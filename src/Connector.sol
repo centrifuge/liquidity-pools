@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.7.6;
 
-interface ConnectorRouterLike {
+interface RouterLike {
   function updateInvestOrder(uint poolId, uint[] calldata trancheId, uint amount) external;
 }
 
-contract Connector {
+contract CentrifugeConnector {
 
-  ConnectorRouterLike public immutable router;
+  RouterLike public immutable router;
 
   constructor(address router_) {
-    router = ConnectorRouterLike(router_);
+    router = RouterLike(router_);
   }
 
   function updateInvestOrder(uint poolId, uint[] calldata trancheId, uint amount) external {
