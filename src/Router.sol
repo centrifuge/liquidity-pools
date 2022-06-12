@@ -2,9 +2,9 @@
 pragma solidity ^0.7.6;
 
 import "forge-std/Test.sol";
-import {Router} from "@nomad-xyz/contracts-router/contracts/Router.sol";
+// import {Router} from "@nomad-xyz/contracts-router/contracts/Router.sol";
 
-contract ConnectorRouter is Router, Test {
+contract ConnectorRouter is Test {
     uint32 immutable CENTRIFUGE_CHAIN_DOMAIN = 3000;
 
     function updateInvestOrder(
@@ -18,11 +18,11 @@ contract ConnectorRouter is Router, Test {
         return;
     }
 
-    function send(bytes memory message) internal {
-        (_home()).dispatch(
-            CENTRIFUGE_CHAIN_DOMAIN,
-            _mustHaveRemote(CENTRIFUGE_CHAIN_DOMAIN),
-            message
-        );
-    }
+    // function send(bytes memory message) internal {
+    //     (_home()).dispatch(
+    //         CENTRIFUGE_CHAIN_DOMAIN,
+    //         _mustHaveRemote(CENTRIFUGE_CHAIN_DOMAIN),
+    //         message
+    //     );
+    // }
 }
