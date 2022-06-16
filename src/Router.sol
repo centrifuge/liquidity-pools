@@ -25,4 +25,14 @@ contract ConnectorRouter is Router, Test {
             message
         );
     }
+
+    function handle(
+        uint32,
+        uint32,
+        bytes32,
+        bytes memory _message
+    ) external override {
+        console.log("handle called");
+        console.log(string(_message));
+    }
 }
