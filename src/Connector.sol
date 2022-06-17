@@ -2,6 +2,9 @@
 pragma solidity ^0.7.6;
 pragma abicoder v2;
 
+import { RestrictedTokenFactoryLike } from "./token/factory.sol";
+import { RestrictedTokenLike } from "./token/restricted.sol";
+import { MemberlistLike } from "./token/memberlist.sol";
 import "forge-std/Test.sol";
 
 interface RouterLike {
@@ -21,6 +24,7 @@ interface RouterLike {
 contract CentrifugeConnector is Test {
 
     RouterLike public router;
+    RestrictedTokenFactoryLike public immutable tokenFactory;
 
     // --- Storage ---
     mapping(address => uint256) public wards;
@@ -43,8 +47,9 @@ contract CentrifugeConnector is Test {
     event File(bytes32 indexed what, address data);
     event PoolAdded(uint256 indexed poolId);
 
-    constructor(address router_) {
+    constructor(address router_, address tokenFactory_) {
         router = RouterLike(router_);
+        tokenFactory = RestrictedTokenFactoryLike(tokenFactory_);
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
     }
@@ -120,7 +125,7 @@ contract CentrifugeConnector is Test {
         onlyRouter
     {
         // Deploy restricted token
-        // Storage in tranche struct
+        // tranche.token = tokenFactory.newRestrictedToken(symbol, name);
     }
 
     function removeTranche(uint256 poolId, string calldata trancheId)
@@ -139,5 +144,9 @@ contract CentrifugeConnector is Test {
         string calldata trancheId,
         address user,
         uint256 validUntil
-    ) public onlyRouter {}
+    ) public onlyRouter {
+        RestrictedTokenLike token = RestrictedTokenLike(pools[poolId].tranches[trancheId].token);
+        MemberlistLike memberlist = MemberlistLike(token.memberlist());
+        memberlist.updateMember(user, validUntil);
+    }
 }

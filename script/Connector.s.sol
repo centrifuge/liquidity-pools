@@ -3,15 +3,19 @@ pragma solidity ^0.7.6;
 
 import "forge-std/Script.sol";
 
-import {ConnectorRouter} from "src/routers/nomad/Router.sol";
-import {CentrifugeConnector} from "src/Connector.sol";
+import { ConnectorRouter } from "src/routers/nomad/Router.sol";
+import { CentrifugeConnector } from "src/Connector.sol";
+import { RestrictedTokenFactory } from "src/token/factory.sol";
 
 contract ConnectorScript is Script {
     function setUp() public {}
 
     function run() public {
         vm.broadcast();
+
+        address tokenFactory_ = address(new RestrictedTokenFactory());
         ConnectorRouter router = new ConnectorRouter(address(0));
-        new CentrifugeConnector(address(router));
+
+        new CentrifugeConnector(address(router), tokenFactory_);
     }
 }

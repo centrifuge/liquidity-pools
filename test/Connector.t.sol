@@ -4,6 +4,7 @@ pragma abicoder v2;
 
 import "forge-std/Test.sol";
 import "src/Connector.sol";
+import { RestrictedTokenFactory } from "src/token/factory.sol";
 import "src/routers/nomad/Router.sol";
 import "./MockHomeConnector.sol";
 
@@ -14,7 +15,9 @@ contract ConnectorTest is Test {
     MockHomeConnector homeConnector;
 
     function setUp() public {
-        bridgedConnector = new CentrifugeConnector(address(this));
+        address tokenFactory_ = address(new RestrictedTokenFactory());
+
+        bridgedConnector = new CentrifugeConnector(address(this), tokenFactory_);
         bridgedRouter = new ConnectorRouter(address(bridgedConnector));
         bridgedConnector.file("router", address(bridgedRouter));
 
