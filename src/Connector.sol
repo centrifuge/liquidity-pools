@@ -8,17 +8,6 @@ import { MemberlistLike } from "./token/memberlist.sol";
 import "forge-std/Test.sol";
 
 interface RouterLike {
-    function updateInvestOrder(
-        uint256 poolId,
-        string calldata trancheId,
-        uint256 amount
-    ) external;
-
-    function updateRedeemOrder(
-        uint256 poolId,
-        string calldata trancheId,
-        uint256 amount
-    ) external;
 }
 
 contract CentrifugeConnector is Test {
@@ -46,6 +35,7 @@ contract CentrifugeConnector is Test {
     event Deny(address indexed user);
     event File(bytes32 indexed what, address data);
     event PoolAdded(uint256 indexed poolId);
+    event TrancheAdded(uint256 indexed poolId, string indexed trancheId, address indexed token);
 
     constructor(address router_, address tokenFactory_) {
         router = RouterLike(router_);
@@ -60,10 +50,7 @@ contract CentrifugeConnector is Test {
     }
 
     modifier onlyRouter() {
-        require(
-            msg.sender == address(router),
-            "CentrifugeConnector/not-authorized"
-        );
+        require(msg.sender == address(router), "CentrifugeConnector/not-the-router");
         _;
     }
 
@@ -84,39 +71,11 @@ contract CentrifugeConnector is Test {
         emit File(what, data);
     }
 
-    // --- Investor interactions ---
-    function updateInvestOrder(
-        uint256 poolId,
-        string calldata trancheId,
-        uint256 amount
-    ) external {
-        require(pools[poolId].poolId != 0, "CentrifugeConnector/unknown-pool");
-        require(
-            pools[poolId].tranches[trancheId].latestPrice != 0,
-            "CentrifugeConnector/unknown-tranche"
-        );
-        // TODO: check msg.sender is a member of the token
-
-        router.updateInvestOrder(poolId, trancheId, amount);
-    }
-
-    function updateRedeemOrder(
-        uint256 poolId,
-        string calldata trancheId,
-        uint256 amount
-    ) external {}
-
     // --- Internal ---
-    // TOOD: add string[] calldata trancheIds
     function addPool(uint256 poolId) public onlyRouter {
         console.log("Adding a pool in Connector");
         Pool storage pool = pools[poolId];
         pool.poolId = poolId;
-
-        // for (uint i = 0; i < trancheIds.length; i++) {
-        //   this.addTranche(poolId, trancheIds[i]);
-        // }
-
         emit PoolAdded(poolId);
     }
 
@@ -124,14 +83,14 @@ contract CentrifugeConnector is Test {
         public
         onlyRouter
     {
-        // Deploy restricted token
-        // tranche.token = tokenFactory.newRestrictedToken(symbol, name);
-    }
+        Pool storage pool = pools[poolId];
+        Tranche storage tranche = pool.tranches[trancheId];
 
-    function removeTranche(uint256 poolId, string calldata trancheId)
-        public
-        onlyRouter
-    {}
+        // Deploy restricted token
+        // TODO: set actual symbol and name
+        tranche.token = tokenFactory.newRestrictedToken("SYMBOL", "Name");
+        emit TrancheAdded(poolId, trancheId, tranche.token);
+    }
 
     function updateTokenPrice(
         uint256 poolId,
@@ -149,4 +108,15 @@ contract CentrifugeConnector is Test {
         MemberlistLike memberlist = MemberlistLike(token.memberlist());
         memberlist.updateMember(user, validUntil);
     }
+
+    function transferTo(
+        uint256 poolId,
+        string calldata trancheId,
+        address user,
+        uint256 amount
+    ) public onlyRouter {
+        RestrictedTokenLike token = RestrictedTokenLike(pools[poolId].tranches[trancheId].token);
+        token.mint(user, amount);
+    }
+    
 }

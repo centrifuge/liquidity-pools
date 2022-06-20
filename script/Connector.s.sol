@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.7.6;
 
-import "forge-std/Script.sol";
-
 import { ConnectorRouter } from "src/routers/nomad/Router.sol";
 import { CentrifugeConnector } from "src/Connector.sol";
 import { RestrictedTokenFactory } from "src/token/factory.sol";
+import "forge-std/Script.sol";
 
 contract ConnectorScript is Script {
     function setUp() public {}

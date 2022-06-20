@@ -20,10 +20,6 @@ contract ConnectorRouter is Router, Test {
 
     uint32 immutable CENTRIFUGE_CHAIN_DOMAIN = 3000;
 
-    enum Types {
-        AddPool
-    }
-
     constructor(address connector_) {
         connector = ConnectorLike(connector_);
     }
