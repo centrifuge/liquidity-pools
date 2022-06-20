@@ -24,11 +24,11 @@ contract CentrifugeConnector is Test {
     }
 
     struct Pool {
-        uint256 poolId;
+        uint64 poolId;
         mapping(string => Tranche) tranches;
     }
 
-    mapping(uint256 => Pool) public pools;
+    mapping(uint64 => Pool) public pools;
 
     // --- Events ---
     event Rely(address indexed user);
@@ -72,14 +72,14 @@ contract CentrifugeConnector is Test {
     }
 
     // --- Internal ---
-    function addPool(uint256 poolId) public onlyRouter {
+    function addPool(uint64 poolId) public onlyRouter {
         console.log("Adding a pool in Connector");
         Pool storage pool = pools[poolId];
         pool.poolId = poolId;
         emit PoolAdded(poolId);
     }
 
-    function addTranche(uint256 poolId, string calldata trancheId)
+    function addTranche(uint64 poolId, string calldata trancheId)
         public
         onlyRouter
     {
@@ -93,13 +93,13 @@ contract CentrifugeConnector is Test {
     }
 
     function updateTokenPrice(
-        uint256 poolId,
+        uint64 poolId,
         string calldata trancheId,
         uint256 price
     ) public onlyRouter {}
 
     function updateMember(
-        uint256 poolId,
+        uint64 poolId,
         string calldata trancheId,
         address user,
         uint256 validUntil
@@ -110,12 +110,13 @@ contract CentrifugeConnector is Test {
     }
 
     function transferTo(
-        uint256 poolId,
+        uint64 poolId,
         string calldata trancheId,
         address user,
         uint256 amount
     ) public onlyRouter {
         RestrictedTokenLike token = RestrictedTokenLike(pools[poolId].tranches[trancheId].token);
+        require(token.hasMember(user), "CentrifugeConnector/not-a-member");
         token.mint(user, amount);
     }
     

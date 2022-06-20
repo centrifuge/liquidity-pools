@@ -8,7 +8,7 @@ import {ConnectorMessages} from "../..//Messages.sol";
 import "forge-std/Test.sol";
 
 interface ConnectorLike {
-  function addPool(uint poolId) external;
+  function addPool(uint64 poolId) external;
 }
 
 contract ConnectorRouter is Router, Test {
@@ -43,6 +43,7 @@ contract ConnectorRouter is Router, Test {
         );
     }
 
+    // TODO: onlyReplica onlyRemoteRouter(_origin, _sender) 
     function handle(
         uint32 _origin,
         uint32 _nonce,
@@ -51,11 +52,11 @@ contract ConnectorRouter is Router, Test {
     ) external override {
         bytes29 _msg = _message.ref(0);
         if (ConnectorMessages.isAddPool(_msg) == true) {
-            console.log("yes");
+            uint64 poolId = ConnectorMessages.parseAddPool(_msg);
+            console.log(poolId);
+            connector.addPool(poolId);
         } else {
-            console.log("no");
+            require(false, "invalid-message");
         }
-        // TODO: actually decode
-        connector.addPool(1);
     }
 }

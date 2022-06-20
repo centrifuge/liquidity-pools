@@ -7,20 +7,28 @@ library ConnectorMessages {
     using TypedMemView for bytes;
     using TypedMemView for bytes29;
 
-    enum Calls {
+    enum Call {
         Invalid,
-        AddPool
+        AddPool,
+        AddTranche,
+        UpdateTokenPrice,
+        UpdateMember,
+        TransferTo
     }
 
-    function formatAddPool(uint256 poolId) internal pure returns (bytes memory) {
-        return abi.encodePacked(uint8(Calls.AddPool), poolId);
+    function formatAddPool(uint64 poolId) internal pure returns (bytes memory) {
+        return abi.encodePacked(uint8(Call.AddPool), poolId);
     }
 
-    function messageType(bytes29 _view) internal pure returns (Calls _call) {
-        _call = Calls(uint8(_view.typeOf()));
+    function messageType(bytes29 _msg) internal pure returns (Call _call) {
+        _call = Call(uint8(_msg.indexUint(0, 1)));
     }
 
-    function isAddPool(bytes29 _view) internal pure returns (bool) {
-        return messageType(_view) == Calls.AddPool;
+    function isAddPool(bytes29 _msg) internal pure returns (bool) {
+        return messageType(_msg) == Call.AddPool;
+    }
+
+    function parseAddPool(bytes29 _msg) internal pure returns (uint64 poolId) {
+        return uint64(_msg.indexUint(1, 8));
     }
 }

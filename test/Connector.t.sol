@@ -24,26 +24,27 @@ contract ConnectorTest is Test {
         homeConnector = new MockHomeConnector(address(bridgedRouter));
     }
 
-    function testAddingPoolWorks(uint poolId) public {
+    function testAddingPoolWorks(uint64 poolId) public {
+        vm.assume(poolId > 0);
         homeConnector.addPool(poolId);
-        (uint actualPoolId) = bridgedConnector.pools(poolId);
-        assertEq(actualPoolId, poolId);
+        (uint64 actualPoolId) = bridgedConnector.pools(poolId);
+        assertEq(uint256(actualPoolId), uint256(poolId));
     }
 
-    function testAddingPoolAsNonRouterFails(uint poolId) public { }
-    function testAddingTranchesWorks(uint poolId, string memory trancheId) public { }
-    function testAddingTranchesAsNonRouterFails(uint poolId, string memory trancheId) public { }
-    function testUpdatingMemberWorks(uint poolId) public { }
-    function testUpdatingMemberAsNonRouterFails(uint poolId) public { }
-    function testUpdatingMemberForNonExistentPoolFails(uint poolId) public { }
-    function testUpdatingMemberForNonExistentTrancheFails(uint poolId) public { }
-    function testUpdatingTokenPriceWorks(uint poolId) public { }
-    function testUpdatingTokenPriceAsNonRouterFails(uint poolId) public { }
-    function testUpdatingTokenPriceForNonExistentPoolFails(uint poolId) public { }
-    function testUpdatingTokenPriceForNonExistentTrancheFails(uint poolId) public { }
-    function testTransferToWorks(uint poolId) public { }
-    function testTransferToAsNonRouterFails(uint poolId) public { }
-    function testTransferToForNonExistentPoolFails(uint poolId) public { }
-    function testTransferToForNonExistentTrancheFails(uint poolId) public { }
+    function testAddingPoolAsNonRouterFails(uint64 poolId) public { }
+    function testAddingTranchesWorks(uint64 poolId, string memory trancheId) public { }
+    function testAddingTranchesAsNonRouterFails(uint64 poolId, string memory trancheId) public { }
+    function testUpdatingMemberWorks(uint64 poolId) public { }
+    function testUpdatingMemberAsNonRouterFails(uint64 poolId) public { }
+    function testUpdatingMemberForNonExistentPoolFails(uint64 poolId) public { }
+    function testUpdatingMemberForNonExistentTrancheFails(uint64 poolId) public { }
+    function testUpdatingTokenPriceWorks(uint64 poolId) public { }
+    function testUpdatingTokenPriceAsNonRouterFails(uint64 poolId) public { }
+    function testUpdatingTokenPriceForNonExistentPoolFails(uint64 poolId) public { }
+    function testUpdatingTokenPriceForNonExistentTrancheFails(uint64 poolId) public { }
+    function testTransferToWorks(uint64 poolId) public { }
+    function testTransferToAsNonRouterFails(uint64 poolId) public { }
+    function testTransferToForNonExistentPoolFails(uint64 poolId) public { }
+    function testTransferToForNonExistentTrancheFails(uint64 poolId) public { }
 
 }

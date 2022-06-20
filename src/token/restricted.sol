@@ -8,8 +8,13 @@ interface MemberlistLike {
     function member(address) external;
 }
 
-interface RestrictedTokenLike {
+interface ERC20Like {
+    function mint(address usr, uint wad) external;
+}
+
+interface RestrictedTokenLike is ERC20Like {
     function memberlist() external view returns (address);
+    function hasMember(address usr) external view returns (bool);
 }
 
 // Only mebmber with a valid (not expired) membership should be allowed to receive tokens
