@@ -35,4 +35,12 @@ contract MessagesTest is Test {
         assertEq(decodedAmount, amount);
     }
 
+    function testUpdateTokenPriceEquivalence(uint64 poolId, bytes16 trancheId, uint256 price) public {
+        bytes memory _message = ConnectorMessages.formatUpdateTokenPrice(poolId, trancheId, price);
+        (uint64 decodedPoolId, bytes16 decodedTrancheId, uint256 decodedPrice) = ConnectorMessages.parseUpdateTokenPrice(_message.ref(0));
+        assertEq(uint256(decodedPoolId), uint256(poolId));
+        assertEq(decodedTrancheId, trancheId);
+        assertEq(decodedPrice, price);
+    }
+
 }

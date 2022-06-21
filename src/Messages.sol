@@ -82,4 +82,26 @@ library ConnectorMessages {
         amount = uint256(_msg.index(45, 32));
     }
 
+    /**
+     * Update token price
+     * 
+     * 0: call type (uint8 = 1 byte)
+     * 1-8: poolId (uint64 = 8 bytes)
+     * 9-25: trancheId (16 bytes)
+     * 26-58: amount (uint256 = 32 bytes)
+     */
+    function formatUpdateTokenPrice(uint64 poolId, bytes16 trancheId, uint256 price) internal pure returns (bytes memory) {
+        return abi.encodePacked(uint8(Call.UpdateTokenPrice), poolId, trancheId, price);
+    }
+
+    function isUpdateTokenPrice(bytes29 _msg) internal pure returns (bool) {
+        return messageType(_msg) == Call.UpdateTokenPrice;
+    }
+
+    function parseUpdateTokenPrice(bytes29 _msg) internal pure returns (uint64 poolId, bytes16 trancheId, uint256 price) {
+        poolId = uint64(_msg.indexUint(1, 8));
+        trancheId = bytes16(_msg.index(9, 16));
+        price = uint256(_msg.index(25, 32));
+    }
+
 }

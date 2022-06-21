@@ -11,6 +11,7 @@ interface ConnectorLike {
   function addPool(uint64 poolId) external;
   function addTranche(uint64 poolId, bytes16 trancheId) external;
   function updateMember(uint64 poolId, bytes16 trancheId, address user, uint256 validUntil) external;
+  function updateTokenPrice(uint64 poolId, bytes16 trancheId, uint256 price) external;
 }
 
 contract ConnectorRouter is Router, Test {
@@ -50,10 +51,10 @@ contract ConnectorRouter is Router, Test {
             connector.addTranche(poolId, trancheId);
         } else if (ConnectorMessages.isUpdateMember(_msg) == true) {
             (uint64 poolId, bytes16 trancheId, address user, uint256 amount) = ConnectorMessages.parseUpdateMember(_msg);
-            console.log(poolId);
-            console.log(user);
-            console.log(amount);
             connector.updateMember(poolId, trancheId, user, amount);
+        } else if (ConnectorMessages.isUpdateTokenPrice(_msg) == true) {
+            (uint64 poolId, bytes16 trancheId, uint256 price) = ConnectorMessages.parseUpdateTokenPrice(_msg);
+            connector.updateTokenPrice(poolId, trancheId, price);
         } else {
             require(false, "invalid-message");
         }

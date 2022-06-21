@@ -41,4 +41,9 @@ contract MockHomeConnector is Test {
         home.handle(CENTRIFUGE_CHAIN_DOMAIN, NONCE, "1", _message);
     }
 
+    function updateTokenPrice(uint64 poolId, bytes16 trancheId, uint256 price) public {
+        bytes memory _message = ConnectorMessages.formatUpdateTokenPrice(poolId, trancheId, price);
+        home.handle(CENTRIFUGE_CHAIN_DOMAIN, NONCE, "1", _message);
+    }
+
 }

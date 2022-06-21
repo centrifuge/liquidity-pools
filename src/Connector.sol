@@ -109,7 +109,11 @@ contract CentrifugeConnector is Test {
         uint64 poolId,
         bytes16 trancheId,
         uint256 price
-    ) public onlyRouter {}
+    ) public onlyRouter {
+        Tranche storage tranche = tranches[poolId][trancheId];
+        tranche.latestPrice = price;
+        tranche.lastPriceUpdate = block.timestamp;
+    }
 
     function updateMember(
         uint64 poolId,

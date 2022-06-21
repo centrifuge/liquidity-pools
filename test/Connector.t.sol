@@ -92,10 +92,27 @@ contract ConnectorTest is Test {
     function testUpdatingMemberAsNonRouterFails(uint64 poolId) public { }
     function testUpdatingMemberForNonExistentPoolFails(uint64 poolId) public { }
     function testUpdatingMemberForNonExistentTrancheFails(uint64 poolId) public { }
-    function testUpdatingTokenPriceWorks(uint64 poolId) public { }
-    function testUpdatingTokenPriceAsNonRouterFails(uint64 poolId) public { }
+
+    function testUpdatingTokenPriceWorks(uint64 poolId, bytes16 trancheId, uint256 price) public {
+        homeConnector.addPool(poolId);
+        homeConnector.addTranche(poolId, trancheId);
+        homeConnector.updateTokenPrice(poolId, trancheId, price);
+
+        (, uint256 latestPrice, uint256 lastPriceUpdate) = bridgedConnector.tranches(poolId, trancheId);
+        assertEq(latestPrice, price);
+        assertEq(lastPriceUpdate, block.timestamp);
+    }
+
+    function testUpdatingTokenPriceAsNonRouterFails(uint64 poolId, bytes16 trancheId, uint256 price) public {
+        homeConnector.addPool(poolId);
+        homeConnector.addTranche(poolId, trancheId);
+        vm.expectRevert(bytes("CentrifugeConnector/not-the-router"));
+        homeConnector.updateTokenPrice(poolId, trancheId, price);
+
+    }
     function testUpdatingTokenPriceForNonExistentPoolFails(uint64 poolId) public { }
     function testUpdatingTokenPriceForNonExistentTrancheFails(uint64 poolId) public { }
+
     function testTransferToWorks(uint64 poolId) public { }
     function testTransferToAsNonRouterFails(uint64 poolId) public { }
     function testTransferToForNonExistentPoolFails(uint64 poolId) public { }
