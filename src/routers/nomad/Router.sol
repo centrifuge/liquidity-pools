@@ -10,6 +10,7 @@ import "forge-std/Test.sol";
 interface ConnectorLike {
   function addPool(uint64 poolId) external;
   function addTranche(uint64 poolId, bytes16 trancheId) external;
+  function updateMember(uint64 poolId, bytes16 trancheId, address user, uint256 validUntil) external;
 }
 
 contract ConnectorRouter is Router, Test {
@@ -43,13 +44,16 @@ contract ConnectorRouter is Router, Test {
         bytes29 _msg = _message.ref(0);
         if (ConnectorMessages.isAddPool(_msg) == true) {
             uint64 poolId = ConnectorMessages.parseAddPool(_msg);
-            console.log(poolId);
             connector.addPool(poolId);
         } else if (ConnectorMessages.isAddTranche(_msg) == true) {
             (uint64 poolId, bytes16 trancheId) = ConnectorMessages.parseAddTranche(_msg);
-            console.log(poolId);
-            // console.log(trancheId[0]);
             connector.addTranche(poolId, trancheId);
+        } else if (ConnectorMessages.isUpdateMember(_msg) == true) {
+            (uint64 poolId, bytes16 trancheId, address user, uint256 amount) = ConnectorMessages.parseUpdateMember(_msg);
+            console.log(poolId);
+            console.log(user);
+            console.log(amount);
+            connector.updateMember(poolId, trancheId, user, amount);
         } else {
             require(false, "invalid-message");
         }

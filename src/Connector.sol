@@ -2,7 +2,7 @@
 pragma solidity ^0.7.6;
 pragma abicoder v2;
 
-import { RestrictedTokenFactoryLike } from "./token/factory.sol";
+import { RestrictedTokenFactoryLike, MemberlistFactoryLike } from "./token/factory.sol";
 import { RestrictedTokenLike } from "./token/restricted.sol";
 import { MemberlistLike } from "./token/memberlist.sol";
 import "forge-std/Test.sol";
@@ -14,10 +14,9 @@ contract CentrifugeConnector is Test {
 
     RouterLike public router;
     RestrictedTokenFactoryLike public immutable tokenFactory;
+    MemberlistFactoryLike public immutable memberlistFactory;
 
     // --- Storage ---
-    mapping(address => uint256) public wards;
-
     struct Pool {
         uint64 poolId;
         uint256 createdAt;
@@ -26,11 +25,14 @@ contract CentrifugeConnector is Test {
     mapping(uint64 => Pool) public pools;
 
     struct Tranche {
-        uint256 latestPrice; // [ray]
         address token;
+        uint256 latestPrice; // [ray]
+        uint256 lastPriceUpdate;
     }
 
     mapping(uint64 => mapping(bytes16 => Tranche)) public tranches;
+
+    mapping(address => uint256) public wards;
 
     // --- Events ---
     event Rely(address indexed user);
@@ -39,9 +41,10 @@ contract CentrifugeConnector is Test {
     event PoolAdded(uint256 indexed poolId);
     event TrancheAdded(uint256 indexed poolId, bytes16 indexed trancheId, address indexed token);
 
-    constructor(address router_, address tokenFactory_) {
+    constructor(address router_, address tokenFactory_, address memberlistFactory_) {
         router = RouterLike(router_);
         tokenFactory = RestrictedTokenFactoryLike(tokenFactory_);
+        memberlistFactory = MemberlistFactoryLike(memberlistFactory_);
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
     }
@@ -75,7 +78,6 @@ contract CentrifugeConnector is Test {
 
     // --- Internal ---
     function addPool(uint64 poolId) public onlyRouter {
-        console.log("Adding a pool in Connector");
         Pool storage pool = pools[poolId];
         pool.poolId = poolId;
         pool.createdAt = block.timestamp;
@@ -96,6 +98,10 @@ contract CentrifugeConnector is Test {
         // TODO: set actual symbol and name
         address token = tokenFactory.newRestrictedToken("SYMBOL", "Name");
         tranche.token = token;
+
+        address memberlist = memberlistFactory.newMemberlist();
+        RestrictedTokenLike(token).depend("memberlist", memberlist);
+
         emit TrancheAdded(poolId, trancheId, token);
     }
 

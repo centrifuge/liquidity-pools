@@ -16,8 +16,6 @@ library ConnectorMessages {
         TransferTo
     }
 
-    uint constant TRANCHE_ID_LENGTH = 16; // [u8, 16]
-
     function messageType(bytes29 _msg) internal pure returns (Call _call) {
         _call = Call(uint8(_msg.indexUint(0, 1)));
     }
@@ -25,10 +23,8 @@ library ConnectorMessages {
     /**
      * Add pool
      * 
-     * 1: call type (uint8 = 1 byte)
-     * 2-9: poolId (uint64 = 8 bytes)
-     *
-     * TODO: consider adding a message ID
+     * 0: call type (uint8 = 1 byte)
+     * 1-8: poolId (uint64 = 8 bytes)
      */
     function formatAddPool(uint64 poolId) internal pure returns (bytes memory) {
         return abi.encodePacked(uint8(Call.AddPool), poolId);
@@ -45,11 +41,9 @@ library ConnectorMessages {
     /**
      * Add tranche
      * 
-     * 1: call type (uint8 = 1 byte)
-     * 2-9: poolId (uint64 = 8 bytes)
-     * 10-26: trancheId (16 bytes)
-     *
-     * TODO: consider adding a message ID
+     * 0: call type (uint8 = 1 byte)
+     * 1-8: poolId (uint64 = 8 bytes)
+     * 9-25: trancheId (16 bytes)
      */
     function formatAddTranche(uint64 poolId, bytes16 trancheId) internal pure returns (bytes memory) {
         return abi.encodePacked(uint8(Call.AddTranche), poolId, trancheId);
@@ -63,4 +57,29 @@ library ConnectorMessages {
         poolId = uint64(_msg.indexUint(1, 8));
         trancheId = bytes16(_msg.index(9, 16));
     }
+
+    /**
+     * Update member
+     * 
+     * 0: call type (uint8 = 1 byte)
+     * 1-8: poolId (uint64 = 8 bytes)
+     * 9-25: trancheId (16 bytes)
+     * 26-46: user (Ethereum address, 20 bytes)
+     * 47-78: amount (uint256 = 32 bytes)
+     */
+    function formatUpdateMember(uint64 poolId, bytes16 trancheId, address user, uint256 amount) internal pure returns (bytes memory) {
+        return abi.encodePacked(uint8(Call.UpdateMember), poolId, trancheId, user, amount);
+    }
+
+    function isUpdateMember(bytes29 _msg) internal pure returns (bool) {
+        return messageType(_msg) == Call.UpdateMember;
+    }
+
+    function parseUpdateMember(bytes29 _msg) internal pure returns (uint64 poolId, bytes16 trancheId, address user, uint256 amount) {
+        poolId = uint64(_msg.indexUint(1, 8));
+        trancheId = bytes16(_msg.index(9, 16));
+        user = address(bytes20(_msg.index(25, 20)));
+        amount = uint256(_msg.index(45, 32));
+    }
+
 }

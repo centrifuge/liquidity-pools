@@ -15,6 +15,7 @@ interface ERC20Like {
 interface RestrictedTokenLike is ERC20Like {
     function memberlist() external view returns (address);
     function hasMember(address usr) external view returns (bool);
+    function depend(bytes32 contractName, address addr) external;
 }
 
 // Only mebmber with a valid (not expired) membership should be allowed to receive tokens

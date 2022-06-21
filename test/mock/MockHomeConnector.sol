@@ -26,15 +26,19 @@ contract MockHomeConnector is Test {
         home = IMessageRecipient(home_);
     }
 
-    function addPool(uint64 poolId) public returns (bool) {
+    function addPool(uint64 poolId) public {
         bytes memory _message = ConnectorMessages.formatAddPool(poolId);
         home.handle(CENTRIFUGE_CHAIN_DOMAIN, NONCE, "1", _message);
-        return true;
     }
 
-    function addTranche(uint64 poolId, bytes16 trancheId) public returns (bool) {
+    function addTranche(uint64 poolId, bytes16 trancheId) public {
         bytes memory _message = ConnectorMessages.formatAddTranche(poolId, trancheId);
         home.handle(CENTRIFUGE_CHAIN_DOMAIN, NONCE, "1", _message);
-        return true;
     }
+
+    function updateMember(uint64 poolId, bytes16 trancheId, address user, uint256 amount) public {
+        bytes memory _message = ConnectorMessages.formatUpdateMember(poolId, trancheId, user, amount);
+        home.handle(CENTRIFUGE_CHAIN_DOMAIN, NONCE, "1", _message);
+    }
+
 }

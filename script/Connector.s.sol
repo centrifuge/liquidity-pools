@@ -3,7 +3,7 @@ pragma solidity ^0.7.6;
 
 import { ConnectorRouter } from "src/routers/nomad/Router.sol";
 import { CentrifugeConnector } from "src/Connector.sol";
-import { RestrictedTokenFactory } from "src/token/factory.sol";
+import { RestrictedTokenFactory, MemberlistFactory } from "src/token/factory.sol";
 import "forge-std/Script.sol";
 
 contract ConnectorScript is Script {
@@ -13,8 +13,11 @@ contract ConnectorScript is Script {
         vm.broadcast();
 
         address tokenFactory_ = address(new RestrictedTokenFactory());
+        address memberlistFactory_ = address(new MemberlistFactory());
         ConnectorRouter router = new ConnectorRouter(address(0));
 
-        new CentrifugeConnector(address(router), tokenFactory_);
+        new CentrifugeConnector(address(router), tokenFactory_, memberlistFactory_);
+
+        // TODO:  file connector on router
     }
 }
