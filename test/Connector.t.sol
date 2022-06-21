@@ -101,11 +101,4 @@ contract ConnectorTest is Test {
     function testTransferToForNonExistentPoolFails(uint64 poolId) public { }
     function testTransferToForNonExistentTrancheFails(uint64 poolId) public { }
 
-    // function setupPool() internal returns (uint64 poolId, bytes16[] trancheIds) {
-    //     uint64 poolId = 1;
-    //     bytes16[] trancheIds = new bytes16[]();
-    //     homeConnector.addPool(poolId);
-    //     homeConnector.addTranche(poolId, trancheId);
-    // }
-
 }
