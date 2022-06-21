@@ -9,7 +9,7 @@ import "forge-std/Test.sol";
 
 interface ConnectorLike {
   function addPool(uint64 poolId) external;
-  function addTranche(uint64 poolId, uint8[] calldata trancheId) external;
+  function addTranche(uint64 poolId, bytes16 trancheId) external;
 }
 
 contract ConnectorRouter is Router, Test {
@@ -46,7 +46,7 @@ contract ConnectorRouter is Router, Test {
             console.log(poolId);
             connector.addPool(poolId);
         } else if (ConnectorMessages.isAddTranche(_msg) == true) {
-            (uint64 poolId, uint8[] memory trancheId) = ConnectorMessages.parseAddTranche(_msg);
+            (uint64 poolId, bytes16 trancheId) = ConnectorMessages.parseAddTranche(_msg);
             console.log(poolId);
             // console.log(trancheId[0]);
             connector.addTranche(poolId, trancheId);

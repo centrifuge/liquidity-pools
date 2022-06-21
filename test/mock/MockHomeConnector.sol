@@ -32,7 +32,7 @@ contract MockHomeConnector is Test {
         return true;
     }
 
-    function addTranche(uint64 poolId, uint8[] calldata trancheId) public returns (bool) {
+    function addTranche(uint64 poolId, bytes16 trancheId) public returns (bool) {
         bytes memory _message = ConnectorMessages.formatAddTranche(poolId, trancheId);
         home.handle(CENTRIFUGE_CHAIN_DOMAIN, NONCE, "1", _message);
         return true;

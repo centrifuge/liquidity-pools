@@ -32,14 +32,15 @@ contract ConnectorTest is Test {
 
     function testAddingPoolAsNonRouterFails(uint64 poolId) public { }
 
-    function testAddingSingleTrancheWorks(uint64 poolId) public {
+    function testAddingSingleTrancheWorks(uint64 poolId, bytes16 trancheId) public {
         homeConnector.addPool(poolId);
         (uint64 actualPoolId,) = bridgedConnector.pools(poolId);
         assertEq(uint256(actualPoolId), uint256(poolId));
 
-        homeConnector.addTranche(poolId, new uint8[](16));
-        // TODO: check tranche token existence
-        assertEq(uint256(3), uint256(4));
+        homeConnector.addTranche(poolId, trancheId);
+        (uint256 latestPrice, address token) = bridgedConnector.tranches(poolId, trancheId);
+        assertTrue(latestPrice > 0);
+        assertTrue(token != address(0));
     }
 
     function testAddingMultipleTranchesWorks(uint64 poolId, string memory trancheId) public {}

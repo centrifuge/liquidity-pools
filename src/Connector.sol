@@ -18,25 +18,26 @@ contract CentrifugeConnector is Test {
     // --- Storage ---
     mapping(address => uint256) public wards;
 
+    struct Pool {
+        uint64 poolId;
+        uint256 createdAt;
+    }
+
+    mapping(uint64 => Pool) public pools;
+
     struct Tranche {
         uint256 latestPrice; // [ray]
         address token;
     }
 
-    struct Pool {
-        uint64 poolId;
-        uint256 createdAt;
-        mapping(string => Tranche) tranches;
-    }
-
-    mapping(uint64 => Pool) public pools;
+    mapping(uint64 => mapping(bytes16 => Tranche)) public tranches;
 
     // --- Events ---
     event Rely(address indexed user);
     event Deny(address indexed user);
     event File(bytes32 indexed what, address data);
     event PoolAdded(uint256 indexed poolId);
-    event TrancheAdded(uint256 indexed poolId, uint8[] indexed trancheId, address indexed token);
+    event TrancheAdded(uint256 indexed poolId, bytes16 indexed trancheId, address indexed token);
 
     constructor(address router_, address tokenFactory_) {
         router = RouterLike(router_);
@@ -81,45 +82,47 @@ contract CentrifugeConnector is Test {
         emit PoolAdded(poolId);
     }
 
-    function addTranche(uint64 poolId, uint8[] calldata trancheId)
+    function addTranche(uint64 poolId, bytes16 trancheId)
         public
         onlyRouter
     {
         Pool storage pool = pools[poolId];
         require(pool.createdAt > 0, "CentrifugeConnector/invalid-pool");
 
-        // Tranche storage tranche = pool.tranches[trancheId];
+        Tranche storage tranche = tranches[poolId][trancheId];
+        tranche.latestPrice = 1*10**27;
 
         // Deploy restricted token
         // TODO: set actual symbol and name
         address token = tokenFactory.newRestrictedToken("SYMBOL", "Name");
+        tranche.token = token;
         emit TrancheAdded(poolId, trancheId, token);
     }
 
     function updateTokenPrice(
         uint64 poolId,
-        string calldata trancheId,
+        bytes16 trancheId,
         uint256 price
     ) public onlyRouter {}
 
     function updateMember(
         uint64 poolId,
-        string calldata trancheId,
+        bytes16 trancheId,
         address user,
         uint256 validUntil
     ) public onlyRouter {
-        RestrictedTokenLike token = RestrictedTokenLike(pools[poolId].tranches[trancheId].token);
+        RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
         MemberlistLike memberlist = MemberlistLike(token.memberlist());
         memberlist.updateMember(user, validUntil);
     }
 
     function transferTo(
         uint64 poolId,
-        string calldata trancheId,
+        bytes16 trancheId,
         address user,
         uint256 amount
     ) public onlyRouter {
-        RestrictedTokenLike token = RestrictedTokenLike(pools[poolId].tranches[trancheId].token);
+        RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
         require(token.hasMember(user), "CentrifugeConnector/not-a-member");
         token.mint(user, amount);
     }

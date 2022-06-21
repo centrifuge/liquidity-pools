@@ -25,8 +25,8 @@ library ConnectorMessages {
     /**
      * Add pool
      * 
-     * 0-1: call type
-     * 1-5: poolId
+     * 1: call type (uint8 = 1 byte)
+     * 2-9: poolId (uint64 = 8 bytes)
      *
      * TODO: consider adding a message ID
      */
@@ -45,13 +45,13 @@ library ConnectorMessages {
     /**
      * Add tranche
      * 
-     * 0-1: call type
-     * 1-5: poolId
-     * 6-22: trancheId
+     * 1: call type (uint8 = 1 byte)
+     * 2-9: poolId (uint64 = 8 bytes)
+     * 10-26: trancheId (16 bytes)
      *
      * TODO: consider adding a message ID
      */
-    function formatAddTranche(uint64 poolId, uint8[] memory trancheId) internal pure returns (bytes memory) {
+    function formatAddTranche(uint64 poolId, bytes16 trancheId) internal pure returns (bytes memory) {
         return abi.encodePacked(uint8(Call.AddTranche), poolId, trancheId);
     }
 
@@ -59,11 +59,8 @@ library ConnectorMessages {
         return messageType(_msg) == Call.AddTranche;
     }
 
-    function parseAddTranche(bytes29 _msg) internal pure returns (uint64 poolId, uint8[] memory trancheId) {
+    function parseAddTranche(bytes29 _msg) internal pure returns (uint64 poolId, bytes16 trancheId) {
         poolId = uint64(_msg.indexUint(1, 8));
-        // trancheId = uint8[];
-        // for (uint i = 0; i < 16; i++) {
-        //     trancheId.push(uint8(_msg.indexUint(i + 5, 1)));
-        // }
+        trancheId = bytes16(_msg.index(9, 16));
     }
 }
