@@ -9,6 +9,7 @@ import "forge-std/Test.sol";
 
 interface ConnectorLike {
   function addPool(uint64 poolId) external;
+  function addTranche(uint64 poolId, uint8[] calldata trancheId) external;
 }
 
 contract ConnectorRouter is Router, Test {
@@ -22,17 +23,6 @@ contract ConnectorRouter is Router, Test {
 
     constructor(address connector_) {
         connector = ConnectorLike(connector_);
-    }
-
-    function updateInvestOrder(
-        uint256 poolId,
-        uint256[] calldata trancheId,
-        uint256 amount
-    ) external {
-        console.log(poolId);
-        console.log(amount);
-        // TODO: send message to Nomad Home contract by calling send()
-        return;
     }
 
     function send(bytes memory message) internal {
@@ -55,6 +45,11 @@ contract ConnectorRouter is Router, Test {
             uint64 poolId = ConnectorMessages.parseAddPool(_msg);
             console.log(poolId);
             connector.addPool(poolId);
+        } else if (ConnectorMessages.isAddTranche(_msg) == true) {
+            (uint64 poolId, uint8[] memory trancheId) = ConnectorMessages.parseAddTranche(_msg);
+            console.log(poolId);
+            // console.log(trancheId[0]);
+            connector.addTranche(poolId, trancheId);
         } else {
             require(false, "invalid-message");
         }

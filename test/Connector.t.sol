@@ -25,14 +25,25 @@ contract ConnectorTest is Test {
     }
 
     function testAddingPoolWorks(uint64 poolId) public {
-        vm.assume(poolId > 0);
         homeConnector.addPool(poolId);
-        (uint64 actualPoolId) = bridgedConnector.pools(poolId);
+        (uint64 actualPoolId,) = bridgedConnector.pools(poolId);
         assertEq(uint256(actualPoolId), uint256(poolId));
     }
 
     function testAddingPoolAsNonRouterFails(uint64 poolId) public { }
-    function testAddingTranchesWorks(uint64 poolId, string memory trancheId) public { }
+
+    function testAddingSingleTrancheWorks(uint64 poolId) public {
+        homeConnector.addPool(poolId);
+        (uint64 actualPoolId,) = bridgedConnector.pools(poolId);
+        assertEq(uint256(actualPoolId), uint256(poolId));
+
+        homeConnector.addTranche(poolId, new uint8[](16));
+        // TODO: check tranche token existence
+        assertEq(uint256(3), uint256(4));
+    }
+
+    function testAddingMultipleTranchesWorks(uint64 poolId, string memory trancheId) public {}
+    
     function testAddingTranchesAsNonRouterFails(uint64 poolId, string memory trancheId) public { }
     function testUpdatingMemberWorks(uint64 poolId) public { }
     function testUpdatingMemberAsNonRouterFails(uint64 poolId) public { }

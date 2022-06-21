@@ -25,6 +25,7 @@ contract CentrifugeConnector is Test {
 
     struct Pool {
         uint64 poolId;
+        uint256 createdAt;
         mapping(string => Tranche) tranches;
     }
 
@@ -35,7 +36,7 @@ contract CentrifugeConnector is Test {
     event Deny(address indexed user);
     event File(bytes32 indexed what, address data);
     event PoolAdded(uint256 indexed poolId);
-    event TrancheAdded(uint256 indexed poolId, string indexed trancheId, address indexed token);
+    event TrancheAdded(uint256 indexed poolId, uint8[] indexed trancheId, address indexed token);
 
     constructor(address router_, address tokenFactory_) {
         router = RouterLike(router_);
@@ -76,20 +77,23 @@ contract CentrifugeConnector is Test {
         console.log("Adding a pool in Connector");
         Pool storage pool = pools[poolId];
         pool.poolId = poolId;
+        pool.createdAt = block.timestamp;
         emit PoolAdded(poolId);
     }
 
-    function addTranche(uint64 poolId, string calldata trancheId)
+    function addTranche(uint64 poolId, uint8[] calldata trancheId)
         public
         onlyRouter
     {
         Pool storage pool = pools[poolId];
-        Tranche storage tranche = pool.tranches[trancheId];
+        require(pool.createdAt > 0, "CentrifugeConnector/invalid-pool");
+
+        // Tranche storage tranche = pool.tranches[trancheId];
 
         // Deploy restricted token
         // TODO: set actual symbol and name
-        tranche.token = tokenFactory.newRestrictedToken("SYMBOL", "Name");
-        emit TrancheAdded(poolId, trancheId, tranche.token);
+        address token = tokenFactory.newRestrictedToken("SYMBOL", "Name");
+        emit TrancheAdded(poolId, trancheId, token);
     }
 
     function updateTokenPrice(

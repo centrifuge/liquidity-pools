@@ -31,4 +31,10 @@ contract MockHomeConnector is Test {
         home.handle(CENTRIFUGE_CHAIN_DOMAIN, NONCE, "1", _message);
         return true;
     }
+
+    function addTranche(uint64 poolId, uint8[] calldata trancheId) public returns (bool) {
+        bytes memory _message = ConnectorMessages.formatAddTranche(poolId, trancheId);
+        home.handle(CENTRIFUGE_CHAIN_DOMAIN, NONCE, "1", _message);
+        return true;
+    }
 }
