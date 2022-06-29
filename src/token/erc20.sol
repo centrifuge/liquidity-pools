@@ -35,10 +35,10 @@ contract ERC20 {
         require((z = x - y) <= x, "math-sub-underflow");
     }
 
-    constructor(string memory symbol_, string memory name_) {
+    constructor(string memory name_, string memory symbol_) {
         wards[msg.sender] = 1;
-        symbol = symbol_;
         name = name_;
+        symbol = symbol_;
 
         uint chainId;
         assembly {

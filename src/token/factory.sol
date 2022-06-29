@@ -9,8 +9,8 @@ interface RestrictedTokenFactoryLike {
 }
 
 contract RestrictedTokenFactory {
-    function newRestrictedToken(string memory symbol, string memory name) public returns (address) {
-        RestrictedToken token = new RestrictedToken(symbol, name);
+    function newRestrictedToken(string memory name, string memory symbol) public returns (address) {
+        RestrictedToken token = new RestrictedToken(name, symbol);
         token.rely(msg.sender);
         token.deny(address(this));
         return address(token);

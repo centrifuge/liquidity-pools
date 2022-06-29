@@ -10,6 +10,8 @@ interface MemberlistLike {
 
 interface ERC20Like {
     function mint(address usr, uint wad) external;
+    function name() external view returns (string memory);
+    function symbol() external view returns (string memory);
 }
 
 interface RestrictedTokenLike is ERC20Like {
@@ -28,7 +30,7 @@ contract RestrictedToken is ERC20 {
         return memberlist.hasMember(usr);
     }
 
-    constructor(string memory symbol_, string memory name_) ERC20(symbol_, name_) {}
+    constructor(string memory name_, string memory symbol_) ERC20(name_, symbol_) {}
 
     function depend(bytes32 contractName, address addr) public auth {
         if (contractName == "memberlist") { memberlist = MemberlistLike(addr); }

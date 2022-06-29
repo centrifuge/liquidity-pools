@@ -14,34 +14,31 @@ interface ConnectorLike {
   function updateTokenPrice(uint64 poolId, bytes16 trancheId, uint256 price) external;
 }
 
-contract ConnectorNomadRouter is Router, Test {
+contract ConnectorXCMRouter is Router, Test {
     using TypedMemView for bytes;
     using TypedMemView for bytes29;
     using ConnectorMessages for bytes29;
 
     ConnectorLike public immutable connector;
 
-    uint32 immutable CENTRIFUGE_CHAIN_DOMAIN = 3000;
+    uint32 immutable centrifugeChainOrigin;
 
-    constructor(address connector_) {
+    constructor(address connector_, address centrifugeChainOrigin_) {
         connector = ConnectorLike(connector_);
+        centrifugeChainOrigin = centrifugeChainOrigin_;
     }
 
-    function send(bytes memory message) internal {
-        (_home()).dispatch(
-            CENTRIFUGE_CHAIN_DOMAIN,
-            _mustHaveRemote(CENTRIFUGE_CHAIN_DOMAIN),
-            message
-        );
+    modifier onlyCentrifugeChainOrigin() {
+        require(msg.sender == address(router), "ConnectorXCMRouter/invalid-origin");
+        _;
     }
 
-    // TODO: onlyReplica onlyRemoteRouter(_origin, _sender) 
     function handle(
         uint32 _origin,
         uint32 _nonce,
         bytes32 _sender,
         bytes memory _message
-    ) external override {
+    ) external override onlyCentrifugeChainOrigin {
         bytes29 _msg = _message.ref(0);
         if (ConnectorMessages.isAddPool(_msg) == true) {
             uint64 poolId = ConnectorMessages.parseAddPool(_msg);

@@ -22,16 +22,14 @@ contract CentrifugeConnector is Test {
         uint256 createdAt;
     }
 
-    mapping(uint64 => Pool) public pools;
-
     struct Tranche {
         address token;
         uint256 latestPrice; // [ray]
         uint256 lastPriceUpdate;
     }
 
+    mapping(uint64 => Pool) public pools;
     mapping(uint64 => mapping(bytes16 => Tranche)) public tranches;
-
     mapping(address => uint256) public wards;
 
     // --- Events ---
@@ -41,8 +39,7 @@ contract CentrifugeConnector is Test {
     event PoolAdded(uint256 indexed poolId);
     event TrancheAdded(uint256 indexed poolId, bytes16 indexed trancheId, address indexed token);
 
-    constructor(address router_, address tokenFactory_, address memberlistFactory_) {
-        router = RouterLike(router_);
+    constructor(address tokenFactory_, address memberlistFactory_) {
         tokenFactory = RestrictedTokenFactoryLike(tokenFactory_);
         memberlistFactory = MemberlistFactoryLike(memberlistFactory_);
         wards[msg.sender] = 1;
@@ -84,7 +81,7 @@ contract CentrifugeConnector is Test {
         emit PoolAdded(poolId);
     }
 
-    function addTranche(uint64 poolId, bytes16 trancheId)
+    function addTranche(uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol)
         public
         onlyRouter
     {
@@ -94,9 +91,7 @@ contract CentrifugeConnector is Test {
         Tranche storage tranche = tranches[poolId][trancheId];
         tranche.latestPrice = 1*10**27;
 
-        // Deploy restricted token
-        // TODO: set actual symbol and name
-        address token = tokenFactory.newRestrictedToken("SYMBOL", "Name");
+        address token = tokenFactory.newRestrictedToken(tokenName, tokenSymbol);
         tranche.token = token;
 
         address memberlist = memberlistFactory.newMemberlist();
