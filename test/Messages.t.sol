@@ -56,22 +56,26 @@ contract MessagesTest is Test {
 
     function testAddTrancheEncoding() public {
         assertEq(
-            ConnectorMessages.formatAddTranche(0, toBytes16(fromHex("100"))),
+            ConnectorMessages.formatAddTranche(0, toBytes16(fromHex("100")), "Some Name", "SYMBOL"),
             fromHex("010000000000000000")
         );
     }
 
-    function testAddTrancheEquivalence(uint64 poolId, bytes16 trancheId)
+    function testAddTrancheEquivalence(uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol)
         public
     {
         bytes memory _message = ConnectorMessages.formatAddTranche(
             poolId,
-            trancheId
+            trancheId,
+            tokenName,
+            tokenSymbol
         );
-        (uint64 decodedPoolId, bytes16 decodedTrancheId) = ConnectorMessages
+        (uint64 decodedPoolId, bytes16 decodedTrancheId, string memory decodedTokenName, string memory decodedTokenSymbol) = ConnectorMessages
             .parseAddTranche(_message.ref(0));
         assertEq(uint256(decodedPoolId), uint256(poolId));
         assertEq(decodedTrancheId, trancheId);
+        assertEq(decodedTokenName, tokenName);
+        assertEq(decodedTokenSymbol, tokenSymbol);
     }
 
     function testUpdateMemberEquivalence(
@@ -154,4 +158,5 @@ contract MessagesTest is Test {
         }
         return fc;
     }
+
 }

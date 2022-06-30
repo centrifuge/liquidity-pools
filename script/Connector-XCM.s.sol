@@ -6,6 +6,7 @@ import { CentrifugeConnector } from "src/Connector.sol";
 import { RestrictedTokenFactory, MemberlistFactory } from "src/token/factory.sol";
 import "forge-std/Script.sol";
 
+// Script to deploy Connectors with an XCM router.
 contract ConnectorXCMScript is Script {
     function setUp() public {}
 
@@ -14,10 +15,10 @@ contract ConnectorXCMScript is Script {
 
         address tokenFactory_ = address(new RestrictedTokenFactory());
         address memberlistFactory_ = address(new MemberlistFactory());
-        address connector = new CentrifugeConnector(tokenFactory_, memberlistFactory_);
+        CentrifugeConnector connector = new CentrifugeConnector(tokenFactory_, memberlistFactory_);
 
         // TODO: add centrifugeChainOrigin_ arg
-        ConnectorRouter router = new ConnectorXCMRouter(connector, address(0));
-        connector.file("router", router);
+        ConnectorXCMRouter router = new ConnectorXCMRouter(address(connector), address(0));
+        connector.file("router", address(router));
     }
 }

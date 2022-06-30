@@ -21,7 +21,7 @@ contract ConnectorXCMRouter is Router, Test {
 
     ConnectorLike public immutable connector;
 
-    uint32 immutable centrifugeChainOrigin;
+    address immutable centrifugeChainOrigin;
 
     constructor(address connector_, address centrifugeChainOrigin_) {
         connector = ConnectorLike(connector_);
@@ -29,7 +29,7 @@ contract ConnectorXCMRouter is Router, Test {
     }
 
     modifier onlyCentrifugeChainOrigin() {
-        require(msg.sender == address(router), "ConnectorXCMRouter/invalid-origin");
+        require(msg.sender == address(centrifugeChainOrigin), "ConnectorXCMRouter/invalid-origin");
         _;
     }
 

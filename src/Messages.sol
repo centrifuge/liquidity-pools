@@ -62,6 +62,7 @@ library ConnectorMessages {
         tokenSymbol = bytes32ToString(bytes32(_msg.index(59, 32)));
     }
 
+    // TODO: should be moved to a util contract
     function stringToBytes32(string memory source) internal pure returns (bytes32 result) {
         bytes memory tempEmptyStringTest = bytes(source);
         if (tempEmptyStringTest.length == 0) {
@@ -73,6 +74,7 @@ library ConnectorMessages {
         }
     }
 
+    // TODO: should be moved to a util contract
     function bytes32ToString(bytes32 _bytes32) internal pure returns (string memory) {
         uint8 i = 0;
         while(i < 32 && _bytes32[i] != 0) {

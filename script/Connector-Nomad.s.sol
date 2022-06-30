@@ -6,6 +6,7 @@ import { CentrifugeConnector } from "src/Connector.sol";
 import { RestrictedTokenFactory, MemberlistFactory } from "src/token/factory.sol";
 import "forge-std/Script.sol";
 
+// Script to deploy Connectors with a Nomad router.
 contract ConnectorNomadScript is Script {
     function setUp() public {}
 
@@ -14,9 +15,10 @@ contract ConnectorNomadScript is Script {
 
         address tokenFactory_ = address(new RestrictedTokenFactory());
         address memberlistFactory_ = address(new MemberlistFactory());
-        address connector = new CentrifugeConnector(tokenFactory_, memberlistFactory_);
+        CentrifugeConnector connector = new CentrifugeConnector(tokenFactory_, memberlistFactory_);
 
-        ConnectorRouter router = new ConnectorNomadRouter(connector);
-        connector.file("router", router);
+        // TODO: pass _xAppConnectionManager as 2nd argument
+        ConnectorNomadRouter router = new ConnectorNomadRouter(address(connector), address(0));
+        connector.file("router", address(router));
     }
 }

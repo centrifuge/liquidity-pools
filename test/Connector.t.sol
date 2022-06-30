@@ -7,21 +7,22 @@ import { RestrictedTokenFactory, MemberlistFactory } from "src/token/factory.sol
 import { RestrictedTokenLike } from "src/token/restricted.sol";
 import { MemberlistLike } from "src/token/memberlist.sol";
 import { MockHomeConnector } from "./mock/MockHomeConnector.sol";
-import { ConnectorRouter } from "src/routers/nomad/Router.sol";
+import { ConnectorNomadRouter } from "src/routers/nomad/Router.sol";
 import "forge-std/Test.sol";
 
 contract ConnectorTest is Test {
 
     CentrifugeConnector bridgedConnector;
-    ConnectorRouter bridgedRouter;
+    ConnectorNomadRouter bridgedRouter;
     MockHomeConnector homeConnector;
 
     function setUp() public {
         address tokenFactory_ = address(new RestrictedTokenFactory());
         address memberlistFactory_ = address(new MemberlistFactory());
 
-        bridgedConnector = new CentrifugeConnector(address(this), tokenFactory_, memberlistFactory_);
-        bridgedRouter = new ConnectorRouter(address(bridgedConnector));
+        bridgedConnector = new CentrifugeConnector(tokenFactory_, memberlistFactory_);
+        // TODO: pass _xAppConnectionManager
+        bridgedRouter = new ConnectorNomadRouter(address(bridgedConnector), address(0));
         bridgedConnector.file("router", address(bridgedRouter));
 
         homeConnector = new MockHomeConnector(address(bridgedRouter));
@@ -66,15 +67,15 @@ contract ConnectorTest is Test {
         }
     }
     
-    function testAddingTranchesAsNonRouterFails(uint64 poolId, bytes16 trancheId) public {
+    function testAddingTranchesAsNonRouterFails(uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol) public {
         homeConnector.addPool(poolId);
         vm.expectRevert(bytes("CentrifugeConnector/not-the-router"));
-        bridgedConnector.addTranche(poolId, trancheId);
+        bridgedConnector.addTranche(poolId, trancheId, tokenName, tokenSymbol);
     }
 
-    function testAddingTranchesForNonExistentPoolFails(uint64 poolId, bytes16 trancheId) public {
+    function testAddingTranchesForNonExistentPoolFails(uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol) public {
         vm.expectRevert(bytes("CentrifugeConnector/invalid-pool"));
-        homeConnector.addTranche(poolId, trancheId);
+        homeConnector.addTranche(poolId, trancheId, tokenName, tokenSymbol);
     }
 
     function testUpdatingMemberWorks(uint64 poolId, bytes16 trancheId, address user, uint256 validUntil) public {
@@ -82,7 +83,7 @@ contract ConnectorTest is Test {
         vm.assume(user != address(0));
 
         homeConnector.addPool(poolId);
-        homeConnector.addTranche(poolId, trancheId);
+        homeConnector.addTranche(poolId, trancheId, "Some Name", "SYMBOL");
         homeConnector.updateMember(poolId, trancheId, user, validUntil);
 
         (address token_,,) = bridgedConnector.tranches(poolId, trancheId);
@@ -99,7 +100,7 @@ contract ConnectorTest is Test {
 
     function testUpdatingTokenPriceWorks(uint64 poolId, bytes16 trancheId, uint256 price) public {
         homeConnector.addPool(poolId);
-        homeConnector.addTranche(poolId, trancheId);
+        homeConnector.addTranche(poolId, trancheId, "Some Name", "SYMBOL");
         homeConnector.updateTokenPrice(poolId, trancheId, price);
 
         (, uint256 latestPrice, uint256 lastPriceUpdate) = bridgedConnector.tranches(poolId, trancheId);
@@ -109,7 +110,7 @@ contract ConnectorTest is Test {
 
     function testUpdatingTokenPriceAsNonRouterFails(uint64 poolId, bytes16 trancheId, uint256 price) public {
         homeConnector.addPool(poolId);
-        homeConnector.addTranche(poolId, trancheId);
+        homeConnector.addTranche(poolId, trancheId, "Some Name", "SYMBOL");
         vm.expectRevert(bytes("CentrifugeConnector/not-the-router"));
         bridgedConnector.updateTokenPrice(poolId, trancheId, price);
 

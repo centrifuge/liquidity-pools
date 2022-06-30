@@ -23,8 +23,9 @@ contract ConnectorNomadRouter is Router, Test {
 
     uint32 immutable CENTRIFUGE_CHAIN_DOMAIN = 3000;
 
-    constructor(address connector_) {
+    constructor(address connector_, address _xAppConnectionManager) {
         connector = ConnectorLike(connector_);
+        __XAppConnectionClient_initialize(_xAppConnectionManager);
     }
 
     function send(bytes memory message) internal {
