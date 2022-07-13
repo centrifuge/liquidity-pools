@@ -1,0 +1,7 @@
+@nomad-xyz/=lib/monorepo/packages/
+@summa-tx/=lib/monorepo/node_modules/@summa-tx/
+ds-test/=lib/forge-std/lib/ds-test/src/
+forge-std/=lib/forge-std/src/
+monorepo/=lib/monorepo/
+openzeppelin-contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/
+@openzeppelin/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/
