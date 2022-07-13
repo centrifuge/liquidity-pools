@@ -159,4 +159,24 @@ contract MessagesTest is Test {
         return fc;
     }
 
+    function testFormatAddTranche1() public returns (bytes memory) {
+        uint64 poolId = 12;
+        bytes16 trancheId = toBytes16(bytes("1"));
+        string memory tokenName = "New Silver DROP";
+        string memory tokenSymbol = "NS2DRP";
+        bytes memory output = ConnectorMessages.formatAddTranche(poolId, trancheId, tokenName, tokenSymbol);
+        bytes memory expected = hex"02000000000000000c310000000000000000000000000000004e65772053696c7665722044524f5000000000000000000000000000000000004e53324452500000000000000000000000000000000000000000000000000000";
+        assertEq(output, expected);
+    }
+
+    function testFormatAddTranche2() public returns (bytes memory) {
+        uint64 poolId = 0;
+        bytes16 trancheId = toBytes16(bytes("0"));
+        string memory tokenName = "Harbor Trade TIN";
+        string memory tokenSymbol = "HTCTIN";
+        bytes memory output = ConnectorMessages.formatAddTranche(poolId, trancheId, tokenName, tokenSymbol);
+        bytes memory expected = hex"02000000000000000030000000000000000000000000000000486172626f722054726164652054494e0000000000000000000000000000000048544354494e0000000000000000000000000000000000000000000000000000";
+        assertEq(output, expected);
+    }
+
 }
