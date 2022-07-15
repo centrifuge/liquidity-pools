@@ -169,13 +169,22 @@ contract MessagesTest is Test {
         assertEq(output, expected);
     }
 
-    function testFormatAddTranche2() public returns (bytes memory) {
-        uint64 poolId = 0;
-        bytes16 trancheId = toBytes16(bytes("0"));
-        string memory tokenName = "Harbor Trade TIN";
-        string memory tokenSymbol = "HTCTIN";
-        bytes memory output = ConnectorMessages.formatAddTranche(poolId, trancheId, tokenName, tokenSymbol);
-        bytes memory expected = hex"02000000000000000030000000000000000000000000000000486172626f722054726164652054494e0000000000000000000000000000000048544354494e0000000000000000000000000000000000000000000000000000";
+    function testFormatUpdateMember1() public returns (bytes memory) {
+        uint64 poolId = 5;
+        bytes16 trancheId = toBytes16(bytes("2"));
+        address user = 0x225ef95fa90f4F7938A5b34234d14768cB4263dd;
+        uint256 validUntil = 1657870537;
+        bytes memory output = ConnectorMessages.formatUpdateMember(poolId, trancheId, user, validUntil);
+        bytes memory expected = hex"04000000000000000532000000000000000000000000000000225ef95fa90f4f7938a5b34234d14768cb4263dd0000000000000000000000000000000000000000000000000000000062d118c9";
+        assertEq(output, expected);
+    }
+
+    function testFormatUpdateTokenPrice() public returns (bytes memory) {
+        uint64 poolId = 3;
+        bytes16 trancheId = toBytes16(bytes("1"));
+        uint256 price = 1234534532534345234234345;
+        bytes memory output = ConnectorMessages.formatUpdateTokenPrice(poolId, trancheId, price);
+        bytes memory expected = hex"0300000000000000033100000000000000000000000000000000000000000000000000000000000000000000000001056c4048afb4a839bbe9";
         assertEq(output, expected);
     }
 
