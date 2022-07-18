@@ -160,32 +160,15 @@ contract MessagesTest is Test {
     }
 
     function testFormatAddTranche1() public returns (bytes memory) {
-        uint64 poolId = 12;
-        bytes16 trancheId = toBytes16(bytes("1"));
-        string memory tokenName = "New Silver DROP";
-        string memory tokenSymbol = "NS2DRP";
-        bytes memory output = ConnectorMessages.formatAddTranche(poolId, trancheId, tokenName, tokenSymbol);
-        bytes memory expected = hex"02000000000000000c310000000000000000000000000000004e65772053696c7665722044524f5000000000000000000000000000000000004e53324452500000000000000000000000000000000000000000000000000000";
-        assertEq(output, expected);
+        assertEq(ConnectorMessages.formatAddTranche(12, toBytes16(bytes("1")), "New Silver DROP", "NS2DRP"), hex"02000000000000000c310000000000000000000000000000004e65772053696c7665722044524f5000000000000000000000000000000000004e53324452500000000000000000000000000000000000000000000000000000");
     }
 
     function testFormatUpdateMember1() public returns (bytes memory) {
-        uint64 poolId = 5;
-        bytes16 trancheId = toBytes16(bytes("2"));
-        address user = 0x225ef95fa90f4F7938A5b34234d14768cB4263dd;
-        uint256 validUntil = 1657870537;
-        bytes memory output = ConnectorMessages.formatUpdateMember(poolId, trancheId, user, validUntil);
-        bytes memory expected = hex"04000000000000000532000000000000000000000000000000225ef95fa90f4f7938a5b34234d14768cb4263dd0000000000000000000000000000000000000000000000000000000062d118c9";
-        assertEq(output, expected);
+        assertEq(ConnectorMessages.formatUpdateMember(5, toBytes16(bytes("2")), 0x225ef95fa90f4F7938A5b34234d14768cB4263dd, 1657870537), hex"04000000000000000532000000000000000000000000000000225ef95fa90f4f7938a5b34234d14768cb4263dd0000000000000000000000000000000000000000000000000000000062d118c9");
     }
 
     function testFormatUpdateTokenPrice() public returns (bytes memory) {
-        uint64 poolId = 3;
-        bytes16 trancheId = toBytes16(bytes("1"));
-        uint256 price = 1234534532534345234234345;
-        bytes memory output = ConnectorMessages.formatUpdateTokenPrice(poolId, trancheId, price);
-        bytes memory expected = hex"0300000000000000033100000000000000000000000000000000000000000000000000000000000000000000000001056c4048afb4a839bbe9";
-        assertEq(output, expected);
+        assertEq(ConnectorMessages.formatUpdateTokenPrice(3, toBytes16(bytes("1")), 1234534532534345234234345), hex"0300000000000000033100000000000000000000000000000000000000000000000000000000000000000000000001056c4048afb4a839bbe9");
     }
 
 }
