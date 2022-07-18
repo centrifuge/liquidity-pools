@@ -58,8 +58,8 @@ library ConnectorMessages {
     function parseAddTranche(bytes29 _msg) internal pure returns (uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol) {
         poolId = uint64(_msg.indexUint(1, 8));
         trancheId = bytes16(_msg.index(9, 16));
-        tokenName = bytes32ToString(bytes32(_msg.index(26, 32)));
-        tokenSymbol = bytes32ToString(bytes32(_msg.index(59, 32)));
+        tokenName = bytes32ToString(bytes32(_msg.index(25, 32)));
+        tokenSymbol = bytes32ToString(bytes32(_msg.index(57, 32)));
     }
 
     // TODO: should be moved to a util contract
