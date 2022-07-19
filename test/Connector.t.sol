@@ -115,7 +115,11 @@ contract ConnectorTest is Test {
         bridgedConnector.updateTokenPrice(poolId, trancheId, price);
 
     }
-    function testUpdatingTokenPriceForNonExistentPoolFails(uint64 poolId) public { }
+    function testUpdatingTokenPriceForNonExistentPoolFails(uint64 poolId, bytes16 trancheId, uint256 price) public {
+        bridgedConnector.file("router", address(this));
+        vm.expectRevert(bytes("CentrifugeConnector/invalid-pool"));
+        bridgedConnector.updateTokenPrice(poolId, trancheId, price);
+     }
     function testUpdatingTokenPriceForNonExistentTrancheFails(uint64 poolId) public { }
 
     function testTransferToWorks(uint64 poolId) public { }
