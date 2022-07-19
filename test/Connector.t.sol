@@ -120,7 +120,12 @@ contract ConnectorTest is Test {
         vm.expectRevert(bytes("CentrifugeConnector/invalid-pool"));
         bridgedConnector.updateTokenPrice(poolId, trancheId, price);
      }
-    function testUpdatingTokenPriceForNonExistentTrancheFails(uint64 poolId) public { }
+    function testUpdatingTokenPriceForNonExistentTrancheFails(uint64 poolId, bytes16 trancheId, uint256 price) public {
+        bridgedConnector.file("router", address(this));
+        bridgedConnector.addPool(poolId);
+        vm.expectRevert(bytes("CentrifugeConnector/invalid-tranche"));
+        bridgedConnector.updateTokenPrice(poolId, trancheId, price);
+     }
 
     function testTransferToWorks(uint64 poolId) public { }
     function testTransferToAsNonRouterFails(uint64 poolId) public { }
