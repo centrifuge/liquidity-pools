@@ -48,22 +48,29 @@ contract MessagesTest is Test {
         );
     }
 
+    // function testAddTrancheEncoding(uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol)
+    //     public
+    // {
+    //     assert ConnectorMessages.formatAddTranche(
+    //         poolId,
+    //         trancheId,
+    //         tokenName,
+    //         tokenSymbol
+    //     );
+    // }
+
     function testAddPoolEquivalence(uint64 poolId) public {
         bytes memory _message = ConnectorMessages.formatAddPool(poolId);
         uint64 decodedPoolId = ConnectorMessages.parseAddPool(_message.ref(0));
         assertEq(uint256(decodedPoolId), uint256(poolId));
     }
 
-    function testAddTrancheEncoding() public {
-        assertEq(
-            ConnectorMessages.formatAddTranche(0, toBytes16(fromHex("100")), "Some Name", "SYMBOL"),
-            fromHex("010000000000000000")
-        );
-    }
 
     function testAddTrancheEquivalence(uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol)
         public
     {
+        // tokenSymbol = "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
+        // tokenSymbol = bytes(tokenSymbol);
         bytes memory _message = ConnectorMessages.formatAddTranche(
             poolId,
             trancheId,
@@ -72,6 +79,14 @@ contract MessagesTest is Test {
         );
         (uint64 decodedPoolId, bytes16 decodedTrancheId, string memory decodedTokenName, string memory decodedTokenSymbol) = ConnectorMessages
             .parseAddTranche(_message.ref(0));
+
+        tokenSymbol = string(abi.encodePacked(tokenSymbol));
+        tokenName = string(abi.encodePacked(tokenName));
+        console.log("!!!!!!!");
+        console.log(tokenSymbol);
+        console.log(tokenName);
+        console.log("!!!!!!!");
+        // tokenSymbol = ConnectorMessages.bytes32ToString(bytes32());
         assertEq(uint256(decodedPoolId), uint256(poolId));
         assertEq(decodedTrancheId, trancheId);
         assertEq(decodedTokenName, tokenName);
@@ -159,15 +174,23 @@ contract MessagesTest is Test {
         return fc;
     }
 
-    function testFormatAddTranche1() public returns (bytes memory) {
+    function testAddTrancheEncoding() public returns (bytes memory) {
         assertEq(ConnectorMessages.formatAddTranche(12, toBytes16(bytes("1")), "New Silver DROP", "NS2DRP"), hex"02000000000000000c310000000000000000000000000000004e65772053696c7665722044524f5000000000000000000000000000000000004e53324452500000000000000000000000000000000000000000000000000000");
     }
 
-    function testFormatUpdateMember1() public returns (bytes memory) {
+    function testAddTrancheDecoding() public returns (bytes memory) {
+        (uint64 decodedPoolId, bytes16 decodedTrancheId, string memory decodedTokenName, string memory decodedTokenSymbol) = ConnectorMessages.parseAddTranche(fromHex("02000000000000000c310000000000000000000000000000004e65772053696c7665722044524f5000000000000000000000000000000000004e53324452500000000000000000000000000000000000000000000000000000").ref(0));
+        assertEq(uint(decodedPoolId), uint(12));
+        assertEq(decodedTrancheId, toBytes16(bytes("1")));
+        assertEq(decodedTokenName, "New Silver DROP");
+        assertEq(decodedTokenSymbol, "NS2DRP");
+    }
+
+    function testUpdateMemberEncoding() public returns (bytes memory) {
         assertEq(ConnectorMessages.formatUpdateMember(5, toBytes16(bytes("2")), 0x225ef95fa90f4F7938A5b34234d14768cB4263dd, 1657870537), hex"04000000000000000532000000000000000000000000000000225ef95fa90f4f7938a5b34234d14768cb4263dd0000000000000000000000000000000000000000000000000000000062d118c9");
     }
 
-    function testFormatUpdateTokenPrice() public returns (bytes memory) {
+    function testUpdateTokenPriceEncoding() public returns (bytes memory) {
         assertEq(ConnectorMessages.formatUpdateTokenPrice(3, toBytes16(bytes("1")), 1234534532534345234234345), hex"0300000000000000033100000000000000000000000000000000000000000000000000000000000000000000000001056c4048afb4a839bbe9");
     }
 
