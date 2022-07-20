@@ -16,6 +16,7 @@ interface ConnectorLike {
 
 contract ConnectorXCMRouter is Router, Test {
     using TypedMemView for bytes;
+    // why bytes29? - https://github.com/summa-tx/memview-sol#why-bytes29
     using TypedMemView for bytes29;
     using ConnectorMessages for bytes29;
 
