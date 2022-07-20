@@ -106,7 +106,7 @@ contract ConnectorTest is Test {
         vm.assume(validUntil > block.timestamp);
         vm.assume(user != address(0));
         bridgedConnector.file("router", address(this));
-        vm.expectRevert(bytes("CentrifugeConnector/invalid-pool"));
+        vm.expectRevert(bytes("CentrifugeConnector/invalid-pool-or-tranche"));
         bridgedConnector.updateMember(poolId, trancheId, user, validUntil);
     }
     function testUpdatingMemberForNonExistentTrancheFails(uint64 poolId, bytes16 trancheId, address user, uint256 validUntil) public {
@@ -114,7 +114,7 @@ contract ConnectorTest is Test {
         vm.assume(user != address(0));
         bridgedConnector.file("router", address(this));
         bridgedConnector.addPool(poolId);
-        vm.expectRevert(bytes("CentrifugeConnector/invalid-tranche"));
+        vm.expectRevert(bytes("CentrifugeConnector/invalid-pool-or-tranche"));
         bridgedConnector.updateMember(poolId, trancheId, user, validUntil);  
      }
 
