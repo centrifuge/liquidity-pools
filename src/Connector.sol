@@ -106,6 +106,7 @@ contract CentrifugeConnector is Test {
         uint256 price
     ) public onlyRouter {
         Tranche storage tranche = tranches[poolId][trancheId];
+        require(tranche.latestPrice > 0, "CentrifugeConnector/invalid-pool-or-tranche");
         tranche.latestPrice = price;
         tranche.lastPriceUpdate = block.timestamp;
     }
@@ -116,6 +117,8 @@ contract CentrifugeConnector is Test {
         address user,
         uint256 validUntil
     ) public onlyRouter {
+        Tranche storage tranche = tranches[poolId][trancheId];
+        require(tranche.latestPrice > 0, "CentrifugeConnector/invalid-pool-or-tranche");
         RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
         MemberlistLike memberlist = MemberlistLike(token.memberlist());
         memberlist.updateMember(user, validUntil);
