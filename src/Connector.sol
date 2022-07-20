@@ -105,11 +105,8 @@ contract CentrifugeConnector is Test {
         bytes16 trancheId,
         uint256 price
     ) public onlyRouter {
-        Pool storage pool = pools[poolId];
-        require(pool.createdAt > 0, "CentrifugeConnector/invalid-pool");
-
         Tranche storage tranche = tranches[poolId][trancheId];
-        require(tranche.latestPrice > 0, "CentrifugeConnector/invalid-tranche");
+        require(tranche.latestPrice > 0, "CentrifugeConnector/invalid-pool-or-tranche");
 
         tranche.latestPrice = price;
         tranche.lastPriceUpdate = block.timestamp;
