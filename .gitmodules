@@ -3,10 +3,7 @@
 	url = https://github.com/foundry-rs/forge-std
 [submodule "lib/monorepo"]
 	path = lib/monorepo
-<<<<<<< HEAD
 	branch = main
-=======
->>>>>>> origin/main
 	url = https://github.com/nomad-xyz/monorepo
 [submodule "lib/openzeppelin-contracts-upgradeable"]
 	path = lib/openzeppelin-contracts-upgradeable
