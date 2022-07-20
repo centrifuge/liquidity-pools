@@ -45,7 +45,11 @@ contract MessagesTest is Test {
 
         uint64 actualPoolId3 = ConnectorMessages.parseAddPool(fromHex("010000000000bce1a4").ref(0));
         assertEq(
+<<<<<<< HEAD
             uint256(actualPoolId3),
+=======
+            uint256(actualPoolId1),
+>>>>>>> origin/main
             12378532
         );
     }

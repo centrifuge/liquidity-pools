@@ -3,7 +3,6 @@ pragma solidity ^0.7.6;
 
 import "@summa-tx/memview-sol/contracts/TypedMemView.sol";
 
-//
 library ConnectorMessages {
     using TypedMemView for bytes;
     using TypedMemView for bytes29;
