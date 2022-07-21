@@ -69,7 +69,6 @@ contract MessagesTest is Test {
         assertEq(decodedTrancheId, toBytes16(fromHex("010000000000000064")));
         assertEq(decodedTokenName, "Some Name"); 
         assertEq(decodedTokenSymbol, "SYMBOL");
-        
     }
 
     function testAddTrancheEquivalence(uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol)
