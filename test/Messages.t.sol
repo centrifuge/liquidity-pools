@@ -67,8 +67,9 @@ contract MessagesTest is Test {
         (uint64 decodedPoolId, bytes16 decodedTrancheId, string memory decodedTokenName, string memory decodedTokenSymbol) = ConnectorMessages.parseAddTranche(fromHex("02000000000000000000000000000000000000000000000009536f6d65204e616d65000000000000000000000000000000000000000000000053594d424f4c0000000000000000000000000000000000000000000000000000").ref(0));
         assertEq(uint(decodedPoolId), uint(0));
         assertEq(decodedTrancheId, toBytes16(fromHex("010000000000000064")));
-        assertEq(decodedTokenName, "Some Name");
+        assertEq(decodedTokenName, "Some Name"); 
         assertEq(decodedTokenSymbol, "SYMBOL");
+        
     }
 
     function testAddTrancheEquivalence(uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol)
