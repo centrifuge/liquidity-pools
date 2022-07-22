@@ -5,7 +5,7 @@ pragma abicoder v2;
 import { CentrifugeConnector } from "src/Connector.sol";
 import { RestrictedTokenFactory, MemberlistFactory } from "src/token/factory.sol";
 import { RestrictedTokenLike } from "src/token/restricted.sol";
-import { MemberlistLike } from "src/token/memberlist.sol";
+import { MemberlistLike, Memberlist } from "src/token/memberlist.sol";
 import { MockHomeConnector } from "./mock/MockHomeConnector.sol";
 import { ConnectorNomadRouter } from "src/routers/nomad/Router.sol";
 import "forge-std/Test.sol";
@@ -15,6 +15,11 @@ contract ConnectorTest is Test {
     CentrifugeConnector bridgedConnector;
     ConnectorNomadRouter bridgedRouter;
     MockHomeConnector homeConnector;
+
+    // --- Math ---
+    function safeAdd(uint x, uint y) internal pure returns (uint z) {
+        require((z = x + y) >= x, "math-add-overflow");
+    }
 
     function setUp() public {
         address tokenFactory_ = address(new RestrictedTokenFactory());
@@ -79,7 +84,7 @@ contract ConnectorTest is Test {
     }
 
     function testUpdatingMemberWorks(uint64 poolId, bytes16 trancheId, address user, uint256 validUntil) public {
-        vm.assume(validUntil > block.timestamp);
+        vm.assume(validUntil > safeAdd(block.timestamp, new Memberlist().minimumDelay()));
         vm.assume(user != address(0));
 
         homeConnector.addPool(poolId);

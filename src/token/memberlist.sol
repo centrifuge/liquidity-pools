@@ -8,7 +8,7 @@ interface MemberlistLike {
 
 contract Memberlist {
 
-    uint constant minimumDelay = 7 days;
+    uint public constant minimumDelay = 7 days;
 
     mapping (address => uint) public members;
 
