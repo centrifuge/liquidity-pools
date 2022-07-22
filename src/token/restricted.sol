@@ -12,12 +12,15 @@ interface ERC20Like {
     function mint(address usr, uint wad) external;
     function name() external view returns (string memory);
     function symbol() external view returns (string memory);
+    function balanceOf(address usr) external view returns (uint wad);
+    function burn(address usr, uint wad) external;
+    function transferFrom(address from, address to, uint amount) external returns (bool);
 }
 
 interface RestrictedTokenLike is ERC20Like {
     function memberlist() external view returns (address);
     function hasMember(address usr) external view returns (bool);
-    function depend(bytes32 contractName, address addr) external;
+    function depend(bytes32 contractName, address addr) external; 
 }
 
 // Only mebmber with a valid (not expired) membership should be allowed to receive tokens
