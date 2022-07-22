@@ -96,7 +96,7 @@ contract CentrifugeConnector is Test {
 
         address memberlist = memberlistFactory.newMemberlist();
         RestrictedTokenLike(token).depend("memberlist", memberlist);
-
+        MemberlistLike(memberlist).updateMember(address(this), uint(-1)); // required to be able to receive tokens in case of withdrawals   
         emit TrancheAdded(poolId, trancheId, token);
     }
 
@@ -124,7 +124,7 @@ contract CentrifugeConnector is Test {
         memberlist.updateMember(user, validUntil);
     }
 
-    function transferTo(
+    function deposit(
         uint64 poolId,
         bytes16 trancheId,
         address user,
@@ -133,6 +133,18 @@ contract CentrifugeConnector is Test {
         RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
         require(token.hasMember(user), "CentrifugeConnector/not-a-member");
         token.mint(user, amount);
+    }
+
+    function withdraw(
+        uint64 poolId,
+        bytes16 trancheId,
+        address user,
+        uint256 amount
+    ) public onlyRouter {
+        RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
+        require(token.balanceOf(user) >= amount, "CentrifugeConnector/insufficient-balance"); // optional
+        require(token.transferFrom(user, address(this), amount), "CentrifugeConnector/token-transfer-failed");
+        token.burn(address(this), amount);
     }
     
 }

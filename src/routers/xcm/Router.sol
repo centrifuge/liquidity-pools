@@ -12,6 +12,8 @@ interface ConnectorLike {
   function addTranche(uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol) external;
   function updateMember(uint64 poolId, bytes16 trancheId, address user, uint256 validUntil) external;
   function updateTokenPrice(uint64 poolId, bytes16 trancheId, uint256 price) external;
+  function deposit(uint64 poolId, bytes16 trancheId, address user, uint256 amount) external;
+  function withdraw(uint64 poolId, bytes16 trancheId, address user, uint256 amount) external;
 }
 
 contract ConnectorXCMRouter is Router, Test {
@@ -48,11 +50,17 @@ contract ConnectorXCMRouter is Router, Test {
             (uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol) = ConnectorMessages.parseAddTranche(_msg);
             connector.addTranche(poolId, trancheId, tokenName, tokenSymbol);
         } else if (ConnectorMessages.isUpdateMember(_msg) == true) {
-            (uint64 poolId, bytes16 trancheId, address user, uint256 amount) = ConnectorMessages.parseUpdateMember(_msg);
-            connector.updateMember(poolId, trancheId, user, amount);
+            (uint64 poolId, bytes16 trancheId, address user, uint256 validUntil) = ConnectorMessages.parseUpdateMember(_msg);
+            connector.updateMember(poolId, trancheId, user, validUntil);
         } else if (ConnectorMessages.isUpdateTokenPrice(_msg) == true) {
             (uint64 poolId, bytes16 trancheId, uint256 price) = ConnectorMessages.parseUpdateTokenPrice(_msg);
             connector.updateTokenPrice(poolId, trancheId, price);
+        } else if (ConnectorMessages.isDeposit(_msg) == true) {
+            (uint64 poolId, bytes16 trancheId, address user, uint256 amount) = ConnectorMessages.parseDeposit(_msg);
+            connector.deposit(poolId, trancheId, user, amount);
+        } else if (ConnectorMessages.isWithdraw(_msg) == true) {
+            (uint64 poolId, bytes16 trancheId, address user, uint256 amount) = ConnectorMessages.parseWithdraw(_msg);
+            connector.withdraw(poolId, trancheId, user, amount);
         } else {
             require(false, "invalid-message");
         }

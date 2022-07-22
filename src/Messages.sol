@@ -13,7 +13,8 @@ library ConnectorMessages {
         AddTranche,
         UpdateTokenPrice,
         UpdateMember,
-        TransferTo
+        Deposit,
+        Withdraw
     }
 
     function messageType(bytes29 _msg) internal pure returns (Call _call) {
@@ -133,6 +134,56 @@ library ConnectorMessages {
         poolId = uint64(_msg.indexUint(1, 8));
         trancheId = bytes16(_msg.index(9, 16));
         price = uint256(_msg.index(25, 32));
+    }
+
+     /**
+     * Deposit
+     * 
+     * 0: call type (uint8 = 1 byte)
+     * 1-8: poolId (uint64 = 8 bytes)
+     * 9-25: trancheId (16 bytes)
+     * 26-46: user (Ethereum address, 20 bytes)
+     * 47-78: amount (uint256 = 32 bytes)
+     * 
+     */
+    function formatDeposit(uint64 poolId, bytes16 trancheId, address user, uint256 amount) internal pure returns (bytes memory) {
+        return abi.encodePacked(uint8(Call.Deposit), poolId, trancheId, user, amount);
+    }
+
+    function isDeposit(bytes29 _msg) internal pure returns (bool) {
+        return messageType(_msg) == Call.Deposit;
+    }
+
+    function parseDeposit(bytes29 _msg) internal pure returns (uint64 poolId, bytes16 trancheId, address user, uint256 amount) {
+        poolId = uint64(_msg.indexUint(1, 8));
+        trancheId = bytes16(_msg.index(9, 16));
+        user = address(bytes20(_msg.index(25, 20)));
+        amount = uint256(_msg.index(45, 32));
+    }
+
+     /**
+     * Withdraw
+     * 
+     * 0: call type (uint8 = 1 byte)
+     * 1-8: poolId (uint64 = 8 bytes)
+     * 9-25: trancheId (16 bytes)
+     * 26-46: user (Ethereum address, 20 bytes)
+     * 47-78: amount (uint256 = 32 bytes)
+     * 
+     */
+    function formatWithdraw(uint64 poolId, bytes16 trancheId, address user, uint256 amount) internal pure returns (bytes memory) {
+        return abi.encodePacked(uint8(Call.Withdraw), poolId, trancheId, user, amount);
+    }
+
+    function isWithdraw(bytes29 _msg) internal pure returns (bool) {
+        return messageType(_msg) == Call.Withdraw;
+    }
+
+    function parseWithdraw(bytes29 _msg) internal pure returns (uint64 poolId, bytes16 trancheId, address user, uint256 amount) {
+        poolId = uint64(_msg.indexUint(1, 8));
+        trancheId = bytes16(_msg.index(9, 16));
+        user = address(bytes20(_msg.index(25, 20)));
+        amount = uint256(_msg.index(45, 32));
     }
 
 }
