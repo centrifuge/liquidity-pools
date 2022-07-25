@@ -97,6 +97,16 @@ contract ConnectorTest is Test {
         assertEq(memberlist.members(user), validUntil);
     }
 
+    function testUpdatingMemberBeforeMinimumDelayFails(uint64 poolId, bytes16 trancheId, address user, uint256 validUntil) public {
+        vm.assume(validUntil < safeAdd(block.timestamp, new Memberlist().minimumDelay()));
+        vm.assume(user != address(0));
+
+        homeConnector.addPool(poolId);
+        homeConnector.addTranche(poolId, trancheId, "Some Name", "SYMBOL");
+        vm.expectRevert("invalid-validUntil");
+        homeConnector.updateMember(poolId, trancheId, user, validUntil);
+    }
+
     function testUpdatingMemberAsNonRouterFails(uint64 poolId, bytes16 trancheId, address user, uint256 validUntil) public {
         vm.assume(validUntil > block.timestamp);
         vm.assume(user != address(0));
