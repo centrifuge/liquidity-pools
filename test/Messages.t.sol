@@ -72,7 +72,6 @@ contract MessagesTest is Test {
     function testAddTrancheEquivalence(uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol)
         public
     {
-        // edge case token Symbol - not passing "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
         bytes memory _message = ConnectorMessages.formatAddTranche(
             poolId,
             trancheId,
@@ -83,6 +82,9 @@ contract MessagesTest is Test {
             .parseAddTranche(_message.ref(0));
         assertEq(uint256(decodedPoolId), uint256(poolId));
         assertEq(decodedTrancheId, trancheId);
+        // Comparing raw input to output can erroneously fail when a byte string is given. 
+        // Intended behaviour is that byte strings will be treated as bytes and converted to strings instead of treated as strings themselves.
+        // This conversion from string to bytes32 to string is used to simulate this intended behaviour.
         assertEq(decodedTokenName, bytes32ToString(stringToBytes32(tokenName)));
         assertEq(decodedTokenSymbol, bytes32ToString(stringToBytes32(tokenSymbol)));
     }

@@ -50,6 +50,9 @@ contract ConnectorTest is Test {
         assertTrue(token_ != address(0));
 
         RestrictedTokenLike token = RestrictedTokenLike(token_);
+        // Comparing raw input to output can erroneously fail when a byte string is given. 
+        // Intended behaviour is that byte strings will be treated as bytes and converted to strings instead of treated as strings themselves.
+        // This conversion from string to bytes32 to string is used to simulate this intended behaviour.
         assertEq(token.name(), bytes32ToString(stringToBytes32(tokenName)));
         assertEq(token.symbol(), bytes32ToString(stringToBytes32(tokenSymbol)));
     }
