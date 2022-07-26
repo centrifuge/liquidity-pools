@@ -1,6 +1,6 @@
-name: test
+name: pull-request
 
-on: workflow_dispatch
+on: [pull_request]
 
 env:
   FOUNDRY_PROFILE: ci
@@ -10,7 +10,7 @@ jobs:
     strategy:
       fail-fast: true
 
-    name: Foundry project
+    name: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -32,3 +32,5 @@ jobs:
         run: |
           forge test -vvv
         id: test
+        env:
+          FOUNDRY_PROFILE: push_to_main
