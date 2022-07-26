@@ -1,6 +1,9 @@
 name: push-to-main
 
-on: [pull_request]
+on:
+  push:
+    branches:
+      - main
 
 env:
   FOUNDRY_PROFILE: ci
