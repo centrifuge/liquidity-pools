@@ -14,8 +14,3 @@ To run all tests locally:
 ```sh
 forge test
 ```
-
-To run all tests with additional fuzzing depth:
-```sh
-FOUNDRY_PROFILE=high forge test
-```
