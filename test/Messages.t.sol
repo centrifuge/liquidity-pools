@@ -72,7 +72,6 @@ contract MessagesTest is Test {
     function testAddTrancheEquivalence(uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol)
         public
     {
-        // edge case token Symbol - not passing "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
         bytes memory _message = ConnectorMessages.formatAddTranche(
             poolId,
             trancheId,
@@ -83,8 +82,11 @@ contract MessagesTest is Test {
             .parseAddTranche(_message.ref(0));
         assertEq(uint256(decodedPoolId), uint256(poolId));
         assertEq(decodedTrancheId, trancheId);
-        assertEq(decodedTokenName, tokenName);
-        assertEq(decodedTokenSymbol, tokenSymbol);
+        // Comparing raw input to output can erroneously fail when a byte string is given. 
+        // Intended behaviour is that byte strings will be treated as bytes and converted to strings instead of treated as strings themselves.
+        // This conversion from string to bytes32 to string is used to simulate this intended behaviour.
+        assertEq(decodedTokenName, bytes32ToString(stringToBytes32(tokenName)));
+        assertEq(decodedTokenSymbol, bytes32ToString(stringToBytes32(tokenSymbol)));
     }
 
     function testUpdateMemberEncoding() public returns (bytes memory) {
@@ -195,5 +197,29 @@ contract MessagesTest is Test {
           fc := mload(add(f, 16))
         }
         return fc;
+    }
+
+    function stringToBytes32(string memory source) internal pure returns (bytes32 result) {
+        bytes memory tempEmptyStringTest = bytes(source);
+        if (tempEmptyStringTest.length == 0) {
+            return 0x0;
+        }
+
+        assembly {
+            result := mload(add(source, 32))
+        }
+    }
+
+    function bytes32ToString(bytes32 _bytes32) internal returns (string memory) {
+        uint8 i = 0;
+        while(i < 32 && _bytes32[i] != 0) {
+            i++;
+        }
+
+        bytes memory bytesArray = new bytes(i);
+        for (i = 0; i < 32 && _bytes32[i] != 0; i++) {
+            bytesArray[i] = _bytes32[i];
+        }
+        return string(bytesArray);
     }
 }
