@@ -55,12 +55,9 @@ contract ConnectorXCMRouter is Router, Test {
         } else if (ConnectorMessages.isUpdateTokenPrice(_msg) == true) {
             (uint64 poolId, bytes16 trancheId, uint256 price) = ConnectorMessages.parseUpdateTokenPrice(_msg);
             connector.updateTokenPrice(poolId, trancheId, price);
-        } else if (ConnectorMessages.isDeposit(_msg) == true) {
-            (uint64 poolId, bytes16 trancheId, address user, uint256 amount) = ConnectorMessages.parseDeposit(_msg);
+        } else if (ConnectorMessages.isTransfer(_msg) == true) {
+            (uint64 poolId, bytes16 trancheId, address user, uint256 amount) = ConnectorMessages.parseTransfer(_msg);
             connector.deposit(poolId, trancheId, user, amount);
-        } else if (ConnectorMessages.isWithdraw(_msg) == true) {
-            (uint64 poolId, bytes16 trancheId, address user, uint256 amount) = ConnectorMessages.parseWithdraw(_msg);
-            connector.withdraw(poolId, trancheId, user, amount);
         } else {
             require(false, "invalid-message");
         }

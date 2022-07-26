@@ -140,11 +140,12 @@ contract CentrifugeConnector is Test {
         bytes16 trancheId,
         address user,
         uint256 amount
-    ) public onlyRouter {
+    ) public {
         RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
         require(token.balanceOf(user) >= amount, "CentrifugeConnector/insufficient-balance"); // optional
         require(token.transferFrom(user, address(this), amount), "CentrifugeConnector/token-transfer-failed");
         token.burn(address(this), amount);
+        // router.send_message(destination_domain, Transfer { pool_id, tranche_id, amount, destination_domain, destination_address })
     }
     
 }
