@@ -5,12 +5,12 @@ pragma abicoder v2;
 import { RestrictedTokenFactoryLike, MemberlistFactoryLike } from "./token/factory.sol";
 import { RestrictedTokenLike } from "./token/restricted.sol";
 import { MemberlistLike } from "./token/memberlist.sol";
-import "forge-std/Test.sol";
 
 interface RouterLike {
+    function sendMessage(uint32 destinationDomain, uint64 poolId, bytes16 trancheId, uint256 amount, address user) external;
 }
 
-contract CentrifugeConnector is Test {
+contract CentrifugeConnector {
 
     RouterLike public router;
     RestrictedTokenFactoryLike public immutable tokenFactory;
@@ -31,11 +31,14 @@ contract CentrifugeConnector is Test {
     mapping(uint64 => Pool) public pools;
     mapping(uint64 => mapping(bytes16 => Tranche)) public tranches;
     mapping(address => uint256) public wards;
+    mapping (bytes32 => uint32) public domainLookup;
+
 
     // --- Events ---
     event Rely(address indexed user);
     event Deny(address indexed user);
     event File(bytes32 indexed what, address data);
+    event File(bytes32 indexed what, string data);
     event PoolAdded(uint256 indexed poolId);
     event TrancheAdded(uint256 indexed poolId, bytes16 indexed trancheId, address indexed token);
 
@@ -71,6 +74,14 @@ contract CentrifugeConnector is Test {
         if (what == "router") router = RouterLike(data);
         else revert("CentrifugeConnector/file-unrecognized-param");
         emit File(what, data);
+    }
+
+    function file(bytes32 name, string memory domainName, uint32 domainId) public auth  {
+        if(name == "domain") {
+           domainLookup[keccak256(bytes(domainName))] = domainId;
+           emit File(name, domainName);
+        } else { revert ("unknown name");}
+        
     }
 
     // --- Internal ---
@@ -139,13 +150,17 @@ contract CentrifugeConnector is Test {
         uint64 poolId,
         bytes16 trancheId,
         address user,
-        uint256 amount
+        uint256 amount,
+        string memory domainName
     ) public {
+        uint32 domainId = domainLookup[keccak256(bytes(domainName))];
+        require(domainId > 0, "CentrifugeConnector/domain-does-not-exist");
+
         RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
         require(token.balanceOf(user) >= amount, "CentrifugeConnector/insufficient-balance"); // optional
         require(token.transferFrom(user, address(this), amount), "CentrifugeConnector/token-transfer-failed");
         token.burn(address(this), amount);
-        // router.send_message(destination_domain, Transfer { pool_id, tranche_id, amount, destination_domain, destination_address })
+        router.sendMessage(domainId, poolId, trancheId, amount, user);
     }
     
 }

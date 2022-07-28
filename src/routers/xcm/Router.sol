@@ -4,6 +4,7 @@ pragma abicoder v2;
 
 import {TypedMemView} from "@summa-tx/memview-sol/contracts/TypedMemView.sol";
 import {Router} from "@nomad-xyz/contracts-router/contracts/Router.sol";
+import {Home} from "@nomad-xyz/contracts-core/contracts/Home.sol";
 import {ConnectorMessages} from "../..//Messages.sol";
 import "forge-std/Test.sol";
 
@@ -36,6 +37,11 @@ contract ConnectorXCMRouter is Router, Test {
         _;
     }
 
+    modifier onlyConnector() {
+        require(msg.sender == address(connector), "ConnectorXCMRouter/only-connector-allowed-to-call");
+        _;
+    }
+
     function handle(
         uint32 _origin,
         uint32 _nonce,
@@ -61,5 +67,14 @@ contract ConnectorXCMRouter is Router, Test {
         } else {
             require(false, "invalid-message");
         }
+    }
+
+    function sendMessage(uint32 destinationDomain, uint64 poolId, bytes16 trancheId, uint256 amount, address user) external onlyConnector {
+        bytes32 remoteAddress = _mustHaveRemote(destinationDomain);
+        
+        Home(xAppConnectionManager.home()).dispatch(
+            destinationDomain,
+            remoteAddress,
+            ConnectorMessages.formatTransfer(poolId, trancheId, user, amount));
     }
 }
