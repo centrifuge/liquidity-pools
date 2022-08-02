@@ -12,7 +12,7 @@ contract MockHomeConnector is Test {
     using TypedMemView for bytes29;
     using ConnectorMessages for bytes29;
 
-    IMessageRecipient public immutable home;
+    IMessageRecipient public home;
 
     uint32 immutable CENTRIFUGE_CHAIN_DOMAIN = 3000;
 
@@ -22,7 +22,10 @@ contract MockHomeConnector is Test {
         AddPool
     }
 
-    constructor(address home_) {
+    constructor() {
+    }
+
+    function setRouter(address home_) public {
         home = IMessageRecipient(home_);
     }
 

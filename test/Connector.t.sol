@@ -7,13 +7,13 @@ import { RestrictedTokenFactory, MemberlistFactory } from "src/token/factory.sol
 import { RestrictedTokenLike } from "src/token/restricted.sol";
 import { MemberlistLike } from "src/token/memberlist.sol";
 import { MockHomeConnector } from "./mock/MockHomeConnector.sol";
-import { ConnectorNomadRouter } from "src/routers/nomad/Router.sol";
+import { ConnectorXCMRouter } from "src/routers/xcm/Router.sol";
 import "forge-std/Test.sol";
 
 contract ConnectorTest is Test {
 
     CentrifugeConnector bridgedConnector;
-    ConnectorNomadRouter bridgedRouter;
+    ConnectorXCMRouter bridgedRouter;
     MockHomeConnector homeConnector;
 
     function setUp() public {
@@ -22,10 +22,12 @@ contract ConnectorTest is Test {
 
         bridgedConnector = new CentrifugeConnector(tokenFactory_, memberlistFactory_);
         // TODO: pass _xAppConnectionManager
-        bridgedRouter = new ConnectorNomadRouter(address(bridgedConnector), address(0));
+        homeConnector = new MockHomeConnector();
+        bridgedRouter = new ConnectorXCMRouter(address(bridgedConnector), address(homeConnector));
+        homeConnector.setRouter(address(bridgedRouter));
         bridgedConnector.file("router", address(bridgedRouter));
 
-        homeConnector = new MockHomeConnector(address(bridgedRouter));
+        
     }
 
     function testAddingPoolWorks(uint64 poolId) public {
@@ -109,6 +111,7 @@ contract ConnectorTest is Test {
         vm.expectRevert(bytes("CentrifugeConnector/invalid-pool-or-tranche"));
         bridgedConnector.updateMember(poolId, trancheId, user, validUntil);
     }
+
     function testUpdatingMemberForNonExistentTrancheFails(uint64 poolId, bytes16 trancheId, address user, uint256 validUntil) public {
         vm.assume(validUntil > block.timestamp);
         vm.assume(user != address(0));
@@ -117,6 +120,7 @@ contract ConnectorTest is Test {
         vm.expectRevert(bytes("CentrifugeConnector/invalid-pool-or-tranche"));
         bridgedConnector.updateMember(poolId, trancheId, user, validUntil);  
      }
+
 
     function testUpdatingTokenPriceWorks(uint64 poolId, bytes16 trancheId, uint256 price) public {
         homeConnector.addPool(poolId);
@@ -133,23 +137,35 @@ contract ConnectorTest is Test {
         homeConnector.addTranche(poolId, trancheId, "Some Name", "SYMBOL");
         vm.expectRevert(bytes("CentrifugeConnector/not-the-router"));
         bridgedConnector.updateTokenPrice(poolId, trancheId, price);
-
     }
+
     function testUpdatingTokenPriceForNonExistentPoolFails(uint64 poolId, bytes16 trancheId, uint256 price) public {
         bridgedConnector.file("router", address(this));
         vm.expectRevert(bytes("CentrifugeConnector/invalid-pool-or-tranche"));
         bridgedConnector.updateTokenPrice(poolId, trancheId, price);
      }
+
     function testUpdatingTokenPriceForNonExistentTrancheFails(uint64 poolId, bytes16 trancheId, uint256 price) public {
         bridgedConnector.file("router", address(this));
         bridgedConnector.addPool(poolId);
         vm.expectRevert(bytes("CentrifugeConnector/invalid-pool-or-tranche"));
         bridgedConnector.updateTokenPrice(poolId, trancheId, price);
      }
+    
+    function testDepositWorks(uint64 poolId) public {
 
-    function testTransferToWorks(uint64 poolId) public { }
-    function testTransferToAsNonRouterFails(uint64 poolId) public { }
-    function testTransferToForNonExistentPoolFails(uint64 poolId) public { }
-    function testTransferToForNonExistentTrancheFails(uint64 poolId) public { }
+     }
 
+    // function testDepositFromOtherChainsFails(uint64 poolId) public { }
+    // function testDepositForNonExistentPoolFails(uint64 poolId) public { }
+    // function testDepositForNonExistentTrancheFails(uint64 poolId) public { }
+    // function testDepositWithoutAllowanceFails(uint64 poolId) public { }
+  
+
+    // function testWithdrawelWorks(uint64 poolId) public { }
+    // function testWithdrawalFailsUnknownDomain(uint64 poolId) public { }
+    // function testWithdrawalFailsNotConnector(uint64 poolId) public { }
+    // function testWithdrawalFailsNotEnoughBalance(uint64 poolId) public { }
+    // function testWithdrawalFailsNotEnoughBalance(uint64 poolId) public { }
+    // function testWithdrawalFailsPoolDoesNotExist(uint64 poolId) public { }
 }

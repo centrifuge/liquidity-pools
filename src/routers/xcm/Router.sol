@@ -14,7 +14,6 @@ interface ConnectorLike {
   function updateMember(uint64 poolId, bytes16 trancheId, address user, uint256 validUntil) external;
   function updateTokenPrice(uint64 poolId, bytes16 trancheId, uint256 price) external;
   function deposit(uint64 poolId, bytes16 trancheId, address user, uint256 amount) external;
-  function withdraw(uint64 poolId, bytes16 trancheId, address user, uint256 amount) external;
 }
 
 contract ConnectorXCMRouter is Router, Test {
@@ -71,7 +70,7 @@ contract ConnectorXCMRouter is Router, Test {
 
     function sendMessage(uint32 destinationDomain, uint64 poolId, bytes16 trancheId, uint256 amount, address user) external onlyConnector {
         bytes32 remoteAddress = _mustHaveRemote(destinationDomain);
-        
+
         Home(xAppConnectionManager.home()).dispatch(
             destinationDomain,
             remoteAddress,
