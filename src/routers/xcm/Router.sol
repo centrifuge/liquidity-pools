@@ -29,7 +29,13 @@ contract ConnectorXCMRouter is Router, Test {
     constructor(address connector_, address centrifugeChainOrigin_) {
         connector = ConnectorLike(connector_);
         centrifugeChainOrigin = centrifugeChainOrigin_;
+        __Ownable_init();
+        //_owner 
+        // _owner = msg.sender;
     }
+    
+   
+
 
     modifier onlyCentrifugeChainOrigin() {
         require(msg.sender == address(centrifugeChainOrigin), "ConnectorXCMRouter/invalid-origin");

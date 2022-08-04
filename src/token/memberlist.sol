@@ -8,7 +8,7 @@ interface MemberlistLike {
 
 contract Memberlist {
 
-    uint constant minimumDelay = 7 days;
+    uint public constant minimumDelay = 7 days;
 
     mapping (address => uint) public members;
 
@@ -28,7 +28,7 @@ contract Memberlist {
     }
 
     function updateMember(address usr, uint validUntil) public auth {
-        require((safeAdd(block.timestamp, minimumDelay)) < validUntil);
+        require(((safeAdd(block.timestamp, minimumDelay)) < validUntil), "invalid-validUntil");
         members[usr] = validUntil;
      }
 

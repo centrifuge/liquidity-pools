@@ -15,7 +15,6 @@ contract MockHomeConnector is Test {
     IMessageRecipient public home;
 
     uint32 immutable CENTRIFUGE_CHAIN_DOMAIN = 3000;
-
     uint32 immutable NONCE = 1;
 
     enum Types {
@@ -46,6 +45,11 @@ contract MockHomeConnector is Test {
 
     function updateTokenPrice(uint64 poolId, bytes16 trancheId, uint256 price) public {
         bytes memory _message = ConnectorMessages.formatUpdateTokenPrice(poolId, trancheId, price);
+        home.handle(CENTRIFUGE_CHAIN_DOMAIN, NONCE, "1", _message);
+    }
+
+    function deposit(uint64 poolId, bytes16 trancheId, address user, uint256 amount) public  {
+        bytes memory _message = ConnectorMessages.formatTransfer(poolId, trancheId, user, amount);
         home.handle(CENTRIFUGE_CHAIN_DOMAIN, NONCE, "1", _message);
     }
 

@@ -15,6 +15,7 @@ interface ERC20Like {
     function balanceOf(address usr) external view returns (uint wad);
     function burn(address usr, uint wad) external;
     function transferFrom(address from, address to, uint amount) external returns (bool);
+    function totalSupply() external returns (uint);
 }
 
 interface RestrictedTokenLike is ERC20Like {

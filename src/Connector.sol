@@ -31,7 +31,7 @@ contract CentrifugeConnector {
     mapping(uint64 => Pool) public pools;
     mapping(uint64 => mapping(bytes16 => Tranche)) public tranches;
     mapping(address => uint256) public wards;
-    mapping (bytes32 => uint32) public domainLookup;
+    mapping(bytes32 => uint32) public domainLookup;
 
 
     // --- Events ---
@@ -149,15 +149,16 @@ contract CentrifugeConnector {
     function withdraw(
         uint64 poolId,
         bytes16 trancheId,
-        address user,
+         address user,
         uint256 amount,
         string memory domainName
-    ) public {
+    ) public auth {
         uint32 domainId = domainLookup[keccak256(bytes(domainName))];
         require(domainId > 0, "CentrifugeConnector/domain-does-not-exist");
 
         RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
-        require(token.balanceOf(user) >= amount, "CentrifugeConnector/insufficient-balance"); // optional
+        require(address(token) != address(0), "CentrifugeConnector/unknown-token");
+        require(token.balanceOf(user) >= amount, "CentrifugeConnector/insufficient-balance");
         require(token.transferFrom(user, address(this), amount), "CentrifugeConnector/token-transfer-failed");
         token.burn(address(this), amount);
         router.sendMessage(domainId, poolId, trancheId, amount, user);
