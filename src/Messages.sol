@@ -136,7 +136,7 @@ library ConnectorMessages {
     }
 
      /**
-     * Deposit
+     * Transfer
      * 
      * 0: call type (uint8 = 1 byte)
      * 1-8: poolId (uint64 = 8 bytes)

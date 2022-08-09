@@ -17,6 +17,13 @@ contract MockHomeConnector is Test {
     uint32 immutable CENTRIFUGE_CHAIN_DOMAIN = 3000;
     uint32 immutable NONCE = 1;
 
+
+    uint32 public dispatchDomain;
+    bytes public dispatchMessage;
+    bytes32 public dispatchRecipient;
+    uint public dispatchCalls;
+
+
     enum Types {
         AddPool
     }
@@ -59,8 +66,10 @@ contract MockHomeConnector is Test {
         bytes32 _recipientAddress,
         bytes memory _messageBody
     ) external {
-
-        console.log("dispatch called");
+         dispatchCalls++;
+         dispatchDomain = _destinationDomain;
+         dispatchMessage =  _messageBody;
+         dispatchRecipient = _recipientAddress;
     }
 
 }

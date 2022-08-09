@@ -8,8 +8,8 @@ import { RestrictedTokenLike } from "src/token/restricted.sol";
 import { MemberlistLike, Memberlist } from "src/token/memberlist.sol";
 import { MockHomeConnector } from "./mock/MockHomeConnector.sol";
 import { ConnectorXCMRouter } from "src/routers/xcm/Router.sol";
-import { Home } from "@nomad-xyz/contracts-core/contracts/Home.sol";
 import { XAppConnectionManager } from "@nomad-xyz/contracts-core/contracts/XAppConnectionManager.sol";
+import {ConnectorMessages} from "src/Messages.sol";
 import "forge-std/Test.sol";
 
 contract ConnectorTest is Test {
@@ -25,14 +25,11 @@ contract ConnectorTest is Test {
         address memberlistFactory_ = address(new MemberlistFactory());
 
         bridgedConnector = new CentrifugeConnector(tokenFactory_, memberlistFactory_);
-        
 
         // home = new Home(1000);
         homeConnector = new MockHomeConnector();
         XAppConnectionManager connectionManager = new XAppConnectionManager(); 
         connectionManager.setHome(address(homeConnector));
-
-    
 
         bridgedRouter = new ConnectorXCMRouter(address(bridgedConnector), address(homeConnector), address(connectionManager));
         homeConnector.setRouter(address(bridgedRouter));
@@ -97,7 +94,6 @@ contract ConnectorTest is Test {
 
     function testUpdatingMemberWorks(uint64 poolId, bytes16 trancheId, address user, uint256 validUntil) public {
         vm.assume(validUntil > safeAdd(block.timestamp, minimumDelay));
-        // vm.assume(user != address(0)); -> not blocked by the memberlist contract 
         homeConnector.addPool(poolId);
         homeConnector.addTranche(poolId, trancheId, "Some Name", "SYMBOL");
         homeConnector.updateMember(poolId, trancheId, user, validUntil);
@@ -112,7 +108,6 @@ contract ConnectorTest is Test {
 
     function testUpdatingMemberAsNonRouterFails(uint64 poolId, bytes16 trancheId, address user, uint256 validUntil) public {
         vm.assume(validUntil > block.timestamp);
-        // vm.assume(user != address(0));
 
         vm.expectRevert(bytes("CentrifugeConnector/not-the-router"));
         bridgedConnector.updateMember(poolId, trancheId, user, validUntil);
@@ -120,15 +115,13 @@ contract ConnectorTest is Test {
 
     function testUpdatingMemberForNonExistentPoolFails(uint64 poolId, bytes16 trancheId, address user, uint256 validUntil) public {
         vm.assume(validUntil > block.timestamp);
-        // vm.assume(user != address(0));
         bridgedConnector.file("router", address(this));
         vm.expectRevert(bytes("CentrifugeConnector/invalid-pool-or-tranche"));
         bridgedConnector.updateMember(poolId, trancheId, user, validUntil);
     }
 
     function testUpdatingMemberBeforeMinimumDelayFails(uint64 poolId, bytes16 trancheId, address user, uint256 validUntil) public {
-        vm.assume(validUntil < safeAdd(block.timestamp, minimumDelay));
-        // vm.assume(user != address(0)); -> not blocked by the memberlist contract 
+        vm.assume(validUntil < safeAdd(block.timestamp, minimumDelay)); 
         homeConnector.addPool(poolId);
         homeConnector.addTranche(poolId, trancheId, "Some Name", "SYMBOL");
         homeConnector.updateMember(poolId, trancheId, user, validUntil);
@@ -138,7 +131,6 @@ contract ConnectorTest is Test {
 
     function testUpdatingMemberForNonExistentTrancheFails(uint64 poolId, bytes16 trancheId, address user, uint256 validUntil) public {
         vm.assume(validUntil > block.timestamp);
-        // vm.assume(user != address(0));
         bridgedConnector.file("router", address(this));
         bridgedConnector.addPool(poolId);
         vm.expectRevert(bytes("CentrifugeConnector/invalid-pool-or-tranche"));
@@ -190,7 +182,6 @@ contract ConnectorTest is Test {
 
         homeConnector.deposit(poolId, trancheId, user, amount);
 
-       
         assertEq(memberlist.members(user), validUntil);
         assertTrue(token.hasMember(user));
         assertEq(token.balanceOf(user), amount);
@@ -204,18 +195,17 @@ contract ConnectorTest is Test {
 
   
     function testWithdrawalWorks(uint64 poolId, bytes16 trancheId, uint256 amount, address user) public { 
-       string memory domainName = "Centrifuge";
-       // vm.assume(keccak256(abi.encodePacked(domainName)) == keccak256(abi.encodePacked(domainName)));
-   
+        string memory domainName = "Centrifuge";
         uint32 domainId = 3000;
+        bytes32 recipient = stringToBytes32("0xefc56627233b02ea95bae7e19f648d7dcd5bb132");
         // add Centrifuge domain to router                  
-        bridgedRouter.enrollRemoteRouter(domainId, stringToBytes32("0xefc56627233b02ea95bae7e19f648d7dcd5bb132"));
-      
+        bridgedRouter.enrollRemoteRouter(domainId, recipient);
+        
         // add Centrifuge domain to connector
         assertEq(bridgedConnector.wards(address(this)), 1);
         bridgedConnector.file("domain", domainName, domainId);
-        // bridgedConnector.deny(address(this)); // revoke ward permissions to test public functions
-      
+        bridgedConnector.deny(address(this)); // revoke ward permissions to test public functions
+        
         user = address(this); // set deployer as user to approve the cnnector to transfer funds
         
         // fund user
@@ -224,9 +214,26 @@ contract ConnectorTest is Test {
         homeConnector.updateMember(poolId, trancheId, user, uint(-1));
         homeConnector.deposit(poolId, trancheId, user, amount);
         // approve token
-        RestrictedTokenLike token = RestrictedTokenLike(bridgedConnector.tokenAddress(poolId, trancheId));
+        (address token_,,) = bridgedConnector.tranches(poolId, trancheId);
+        RestrictedTokenLike token = RestrictedTokenLike(token_);
         token.approve(address(bridgedConnector), uint(-1)); // approve connector to take token
+
+        uint userTokenBalanceBefore = token.balanceOf(user);
+
+        // withdraw
         bridgedConnector.withdraw(poolId, trancheId, user, amount, domainName);
+        
+        assert(homeConnector.dispatchDomain() == domainId);
+        assertEq(token.balanceOf(user), (userTokenBalanceBefore - amount));
+        assertEq(homeConnector.dispatchRecipient(), recipient);
+        assertEq(homeConnector.dispatchCalls(), 1);
+
+        // TODO: fix assertions
+        //(uint64 poolIdDispatchCall, bytes16 trancheIdDispatchCall, address userDispatchCall, uint256 amountDispatchCall) =  ConnectorMessages.parseTransfer(toBytes29(homeConnector.dispatchMessage()));
+        // assert(poolIdDispatchCall == poolId);
+        // assertEq(trancheIdDispatchCall,trancheId);
+        // assertEq(userDispatchCall, user);
+        // assertEq(amountDispatchCall, amount);
     }
 
 
@@ -288,6 +295,13 @@ contract ConnectorTest is Test {
     function toBytes32(bytes memory f) internal pure returns (bytes16 fc) {
         assembly {
           fc := mload(add(f, 32))
+        }
+        return fc;
+    }
+
+        function toBytes29(bytes memory f) internal pure returns (bytes29 fc) {
+        assembly {
+          fc := mload(add(f, 29))
         }
         return fc;
     }

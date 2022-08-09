@@ -152,7 +152,7 @@ contract CentrifugeConnector {
         address user,
         uint256 amount,
         string memory domainName
-    ) public auth {
+    ) public {
         uint32 domainId = domainLookup[keccak256(bytes(domainName))];
         require(domainId > 0, "CentrifugeConnector/domain-does-not-exist");
 
@@ -163,12 +163,4 @@ contract CentrifugeConnector {
         token.burn(address(this), amount);
         router.sendMessage(domainId, poolId, trancheId, amount, user);
     }
-
-    function tokenAddress(uint64 poolId,
-        bytes16 trancheId) public view returns(address) {
-        
-        return tranches[poolId][trancheId].token;
-
-    }
-    
 }
