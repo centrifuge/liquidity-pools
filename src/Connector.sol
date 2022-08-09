@@ -149,7 +149,7 @@ contract CentrifugeConnector {
     function withdraw(
         uint64 poolId,
         bytes16 trancheId,
-         address user,
+        address user,
         uint256 amount,
         string memory domainName
     ) public auth {
@@ -162,6 +162,13 @@ contract CentrifugeConnector {
         require(token.transferFrom(user, address(this), amount), "CentrifugeConnector/token-transfer-failed");
         token.burn(address(this), amount);
         router.sendMessage(domainId, poolId, trancheId, amount, user);
+    }
+
+    function tokenAddress(uint64 poolId,
+        bytes16 trancheId) public view returns(address) {
+        
+        return tranches[poolId][trancheId].token;
+
     }
     
 }

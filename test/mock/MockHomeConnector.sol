@@ -53,4 +53,14 @@ contract MockHomeConnector is Test {
         home.handle(CENTRIFUGE_CHAIN_DOMAIN, NONCE, "1", _message);
     }
 
+
+    function dispatch(
+        uint32 _destinationDomain,
+        bytes32 _recipientAddress,
+        bytes memory _messageBody
+    ) external {
+
+        console.log("dispatch called");
+    }
+
 }

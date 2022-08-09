@@ -18,7 +18,7 @@ contract ConnectorXCMScript is Script {
         CentrifugeConnector connector = new CentrifugeConnector(tokenFactory_, memberlistFactory_);
 
         // TODO: add centrifugeChainOrigin_ arg
-        ConnectorXCMRouter router = new ConnectorXCMRouter(address(connector), address(0));
+        ConnectorXCMRouter router = new ConnectorXCMRouter(address(connector), address(0), address(0));
         connector.file("router", address(router));
     }
 }

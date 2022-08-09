@@ -8,6 +8,8 @@ import { RestrictedTokenLike } from "src/token/restricted.sol";
 import { MemberlistLike, Memberlist } from "src/token/memberlist.sol";
 import { MockHomeConnector } from "./mock/MockHomeConnector.sol";
 import { ConnectorXCMRouter } from "src/routers/xcm/Router.sol";
+import { Home } from "@nomad-xyz/contracts-core/contracts/Home.sol";
+import { XAppConnectionManager } from "@nomad-xyz/contracts-core/contracts/XAppConnectionManager.sol";
 import "forge-std/Test.sol";
 
 contract ConnectorTest is Test {
@@ -23,9 +25,16 @@ contract ConnectorTest is Test {
         address memberlistFactory_ = address(new MemberlistFactory());
 
         bridgedConnector = new CentrifugeConnector(tokenFactory_, memberlistFactory_);
-        // TODO: pass _xAppConnectionManager
+        
+
+        // home = new Home(1000);
         homeConnector = new MockHomeConnector();
-        bridgedRouter = new ConnectorXCMRouter(address(bridgedConnector), address(homeConnector));
+        XAppConnectionManager connectionManager = new XAppConnectionManager(); 
+        connectionManager.setHome(address(homeConnector));
+
+    
+
+        bridgedRouter = new ConnectorXCMRouter(address(bridgedConnector), address(homeConnector), address(connectionManager));
         homeConnector.setRouter(address(bridgedRouter));
         bridgedConnector.file("router", address(bridgedRouter)); 
 
@@ -199,22 +208,24 @@ contract ConnectorTest is Test {
        // vm.assume(keccak256(abi.encodePacked(domainName)) == keccak256(abi.encodePacked(domainName)));
    
         uint32 domainId = 3000;
-        // add Centrifuge domain to router 
-        bridgedRouter.enrollRemoteRouter(domainId, stringToBytes32("testAddress"));
+        // add Centrifuge domain to router                  
+        bridgedRouter.enrollRemoteRouter(domainId, stringToBytes32("0xefc56627233b02ea95bae7e19f648d7dcd5bb132"));
       
         // add Centrifuge domain to connector
         assertEq(bridgedConnector.wards(address(this)), 1);
         bridgedConnector.file("domain", domainName, domainId);
-        // bridgedConnector.deny(address(this)); // revoke ward permissions to test publicfunctions
-        // address user = address(this); // test contract = user
-        
+        // bridgedConnector.deny(address(this)); // revoke ward permissions to test public functions
+      
+        user = address(this); // set deployer as user to approve the cnnector to transfer funds
         
         // fund user
         homeConnector.addPool(poolId);
         homeConnector.addTranche(poolId, trancheId, "Some Name", "SYMBOL");
         homeConnector.updateMember(poolId, trancheId, user, uint(-1));
         homeConnector.deposit(poolId, trancheId, user, amount);
-
+        // approve token
+        RestrictedTokenLike token = RestrictedTokenLike(bridgedConnector.tokenAddress(poolId, trancheId));
+        token.approve(address(bridgedConnector), uint(-1)); // approve connector to take token
         bridgedConnector.withdraw(poolId, trancheId, user, amount, domainName);
     }
 

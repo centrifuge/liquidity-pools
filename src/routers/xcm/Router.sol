@@ -26,10 +26,12 @@ contract ConnectorXCMRouter is Router, Test {
 
     address immutable centrifugeChainOrigin;
 
-    constructor(address connector_, address centrifugeChainOrigin_) {
+    constructor(address connector_, address centrifugeChainOrigin_, address xAppConnectionManager) {
         connector = ConnectorLike(connector_);
         centrifugeChainOrigin = centrifugeChainOrigin_;
+
         __Ownable_init();
+        __XAppConnectionClient_initialize(xAppConnectionManager);
     }
     
    
@@ -72,10 +74,23 @@ contract ConnectorXCMRouter is Router, Test {
 
     function sendMessage(uint32 destinationDomain, uint64 poolId, bytes16 trancheId, uint256 amount, address user) external onlyConnector {
         bytes32 remoteAddress = _mustHaveRemote(destinationDomain);
-
         Home(xAppConnectionManager.home()).dispatch(
             destinationDomain,
             remoteAddress,
             ConnectorMessages.formatTransfer(poolId, trancheId, user, amount));
     }
+
+       function bytes32ToString(bytes32 _bytes32) internal returns (string memory) {
+        uint8 i = 0;
+        while(i < 32 && _bytes32[i] != 0) {
+            i++;
+        }
+
+        bytes memory bytesArray = new bytes(i);
+        for (i = 0; i < 32 && _bytes32[i] != 0; i++) {
+            bytesArray[i] = _bytes32[i];
+        }
+        return string(bytesArray);
+    }
+
 }
