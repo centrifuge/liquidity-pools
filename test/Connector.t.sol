@@ -8,6 +8,7 @@ import { RestrictedTokenLike } from "src/token/restricted.sol";
 import { MemberlistLike, Memberlist } from "src/token/memberlist.sol";
 import { MockHomeConnector } from "./mock/MockHomeConnector.sol";
 import { ConnectorNomadRouter } from "src/routers/nomad/Router.sol";
+import {Utils} from "src/Utils.sol";
 import "forge-std/Test.sol";
 
 contract ConnectorTest is Test {
@@ -53,8 +54,8 @@ contract ConnectorTest is Test {
         // Comparing raw input to output can erroneously fail when a byte string is given. 
         // Intended behaviour is that byte strings will be treated as bytes and converted to strings instead of treated as strings themselves.
         // This conversion from string to bytes32 to string is used to simulate this intended behaviour.
-        assertEq(token.name(), bytes32ToString(stringToBytes32(tokenName)));
-        assertEq(token.symbol(), bytes32ToString(stringToBytes32(tokenSymbol)));
+        assertEq(token.name(), Utils.bytes32ToString(Utils.stringToBytes32(tokenName)));
+        assertEq(token.symbol(), Utils.bytes32ToString(Utils.stringToBytes32(tokenSymbol)));
     }
 
     function testAddingMultipleTranchesWorks(uint64 poolId, bytes16[] calldata trancheIds, string memory tokenName, string memory tokenSymbol) public {
@@ -82,7 +83,7 @@ contract ConnectorTest is Test {
     }
 
     function testUpdatingMemberWorks(uint64 poolId, bytes16 trancheId, address user, uint256 validUntil) public {
-        vm.assume(validUntil > safeAdd(block.timestamp, new Memberlist().minimumDelay()));
+        vm.assume(validUntil > Utils.safeAdd(block.timestamp, new Memberlist().minimumDelay()));
         vm.assume(user != address(0));
 
         homeConnector.addPool(poolId);
@@ -98,7 +99,7 @@ contract ConnectorTest is Test {
     }
 
     function testUpdatingMemberBeforeMinimumDelayFails(uint64 poolId, bytes16 trancheId, address user, uint256 validUntil) public {
-        vm.assume(validUntil < safeAdd(block.timestamp, new Memberlist().minimumDelay()));
+        vm.assume(validUntil < Utils.safeAdd(block.timestamp, new Memberlist().minimumDelay()));
         vm.assume(user != address(0));
 
         homeConnector.addPool(poolId);
@@ -164,33 +165,4 @@ contract ConnectorTest is Test {
     function testTransferToAsNonRouterFails(uint64 poolId) public { }
     function testTransferToForNonExistentPoolFails(uint64 poolId) public { }
     function testTransferToForNonExistentTrancheFails(uint64 poolId) public { }
-
-    function safeAdd(uint x, uint y) internal pure returns (uint z) {
-        require((z = x + y) >= x, "math-add-overflow");
-    }
-
-    function stringToBytes32(string memory source) internal pure returns (bytes32 result) {
-        bytes memory tempEmptyStringTest = bytes(source);
-        if (tempEmptyStringTest.length == 0) {
-            return 0x0;
-        }
-
-        assembly {
-            result := mload(add(source, 32))
-        }
-    }
-
-    function bytes32ToString(bytes32 _bytes32) internal returns (string memory) {
-        uint8 i = 0;
-        while(i < 32 && _bytes32[i] != 0) {
-            i++;
-        }
-
-        bytes memory bytesArray = new bytes(i);
-        for (i = 0; i < 32 && _bytes32[i] != 0; i++) {
-            bytesArray[i] = _bytes32[i];
-        }
-        return string(bytesArray);
-    }
-
 }

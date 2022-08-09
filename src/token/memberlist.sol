@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity >=0.7.6;
 
+import {Utils} from "src/Utils.sol";
+
 interface MemberlistLike {
     function updateMember(address usr, uint validUntil) external;
     function members(address usr) external view returns (uint);
@@ -18,17 +20,12 @@ contract Memberlist {
     function deny(address usr) public auth { wards[usr] = 0; }
     modifier auth { require(wards[msg.sender] == 1); _; }
 
-    // --- Math ---
-    function safeAdd(uint x, uint y) internal pure returns (uint z) {
-        require((z = x + y) >= x, "math-add-overflow");
-    }
-
     constructor() {
         wards[msg.sender] = 1;
     }
 
     function updateMember(address usr, uint validUntil) public auth {
-        require((safeAdd(block.timestamp, minimumDelay)) < validUntil, "invalid-validUntil");
+        require((Utils.safeAdd(block.timestamp, minimumDelay)) < validUntil, "invalid-validUntil");
         members[usr] = validUntil;
      }
 

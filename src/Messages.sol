@@ -2,6 +2,7 @@
 pragma solidity ^0.7.6;
 
 import "@summa-tx/memview-sol/contracts/TypedMemView.sol";
+import {Utils} from "src/Utils.sol";
 
 library ConnectorMessages {
     using TypedMemView for bytes;
@@ -48,7 +49,7 @@ library ConnectorMessages {
      * 59-91: tokenSymbol (string = 32 bytes)
      */
     function formatAddTranche(uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol) internal pure returns (bytes memory) {
-        return abi.encodePacked(uint8(Call.AddTranche), poolId, trancheId, stringToBytes32(tokenName), stringToBytes32(tokenSymbol));
+        return abi.encodePacked(uint8(Call.AddTranche), poolId, trancheId, Utils.stringToBytes32(tokenName), Utils.stringToBytes32(tokenSymbol));
     }
 
     function isAddTranche(bytes29 _msg) internal pure returns (bool) {
@@ -58,33 +59,8 @@ library ConnectorMessages {
     function parseAddTranche(bytes29 _msg) internal pure returns (uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol) {
         poolId = uint64(_msg.indexUint(1, 8));
         trancheId = bytes16(_msg.index(9, 16));
-        tokenName = bytes32ToString(bytes32(_msg.index(25, 32)));
-        tokenSymbol = bytes32ToString(bytes32(_msg.index(57, 32)));
-    }
-
-    // TODO: should be moved to a util contract
-    function stringToBytes32(string memory source) internal pure returns (bytes32 result) {
-        bytes memory tempEmptyStringTest = bytes(source);
-        if (tempEmptyStringTest.length == 0) {
-            return 0x0;
-        }
-
-        assembly {
-            result := mload(add(source, 32))
-        }
-    }
-
-    // TODO: should be moved to a util contract
-    function bytes32ToString(bytes32 _bytes32) internal pure returns (string memory) {
-        uint8 i = 0;
-        while(i < 32 && _bytes32[i] != 0) {
-            i++;
-        }
-        bytes memory bytesArray = new bytes(i);
-        for (i = 0; i < 32 && _bytes32[i] != 0; i++) {
-            bytesArray[i] = _bytes32[i];
-        }
-        return string(bytesArray);
+        tokenName = Utils.bytes32ToString(bytes32(_msg.index(25, 32)));
+        tokenSymbol = Utils.bytes32ToString(bytes32(_msg.index(57, 32)));
     }
 
     /**
