@@ -81,8 +81,9 @@ contract ConnectorTest is Test {
         homeConnector.addTranche(poolId, trancheId, tokenName, tokenSymbol);
     }
 
-    function testUpdatingMemberWorks(uint64 poolId, bytes16 trancheId, address user, uint256 validUntil) public {
-        vm.assume(validUntil > safeAdd(block.timestamp, new Memberlist().minimumDelay()));
+    function testUpdatingMemberWorks(uint64 poolId, bytes16 trancheId, address user, uint128 fuzzed_uint128) public {
+        vm.assume(fuzzed_uint128 > 0);
+        uint256 validUntil = safeAdd(fuzzed_uint128, safeAdd(block.timestamp, new Memberlist().minimumDelay()));
         vm.assume(user != address(0));
 
         homeConnector.addPool(poolId);
@@ -98,7 +99,7 @@ contract ConnectorTest is Test {
     }
 
     function testUpdatingMemberBeforeMinimumDelayFails(uint64 poolId, bytes16 trancheId, address user, uint256 validUntil) public {
-        vm.assume(validUntil < safeAdd(block.timestamp, new Memberlist().minimumDelay()));
+        vm.assume(validUntil <= safeAdd(block.timestamp, new Memberlist().minimumDelay()));
         vm.assume(user != address(0));
 
         homeConnector.addPool(poolId);
@@ -107,8 +108,9 @@ contract ConnectorTest is Test {
         homeConnector.updateMember(poolId, trancheId, user, validUntil);
     }
 
-    function testUpdatingMemberAsNonRouterFails(uint64 poolId, bytes16 trancheId, address user, uint256 validUntil) public {
-        vm.assume(validUntil > block.timestamp);
+    function testUpdatingMemberAsNonRouterFails(uint64 poolId, bytes16 trancheId, address user, uint128 fuzzed_uint128) public {
+        vm.assume(fuzzed_uint128 > 0);
+        uint256 validUntil = safeAdd(fuzzed_uint128, safeAdd(block.timestamp, new Memberlist().minimumDelay()));
         vm.assume(user != address(0));
 
         vm.expectRevert(bytes("CentrifugeConnector/not-the-router"));
