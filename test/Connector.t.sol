@@ -58,8 +58,6 @@ contract ConnectorTest is Test {
     }
 
     function testAddingMultipleTranchesWorks(uint64 poolId, bytes16[] calldata trancheIds, string memory tokenName, string memory tokenSymbol) public {
-        vm.assume(trancheIds.length > 0 && trancheIds.length <= 5);
-
         homeConnector.addPool(poolId);
 
         for (uint i = 0; i < trancheIds.length; i++) {
