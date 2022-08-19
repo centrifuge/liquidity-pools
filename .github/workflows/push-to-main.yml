@@ -1,9 +1,9 @@
-name: test
+name: push-to-main
 
 on:
   push:
-    branches: [main]
-  pull_request:
+    branches:
+      - main
 
 env:
   FOUNDRY_PROFILE: ci
@@ -54,3 +54,5 @@ jobs:
         run: |
           forge test -vvv
         id: test
+        env:
+          FOUNDRY_PROFILE: push_to_main

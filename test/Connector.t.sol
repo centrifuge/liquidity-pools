@@ -61,7 +61,6 @@ contract ConnectorTest is Test {
         assertTrue(token_ != address(0));
 
         RestrictedTokenLike token = RestrictedTokenLike(token_);
-
         // Comparing raw input to output can erroneously fail when a byte string is given. 
         // Intended behaviour is that byte strings will be treated as bytes and converted to strings instead of treated as strings themselves.
         // This conversion from string to bytes32 to string is used to simulate this intended behaviour.
@@ -94,7 +93,9 @@ contract ConnectorTest is Test {
     }
 
     function testUpdatingMemberWorks(uint64 poolId, bytes16 trancheId, address user, uint256 validUntil) public {
-        vm.assume(validUntil > safeAdd(block.timestamp, minimumDelay));
+        vm.assume(validUntil > safeAdd(block.timestamp, new Memberlist().minimumDelay()));
+        vm.assume(user != address(0));
+
         homeConnector.addPool(poolId);
         homeConnector.addTranche(poolId, trancheId, "Some Name", "SYMBOL");
         homeConnector.updateMember(poolId, trancheId, user, validUntil);
@@ -105,6 +106,16 @@ contract ConnectorTest is Test {
 
         MemberlistLike memberlist = MemberlistLike(token.memberlist());
         assertEq(memberlist.members(user), validUntil);
+    }
+
+    function testUpdatingMemberBeforeMinimumDelayFails(uint64 poolId, bytes16 trancheId, address user, uint256 validUntil) public {
+        vm.assume(validUntil < safeAdd(block.timestamp, new Memberlist().minimumDelay()));
+        vm.assume(user != address(0));
+
+        homeConnector.addPool(poolId);
+        homeConnector.addTranche(poolId, trancheId, "Some Name", "SYMBOL");
+        vm.expectRevert("invalid-validUntil");
+        homeConnector.updateMember(poolId, trancheId, user, validUntil);
     }
 
     function testUpdatingMemberAsNonRouterFails(uint64 poolId, bytes16 trancheId, address user, uint256 validUntil) public {
@@ -121,15 +132,6 @@ contract ConnectorTest is Test {
         bridgedConnector.updateMember(poolId, trancheId, user, validUntil);
     }
 
-    function testUpdatingMemberBeforeMinimumDelayFails(uint64 poolId, bytes16 trancheId, address user, uint256 validUntil) public {
-        vm.assume(validUntil < safeAdd(block.timestamp, minimumDelay)); 
-        homeConnector.addPool(poolId);
-        homeConnector.addTranche(poolId, trancheId, "Some Name", "SYMBOL");
-        vm.expectRevert(bytes("invalid-validUntil"));
-        homeConnector.updateMember(poolId, trancheId, user, validUntil);
-
-        
-    }
 
     function testUpdatingMemberForNonExistentTrancheFails(uint64 poolId, bytes16 trancheId, address user, uint256 validUntil) public {
         vm.assume(validUntil > block.timestamp);

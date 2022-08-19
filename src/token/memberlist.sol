@@ -28,7 +28,7 @@ contract Memberlist {
     }
 
     function updateMember(address usr, uint validUntil) public auth {
-        require(((safeAdd(block.timestamp, minimumDelay)) < validUntil), "invalid-validUntil");
+        require((safeAdd(block.timestamp, minimumDelay)) < validUntil, "invalid-validUntil");
         members[usr] = validUntil;
      }
 
