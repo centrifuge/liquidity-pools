@@ -363,7 +363,7 @@ contract ConnectorTest is Test {
         
         // add Centrifuge domain to connector
         assertEq(bridgedConnector.wards(address(this)), 1);
-        bridgedConnector.file("domain", domainName, domainId); // use wrong domainID
+        bridgedConnector.file("domain", domainName, domainId);
         bridgedConnector.deny(address(this)); // revoke ward permissions to test public functions
     
         // fund user
