@@ -126,7 +126,7 @@ contract ConnectorTest is Test {
         homeConnector.addTranche(poolId, trancheId, "Some Name", "SYMBOL");
         homeConnector.updateMember(poolId, trancheId, user, validUntil);
 
-        vm.expectRevert("invalid-validUntil");
+        vm.expectRevert(bytes("invalid-validUntil"));
     }
 
     function testUpdatingMemberForNonExistentTrancheFails(uint64 poolId, bytes16 trancheId, address user, uint256 validUntil) public {
@@ -168,7 +168,7 @@ contract ConnectorTest is Test {
         bridgedConnector.updateTokenPrice(poolId, trancheId, price);
      }
     
-    function testDepositWorks(uint64 poolId, bytes16 trancheId, address user, uint256 amount, uint256 validUntil) public {
+    function testTransferWorks(uint64 poolId, bytes16 trancheId, address user, uint256 amount, uint256 validUntil) public {
         vm.assume(validUntil > safeAdd(block.timestamp, minimumDelay));
 
         homeConnector.addPool(poolId);
@@ -180,7 +180,7 @@ contract ConnectorTest is Test {
         MemberlistLike memberlist = MemberlistLike(token.memberlist());
         uint totalSupplyBefore = token.totalSupply();
 
-        homeConnector.deposit(poolId, trancheId, user, amount);
+        homeConnector.transfer(poolId, trancheId, user, amount);
 
         assertEq(memberlist.members(user), validUntil);
         assertTrue(token.hasMember(user));
@@ -188,10 +188,56 @@ contract ConnectorTest is Test {
         assertEq(token.totalSupply(), safeAdd(totalSupplyBefore, amount));
      }
 
-    // function testDepositForNonExistentPoolFails(uint64 poolId) public { }
-    // function testDepositForNonExistentTrancheFails(uint64 poolId) public { }
-    // function testDepositWithoutAllowanceFails(uint64 poolId) public { }
-    // function testDepositFromOtherOriginFails(uint64 poolId) public { }
+    function testTransferForNonExistentPoolFails(uint64 poolId, bytes16 trancheId, address user, uint256 amount, uint256 validUntil) public { 
+        vm.assume(validUntil > safeAdd(block.timestamp, minimumDelay));
+
+        // do not add pool
+        vm.expectRevert(bytes("CentrifugeConnector/invalid-pool"));
+        homeConnector.addTranche(poolId, trancheId, "Some Name", "SYMBOL");
+        
+        vm.expectRevert(bytes("CentrifugeConnector/invalid-pool-or-tranche"));
+        homeConnector.updateMember(poolId, trancheId, user, validUntil);
+
+        vm.expectRevert(bytes("CentrifugeConnector/unknown-token"));
+        homeConnector.transfer(poolId, trancheId, user, amount);
+    }
+    
+    function testTransferForNonExistentTrancheFails(uint64 poolId, bytes16 trancheId, address user, uint256 amount, uint256 validUntil) public { 
+        vm.assume(validUntil > safeAdd(block.timestamp, minimumDelay));
+
+        homeConnector.addPool(poolId);
+        //do not add tranche
+        vm.expectRevert(bytes("CentrifugeConnector/invalid-pool-or-tranche"));
+        homeConnector.updateMember(poolId, trancheId, user, validUntil);
+
+        vm.expectRevert(bytes("CentrifugeConnector/unknown-token"));        homeConnector.transfer(poolId, trancheId, user, amount);
+    
+    }
+
+    function testTransferForNoMemberlistFails(uint64 poolId, bytes16 trancheId, address user, uint256 amount, uint256 validUntil) public { 
+        vm.assume(validUntil > safeAdd(block.timestamp, minimumDelay));
+
+        homeConnector.addPool(poolId);
+        homeConnector.addTranche(poolId, trancheId, "Some Name", "SYMBOL");
+
+        // do not add to Memberlist
+        vm.expectRevert(bytes("CentrifugeConnector/not-a-member"));
+        homeConnector.transfer(poolId, trancheId, user, amount);
+    }
+
+    function testTransferFromOtherOriginFails(uint64 poolId, bytes16 trancheId, address user, uint256 amount, uint256 validUntil) public { 
+
+        MockHomeConnector homeConnectorDifferentOrigin = new MockHomeConnector();
+        homeConnectorDifferentOrigin.setRouter(address(bridgedRouter));
+         vm.assume(validUntil > safeAdd(block.timestamp, minimumDelay));
+
+        homeConnector.addPool(poolId);
+        homeConnector.addTranche(poolId, trancheId, "Some Name", "SYMBOL");
+        homeConnector.updateMember(poolId, trancheId, user, validUntil);
+
+        vm.expectRevert(bytes("ConnectorXCMRouter/invalid-origin"));
+        homeConnectorDifferentOrigin.transfer(poolId, trancheId, user, amount);
+    }
 
   
     function testWithdrawalWorks(uint64 poolId, bytes16 trancheId, uint256 amount, address user) public { 
@@ -212,7 +258,7 @@ contract ConnectorTest is Test {
         homeConnector.addPool(poolId);
         homeConnector.addTranche(poolId, trancheId, "Some Name", "SYMBOL");
         homeConnector.updateMember(poolId, trancheId, user, uint(-1));
-        homeConnector.deposit(poolId, trancheId, user, amount);
+        homeConnector.transfer(poolId, trancheId, user, amount);
         // approve token
         (address token_,,) = bridgedConnector.tranches(poolId, trancheId);
         RestrictedTokenLike token = RestrictedTokenLike(token_);

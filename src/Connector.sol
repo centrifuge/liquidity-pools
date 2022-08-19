@@ -135,13 +135,14 @@ contract CentrifugeConnector {
         memberlist.updateMember(user, validUntil);
     }
 
-    function deposit(
+    function transfer(
         uint64 poolId,
         bytes16 trancheId,
         address user,
         uint256 amount
     ) public onlyRouter {
         RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
+        require(address(token) != address(0), "CentrifugeConnector/unknown-token");
         require(token.hasMember(user), "CentrifugeConnector/not-a-member");
         token.mint(user, amount);
     }

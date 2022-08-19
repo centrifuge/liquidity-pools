@@ -13,7 +13,7 @@ interface ConnectorLike {
   function addTranche(uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol) external;
   function updateMember(uint64 poolId, bytes16 trancheId, address user, uint256 validUntil) external;
   function updateTokenPrice(uint64 poolId, bytes16 trancheId, uint256 price) external;
-  function deposit(uint64 poolId, bytes16 trancheId, address user, uint256 amount) external;
+  function transfer(uint64 poolId, bytes16 trancheId, address user, uint256 amount) external;
 }
 
 contract ConnectorXCMRouter is Router, Test {
@@ -66,7 +66,7 @@ contract ConnectorXCMRouter is Router, Test {
             connector.updateTokenPrice(poolId, trancheId, price);
         } else if (ConnectorMessages.isTransfer(_msg) == true) {
             (uint64 poolId, bytes16 trancheId, address user, uint256 amount) = ConnectorMessages.parseTransfer(_msg);
-            connector.deposit(poolId, trancheId, user, amount);
+            connector.transfer(poolId, trancheId, user, amount);
         } else {
             require(false, "invalid-message");
         }

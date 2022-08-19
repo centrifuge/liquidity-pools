@@ -55,7 +55,7 @@ contract MockHomeConnector is Test {
         home.handle(CENTRIFUGE_CHAIN_DOMAIN, NONCE, "1", _message);
     }
 
-    function deposit(uint64 poolId, bytes16 trancheId, address user, uint256 amount) public  {
+    function transfer(uint64 poolId, bytes16 trancheId, address user, uint256 amount) public  {
         bytes memory _message = ConnectorMessages.formatTransfer(poolId, trancheId, user, amount);
         home.handle(CENTRIFUGE_CHAIN_DOMAIN, NONCE, "1", _message);
     }
