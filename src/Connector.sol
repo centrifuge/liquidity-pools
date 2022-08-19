@@ -147,7 +147,7 @@ contract CentrifugeConnector {
         token.mint(user, amount);
     }
 
-    function withdraw(
+    function transferTo(
         uint64 poolId,
         bytes16 trancheId,
         address user,

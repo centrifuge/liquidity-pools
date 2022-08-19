@@ -33,6 +33,7 @@ contract ConnectorTest is Test {
 
         bridgedRouter = new ConnectorXCMRouter(address(bridgedConnector), address(homeConnector), address(connectionManager));
         homeConnector.setRouter(address(bridgedRouter));
+        
         bridgedConnector.file("router", address(bridgedRouter)); 
 
         minimumDelay =  new Memberlist().minimumDelay();
@@ -124,9 +125,10 @@ contract ConnectorTest is Test {
         vm.assume(validUntil < safeAdd(block.timestamp, minimumDelay)); 
         homeConnector.addPool(poolId);
         homeConnector.addTranche(poolId, trancheId, "Some Name", "SYMBOL");
+        vm.expectRevert(bytes("invalid-validUntil"));
         homeConnector.updateMember(poolId, trancheId, user, validUntil);
 
-        vm.expectRevert(bytes("invalid-validUntil"));
+        
     }
 
     function testUpdatingMemberForNonExistentTrancheFails(uint64 poolId, bytes16 trancheId, address user, uint256 validUntil) public {
@@ -229,7 +231,7 @@ contract ConnectorTest is Test {
 
         MockHomeConnector homeConnectorDifferentOrigin = new MockHomeConnector();
         homeConnectorDifferentOrigin.setRouter(address(bridgedRouter));
-         vm.assume(validUntil > safeAdd(block.timestamp, minimumDelay));
+        vm.assume(validUntil > safeAdd(block.timestamp, minimumDelay));
 
         homeConnector.addPool(poolId);
         homeConnector.addTranche(poolId, trancheId, "Some Name", "SYMBOL");
@@ -239,11 +241,12 @@ contract ConnectorTest is Test {
         homeConnectorDifferentOrigin.transfer(poolId, trancheId, user, amount);
     }
 
-  
-    function testWithdrawalWorks(uint64 poolId, bytes16 trancheId, uint256 amount, address user) public { 
+    function testTransferToWorks(uint64 poolId, bytes16 trancheId, uint256 amount, address user) public { 
         string memory domainName = "Centrifuge";
         uint32 domainId = 3000;
         bytes32 recipient = stringToBytes32("0xefc56627233b02ea95bae7e19f648d7dcd5bb132");
+        user = address(this); // set deployer as user to approve the cnnector to transfer funds
+
         // add Centrifuge domain to router                  
         bridgedRouter.enrollRemoteRouter(domainId, recipient);
         
@@ -251,14 +254,13 @@ contract ConnectorTest is Test {
         assertEq(bridgedConnector.wards(address(this)), 1);
         bridgedConnector.file("domain", domainName, domainId);
         bridgedConnector.deny(address(this)); // revoke ward permissions to test public functions
-        
-        user = address(this); // set deployer as user to approve the cnnector to transfer funds
-        
+    
         // fund user
         homeConnector.addPool(poolId);
         homeConnector.addTranche(poolId, trancheId, "Some Name", "SYMBOL");
         homeConnector.updateMember(poolId, trancheId, user, uint(-1));
         homeConnector.transfer(poolId, trancheId, user, amount);
+
         // approve token
         (address token_,,) = bridgedConnector.tranches(poolId, trancheId);
         RestrictedTokenLike token = RestrictedTokenLike(token_);
@@ -266,31 +268,204 @@ contract ConnectorTest is Test {
 
         uint userTokenBalanceBefore = token.balanceOf(user);
 
-        // withdraw
-        bridgedConnector.withdraw(poolId, trancheId, user, amount, domainName);
+        // transferTo
+        bridgedConnector.transferTo(poolId, trancheId, user, amount, domainName);
         
         assert(homeConnector.dispatchDomain() == domainId);
         assertEq(token.balanceOf(user), (userTokenBalanceBefore - amount));
         assertEq(homeConnector.dispatchRecipient(), recipient);
         assertEq(homeConnector.dispatchCalls(), 1);
+    }
 
-        // TODO: fix assertions
+    function testTransferToUnknownDomainNameFails(uint64 poolId, bytes16 trancheId, uint256 amount, address user) public {
+        string memory domainName = "Centrifuge";
+        uint32 domainId = 3000;
+        bytes32 recipient = stringToBytes32("0xefc56627233b02ea95bae7e19f648d7dcd5bb132");
+        user = address(this); // set deployer as user to approve the cnnector to transfer funds
+
+        // add Centrifuge domain to router                  
+        bridgedRouter.enrollRemoteRouter(domainId, recipient);
+        
+        // add Centrifuge domain to connector
+        assertEq(bridgedConnector.wards(address(this)), 1);
+        bridgedConnector.file("domain", domainName, domainId);
+        bridgedConnector.deny(address(this)); // revoke ward permissions to test public functions
+    
+        // fund user
+        homeConnector.addPool(poolId);
+        homeConnector.addTranche(poolId, trancheId, "Some Name", "SYMBOL");
+        homeConnector.updateMember(poolId, trancheId, user, uint(-1));
+        homeConnector.transfer(poolId, trancheId, user, amount);
+        
+        // approve token
+        (address token_,,) = bridgedConnector.tranches(poolId, trancheId);
+        RestrictedTokenLike token = RestrictedTokenLike(token_);
+        token.approve(address(bridgedConnector), uint(-1)); // approve connector to take token
+
+        // transferTo
+        vm.expectRevert(bytes("CentrifugeConnector/domain-does-not-exist"));
+        bridgedConnector.transferTo(poolId, trancheId, user, amount, "Unknown"); // use unknown domain name
+     }
+    
+    function testTransferToUnknownDomainIDFails(uint64 poolId, bytes16 trancheId, uint256 amount, address user) public {
+        string memory domainName = "Centrifuge";
+        uint32 domainId = 3000;
+        bytes32 recipient = stringToBytes32("0xefc56627233b02ea95bae7e19f648d7dcd5bb132");
+        user = address(this); // set deployer as user to approve the cnnector to transfer funds
+
+        // add Centrifuge domain to router                  
+        bridgedRouter.enrollRemoteRouter(domainId, recipient);
+        
+        // add Centrifuge domain to connector
+        assertEq(bridgedConnector.wards(address(this)), 1);
+        bridgedConnector.file("domain", domainName, 5000); // use wrong domainID
+        bridgedConnector.deny(address(this)); // revoke ward permissions to test public functions
+    
+        // fund user
+        homeConnector.addPool(poolId);
+        homeConnector.addTranche(poolId, trancheId, "Some Name", "SYMBOL");
+        homeConnector.updateMember(poolId, trancheId, user, uint(-1));
+        homeConnector.transfer(poolId, trancheId, user, amount);
+        
+        // approve token
+        (address token_,,) = bridgedConnector.tranches(poolId, trancheId);
+        RestrictedTokenLike token = RestrictedTokenLike(token_);
+        token.approve(address(bridgedConnector), uint(-1)); // approve connector to take token
+
+        // transferTo
+        vm.expectRevert(bytes("!remote"));
+        bridgedConnector.transferTo(poolId, trancheId, user, amount, "Centrifuge");
+     }
+
+    function testTransferToNotConnectorFails(uint64 poolId, bytes16 trancheId, uint256 amount, address user) public {
+
+        string memory domainName = "Centrifuge";
+        uint32 domainId = 3000;
+        bytes32 recipient = stringToBytes32("0xefc56627233b02ea95bae7e19f648d7dcd5bb132");
+        user = address(this); // set deployer as user to approve the cnnector to transfer funds
+
+        // call from an address othe rthen bridged Connector   
+        vm.expectRevert(bytes("ConnectorXCMRouter/only-connector-allowed-to-call"));           
+        bridgedRouter.sendMessage(domainId, poolId, trancheId, amount, user);
+     }
+    
+    function testTransferToNotEnoughBalanceFails(uint64 poolId, bytes16 trancheId, uint256 amount, address user) public {
+        vm.assume(amount > 0);
+        string memory domainName = "Centrifuge";
+        uint32 domainId = 3000;
+        bytes32 recipient = stringToBytes32("0xefc56627233b02ea95bae7e19f648d7dcd5bb132");
+        user = address(this); // set deployer as user to approve the cnnector to transfer funds
+
+        // add Centrifuge domain to router                  
+        bridgedRouter.enrollRemoteRouter(domainId, recipient);
+        
+        // add Centrifuge domain to connector
+        assertEq(bridgedConnector.wards(address(this)), 1);
+        bridgedConnector.file("domain", domainName, domainId); // use wrong domainID
+        bridgedConnector.deny(address(this)); // revoke ward permissions to test public functions
+    
+        // fund user
+        homeConnector.addPool(poolId);
+        homeConnector.addTranche(poolId, trancheId, "Some Name", "SYMBOL");
+        homeConnector.updateMember(poolId, trancheId, user, uint(-1));
+         // do not fund user
+        
+        // approve token
+        (address token_,,) = bridgedConnector.tranches(poolId, trancheId);
+        RestrictedTokenLike token = RestrictedTokenLike(token_);
+        token.approve(address(bridgedConnector), uint(-1)); // approve connector to take token
+
+        // transferTo
+        vm.expectRevert(bytes("CentrifugeConnector/insufficient-balance"));
+        bridgedConnector.transferTo(poolId, trancheId, user, amount, "Centrifuge");
+     }
+
+    function testTransferToTokenDoesNotExistFails(uint64 poolId, bytes16 trancheId, uint256 amount, address user) public {
+        string memory domainName = "Centrifuge";
+        uint32 domainId = 3000;
+        bytes32 recipient = stringToBytes32("0xefc56627233b02ea95bae7e19f648d7dcd5bb132");
+        user = address(this); // set deployer as user to approve the cnnector to transfer funds
+
+        // add Centrifuge domain to router                  
+        bridgedRouter.enrollRemoteRouter(domainId, recipient);
+        
+        // add Centrifuge domain to connector
+        assertEq(bridgedConnector.wards(address(this)), 1);
+        bridgedConnector.file("domain", domainName, domainId); // use wrong domainID
+        bridgedConnector.deny(address(this)); // revoke ward permissions to test public functions
+    
+
+        // transferTo
+        vm.expectRevert(bytes("CentrifugeConnector/unknown-token"));
+        bridgedConnector.transferTo(poolId, trancheId, user, amount, "Centrifuge");
+     }
+
+     function testTransferToDomainNotEnrolledFails(uint64 poolId, bytes16 trancheId, uint256 amount, address user) public {
+        string memory domainName = "Centrifuge";
+        uint32 domainId = 3000;
+        bytes32 recipient = stringToBytes32("0xefc56627233b02ea95bae7e19f648d7dcd5bb132");
+        user = address(this); // set deployer as user to approve the cnnector to transfer funds
+
+        // do not enroll router               
+        
+        // add Centrifuge domain to connector
+        assertEq(bridgedConnector.wards(address(this)), 1);
+        bridgedConnector.file("domain", domainName, domainId);
+        bridgedConnector.deny(address(this)); // revoke ward permissions to test public functions
+    
+        // fund user
+        homeConnector.addPool(poolId);
+        homeConnector.addTranche(poolId, trancheId, "Some Name", "SYMBOL");
+        homeConnector.updateMember(poolId, trancheId, user, uint(-1));
+        homeConnector.transfer(poolId, trancheId, user, amount);
+        
+        // approve token
+        (address token_,,) = bridgedConnector.tranches(poolId, trancheId);
+        RestrictedTokenLike token = RestrictedTokenLike(token_);
+        token.approve(address(bridgedConnector), uint(-1)); // approve connector to take token
+
+        // transferTo
+        vm.expectRevert(bytes("!remote"));
+        bridgedConnector.transferTo(poolId, trancheId, user, amount, domainName); // use unknown domain name
+     }
+
+    function testTransferNoAllowanceFails(uint64 poolId, bytes16 trancheId, uint256 amount, address user) public {
+        vm.assume(amount > 0);
+        string memory domainName = "Centrifuge";
+        uint32 domainId = 3000;
+        bytes32 recipient = stringToBytes32("0xefc56627233b02ea95bae7e19f648d7dcd5bb132");
+        user = address(this); // set deployer as user to approve the cnnector to transfer funds
+
+         // add Centrifuge domain to router                  
+        bridgedRouter.enrollRemoteRouter(domainId, recipient);             
+        
+        // add Centrifuge domain to connector
+        assertEq(bridgedConnector.wards(address(this)), 1);
+        bridgedConnector.file("domain", domainName, domainId);
+        bridgedConnector.deny(address(this)); // revoke ward permissions to test public functions
+    
+        // fund user
+        homeConnector.addPool(poolId);
+        homeConnector.addTranche(poolId, trancheId, "Some Name", "SYMBOL");
+        homeConnector.updateMember(poolId, trancheId, user, uint(-1));
+        homeConnector.transfer(poolId, trancheId, user, amount);
+        
+        // approve token
+        (address token_,,) = bridgedConnector.tranches(poolId, trancheId);
+        RestrictedTokenLike token = RestrictedTokenLike(token_);
+        //token.approve(address(bridgedConnector), uint(-1)); // approve connector to take token
+
+        // transferTo
+        vm.expectRevert(bytes("cent/insufficient-allowance"));
+        bridgedConnector.transferTo(poolId, trancheId, user, amount, domainName); // do not approve connector
+    }
+
+     // TODO: fix & add assertions to transferTo tests - currently edge case that makes the assertion fail
         //(uint64 poolIdDispatchCall, bytes16 trancheIdDispatchCall, address userDispatchCall, uint256 amountDispatchCall) =  ConnectorMessages.parseTransfer(toBytes29(homeConnector.dispatchMessage()));
         // assert(poolIdDispatchCall == poolId);
         // assertEq(trancheIdDispatchCall,trancheId);
         // assertEq(userDispatchCall, user);
         // assertEq(amountDispatchCall, amount);
-    }
-
-
-    // function testWithdrawalFailsUnknownDomainConnector(uint64 poolId) public { }
-    // function testWithdrawalFailsUnknownDomainRouter(uint64 poolId) public { }
-    // function testWithdrawalFailsUNoPermissions(uint64 poolId) public { }
-    // function testWithdrawalFailsNotConnector(uint64 poolId) public { }
-    // function testWithdrawalFailsNotEnoughBalance(uint64 poolId) public { }
-    // function testWithdrawalFailsNotEnoughBalance(uint64 poolId) public { }
-    // function testWithdrawalFailsPoolDoesNotExist(uint64 poolId) public { }
-    // function fails domain does not exist
 
 
     // helpers 
@@ -322,22 +497,6 @@ contract ConnectorTest is Test {
         return string(bytesArray);
     }
 
-    // Convert an hexadecimal string to raw bytes
-    function fromHex(string memory s) internal pure returns (bytes memory) {
-        bytes memory ss = bytes(s);
-        require(ss.length % 2 == 0); // length must be even
-        bytes memory r = new bytes(ss.length / 2);
-
-        for (uint256 i = 0; i < ss.length / 2; ++i) {
-            r[i] = bytes1(
-                fromHexChar(uint8(ss[2 * i])) *
-                    16 +
-                    fromHexChar(uint8(ss[2 * i + 1]))
-            );
-        }
-        return r;
-    }
-
     function toBytes32(bytes memory f) internal pure returns (bytes16 fc) {
         assembly {
           fc := mload(add(f, 32))
@@ -345,26 +504,13 @@ contract ConnectorTest is Test {
         return fc;
     }
 
-        function toBytes29(bytes memory f) internal pure returns (bytes29 fc) {
+    function toBytes29(bytes memory f) internal pure returns (bytes29 fc) {
         assembly {
           fc := mload(add(f, 29))
         }
         return fc;
     }
 
-   // Convert an hexadecimal character to their value
-    function fromHexChar(uint8 c) internal pure returns (uint8) {
-        if (bytes1(c) >= bytes1("0") && bytes1(c) <= bytes1("9")) {
-            return c - uint8(bytes1("0"));
-        }
-        if (bytes1(c) >= bytes1("a") && bytes1(c) <= bytes1("f")) {
-            return 10 + c - uint8(bytes1("a"));
-        }
-        if (bytes1(c) >= bytes1("A") && bytes1(c) <= bytes1("F")) {
-            return 10 + c - uint8(bytes1("A"));
-        }
-        revert("Failed to encode hex char");
-    }
 }
 
  
