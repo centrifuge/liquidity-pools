@@ -2,7 +2,7 @@
 pragma solidity ^0.7.6;
 
 import "@summa-tx/memview-sol/contracts/TypedMemView.sol";
-import {Utils} from "src/Utils.sol";
+import {MessageUtils} from "src/utils/MessageUtils.sol";
 
 library ConnectorMessages {
     using TypedMemView for bytes;
@@ -49,7 +49,7 @@ library ConnectorMessages {
      * 59-91: tokenSymbol (string = 32 bytes)
      */
     function formatAddTranche(uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol) internal pure returns (bytes memory) {
-        return abi.encodePacked(uint8(Call.AddTranche), poolId, trancheId, Utils.stringToBytes32(tokenName), Utils.stringToBytes32(tokenSymbol));
+        return abi.encodePacked(uint8(Call.AddTranche), poolId, trancheId, MessageUtils.stringToBytes32(tokenName), MessageUtils.stringToBytes32(tokenSymbol));
     }
 
     function isAddTranche(bytes29 _msg) internal pure returns (bool) {
@@ -59,8 +59,8 @@ library ConnectorMessages {
     function parseAddTranche(bytes29 _msg) internal pure returns (uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol) {
         poolId = uint64(_msg.indexUint(1, 8));
         trancheId = bytes16(_msg.index(9, 16));
-        tokenName = Utils.bytes32ToString(bytes32(_msg.index(25, 32)));
-        tokenSymbol = Utils.bytes32ToString(bytes32(_msg.index(57, 32)));
+        tokenName = MessageUtils.bytes32ToString(bytes32(_msg.index(25, 32)));
+        tokenSymbol = MessageUtils.bytes32ToString(bytes32(_msg.index(57, 32)));
     }
 
     /**

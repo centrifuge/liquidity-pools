@@ -1,21 +1,20 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.7.6;
 
-library Utils {
+library MessageUtils {
 
-    // ------/ TYPE CONVERSION /-----
-
+    // Convert string to bytes32
     function stringToBytes32(string memory source) internal pure returns (bytes32 result) {
         bytes memory tempEmptyStringTest = bytes(source);
         if (tempEmptyStringTest.length == 0) {
             return 0x0;
         }
-
         assembly {
             result := mload(add(source, 32))
         }
     }
 
+    // Convert bytes32 to a string
     function bytes32ToString(bytes32 _bytes32) internal pure returns (string memory) {
         uint8 i = 0;
         while(i < 32 && _bytes32[i] != 0) {
@@ -47,7 +46,6 @@ library Utils {
         bytes memory ss = bytes(s);
         require(ss.length % 2 == 0); // length must be even
         bytes memory r = new bytes(ss.length / 2);
-
         for (uint256 i = 0; i < ss.length / 2; ++i) {
             r[i] = bytes1(
                 fromHexChar(uint8(ss[2 * i])) *
@@ -58,6 +56,7 @@ library Utils {
         return r;
     }
 
+    // Convert raw bytes to bytes16
     function toBytes16(bytes memory f) internal pure returns (bytes16 fc) {
         assembly {
           fc := mload(add(f, 16))

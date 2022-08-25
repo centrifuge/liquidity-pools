@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity >=0.7.6;
 
-import {Utils} from "src/Utils.sol";
-
 interface MemberlistLike {
     function updateMember(address usr, uint validUntil) external;
     function members(address usr) external view returns (uint);
