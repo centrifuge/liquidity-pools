@@ -25,7 +25,7 @@ contract Memberlist {
     }
 
     function updateMember(address usr, uint validUntil) public auth {
-        require((Utils.safeAdd(block.timestamp, minimumDelay)) < validUntil, "invalid-validUntil");
+        require((safeAdd(block.timestamp, minimumDelay)) < validUntil, "invalid-validUntil");
         members[usr] = validUntil;
      }
 
@@ -44,5 +44,10 @@ contract Memberlist {
             return true;
         } 
         return false;
+    }
+
+    // --- MATH ---
+    function safeAdd(uint x, uint y) internal pure returns (uint z) {
+        require((z = x + y) >= x, "math-add-overflow");
     }
 }

@@ -3,12 +3,6 @@ pragma solidity ^0.7.6;
 
 library Utils {
 
-    // -----/ MATH /-----
-
-    function safeAdd(uint x, uint y) internal pure returns (uint z) {
-        require((z = x + y) >= x, "math-add-overflow");
-    }
-
     // ------/ TYPE CONVERSION /-----
 
     function stringToBytes32(string memory source) internal pure returns (bytes32 result) {

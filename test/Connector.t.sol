@@ -83,7 +83,7 @@ contract ConnectorTest is Test {
     }
 
     function testUpdatingMemberWorks(uint64 poolId, bytes16 trancheId, address user, uint256 validUntil) public {
-        vm.assume(validUntil > Utils.safeAdd(block.timestamp, new Memberlist().minimumDelay()));
+        vm.assume(validUntil > safeAdd(block.timestamp, new Memberlist().minimumDelay()));
         vm.assume(user != address(0));
 
         homeConnector.addPool(poolId);
@@ -99,7 +99,7 @@ contract ConnectorTest is Test {
     }
 
     function testUpdatingMemberBeforeMinimumDelayFails(uint64 poolId, bytes16 trancheId, address user, uint256 validUntil) public {
-        vm.assume(validUntil < Utils.safeAdd(block.timestamp, new Memberlist().minimumDelay()));
+        vm.assume(validUntil < safeAdd(block.timestamp, new Memberlist().minimumDelay()));
         vm.assume(user != address(0));
 
         homeConnector.addPool(poolId);
@@ -165,4 +165,9 @@ contract ConnectorTest is Test {
     function testTransferToAsNonRouterFails(uint64 poolId) public { }
     function testTransferToForNonExistentPoolFails(uint64 poolId) public { }
     function testTransferToForNonExistentTrancheFails(uint64 poolId) public { }
+
+    // --- MATH ---
+    function safeAdd(uint x, uint y) internal pure returns (uint z) {
+        require((z = x + y) >= x, "math-add-overflow");
+    }
 }
