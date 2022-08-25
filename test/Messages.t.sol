@@ -4,7 +4,7 @@ pragma abicoder v2;
 
 import {TypedMemView} from "@summa-tx/memview-sol/contracts/TypedMemView.sol";
 import {ConnectorMessages} from "src/Messages.sol";
-import {Utils} from "src/Utils.sol";
+import {TestUtils} from "test/utils/TestUtils.sol";
 import "forge-std/Test.sol";
 
 contract MessagesTest is Test {
@@ -17,32 +17,32 @@ contract MessagesTest is Test {
     function testAddPoolEncoding() public {
         assertEq(
             ConnectorMessages.formatAddPool(0),
-            Utils.fromHex("010000000000000000")
+            TestUtils.fromHex("010000000000000000")
         );       
         assertEq(
             ConnectorMessages.formatAddPool(1),
-            Utils.fromHex("010000000000000001")
+            TestUtils.fromHex("010000000000000001")
         );
         assertEq(
             ConnectorMessages.formatAddPool(12378532),
-            Utils.fromHex("010000000000bce1a4")
+            TestUtils.fromHex("010000000000bce1a4")
         );
     }
 
     function testAddPoolDecoding() public {
-        uint64 actualPoolId1 = ConnectorMessages.parseAddPool(Utils.fromHex("010000000000000000").ref(0));
+        uint64 actualPoolId1 = ConnectorMessages.parseAddPool(TestUtils.fromHex("010000000000000000").ref(0));
         assertEq(
             uint256(actualPoolId1),
             0
         );
      
-        uint64 actualPoolId2 = ConnectorMessages.parseAddPool(Utils.fromHex("010000000000000001").ref(0));
+        uint64 actualPoolId2 = ConnectorMessages.parseAddPool(TestUtils.fromHex("010000000000000001").ref(0));
         assertEq(
             uint256(actualPoolId2),
             1
         );
 
-        uint64 actualPoolId3 = ConnectorMessages.parseAddPool(Utils.fromHex("010000000000bce1a4").ref(0));
+        uint64 actualPoolId3 = ConnectorMessages.parseAddPool(TestUtils.fromHex("010000000000bce1a4").ref(0));
         assertEq(
             uint256(actualPoolId3),
             12378532
@@ -57,15 +57,15 @@ contract MessagesTest is Test {
 
     function testAddTrancheEncoding() public {
         assertEq(
-            ConnectorMessages.formatAddTranche(0, Utils.toBytes16(Utils.fromHex("010000000000000064")), "Some Name", "SYMBOL"),
-            Utils.fromHex("02000000000000000000000000000000000000000000000009536f6d65204e616d65000000000000000000000000000000000000000000000053594d424f4c0000000000000000000000000000000000000000000000000000")
+            ConnectorMessages.formatAddTranche(0, TestUtils.toBytes16(TestUtils.fromHex("010000000000000064")), "Some Name", "SYMBOL"),
+            TestUtils.fromHex("02000000000000000000000000000000000000000000000009536f6d65204e616d65000000000000000000000000000000000000000000000053594d424f4c0000000000000000000000000000000000000000000000000000")
         );
     }
 
     function testAddTrancheDecoding() public returns (bytes memory) {
-        (uint64 decodedPoolId, bytes16 decodedTrancheId, string memory decodedTokenName, string memory decodedTokenSymbol) = ConnectorMessages.parseAddTranche(Utils.fromHex("02000000000000000000000000000000000000000000000009536f6d65204e616d65000000000000000000000000000000000000000000000053594d424f4c0000000000000000000000000000000000000000000000000000").ref(0));
+        (uint64 decodedPoolId, bytes16 decodedTrancheId, string memory decodedTokenName, string memory decodedTokenSymbol) = ConnectorMessages.parseAddTranche(TestUtils.fromHex("02000000000000000000000000000000000000000000000009536f6d65204e616d65000000000000000000000000000000000000000000000053594d424f4c0000000000000000000000000000000000000000000000000000").ref(0));
         assertEq(uint(decodedPoolId), uint(0));
-        assertEq(decodedTrancheId, Utils.toBytes16(Utils.fromHex("010000000000000064")));
+        assertEq(decodedTrancheId, TestUtils.toBytes16(TestUtils.fromHex("010000000000000064")));
         assertEq(decodedTokenName, "Some Name"); 
         assertEq(decodedTokenSymbol, "SYMBOL");
     }
@@ -86,21 +86,21 @@ contract MessagesTest is Test {
         // Comparing raw input to output can erroneously fail when a byte string is given. 
         // Intended behaviour is that byte strings will be treated as bytes and converted to strings instead of treated as strings themselves.
         // This conversion from string to bytes32 to string is used to simulate this intended behaviour.
-        assertEq(decodedTokenName, Utils.bytes32ToString(Utils.stringToBytes32(tokenName)));
-        assertEq(decodedTokenSymbol, Utils.bytes32ToString(Utils.stringToBytes32(tokenSymbol)));
+        assertEq(decodedTokenName, TestUtils.bytes32ToString(TestUtils.stringToBytes32(tokenName)));
+        assertEq(decodedTokenSymbol, TestUtils.bytes32ToString(TestUtils.stringToBytes32(tokenSymbol)));
     }
 
     function testUpdateMemberEncoding() public returns (bytes memory) {
         assertEq(
-            ConnectorMessages.formatUpdateMember(5, Utils.toBytes16(Utils.fromHex("010000000000000003")), 0x225ef95fa90f4F7938A5b34234d14768cB4263dd, 1657870537), 
-            Utils.fromHex("04000000000000000500000000000000000000000000000009225ef95fa90f4f7938a5b34234d14768cb4263dd0000000000000000000000000000000000000000000000000000000062d118c9")
+            ConnectorMessages.formatUpdateMember(5, TestUtils.toBytes16(TestUtils.fromHex("010000000000000003")), 0x225ef95fa90f4F7938A5b34234d14768cB4263dd, 1657870537), 
+            TestUtils.fromHex("04000000000000000500000000000000000000000000000009225ef95fa90f4f7938a5b34234d14768cb4263dd0000000000000000000000000000000000000000000000000000000062d118c9")
             );
     }
 
     function testUpdateMemberDecoding() public returns (bytes memory) {
-        (uint64 decodedPoolId, bytes16 decodedTrancheId, address decodedUser, uint256 decodedValidUntil) = ConnectorMessages.parseUpdateMember(Utils.fromHex("04000000000000000500000000000000000000000000000009225ef95fa90f4f7938a5b34234d14768cb4263dd0000000000000000000000000000000000000000000000000000000062d118c9").ref(0));
+        (uint64 decodedPoolId, bytes16 decodedTrancheId, address decodedUser, uint256 decodedValidUntil) = ConnectorMessages.parseUpdateMember(TestUtils.fromHex("04000000000000000500000000000000000000000000000009225ef95fa90f4f7938a5b34234d14768cb4263dd0000000000000000000000000000000000000000000000000000000062d118c9").ref(0));
         assertEq(uint(decodedPoolId), uint(5));
-        assertEq(decodedTrancheId, Utils.toBytes16(Utils.fromHex("010000000000000003")));
+        assertEq(decodedTrancheId, TestUtils.toBytes16(TestUtils.fromHex("010000000000000003")));
         assertEq(decodedUser, 0x225ef95fa90f4F7938A5b34234d14768cB4263dd);
         assertEq(decodedValidUntil, uint(1657870537));
     }
@@ -131,15 +131,15 @@ contract MessagesTest is Test {
 
     function testUpdateTokenPriceEncoding() public returns (bytes memory) {
         assertEq(
-            ConnectorMessages.formatUpdateTokenPrice(3, Utils.toBytes16(Utils.fromHex("010000000000000005")), 100), 
-            Utils.fromHex("030000000000000003000000000000000000000000000000090000000000000000000000000000000000000000000000000000000000000064")
+            ConnectorMessages.formatUpdateTokenPrice(3, TestUtils.toBytes16(TestUtils.fromHex("010000000000000005")), 100), 
+            TestUtils.fromHex("030000000000000003000000000000000000000000000000090000000000000000000000000000000000000000000000000000000000000064")
             );
     }
 
       function testUpdateTokenPriceDecoding() public returns (bytes memory) {
-        (uint64 decodedPoolId, bytes16 decodedTrancheId, uint256 decodedPrice) = ConnectorMessages.parseUpdateTokenPrice(Utils.fromHex("030000000000000003000000000000000000000000000000090000000000000000000000000000000000000000000000000000000000000064").ref(0));
+        (uint64 decodedPoolId, bytes16 decodedTrancheId, uint256 decodedPrice) = ConnectorMessages.parseUpdateTokenPrice(TestUtils.fromHex("030000000000000003000000000000000000000000000000090000000000000000000000000000000000000000000000000000000000000064").ref(0));
         assertEq(uint(decodedPoolId), uint(3));
-        assertEq(decodedTrancheId, Utils.toBytes16(Utils.fromHex("010000000000000005")));
+        assertEq(decodedTrancheId, TestUtils.toBytes16(TestUtils.fromHex("010000000000000005")));
         assertEq(decodedPrice, uint(100));
     }
 

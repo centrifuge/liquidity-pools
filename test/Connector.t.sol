@@ -8,7 +8,7 @@ import { RestrictedTokenLike } from "src/token/restricted.sol";
 import { MemberlistLike, Memberlist } from "src/token/memberlist.sol";
 import { MockHomeConnector } from "./mock/MockHomeConnector.sol";
 import { ConnectorNomadRouter } from "src/routers/nomad/Router.sol";
-import {Utils} from "src/Utils.sol";
+import {TestUtils} from "test/utils/TestUtils.sol";
 import "forge-std/Test.sol";
 
 contract ConnectorTest is Test {
@@ -54,8 +54,8 @@ contract ConnectorTest is Test {
         // Comparing raw input to output can erroneously fail when a byte string is given. 
         // Intended behaviour is that byte strings will be treated as bytes and converted to strings instead of treated as strings themselves.
         // This conversion from string to bytes32 to string is used to simulate this intended behaviour.
-        assertEq(token.name(), Utils.bytes32ToString(Utils.stringToBytes32(tokenName)));
-        assertEq(token.symbol(), Utils.bytes32ToString(Utils.stringToBytes32(tokenSymbol)));
+        assertEq(token.name(), TestUtils.bytes32ToString(TestUtils.stringToBytes32(tokenName)));
+        assertEq(token.symbol(), TestUtils.bytes32ToString(TestUtils.stringToBytes32(tokenSymbol)));
     }
 
     function testAddingMultipleTranchesWorks(uint64 poolId, bytes16[] calldata trancheIds, string memory tokenName, string memory tokenSymbol) public {
