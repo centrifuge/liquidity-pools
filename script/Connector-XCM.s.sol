@@ -17,7 +17,7 @@ contract ConnectorXCMScript is Script {
         address memberlistFactory_ = address(new MemberlistFactory());
         CentrifugeConnector connector = new CentrifugeConnector(tokenFactory_, memberlistFactory_);
 
-        ConnectorXCMRouter router = new ConnectorXCMRouter(address(connector), address(0x8c01f5aefdc2243742d312a29326ef44120ff965));
+        ConnectorXCMRouter router = new ConnectorXCMRouter(address(connector), address(0x8c01F5aefDc2243742d312a29326ef44120fF965));
         connector.file("router", address(router));
         vm.stopBroadcast();
     }
