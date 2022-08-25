@@ -14,3 +14,5 @@ fuzz_runs = 1000
 
 [push_to_main]
 fuzz_runs = 50000
+fuzz_max_global_rejects = 262144
+fuzz_max_local_rejects = 4096
