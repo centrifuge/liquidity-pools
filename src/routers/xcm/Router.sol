@@ -22,6 +22,8 @@ contract ConnectorXCMRouter {
 
     address immutable centrifugeChainOrigin;
 
+    event Pong(address indexed origin);
+
     constructor(address connector_, address centrifugeChainOrigin_) {
         connector = ConnectorLike(connector_);
         centrifugeChainOrigin = centrifugeChainOrigin_;
@@ -30,6 +32,28 @@ contract ConnectorXCMRouter {
     modifier onlyCentrifugeChainOrigin() {
         require(msg.sender == address(centrifugeChainOrigin), "ConnectorXCMRouter/invalid-origin");
         _;
+    }
+
+    // TODO: re-add onlyCentrifugeChainOrigin
+    function handleUnauthenticated(
+        bytes memory _message
+    ) external  {
+        bytes29 _msg = _message.ref(0);
+        if (ConnectorMessages.isAddPool(_msg) == true) {
+            uint64 poolId = ConnectorMessages.parseAddPool(_msg);
+            connector.addPool(poolId);
+        } else if (ConnectorMessages.isAddTranche(_msg) == true) {
+            (uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol) = ConnectorMessages.parseAddTranche(_msg);
+            connector.addTranche(poolId, trancheId, tokenName, tokenSymbol);
+        } else if (ConnectorMessages.isUpdateMember(_msg) == true) {
+            (uint64 poolId, bytes16 trancheId, address user, uint256 amount) = ConnectorMessages.parseUpdateMember(_msg);
+            connector.updateMember(poolId, trancheId, user, amount);
+        } else if (ConnectorMessages.isUpdateTokenPrice(_msg) == true) {
+            (uint64 poolId, bytes16 trancheId, uint256 price) = ConnectorMessages.parseUpdateTokenPrice(_msg);
+            connector.updateTokenPrice(poolId, trancheId, price);
+        } else {
+            require(false, "invalid-message");
+        }
     }
 
     function handle(
@@ -54,7 +78,12 @@ contract ConnectorXCMRouter {
     }
 
     // TODO: For testing purposes. Remove once router integration is complete
-    function ping() public pure returns (string memory){
-        return "pong";
+    function ping() external {
+        emit Pong(msg.sender);
+    }
+
+    // TODO: For testing purposes. Remove once router integration is complete
+    function testThatAnErrorIsShown() external {
+        require(1 == 2, "explicit-error");
     }
 }
