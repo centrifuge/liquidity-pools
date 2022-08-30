@@ -243,7 +243,7 @@ contract ConnectorTest is Test {
         homeConnectorDifferentOrigin.transfer(poolId, trancheId, user, amount);
     }
 
-    function testTransferToWorks(uint64 poolId, bytes16 trancheId, uint256 amount, address user) public { 
+    function testTransferWorks(uint64 poolId, bytes16 trancheId, uint256 amount, address user) public { 
         string memory domainName = "Centrifuge";
         uint32 domainId = 3000;
         bytes32 recipient = stringToBytes32("0xefc56627233b02ea95bae7e19f648d7dcd5bb132");
@@ -270,8 +270,8 @@ contract ConnectorTest is Test {
 
         uint userTokenBalanceBefore = token.balanceOf(user);
 
-        // transferTo
-        bridgedConnector.transferTo(poolId, trancheId, user, amount, domainName);
+        // transfer
+        bridgedConnector.transfer(poolId, trancheId, user, amount, domainName);
         
         assert(homeConnector.dispatchDomain() == domainId);
         assertEq(token.balanceOf(user), (userTokenBalanceBefore - amount));
@@ -279,7 +279,7 @@ contract ConnectorTest is Test {
         assertEq(homeConnector.dispatchCalls(), 1);
     }
 
-    function testTransferToUnknownDomainNameFails(uint64 poolId, bytes16 trancheId, uint256 amount, address user) public {
+    function testTransferUnknownDomainNameFails(uint64 poolId, bytes16 trancheId, uint256 amount, address user) public {
         string memory domainName = "Centrifuge";
         uint32 domainId = 3000;
         bytes32 recipient = stringToBytes32("0xefc56627233b02ea95bae7e19f648d7dcd5bb132");
@@ -304,12 +304,12 @@ contract ConnectorTest is Test {
         RestrictedTokenLike token = RestrictedTokenLike(token_);
         token.approve(address(bridgedConnector), uint(-1)); // approve connector to take token
 
-        // transferTo
+        // transfer
         vm.expectRevert(bytes("CentrifugeConnector/domain-does-not-exist"));
-        bridgedConnector.transferTo(poolId, trancheId, user, amount, "Unknown"); // use unknown domain name
+        bridgedConnector.transfer(poolId, trancheId, user, amount, "Unknown"); // use unknown domain name
      }
     
-    function testTransferToUnknownDomainIDFails(uint64 poolId, bytes16 trancheId, uint256 amount, address user) public {
+    function testTransferUnknownDomainIDFails(uint64 poolId, bytes16 trancheId, uint256 amount, address user) public {
         string memory domainName = "Centrifuge";
         uint32 domainId = 3000;
         bytes32 recipient = stringToBytes32("0xefc56627233b02ea95bae7e19f648d7dcd5bb132");
@@ -334,12 +334,12 @@ contract ConnectorTest is Test {
         RestrictedTokenLike token = RestrictedTokenLike(token_);
         token.approve(address(bridgedConnector), uint(-1)); // approve connector to take token
 
-        // transferTo
+        // transfer
         vm.expectRevert(bytes("!remote"));
-        bridgedConnector.transferTo(poolId, trancheId, user, amount, "Centrifuge");
+        bridgedConnector.transfer(poolId, trancheId, user, amount, "Centrifuge");
      }
 
-    function testTransferToNotConnectorFails(uint64 poolId, bytes16 trancheId, uint256 amount, address user) public {
+    function testTransferNotConnectorFails(uint64 poolId, bytes16 trancheId, uint256 amount, address user) public {
 
         string memory domainName = "Centrifuge";
         uint32 domainId = 3000;
@@ -351,7 +351,7 @@ contract ConnectorTest is Test {
         bridgedRouter.sendMessage(domainId, poolId, trancheId, amount, user);
      }
     
-    function testTransferToNotEnoughBalanceFails(uint64 poolId, bytes16 trancheId, uint256 amount, address user) public {
+    function testTransferNotEnoughBalanceFails(uint64 poolId, bytes16 trancheId, uint256 amount, address user) public {
         vm.assume(amount > 0);
         string memory domainName = "Centrifuge";
         uint32 domainId = 3000;
@@ -377,12 +377,12 @@ contract ConnectorTest is Test {
         RestrictedTokenLike token = RestrictedTokenLike(token_);
         token.approve(address(bridgedConnector), uint(-1)); // approve connector to take token
 
-        // transferTo
+        // transfer
         vm.expectRevert(bytes("CentrifugeConnector/insufficient-balance"));
-        bridgedConnector.transferTo(poolId, trancheId, user, amount, "Centrifuge");
+        bridgedConnector.transfer(poolId, trancheId, user, amount, "Centrifuge");
      }
 
-    function testTransferToTokenDoesNotExistFails(uint64 poolId, bytes16 trancheId, uint256 amount, address user) public {
+    function testTransferTokenDoesNotExistFails(uint64 poolId, bytes16 trancheId, uint256 amount, address user) public {
         string memory domainName = "Centrifuge";
         uint32 domainId = 3000;
         bytes32 recipient = stringToBytes32("0xefc56627233b02ea95bae7e19f648d7dcd5bb132");
@@ -397,12 +397,12 @@ contract ConnectorTest is Test {
         bridgedConnector.deny(address(this)); // revoke ward permissions to test public functions
     
 
-        // transferTo
+        // transfer
         vm.expectRevert(bytes("CentrifugeConnector/unknown-token"));
-        bridgedConnector.transferTo(poolId, trancheId, user, amount, "Centrifuge");
+        bridgedConnector.transfer(poolId, trancheId, user, amount, "Centrifuge");
      }
 
-     function testTransferToDomainNotEnrolledFails(uint64 poolId, bytes16 trancheId, uint256 amount, address user) public {
+     function testTransferDomainNotEnrolledFails(uint64 poolId, bytes16 trancheId, uint256 amount, address user) public {
         string memory domainName = "Centrifuge";
         uint32 domainId = 3000;
         bytes32 recipient = stringToBytes32("0xefc56627233b02ea95bae7e19f648d7dcd5bb132");
@@ -426,9 +426,9 @@ contract ConnectorTest is Test {
         RestrictedTokenLike token = RestrictedTokenLike(token_);
         token.approve(address(bridgedConnector), uint(-1)); // approve connector to take token
 
-        // transferTo
+        // transfer
         vm.expectRevert(bytes("!remote"));
-        bridgedConnector.transferTo(poolId, trancheId, user, amount, domainName); // use unknown domain name
+        bridgedConnector.transfer(poolId, trancheId, user, amount, domainName); // use unknown domain name
      }
 
     function testTransferNoAllowanceFails(uint64 poolId, bytes16 trancheId, uint256 amount, address user) public {
@@ -457,9 +457,9 @@ contract ConnectorTest is Test {
         RestrictedTokenLike token = RestrictedTokenLike(token_);
         //token.approve(address(bridgedConnector), uint(-1)); // approve connector to take token
 
-        // transferTo
+        // transfer
         vm.expectRevert(bytes("cent/insufficient-allowance"));
-        bridgedConnector.transferTo(poolId, trancheId, user, amount, domainName); // do not approve connector
+        bridgedConnector.transfer(poolId, trancheId, user, amount, domainName); // do not approve connector
     }
 
      // TODO: fix & add assertions to transferTo tests - currently edge case that makes the assertion fail

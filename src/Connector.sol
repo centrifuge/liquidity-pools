@@ -135,7 +135,7 @@ contract CentrifugeConnector {
         memberlist.updateMember(user, validUntil);
     }
 
-    function transfer(
+    function handleTransfer(
         uint64 poolId,
         bytes16 trancheId,
         address user,
@@ -147,7 +147,7 @@ contract CentrifugeConnector {
         token.mint(user, amount);
     }
 
-    function transferTo(
+    function transfer(
         uint64 poolId,
         bytes16 trancheId,
         address user,
