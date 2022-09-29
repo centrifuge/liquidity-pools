@@ -37,7 +37,7 @@ contract ConnectorXCMRouter {
     // TODO: re-add onlyCentrifugeChainOrigin
     function handleUnauthenticated(
         bytes memory _message
-    ) external  {
+    ) external {
         bytes29 _msg = _message.ref(0);
         if (ConnectorMessages.isAddPool(_msg) == true) {
             uint64 poolId = ConnectorMessages.parseAddPool(_msg);
