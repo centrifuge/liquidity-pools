@@ -6,4 +6,5 @@
 	url = https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable
 [submodule "lib/memview-sol"]
 	path = lib/memview-sol
-	url = https://github.com/@summa-tx/memview-sol
+	url = https://github.com/summa-tx/memview-sol
+	branch = v2.1.1
