@@ -2,7 +2,7 @@
 pragma solidity ^0.7.6;
 pragma abicoder v2;
 
-import {TypedMemView} from "@summa-tx/memview-sol/contracts/TypedMemView.sol";
+import {TypedMemView} from "memview-sol/TypedMemView.sol";
 import {ConnectorMessages} from "../../Messages.sol";
 
 interface ConnectorLike {
@@ -20,9 +20,7 @@ contract ConnectorXCMRouter {
 
     ConnectorLike public immutable connector;
 
-    address immutable centrifugeChainOrigin;
-
-    event Pong(address indexed origin);
+    address centrifugeChainOrigin;
 
     constructor(address connector_, address centrifugeChainOrigin_) {
         connector = ConnectorLike(connector_);

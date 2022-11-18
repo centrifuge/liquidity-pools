@@ -21,10 +21,8 @@ contract ConnectorTest is Test {
         address memberlistFactory_ = address(new MemberlistFactory());
 
         bridgedConnector = new CentrifugeConnector(tokenFactory_, memberlistFactory_);
-        bridgedRouter = new ConnectorXCMRouter(address(bridgedConnector), address(0));
-        bridgedConnector.file("router", address(bridgedRouter));
-
-        homeConnector = new MockHomeConnector(address(bridgedRouter));
+        homeConnector = new MockHomeConnector(address(bridgedConnector));
+        bridgedConnector.file("router", address(homeConnector.router()));
     }
 
     function testAddingPoolWorks(uint64 poolId) public {
