@@ -11,14 +11,14 @@ contract ConnectorXCMScript is Script {
     function setUp() public {}
 
     function run() public {
-        vm.broadcast();
+        vm.startBroadcast();
 
         address tokenFactory_ = address(new RestrictedTokenFactory());
         address memberlistFactory_ = address(new MemberlistFactory());
         CentrifugeConnector connector = new CentrifugeConnector(tokenFactory_, memberlistFactory_);
 
-        // TODO: add centrifugeChainOrigin_ arg
-        ConnectorXCMRouter router = new ConnectorXCMRouter(address(connector), address(0));
+        ConnectorXCMRouter router = new ConnectorXCMRouter(address(connector), address(vm.envAddress("CENTRIFUGE_CHAIN_ORIGIN")));
         connector.file("router", address(router));
+        vm.stopBroadcast();
     }
 }

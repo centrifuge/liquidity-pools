@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.7.6;
 
-import "@summa-tx/memview-sol/contracts/TypedMemView.sol";
+import "memview-sol/TypedMemView.sol";
 
 library ConnectorMessages {
     using TypedMemView for bytes;
@@ -110,6 +110,7 @@ library ConnectorMessages {
         poolId = uint64(_msg.indexUint(1, 8));
         trancheId = bytes16(_msg.index(9, 16));
         user = address(bytes20(_msg.index(25, 20)));
+        // TODO: skip 12 padded zeroes from address
         validUntil = uint256(_msg.index(45, 32));
     }
 

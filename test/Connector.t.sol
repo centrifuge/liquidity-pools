@@ -7,13 +7,13 @@ import { RestrictedTokenFactory, MemberlistFactory } from "src/token/factory.sol
 import { RestrictedTokenLike } from "src/token/restricted.sol";
 import { MemberlistLike, Memberlist } from "src/token/memberlist.sol";
 import { MockHomeConnector } from "./mock/MockHomeConnector.sol";
-import { ConnectorNomadRouter } from "src/routers/nomad/Router.sol";
+import { ConnectorXCMRouter } from "src/routers/xcm/Router.sol";
 import "forge-std/Test.sol";
 
 contract ConnectorTest is Test {
 
     CentrifugeConnector bridgedConnector;
-    ConnectorNomadRouter bridgedRouter;
+    ConnectorXCMRouter bridgedRouter;
     MockHomeConnector homeConnector;
 
     function setUp() public {
@@ -21,11 +21,8 @@ contract ConnectorTest is Test {
         address memberlistFactory_ = address(new MemberlistFactory());
 
         bridgedConnector = new CentrifugeConnector(tokenFactory_, memberlistFactory_);
-        // TODO: pass _xAppConnectionManager
-        bridgedRouter = new ConnectorNomadRouter(address(bridgedConnector), address(0));
-        bridgedConnector.file("router", address(bridgedRouter));
-
-        homeConnector = new MockHomeConnector(address(bridgedRouter));
+        homeConnector = new MockHomeConnector(address(bridgedConnector));
+        bridgedConnector.file("router", address(homeConnector.router()));
     }
 
     function testAddingPoolWorks(uint64 poolId) public {

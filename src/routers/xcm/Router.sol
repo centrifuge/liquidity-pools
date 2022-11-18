@@ -2,10 +2,8 @@
 pragma solidity ^0.7.6;
 pragma abicoder v2;
 
-import {TypedMemView} from "@summa-tx/memview-sol/contracts/TypedMemView.sol";
-import {Router} from "@nomad-xyz/contracts-router/contracts/Router.sol";
-import {ConnectorMessages} from "../..//Messages.sol";
-import "forge-std/Test.sol";
+import {TypedMemView} from "memview-sol/TypedMemView.sol";
+import {ConnectorMessages} from "../../Messages.sol";
 
 interface ConnectorLike {
   function addPool(uint64 poolId) external;
@@ -14,7 +12,7 @@ interface ConnectorLike {
   function updateTokenPrice(uint64 poolId, bytes16 trancheId, uint256 price) external;
 }
 
-contract ConnectorXCMRouter is Router, Test {
+contract ConnectorXCMRouter {
     using TypedMemView for bytes;
     // why bytes29? - https://github.com/summa-tx/memview-sol#why-bytes29
     using TypedMemView for bytes29;
@@ -22,7 +20,7 @@ contract ConnectorXCMRouter is Router, Test {
 
     ConnectorLike public immutable connector;
 
-    address immutable centrifugeChainOrigin;
+    address centrifugeChainOrigin;
 
     constructor(address connector_, address centrifugeChainOrigin_) {
         connector = ConnectorLike(connector_);
@@ -35,11 +33,8 @@ contract ConnectorXCMRouter is Router, Test {
     }
 
     function handle(
-        uint32 _origin,
-        uint32 _nonce,
-        bytes32 _sender,
         bytes memory _message
-    ) external override onlyCentrifugeChainOrigin {
+    ) external onlyCentrifugeChainOrigin {
         bytes29 _msg = _message.ref(0);
         if (ConnectorMessages.isAddPool(_msg) == true) {
             uint64 poolId = ConnectorMessages.parseAddPool(_msg);
