@@ -44,8 +44,8 @@ library ConnectorMessages {
      * 0: call type (uint8 = 1 byte)
      * 1-8: poolId (uint64 = 8 bytes)
      * 9-25: trancheId (16 bytes)
-     * 26-58: tokenName (string = 32 bytes)
-     * 59-91: tokenSymbol (string = 32 bytes)
+     * 26-154: tokenName (string = 128 bytes)
+     * 155-187: tokenSymbol (string = 32 bytes)
      */
     function formatAddTranche(uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol) internal pure returns (bytes memory) {
         return abi.encodePacked(uint8(Call.AddTranche), poolId, trancheId, stringToBytes32(tokenName), stringToBytes32(tokenSymbol));
@@ -59,7 +59,7 @@ library ConnectorMessages {
         poolId = uint64(_msg.indexUint(1, 8));
         trancheId = bytes16(_msg.index(9, 16));
         tokenName = bytes32ToString(bytes32(_msg.index(25, 32)));
-        tokenSymbol = bytes32ToString(bytes32(_msg.index(57, 32)));
+        tokenSymbol = bytes32ToString(bytes32(_msg.index(153, 32)));
     }
 
     // TODO: should be moved to a util contract
