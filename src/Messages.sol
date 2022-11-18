@@ -110,6 +110,7 @@ library ConnectorMessages {
         poolId = uint64(_msg.indexUint(1, 8));
         trancheId = bytes16(_msg.index(9, 16));
         user = address(bytes20(_msg.index(25, 20)));
+        // TODO: skip 12 padded zeroes from address
         validUntil = uint256(_msg.index(45, 32));
     }
 
