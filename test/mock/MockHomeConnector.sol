@@ -15,8 +15,14 @@ contract MockHomeConnector is Test {
     ConnectorXCMRouter public immutable router;
 
     uint32 immutable CENTRIFUGE_CHAIN_DOMAIN = 3000;
-
     uint32 immutable NONCE = 1;
+
+
+    uint32 public dispatchDomain;
+    bytes public dispatchMessage;
+    bytes32 public dispatchRecipient;
+    uint public dispatchCalls;
+
 
     enum Types {
         AddPool
@@ -44,6 +50,23 @@ contract MockHomeConnector is Test {
     function updateTokenPrice(uint64 poolId, bytes16 trancheId, uint256 price) public {
         bytes memory _message = ConnectorMessages.formatUpdateTokenPrice(poolId, trancheId, price);
         router.handle(_message);
+    }
+
+    function transfer(uint64 poolId, bytes16 trancheId, address user, uint256 amount) public  {
+        bytes memory _message = ConnectorMessages.formatTransfer(poolId, trancheId, user, amount);
+        router.handle(_message);
+    }
+
+
+    function dispatch(
+        uint32 _destinationDomain,
+        bytes32 _recipientAddress,
+        bytes memory _messageBody
+    ) external {
+         dispatchCalls++;
+         dispatchDomain = _destinationDomain;
+         dispatchMessage =  _messageBody;
+         dispatchRecipient = _recipientAddress;
     }
 
 }

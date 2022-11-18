@@ -4,15 +4,17 @@ pragma abicoder v2;
 
 import {TypedMemView} from "memview-sol/TypedMemView.sol";
 import {ConnectorMessages} from "../../Messages.sol";
+import "forge-std/Test.sol";
 
 interface ConnectorLike {
   function addPool(uint64 poolId) external;
   function addTranche(uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol) external;
   function updateMember(uint64 poolId, bytes16 trancheId, address user, uint256 validUntil) external;
   function updateTokenPrice(uint64 poolId, bytes16 trancheId, uint256 price) external;
+  function handleTransfer(uint64 poolId, bytes16 trancheId, address user, uint256 amount) external;
 }
 
-contract ConnectorXCMRouter {
+contract ConnectorXCMRouter is Test {
     using TypedMemView for bytes;
     // why bytes29? - https://github.com/summa-tx/memview-sol#why-bytes29
     using TypedMemView for bytes29;
@@ -26,9 +28,15 @@ contract ConnectorXCMRouter {
         connector = ConnectorLike(connector_);
         centrifugeChainOrigin = centrifugeChainOrigin_;
     }
-
+    
+   
     modifier onlyCentrifugeChainOrigin() {
         require(msg.sender == address(centrifugeChainOrigin), "ConnectorXCMRouter/invalid-origin");
+        _;
+    }
+
+    modifier onlyConnector() {
+        require(msg.sender == address(connector), "ConnectorXCMRouter/only-connector-allowed-to-call");
         _;
     }
 
@@ -43,13 +51,40 @@ contract ConnectorXCMRouter {
             (uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol) = ConnectorMessages.parseAddTranche(_msg);
             connector.addTranche(poolId, trancheId, tokenName, tokenSymbol);
         } else if (ConnectorMessages.isUpdateMember(_msg) == true) {
-            (uint64 poolId, bytes16 trancheId, address user, uint256 amount) = ConnectorMessages.parseUpdateMember(_msg);
-            connector.updateMember(poolId, trancheId, user, amount);
+            (uint64 poolId, bytes16 trancheId, address user, uint256 validUntil) = ConnectorMessages.parseUpdateMember(_msg);
+            connector.updateMember(poolId, trancheId, user, validUntil);
         } else if (ConnectorMessages.isUpdateTokenPrice(_msg) == true) {
             (uint64 poolId, bytes16 trancheId, uint256 price) = ConnectorMessages.parseUpdateTokenPrice(_msg);
             connector.updateTokenPrice(poolId, trancheId, price);
+        } else if (ConnectorMessages.isTransfer(_msg) == true) {
+            (uint64 poolId, bytes16 trancheId, address user, uint256 amount) = ConnectorMessages.parseTransfer(_msg);
+            connector.handleTransfer(poolId, trancheId, user, amount);
         } else {
             require(false, "invalid-message");
         }
     }
+
+    function sendMessage(uint32 destinationDomain, uint64 poolId, bytes16 trancheId, uint256 amount, address user) external onlyConnector {
+        console.log("Destination domain: %d", destinationDomain);
+        console.log("Pool: %d", poolId);
+        // bytes32 remoteAddress = _mustHaveRemote(destinationDomain);
+        // Home(xAppConnectionManager.home()).dispatch(
+        //     destinationDomain,
+        //     remoteAddress,
+        //     ConnectorMessages.formatTransfer(poolId, trancheId, user, amount));
+    }
+
+    function bytes32ToString(bytes32 _bytes32) internal returns (string memory) {
+        uint8 i = 0;
+        while (i < 32 && _bytes32[i] != 0) {
+            i++;
+        }
+
+        bytes memory bytesArray = new bytes(i);
+        for (i = 0; i < 32 && _bytes32[i] != 0; i++) {
+            bytesArray[i] = _bytes32[i];
+        }
+        return string(bytesArray);
+    }
+
 }
