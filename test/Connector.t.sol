@@ -42,7 +42,7 @@ contract ConnectorTest is Test {
         assertEq(uint256(actualPoolId), uint256(poolId));
 
         homeConnector.addTranche(poolId, trancheId, tokenName, tokenSymbol);
-        (address token_, uint256 latestPrice,) = bridgedConnector.tranches(poolId, trancheId);
+        (address token_, uint256 latestPrice,,,) = bridgedConnector.tranches(poolId, trancheId);
         assertTrue(latestPrice > 0);
         assertTrue(token_ != address(0));
 
@@ -59,7 +59,7 @@ contract ConnectorTest is Test {
 
         for (uint i = 0; i < trancheIds.length; i++) {
             homeConnector.addTranche(poolId, trancheIds[i], tokenName, tokenSymbol);
-            (address token, uint256 latestPrice,) = bridgedConnector.tranches(poolId, trancheIds[i]);
+            (address token, uint256 latestPrice, , ,) = bridgedConnector.tranches(poolId, trancheIds[i]);
             assertTrue(latestPrice > 0);
             assertTrue(token != address(0));
         }
@@ -85,7 +85,7 @@ contract ConnectorTest is Test {
         homeConnector.addTranche(poolId, trancheId, "Some Name", "SYMBOL");
         homeConnector.updateMember(poolId, trancheId, user, validUntil);
 
-        (address token_,,) = bridgedConnector.tranches(poolId, trancheId);
+        (address token_,,,,) = bridgedConnector.tranches(poolId, trancheId);
         RestrictedTokenLike token = RestrictedTokenLike(token_);
         assertTrue(token.hasMember(user));
 
@@ -133,7 +133,7 @@ contract ConnectorTest is Test {
         homeConnector.addTranche(poolId, trancheId, "Some Name", "SYMBOL");
         homeConnector.updateTokenPrice(poolId, trancheId, price);
 
-        (, uint256 latestPrice, uint256 lastPriceUpdate) = bridgedConnector.tranches(poolId, trancheId);
+        (, uint256 latestPrice, uint256 lastPriceUpdate, ,) = bridgedConnector.tranches(poolId, trancheId);
         assertEq(latestPrice, price);
         assertEq(lastPriceUpdate, block.timestamp);
     }
