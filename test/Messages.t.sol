@@ -61,7 +61,7 @@ contract MessagesTest is Test {
         );
     }
 
-    function testAddTrancheDecoding() public returns (bytes memory) {
+    function testAddTrancheDecoding() public {
         (uint64 decodedPoolId, bytes16 decodedTrancheId, string memory decodedTokenName, string memory decodedTokenSymbol) = ConnectorMessages.parseAddTranche(fromHex("02000000000000000000000000000000000000000000000009536f6d65204e616d65000000000000000000000000000000000000000000000053594d424f4c0000000000000000000000000000000000000000000000000000").ref(0));
         assertEq(uint(decodedPoolId), uint(0));
         assertEq(decodedTrancheId, toBytes16(fromHex("010000000000000064")));
@@ -89,14 +89,14 @@ contract MessagesTest is Test {
         assertEq(decodedTokenSymbol, bytes32ToString(stringToBytes32(tokenSymbol)));
     }
 
-    function testUpdateMemberEncoding() public returns (bytes memory) {
+    function testUpdateMemberEncoding() public {
         assertEq(
             ConnectorMessages.formatUpdateMember(5, toBytes16(fromHex("010000000000000003")), 0x225ef95fa90f4F7938A5b34234d14768cB4263dd, 1657870537), 
             fromHex("04000000000000000500000000000000000000000000000009225ef95fa90f4f7938a5b34234d14768cb4263dd0000000000000000000000000000000000000000000000000000000062d118c9")
             );
     }
 
-    function testUpdateMemberDecoding() public returns (bytes memory) {
+    function testUpdateMemberDecoding() public {
         (uint64 decodedPoolId, bytes16 decodedTrancheId, address decodedUser, uint256 decodedValidUntil) = ConnectorMessages.parseUpdateMember(fromHex("04000000000000000500000000000000000000000000000009225ef95fa90f4f7938a5b34234d14768cb4263dd0000000000000000000000000000000000000000000000000000000062d118c9").ref(0));
         assertEq(uint(decodedPoolId), uint(5));
         assertEq(decodedTrancheId, toBytes16(fromHex("010000000000000003")));
@@ -128,14 +128,14 @@ contract MessagesTest is Test {
         assertEq(decodedAmount, amount);
     }
 
-    function testUpdateTokenPriceEncoding() public returns (bytes memory) {
+    function testUpdateTokenPriceEncoding() public {
         assertEq(
             ConnectorMessages.formatUpdateTokenPrice(3, toBytes16(fromHex("010000000000000005")), 100), 
             fromHex("030000000000000003000000000000000000000000000000090000000000000000000000000000000000000000000000000000000000000064")
             );
     }
 
-      function testUpdateTokenPriceDecoding() public returns (bytes memory) {
+      function testUpdateTokenPriceDecoding() public {
         (uint64 decodedPoolId, bytes16 decodedTrancheId, uint256 decodedPrice) = ConnectorMessages.parseUpdateTokenPrice(fromHex("030000000000000003000000000000000000000000000000090000000000000000000000000000000000000000000000000000000000000064").ref(0));
         assertEq(uint(decodedPoolId), uint(3));
         assertEq(decodedTrancheId, toBytes16(fromHex("010000000000000005")));
@@ -210,7 +210,7 @@ contract MessagesTest is Test {
         }
     }
 
-    function bytes32ToString(bytes32 _bytes32) internal returns (string memory) {
+    function bytes32ToString(bytes32 _bytes32) internal pure returns (string memory) {
         uint8 i = 0;
         while(i < 32 && _bytes32[i] != 0) {
             i++;
