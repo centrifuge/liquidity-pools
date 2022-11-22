@@ -95,6 +95,7 @@ contract ConnectorTest is Test {
 
         homeConnector.addPool(poolId);
         homeConnector.addTranche(poolId, trancheId, "Some Name", "SYMBOL");
+        bridgedConnector.deployTranche(poolId, trancheId);
         homeConnector.updateMember(poolId, trancheId, user, validUntil);
 
         (address token_,,,,) = bridgedConnector.tranches(poolId, trancheId);
@@ -111,6 +112,7 @@ contract ConnectorTest is Test {
 
         homeConnector.addPool(poolId);
         homeConnector.addTranche(poolId, trancheId, "Some Name", "SYMBOL");
+        bridgedConnector.deployTranche(poolId, trancheId);
         vm.expectRevert("invalid-validUntil");
         homeConnector.updateMember(poolId, trancheId, user, validUntil);
     }
