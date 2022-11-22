@@ -70,6 +70,7 @@ contract ConnectorTest is Test {
 
         for (uint i = 0; i < trancheIds.length; i++) {
             homeConnector.addTranche(poolId, trancheIds[i], tokenName, tokenSymbol);
+            bridgedConnector.deployTranche(poolId, trancheIds[i]);
             (address token, uint256 latestPrice, , ,) = bridgedConnector.tranches(poolId, trancheIds[i]);
             assertTrue(latestPrice > 0);
             assertTrue(token != address(0));
