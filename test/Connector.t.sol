@@ -9,6 +9,7 @@ import { MemberlistLike, Memberlist } from "src/token/memberlist.sol";
 import { MockHomeConnector } from "./mock/MockHomeConnector.sol";
 import { ConnectorXCMRouter } from "src/routers/xcm/Router.sol";
 import "forge-std/Test.sol";
+import "../src/Connector.sol";
 
 contract ConnectorTest is Test {
 
@@ -36,16 +37,25 @@ contract ConnectorTest is Test {
         bridgedConnector.addPool(poolId);
     }
 
-    function testAddingSingleTrancheWorks(uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol) public {
+    // nuno
+    function testAddingSingleTrancheWorks(uint64 poolId, string memory tokenName, string memory tokenSymbol, bytes16 trancheId) public {
+        vm.assume(bytes(tokenName).length < 32);
+
+        // 0. Add Pool
         homeConnector.addPool(poolId);
         (uint64 actualPoolId,) = bridgedConnector.pools(poolId);
         assertEq(uint256(actualPoolId), uint256(poolId));
 
+        // 1. Add the tranche
         homeConnector.addTranche(poolId, trancheId, tokenName, tokenSymbol);
-        (address token_, uint256 latestPrice,,,) = bridgedConnector.tranches(poolId, trancheId);
+        // 2. Then deploy the tranche
+        bridgedConnector.deployTranche(poolId, trancheId);
+
+        (address token_, uint256 latestPrice,,string memory actualTokenName, string memory actualTokenSymbol) = bridgedConnector.tranches(poolId, trancheId);
+        assertTrue(token_ != address(0));
         assertTrue(latestPrice > 0);
-        // TODO(nuno): fix this one
-         assertTrue(token_ != address(0));
+        assertEq(actualTokenName, tokenName);
+        assertEq(actualTokenSymbol, tokenSymbol);
 
         RestrictedTokenLike token = RestrictedTokenLike(token_);
         // Comparing raw input to output can erroneously fail when a byte string is given.
