@@ -26,6 +26,8 @@ contract CentrifugeConnector is Test {
         address token;
         uint256 latestPrice; // [ray]
         uint256 lastPriceUpdate;
+        // TODO: the token name & symbol need to be stored because of the separation between adding and deploying tranches.
+        // This leads to duplicate storage (also in the ERC20 contract), ideally we should refactor this somehow
         string tokenName;
         string tokenSymbol;
     }
