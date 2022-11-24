@@ -48,7 +48,8 @@ contract ConnectorTest is Test {
         // 2. Then deploy the tranche
         bridgedConnector.deployTranche(poolId, trancheId);
 
-        (address token_, uint256 latestPrice,,string memory actualTokenName, string memory actualTokenSymbol) = bridgedConnector.tranches(poolId, trancheId);
+        (address token_, uint256 latestPrice,,string memory actualTokenName, string memory actualTokenSymbol)
+            = bridgedConnector.tranches(poolId, trancheId);
         assertTrue(token_ != address(0));
         assertTrue(latestPrice > 0);
 
