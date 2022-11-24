@@ -37,10 +37,7 @@ contract ConnectorTest is Test {
         bridgedConnector.addPool(poolId);
     }
 
-    // nuno
     function testAddingSingleTrancheWorks(uint64 poolId, string memory tokenName, string memory tokenSymbol, bytes16 trancheId) public {
-        vm.assume(bytes(tokenName).length < 32);
-
         // 0. Add Pool
         homeConnector.addPool(poolId);
         (uint64 actualPoolId,) = bridgedConnector.pools(poolId);
@@ -54,13 +51,15 @@ contract ConnectorTest is Test {
         (address token_, uint256 latestPrice,,string memory actualTokenName, string memory actualTokenSymbol) = bridgedConnector.tranches(poolId, trancheId);
         assertTrue(token_ != address(0));
         assertTrue(latestPrice > 0);
-        assertEq(actualTokenName, tokenName);
-        assertEq(actualTokenSymbol, tokenSymbol);
+
+        // Comparing raw input to output can erroneously fail when a byte string is given.
+        // Intended behaviour is that byte strings will be treated as bytes and converted to strings
+        // instead of treated as strings themselves. This conversion from string to bytes32 to string
+        // is used to simulate this intended behaviour.
+        assertEq(actualTokenName, bytes32ToString(stringToBytes32(tokenName)));
+        assertEq(actualTokenSymbol, bytes32ToString(stringToBytes32(tokenSymbol)));
 
         RestrictedTokenLike token = RestrictedTokenLike(token_);
-        // Comparing raw input to output can erroneously fail when a byte string is given.
-        // Intended behaviour is that byte strings will be treated as bytes and converted to strings instead of treated as strings themselves.
-        // This conversion from string to bytes32 to string is used to simulate this intended behaviour.
         assertEq(token.name(), bytes32ToString(stringToBytes32(tokenName)));
         assertEq(token.symbol(), bytes32ToString(stringToBytes32(tokenSymbol)));
     }
@@ -191,7 +190,7 @@ contract ConnectorTest is Test {
         }
     }
 
-    function bytes32ToString(bytes32 _bytes32) internal returns (string memory) {
+    function bytes32ToString(bytes32 _bytes32) internal pure returns (string memory) {
         uint8 i = 0;
         while(i < 32 && _bytes32[i] != 0) {
             i++;
