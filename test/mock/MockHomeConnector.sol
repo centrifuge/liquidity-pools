@@ -36,6 +36,7 @@ contract MockHomeConnector is Test {
         router.handle(_message);
     }
 
+
     function updateMember(uint64 poolId, bytes16 trancheId, address user, uint256 amount) public {
         bytes memory _message = ConnectorMessages.formatUpdateMember(poolId, trancheId, user, amount);
         router.handle(_message);
