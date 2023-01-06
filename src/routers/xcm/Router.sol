@@ -4,7 +4,6 @@ pragma abicoder v2;
 
 import {TypedMemView} from "memview-sol/TypedMemView.sol";
 import {ConnectorMessages} from "../../Messages.sol";
-import "forge-std/Test.sol";
 
 interface ConnectorLike {
   function addPool(uint64 poolId) external;
@@ -14,7 +13,7 @@ interface ConnectorLike {
   function handleTransfer(uint64 poolId, bytes16 trancheId, address user, uint256 amount) external;
 }
 
-contract ConnectorXCMRouter is Test {
+contract ConnectorXCMRouter {
     using TypedMemView for bytes;
     // why bytes29? - https://github.com/summa-tx/memview-sol#why-bytes29
     using TypedMemView for bytes29;

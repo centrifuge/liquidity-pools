@@ -10,6 +10,7 @@ import { MockHomeConnector } from "./mock/MockHomeConnector.sol";
 import { ConnectorXCMRouter } from "src/routers/xcm/Router.sol";
 import {ConnectorMessages} from "src/Messages.sol";
 import "forge-std/Test.sol";
+import "../src/Connector.sol";
 
 contract ConnectorTest is Test {
 
@@ -26,7 +27,6 @@ contract ConnectorTest is Test {
         bridgedConnector = new CentrifugeConnector(tokenFactory_, memberlistFactory_);
         homeConnector = new MockHomeConnector(address(bridgedConnector));
         bridgedConnector.file("router", address(homeConnector.router()));
-
         minimumDelay =  new Memberlist().minimumDelay();
     }
 
@@ -41,20 +41,30 @@ contract ConnectorTest is Test {
         bridgedConnector.addPool(poolId);
     }
 
-    function testAddingSingleTrancheWorks(uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol) public {
+    function testAddingSingleTrancheWorks(uint64 poolId, string memory tokenName, string memory tokenSymbol, bytes16 trancheId) public {
+        // 0. Add Pool
         homeConnector.addPool(poolId);
         (uint64 actualPoolId,) = bridgedConnector.pools(poolId);
         assertEq(uint256(actualPoolId), uint256(poolId));
 
+        // 1. Add the tranche
         homeConnector.addTranche(poolId, trancheId, tokenName, tokenSymbol);
-        (address token_, uint256 latestPrice,) = bridgedConnector.tranches(poolId, trancheId);
-        assertTrue(latestPrice > 0);
+        // 2. Then deploy the tranche
+        bridgedConnector.deployTranche(poolId, trancheId);
+
+        (address token_, uint256 latestPrice,,string memory actualTokenName, string memory actualTokenSymbol)
+            = bridgedConnector.tranches(poolId, trancheId);
         assertTrue(token_ != address(0));
+        assertTrue(latestPrice > 0);
+
+        // Comparing raw input to output can erroneously fail when a byte string is given.
+        // Intended behaviour is that byte strings will be treated as bytes and converted to strings
+        // instead of treated as strings themselves. This conversion from string to bytes32 to string
+        // is used to simulate this intended behaviour.
+        assertEq(actualTokenName, bytes32ToString(stringToBytes32(tokenName)));
+        assertEq(actualTokenSymbol, bytes32ToString(stringToBytes32(tokenSymbol)));
 
         RestrictedTokenLike token = RestrictedTokenLike(token_);
-        // Comparing raw input to output can erroneously fail when a byte string is given. 
-        // Intended behaviour is that byte strings will be treated as bytes and converted to strings instead of treated as strings themselves.
-        // This conversion from string to bytes32 to string is used to simulate this intended behaviour.
         assertEq(token.name(), bytes32ToString(stringToBytes32(tokenName)));
         assertEq(token.symbol(), bytes32ToString(stringToBytes32(tokenSymbol)));
     }
@@ -64,7 +74,8 @@ contract ConnectorTest is Test {
 
         for (uint i = 0; i < trancheIds.length; i++) {
             homeConnector.addTranche(poolId, trancheIds[i], tokenName, tokenSymbol);
-            (address token, uint256 latestPrice,) = bridgedConnector.tranches(poolId, trancheIds[i]);
+            bridgedConnector.deployTranche(poolId, trancheIds[i]);
+            (address token, uint256 latestPrice, , ,) = bridgedConnector.tranches(poolId, trancheIds[i]);
             assertTrue(latestPrice > 0);
             assertTrue(token != address(0));
         }
@@ -88,9 +99,10 @@ contract ConnectorTest is Test {
 
         homeConnector.addPool(poolId);
         homeConnector.addTranche(poolId, trancheId, "Some Name", "SYMBOL");
+        bridgedConnector.deployTranche(poolId, trancheId);
         homeConnector.updateMember(poolId, trancheId, user, validUntil);
 
-        (address token_,,) = bridgedConnector.tranches(poolId, trancheId);
+        (address token_,,,,) = bridgedConnector.tranches(poolId, trancheId);
         RestrictedTokenLike token = RestrictedTokenLike(token_);
         assertTrue(token.hasMember(user));
 
@@ -104,6 +116,7 @@ contract ConnectorTest is Test {
 
         homeConnector.addPool(poolId);
         homeConnector.addTranche(poolId, trancheId, "Some Name", "SYMBOL");
+        bridgedConnector.deployTranche(poolId, trancheId);
         vm.expectRevert("invalid-validUntil");
         homeConnector.updateMember(poolId, trancheId, user, validUntil);
     }
@@ -139,7 +152,7 @@ contract ConnectorTest is Test {
         homeConnector.addTranche(poolId, trancheId, "Some Name", "SYMBOL");
         homeConnector.updateTokenPrice(poolId, trancheId, price);
 
-        (, uint256 latestPrice, uint256 lastPriceUpdate) = bridgedConnector.tranches(poolId, trancheId);
+        (, uint256 latestPrice, uint256 lastPriceUpdate, ,) = bridgedConnector.tranches(poolId, trancheId);
         assertEq(latestPrice, price);
         assertEq(lastPriceUpdate, block.timestamp);
     }
@@ -477,7 +490,7 @@ contract ConnectorTest is Test {
         }
     }
 
-    function bytes32ToString(bytes32 _bytes32) internal returns (string memory) {
+    function bytes32ToString(bytes32 _bytes32) internal pure returns (string memory) {
         uint8 i = 0;
         while(i < 32 && _bytes32[i] != 0) {
             i++;

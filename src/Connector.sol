@@ -26,6 +26,10 @@ contract CentrifugeConnector {
         address token;
         uint256 latestPrice; // [ray]
         uint256 lastPriceUpdate;
+        // TODO: the token name & symbol need to be stored because of the separation between adding and deploying tranches.
+        // This leads to duplicate storage (also in the ERC20 contract), ideally we should refactor this somehow
+        string tokenName;
+        string tokenSymbol;
     }
 
     mapping(uint64 => Pool) public pools;
@@ -40,7 +44,8 @@ contract CentrifugeConnector {
     event File(bytes32 indexed what, address data);
     event File(bytes32 indexed what, string data);
     event PoolAdded(uint256 indexed poolId);
-    event TrancheAdded(uint256 indexed poolId, bytes16 indexed trancheId, address indexed token);
+    event TrancheAdded(uint256 indexed poolId, bytes16 indexed trancheId);
+    event TrancheDeployed(uint256 indexed poolId, bytes16 indexed trancheId, address indexed token);
 
     constructor(address tokenFactory_, address memberlistFactory_) {
         tokenFactory = RestrictedTokenFactoryLike(tokenFactory_);
@@ -101,14 +106,24 @@ contract CentrifugeConnector {
 
         Tranche storage tranche = tranches[poolId][trancheId];
         tranche.latestPrice = 1*10**27;
+        tranche.tokenName = tokenName;
+        tranche.tokenSymbol = tokenSymbol;
 
-        address token = tokenFactory.newRestrictedToken(tokenName, tokenSymbol);
+        emit TrancheAdded(poolId, trancheId);
+    }
+
+    function deployTranche(uint64 poolId, bytes16 trancheId) public {
+        Pool storage pool = pools[poolId];
+        require(pool.createdAt > 0, "CentrifugeConnector/invalid-pool");
+
+        Tranche storage tranche = tranches[poolId][trancheId];
+        address token = tokenFactory.newRestrictedToken(tranche.tokenName, tranche.tokenSymbol);
         tranche.token = token;
 
         address memberlist = memberlistFactory.newMemberlist();
         RestrictedTokenLike(token).depend("memberlist", memberlist);
         MemberlistLike(memberlist).updateMember(address(this), uint(-1)); // required to be able to receive tokens in case of withdrawals   
-        emit TrancheAdded(poolId, trancheId, token);
+        emit TrancheDeployed(poolId, trancheId, token);
     }
 
     function updateTokenPrice(
