@@ -64,13 +64,7 @@ contract ConnectorXCMRouter {
     }
 
     function sendMessage(uint32 destinationDomain, uint64 poolId, bytes16 trancheId, uint256 amount, address user) external onlyConnector {
-        console.log("Destination domain: %d", destinationDomain);
-        console.log("Pool: %d", poolId);
-        // bytes32 remoteAddress = _mustHaveRemote(destinationDomain);
-        // Home(xAppConnectionManager.home()).dispatch(
-        //     destinationDomain,
-        //     remoteAddress,
-        //     ConnectorMessages.formatTransfer(poolId, trancheId, user, amount));
+        // TODO: implement
     }
 
     function bytes32ToString(bytes32 _bytes32) internal returns (string memory) {
