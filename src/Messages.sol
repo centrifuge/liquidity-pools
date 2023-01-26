@@ -50,7 +50,7 @@ library ConnectorMessages {
     function formatAddTranche(uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol) internal pure returns (bytes memory) {
         // TODO(nuno): Now, we encode `tokenName` as a 128-bytearray by first encoding `tokenName`
         // to bytes32 and then we encode three empty bytes32's, which sum up to a total of 128 bytes.
-        // Add support to actually encode `tokennName` fully as a 128 bytes string.
+        // Add support to actually encode `tokenName` fully as a 128 bytes string.
         return abi.encodePacked(uint8(Call.AddTranche), poolId, trancheId, stringToBytes32(tokenName), bytes32(""), bytes32(""), bytes32(""), stringToBytes32(tokenSymbol));
     }
 
@@ -115,6 +115,18 @@ library ConnectorMessages {
         user = address(bytes20(_msg.index(25, 20)));
         // TODO: skip 12 padded zeroes from address
         validUntil = uint256(_msg.index(45, 32));
+    }
+
+    function parseUpdateMemberDebug(bytes29 _msg) internal pure returns (uint64 poolId, bytes16 trancheId) {
+        poolId = uint64(_msg.indexUint(1, 8));
+        trancheId = bytes16(_msg.index(9, 16));
+//        user = address(bytes20(_msg.index(25, 20)));
+//        // TODO: skip 12 padded zeroes from address
+//        validUntil = uint256(_msg.index(45, 32));
+    }
+
+    function parseTrancheId(bytes29 _msg) internal pure returns (bytes16 trancheId) {
+        trancheId = bytes16(_msg.index(0, 16));
     }
 
     /**
