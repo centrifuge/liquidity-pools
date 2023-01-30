@@ -93,7 +93,7 @@ contract ConnectorTest is Test {
     }
 
     function testUpdatingMemberWorks(uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) public {
-        vm.assume(validUntil <= safeAdd(block.timestamp, new Memberlist().minimumDelay()));
+        vm.assume(validUntil >= safeAdd(block.timestamp, new Memberlist().minimumDelay()));
         vm.assume(user != address(0));
 
         homeConnector.addPool(poolId);

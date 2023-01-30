@@ -102,7 +102,7 @@ library ConnectorMessages {
      * TODO: use bytes32 for user (for non-EVM compatibility)
      */
     function formatUpdateMember(uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) internal pure returns (bytes memory) {
-        return abi.encodePacked(uint8(Call.UpdateMember), poolId, trancheId, user, validUntil);
+        return abi.encodePacked(uint8(Call.UpdateMember), poolId, trancheId, user, bytes(hex"000000000000000000000000"), validUntil);
     }
 
     function isUpdateMember(bytes29 _msg) internal pure returns (bool) {
