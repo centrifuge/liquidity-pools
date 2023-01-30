@@ -8,7 +8,7 @@ import {ConnectorMessages} from "../../Messages.sol";
 interface ConnectorLike {
   function addPool(uint64 poolId) external;
   function addTranche(uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol) external;
-  function updateMember(uint64 poolId, bytes16 trancheId, address user, uint256 validUntil) external;
+  function updateMember(uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) external;
   function updateTokenPrice(uint64 poolId, bytes16 trancheId, uint256 price) external;
   function handleTransfer(uint64 poolId, bytes16 trancheId, address user, uint256 amount) external;
 }
@@ -50,7 +50,7 @@ contract ConnectorXCMRouter {
             (uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol) = ConnectorMessages.parseAddTranche(_msg);
             connector.addTranche(poolId, trancheId, tokenName, tokenSymbol);
         } else if (ConnectorMessages.isUpdateMember(_msg)) {
-            (uint64 poolId, bytes16 trancheId, address user, uint256 validUntil) = ConnectorMessages.parseUpdateMember(_msg);
+            (uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) = ConnectorMessages.parseUpdateMember(_msg);
             connector.updateMember(poolId, trancheId, user, validUntil);
         } else if (ConnectorMessages.isUpdateTokenPrice(_msg)) {
             (uint64 poolId, bytes16 trancheId, uint256 price) = ConnectorMessages.parseUpdateTokenPrice(_msg);
