@@ -89,27 +89,6 @@ contract MessagesTest is Test {
         assertEq(decodedTokenSymbol, bytes32ToString(stringToBytes32(tokenSymbol)));
     }
 
-//    function testDecodeValidUntil() public {
-//        assertEq(
-//            uint256(bytes29("aa76b36500000000").ref(0).index(0, 7)),
-//            1657870537
-//        );
-//    }
-
-//    function testUpdateMemberEncoding() public {
-//        assertEq(
-//            ConnectorMessages.formatUpdateMember(5, toBytes16(fromHex("010000000000000003")), 0x225ef95fa90f4F7938A5b34234d14768cB4263dd, 1657870537),
-//            fromHex("04000000000000000500000000000000000000000000000009225ef95fa90f4f7938a5b34234d14768cb4263dd0000000000000000000000000000000000000000000000000000000062d118c9")
-//            );
-//    }
-
-//    function testUpdateMemberEncodingThatFailed() public {
-//        assertEq(
-//            ConnectorMessages.formatUpdateMember(2, toBytes16(fromHex("811acd5b3f17c06841c7e41e9e04cb1b")), address(0x1231231231231231231231231231231231231231), 1706260138),
-//            fromHex("040000000000000002811acd5b3f17c06841c7e41e9e04cb1b12312312312312312312312312312312312312312312312312312312312312310000000065B376AA")
-//        );
-//    }
-
     function testUpdateMemberDecodingThatFailed() public {
         (uint64 decodedPoolId, bytes16 decodedTrancheId, address decodedUser, uint64 decodedValidUntil) = ConnectorMessages.parseUpdateMember(fromHex("040000000000000002811acd5b3f17c06841c7e41e9e04cb1b12312312312312312312312312312312312312312312312312312312312312310000000065B376AA").ref(0));
         assertEq(uint(decodedPoolId), uint(2));
