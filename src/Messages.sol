@@ -117,16 +117,41 @@ library ConnectorMessages {
         validUntil = uint256(_msg.index(45, 32));
     }
 
-    function parseUpdateMemberDebug(bytes29 _msg) internal pure returns (uint64 poolId, bytes16 trancheId) {
+    function parseUpdateMemberDebug(bytes29 _msg) internal pure returns (uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) {
         poolId = uint64(_msg.indexUint(1, 8));
         trancheId = bytes16(_msg.index(9, 16));
-//        user = address(bytes20(_msg.index(25, 20)));
-//        // TODO: skip 12 padded zeroes from address
-//        validUntil = uint256(_msg.index(45, 32));
+        user = address(bytes20(_msg.index(25, 20)));
+        validUntil = uint64(_msg.indexUint(57, 8));
     }
 
-    function parseTrancheId(bytes29 _msg) internal pure returns (bytes16 trancheId) {
-        trancheId = bytes16(_msg.index(0, 16));
+    // Convert an hexadecimal character to their value
+    function fromHexChar(uint8 c) internal pure returns (uint8) {
+        if (bytes1(c) >= bytes1("0") && bytes1(c) <= bytes1("9")) {
+            return c - uint8(bytes1("0"));
+        }
+        if (bytes1(c) >= bytes1("a") && bytes1(c) <= bytes1("f")) {
+            return 10 + c - uint8(bytes1("a"));
+        }
+        if (bytes1(c) >= bytes1("A") && bytes1(c) <= bytes1("F")) {
+            return 10 + c - uint8(bytes1("A"));
+        }
+        revert("Failed to encode hex char");
+    }
+
+    // Convert an hexadecimal string to raw bytes
+    function fromHex(string memory s) internal pure returns (bytes memory) {
+        bytes memory ss = bytes(s);
+        require(ss.length % 2 == 0); // length must be even
+        bytes memory r = new bytes(ss.length / 2);
+
+        for (uint256 i = 0; i < ss.length / 2; ++i) {
+            r[i] = bytes1(
+                fromHexChar(uint8(ss[2 * i])) *
+                16 +
+                fromHexChar(uint8(ss[2 * i + 1]))
+            );
+        }
+        return r;
     }
 
     /**

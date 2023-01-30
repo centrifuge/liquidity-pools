@@ -67,7 +67,7 @@ contract ConnectorXCMRouter {
         // TODO: implement
     }
 
-    function bytes32ToString(bytes32 _bytes32) internal returns (string memory) {
+    function bytes32ToString(bytes32 _bytes32) internal pure returns (string memory) {
         uint8 i = 0;
         while (i < 32 && _bytes32[i] != 0) {
             i++;
