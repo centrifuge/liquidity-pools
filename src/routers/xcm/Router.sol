@@ -43,19 +43,19 @@ contract ConnectorXCMRouter {
         bytes memory _message
     ) external onlyCentrifugeChainOrigin {
         bytes29 _msg = _message.ref(0);
-        if (ConnectorMessages.isAddPool(_msg) == true) {
+        if (ConnectorMessages.isAddPool(_msg)) {
             uint64 poolId = ConnectorMessages.parseAddPool(_msg);
             connector.addPool(poolId);
-        } else if (ConnectorMessages.isAddTranche(_msg) == true) {
+        } else if (ConnectorMessages.isAddTranche(_msg)) {
             (uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol) = ConnectorMessages.parseAddTranche(_msg);
             connector.addTranche(poolId, trancheId, tokenName, tokenSymbol);
-        } else if (ConnectorMessages.isUpdateMember(_msg) == true) {
+        } else if (ConnectorMessages.isUpdateMember(_msg)) {
             (uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) = ConnectorMessages.parseUpdateMember(_msg);
             connector.updateMember(poolId, trancheId, user, validUntil);
-        } else if (ConnectorMessages.isUpdateTokenPrice(_msg) == true) {
+        } else if (ConnectorMessages.isUpdateTokenPrice(_msg)) {
             (uint64 poolId, bytes16 trancheId, uint256 price) = ConnectorMessages.parseUpdateTokenPrice(_msg);
             connector.updateTokenPrice(poolId, trancheId, price);
-        } else if (ConnectorMessages.isTransfer(_msg) == true) {
+        } else if (ConnectorMessages.isTransfer(_msg)) {
             (uint64 poolId, bytes16 trancheId, address user, uint256 amount) = ConnectorMessages.parseTransfer(_msg);
             connector.handleTransfer(poolId, trancheId, user, amount);
         } else {
