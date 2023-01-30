@@ -104,62 +104,6 @@ contract MessagesTest is Test {
         assertEq(decodedValidUntil, uint(1706260138));
     }
 
-    function testPlayground() public {
-        // Works
-        assertEq(
-            fromHex("040000000000000002811acd5b3f17c06841c7e41e9e04cb1b12312312312312312312312312312312312312312312312312312312312312310000000065B376AA").ref(0).index(9, 16),
-            hex"811acd5b3f17c06841c7e41e9e04cb1b"
-        );
-
-        // Works
-        assertEq(
-            fromHex("811acd5b3f17c06841c7e41e9e04cb1b").ref(0).index(0, 16),
-            hex"811acd5b3f17c06841c7e41e9e04cb1b"
-        );
-
-        // Works
-        assertEq(
-            bytes16(fromHex("811acd5b3f17c06841c7e41e9e04cb1b").ref(0).index(0, 16)),
-            bytes16(hex"811acd5b3f17c06841c7e41e9e04cb1b")
-        );
-
-        // Works
-        assertEq(
-            fromHex("811acd5b3f17c06841c7e41e9e04cb1b"),
-            hex"811acd5b3f17c06841c7e41e9e04cb1b"
-        );
-
-        // Works
-        assertEq(
-            toBytes16(fromHex("811acd5b3f17c06841c7e41e9e04cb1b")),
-            toBytes16(hex"811acd5b3f17c06841c7e41e9e04cb1b")
-        );
-
-        // Address - if it were 32 bytes
-        assertEq(
-            fromHex("040000000000000002811acd5b3f17c06841c7e41e9e04cb1b12312312312312312312312312312312312312312312312312312312312312310000000065B376AA").ref(0).index(25, 32),
-            hex"1231231231231231231231231231231231231231231231231231231231231231"
-        );
-
-        // Address - read 32 bytes but convert to 20 bytes
-        assertEq(
-            address(bytes20(fromHex("040000000000000002811acd5b3f17c06841c7e41e9e04cb1b12312312312312312312312312312312312312312312312312312312312312310000000065B376AA").ref(0).index(25, 32))),
-            0x1231231231231231231231231231231231231231
-        );
-
-        // Address - read bytes bytes and coerce convert to 20 bytes
-        assertEq(
-            address(bytes20(fromHex("040000000000000002811acd5b3f17c06841c7e41e9e04cb1b12312312312312312312312312312312312312312312312312312312312312310000000065B376AA").ref(0).index(25, 20))),
-            0x1231231231231231231231231231231231231231
-        );
-
-        // ValidUntil - read as uint
-        assertEq(
-            uint64(fromHex("040000000000000002811acd5b3f17c06841c7e41e9e04cb1b12312312312312312312312312312312312312312312312312312312312312310000000065B376AA").ref(0).indexUint(57, 8)),
-            uint(1706260138)
-        );
-    }
-
     function testUpdateMemberEquivalence(
         uint64 poolId,
         bytes16 trancheId,
