@@ -102,6 +102,8 @@ library ConnectorMessages {
      * TODO: use bytes32 for user (for non-EVM compatibility)
      */
     function formatUpdateMember(uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) internal pure returns (bytes memory) {
+        // NOTE: Since parseUpdateMember parses the first 20 bytes of `user` and skips the following 12
+        // here we need to append 12 zeros to make it right. Drop once we support 32-byte addresses.
         return abi.encodePacked(uint8(Call.UpdateMember), poolId, trancheId, user, bytes(hex"000000000000000000000000"), validUntil);
     }
 
