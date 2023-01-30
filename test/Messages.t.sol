@@ -120,12 +120,12 @@ contract MessagesTest is Test {
             uint64 decodedPoolId,
             bytes16 decodedTrancheId,
             address decodedUser,
-            uint256 decodedValidUntil
+            uint64 decodedValidUntil
         ) = ConnectorMessages.parseUpdateMember(_message.ref(0));
-        assertEq(uint256(decodedPoolId), uint256(poolId));
+        assertEq(uint(decodedPoolId), uint(poolId));
         assertEq(decodedTrancheId, trancheId);
         assertEq(decodedUser, user);
-        assertEq(decodedValidUntil, validUntil);
+        assertEq(uint(decodedValidUntil), uint(validUntil));
     }
 
     function testUpdateTokenPriceEncoding() public {
