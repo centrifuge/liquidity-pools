@@ -44,10 +44,18 @@ library ConnectorMessages {
      * 0: call type (uint8 = 1 byte)
      * 1-8: poolId (uint64 = 8 bytes)
      * 9-24: trancheId (16 bytes)
-     * 26-154: tokenName (string = 128 bytes)
+     * 25-154: tokenName (string = 128 bytes)
      * 155-187: tokenSymbol (string = 32 bytes)
-     * 155-187: price (uint256 = 32 bytes)
+     * 185-187: price (uint256 = 32 bytes)
      */
+
+    /**
+                pool_id: 12378532, (8 bytes)
+				tranche_id: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], (16 bytes)
+				token_name: [5; 128], (128 bytes)
+				token_symbol: [6; 32], (32 bytes)
+				price: Rate::one(), (32 bytes)
+    */
     function formatAddTranche(uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol, uint256 price) internal pure returns (bytes memory) {
         // TODO(nuno): Now, we encode `tokenName` as a 128-bytearray by first encoding `tokenName`
         // to bytes32 and then we encode three empty bytes32's, which sum up to a total of 128 bytes.
