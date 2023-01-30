@@ -97,7 +97,7 @@ contract CentrifugeConnector {
         emit PoolAdded(poolId);
     }
 
-    function addTranche(uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol)
+    function addTranche(uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol, uint256 price)
         public
         onlyRouter
     {
@@ -105,7 +105,7 @@ contract CentrifugeConnector {
         require(pool.createdAt > 0, "CentrifugeConnector/invalid-pool");
 
         Tranche storage tranche = tranches[poolId][trancheId];
-        tranche.latestPrice = 1*10**27;
+        tranche.latestPrice = price;
         tranche.tokenName = tokenName;
         tranche.tokenSymbol = tokenSymbol;
 
