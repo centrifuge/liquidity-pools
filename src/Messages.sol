@@ -95,7 +95,7 @@ library ConnectorMessages {
      * 
      * 0: call type (uint8 = 1 byte)
      * 1-8: poolId (uint64 = 8 bytes)
-     * 9-25: trancheId (16 bytes)
+     * 9-24: trancheId (16 bytes)
      * 25-45: user (Ethereum address, 20 bytes - Skip 12 bytes from 32-byte addresses)
      * 57-65: validUntil (uint64 = 8 bytes)
      * 
@@ -110,7 +110,6 @@ library ConnectorMessages {
     function isUpdateMember(bytes29 _msg) internal pure returns (bool) {
         return messageType(_msg) == Call.UpdateMember;
     }
-
 
     function parseUpdateMember(bytes29 _msg) internal pure returns (uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) {
         poolId = uint64(_msg.indexUint(1, 8));
