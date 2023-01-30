@@ -111,7 +111,7 @@ contract MessagesTest is Test {
 //    }
 
     function testUpdateMemberDecodingThatFailed() public {
-        (uint64 decodedPoolId, bytes16 decodedTrancheId, address decodedUser, uint64 decodedValidUntil) = ConnectorMessages.parseUpdateMemberDebug(fromHex("040000000000000002811acd5b3f17c06841c7e41e9e04cb1b12312312312312312312312312312312312312312312312312312312312312310000000065B376AA").ref(0));
+        (uint64 decodedPoolId, bytes16 decodedTrancheId, address decodedUser, uint64 decodedValidUntil) = ConnectorMessages.parseUpdateMember(fromHex("040000000000000002811acd5b3f17c06841c7e41e9e04cb1b12312312312312312312312312312312312312312312312312312312312312310000000065B376AA").ref(0));
         assertEq(uint(decodedPoolId), uint(2));
         assertEq(decodedTrancheId, hex"811acd5b3f17c06841c7e41e9e04cb1b");
         assertEq(decodedUser, 0x1231231231231231231231231231231231231231);
@@ -188,24 +188,24 @@ contract MessagesTest is Test {
         uint64 poolId,
         bytes16 trancheId,
         address user,
-        uint256 amount
+        uint64 validUntil
     ) public {
         bytes memory _message = ConnectorMessages.formatUpdateMember(
             poolId,
             trancheId,
             user,
-            amount
+            validUntil
         );
         (
             uint64 decodedPoolId,
             bytes16 decodedTrancheId,
             address decodedUser,
-            uint256 decodedAmount
+            uint256 decodedValidUntil
         ) = ConnectorMessages.parseUpdateMember(_message.ref(0));
         assertEq(uint256(decodedPoolId), uint256(poolId));
         assertEq(decodedTrancheId, trancheId);
         assertEq(decodedUser, user);
-        assertEq(decodedAmount, amount);
+        assertEq(decodedValidUntil, validUntil);
     }
 
     function testUpdateTokenPriceEncoding() public {

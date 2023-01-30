@@ -96,12 +96,12 @@ library ConnectorMessages {
      * 0: call type (uint8 = 1 byte)
      * 1-8: poolId (uint64 = 8 bytes)
      * 9-25: trancheId (16 bytes)
-     * 26-46: user (Ethereum address, 20 bytes)
-     * 47-78: validUntil (uint256 = 32 bytes)
+     * 25-45: user (Ethereum address, 20 bytes - Skip 12 bytes from 32-byte addresses)
+     * 57-65: validUntil (uint64 = 8 bytes)
      * 
      * TODO: use bytes32 for user (for non-EVM compatibility)
      */
-    function formatUpdateMember(uint64 poolId, bytes16 trancheId, address user, uint256 validUntil) internal pure returns (bytes memory) {
+    function formatUpdateMember(uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) internal pure returns (bytes memory) {
         return abi.encodePacked(uint8(Call.UpdateMember), poolId, trancheId, user, validUntil);
     }
 
@@ -109,15 +109,8 @@ library ConnectorMessages {
         return messageType(_msg) == Call.UpdateMember;
     }
 
-    function parseUpdateMember(bytes29 _msg) internal pure returns (uint64 poolId, bytes16 trancheId, address user, uint256 validUntil) {
-        poolId = uint64(_msg.indexUint(1, 8));
-        trancheId = bytes16(_msg.index(9, 16));
-        user = address(bytes20(_msg.index(25, 20)));
-        // TODO: skip 12 padded zeroes from address
-        validUntil = uint256(_msg.index(45, 32));
-    }
 
-    function parseUpdateMemberDebug(bytes29 _msg) internal pure returns (uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) {
+    function parseUpdateMember(bytes29 _msg) internal pure returns (uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) {
         poolId = uint64(_msg.indexUint(1, 8));
         trancheId = bytes16(_msg.index(9, 16));
         user = address(bytes20(_msg.index(25, 20)));

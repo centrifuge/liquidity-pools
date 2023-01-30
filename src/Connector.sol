@@ -141,7 +141,7 @@ contract CentrifugeConnector {
         uint64 poolId,
         bytes16 trancheId,
         address user,
-        uint256 validUntil
+        uint64 validUntil
     ) public onlyRouter {
         Tranche storage tranche = tranches[poolId][trancheId];
         require(tranche.latestPrice > 0, "CentrifugeConnector/invalid-pool-or-tranche");
