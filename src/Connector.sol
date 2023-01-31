@@ -157,15 +157,14 @@ contract CentrifugeConnector {
         bytes16 trancheId,
         address user,
         uint256 amount,
-        string memory domainName
+        uint32 destinationDomain
     ) public {
-        require(domainId > 0, "CentrifugeConnector/domain-does-not-exist");
-
+        require(destinationDomain == router.centrifugeChainOrigin(), "CentrifugeConnector/invalid-destination");
         RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
         require(address(token) != address(0), "CentrifugeConnector/unknown-token");
         require(token.balanceOf(user) >= amount, "CentrifugeConnector/insufficient-balance");
         require(token.transferFrom(user, address(this), amount), "CentrifugeConnector/token-transfer-failed");
         token.burn(address(this), amount);
-        router.sendMessage(domainId, poolId, trancheId, amount, user);
+        router.sendMessage(destinationDomain, poolId, trancheId, amount, user);
     }
 }
