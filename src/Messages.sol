@@ -46,7 +46,7 @@ library ConnectorMessages {
      * 9-24: trancheId (16 bytes)
      * 25-154: tokenName (string = 128 bytes)
      * 155-187: tokenSymbol (string = 32 bytes)
-     * 185-187: price (uint256 = 32 bytes)
+     * 185-200: price (uint128 = 16 bytes)
      */
     function formatAddTranche(uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol, uint128 price) internal pure returns (bytes memory) {
         // TODO(nuno): Now, we encode `tokenName` as a 128-bytearray by first encoding `tokenName`
