@@ -35,8 +35,6 @@ contract CentrifugeConnector {
     mapping(uint64 => Pool) public pools;
     mapping(uint64 => mapping(bytes16 => Tranche)) public tranches;
     mapping(address => uint256) public wards;
-    mapping(bytes32 => uint32) public domainLookup;
-
 
     // --- Events ---
     event Rely(address indexed user);
@@ -79,14 +77,6 @@ contract CentrifugeConnector {
         if (what == "router") router = RouterLike(data);
         else revert("CentrifugeConnector/file-unrecognized-param");
         emit File(what, data);
-    }
-
-    function file(bytes32 name, string memory domainName, uint32 domainId) public auth  {
-        if(name == "domain") {
-           domainLookup[keccak256(bytes(domainName))] = domainId;
-           emit File(name, domainName);
-        } else { revert ("unknown name");}
-        
     }
 
     // --- Internal ---
@@ -169,7 +159,6 @@ contract CentrifugeConnector {
         uint256 amount,
         string memory domainName
     ) public {
-        uint32 domainId = domainLookup[keccak256(bytes(domainName))];
         require(domainId > 0, "CentrifugeConnector/domain-does-not-exist");
 
         RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
