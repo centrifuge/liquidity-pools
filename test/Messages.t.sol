@@ -56,37 +56,41 @@ contract MessagesTest is Test {
 
     function testAddTrancheEncoding() public {
         assertEq(
-            ConnectorMessages.formatAddTranche(0, toBytes16(fromHex("010000000000000064")), "Some Name", "SYMBOL"),
-            fromHex("02000000000000000000000000000000000000000000000009536f6d65204e616d65000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000053594d424f4c0000000000000000000000000000000000000000000000000000")
+            ConnectorMessages.formatAddTranche(12378532, bytes16(hex"811acd5b3f17c06841c7e41e9e04cb1b"), "Some Name", "SYMBOL", 1),
+            hex"020000000000bce1a4811acd5b3f17c06841c7e41e9e04cb1b536f6d65204e616d65000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000053594d424f4c000000000000000000000000000000000000000000000000000000000000000000000000000000000001"
         );
     }
 
     function testAddTrancheDecoding() public {
-        (uint64 decodedPoolId, bytes16 decodedTrancheId, string memory decodedTokenName, string memory decodedTokenSymbol) = ConnectorMessages.parseAddTranche(fromHex("02000000000000000000000000000000000000000000000009536f6d65204e616d65000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000053594d424f4c0000000000000000000000000000000000000000000000000000").ref(0));
-        assertEq(uint(decodedPoolId), uint(0));
-        assertEq(decodedTrancheId, toBytes16(fromHex("010000000000000064")));
-        assertEq(decodedTokenName, "Some Name"); 
-        assertEq(decodedTokenSymbol, "SYMBOL");
+        (uint64 decodedPoolId, bytes16 decodedTrancheId, string memory decodedTokenName, string memory decodedTokenSymbol, uint256 decodedPrice) = ConnectorMessages.parseAddTranche(fromHex("020000000000bce1a4000000000000000000000000000000010505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505060606060606060606060606060606060606060606060606060606060606060600000000033b2e3c9fd0803ce8000000").ref(0));
+        assertEq(uint(decodedPoolId), uint(12378532));
+        assertEq(decodedTrancheId, bytes16(hex"00000000000000000000000000000001"));
+        assertEq(decodedTokenName, bytes32ToString(bytes32(hex"0505050505050505050505050505050505050505050505050505050505050505")));
+        assertEq(decodedTokenSymbol, bytes32ToString(hex"0606060606060606060606060606060606060606060606060606060606060606"));
+        assertEq(decodedPrice, uint(1000000000000000000000000000));
     }
 
-    function testAddTrancheEquivalence(uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol)
+    function testAddTrancheEquivalence(uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol, uint128 price)
         public
     {
         bytes memory _message = ConnectorMessages.formatAddTranche(
             poolId,
             trancheId,
             tokenName,
-            tokenSymbol
+            tokenSymbol,
+            price
         );
-        (uint64 decodedPoolId, bytes16 decodedTrancheId, string memory decodedTokenName, string memory decodedTokenSymbol) = ConnectorMessages
+        (uint64 decodedPoolId, bytes16 decodedTrancheId, string memory decodedTokenName, string memory decodedTokenSymbol, uint256 decodedPrice) = ConnectorMessages
             .parseAddTranche(_message.ref(0));
         assertEq(uint256(decodedPoolId), uint256(poolId));
         assertEq(decodedTrancheId, trancheId);
-        // Comparing raw input to output can erroneously fail when a byte string is given. 
+        // Comparing raw input to output can erroneously fail when a byte string is given.
         // Intended behaviour is that byte strings will be treated as bytes and converted to strings instead of treated as strings themselves.
         // This conversion from string to bytes32 to string is used to simulate this intended behaviour.
         assertEq(decodedTokenName, bytes32ToString(stringToBytes32(tokenName)));
         assertEq(decodedTokenSymbol, bytes32ToString(stringToBytes32(tokenSymbol)));
+        // TODO(nuno): fix this
+        assertEq(decodedPrice, uint256(price));
     }
 
     function testUpdateMemberEncoding() public {
