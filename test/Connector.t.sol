@@ -146,7 +146,7 @@ contract ConnectorTest is Test {
      }
 
 
-    function testUpdatingTokenPriceWorks(uint64 poolId, bytes16 trancheId, uint256 price) public {
+    function testUpdatingTokenPriceWorks(uint64 poolId, bytes16 trancheId, uint128 price) public {
         homeConnector.addPool(poolId);
         homeConnector.addTranche(poolId, trancheId, "Some Name", "SYMBOL", 123);
         homeConnector.updateTokenPrice(poolId, trancheId, price);
@@ -156,20 +156,20 @@ contract ConnectorTest is Test {
         assertEq(lastPriceUpdate, block.timestamp);
     }
 
-    function testUpdatingTokenPriceAsNonRouterFails(uint64 poolId, bytes16 trancheId, uint256 price) public {
+    function testUpdatingTokenPriceAsNonRouterFails(uint64 poolId, bytes16 trancheId, uint128 price) public {
         homeConnector.addPool(poolId);
         homeConnector.addTranche(poolId, trancheId, "Some Name", "SYMBOL", 123);
         vm.expectRevert(bytes("CentrifugeConnector/not-the-router"));
         bridgedConnector.updateTokenPrice(poolId, trancheId, price);
     }
 
-    function testUpdatingTokenPriceForNonExistentPoolFails(uint64 poolId, bytes16 trancheId, uint256 price) public {
+    function testUpdatingTokenPriceForNonExistentPoolFails(uint64 poolId, bytes16 trancheId, uint128 price) public {
         bridgedConnector.file("router", address(this));
         vm.expectRevert(bytes("CentrifugeConnector/invalid-pool-or-tranche"));
         bridgedConnector.updateTokenPrice(poolId, trancheId, price);
      }
 
-    function testUpdatingTokenPriceForNonExistentTrancheFails(uint64 poolId, bytes16 trancheId, uint256 price) public {
+    function testUpdatingTokenPriceForNonExistentTrancheFails(uint64 poolId, bytes16 trancheId, uint128 price) public {
         bridgedConnector.file("router", address(this));
         bridgedConnector.addPool(poolId);
         vm.expectRevert(bytes("CentrifugeConnector/invalid-pool-or-tranche"));

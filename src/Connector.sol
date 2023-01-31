@@ -24,7 +24,7 @@ contract CentrifugeConnector {
 
     struct Tranche {
         address token;
-        uint256 latestPrice; // [ray]
+        uint128 latestPrice; // [ray]
         uint256 lastPriceUpdate;
         // TODO: the token name & symbol need to be stored because of the separation between adding and deploying tranches.
         // This leads to duplicate storage (also in the ERC20 contract), ideally we should refactor this somehow
@@ -105,7 +105,7 @@ contract CentrifugeConnector {
         require(pool.createdAt > 0, "CentrifugeConnector/invalid-pool");
 
         Tranche storage tranche = tranches[poolId][trancheId];
-        tranche.latestPrice = uint256(price);
+        tranche.latestPrice = price;
         tranche.tokenName = tokenName;
         tranche.tokenSymbol = tokenSymbol;
 
@@ -129,7 +129,7 @@ contract CentrifugeConnector {
     function updateTokenPrice(
         uint64 poolId,
         bytes16 trancheId,
-        uint256 price
+        uint128 price
     ) public onlyRouter {
         Tranche storage tranche = tranches[poolId][trancheId];
         require(tranche.latestPrice > 0, "CentrifugeConnector/invalid-pool-or-tranche");

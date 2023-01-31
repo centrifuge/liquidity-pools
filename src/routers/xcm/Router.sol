@@ -9,7 +9,7 @@ interface ConnectorLike {
   function addPool(uint64 poolId) external;
   function addTranche(uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol, uint128 price) external;
   function updateMember(uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) external;
-  function updateTokenPrice(uint64 poolId, bytes16 trancheId, uint256 price) external;
+  function updateTokenPrice(uint64 poolId, bytes16 trancheId, uint128 price) external;
   function handleTransfer(uint64 poolId, bytes16 trancheId, address user, uint256 amount) external;
 }
 
@@ -53,7 +53,7 @@ contract ConnectorXCMRouter {
             (uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) = ConnectorMessages.parseUpdateMember(_msg);
             connector.updateMember(poolId, trancheId, user, validUntil);
         } else if (ConnectorMessages.isUpdateTokenPrice(_msg)) {
-            (uint64 poolId, bytes16 trancheId, uint256 price) = ConnectorMessages.parseUpdateTokenPrice(_msg);
+            (uint64 poolId, bytes16 trancheId, uint128 price) = ConnectorMessages.parseUpdateTokenPrice(_msg);
             connector.updateTokenPrice(poolId, trancheId, price);
         } else if (ConnectorMessages.isTransfer(_msg)) {
             (uint64 poolId, bytes16 trancheId, address user, uint256 amount) = ConnectorMessages.parseTransfer(_msg);
