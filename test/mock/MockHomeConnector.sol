@@ -37,7 +37,7 @@ contract MockHomeConnector is Test {
         router.handle(_message);
     }
 
-    function addTranche(uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol, uint256 price) public {
+    function addTranche(uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol, uint128 price) public {
         bytes memory _message = ConnectorMessages.formatAddTranche(poolId, trancheId, tokenName, tokenSymbol, price);
         router.handle(_message);
     }

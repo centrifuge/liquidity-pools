@@ -41,7 +41,7 @@ contract ConnectorTest is Test {
         bridgedConnector.addPool(poolId);
     }
 
-    function testAddingSingleTrancheWorks(uint64 poolId, string memory tokenName, string memory tokenSymbol, bytes16 trancheId, uint256 price) public {
+    function testAddingSingleTrancheWorks(uint64 poolId, string memory tokenName, string memory tokenSymbol, bytes16 trancheId, uint128 price) public {
         // 0. Add Pool
         homeConnector.addPool(poolId);
         (uint64 actualPoolId,) = bridgedConnector.pools(poolId);
@@ -52,11 +52,10 @@ contract ConnectorTest is Test {
         // 2. Then deploy the tranche
         bridgedConnector.deployTranche(poolId, trancheId);
 
-        // Todo nuno should we ensure latestPrice == price coming from above?
         (address token_, uint256 latestPrice,,string memory actualTokenName, string memory actualTokenSymbol)
             = bridgedConnector.tranches(poolId, trancheId);
         assertTrue(token_ != address(0));
-        assertTrue(latestPrice > 0);
+        assertEq(latestPrice, price);
 
         // Comparing raw input to output can erroneously fail when a byte string is given.
         // Intended behaviour is that byte strings will be treated as bytes and converted to strings
@@ -70,27 +69,26 @@ contract ConnectorTest is Test {
         assertEq(token.symbol(), bytes32ToString(stringToBytes32(tokenSymbol)));
     }
 
-    function testAddingMultipleTranchesWorks(uint64 poolId, bytes16[] calldata trancheIds, string memory tokenName, string memory tokenSymbol, uint256 price) public {
+    function testAddingMultipleTranchesWorks(uint64 poolId, bytes16[] calldata trancheIds, string memory tokenName, string memory tokenSymbol, uint128 price) public {
         homeConnector.addPool(poolId);
 
         for (uint i = 0; i < trancheIds.length; i++) {
-            uint256 tranchePrice = price + uint256(i);
+            uint128 tranchePrice = price + uint128(i);
             homeConnector.addTranche(poolId, trancheIds[i], tokenName, tokenSymbol, tranchePrice);
             bridgedConnector.deployTranche(poolId, trancheIds[i]);
             (address token, uint256 latestPrice, , ,) = bridgedConnector.tranches(poolId, trancheIds[i]);
-            // TODO(nuno): check latestPrice == tranchePrice
-            assertTrue(latestPrice > 0);
+            assertEq(latestPrice, tranchePrice);
             assertTrue(token != address(0));
         }
     }
     
-    function testAddingTranchesAsNonRouterFails(uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol, uint256 price) public {
+    function testAddingTranchesAsNonRouterFails(uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol, uint128 price) public {
         homeConnector.addPool(poolId);
         vm.expectRevert(bytes("CentrifugeConnector/not-the-router"));
         bridgedConnector.addTranche(poolId, trancheId, tokenName, tokenSymbol, price);
     }
 
-    function testAddingTranchesForNonExistentPoolFails(uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol, uint256 price) public {
+    function testAddingTranchesForNonExistentPoolFails(uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol, uint128 price) public {
         vm.expectRevert(bytes("CentrifugeConnector/invalid-pool"));
         homeConnector.addTranche(poolId, trancheId, tokenName, tokenSymbol, price);
     }

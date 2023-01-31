@@ -48,15 +48,7 @@ library ConnectorMessages {
      * 155-187: tokenSymbol (string = 32 bytes)
      * 185-187: price (uint256 = 32 bytes)
      */
-
-    /**
-                pool_id: 12378532, (8 bytes)
-				tranche_id: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], (16 bytes)
-				token_name: [5; 128], (128 bytes)
-				token_symbol: [6; 32], (32 bytes)
-				price: Rate::one(), (32 bytes)
-    */
-    function formatAddTranche(uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol, uint256 price) internal pure returns (bytes memory) {
+    function formatAddTranche(uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol, uint128 price) internal pure returns (bytes memory) {
         // TODO(nuno): Now, we encode `tokenName` as a 128-bytearray by first encoding `tokenName`
         // to bytes32 and then we encode three empty bytes32's, which sum up to a total of 128 bytes.
         // Add support to actually encode `tokenName` fully as a 128 bytes string.
@@ -70,26 +62,11 @@ library ConnectorMessages {
         );
     }
 
-    function formatAddTrancheB(uint256 price) internal pure returns (bytes memory) {
-        return abi.encodePacked(
-            price
-        );
-    }
-
     function isAddTranche(bytes29 _msg) internal pure returns (bool) {
         return messageType(_msg) == Call.AddTranche;
     }
 
-    function parseAddTranche(bytes29 _msg) internal pure returns (uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol, uint256 price) {
-        poolId = uint64(_msg.indexUint(1, 8));
-        trancheId = bytes16(_msg.index(9, 16));
-        tokenName = bytes32ToString(bytes32(_msg.index(25, 32)));
-        tokenSymbol = bytes32ToString(bytes32(_msg.index(153, 32)));
-        price = uint256(_msg.index(185, 32));
-    }
-
-    // TODO(nuno): make this the official impl once we agree on the price type
-    function parseAddTrancheB(bytes29 _msg) internal pure returns (uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol, uint128 price) {
+    function parseAddTranche(bytes29 _msg) internal pure returns (uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol, uint128 price) {
         poolId = uint64(_msg.indexUint(1, 8));
         trancheId = bytes16(_msg.index(9, 16));
         tokenName = bytes32ToString(bytes32(_msg.index(25, 32)));
