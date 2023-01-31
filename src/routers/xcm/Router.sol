@@ -21,7 +21,7 @@ contract ConnectorXCMRouter {
 
     ConnectorLike public immutable connector;
 
-    address centrifugeChainOrigin;
+    address public centrifugeChainOrigin;
 
     constructor(address connector_, address centrifugeChainOrigin_) {
         connector = ConnectorLike(connector_);

@@ -8,9 +8,12 @@ import { MemberlistLike } from "./token/memberlist.sol";
 
 interface RouterLike {
     function sendMessage(uint32 destinationDomain, uint64 poolId, bytes16 trancheId, uint256 amount, address user) external;
+    function centrifugeChainOrigin() external view returns (address);
 }
 
 contract CentrifugeConnector {
+
+    uint32 immutable CENTRIFUGE_CHAIN_DOMAIN = 3000;
 
     RouterLike public router;
     RestrictedTokenFactoryLike public immutable tokenFactory;
@@ -159,7 +162,7 @@ contract CentrifugeConnector {
         uint256 amount,
         uint32 destinationDomain
     ) public {
-        require(destinationDomain == router.centrifugeChainOrigin(), "CentrifugeConnector/invalid-destination");
+        require(destinationDomain == CENTRIFUGE_CHAIN_DOMAIN, "CentrifugeConnector/invalid-destination");
         RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
         require(address(token) != address(0), "CentrifugeConnector/unknown-token");
         require(token.balanceOf(user) >= amount, "CentrifugeConnector/insufficient-balance");
