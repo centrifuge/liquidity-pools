@@ -62,7 +62,7 @@ contract MessagesTest is Test {
     }
 
     function testAddTrancheDecoding() public {
-        (uint64 decodedPoolId, bytes16 decodedTrancheId, string memory decodedTokenName, string memory decodedTokenSymbol, uint256 decodedPrice) = ConnectorMessages.parseAddTranche(fromHex("020000000000bce1a4000000000000000000000000000000010505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505060606060606060606060606060606060606060606060606060606060606060600000000033b2e3c9fd0803ce8000000").ref(0));
+        (uint64 decodedPoolId, bytes16 decodedTrancheId, string memory decodedTokenName, string memory decodedTokenSymbol, uint128 decodedPrice) = ConnectorMessages.parseAddTranche(fromHex("020000000000bce1a4000000000000000000000000000000010505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505060606060606060606060606060606060606060606060606060606060606060600000000033b2e3c9fd0803ce8000000").ref(0));
         assertEq(uint(decodedPoolId), uint(12378532));
         assertEq(decodedTrancheId, bytes16(hex"00000000000000000000000000000001"));
         assertEq(decodedTokenName, bytes32ToString(bytes32(hex"0505050505050505050505050505050505050505050505050505050505050505")));
@@ -80,7 +80,7 @@ contract MessagesTest is Test {
             tokenSymbol,
             price
         );
-        (uint64 decodedPoolId, bytes16 decodedTrancheId, string memory decodedTokenName, string memory decodedTokenSymbol, uint256 decodedPrice) = ConnectorMessages
+        (uint64 decodedPoolId, bytes16 decodedTrancheId, string memory decodedTokenName, string memory decodedTokenSymbol, uint128 decodedPrice) = ConnectorMessages
             .parseAddTranche(_message.ref(0));
         assertEq(uint256(decodedPoolId), uint256(poolId));
         assertEq(decodedTrancheId, trancheId);
@@ -134,22 +134,22 @@ contract MessagesTest is Test {
 
     function testUpdateTokenPriceEncoding() public {
         assertEq(
-            ConnectorMessages.formatUpdateTokenPrice(3, toBytes16(fromHex("010000000000000005")), 100), 
-            fromHex("030000000000000003000000000000000000000000000000090000000000000000000000000000000000000000000000000000000000000064")
+            ConnectorMessages.formatUpdateTokenPrice(1, bytes16(hex"811acd5b3f17c06841c7e41e9e04cb1b"), 1000000000000000000000000000),
+            fromHex("030000000000000001811acd5b3f17c06841c7e41e9e04cb1b00000000033b2e3c9fd0803ce8000000")
             );
     }
 
       function testUpdateTokenPriceDecoding() public {
-        (uint64 decodedPoolId, bytes16 decodedTrancheId, uint256 decodedPrice) = ConnectorMessages.parseUpdateTokenPrice(fromHex("030000000000000003000000000000000000000000000000090000000000000000000000000000000000000000000000000000000000000064").ref(0));
-        assertEq(uint(decodedPoolId), uint(3));
-        assertEq(decodedTrancheId, toBytes16(fromHex("010000000000000005")));
-        assertEq(decodedPrice, uint(100));
+        (uint64 decodedPoolId, bytes16 decodedTrancheId, uint128 decodedPrice) = ConnectorMessages.parseUpdateTokenPrice(fromHex("030000000000000001811acd5b3f17c06841c7e41e9e04cb1b00000000033b2e3c9fd0803ce8000000").ref(0));
+        assertEq(uint(decodedPoolId), uint(1));
+        assertEq(decodedTrancheId, bytes16(hex"811acd5b3f17c06841c7e41e9e04cb1b"));
+        assertEq(decodedPrice, uint(1000000000000000000000000000));
     }
 
     function testUpdateTokenPriceEquivalence(
         uint64 poolId,
         bytes16 trancheId,
-        uint256 price
+        uint128 price
     ) public {
         bytes memory _message = ConnectorMessages.formatUpdateTokenPrice(
             poolId,
@@ -159,11 +159,11 @@ contract MessagesTest is Test {
         (
             uint64 decodedPoolId,
             bytes16 decodedTrancheId,
-            uint256 decodedPrice
+            uint128 decodedPrice
         ) = ConnectorMessages.parseUpdateTokenPrice(_message.ref(0));
         assertEq(uint256(decodedPoolId), uint256(poolId));
         assertEq(decodedTrancheId, trancheId);
-        assertEq(decodedPrice, price);
+        assertEq(uint(decodedPrice), uint(price));
     }
 
     // Convert an hexadecimal character to their value

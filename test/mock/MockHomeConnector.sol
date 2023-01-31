@@ -48,7 +48,7 @@ contract MockHomeConnector is Test {
         router.handle(_message);
     }
 
-    function updateTokenPrice(uint64 poolId, bytes16 trancheId, uint256 price) public {
+    function updateTokenPrice(uint64 poolId, bytes16 trancheId, uint128 price) public {
         bytes memory _message = ConnectorMessages.formatUpdateTokenPrice(poolId, trancheId, price);
         router.handle(_message);
     }
