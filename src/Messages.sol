@@ -70,6 +70,12 @@ library ConnectorMessages {
         );
     }
 
+    function formatAddTrancheB(uint256 price) internal pure returns (bytes memory) {
+        return abi.encodePacked(
+            price
+        );
+    }
+
     function isAddTranche(bytes29 _msg) internal pure returns (bool) {
         return messageType(_msg) == Call.AddTranche;
     }
@@ -80,6 +86,15 @@ library ConnectorMessages {
         tokenName = bytes32ToString(bytes32(_msg.index(25, 32)));
         tokenSymbol = bytes32ToString(bytes32(_msg.index(153, 32)));
         price = uint256(_msg.index(185, 32));
+    }
+
+    // TODO(nuno): make this the official impl once we agree on the price type
+    function parseAddTrancheB(bytes29 _msg) internal pure returns (uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol, uint128 price) {
+        poolId = uint64(_msg.indexUint(1, 8));
+        trancheId = bytes16(_msg.index(9, 16));
+        tokenName = bytes32ToString(bytes32(_msg.index(25, 32)));
+        tokenSymbol = bytes32ToString(bytes32(_msg.index(153, 32)));
+        price = uint128(_msg.indexUint(185, 16));
     }
 
     // TODO: should be moved to a util contract
