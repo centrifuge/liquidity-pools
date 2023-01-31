@@ -8,7 +8,6 @@ import { MemberlistLike } from "./token/memberlist.sol";
 
 interface RouterLike {
     function sendMessage(uint32 destinationDomain, uint64 poolId, bytes16 trancheId, uint256 amount, address user) external;
-    function centrifugeChainOrigin() external view returns (address);
 }
 
 contract CentrifugeConnector {
