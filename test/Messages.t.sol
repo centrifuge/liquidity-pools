@@ -201,13 +201,6 @@ contract MessagesTest is Test {
         return r;
     }
 
-    function toBytes16(bytes memory f) internal pure returns (bytes16 fc) {
-        assembly {
-          fc := mload(add(f, 16))
-        }
-        return fc;
-    }
-
     function stringToBytes32(string memory source) internal pure returns (bytes32 result) {
         bytes memory tempEmptyStringTest = bytes(source);
         if (tempEmptyStringTest.length == 0) {
