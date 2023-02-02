@@ -53,8 +53,8 @@ contract MockHomeConnector is Test {
         router.handle(_message);
     }
 
-    function transfer(uint32 destinationDomain, uint64 poolId, bytes16 trancheId, address user, uint256 amount) public  {
-        bytes memory _message = ConnectorMessages.formatTransfer(destinationDomain, poolId, trancheId, user, amount);
+    function transfer(uint64 poolId, bytes16 trancheId, address user, uint256 amount, uint32 destinationDomain) public  {
+        bytes memory _message = ConnectorMessages.formatTransfer(poolId, trancheId, user, amount, destinationDomain);
         router.handle(_message);
     }
 

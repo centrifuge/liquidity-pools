@@ -7,12 +7,14 @@ import { RestrictedTokenLike } from "./token/restricted.sol";
 import { MemberlistLike } from "./token/memberlist.sol";
 
 interface RouterLike {
-    function sendMessage(uint32 destinationDomain, uint64 poolId, bytes16 trancheId, uint256 amount, address user) external;
+    function sendMessage(uint64 poolId, bytes16 trancheId, uint256 amount, address user) external;
 }
 
 contract CentrifugeConnector {
 
-    uint32 immutable CENTRIFUGE_CHAIN_DOMAIN = 3000;
+    enum Domains {
+        Centrifuge
+    }
 
     RouterLike public router;
     RestrictedTokenFactoryLike public immutable tokenFactory;
@@ -159,14 +161,14 @@ contract CentrifugeConnector {
         bytes16 trancheId,
         address user,
         uint256 amount,
-        uint32 destinationDomain
+        Domains destinationDomain
     ) public {
-        require(destinationDomain == CENTRIFUGE_CHAIN_DOMAIN, "CentrifugeConnector/invalid-destination");
+        require(destinationDomain == Domains.Centrifuge, "CentrifugeConnector/invalid-destination");
         RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
         require(address(token) != address(0), "CentrifugeConnector/unknown-token");
         require(token.balanceOf(user) >= amount, "CentrifugeConnector/insufficient-balance");
         require(token.transferFrom(user, address(this), amount), "CentrifugeConnector/token-transfer-failed");
         token.burn(address(this), amount);
-        router.sendMessage(destinationDomain, poolId, trancheId, amount, user);
+        router.sendMessage(poolId, trancheId, amount, user);
     }
 }
