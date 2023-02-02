@@ -176,6 +176,30 @@ contract ConnectorTest is Test {
         bridgedConnector.updateTokenPrice(poolId, trancheId, price);
      }
 
+    function testTransfer(uint64 poolId, string memory tokenName, string memory tokenSymbol, bytes16 trancheId, uint128 price, uint32 destinationDomain, address user, uint256 amount, uint64 validUntil) public {
+        vm.assume(validUntil > block.timestamp);
+        // 0. Add Pool
+        homeConnector.addPool(poolId);
+        (uint64 actualPoolId,) = bridgedConnector.pools(poolId);
+        assertEq(uint256(actualPoolId), uint256(poolId));
+
+        // 1. Add the tranche
+        homeConnector.addTranche(poolId, trancheId, tokenName, tokenSymbol, price);
+        // 2. Then deploy the tranche
+        bridgedConnector.deployTranche(poolId, trancheId);
+
+        // (address token_, uint256 latestPrice,,string memory actualTokenName, string memory actualTokenSymbol)
+        //     = bridgedConnector.tranches(poolId, trancheId);
+        // assertTrue(token_ != address(0));
+        // assertEq(latestPrice, price);
+
+        // 3. Add member
+        bridgedConnector.updateMember(poolId, trancheId, user, validUntil);
+        // 4. Transfer some tokens
+        homeConnector.transfer(destinationDomain, poolId, trancheId, user, amount);
+
+    }
+
     // helpers 
     function safeAdd(uint x, uint y) internal pure returns (uint z) {
         require((z = x + y) >= x, "math-add-overflow");
