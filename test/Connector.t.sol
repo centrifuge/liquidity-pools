@@ -121,7 +121,7 @@ contract ConnectorTest is Test {
         homeConnector.addPool(poolId);
         homeConnector.addTranche(poolId, trancheId, "Some Name", "SYMBOL", 123);
         bridgedConnector.deployTranche(poolId, trancheId);
-        vm.expectRevert("invalid-validUntil");
+        vm.expectRevert("cent/invalid-validUntil");
         homeConnector.updateMember(poolId, trancheId, user, validUntil);
     }
 
