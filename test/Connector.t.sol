@@ -212,7 +212,7 @@ contract ConnectorTest is Test {
         bridgedConnector.deployTranche(poolId, trancheId);
         
         // 3. Transfer some tokens and expect revert
-        vm.expectRevert(bytes("cent/not-allowed-to-hold-token"));
+        vm.expectRevert(bytes("CentrifugeConnector/not-a-member"));
         homeConnector.transfer(poolId, trancheId, user, amount);
         (address token,,,,) = bridgedConnector.tranches(poolId, trancheId);
         assertEq(ERC20Like(token).balanceOf(user), 0);

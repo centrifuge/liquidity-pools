@@ -45,9 +45,4 @@ contract RestrictedToken is ERC20 {
     function transferFrom(address from, address to, uint wad) checkMember(to) public override returns (bool) {
         return super.transferFrom(from, to, wad);
     }
-
-    // minting should only be possible for members
-    function mint(address usr, uint wad) public override checkMember(usr) {
-        super.mint(usr, wad);
-    }
 }

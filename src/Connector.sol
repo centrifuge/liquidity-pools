@@ -158,8 +158,7 @@ contract CentrifugeConnector {
         uint256 amount
     ) public onlyRouter {
         RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
-        // // require(address(token) != address(0), "CentrifugeConnector/unknown-token");
-        // require(token.hasMember(user), "CentrifugeConnector/not-a-member");
+        require(token.hasMember(user), "CentrifugeConnector/not-a-member");
 
         token.mint(user, amount);
     }
