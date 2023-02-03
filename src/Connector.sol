@@ -12,7 +12,7 @@ interface RouterLike {
 
 contract CentrifugeConnector {
 
-    enum Domains {
+    enum Domain {
         Centrifuge
     }
 
@@ -161,9 +161,9 @@ contract CentrifugeConnector {
         bytes16 trancheId,
         address user,
         uint256 amount,
-        Domains destinationDomain
+        Domain destinationDomain
     ) public {
-        require(destinationDomain == Domains.Centrifuge, "CentrifugeConnector/invalid-destination");
+        require(destinationDomain == Domain.Centrifuge, "CentrifugeConnector/invalid-destination");
         RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
         require(address(token) != address(0), "CentrifugeConnector/unknown-token");
         require(token.balanceOf(user) >= amount, "CentrifugeConnector/insufficient-balance");
