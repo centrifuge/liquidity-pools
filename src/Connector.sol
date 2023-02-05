@@ -12,13 +12,11 @@ interface RouterLike {
 
 contract CentrifugeConnector {
 
-    enum Domain {
-        Centrifuge
-    }
-
     RouterLike public router;
     RestrictedTokenFactoryLike public immutable tokenFactory;
     MemberlistFactoryLike public immutable memberlistFactory;
+
+    enum Domain { EVM, Parachain }
 
     // --- Storage ---
     struct Pool {
@@ -39,12 +37,14 @@ contract CentrifugeConnector {
     mapping(uint64 => Pool) public pools;
     mapping(uint64 => mapping(bytes16 => Tranche)) public tranches;
     mapping(address => uint256) public wards;
+    mapping(bytes32 => uint32) public domainsEVM;
+    mapping(bytes32 => uint32) public domainsParachain;
 
     // --- Events ---
     event Rely(address indexed user);
     event Deny(address indexed user);
     event File(bytes32 indexed what, address data);
-    event File(bytes32 indexed what, string data);
+    event File(bytes32 indexed what, string data, uint32 data2);
     event PoolAdded(uint256 indexed poolId);
     event TrancheAdded(uint256 indexed poolId, bytes16 indexed trancheId);
     event TrancheDeployed(uint256 indexed poolId, bytes16 indexed trancheId, address indexed token);
@@ -53,6 +53,7 @@ contract CentrifugeConnector {
         tokenFactory = RestrictedTokenFactoryLike(tokenFactory_);
         memberlistFactory = MemberlistFactoryLike(memberlistFactory_);
         wards[msg.sender] = 1;
+        file("domainEVM", "centrifuge", 3000);
         emit Rely(msg.sender);
     }
     
@@ -83,7 +84,27 @@ contract CentrifugeConnector {
         emit File(what, data);
     }
 
+    function file(bytes32 name, string memory domainName, uint32 domainId) public auth  {
+        if(name == "domainEVM") {
+           domainsEVM[keccak256(bytes(domainName))] = domainId;
+           emit File(name, domainName, domainId);
+        } else if(name == "domainParachain") {
+           domainsParachain[keccak256(bytes(domainName))] = domainId;
+           emit File(name, domainName, domainId);
+        } else { revert ("unknown name");}
+    }
+
     // --- Internal ---
+    function getDomain(Domain domain, string memory domainName) internal view returns (uint32) {
+        if (domain == Domain.EVM) {
+            return domainsEVM[keccak256(bytes(domainName))];
+        } else if (domain == Domain.Parachain) {
+            return domainsParachain[keccak256(bytes(domainName))];
+        } else {
+            revert("CentrifugeConnector/invalid-domain");
+        }
+    }
+
     function addPool(uint64 poolId) public onlyRouter {
         Pool storage pool = pools[poolId];
         pool.poolId = poolId;
@@ -161,9 +182,12 @@ contract CentrifugeConnector {
         bytes16 trancheId,
         address user,
         uint256 amount,
-        Domain destinationDomain
+        Domain domainType,
+        string memory domainName
     ) public {
-        require(destinationDomain == Domain.Centrifuge, "CentrifugeConnector/invalid-destination");
+        require(domainType == Domain.Parachain, "CentrifugeConnector/invalid-domain-type");
+        require(keccak256(bytes(domainName)) == keccak256("centrifuge"), "CentrifugeConnector/invalid-domain-name");
+        uint32 domainId = getDomain(Domain.Parachain, "centrifuge");
         RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
         require(address(token) != address(0), "CentrifugeConnector/unknown-token");
         require(token.balanceOf(user) >= amount, "CentrifugeConnector/insufficient-balance");
