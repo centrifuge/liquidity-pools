@@ -176,6 +176,11 @@ contract ConnectorTest is Test {
         bridgedConnector.updateTokenPrice(poolId, trancheId, price);
      }
 
+    function testGetDomainAvalanche() public {
+        bytes32 domain = bridgedConnector.getDomain(CentrifugeConnector.Domain.EVM, 43114);
+        assertEq(domain, bytes32(hex"006aa8000000000000"));
+    }
+
     // helpers 
     function safeAdd(uint x, uint y) internal pure returns (uint z) {
         require((z = x + y) >= x, "math-add-overflow");

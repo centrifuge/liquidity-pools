@@ -19,6 +19,8 @@ contract CentrifugeConnector {
     enum Domain { EVM, Parachain }
 
     // --- Storage ---
+    uint32 immutable CENTRIFUGE_CHAIN_DOMAIN_ID = 3000;
+
     struct Pool {
         uint64 poolId;
         uint256 createdAt;
@@ -37,8 +39,6 @@ contract CentrifugeConnector {
     mapping(uint64 => Pool) public pools;
     mapping(uint64 => mapping(bytes16 => Tranche)) public tranches;
     mapping(address => uint256) public wards;
-    mapping(bytes32 => uint32) public domainsEVM;
-    mapping(bytes32 => uint32) public domainsParachain;
 
     // --- Events ---
     event Rely(address indexed user);
@@ -53,7 +53,6 @@ contract CentrifugeConnector {
         tokenFactory = RestrictedTokenFactoryLike(tokenFactory_);
         memberlistFactory = MemberlistFactoryLike(memberlistFactory_);
         wards[msg.sender] = 1;
-        file("domainEVM", "centrifuge", 3000);
         emit Rely(msg.sender);
     }
     
@@ -84,25 +83,9 @@ contract CentrifugeConnector {
         emit File(what, data);
     }
 
-    function file(bytes32 name, string memory domainName, uint32 domainId) public auth  {
-        if(name == "domainEVM") {
-           domainsEVM[keccak256(bytes(domainName))] = domainId;
-           emit File(name, domainName, domainId);
-        } else if(name == "domainParachain") {
-           domainsParachain[keccak256(bytes(domainName))] = domainId;
-           emit File(name, domainName, domainId);
-        } else { revert ("unknown name");}
-    }
-
     // --- Internal ---
-    function getDomain(Domain domain, string memory domainName) internal view returns (uint32) {
-        if (domain == Domain.EVM) {
-            return domainsEVM[keccak256(bytes(domainName))];
-        } else if (domain == Domain.Parachain) {
-            return domainsParachain[keccak256(bytes(domainName))];
-        } else {
-            revert("CentrifugeConnector/invalid-domain");
-        }
+    function getDomain(Domain domain, uint domainId) public pure returns (bytes32) {
+        return bytes32(uint64(domain) + domainId);
     }
 
     function addPool(uint64 poolId) public onlyRouter {
@@ -182,12 +165,11 @@ contract CentrifugeConnector {
         bytes16 trancheId,
         address user,
         uint256 amount,
-        Domain domainType,
-        string memory domainName
+        Domain domain,
+        uint256 domainId
     ) public {
-        require(domainType == Domain.Parachain, "CentrifugeConnector/invalid-domain-type");
-        require(keccak256(bytes(domainName)) == keccak256("centrifuge"), "CentrifugeConnector/invalid-domain-name");
-        uint32 domainId = getDomain(Domain.Parachain, "centrifuge");
+        require(domain == Domain.Parachain, "CentrifugeConnector/invalid-domain");
+        require(domainId == CENTRIFUGE_CHAIN_DOMAIN_ID, "CentrifugeConnector/invalid-domain-id");
         RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
         require(address(token) != address(0), "CentrifugeConnector/unknown-token");
         require(token.balanceOf(user) >= amount, "CentrifugeConnector/insufficient-balance");
