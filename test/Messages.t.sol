@@ -56,17 +56,17 @@ contract MessagesTest is Test {
 
     function testAddTrancheEncoding() public {
         assertEq(
-            ConnectorMessages.formatAddTranche(12378532, bytes16(hex"811acd5b3f17c06841c7e41e9e04cb1b"), "Some Name", "SYMBOL", 1),
-            hex"020000000000bce1a4811acd5b3f17c06841c7e41e9e04cb1b536f6d65204e616d65000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000053594d424f4c000000000000000000000000000000000000000000000000000000000000000000000000000000000001"
+            ConnectorMessages.formatAddTranche(12378532, bytes16(hex"811acd5b3f17c06841c7e41e9e04cb1b"), "Some Name", "SYMBOL", 1000000000000000000000000000),
+            hex"020000000000bce1a4811acd5b3f17c06841c7e41e9e04cb1b536f6d65204e616d65000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000053594d424f4c000000000000000000000000000000000000000000000000000000000000033b2e3c9fd0803ce8000000"
         );
     }
 
     function testAddTrancheDecoding() public {
-        (uint64 decodedPoolId, bytes16 decodedTrancheId, string memory decodedTokenName, string memory decodedTokenSymbol, uint128 decodedPrice) = ConnectorMessages.parseAddTranche(fromHex("020000000000bce1a4000000000000000000000000000000010505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505050505060606060606060606060606060606060606060606060606060606060606060600000000033b2e3c9fd0803ce8000000").ref(0));
+        (uint64 decodedPoolId, bytes16 decodedTrancheId, string memory decodedTokenName, string memory decodedTokenSymbol, uint128 decodedPrice) = ConnectorMessages.parseAddTranche(fromHex("020000000000bce1a4811acd5b3f17c06841c7e41e9e04cb1b536f6d65204e616d65000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000053594d424f4c000000000000000000000000000000000000000000000000000000000000033b2e3c9fd0803ce8000000").ref(0));
         assertEq(uint(decodedPoolId), uint(12378532));
-        assertEq(decodedTrancheId, bytes16(hex"00000000000000000000000000000001"));
-        assertEq(decodedTokenName, bytes32ToString(bytes32(hex"0505050505050505050505050505050505050505050505050505050505050505")));
-        assertEq(decodedTokenSymbol, bytes32ToString(hex"0606060606060606060606060606060606060606060606060606060606060606"));
+        assertEq(decodedTrancheId, bytes16(hex"811acd5b3f17c06841c7e41e9e04cb1b"));
+        assertEq(decodedTokenName, bytes32ToString(bytes32("Some Name")));
+        assertEq(decodedTokenSymbol, bytes32ToString(bytes32("SYMBOL")));
         assertEq(decodedPrice, uint(1000000000000000000000000000));
     }
 
@@ -82,17 +82,20 @@ contract MessagesTest is Test {
         );
         (uint64 decodedPoolId, bytes16 decodedTrancheId, string memory decodedTokenName, string memory decodedTokenSymbol, uint128 decodedPrice) = ConnectorMessages
             .parseAddTranche(_message.ref(0));
-        assertEq(uint256(decodedPoolId), uint256(poolId));
+        assertEq(uint(decodedPoolId), uint(poolId));
         assertEq(decodedTrancheId, trancheId);
         // Comparing raw input to output can erroneously fail when a byte string is given.
-        // Intended behaviour is that byte strings will be treated as bytes and converted to strings instead of treated as strings themselves.
-        // This conversion from string to bytes32 to string is used to simulate this intended behaviour.
+        // Intended behaviour is that byte strings will be treated as bytes and converted to strings instead
+        // of treated as strings themselves. This conversion from string to bytes32 to string is used to simulate
+        // this intended behaviour.
         assertEq(decodedTokenName, bytes32ToString(stringToBytes32(tokenName)));
         assertEq(decodedTokenSymbol, bytes32ToString(stringToBytes32(tokenSymbol)));
-        // TODO(nuno): fix this
-        assertEq(decodedPrice, uint256(price));
+        assertEq(uint(decodedPrice), uint(price));
     }
 
+    // Note: UpdateMember encodes differently in Solidity compared to the Rust counterpart because `user` is a 20-byte
+    // value in Solidity while it is 32-byte in Rust. However, UpdateMember messages coming from the cent-chain will
+    // be handled correctly as the last 12 bytes out of said 32 will be ignored.
     function testUpdateMemberEncoding() public {
         assertEq(
             ConnectorMessages.formatUpdateMember(2, bytes16(hex"811acd5b3f17c06841c7e41e9e04cb1b"), 0x1231231231231231231231231231231231231231, 1706260138),
@@ -100,8 +103,10 @@ contract MessagesTest is Test {
         );
     }
 
+    // We use an UpdateMember encoded message generated in the cent-chain to
+    // verify we handle the 32 to 20 bytes address compatibility as expected.
     function testUpdateMemberDecoding() public {
-        (uint64 decodedPoolId, bytes16 decodedTrancheId, address decodedUser, uint64 decodedValidUntil) = ConnectorMessages.parseUpdateMember(fromHex("040000000000000002811acd5b3f17c06841c7e41e9e04cb1b12312312312312312312312312312312312312312312312312312312312312310000000065B376AA").ref(0));
+        (uint64 decodedPoolId, bytes16 decodedTrancheId, address decodedUser, uint64 decodedValidUntil) = ConnectorMessages.parseUpdateMember(fromHex("040000000000000002811acd5b3f17c06841c7e41e9e04cb1b12312312312312312312312312312312312312312312312312312312312312310000000065b376aa").ref(0));
         assertEq(uint(decodedPoolId), uint(2));
         assertEq(decodedTrancheId, hex"811acd5b3f17c06841c7e41e9e04cb1b");
         assertEq(decodedUser, 0x1231231231231231231231231231231231231231);
@@ -209,13 +214,6 @@ contract MessagesTest is Test {
             );
         }
         return r;
-    }
-
-    function toBytes16(bytes memory f) internal pure returns (bytes16 fc) {
-        assembly {
-          fc := mload(add(f, 16))
-        }
-        return fc;
     }
 
     function stringToBytes32(string memory source) internal pure returns (bytes32 result) {

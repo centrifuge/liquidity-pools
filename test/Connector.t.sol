@@ -11,6 +11,10 @@ import { ConnectorXCMRouter } from "src/routers/xcm/Router.sol";
 import "forge-std/Test.sol";
 import "../src/Connector.sol";
 
+interface ERC20Like {
+    function balanceOf(address) external view returns (uint);
+}
+
 contract ConnectorTest is Test {
 
     CentrifugeConnector bridgedConnector;
@@ -174,6 +178,44 @@ contract ConnectorTest is Test {
         vm.expectRevert(bytes("CentrifugeConnector/invalid-pool-or-tranche"));
         bridgedConnector.updateTokenPrice(poolId, trancheId, price);
      }
+
+    function testTransfer(uint64 poolId, string memory tokenName, string memory tokenSymbol, bytes16 trancheId, uint128 price, uint32 destinationDomain, address user, uint256 amount, uint64 validUntil) public {
+        vm.assume(validUntil > block.timestamp + 7 days);
+        // 0. Add Pool
+        homeConnector.addPool(poolId);
+
+        // 1. Add the tranche
+        homeConnector.addTranche(poolId, trancheId, tokenName, tokenSymbol, price);
+
+        // 2. Then deploy the tranche
+        bridgedConnector.deployTranche(poolId, trancheId);
+
+        // 3. Add member
+        homeConnector.updateMember(poolId, trancheId, user, validUntil);
+        
+        // 4. Transfer some tokens
+        homeConnector.transfer(poolId, trancheId, user, amount);
+        (address token,,,,) = bridgedConnector.tranches(poolId, trancheId);
+        assertEq(ERC20Like(token).balanceOf(user), amount);
+    }
+
+    function testTransferWithoutMemberFails(uint64 poolId, string memory tokenName, string memory tokenSymbol, bytes16 trancheId, uint128 price, uint32 destinationDomain, address user, uint256 amount, uint64 validUntil) public {
+        vm.assume(validUntil > block.timestamp + 7 days);
+        // 0. Add Pool
+        homeConnector.addPool(poolId);
+
+        // 1. Add the tranche
+        homeConnector.addTranche(poolId, trancheId, tokenName, tokenSymbol, price);
+
+        // 2. Then deploy the tranche
+        bridgedConnector.deployTranche(poolId, trancheId);
+        
+        // 3. Transfer some tokens and expect revert
+        vm.expectRevert(bytes("CentrifugeConnector/not-a-member"));
+        homeConnector.transfer(poolId, trancheId, user, amount);
+        (address token,,,,) = bridgedConnector.tranches(poolId, trancheId);
+        assertEq(ERC20Like(token).balanceOf(user), 0);
+    }
 
     // helpers 
     function safeAdd(uint x, uint y) internal pure returns (uint z) {
