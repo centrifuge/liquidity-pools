@@ -18,8 +18,6 @@ contract CentrifugeConnector {
     MemberlistFactoryLike public immutable memberlistFactory;
 
     // --- Storage ---
-    uint32 immutable CENTRIFUGE_CHAIN_DOMAIN_ID = 3000;
-
     struct Pool {
         uint64 poolId;
         uint256 createdAt;
@@ -161,11 +159,9 @@ contract CentrifugeConnector {
         bytes16 trancheId,
         address user,
         uint256 amount,
-        ConnectorMessages.Domain domain,
-        uint64 domainId
+        ConnectorMessages.Domain domain
     ) public {
-        require(domain == ConnectorMessages.Domain.Parachain, "CentrifugeConnector/invalid-domain");
-        require(uint8(domainId) == uint8(ConnectorMessages.ParachainId.Centrifuge), "CentrifugeConnector/invalid-domain-id");
+        require(domain == ConnectorMessages.Domain.Centrifuge, "CentrifugeConnector/invalid-domain");
         RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
         require(address(token) != address(0), "CentrifugeConnector/unknown-token");
         require(token.balanceOf(user) >= amount, "CentrifugeConnector/insufficient-balance");

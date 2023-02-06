@@ -16,8 +16,7 @@ library ConnectorMessages {
         Transfer
     }
 
-    enum Domain { EVM, Parachain }
-    enum ParachainId { Centrifuge, Moonbeam }
+    enum Domain { Centrifuge, EVM }
 
     function messageType(bytes29 _msg) internal pure returns (Call _call) {
         _call = Call(uint8(_msg.indexUint(0, 1)));
@@ -177,7 +176,11 @@ library ConnectorMessages {
         amount = uint256(_msg.index(45, 32));
     }
 
-    function formatDomain(Domain domain, uint domainId) public pure returns (bytes32) {
+    function formatDomain(Domain domain) public pure returns (bytes32) {
+        return bytes32(byte(uint8(domain)));
+    }
+
+    function formatDomain(Domain domain, uint256 domainId) public pure returns (bytes32) {
         return bytes32(uint8(domain) + domainId);
     }
 
