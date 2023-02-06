@@ -106,6 +106,7 @@ contract CentrifugeConnector {
 
         Tranche storage tranche = tranches[poolId][trancheId];
         tranche.latestPrice = price;
+        tranche.lastPriceUpdate = block.timestamp;
         tranche.tokenName = tokenName;
         tranche.tokenSymbol = tokenSymbol;
 
@@ -132,7 +133,7 @@ contract CentrifugeConnector {
         uint128 price
     ) public onlyRouter {
         Tranche storage tranche = tranches[poolId][trancheId];
-        require(tranche.latestPrice > 0, "CentrifugeConnector/invalid-pool-or-tranche");
+        require(tranche.lastPriceUpdate > 0, "CentrifugeConnector/invalid-pool-or-tranche");
         tranche.latestPrice = price;
         tranche.lastPriceUpdate = block.timestamp;
     }
@@ -144,7 +145,7 @@ contract CentrifugeConnector {
         uint64 validUntil
     ) public onlyRouter {
         Tranche storage tranche = tranches[poolId][trancheId];
-        require(tranche.latestPrice > 0, "CentrifugeConnector/invalid-pool-or-tranche");
+        require(tranche.lastPriceUpdate > 0, "CentrifugeConnector/invalid-pool-or-tranche");
         RestrictedTokenLike token = RestrictedTokenLike(tranche.token);
         MemberlistLike memberlist = MemberlistLike(token.memberlist());
         memberlist.updateMember(user, validUntil);
@@ -157,8 +158,8 @@ contract CentrifugeConnector {
         uint256 amount
     ) public onlyRouter {
         RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
-        require(address(token) != address(0), "CentrifugeConnector/unknown-token");
         require(token.hasMember(user), "CentrifugeConnector/not-a-member");
+
         token.mint(user, amount);
     }
 
