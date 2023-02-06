@@ -72,7 +72,7 @@ contract ERC20 {
         emit Transfer(src, dst, wad);
         return true;
     }
-    function mint(address usr, uint wad) public virtual auth {
+    function mint(address usr, uint wad) external virtual auth {
         balanceOf[usr] = safeAdd_(balanceOf[usr], wad);
         totalSupply    = safeAdd_(totalSupply, wad);
         emit Transfer(address(0), usr, wad);

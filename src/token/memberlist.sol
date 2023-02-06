@@ -28,7 +28,7 @@ contract Memberlist {
     }
 
     function updateMember(address usr, uint validUntil) public auth {
-        require((safeAdd(block.timestamp, minimumDelay)) < validUntil, "cent/invalid-validUntil");
+        require((safeAdd(block.timestamp, minimumDelay)) < validUntil, "invalid-validUntil");
         members[usr] = validUntil;
      }
 
@@ -39,7 +39,7 @@ contract Memberlist {
     }
 
     function member(address usr) public view {
-        require((members[usr] >= block.timestamp), "cent/not-allowed-to-hold-token");
+        require((members[usr] >= block.timestamp), "not-allowed-to-hold-token");
     }
 
     function hasMember(address usr) public view returns (bool) {
