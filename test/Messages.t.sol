@@ -166,6 +166,21 @@ contract MessagesTest is Test {
         assertEq(uint(decodedPrice), uint(price));
     }
 
+    function testFormatDomainCentrifuge() public {
+        bytes32 domain = ConnectorMessages.formatDomain(ConnectorMessages.Domain.Parachain, uint8(ConnectorMessages.ParachainId.Centrifuge));
+        assertEq(domain, bytes32(hex"0010000000000000"));
+    }
+
+    function testFormatDomainMoonbeam() public {
+        bytes32 domain = ConnectorMessages.formatDomain(ConnectorMessages.Domain.Parachain, uint8(ConnectorMessages.ParachainId.Moonbeam));
+        assertEq(domain, bytes32(hex"0010000000000000"));
+    }
+
+    function testFormatDomainAvalanche() public {
+        bytes32 domain = ConnectorMessages.formatDomain(ConnectorMessages.Domain.EVM, 43114);
+        assertEq(domain, bytes32(hex"00a86a000000000000"));
+    }
+
     // Convert an hexadecimal character to their value
     function fromHexChar(uint8 c) internal pure returns (uint8) {
         if (bytes1(c) >= bytes1("0") && bytes1(c) <= bytes1("9")) {

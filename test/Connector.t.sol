@@ -8,7 +8,6 @@ import { RestrictedTokenLike } from "src/token/restricted.sol";
 import { MemberlistLike, Memberlist } from "src/token/memberlist.sol";
 import { MockHomeConnector } from "./mock/MockHomeConnector.sol";
 import { ConnectorXCMRouter } from "src/routers/xcm/Router.sol";
-import {ConnectorMessages} from "src/Messages.sol";
 import "forge-std/Test.sol";
 import "../src/Connector.sol";
 
@@ -175,11 +174,6 @@ contract ConnectorTest is Test {
         vm.expectRevert(bytes("CentrifugeConnector/invalid-pool-or-tranche"));
         bridgedConnector.updateTokenPrice(poolId, trancheId, price);
      }
-
-    function testGetDomainAvalanche() public {
-        bytes32 domain = bridgedConnector.getDomain(CentrifugeConnector.Domain.EVM, 43114);
-        assertEq(domain, bytes32(hex"006aa8000000000000"));
-    }
 
     // helpers 
     function safeAdd(uint x, uint y) internal pure returns (uint z) {

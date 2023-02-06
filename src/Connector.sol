@@ -5,6 +5,7 @@ pragma abicoder v2;
 import { RestrictedTokenFactoryLike, MemberlistFactoryLike } from "./token/factory.sol";
 import { RestrictedTokenLike } from "./token/restricted.sol";
 import { MemberlistLike } from "./token/memberlist.sol";
+import { ConnectorMessages } from "src/messages.sol";
 
 interface RouterLike {
     function sendMessage(uint64 poolId, bytes16 trancheId, uint256 amount, address user) external;
@@ -15,8 +16,6 @@ contract CentrifugeConnector {
     RouterLike public router;
     RestrictedTokenFactoryLike public immutable tokenFactory;
     MemberlistFactoryLike public immutable memberlistFactory;
-
-    enum Domain { EVM, Parachain }
 
     // --- Storage ---
     uint32 immutable CENTRIFUGE_CHAIN_DOMAIN_ID = 3000;
@@ -84,10 +83,6 @@ contract CentrifugeConnector {
     }
 
     // --- Internal ---
-    function getDomain(Domain domain, uint domainId) public pure returns (bytes32) {
-        return bytes32(uint64(domain) + domainId);
-    }
-
     function addPool(uint64 poolId) public onlyRouter {
         Pool storage pool = pools[poolId];
         pool.poolId = poolId;
@@ -165,11 +160,11 @@ contract CentrifugeConnector {
         bytes16 trancheId,
         address user,
         uint256 amount,
-        Domain domain,
-        uint256 domainId
+        ConnectorMessages.Domain domain,
+        uint64 domainId
     ) public {
-        require(domain == Domain.Parachain, "CentrifugeConnector/invalid-domain");
-        require(domainId == CENTRIFUGE_CHAIN_DOMAIN_ID, "CentrifugeConnector/invalid-domain-id");
+        require(domain == ConnectorMessages.Domain.Parachain, "CentrifugeConnector/invalid-domain");
+        require(uint8(domainId) == uint8(ConnectorMessages.ParachainId.Centrifuge), "CentrifugeConnector/invalid-domain-id");
         RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
         require(address(token) != address(0), "CentrifugeConnector/unknown-token");
         require(token.balanceOf(user) >= amount, "CentrifugeConnector/insufficient-balance");
