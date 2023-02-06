@@ -194,7 +194,7 @@ contract ConnectorTest is Test {
         homeConnector.updateMember(poolId, trancheId, user, validUntil);
         
         // 4. Transfer some tokens
-        homeConnector.transfer(poolId, trancheId, user, amount);
+        homeConnector.transfer(poolId, trancheId, user, amount, destinationDomain);
         (address token,,,,) = bridgedConnector.tranches(poolId, trancheId);
         assertEq(ERC20Like(token).balanceOf(user), amount);
     }
@@ -212,7 +212,7 @@ contract ConnectorTest is Test {
         
         // 3. Transfer some tokens and expect revert
         vm.expectRevert(bytes("CentrifugeConnector/not-a-member"));
-        homeConnector.transfer(poolId, trancheId, user, amount);
+        homeConnector.transfer(poolId, trancheId, user, amount, destinationDomain);
         (address token,,,,) = bridgedConnector.tranches(poolId, trancheId);
         assertEq(ERC20Like(token).balanceOf(user), 0);
     }
