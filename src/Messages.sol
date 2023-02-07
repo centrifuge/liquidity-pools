@@ -159,7 +159,7 @@ library ConnectorMessages {
      * 9-24: trancheId (16 bytes)
      * 25-56: user (Ethereum address, 20 bytes - Skip last 12 bytes for 32-byte address compatibility)
      * 57-72: amount (uint128 = 16 bytes)
-     * 73-82: domain (Domain = 9 bytes)
+     * 73-81: domain (Domain = 9 bytes)
      */
     function formatTransfer(uint64 poolId, bytes16 trancheId, address user, uint128 amount, bytes9 destinationDomain) internal pure returns (bytes memory) {
         return abi.encodePacked(uint8(Call.Transfer), poolId, trancheId, user, bytes(hex"000000000000000000000000"), amount, destinationDomain);
