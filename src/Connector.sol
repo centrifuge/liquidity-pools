@@ -5,7 +5,7 @@ pragma abicoder v2;
 import { RestrictedTokenFactoryLike, MemberlistFactoryLike } from "./token/factory.sol";
 import { RestrictedTokenLike } from "./token/restricted.sol";
 import { MemberlistLike } from "./token/memberlist.sol";
-import { ConnectorMessages } from "src/messages.sol";
+import { ConnectorMessages } from "src/Messages.sol";
 
 interface RouterLike {
     function sendMessage(uint64 poolId, bytes16 trancheId, uint256 amount, address user) external;
