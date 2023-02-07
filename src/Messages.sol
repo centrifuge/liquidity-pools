@@ -157,17 +157,11 @@ library ConnectorMessages {
      * 0: call type (uint8 = 1 byte)
      * 1-8: poolId (uint64 = 8 bytes)
      * 9-24: trancheId (16 bytes)
-     * 25-56: user (Ethereum address, 20 bytes)
+     * 25-56: user (Ethereum address, 20 bytes - Skip last 12 bytes for 32-byte address compatibility)
      * 57-72: amount (uint128 = 16 bytes)
      * 73-82: domain (Domain = 9 bytes)
      */
     function formatTransfer(uint64 poolId, bytes16 trancheId, address user, uint128 amount, bytes9 destinationDomain) internal pure returns (bytes memory) {
-        // 1 byte - call type
-        // 8 bytes - poolId
-        // 16 bytes - TrancheId
-        // 32 bytes - Address
-        // 16 bytes - Amount
-        // 9 bytes - Domain
         return abi.encodePacked(uint8(Call.Transfer), poolId, trancheId, user, bytes(hex"000000000000000000000000"), amount, destinationDomain);
     }
 
@@ -176,18 +170,11 @@ library ConnectorMessages {
     }
 
     function parseTransfer(bytes29 _msg) internal pure returns (uint64 poolId, bytes16 trancheId, address user, uint128 amount, bytes9 encodedDomain) {
-        // 8 bytes - Pool id
-        // 16 bytes - tranche Id
-
-        // 9 bytes - domain
-        // 32 bytes - address
-        // 16 bytes - Amount (????)
-
         poolId = uint64(_msg.indexUint(1, 8));
         trancheId = bytes16(_msg.index(9, 16));
         user = address(bytes20(_msg.index(25, 20)));
-        amount = uint128(_msg.indexUint(45, 16));
-        encodedDomain = bytes9(_msg.index(45, 9));
+        amount = uint128(_msg.indexUint(57, 16));
+        encodedDomain = bytes9(_msg.index(73, 9));
     }
 
     function formatDomain(Domain domain) public pure returns (bytes9) {
