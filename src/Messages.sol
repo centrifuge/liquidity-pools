@@ -16,6 +16,8 @@ library ConnectorMessages {
         Transfer
     }
 
+    enum Domain { Centrifuge, EVM }
+
     function messageType(bytes29 _msg) internal pure returns (Call _call) {
         _call = Call(uint8(_msg.indexUint(0, 1)));
     }
@@ -159,8 +161,8 @@ library ConnectorMessages {
      * 47-78: amount (uint256 = 32 bytes)
      * 
      */
-    function formatTransfer(uint64 poolId, bytes16 trancheId, address user, uint256 amount) internal pure returns (bytes memory) {
-        return abi.encodePacked(uint8(Call.Transfer), poolId, trancheId, user, amount);
+    function formatTransfer(uint64 poolId, bytes16 trancheId, address user, uint256 amount, bytes9 destinationDomain) internal pure returns (bytes memory) {
+        return abi.encodePacked(uint8(Call.Transfer), poolId, trancheId, user, amount, destinationDomain);
     }
 
     function isTransfer(bytes29 _msg) internal pure returns (bool) {
@@ -172,6 +174,14 @@ library ConnectorMessages {
         trancheId = bytes16(_msg.index(9, 16));
         user = address(bytes20(_msg.index(25, 20)));
         amount = uint256(_msg.index(45, 32));
+    }
+
+    function formatDomain(Domain domain) public pure returns (bytes9) {
+        return bytes9(byte(uint8(domain)));
+    }
+
+    function formatDomain(Domain domain, uint64 domainId) public pure returns (bytes9) {
+        return bytes9(abi.encodePacked(uint8(domain), domainId).ref(0).index(0, 9));
     }
 
 }

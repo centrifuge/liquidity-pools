@@ -63,7 +63,7 @@ contract ConnectorXCMRouter {
         }
     }
 
-    function sendMessage(uint32 destinationDomain, uint64 poolId, bytes16 trancheId, uint256 amount, address user) external onlyConnector {
+    function sendMessage(uint64 poolId, bytes16 trancheId, uint256 amount, address user) external onlyConnector {
         // TODO: implement
     }
 
