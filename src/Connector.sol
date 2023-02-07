@@ -41,7 +41,6 @@ contract CentrifugeConnector {
     event Rely(address indexed user);
     event Deny(address indexed user);
     event File(bytes32 indexed what, address data);
-    event File(bytes32 indexed what, string data, uint32 data2);
     event PoolAdded(uint256 indexed poolId);
     event TrancheAdded(uint256 indexed poolId, bytes16 indexed trancheId);
     event TrancheDeployed(uint256 indexed poolId, bytes16 indexed trancheId, address indexed token);
