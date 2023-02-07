@@ -179,7 +179,7 @@ contract ConnectorTest is Test {
         bridgedConnector.updateTokenPrice(poolId, trancheId, price);
      }
 
-    function testTransferCentrifuge(uint64 poolId, string memory tokenName, string memory tokenSymbol, bytes16 trancheId, uint128 price, address user, uint256 amount, uint64 validUntil) public {
+    function testTransferCentrifuge(uint64 poolId, string memory tokenName, string memory tokenSymbol, bytes16 trancheId, uint128 price, address user, uint128 amount, uint64 validUntil) public {
         vm.assume(validUntil > block.timestamp + 7 days);
         // 0. Add Pool
         homeConnector.addPool(poolId);
@@ -200,7 +200,7 @@ contract ConnectorTest is Test {
         assertEq(ERC20Like(token).balanceOf(user), amount);
     }
 
-    function testTransferEVM(uint64 poolId, string memory tokenName, string memory tokenSymbol, bytes16 trancheId, uint128 price, uint64 destinationChainId, address user, uint256 amount, uint64 validUntil) public {
+    function testTransferEVM(uint64 poolId, string memory tokenName, string memory tokenSymbol, bytes16 trancheId, uint128 price, uint64 destinationChainId, address user, uint128 amount, uint64 validUntil) public {
         vm.assume(validUntil > block.timestamp + 7 days);
         // 0. Add Pool
         homeConnector.addPool(poolId);
@@ -221,7 +221,7 @@ contract ConnectorTest is Test {
         assertEq(ERC20Like(token).balanceOf(user), amount);
     }
 
-    function testTransferEVMWithoutMemberFails(uint64 poolId, string memory tokenName, string memory tokenSymbol, bytes16 trancheId, uint128 price, uint64 destinationChainId, address user, uint256 amount, uint64 validUntil) public {
+    function testTransferEVMWithoutMemberFails(uint64 poolId, string memory tokenName, string memory tokenSymbol, bytes16 trancheId, uint128 price, uint64 destinationChainId, address user, uint128 amount, uint64 validUntil) public {
         vm.assume(validUntil > block.timestamp + 7 days);
         // 0. Add Pool
         homeConnector.addPool(poolId);
