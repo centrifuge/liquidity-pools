@@ -172,23 +172,19 @@ contract MessagesTest is Test {
     }
 
     function testFormatDomainCentrifuge() public {
-        bytes32 domain = ConnectorMessages.formatDomain(ConnectorMessages.Domain.Centrifuge);
-        assertEq(domain, bytes32(hex"00"));
+        assertEq(ConnectorMessages.formatDomain(ConnectorMessages.Domain.Centrifuge), hex"00");
     }
 
     function testFormatDomainMoonbeam() public {
-        bytes32 domain = ConnectorMessages.formatDomain(ConnectorMessages.Domain.EVM, 1284);
-        assertEq(domain, bytes32(hex"000000000000050400"));
+        assertEq(ConnectorMessages.formatDomain(ConnectorMessages.Domain.EVM, 1284), hex"010000000000000504");
     }
 
     function testFormatDomainMoonbaseAlpha() public {
-        bytes32 domain = ConnectorMessages.formatDomain(ConnectorMessages.Domain.EVM, 1287);
-        assertEq(domain, bytes32(hex"000000000000050700"));
+        assertEq(ConnectorMessages.formatDomain(ConnectorMessages.Domain.EVM, 1287), hex"010000000000000507");
     }
 
     function testFormatDomainAvalanche() public {
-        bytes32 domain = ConnectorMessages.formatDomain(ConnectorMessages.Domain.Centrifuge, 43114);
-        assertEq(domain, bytes32(hex"000000000000a86a00"));
+        assertEq(ConnectorMessages.formatDomain(ConnectorMessages.Domain.EVM, 43114), hex"01000000000000a86a");
     }
 
     // Convert an hexadecimal character to their value

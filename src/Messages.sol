@@ -176,12 +176,12 @@ library ConnectorMessages {
         amount = uint256(_msg.index(45, 32));
     }
 
-    function formatDomain(Domain domain) public pure returns (bytes32) {
-        return bytes32(byte(uint8(domain)));
+    function formatDomain(Domain domain) public pure returns (bytes9) {
+        return bytes9(byte(uint8(domain)));
     }
 
-    function formatDomain(Domain domain, uint256 domainId) public pure returns (bytes32) {
-        return bytes32(uint8(domain) + domainId);
+    function formatDomain(Domain domain, uint64 domainId) public pure returns (bytes memory) {
+        return abi.encodePacked(uint8(domain), domainId);
     }
 
 }
