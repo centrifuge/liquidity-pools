@@ -5,6 +5,7 @@ pragma abicoder v2;
 import { RestrictedTokenFactoryLike, MemberlistFactoryLike } from "./token/factory.sol";
 import { RestrictedTokenLike } from "./token/restricted.sol";
 import { MemberlistLike } from "./token/memberlist.sol";
+// TODO: remove dependency on Messages.sol
 import { ConnectorMessages } from "src/Messages.sol";
 
 interface RouterLike {
@@ -104,10 +105,9 @@ contract CentrifugeConnector {
     }
 
     function deployTranche(uint64 poolId, bytes16 trancheId) public {
-        Pool storage pool = pools[poolId];
-        require(pool.createdAt > 0, "CentrifugeConnector/invalid-pool");
-
         Tranche storage tranche = tranches[poolId][trancheId];
+        require(tranche.lastPriceUpdate > 0, "CentrifugeConnector/invalid-pool-or-tranche");
+
         address token = tokenFactory.newRestrictedToken(tranche.tokenName, tranche.tokenSymbol);
         tranche.token = token;
 

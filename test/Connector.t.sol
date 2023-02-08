@@ -96,6 +96,34 @@ contract ConnectorTest is Test {
         homeConnector.addTranche(poolId, trancheId, tokenName, tokenSymbol, price);
     }
 
+    function testDeployingWrongTrancheFails(uint64 poolId, string memory tokenName, string memory tokenSymbol, bytes16 trancheId, bytes16 wrongTrancheId, uint128 price) public {
+        vm.assume(trancheId != wrongTrancheId);
+        // 0. Add Pool
+        homeConnector.addPool(poolId);
+        (uint64 actualPoolId,) = bridgedConnector.pools(poolId);
+        assertEq(uint256(actualPoolId), uint256(poolId));
+
+        // 1. Add the tranche
+        homeConnector.addTranche(poolId, trancheId, tokenName, tokenSymbol, price);
+        // 2. Then deploy the tranche
+        vm.expectRevert(bytes("CentrifugeConnector/invalid-pool-or-tranche"));
+        bridgedConnector.deployTranche(poolId, wrongTrancheId);
+    }
+
+    function testDeployingTrancheOnNonExistantPoolFails(uint64 poolId, uint64 wrongPoolId, string memory tokenName, string memory tokenSymbol, bytes16 trancheId, uint128 price) public {
+        vm.assume(poolId != wrongPoolId);
+        // 0. Add Pool
+        homeConnector.addPool(poolId);
+        (uint64 actualPoolId,) = bridgedConnector.pools(poolId);
+        assertEq(uint256(actualPoolId), uint256(poolId));
+
+        // 1. Add the tranche
+        homeConnector.addTranche(poolId, trancheId, tokenName, tokenSymbol, price);
+        // 2. Then deploy the tranche
+        vm.expectRevert(bytes("CentrifugeConnector/invalid-pool-or-tranche"));
+        bridgedConnector.deployTranche(wrongPoolId, trancheId);
+    }
+
     function testUpdatingMemberWorks(uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) public {
         vm.assume(validUntil >= safeAdd(block.timestamp, new Memberlist().minimumDelay()));
         vm.assume(user != address(0));
