@@ -19,7 +19,6 @@ contract InvariantPoolManager is Test {
 
   function addPool(uint64 poolId) public {
     connector.addPool(poolId);
-    
     allPools.push(poolId);
   }
 
