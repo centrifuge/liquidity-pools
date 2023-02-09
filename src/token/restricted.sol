@@ -12,6 +12,11 @@ interface ERC20Like {
     function mint(address usr, uint wad) external;
     function name() external view returns (string memory);
     function symbol() external view returns (string memory);
+    function balanceOf(address usr) external view returns (uint wad);
+    function burn(address usr, uint wad) external;
+    function transferFrom(address from, address to, uint amount) external returns (bool);
+    function totalSupply() external returns (uint);
+    function approve(address _spender, uint256 _value) external returns (bool);
 }
 
 interface RestrictedTokenLike is ERC20Like {

@@ -15,8 +15,14 @@ contract MockHomeConnector is Test {
     ConnectorXCMRouter public immutable router;
 
     uint32 immutable CENTRIFUGE_CHAIN_DOMAIN = 3000;
-
     uint32 immutable NONCE = 1;
+
+
+    uint32 public dispatchDomain;
+    bytes public dispatchMessage;
+    bytes32 public dispatchRecipient;
+    uint public dispatchCalls;
+
 
     enum Types {
         AddPool
@@ -31,20 +37,37 @@ contract MockHomeConnector is Test {
         router.handle(_message);
     }
 
-    function addTranche(uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol) public {
-        bytes memory _message = ConnectorMessages.formatAddTranche(poolId, trancheId, tokenName, tokenSymbol);
+    function addTranche(uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol, uint128 price) public {
+        bytes memory _message = ConnectorMessages.formatAddTranche(poolId, trancheId, tokenName, tokenSymbol, price);
         router.handle(_message);
     }
 
 
-    function updateMember(uint64 poolId, bytes16 trancheId, address user, uint256 amount) public {
-        bytes memory _message = ConnectorMessages.formatUpdateMember(poolId, trancheId, user, amount);
+    function updateMember(uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) public {
+        bytes memory _message = ConnectorMessages.formatUpdateMember(poolId, trancheId, user, validUntil);
         router.handle(_message);
     }
 
-    function updateTokenPrice(uint64 poolId, bytes16 trancheId, uint256 price) public {
+    function updateTokenPrice(uint64 poolId, bytes16 trancheId, uint128 price) public {
         bytes memory _message = ConnectorMessages.formatUpdateTokenPrice(poolId, trancheId, price);
         router.handle(_message);
+    }
+
+    function transfer(uint64 poolId, bytes16 trancheId, address user, uint128 amount, bytes9 destinationDomain) public  {
+        bytes memory _message = ConnectorMessages.formatTransfer(poolId, trancheId, user, amount, destinationDomain);
+        router.handle(_message);
+    }
+
+
+    function dispatch(
+        uint32 _destinationDomain,
+        bytes32 _recipientAddress,
+        bytes memory _messageBody
+    ) external {
+         dispatchCalls++;
+         dispatchDomain = _destinationDomain;
+         dispatchMessage =  _messageBody;
+         dispatchRecipient = _recipientAddress;
     }
 
 }
