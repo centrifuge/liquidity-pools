@@ -1,0 +1,45 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+pragma solidity ^0.7.6;
+pragma abicoder v2;
+
+import { CentrifugeConnector } from "src/Connector.sol";
+import { MockHomeConnector } from "./mock/MockHomeConnector.sol";
+import { ConnectorXCMRouter } from "src/routers/xcm/Router.sol";
+import { RestrictedTokenFactory, MemberlistFactory } from "src/token/factory.sol";
+import { InvariantPoolManager } from "./accounts/PoolManager.sol";
+import "forge-std/Test.sol";
+import "../src/Connector.sol";
+
+contract ConnectorInvariants is Test {
+
+    CentrifugeConnector bridgedConnector;
+    ConnectorXCMRouter bridgedRouter;
+    MockHomeConnector connector;
+
+    InvariantPoolManager poolManager;
+
+    address[] private targetContracts;
+
+    function setUp() public {
+      address tokenFactory_ = address(new RestrictedTokenFactory());
+      address memberlistFactory_ = address(new MemberlistFactory());
+      bridgedConnector = new CentrifugeConnector(tokenFactory_, memberlistFactory_);
+      connector = new MockHomeConnector(address(bridgedConnector));
+      bridgedConnector.file("router", address(connector.router()));
+
+      // Add random pools and tranches
+      poolManager = new InvariantPoolManager(connector);
+      targetContracts.push(address(poolManager));
+    }
+
+    // For every tranche that exists, the equivalent pool exists
+    function invariantTrancheRequiresPool() external {
+        for (uint i = 0; i < poolManager.allTranchesLength(); i++) {
+          bytes16 trancheId = poolManager.allTranches(i);
+          uint64 poolId = poolManager.trancheIdToPoolId(trancheId);
+          (, uint256 createdAt) = bridgedConnector.pools(poolId);
+          assertTrue(createdAt > 0);
+        }
+    }
+
+}
