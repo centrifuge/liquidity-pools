@@ -110,7 +110,7 @@ contract ConnectorTest is Test {
         bridgedConnector.deployTranche(poolId, wrongTrancheId);
     }
 
-    function testDeployingTrancheOnNonExistantPoolFails(uint64 poolId, uint64 wrongPoolId, string memory tokenName, string memory tokenSymbol, bytes16 trancheId, uint128 price) public {
+    function testDeployingTrancheOnNonExistentPoolFails(uint64 poolId, uint64 wrongPoolId, string memory tokenName, string memory tokenSymbol, bytes16 trancheId, uint128 price) public {
         vm.assume(poolId != wrongPoolId);
         // 0. Add Pool
         homeConnector.addPool(poolId);
