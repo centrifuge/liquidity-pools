@@ -18,7 +18,7 @@ contract ConnectorInvariants is Test {
 
     InvariantPoolManager poolManager;
 
-    address[] private targetContracts;
+    address[] private targetContracts_;
 
     function setUp() public {
       address tokenFactory_ = address(new RestrictedTokenFactory());
@@ -27,12 +27,16 @@ contract ConnectorInvariants is Test {
       connector = new MockHomeConnector(address(bridgedConnector));
       bridgedConnector.file("router", address(connector.router()));
 
-      // Add random pools and tranches
+      // Performs random pool and tranches creations
       poolManager = new InvariantPoolManager(connector);
-      targetContracts.push(address(poolManager));
+      targetContracts_.push(address(poolManager));
     }
 
-    // For every tranche that exists, the equivalent pool exists
+    function targetContracts() public returns (address[] memory) {
+        return targetContracts_;
+    }
+
+    // Invariant 1: For every tranche that exists, the equivalent pool exists
     function invariantTrancheRequiresPool() external {
         for (uint i = 0; i < poolManager.allTranchesLength(); i++) {
           bytes16 trancheId = poolManager.allTranches(i);

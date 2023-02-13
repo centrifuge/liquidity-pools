@@ -23,11 +23,9 @@ contract InvariantPoolManager is Test {
     allPools.push(poolId);
   }
 
-  // uint8 so the fuzzer more often finds valid array indices
-  function addTranche(uint8 poolIndex, bytes16 trancheId, string memory tokenName, string memory tokenSymbol, uint128 price) public {
-    uint64 poolId = allPools[poolIndex];
-    vm.assume(poolId > 0);
-    connector.addTranche(poolId, trancheId, tokenName, tokenSymbol, price);
+  function addPoolAndTranche(uint64 poolId, bytes16 trancheId, uint128 price) public {
+    addPool(poolId);
+    connector.addTranche(poolId, trancheId, "-", "-", price);
 
     allTranches.push(trancheId);
     trancheIdToPoolId[trancheId] = poolId;
