@@ -223,7 +223,7 @@ contract ConnectorTest is Test {
         
         // 4. Transfer some tokens
         bytes9 encodedDomain = ConnectorMessages.formatDomain(ConnectorMessages.Domain.Centrifuge);
-        homeConnector.transfer(poolId, trancheId, user, amount, encodedDomain);
+        homeConnector.transfer(poolId, trancheId, encodedDomain, user, amount);
         (address token,,,,) = bridgedConnector.tranches(poolId, trancheId);
         assertEq(ERC20Like(token).balanceOf(user), amount);
     }
@@ -244,7 +244,7 @@ contract ConnectorTest is Test {
         
         // 4. Transfer some tokens
         bytes9 encodedDomain = ConnectorMessages.formatDomain(ConnectorMessages.Domain.EVM, destinationChainId);
-        homeConnector.transfer(poolId, trancheId, user, amount, encodedDomain);
+        homeConnector.transfer(poolId, trancheId, encodedDomain, user, amount);
         (address token,,,,) = bridgedConnector.tranches(poolId, trancheId);
         assertEq(ERC20Like(token).balanceOf(user), amount);
     }
@@ -263,7 +263,7 @@ contract ConnectorTest is Test {
         // 3. Transfer some tokens and expect revert
         bytes9 encodedDomain = ConnectorMessages.formatDomain(ConnectorMessages.Domain.EVM, destinationChainId);
         vm.expectRevert(bytes("CentrifugeConnector/not-a-member"));
-        homeConnector.transfer(poolId, trancheId, user, amount, encodedDomain);
+        homeConnector.transfer(poolId, trancheId, encodedDomain, user, amount);
         (address token,,,,) = bridgedConnector.tranches(poolId, trancheId);
         assertEq(ERC20Like(token).balanceOf(user), 0);
     }
