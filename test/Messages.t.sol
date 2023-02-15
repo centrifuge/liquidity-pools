@@ -173,45 +173,45 @@ contract MessagesTest is Test {
 
     function testTransferToEvmDomainEncoding() public {
         assertEq(
-            ConnectorMessages.formatTransfer(1, bytes16(hex"811acd5b3f17c06841c7e41e9e04cb1b"), 0x1231231231231231231231231231231231231231, 1000000000000000000000000000, ConnectorMessages.formatDomain(ConnectorMessages.Domain.EVM, 1284)),
-            hex"050000000000000001811acd5b3f17c06841c7e41e9e04cb1b123123123123123123123123123123123123123100000000000000000000000000000000033b2e3c9fd0803ce8000000010000000000000504"
+            ConnectorMessages.formatTransfer(1, bytes16(hex"811acd5b3f17c06841c7e41e9e04cb1b"), ConnectorMessages.formatDomain(ConnectorMessages.Domain.EVM, 1284), 0x1231231231231231231231231231231231231231, 1000000000000000000000000000),
+            hex"050000000000000001811acd5b3f17c06841c7e41e9e04cb1b010000000000000504123123123123123123123123123123123123123100000000000000000000000000000000033b2e3c9fd0803ce8000000"
         );
     }
 
     function testTransferToEvmDomainDecoding() public {
-        (uint64 poolId, bytes16 trancheId, address user, uint256 amount, bytes9 decodedDomain) = ConnectorMessages.parseTransfer(fromHex("050000000000000001811acd5b3f17c06841c7e41e9e04cb1b123123123123123123123123123123123123123100000000000000000000000000000000033b2e3c9fd0803ce8000000010000000000000504").ref(0));
+        (uint64 poolId, bytes16 trancheId, bytes9 domain, address user, uint256 amount) = ConnectorMessages.parseTransfer(fromHex("050000000000000001811acd5b3f17c06841c7e41e9e04cb1b010000000000000504123123123123123123123123123123123123123100000000000000000000000000000000033b2e3c9fd0803ce8000000").ref(0));
         assertEq(uint(poolId), uint(1));
         assertEq(trancheId, bytes16(hex"811acd5b3f17c06841c7e41e9e04cb1b"));
+        assertEq(domain, ConnectorMessages.formatDomain(ConnectorMessages.Domain.EVM, 1284));
         assertEq(user, 0x1231231231231231231231231231231231231231);
         assertEq(amount, uint(1000000000000000000000000000));
-        assertEq(decodedDomain, bytes9(hex"010000000000000504"));
     }
 
     function testTransferToCentrifugeEncoding() public {
         assertEq(
-            ConnectorMessages.formatTransfer(1, bytes16(hex"811acd5b3f17c06841c7e41e9e04cb1b"), 0x1231231231231231231231231231231231231231, 1000000000000000000000000000, ConnectorMessages.formatDomain(ConnectorMessages.Domain.Centrifuge)),
-            hex"050000000000000001811acd5b3f17c06841c7e41e9e04cb1b123123123123123123123123123123123123123100000000000000000000000000000000033b2e3c9fd0803ce8000000000000000000000000"
+            ConnectorMessages.formatTransfer(1, bytes16(hex"811acd5b3f17c06841c7e41e9e04cb1b"), ConnectorMessages.formatDomain(ConnectorMessages.Domain.Centrifuge), 0x1231231231231231231231231231231231231231, 1000000000000000000000000000),
+            hex"050000000000000001811acd5b3f17c06841c7e41e9e04cb1b000000000000000000123123123123123123123123123123123123123100000000000000000000000000000000033b2e3c9fd0803ce8000000"
         );
     }
 
     function testTransferToCentrifugeDecoding() public {
-        (uint64 poolId, bytes16 trancheId, address user, uint256 amount, bytes9 decodedDomain) = ConnectorMessages.parseTransfer(fromHex("050000000000000001811acd5b3f17c06841c7e41e9e04cb1b123123123123123123123123123123123123123100000000000000000000000000000000033b2e3c9fd0803ce8000000000000000000000000").ref(0));
+        (uint64 poolId, bytes16 trancheId, bytes9 domain, address user, uint256 amount) = ConnectorMessages.parseTransfer(fromHex("050000000000000001811acd5b3f17c06841c7e41e9e04cb1b000000000000000000123123123123123123123123123123123123123100000000000000000000000000000000033b2e3c9fd0803ce8000000").ref(0));
         assertEq(uint(poolId), uint(1));
         assertEq(trancheId, bytes16(hex"811acd5b3f17c06841c7e41e9e04cb1b"));
+        assertEq(domain, ConnectorMessages.formatDomain(ConnectorMessages.Domain.Centrifuge));
         assertEq(user, 0x1231231231231231231231231231231231231231);
         assertEq(amount, uint(1000000000000000000000000000));
-        assertEq(decodedDomain, bytes9(hex"000000000000000000"));
     }
 
     function testTransferEquivalence(uint64 poolId, bytes16 trancheId, address user, uint128 amount, uint64 destinationChainId) public {
         bytes9 inputEncodedDomain = ConnectorMessages.formatDomain(ConnectorMessages.Domain.EVM, destinationChainId);
-        bytes memory _message = ConnectorMessages.formatTransfer(poolId, trancheId, user, amount, inputEncodedDomain);
-        (uint64 decodedPoolId, bytes16 decodedTrancheId, address decodedUser, uint256 decodedAmount, bytes9 encodedDomain) = ConnectorMessages.parseTransfer(_message.ref(0));
+        bytes memory _message = ConnectorMessages.formatTransfer(poolId, trancheId, inputEncodedDomain, user, amount);
+        (uint64 decodedPoolId, bytes16 decodedTrancheId,  bytes9 encodedDomain, address decodedUser, uint256 decodedAmount) = ConnectorMessages.parseTransfer(_message.ref(0));
         assertEq(uint(decodedPoolId), uint(poolId));
         assertEq(decodedTrancheId, trancheId);
+        assertEq(encodedDomain, inputEncodedDomain);
         assertEq(decodedUser, user);
         assertEq(decodedAmount, amount);
-        assertEq(encodedDomain, inputEncodedDomain);
     }
 
     function testFormatDomainCentrifuge() public {
