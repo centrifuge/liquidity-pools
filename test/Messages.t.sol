@@ -179,10 +179,10 @@ contract MessagesTest is Test {
     }
 
     function testTransferToEvmDomainDecoding() public {
-        (uint64 poolId, bytes16 trancheId, bytes9 decodedDomain, address user, uint256 amount) = ConnectorMessages.parseTransfer(fromHex("050000000000000001811acd5b3f17c06841c7e41e9e04cb1b010000000000000504123123123123123123123123123123123123123100000000000000000000000000000000033b2e3c9fd0803ce8000000").ref(0));
+        (uint64 poolId, bytes16 trancheId, bytes9 domain, address user, uint256 amount) = ConnectorMessages.parseTransfer(fromHex("050000000000000001811acd5b3f17c06841c7e41e9e04cb1b010000000000000504123123123123123123123123123123123123123100000000000000000000000000000000033b2e3c9fd0803ce8000000").ref(0));
         assertEq(uint(poolId), uint(1));
         assertEq(trancheId, bytes16(hex"811acd5b3f17c06841c7e41e9e04cb1b"));
-        assertEq(decodedDomain, bytes9(hex"010000000000000504"));
+        assertEq(domain, ConnectorMessages.formatDomain(ConnectorMessages.Domain.EVM, 1284));
         assertEq(user, 0x1231231231231231231231231231231231231231);
         assertEq(amount, uint(1000000000000000000000000000));
     }
@@ -195,10 +195,10 @@ contract MessagesTest is Test {
     }
 
     function testTransferToCentrifugeDecoding() public {
-        (uint64 poolId, bytes16 trancheId, bytes9 decodedDomain, address user, uint256 amount) = ConnectorMessages.parseTransfer(fromHex("050000000000000001811acd5b3f17c06841c7e41e9e04cb1b000000000000000000123123123123123123123123123123123123123100000000000000000000000000000000033b2e3c9fd0803ce8000000").ref(0));
+        (uint64 poolId, bytes16 trancheId, bytes9 domain, address user, uint256 amount) = ConnectorMessages.parseTransfer(fromHex("050000000000000001811acd5b3f17c06841c7e41e9e04cb1b000000000000000000123123123123123123123123123123123123123100000000000000000000000000000000033b2e3c9fd0803ce8000000").ref(0));
         assertEq(uint(poolId), uint(1));
         assertEq(trancheId, bytes16(hex"811acd5b3f17c06841c7e41e9e04cb1b"));
-        assertEq(decodedDomain, bytes9(hex"000000000000000000"));
+        assertEq(domain, ConnectorMessages.formatDomain(ConnectorMessages.Domain.Centrifuge));
         assertEq(user, 0x1231231231231231231231231231231231231231);
         assertEq(amount, uint(1000000000000000000000000000));
     }

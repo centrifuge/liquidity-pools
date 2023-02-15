@@ -161,8 +161,8 @@ library ConnectorMessages {
      * 57-72: amount (uint128 = 16 bytes)
      * 73-81: domain (Domain = 9 bytes)
      */
-    function formatTransfer(uint64 poolId, bytes16 trancheId, bytes9 destinationDomain, address user, uint128 amount) internal pure returns (bytes memory) {
-        return abi.encodePacked(uint8(Call.Transfer), poolId, trancheId, destinationDomain, user, bytes(hex"000000000000000000000000"), amount);
+    function formatTransfer(uint64 poolId, bytes16 trancheId, bytes9 destinationDomain, address destinationAddress, uint128 amount) internal pure returns (bytes memory) {
+        return abi.encodePacked(uint8(Call.Transfer), poolId, trancheId, destinationDomain, destinationAddress, bytes(hex"000000000000000000000000"), amount);
     }
 
     function isTransfer(bytes29 _msg) internal pure returns (bool) {
