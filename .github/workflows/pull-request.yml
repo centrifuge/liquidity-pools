@@ -34,7 +34,7 @@ jobs:
         id: test
 
         env:
-          FOUNDRY_PROFILE: push_to_main
+          FOUNDRY_PROFILE: pull_request
 
   lint:
     name: fmt
