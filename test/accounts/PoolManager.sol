@@ -2,37 +2,35 @@
 pragma solidity ^0.7.6;
 pragma abicoder v2;
 
-import { MockHomeConnector } from "../mock/MockHomeConnector.sol";
+import {MockHomeConnector} from "../mock/MockHomeConnector.sol";
 import "forge-std/Test.sol";
 
 contract InvariantPoolManager is Test {
-  
-  MockHomeConnector connector;
+    MockHomeConnector connector;
 
-  uint64[] public allPools;
-  bytes16[] public allTranches;
-  mapping(bytes16 => uint64) public trancheIdToPoolId;
+    uint64[] public allPools;
+    bytes16[] public allTranches;
+    mapping(bytes16 => uint64) public trancheIdToPoolId;
 
-  constructor(MockHomeConnector connector_) public {
-    connector = connector_;
-  }
+    constructor(MockHomeConnector connector_) public {
+        connector = connector_;
+    }
 
-  function addPool(uint64 poolId) public {
-    connector.addPool(poolId);
-    
-    allPools.push(poolId);
-  }
+    function addPool(uint64 poolId) public {
+        connector.addPool(poolId);
 
-  function addPoolAndTranche(uint64 poolId, bytes16 trancheId, uint128 price) public {
-    addPool(poolId);
-    connector.addTranche(poolId, trancheId, "-", "-", price);
+        allPools.push(poolId);
+    }
 
-    allTranches.push(trancheId);
-    trancheIdToPoolId[trancheId] = poolId;
-  }
+    function addPoolAndTranche(uint64 poolId, bytes16 trancheId, uint128 price) public {
+        addPool(poolId);
+        connector.addTranche(poolId, trancheId, "-", "-", price);
 
-  function allTranchesLength() public view returns (uint) {
-    return allTranches.length;
-  }
+        allTranches.push(trancheId);
+        trancheIdToPoolId[trancheId] = poolId;
+    }
 
+    function allTranchesLength() public view returns (uint256) {
+        return allTranches.length;
+    }
 }

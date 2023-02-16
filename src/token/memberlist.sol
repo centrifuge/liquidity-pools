@@ -2,24 +2,33 @@
 pragma solidity >=0.7.6;
 
 interface MemberlistLike {
-    function updateMember(address usr, uint validUntil) external;
-    function members(address usr) external view returns (uint);
+    function updateMember(address usr, uint256 validUntil) external;
+    function members(address usr) external view returns (uint256);
 }
 
 contract Memberlist {
+    uint256 public constant minimumDelay = 7 days;
 
-    uint public constant minimumDelay = 7 days;
-
-    mapping (address => uint) public members;
+    mapping(address => uint256) public members;
 
     // --- Auth ---
-    mapping (address => uint) public wards;
-    function rely(address usr) public auth { wards[usr] = 1; }
-    function deny(address usr) public auth { wards[usr] = 0; }
-    modifier auth { require(wards[msg.sender] == 1); _; }
+    mapping(address => uint256) public wards;
+
+    function rely(address usr) public auth {
+        wards[usr] = 1;
+    }
+
+    function deny(address usr) public auth {
+        wards[usr] = 0;
+    }
+
+    modifier auth() {
+        require(wards[msg.sender] == 1);
+        _;
+    }
 
     // --- Math ---
-    function safeAdd(uint x, uint y) internal pure returns (uint z) {
+    function safeAdd(uint256 x, uint256 y) internal pure returns (uint256 z) {
         require((z = x + y) >= x, "math-add-overflow");
     }
 
@@ -27,13 +36,13 @@ contract Memberlist {
         wards[msg.sender] = 1;
     }
 
-    function updateMember(address usr, uint validUntil) public auth {
+    function updateMember(address usr, uint256 validUntil) public auth {
         require((safeAdd(block.timestamp, minimumDelay)) < validUntil, "invalid-validUntil");
         members[usr] = validUntil;
-     }
+    }
 
-    function updateMembers(address[] memory users, uint validUntil) public auth {
-        for (uint i = 0; i < users.length; i++) {
+    function updateMembers(address[] memory users, uint256 validUntil) public auth {
+        for (uint256 i = 0; i < users.length; i++) {
             updateMember(users[i], validUntil);
         }
     }
@@ -45,7 +54,7 @@ contract Memberlist {
     function hasMember(address usr) public view returns (bool) {
         if (members[usr] >= block.timestamp) {
             return true;
-        } 
+        }
         return false;
     }
 }

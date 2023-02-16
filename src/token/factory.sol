@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity >=0.7.6;
 
-import { RestrictedToken } from "./restricted.sol";
-import { Memberlist } from "./memberlist.sol";
+import {RestrictedToken} from "./restricted.sol";
+import {Memberlist} from "./memberlist.sol";
 
 interface RestrictedTokenFactoryLike {
     function newRestrictedToken(string calldata, string calldata) external returns (address);

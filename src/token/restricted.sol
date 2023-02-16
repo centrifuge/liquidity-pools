@@ -9,13 +9,13 @@ interface MemberlistLike {
 }
 
 interface ERC20Like {
-    function mint(address usr, uint wad) external;
+    function mint(address usr, uint256 wad) external;
     function name() external view returns (string memory);
     function symbol() external view returns (string memory);
-    function balanceOf(address usr) external view returns (uint wad);
-    function burn(address usr, uint wad) external;
-    function transferFrom(address from, address to, uint amount) external returns (bool);
-    function totalSupply() external returns (uint);
+    function balanceOf(address usr) external view returns (uint256 wad);
+    function burn(address usr, uint256 wad) external;
+    function transferFrom(address from, address to, uint256 amount) external returns (bool);
+    function totalSupply() external returns (uint256);
     function approve(address _spender, uint256 _value) external returns (bool);
 }
 
@@ -27,10 +27,13 @@ interface RestrictedTokenLike is ERC20Like {
 
 // Only mebmber with a valid (not expired) membership should be allowed to receive tokens
 contract RestrictedToken is ERC20 {
+    MemberlistLike public memberlist;
 
-    MemberlistLike public memberlist; 
-    modifier checkMember(address usr) { memberlist.member(usr); _; }
-    
+    modifier checkMember(address usr) {
+        memberlist.member(usr);
+        _;
+    }
+
     function hasMember(address usr) public view returns (bool) {
         return memberlist.hasMember(usr);
     }
@@ -38,11 +41,11 @@ contract RestrictedToken is ERC20 {
     constructor(string memory name_, string memory symbol_) ERC20(name_, symbol_) {}
 
     function depend(bytes32 contractName, address addr) public auth {
-        if (contractName == "memberlist") { memberlist = MemberlistLike(addr); }
+        if (contractName == "memberlist") memberlist = MemberlistLike(addr);
         else revert();
     }
 
-    function transferFrom(address from, address to, uint wad) checkMember(to) public override returns (bool) {
+    function transferFrom(address from, address to, uint256 wad) public override checkMember(to) returns (bool) {
         return super.transferFrom(from, to, wad);
     }
 }

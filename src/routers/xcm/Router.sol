@@ -6,11 +6,17 @@ import {TypedMemView} from "memview-sol/TypedMemView.sol";
 import {ConnectorMessages} from "../../Messages.sol";
 
 interface ConnectorLike {
-  function addPool(uint64 poolId) external;
-  function addTranche(uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol, uint128 price) external;
-  function updateMember(uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) external;
-  function updateTokenPrice(uint64 poolId, bytes16 trancheId, uint128 price) external;
-  function handleTransfer(uint64 poolId, bytes16 trancheId, address user, uint256 amount) external;
+    function addPool(uint64 poolId) external;
+    function addTranche(
+        uint64 poolId,
+        bytes16 trancheId,
+        string memory tokenName,
+        string memory tokenSymbol,
+        uint128 price
+    ) external;
+    function updateMember(uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) external;
+    function updateTokenPrice(uint64 poolId, bytes16 trancheId, uint128 price) external;
+    function handleTransfer(uint64 poolId, bytes16 trancheId, address user, uint256 amount) external;
 }
 
 contract ConnectorXCMRouter {
@@ -27,8 +33,7 @@ contract ConnectorXCMRouter {
         connector = ConnectorLike(connector_);
         centrifugeChainOrigin = centrifugeChainOrigin_;
     }
-    
-   
+
     modifier onlyCentrifugeChainOrigin() {
         require(msg.sender == address(centrifugeChainOrigin), "ConnectorXCMRouter/invalid-origin");
         _;
@@ -39,24 +44,24 @@ contract ConnectorXCMRouter {
         _;
     }
 
-    function handle(
-        bytes memory _message
-    ) external onlyCentrifugeChainOrigin {
+    function handle(bytes memory _message) external onlyCentrifugeChainOrigin {
         bytes29 _msg = _message.ref(0);
         if (ConnectorMessages.isAddPool(_msg)) {
             uint64 poolId = ConnectorMessages.parseAddPool(_msg);
             connector.addPool(poolId);
         } else if (ConnectorMessages.isAddTranche(_msg)) {
-            (uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol, uint128 price) = ConnectorMessages.parseAddTranche(_msg);
+            (uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol, uint128 price) =
+                ConnectorMessages.parseAddTranche(_msg);
             connector.addTranche(poolId, trancheId, tokenName, tokenSymbol, price);
         } else if (ConnectorMessages.isUpdateMember(_msg)) {
-            (uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) = ConnectorMessages.parseUpdateMember(_msg);
+            (uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) =
+                ConnectorMessages.parseUpdateMember(_msg);
             connector.updateMember(poolId, trancheId, user, validUntil);
         } else if (ConnectorMessages.isUpdateTokenPrice(_msg)) {
             (uint64 poolId, bytes16 trancheId, uint128 price) = ConnectorMessages.parseUpdateTokenPrice(_msg);
             connector.updateTokenPrice(poolId, trancheId, price);
         } else if (ConnectorMessages.isTransfer(_msg)) {
-            (uint64 poolId, bytes16 trancheId, address user, uint256 amount, bytes9 _decodedDomain) = ConnectorMessages.parseTransfer(_msg);
+            (uint64 poolId, bytes16 trancheId,, address user, uint256 amount) = ConnectorMessages.parseTransfer(_msg);
             connector.handleTransfer(poolId, trancheId, user, amount);
         } else {
             require(false, "invalid-message");
@@ -79,5 +84,4 @@ contract ConnectorXCMRouter {
         }
         return string(bytesArray);
     }
-
 }
