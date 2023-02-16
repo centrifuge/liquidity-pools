@@ -6,7 +6,7 @@ env:
   FOUNDRY_PROFILE: ci
 
 jobs:
-  check:
+  test:
     strategy:
       fail-fast: true
 
@@ -35,3 +35,27 @@ jobs:
 
         env:
           FOUNDRY_PROFILE: push_to_main
+
+  lint:
+    name: fmt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Run Forge build
+        run: |
+          forge --version
+          forge build --sizes
+        id: build
+
+      - name: Check formatting
+        run: forge fmt --check
+        env:
+          FOUNDRY_PROFILE: pull_request
