@@ -2,18 +2,17 @@
 pragma solidity ^0.7.6;
 pragma abicoder v2;
 
-import { RestrictedTokenFactoryLike, MemberlistFactoryLike } from "./token/factory.sol";
-import { RestrictedTokenLike } from "./token/restricted.sol";
-import { MemberlistLike } from "./token/memberlist.sol";
+import {RestrictedTokenFactoryLike, MemberlistFactoryLike} from "./token/factory.sol";
+import {RestrictedTokenLike} from "./token/restricted.sol";
+import {MemberlistLike} from "./token/memberlist.sol";
 // TODO: remove dependency on Messages.sol
-import { ConnectorMessages } from "src/Messages.sol";
+import {ConnectorMessages} from "src/Messages.sol";
 
 interface RouterLike {
     function sendMessage(uint64 poolId, bytes16 trancheId, uint256 amount, address user) external;
 }
 
 contract CentrifugeConnector {
-
     RouterLike public router;
     RestrictedTokenFactoryLike public immutable tokenFactory;
     MemberlistFactoryLike public immutable memberlistFactory;
@@ -52,8 +51,8 @@ contract CentrifugeConnector {
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
     }
-    
-    modifier auth {
+
+    modifier auth() {
         require(wards[msg.sender] == 1, "CentrifugeConnector/not-authorized");
         _;
     }
@@ -88,10 +87,13 @@ contract CentrifugeConnector {
         emit PoolAdded(poolId);
     }
 
-    function addTranche(uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol, uint128 price)
-        public
-        onlyRouter
-    {
+    function addTranche(
+        uint64 poolId,
+        bytes16 trancheId,
+        string memory tokenName,
+        string memory tokenSymbol,
+        uint128 price
+    ) public onlyRouter {
         Pool storage pool = pools[poolId];
         require(pool.createdAt > 0, "CentrifugeConnector/invalid-pool");
 
@@ -113,27 +115,18 @@ contract CentrifugeConnector {
 
         address memberlist = memberlistFactory.newMemberlist();
         RestrictedTokenLike(token).depend("memberlist", memberlist);
-        MemberlistLike(memberlist).updateMember(address(this), uint(-1)); // required to be able to receive tokens in case of withdrawals   
+        MemberlistLike(memberlist).updateMember(address(this), uint256(-1)); // required to be able to receive tokens in case of withdrawals
         emit TrancheDeployed(poolId, trancheId, token);
     }
 
-    function updateTokenPrice(
-        uint64 poolId,
-        bytes16 trancheId,
-        uint128 price
-    ) public onlyRouter {
+    function updateTokenPrice(uint64 poolId, bytes16 trancheId, uint128 price) public onlyRouter {
         Tranche storage tranche = tranches[poolId][trancheId];
         require(tranche.lastPriceUpdate > 0, "CentrifugeConnector/invalid-pool-or-tranche");
         tranche.latestPrice = price;
         tranche.lastPriceUpdate = block.timestamp;
     }
 
-    function updateMember(
-        uint64 poolId,
-        bytes16 trancheId,
-        address user,
-        uint64 validUntil
-    ) public onlyRouter {
+    function updateMember(uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) public onlyRouter {
         Tranche storage tranche = tranches[poolId][trancheId];
         require(tranche.lastPriceUpdate > 0, "CentrifugeConnector/invalid-pool-or-tranche");
         RestrictedTokenLike token = RestrictedTokenLike(tranche.token);
@@ -141,25 +134,16 @@ contract CentrifugeConnector {
         memberlist.updateMember(user, validUntil);
     }
 
-    function handleTransfer(
-        uint64 poolId,
-        bytes16 trancheId,
-        address user,
-        uint256 amount
-    ) public onlyRouter {
+    function handleTransfer(uint64 poolId, bytes16 trancheId, address user, uint256 amount) public onlyRouter {
         RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
         require(token.hasMember(user), "CentrifugeConnector/not-a-member");
 
         token.mint(user, amount);
     }
 
-    function transfer(
-        uint64 poolId,
-        bytes16 trancheId,
-        address user,
-        uint256 amount,
-        ConnectorMessages.Domain domain
-    ) public {
+    function transfer(uint64 poolId, bytes16 trancheId, address user, uint256 amount, ConnectorMessages.Domain domain)
+        public
+    {
         require(domain == ConnectorMessages.Domain.Centrifuge, "CentrifugeConnector/invalid-domain");
         RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
         require(address(token) != address(0), "CentrifugeConnector/unknown-token");

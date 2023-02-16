@@ -2,38 +2,42 @@
 pragma solidity ^0.7.6;
 pragma abicoder v2;
 
-import { MockHomeConnector } from "../mock/MockHomeConnector.sol";
+import {MockHomeConnector} from "../mock/MockHomeConnector.sol";
 import "forge-std/Test.sol";
 
 contract InvariantPoolManager is Test {
-  
-  MockHomeConnector connector;
+    MockHomeConnector connector;
 
-  uint64[] public allPools;
-  bytes16[] public allTranches;
-  mapping(bytes16 => uint64) public trancheIdToPoolId;
+    uint64[] public allPools;
+    bytes16[] public allTranches;
+    mapping(bytes16 => uint64) public trancheIdToPoolId;
 
-  constructor(MockHomeConnector connector_) public {
-    connector = connector_;
-  }
+    constructor(MockHomeConnector connector_) public {
+        connector = connector_;
+    }
 
-  function addPool(uint64 poolId) public {
-    connector.addPool(poolId);
-    allPools.push(poolId);
-  }
+    function addPool(uint64 poolId) public {
+        connector.addPool(poolId);
+        allPools.push(poolId);
+    }
 
-  // uint8 so the fuzzer more often finds valid array indices
-  function addTranche(uint8 poolIndex, bytes16 trancheId, string memory tokenName, string memory tokenSymbol, uint128 price) public {
-    uint64 poolId = allPools[poolIndex];
-    vm.assume(poolId > 0);
-    connector.addTranche(poolId, trancheId, tokenName, tokenSymbol, price);
+    // uint8 so the fuzzer more often finds valid array indices
+    function addTranche(
+        uint8 poolIndex,
+        bytes16 trancheId,
+        string memory tokenName,
+        string memory tokenSymbol,
+        uint128 price
+    ) public {
+        uint64 poolId = allPools[poolIndex];
+        vm.assume(poolId > 0);
+        connector.addTranche(poolId, trancheId, tokenName, tokenSymbol, price);
 
-    allTranches.push(trancheId);
-    trancheIdToPoolId[trancheId] = poolId;
-  }
+        allTranches.push(trancheId);
+        trancheIdToPoolId[trancheId] = poolId;
+    }
 
-  function allTranchesLength() public view returns (uint) {
-    return allTranches.length;
-  }
-
+    function allTranchesLength() public view returns (uint256) {
+        return allTranches.length;
+    }
 }
