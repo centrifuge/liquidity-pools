@@ -4,7 +4,7 @@ pragma abicoder v2;
 
 import {TypedMemView} from "memview-sol/TypedMemView.sol";
 import {ConnectorMessages} from "../../Messages.sol";
-import {XcmTransactorV1} from "../../../lib/moonbeam-xcm-transactor/XcmTransactorV1.sol";
+import {XcmTransactorV1, XCM_TRANSACTOR_V1_ADDRESS} from "../../../lib/moonbeam-xcm-transactor/XcmTransactorV1.sol";
 
 interface ConnectorLike {
     function addPool(uint64 poolId) external;
@@ -27,12 +27,14 @@ contract ConnectorXCMRouter {
     using ConnectorMessages for bytes29;
 
     ConnectorLike public immutable connector;
+    XcmTransactorV1 public immutable xcmTransactor;
 
     address centrifugeChainOrigin;
 
     constructor(address connector_, address centrifugeChainOrigin_) {
         connector = ConnectorLike(connector_);
         centrifugeChainOrigin = centrifugeChainOrigin_;
+        xcmTransactor = XcmTransactorV1(XCM_TRANSACTOR_V1_ADDRESS);
     }
 
     modifier onlyCentrifugeChainOrigin() {
