@@ -8,3 +8,7 @@
 	path = lib/memview-sol
 	url = https://github.com/summa-tx/memview-sol
 	branch = main
+[submodule "lib/xcm-transactor"]
+    path = lib/xcm-transactor
+    url = https://github.com/PureStake/moonbeam
+    branch = main

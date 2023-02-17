@@ -69,7 +69,7 @@ contract ConnectorXCMRouter {
     }
 
     function sendMessage(uint64 poolId, bytes16 trancheId, uint256 amount, address user) external onlyConnector {
-        // TODO: implement
+        // TODO(nuno): implement
     }
 
     function bytes32ToString(bytes32 _bytes32) internal pure returns (string memory) {
