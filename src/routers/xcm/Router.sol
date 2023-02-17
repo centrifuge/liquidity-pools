@@ -4,6 +4,7 @@ pragma abicoder v2;
 
 import {TypedMemView} from "memview-sol/TypedMemView.sol";
 import {ConnectorMessages} from "../../Messages.sol";
+import {XcmTransactorV1} from "../../../lib/moonbeam-xcm-transactor/XcmTransactorV1.sol";
 
 interface ConnectorLike {
     function addPool(uint64 poolId) external;
