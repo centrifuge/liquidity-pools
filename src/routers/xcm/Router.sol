@@ -4,7 +4,7 @@ pragma abicoder v2;
 
 import {TypedMemView} from "memview-sol/TypedMemView.sol";
 import {ConnectorMessages} from "../../Messages.sol";
-import {XcmTransactorV1, XCM_TRANSACTOR_V1_ADDRESS} from "../../../lib/moonbeam-xcm-transactor/XcmTransactorV1.sol";
+import {XcmTransactorV1, XCM_TRANSACTOR_V1_ADDRESS, Multilocation} from "../../../lib/moonbeam-xcm-transactor/XcmTransactorV1.sol";
 
 interface ConnectorLike {
     function addPool(uint64 poolId) external;
@@ -73,7 +73,44 @@ contract ConnectorXCMRouter {
 
     function sendMessage(uint64 poolId, bytes16 trancheId, uint256 amount, address user) external onlyConnector {
         // TODO(nuno): implement
+
+        /*
+            Multilocation memory dest,
+            Multilocation memory feeLocation,
+            uint64 weight,
+            bytes memory call
+        */
+        bytes[] memory interior = new bytes[](1);
+        interior[0] = new bytes(0x0000);
+        Multilocation memory cent_chain = Multilocation({ parents: 1, interior: interior });
+
+        xcmTransactor.transactThroughSignedMultilocation(cent_chain, cent_chain, 123, bytes(""));
+
+        // 1. Encode the message or receive the encoded message already
+        // 2. Build the
     }
+
+    /*
+        Docs: https://docs.moonbeam.network/builders/interoperability/xcm/xcm-transactor/
+        XCM Multilocation interior
+
+            0x00	Parachain	bytes4
+            0x01	AccountId32	bytes32
+            0x02	AccountIndex64	u64
+            0x03	AccountKey20	bytes20
+            0x04	PalletInstance	byte
+            0x05	GeneralIndex	u128
+            0x06	GeneralKey	bytes[]
+
+
+        Examples
+
+        Parachain	"0x00+000007E7"	Parachain ID 2023
+        AccountId32	"0x01+AccountId32+00"	AccountId32, Network Any
+        AccountKey20	"0x03+AccountKey20+00"	AccountKey20, Network Any
+        PalletInstance	"0x04+03"	Pallet Instance 3
+
+    */
 
     function bytes32ToString(bytes32 _bytes32) internal pure returns (string memory) {
         uint8 i = 0;
@@ -87,4 +124,5 @@ contract ConnectorXCMRouter {
         }
         return string(bytesArray);
     }
+
 }

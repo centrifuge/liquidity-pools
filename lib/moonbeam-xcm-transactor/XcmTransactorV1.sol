@@ -8,13 +8,14 @@ XcmTransactorV1 constant XCM_TRANSACTOR_V1_CONTRACT = XcmTransactorV1(
     XCM_TRANSACTOR_V1_ADDRESS
 );
 
+// A multilocation is defined by its number of parents and the encoded junctions (interior)
+struct Multilocation {
+    uint8 parents;
+    bytes[] interior;
+}
 
 interface XcmTransactorV1 {
-    // A multilocation is defined by its number of parents and the encoded junctions (interior)
-    struct Multilocation {
-        uint8 parents;
-        bytes[] interior;
-    }
+
 
     function indexToAccount(uint16 index) external view returns (address owner);
 
