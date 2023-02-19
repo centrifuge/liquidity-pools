@@ -80,14 +80,40 @@ contract ConnectorXCMRouter {
             uint64 weight,
             bytes memory call
         */
-        bytes[] memory interior = new bytes[](1);
-        interior[0] = new bytes(0x0000);
-        Multilocation memory cent_chain = Multilocation({ parents: 1, interior: interior });
+        Multilocation memory cent_chain = centrifuge_parachain_multilocation();
+        // Nuno: Make sure this is the way
+        (uint64 _transactExtraWeight,
+        uint256 _feePerSecond,
+        uint64 maxWeight) = xcmTransactor.transactInfo(cent_chain);
 
-        xcmTransactor.transactThroughSignedMultilocation(cent_chain, cent_chain, 123, bytes(""));
+        xcmTransactor.transactThroughSignedMultilocation(
+            cent_chain,
+            cfg_asset_multilocation(),
+            maxWeight,
+            bytes("TODO(nuno)"));
 
         // 1. Encode the message or receive the encoded message already
         // 2. Build the
+    }
+
+    function centrifuge_parachain_multilocation() internal pure returns (Multilocation memory) {
+        bytes[] memory interior = new bytes[](1);
+        interior[0] = parachain_id();
+
+        return Multilocation({ parents: 1, interior: interior });
+    }
+
+    function cfg_asset_multilocation() internal pure returns (Multilocation memory) {
+        bytes[] memory interior = new bytes[](2);
+        interior[0] = parachain_id();
+        interior[1] = hex"060001";
+
+        return Multilocation({ parents: 1, interior: interior });
+    }
+
+    // TODO(nuno): test value generated here
+    function parachain_id() internal pure returns (bytes memory) {
+        return abi.encodePacked(uint8(0), uint32(2031));
     }
 
     /*
