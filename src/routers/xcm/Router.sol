@@ -4,7 +4,11 @@ pragma abicoder v2;
 
 import {TypedMemView} from "memview-sol/TypedMemView.sol";
 import {ConnectorMessages} from "../../Messages.sol";
-import {XcmTransactorV1, XCM_TRANSACTOR_V1_ADDRESS, Multilocation} from "../../../lib/moonbeam-xcm-transactor/XcmTransactorV1.sol";
+import {
+    XcmTransactorV1,
+    XCM_TRANSACTOR_V1_ADDRESS,
+    Multilocation
+} from "../../../lib/moonbeam-xcm-transactor/XcmTransactorV1.sol";
 
 interface ConnectorLike {
     function addPool(uint64 poolId) external;
@@ -71,36 +75,43 @@ contract ConnectorXCMRouter {
         }
     }
 
-    function sendMessage(uint64 poolId, bytes16 trancheId, uint256 amount, address user) external onlyConnector {
-        // TODO(nuno): implement
-
-        /*
-            Multilocation memory dest,
-            Multilocation memory feeLocation,
-            uint64 weight,
-            bytes memory call
-        */
+    function sendMessage(uint64 poolId, bytes16 trancheId, uint128 amount, address destinationAddress)
+        external
+        onlyConnector
+    {
         Multilocation memory cent_chain = centrifuge_parachain_multilocation();
-        // Nuno: Make sure this is the way
-        (uint64 _transactExtraWeight,
-        uint256 _feePerSecond,
-        uint64 maxWeight) = xcmTransactor.transactInfo(cent_chain);
+        (uint64 _transactExtraWeight, uint256 _feePerSecond, uint64 maxWeight) = xcmTransactor.transactInfo(cent_chain);
+        bytes memory centChainCall = centrifuge_handle_function(
+            ConnectorMessages.formatTransfer(
+                poolId,
+                trancheId,
+                ConnectorMessages.formatDomain(ConnectorMessages.Domain.Centrifuge),
+                destinationAddress,
+                amount
+            )
+        );
 
         xcmTransactor.transactThroughSignedMultilocation(
-            cent_chain,
-            cfg_asset_multilocation(),
-            maxWeight,
-            bytes("TODO(nuno)"));
+            cent_chain, cfg_asset_multilocation(), maxWeight, centChainCall
+        );
+    }
 
-        // 1. Encode the message or receive the encoded message already
-        // 2. Build the
+    function centrifuge_handle_function(bytes memory msg) internal pure returns (bytes memory) {
+        return abi.encodePacked(
+            // The pallet index
+            hex"6c",
+            // The handle function index
+            uint8(99),
+            // the message itself
+            msg
+        );
     }
 
     function centrifuge_parachain_multilocation() internal pure returns (Multilocation memory) {
         bytes[] memory interior = new bytes[](1);
         interior[0] = parachain_id();
 
-        return Multilocation({ parents: 1, interior: interior });
+        return Multilocation({parents: 1, interior: interior});
     }
 
     function cfg_asset_multilocation() internal pure returns (Multilocation memory) {
@@ -108,7 +119,7 @@ contract ConnectorXCMRouter {
         interior[0] = parachain_id();
         interior[1] = hex"060001";
 
-        return Multilocation({ parents: 1, interior: interior });
+        return Multilocation({parents: 1, interior: interior});
     }
 
     // TODO(nuno): test value generated here
@@ -150,5 +161,4 @@ contract ConnectorXCMRouter {
         }
         return string(bytesArray);
     }
-
 }
