@@ -175,7 +175,7 @@ contract MessagesTest is Test {
     }
 
     function testTransferToEvmDomainDecoding() public {
-        (uint64 poolId, bytes16 trancheId, bytes9 domain, address user, uint256 amount) = ConnectorMessages
+        (uint64 poolId, bytes16 trancheId, bytes9 domain, address user, uint128 amount) = ConnectorMessages
             .parseTransfer(
             fromHex(
                 "050000000000000001811acd5b3f17c06841c7e41e9e04cb1b010000000000000504123123123123123123123123123123123123123100000000000000000000000000000000033b2e3c9fd0803ce8000000"
@@ -202,7 +202,7 @@ contract MessagesTest is Test {
     }
 
     function testTransferToCentrifugeDecoding() public {
-        (uint64 poolId, bytes16 trancheId, bytes9 domain, address user, uint256 amount) = ConnectorMessages
+        (uint64 poolId, bytes16 trancheId, bytes9 domain, address user, uint128 amount) = ConnectorMessages
             .parseTransfer(
             fromHex(
                 "050000000000000001811acd5b3f17c06841c7e41e9e04cb1b000000000000000000123123123123123123123123123123123123123100000000000000000000000000000000033b2e3c9fd0803ce8000000"

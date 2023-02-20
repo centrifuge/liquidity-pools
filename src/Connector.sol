@@ -9,7 +9,7 @@ import {MemberlistLike} from "./token/memberlist.sol";
 import {ConnectorMessages} from "src/Messages.sol";
 
 interface RouterLike {
-    function sendMessage(uint64 poolId, bytes16 trancheId, uint256 amount, address user) external;
+    function sendMessage(uint64 poolId, bytes16 trancheId, uint128 amount, address user) external;
 }
 
 contract CentrifugeConnector {
@@ -134,14 +134,14 @@ contract CentrifugeConnector {
         memberlist.updateMember(user, validUntil);
     }
 
-    function handleTransfer(uint64 poolId, bytes16 trancheId, address user, uint256 amount) public onlyRouter {
+    function handleTransfer(uint64 poolId, bytes16 trancheId, address user, uint128 amount) public onlyRouter {
         RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
         require(token.hasMember(user), "CentrifugeConnector/not-a-member");
 
         token.mint(user, amount);
     }
 
-    function transfer(uint64 poolId, bytes16 trancheId, address user, uint256 amount, ConnectorMessages.Domain domain)
+    function transfer(uint64 poolId, bytes16 trancheId, address user, uint128 amount, ConnectorMessages.Domain domain)
         public
     {
         require(domain == ConnectorMessages.Domain.Centrifuge, "CentrifugeConnector/invalid-domain");
