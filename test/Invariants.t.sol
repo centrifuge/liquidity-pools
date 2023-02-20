@@ -35,15 +35,15 @@ contract ConnectorInvariants is Test {
 
         // Performs random transfers in and out
         investor = new InvariantInvestor(connector, bridgedConnector);
-        targetContracts_.push(address(poolManager));
+        targetContracts_.push(address(investor));
     }
 
-    function targetContracts() public returns (address[] memory) {
+    function targetContracts() public view returns (address[] memory) {
         return targetContracts_;
     }
 
     // Invariant 1: For every tranche that exists, the equivalent pool exists
-    function invariantTrancheRequiresPool() external {
+    function invariant_trancheRequiresPool() external {
         for (uint256 i = 0; i < poolManager.allTranchesLength(); i++) {
             bytes16 trancheId = poolManager.allTranches(i);
             uint64 poolId = poolManager.trancheIdToPoolId(trancheId);
@@ -53,8 +53,8 @@ contract ConnectorInvariants is Test {
     }
 
     // Invariant 2: The tranche token supply should equal the sum of all
-    // transfers in minus the sum of all the transfers out.
-    function invariantTokenSolvency() external {
+    // transfers in minus the sum of all the transfers out
+    function invariant_tokenSolvency() external {
         (address token,,,,) = bridgedConnector.tranches(investor.fixedPoolId(), investor.fixedTrancheId());
         assertEq(ERC20Like(token).totalSupply(), investor.totalTransferredIn() - investor.totalTransferredOut());
     }

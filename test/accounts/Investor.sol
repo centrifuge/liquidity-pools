@@ -16,7 +16,6 @@ contract InvariantInvestor is Test {
     // This handler only uses a single pool, tranche and user combination
     uint64 public fixedPoolId = 1;
     bytes16 public fixedTrancheId = "1";
-    address public fixedUser;
     ERC20Like public fixedToken;
 
     // Investor initially holds 10M tranche tokens on Centrifuge Chain
@@ -25,15 +24,14 @@ contract InvariantInvestor is Test {
     uint256 public totalTransferredIn;
     uint256 public totalTransferredOut = 10;
 
-    constructor(MockHomeConnector connector_, CentrifugeConnector bridgedConnector_) public {
+    constructor(MockHomeConnector connector_, CentrifugeConnector bridgedConnector_) {
         connector = connector_;
         bridgedConnector = bridgedConnector_;
-        fixedUser = address(this);
 
         connector.addPool(fixedPoolId);
         connector.addTranche(fixedPoolId, fixedTrancheId, "TKN", "Token", uint128(1000));
         bridgedConnector.deployTranche(fixedPoolId, fixedTrancheId);
-        connector.updateMember(fixedPoolId, fixedTrancheId, fixedUser, type(uint64).max);
+        connector.updateMember(fixedPoolId, fixedTrancheId, address(this), type(uint64).max);
 
         (address token,,,,) = bridgedConnector.tranches(fixedPoolId, fixedTrancheId);
         fixedToken = ERC20Like(token);
@@ -49,6 +47,7 @@ contract InvariantInvestor is Test {
 
     function transferOut(uint256 amount) public {
         amount = bound(amount, 0, fixedToken.balanceOf(address(this)));
+        fixedToken.approve(address(bridgedConnector), amount);
         bridgedConnector.transfer(
             fixedPoolId, fixedTrancheId, address(this), uint128(amount), ConnectorMessages.Domain.Centrifuge
         );
