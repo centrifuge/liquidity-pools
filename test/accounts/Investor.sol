@@ -20,7 +20,7 @@ contract InvariantInvestor is Test {
     ERC20Like public fixedToken;
 
     // Investor initially holds 10M tranche tokens on Centrifuge Chain
-    uint128 public investorBalanceOnCentrifugeChain = 10_000_000*10**18;
+    uint128 public investorBalanceOnCentrifugeChain = 10_000_000 * 10 ** 18;
 
     uint256 public totalTransferredIn;
     uint256 public totalTransferredOut = 10;
@@ -49,7 +49,9 @@ contract InvariantInvestor is Test {
 
     function transferOut(uint256 amount) public {
         amount = bound(amount, 0, fixedToken.balanceOf(address(this)));
-        bridgedConnector.transfer(fixedPoolId, fixedTrancheId, address(this), uint128(amount), ConnectorMessages.Domain.Centrifuge);
+        bridgedConnector.transfer(
+            fixedPoolId, fixedTrancheId, address(this), uint128(amount), ConnectorMessages.Domain.Centrifuge
+        );
 
         investorBalanceOnCentrifugeChain += uint128(amount);
         totalTransferredOut += amount;
