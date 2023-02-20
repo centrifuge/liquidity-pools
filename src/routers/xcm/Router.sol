@@ -80,7 +80,6 @@ contract ConnectorXCMRouter {
         onlyConnector
     {
         Multilocation memory cent_chain = centrifuge_parachain_multilocation();
-        (uint64 _transactExtraWeight, uint256 _feePerSecond, uint64 maxWeight) = xcmTransactor.transactInfo(cent_chain);
         bytes memory centChainCall = centrifuge_handle_function(
             ConnectorMessages.formatTransfer(
                 poolId,
@@ -92,7 +91,7 @@ contract ConnectorXCMRouter {
         );
 
         xcmTransactor.transactThroughSignedMultilocation(
-            cent_chain, cfg_asset_multilocation(), maxWeight, centChainCall
+            cent_chain, cfg_asset_multilocation(), 5_000_000_000, centChainCall
         );
     }
 
@@ -122,32 +121,31 @@ contract ConnectorXCMRouter {
         return Multilocation({parents: 1, interior: interior});
     }
 
-    // TODO(nuno): test value generated here
+    /*
+       Docs: https://docs.moonbeam.network/builders/interoperability/xcm/xcm-transactor/
+       XCM Multilocation interior
+
+           0x00	Parachain	bytes4
+           0x01	AccountId32	bytes32
+           0x02	AccountIndex64	u64
+           0x03	AccountKey20	bytes20
+           0x04	PalletInstance	byte
+           0x05	GeneralIndex	u128
+           0x06	GeneralKey	bytes[]
+
+
+       Examples
+
+       Parachain	"0x00+000007E7"	Parachain ID 2023
+       AccountId32	"0x01+AccountId32+00"	AccountId32, Network Any
+       AccountKey20	"0x03+AccountKey20+00"	AccountKey20, Network Any
+       PalletInstance	"0x04+03"	Pallet Instance 3
+
+    */
+
     function parachain_id() internal pure returns (bytes memory) {
         return abi.encodePacked(uint8(0), uint32(2031));
     }
-
-    /*
-        Docs: https://docs.moonbeam.network/builders/interoperability/xcm/xcm-transactor/
-        XCM Multilocation interior
-
-            0x00	Parachain	bytes4
-            0x01	AccountId32	bytes32
-            0x02	AccountIndex64	u64
-            0x03	AccountKey20	bytes20
-            0x04	PalletInstance	byte
-            0x05	GeneralIndex	u128
-            0x06	GeneralKey	bytes[]
-
-
-        Examples
-
-        Parachain	"0x00+000007E7"	Parachain ID 2023
-        AccountId32	"0x01+AccountId32+00"	AccountId32, Network Any
-        AccountKey20	"0x03+AccountKey20+00"	AccountKey20, Network Any
-        PalletInstance	"0x04+03"	Pallet Instance 3
-
-    */
 
     function bytes32ToString(bytes32 _bytes32) internal pure returns (string memory) {
         uint8 i = 0;
