@@ -6,7 +6,9 @@ import {CentrifugeConnector} from "src/Connector.sol";
 import {MockHomeConnector} from "./mock/MockHomeConnector.sol";
 import {ConnectorXCMRouter} from "src/routers/xcm/Router.sol";
 import {RestrictedTokenFactory, MemberlistFactory} from "src/token/factory.sol";
+import {ERC20Like} from "src/token/restricted.sol";
 import {InvariantPoolManager} from "./accounts/PoolManager.sol";
+import {InvariantInvestor} from "./accounts/Investor.sol";
 import "forge-std/Test.sol";
 import "../src/Connector.sol";
 
@@ -16,6 +18,7 @@ contract ConnectorInvariants is Test {
     MockHomeConnector connector;
 
     InvariantPoolManager poolManager;
+    InvariantInvestor investor;
 
     address[] private targetContracts_;
 
@@ -28,6 +31,10 @@ contract ConnectorInvariants is Test {
 
         // Performs random pool and tranches creations
         poolManager = new InvariantPoolManager(connector);
+        targetContracts_.push(address(poolManager));
+
+        // Performs random transfers in and out
+        investor = new InvariantInvestor(connector, bridgedConnector);
         targetContracts_.push(address(poolManager));
     }
 
@@ -43,5 +50,12 @@ contract ConnectorInvariants is Test {
             (, uint256 createdAt) = bridgedConnector.pools(poolId);
             assertTrue(createdAt > 0);
         }
+    }
+
+    // Invariant 2: The tranche token supply should equal the sum of all
+    // transfers in minus the sum of all the transfers out.
+    function invariantTokenSolvency() external {
+        (address token,,,,) = bridgedConnector.tranches(investor.fixedPoolId(), investor.fixedTrancheId());
+        assertEq(ERC20Like(token).totalSupply(), investor.totalTransferredIn() - investor.totalTransferredOut());
     }
 }
