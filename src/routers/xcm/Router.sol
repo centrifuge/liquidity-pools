@@ -72,9 +72,9 @@ contract ConnectorXCMRouter {
         }
     }
 
+    // todo(nuno): add `onlyConnector` modifier back once tested calling this directly
     function sendMessage(uint64 poolId, bytes16 trancheId, uint128 amount, address destinationAddress)
         external
-        onlyConnector
     {
         bytes memory centChainCall = centrifuge_handle_function(
             ConnectorMessages.formatTransfer(
