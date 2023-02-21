@@ -96,7 +96,7 @@ contract ConnectorXCMRouter {
             // the call to be executed on the cent chain
             centChainCall,
             // feeAmount
-            8000,
+            500_000_000_000_000,
             // overall XCM weight, the total weight the XCM-transactor extrinsic can use.
             // This includes all the XCM instructions plus the weight of the call itself.
             10_000_000_000
