@@ -5,10 +5,9 @@ pragma abicoder v2;
 import {TypedMemView} from "memview-sol/TypedMemView.sol";
 import {ConnectorMessages} from "../../Messages.sol";
 import {
-    XcmTransactorV1,
-    XCM_TRANSACTOR_V1_ADDRESS,
+    XCM_TRANSACTOR_V2_CONTRACT,
     Multilocation
-} from "../../../lib/moonbeam-xcm-transactor/XcmTransactorV1.sol";
+} from "../../../lib/moonbeam-xcm-transactor/XcmTransactorV2.sol";
 
 interface ConnectorLike {
     function addPool(uint64 poolId) external;
@@ -31,14 +30,12 @@ contract ConnectorXCMRouter {
     using ConnectorMessages for bytes29;
 
     ConnectorLike public immutable connector;
-    XcmTransactorV1 public immutable xcmTransactor;
 
     address centrifugeChainOrigin;
 
     constructor(address connector_, address centrifugeChainOrigin_) {
         connector = ConnectorLike(connector_);
         centrifugeChainOrigin = centrifugeChainOrigin_;
-        xcmTransactor = XcmTransactorV1(XCM_TRANSACTOR_V1_ADDRESS);
     }
 
     modifier onlyCentrifugeChainOrigin() {
@@ -79,7 +76,6 @@ contract ConnectorXCMRouter {
         external
         onlyConnector
     {
-        Multilocation memory cent_chain = centrifuge_parachain_multilocation();
         bytes memory centChainCall = centrifuge_handle_function(
             ConnectorMessages.formatTransfer(
                 poolId,
@@ -90,8 +86,19 @@ contract ConnectorXCMRouter {
             )
         );
 
-        xcmTransactor.transactThroughSignedMultilocation(
-            cent_chain, cfg_asset_multilocation(), 5_000_000_000, centChainCall
+        XCM_TRANSACTOR_V2_CONTRACT.transactThroughSignedMultilocation(
+            // dest chain
+            centrifuge_parachain_multilocation(),
+            // fee asset
+            cfg_asset_multilocation(),
+            // requireWeightAtMost
+            5_000_000_000,
+            // the call to be executed on the cent chain
+            centChainCall,
+            // feeAmount
+            8000,
+            // overall XCM weight
+            5000
         );
     }
 
