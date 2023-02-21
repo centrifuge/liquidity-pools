@@ -97,19 +97,29 @@ contract ConnectorXCMRouter {
             centChainCall,
             // feeAmount
             8000,
-            // overall XCM weight
-            5000
+            // overall XCM weight, the total weight the XCM-transactor extrinsic can use.
+            // This includes all the XCM instructions plus the weight of the call itself.
+            10_000_000_000
         );
+
+//        function transactThroughSignedMultilocation(
+//            Multilocation memory dest,
+//            Multilocation memory feeLocation,
+//            uint64 transactRequiredWeightAtMost,
+//            bytes memory call,
+//            uint256 feeAmount,
+//            uint64 overallWeight
+//        ) external;
     }
 
-    function centrifuge_handle_function(bytes memory msg) internal pure returns (bytes memory) {
+    function centrifuge_handle_function(bytes memory message) internal pure returns (bytes memory) {
         return abi.encodePacked(
             // The pallet index
             hex"6c",
             // The handle function index
             uint8(99),
-            // the message itself
-            msg
+            // the connector message itself
+            message
         );
     }
 
