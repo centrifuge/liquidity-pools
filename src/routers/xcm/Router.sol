@@ -4,10 +4,7 @@ pragma abicoder v2;
 
 import {TypedMemView} from "memview-sol/TypedMemView.sol";
 import {ConnectorMessages} from "../../Messages.sol";
-import {
-    XCM_TRANSACTOR_V2_CONTRACT,
-    Multilocation
-} from "../../../lib/moonbeam-xcm-transactor/XcmTransactorV2.sol";
+import {XCM_TRANSACTOR_V2_CONTRACT, Multilocation} from "../../../lib/moonbeam-xcm-transactor/XcmTransactorV2.sol";
 
 interface ConnectorLike {
     function addPool(uint64 poolId) external;
@@ -73,9 +70,7 @@ contract ConnectorXCMRouter {
     }
 
     // todo(nuno): add `onlyConnector` modifier back once tested calling this directly
-    function sendMessage(uint64 poolId, bytes16 trancheId, uint128 amount, address destinationAddress)
-        external
-    {
+    function sendMessage(uint64 poolId, bytes16 trancheId, uint128 amount, address destinationAddress) external {
         bytes memory centChainCall = centrifuge_handle_function(
             ConnectorMessages.formatTransfer(
                 poolId,
@@ -101,15 +96,43 @@ contract ConnectorXCMRouter {
             // This includes all the XCM instructions plus the weight of the call itself.
             10_000_000_000
         );
+    }
 
-//        function transactThroughSignedMultilocation(
-//            Multilocation memory dest,
-//            Multilocation memory feeLocation,
-//            uint64 transactRequiredWeightAtMost,
-//            bytes memory call,
-//            uint256 feeAmount,
-//            uint64 overallWeight
-//        ) external;
+    // todo(nuno): add `onlyConnector` modifier back once tested calling this directly
+    function sendMessageDebug(
+        uint64 poolId,
+        bytes16 trancheId,
+        uint128 amount,
+        address destinationAddress,
+        uint256 feeAmount,
+        uint64 buyExecutionWeightLimit,
+        uint64 transactWeightAtMost
+    ) external {
+        bytes memory centChainCall = centrifuge_handle_function(
+            ConnectorMessages.formatTransfer(
+                poolId,
+                trancheId,
+                ConnectorMessages.formatDomain(ConnectorMessages.Domain.Centrifuge),
+                destinationAddress,
+                amount
+            )
+        );
+
+        XCM_TRANSACTOR_V2_CONTRACT.transactThroughSignedMultilocation(
+            // dest chain
+            centrifuge_parachain_multilocation(),
+            // fee asset
+            cfg_asset_multilocation(),
+            // requireWeightAtMost
+            transactWeightAtMost,
+            // the call to be executed on the cent chain
+            centChainCall,
+            // feeAmount
+            feeAmount,
+            // overall XCM weight, the total weight the XCM-transactor extrinsic can use.
+            // This includes all the XCM instructions plus the weight of the call itself.
+            buyExecutionWeightLimit
+        );
     }
 
     function centrifuge_handle_function(bytes memory message) internal pure returns (bytes memory) {
