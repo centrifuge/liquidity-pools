@@ -71,7 +71,7 @@ contract ConnectorXCMRouter {
 
     // todo(nuno): add `onlyConnector` modifier back once tested calling this directly
     function sendMessage(uint64 poolId, bytes16 trancheId, uint128 amount, address destinationAddress) external {
-        bytes memory centChainCall = centrifuge_handle_function(
+        bytes memory centChainCall = centrifuge_handle_call(
             ConnectorMessages.formatTransfer(
                 poolId,
                 trancheId,
@@ -108,7 +108,7 @@ contract ConnectorXCMRouter {
         uint64 buyExecutionWeightLimit,
         uint64 transactWeightAtMost
     ) external {
-        bytes memory centChainCall = centrifuge_handle_function(
+        bytes memory centChainCall = centrifuge_handle_call(
             ConnectorMessages.formatTransfer(
                 poolId,
                 trancheId,
@@ -135,12 +135,14 @@ contract ConnectorXCMRouter {
         );
     }
 
-    function centrifuge_handle_function(bytes memory message) internal pure returns (bytes memory) {
+    function centrifuge_handle_call(bytes memory message) internal pure returns (bytes memory) {
         return abi.encodePacked(
-            // The pallet index
-            hex"6c",
-            // The handle function index
-            uint8(99),
+            // The call index; first byte is the pallet, the second is the extrinsic
+            hex"6c63",
+            // We need to specify the length of the message in the scale-encoding format
+            // A transfer message has 82 bytes which encodes to 4901 in Scale :shrug:
+            // TODO(nuno): The length is fixed on a per message call type basis; we will need to support other types
+            hex"4901",
             // the connector message itself
             message
         );
