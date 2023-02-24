@@ -30,6 +30,23 @@ contract ConnectorXCMRouter {
     ConnectorLike public immutable connector;
     address centrifugeChainOrigin;
     bytes centrifugeChainHandleCallIndex;
+    XcmWeightInfo xcmWeightInfo;
+
+    // Types
+    struct XcmWeightInfo {
+        // The weight limit in Weight units we accept amount to pay for the
+        // execution of the whole XCM on the Centrifuge chain. This should be
+        // transactWeightAtMost + an extra amount to cover for the other
+        // instructions in the XCM message.
+        uint64 buyExecutionWeightLimit;
+        // The weight limit in Weight units we accept paying for having the Transact
+        // call be executed. This is the cost associated with executing the handle call
+        // in the Centrifuge.
+        uint64 transactWeightAtMost;
+        // The amount to cover for the fees. It will be used in XCM to buy
+        // execution and thus have credit for pay those fees.
+        uint256 feeAmount;
+    }
 
     constructor(address connector_, address centrifugeChainOrigin_, bytes memory centrifugeChainHandleCallIndex_) {
         connector = ConnectorLike(connector_);
