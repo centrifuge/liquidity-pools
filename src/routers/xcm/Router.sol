@@ -26,13 +26,15 @@ contract ConnectorXCMRouter {
     using TypedMemView for bytes29;
     using ConnectorMessages for bytes29;
 
+    /// Properties
     ConnectorLike public immutable connector;
-
     address centrifugeChainOrigin;
+    bytes centrifugeChainHandleCallIndex;
 
-    constructor(address connector_, address centrifugeChainOrigin_) {
+    constructor(address connector_, address centrifugeChainOrigin_, bytes memory centrifugeChainHandleCallIndex_) {
         connector = ConnectorLike(connector_);
         centrifugeChainOrigin = centrifugeChainOrigin_;
+        centrifugeChainHandleCallIndex = centrifugeChainHandleCallIndex_;
     }
 
     modifier onlyCentrifugeChainOrigin() {
@@ -135,10 +137,10 @@ contract ConnectorXCMRouter {
         );
     }
 
-    function centrifuge_handle_call(bytes memory message) internal pure returns (bytes memory) {
+    function centrifuge_handle_call(bytes memory message) internal view returns (bytes memory) {
         return abi.encodePacked(
             // The call index; first byte is the pallet, the second is the extrinsic
-            hex"6c63",
+            centrifugeChainHandleCallIndex,
             // We need to specify the length of the message in the scale-encoding format
             // A transfer message has 82 bytes which encodes to 4901 in Scale :shrug:
             // TODO(nuno): The length is fixed on a per message call type basis; we will need to support other types

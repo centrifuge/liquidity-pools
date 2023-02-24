@@ -17,8 +17,11 @@ contract ConnectorXCMScript is Script {
         address memberlistFactory_ = address(new MemberlistFactory());
         CentrifugeConnector connector = new CentrifugeConnector(tokenFactory_, memberlistFactory_);
 
-        ConnectorXCMRouter router =
-            new ConnectorXCMRouter(address(connector), address(vm.envAddress("CENTRIFUGE_CHAIN_ORIGIN")));
+        ConnectorXCMRouter router = new ConnectorXCMRouter(
+                address(connector),
+                address(vm.envAddress("CENTRIFUGE_CHAIN_ORIGIN")),
+                vm.envBytes("CENTRIFUGE_CHAIN_HANDLE_CALL_INDEX")
+        );
         connector.file("router", address(router));
         vm.stopBroadcast();
     }

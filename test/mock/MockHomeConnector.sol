@@ -25,7 +25,7 @@ contract MockHomeConnector is Test {
     enum Types {AddPool}
 
     constructor(address bridgedConnector) {
-        router = new ConnectorXCMRouter(bridgedConnector, address(this));
+        router = new ConnectorXCMRouter(bridgedConnector, address(this), hex"4901");
     }
 
     function addPool(uint64 poolId) public {
