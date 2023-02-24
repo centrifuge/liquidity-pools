@@ -52,6 +52,11 @@ contract ConnectorXCMRouter {
         connector = ConnectorLike(connector_);
         centrifugeChainOrigin = centrifugeChainOrigin_;
         centrifugeChainHandleCallIndex = centrifugeChainHandleCallIndex_;
+        xcmWeightInfo = XcmWeightInfo({
+            buyExecutionWeightLimit: 19000000000,
+            transactWeightAtMost: 8000000000,
+            feeAmount: 1000000000000000000
+        });
     }
 
     modifier onlyCentrifugeChainOrigin() {
@@ -62,6 +67,11 @@ contract ConnectorXCMRouter {
     modifier onlyConnector() {
         require(msg.sender == address(connector), "ConnectorXCMRouter/only-connector-allowed-to-call");
         _;
+    }
+
+    // todo(nuno): add auth modifier
+    function update(XcmWeightInfo memory xcmWeightInfo_) external {
+        xcmWeightInfo = xcmWeightInfo_;
     }
 
     function handle(bytes memory _message) external onlyCentrifugeChainOrigin {
