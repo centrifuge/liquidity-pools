@@ -88,32 +88,25 @@ contract ConnectorXCMRouter {
         }
     }
 
-    // todo(nuno): add `onlyConnector` modifier back once tested calling this directly
-    function sendMessage(uint64 poolId, bytes16 trancheId, uint128 amount, address destinationAddress) external {
-        bytes memory centChainCall = centrifuge_handle_call(
-            ConnectorMessages.formatTransfer(
-                poolId,
-                trancheId,
-                ConnectorMessages.formatDomain(ConnectorMessages.Domain.Centrifuge),
-                destinationAddress,
-                amount
-            )
-        );
+    function send(bytes memory message) external onlyConnector {
+        bytes memory centChainCall = centrifuge_handle_call(message);
+        XcmWeightInfo memory xcmWeightInfo =
+            XcmWeightInfo({buyExecutionWeightLimit: 1, transactWeightAtMost: 2, feeAmount: 3});
 
         XCM_TRANSACTOR_V2_CONTRACT.transactThroughSignedMultilocation(
             // dest chain
             centrifuge_parachain_multilocation(),
             // fee asset
             cfg_asset_multilocation(),
-            // requireWeightAtMost
-            5_000_000_000,
+            // the weight limit for the transact call execution
+            xcmWeightInfo.transactWeightAtMost,
             // the call to be executed on the cent chain
             centChainCall,
-            // feeAmount
-            500_000_000_000_000,
+            // the CFG we offer to pay for execution fees of the whole XCM
+            xcmWeightInfo.feeAmount,
             // overall XCM weight, the total weight the XCM-transactor extrinsic can use.
-            // This includes all the XCM instructions plus the weight of the call itself.
-            10_000_000_000
+            // This includes all the XCM instructions plus the weight of the Transact call itself.
+            xcmWeightInfo.buyExecutionWeightLimit
         );
     }
 

@@ -9,7 +9,7 @@ import {MemberlistLike} from "./token/memberlist.sol";
 import {ConnectorMessages} from "src/Messages.sol";
 
 interface RouterLike {
-    function sendMessage(uint64 poolId, bytes16 trancheId, uint128 amount, address user) external;
+    function send(bytes memory message) external;
 }
 
 contract CentrifugeConnector {
@@ -150,6 +150,9 @@ contract CentrifugeConnector {
         require(token.balanceOf(user) >= amount, "CentrifugeConnector/insufficient-balance");
         require(token.transferFrom(user, address(this), amount), "CentrifugeConnector/token-transfer-failed");
         token.burn(address(this), amount);
-        router.sendMessage(poolId, trancheId, amount, user);
+
+        bytes memory message =
+            ConnectorMessages.formatTransfer(poolId, trancheId, ConnectorMessages.formatDomain(domain), user, amount);
+        router.send(message);
     }
 }
