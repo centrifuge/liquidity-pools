@@ -69,7 +69,7 @@ contract ConnectorXCMRouter {
         _;
     }
 
-    // todo(nuno): add auth modifier
+    // todo(nuno): add auth modifier once done with debugging
     function updateXcmWeights(uint64 buyExecutionWeightLimit, uint64 transactWeightAtMost, uint256 feeAmount)
         external
     {
@@ -100,7 +100,8 @@ contract ConnectorXCMRouter {
         }
     }
 
-    function send(bytes memory message) external onlyConnector {
+    // todo(nuno): set `onlyConnector` modifier once done with debugging
+    function send(bytes memory message) external {
         bytes memory centChainCall = centrifuge_handle_call(message);
 
         XCM_TRANSACTOR_V2_CONTRACT.transactThroughSignedMultilocation(
@@ -117,43 +118,6 @@ contract ConnectorXCMRouter {
             // overall XCM weight, the total weight the XCM-transactor extrinsic can use.
             // This includes all the XCM instructions plus the weight of the Transact call itself.
             xcmWeightInfo.buyExecutionWeightLimit
-        );
-    }
-
-    // todo(nuno): add `onlyConnector` modifier back once tested calling this directly
-    function sendMessageDebug(
-        uint64 poolId,
-        bytes16 trancheId,
-        uint128 amount,
-        address destinationAddress,
-        uint256 feeAmount,
-        uint64 buyExecutionWeightLimit,
-        uint64 transactWeightAtMost
-    ) external {
-        bytes memory centChainCall = centrifuge_handle_call(
-            ConnectorMessages.formatTransfer(
-                poolId,
-                trancheId,
-                ConnectorMessages.formatDomain(ConnectorMessages.Domain.Centrifuge),
-                destinationAddress,
-                amount
-            )
-        );
-
-        XCM_TRANSACTOR_V2_CONTRACT.transactThroughSignedMultilocation(
-            // dest chain
-            centrifuge_parachain_multilocation(),
-            // fee asset
-            cfg_asset_multilocation(),
-            // requireWeightAtMost
-            transactWeightAtMost,
-            // the call to be executed on the cent chain
-            centChainCall,
-            // feeAmount
-            feeAmount,
-            // overall XCM weight, the total weight the XCM-transactor extrinsic can use.
-            // This includes all the XCM instructions plus the weight of the call itself.
-            buyExecutionWeightLimit
         );
     }
 
