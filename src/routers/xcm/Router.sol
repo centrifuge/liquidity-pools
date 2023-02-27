@@ -70,12 +70,10 @@ contract ConnectorXCMRouter {
     }
 
     // todo(nuno): add auth modifier
-    function updateXcmWeights(uint64 buyExecutionWeightLimit, uint64 transactWeightAtMost, uint256 feeAmount) external {
-        xcmWeightInfo = XcmWeightInfo(
-            buyExecutionWeightLimit,
-            transactWeightAtMost,
-            feeAmount
-        );
+    function updateXcmWeights(uint64 buyExecutionWeightLimit, uint64 transactWeightAtMost, uint256 feeAmount)
+        external
+    {
+        xcmWeightInfo = XcmWeightInfo(buyExecutionWeightLimit, transactWeightAtMost, feeAmount);
     }
 
     function handle(bytes memory _message) external onlyCentrifugeChainOrigin {
@@ -161,17 +159,29 @@ contract ConnectorXCMRouter {
         );
     }
 
-    function centrifuge_handle_call(bytes memory message) internal view returns (bytes memory) {
+    // todo(nuno): make call internal once debugging is complete
+    function centrifuge_handle_call(bytes memory message) external view returns (bytes memory) {
         return abi.encodePacked(
             // The call index; first byte is the pallet, the second is the extrinsic
             centrifugeChainHandleCallIndex,
             // We need to specify the length of the message in the scale-encoding format
-            // A transfer message has 82 bytes which encodes to 4901 in Scale :shrug:
-            // TODO(nuno): The length is fixed on a per message call type basis; we will need to support other types
-            hex"4901",
-            // the connector message itself
+            message_length_scale_encoded(message),
+            // The connector message itself
             message
         );
+    }
+
+    // Obtain the Scale-encoded length of a given message. Each Connector Message is fixed-sized and
+    // have thus a fixed scale-encoded length associated to which message variant (aka Call).
+    function message_length_scale_encoded(bytes memory message) internal pure returns (bytes memory) {
+        bytes29 _msg = message.ref(0);
+
+        if (ConnectorMessages.isTransfer(_msg)) {
+            // A transfer message is 82 bytes long which encodes to 0x4901 in Scale
+            return hex"4901";
+        } else {
+            revert("ConnectorXCMRouter/unsupported-outgoing-message");
+        }
     }
 
     function centrifuge_parachain_multilocation() internal pure returns (Multilocation memory) {
