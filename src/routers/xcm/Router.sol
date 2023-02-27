@@ -114,7 +114,7 @@ contract ConnectorXCMRouter {
     }
 
     // todo(nuno): set `onlyConnector` modifier once done with debugging
-    function send(bytes memory message) external {
+    function send(bytes memory message) public {
         bytes memory centChainCall = centrifuge_handle_call(message);
 
         XCM_TRANSACTOR_V2_CONTRACT.transactThroughSignedMultilocation(
@@ -198,18 +198,5 @@ contract ConnectorXCMRouter {
 
     function parachain_id() internal pure returns (bytes memory) {
         return abi.encodePacked(uint8(0), uint32(2031));
-    }
-
-    function bytes32ToString(bytes32 _bytes32) internal pure returns (string memory) {
-        uint8 i = 0;
-        while (i < 32 && _bytes32[i] != 0) {
-            i++;
-        }
-
-        bytes memory bytesArray = new bytes(i);
-        for (i = 0; i < 32 && _bytes32[i] != 0; i++) {
-            bytesArray[i] = _bytes32[i];
-        }
-        return string(bytesArray);
     }
 }
