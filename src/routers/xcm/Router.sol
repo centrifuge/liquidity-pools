@@ -70,8 +70,12 @@ contract ConnectorXCMRouter {
     }
 
     // todo(nuno): add auth modifier
-    function update(XcmWeightInfo memory xcmWeightInfo_) external {
-        xcmWeightInfo = xcmWeightInfo_;
+    function updateXcmWeights(uint64 buyExecutionWeightLimit, uint64 transactWeightAtMost, uint256 feeAmount) external {
+        xcmWeightInfo = XcmWeightInfo(
+            buyExecutionWeightLimit,
+            transactWeightAtMost,
+            feeAmount
+        );
     }
 
     function handle(bytes memory _message) external onlyCentrifugeChainOrigin {
