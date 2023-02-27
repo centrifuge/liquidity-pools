@@ -102,8 +102,6 @@ contract ConnectorXCMRouter {
 
     function send(bytes memory message) external onlyConnector {
         bytes memory centChainCall = centrifuge_handle_call(message);
-        XcmWeightInfo memory xcmWeightInfo =
-            XcmWeightInfo({buyExecutionWeightLimit: 1, transactWeightAtMost: 2, feeAmount: 3});
 
         XCM_TRANSACTOR_V2_CONTRACT.transactThroughSignedMultilocation(
             // dest chain
@@ -160,7 +158,7 @@ contract ConnectorXCMRouter {
     }
 
     // todo(nuno): make call internal once debugging is complete
-    function centrifuge_handle_call(bytes memory message) external view returns (bytes memory) {
+    function centrifuge_handle_call(bytes memory message) public view returns (bytes memory) {
         return abi.encodePacked(
             // The call index; first byte is the pallet, the second is the extrinsic
             centrifugeChainHandleCallIndex,
