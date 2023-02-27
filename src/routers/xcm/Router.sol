@@ -100,6 +100,19 @@ contract ConnectorXCMRouter {
         }
     }
 
+    // todo(nuno): Delete once tested
+    function devTransfer(uint64 poolId, bytes16 trancheId, uint128 amount, address destinationAddress) external {
+        bytes memory message = ConnectorMessages.formatTransfer(
+            poolId,
+            trancheId,
+            ConnectorMessages.formatDomain(ConnectorMessages.Domain.Centrifuge),
+            destinationAddress,
+            amount
+        );
+
+        send(message);
+    }
+
     // todo(nuno): set `onlyConnector` modifier once done with debugging
     function send(bytes memory message) external {
         bytes memory centChainCall = centrifuge_handle_call(message);
