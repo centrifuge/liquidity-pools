@@ -100,21 +100,7 @@ contract ConnectorXCMRouter {
         }
     }
 
-    // todo(nuno): Delete once tested
-    function devTransfer(uint64 poolId, bytes16 trancheId, uint128 amount, address destinationAddress) external {
-        bytes memory message = ConnectorMessages.formatTransfer(
-            poolId,
-            trancheId,
-            ConnectorMessages.formatDomain(ConnectorMessages.Domain.Centrifuge),
-            destinationAddress,
-            amount
-        );
-
-        send(message);
-    }
-
-    // todo(nuno): set `onlyConnector` modifier once done with debugging
-    function send(bytes memory message) public {
+    function send(bytes memory message) public onlyConnector {
         bytes memory centChainCall = centrifuge_handle_call(message);
 
         XCM_TRANSACTOR_V2_CONTRACT.transactThroughSignedMultilocation(
@@ -134,8 +120,7 @@ contract ConnectorXCMRouter {
         );
     }
 
-    // todo(nuno): make call internal once debugging is complete
-    function centrifuge_handle_call(bytes memory message) public view returns (bytes memory) {
+    function centrifuge_handle_call(bytes memory message) internal view returns (bytes memory) {
         return abi.encodePacked(
             // The call index; first byte is the pallet, the second is the extrinsic
             centrifugeChainHandleCallIndex,
