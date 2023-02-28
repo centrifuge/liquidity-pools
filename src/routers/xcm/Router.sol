@@ -66,6 +66,7 @@ contract ConnectorXCMRouter {
             transactWeightAtMost: 8000000000,
             feeAmount: 1000000000000000000
         });
+        wards[msg.sender] = 1;
     }
 
     /// -- Auth ---
