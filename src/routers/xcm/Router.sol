@@ -32,6 +32,9 @@ contract ConnectorXCMRouter {
     bytes centrifugeChainHandleCallIndex;
     XcmWeightInfo xcmWeightInfo;
 
+    /// Events
+    event File(bytes32 indexed what, XcmWeightInfo xcmWeightInfo);
+
     // Types
     struct XcmWeightInfo {
         // The weight limit in Weight units we accept amount to pay for the
@@ -69,11 +72,17 @@ contract ConnectorXCMRouter {
         _;
     }
 
-    // todo(nuno): add auth modifier once done with debugging
-    function updateXcmWeights(uint64 buyExecutionWeightLimit, uint64 transactWeightAtMost, uint256 feeAmount)
+    //todo(nuno): add auth modifier
+    function file(bytes32 what, uint64 buyExecutionWeightLimit, uint64 transactWeightAtMost, uint256 feeAmount)
         external
     {
-        xcmWeightInfo = XcmWeightInfo(buyExecutionWeightLimit, transactWeightAtMost, feeAmount);
+        if (what == "xcmWeightInfo") {
+            xcmWeightInfo = XcmWeightInfo(buyExecutionWeightLimit, transactWeightAtMost, feeAmount);
+        } else {
+            revert("CentrifugeConnector/file-unrecognized-param");
+        }
+
+        emit File(what, xcmWeightInfo);
     }
 
     function handle(bytes memory _message) external onlyCentrifugeChainOrigin {
