@@ -26,13 +26,19 @@ contract ConnectorXCMRouter {
     using TypedMemView for bytes29;
     using ConnectorMessages for bytes29;
 
-    /// Properties
+    /// --- Properties ---
     ConnectorLike public immutable connector;
     address centrifugeChainOrigin;
     bytes centrifugeChainHandleCallIndex;
     XcmWeightInfo xcmWeightInfo;
 
-    /// Events
+    /// --- Storage ---
+    /// Auth storage
+    mapping(address => uint256) public wards;
+
+    /// --- Events ---
+    event Rely(address indexed user);
+    event Deny(address indexed user);
     event File(bytes32 indexed what, XcmWeightInfo xcmWeightInfo);
 
     // Types
@@ -62,6 +68,22 @@ contract ConnectorXCMRouter {
         });
     }
 
+    /// -- Auth ---
+    modifier auth() {
+        require(wards[msg.sender] == 1, "ConnectorXCMRouter/not-authorized");
+        _;
+    }
+
+    function rely(address usr) external auth {
+        wards[usr] = 1;
+        emit Rely(usr);
+    }
+
+    function deny(address usr) external auth {
+        wards[usr] = 0;
+        emit Deny(usr);
+    }
+
     modifier onlyCentrifugeChainOrigin() {
         require(msg.sender == address(centrifugeChainOrigin), "ConnectorXCMRouter/invalid-origin");
         _;
@@ -72,9 +94,9 @@ contract ConnectorXCMRouter {
         _;
     }
 
-    //todo(nuno): add auth modifier
     function file(bytes32 what, uint64 buyExecutionWeightLimit, uint64 transactWeightAtMost, uint256 feeAmount)
         external
+        auth
     {
         if (what == "xcmWeightInfo") {
             xcmWeightInfo = XcmWeightInfo(buyExecutionWeightLimit, transactWeightAtMost, feeAmount);
