@@ -153,6 +153,8 @@ contract ConnectorXCMRouter {
         }
     }
 
+    // Docs on the encoding of a MultiLocation value can be found here:
+    // https://docs.moonbeam.network/builders/interoperability/xcm/xcm-transactor/
     function centrifuge_parachain_multilocation() internal pure returns (Multilocation memory) {
         bytes[] memory interior = new bytes[](1);
         interior[0] = parachain_id();
@@ -167,28 +169,6 @@ contract ConnectorXCMRouter {
 
         return Multilocation({parents: 1, interior: interior});
     }
-
-    /*
-       Docs: https://docs.moonbeam.network/builders/interoperability/xcm/xcm-transactor/
-       XCM Multilocation interior
-
-           0x00	Parachain	bytes4
-           0x01	AccountId32	bytes32
-           0x02	AccountIndex64	u64
-           0x03	AccountKey20	bytes20
-           0x04	PalletInstance	byte
-           0x05	GeneralIndex	u128
-           0x06	GeneralKey	bytes[]
-
-
-       Examples
-
-       Parachain	"0x00+000007E7"	Parachain ID 2023
-       AccountId32	"0x01+AccountId32+00"	AccountId32, Network Any
-       AccountKey20	"0x03+AccountKey20+00"	AccountKey20, Network Any
-       PalletInstance	"0x04+03"	Pallet Instance 3
-
-    */
 
     function parachain_id() internal pure returns (bytes memory) {
         return abi.encodePacked(uint8(0), uint32(2031));
