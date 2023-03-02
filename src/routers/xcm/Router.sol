@@ -102,7 +102,7 @@ contract ConnectorXCMRouter {
         if (what == "xcmWeightInfo") {
             xcmWeightInfo = XcmWeightInfo(buyExecutionWeightLimit, transactWeightAtMost, feeAmount);
         } else {
-            revert("CentrifugeConnector/file-unrecognized-param");
+            revert("CentrifugeXCMRouter/file-unrecognized-param");
         }
 
         emit File(what, xcmWeightInfo);
