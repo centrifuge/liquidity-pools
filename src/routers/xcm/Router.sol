@@ -28,7 +28,7 @@ contract ConnectorXCMRouter {
 
     /// --- Properties ---
     ConnectorLike public immutable connector;
-    address centrifugeChainOrigin;
+    address immutable centrifugeChainOrigin;
     bytes centrifugeChainHandleCallIndex;
     XcmWeightInfo xcmWeightInfo;
 
