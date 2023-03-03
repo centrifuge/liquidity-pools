@@ -29,7 +29,8 @@ contract ConnectorXCMRouter {
     /// --- Properties ---
     ConnectorLike public immutable connector;
     address immutable centrifugeChainOrigin;
-    bytes centrifugeChainHandleCallIndex;
+    uint8 immutable centrifugeChainConnectorsPalletIndex;
+    uint8 immutable centrifugeChainConnectorsPalletHandleIndex;
     XcmWeightInfo xcmWeightInfo;
 
     /// --- Storage ---
@@ -57,10 +58,11 @@ contract ConnectorXCMRouter {
         uint256 feeAmount;
     }
 
-    constructor(address connector_, address centrifugeChainOrigin_, bytes memory centrifugeChainHandleCallIndex_) {
+    constructor(address connector_, address centrifugeChainOrigin_, uint8 centrifugeChainConnectorsPalletIndex_, uint8 centrifugeChainConnectorsPalletHandleIndex_) {
         connector = ConnectorLike(connector_);
         centrifugeChainOrigin = centrifugeChainOrigin_;
-        centrifugeChainHandleCallIndex = centrifugeChainHandleCallIndex_;
+        centrifugeChainConnectorsPalletIndex = centrifugeChainConnectorsPalletIndex_;
+        centrifugeChainConnectorsPalletHandleIndex = centrifugeChainConnectorsPalletHandleIndex_;
         xcmWeightInfo = XcmWeightInfo({
             buyExecutionWeightLimit: 19000000000,
             transactWeightAtMost: 8000000000,
@@ -155,8 +157,10 @@ contract ConnectorXCMRouter {
 
     function centrifuge_handle_call(bytes memory message) internal view returns (bytes memory) {
         return abi.encodePacked(
-            // The call index; first byte is the pallet, the second is the extrinsic
-            centrifugeChainHandleCallIndex,
+            // The centrifuge chain Connectors pallet index
+            centrifugeChainConnectorsPalletIndex,
+            // The `handle` call index within the Connectors pallet
+            centrifugeChainConnectorsPalletHandleIndex,
             // We need to specify the length of the message in the scale-encoding format
             message_length_scale_encoded(message),
             // The connector message itself

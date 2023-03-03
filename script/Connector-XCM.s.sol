@@ -20,7 +20,8 @@ contract ConnectorXCMScript is Script {
         ConnectorXCMRouter router = new ConnectorXCMRouter(
                 address(connector),
                 address(vm.envAddress("CENTRIFUGE_CHAIN_ORIGIN")),
-                vm.envBytes("CENTRIFUGE_CHAIN_HANDLE_CALL_INDEX")
+                uint8(vm.envUint("CENTRIFUGE_CHAIN_CONNECTORS_PALLET_INDEX")),
+                uint8(vm.envUint("CENTRIFUGE_CHAIN_CONNECTORS_PALLET_HANDLE_INDEX"))
         );
         connector.file("router", address(router));
         vm.stopBroadcast();
