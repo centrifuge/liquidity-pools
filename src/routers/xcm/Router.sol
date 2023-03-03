@@ -17,7 +17,7 @@ interface ConnectorLike {
     ) external;
     function updateMember(uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) external;
     function updateTokenPrice(uint64 poolId, bytes16 trancheId, uint128 price) external;
-    function handleTransfer(uint64 poolId, bytes16 trancheId, address user, uint128 amount) external;
+    function handleTransfer(uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 amount) external;
 }
 
 contract ConnectorXCMRouter {
@@ -125,8 +125,8 @@ contract ConnectorXCMRouter {
             (uint64 poolId, bytes16 trancheId, uint128 price) = ConnectorMessages.parseUpdateTokenPrice(_msg);
             connector.updateTokenPrice(poolId, trancheId, price);
         } else if (ConnectorMessages.isTransfer(_msg)) {
-            (uint64 poolId, bytes16 trancheId,, address user, uint128 amount) = ConnectorMessages.parseTransfer(_msg);
-            connector.handleTransfer(poolId, trancheId, user, amount);
+            (uint64 poolId, bytes16 trancheId,, address destinationAddress, uint128 amount) = ConnectorMessages.parseTransfer(_msg);
+            connector.handleTransfer(poolId, trancheId, destinationAddress, amount);
         } else {
             require(false, "invalid-message");
         }

@@ -134,25 +134,25 @@ contract CentrifugeConnector {
         memberlist.updateMember(user, validUntil);
     }
 
-    function handleTransfer(uint64 poolId, bytes16 trancheId, address user, uint128 amount) public onlyRouter {
+    function handleTransfer(uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 amount) public onlyRouter {
         RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
-        require(token.hasMember(user), "CentrifugeConnector/not-a-member");
+        require(token.hasMember(destinationAddress), "CentrifugeConnector/not-a-member");
 
-        token.mint(user, amount);
+        token.mint(destinationAddress, amount);
     }
 
-    function transfer(uint64 poolId, bytes16 trancheId, address user, uint128 amount, ConnectorMessages.Domain domain)
+    function transfer(uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 amount, ConnectorMessages.Domain domain)
         public
     {
         require(domain == ConnectorMessages.Domain.Centrifuge, "CentrifugeConnector/invalid-domain");
         RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
         require(address(token) != address(0), "CentrifugeConnector/unknown-token");
-        require(token.balanceOf(user) >= amount, "CentrifugeConnector/insufficient-balance");
-        require(token.transferFrom(user, address(this), amount), "CentrifugeConnector/token-transfer-failed");
+        require(token.balanceOf(destinationAddress) >= amount, "CentrifugeConnector/insufficient-balance");
+        require(token.transferFrom(destinationAddress, address(this), amount), "CentrifugeConnector/token-transfer-failed");
         token.burn(address(this), amount);
 
         bytes memory message =
-            ConnectorMessages.formatTransfer(poolId, trancheId, ConnectorMessages.formatDomain(domain), user, amount);
+            ConnectorMessages.formatTransfer(poolId, trancheId, ConnectorMessages.formatDomain(domain), destinationAddress, amount);
         router.send(message);
     }
 }
