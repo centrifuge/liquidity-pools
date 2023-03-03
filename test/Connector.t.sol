@@ -320,7 +320,7 @@ contract ConnectorTest is Test {
         homeConnector.transfer(poolId, trancheId, encodedDomain, destinationAddress, amount);
 
         // 5. Verify the destinationAddress has the expected amount
-    (address token,,,,) = bridgedConnector.tranches(poolId, trancheId);
+        (address token,,,,) = bridgedConnector.tranches(poolId, trancheId);
         assertEq(ERC20Like(token).balanceOf(destinationAddress), amount);
     }
 
