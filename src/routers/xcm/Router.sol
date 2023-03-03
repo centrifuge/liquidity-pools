@@ -58,7 +58,12 @@ contract ConnectorXCMRouter {
         uint256 feeAmount;
     }
 
-    constructor(address connector_, address centrifugeChainOrigin_, uint8 centrifugeChainConnectorsPalletIndex_, uint8 centrifugeChainConnectorsPalletHandleIndex_) {
+    constructor(
+        address connector_,
+        address centrifugeChainOrigin_,
+        uint8 centrifugeChainConnectorsPalletIndex_,
+        uint8 centrifugeChainConnectorsPalletHandleIndex_
+    ) {
         connector = ConnectorLike(connector_);
         centrifugeChainOrigin = centrifugeChainOrigin_;
         centrifugeChainConnectorsPalletIndex = centrifugeChainConnectorsPalletIndex_;
