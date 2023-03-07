@@ -167,9 +167,8 @@ contract CentrifugeConnector {
         require(token.balanceOf(msg.sender) >= amount, "CentrifugeConnector/insufficient-balance");
         require(token.hasMember(destinationAddress), "CentrifugeConnector/not-a-member");
 
-        // Transfer the tokens locally and burn them
-        require(token.transferFrom(msg.sender, address(this), amount), "CentrifugeConnector/token-transfer-failed");
-        token.burn(address(this), amount);
+        // Burn the tokens
+        token.burn(msg.sender, amount);
 
         // Send the Transfer message to the destination domain
         router.send(
