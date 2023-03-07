@@ -151,18 +151,26 @@ contract CentrifugeConnector {
         uint128 amount,
         ConnectorMessages.Domain domain
     ) public {
+        // Ensure the destination domain is supported
         require(domain == ConnectorMessages.Domain.Centrifuge, "CentrifugeConnector/invalid-domain");
+
+        // Lookup the tranche token
         RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
         require(address(token) != address(0), "CentrifugeConnector/unknown-token");
-        require(token.balanceOf(destinationAddress) >= amount, "CentrifugeConnector/insufficient-balance");
-        require(
-            token.transferFrom(destinationAddress, address(this), amount), "CentrifugeConnector/token-transfer-failed"
-        );
+
+        // Ensure the sender has enough balance and that the destination address is whitelisted
+        require(token.balanceOf(msg.sender) >= amount, "CentrifugeConnector/insufficient-balance");
+        require(token.hasMember(destinationAddress), "CentrifugeConnector/not-a-member");
+
+        // Transfer the tokens locally and burn them
+        require(token.transferFrom(msg.sender, address(this), amount), "CentrifugeConnector/token-transfer-failed");
         token.burn(address(this), amount);
 
-        bytes memory message = ConnectorMessages.formatTransfer(
-            poolId, trancheId, ConnectorMessages.formatDomain(domain), destinationAddress, amount
+        // Send the Transfer message to the destination domain
+        router.send(
+            ConnectorMessages.formatTransfer(
+                poolId, trancheId, ConnectorMessages.formatDomain(domain), destinationAddress, amount
+            )
         );
-        router.send(message);
     }
 }
