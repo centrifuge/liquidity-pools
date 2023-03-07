@@ -152,9 +152,9 @@ contract CentrifugeConnector {
     function transfer(
         uint64 poolId,
         bytes16 trancheId,
+        ConnectorMessages.Domain domain,
         address destinationAddress,
-        uint128 amount,
-        ConnectorMessages.Domain domain
+        uint128 amount
     ) public {
         // Ensure the destination domain is supported
         require(domain == ConnectorMessages.Domain.Centrifuge, "CentrifugeConnector/invalid-domain");
