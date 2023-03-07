@@ -138,9 +138,14 @@ contract CentrifugeConnector {
         public
         onlyRouter
     {
+        // Lookup the tranche token
         RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
+        require(address(token) != address(0), "CentrifugeConnector/unknown-token");
+
+        // Ensure the destination address is a whitelisted member
         require(token.hasMember(destinationAddress), "CentrifugeConnector/not-a-member");
 
+        // Mint the transfer amount to the destinationAddress account
         token.mint(destinationAddress, amount);
     }
 
