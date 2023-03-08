@@ -7,12 +7,17 @@ import {ConnectorMessages} from "src/Messages.sol";
 import "forge-std/Test.sol";
 import {ConnectorXCMRouter} from "src/routers/xcm/Router.sol";
 
+interface XcmRouterLike {
+    function handle(bytes memory _message) external;
+    function send(bytes memory message) external;
+}
+
 contract MockHomeConnector is Test {
     using TypedMemView for bytes;
     using TypedMemView for bytes29;
     using ConnectorMessages for bytes29;
 
-    ConnectorXCMRouter public immutable router;
+    XcmRouterLike public immutable router;
 
     uint32 immutable CENTRIFUGE_CHAIN_DOMAIN = 3000;
     uint32 immutable NONCE = 1;
@@ -24,8 +29,8 @@ contract MockHomeConnector is Test {
 
     enum Types {AddPool}
 
-    constructor(address bridgedConnector) {
-        router = new ConnectorXCMRouter(bridgedConnector, address(this), 108, 99);
+    constructor(address xcmRouter) {
+        router = XcmRouterLike(xcmRouter);
     }
 
     function addPool(uint64 poolId) public {
