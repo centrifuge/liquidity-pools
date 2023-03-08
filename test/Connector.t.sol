@@ -8,7 +8,6 @@ import {RestrictedTokenLike} from "src/token/restricted.sol";
 import {MemberlistLike, Memberlist} from "src/token/memberlist.sol";
 import {MockHomeConnector} from "./mock/MockHomeConnector.sol";
 import {MockXcmRouter} from "./mock/MockXcmRouter.sol";
-import {ConnectorXCMRouter} from "src/routers/xcm/Router.sol";
 import "forge-std/Test.sol";
 import "../src/Connector.sol";
 import "./mock/MockXcmRouter.sol";
@@ -19,7 +18,6 @@ interface ERC20Like {
 
 contract ConnectorTest is Test {
     CentrifugeConnector _connector;
-
     MockHomeConnector mockHomeConnector;
     MockXcmRouter mockXcmRouter;
 

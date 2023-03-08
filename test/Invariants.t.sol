@@ -4,7 +4,7 @@ pragma abicoder v2;
 
 import {CentrifugeConnector} from "src/Connector.sol";
 import {MockHomeConnector} from "./mock/MockHomeConnector.sol";
-import {ConnectorXCMRouter} from "src/routers/xcm/Router.sol";
+import "./mock/MockXcmRouter.sol";
 import {RestrictedTokenFactory, MemberlistFactory} from "src/token/factory.sol";
 import {InvariantPoolManager} from "./accounts/PoolManager.sol";
 import "forge-std/Test.sol";
@@ -12,8 +12,8 @@ import "../src/Connector.sol";
 
 contract ConnectorInvariants is Test {
     CentrifugeConnector bridgedConnector;
-    ConnectorXCMRouter bridgedRouter;
     MockHomeConnector connector;
+    MockXcmRouter mockXcmRouter;
 
     InvariantPoolManager poolManager;
 
@@ -23,8 +23,11 @@ contract ConnectorInvariants is Test {
         address tokenFactory_ = address(new RestrictedTokenFactory());
         address memberlistFactory_ = address(new MemberlistFactory());
         bridgedConnector = new CentrifugeConnector(tokenFactory_, memberlistFactory_);
-        connector = new MockHomeConnector(address(bridgedConnector));
-        bridgedConnector.file("router", address(connector.router()));
+        bridgedConnector = new CentrifugeConnector(tokenFactory_, memberlistFactory_);
+        mockXcmRouter = new MockXcmRouter(bridgedConnector);
+
+        connector = new MockHomeConnector(address(mockXcmRouter));
+        bridgedConnector.file("router", address(mockXcmRouter));
 
         // Performs random pool and tranches creations
         poolManager = new InvariantPoolManager(connector);
@@ -35,14 +38,14 @@ contract ConnectorInvariants is Test {
         return targetContracts_;
     }
 
-    //todo(nuno): fix this
-    //    // Invariant 1: For every tranche that exists, the equivalent pool exists
-    //    function invariantTrancheRequiresPool() external {
-    //        for (uint256 i = 0; i < poolManager.allTranchesLength(); i++) {
-    //            bytes16 trancheId = poolManager.allTranches(i);
-    //            uint64 poolId = poolManager.trancheIdToPoolId(trancheId);
-    //            (, uint256 createdAt) = bridgedConnector.pools(poolId);
-    //            assertTrue(createdAt > 0);
-    //        }
-    //    }
+    //    todo(nuno): fix this
+    // Invariant 1: For every tranche that exists, the equivalent pool exists
+    function invariantTrancheRequiresPool() external {
+        for (uint256 i = 0; i < poolManager.allTranchesLength(); i++) {
+            bytes16 trancheId = poolManager.allTranches(i);
+            uint64 poolId = poolManager.trancheIdToPoolId(trancheId);
+            (, uint256 createdAt) = bridgedConnector.pools(poolId);
+            assertTrue(createdAt > 0);
+        }
+    }
 }
