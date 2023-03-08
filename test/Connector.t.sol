@@ -293,7 +293,11 @@ contract ConnectorTest is Test {
 
         // Finally, verify the connector called `router.send`
         bytes memory message = ConnectorMessages.formatTransfer(
-            poolId, trancheId, ConnectorMessages.formatDomain(ConnectorMessages.Domain.Centrifuge), centChainAddress, amount
+            poolId,
+            trancheId,
+            ConnectorMessages.formatDomain(ConnectorMessages.Domain.Centrifuge),
+            centChainAddress,
+            amount
         );
         assert(mockXcmRouter.sentMessages(message));
     }
