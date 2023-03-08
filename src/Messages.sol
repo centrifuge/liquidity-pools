@@ -220,12 +220,12 @@ library ConnectorMessages {
     function parseTransfer(bytes29 _msg)
         internal
         pure
-        returns (uint64 poolId, bytes16 trancheId, bytes9 encodedDomain, address user, uint128 amount)
+        returns (uint64 poolId, bytes16 trancheId, bytes9 encodedDomain, address destinationAddress, uint128 amount)
     {
         poolId = uint64(_msg.indexUint(1, 8));
         trancheId = bytes16(_msg.index(9, 16));
         encodedDomain = bytes9(_msg.index(25, 9));
-        user = address(bytes20(_msg.index(34, 20)));
+        destinationAddress = address(bytes20(_msg.index(34, 20)));
         amount = uint128(_msg.indexUint(66, 16));
     }
 
