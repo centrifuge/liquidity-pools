@@ -19,7 +19,7 @@ interface ERC20Like {
 contract ConnectorTest is Test {
     CentrifugeConnector bridgedConnector;
     MockHomeConnector connector;
-    MockXcmRouter mockXcmRouter;g
+    MockXcmRouter mockXcmRouter;
 
     uint256 minimumDelay;
 
