@@ -53,14 +53,11 @@ contract ConnectorTest is Test {
         bytes16 trancheId,
         uint128 price
     ) public {
-        // 0. Add Pool
         connector.addPool(poolId);
         (uint64 actualPoolId,) = bridgedConnector.pools(poolId);
         assertEq(uint256(actualPoolId), uint256(poolId));
 
-        // 1. Add the tranche
         connector.addTranche(poolId, trancheId, tokenName, tokenSymbol, price);
-        // 2. Then deploy the tranche
         bridgedConnector.deployTranche(poolId, trancheId);
 
         (address token_, uint256 latestPrice,, string memory actualTokenName, string memory actualTokenSymbol) =
@@ -131,14 +128,12 @@ contract ConnectorTest is Test {
         uint128 price
     ) public {
         vm.assume(trancheId != wrongTrancheId);
-        // 0. Add Pool
+
         connector.addPool(poolId);
         (uint64 actualPoolId,) = bridgedConnector.pools(poolId);
         assertEq(uint256(actualPoolId), uint256(poolId));
 
-        // 1. Add the tranche
         connector.addTranche(poolId, trancheId, tokenName, tokenSymbol, price);
-        // 2. Then deploy the tranche
         vm.expectRevert(bytes("CentrifugeConnector/invalid-pool-or-tranche"));
         bridgedConnector.deployTranche(poolId, wrongTrancheId);
     }
@@ -152,14 +147,12 @@ contract ConnectorTest is Test {
         uint128 price
     ) public {
         vm.assume(poolId != wrongPoolId);
-        // 0. Add Pool
+
         connector.addPool(poolId);
         (uint64 actualPoolId,) = bridgedConnector.pools(poolId);
         assertEq(uint256(actualPoolId), uint256(poolId));
 
-        // 1. Add the tranche
         connector.addTranche(poolId, trancheId, tokenName, tokenSymbol, price);
-        // 2. Then deploy the tranche
         vm.expectRevert(bytes("CentrifugeConnector/invalid-pool-or-tranche"));
         bridgedConnector.deployTranche(wrongPoolId, trancheId);
     }
