@@ -13,6 +13,8 @@ contract MockXcmRouter is Test {
 
     CentrifugeConnector public immutable connector;
 
+    mapping(bytes => bool) public sentMessages;
+
     constructor(CentrifugeConnector connector_) {
         connector = connector_;
     }
@@ -48,6 +50,6 @@ contract MockXcmRouter is Test {
     }
 
     function send(bytes memory message) public onlyConnector {
-        // do nothing
+        sentMessages[message] = true;
     }
 }
