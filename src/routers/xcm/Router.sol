@@ -140,7 +140,7 @@ contract ConnectorXCMRouter {
         }
     }
 
-    function send(bytes memory message) public onlyConnector {
+    function send(bytes memory message) public {
         bytes memory centChainCall = centrifuge_handle_call(message);
 
         XCM_TRANSACTOR_V2_CONTRACT.transactThroughSignedMultilocation(

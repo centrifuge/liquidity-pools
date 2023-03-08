@@ -30,10 +30,10 @@ contract ConnectorTest is Test {
         address memberlistFactory_ = address(new MemberlistFactory());
 
         _connector = new CentrifugeConnector(tokenFactory_, memberlistFactory_);
-        mockXcmRouter = new MockXcmRouter(address(_connector));
+        mockXcmRouter = new MockXcmRouter(_connector);
 
         mockHomeConnector = new MockHomeConnector(address(mockXcmRouter));
-        _connector.file("router", address(mockXcmRouter.router()));
+        _connector.file("router", address(mockXcmRouter));
         minimumDelay = new Memberlist().minimumDelay();
     }
 
@@ -264,7 +264,46 @@ contract ConnectorTest is Test {
         _connector.updateTokenPrice(poolId, trancheId, price);
     }
 
-    function testTransferCentrifuge(
+    // Test transferring `amount` to the msg.sender's account (Centrifuge Chain -> EVM like) and then try
+    // transferring that amount to a `centChainAddress` (EVM -> Centrifuge Chain like).
+    function testTransferToCentrifuge(
+        uint64 poolId,
+        string memory tokenName,
+        string memory tokenSymbol,
+        bytes16 trancheId,
+        uint128 price,
+        address centChainAddress,
+        uint128 amount,
+        uint64 validUntil
+    ) public {
+        vm.assume(validUntil > block.timestamp + 7 days);
+        // 0. Add Pool
+        mockHomeConnector.addPool(poolId);
+
+        // 1. Add the tranche
+        mockHomeConnector.addTranche(poolId, trancheId, tokenName, tokenSymbol, price);
+
+        // 2. Then deploy the tranche
+        _connector.deployTranche(poolId, trancheId);
+
+        // 3. Add msg.sender as a member
+        mockHomeConnector.updateMember(poolId, trancheId, msg.sender, validUntil);
+
+        // 4. Transfer some tokens to the msg.sender
+        bytes9 encodedDomain = ConnectorMessages.formatDomain(ConnectorMessages.Domain.Centrifuge);
+        mockHomeConnector.transfer(poolId, trancheId, encodedDomain, msg.sender, amount);
+
+        // 5. Verify the destinationAddress has the expected amount
+        (address tokenAddress,,,,) = _connector.tranches(poolId, trancheId);
+        RestrictedTokenLike token = RestrictedTokenLike(tokenAddress);
+        assertEq(token.balanceOf(msg.sender), amount);
+
+        // Now send the transfer from EVM -> Cent Chain
+        _connector.transfer(poolId, trancheId, ConnectorMessages.Domain.Centrifuge, centChainAddress, amount);
+        assertEq(token.balanceOf(msg.sender), 0);
+    }
+
+    function testTransferFromCentrifuge(
         uint64 poolId,
         string memory tokenName,
         string memory tokenSymbol,
@@ -296,7 +335,7 @@ contract ConnectorTest is Test {
         assertEq(ERC20Like(token).balanceOf(destinationAddress), amount);
     }
 
-    function testTransferEVM(
+    function testTransferFromEVM(
         uint64 poolId,
         string memory tokenName,
         string memory tokenSymbol,
@@ -329,7 +368,7 @@ contract ConnectorTest is Test {
         assertEq(ERC20Like(token).balanceOf(destinationAddress), amount);
     }
 
-    function testTransferEVMWithoutMemberFails(
+    function testTransferFromEVMWithoutMemberFails(
         uint64 poolId,
         string memory tokenName,
         string memory tokenSymbol,

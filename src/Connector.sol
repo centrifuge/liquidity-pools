@@ -165,8 +165,6 @@ contract CentrifugeConnector {
 
         // Ensure the sender has enough balance and that the destination address is whitelisted
         require(token.balanceOf(msg.sender) >= amount, "CentrifugeConnector/insufficient-balance");
-        require(token.hasMember(destinationAddress), "CentrifugeConnector/not-a-member");
-
         // Burn the tokens
         token.burn(msg.sender, amount);
 
