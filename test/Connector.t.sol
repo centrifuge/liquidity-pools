@@ -300,7 +300,7 @@ contract ConnectorTest is Test {
     }
 
     // Test that an outbound transfer fails when targeting a domain that is not Centrifuge
-    function testTransferToUnsupportedDomain(
+    function testTransferToInvalidDomain(
         uint64 poolId,
         string memory tokenName,
         string memory tokenSymbol,
