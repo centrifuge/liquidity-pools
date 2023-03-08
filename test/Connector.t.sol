@@ -299,6 +299,21 @@ contract ConnectorTest is Test {
         assertEq(token.balanceOf(address(this)), 0);
     }
 
+    // Test that an outbound transfer fails when targeting a domain that is not Centrifuge
+    function testTransferToUnsupportedDomain(
+        uint64 poolId,
+        string memory tokenName,
+        string memory tokenSymbol,
+        bytes16 trancheId,
+        uint128 price,
+        address centChainAddress,
+        uint128 amount,
+        uint64 validUntil
+    ) public {
+        vm.expectRevert(bytes("CentrifugeConnector/invalid-domain"));
+        _connector.transfer(poolId, trancheId, ConnectorMessages.Domain.EVM, centChainAddress, amount);
+    }
+
     function testTransferFromCentrifuge(
         uint64 poolId,
         string memory tokenName,
