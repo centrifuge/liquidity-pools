@@ -325,23 +325,14 @@ contract ConnectorTest is Test {
         uint64 validUntil
     ) public {
         vm.assume(validUntil > block.timestamp + 7 days);
-        // 0. Add Pool
         connector.addPool(poolId);
-
-        // 1. Add the tranche
         connector.addTranche(poolId, trancheId, tokenName, tokenSymbol, price);
-
-        // 2. Then deploy the tranche
         bridgedConnector.deployTranche(poolId, trancheId);
-
-        // 3. Add member
         connector.updateMember(poolId, trancheId, destinationAddress, validUntil);
 
-        // 4. Transfer some tokens
         bytes9 encodedDomain = ConnectorMessages.formatDomain(ConnectorMessages.Domain.Centrifuge);
         connector.transfer(poolId, trancheId, encodedDomain, destinationAddress, amount);
 
-        // 5. Verify the destinationAddress has the expected amount
         (address token,,,,) = bridgedConnector.tranches(poolId, trancheId);
         assertEq(ERC20Like(token).balanceOf(destinationAddress), amount);
     }
@@ -358,23 +349,14 @@ contract ConnectorTest is Test {
         uint64 validUntil
     ) public {
         vm.assume(validUntil > block.timestamp + 7 days);
-        // 0. Add Pool
         connector.addPool(poolId);
-
-        // 1. Add the tranche
         connector.addTranche(poolId, trancheId, tokenName, tokenSymbol, price);
-
-        // 2. Then deploy the tranche
         bridgedConnector.deployTranche(poolId, trancheId);
-
-        // 3. Add member
         connector.updateMember(poolId, trancheId, destinationAddress, validUntil);
 
-        // 4. Transfer some tokens
         bytes9 encodedDomain = ConnectorMessages.formatDomain(ConnectorMessages.Domain.EVM, destinationChainId);
         connector.transfer(poolId, trancheId, encodedDomain, destinationAddress, amount);
 
-        // 5. Verify the destinationAddress has the expected amount
         (address token,,,,) = bridgedConnector.tranches(poolId, trancheId);
         assertEq(ERC20Like(token).balanceOf(destinationAddress), amount);
     }
@@ -391,21 +373,14 @@ contract ConnectorTest is Test {
         uint64 validUntil
     ) public {
         vm.assume(validUntil > block.timestamp + 7 days);
-        // 0. Add Pool
         connector.addPool(poolId);
-
-        // 1. Add the tranche
         connector.addTranche(poolId, trancheId, tokenName, tokenSymbol, price);
-
-        // 2. Then deploy the tranche
         bridgedConnector.deployTranche(poolId, trancheId);
 
-        // 3. Transfer some tokens and expect revert
         bytes9 encodedDomain = ConnectorMessages.formatDomain(ConnectorMessages.Domain.EVM, destinationChainId);
         vm.expectRevert(bytes("CentrifugeConnector/not-a-member"));
         connector.transfer(poolId, trancheId, encodedDomain, destinationAddress, amount);
 
-        // 4. Verify the destinationUser balance is 0
         (address token,,,,) = bridgedConnector.tranches(poolId, trancheId);
         assertEq(ERC20Like(token).balanceOf(destinationAddress), 0);
     }

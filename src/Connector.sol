@@ -138,14 +138,10 @@ contract CentrifugeConnector {
         public
         onlyRouter
     {
-        // Lookup the tranche token
         RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
         require(address(token) != address(0), "CentrifugeConnector/unknown-token");
 
-        // Ensure the destination address is a whitelisted member
         require(token.hasMember(destinationAddress), "CentrifugeConnector/not-a-member");
-
-        // Mint the transfer amount to the destinationAddress account
         token.mint(destinationAddress, amount);
     }
 
@@ -156,19 +152,14 @@ contract CentrifugeConnector {
         address destinationAddress,
         uint128 amount
     ) public {
-        // Ensure the destination domain is supported
         require(domain == ConnectorMessages.Domain.Centrifuge, "CentrifugeConnector/invalid-domain");
 
-        // Lookup the tranche token
         RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
         require(address(token) != address(0), "CentrifugeConnector/unknown-token");
 
-        // Ensure the sender has enough balance and that the destination address is whitelisted
         require(token.balanceOf(msg.sender) >= amount, "CentrifugeConnector/insufficient-balance");
-        // Burn the tokens
         token.burn(msg.sender, amount);
 
-        // Send the Transfer message to the destination domain
         router.send(
             ConnectorMessages.formatTransfer(
                 poolId, trancheId, ConnectorMessages.formatDomain(domain), destinationAddress, amount
