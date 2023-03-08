@@ -291,7 +291,7 @@ contract ConnectorTest is Test {
         bytes9 encodedDomain = ConnectorMessages.formatDomain(ConnectorMessages.Domain.Centrifuge);
         mockHomeConnector.transfer(poolId, trancheId, encodedDomain, msg.sender, amount);
 
-        // 5. Verify the destinationAddress has the expected amount
+        // 5. Verify the msg.sender has the expected amount
         (address tokenAddress,,,,) = _connector.tranches(poolId, trancheId);
         RestrictedTokenLike token = RestrictedTokenLike(tokenAddress);
         assertEq(token.balanceOf(msg.sender), amount);
