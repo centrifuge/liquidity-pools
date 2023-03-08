@@ -34,7 +34,6 @@ contract ConnectorXCMRouter {
     XcmWeightInfo xcmWeightInfo;
 
     /// --- Storage ---
-    /// Auth storage
     mapping(address => uint256) public wards;
 
     /// --- Events ---
@@ -140,7 +139,7 @@ contract ConnectorXCMRouter {
         }
     }
 
-    function send(bytes memory message) public {
+    function send(bytes memory message) public onlyConnector {
         bytes memory centChainCall = centrifuge_handle_call(message);
 
         XCM_TRANSACTOR_V2_CONTRACT.transactThroughSignedMultilocation(
