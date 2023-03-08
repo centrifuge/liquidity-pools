@@ -262,7 +262,7 @@ contract ConnectorTest is Test {
         _connector.updateTokenPrice(poolId, trancheId, price);
     }
 
-    // Test transferring `amount` to the msg.sender's account (Centrifuge Chain -> EVM like) and then try
+    // Test transferring `amount` to the address(this)'s account (Centrifuge Chain -> EVM like) and then try
     // transferring that amount to a `centChainAddress` (EVM -> Centrifuge Chain like).
     function testTransferToCentrifuge(
         uint64 poolId,
@@ -275,30 +275,28 @@ contract ConnectorTest is Test {
         uint64 validUntil
     ) public {
         vm.assume(validUntil > block.timestamp + 7 days);
-        // 0. Add Pool
         mockHomeConnector.addPool(poolId);
-
-        // 1. Add the tranche
         mockHomeConnector.addTranche(poolId, trancheId, tokenName, tokenSymbol, price);
-
-        // 2. Then deploy the tranche
         _connector.deployTranche(poolId, trancheId);
+        mockHomeConnector.updateMember(poolId, trancheId, address(this), validUntil);
 
-        // 3. Add msg.sender as a member
-        mockHomeConnector.updateMember(poolId, trancheId, msg.sender, validUntil);
+        mockHomeConnector.transfer(
+            poolId,
+            trancheId,
+            ConnectorMessages.formatDomain(ConnectorMessages.Domain.Centrifuge),
+            address(this),
+            amount
+        );
 
-        // 4. Transfer some tokens to the msg.sender
-        bytes9 encodedDomain = ConnectorMessages.formatDomain(ConnectorMessages.Domain.Centrifuge);
-        mockHomeConnector.transfer(poolId, trancheId, encodedDomain, msg.sender, amount);
-
-        // 5. Verify the msg.sender has the expected amount
+        // Verify the address(this) has the expected amount
         (address tokenAddress,,,,) = _connector.tranches(poolId, trancheId);
         RestrictedTokenLike token = RestrictedTokenLike(tokenAddress);
-        assertEq(token.balanceOf(msg.sender), amount);
+        assertEq(token.balanceOf(address(this)), amount);
 
         // Now send the transfer from EVM -> Cent Chain
+        token.approve(address(_connector), amount);
         _connector.transfer(poolId, trancheId, ConnectorMessages.Domain.Centrifuge, centChainAddress, amount);
-        assertEq(token.balanceOf(msg.sender), 0);
+        assertEq(token.balanceOf(address(this)), 0);
     }
 
     function testTransferFromCentrifuge(
