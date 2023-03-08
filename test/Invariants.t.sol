@@ -38,7 +38,6 @@ contract ConnectorInvariants is Test {
         return targetContracts_;
     }
 
-    //    todo(nuno): fix this
     // Invariant 1: For every tranche that exists, the equivalent pool exists
     function invariantTrancheRequiresPool() external {
         for (uint256 i = 0; i < poolManager.allTranchesLength(); i++) {
