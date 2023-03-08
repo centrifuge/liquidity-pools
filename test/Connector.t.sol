@@ -299,7 +299,7 @@ contract ConnectorTest is Test {
             centChainAddress,
             amount
         );
-        assert(mockXcmRouter.sentMessages(message));
+        assertEq(mockXcmRouter.sentMessages(message), true);
     }
 
     // Test that an outbound transfer fails when targeting a domain that is not Centrifuge
