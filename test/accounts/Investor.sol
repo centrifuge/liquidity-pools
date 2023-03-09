@@ -49,7 +49,7 @@ contract InvariantInvestor is Test {
         amount = bound(amount, 0, fixedToken.balanceOf(address(this)));
         fixedToken.approve(address(bridgedConnector), amount);
         bridgedConnector.transfer(
-            fixedPoolId, fixedTrancheId, address(this), uint128(amount), ConnectorMessages.Domain.Centrifuge
+            fixedPoolId, fixedTrancheId, ConnectorMessages.Domain.Centrifuge, address(this), uint128(amount)
         );
 
         investorBalanceOnCentrifugeChain += uint128(amount);
