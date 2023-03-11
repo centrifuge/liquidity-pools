@@ -7,9 +7,10 @@ import {RestrictedTokenFactory, MemberlistFactory} from "src/token/factory.sol";
 import {RestrictedTokenLike} from "src/token/restricted.sol";
 import {MemberlistLike, Memberlist} from "src/token/memberlist.sol";
 import {MockHomeConnector} from "./mock/MockHomeConnector.sol";
-import {ConnectorXCMRouter} from "src/routers/xcm/Router.sol";
+import {MockXcmRouter} from "./mock/MockXcmRouter.sol";
 import "forge-std/Test.sol";
 import "../src/Connector.sol";
+import "./mock/MockXcmRouter.sol";
 
 interface ERC20Like {
     function balanceOf(address) external view returns (uint256);
@@ -17,8 +18,8 @@ interface ERC20Like {
 
 contract ConnectorTest is Test {
     CentrifugeConnector bridgedConnector;
-    ConnectorXCMRouter bridgedRouter;
-    MockHomeConnector homeConnector;
+    MockHomeConnector connector;
+    MockXcmRouter mockXcmRouter;
 
     uint256 minimumDelay;
 
@@ -27,13 +28,15 @@ contract ConnectorTest is Test {
         address memberlistFactory_ = address(new MemberlistFactory());
 
         bridgedConnector = new CentrifugeConnector(tokenFactory_, memberlistFactory_);
-        homeConnector = new MockHomeConnector(address(bridgedConnector));
-        bridgedConnector.file("router", address(homeConnector.router()));
+        mockXcmRouter = new MockXcmRouter(bridgedConnector);
+
+        connector = new MockHomeConnector(address(mockXcmRouter));
+        bridgedConnector.file("router", address(mockXcmRouter));
         minimumDelay = new Memberlist().minimumDelay();
     }
 
     function testAddingPoolWorks(uint64 poolId) public {
-        homeConnector.addPool(poolId);
+        connector.addPool(poolId);
         (uint64 actualPoolId,) = bridgedConnector.pools(poolId);
         assertEq(uint256(actualPoolId), uint256(poolId));
     }
@@ -50,14 +53,11 @@ contract ConnectorTest is Test {
         bytes16 trancheId,
         uint128 price
     ) public {
-        // 0. Add Pool
-        homeConnector.addPool(poolId);
+        connector.addPool(poolId);
         (uint64 actualPoolId,) = bridgedConnector.pools(poolId);
         assertEq(uint256(actualPoolId), uint256(poolId));
 
-        // 1. Add the tranche
-        homeConnector.addTranche(poolId, trancheId, tokenName, tokenSymbol, price);
-        // 2. Then deploy the tranche
+        connector.addTranche(poolId, trancheId, tokenName, tokenSymbol, price);
         bridgedConnector.deployTranche(poolId, trancheId);
 
         (address token_, uint256 latestPrice,, string memory actualTokenName, string memory actualTokenSymbol) =
@@ -84,11 +84,11 @@ contract ConnectorTest is Test {
         string memory tokenSymbol,
         uint128 price
     ) public {
-        homeConnector.addPool(poolId);
+        connector.addPool(poolId);
 
         for (uint256 i = 0; i < trancheIds.length; i++) {
             uint128 tranchePrice = price + uint128(i);
-            homeConnector.addTranche(poolId, trancheIds[i], tokenName, tokenSymbol, tranchePrice);
+            connector.addTranche(poolId, trancheIds[i], tokenName, tokenSymbol, tranchePrice);
             bridgedConnector.deployTranche(poolId, trancheIds[i]);
             (address token, uint256 latestPrice,,,) = bridgedConnector.tranches(poolId, trancheIds[i]);
             assertEq(latestPrice, tranchePrice);
@@ -103,7 +103,7 @@ contract ConnectorTest is Test {
         string memory tokenSymbol,
         uint128 price
     ) public {
-        homeConnector.addPool(poolId);
+        connector.addPool(poolId);
         vm.expectRevert(bytes("CentrifugeConnector/not-the-router"));
         bridgedConnector.addTranche(poolId, trancheId, tokenName, tokenSymbol, price);
     }
@@ -116,7 +116,7 @@ contract ConnectorTest is Test {
         uint128 price
     ) public {
         vm.expectRevert(bytes("CentrifugeConnector/invalid-pool"));
-        homeConnector.addTranche(poolId, trancheId, tokenName, tokenSymbol, price);
+        connector.addTranche(poolId, trancheId, tokenName, tokenSymbol, price);
     }
 
     function testDeployingWrongTrancheFails(
@@ -128,14 +128,12 @@ contract ConnectorTest is Test {
         uint128 price
     ) public {
         vm.assume(trancheId != wrongTrancheId);
-        // 0. Add Pool
-        homeConnector.addPool(poolId);
+
+        connector.addPool(poolId);
         (uint64 actualPoolId,) = bridgedConnector.pools(poolId);
         assertEq(uint256(actualPoolId), uint256(poolId));
 
-        // 1. Add the tranche
-        homeConnector.addTranche(poolId, trancheId, tokenName, tokenSymbol, price);
-        // 2. Then deploy the tranche
+        connector.addTranche(poolId, trancheId, tokenName, tokenSymbol, price);
         vm.expectRevert(bytes("CentrifugeConnector/invalid-pool-or-tranche"));
         bridgedConnector.deployTranche(poolId, wrongTrancheId);
     }
@@ -149,14 +147,12 @@ contract ConnectorTest is Test {
         uint128 price
     ) public {
         vm.assume(poolId != wrongPoolId);
-        // 0. Add Pool
-        homeConnector.addPool(poolId);
+
+        connector.addPool(poolId);
         (uint64 actualPoolId,) = bridgedConnector.pools(poolId);
         assertEq(uint256(actualPoolId), uint256(poolId));
 
-        // 1. Add the tranche
-        homeConnector.addTranche(poolId, trancheId, tokenName, tokenSymbol, price);
-        // 2. Then deploy the tranche
+        connector.addTranche(poolId, trancheId, tokenName, tokenSymbol, price);
         vm.expectRevert(bytes("CentrifugeConnector/invalid-pool-or-tranche"));
         bridgedConnector.deployTranche(wrongPoolId, trancheId);
     }
@@ -165,10 +161,10 @@ contract ConnectorTest is Test {
         vm.assume(validUntil >= safeAdd(block.timestamp, new Memberlist().minimumDelay()));
         vm.assume(user != address(0));
 
-        homeConnector.addPool(poolId);
-        homeConnector.addTranche(poolId, trancheId, "Some Name", "SYMBOL", 123);
+        connector.addPool(poolId);
+        connector.addTranche(poolId, trancheId, "Some Name", "SYMBOL", 123);
         bridgedConnector.deployTranche(poolId, trancheId);
-        homeConnector.updateMember(poolId, trancheId, user, validUntil);
+        connector.updateMember(poolId, trancheId, user, validUntil);
 
         (address token_,,,,) = bridgedConnector.tranches(poolId, trancheId);
         RestrictedTokenLike token = RestrictedTokenLike(token_);
@@ -187,11 +183,11 @@ contract ConnectorTest is Test {
         vm.assume(validUntil <= safeAdd(block.timestamp, new Memberlist().minimumDelay()));
         vm.assume(user != address(0));
 
-        homeConnector.addPool(poolId);
-        homeConnector.addTranche(poolId, trancheId, "Some Name", "SYMBOL", 123);
+        connector.addPool(poolId);
+        connector.addTranche(poolId, trancheId, "Some Name", "SYMBOL", 123);
         bridgedConnector.deployTranche(poolId, trancheId);
         vm.expectRevert("invalid-validUntil");
-        homeConnector.updateMember(poolId, trancheId, user, validUntil);
+        connector.updateMember(poolId, trancheId, user, validUntil);
     }
 
     function testUpdatingMemberAsNonRouterFails(uint64 poolId, bytes16 trancheId, address user, uint64 validUntil)
@@ -230,9 +226,9 @@ contract ConnectorTest is Test {
     }
 
     function testUpdatingTokenPriceWorks(uint64 poolId, bytes16 trancheId, uint128 price) public {
-        homeConnector.addPool(poolId);
-        homeConnector.addTranche(poolId, trancheId, "Some Name", "SYMBOL", 123);
-        homeConnector.updateTokenPrice(poolId, trancheId, price);
+        connector.addPool(poolId);
+        connector.addTranche(poolId, trancheId, "Some Name", "SYMBOL", 123);
+        connector.updateTokenPrice(poolId, trancheId, price);
 
         (, uint256 latestPrice, uint256 lastPriceUpdate,,) = bridgedConnector.tranches(poolId, trancheId);
         assertEq(latestPrice, price);
@@ -240,8 +236,8 @@ contract ConnectorTest is Test {
     }
 
     function testUpdatingTokenPriceAsNonRouterFails(uint64 poolId, bytes16 trancheId, uint128 price) public {
-        homeConnector.addPool(poolId);
-        homeConnector.addTranche(poolId, trancheId, "Some Name", "SYMBOL", 123);
+        connector.addPool(poolId);
+        connector.addTranche(poolId, trancheId, "Some Name", "SYMBOL", 123);
         vm.expectRevert(bytes("CentrifugeConnector/not-the-router"));
         bridgedConnector.updateTokenPrice(poolId, trancheId, price);
     }
@@ -259,94 +255,143 @@ contract ConnectorTest is Test {
         bridgedConnector.updateTokenPrice(poolId, trancheId, price);
     }
 
-    function testTransferCentrifuge(
+    // Test transferring `amount` to the address(this)'s account (Centrifuge Chain -> EVM like) and then try
+    // transferring that amount to a `centChainAddress` (EVM -> Centrifuge Chain like).
+    function testTransferToCentrifuge(
         uint64 poolId,
         string memory tokenName,
         string memory tokenSymbol,
         bytes16 trancheId,
         uint128 price,
-        address user,
+        address centChainAddress,
         uint128 amount,
         uint64 validUntil
     ) public {
         vm.assume(validUntil > block.timestamp + 7 days);
-        // 0. Add Pool
-        homeConnector.addPool(poolId);
-
-        // 1. Add the tranche
-        homeConnector.addTranche(poolId, trancheId, tokenName, tokenSymbol, price);
-
-        // 2. Then deploy the tranche
+        connector.addPool(poolId);
+        connector.addTranche(poolId, trancheId, tokenName, tokenSymbol, price);
         bridgedConnector.deployTranche(poolId, trancheId);
+        connector.updateMember(poolId, trancheId, address(this), validUntil);
 
-        // 3. Add member
-        homeConnector.updateMember(poolId, trancheId, user, validUntil);
+        connector.transfer(
+            poolId,
+            trancheId,
+            ConnectorMessages.formatDomain(ConnectorMessages.Domain.Centrifuge),
+            address(this),
+            amount
+        );
 
-        // 4. Transfer some tokens
+        // Verify the address(this) has the expected amount
+        (address tokenAddress,,,,) = bridgedConnector.tranches(poolId, trancheId);
+        RestrictedTokenLike token = RestrictedTokenLike(tokenAddress);
+        assertEq(token.balanceOf(address(this)), amount);
+
+        // Now send the transfer from EVM -> Cent Chain
+        token.approve(address(bridgedConnector), amount);
+        bridgedConnector.transfer(poolId, trancheId, ConnectorMessages.Domain.Centrifuge, centChainAddress, amount);
+        assertEq(token.balanceOf(address(this)), 0);
+
+        // Finally, verify the connector called `router.send`
+        bytes memory message = ConnectorMessages.formatTransfer(
+            poolId,
+            trancheId,
+            ConnectorMessages.formatDomain(ConnectorMessages.Domain.Centrifuge),
+            centChainAddress,
+            amount
+        );
+        assertEq(mockXcmRouter.sentMessages(message), true);
+    }
+
+    // Test that an outbound transfer fails when targeting a domain that is not Centrifuge
+    function testTransferToInvalidDomain(
+        uint64 poolId,
+        string memory tokenName,
+        string memory tokenSymbol,
+        bytes16 trancheId,
+        uint128 price,
+        address centChainAddress,
+        uint128 amount,
+        uint64 validUntil
+    ) public {
+        vm.expectRevert(bytes("CentrifugeConnector/invalid-domain"));
+        bridgedConnector.transfer(poolId, trancheId, ConnectorMessages.Domain.EVM, centChainAddress, amount);
+
+        // Verify the connector did NOT call `router.send`
+        bytes memory message = ConnectorMessages.formatTransfer(
+            poolId, trancheId, ConnectorMessages.formatDomain(ConnectorMessages.Domain.EVM), centChainAddress, amount
+        );
+        assertFalse(mockXcmRouter.sentMessages(message));
+    }
+
+    function testTransferFromCentrifuge(
+        uint64 poolId,
+        string memory tokenName,
+        string memory tokenSymbol,
+        bytes16 trancheId,
+        uint128 price,
+        address destinationAddress,
+        uint128 amount,
+        uint64 validUntil
+    ) public {
+        vm.assume(validUntil > block.timestamp + 7 days);
+        connector.addPool(poolId);
+        connector.addTranche(poolId, trancheId, tokenName, tokenSymbol, price);
+        bridgedConnector.deployTranche(poolId, trancheId);
+        connector.updateMember(poolId, trancheId, destinationAddress, validUntil);
+
         bytes9 encodedDomain = ConnectorMessages.formatDomain(ConnectorMessages.Domain.Centrifuge);
-        homeConnector.transfer(poolId, trancheId, encodedDomain, user, amount);
+        connector.transfer(poolId, trancheId, encodedDomain, destinationAddress, amount);
+
         (address token,,,,) = bridgedConnector.tranches(poolId, trancheId);
-        assertEq(ERC20Like(token).balanceOf(user), amount);
+        assertEq(ERC20Like(token).balanceOf(destinationAddress), amount);
     }
 
-    function testTransferEVM(
+    function testTransferFromEVM(
         uint64 poolId,
         string memory tokenName,
         string memory tokenSymbol,
         bytes16 trancheId,
         uint128 price,
         uint64 destinationChainId,
-        address user,
+        address destinationAddress,
         uint128 amount,
         uint64 validUntil
     ) public {
         vm.assume(validUntil > block.timestamp + 7 days);
-        // 0. Add Pool
-        homeConnector.addPool(poolId);
-
-        // 1. Add the tranche
-        homeConnector.addTranche(poolId, trancheId, tokenName, tokenSymbol, price);
-
-        // 2. Then deploy the tranche
+        connector.addPool(poolId);
+        connector.addTranche(poolId, trancheId, tokenName, tokenSymbol, price);
         bridgedConnector.deployTranche(poolId, trancheId);
+        connector.updateMember(poolId, trancheId, destinationAddress, validUntil);
 
-        // 3. Add member
-        homeConnector.updateMember(poolId, trancheId, user, validUntil);
-
-        // 4. Transfer some tokens
         bytes9 encodedDomain = ConnectorMessages.formatDomain(ConnectorMessages.Domain.EVM, destinationChainId);
-        homeConnector.transfer(poolId, trancheId, encodedDomain, user, amount);
+        connector.transfer(poolId, trancheId, encodedDomain, destinationAddress, amount);
+
         (address token,,,,) = bridgedConnector.tranches(poolId, trancheId);
-        assertEq(ERC20Like(token).balanceOf(user), amount);
+        assertEq(ERC20Like(token).balanceOf(destinationAddress), amount);
     }
 
-    function testTransferEVMWithoutMemberFails(
+    function testTransferFromEVMWithoutMemberFails(
         uint64 poolId,
         string memory tokenName,
         string memory tokenSymbol,
         bytes16 trancheId,
         uint128 price,
         uint64 destinationChainId,
-        address user,
+        address destinationAddress,
         uint128 amount,
         uint64 validUntil
     ) public {
         vm.assume(validUntil > block.timestamp + 7 days);
-        // 0. Add Pool
-        homeConnector.addPool(poolId);
-
-        // 1. Add the tranche
-        homeConnector.addTranche(poolId, trancheId, tokenName, tokenSymbol, price);
-
-        // 2. Then deploy the tranche
+        connector.addPool(poolId);
+        connector.addTranche(poolId, trancheId, tokenName, tokenSymbol, price);
         bridgedConnector.deployTranche(poolId, trancheId);
 
-        // 3. Transfer some tokens and expect revert
         bytes9 encodedDomain = ConnectorMessages.formatDomain(ConnectorMessages.Domain.EVM, destinationChainId);
         vm.expectRevert(bytes("CentrifugeConnector/not-a-member"));
-        homeConnector.transfer(poolId, trancheId, encodedDomain, user, amount);
+        connector.transfer(poolId, trancheId, encodedDomain, destinationAddress, amount);
+
         (address token,,,,) = bridgedConnector.tranches(poolId, trancheId);
-        assertEq(ERC20Like(token).balanceOf(user), 0);
+        assertEq(ERC20Like(token).balanceOf(destinationAddress), 0);
     }
 
     // helpers

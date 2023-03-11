@@ -9,7 +9,7 @@ import {MemberlistLike} from "./token/memberlist.sol";
 import {ConnectorMessages} from "src/Messages.sol";
 
 interface RouterLike {
-    function sendMessage(uint64 poolId, bytes16 trancheId, uint256 amount, address user) external;
+    function send(bytes memory message) external;
 }
 
 contract CentrifugeConnector {
@@ -134,22 +134,36 @@ contract CentrifugeConnector {
         memberlist.updateMember(user, validUntil);
     }
 
-    function handleTransfer(uint64 poolId, bytes16 trancheId, address user, uint256 amount) public onlyRouter {
-        RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
-        require(token.hasMember(user), "CentrifugeConnector/not-a-member");
-
-        token.mint(user, amount);
-    }
-
-    function transfer(uint64 poolId, bytes16 trancheId, address user, uint256 amount, ConnectorMessages.Domain domain)
+    function handleTransfer(uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 amount)
         public
+        onlyRouter
     {
-        require(domain == ConnectorMessages.Domain.Centrifuge, "CentrifugeConnector/invalid-domain");
         RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
         require(address(token) != address(0), "CentrifugeConnector/unknown-token");
-        require(token.balanceOf(user) >= amount, "CentrifugeConnector/insufficient-balance");
-        require(token.transferFrom(user, address(this), amount), "CentrifugeConnector/token-transfer-failed");
-        token.burn(address(this), amount);
-        router.sendMessage(poolId, trancheId, amount, user);
+
+        require(token.hasMember(destinationAddress), "CentrifugeConnector/not-a-member");
+        token.mint(destinationAddress, amount);
+    }
+
+    function transfer(
+        uint64 poolId,
+        bytes16 trancheId,
+        ConnectorMessages.Domain domain,
+        address destinationAddress,
+        uint128 amount
+    ) public {
+        require(domain == ConnectorMessages.Domain.Centrifuge, "CentrifugeConnector/invalid-domain");
+
+        RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
+        require(address(token) != address(0), "CentrifugeConnector/unknown-token");
+
+        require(token.balanceOf(msg.sender) >= amount, "CentrifugeConnector/insufficient-balance");
+        token.burn(msg.sender, amount);
+
+        router.send(
+            ConnectorMessages.formatTransfer(
+                poolId, trancheId, ConnectorMessages.formatDomain(domain), destinationAddress, amount
+            )
+        );
     }
 }
