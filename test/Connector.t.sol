@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity ^0.7.6;
+pragma solidity ^0.8.18;
 pragma abicoder v2;
 
 import {CentrifugeConnector} from "src/Connector.sol";
@@ -87,11 +87,10 @@ contract ConnectorTest is Test {
         connector.addPool(poolId);
 
         for (uint256 i = 0; i < trancheIds.length; i++) {
-            uint128 tranchePrice = price + uint128(i);
-            connector.addTranche(poolId, trancheIds[i], tokenName, tokenSymbol, tranchePrice);
+            connector.addTranche(poolId, trancheIds[i], tokenName, tokenSymbol, price);
             bridgedConnector.deployTranche(poolId, trancheIds[i]);
             (address token, uint256 latestPrice,,,) = bridgedConnector.tranches(poolId, trancheIds[i]);
-            assertEq(latestPrice, tranchePrice);
+            assertEq(latestPrice, price);
             assertTrue(token != address(0));
         }
     }

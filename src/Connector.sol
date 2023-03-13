@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity ^0.7.6;
+pragma solidity ^0.8.18;
 pragma abicoder v2;
 
 import {RestrictedTokenFactoryLike, MemberlistFactoryLike} from "./token/factory.sol";
@@ -115,7 +115,7 @@ contract CentrifugeConnector {
 
         address memberlist = memberlistFactory.newMemberlist();
         RestrictedTokenLike(token).depend("memberlist", memberlist);
-        MemberlistLike(memberlist).updateMember(address(this), uint256(-1)); // required to be able to receive tokens in case of withdrawals
+        MemberlistLike(memberlist).updateMember(address(this), type(uint256).max); // required to be able to receive tokens in case of withdrawals
         emit TrancheDeployed(poolId, trancheId, token);
     }
 

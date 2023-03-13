@@ -1,10 +1,26 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity ^0.7.6;
+pragma solidity ^0.8.18;
 pragma abicoder v2;
 
 import {TypedMemView} from "memview-sol/TypedMemView.sol";
 import {ConnectorMessages} from "../../Messages.sol";
-import {XCM_TRANSACTOR_V2_CONTRACT, Multilocation} from "../../../lib/moonbeam-xcm-transactor/XcmTransactorV2.sol";
+
+struct Multilocation {
+    uint8 parents;
+    bytes[] interior;
+}
+
+// https://github.com/PureStake/moonbeam/blob/v0.30.0/precompiles/xcm-transactor/src/v2/XcmTransactorV2.sol#L12
+interface XcmTransactorV2 {
+    function transactThroughSignedMultilocation(
+        Multilocation memory dest,
+        Multilocation memory feeLocation,
+        uint64 transactRequiredWeightAtMost,
+        bytes memory call,
+        uint256 feeAmount,
+        uint64 overallWeight
+    ) external;
+}
 
 interface ConnectorLike {
     function addPool(uint64 poolId) external;
@@ -32,6 +48,7 @@ contract ConnectorXCMRouter {
     uint8 immutable centrifugeChainConnectorsPalletIndex;
     uint8 immutable centrifugeChainConnectorsPalletHandleIndex;
     XcmWeightInfo xcmWeightInfo;
+    address constant XCM_TRANSACTOR_V2_ADDRESS = 0x000000000000000000000000000000000000080D;
 
     /// --- Storage ---
     mapping(address => uint256) public wards;
@@ -142,7 +159,9 @@ contract ConnectorXCMRouter {
     function send(bytes memory message) public onlyConnector {
         bytes memory centChainCall = centrifuge_handle_call(message);
 
-        XCM_TRANSACTOR_V2_CONTRACT.transactThroughSignedMultilocation(
+        XcmTransactorV2 transactorContract = XcmTransactorV2(XCM_TRANSACTOR_V2_ADDRESS);
+
+        transactorContract.transactThroughSignedMultilocation(
             // dest chain
             centrifuge_parachain_multilocation(),
             // fee asset

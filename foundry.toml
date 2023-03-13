@@ -4,7 +4,7 @@ out = 'out'
 libs = ['lib']
 
 fuzz-runs = 100
-solc_version = "0.7.6"    # Override for the solc version (setting this ignores `auto_detect_solc`)
+solc_version = "0.8.18"   # Override for the solc version (setting this ignores `auto_detect_solc`)
 optimizer = true          # Enable or disable the solc optimizer
 optimizer_runs = 200      # The number of optimizer runs
 verbosity = 3             # The verbosity of tests
