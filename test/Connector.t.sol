@@ -21,8 +21,6 @@ contract ConnectorTest is Test {
     MockHomeConnector connector;
     MockXcmRouter mockXcmRouter;
 
-    uint256 minimumDelay;
-
     function setUp() public {
         address tokenFactory_ = address(new RestrictedTokenFactory());
         address memberlistFactory_ = address(new MemberlistFactory());
@@ -32,7 +30,6 @@ contract ConnectorTest is Test {
 
         connector = new MockHomeConnector(address(mockXcmRouter));
         bridgedConnector.file("router", address(mockXcmRouter));
-        minimumDelay = new Memberlist().minimumDelay();
     }
 
     function testAddingPoolWorks(uint64 poolId) public {
@@ -157,7 +154,7 @@ contract ConnectorTest is Test {
     }
 
     function testUpdatingMemberWorks(uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) public {
-        vm.assume(validUntil >= safeAdd(block.timestamp, new Memberlist().minimumDelay()));
+        vm.assume(validUntil >= block.timestamp);
         vm.assume(user != address(0));
 
         connector.addPool(poolId);
@@ -173,26 +170,10 @@ contract ConnectorTest is Test {
         assertEq(memberlist.members(user), validUntil);
     }
 
-    function testUpdatingMemberBeforeMinimumDelayFails(
-        uint64 poolId,
-        bytes16 trancheId,
-        address user,
-        uint64 validUntil
-    ) public {
-        vm.assume(validUntil <= safeAdd(block.timestamp, new Memberlist().minimumDelay()));
-        vm.assume(user != address(0));
-
-        connector.addPool(poolId);
-        connector.addTranche(poolId, trancheId, "Some Name", "SYMBOL", 123);
-        bridgedConnector.deployTranche(poolId, trancheId);
-        vm.expectRevert("invalid-validUntil");
-        connector.updateMember(poolId, trancheId, user, validUntil);
-    }
-
     function testUpdatingMemberAsNonRouterFails(uint64 poolId, bytes16 trancheId, address user, uint64 validUntil)
         public
     {
-        vm.assume(validUntil <= safeAdd(block.timestamp, new Memberlist().minimumDelay()));
+        vm.assume(validUntil <= block.timestamp);
         vm.assume(user != address(0));
 
         vm.expectRevert(bytes("CentrifugeConnector/not-the-router"));
