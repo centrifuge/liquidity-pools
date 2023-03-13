@@ -26,7 +26,6 @@ interface RestrictedTokenLike is ERC20Like {
 }
 
 contract RestrictedToken is ERC20 {
-    
     MemberlistLike public memberlist;
 
     /// --- Events ---

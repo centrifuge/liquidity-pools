@@ -20,18 +20,18 @@ contract ERC20 {
     mapping(address => mapping(address => uint256)) public allowance;
     mapping(address => uint256) public nonces;
 
+    // --- EIP712 niceties ---
+    uint256 public immutable deploymentChainId;
+    bytes32 private immutable _DOMAIN_SEPARATOR;
+    bytes32 public constant PERMIT_TYPEHASH =
+        keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
+
     // --- Events ---
     event Rely(address indexed user);
     event Deny(address indexed user);
     event File(bytes32 indexed what, string data);
     event Approval(address indexed owner, address indexed spender, uint256 value);
     event Transfer(address indexed from, address indexed to, uint256 value);
-
-    // --- EIP712 niceties ---
-    uint256 public immutable deploymentChainId;
-    bytes32 private immutable _DOMAIN_SEPARATOR;
-    bytes32 public constant PERMIT_TYPEHASH =
-        keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
 
     constructor(string memory name_, string memory symbol_, uint8 decimals_) {
         name = name_;
@@ -191,7 +191,6 @@ contract ERC20 {
     }
 
     // --- Approve by signature ---
-
     function _isValidSignature(address signer, bytes32 digest, bytes memory signature) internal view returns (bool) {
         if (signature.length == 65) {
             bytes32 r;
