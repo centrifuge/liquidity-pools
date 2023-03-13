@@ -8,7 +8,6 @@ import "forge-std/Script.sol";
 
 // Script to deploy Connectors with an XCM router.
 contract ConnectorXCMScript is Script {
-
     // address(0)[0:20] + heccak("Centrifuge")[21:32]
     bytes32 SALT = 0x000000000000000000000000000000000000000075eb27011b69f002dc094d05;
 
