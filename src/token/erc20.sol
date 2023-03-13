@@ -10,7 +10,6 @@ interface IERC1271 {
 contract ERC20 {
     mapping(address => uint256) public wards;
 
-    // --- ERC20 Data ---
     string public name;
     string public symbol;
     string public constant version = "3";
@@ -22,8 +21,8 @@ contract ERC20 {
     mapping(address => uint256) public nonces;
 
     // --- Events ---
-    event Rely(address indexed usr);
-    event Deny(address indexed usr);
+    event Rely(address indexed user);
+    event Deny(address indexed user);
     event File(bytes32 indexed what, string data);
     event Approval(address indexed owner, address indexed spender, uint256 value);
     event Transfer(address indexed from, address indexed to, uint256 value);
@@ -33,11 +32,6 @@ contract ERC20 {
     bytes32 private immutable _DOMAIN_SEPARATOR;
     bytes32 public constant PERMIT_TYPEHASH =
         keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
-
-    modifier auth() {
-        require(wards[msg.sender] == 1, "not-authorized");
-        _;
-    }
 
     constructor(string memory name_, string memory symbol_, uint8 decimals_) {
         name = name_;
@@ -67,15 +61,20 @@ contract ERC20 {
         return block.chainid == deploymentChainId ? _DOMAIN_SEPARATOR : _calculateDomainSeparator(block.chainid);
     }
 
-    // --- Administration ---
-    function rely(address usr) external auth {
-        wards[usr] = 1;
-        emit Rely(usr);
+    modifier auth() {
+        require(wards[msg.sender] == 1, "not-authorized");
+        _;
     }
 
-    function deny(address usr) external auth {
-        wards[usr] = 0;
-        emit Deny(usr);
+    // --- Administration ---
+    function rely(address user) external auth {
+        wards[user] = 1;
+        emit Rely(user);
+    }
+
+    function deny(address user) external auth {
+        wards[user] = 0;
+        emit Deny(user);
     }
 
     function file(bytes32 what, string memory data) external auth {

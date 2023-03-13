@@ -12,30 +12,29 @@ interface RouterLike {
     function send(bytes memory message) external;
 }
 
+struct Pool {
+    uint64 poolId;
+    uint256 createdAt;
+}
+
+struct Tranche {
+    address token;
+    uint128 latestPrice; // Fixed point integer with 27 decimals
+    uint256 lastPriceUpdate;
+    // TODO: the token name & symbol need to be stored because of the separation between adding and deploying tranches.
+    // This leads to duplicate storage (also in the ERC20 contract), ideally we should refactor this somehow
+    string tokenName;
+    string tokenSymbol;
+}
+
 contract CentrifugeConnector {
+    mapping(address => uint256) public wards;
+    mapping(uint64 => Pool) public pools;
+    mapping(uint64 => mapping(bytes16 => Tranche)) public tranches;
+
     RouterLike public router;
     RestrictedTokenFactoryLike public immutable tokenFactory;
     MemberlistFactoryLike public immutable memberlistFactory;
-
-    // --- Storage ---
-    struct Pool {
-        uint64 poolId;
-        uint256 createdAt;
-    }
-
-    struct Tranche {
-        address token;
-        uint128 latestPrice; // [ray]
-        uint256 lastPriceUpdate;
-        // TODO: the token name & symbol need to be stored because of the separation between adding and deploying tranches.
-        // This leads to duplicate storage (also in the ERC20 contract), ideally we should refactor this somehow
-        string tokenName;
-        string tokenSymbol;
-    }
-
-    mapping(uint64 => Pool) public pools;
-    mapping(uint64 => mapping(bytes16 => Tranche)) public tranches;
-    mapping(address => uint256) public wards;
 
     // --- Events ---
     event Rely(address indexed user);
@@ -48,6 +47,7 @@ contract CentrifugeConnector {
     constructor(address tokenFactory_, address memberlistFactory_) {
         tokenFactory = RestrictedTokenFactoryLike(tokenFactory_);
         memberlistFactory = MemberlistFactoryLike(memberlistFactory_);
+
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
     }
@@ -63,14 +63,14 @@ contract CentrifugeConnector {
     }
 
     // --- Administration ---
-    function rely(address usr) external auth {
-        wards[usr] = 1;
-        emit Rely(usr);
+    function rely(address user) external auth {
+        wards[user] = 1;
+        emit Rely(user);
     }
 
-    function deny(address usr) external auth {
-        wards[usr] = 0;
-        emit Deny(usr);
+    function deny(address user) external auth {
+        wards[user] = 0;
+        emit Deny(user);
     }
 
     function file(bytes32 what, address data) external auth {
@@ -79,7 +79,30 @@ contract CentrifugeConnector {
         emit File(what, data);
     }
 
-    // --- Internal ---
+    // --- Outgoing message handling ---
+    function transfer(
+        uint64 poolId,
+        bytes16 trancheId,
+        ConnectorMessages.Domain domain,
+        address destinationAddress,
+        uint128 amount
+    ) public {
+        require(domain == ConnectorMessages.Domain.Centrifuge, "CentrifugeConnector/invalid-domain");
+
+        RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
+        require(address(token) != address(0), "CentrifugeConnector/unknown-token");
+
+        require(token.balanceOf(msg.sender) >= amount, "CentrifugeConnector/insufficient-balance");
+        token.burn(msg.sender, amount);
+
+        router.send(
+            ConnectorMessages.formatTransfer(
+                poolId, trancheId, ConnectorMessages.formatDomain(domain), destinationAddress, amount
+            )
+        );
+    }
+
+    // --- Incoming message handling ---
     function addPool(uint64 poolId) public onlyRouter {
         Pool storage pool = pools[poolId];
         pool.poolId = poolId;
@@ -145,27 +168,5 @@ contract CentrifugeConnector {
 
         require(token.hasMember(destinationAddress), "CentrifugeConnector/not-a-member");
         token.mint(destinationAddress, amount);
-    }
-
-    function transfer(
-        uint64 poolId,
-        bytes16 trancheId,
-        ConnectorMessages.Domain domain,
-        address destinationAddress,
-        uint128 amount
-    ) public {
-        require(domain == ConnectorMessages.Domain.Centrifuge, "CentrifugeConnector/invalid-domain");
-
-        RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
-        require(address(token) != address(0), "CentrifugeConnector/unknown-token");
-
-        require(token.balanceOf(msg.sender) >= amount, "CentrifugeConnector/insufficient-balance");
-        token.burn(msg.sender, amount);
-
-        router.send(
-            ConnectorMessages.formatTransfer(
-                poolId, trancheId, ConnectorMessages.formatDomain(domain), destinationAddress, amount
-            )
-        );
     }
 }
