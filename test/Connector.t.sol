@@ -283,16 +283,9 @@ contract ConnectorTest is Test {
     }
 
     // Test that an outbound transfer fails when targeting a domain that is not Centrifuge
-    function testTransferToInvalidDomain(
-        uint64 poolId,
-        string memory tokenName,
-        string memory tokenSymbol,
-        bytes16 trancheId,
-        uint128 price,
-        address centChainAddress,
-        uint128 amount,
-        uint64 validUntil
-    ) public {
+    function testTransferToInvalidDomain(uint64 poolId, bytes16 trancheId, address centChainAddress, uint128 amount)
+        public
+    {
         vm.expectRevert(bytes("CentrifugeConnector/invalid-domain"));
         bridgedConnector.transfer(poolId, trancheId, ConnectorMessages.Domain.EVM, centChainAddress, amount);
 
@@ -375,10 +368,6 @@ contract ConnectorTest is Test {
     }
 
     // helpers
-    function safeAdd(uint256 x, uint256 y) internal pure returns (uint256 z) {
-        require((z = x + y) >= x, "math-add-overflow");
-    }
-
     function stringToBytes32(string memory source) internal pure returns (bytes32 result) {
         bytes memory tempEmptyStringTest = bytes(source);
         if (tempEmptyStringTest.length == 0) {

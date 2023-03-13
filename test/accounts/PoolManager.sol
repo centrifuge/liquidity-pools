@@ -12,7 +12,7 @@ contract InvariantPoolManager is Test {
     bytes16[] public allTranches;
     mapping(bytes16 => uint64) public trancheIdToPoolId;
 
-    constructor(MockHomeConnector connector_) public {
+    constructor(MockHomeConnector connector_) {
         connector = connector_;
     }
 

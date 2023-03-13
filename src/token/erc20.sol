@@ -4,25 +4,22 @@
 pragma solidity ^0.8.18;
 
 interface IERC1271 {
-    function isValidSignature(
-        bytes32,
-        bytes memory
-    ) external view returns (bytes4);
+    function isValidSignature(bytes32, bytes memory) external view returns (bytes4);
 }
 
 contract ERC20 {
-    mapping (address => uint256) public wards;
+    mapping(address => uint256) public wards;
 
     // --- ERC20 Data ---
-    string  public  name;
-    string  public  symbol;
-    string  public constant version  = "3";
-    uint8   public decimals;
+    string public name;
+    string public symbol;
+    string public constant version = "3";
+    uint8 public decimals;
     uint256 public totalSupply;
 
-    mapping (address => uint256)                      public balanceOf;
-    mapping (address => mapping (address => uint256)) public allowance;
-    mapping (address => uint256)                      public nonces;
+    mapping(address => uint256) public balanceOf;
+    mapping(address => mapping(address => uint256)) public allowance;
+    mapping(address => uint256) public nonces;
 
     // --- Events ---
     event Rely(address indexed usr);
@@ -34,9 +31,10 @@ contract ERC20 {
     // --- EIP712 niceties ---
     uint256 public immutable deploymentChainId;
     bytes32 private immutable _DOMAIN_SEPARATOR;
-    bytes32 public constant PERMIT_TYPEHASH = keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
+    bytes32 public constant PERMIT_TYPEHASH =
+        keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
 
-    modifier auth {
+    modifier auth() {
         require(wards[msg.sender] == 1, "not-authorized");
         _;
     }
@@ -149,7 +147,7 @@ contract ERC20 {
     function decreaseAllowance(address spender, uint256 subtractedValue) external returns (bool) {
         uint256 allowed = allowance[msg.sender][spender];
         require(allowed >= subtractedValue, "insufficient-allowance");
-        unchecked{
+        unchecked {
             allowed = allowed - subtractedValue;
         }
         allowance[msg.sender][spender] = allowed;
@@ -187,7 +185,7 @@ contract ERC20 {
 
         unchecked {
             balanceOf[from] = balance - value; // note: we don't need overflow checks b/c require(balance >= value) and balance <= totalSupply
-            totalSupply     = totalSupply - value;
+            totalSupply = totalSupply - value;
         }
 
         emit Transfer(from, address(0), value);
@@ -195,11 +193,7 @@ contract ERC20 {
 
     // --- Approve by signature ---
 
-    function _isValidSignature(
-        address signer,
-        bytes32 digest,
-        bytes memory signature
-    ) internal view returns (bool) {
+    function _isValidSignature(address signer, bytes32 digest, bytes memory signature) internal view returns (bool) {
         if (signature.length == 65) {
             bytes32 r;
             bytes32 s;
@@ -214,40 +208,27 @@ contract ERC20 {
             }
         }
 
-        (bool success, bytes memory result) = signer.staticcall(
-            abi.encodeWithSelector(IERC1271.isValidSignature.selector, digest, signature)
-        );
-        return (success &&
-            result.length == 32 &&
-            abi.decode(result, (bytes4)) == IERC1271.isValidSignature.selector);
+        (bool success, bytes memory result) =
+            signer.staticcall(abi.encodeWithSelector(IERC1271.isValidSignature.selector, digest, signature));
+        return (success && result.length == 32 && abi.decode(result, (bytes4)) == IERC1271.isValidSignature.selector);
     }
 
-    function permit(
-        address owner,
-        address spender,
-        uint256 value,
-        uint256 deadline,
-        bytes memory signature
-    ) public {
+    function permit(address owner, address spender, uint256 value, uint256 deadline, bytes memory signature) public {
         require(block.timestamp <= deadline, "permit-expired");
         require(owner != address(0), "invalid-owner");
 
         uint256 nonce;
-        unchecked { nonce = nonces[owner]++; }
+        unchecked {
+            nonce = nonces[owner]++;
+        }
 
-        bytes32 digest =
-            keccak256(abi.encodePacked(
+        bytes32 digest = keccak256(
+            abi.encodePacked(
                 "\x19\x01",
                 block.chainid == deploymentChainId ? _DOMAIN_SEPARATOR : _calculateDomainSeparator(block.chainid),
-                keccak256(abi.encode(
-                    PERMIT_TYPEHASH,
-                    owner,
-                    spender,
-                    value,
-                    nonce,
-                    deadline
-                ))
-            ));
+                keccak256(abi.encode(PERMIT_TYPEHASH, owner, spender, value, nonce, deadline))
+            )
+        );
 
         require(_isValidSignature(owner, digest, signature), "invalid-permit");
 
@@ -255,15 +236,9 @@ contract ERC20 {
         emit Approval(owner, spender, value);
     }
 
-    function permit(
-        address owner,
-        address spender,
-        uint256 value,
-        uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external {
+    function permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
+        external
+    {
         permit(owner, spender, value, deadline, abi.encodePacked(r, s, v));
     }
 }

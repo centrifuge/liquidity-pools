@@ -34,7 +34,7 @@ contract ConnectorInvariants is Test {
         targetContracts_.push(address(poolManager));
     }
 
-    function targetContracts() public returns (address[] memory) {
+    function targetContracts() public view returns (address[] memory) {
         return targetContracts_;
     }
 
