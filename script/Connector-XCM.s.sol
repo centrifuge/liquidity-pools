@@ -8,16 +8,20 @@ import "forge-std/Script.sol";
 
 // Script to deploy Connectors with an XCM router.
 contract ConnectorXCMScript is Script {
+
+    // address(0)[0:20] + heccak("Centrifuge")[21:32]
+    bytes32 SALT = 0x000000000000000000000000000000000000000075eb27011b69f002dc094d05;
+
     function setUp() public {}
 
     function run() public {
         vm.startBroadcast();
 
-        address tokenFactory_ = address(new RestrictedTokenFactory());
-        address memberlistFactory_ = address(new MemberlistFactory());
-        CentrifugeConnector connector = new CentrifugeConnector(tokenFactory_, memberlistFactory_);
+        address tokenFactory_ = address(new RestrictedTokenFactory{ salt: SALT }());
+        address memberlistFactory_ = address(new MemberlistFactory{ salt: SALT }());
+        CentrifugeConnector connector = new CentrifugeConnector{ salt: SALT }(tokenFactory_, memberlistFactory_);
 
-        ConnectorXCMRouter router = new ConnectorXCMRouter(
+        ConnectorXCMRouter router = new ConnectorXCMRouter{ salt: SALT }(
                 address(connector),
                 address(vm.envAddress("CENTRIFUGE_CHAIN_ORIGIN")),
                 uint8(vm.envUint("CENTRIFUGE_CHAIN_CONNECTORS_PALLET_INDEX")),
