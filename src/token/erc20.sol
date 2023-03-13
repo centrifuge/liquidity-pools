@@ -80,15 +80,15 @@ contract ERC20 {
     function file(bytes32 what, string memory data) external auth {
         if (what == "name") name = name;
         else if (what == "symbol") symbol = symbol;
-        else revert("file-unrecognized-param");
+        else revert("ERC20/file-unrecognized-param");
         emit File(what, data);
     }
 
     // --- ERC20 Mutations ---
     function transfer(address to, uint256 value) external returns (bool) {
-        require(to != address(0) && to != address(this), "invalid-address");
+        require(to != address(0) && to != address(this), "ERC20/invalid-address");
         uint256 balance = balanceOf[msg.sender];
-        require(balance >= value, "insufficient-balance");
+        require(balance >= value, "ERC20/insufficient-balance");
 
         unchecked {
             balanceOf[msg.sender] = balance - value;
@@ -101,14 +101,14 @@ contract ERC20 {
     }
 
     function transferFrom(address from, address to, uint256 value) public virtual returns (bool) {
-        require(to != address(0) && to != address(this), "invalid-address");
+        require(to != address(0) && to != address(this), "ERC20/invalid-address");
         uint256 balance = balanceOf[from];
-        require(balance >= value, "insufficient-balance");
+        require(balance >= value, "ERC20/insufficient-balance");
 
         if (from != msg.sender) {
             uint256 allowed = allowance[from][msg.sender];
             if (allowed != type(uint256).max) {
-                require(allowed >= value, "insufficient-allowance");
+                require(allowed >= value, "ERC20/insufficient-allowance");
 
                 unchecked {
                     allowance[from][msg.sender] = allowed - value;
@@ -145,7 +145,7 @@ contract ERC20 {
 
     function decreaseAllowance(address spender, uint256 subtractedValue) external returns (bool) {
         uint256 allowed = allowance[msg.sender][spender];
-        require(allowed >= subtractedValue, "insufficient-allowance");
+        require(allowed >= subtractedValue, "ERC20/insufficient-allowance");
         unchecked {
             allowed = allowed - subtractedValue;
         }
@@ -158,7 +158,7 @@ contract ERC20 {
 
     // --- Mint/Burn ---
     function mint(address to, uint256 value) external auth {
-        require(to != address(0) && to != address(this), "invalid-address");
+        require(to != address(0) && to != address(this), "ERC20/invalid-address");
         unchecked {
             balanceOf[to] = balanceOf[to] + value; // note: we don't need an overflow check here b/c balanceOf[to] <= totalSupply and there is an overflow check below
         }
@@ -169,12 +169,12 @@ contract ERC20 {
 
     function burn(address from, uint256 value) external {
         uint256 balance = balanceOf[from];
-        require(balance >= value, "insufficient-balance");
+        require(balance >= value, "ERC20/insufficient-balance");
 
         if (from != msg.sender) {
             uint256 allowed = allowance[from][msg.sender];
             if (allowed != type(uint256).max) {
-                require(allowed >= value, "insufficient-allowance");
+                require(allowed >= value, "ERC20/insufficient-allowance");
 
                 unchecked {
                     allowance[from][msg.sender] = allowed - value;
@@ -212,8 +212,8 @@ contract ERC20 {
     }
 
     function permit(address owner, address spender, uint256 value, uint256 deadline, bytes memory signature) public {
-        require(block.timestamp <= deadline, "permit-expired");
-        require(owner != address(0), "invalid-owner");
+        require(block.timestamp <= deadline, "ERC20/permit-expired");
+        require(owner != address(0), "ERC20/invalid-owner");
 
         uint256 nonce;
         unchecked {
@@ -228,7 +228,7 @@ contract ERC20 {
             )
         );
 
-        require(_isValidSignature(owner, digest, signature), "invalid-permit");
+        require(_isValidSignature(owner, digest, signature), "ERC20/invalid-permit");
 
         allowance[owner][spender] = value;
         emit Approval(owner, spender, value);
