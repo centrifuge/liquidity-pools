@@ -22,12 +22,14 @@ interface ERC20Like {
 interface RestrictedTokenLike is ERC20Like {
     function memberlist() external view returns (address);
     function hasMember(address usr) external view returns (bool);
-    function depend(bytes32 contractName, address addr) external;
+    function file(bytes32 contractName, address addr) external;
 }
 
 // Only mebmber with a valid (not expired) membership should be allowed to receive tokens
 contract RestrictedToken is ERC20 {
     MemberlistLike public memberlist;
+
+    event File(bytes32 indexed what, address data);
 
     modifier checkMember(address usr) {
         memberlist.member(usr);
@@ -38,14 +40,15 @@ contract RestrictedToken is ERC20 {
         return memberlist.hasMember(usr);
     }
 
-    constructor(string memory name_, string memory symbol_) ERC20(name_, symbol_) {}
+    constructor(string memory name_, string memory symbol_, uint8 decimals_) ERC20(name_, symbol_, decimals_) {}
 
-    function depend(bytes32 contractName, address addr) public auth {
-        if (contractName == "memberlist") memberlist = MemberlistLike(addr);
-        else revert();
+    function file(bytes32 what, address data) external auth {
+        if (what == "memberlist") memberlist = MemberlistLike(data);
+        else revert("file-unrecognized-param");
+        emit File(what, data);
     }
 
-    function transferFrom(address from, address to, uint256 wad) public override checkMember(to) returns (bool) {
-        return super.transferFrom(from, to, wad);
+    function transferFrom(address from, address to, uint256 value) public override checkMember(to) returns (bool) {
+        return super.transferFrom(from, to, value);
     }
 }

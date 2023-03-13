@@ -1,61 +1,60 @@
-// SPDX-License-Identifier: AGPL-3.0-only
-// Copyright (C) 2017, 2018, 2019 dbrock, rain, mrchico, lucasvo
-pragma solidity >=0.7.0;
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2017, 2018, 2019 dbrock, rain, mrchico
+// Copyright (C) 2021-2022 Foundation
+pragma solidity ^0.8.18;
+
+interface IERC1271 {
+    function isValidSignature(
+        bytes32,
+        bytes memory
+    ) external view returns (bytes4);
+}
 
 contract ERC20 {
-    // --- Auth ---
-    mapping(address => uint256) public wards;
+    mapping (address => uint256) public wards;
 
-    function rely(address usr) public auth {
-        wards[usr] = 1;
-    }
+    // --- ERC20 Data ---
+    string  public  name;
+    string  public  symbol;
+    string  public constant version  = "3";
+    uint8   public decimals;
+    uint256 public totalSupply;
 
-    function deny(address usr) public auth {
-        wards[usr] = 0;
-    }
+    mapping (address => uint256)                      public balanceOf;
+    mapping (address => mapping (address => uint256)) public allowance;
+    mapping (address => uint256)                      public nonces;
 
-    modifier auth() {
-        require(wards[msg.sender] == 1);
+    // --- Events ---
+    event Rely(address indexed usr);
+    event Deny(address indexed usr);
+    event File(bytes32 indexed what, string data);
+    event Approval(address indexed owner, address indexed spender, uint256 value);
+    event Transfer(address indexed from, address indexed to, uint256 value);
+
+    // --- EIP712 niceties ---
+    uint256 public immutable deploymentChainId;
+    bytes32 private immutable _DOMAIN_SEPARATOR;
+    bytes32 public constant PERMIT_TYPEHASH = keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
+
+    modifier auth {
+        require(wards[msg.sender] == 1, "not-authorized");
         _;
     }
 
-    // --- ERC20 Data ---
-    uint8 public constant decimals = 18;
-    string public name;
-    string public symbol;
-    string public constant version = "1";
-    uint256 public totalSupply;
-
-    bytes32 public DOMAIN_SEPARATOR;
-    // keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
-    bytes32 public constant PERMIT_TYPEHASH = 0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9;
-    mapping(address => uint256) public nonces;
-
-    mapping(address => uint256) public balanceOf;
-    mapping(address => mapping(address => uint256)) public allowance;
-
-    event Approval(address indexed src, address indexed usr, uint256 wad);
-    event Transfer(address indexed src, address indexed dst, uint256 wad);
-
-    // --- Math ---
-    function safeAdd_(uint256 x, uint256 y) internal pure returns (uint256 z) {
-        require((z = x + y) >= x, "math-add-overflow");
-    }
-
-    function safeSub_(uint256 x, uint256 y) internal pure returns (uint256 z) {
-        require((z = x - y) <= x, "math-sub-underflow");
-    }
-
-    constructor(string memory name_, string memory symbol_) {
-        wards[msg.sender] = 1;
+    constructor(string memory name_, string memory symbol_, uint8 decimals_) {
         name = name_;
         symbol = symbol_;
+        decimals = decimals_;
 
-        uint256 chainId;
-        assembly {
-            chainId := chainid()
-        }
-        DOMAIN_SEPARATOR = keccak256(
+        wards[msg.sender] = 1;
+        emit Rely(msg.sender);
+
+        deploymentChainId = block.chainid;
+        _DOMAIN_SEPARATOR = _calculateDomainSeparator(block.chainid);
+    }
+
+    function _calculateDomainSeparator(uint256 chainId) private view returns (bytes32) {
+        return keccak256(
             abi.encode(
                 keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
                 keccak256(bytes(name)),
@@ -66,78 +65,205 @@ contract ERC20 {
         );
     }
 
-    // --- ERC20 ---
-    function transfer(address dst, uint256 wad) external returns (bool) {
-        return transferFrom(msg.sender, dst, wad);
+    function DOMAIN_SEPARATOR() external view returns (bytes32) {
+        return block.chainid == deploymentChainId ? _DOMAIN_SEPARATOR : _calculateDomainSeparator(block.chainid);
     }
 
-    function transferFrom(address src, address dst, uint256 wad) public virtual returns (bool) {
-        require(balanceOf[src] >= wad, "cent/insufficient-balance");
-        if (src != msg.sender && allowance[src][msg.sender] != type(uint256).max) {
-            require(allowance[src][msg.sender] >= wad, "cent/insufficient-allowance");
-            allowance[src][msg.sender] = safeSub_(allowance[src][msg.sender], wad);
+    // --- Administration ---
+    function rely(address usr) external auth {
+        wards[usr] = 1;
+        emit Rely(usr);
+    }
+
+    function deny(address usr) external auth {
+        wards[usr] = 0;
+        emit Deny(usr);
+    }
+
+    function file(bytes32 what, string memory data) external auth {
+        if (what == "name") name = name;
+        else if (what == "symbol") symbol = symbol;
+        else revert("file-unrecognized-param");
+        emit File(what, data);
+    }
+
+    // --- ERC20 Mutations ---
+    function transfer(address to, uint256 value) external returns (bool) {
+        require(to != address(0) && to != address(this), "invalid-address");
+        uint256 balance = balanceOf[msg.sender];
+        require(balance >= value, "insufficient-balance");
+
+        unchecked {
+            balanceOf[msg.sender] = balance - value;
+            balanceOf[to] += value;
         }
-        balanceOf[src] = safeSub_(balanceOf[src], wad);
-        balanceOf[dst] = safeAdd_(balanceOf[dst], wad);
-        emit Transfer(src, dst, wad);
+
+        emit Transfer(msg.sender, to, value);
+
         return true;
     }
 
-    function mint(address usr, uint256 wad) external virtual auth {
-        balanceOf[usr] = safeAdd_(balanceOf[usr], wad);
-        totalSupply = safeAdd_(totalSupply, wad);
-        emit Transfer(address(0), usr, wad);
-    }
+    function transferFrom(address from, address to, uint256 value) public virtual returns (bool) {
+        require(to != address(0) && to != address(this), "invalid-address");
+        uint256 balance = balanceOf[from];
+        require(balance >= value, "insufficient-balance");
 
-    function burn(address usr, uint256 wad) public {
-        require(balanceOf[usr] >= wad, "cent/insufficient-balance");
-        if (usr != msg.sender && allowance[usr][msg.sender] != type(uint256).max) {
-            require(allowance[usr][msg.sender] >= wad, "cent/insufficient-allowance");
-            allowance[usr][msg.sender] = safeSub_(allowance[usr][msg.sender], wad);
+        if (from != msg.sender) {
+            uint256 allowed = allowance[from][msg.sender];
+            if (allowed != type(uint256).max) {
+                require(allowed >= value, "insufficient-allowance");
+
+                unchecked {
+                    allowance[from][msg.sender] = allowed - value;
+                }
+            }
         }
-        balanceOf[usr] = safeSub_(balanceOf[usr], wad);
-        totalSupply = safeSub_(totalSupply, wad);
-        emit Transfer(usr, address(0), wad);
-    }
 
-    function approve(address usr, uint256 wad) external returns (bool) {
-        allowance[msg.sender][usr] = wad;
-        emit Approval(msg.sender, usr, wad);
+        unchecked {
+            balanceOf[from] = balance - value;
+            balanceOf[to] += value;
+        }
+
+        emit Transfer(from, to, value);
+
         return true;
     }
 
-    // --- Alias ---
-    function push(address usr, uint256 wad) external {
-        transferFrom(msg.sender, usr, wad);
+    function approve(address spender, uint256 value) external returns (bool) {
+        allowance[msg.sender][spender] = value;
+
+        emit Approval(msg.sender, spender, value);
+
+        return true;
     }
 
-    function pull(address usr, uint256 wad) external {
-        transferFrom(usr, msg.sender, wad);
+    function increaseAllowance(address spender, uint256 addedValue) external returns (bool) {
+        uint256 newValue = allowance[msg.sender][spender] + addedValue;
+        allowance[msg.sender][spender] = newValue;
+
+        emit Approval(msg.sender, spender, newValue);
+
+        return true;
     }
 
-    function move(address src, address dst, uint256 wad) external {
-        transferFrom(src, dst, wad);
+    function decreaseAllowance(address spender, uint256 subtractedValue) external returns (bool) {
+        uint256 allowed = allowance[msg.sender][spender];
+        require(allowed >= subtractedValue, "insufficient-allowance");
+        unchecked{
+            allowed = allowed - subtractedValue;
+        }
+        allowance[msg.sender][spender] = allowed;
+
+        emit Approval(msg.sender, spender, allowed);
+
+        return true;
     }
 
-    function burnFrom(address usr, uint256 wad) external {
-        burn(usr, wad);
+    // --- Mint/Burn ---
+    function mint(address to, uint256 value) external auth {
+        require(to != address(0) && to != address(this), "invalid-address");
+        unchecked {
+            balanceOf[to] = balanceOf[to] + value; // note: we don't need an overflow check here b/c balanceOf[to] <= totalSupply and there is an overflow check below
+        }
+        totalSupply = totalSupply + value;
+
+        emit Transfer(address(0), to, value);
+    }
+
+    function burn(address from, uint256 value) external {
+        uint256 balance = balanceOf[from];
+        require(balance >= value, "insufficient-balance");
+
+        if (from != msg.sender) {
+            uint256 allowed = allowance[from][msg.sender];
+            if (allowed != type(uint256).max) {
+                require(allowed >= value, "insufficient-allowance");
+
+                unchecked {
+                    allowance[from][msg.sender] = allowed - value;
+                }
+            }
+        }
+
+        unchecked {
+            balanceOf[from] = balance - value; // note: we don't need overflow checks b/c require(balance >= value) and balance <= totalSupply
+            totalSupply     = totalSupply - value;
+        }
+
+        emit Transfer(from, address(0), value);
     }
 
     // --- Approve by signature ---
-    function permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
-        external
-    {
-        require(deadline >= block.timestamp, "cent/past-deadline");
-        bytes32 digest = keccak256(
-            abi.encodePacked(
-                "\x19\x01",
-                DOMAIN_SEPARATOR,
-                keccak256(abi.encode(PERMIT_TYPEHASH, owner, spender, value, nonces[owner]++, deadline))
-            )
+
+    function _isValidSignature(
+        address signer,
+        bytes32 digest,
+        bytes memory signature
+    ) internal view returns (bool) {
+        if (signature.length == 65) {
+            bytes32 r;
+            bytes32 s;
+            uint8 v;
+            assembly {
+                r := mload(add(signature, 0x20))
+                s := mload(add(signature, 0x40))
+                v := byte(0, mload(add(signature, 0x60)))
+            }
+            if (signer == ecrecover(digest, v, r, s)) {
+                return true;
+            }
+        }
+
+        (bool success, bytes memory result) = signer.staticcall(
+            abi.encodeWithSelector(IERC1271.isValidSignature.selector, digest, signature)
         );
-        address recoveredAddress = ecrecover(digest, v, r, s);
-        require(recoveredAddress != address(0) && recoveredAddress == owner, "cent-erc20/invalid-sig");
+        return (success &&
+            result.length == 32 &&
+            abi.decode(result, (bytes4)) == IERC1271.isValidSignature.selector);
+    }
+
+    function permit(
+        address owner,
+        address spender,
+        uint256 value,
+        uint256 deadline,
+        bytes memory signature
+    ) public {
+        require(block.timestamp <= deadline, "permit-expired");
+        require(owner != address(0), "invalid-owner");
+
+        uint256 nonce;
+        unchecked { nonce = nonces[owner]++; }
+
+        bytes32 digest =
+            keccak256(abi.encodePacked(
+                "\x19\x01",
+                block.chainid == deploymentChainId ? _DOMAIN_SEPARATOR : _calculateDomainSeparator(block.chainid),
+                keccak256(abi.encode(
+                    PERMIT_TYPEHASH,
+                    owner,
+                    spender,
+                    value,
+                    nonce,
+                    deadline
+                ))
+            ));
+
+        require(_isValidSignature(owner, digest, signature), "invalid-permit");
+
         allowance[owner][spender] = value;
         emit Approval(owner, spender, value);
+    }
+
+    function permit(
+        address owner,
+        address spender,
+        uint256 value,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external {
+        permit(owner, spender, value, deadline, abi.encodePacked(r, s, v));
     }
 }

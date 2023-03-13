@@ -110,11 +110,13 @@ contract CentrifugeConnector {
         Tranche storage tranche = tranches[poolId][trancheId];
         require(tranche.lastPriceUpdate > 0, "CentrifugeConnector/invalid-pool-or-tranche");
 
-        address token = tokenFactory.newRestrictedToken(tranche.tokenName, tranche.tokenSymbol);
+        // TODO: use actual decimals
+        uint8 decimals = 18;
+        address token = tokenFactory.newRestrictedToken(tranche.tokenName, tranche.tokenSymbol, decimals);
         tranche.token = token;
 
         address memberlist = memberlistFactory.newMemberlist();
-        RestrictedTokenLike(token).depend("memberlist", memberlist);
+        RestrictedTokenLike(token).file("memberlist", memberlist);
         MemberlistLike(memberlist).updateMember(address(this), type(uint256).max); // required to be able to receive tokens in case of withdrawals
         emit TrancheDeployed(poolId, trancheId, token);
     }
