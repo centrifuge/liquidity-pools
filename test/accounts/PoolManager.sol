@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity ^0.7.6;
+pragma solidity ^0.8.18;
 pragma abicoder v2;
 
 import {MockHomeConnector} from "../mock/MockHomeConnector.sol";
@@ -12,7 +12,7 @@ contract InvariantPoolManager is Test {
     bytes16[] public allTranches;
     mapping(bytes16 => uint64) public trancheIdToPoolId;
 
-    constructor(MockHomeConnector connector_) public {
+    constructor(MockHomeConnector connector_) {
         connector = connector_;
     }
 

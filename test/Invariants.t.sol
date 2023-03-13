@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity ^0.7.6;
+pragma solidity ^0.8.18;
 pragma abicoder v2;
 
 import {CentrifugeConnector} from "src/Connector.sol";
@@ -34,7 +34,7 @@ contract ConnectorInvariants is Test {
         targetContracts_.push(address(poolManager));
     }
 
-    function targetContracts() public returns (address[] memory) {
+    function targetContracts() public view returns (address[] memory) {
         return targetContracts_;
     }
 
