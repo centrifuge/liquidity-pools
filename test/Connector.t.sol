@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity ^0.7.6;
+pragma solidity ^0.8.18;
 pragma abicoder v2;
 
 import {CentrifugeConnector} from "src/Connector.sol";
@@ -21,8 +21,6 @@ contract ConnectorTest is Test {
     MockHomeConnector connector;
     MockXcmRouter mockXcmRouter;
 
-    uint256 minimumDelay;
-
     function setUp() public {
         address tokenFactory_ = address(new RestrictedTokenFactory());
         address memberlistFactory_ = address(new MemberlistFactory());
@@ -32,7 +30,6 @@ contract ConnectorTest is Test {
 
         connector = new MockHomeConnector(address(mockXcmRouter));
         bridgedConnector.file("router", address(mockXcmRouter));
-        minimumDelay = new Memberlist().minimumDelay();
     }
 
     function testAddingPoolWorks(uint64 poolId) public {
@@ -87,11 +84,10 @@ contract ConnectorTest is Test {
         connector.addPool(poolId);
 
         for (uint256 i = 0; i < trancheIds.length; i++) {
-            uint128 tranchePrice = price + uint128(i);
-            connector.addTranche(poolId, trancheIds[i], tokenName, tokenSymbol, tranchePrice);
+            connector.addTranche(poolId, trancheIds[i], tokenName, tokenSymbol, price);
             bridgedConnector.deployTranche(poolId, trancheIds[i]);
             (address token, uint256 latestPrice,,,) = bridgedConnector.tranches(poolId, trancheIds[i]);
-            assertEq(latestPrice, tranchePrice);
+            assertEq(latestPrice, price);
             assertTrue(token != address(0));
         }
     }
@@ -158,7 +154,7 @@ contract ConnectorTest is Test {
     }
 
     function testUpdatingMemberWorks(uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) public {
-        vm.assume(validUntil >= safeAdd(block.timestamp, new Memberlist().minimumDelay()));
+        vm.assume(validUntil >= block.timestamp);
         vm.assume(user != address(0));
 
         connector.addPool(poolId);
@@ -174,26 +170,10 @@ contract ConnectorTest is Test {
         assertEq(memberlist.members(user), validUntil);
     }
 
-    function testUpdatingMemberBeforeMinimumDelayFails(
-        uint64 poolId,
-        bytes16 trancheId,
-        address user,
-        uint64 validUntil
-    ) public {
-        vm.assume(validUntil <= safeAdd(block.timestamp, new Memberlist().minimumDelay()));
-        vm.assume(user != address(0));
-
-        connector.addPool(poolId);
-        connector.addTranche(poolId, trancheId, "Some Name", "SYMBOL", 123);
-        bridgedConnector.deployTranche(poolId, trancheId);
-        vm.expectRevert("invalid-validUntil");
-        connector.updateMember(poolId, trancheId, user, validUntil);
-    }
-
     function testUpdatingMemberAsNonRouterFails(uint64 poolId, bytes16 trancheId, address user, uint64 validUntil)
         public
     {
-        vm.assume(validUntil <= safeAdd(block.timestamp, new Memberlist().minimumDelay()));
+        vm.assume(validUntil <= block.timestamp);
         vm.assume(user != address(0));
 
         vm.expectRevert(bytes("CentrifugeConnector/not-the-router"));
@@ -290,21 +270,30 @@ contract ConnectorTest is Test {
         token.approve(address(bridgedConnector), amount);
         bridgedConnector.transfer(poolId, trancheId, ConnectorMessages.Domain.Centrifuge, centChainAddress, amount);
         assertEq(token.balanceOf(address(this)), 0);
+
+        // Finally, verify the connector called `router.send`
+        bytes memory message = ConnectorMessages.formatTransfer(
+            poolId,
+            trancheId,
+            ConnectorMessages.formatDomain(ConnectorMessages.Domain.Centrifuge),
+            centChainAddress,
+            amount
+        );
+        assertEq(mockXcmRouter.sentMessages(message), true);
     }
 
     // Test that an outbound transfer fails when targeting a domain that is not Centrifuge
-    function testTransferToInvalidDomain(
-        uint64 poolId,
-        string memory tokenName,
-        string memory tokenSymbol,
-        bytes16 trancheId,
-        uint128 price,
-        address centChainAddress,
-        uint128 amount,
-        uint64 validUntil
-    ) public {
+    function testTransferToInvalidDomain(uint64 poolId, bytes16 trancheId, address centChainAddress, uint128 amount)
+        public
+    {
         vm.expectRevert(bytes("CentrifugeConnector/invalid-domain"));
         bridgedConnector.transfer(poolId, trancheId, ConnectorMessages.Domain.EVM, centChainAddress, amount);
+
+        // Verify the connector did NOT call `router.send`
+        bytes memory message = ConnectorMessages.formatTransfer(
+            poolId, trancheId, ConnectorMessages.formatDomain(ConnectorMessages.Domain.EVM), centChainAddress, amount
+        );
+        assertFalse(mockXcmRouter.sentMessages(message));
     }
 
     function testTransferFromCentrifuge(
@@ -379,10 +368,6 @@ contract ConnectorTest is Test {
     }
 
     // helpers
-    function safeAdd(uint256 x, uint256 y) internal pure returns (uint256 z) {
-        require((z = x + y) >= x, "math-add-overflow");
-    }
-
     function stringToBytes32(string memory source) internal pure returns (bytes32 result) {
         bytes memory tempEmptyStringTest = bytes(source);
         if (tempEmptyStringTest.length == 0) {

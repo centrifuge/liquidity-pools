@@ -1,10 +1,26 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity ^0.7.6;
+pragma solidity ^0.8.18;
 pragma abicoder v2;
 
 import {TypedMemView} from "memview-sol/TypedMemView.sol";
 import {ConnectorMessages} from "../../Messages.sol";
-import {XCM_TRANSACTOR_V2_CONTRACT, Multilocation} from "../../../lib/moonbeam-xcm-transactor/XcmTransactorV2.sol";
+
+struct Multilocation {
+    uint8 parents;
+    bytes[] interior;
+}
+
+// https://github.com/PureStake/moonbeam/blob/v0.30.0/precompiles/xcm-transactor/src/v2/XcmTransactorV2.sol#L12
+interface XcmTransactorV2 {
+    function transactThroughSignedMultilocation(
+        Multilocation memory dest,
+        Multilocation memory feeLocation,
+        uint64 transactRequiredWeightAtMost,
+        bytes memory call,
+        uint256 feeAmount,
+        uint64 overallWeight
+    ) external;
+}
 
 interface ConnectorLike {
     function addPool(uint64 poolId) external;
@@ -20,43 +36,41 @@ interface ConnectorLike {
     function handleTransfer(uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 amount) external;
 }
 
+struct XcmWeightInfo {
+    // The weight limit in Weight units we accept amount to pay for the
+    // execution of the whole XCM on the Centrifuge chain. This should be
+    // transactWeightAtMost + an extra amount to cover for the other
+    // instructions in the XCM message.
+    uint64 buyExecutionWeightLimit;
+    // The weight limit in Weight units we accept paying for having the Transact
+    // call be executed. This is the cost associated with executing the handle call
+    // in the Centrifuge.
+    uint64 transactWeightAtMost;
+    // The amount to cover for the fees. It will be used in XCM to buy
+    // execution and thus have credit for pay those fees.
+    uint256 feeAmount;
+}
+
 contract ConnectorXCMRouter {
     using TypedMemView for bytes;
     // why bytes29? - https://github.com/summa-tx/memview-sol#why-bytes29
     using TypedMemView for bytes29;
     using ConnectorMessages for bytes29;
 
-    /// --- Properties ---
-    ConnectorLike public immutable connector;
-    address immutable centrifugeChainOrigin;
-    uint8 immutable centrifugeChainConnectorsPalletIndex;
-    uint8 immutable centrifugeChainConnectorsPalletHandleIndex;
-    XcmWeightInfo xcmWeightInfo;
+    address constant XCM_TRANSACTOR_V2_ADDRESS = 0x000000000000000000000000000000000000080D;
 
-    /// --- Storage ---
-    /// Auth storage
     mapping(address => uint256) public wards;
+    XcmWeightInfo internal xcmWeightInfo;
+
+    ConnectorLike public immutable connector;
+    address public immutable centrifugeChainOrigin;
+    uint8 public immutable centrifugeChainConnectorsPalletIndex;
+    uint8 public immutable centrifugeChainConnectorsPalletHandleIndex;
 
     /// --- Events ---
     event Rely(address indexed user);
     event Deny(address indexed user);
     event File(bytes32 indexed what, XcmWeightInfo xcmWeightInfo);
-
-    // Types
-    struct XcmWeightInfo {
-        // The weight limit in Weight units we accept amount to pay for the
-        // execution of the whole XCM on the Centrifuge chain. This should be
-        // transactWeightAtMost + an extra amount to cover for the other
-        // instructions in the XCM message.
-        uint64 buyExecutionWeightLimit;
-        // The weight limit in Weight units we accept paying for having the Transact
-        // call be executed. This is the cost associated with executing the handle call
-        // in the Centrifuge.
-        uint64 transactWeightAtMost;
-        // The amount to cover for the fees. It will be used in XCM to buy
-        // execution and thus have credit for pay those fees.
-        uint256 feeAmount;
-    }
 
     constructor(
         address connector_,
@@ -73,23 +87,14 @@ contract ConnectorXCMRouter {
             transactWeightAtMost: 8000000000,
             feeAmount: 1000000000000000000
         });
+
         wards[msg.sender] = 1;
+        emit Rely(msg.sender);
     }
 
-    /// -- Auth ---
     modifier auth() {
         require(wards[msg.sender] == 1, "ConnectorXCMRouter/not-authorized");
         _;
-    }
-
-    function rely(address usr) external auth {
-        wards[usr] = 1;
-        emit Rely(usr);
-    }
-
-    function deny(address usr) external auth {
-        wards[usr] = 0;
-        emit Deny(usr);
     }
 
     modifier onlyCentrifugeChainOrigin() {
@@ -100,6 +105,17 @@ contract ConnectorXCMRouter {
     modifier onlyConnector() {
         require(msg.sender == address(connector), "ConnectorXCMRouter/only-connector-allowed-to-call");
         _;
+    }
+
+    // --- Administration ---
+    function rely(address user) external auth {
+        wards[user] = 1;
+        emit Rely(user);
+    }
+
+    function deny(address user) external auth {
+        wards[user] = 0;
+        emit Deny(user);
     }
 
     function file(bytes32 what, uint64 buyExecutionWeightLimit, uint64 transactWeightAtMost, uint256 feeAmount)
@@ -115,6 +131,7 @@ contract ConnectorXCMRouter {
         emit File(what, xcmWeightInfo);
     }
 
+    // --- Incoming ---
     function handle(bytes memory _message) external onlyCentrifugeChainOrigin {
         bytes29 _msg = _message.ref(0);
         if (ConnectorMessages.isAddPool(_msg)) {
@@ -140,10 +157,13 @@ contract ConnectorXCMRouter {
         }
     }
 
-    function send(bytes memory message) public {
+    // --- Outgoing ---
+    function send(bytes memory message) public onlyConnector {
         bytes memory centChainCall = centrifuge_handle_call(message);
 
-        XCM_TRANSACTOR_V2_CONTRACT.transactThroughSignedMultilocation(
+        XcmTransactorV2 transactorContract = XcmTransactorV2(XCM_TRANSACTOR_V2_ADDRESS);
+
+        transactorContract.transactThroughSignedMultilocation(
             // dest chain
             centrifuge_parachain_multilocation(),
             // fee asset
@@ -160,6 +180,7 @@ contract ConnectorXCMRouter {
         );
     }
 
+    // --- Utilities ---
     function centrifuge_handle_call(bytes memory message) internal view returns (bytes memory) {
         return abi.encodePacked(
             // The centrifuge chain Connectors pallet index

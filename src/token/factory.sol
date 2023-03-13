@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity >=0.7.6;
+pragma solidity ^0.8.18;
 
 import {RestrictedToken} from "./restricted.sol";
 import {Memberlist} from "./memberlist.sol";
 
 interface RestrictedTokenFactoryLike {
-    function newRestrictedToken(string calldata, string calldata) external returns (address);
+    function newRestrictedToken(string calldata, string calldata, uint8) external returns (address);
 }
 
 contract RestrictedTokenFactory {
-    function newRestrictedToken(string memory name, string memory symbol) public returns (address) {
-        RestrictedToken token = new RestrictedToken(name, symbol);
+    function newRestrictedToken(string memory name, string memory symbol, uint8 decimals) public returns (address) {
+        RestrictedToken token = new RestrictedToken(name, symbol, decimals);
         token.rely(msg.sender);
         token.deny(address(this));
         return address(token);

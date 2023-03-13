@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity ^0.7.6;
+pragma solidity ^0.8.18;
 pragma abicoder v2;
 
 import {TypedMemView} from "memview-sol/TypedMemView.sol";
@@ -12,6 +12,8 @@ contract MockXcmRouter is Test {
     using TypedMemView for bytes29;
 
     CentrifugeConnector public immutable connector;
+
+    mapping(bytes => bool) public sentMessages;
 
     constructor(CentrifugeConnector connector_) {
         connector = connector_;
@@ -48,6 +50,6 @@ contract MockXcmRouter is Test {
     }
 
     function send(bytes memory message) public onlyConnector {
-        // do nothing
+        sentMessages[message] = true;
     }
 }
