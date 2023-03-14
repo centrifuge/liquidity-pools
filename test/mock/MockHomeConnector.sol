@@ -59,7 +59,7 @@ contract MockHomeConnector is Test {
         router.handle(_message);
     }
 
-    // Triggger an incoming (e.g. Centrifuge Chain -> EVM) transfer
+    // Trigger an incoming (e.g. Centrifuge Chain -> EVM) transfer
     function transfer(
         uint64 poolId,
         bytes16 trancheId,

@@ -84,7 +84,7 @@ contract CentrifugeConnector {
         uint64 poolId,
         bytes16 trancheId,
         ConnectorMessages.Domain domain,
-        address destinationAddress,
+        bytes32 destinationAddress,
         uint128 amount
     ) public {
         require(domain == ConnectorMessages.Domain.Centrifuge, "CentrifugeConnector/invalid-domain");

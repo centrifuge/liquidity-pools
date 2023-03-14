@@ -191,10 +191,24 @@ library ConnectorMessages {
      * 0: call type (uint8 = 1 byte)
      * 1-8: poolId (uint64 = 8 bytes)
      * 9-24: trancheId (16 bytes)
-     * 25-56: user (Ethereum address, 20 bytes - Skip last 12 bytes for 32-byte address compatibility)
-     * 57-72: amount (uint128 = 16 bytes)
-     * 73-81: domain (Domain = 9 bytes)
+     * 25-33: destinationDomain (Domain = 9 bytes)
+     * 34-65: destinationAddress (32 bytes - Either a Centrifuge chain address or an EVM address followed by 12 zeros)
+     * 66-81: amount (uint128 = 16 bytes)
      */
+    function formatTransfer(
+        uint64 poolId,
+        bytes16 trancheId,
+        bytes9 destinationDomain,
+        bytes32 destinationAddress,
+        uint128 amount
+    ) internal pure returns (bytes memory) {
+        return abi.encodePacked(uint8(Call.Transfer), poolId, trancheId, destinationDomain, destinationAddress, amount);
+    }
+
+    // Format a transfer to an Evm address
+    // Note: This is a convenience function to dry the cast from `address` to `bytes32`
+    // for the `destinationAddress` field by using the default `formatTransfer` implementation
+    // by appending 12 zeros to the evm-based `destinationAddress`.
     function formatTransfer(
         uint64 poolId,
         bytes16 trancheId,
@@ -202,13 +216,11 @@ library ConnectorMessages {
         address destinationAddress,
         uint128 amount
     ) internal pure returns (bytes memory) {
-        return abi.encodePacked(
-            uint8(Call.Transfer),
+        return formatTransfer(
             poolId,
             trancheId,
             destinationDomain,
-            destinationAddress,
-            bytes(hex"000000000000000000000000"),
+            bytes32(abi.encodePacked(destinationAddress)),
             amount
         );
     }

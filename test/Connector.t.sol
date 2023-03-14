@@ -243,7 +243,7 @@ contract ConnectorTest is Test {
         string memory tokenSymbol,
         bytes16 trancheId,
         uint128 price,
-        address centChainAddress,
+        bytes32 centChainAddress,
         uint128 amount,
         uint64 validUntil
     ) public {
@@ -283,7 +283,7 @@ contract ConnectorTest is Test {
     }
 
     // Test that an outbound transfer fails when targeting a domain that is not Centrifuge
-    function testTransferToInvalidDomain(uint64 poolId, bytes16 trancheId, address centChainAddress, uint128 amount)
+    function testTransferToInvalidDomain(uint64 poolId, bytes16 trancheId, bytes32 centChainAddress, uint128 amount)
         public
     {
         vm.expectRevert(bytes("CentrifugeConnector/invalid-domain"));
@@ -319,7 +319,7 @@ contract ConnectorTest is Test {
         assertEq(ERC20Like(token).balanceOf(destinationAddress), amount);
     }
 
-    function testTransferFromEVM(
+    function testTransferToEVM(
         uint64 poolId,
         string memory tokenName,
         string memory tokenSymbol,
@@ -343,7 +343,7 @@ contract ConnectorTest is Test {
         assertEq(ERC20Like(token).balanceOf(destinationAddress), amount);
     }
 
-    function testTransferFromEVMWithoutMemberFails(
+    function testTransferToEVMWithoutMemberFails(
         uint64 poolId,
         string memory tokenName,
         string memory tokenSymbol,
