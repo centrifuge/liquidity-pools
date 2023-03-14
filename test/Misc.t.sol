@@ -20,8 +20,9 @@ contract MiscTest is Test {
 
         assertEq(
             bytes32(abi.encodePacked(hex"1231231231231231231231231231231231231231")),
-            bytes32(abi.encodePacked(hex"1231231231231231231231231231231231231231", bytes(hex"000000000000000000000000")))
+            bytes32(
+                abi.encodePacked(hex"1231231231231231231231231231231231231231", bytes(hex"000000000000000000000000"))
+            )
         );
-
     }
 }

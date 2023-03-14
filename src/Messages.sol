@@ -216,13 +216,8 @@ library ConnectorMessages {
         address destinationAddress,
         uint128 amount
     ) internal pure returns (bytes memory) {
-        return formatTransfer(
-            poolId,
-            trancheId,
-            destinationDomain,
-            bytes32(abi.encodePacked(destinationAddress)),
-            amount
-        );
+        return
+            formatTransfer(poolId, trancheId, destinationDomain, bytes32(abi.encodePacked(destinationAddress)), amount);
     }
 
     function isTransfer(bytes29 _msg) internal pure returns (bool) {
