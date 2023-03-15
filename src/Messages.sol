@@ -223,16 +223,29 @@ library ConnectorMessages {
         return messageType(_msg) == Call.Transfer;
     }
 
-    function parseTransfer(bytes29 _msg)
-        internal
-        pure
-        returns (uint64 poolId, bytes16 trancheId, bytes9 encodedDomain, address destinationAddress, uint128 amount)
+    // Parse a Transfer to a Centrifuge-based `destinationAddress` (32-byte long)
+    function parseTransfer32(bytes29 _msg)
+    internal
+    pure
+    returns (uint64 poolId, bytes16 trancheId, bytes9 encodedDomain, bytes32 destinationAddress, uint128 amount)
     {
         poolId = uint64(_msg.indexUint(1, 8));
         trancheId = bytes16(_msg.index(9, 16));
         encodedDomain = bytes9(_msg.index(25, 9));
-        destinationAddress = address(bytes20(_msg.index(34, 20)));
+        destinationAddress = bytes32(_msg.index(34, 32));
         amount = uint128(_msg.indexUint(66, 16));
+    }
+
+    // Parse a Transfer to an EVM-based `destinationAddress` (20-byte long)
+    function parseTransfer20(bytes29 _msg)
+        internal
+        pure
+        returns (uint64 poolId, bytes16 trancheId, bytes9 encodedDomain, address destinationAddress, uint128 amount)
+    {
+        (uint64 poolId_, bytes16 trancheId_, bytes9 encodedDomain_, bytes32 destinationAddress32, uint128 amount_) = parseTransfer32(_msg);
+        destinationAddress = address(bytes20(destinationAddress32));
+
+        return (poolId_, trancheId_, encodedDomain_, destinationAddress, amount_);
     }
 
     function formatDomain(Domain domain) public pure returns (bytes9) {
