@@ -247,13 +247,13 @@ contract MessagesTest is Test {
     ) public {
         bytes9 inputEncodedDomain = ConnectorMessages.formatDomain(ConnectorMessages.Domain.Centrifuge);
         bytes memory _message =
-        ConnectorMessages.formatTransfer(poolId, trancheId, inputEncodedDomain, destinationAddress, amount);
+            ConnectorMessages.formatTransfer(poolId, trancheId, inputEncodedDomain, destinationAddress, amount);
         (
-        uint64 decodedPoolId,
-        bytes16 decodedTrancheId,
-        bytes9 encodedDomain,
-        bytes32 decodedDestinationAddress,
-        uint256 decodedAmount
+            uint64 decodedPoolId,
+            bytes16 decodedTrancheId,
+            bytes9 encodedDomain,
+            bytes32 decodedDestinationAddress,
+            uint256 decodedAmount
         ) = ConnectorMessages.parseTransfer32(_message.ref(0));
         assertEq(uint256(decodedPoolId), uint256(poolId));
         assertEq(decodedTrancheId, trancheId);
