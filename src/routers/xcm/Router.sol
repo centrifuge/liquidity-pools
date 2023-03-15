@@ -150,7 +150,7 @@ contract ConnectorXCMRouter {
             connector.updateTokenPrice(poolId, trancheId, price);
         } else if (ConnectorMessages.isTransfer(_msg)) {
             (uint64 poolId, bytes16 trancheId,, address destinationAddress, uint128 amount) =
-                ConnectorMessages.parseTransfer(_msg);
+                ConnectorMessages.parseTransfer20(_msg);
             connector.handleTransfer(poolId, trancheId, destinationAddress, amount);
         } else {
             require(false, "invalid-message");
