@@ -80,15 +80,9 @@ contract CentrifugeConnector {
     }
 
     // --- Outgoing message handling ---
-    function transfer(
-        uint64 poolId,
-        bytes16 trancheId,
-        ConnectorMessages.Domain domain,
-        bytes32 destinationAddress,
-        uint128 amount
-    ) public {
-        require(domain == ConnectorMessages.Domain.Centrifuge, "CentrifugeConnector/invalid-domain");
-
+    function transferToCentrifuge(uint64 poolId, bytes16 trancheId, bytes32 destinationAddress, uint128 amount)
+        public
+    {
         RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
         require(address(token) != address(0), "CentrifugeConnector/unknown-token");
 
@@ -97,7 +91,11 @@ contract CentrifugeConnector {
 
         router.send(
             ConnectorMessages.formatTransfer(
-                poolId, trancheId, ConnectorMessages.formatDomain(domain), destinationAddress, amount
+                poolId,
+                trancheId,
+                ConnectorMessages.formatDomain(ConnectorMessages.Domain.Centrifuge),
+                destinationAddress,
+                amount
             )
         );
     }

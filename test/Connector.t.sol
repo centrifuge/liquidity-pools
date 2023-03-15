@@ -268,7 +268,7 @@ contract ConnectorTest is Test {
 
         // Now send the transfer from EVM -> Cent Chain
         token.approve(address(bridgedConnector), amount);
-        bridgedConnector.transfer(poolId, trancheId, ConnectorMessages.Domain.Centrifuge, centChainAddress, amount);
+        bridgedConnector.transferToCentrifuge(poolId, trancheId, centChainAddress, amount);
         assertEq(token.balanceOf(address(this)), 0);
 
         // Finally, verify the connector called `router.send`
@@ -280,20 +280,6 @@ contract ConnectorTest is Test {
             amount
         );
         assertEq(mockXcmRouter.sentMessages(message), true);
-    }
-
-    // Test that an outbound transfer fails when targeting a domain that is not Centrifuge
-    function testTransferToInvalidDomain(uint64 poolId, bytes16 trancheId, bytes32 centChainAddress, uint128 amount)
-        public
-    {
-        vm.expectRevert(bytes("CentrifugeConnector/invalid-domain"));
-        bridgedConnector.transfer(poolId, trancheId, ConnectorMessages.Domain.EVM, centChainAddress, amount);
-
-        // Verify the connector did NOT call `router.send`
-        bytes memory message = ConnectorMessages.formatTransfer(
-            poolId, trancheId, ConnectorMessages.formatDomain(ConnectorMessages.Domain.EVM), centChainAddress, amount
-        );
-        assertFalse(mockXcmRouter.sentMessages(message));
     }
 
     function testTransferFromCentrifuge(
