@@ -14,7 +14,7 @@ contract MiscTest is Test {
 
     function testAddressToBytes32Cast() public {
         assertEq(
-            bytes32(abi.encodePacked(hex"1231231231231231231231231231231231231231")),
+            bytes32(bytes20(address(bytes20(hex"1231231231231231231231231231231231231231")))),
             bytes32(hex"1231231231231231231231231231231231231231000000000000000000000000")
         );
 
@@ -23,6 +23,13 @@ contract MiscTest is Test {
             bytes32(
                 abi.encodePacked(hex"1231231231231231231231231231231231231231", bytes(hex"000000000000000000000000"))
             )
+        );
+    }
+
+    function testBytes32ToAddress() public {
+        assertEq(
+            address(bytes20(bytes32(hex"1231231231231231231231231231231231231231000000000000000000000000"))),
+            address(bytes20(hex"1231231231231231231231231231231231231231"))
         );
     }
 }

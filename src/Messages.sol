@@ -205,8 +205,8 @@ library ConnectorMessages {
         return abi.encodePacked(uint8(Call.Transfer), poolId, trancheId, destinationDomain, destinationAddress, amount);
     }
 
-    // Format a transfer to an Evm address
-    // Note: This is a convenience function to dry the cast from `address` to `bytes32`
+    // Format a transfer to an EVM domain
+    // Note: This is an overload function to dry the cast from `address` to `bytes32`
     // for the `destinationAddress` field by using the default `formatTransfer` implementation
     // by appending 12 zeros to the evm-based `destinationAddress`.
     function formatTransfer(
@@ -217,7 +217,7 @@ library ConnectorMessages {
         uint128 amount
     ) internal pure returns (bytes memory) {
         return
-            formatTransfer(poolId, trancheId, destinationDomain, bytes32(abi.encodePacked(destinationAddress)), amount);
+            formatTransfer(poolId, trancheId, destinationDomain, bytes32(bytes20(destinationAddress)), amount);
     }
 
     function isTransfer(bytes29 _msg) internal pure returns (bool) {
