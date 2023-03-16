@@ -3,6 +3,7 @@ pragma solidity ^0.8.18;
 pragma abicoder v2;
 
 import {CentrifugeConnector} from "src/Connector.sol";
+import {ConnectorGateway} from "src/routers/gateway.sol";
 import {RestrictedTokenFactory, MemberlistFactory} from "src/token/factory.sol";
 import {RestrictedTokenLike} from "src/token/restricted.sol";
 import {MemberlistLike, Memberlist} from "src/token/memberlist.sol";
@@ -18,6 +19,7 @@ interface ERC20Like {
 
 contract ConnectorTest is Test {
     CentrifugeConnector bridgedConnector;
+    ConnectorGateway gateway;
     MockHomeConnector connector;
     MockXcmRouter mockXcmRouter;
 
@@ -29,7 +31,8 @@ contract ConnectorTest is Test {
         mockXcmRouter = new MockXcmRouter(bridgedConnector);
 
         connector = new MockHomeConnector(address(mockXcmRouter));
-        bridgedConnector.file("router", address(mockXcmRouter));
+        gateway = new ConnectorGateway(address(bridgedConnector), address(mockXcmRouter));
+        bridgedConnector.file("gateway", address(gateway));
     }
 
     function testAddingPoolWorks(uint64 poolId) public {
@@ -187,7 +190,7 @@ contract ConnectorTest is Test {
         uint64 validUntil
     ) public {
         vm.assume(validUntil > block.timestamp);
-        bridgedConnector.file("router", address(this));
+        bridgedConnector.file("gateway", address(this));
         vm.expectRevert(bytes("CentrifugeConnector/invalid-pool-or-tranche"));
         bridgedConnector.updateMember(poolId, trancheId, user, validUntil);
     }
@@ -199,7 +202,7 @@ contract ConnectorTest is Test {
         uint64 validUntil
     ) public {
         vm.assume(validUntil > block.timestamp);
-        bridgedConnector.file("router", address(this));
+        bridgedConnector.file("gateway", address(this));
         bridgedConnector.addPool(poolId);
         vm.expectRevert(bytes("CentrifugeConnector/invalid-pool-or-tranche"));
         bridgedConnector.updateMember(poolId, trancheId, user, validUntil);
@@ -223,13 +226,13 @@ contract ConnectorTest is Test {
     }
 
     function testUpdatingTokenPriceForNonExistentPoolFails(uint64 poolId, bytes16 trancheId, uint128 price) public {
-        bridgedConnector.file("router", address(this));
+        bridgedConnector.file("gateway", address(this));
         vm.expectRevert(bytes("CentrifugeConnector/invalid-pool-or-tranche"));
         bridgedConnector.updateTokenPrice(poolId, trancheId, price);
     }
 
     function testUpdatingTokenPriceForNonExistentTrancheFails(uint64 poolId, bytes16 trancheId, uint128 price) public {
-        bridgedConnector.file("router", address(this));
+        bridgedConnector.file("gateway", address(this));
         bridgedConnector.addPool(poolId);
         vm.expectRevert(bytes("CentrifugeConnector/invalid-pool-or-tranche"));
         bridgedConnector.updateTokenPrice(poolId, trancheId, price);
