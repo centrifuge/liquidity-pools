@@ -86,22 +86,16 @@ contract CentrifugeConnector {
     }
 
     // --- Outgoing message handling ---
-    function transfer(
-        uint64 poolId,
-        bytes16 trancheId,
-        ConnectorMessages.Domain domain,
-        address destinationAddress,
-        uint128 amount
-    ) public {
-        require(domain == ConnectorMessages.Domain.Centrifuge, "CentrifugeConnector/invalid-domain");
-
+    function transferToCentrifuge(uint64 poolId, bytes16 trancheId, bytes32 destinationAddress, uint128 amount)
+        public
+    {
         RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
         require(address(token) != address(0), "CentrifugeConnector/unknown-token");
 
         require(token.balanceOf(msg.sender) >= amount, "CentrifugeConnector/insufficient-balance");
         token.burn(msg.sender, amount);
 
-        gateway.transfer(poolId, trancheId, domain, destinationAddress, amount);
+        gateway.transfer(poolId, trancheId, ConnectorMessages.Domain.Centrifuge, destinationAddress, amount);
     }
 
     // --- Incoming message handling ---
