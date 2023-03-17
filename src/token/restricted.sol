@@ -50,6 +50,10 @@ contract RestrictedToken is ERC20 {
         return memberlist.hasMember(user);
     }
 
+    function transfer(address to, uint256 value) public override checkMember(to) returns (bool) {
+        return super.transfer(to, value);
+    }
+
     function transferFrom(address from, address to, uint256 value) public override checkMember(to) returns (bool) {
         return super.transferFrom(from, to, value);
     }

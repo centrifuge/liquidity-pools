@@ -85,7 +85,7 @@ contract ERC20 {
     }
 
     // --- ERC20 Mutations ---
-    function transfer(address to, uint256 value) external returns (bool) {
+    function transfer(address to, uint256 value) public virtual returns (bool) {
         require(to != address(0) && to != address(this), "ERC20/invalid-address");
         uint256 balance = balanceOf[msg.sender];
         require(balance >= value, "ERC20/insufficient-balance");
