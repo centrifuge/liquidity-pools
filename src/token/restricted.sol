@@ -14,6 +14,7 @@ interface ERC20Like {
     function symbol() external view returns (string memory);
     function balanceOf(address user) external view returns (uint256 value);
     function burn(address user, uint256 value) external;
+    function transfer(address to, uint256 amount) external returns (bool);
     function transferFrom(address from, address to, uint256 amount) external returns (bool);
     function totalSupply() external returns (uint256);
     function approve(address _spender, uint256 _value) external returns (bool);
