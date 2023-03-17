@@ -26,7 +26,7 @@ contract RestrictedTokenTest is Test {
     }
 
     function testTransferFromTokensToMemberWorks(uint256 amount, address targetUser, uint256 validUntil) public {
-        vm.assume(validUntil > block.timestamp && targetUser != address(0));
+        vm.assume(validUntil > block.timestamp && targetUser != address(0) && targetUser != address(this));
 
         memberlist.updateMember(targetUser, validUntil);
         assertEq(memberlist.members(targetUser), validUntil);
@@ -37,7 +37,7 @@ contract RestrictedTokenTest is Test {
     }
 
     function testTransferFromTokensToNonMemberFails(uint256 amount, address targetUser, uint256 validUntil) public {
-        vm.assume(validUntil > block.timestamp && targetUser != address(0));
+        vm.assume(validUntil > block.timestamp && targetUser != address(0) && targetUser != address(this));
 
         token.mint(address(this), amount);
         vm.expectRevert(bytes("RestrictedToken/not-allowed-to-hold-token"));
@@ -46,7 +46,7 @@ contract RestrictedTokenTest is Test {
     }
 
     function testTransferTokensToMemberWorks(uint256 amount, address targetUser, uint256 validUntil) public {
-        vm.assume(validUntil > block.timestamp && targetUser != address(0));
+        vm.assume(validUntil > block.timestamp && targetUser != address(0) && targetUser != address(this));
 
         memberlist.updateMember(targetUser, validUntil);
         assertEq(memberlist.members(targetUser), validUntil);
@@ -57,7 +57,7 @@ contract RestrictedTokenTest is Test {
     }
 
     function testTransferTokensToNonMemberFails(uint256 amount, address targetUser, uint256 validUntil) public {
-        vm.assume(validUntil > block.timestamp && targetUser != address(0));
+        vm.assume(validUntil > block.timestamp && targetUser != address(0) && targetUser != address(this));
 
         token.mint(address(this), amount);
         vm.expectRevert(bytes("RestrictedToken/not-allowed-to-hold-token"));
@@ -66,7 +66,7 @@ contract RestrictedTokenTest is Test {
     }
 
     function testTransferFromTokensToExpiredMemberFails(uint256 amount, address targetUser) public {
-        vm.assume(targetUser != address(0));
+        vm.assume(targetUser != address(0) && targetUser != address(this));
 
         memberlist.updateMember(targetUser, block.timestamp);
         assertEq(memberlist.members(targetUser), block.timestamp);
@@ -80,7 +80,7 @@ contract RestrictedTokenTest is Test {
     }
 
     function testTransferTokensToExpiredMemberFails(uint256 amount, address targetUser) public {
-        vm.assume(targetUser != address(0));
+        vm.assume(targetUser != address(0) && targetUser != address(this));
 
         memberlist.updateMember(targetUser, block.timestamp);
         assertEq(memberlist.members(targetUser), block.timestamp);
