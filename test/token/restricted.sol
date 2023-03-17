@@ -30,7 +30,7 @@ contract RestrictedTokenTest is Test {
 
         memberlist.updateMember(targetUser, validUntil);
         assertEq(memberlist.members(targetUser), validUntil);
-        
+
         token.mint(address(this), amount);
         token.transferFrom(address(this), targetUser, amount);
         assertEq(token.balanceOf(targetUser), amount);
@@ -38,7 +38,7 @@ contract RestrictedTokenTest is Test {
 
     function testTransferFromTokensToNonMemberFails(uint256 amount, address targetUser, uint256 validUntil) public {
         vm.assume(validUntil > block.timestamp && targetUser != address(0));
-        
+
         token.mint(address(this), amount);
         vm.expectRevert(bytes("RestrictedToken/not-allowed-to-hold-token"));
         token.transferFrom(address(this), targetUser, amount);
@@ -50,7 +50,7 @@ contract RestrictedTokenTest is Test {
 
         memberlist.updateMember(targetUser, validUntil);
         assertEq(memberlist.members(targetUser), validUntil);
-        
+
         token.mint(address(this), amount);
         token.transfer(targetUser, amount);
         assertEq(token.balanceOf(targetUser), amount);
@@ -58,7 +58,7 @@ contract RestrictedTokenTest is Test {
 
     function testTransferTokensToNonMemberFails(uint256 amount, address targetUser, uint256 validUntil) public {
         vm.assume(validUntil > block.timestamp && targetUser != address(0));
-        
+
         token.mint(address(this), amount);
         vm.expectRevert(bytes("RestrictedToken/not-allowed-to-hold-token"));
         token.transfer(targetUser, amount);
@@ -72,7 +72,7 @@ contract RestrictedTokenTest is Test {
         assertEq(memberlist.members(targetUser), block.timestamp);
 
         vm.warp(block.timestamp + 1);
-        
+
         token.mint(address(this), amount);
         vm.expectRevert(bytes("RestrictedToken/not-allowed-to-hold-token"));
         token.transferFrom(address(this), targetUser, amount);
@@ -86,11 +86,10 @@ contract RestrictedTokenTest is Test {
         assertEq(memberlist.members(targetUser), block.timestamp);
 
         vm.warp(block.timestamp + 1);
-        
+
         token.mint(address(this), amount);
         vm.expectRevert(bytes("RestrictedToken/not-allowed-to-hold-token"));
         token.transfer(targetUser, amount);
         assertEq(token.balanceOf(targetUser), 0);
     }
-
 }
