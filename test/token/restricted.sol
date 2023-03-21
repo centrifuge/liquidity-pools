@@ -23,8 +23,11 @@ contract RestrictedTokenTest is Test {
 
         memberlist = MemberlistLike(memberlistFactory.newMemberlist());
         token.file("memberlist", address(memberlist));
+
+        memberlist.updateMember(address(this), type(uint256).max);
     }
 
+    // transferFrom
     function testTransferFromTokensToMemberWorks(uint256 amount, address targetUser, uint256 validUntil) public {
         vm.assume(validUntil > block.timestamp && targetUser != address(0) && targetUser != address(this));
 
@@ -45,6 +48,21 @@ contract RestrictedTokenTest is Test {
         assertEq(token.balanceOf(targetUser), 0);
     }
 
+    function testTransferFromTokensToExpiredMemberFails(uint256 amount, address targetUser) public {
+        vm.assume(targetUser != address(0) && targetUser != address(this));
+
+        memberlist.updateMember(targetUser, block.timestamp);
+        assertEq(memberlist.members(targetUser), block.timestamp);
+
+        vm.warp(block.timestamp + 1);
+
+        token.mint(address(this), amount);
+        vm.expectRevert(bytes("RestrictedToken/not-allowed-to-hold-token"));
+        token.transferFrom(address(this), targetUser, amount);
+        assertEq(token.balanceOf(targetUser), 0);
+    }
+
+    // Transfer
     function testTransferTokensToMemberWorks(uint256 amount, address targetUser, uint256 validUntil) public {
         vm.assume(validUntil > block.timestamp && targetUser != address(0) && targetUser != address(this));
 
@@ -65,20 +83,6 @@ contract RestrictedTokenTest is Test {
         assertEq(token.balanceOf(targetUser), 0);
     }
 
-    function testTransferFromTokensToExpiredMemberFails(uint256 amount, address targetUser) public {
-        vm.assume(targetUser != address(0) && targetUser != address(this));
-
-        memberlist.updateMember(targetUser, block.timestamp);
-        assertEq(memberlist.members(targetUser), block.timestamp);
-
-        vm.warp(block.timestamp + 1);
-
-        token.mint(address(this), amount);
-        vm.expectRevert(bytes("RestrictedToken/not-allowed-to-hold-token"));
-        token.transferFrom(address(this), targetUser, amount);
-        assertEq(token.balanceOf(targetUser), 0);
-    }
-
     function testTransferTokensToExpiredMemberFails(uint256 amount, address targetUser) public {
         vm.assume(targetUser != address(0) && targetUser != address(this));
 
@@ -90,6 +94,38 @@ contract RestrictedTokenTest is Test {
         token.mint(address(this), amount);
         vm.expectRevert(bytes("RestrictedToken/not-allowed-to-hold-token"));
         token.transfer(targetUser, amount);
+        assertEq(token.balanceOf(targetUser), 0);
+    }
+
+    // Mint
+    function testMintTokensToMemberWorks(uint256 amount, address targetUser, uint256 validUntil) public {
+        vm.assume(validUntil > block.timestamp && targetUser != address(0) && targetUser != address(this));
+
+        memberlist.updateMember(targetUser, validUntil);
+        assertEq(memberlist.members(targetUser), validUntil);
+
+        token.mint(targetUser, amount);
+        assertEq(token.balanceOf(targetUser), amount);
+    }
+
+    function testMintTokensToNonMemberFails(uint256 amount, address targetUser, uint256 validUntil) public {
+        vm.assume(validUntil > block.timestamp && targetUser != address(0) && targetUser != address(this));
+
+        vm.expectRevert(bytes("RestrictedToken/not-allowed-to-hold-token"));
+        token.mint(targetUser, amount);
+        assertEq(token.balanceOf(targetUser), 0);
+    }
+
+    function testMintTokensToExpiredMemberFails(uint256 amount, address targetUser) public {
+        vm.assume(targetUser != address(0) && targetUser != address(this));
+
+        memberlist.updateMember(targetUser, block.timestamp);
+        assertEq(memberlist.members(targetUser), block.timestamp);
+
+        vm.warp(block.timestamp + 1);
+
+        vm.expectRevert(bytes("RestrictedToken/not-allowed-to-hold-token"));
+        token.mint(targetUser, amount);
         assertEq(token.balanceOf(targetUser), 0);
     }
 }
