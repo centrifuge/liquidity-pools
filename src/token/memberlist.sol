@@ -37,7 +37,7 @@ contract Memberlist {
 
     // --- Checking members ---
     function member(address user) public view {
-        require((members[user] >= block.timestamp), "not-allowed-to-hold-token");
+        require((members[user] >= block.timestamp), "RestrictedToken/not-allowed-to-hold-token");
     }
 
     function hasMember(address user) public view returns (bool) {
@@ -49,7 +49,7 @@ contract Memberlist {
 
     // --- Updating members ---
     function updateMember(address user, uint256 validUntil) public auth {
-        require(block.timestamp <= validUntil, "invalid-validUntil");
+        require(block.timestamp <= validUntil, "RestrictedToken/invalid-validUntil");
         members[user] = validUntil;
     }
 
