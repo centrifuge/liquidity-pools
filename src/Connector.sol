@@ -115,11 +115,12 @@ contract CentrifugeConnector {
         Pool storage pool = pools[poolId];
         require(pool.createdAt > 0, "CentrifugeConnector/invalid-pool");
 
-        require(ERC20Like(pool.currency).balanceOf(msg.sender) >= amount, "CentrifugeConnector/insufficient-balance");
+        RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
+        require(address(token) != address(0), "CentrifugeConnector/unknown-token");
+        require(token.hasMember(msg.sender), "CentrifugeConnector/not-a-member");
 
-        ERC20Like(pool.currency).transferFrom(msg.sender, address(escrow), amount);
+        require(ERC20Like(pool.currency).transferFrom(msg.sender, address(escrow), amount), "Centrifuge/Connector/currency-transfer-failed");
 
-        // TODO: transfer currency to escrow
         // TODO: send message to router to 
     }
 
