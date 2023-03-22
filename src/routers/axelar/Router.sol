@@ -43,18 +43,17 @@ contract ConnectorAxelarRouter is AxelarExecutableLike {
 
     ConnectorLike public immutable connector;
     AxelarGatewayLike public immutable axelarGateway;
-    string public sourceChain;
-    string public sourceAddress;
 
-    /// --- Events ---
+    string public constant axelarCentrifugeChainId = "Centrifuge";
+    string public constant axelarCentrifugeChainAddress = "";
+
+    // --- Events ---
     event Rely(address indexed user);
     event Deny(address indexed user);
 
-    constructor(address connector_, address axelarGateway_, string memory sourceChain_, string memory sourceAddress_) {
+    constructor(address connector_, address axelarGateway_) {
         connector = ConnectorLike(connector_);
         axelarGateway = AxelarGatewayLike(axelarGateway_);
-        sourceChain = sourceChain_;
-        sourceAddress = sourceAddress_;
 
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
@@ -65,10 +64,10 @@ contract ConnectorAxelarRouter is AxelarExecutableLike {
         _;
     }
 
-    modifier onlyCentrifugeChainOrigin(string memory sourceChain_, string memory sourceAddress_) {
+    modifier onlyCentrifugeChainOrigin(string memory sourceChain) {
         require(
-            msg.sender == address(axelarGateway) && keccak256(bytes(sourceChain)) == keccak256(bytes(sourceChain_))
-                && keccak256(bytes(sourceAddress)) == keccak256(bytes(sourceAddress_)),
+            msg.sender == address(axelarGateway)
+                && keccak256(bytes(axelarCentrifugeChainId)) == keccak256(bytes(sourceChain)),
             "ConnectorAxelarRouter/invalid-origin"
         );
         _;
@@ -89,14 +88,12 @@ contract ConnectorAxelarRouter is AxelarExecutableLike {
         wards[user] = 0;
         emit Deny(user);
     }
+
     // --- Incoming ---
-
-    function execute(bytes32, string calldata sourceChain_, string calldata sourceAddress_, bytes calldata payload)
+    function execute(bytes32, string calldata sourceChain, string calldata, bytes calldata payload)
         external
-        onlyCentrifugeChainOrigin(sourceChain_, sourceAddress_)
+        onlyCentrifugeChainOrigin(sourceChain)
     {
-        // TODO: check first param, commandId?
-
         bytes29 _msg = payload.ref(0);
 
         if (ConnectorMessages.isAddPool(_msg)) {
@@ -124,6 +121,6 @@ contract ConnectorAxelarRouter is AxelarExecutableLike {
 
     // --- Outgoing ---
     function send(bytes memory message) public onlyConnector {
-        axelarGateway.callContract(sourceChain, sourceAddress, message);
+        axelarGateway.callContract(axelarCentrifugeChainId, axelarCentrifugeChainAddress, message);
     }
 }

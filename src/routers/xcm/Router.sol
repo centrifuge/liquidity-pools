@@ -67,7 +67,7 @@ contract ConnectorXCMRouter {
     uint8 public immutable centrifugeChainConnectorsPalletIndex;
     uint8 public immutable centrifugeChainConnectorsPalletHandleIndex;
 
-    /// --- Events ---
+    // --- Events ---
     event Rely(address indexed user);
     event Deny(address indexed user);
     event File(bytes32 indexed what, XcmWeightInfo xcmWeightInfo);
