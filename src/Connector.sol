@@ -122,7 +122,7 @@ contract CentrifugeConnector {
             "Centrifuge/Connector/currency-transfer-failed"
         );
 
-        // TODO: send message to router to
+        // TODO: send message to the gateway. Depends on https://github.com/centrifuge/connectors/pull/52
     }
 
     // --- Incoming message handling ---
