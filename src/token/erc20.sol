@@ -7,6 +7,7 @@ interface IERC1271 {
     function isValidSignature(bytes32, bytes memory) external view returns (bytes4);
 }
 
+// Adapted from https://github.com/makerdao/xdomain-dss/blob/master/src/Dai.sol
 contract ERC20 {
     mapping(address => uint256) public wards;
 
