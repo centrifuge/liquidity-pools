@@ -91,13 +91,11 @@ contract ConnectorAxelarRouter is AxelarExecutableLike {
     }
     // --- Incoming ---
 
-    function execute(
-        bytes32 commandId,
-        string calldata sourceChain_,
-        string calldata sourceAddress_,
-        bytes calldata payload
-    ) external onlyCentrifugeChainOrigin(sourceChain_, sourceAddress_) {
-        // TODO: check commandId?
+    function execute(bytes32, string calldata sourceChain_, string calldata sourceAddress_, bytes calldata payload)
+        external
+        onlyCentrifugeChainOrigin(sourceChain_, sourceAddress_)
+    {
+        // TODO: check first param, commandId?
 
         bytes29 _msg = payload.ref(0);
 
@@ -128,6 +126,4 @@ contract ConnectorAxelarRouter is AxelarExecutableLike {
     function send(bytes memory message) public onlyConnector {
         axelarGateway.callContract(sourceChain, sourceAddress, message);
     }
-
-    // --- Utilities ---
 }
