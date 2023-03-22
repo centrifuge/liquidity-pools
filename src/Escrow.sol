@@ -38,11 +38,7 @@ contract ConnectorEscrow {
     }
 
     // --- Token approvals ---
-    function approve(
-        address token,
-        address spender,
-        uint256 value
-    ) external auth {
+    function approve(address token, address spender, uint256 value) external auth {
         emit Approve(token, spender, value);
 
         ApproveLike(token).approve(spender, value);

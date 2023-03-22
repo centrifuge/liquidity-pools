@@ -109,9 +109,7 @@ contract CentrifugeConnector {
         );
     }
 
-    function increaseInvestOrder(uint64 poolId, bytes16 trancheId, uint128 amount)
-        public
-    {
+    function increaseInvestOrder(uint64 poolId, bytes16 trancheId, uint128 amount) public {
         Pool storage pool = pools[poolId];
         require(pool.createdAt > 0, "CentrifugeConnector/invalid-pool");
 
@@ -119,9 +117,12 @@ contract CentrifugeConnector {
         require(address(token) != address(0), "CentrifugeConnector/unknown-token");
         require(token.hasMember(msg.sender), "CentrifugeConnector/not-a-member");
 
-        require(ERC20Like(pool.currency).transferFrom(msg.sender, address(escrow), amount), "Centrifuge/Connector/currency-transfer-failed");
+        require(
+            ERC20Like(pool.currency).transferFrom(msg.sender, address(escrow), amount),
+            "Centrifuge/Connector/currency-transfer-failed"
+        );
 
-        // TODO: send message to router to 
+        // TODO: send message to router to
     }
 
     // --- Incoming message handling ---
