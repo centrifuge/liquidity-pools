@@ -29,7 +29,7 @@ interface RestrictedTokenLike is ERC20Like {
 contract RestrictedToken is ERC20 {
     MemberlistLike public memberlist;
 
-    /// --- Events ---
+    // --- Events ---
     event File(bytes32 indexed what, address data);
 
     constructor(string memory name_, string memory symbol_, uint8 decimals_) ERC20(name_, symbol_, decimals_) {}
