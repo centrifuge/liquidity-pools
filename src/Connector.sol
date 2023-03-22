@@ -3,7 +3,7 @@ pragma solidity ^0.8.18;
 pragma abicoder v2;
 
 import {RestrictedTokenFactoryLike, MemberlistFactoryLike} from "./token/factory.sol";
-import {RestrictedTokenLike} from "./token/restricted.sol";
+import {RestrictedTokenLike, ERC20Like} from "./token/restricted.sol";
 import {MemberlistLike} from "./token/memberlist.sol";
 // TODO: remove dependency on Messages.sol
 import {ConnectorMessages} from "src/Messages.sol";
@@ -12,9 +12,14 @@ interface RouterLike {
     function send(bytes memory message) external;
 }
 
+interface EscrowLike {
+    function approve(address token, address spender, uint256 value) external;
+}
+
 struct Pool {
     uint64 poolId;
     uint256 createdAt;
+    address currency;
 }
 
 struct Tranche {
@@ -33,6 +38,8 @@ contract CentrifugeConnector {
     mapping(uint64 => mapping(bytes16 => Tranche)) public tranches;
 
     RouterLike public router;
+    EscrowLike public immutable escrow;
+
     RestrictedTokenFactoryLike public immutable tokenFactory;
     MemberlistFactoryLike public immutable memberlistFactory;
 
@@ -44,7 +51,9 @@ contract CentrifugeConnector {
     event TrancheAdded(uint256 indexed poolId, bytes16 indexed trancheId);
     event TrancheDeployed(uint256 indexed poolId, bytes16 indexed trancheId, address indexed token);
 
-    constructor(address tokenFactory_, address memberlistFactory_) {
+    constructor(address escrow_, address tokenFactory_, address memberlistFactory_) {
+        escrow = EscrowLike(escrow_);
+
         tokenFactory = RestrictedTokenFactoryLike(tokenFactory_);
         memberlistFactory = MemberlistFactoryLike(memberlistFactory_);
 
@@ -98,6 +107,20 @@ contract CentrifugeConnector {
                 amount
             )
         );
+    }
+
+    function increaseInvestOrder(uint64 poolId, bytes16 trancheId, uint128 amount)
+        public
+    {
+        Pool storage pool = pools[poolId];
+        require(pool.createdAt > 0, "CentrifugeConnector/invalid-pool");
+
+        require(ERC20Like(pool.currency).balanceOf(msg.sender) >= amount, "CentrifugeConnector/insufficient-balance");
+
+        ERC20Like(pool.currency).transferFrom(msg.sender, address(escrow), amount);
+
+        // TODO: transfer currency to escrow
+        // TODO: send message to router to 
     }
 
     // --- Incoming message handling ---

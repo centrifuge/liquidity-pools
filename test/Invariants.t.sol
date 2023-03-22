@@ -3,6 +3,7 @@ pragma solidity ^0.8.18;
 pragma abicoder v2;
 
 import {CentrifugeConnector} from "src/Connector.sol";
+import {ConnectorEscrow} from "src/Escrow.sol";
 import {MockHomeConnector} from "./mock/MockHomeConnector.sol";
 import "./mock/MockXcmRouter.sol";
 import {RestrictedTokenFactory, MemberlistFactory} from "src/token/factory.sol";
@@ -20,10 +21,12 @@ contract ConnectorInvariants is Test {
     address[] private targetContracts_;
 
     function setUp() public {
+        address escrow_ = address(new ConnectorEscrow());
         address tokenFactory_ = address(new RestrictedTokenFactory());
         address memberlistFactory_ = address(new MemberlistFactory());
-        bridgedConnector = new CentrifugeConnector(tokenFactory_, memberlistFactory_);
-        bridgedConnector = new CentrifugeConnector(tokenFactory_, memberlistFactory_);
+
+        bridgedConnector = new CentrifugeConnector(escrow_, tokenFactory_, memberlistFactory_);
+        bridgedConnector = new CentrifugeConnector(escrow_, tokenFactory_, memberlistFactory_);
         mockXcmRouter = new MockXcmRouter(bridgedConnector);
 
         connector = new MockHomeConnector(address(mockXcmRouter));
@@ -43,7 +46,7 @@ contract ConnectorInvariants is Test {
         for (uint256 i = 0; i < poolManager.allTranchesLength(); i++) {
             bytes16 trancheId = poolManager.allTranches(i);
             uint64 poolId = poolManager.trancheIdToPoolId(trancheId);
-            (, uint256 createdAt) = bridgedConnector.pools(poolId);
+            (, uint256 createdAt, ) = bridgedConnector.pools(poolId);
             assertTrue(createdAt > 0);
         }
     }
