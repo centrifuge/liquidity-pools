@@ -3,6 +3,7 @@ pragma solidity ^0.8.18;
 
 import {ConnectorAxelarRouter} from "src/routers/axelar/Router.sol";
 import {CentrifugeConnector} from "src/Connector.sol";
+import {ConnectorEscrow} from "src/Escrow.sol";
 import {RestrictedTokenFactory, MemberlistFactory} from "src/token/factory.sol";
 import "forge-std/Script.sol";
 
@@ -16,9 +17,11 @@ contract ConnectorAxelarScript is Script {
     function run() public {
         vm.startBroadcast();
 
+        address escrow_ = address(new ConnectorEscrow{ salt: SALT }());
         address tokenFactory_ = address(new RestrictedTokenFactory{ salt: SALT }());
         address memberlistFactory_ = address(new MemberlistFactory{ salt: SALT }());
-        CentrifugeConnector connector = new CentrifugeConnector{ salt: SALT }(tokenFactory_, memberlistFactory_);
+        CentrifugeConnector connector =
+            new CentrifugeConnector{ salt: SALT }(escrow_, tokenFactory_, memberlistFactory_);
 
         ConnectorAxelarRouter router = new ConnectorAxelarRouter{ salt: SALT }(
                 address(connector),
