@@ -39,29 +39,15 @@ contract ConnectorAxelarRouter is AxelarExecutableLike {
     using TypedMemView for bytes29;
     using ConnectorMessages for bytes29;
 
-    mapping(address => uint256) public wards;
-
     ConnectorLike public immutable connector;
     AxelarGatewayLike public immutable axelarGateway;
 
     string public constant axelarCentrifugeChainId = "Centrifuge";
     string public constant axelarCentrifugeChainAddress = "";
 
-    // --- Events ---
-    event Rely(address indexed user);
-    event Deny(address indexed user);
-
     constructor(address connector_, address axelarGateway_) {
         connector = ConnectorLike(connector_);
         axelarGateway = AxelarGatewayLike(axelarGateway_);
-
-        wards[msg.sender] = 1;
-        emit Rely(msg.sender);
-    }
-
-    modifier auth() {
-        require(wards[msg.sender] == 1, "ConnectorAxelarRouter/not-authorized");
-        _;
     }
 
     modifier onlyCentrifugeChainOrigin(string memory sourceChain) {
@@ -76,17 +62,6 @@ contract ConnectorAxelarRouter is AxelarExecutableLike {
     modifier onlyConnector() {
         require(msg.sender == address(connector), "ConnectorAxelarRouter/only-connector-allowed-to-call");
         _;
-    }
-
-    // --- Administration ---
-    function rely(address user) external auth {
-        wards[user] = 1;
-        emit Rely(user);
-    }
-
-    function deny(address user) external auth {
-        wards[user] = 0;
-        emit Deny(user);
     }
 
     // --- Incoming ---
