@@ -11,7 +11,6 @@ import {MockHomeConnector} from "./mock/MockHomeConnector.sol";
 import {MockXcmRouter} from "./mock/MockXcmRouter.sol";
 import "forge-std/Test.sol";
 import "../src/Connector.sol";
-import "./mock/MockXcmRouter.sol";
 
 interface ERC20Like {
     function balanceOf(address) external view returns (uint256);
@@ -28,11 +27,12 @@ contract ConnectorTest is Test {
         address memberlistFactory_ = address(new MemberlistFactory());
 
         bridgedConnector = new CentrifugeConnector(tokenFactory_, memberlistFactory_);
-        mockXcmRouter = new MockXcmRouter(bridgedConnector);
+        mockXcmRouter = new MockXcmRouter(address(bridgedConnector));
 
         connector = new MockHomeConnector(address(mockXcmRouter));
         gateway = new ConnectorGateway(address(bridgedConnector), address(mockXcmRouter));
         bridgedConnector.file("gateway", address(gateway));
+        mockXcmRouter.file("gateway", address(gateway));
     }
 
     function testAddingPoolWorks(uint64 poolId) public {
@@ -42,7 +42,7 @@ contract ConnectorTest is Test {
     }
 
     function testAddingPoolAsNonRouterFails(uint64 poolId) public {
-        vm.expectRevert(bytes("CentrifugeConnector/not-the-router"));
+        vm.expectRevert(bytes("CentrifugeConnector/not-the-gateway"));
         bridgedConnector.addPool(poolId);
     }
 
@@ -103,7 +103,7 @@ contract ConnectorTest is Test {
         uint128 price
     ) public {
         connector.addPool(poolId);
-        vm.expectRevert(bytes("CentrifugeConnector/not-the-router"));
+        vm.expectRevert(bytes("CentrifugeConnector/not-the-gateway"));
         bridgedConnector.addTranche(poolId, trancheId, tokenName, tokenSymbol, price);
     }
 
@@ -179,7 +179,7 @@ contract ConnectorTest is Test {
         vm.assume(validUntil <= block.timestamp);
         vm.assume(user != address(0));
 
-        vm.expectRevert(bytes("CentrifugeConnector/not-the-router"));
+        vm.expectRevert(bytes("CentrifugeConnector/not-the-gateway"));
         bridgedConnector.updateMember(poolId, trancheId, user, validUntil);
     }
 
@@ -221,7 +221,7 @@ contract ConnectorTest is Test {
     function testUpdatingTokenPriceAsNonRouterFails(uint64 poolId, bytes16 trancheId, uint128 price) public {
         connector.addPool(poolId);
         connector.addTranche(poolId, trancheId, "Some Name", "SYMBOL", 123);
-        vm.expectRevert(bytes("CentrifugeConnector/not-the-router"));
+        vm.expectRevert(bytes("CentrifugeConnector/not-the-gateway"));
         bridgedConnector.updateTokenPrice(poolId, trancheId, price);
     }
 

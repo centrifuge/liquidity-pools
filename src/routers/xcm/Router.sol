@@ -52,7 +52,7 @@ contract ConnectorXCMRouter {
     mapping(address => uint256) public wards;
     XcmWeightInfo internal xcmWeightInfo;
 
-    GatewayLike public immutable gateway;
+    GatewayLike public gateway;
     address public immutable centrifugeChainOrigin;
     uint8 public immutable centrifugeChainConnectorsPalletIndex;
     uint8 public immutable centrifugeChainConnectorsPalletHandleIndex;
@@ -61,14 +61,13 @@ contract ConnectorXCMRouter {
     event Rely(address indexed user);
     event Deny(address indexed user);
     event File(bytes32 indexed what, XcmWeightInfo xcmWeightInfo);
+    event File(bytes32 indexed what, address addr);
 
     constructor(
-        address gateway_,
         address centrifugeChainOrigin_,
         uint8 centrifugeChainConnectorsPalletIndex_,
         uint8 centrifugeChainConnectorsPalletHandleIndex_
     ) {
-        gateway = GatewayLike(gateway_);
         centrifugeChainOrigin = centrifugeChainOrigin_;
         centrifugeChainConnectorsPalletIndex = centrifugeChainConnectorsPalletIndex_;
         centrifugeChainConnectorsPalletHandleIndex = centrifugeChainConnectorsPalletHandleIndex_;
@@ -106,6 +105,17 @@ contract ConnectorXCMRouter {
     function deny(address user) external auth {
         wards[user] = 0;
         emit Deny(user);
+    }
+
+    // file gateway
+    function file(bytes32 what, address gateway_) external auth {
+        if (what == "gateway") {
+            gateway = GatewayLike(gateway_);
+        } else {
+            revert("ConnectorXCMRouter/file-unrecognized-param");
+        }
+
+        emit File(what, gateway_);
     }
 
     function file(bytes32 what, uint64 buyExecutionWeightLimit, uint64 transactWeightAtMost, uint256 feeAmount)

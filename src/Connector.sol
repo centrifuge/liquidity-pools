@@ -13,7 +13,7 @@ interface GatewayLike {
         uint64 poolId,
         bytes16 trancheId,
         ConnectorMessages.Domain destinationDomain,
-        address destinationAddress,
+        bytes32 destinationAddress,
         uint128 amount
     ) external;
 }
@@ -64,7 +64,7 @@ contract CentrifugeConnector {
     }
 
     modifier onlyGateway() {
-        require(msg.sender == address(gateway), "CentrifugeConnector/not-the-router");
+        require(msg.sender == address(gateway), "CentrifugeConnector/not-the-gateway");
         _;
     }
 

@@ -59,7 +59,7 @@ contract ConnectorGateway {
     }
 
     modifier onlyRouter() {
-        require(msg.sender == address(connector), "ConnectorGateway/only-router-allowed-to-call");
+        require(msg.sender == address(router), "ConnectorGateway/only-router-allowed-to-call");
         _;
     }
 
@@ -79,7 +79,7 @@ contract ConnectorGateway {
         uint64 poolId,
         bytes16 trancheId,
         ConnectorMessages.Domain destinationDomain,
-        address destinationAddress,
+        bytes32 destinationAddress,
         uint128 amount
     ) public onlyConnector {
         router.send(
@@ -108,7 +108,7 @@ contract ConnectorGateway {
             connector.updateTokenPrice(poolId, trancheId, price);
         } else if (ConnectorMessages.isTransfer(_msg)) {
             (uint64 poolId, bytes16 trancheId,, address destinationAddress, uint128 amount) =
-                ConnectorMessages.parseTransfer(_msg);
+                ConnectorMessages.parseTransfer20(_msg);
             connector.handleTransfer(poolId, trancheId, destinationAddress, amount);
         } else {
             require(false, "invalid-message");
