@@ -38,7 +38,7 @@ contract FactoryTest is Test {
         bytes16 fixedTrancheId = "1";
         uint8 fixedDecimals = 18;
     
-        address token = tokenFactory.newRestrictedToken(fixedPoolId, fixedTrancheId, name, symbol, fixedDecimals);
+        address token = tokenFactory.newTrancheToken(fixedPoolId, fixedTrancheId, name, symbol, fixedDecimals);
 
         if (isFirstRun) {
             tokenAddress = address(tokenFactory);

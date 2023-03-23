@@ -159,7 +159,7 @@ contract CentrifugeConnector {
         // TODO: use actual decimals
         uint8 decimals = 18;
         address token =
-            tokenFactory.newRestrictedToken(poolId, trancheId, tranche.tokenName, tranche.tokenSymbol, decimals);
+            tokenFactory.newTrancheToken(poolId, trancheId, tranche.tokenName, tranche.tokenSymbol, decimals);
         tranche.token = token;
 
         address memberlist = memberlistFactory.newMemberlist();
