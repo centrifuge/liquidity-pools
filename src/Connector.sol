@@ -89,7 +89,7 @@ contract CentrifugeConnector {
     }
 
     // --- Outgoing message handling ---
-    function transferToCentrifuge(uint64 poolId, bytes16 trancheId, bytes32 destinationAddress, uint128 amount)
+    function transferTrancheTokensToCentrifuge(uint64 poolId, bytes16 trancheId, bytes32 destinationAddress, uint128 amount)
         public
     {
         RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
@@ -99,7 +99,7 @@ contract CentrifugeConnector {
         token.burn(msg.sender, amount);
 
         router.send(
-            ConnectorMessages.formatTransfer(
+            ConnectorMessages.formatTransferTrancheTokens(
                 poolId,
                 trancheId,
                 ConnectorMessages.formatDomain(ConnectorMessages.Domain.Centrifuge),
@@ -182,7 +182,7 @@ contract CentrifugeConnector {
         memberlist.updateMember(user, validUntil);
     }
 
-    function handleTransfer(uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 amount)
+    function handleTransferTrancheTokens(uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 amount)
         public
         onlyRouter
     {

@@ -55,7 +55,7 @@ contract MockHomeConnector is Test {
     }
 
     function updateTokenPrice(uint64 poolId, bytes16 trancheId, uint128 price) public {
-        bytes memory _message = ConnectorMessages.formatUpdateTokenPrice(poolId, trancheId, price);
+        bytes memory _message = ConnectorMessages.formatUpdateTrancheTokenPrice(poolId, trancheId, price);
         router.handle(_message);
     }
 
@@ -68,7 +68,7 @@ contract MockHomeConnector is Test {
         uint128 amount
     ) public {
         bytes memory _message =
-            ConnectorMessages.formatTransfer(poolId, trancheId, destinationDomain, destinationAddress, amount);
+            ConnectorMessages.formatTransferTrancheTokens(poolId, trancheId, destinationDomain, destinationAddress, amount);
         router.handle(_message);
     }
 

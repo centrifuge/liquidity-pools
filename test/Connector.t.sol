@@ -266,11 +266,11 @@ contract ConnectorTest is Test {
 
         // Now send the transfer from EVM -> Cent Chain
         token.approve(address(bridgedConnector), amount);
-        bridgedConnector.transferToCentrifuge(poolId, trancheId, centChainAddress, amount);
+        bridgedConnector.transferTrancheTokensToCentrifuge(poolId, trancheId, centChainAddress, amount);
         assertEq(token.balanceOf(address(this)), 0);
 
         // Finally, verify the connector called `router.send`
-        bytes memory message = ConnectorMessages.formatTransfer(
+        bytes memory message = ConnectorMessages.formatTransferTrancheTokens(
             poolId,
             trancheId,
             ConnectorMessages.formatDomain(ConnectorMessages.Domain.Centrifuge),

@@ -16,7 +16,7 @@ interface ConnectorLike {
     ) external;
     function updateMember(uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) external;
     function updateTokenPrice(uint64 poolId, bytes16 trancheId, uint128 price) external;
-    function handleTransfer(uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 amount) external;
+    function handleTransferTrancheTokens(uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 amount) external;
 }
 
 interface AxelarExecutableLike {
@@ -82,13 +82,13 @@ contract ConnectorAxelarRouter is AxelarExecutableLike {
             (uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) =
                 ConnectorMessages.parseUpdateMember(_msg);
             connector.updateMember(poolId, trancheId, user, validUntil);
-        } else if (ConnectorMessages.isUpdateTokenPrice(_msg)) {
-            (uint64 poolId, bytes16 trancheId, uint128 price) = ConnectorMessages.parseUpdateTokenPrice(_msg);
+        } else if (ConnectorMessages.isUpdateTrancheTokenPrice(_msg)) {
+            (uint64 poolId, bytes16 trancheId, uint128 price) = ConnectorMessages.parseUpdateTrancheTokenPrice(_msg);
             connector.updateTokenPrice(poolId, trancheId, price);
-        } else if (ConnectorMessages.isTransfer(_msg)) {
+        } else if (ConnectorMessages.isTransferTrancheTokens(_msg)) {
             (uint64 poolId, bytes16 trancheId,, address destinationAddress, uint128 amount) =
-                ConnectorMessages.parseTransfer20(_msg);
-            connector.handleTransfer(poolId, trancheId, destinationAddress, amount);
+                ConnectorMessages.parseTransferTrancheTokens20(_msg);
+            connector.handleTransferTrancheTokens(poolId, trancheId, destinationAddress, amount);
         } else {
             require(false, "invalid-message");
         }

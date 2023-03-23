@@ -11,9 +11,9 @@ library ConnectorMessages {
         Invalid,
         AddPool,
         AddTranche,
-        UpdateTokenPrice,
+        UpdateTrancheTokenPrice,
         UpdateMember,
-        Transfer
+        TransferTrancheTokens
     }
 
     enum Domain {
@@ -163,19 +163,19 @@ library ConnectorMessages {
      * 9-24: trancheId (16 bytes)
      * 25-41: price (uint128 = 16 bytes)
      */
-    function formatUpdateTokenPrice(uint64 poolId, bytes16 trancheId, uint128 price)
+    function formatUpdateTrancheTokenPrice(uint64 poolId, bytes16 trancheId, uint128 price)
         internal
         pure
         returns (bytes memory)
     {
-        return abi.encodePacked(uint8(Call.UpdateTokenPrice), poolId, trancheId, price);
+        return abi.encodePacked(uint8(Call.UpdateTrancheTokenPrice), poolId, trancheId, price);
     }
 
-    function isUpdateTokenPrice(bytes29 _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.UpdateTokenPrice;
+    function isUpdateTrancheTokenPrice(bytes29 _msg) internal pure returns (bool) {
+        return messageType(_msg) == Call.UpdateTrancheTokenPrice;
     }
 
-    function parseUpdateTokenPrice(bytes29 _msg)
+    function parseUpdateTrancheTokenPrice(bytes29 _msg)
         internal
         pure
         returns (uint64 poolId, bytes16 trancheId, uint128 price)
@@ -186,7 +186,7 @@ library ConnectorMessages {
     }
 
     /**
-     * Transfer
+     * TransferTrancheTokens
      *
      * 0: call type (uint8 = 1 byte)
      * 1-8: poolId (uint64 = 8 bytes)
@@ -195,36 +195,36 @@ library ConnectorMessages {
      * 34-65: destinationAddress (32 bytes - Either a Centrifuge chain address or an EVM address followed by 12 zeros)
      * 66-81: amount (uint128 = 16 bytes)
      */
-    function formatTransfer(
+    function formatTransferTrancheTokens(
         uint64 poolId,
         bytes16 trancheId,
         bytes9 destinationDomain,
         bytes32 destinationAddress,
         uint128 amount
     ) internal pure returns (bytes memory) {
-        return abi.encodePacked(uint8(Call.Transfer), poolId, trancheId, destinationDomain, destinationAddress, amount);
+        return abi.encodePacked(uint8(Call.TransferTrancheTokens), poolId, trancheId, destinationDomain, destinationAddress, amount);
     }
 
-    // Format a transfer to an EVM domain
+    // Format a TransferTrancheTokens to an EVM domain
     // Note: This is an overload function to dry the cast from `address` to `bytes32`
-    // for the `destinationAddress` field by using the default `formatTransfer` implementation
+    // for the `destinationAddress` field by using the default `formatTransferTrancheTokens` implementation
     // by appending 12 zeros to the evm-based `destinationAddress`.
-    function formatTransfer(
+    function formatTransferTrancheTokens(
         uint64 poolId,
         bytes16 trancheId,
         bytes9 destinationDomain,
         address destinationAddress,
         uint128 amount
     ) internal pure returns (bytes memory) {
-        return formatTransfer(poolId, trancheId, destinationDomain, bytes32(bytes20(destinationAddress)), amount);
+        return formatTransferTrancheTokens(poolId, trancheId, destinationDomain, bytes32(bytes20(destinationAddress)), amount);
     }
 
-    function isTransfer(bytes29 _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.Transfer;
+    function isTransferTrancheTokens(bytes29 _msg) internal pure returns (bool) {
+        return messageType(_msg) == Call.TransferTrancheTokens;
     }
 
-    // Parse a Transfer to a Centrifuge-based `destinationAddress` (32-byte long)
-    function parseTransfer32(bytes29 _msg)
+    // Parse a TransferTrancheTokens to a Centrifuge-based `destinationAddress` (32-byte long)
+    function parseTransferTrancheTokens32(bytes29 _msg)
         internal
         pure
         returns (uint64 poolId, bytes16 trancheId, bytes9 encodedDomain, bytes32 destinationAddress, uint128 amount)
@@ -236,14 +236,14 @@ library ConnectorMessages {
         amount = uint128(_msg.indexUint(66, 16));
     }
 
-    // Parse a Transfer to an EVM-based `destinationAddress` (20-byte long)
-    function parseTransfer20(bytes29 _msg)
+    // Parse a TransferTrancheTokens to an EVM-based `destinationAddress` (20-byte long)
+    function parseTransferTrancheTokens20(bytes29 _msg)
         internal
         pure
         returns (uint64 poolId, bytes16 trancheId, bytes9 encodedDomain, address destinationAddress, uint128 amount)
     {
         (uint64 poolId_, bytes16 trancheId_, bytes9 encodedDomain_, bytes32 destinationAddress32, uint128 amount_) =
-            parseTransfer32(_msg);
+            parseTransferTrancheTokens32(_msg);
         destinationAddress = address(bytes20(destinationAddress32));
 
         return (poolId_, trancheId_, encodedDomain_, destinationAddress, amount_);
