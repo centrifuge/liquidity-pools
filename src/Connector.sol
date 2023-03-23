@@ -128,6 +128,7 @@ contract CentrifugeConnector {
     // --- Incoming message handling ---
     function addPool(uint64 poolId) public onlyRouter {
         Pool storage pool = pools[poolId];
+        require(pool.createdAt == 0, "CentrifugeConnector/pool-already-added");
         pool.poolId = poolId;
         pool.createdAt = block.timestamp;
         emit PoolAdded(poolId);
@@ -144,6 +145,7 @@ contract CentrifugeConnector {
         require(pool.createdAt > 0, "CentrifugeConnector/invalid-pool");
 
         Tranche storage tranche = tranches[poolId][trancheId];
+        require(tranche.lastPriceUpdate == 0, "CentrifugeConnector/tranche-already-added");
         tranche.latestPrice = price;
         tranche.lastPriceUpdate = block.timestamp;
         tranche.tokenName = tokenName;
@@ -155,6 +157,7 @@ contract CentrifugeConnector {
     function deployTranche(uint64 poolId, bytes16 trancheId) public {
         Tranche storage tranche = tranches[poolId][trancheId];
         require(tranche.lastPriceUpdate > 0, "CentrifugeConnector/invalid-pool-or-tranche");
+        require(tranche.token == address(0), "CentrifugeConnector/tranche-already-deployed");
 
         // TODO: use actual decimals
         uint8 decimals = 18;

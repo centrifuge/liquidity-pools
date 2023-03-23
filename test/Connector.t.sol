@@ -36,6 +36,13 @@ contract ConnectorTest is Test {
         assertEq(uint256(actualPoolId), uint256(poolId));
     }
 
+    function testAddingPoolMultipleTimesFails(uint64 poolId) public {
+        bridgedConnector.addPool(poolId);
+
+        vm.expectRevert(bytes("CentrifugeConnector/pool-already-added"));
+        bridgedConnector.addPool(poolId);
+    }
+
     function testAddingPoolAsNonRouterFails(uint64 poolId) public {
         vm.expectRevert(bytes("CentrifugeConnector/not-the-router"));
         bridgedConnector.addPool(poolId);
@@ -70,6 +77,18 @@ contract ConnectorTest is Test {
         RestrictedTokenLike token = RestrictedTokenLike(token_);
         assertEq(token.name(), bytes32ToString(stringToBytes32(tokenName)));
         assertEq(token.symbol(), bytes32ToString(stringToBytes32(tokenSymbol)));
+    }
+
+    function testAddingTrancheMultipleTimesFails(uint64 poolId,
+        string memory tokenName,
+        string memory tokenSymbol,
+        bytes16 trancheId,
+        uint128 price) public {
+        bridgedConnector.addPool(poolId);
+        connector.addTranche(poolId, trancheId, tokenName, tokenSymbol, price);
+        
+        vm.expectRevert(bytes("CentrifugeConnector/tranche-already-added"));
+        connector.addTranche(poolId, trancheId, tokenName, tokenSymbol, price);
     }
 
     function testAddingMultipleTranchesWorks(
@@ -111,6 +130,19 @@ contract ConnectorTest is Test {
     ) public {
         vm.expectRevert(bytes("CentrifugeConnector/invalid-pool"));
         connector.addTranche(poolId, trancheId, tokenName, tokenSymbol, price);
+    }
+
+    function testDeployingTrancheMultipleTimesFails(uint64 poolId,
+        string memory tokenName,
+        string memory tokenSymbol,
+        bytes16 trancheId,
+        uint128 price) public {
+        bridgedConnector.addPool(poolId);
+        connector.addTranche(poolId, trancheId, tokenName, tokenSymbol, price);
+        bridgedConnector.deployTranche(poolId, trancheId);
+        
+        vm.expectRevert(bytes("CentrifugeConnector/tranche-already-deployed"));
+        bridgedConnector.deployTranche(poolId, trancheId);
     }
 
     function testDeployingWrongTrancheFails(
