@@ -89,9 +89,12 @@ contract CentrifugeConnector {
     }
 
     // --- Outgoing message handling ---
-    function transferTrancheTokensToCentrifuge(uint64 poolId, bytes16 trancheId, bytes32 destinationAddress, uint128 amount)
-        public
-    {
+    function transferTrancheTokensToCentrifuge(
+        uint64 poolId,
+        bytes16 trancheId,
+        bytes32 destinationAddress,
+        uint128 amount
+    ) public {
         RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
         require(address(token) != address(0), "CentrifugeConnector/unknown-token");
 

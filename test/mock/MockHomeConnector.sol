@@ -67,8 +67,9 @@ contract MockHomeConnector is Test {
         address destinationAddress,
         uint128 amount
     ) public {
-        bytes memory _message =
-            ConnectorMessages.formatTransferTrancheTokens(poolId, trancheId, destinationDomain, destinationAddress, amount);
+        bytes memory _message = ConnectorMessages.formatTransferTrancheTokens(
+            poolId, trancheId, destinationDomain, destinationAddress, amount
+        );
         router.handle(_message);
     }
 

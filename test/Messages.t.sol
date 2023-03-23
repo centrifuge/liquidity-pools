@@ -14,23 +14,33 @@ contract MessagesTest is Test {
     function setUp() public {}
 
     function testAddPoolEncoding() public {
-        assertEq(ConnectorMessages.formatAddPool(0, 0, 0), fromHex("0100000000000000000000000000000000000000000000000000"));
-        assertEq(ConnectorMessages.formatAddPool(1, 2, 3), fromHex("0100000000000000010000000000000000000000000000000203"));
-        assertEq(ConnectorMessages.formatAddPool(12378532, 123, 18), fromHex("010000000000bce1a40000000000000000000000000000007b12"));
+        assertEq(
+            ConnectorMessages.formatAddPool(0, 0, 0), fromHex("0100000000000000000000000000000000000000000000000000")
+        );
+        assertEq(
+            ConnectorMessages.formatAddPool(1, 2, 3), fromHex("0100000000000000010000000000000000000000000000000203")
+        );
+        assertEq(
+            ConnectorMessages.formatAddPool(12378532, 123, 18),
+            fromHex("010000000000bce1a40000000000000000000000000000007b12")
+        );
     }
 
     function testAddPoolDecoding() public {
-        (uint64 actualPoolId1, uint128 actualCurrency1, uint8 actualDecimals1) = ConnectorMessages.parseAddPool(fromHex("0100000000000000000000000000000000000000000000000000").ref(0));
+        (uint64 actualPoolId1, uint128 actualCurrency1, uint8 actualDecimals1) =
+            ConnectorMessages.parseAddPool(fromHex("0100000000000000000000000000000000000000000000000000").ref(0));
         assertEq(uint256(actualPoolId1), 0);
         assertEq(uint256(actualCurrency1), 0);
         assertEq(uint256(actualDecimals1), 0);
 
-        (uint64 actualPoolId2, uint128 actualCurrency2, uint8 actualDecimals2) = ConnectorMessages.parseAddPool(fromHex("0100000000000000010000000000000000000000000000000203").ref(0));
+        (uint64 actualPoolId2, uint128 actualCurrency2, uint8 actualDecimals2) =
+            ConnectorMessages.parseAddPool(fromHex("0100000000000000010000000000000000000000000000000203").ref(0));
         assertEq(uint256(actualPoolId2), 1);
         assertEq(uint256(actualCurrency2), 2);
         assertEq(uint256(actualDecimals2), 3);
 
-        (uint64 actualPoolId3, uint128 actualCurrency3, uint8 actualDecimals3) = ConnectorMessages.parseAddPool(fromHex("010000000000bce1a40000000000000000000000000000007b12").ref(0));
+        (uint64 actualPoolId3, uint128 actualCurrency3, uint8 actualDecimals3) =
+            ConnectorMessages.parseAddPool(fromHex("010000000000bce1a40000000000000000000000000000007b12").ref(0));
         assertEq(uint256(actualPoolId3), 12378532);
         assertEq(uint256(actualCurrency3), 123);
         assertEq(uint256(actualDecimals3), 18);
@@ -38,7 +48,8 @@ contract MessagesTest is Test {
 
     function testAddPoolEquivalence(uint64 poolId, uint128 currency, uint8 decimals) public {
         bytes memory _message = ConnectorMessages.formatAddPool(poolId, currency, decimals);
-        (uint64 decodedPoolId, uint128 decodedCurrency, uint8 decodedDecimals) = ConnectorMessages.parseAddPool(_message.ref(0));
+        (uint64 decodedPoolId, uint128 decodedCurrency, uint8 decodedDecimals) =
+            ConnectorMessages.parseAddPool(_message.ref(0));
         assertEq(uint256(decodedPoolId), uint256(poolId));
         assertEq(uint256(decodedCurrency), uint256(currency));
         assertEq(decodedDecimals, decimals);
@@ -152,7 +163,8 @@ contract MessagesTest is Test {
     }
 
     function testUpdateTrancheTokenPriceDecoding() public {
-        (uint64 decodedPoolId, bytes16 decodedTrancheId, uint128 decodedPrice) = ConnectorMessages.parseUpdateTrancheTokenPrice(
+        (uint64 decodedPoolId, bytes16 decodedTrancheId, uint128 decodedPrice) = ConnectorMessages
+            .parseUpdateTrancheTokenPrice(
             fromHex("030000000000000001811acd5b3f17c06841c7e41e9e04cb1b00000000033b2e3c9fd0803ce8000000").ref(0)
         );
         assertEq(uint256(decodedPoolId), uint256(1));
@@ -169,7 +181,41 @@ contract MessagesTest is Test {
         assertEq(uint256(decodedPrice), uint256(price));
     }
 
-    function testTransferToEvmDomainEncoding() public {
+    function testTransferEncoding() public {
+        assertEq(
+            ConnectorMessages.formatTransfer(
+                uint128(42),
+                0x1111111111111111111111111111111111111111111111111111111111111111,
+                0x2222222222222222222222222222222222222222222222222222222222222222,
+                1000000000000000000000000000
+            ),
+            hex"050000000000000000000000000000002a1111111111111111111111111111111111111111111111111111111111111111222222222222222222222222222222222222222222222222222222222222222200000000033b2e3c9fd0803ce8000000"
+        );
+    }
+
+    function testTransferDecoding() public {
+        (uint128 token, bytes32 sender, bytes32 receiver, uint128 amount) = ConnectorMessages.parseTransfer(
+            fromHex(
+                "050000000000000000000000000000002a1111111111111111111111111111111111111111111111111111111111111111222222222222222222222222222222222222222222222222222222222222222200000000033b2e3c9fd0803ce8000000"
+            ).ref(0)
+        );
+        assertEq(uint256(token), uint256(42));
+        assertEq(sender, 0x1111111111111111111111111111111111111111111111111111111111111111);
+        assertEq(receiver, 0x2222222222222222222222222222222222222222222222222222222222222222);
+        assertEq(amount, uint256(1000000000000000000000000000));
+    }
+
+    function testTransferEquivalence(uint128 token, bytes32 sender, bytes32 receiver, uint128 amount) public {
+        bytes memory _message = ConnectorMessages.formatTransfer(token, sender, receiver, amount);
+        (uint128 decodedToken, bytes32 decodedSender, bytes32 decodedReceiver, uint128 decodedAmount) =
+            ConnectorMessages.parseTransfer(_message.ref(0));
+        assertEq(uint256(decodedToken), uint256(token));
+        assertEq(decodedSender, sender);
+        assertEq(decodedReceiver, receiver);
+        assertEq(decodedAmount, amount);
+    }
+
+    function testTransferTrancheTokensToEvmDomainEncoding() public {
         assertEq(
             ConnectorMessages.formatTransferTrancheTokens(
                 1,
@@ -182,7 +228,7 @@ contract MessagesTest is Test {
         );
     }
 
-    function testTransferToEvmDomainDecoding() public {
+    function testTransferTrancheTokensToEvmDomainDecoding() public {
         (uint64 poolId, bytes16 trancheId, bytes9 domain, address destinationAddress, uint128 amount) =
         ConnectorMessages.parseTransferTrancheTokens20(
             fromHex(
@@ -196,7 +242,7 @@ contract MessagesTest is Test {
         assertEq(amount, uint256(1000000000000000000000000000));
     }
 
-    function testTransferToCentrifugeEncoding() public {
+    function testTransferTrancheTokensToCentrifugeEncoding() public {
         assertEq(
             ConnectorMessages.formatTransferTrancheTokens(
                 1,
@@ -209,7 +255,7 @@ contract MessagesTest is Test {
         );
     }
 
-    function testTransferToCentrifugeDecoding() public {
+    function testTransferTrancheTokensToCentrifugeDecoding() public {
         (uint64 poolId, bytes16 trancheId, bytes9 domain, bytes32 destinationAddress, uint128 amount) =
         ConnectorMessages.parseTransferTrancheTokens32(
             fromHex(
@@ -223,7 +269,7 @@ contract MessagesTest is Test {
         assertEq(amount, uint256(1000000000000000000000000000));
     }
 
-    function testTransferToEvmEquivalence(
+    function testTransferTrancheTokensToEvmEquivalence(
         uint64 poolId,
         bytes16 trancheId,
         address destinationAddress,
@@ -231,8 +277,9 @@ contract MessagesTest is Test {
         uint64 destinationChainId
     ) public {
         bytes9 inputEncodedDomain = ConnectorMessages.formatDomain(ConnectorMessages.Domain.EVM, destinationChainId);
-        bytes memory _message =
-            ConnectorMessages.formatTransferTrancheTokens(poolId, trancheId, inputEncodedDomain, destinationAddress, amount);
+        bytes memory _message = ConnectorMessages.formatTransferTrancheTokens(
+            poolId, trancheId, inputEncodedDomain, destinationAddress, amount
+        );
         (
             uint64 decodedPoolId,
             bytes16 decodedTrancheId,
@@ -247,15 +294,16 @@ contract MessagesTest is Test {
         assertEq(decodedAmount, amount);
     }
 
-    function testTransferToCentrifugeEquivalence(
+    function testTransferTrancheTokensToCentrifugeEquivalence(
         uint64 poolId,
         bytes16 trancheId,
         bytes32 destinationAddress,
         uint128 amount
     ) public {
         bytes9 inputEncodedDomain = ConnectorMessages.formatDomain(ConnectorMessages.Domain.Centrifuge);
-        bytes memory _message =
-            ConnectorMessages.formatTransferTrancheTokens(poolId, trancheId, inputEncodedDomain, destinationAddress, amount);
+        bytes memory _message = ConnectorMessages.formatTransferTrancheTokens(
+            poolId, trancheId, inputEncodedDomain, destinationAddress, amount
+        );
         (
             uint64 decodedPoolId,
             bytes16 decodedTrancheId,
@@ -267,6 +315,58 @@ contract MessagesTest is Test {
         assertEq(decodedTrancheId, trancheId);
         assertEq(encodedDomain, inputEncodedDomain);
         assertEq(decodedDestinationAddress, destinationAddress);
+        assertEq(decodedAmount, amount);
+    }
+
+    // IncreaseInvestOrder
+
+    function testIncreaseInvestOrderEncoding() public {
+        assertEq(
+            ConnectorMessages.formatIncreaseInvestOrder(
+                2,
+                bytes16(hex"811acd5b3f17c06841c7e41e9e04cb1b"),
+                0x1231231231231231231231231231231231231231231231231231231231231231,
+                uint128(42),
+                1706260138
+            ),
+            hex"070000000000000002811acd5b3f17c06841c7e41e9e04cb1b12312312312312312312312312312312312312312312312312312312312312310000000000000000000000000000002a00000000000000000000000065b376aa"
+        );
+    }
+
+    function testIncreaseInvestOrderDecoding() public {
+        (uint64 decodedPoolId, bytes16 decodedTrancheId, bytes32 decodedInvestor, uint128 token, uint128 amount) =
+        ConnectorMessages.parseIncreaseInvestOrder(
+            fromHex(
+                "070000000000000002811acd5b3f17c06841c7e41e9e04cb1b12312312312312312312312312312312312312312312312312312312312312310000000000000000000000000000002a00000000000000000000000065b376aa"
+            ).ref(0)
+        );
+        assertEq(uint256(decodedPoolId), uint256(2));
+        assertEq(decodedTrancheId, hex"811acd5b3f17c06841c7e41e9e04cb1b");
+        assertEq(decodedInvestor, 0x1231231231231231231231231231231231231231231231231231231231231231);
+        assertEq(token, uint128(42));
+        assertEq(amount, uint128(1706260138));
+    }
+
+    function testIncreaseInvestOrderEquivalence(
+        uint64 poolId,
+        bytes16 trancheId,
+        bytes32 investor,
+        uint128 token,
+        uint128 amount
+    ) public {
+        bytes memory _message = ConnectorMessages.formatIncreaseInvestOrder(poolId, trancheId, investor, token, amount);
+        (
+            uint64 decodedPoolId,
+            bytes16 decodedTrancheId,
+            bytes32 decodedInvestor,
+            uint128 decodedToken,
+            uint128 decodedAmount
+        ) = ConnectorMessages.parseIncreaseInvestOrder(_message.ref(0));
+
+        assertEq(uint256(decodedPoolId), uint256(poolId));
+        assertEq(decodedTrancheId, trancheId);
+        assertEq(decodedInvestor, investor);
+        assertEq(decodedToken, token);
         assertEq(decodedAmount, amount);
     }
 
