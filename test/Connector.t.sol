@@ -4,7 +4,7 @@ pragma abicoder v2;
 
 import {CentrifugeConnector} from "src/Connector.sol";
 import {ConnectorEscrow} from "src/Escrow.sol";
-import {RestrictedTokenFactory, MemberlistFactory} from "src/token/factory.sol";
+import {TrancheTokenFactory, MemberlistFactory} from "src/token/factory.sol";
 import {RestrictedTokenLike} from "src/token/restricted.sol";
 import {MemberlistLike, Memberlist} from "src/token/memberlist.sol";
 import {MockHomeConnector} from "./mock/MockHomeConnector.sol";
@@ -19,8 +19,11 @@ contract ConnectorTest is Test {
     MockXcmRouter mockXcmRouter;
 
     function setUp() public {
+        bytes memory calldata_ = _getCalldata("./test/util/immutable_create2_factory_calldata");
+        vm.etch(0x0000000000FFe8B47B3e2130213B802212439497, calldata_);
+
         address escrow_ = address(new ConnectorEscrow());
-        address tokenFactory_ = address(new RestrictedTokenFactory());
+        address tokenFactory_ = address(new TrancheTokenFactory());
         address memberlistFactory_ = address(new MemberlistFactory());
 
         bridgedConnector = new CentrifugeConnector(escrow_, tokenFactory_, memberlistFactory_);
@@ -28,6 +31,13 @@ contract ConnectorTest is Test {
 
         connector = new MockHomeConnector(address(mockXcmRouter));
         bridgedConnector.file("router", address(mockXcmRouter));
+    }
+
+    function _getCalldata(string memory fileName) private returns (bytes memory) {
+        string[] memory ffiArgs = new string[](2);
+        ffiArgs[0] = "cat";
+        ffiArgs[1] = fileName;
+        return vm.ffi(ffiArgs);
     }
 
     function testAddingPoolWorks(uint64 poolId) public {

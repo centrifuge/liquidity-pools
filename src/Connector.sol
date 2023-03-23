@@ -2,7 +2,7 @@
 pragma solidity ^0.8.18;
 pragma abicoder v2;
 
-import {RestrictedTokenFactoryLike, MemberlistFactoryLike} from "./token/factory.sol";
+import {TrancheTokenFactoryLike, MemberlistFactoryLike} from "./token/factory.sol";
 import {RestrictedTokenLike, ERC20Like} from "./token/restricted.sol";
 import {MemberlistLike} from "./token/memberlist.sol";
 // TODO: remove dependency on Messages.sol
@@ -40,7 +40,7 @@ contract CentrifugeConnector {
     RouterLike public router;
     EscrowLike public immutable escrow;
 
-    RestrictedTokenFactoryLike public immutable tokenFactory;
+    TrancheTokenFactoryLike public immutable tokenFactory;
     MemberlistFactoryLike public immutable memberlistFactory;
 
     // --- Events ---
@@ -54,7 +54,7 @@ contract CentrifugeConnector {
     constructor(address escrow_, address tokenFactory_, address memberlistFactory_) {
         escrow = EscrowLike(escrow_);
 
-        tokenFactory = RestrictedTokenFactoryLike(tokenFactory_);
+        tokenFactory = TrancheTokenFactoryLike(tokenFactory_);
         memberlistFactory = MemberlistFactoryLike(memberlistFactory_);
 
         wards[msg.sender] = 1;
@@ -158,7 +158,8 @@ contract CentrifugeConnector {
 
         // TODO: use actual decimals
         uint8 decimals = 18;
-        address token = tokenFactory.newRestrictedToken(poolId, trancheId, tranche.tokenName, tranche.tokenSymbol, decimals);
+        address token =
+            tokenFactory.newRestrictedToken(poolId, trancheId, tranche.tokenName, tranche.tokenSymbol, decimals);
         tranche.token = token;
 
         address memberlist = memberlistFactory.newMemberlist();
