@@ -79,14 +79,16 @@ contract ConnectorTest is Test {
         assertEq(token.symbol(), bytes32ToString(stringToBytes32(tokenSymbol)));
     }
 
-    function testAddingTrancheMultipleTimesFails(uint64 poolId,
+    function testAddingTrancheMultipleTimesFails(
+        uint64 poolId,
         string memory tokenName,
         string memory tokenSymbol,
         bytes16 trancheId,
-        uint128 price) public {
+        uint128 price
+    ) public {
         bridgedConnector.addPool(poolId);
         connector.addTranche(poolId, trancheId, tokenName, tokenSymbol, price);
-        
+
         vm.expectRevert(bytes("CentrifugeConnector/tranche-already-added"));
         connector.addTranche(poolId, trancheId, tokenName, tokenSymbol, price);
     }
@@ -132,15 +134,17 @@ contract ConnectorTest is Test {
         connector.addTranche(poolId, trancheId, tokenName, tokenSymbol, price);
     }
 
-    function testDeployingTrancheMultipleTimesFails(uint64 poolId,
+    function testDeployingTrancheMultipleTimesFails(
+        uint64 poolId,
         string memory tokenName,
         string memory tokenSymbol,
         bytes16 trancheId,
-        uint128 price) public {
+        uint128 price
+    ) public {
         bridgedConnector.addPool(poolId);
         connector.addTranche(poolId, trancheId, tokenName, tokenSymbol, price);
         bridgedConnector.deployTranche(poolId, trancheId);
-        
+
         vm.expectRevert(bytes("CentrifugeConnector/tranche-already-deployed"));
         bridgedConnector.deployTranche(poolId, trancheId);
     }
