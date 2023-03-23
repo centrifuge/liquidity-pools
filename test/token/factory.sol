@@ -6,7 +6,6 @@ import {TrancheTokenFactory, MemberlistFactory} from "src/token/factory.sol";
 import "forge-std/Test.sol";
 
 contract FactoryTest is Test {
-
     // address(0)[0:20] + keccak("Centrifuge")[21:32]
     bytes32 SALT = 0x000000000000000000000000000000000000000075eb27011b69f002dc094d05;
 
@@ -14,8 +13,7 @@ contract FactoryTest is Test {
     address tokenFactoryAddress;
     address tokenAddress;
 
-    function setUp() public {
-    }
+    function setUp() public {}
 
     function testTokenAddressShouldBeDeterministic(
         address sender,
@@ -37,7 +35,7 @@ contract FactoryTest is Test {
         uint64 fixedPoolId = 1;
         bytes16 fixedTrancheId = "1";
         uint8 fixedDecimals = 18;
-    
+
         address token = tokenFactory.newTrancheToken(fixedPoolId, fixedTrancheId, name, symbol, fixedDecimals);
 
         if (isFirstRun) {

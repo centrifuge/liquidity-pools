@@ -13,13 +13,10 @@ interface TrancheTokenFactoryLike {
 }
 
 contract TrancheTokenFactory {
-    function newTrancheToken(
-        uint64 poolId,
-        bytes16 trancheId,
-        string memory name,
-        string memory symbol,
-        uint8 decimals
-    ) public returns (address) {
+    function newTrancheToken(uint64 poolId, bytes16 trancheId, string memory name, string memory symbol, uint8 decimals)
+        public
+        returns (address)
+    {
         // Salt is hash(poolId + trancheId), to deploy copies of the restricted token contract
         // on multiple chains with the same address for the same tranche
         bytes32 salt = keccak256(abi.encodePacked(poolId, trancheId));
