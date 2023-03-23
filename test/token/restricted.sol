@@ -19,7 +19,7 @@ contract RestrictedTokenTest is Test {
         RestrictedTokenFactory tokenFactory = new RestrictedTokenFactory();
         MemberlistFactory memberlistFactory = new MemberlistFactory();
 
-        token = RestrictedTokenLike(tokenFactory.newRestrictedToken("Some Token", "ST", 18));
+        token = RestrictedTokenLike(tokenFactory.newRestrictedToken(1, "1", "Some Token", "ST", 18));
 
         memberlist = MemberlistLike(memberlistFactory.newMemberlist());
         token.file("memberlist", address(memberlist));
