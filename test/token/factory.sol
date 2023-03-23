@@ -45,11 +45,4 @@ contract FactoryTest is Test {
             assertEq(token, tokenAddress);
         }
     }
-
-    function _getCalldata(string memory fileName) private returns (bytes memory) {
-        string[] memory ffiArgs = new string[](2);
-        ffiArgs[0] = "cat";
-        ffiArgs[1] = fileName;
-        return vm.ffi(ffiArgs);
-    }
 }
