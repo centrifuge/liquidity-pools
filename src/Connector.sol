@@ -126,7 +126,8 @@ contract CentrifugeConnector {
     }
 
     // --- Incoming message handling ---
-    function addPool(uint64 poolId) public onlyRouter {
+    // todo(nuno): store currency and decimals
+    function addPool(uint64 poolId, uint128 currency, uint8 decimals) public onlyRouter {
         Pool storage pool = pools[poolId];
         pool.poolId = poolId;
         pool.createdAt = block.timestamp;

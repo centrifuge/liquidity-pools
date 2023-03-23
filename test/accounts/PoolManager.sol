@@ -16,14 +16,14 @@ contract InvariantPoolManager is Test {
         connector = connector_;
     }
 
-    function addPool(uint64 poolId) public {
-        connector.addPool(poolId);
+    function addPool(uint64 poolId, uint128 currency, uint8 decimals) public {
+        connector.addPool(poolId, currency, decimals);
 
         allPools.push(poolId);
     }
 
-    function addPoolAndTranche(uint64 poolId, bytes16 trancheId, uint128 price) public {
-        addPool(poolId);
+    function addPoolAndTranche(uint64 poolId, uint128 currency, uint8 decimals, bytes16 trancheId, uint128 price) public {
+        addPool(poolId, currency, decimals);
         connector.addTranche(poolId, trancheId, "-", "-", price);
 
         allTranches.push(trancheId);

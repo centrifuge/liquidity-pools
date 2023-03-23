@@ -6,7 +6,7 @@ import {TypedMemView} from "memview-sol/TypedMemView.sol";
 import {ConnectorMessages} from "../../Messages.sol";
 
 interface ConnectorLike {
-    function addPool(uint64 poolId) external;
+    function addPool(uint64 poolId, uint128 currency, uint8 decimals) external;
     function addTranche(
         uint64 poolId,
         bytes16 trancheId,
@@ -72,8 +72,8 @@ contract ConnectorAxelarRouter is AxelarExecutableLike {
         bytes29 _msg = payload.ref(0);
 
         if (ConnectorMessages.isAddPool(_msg)) {
-            uint64 poolId = ConnectorMessages.parseAddPool(_msg);
-            connector.addPool(poolId);
+            (uint64 poolId, uint128 currency, uint8 decimals) = ConnectorMessages.parseAddPool(_msg);
+            connector.addPool(poolId, currency, decimals);
         } else if (ConnectorMessages.isAddTranche(_msg)) {
             (uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol, uint128 price) =
                 ConnectorMessages.parseAddTranche(_msg);
