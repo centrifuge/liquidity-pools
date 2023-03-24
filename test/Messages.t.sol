@@ -555,6 +555,7 @@ contract MessagesTest is Test {
         assertEq(decodedUser, user);
     }
 
+    // CollectForRedeem
     function testCollectForRedeemEncoding() public {
         assertEq(
             ConnectorMessages.formatCollectForRedeem(
@@ -621,6 +622,43 @@ contract MessagesTest is Test {
 
         assertEq(uint256(decodedPoolId), uint256(poolId));
         assertEq(decodedTrancheId, trancheId);
+        assertEq(decodedUser, user);
+    }
+
+    // CollectForInvest
+    function testCollectForInvestEncoding() public {
+        assertEq(
+            ConnectorMessages.formatCollectForInvest(
+                2,
+                bytes16(hex"811acd5b3f17c06841c7e41e9e04cb1b"),
+                0x1111111111111111111111111111111111111111111111111111111111111111,
+                0x2222222222222222222222222222222222222222222222222222222222222222
+            ),
+            hex"0e0000000000000002811acd5b3f17c06841c7e41e9e04cb1b11111111111111111111111111111111111111111111111111111111111111112222222222222222222222222222222222222222222222222222222222222222"
+        );
+    }
+
+    function testCollectForInvestDecoding() public {
+        (uint64 decodedPoolId, bytes16 decodedTrancheId, bytes32 decodedCaller, bytes32 decodedUser) = ConnectorMessages
+        .parseCollectForInvest(
+            fromHex(
+                "0e0000000000000002811acd5b3f17c06841c7e41e9e04cb1b11111111111111111111111111111111111111111111111111111111111111112222222222222222222222222222222222222222222222222222222222222222"
+            ).ref(0)
+        );
+        assertEq(uint256(decodedPoolId), uint256(2));
+        assertEq(decodedTrancheId, hex"811acd5b3f17c06841c7e41e9e04cb1b");
+        assertEq(decodedCaller, 0x1111111111111111111111111111111111111111111111111111111111111111);
+        assertEq(decodedUser, 0x2222222222222222222222222222222222222222222222222222222222222222);
+    }
+
+    function testCollectForInvestEquivalence(uint64 poolId, bytes16 trancheId, bytes32 caller, bytes32 user) public {
+        bytes memory _message = ConnectorMessages.formatCollectForInvest(poolId, trancheId, caller, user);
+        (uint64 decodedPoolId, bytes16 decodedTrancheId, bytes32 decodedCaller, bytes32 decodedUser) =
+        ConnectorMessages.parseCollectForInvest(_message.ref(0));
+
+        assertEq(uint256(decodedPoolId), uint256(poolId));
+        assertEq(decodedTrancheId, trancheId);
+        assertEq(decodedCaller, caller);
         assertEq(decodedUser, user);
     }
 
