@@ -407,7 +407,7 @@ library ConnectorMessages {
         uint128 token,
         uint128 amount
     ) internal pure returns (bytes memory) {
-        return abi.encodePacked(uint8(Call.IncreaseInvestOrder), poolId, trancheId, investor, token, amount);
+        return abi.encodePacked(uint8(Call.DecreaseRedeemOrder), poolId, trancheId, investor, token, amount);
     }
 
     function isDecreaseRedeemOrder(bytes29 _msg) internal pure returns (bool) {

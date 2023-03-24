@@ -471,6 +471,57 @@ contract MessagesTest is Test {
         assertEq(decodedAmount, amount);
     }
 
+    // DecreaseRedeemOrder
+    function testDecreaseRedeemOrderEncoding() public {
+        assertEq(
+            ConnectorMessages.formatDecreaseRedeemOrder(
+                2,
+                bytes16(hex"811acd5b3f17c06841c7e41e9e04cb1b"),
+                0x1231231231231231231231231231231231231231231231231231231231231231,
+                uint128(42),
+                1706260138
+            ),
+            hex"0a0000000000000002811acd5b3f17c06841c7e41e9e04cb1b12312312312312312312312312312312312312312312312312312312312312310000000000000000000000000000002a00000000000000000000000065b376aa"
+        );
+    }
+
+    function testDecreaseRedeemOrderDecoding() public {
+        (uint64 decodedPoolId, bytes16 decodedTrancheId, bytes32 decodedInvestor, uint128 token, uint128 amount) =
+        ConnectorMessages.parseDecreaseRedeemOrder(
+            fromHex(
+                "0a0000000000000002811acd5b3f17c06841c7e41e9e04cb1b12312312312312312312312312312312312312312312312312312312312312310000000000000000000000000000002a00000000000000000000000065b376aa"
+            ).ref(0)
+        );
+        assertEq(uint256(decodedPoolId), uint256(2));
+        assertEq(decodedTrancheId, hex"811acd5b3f17c06841c7e41e9e04cb1b");
+        assertEq(decodedInvestor, 0x1231231231231231231231231231231231231231231231231231231231231231);
+        assertEq(token, uint128(42));
+        assertEq(amount, uint128(1706260138));
+    }
+
+    function testDecreaseRedeemOrderEquivalence(
+        uint64 poolId,
+        bytes16 trancheId,
+        bytes32 investor,
+        uint128 token,
+        uint128 amount
+    ) public {
+        bytes memory _message = ConnectorMessages.formatDecreaseRedeemOrder(poolId, trancheId, investor, token, amount);
+        (
+        uint64 decodedPoolId,
+        bytes16 decodedTrancheId,
+        bytes32 decodedInvestor,
+        uint128 decodedToken,
+        uint128 decodedAmount
+        ) = ConnectorMessages.parseDecreaseRedeemOrder(_message.ref(0));
+
+        assertEq(uint256(decodedPoolId), uint256(poolId));
+        assertEq(decodedTrancheId, trancheId);
+        assertEq(decodedInvestor, investor);
+        assertEq(decodedToken, token);
+        assertEq(decodedAmount, amount);
+    }
+
     function testFormatDomainCentrifuge() public {
         assertEq(ConnectorMessages.formatDomain(ConnectorMessages.Domain.Centrifuge), hex"000000000000000000");
     }
