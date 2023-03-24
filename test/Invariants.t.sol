@@ -26,12 +26,11 @@ contract ConnectorInvariants is Test {
         address memberlistFactory_ = address(new MemberlistFactory());
         bridgedConnector = new CentrifugeConnector(tokenFactory_, memberlistFactory_);
         mockXcmRouter = new MockXcmRouter(address(bridgedConnector));
-
         connector = new MockHomeConnector(address(mockXcmRouter));
-        bridgedConnector.file("router", address(mockXcmRouter));
-
         gateway = new ConnectorGateway(address(bridgedConnector), address(mockXcmRouter));
+
         mockXcmRouter.file("gateway", address(gateway));
+        bridgedConnector.file("gateway", address(gateway));
 
         // Performs random pool and tranches creations
         poolManager = new InvariantPoolManager(connector);
