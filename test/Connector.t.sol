@@ -4,6 +4,7 @@ pragma abicoder v2;
 
 import {CentrifugeConnector} from "src/Connector.sol";
 import {ConnectorGateway} from "src/routers/gateway.sol";
+import {ConnectorEscrow} from "src/Escrow.sol";
 import {RestrictedTokenFactory, MemberlistFactory} from "src/token/factory.sol";
 import {RestrictedTokenLike} from "src/token/restricted.sol";
 import {MemberlistLike, Memberlist} from "src/token/memberlist.sol";
@@ -12,10 +13,6 @@ import {MockXcmRouter} from "./mock/MockXcmRouter.sol";
 import "forge-std/Test.sol";
 import "../src/Connector.sol";
 
-interface ERC20Like {
-    function balanceOf(address) external view returns (uint256);
-}
-
 contract ConnectorTest is Test {
     CentrifugeConnector bridgedConnector;
     ConnectorGateway gateway;
@@ -23,10 +20,11 @@ contract ConnectorTest is Test {
     MockXcmRouter mockXcmRouter;
 
     function setUp() public {
+        address escrow_ = address(new ConnectorEscrow());
         address tokenFactory_ = address(new RestrictedTokenFactory());
         address memberlistFactory_ = address(new MemberlistFactory());
 
-        bridgedConnector = new CentrifugeConnector(tokenFactory_, memberlistFactory_);
+        bridgedConnector = new CentrifugeConnector(escrow_, tokenFactory_, memberlistFactory_);
         mockXcmRouter = new MockXcmRouter(address(bridgedConnector));
 
         connector = new MockHomeConnector(address(mockXcmRouter));
@@ -37,7 +35,7 @@ contract ConnectorTest is Test {
 
     function testAddingPoolWorks(uint64 poolId) public {
         connector.addPool(poolId);
-        (uint64 actualPoolId,) = bridgedConnector.pools(poolId);
+        (uint64 actualPoolId,,) = bridgedConnector.pools(poolId);
         assertEq(uint256(actualPoolId), uint256(poolId));
     }
 
@@ -54,7 +52,7 @@ contract ConnectorTest is Test {
         uint128 price
     ) public {
         connector.addPool(poolId);
-        (uint64 actualPoolId,) = bridgedConnector.pools(poolId);
+        (uint64 actualPoolId,,) = bridgedConnector.pools(poolId);
         assertEq(uint256(actualPoolId), uint256(poolId));
 
         connector.addTranche(poolId, trancheId, tokenName, tokenSymbol, price);
@@ -129,7 +127,7 @@ contract ConnectorTest is Test {
         vm.assume(trancheId != wrongTrancheId);
 
         connector.addPool(poolId);
-        (uint64 actualPoolId,) = bridgedConnector.pools(poolId);
+        (uint64 actualPoolId,,) = bridgedConnector.pools(poolId);
         assertEq(uint256(actualPoolId), uint256(poolId));
 
         connector.addTranche(poolId, trancheId, tokenName, tokenSymbol, price);
@@ -148,7 +146,7 @@ contract ConnectorTest is Test {
         vm.assume(poolId != wrongPoolId);
 
         connector.addPool(poolId);
-        (uint64 actualPoolId,) = bridgedConnector.pools(poolId);
+        (uint64 actualPoolId,,) = bridgedConnector.pools(poolId);
         assertEq(uint256(actualPoolId), uint256(poolId));
 
         connector.addTranche(poolId, trancheId, tokenName, tokenSymbol, price);

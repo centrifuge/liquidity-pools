@@ -3,7 +3,7 @@ pragma solidity ^0.8.18;
 pragma abicoder v2;
 
 import {RestrictedTokenFactoryLike, MemberlistFactoryLike} from "./token/factory.sol";
-import {RestrictedTokenLike} from "./token/restricted.sol";
+import {RestrictedTokenLike, ERC20Like} from "./token/restricted.sol";
 import {MemberlistLike} from "./token/memberlist.sol";
 // TODO: remove dependency on Messages.sol
 import {ConnectorMessages} from "src/Messages.sol";
@@ -18,9 +18,14 @@ interface GatewayLike {
     ) external;
 }
 
+interface EscrowLike {
+    function approve(address token, address spender, uint256 value) external;
+}
+
 struct Pool {
     uint64 poolId;
     uint256 createdAt;
+    address currency;
 }
 
 struct Tranche {
@@ -39,6 +44,8 @@ contract CentrifugeConnector {
     mapping(uint64 => mapping(bytes16 => Tranche)) public tranches;
 
     GatewayLike public gateway;
+    EscrowLike public immutable escrow;
+
     RestrictedTokenFactoryLike public immutable tokenFactory;
     MemberlistFactoryLike public immutable memberlistFactory;
 
@@ -50,7 +57,9 @@ contract CentrifugeConnector {
     event TrancheAdded(uint256 indexed poolId, bytes16 indexed trancheId);
     event TrancheDeployed(uint256 indexed poolId, bytes16 indexed trancheId, address indexed token);
 
-    constructor(address tokenFactory_, address memberlistFactory_) {
+    constructor(address escrow_, address tokenFactory_, address memberlistFactory_) {
+        escrow = EscrowLike(escrow_);
+
         tokenFactory = RestrictedTokenFactoryLike(tokenFactory_);
         memberlistFactory = MemberlistFactoryLike(memberlistFactory_);
 
@@ -96,6 +105,22 @@ contract CentrifugeConnector {
         token.burn(msg.sender, amount);
 
         gateway.transfer(poolId, trancheId, ConnectorMessages.Domain.Centrifuge, destinationAddress, amount);
+    }
+
+    function increaseInvestOrder(uint64 poolId, bytes16 trancheId, uint128 amount) public {
+        Pool storage pool = pools[poolId];
+        require(pool.createdAt > 0, "CentrifugeConnector/invalid-pool");
+
+        RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
+        require(address(token) != address(0), "CentrifugeConnector/unknown-token");
+        require(token.hasMember(msg.sender), "CentrifugeConnector/not-a-member");
+
+        require(
+            ERC20Like(pool.currency).transferFrom(msg.sender, address(escrow), amount),
+            "Centrifuge/Connector/currency-transfer-failed"
+        );
+
+        // TODO: send message to the gateway. Depends on https://github.com/centrifuge/connectors/pull/52
     }
 
     // --- Incoming message handling ---
