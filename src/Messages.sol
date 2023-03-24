@@ -343,7 +343,7 @@ library ConnectorMessages {
         uint128 token,
         uint128 amount
     ) internal pure returns (bytes memory) {
-        return formatIncreaseInvestOrder(poolId, trancheId, investor, token, amount);
+        return abi.encodePacked(uint8(Call.DecreaseInvestOrder), poolId, trancheId, investor, token, amount);
     }
 
     function isDecreaseInvestOrder(bytes29 _msg) internal pure returns (bool) {
@@ -375,7 +375,7 @@ library ConnectorMessages {
         uint128 token,
         uint128 amount
     ) internal pure returns (bytes memory) {
-        return formatIncreaseInvestOrder(poolId, trancheId, investor, token, amount);
+        return abi.encodePacked(uint8(Call.IncreaseRedeemOrder), poolId, trancheId, investor, token, amount);
     }
 
     function isIncreaseRedeemOrder(bytes29 _msg) internal pure returns (bool) {
@@ -407,7 +407,7 @@ library ConnectorMessages {
         uint128 token,
         uint128 amount
     ) internal pure returns (bytes memory) {
-        return formatIncreaseInvestOrder(poolId, trancheId, investor, token, amount);
+        return abi.encodePacked(uint8(Call.IncreaseInvestOrder), poolId, trancheId, investor, token, amount);
     }
 
     function isDecreaseRedeemOrder(bytes29 _msg) internal pure returns (bool) {
@@ -430,11 +430,7 @@ library ConnectorMessages {
      * 9-24: trancheId (16 bytes)
      * 25-56: user address (32 bytes)
      */
-    function formatCollectRedeem(
-        uint64 poolId,
-        bytes16 trancheId,
-        bytes32 user
-    ) internal pure returns (bytes memory) {
+    function formatCollectRedeem(uint64 poolId, bytes16 trancheId, bytes32 user) internal pure returns (bytes memory) {
         return abi.encodePacked(uint8(Call.CollectRedeem), poolId, trancheId, user);
     }
 
@@ -442,11 +438,7 @@ library ConnectorMessages {
         return messageType(_msg) == Call.CollectRedeem;
     }
 
-    function parseCollectRedeem(bytes29 _msg)
-    internal
-    pure
-    returns (uint64 poolId, bytes16 trancheId, bytes32 user)
-    {
+    function parseCollectRedeem(bytes29 _msg) internal pure returns (uint64 poolId, bytes16 trancheId, bytes32 user) {
         poolId = uint64(_msg.indexUint(1, 8));
         trancheId = bytes16(_msg.index(9, 16));
         user = bytes32(_msg.index(25, 32));
@@ -461,12 +453,11 @@ library ConnectorMessages {
      * 25-56: caller address (32 bytes)
      * 57-89: user address (32 bytes)
      */
-    function formatCollectForRedeem(
-        uint64 poolId,
-        bytes16 trancheId,
-        bytes32 caller,
-        bytes32 user
-    ) internal pure returns (bytes memory) {
+    function formatCollectForRedeem(uint64 poolId, bytes16 trancheId, bytes32 caller, bytes32 user)
+        internal
+        pure
+        returns (bytes memory)
+    {
         return abi.encodePacked(uint8(Call.CollectForRedeem), poolId, trancheId, caller, user);
     }
 
@@ -475,9 +466,9 @@ library ConnectorMessages {
     }
 
     function parseCollectForRedeem(bytes29 _msg)
-    internal
-    pure
-    returns (uint64 poolId, bytes16 trancheId, bytes32 caller, bytes32 user)
+        internal
+        pure
+        returns (uint64 poolId, bytes16 trancheId, bytes32 caller, bytes32 user)
     {
         poolId = uint64(_msg.indexUint(1, 8));
         trancheId = bytes16(_msg.index(9, 16));
@@ -493,11 +484,7 @@ library ConnectorMessages {
      * 9-24: trancheId (16 bytes)
      * 25-56: user address (32 bytes)
      */
-    function formatCollectInvest(
-        uint64 poolId,
-        bytes16 trancheId,
-        bytes32 user
-    ) internal pure returns (bytes memory) {
+    function formatCollectInvest(uint64 poolId, bytes16 trancheId, bytes32 user) internal pure returns (bytes memory) {
         return abi.encodePacked(uint8(Call.CollectInvest), poolId, trancheId, user);
     }
 
@@ -505,11 +492,7 @@ library ConnectorMessages {
         return messageType(_msg) == Call.CollectInvest;
     }
 
-    function parseCollectInvest(bytes29 _msg)
-    internal
-    pure
-    returns (uint64 poolId, bytes16 trancheId, bytes32 user)
-    {
+    function parseCollectInvest(bytes29 _msg) internal pure returns (uint64 poolId, bytes16 trancheId, bytes32 user) {
         poolId = uint64(_msg.indexUint(1, 8));
         trancheId = bytes16(_msg.index(9, 16));
         user = bytes32(_msg.index(25, 32));
@@ -524,12 +507,11 @@ library ConnectorMessages {
      * 25-56: caller address (32 bytes)
      * 57-89: user address (32 bytes)
      */
-    function formatCollectForInvest(
-        uint64 poolId,
-        bytes16 trancheId,
-        bytes32 caller,
-        bytes32 user
-    ) internal pure returns (bytes memory) {
+    function formatCollectForInvest(uint64 poolId, bytes16 trancheId, bytes32 caller, bytes32 user)
+        internal
+        pure
+        returns (bytes memory)
+    {
         return abi.encodePacked(uint8(Call.CollectForInvest), poolId, trancheId, caller, user);
     }
 
@@ -538,9 +520,9 @@ library ConnectorMessages {
     }
 
     function parseCollectForInvest(bytes29 _msg)
-    internal
-    pure
-    returns (uint64 poolId, bytes16 trancheId, bytes32 caller, bytes32 user)
+        internal
+        pure
+        returns (uint64 poolId, bytes16 trancheId, bytes32 caller, bytes32 user)
     {
         poolId = uint64(_msg.indexUint(1, 8));
         trancheId = bytes16(_msg.index(9, 16));
