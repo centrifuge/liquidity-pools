@@ -406,11 +406,11 @@ contract MessagesTest is Test {
     ) public {
         bytes memory _message = ConnectorMessages.formatDecreaseInvestOrder(poolId, trancheId, investor, token, amount);
         (
-        uint64 decodedPoolId,
-        bytes16 decodedTrancheId,
-        bytes32 decodedInvestor,
-        uint128 decodedToken,
-        uint128 decodedAmount
+            uint64 decodedPoolId,
+            bytes16 decodedTrancheId,
+            bytes32 decodedInvestor,
+            uint128 decodedToken,
+            uint128 decodedAmount
         ) = ConnectorMessages.parseDecreaseInvestOrder(_message.ref(0));
 
         assertEq(uint256(decodedPoolId), uint256(poolId));
@@ -457,11 +457,11 @@ contract MessagesTest is Test {
     ) public {
         bytes memory _message = ConnectorMessages.formatIncreaseRedeemOrder(poolId, trancheId, investor, token, amount);
         (
-        uint64 decodedPoolId,
-        bytes16 decodedTrancheId,
-        bytes32 decodedInvestor,
-        uint128 decodedToken,
-        uint128 decodedAmount
+            uint64 decodedPoolId,
+            bytes16 decodedTrancheId,
+            bytes32 decodedInvestor,
+            uint128 decodedToken,
+            uint128 decodedAmount
         ) = ConnectorMessages.parseIncreaseRedeemOrder(_message.ref(0));
 
         assertEq(uint256(decodedPoolId), uint256(poolId));
@@ -508,11 +508,11 @@ contract MessagesTest is Test {
     ) public {
         bytes memory _message = ConnectorMessages.formatDecreaseRedeemOrder(poolId, trancheId, investor, token, amount);
         (
-        uint64 decodedPoolId,
-        bytes16 decodedTrancheId,
-        bytes32 decodedInvestor,
-        uint128 decodedToken,
-        uint128 decodedAmount
+            uint64 decodedPoolId,
+            bytes16 decodedTrancheId,
+            bytes32 decodedInvestor,
+            uint128 decodedToken,
+            uint128 decodedAmount
         ) = ConnectorMessages.parseDecreaseRedeemOrder(_message.ref(0));
 
         assertEq(uint256(decodedPoolId), uint256(poolId));
@@ -520,6 +520,39 @@ contract MessagesTest is Test {
         assertEq(decodedInvestor, investor);
         assertEq(decodedToken, token);
         assertEq(decodedAmount, amount);
+    }
+
+    // CollectRedeem
+    function testCollectRedeemEncoding() public {
+        assertEq(
+            ConnectorMessages.formatCollectRedeem(
+                2,
+                bytes16(hex"811acd5b3f17c06841c7e41e9e04cb1b"),
+                0x1231231231231231231231231231231231231231231231231231231231231231
+            ),
+            hex"0b0000000000000002811acd5b3f17c06841c7e41e9e04cb1b1231231231231231231231231231231231231231231231231231231231231231"
+        );
+    }
+
+    function testCollectRedeemDecoding() public {
+        (uint64 decodedPoolId, bytes16 decodedTrancheId, bytes32 decodedUser) = ConnectorMessages.parseCollectRedeem(
+            fromHex(
+                "0b0000000000000002811acd5b3f17c06841c7e41e9e04cb1b1231231231231231231231231231231231231231231231231231231231231231"
+            ).ref(0)
+        );
+        assertEq(uint256(decodedPoolId), uint256(2));
+        assertEq(decodedTrancheId, hex"811acd5b3f17c06841c7e41e9e04cb1b");
+        assertEq(decodedUser, 0x1231231231231231231231231231231231231231231231231231231231231231);
+    }
+
+    function testCollectRedeemEquivalence(uint64 poolId, bytes16 trancheId, bytes32 user) public {
+        bytes memory _message = ConnectorMessages.formatCollectRedeem(poolId, trancheId, user);
+        (uint64 decodedPoolId, bytes16 decodedTrancheId, bytes32 decodedUser) =
+            ConnectorMessages.parseCollectRedeem(_message.ref(0));
+
+        assertEq(uint256(decodedPoolId), uint256(poolId));
+        assertEq(decodedTrancheId, trancheId);
+        assertEq(decodedUser, user);
     }
 
     function testFormatDomainCentrifuge() public {
