@@ -640,7 +640,7 @@ contract MessagesTest is Test {
 
     function testCollectForInvestDecoding() public {
         (uint64 decodedPoolId, bytes16 decodedTrancheId, bytes32 decodedCaller, bytes32 decodedUser) = ConnectorMessages
-        .parseCollectForInvest(
+            .parseCollectForInvest(
             fromHex(
                 "0e0000000000000002811acd5b3f17c06841c7e41e9e04cb1b11111111111111111111111111111111111111111111111111111111111111112222222222222222222222222222222222222222222222222222222222222222"
             ).ref(0)
@@ -654,7 +654,7 @@ contract MessagesTest is Test {
     function testCollectForInvestEquivalence(uint64 poolId, bytes16 trancheId, bytes32 caller, bytes32 user) public {
         bytes memory _message = ConnectorMessages.formatCollectForInvest(poolId, trancheId, caller, user);
         (uint64 decodedPoolId, bytes16 decodedTrancheId, bytes32 decodedCaller, bytes32 decodedUser) =
-        ConnectorMessages.parseCollectForInvest(_message.ref(0));
+            ConnectorMessages.parseCollectForInvest(_message.ref(0));
 
         assertEq(uint256(decodedPoolId), uint256(poolId));
         assertEq(decodedTrancheId, trancheId);
