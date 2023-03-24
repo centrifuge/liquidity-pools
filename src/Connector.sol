@@ -128,6 +128,22 @@ contract CentrifugeConnector {
         // TODO: send message to the gateway. Depends on https://github.com/centrifuge/connectors/pull/52
     }
 
+    function decreaseInvestOrder(uint64 poolId, bytes16 trancheId, uint128 amount) public {
+        Pool storage pool = pools[poolId];
+        require(pool.createdAt > 0, "CentrifugeConnector/invalid-pool");
+
+        RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
+        require(address(token) != address(0), "CentrifugeConnector/unknown-token");
+        require(token.hasMember(msg.sender), "CentrifugeConnector/not-a-member");
+
+        require(
+            ERC20Like(pool.currency).transferFrom(address(escrow), msg.sender, amount),
+            "Centrifuge/Connector/currency-transfer-failed"
+        );
+
+        // TODO: send message to the gateway. Depends on https://github.com/centrifuge/connectors/pull/52
+    }
+
     // --- Incoming message handling ---
     // todo(nuno): store currency and decimals
     function addPool(uint64 poolId, uint128 currency, uint8 decimals) public onlyRouter {
