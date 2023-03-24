@@ -22,10 +22,6 @@ interface EscrowLike {
     function approve(address token, address spender, uint256 value) external;
 }
 
-interface EscrowLike {
-    function approve(address token, address spender, uint256 value) external;
-}
-
 struct Pool {
     uint64 poolId;
     uint256 createdAt;
@@ -109,22 +105,6 @@ contract CentrifugeConnector {
         token.burn(msg.sender, amount);
 
         gateway.transfer(poolId, trancheId, ConnectorMessages.Domain.Centrifuge, destinationAddress, amount);
-    }
-
-    function increaseInvestOrder(uint64 poolId, bytes16 trancheId, uint128 amount) public {
-        Pool storage pool = pools[poolId];
-        require(pool.createdAt > 0, "CentrifugeConnector/invalid-pool");
-
-        RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
-        require(address(token) != address(0), "CentrifugeConnector/unknown-token");
-        require(token.hasMember(msg.sender), "CentrifugeConnector/not-a-member");
-
-        require(
-            ERC20Like(pool.currency).transferFrom(msg.sender, address(escrow), amount),
-            "Centrifuge/Connector/currency-transfer-failed"
-        );
-
-        // TODO: send message to the gateway. Depends on https://github.com/centrifuge/connectors/pull/52
     }
 
     function increaseInvestOrder(uint64 poolId, bytes16 trancheId, uint128 amount) public {
