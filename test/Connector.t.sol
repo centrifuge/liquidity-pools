@@ -3,7 +3,7 @@ pragma solidity ^0.8.18;
 pragma abicoder v2;
 
 import {CentrifugeConnector} from "src/Connector.sol";
-import {ConnectorGateway} from "src/routers/gateway.sol";
+import {ConnectorGateway} from "src/routers/Gateway.sol";
 import {ConnectorEscrow} from "src/Escrow.sol";
 import {RestrictedTokenFactory, MemberlistFactory} from "src/token/factory.sol";
 import {RestrictedTokenLike} from "src/token/restricted.sol";
