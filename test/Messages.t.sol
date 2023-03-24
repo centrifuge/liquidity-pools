@@ -555,6 +555,42 @@ contract MessagesTest is Test {
         assertEq(decodedUser, user);
     }
 
+    function testCollectForRedeemEncoding() public {
+        assertEq(
+            ConnectorMessages.formatCollectForRedeem(
+                2,
+                bytes16(hex"811acd5b3f17c06841c7e41e9e04cb1b"),
+                0x1111111111111111111111111111111111111111111111111111111111111111,
+                0x2222222222222222222222222222222222222222222222222222222222222222
+            ),
+            hex"0c0000000000000002811acd5b3f17c06841c7e41e9e04cb1b11111111111111111111111111111111111111111111111111111111111111112222222222222222222222222222222222222222222222222222222222222222"
+        );
+    }
+
+    function testCollectForRedeemDecoding() public {
+        (uint64 decodedPoolId, bytes16 decodedTrancheId, bytes32 decodedCaller, bytes32 decodedUser) = ConnectorMessages
+            .parseCollectForRedeem(
+            fromHex(
+                "0c0000000000000002811acd5b3f17c06841c7e41e9e04cb1b11111111111111111111111111111111111111111111111111111111111111112222222222222222222222222222222222222222222222222222222222222222"
+            ).ref(0)
+        );
+        assertEq(uint256(decodedPoolId), uint256(2));
+        assertEq(decodedTrancheId, hex"811acd5b3f17c06841c7e41e9e04cb1b");
+        assertEq(decodedCaller, 0x1111111111111111111111111111111111111111111111111111111111111111);
+        assertEq(decodedUser, 0x2222222222222222222222222222222222222222222222222222222222222222);
+    }
+
+    function testCollectForRedeemEquivalence(uint64 poolId, bytes16 trancheId, bytes32 caller, bytes32 user) public {
+        bytes memory _message = ConnectorMessages.formatCollectForRedeem(poolId, trancheId, caller, user);
+        (uint64 decodedPoolId, bytes16 decodedTrancheId, bytes32 decodedCaller, bytes32 decodedUser) =
+            ConnectorMessages.parseCollectForRedeem(_message.ref(0));
+
+        assertEq(uint256(decodedPoolId), uint256(poolId));
+        assertEq(decodedTrancheId, trancheId);
+        assertEq(decodedCaller, caller);
+        assertEq(decodedUser, user);
+    }
+
     // CollectInvest
     function testCollectInvestEncoding() public {
         assertEq(
@@ -581,7 +617,7 @@ contract MessagesTest is Test {
     function testCollectInvestEquivalence(uint64 poolId, bytes16 trancheId, bytes32 user) public {
         bytes memory _message = ConnectorMessages.formatCollectInvest(poolId, trancheId, user);
         (uint64 decodedPoolId, bytes16 decodedTrancheId, bytes32 decodedUser) =
-        ConnectorMessages.parseCollectInvest(_message.ref(0));
+            ConnectorMessages.parseCollectInvest(_message.ref(0));
 
         assertEq(uint256(decodedPoolId), uint256(poolId));
         assertEq(decodedTrancheId, trancheId);
