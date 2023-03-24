@@ -107,7 +107,6 @@ contract ConnectorXCMRouter {
         emit Deny(user);
     }
 
-    // file gateway
     function file(bytes32 what, address gateway_) external auth {
         if (what == "gateway") {
             gateway = GatewayLike(gateway_);
