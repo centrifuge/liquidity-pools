@@ -111,7 +111,7 @@ contract ConnectorGateway {
                 ConnectorMessages.parseTransfer20(_msg);
             connector.handleTransfer(poolId, trancheId, destinationAddress, amount);
         } else {
-            require(false, "invalid-message");
+            revert("ConnectorGateway/invalid-message");
         }
     }
 }
