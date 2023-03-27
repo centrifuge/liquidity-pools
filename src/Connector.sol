@@ -136,12 +136,31 @@ contract CentrifugeConnector {
         require(address(token) != address(0), "CentrifugeConnector/unknown-token");
         require(token.hasMember(msg.sender), "CentrifugeConnector/not-a-member");
 
-        require(
-            ERC20Like(pool.currency).transferFrom(address(escrow), msg.sender, amount),
-            "Centrifuge/Connector/currency-transfer-failed"
-        );
-
         // TODO: send message to the gateway. Depends on https://github.com/centrifuge/connectors/pull/52
+    }
+
+    function increaseRedeemOrder(uint64 poolId, bytes16 trancheId, uint128 amount) public {
+        // TODO(nuno)
+    }
+
+    function decreaseRedeemOrder(uint64 poolId, bytes16 trancheId, uint128 amount) public {
+        // TODO(nuno)
+    }
+
+    function collectRedeem(uint64 poolId, bytes16 trancheId) public {
+        // TODO(nuno)
+    }
+
+    function collectForRedeem(uint64 poolId, bytes16 trancheId, bytes32 userAddress) public {
+        // TODO(nuno)
+    }
+
+    function collectInvest(uint64 poolId, bytes16 trancheId) public {
+        // TODO(nuno)
+    }
+
+    function collectInvest(uint64 poolId, bytes16 trancheId, bytes32 userAddress) public {
+        // TODO(nuno)
     }
 
     // --- Incoming message handling ---
