@@ -19,9 +19,10 @@ contract ConnectorChainBridgeRouter is ChainBridgeDepositExecuteLike {
     CentrifugeGatewayLike public gateway;
     ChainBridgeLike public immutable bridge;
 
-    // TODO: figure out all these parameters
-    uint256 public constant deposit = 0.01 ether;
+    uint256 public constant deposit = 0;
     uint8 public constant centrifugeChainId = 1;
+
+    // TODO: define this parameter
     bytes32 public constant resourceID = "1";
 
     constructor(address bridge_) {
