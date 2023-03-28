@@ -321,15 +321,15 @@ contract ConnectorTest is Test {
 
     function testTransferFromCentrifuge(
         uint64 poolId,
+        bytes16 trancheId,
         uint128 currency,
         uint8 decimals,
         string memory tokenName,
         string memory tokenSymbol,
-        bytes16 trancheId,
         uint128 price,
+        uint64 validUntil,
         address destinationAddress,
-        uint128 amount,
-        uint64 validUntil
+        uint128 amount
     ) public {
         vm.assume(validUntil > block.timestamp + 7 days);
         connector.addPool(poolId, currency, decimals);
@@ -346,16 +346,16 @@ contract ConnectorTest is Test {
 
     function testTransferToEVM(
         uint64 poolId,
+        bytes16 trancheId,
         uint128 currency,
         uint8 decimals,
         string memory tokenName,
         string memory tokenSymbol,
-        bytes16 trancheId,
         uint128 price,
+        uint64 validUntil,
         uint64 destinationChainId,
         address destinationAddress,
-        uint128 amount,
-        uint64 validUntil
+        uint128 amount
     ) public {
         vm.assume(validUntil > block.timestamp + 7 days);
         connector.addPool(poolId, currency, decimals);
@@ -373,7 +373,6 @@ contract ConnectorTest is Test {
     function testTransferToEVMWithoutMemberFails(
         uint64 poolId,
         bytes16 trancheId,
-        uint128 amount,
         uint128 currency,
         uint8 decimals,
         string memory tokenName,
@@ -381,7 +380,8 @@ contract ConnectorTest is Test {
         uint128 price,
         uint64 validUntil,
         uint64 destinationChainId,
-        address destinationAddress
+        address destinationAddress,
+        uint128 amount
     ) public {
         vm.assume(validUntil > block.timestamp + 7 days);
         connector.addPool(poolId, currency, decimals);
