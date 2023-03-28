@@ -159,7 +159,7 @@ contract CentrifugeConnector {
         // TODO(nuno)
     }
 
-    function collectInvest(uint64 poolId, bytes16 trancheId, bytes32 userAddress) public {
+    function collectForInvest(uint64 poolId, bytes16 trancheId, bytes32 userAddress) public {
         // TODO(nuno)
     }
 
