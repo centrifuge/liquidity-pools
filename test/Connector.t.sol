@@ -272,7 +272,7 @@ contract ConnectorTest is Test {
 
     // Test transferring `amount` to the address(this)'s account (Centrifuge Chain -> EVM like) and then try
     // transferring that amount to a `centChainAddress` (EVM -> Centrifuge Chain like).
-    function testTransferToCentrifuge(
+    function testTransferTrancheTokensToCentrifuge(
         uint64 poolId,
         uint128 currency,
         uint8 decimals,
@@ -319,7 +319,7 @@ contract ConnectorTest is Test {
         assertEq(mockXcmRouter.sentMessages(message), true);
     }
 
-    function testTransferFromCentrifuge(
+    function testTransferTrancheTokensFromCentrifuge(
         uint64 poolId,
         bytes16 trancheId,
         uint128 currency,
@@ -344,7 +344,7 @@ contract ConnectorTest is Test {
         assertEq(ERC20Like(token).balanceOf(destinationAddress), amount);
     }
 
-    function testTransferToEVM(
+    function testTransferTrancheTokensToEVM(
         uint64 poolId,
         bytes16 trancheId,
         uint128 currency,
@@ -370,7 +370,7 @@ contract ConnectorTest is Test {
         assertEq(ERC20Like(token).balanceOf(destinationAddress), amount);
     }
 
-    function testTransferToEVMWithoutMemberFails(
+    function testTransferTrancheTokensToEVMWithoutMemberFails(
         uint64 poolId,
         bytes16 trancheId,
         uint128 currency,
