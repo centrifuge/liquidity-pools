@@ -1,9 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.18;
-pragma abicoder v2;
-
-import {TypedMemView} from "memview-sol/TypedMemView.sol";
-import {ConnectorMessages} from "../../Messages.sol";
 
 interface CentrifugeGatewayLike {
     function handle(bytes memory message) external;
@@ -18,11 +14,6 @@ interface ChainBridgeDepositExecuteLike {
 }
 
 contract ConnectorChainBridgeRouter is ChainBridgeDepositExecuteLike {
-    using TypedMemView for bytes;
-    // why bytes29? - https://github.com/summa-tx/memview-sol#why-bytes29
-    using TypedMemView for bytes29;
-    using ConnectorMessages for bytes29;
-
     mapping(address => uint256) public wards;
 
     CentrifugeGatewayLike public gateway;
