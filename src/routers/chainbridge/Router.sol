@@ -5,18 +5,8 @@ pragma abicoder v2;
 import {TypedMemView} from "memview-sol/TypedMemView.sol";
 import {ConnectorMessages} from "../../Messages.sol";
 
-interface ConnectorLike {
-    function addPool(uint64 poolId) external;
-    function addTranche(
-        uint64 poolId,
-        bytes16 trancheId,
-        string memory tokenName,
-        string memory tokenSymbol,
-        uint128 price
-    ) external;
-    function updateMember(uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) external;
-    function updateTokenPrice(uint64 poolId, bytes16 trancheId, uint128 price) external;
-    function handleTransfer(uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 amount) external;
+interface CentrifugeGatewayLike {
+    function handle(bytes memory message) external;
 }
 
 interface ChainBridgeLike {
@@ -33,7 +23,9 @@ contract ConnectorChainBridgeRouter is ChainBridgeDepositExecuteLike {
     using TypedMemView for bytes29;
     using ConnectorMessages for bytes29;
 
-    ConnectorLike public immutable connector;
+    mapping(address => uint256) public wards;
+
+    CentrifugeGatewayLike public gateway;
     ChainBridgeLike public immutable bridge;
 
     // TODO: figure out all these parameters
@@ -41,9 +33,13 @@ contract ConnectorChainBridgeRouter is ChainBridgeDepositExecuteLike {
     uint8 public constant centrifugeChainId = 1;
     bytes32 public constant resourceID = "1";
 
-    constructor(address connector_, address bridge_) {
-        connector = ConnectorLike(connector_);
+    constructor(address bridge_) {
         bridge = ChainBridgeLike(bridge_);
+    }
+
+    modifier auth() {
+        require(wards[msg.sender] == 1, "ConnectorXCMRouter/not-authorized");
+        _;
     }
 
     modifier onlyChainBridgeOrigin() {
@@ -51,40 +47,39 @@ contract ConnectorChainBridgeRouter is ChainBridgeDepositExecuteLike {
         _;
     }
 
-    modifier onlyConnector() {
-        require(msg.sender == address(connector), "ConnectorChainBridgeRouter/only-connector-allowed-to-call");
+    modifier onlyGateway() {
+        require(msg.sender == address(gateway), "ConnectorChainBridgeRouter/only-gateway-allowed-to-call");
         _;
+    }
+
+    // --- Administration ---
+    function rely(address user) external auth {
+        wards[user] = 1;
+        emit Rely(user);
+    }
+
+    function deny(address user) external auth {
+        wards[user] = 0;
+        emit Deny(user);
+    }
+
+    function file(bytes32 what, address gateway_) external auth {
+        if (what == "gateway") {
+            gateway = GatewayLike(gateway_);
+        } else {
+            revert("ConnectorChainBridgeRouter/file-unrecognized-param");
+        }
+
+        emit File(what, gateway_);
     }
 
     // --- Incoming ---
     function executeProposal(bytes32, bytes calldata payload) external onlyChainBridgeOrigin {
-        bytes29 _msg = payload.ref(0);
-
-        if (ConnectorMessages.isAddPool(_msg)) {
-            uint64 poolId = ConnectorMessages.parseAddPool(_msg);
-            connector.addPool(poolId);
-        } else if (ConnectorMessages.isAddTranche(_msg)) {
-            (uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol, uint128 price) =
-                ConnectorMessages.parseAddTranche(_msg);
-            connector.addTranche(poolId, trancheId, tokenName, tokenSymbol, price);
-        } else if (ConnectorMessages.isUpdateMember(_msg)) {
-            (uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) =
-                ConnectorMessages.parseUpdateMember(_msg);
-            connector.updateMember(poolId, trancheId, user, validUntil);
-        } else if (ConnectorMessages.isUpdateTokenPrice(_msg)) {
-            (uint64 poolId, bytes16 trancheId, uint128 price) = ConnectorMessages.parseUpdateTokenPrice(_msg);
-            connector.updateTokenPrice(poolId, trancheId, price);
-        } else if (ConnectorMessages.isTransfer(_msg)) {
-            (uint64 poolId, bytes16 trancheId,, address destinationAddress, uint128 amount) =
-                ConnectorMessages.parseTransfer20(_msg);
-            connector.handleTransfer(poolId, trancheId, destinationAddress, amount);
-        } else {
-            require(false, "invalid-message");
-        }
+        gateway.handle(payload);
     }
 
     // --- Outgoing ---
-    function send(bytes memory message) public onlyConnector {
+    function send(bytes memory message) public onlyGateway {
         bridge.deposit(centrifugeChainId, resourceID, message);
     }
 }
