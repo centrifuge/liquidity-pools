@@ -168,6 +168,7 @@ contract MessagesTest is Test {
                 bytes16(hex"811acd5b3f17c06841c7e41e9e04cb1b"),
                 ConnectorMessages.formatDomain(ConnectorMessages.Domain.EVM, 1284),
                 0x1231231231231231231231231231231231231231,
+                1,
                 1000000000000000000000000000
             ),
             hex"050000000000000001811acd5b3f17c06841c7e41e9e04cb1b010000000000000504123123123123123123123123123123123123123100000000000000000000000000000000033b2e3c9fd0803ce8000000"
@@ -195,6 +196,7 @@ contract MessagesTest is Test {
                 bytes16(hex"811acd5b3f17c06841c7e41e9e04cb1b"),
                 ConnectorMessages.formatDomain(ConnectorMessages.Domain.Centrifuge),
                 0x1231231231231231231231231231231231231231231231231231231231231231,
+                0,
                 1000000000000000000000000000
             ),
             hex"050000000000000001811acd5b3f17c06841c7e41e9e04cb1b000000000000000000123123123123123123123123123123123123123123123123123123123123123100000000033b2e3c9fd0803ce8000000"
@@ -224,7 +226,7 @@ contract MessagesTest is Test {
     ) public {
         bytes9 inputEncodedDomain = ConnectorMessages.formatDomain(ConnectorMessages.Domain.EVM, destinationChainId);
         bytes memory _message =
-            ConnectorMessages.formatTransfer(poolId, trancheId, inputEncodedDomain, destinationAddress, amount);
+            ConnectorMessages.formatTransfer(poolId, trancheId, inputEncodedDomain, destinationAddress, 1, amount);
         (
             uint64 decodedPoolId,
             bytes16 decodedTrancheId,
@@ -247,7 +249,7 @@ contract MessagesTest is Test {
     ) public {
         bytes9 inputEncodedDomain = ConnectorMessages.formatDomain(ConnectorMessages.Domain.Centrifuge);
         bytes memory _message =
-            ConnectorMessages.formatTransfer(poolId, trancheId, inputEncodedDomain, destinationAddress, amount);
+            ConnectorMessages.formatTransfer(poolId, trancheId, inputEncodedDomain, destinationAddress, 0, amount);
         (
             uint64 decodedPoolId,
             bytes16 decodedTrancheId,

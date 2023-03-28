@@ -75,16 +75,29 @@ contract ConnectorGateway {
     }
 
     // --- Outgoing ---
-    function transfer(
+    function transferToCentrifuge(
         uint64 poolId,
         bytes16 trancheId,
-        ConnectorMessages.Domain destinationDomain,
         bytes32 destinationAddress,
         uint128 amount
     ) public onlyConnector {
         router.send(
             ConnectorMessages.formatTransfer(
-                poolId, trancheId, ConnectorMessages.formatDomain(destinationDomain), destinationAddress, amount
+                poolId, trancheId, ConnectorMessages.formatDomain(ConnectorMessages.Domain.Centrifuge), destinationAddress, uint(0), amount
+            )
+        );
+    }
+
+    function transferToEVM(
+        uint64 poolId,
+        bytes16 trancheId,
+        address destinationAddress,
+        uint256 chainId,
+        uint128 amount
+    ) public onlyConnector {
+        router.send(
+            ConnectorMessages.formatTransfer(
+                poolId, trancheId, ConnectorMessages.formatDomain(ConnectorMessages.Domain.EVM), destinationAddress, chainId, amount
             )
         );
     }

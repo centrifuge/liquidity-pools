@@ -193,16 +193,18 @@ library ConnectorMessages {
      * 9-24: trancheId (16 bytes)
      * 25-33: destinationDomain (Domain = 9 bytes)
      * 34-65: destinationAddress (32 bytes - Either a Centrifuge chain address or an EVM address followed by 12 zeros)
-     * 66-81: amount (uint128 = 16 bytes)
+     * 66-73: chainId (uint256 = 32 bytes)
+     * 74-89: amount (uint128 = 16 bytes)
      */
     function formatTransfer(
         uint64 poolId,
         bytes16 trancheId,
         bytes9 destinationDomain,
         bytes32 destinationAddress,
+        uint256 chainId,
         uint128 amount
     ) internal pure returns (bytes memory) {
-        return abi.encodePacked(uint8(Call.Transfer), poolId, trancheId, destinationDomain, destinationAddress, amount);
+        return abi.encodePacked(uint8(Call.Transfer), poolId, trancheId, destinationDomain, destinationAddress, chainId, amount);
     }
 
     // Format a transfer to an EVM domain
@@ -214,9 +216,10 @@ library ConnectorMessages {
         bytes16 trancheId,
         bytes9 destinationDomain,
         address destinationAddress,
+        uint256 chainId,
         uint128 amount
     ) internal pure returns (bytes memory) {
-        return formatTransfer(poolId, trancheId, destinationDomain, bytes32(bytes20(destinationAddress)), amount);
+        return formatTransfer(poolId, trancheId, destinationDomain, bytes32(bytes20(destinationAddress)), chainId, amount);
     }
 
     function isTransfer(bytes29 _msg) internal pure returns (bool) {

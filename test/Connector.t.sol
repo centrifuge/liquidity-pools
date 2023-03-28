@@ -254,11 +254,10 @@ contract ConnectorTest is Test {
         bridgedConnector.deployTranche(poolId, trancheId);
         connector.updateMember(poolId, trancheId, address(this), validUntil);
 
-        connector.transfer(
+        bridgedConnector.transferToCentrifuge(
             poolId,
             trancheId,
-            ConnectorMessages.formatDomain(ConnectorMessages.Domain.Centrifuge),
-            address(this),
+            bytes32(0),
             amount
         );
 
@@ -278,6 +277,7 @@ contract ConnectorTest is Test {
             trancheId,
             ConnectorMessages.formatDomain(ConnectorMessages.Domain.Centrifuge),
             centChainAddress,
+            0,
             amount
         );
         assertEq(mockXcmRouter.sentMessages(message), true);
@@ -300,7 +300,7 @@ contract ConnectorTest is Test {
         connector.updateMember(poolId, trancheId, destinationAddress, validUntil);
 
         bytes9 encodedDomain = ConnectorMessages.formatDomain(ConnectorMessages.Domain.Centrifuge);
-        connector.transfer(poolId, trancheId, encodedDomain, destinationAddress, amount);
+        connector.incomingTransfer(poolId, trancheId, encodedDomain, destinationAddress, 1, amount);
 
         (address token,,,,) = bridgedConnector.tranches(poolId, trancheId);
         assertEq(ERC20Like(token).balanceOf(destinationAddress), amount);
@@ -323,8 +323,7 @@ contract ConnectorTest is Test {
         bridgedConnector.deployTranche(poolId, trancheId);
         connector.updateMember(poolId, trancheId, destinationAddress, validUntil);
 
-        bytes9 encodedDomain = ConnectorMessages.formatDomain(ConnectorMessages.Domain.EVM, destinationChainId);
-        connector.transfer(poolId, trancheId, encodedDomain, destinationAddress, amount);
+        bridgedConnector.transferToEVM(poolId, trancheId, destinationAddress, 1, amount);
 
         (address token,,,,) = bridgedConnector.tranches(poolId, trancheId);
         assertEq(ERC20Like(token).balanceOf(destinationAddress), amount);
@@ -348,7 +347,7 @@ contract ConnectorTest is Test {
 
         bytes9 encodedDomain = ConnectorMessages.formatDomain(ConnectorMessages.Domain.EVM, destinationChainId);
         vm.expectRevert(bytes("CentrifugeConnector/not-a-member"));
-        connector.transfer(poolId, trancheId, encodedDomain, destinationAddress, amount);
+        bridgedConnector.transferToEVM(poolId, trancheId, destinationAddress, 1, amount);
 
         (address token,,,,) = bridgedConnector.tranches(poolId, trancheId);
         assertEq(ERC20Like(token).balanceOf(destinationAddress), 0);

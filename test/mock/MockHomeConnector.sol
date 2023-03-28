@@ -60,15 +60,16 @@ contract MockHomeConnector is Test {
     }
 
     // Trigger an incoming (e.g. Centrifuge Chain -> EVM) transfer
-    function transfer(
+    function incomingTransfer(
         uint64 poolId,
         bytes16 trancheId,
         bytes9 destinationDomain,
         address destinationAddress,
+        uint256 chainId,
         uint128 amount
     ) public {
         bytes memory _message =
-            ConnectorMessages.formatTransfer(poolId, trancheId, destinationDomain, destinationAddress, amount);
+            ConnectorMessages.formatTransfer(poolId, trancheId, destinationDomain, destinationAddress, chainId, amount);
         router.handle(_message);
     }
 
