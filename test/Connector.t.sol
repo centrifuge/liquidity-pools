@@ -372,16 +372,16 @@ contract ConnectorTest is Test {
 
     function testTransferToEVMWithoutMemberFails(
         uint64 poolId,
+        bytes16 trancheId,
+        uint128 amount,
         uint128 currency,
         uint8 decimals,
         string memory tokenName,
         string memory tokenSymbol,
-        bytes16 trancheId,
         uint128 price,
+        uint64 validUntil,
         uint64 destinationChainId,
-        address destinationAddress,
-        uint128 amount,
-        uint64 validUntil
+        address destinationAddress
     ) public {
         vm.assume(validUntil > block.timestamp + 7 days);
         connector.addPool(poolId, currency, decimals);
