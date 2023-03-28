@@ -36,9 +36,10 @@ contract ConnectorChainBridgeRouter is ChainBridgeDepositExecuteLike {
     ConnectorLike public immutable connector;
     ChainBridgeLike public immutable bridge;
 
+    // TODO: figure out all these parameters
     uint256 public constant deposit = 0.01 ether;
-    string public constant centrifugeChainId = "Centrifuge";
-    string public constant resourceID = "TODO";
+    uint8 public constant centrifugeChainId = 1;
+    bytes32 public constant resourceID = "1";
 
     constructor(address connector_, address bridge_) {
         connector = ConnectorLike(connector_);
@@ -46,10 +47,7 @@ contract ConnectorChainBridgeRouter is ChainBridgeDepositExecuteLike {
     }
 
     modifier onlyChainBridgeOrigin() {
-        require(
-            msg.sender == address(bridge),
-            "ConnectorChainBridgeRouter/invalid-origin"
-        );
+        require(msg.sender == address(bridge), "ConnectorChainBridgeRouter/invalid-origin");
         _;
     }
 
@@ -59,10 +57,7 @@ contract ConnectorChainBridgeRouter is ChainBridgeDepositExecuteLike {
     }
 
     // --- Incoming ---
-    function executeProposal(bytes32, bytes calldata payload)
-        external
-        onlyChainBridgeOrigin
-    {
+    function executeProposal(bytes32, bytes calldata payload) external onlyChainBridgeOrigin {
         bytes29 _msg = payload.ref(0);
 
         if (ConnectorMessages.isAddPool(_msg)) {
