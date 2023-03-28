@@ -2,6 +2,7 @@
 pragma solidity ^0.8.18;
 
 import {ConnectorAxelarRouter} from "src/routers/axelar/Router.sol";
+import {ConnectorGateway} from "src/routers/Gateway.sol";
 import {CentrifugeConnector} from "src/Connector.sol";
 import {ConnectorEscrow} from "src/Escrow.sol";
 import {RestrictedTokenFactory, MemberlistFactory} from "src/token/factory.sol";
@@ -28,6 +29,8 @@ contract ConnectorAxelarScript is Script {
                 address(vm.envAddress("AXELAR_GATEWAY"))
         );
         connector.file("router", address(router));
+        ConnectorGateway gateway = new ConnectorGateway{ salt: SALT }(address(connector), address(router));
+        router.file("gateway", address(gateway));
         vm.stopBroadcast();
     }
 }
