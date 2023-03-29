@@ -25,7 +25,9 @@ contract ConnectorTest is Test {
         address tokenFactory_ = address(new RestrictedTokenFactory());
         address memberlistFactory_ = address(new MemberlistFactory());
 
-        bridgedConnector = new CentrifugeConnector(escrow_, tokenFactory_, memberlistFactory_);
+        bridgedConnector = new CentrifugeConnector(tokenFactory_, memberlistFactory_);
+        bridgedConnector.file("escrow", escrow_);
+
         mockXcmRouter = new MockXcmRouter(address(bridgedConnector));
 
         connector = new MockHomeConnector(address(mockXcmRouter));

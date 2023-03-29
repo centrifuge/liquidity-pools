@@ -50,7 +50,7 @@ contract CentrifugeConnector {
     mapping(uint64 => mapping(bytes16 => Tranche)) public tranches;
 
     GatewayLike public gateway;
-    EscrowLike public immutable escrow;
+    EscrowLike public escrow;
 
     RestrictedTokenFactoryLike public immutable tokenFactory;
     MemberlistFactoryLike public immutable memberlistFactory;
@@ -63,9 +63,7 @@ contract CentrifugeConnector {
     event TrancheAdded(uint256 indexed poolId, bytes16 indexed trancheId);
     event TrancheDeployed(uint256 indexed poolId, bytes16 indexed trancheId, address indexed token);
 
-    constructor(address escrow_, address tokenFactory_, address memberlistFactory_) {
-        escrow = EscrowLike(escrow_);
-
+    constructor(address tokenFactory_, address memberlistFactory_) {
         tokenFactory = RestrictedTokenFactoryLike(tokenFactory_);
         memberlistFactory = MemberlistFactoryLike(memberlistFactory_);
 
@@ -96,6 +94,7 @@ contract CentrifugeConnector {
 
     function file(bytes32 what, address data) external auth {
         if (what == "gateway") gateway = GatewayLike(data);
+        else if (what == "escrow") escrow = EscrowLike(data);
         else revert("CentrifugeConnector/file-unrecognized-param");
         emit File(what, data);
     }
