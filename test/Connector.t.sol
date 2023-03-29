@@ -20,6 +20,7 @@ contract ConnectorTest is Test {
     MockXcmRouter mockXcmRouter;
 
     function setUp() public {
+        vm.chainId(1);
         address escrow_ = address(new ConnectorEscrow());
         address tokenFactory_ = address(new RestrictedTokenFactory());
         address memberlistFactory_ = address(new MemberlistFactory());
@@ -254,12 +255,8 @@ contract ConnectorTest is Test {
         bridgedConnector.deployTranche(poolId, trancheId);
         connector.updateMember(poolId, trancheId, address(this), validUntil);
 
-        bridgedConnector.transferToCentrifuge(
-            poolId,
-            trancheId,
-            bytes32(0),
-            amount
-        );
+        // fund this account with amount
+        connector.incomingTransfer(poolId, trancheId, address(this), 1, amount);
 
         // Verify the address(this) has the expected amount
         (address tokenAddress,,,,) = bridgedConnector.tranches(poolId, trancheId);
@@ -300,36 +297,13 @@ contract ConnectorTest is Test {
         connector.updateMember(poolId, trancheId, destinationAddress, validUntil);
 
         bytes9 encodedDomain = ConnectorMessages.formatDomain(ConnectorMessages.Domain.Centrifuge);
-        connector.incomingTransfer(poolId, trancheId, encodedDomain, destinationAddress, 1, amount);
+        connector.incomingTransfer(poolId, trancheId, destinationAddress, 1, amount);
 
         (address token,,,,) = bridgedConnector.tranches(poolId, trancheId);
         assertEq(ERC20Like(token).balanceOf(destinationAddress), amount);
     }
 
-    function testTransferToEVM(
-        uint64 poolId,
-        string memory tokenName,
-        string memory tokenSymbol,
-        bytes16 trancheId,
-        uint128 price,
-        uint64 destinationChainId,
-        address destinationAddress,
-        uint128 amount,
-        uint64 validUntil
-    ) public {
-        vm.assume(validUntil > block.timestamp + 7 days);
-        connector.addPool(poolId);
-        connector.addTranche(poolId, trancheId, tokenName, tokenSymbol, price);
-        bridgedConnector.deployTranche(poolId, trancheId);
-        connector.updateMember(poolId, trancheId, destinationAddress, validUntil);
-
-        bridgedConnector.transferToEVM(poolId, trancheId, destinationAddress, 1, amount);
-
-        (address token,,,,) = bridgedConnector.tranches(poolId, trancheId);
-        assertEq(ERC20Like(token).balanceOf(destinationAddress), amount);
-    }
-
-    function testTransferToEVMWithoutMemberFails(
+    function testTransferFromCentrifugeWithoutMemberFails(
         uint64 poolId,
         string memory tokenName,
         string memory tokenSymbol,
@@ -347,10 +321,41 @@ contract ConnectorTest is Test {
 
         bytes9 encodedDomain = ConnectorMessages.formatDomain(ConnectorMessages.Domain.EVM, destinationChainId);
         vm.expectRevert(bytes("CentrifugeConnector/not-a-member"));
-        bridgedConnector.transferToEVM(poolId, trancheId, destinationAddress, 1, amount);
+        connector.incomingTransfer(poolId, trancheId, destinationAddress, 1, amount);
 
         (address token,,,,) = bridgedConnector.tranches(poolId, trancheId);
         assertEq(ERC20Like(token).balanceOf(destinationAddress), 0);
+    }
+
+    function testTransferToEVM(
+        uint64 poolId,
+        string memory tokenName,
+        string memory tokenSymbol,
+        bytes16 trancheId,
+        uint128 price,
+        uint64 destinationChainId,
+        address destinationAddress,
+        uint128 amount,
+        uint64 validUntil
+    ) public {
+        vm.assume(validUntil > block.timestamp + 7 days);
+        vm.assume(destinationAddress != address(0));
+        vm.assume(amount > 0);
+        connector.addPool(poolId);
+        connector.addTranche(poolId, trancheId, tokenName, tokenSymbol, price);
+        bridgedConnector.deployTranche(poolId, trancheId);
+        connector.updateMember(poolId, trancheId, destinationAddress, validUntil);
+        connector.updateMember(poolId, trancheId, address(this), validUntil);
+
+        // Fund this address with amount
+        connector.incomingTransfer(poolId, trancheId, address(this), 1, amount);
+        (address token,,,,) = bridgedConnector.tranches(poolId, trancheId);
+        assertEq(ERC20Like(token).balanceOf(address(this)), amount);
+
+        // Approve and transfer amont from this address to destinationAddress
+        ERC20Like(token).approve(address(bridgedConnector), amount);
+        bridgedConnector.transferToEVM(poolId, trancheId, destinationAddress, 2, amount);
+        assertEq(ERC20Like(token).balanceOf(address(this)), 0);
     }
 
     // helpers

@@ -198,10 +198,12 @@ contract CentrifugeConnector {
         memberlist.updateMember(user, validUntil);
     }
 
-    function handleTransfer(uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 amount)
+    function handleTransfer(uint64 poolId, bytes16 trancheId, address destinationAddress, uint256 chainId, uint128 amount)
         public
         onlyGateway
     {
+        
+        require(chainId == block.chainid, "CentrifugeConnector/invalid-chain-id");
         RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
         require(address(token) != address(0), "CentrifugeConnector/unknown-token");
 
