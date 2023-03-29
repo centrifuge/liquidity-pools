@@ -26,8 +26,7 @@ contract ConnectorInvariants is Test {
         address escrow_ = address(new ConnectorEscrow());
         address tokenFactory_ = address(new RestrictedTokenFactory());
         address memberlistFactory_ = address(new MemberlistFactory());
-        bridgedConnector = new CentrifugeConnector(tokenFactory_, memberlistFactory_);
-        bridgedConnector.file("escrow", escrow_);
+        bridgedConnector = new CentrifugeConnector(escrow_, tokenFactory_, memberlistFactory_);
         mockXcmRouter = new MockXcmRouter(address(bridgedConnector));
         connector = new MockHomeConnector(address(mockXcmRouter));
         gateway = new ConnectorGateway(address(bridgedConnector), address(mockXcmRouter));

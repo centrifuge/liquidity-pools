@@ -25,8 +25,7 @@ contract ConnectorTest is Test {
         address tokenFactory_ = address(new RestrictedTokenFactory());
         address memberlistFactory_ = address(new MemberlistFactory());
 
-        bridgedConnector = new CentrifugeConnector(tokenFactory_, memberlistFactory_);
-        bridgedConnector.file("escrow", escrow_);
+        bridgedConnector = new CentrifugeConnector(escrow_, tokenFactory_, memberlistFactory_);
 
         mockXcmRouter = new MockXcmRouter(address(bridgedConnector));
 
@@ -258,7 +257,7 @@ contract ConnectorTest is Test {
         connector.updateMember(poolId, trancheId, address(this), validUntil);
 
         // fund this account with amount
-        connector.incomingTransfer(poolId, trancheId, address(this), 1, amount);
+        connector.incomingTransfer(poolId, trancheId,  1, address(this), amount);
 
         // Verify the address(this) has the expected amount
         (address tokenAddress,,,,) = bridgedConnector.tranches(poolId, trancheId);
@@ -275,8 +274,8 @@ contract ConnectorTest is Test {
             poolId,
             trancheId,
             ConnectorMessages.formatDomain(ConnectorMessages.Domain.Centrifuge),
-            centChainAddress,
             0,
+            centChainAddress,
             amount
         );
         assertEq(mockXcmRouter.sentMessages(message), true);
@@ -299,7 +298,7 @@ contract ConnectorTest is Test {
         connector.updateMember(poolId, trancheId, destinationAddress, validUntil);
 
         bytes9 encodedDomain = ConnectorMessages.formatDomain(ConnectorMessages.Domain.Centrifuge);
-        connector.incomingTransfer(poolId, trancheId, destinationAddress, 1, amount);
+        connector.incomingTransfer(poolId, trancheId, 1, destinationAddress, amount);
 
         (address token,,,,) = bridgedConnector.tranches(poolId, trancheId);
         assertEq(ERC20Like(token).balanceOf(destinationAddress), amount);
@@ -311,7 +310,6 @@ contract ConnectorTest is Test {
         string memory tokenSymbol,
         bytes16 trancheId,
         uint128 price,
-        uint64 destinationChainId,
         address destinationAddress,
         uint128 amount,
         uint64 validUntil
@@ -321,9 +319,9 @@ contract ConnectorTest is Test {
         connector.addTranche(poolId, trancheId, tokenName, tokenSymbol, price);
         bridgedConnector.deployTranche(poolId, trancheId);
 
-        bytes9 encodedDomain = ConnectorMessages.formatDomain(ConnectorMessages.Domain.EVM, destinationChainId);
+        bytes9 encodedDomain = ConnectorMessages.formatDomain(ConnectorMessages.Domain.EVM);
         vm.expectRevert(bytes("CentrifugeConnector/not-a-member"));
-        connector.incomingTransfer(poolId, trancheId, destinationAddress, 1, amount);
+        connector.incomingTransfer(poolId, trancheId, 1, destinationAddress, amount);
 
         (address token,,,,) = bridgedConnector.tranches(poolId, trancheId);
         assertEq(ERC20Like(token).balanceOf(destinationAddress), 0);
@@ -335,7 +333,6 @@ contract ConnectorTest is Test {
         string memory tokenSymbol,
         bytes16 trancheId,
         uint128 price,
-        uint64 destinationChainId,
         address destinationAddress,
         uint128 amount,
         uint64 validUntil
@@ -350,13 +347,13 @@ contract ConnectorTest is Test {
         connector.updateMember(poolId, trancheId, address(this), validUntil);
 
         // Fund this address with amount
-        connector.incomingTransfer(poolId, trancheId, address(this), 1, amount);
+        connector.incomingTransfer(poolId, trancheId, 1, address(this), amount);
         (address token,,,,) = bridgedConnector.tranches(poolId, trancheId);
         assertEq(ERC20Like(token).balanceOf(address(this)), amount);
 
         // Approve and transfer amont from this address to destinationAddress
         ERC20Like(token).approve(address(bridgedConnector), amount);
-        bridgedConnector.transferToEVM(poolId, trancheId, destinationAddress, 2, amount);
+        bridgedConnector.transferToEVM(poolId, trancheId, 2, destinationAddress, amount);
         assertEq(ERC20Like(token).balanceOf(address(this)), 0);
     }
 

@@ -20,10 +20,9 @@ contract ConnectorXCMScript is Script {
 
         address tokenFactory_ = address(new RestrictedTokenFactory{ salt: SALT }());
         address memberlistFactory_ = address(new MemberlistFactory{ salt: SALT }());
-        CentrifugeConnector connector =
-            new CentrifugeConnector{ salt: SALT }(tokenFactory_, memberlistFactory_);
         address escrow_ = address(new ConnectorEscrow{ salt: SALT }());
-        connector.file("escrow", escrow_);
+        CentrifugeConnector connector =
+            new CentrifugeConnector{ salt: SALT }(escrow_, tokenFactory_, memberlistFactory_);
 
         ConnectorXCMRouter router = new ConnectorXCMRouter{ salt: SALT }(
                 address(vm.envAddress("CENTRIFUGE_CHAIN_ORIGIN")),

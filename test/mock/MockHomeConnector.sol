@@ -23,6 +23,7 @@ contract MockHomeConnector is Test {
     uint32 immutable NONCE = 1;
 
     uint32 public dispatchDomain;
+    uint256 public dispatchChainId;
     bytes public dispatchMessage;
     bytes32 public dispatchRecipient;
     uint256 public dispatchCalls;
@@ -63,18 +64,19 @@ contract MockHomeConnector is Test {
     function incomingTransfer(
         uint64 poolId,
         bytes16 trancheId,
+        uint256 destinationChainId,
         address destinationAddress,
-        uint256 chainId,
         uint128 amount
     ) public {
         bytes memory _message =
-            ConnectorMessages.formatTransfer(poolId, trancheId, ConnectorMessages.formatDomain(ConnectorMessages.Domain.EVM), destinationAddress, chainId, amount);
+            ConnectorMessages.formatTransfer(poolId, trancheId, ConnectorMessages.formatDomain(ConnectorMessages.Domain.EVM), destinationChainId, destinationAddress, amount);
         router.handle(_message);
     }
 
-    function dispatch(uint32 _destinationDomain, bytes32 _recipientAddress, bytes memory _messageBody) external {
+    function dispatch(uint32 _destinationDomain, uint256 _destinationChainId, bytes32 _recipientAddress, bytes memory _messageBody) external {
         dispatchCalls++;
         dispatchDomain = _destinationDomain;
+        dispatchChainId = _destinationChainId;
         dispatchMessage = _messageBody;
         dispatchRecipient = _recipientAddress;
     }

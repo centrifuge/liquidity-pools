@@ -18,8 +18,8 @@ interface GatewayLike {
     function transferToEVM(
         uint64 poolId,
         bytes16 trancheId,
+        uint256 destinationChainId,
         address destinationAddress,
-        uint256 chainId,
         uint128 amount
     ) external;
 }
@@ -63,7 +63,8 @@ contract CentrifugeConnector {
     event TrancheAdded(uint256 indexed poolId, bytes16 indexed trancheId);
     event TrancheDeployed(uint256 indexed poolId, bytes16 indexed trancheId, address indexed token);
 
-    constructor(address tokenFactory_, address memberlistFactory_) {
+    constructor(address escrow_, address tokenFactory_, address memberlistFactory_) {
+        escrow = EscrowLike(escrow_);
         tokenFactory = RestrictedTokenFactoryLike(tokenFactory_);
         memberlistFactory = MemberlistFactoryLike(memberlistFactory_);
 
@@ -94,7 +95,6 @@ contract CentrifugeConnector {
 
     function file(bytes32 what, address data) external auth {
         if (what == "gateway") gateway = GatewayLike(data);
-        else if (what == "escrow") escrow = EscrowLike(data);
         else revert("CentrifugeConnector/file-unrecognized-param");
         emit File(what, data);
     }
@@ -112,7 +112,7 @@ contract CentrifugeConnector {
         gateway.transferToCentrifuge(poolId, trancheId, destinationAddress, amount);
     }
 
-    function transferToEVM(uint64 poolId, bytes16 trancheId, address destinationAddress, uint256 chainId, uint128 amount)
+    function transferToEVM(uint64 poolId, bytes16 trancheId,uint256 destinationChainId, address destinationAddress, uint128 amount)
         public
     {
         RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
@@ -121,7 +121,7 @@ contract CentrifugeConnector {
         require(token.balanceOf(msg.sender) >= amount, "CentrifugeConnector/insufficient-balance");
         token.burn(msg.sender, amount);
 
-        gateway.transferToEVM(poolId, trancheId, destinationAddress, chainId, amount);
+        gateway.transferToEVM(poolId, trancheId, destinationChainId, destinationAddress, amount);
     }
 
     function increaseInvestOrder(uint64 poolId, bytes16 trancheId, uint128 amount) public {
@@ -197,12 +197,12 @@ contract CentrifugeConnector {
         memberlist.updateMember(user, validUntil);
     }
 
-    function handleTransfer(uint64 poolId, bytes16 trancheId, address destinationAddress, uint256 chainId, uint128 amount)
+    function handleTransfer(uint64 poolId, bytes16 trancheId, uint256 destinationChainId, address destinationAddress, uint128 amount)
         public
         onlyGateway
     {
         
-        require(chainId == block.chainid, "CentrifugeConnector/invalid-chain-id");
+        require(destinationChainId == block.chainid, "CentrifugeConnector/invalid-chain-id");
         RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
         require(address(token) != address(0), "CentrifugeConnector/unknown-token");
 
