@@ -2,9 +2,6 @@
 pragma solidity ^0.8.18;
 pragma abicoder v2;
 
-import {TypedMemView} from "memview-sol/TypedMemView.sol";
-import {ConnectorMessages} from "../../Messages.sol";
-
 interface ConnectorLike {
     function addPool(uint64 poolId) external;
     function addTranche(
@@ -38,11 +35,6 @@ interface CentrifugeGatewayLike {
 }
 
 contract ConnectorAxelarRouter is AxelarExecutableLike {
-    using TypedMemView for bytes;
-    // why bytes29? - https://github.com/summa-tx/memview-sol#why-bytes29
-    using TypedMemView for bytes29;
-    using ConnectorMessages for bytes29;
-
     mapping(address => uint256) public wards;
 
     ConnectorLike public immutable connector;
