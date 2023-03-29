@@ -68,12 +68,23 @@ contract MockHomeConnector is Test {
         address destinationAddress,
         uint128 amount
     ) public {
-        bytes memory _message =
-            ConnectorMessages.formatTransfer(poolId, trancheId, ConnectorMessages.formatDomain(ConnectorMessages.Domain.EVM), destinationChainId, destinationAddress, amount);
+        bytes memory _message = ConnectorMessages.formatTransfer(
+            poolId,
+            trancheId,
+            ConnectorMessages.formatDomain(ConnectorMessages.Domain.EVM),
+            destinationChainId,
+            destinationAddress,
+            amount
+        );
         router.handle(_message);
     }
 
-    function dispatch(uint32 _destinationDomain, uint256 _destinationChainId, bytes32 _recipientAddress, bytes memory _messageBody) external {
+    function dispatch(
+        uint32 _destinationDomain,
+        uint256 _destinationChainId,
+        bytes32 _recipientAddress,
+        bytes memory _messageBody
+    ) external {
         dispatchCalls++;
         dispatchDomain = _destinationDomain;
         dispatchChainId = _destinationChainId;

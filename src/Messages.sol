@@ -204,7 +204,9 @@ library ConnectorMessages {
         bytes32 destinationAddress,
         uint128 amount
     ) internal pure returns (bytes memory) {
-        return abi.encodePacked(uint8(Call.Transfer), poolId, trancheId, destinationDomain, destinationChainId, destinationAddress, amount);
+        return abi.encodePacked(
+            uint8(Call.Transfer), poolId, trancheId, destinationDomain, destinationChainId, destinationAddress, amount
+        );
     }
 
     // Format a transfer to an EVM domain
@@ -219,7 +221,9 @@ library ConnectorMessages {
         address destinationAddress,
         uint128 amount
     ) internal pure returns (bytes memory) {
-        return formatTransfer(poolId, trancheId, destinationDomain, destinationChainId, bytes32(bytes20(destinationAddress)), amount);
+        return formatTransfer(
+            poolId, trancheId, destinationDomain, destinationChainId, bytes32(bytes20(destinationAddress)), amount
+        );
     }
 
     function isTransfer(bytes29 _msg) internal pure returns (bool) {
@@ -230,7 +234,14 @@ library ConnectorMessages {
     function parseTransfer32(bytes29 _msg)
         internal
         pure
-        returns (uint64 poolId, bytes16 trancheId, bytes9 encodedDomain, uint256 destinationChainId, bytes32 destinationAddress, uint128 amount)
+        returns (
+            uint64 poolId,
+            bytes16 trancheId,
+            bytes9 encodedDomain,
+            uint256 destinationChainId,
+            bytes32 destinationAddress,
+            uint128 amount
+        )
     {
         poolId = uint64(_msg.indexUint(1, 8));
         trancheId = bytes16(_msg.index(9, 16));
@@ -244,10 +255,23 @@ library ConnectorMessages {
     function parseTransfer20(bytes29 _msg)
         internal
         pure
-        returns (uint64 poolId, bytes16 trancheId, bytes9 encodedDomain, uint256 destinationChainId, address destinationAddress, uint128 amount)
+        returns (
+            uint64 poolId,
+            bytes16 trancheId,
+            bytes9 encodedDomain,
+            uint256 destinationChainId,
+            address destinationAddress,
+            uint128 amount
+        )
     {
-        (uint64 poolId_, bytes16 trancheId_, bytes9 encodedDomain_, uint256 destinationChainId_, bytes32 destinationAddress32_, uint128 amount_) =
-            parseTransfer32(_msg);
+        (
+            uint64 poolId_,
+            bytes16 trancheId_,
+            bytes9 encodedDomain_,
+            uint256 destinationChainId_,
+            bytes32 destinationAddress32_,
+            uint128 amount_
+        ) = parseTransfer32(_msg);
         destinationAddress = address(bytes20(destinationAddress32_));
 
         return (poolId_, trancheId_, encodedDomain_, destinationChainId_, destinationAddress, amount_);

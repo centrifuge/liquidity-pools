@@ -9,12 +9,8 @@ import {MemberlistLike} from "./token/memberlist.sol";
 import {ConnectorMessages} from "src/Messages.sol";
 
 interface GatewayLike {
-    function transferToCentrifuge(
-        uint64 poolId,
-        bytes16 trancheId,
-        bytes32 destinationAddress,
-        uint128 amount
-    ) external;
+    function transferToCentrifuge(uint64 poolId, bytes16 trancheId, bytes32 destinationAddress, uint128 amount)
+        external;
     function transferToEVM(
         uint64 poolId,
         bytes16 trancheId,
@@ -112,9 +108,13 @@ contract CentrifugeConnector {
         gateway.transferToCentrifuge(poolId, trancheId, destinationAddress, amount);
     }
 
-    function transferToEVM(uint64 poolId, bytes16 trancheId,uint256 destinationChainId, address destinationAddress, uint128 amount)
-        public
-    {
+    function transferToEVM(
+        uint64 poolId,
+        bytes16 trancheId,
+        uint256 destinationChainId,
+        address destinationAddress,
+        uint128 amount
+    ) public {
         RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
         require(address(token) != address(0), "CentrifugeConnector/unknown-token");
 
@@ -197,11 +197,13 @@ contract CentrifugeConnector {
         memberlist.updateMember(user, validUntil);
     }
 
-    function handleTransfer(uint64 poolId, bytes16 trancheId, uint256 destinationChainId, address destinationAddress, uint128 amount)
-        public
-        onlyGateway
-    {
-        
+    function handleTransfer(
+        uint64 poolId,
+        bytes16 trancheId,
+        uint256 destinationChainId,
+        address destinationAddress,
+        uint128 amount
+    ) public onlyGateway {
         require(destinationChainId == block.chainid, "CentrifugeConnector/invalid-chain-id");
         RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
         require(address(token) != address(0), "CentrifugeConnector/unknown-token");

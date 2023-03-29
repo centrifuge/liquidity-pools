@@ -257,7 +257,7 @@ contract ConnectorTest is Test {
         connector.updateMember(poolId, trancheId, address(this), validUntil);
 
         // fund this account with amount
-        connector.incomingTransfer(poolId, trancheId,  1, address(this), amount);
+        connector.incomingTransfer(poolId, trancheId, 1, address(this), amount);
 
         // Verify the address(this) has the expected amount
         (address tokenAddress,,,,) = bridgedConnector.tranches(poolId, trancheId);
