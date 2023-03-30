@@ -89,9 +89,12 @@ contract CentrifugeConnector {
     }
 
     // --- Outgoing message handling ---
-    function transferToCentrifuge(uint64 poolId, bytes16 trancheId, bytes32 destinationAddress, uint128 amount)
-        public
-    {
+    function transferTrancheTokensToCentrifuge(
+        uint64 poolId,
+        bytes16 trancheId,
+        bytes32 destinationAddress,
+        uint128 amount
+    ) public {
         RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
         require(address(token) != address(0), "CentrifugeConnector/unknown-token");
 
@@ -99,7 +102,7 @@ contract CentrifugeConnector {
         token.burn(msg.sender, amount);
 
         router.send(
-            ConnectorMessages.formatTransfer(
+            ConnectorMessages.formatTransferTrancheTokens(
                 poolId,
                 trancheId,
                 ConnectorMessages.formatDomain(ConnectorMessages.Domain.Centrifuge),
@@ -125,8 +128,44 @@ contract CentrifugeConnector {
         // TODO: send message to the gateway. Depends on https://github.com/centrifuge/connectors/pull/52
     }
 
+    function decreaseInvestOrder(uint64 poolId, bytes16 trancheId, uint128 amount) public {
+        Pool storage pool = pools[poolId];
+        require(pool.createdAt > 0, "CentrifugeConnector/invalid-pool");
+
+        RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
+        require(address(token) != address(0), "CentrifugeConnector/unknown-token");
+        require(token.hasMember(msg.sender), "CentrifugeConnector/not-a-member");
+
+        // TODO: send message to the gateway. Depends on https://github.com/centrifuge/connectors/pull/52
+    }
+
+    function increaseRedeemOrder(uint64 poolId, bytes16 trancheId, uint128 amount) public {
+        // TODO(nuno)
+    }
+
+    function decreaseRedeemOrder(uint64 poolId, bytes16 trancheId, uint128 amount) public {
+        // TODO(nuno)
+    }
+
+    function collectRedeem(uint64 poolId, bytes16 trancheId) public {
+        // TODO(nuno)
+    }
+
+    function collectForRedeem(uint64 poolId, bytes16 trancheId, bytes32 userAddress) public {
+        // TODO(nuno)
+    }
+
+    function collectInvest(uint64 poolId, bytes16 trancheId) public {
+        // TODO(nuno)
+    }
+
+    function collectForInvest(uint64 poolId, bytes16 trancheId, bytes32 userAddress) public {
+        // TODO(nuno)
+    }
+
     // --- Incoming message handling ---
-    function addPool(uint64 poolId) public onlyRouter {
+    // todo(nuno): store currency and decimals
+    function addPool(uint64 poolId, uint128 currency, uint8 decimals) public onlyRouter {
         Pool storage pool = pools[poolId];
         pool.poolId = poolId;
         pool.createdAt = block.timestamp;
@@ -182,7 +221,7 @@ contract CentrifugeConnector {
         memberlist.updateMember(user, validUntil);
     }
 
-    function handleTransfer(uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 amount)
+    function handleTransferTrancheTokens(uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 amount)
         public
         onlyRouter
     {

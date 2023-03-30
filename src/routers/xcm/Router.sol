@@ -23,7 +23,7 @@ interface XcmTransactorV2 {
 }
 
 interface ConnectorLike {
-    function addPool(uint64 poolId) external;
+    function addPool(uint64 poolId, uint128 currency, uint8 decimals) external;
     function addTranche(
         uint64 poolId,
         bytes16 trancheId,
@@ -33,7 +33,8 @@ interface ConnectorLike {
     ) external;
     function updateMember(uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) external;
     function updateTokenPrice(uint64 poolId, bytes16 trancheId, uint128 price) external;
-    function handleTransfer(uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 amount) external;
+    function handleTransferTrancheTokens(uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 amount)
+        external;
 }
 
 struct XcmWeightInfo {
@@ -135,8 +136,8 @@ contract ConnectorXCMRouter {
     function handle(bytes memory _message) external onlyCentrifugeChainOrigin {
         bytes29 _msg = _message.ref(0);
         if (ConnectorMessages.isAddPool(_msg)) {
-            uint64 poolId = ConnectorMessages.parseAddPool(_msg);
-            connector.addPool(poolId);
+            (uint64 poolId, uint128 currency, uint8 decimals) = ConnectorMessages.parseAddPool(_msg);
+            connector.addPool(poolId, currency, decimals);
         } else if (ConnectorMessages.isAddTranche(_msg)) {
             (uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol, uint128 price) =
                 ConnectorMessages.parseAddTranche(_msg);
@@ -145,13 +146,13 @@ contract ConnectorXCMRouter {
             (uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) =
                 ConnectorMessages.parseUpdateMember(_msg);
             connector.updateMember(poolId, trancheId, user, validUntil);
-        } else if (ConnectorMessages.isUpdateTokenPrice(_msg)) {
-            (uint64 poolId, bytes16 trancheId, uint128 price) = ConnectorMessages.parseUpdateTokenPrice(_msg);
+        } else if (ConnectorMessages.isUpdateTrancheTokenPrice(_msg)) {
+            (uint64 poolId, bytes16 trancheId, uint128 price) = ConnectorMessages.parseUpdateTrancheTokenPrice(_msg);
             connector.updateTokenPrice(poolId, trancheId, price);
-        } else if (ConnectorMessages.isTransfer(_msg)) {
+        } else if (ConnectorMessages.isTransferTrancheTokens(_msg)) {
             (uint64 poolId, bytes16 trancheId,, address destinationAddress, uint128 amount) =
-                ConnectorMessages.parseTransfer20(_msg);
-            connector.handleTransfer(poolId, trancheId, destinationAddress, amount);
+                ConnectorMessages.parseTransferTrancheTokens20(_msg);
+            connector.handleTransferTrancheTokens(poolId, trancheId, destinationAddress, amount);
         } else {
             require(false, "invalid-message");
         }
@@ -199,8 +200,8 @@ contract ConnectorXCMRouter {
     function message_length_scale_encoded(bytes memory message) internal pure returns (bytes memory) {
         bytes29 _msg = message.ref(0);
 
-        if (ConnectorMessages.isTransfer(_msg)) {
-            // A transfer message is 82 bytes long which encodes to 0x4901 in Scale
+        if (ConnectorMessages.isTransferTrancheTokens(_msg)) {
+            // A TransferTrancheTokens message is 82 bytes long which encodes to 0x4901 in Scale
             return hex"4901";
         } else {
             revert("ConnectorXCMRouter/unsupported-outgoing-message");
