@@ -43,9 +43,6 @@ interface GatewayLike {
 
 contract ConnectorXCMRouter {
     using TypedMemView for bytes;
-    // why bytes29? - https://github.com/summa-tx/memview-sol#why-bytes29
-    using TypedMemView for bytes29;
-    using ConnectorMessages for bytes29;
 
     address constant XCM_TRANSACTOR_V2_ADDRESS = 0x000000000000000000000000000000000000080D;
 

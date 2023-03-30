@@ -18,9 +18,9 @@ contract ConnectorXCMScript is Script {
     function run() public {
         vm.startBroadcast();
 
-        address escrow_ = address(new ConnectorEscrow{ salt: SALT }());
         address tokenFactory_ = address(new RestrictedTokenFactory{ salt: SALT }());
         address memberlistFactory_ = address(new MemberlistFactory{ salt: SALT }());
+        address escrow_ = address(new ConnectorEscrow{ salt: SALT }());
         CentrifugeConnector connector =
             new CentrifugeConnector{ salt: SALT }(escrow_, tokenFactory_, memberlistFactory_);
 
@@ -31,6 +31,7 @@ contract ConnectorXCMScript is Script {
         );
         connector.file("router", address(router));
         ConnectorGateway gateway = new ConnectorGateway{ salt: SALT }(address(connector), address(router));
+        // TODO: We should be able to make the gateway address immutable on routers once we're deploying deterministically.
         router.file("gateway", address(gateway));
 
         vm.stopBroadcast();
