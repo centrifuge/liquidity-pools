@@ -30,7 +30,6 @@ contract ConnectorAxelarScript is Script {
         );
         connector.file("router", address(router));
         ConnectorGateway gateway = new ConnectorGateway{ salt: SALT }(address(connector), address(router));
-        // TODO: We should be able to make the gateway address immutable on routers once we're deploying deterministically.
         router.file("gateway", address(gateway));
         vm.stopBroadcast();
     }
