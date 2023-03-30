@@ -25,6 +25,11 @@ contract ConnectorChainBridgeRouter is ChainBridgeDepositExecuteLike {
     // TODO: define this parameter
     bytes32 public constant resourceID = "1";
 
+    // --- Events ---
+    event Rely(address indexed user);
+    event Deny(address indexed user);
+    event File(bytes32 indexed what, address addr);
+
     constructor(address bridge_) {
         bridge = ChainBridgeLike(bridge_);
     }
@@ -57,7 +62,7 @@ contract ConnectorChainBridgeRouter is ChainBridgeDepositExecuteLike {
 
     function file(bytes32 what, address gateway_) external auth {
         if (what == "gateway") {
-            gateway = GatewayLike(gateway_);
+            gateway = CentrifugeGatewayLike(gateway_);
         } else {
             revert("ConnectorChainBridgeRouter/file-unrecognized-param");
         }
