@@ -5,8 +5,8 @@ pragma abicoder v2;
 import {TypedMemView} from "memview-sol/TypedMemView.sol";
 import {ConnectorMessages} from "../Messages.sol";
 
-interface ConnectorLike {
-    function addPool(uint64 poolId) external;
+interface ConnectorLike{
+    function addPool(uint64 poolId, uint128 currency, uint8 decimals) external;
     function addTranche(
         uint64 poolId,
         bytes16 trancheId,
@@ -16,7 +16,7 @@ interface ConnectorLike {
     ) external;
     function updateMember(uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) external;
     function updateTokenPrice(uint64 poolId, bytes16 trancheId, uint128 price) external;
-    function handleTransfer(
+    function handleTransferTrancheTokens(
         uint64 poolId,
         bytes16 trancheId,
         uint256 destinationChainId,
@@ -29,7 +29,7 @@ interface RouterLike {
     function send(bytes memory message) external;
 }
 
-contract ConnectorGateway {
+contract ConnectorGateway{
     using TypedMemView for bytes;
     // why bytes29? - https://github.com/summa-tx/memview-sol#why-bytes29
     using TypedMemView for bytes29;
@@ -81,12 +81,12 @@ contract ConnectorGateway {
     }
 
     // --- Outgoing ---
-    function transferToCentrifuge(uint64 poolId, bytes16 trancheId, bytes32 destinationAddress, uint128 amount)
+    function transferTrancheTokensToCentrifuge(uint64 poolId, bytes16 trancheId, bytes32 destinationAddress, uint128 amount)
         public
         onlyConnector
     {
         router.send(
-            ConnectorMessages.formatTransfer(
+            ConnectorMessages.formatTransferTrancheTokens(
                 poolId,
                 trancheId,
                 ConnectorMessages.formatDomain(ConnectorMessages.Domain.Centrifuge),
@@ -97,7 +97,7 @@ contract ConnectorGateway {
         );
     }
 
-    function transferToEVM(
+    function transferTrancheTokensToEVM(
         uint64 poolId,
         bytes16 trancheId,
         uint256 destinationChainId,
@@ -105,7 +105,7 @@ contract ConnectorGateway {
         uint128 amount
     ) public onlyConnector {
         router.send(
-            ConnectorMessages.formatTransfer(
+            ConnectorMessages.formatTransferTrancheTokens(
                 poolId,
                 trancheId,
                 ConnectorMessages.formatDomain(ConnectorMessages.Domain.EVM),
@@ -116,12 +116,26 @@ contract ConnectorGateway {
         );
     }
 
+    function transfer(uint128 token, bytes32 sender, bytes32 receiver, uint128 amount)
+        public
+        onlyConnector
+    {
+        router.send(
+            ConnectorMessages.formatTransfer(
+                token,
+                sender,
+                receiver,
+                amount
+            )
+        );
+    }
+
     // --- Incoming ---
     function handle(bytes memory _message) external onlyRouter {
         bytes29 _msg = _message.ref(0);
         if (ConnectorMessages.isAddPool(_msg)) {
-            uint64 poolId = ConnectorMessages.parseAddPool(_msg);
-            connector.addPool(poolId);
+            (uint64 poolId, uint128 currency, uint8 decimals) = ConnectorMessages.parseAddPool(_msg);
+            connector.addPool(poolId, currency, decimals);
         } else if (ConnectorMessages.isAddTranche(_msg)) {
             (uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol, uint128 price) =
                 ConnectorMessages.parseAddTranche(_msg);
@@ -130,13 +144,13 @@ contract ConnectorGateway {
             (uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) =
                 ConnectorMessages.parseUpdateMember(_msg);
             connector.updateMember(poolId, trancheId, user, validUntil);
-        } else if (ConnectorMessages.isUpdateTokenPrice(_msg)) {
-            (uint64 poolId, bytes16 trancheId, uint128 price) = ConnectorMessages.parseUpdateTokenPrice(_msg);
+        } else if (ConnectorMessages.isUpdateTrancheTokenPrice(_msg)) {
+            (uint64 poolId, bytes16 trancheId, uint128 price) = ConnectorMessages.parseUpdateTrancheTokenPrice(_msg);
             connector.updateTokenPrice(poolId, trancheId, price);
-        } else if (ConnectorMessages.isTransfer(_msg)) {
+        } else if (ConnectorMessages.isTransferTrancheTokens(_msg)) {
             (uint64 poolId, bytes16 trancheId,, uint256 destinationChainId, address destinationAddress, uint128 amount)
-            = ConnectorMessages.parseTransfer20(_msg);
-            connector.handleTransfer(poolId, trancheId, destinationChainId, destinationAddress, amount);
+            = ConnectorMessages.parseTransferTrancheTokens20(_msg);
+            connector.handleTransferTrancheTokens(poolId, trancheId, destinationChainId, destinationAddress, amount);
         } else {
             revert("ConnectorGateway/invalid-message");
         }

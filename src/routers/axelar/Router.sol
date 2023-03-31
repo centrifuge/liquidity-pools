@@ -3,7 +3,7 @@ pragma solidity ^0.8.18;
 pragma abicoder v2;
 
 interface ConnectorLike {
-    function addPool(uint64 poolId) external;
+    function addPool(uint64 poolId, uint128 currency, uint8 decimals) external;
     function addTranche(
         uint64 poolId,
         bytes16 trancheId,
@@ -13,7 +13,8 @@ interface ConnectorLike {
     ) external;
     function updateMember(uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) external;
     function updateTokenPrice(uint64 poolId, bytes16 trancheId, uint128 price) external;
-    function handleTransfer(uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 amount) external;
+    function handleTransferTrancheTokens(uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 amount)
+        external;
 }
 
 interface AxelarExecutableLike {
@@ -30,7 +31,7 @@ interface AxelarGatewayLike {
         external;
 }
 
-interface CentrifugeGatewayLike {
+interface ConnectorGatewayLike {
     function handle(bytes memory message) external;
 }
 
@@ -39,7 +40,7 @@ contract ConnectorAxelarRouter is AxelarExecutableLike {
 
     ConnectorLike public immutable connector;
     AxelarGatewayLike public immutable axelarGateway;
-    CentrifugeGatewayLike public centrifugeGateway;
+    ConnectorGatewayLike public connectorGateway;
 
     string public constant axelarCentrifugeChainId = "Centrifuge";
     string public constant axelarCentrifugeChainAddress = "";
@@ -88,7 +89,7 @@ contract ConnectorAxelarRouter is AxelarExecutableLike {
 
     function file(bytes32 what, address gateway_) external auth {
         if (what == "gateway") {
-            centrifugeGateway = CentrifugeGatewayLike(gateway_);
+            connectorGateway = ConnectorGatewayLike(gateway_);
         } else {
             revert("ConnectorXCMRouter/file-unrecognized-param");
         }
@@ -101,7 +102,8 @@ contract ConnectorAxelarRouter is AxelarExecutableLike {
         external
         onlyCentrifugeChainOrigin(sourceChain)
     {
-        centrifugeGateway.handle(payload);
+
+        connectorGateway.handle(payload);
     }
 
     // --- Outgoing ---

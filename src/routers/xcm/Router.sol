@@ -174,8 +174,8 @@ contract ConnectorXCMRouter {
     function message_length_scale_encoded(bytes memory message) internal pure returns (bytes memory) {
         bytes29 _msg = message.ref(0);
 
-        if (ConnectorMessages.isTransfer(_msg)) {
-            // A transfer message is 82 bytes long which encodes to 0x4901 in Scale
+        if (ConnectorMessages.isTransferTrancheTokens(_msg)) {
+            // A TransferTrancheTokens message is 82 bytes long which encodes to 0x4901 in Scale
             return hex"4901";
         } else {
             revert("ConnectorXCMRouter/unsupported-outgoing-message");

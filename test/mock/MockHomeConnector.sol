@@ -34,8 +34,8 @@ contract MockHomeConnector is Test {
         router = XcmRouterLike(xcmRouter);
     }
 
-    function addPool(uint64 poolId) public {
-        bytes memory _message = ConnectorMessages.formatAddPool(poolId);
+    function addPool(uint64 poolId, uint128 currency, uint8 decimals) public {
+        bytes memory _message = ConnectorMessages.formatAddPool(poolId, currency, decimals);
         router.handle(_message);
     }
 
@@ -56,7 +56,7 @@ contract MockHomeConnector is Test {
     }
 
     function updateTokenPrice(uint64 poolId, bytes16 trancheId, uint128 price) public {
-        bytes memory _message = ConnectorMessages.formatUpdateTokenPrice(poolId, trancheId, price);
+        bytes memory _message = ConnectorMessages.formatUpdateTrancheTokenPrice(poolId, trancheId, price);
         router.handle(_message);
     }
 
@@ -68,7 +68,7 @@ contract MockHomeConnector is Test {
         address destinationAddress,
         uint128 amount
     ) public {
-        bytes memory _message = ConnectorMessages.formatTransfer(
+        bytes memory _message = ConnectorMessages.formatTransferTrancheTokens(
             poolId,
             trancheId,
             ConnectorMessages.formatDomain(ConnectorMessages.Domain.EVM),
