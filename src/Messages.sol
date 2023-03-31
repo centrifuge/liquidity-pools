@@ -242,7 +242,13 @@ library ConnectorMessages {
         uint128 amount
     ) internal pure returns (bytes memory) {
         return abi.encodePacked(
-            uint8(Call.TransferTrancheTokens), poolId, trancheId, destinationDomain, destinationChainId, destinationAddress, amount
+            uint8(Call.TransferTrancheTokens),
+            poolId,
+            trancheId,
+            destinationDomain,
+            destinationChainId,
+            destinationAddress,
+            amount
         );
     }
 

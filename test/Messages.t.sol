@@ -230,8 +230,14 @@ contract MessagesTest is Test {
     }
 
     function testTransferTrancheTokensToEvmDomainDecoding() public {
-        (uint64 poolId, bytes16 trancheId, bytes9 domain, uint256 destinationChainId, address destinationAddress, uint128 amount) =
-        ConnectorMessages.parseTransferTrancheTokens20(
+        (
+            uint64 poolId,
+            bytes16 trancheId,
+            bytes9 domain,
+            uint256 destinationChainId,
+            address destinationAddress,
+            uint128 amount
+        ) = ConnectorMessages.parseTransferTrancheTokens20(
             fromHex(
                 "060000000000000001811acd5b3f17c06841c7e41e9e04cb1b0100000000000005040000000000000000000000000000000000000000000000000000000000000001123123123123123123123123123123123123123100000000000000000000000000000000033b2e3c9fd0803ce8000000"
             ).ref(0)
@@ -259,8 +265,14 @@ contract MessagesTest is Test {
     }
 
     function testTransferTrancheTokensToCentrifugeDecoding() public {
-        (uint64 poolId, bytes16 trancheId, bytes9 domain, uint256 destinationChainId, bytes32 destinationAddress, uint128 amount) =
-        ConnectorMessages.parseTransferTrancheTokens32(
+        (
+            uint64 poolId,
+            bytes16 trancheId,
+            bytes9 domain,
+            uint256 destinationChainId,
+            bytes32 destinationAddress,
+            uint128 amount
+        ) = ConnectorMessages.parseTransferTrancheTokens32(
             fromHex(
                 "060000000000000001811acd5b3f17c06841c7e41e9e04cb1b0000000000000000000000000000000000000000000000000000000000000000000000000000000001123123123123123123123123123123123123123123123123123123123123123100000000033b2e3c9fd0803ce8000000"
             ).ref(0)
@@ -307,8 +319,9 @@ contract MessagesTest is Test {
         uint128 amount
     ) public {
         bytes9 inputEncodedDomain = ConnectorMessages.formatDomain(ConnectorMessages.Domain.Centrifuge);
-        bytes memory _message =
-            ConnectorMessages.formatTransferTrancheTokens(poolId, trancheId, inputEncodedDomain, 0, destinationAddress, amount);
+        bytes memory _message = ConnectorMessages.formatTransferTrancheTokens(
+            poolId, trancheId, inputEncodedDomain, 0, destinationAddress, amount
+        );
         (
             uint64 decodedPoolId,
             bytes16 decodedTrancheId,

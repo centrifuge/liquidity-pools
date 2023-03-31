@@ -7,8 +7,12 @@ import {RestrictedTokenLike, ERC20Like} from "./token/restricted.sol";
 import {MemberlistLike} from "./token/memberlist.sol";
 
 interface GatewayLike {
-    function transferTrancheTokensToCentrifuge(uint64 poolId, bytes16 trancheId, bytes32 destinationAddress, uint128 amount)
-        external;
+    function transferTrancheTokensToCentrifuge(
+        uint64 poolId,
+        bytes16 trancheId,
+        bytes32 destinationAddress,
+        uint128 amount
+    ) external;
     function transferTrancheTokensToEVM(
         uint64 poolId,
         bytes16 trancheId,
@@ -38,7 +42,7 @@ struct Tranche {
     string tokenSymbol;
 }
 
-contract CentrifugeConnector{
+contract CentrifugeConnector {
     mapping(address => uint256) public wards;
     mapping(uint64 => Pool) public pools;
     mapping(uint64 => mapping(bytes16 => Tranche)) public tranches;
@@ -234,10 +238,13 @@ contract CentrifugeConnector{
         memberlist.updateMember(user, validUntil);
     }
 
-    function handleTransferTrancheTokens(uint64 poolId, bytes16 trancheId, uint256 destinationChainId, address destinationAddress, uint128 amount)
-        public
-        onlyGateway
-    {
+    function handleTransferTrancheTokens(
+        uint64 poolId,
+        bytes16 trancheId,
+        uint256 destinationChainId,
+        address destinationAddress,
+        uint128 amount
+    ) public onlyGateway {
         require(destinationChainId == block.chainid, "CentrifugeConnector/invalid-chain-id");
         RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
         require(address(token) != address(0), "CentrifugeConnector/unknown-token");

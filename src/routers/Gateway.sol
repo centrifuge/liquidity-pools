@@ -5,7 +5,7 @@ pragma abicoder v2;
 import {TypedMemView} from "memview-sol/TypedMemView.sol";
 import {ConnectorMessages} from "../Messages.sol";
 
-interface ConnectorLike{
+interface ConnectorLike {
     function addPool(uint64 poolId, uint128 currency, uint8 decimals) external;
     function addTranche(
         uint64 poolId,
@@ -29,7 +29,7 @@ interface RouterLike {
     function send(bytes memory message) external;
 }
 
-contract ConnectorGateway{
+contract ConnectorGateway {
     using TypedMemView for bytes;
     // why bytes29? - https://github.com/summa-tx/memview-sol#why-bytes29
     using TypedMemView for bytes29;
@@ -81,10 +81,12 @@ contract ConnectorGateway{
     }
 
     // --- Outgoing ---
-    function transferTrancheTokensToCentrifuge(uint64 poolId, bytes16 trancheId, bytes32 destinationAddress, uint128 amount)
-        public
-        onlyConnector
-    {
+    function transferTrancheTokensToCentrifuge(
+        uint64 poolId,
+        bytes16 trancheId,
+        bytes32 destinationAddress,
+        uint128 amount
+    ) public onlyConnector {
         router.send(
             ConnectorMessages.formatTransferTrancheTokens(
                 poolId,
@@ -116,18 +118,8 @@ contract ConnectorGateway{
         );
     }
 
-    function transfer(uint128 token, bytes32 sender, bytes32 receiver, uint128 amount)
-        public
-        onlyConnector
-    {
-        router.send(
-            ConnectorMessages.formatTransfer(
-                token,
-                sender,
-                receiver,
-                amount
-            )
-        );
+    function transfer(uint128 token, bytes32 sender, bytes32 receiver, uint128 amount) public onlyConnector {
+        router.send(ConnectorMessages.formatTransfer(token, sender, receiver, amount));
     }
 
     // --- Incoming ---

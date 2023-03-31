@@ -102,7 +102,6 @@ contract ConnectorAxelarRouter is AxelarExecutableLike {
         external
         onlyCentrifugeChainOrigin(sourceChain)
     {
-
         connectorGateway.handle(payload);
     }
 
