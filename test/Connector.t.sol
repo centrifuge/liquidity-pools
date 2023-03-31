@@ -428,32 +428,6 @@ contract ConnectorTest is Test {
         // the escrow contract.
     }
 
-    function testIncreaseInvestOrder(
-        uint64 poolId,
-        bytes16 trancheId,
-        uint128 amount,
-        uint128 currency,
-        uint8 decimals,
-        string memory tokenName,
-        string memory tokenSymbol,
-        uint128 price,
-        uint64 validUntil
-    ) public {
-        vm.assume(validUntil > block.timestamp + 7 days);
-
-        connector.addPool(poolId, currency, decimals);
-        connector.addTranche(poolId, trancheId, tokenName, tokenSymbol, price);
-        bridgedConnector.deployTranche(poolId, trancheId);
-        connector.updateMember(poolId, trancheId, address(this), validUntil);
-
-        // todo(nuno): we need to first agree on the currencyId/address discussion
-        // and then be able to pass the right param to `addPool`, make sure the
-        // corresponding currency is a deployed ERC20Like token, mint sufficient
-        // funds to the right account; then we call bridgedConnector.increaseInvestOrder
-        // and verified the `amount` was transferred from the caller account into
-        // the escrow contract.
-    }
-
     // helpers
     function stringToBytes32(string memory source) internal pure returns (bytes32 result) {
         bytes memory tempEmptyStringTest = bytes(source);
