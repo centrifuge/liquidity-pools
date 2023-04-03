@@ -19,19 +19,17 @@ contract ConnectorChainBridgeRouter is ChainBridgeDepositExecuteLike {
     CentrifugeGatewayLike public gateway;
     ChainBridgeLike public immutable bridge;
 
-    uint256 public constant deposit = 0;
     uint8 public constant centrifugeChainId = 1;
-
-    // TODO: define this parameter
-    bytes32 public constant resourceID = "1";
+    bytes32 public immutable resourceID;
 
     // --- Events ---
     event Rely(address indexed user);
     event Deny(address indexed user);
     event File(bytes32 indexed what, address addr);
 
-    constructor(address bridge_) {
+    constructor(address bridge_, bytes32 resourceID_) {
         bridge = ChainBridgeLike(bridge_);
+        resourceID = resourceID_;
     }
 
     modifier auth() {
