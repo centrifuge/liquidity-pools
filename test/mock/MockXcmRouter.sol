@@ -6,50 +6,44 @@ import {TypedMemView} from "memview-sol/TypedMemView.sol";
 import "forge-std/Test.sol";
 import {CentrifugeConnector} from "src/Connector.sol";
 import {ConnectorMessages} from "src/Messages.sol";
+import {ConnectorGateway} from "src/routers/Gateway.sol";
 
 contract MockXcmRouter is Test {
     using TypedMemView for bytes;
     using TypedMemView for bytes29;
 
-    CentrifugeConnector public immutable connector;
+    address public immutable centrifugeChainOrigin;
+    address public gateway;
 
     mapping(bytes => bool) public sentMessages;
 
-    constructor(CentrifugeConnector connector_) {
-        connector = connector_;
+    constructor(address centrifugeChainOrigin_) {
+        centrifugeChainOrigin = centrifugeChainOrigin_;
     }
 
-    modifier onlyConnector() {
-        require(msg.sender == address(connector), "ConnectorXCMRouter/only-connector-allowed-to-call");
+    modifier onlyCentrifugeChainOrigin() {
+        require(msg.sender == address(centrifugeChainOrigin), "ConnectorXCMRouter/invalid-origin");
         _;
     }
 
-    function handle(bytes memory _message) external {
-        bytes29 _msg = _message.ref(0);
-        if (ConnectorMessages.isAddPool(_msg)) {
-            (uint64 poolId, uint128 currency, uint8 decimals) = ConnectorMessages.parseAddPool(_msg);
-            connector.addPool(poolId, currency, decimals);
-        } else if (ConnectorMessages.isAddTranche(_msg)) {
-            (uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol, uint128 price) =
-                ConnectorMessages.parseAddTranche(_msg);
-            connector.addTranche(poolId, trancheId, tokenName, tokenSymbol, price);
-        } else if (ConnectorMessages.isUpdateMember(_msg)) {
-            (uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) =
-                ConnectorMessages.parseUpdateMember(_msg);
-            connector.updateMember(poolId, trancheId, user, validUntil);
-        } else if (ConnectorMessages.isUpdateTrancheTokenPrice(_msg)) {
-            (uint64 poolId, bytes16 trancheId, uint128 price) = ConnectorMessages.parseUpdateTrancheTokenPrice(_msg);
-            connector.updateTokenPrice(poolId, trancheId, price);
-        } else if (ConnectorMessages.isTransferTrancheTokens(_msg)) {
-            (uint64 poolId, bytes16 trancheId,, address destinationAddress, uint128 amount) =
-                ConnectorMessages.parseTransferTrancheTokens20(_msg);
-            connector.handleTransferTrancheTokens(poolId, trancheId, destinationAddress, amount);
+    modifier onlyGateway() {
+        require(msg.sender == address(gateway), "ConnectorXCMRouter/only-gateway-allowed-to-call");
+        _;
+    }
+
+    function file(bytes32 what, address addr) external {
+        if (what == "gateway") {
+            gateway = addr;
         } else {
-            require(false, "invalid-message");
+            revert("ConnectorXCMRouter/file-unrecognized-param");
         }
     }
 
-    function send(bytes memory message) public onlyConnector {
+    function handle(bytes memory _message) external {
+        ConnectorGateway(gateway).handle(_message);
+    }
+
+    function send(bytes memory message) public onlyGateway {
         sentMessages[message] = true;
     }
 }

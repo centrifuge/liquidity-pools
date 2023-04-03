@@ -2,9 +2,6 @@
 pragma solidity ^0.8.18;
 pragma abicoder v2;
 
-import {TypedMemView} from "memview-sol/TypedMemView.sol";
-import {ConnectorMessages} from "../../Messages.sol";
-
 interface ConnectorLike {
     function addPool(uint64 poolId, uint128 currency, uint8 decimals) external;
     function addTranche(
@@ -34,21 +31,35 @@ interface AxelarGatewayLike {
         external;
 }
 
+interface ConnectorGatewayLike {
+    function handle(bytes memory message) external;
+}
+
 contract ConnectorAxelarRouter is AxelarExecutableLike {
-    using TypedMemView for bytes;
-    // why bytes29? - https://github.com/summa-tx/memview-sol#why-bytes29
-    using TypedMemView for bytes29;
-    using ConnectorMessages for bytes29;
+    mapping(address => uint256) public wards;
 
     ConnectorLike public immutable connector;
     AxelarGatewayLike public immutable axelarGateway;
+    ConnectorGatewayLike public connectorGateway;
 
     string public constant axelarCentrifugeChainId = "Centrifuge";
     string public constant axelarCentrifugeChainAddress = "";
 
+    // --- Events ---
+    event Rely(address indexed user);
+    event Deny(address indexed user);
+    event File(bytes32 indexed what, address addr);
+
     constructor(address connector_, address axelarGateway_) {
         connector = ConnectorLike(connector_);
         axelarGateway = AxelarGatewayLike(axelarGateway_);
+        wards[msg.sender] = 1;
+        emit Rely(msg.sender);
+    }
+
+    modifier auth() {
+        require(wards[msg.sender] == 1, "ConnectorAxelarRouter/not-authorized");
+        _;
     }
 
     modifier onlyCentrifugeChainOrigin(string memory sourceChain) {
@@ -65,34 +76,33 @@ contract ConnectorAxelarRouter is AxelarExecutableLike {
         _;
     }
 
+    // --- Administration ---
+    function rely(address user) external auth {
+        wards[user] = 1;
+        emit Rely(user);
+    }
+
+    function deny(address user) external auth {
+        wards[user] = 0;
+        emit Deny(user);
+    }
+
+    function file(bytes32 what, address gateway_) external auth {
+        if (what == "gateway") {
+            connectorGateway = ConnectorGatewayLike(gateway_);
+        } else {
+            revert("ConnectorXCMRouter/file-unrecognized-param");
+        }
+
+        emit File(what, gateway_);
+    }
+
     // --- Incoming ---
     function execute(bytes32, string calldata sourceChain, string calldata, bytes calldata payload)
         external
         onlyCentrifugeChainOrigin(sourceChain)
     {
-        bytes29 _msg = payload.ref(0);
-
-        if (ConnectorMessages.isAddPool(_msg)) {
-            (uint64 poolId, uint128 currency, uint8 decimals) = ConnectorMessages.parseAddPool(_msg);
-            connector.addPool(poolId, currency, decimals);
-        } else if (ConnectorMessages.isAddTranche(_msg)) {
-            (uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol, uint128 price) =
-                ConnectorMessages.parseAddTranche(_msg);
-            connector.addTranche(poolId, trancheId, tokenName, tokenSymbol, price);
-        } else if (ConnectorMessages.isUpdateMember(_msg)) {
-            (uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) =
-                ConnectorMessages.parseUpdateMember(_msg);
-            connector.updateMember(poolId, trancheId, user, validUntil);
-        } else if (ConnectorMessages.isUpdateTrancheTokenPrice(_msg)) {
-            (uint64 poolId, bytes16 trancheId, uint128 price) = ConnectorMessages.parseUpdateTrancheTokenPrice(_msg);
-            connector.updateTokenPrice(poolId, trancheId, price);
-        } else if (ConnectorMessages.isTransferTrancheTokens(_msg)) {
-            (uint64 poolId, bytes16 trancheId,, address destinationAddress, uint128 amount) =
-                ConnectorMessages.parseTransferTrancheTokens20(_msg);
-            connector.handleTransferTrancheTokens(poolId, trancheId, destinationAddress, amount);
-        } else {
-            require(false, "invalid-message");
-        }
+        connectorGateway.handle(payload);
     }
 
     // --- Outgoing ---
