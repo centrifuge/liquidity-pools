@@ -22,20 +22,6 @@ interface XcmTransactorV2 {
     ) external;
 }
 
-interface ConnectorLike {
-    function addPool(uint64 poolId) external;
-    function addTranche(
-        uint64 poolId,
-        bytes16 trancheId,
-        string memory tokenName,
-        string memory tokenSymbol,
-        uint128 price
-    ) external;
-    function updateMember(uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) external;
-    function updateTokenPrice(uint64 poolId, bytes16 trancheId, uint128 price) external;
-    function handleTransfer(uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 amount) external;
-}
-
 struct XcmWeightInfo {
     // The weight limit in Weight units we accept amount to pay for the
     // execution of the whole XCM on the Centrifuge chain. This should be
@@ -51,18 +37,19 @@ struct XcmWeightInfo {
     uint256 feeAmount;
 }
 
+interface GatewayLike {
+    function handle(bytes memory message) external;
+}
+
 contract ConnectorXCMRouter {
     using TypedMemView for bytes;
-    // why bytes29? - https://github.com/summa-tx/memview-sol#why-bytes29
-    using TypedMemView for bytes29;
-    using ConnectorMessages for bytes29;
 
     address constant XCM_TRANSACTOR_V2_ADDRESS = 0x000000000000000000000000000000000000080D;
 
     mapping(address => uint256) public wards;
     XcmWeightInfo internal xcmWeightInfo;
 
-    ConnectorLike public immutable connector;
+    GatewayLike public gateway;
     address public immutable centrifugeChainOrigin;
     uint8 public immutable centrifugeChainConnectorsPalletIndex;
     uint8 public immutable centrifugeChainConnectorsPalletHandleIndex;
@@ -71,14 +58,13 @@ contract ConnectorXCMRouter {
     event Rely(address indexed user);
     event Deny(address indexed user);
     event File(bytes32 indexed what, XcmWeightInfo xcmWeightInfo);
+    event File(bytes32 indexed what, address addr);
 
     constructor(
-        address connector_,
         address centrifugeChainOrigin_,
         uint8 centrifugeChainConnectorsPalletIndex_,
         uint8 centrifugeChainConnectorsPalletHandleIndex_
     ) {
-        connector = ConnectorLike(connector_);
         centrifugeChainOrigin = centrifugeChainOrigin_;
         centrifugeChainConnectorsPalletIndex = centrifugeChainConnectorsPalletIndex_;
         centrifugeChainConnectorsPalletHandleIndex = centrifugeChainConnectorsPalletHandleIndex_;
@@ -102,8 +88,8 @@ contract ConnectorXCMRouter {
         _;
     }
 
-    modifier onlyConnector() {
-        require(msg.sender == address(connector), "ConnectorXCMRouter/only-connector-allowed-to-call");
+    modifier onlyGateway() {
+        require(msg.sender == address(gateway), "ConnectorXCMRouter/only-gateway-allowed-to-call");
         _;
     }
 
@@ -116,6 +102,16 @@ contract ConnectorXCMRouter {
     function deny(address user) external auth {
         wards[user] = 0;
         emit Deny(user);
+    }
+
+    function file(bytes32 what, address gateway_) external auth {
+        if (what == "gateway") {
+            gateway = GatewayLike(gateway_);
+        } else {
+            revert("ConnectorXCMRouter/file-unrecognized-param");
+        }
+
+        emit File(what, gateway_);
     }
 
     function file(bytes32 what, uint64 buyExecutionWeightLimit, uint64 transactWeightAtMost, uint256 feeAmount)
@@ -133,32 +129,11 @@ contract ConnectorXCMRouter {
 
     // --- Incoming ---
     function handle(bytes memory _message) external onlyCentrifugeChainOrigin {
-        bytes29 _msg = _message.ref(0);
-        if (ConnectorMessages.isAddPool(_msg)) {
-            uint64 poolId = ConnectorMessages.parseAddPool(_msg);
-            connector.addPool(poolId);
-        } else if (ConnectorMessages.isAddTranche(_msg)) {
-            (uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol, uint128 price) =
-                ConnectorMessages.parseAddTranche(_msg);
-            connector.addTranche(poolId, trancheId, tokenName, tokenSymbol, price);
-        } else if (ConnectorMessages.isUpdateMember(_msg)) {
-            (uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) =
-                ConnectorMessages.parseUpdateMember(_msg);
-            connector.updateMember(poolId, trancheId, user, validUntil);
-        } else if (ConnectorMessages.isUpdateTokenPrice(_msg)) {
-            (uint64 poolId, bytes16 trancheId, uint128 price) = ConnectorMessages.parseUpdateTokenPrice(_msg);
-            connector.updateTokenPrice(poolId, trancheId, price);
-        } else if (ConnectorMessages.isTransfer(_msg)) {
-            (uint64 poolId, bytes16 trancheId,, address destinationAddress, uint128 amount) =
-                ConnectorMessages.parseTransfer20(_msg);
-            connector.handleTransfer(poolId, trancheId, destinationAddress, amount);
-        } else {
-            require(false, "invalid-message");
-        }
+        gateway.handle(_message);
     }
 
     // --- Outgoing ---
-    function send(bytes memory message) public onlyConnector {
+    function send(bytes memory message) public onlyGateway {
         bytes memory centChainCall = centrifuge_handle_call(message);
 
         XcmTransactorV2 transactorContract = XcmTransactorV2(XCM_TRANSACTOR_V2_ADDRESS);
@@ -199,8 +174,8 @@ contract ConnectorXCMRouter {
     function message_length_scale_encoded(bytes memory message) internal pure returns (bytes memory) {
         bytes29 _msg = message.ref(0);
 
-        if (ConnectorMessages.isTransfer(_msg)) {
-            // A transfer message is 82 bytes long which encodes to 0x4901 in Scale
+        if (ConnectorMessages.isTransferTrancheTokens(_msg)) {
+            // A TransferTrancheTokens message is 82 bytes long which encodes to 0x4901 in Scale
             return hex"4901";
         } else {
             revert("ConnectorXCMRouter/unsupported-outgoing-message");

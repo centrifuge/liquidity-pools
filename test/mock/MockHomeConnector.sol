@@ -23,6 +23,7 @@ contract MockHomeConnector is Test {
     uint32 immutable NONCE = 1;
 
     uint32 public dispatchDomain;
+    uint256 public dispatchChainId;
     bytes public dispatchMessage;
     bytes32 public dispatchRecipient;
     uint256 public dispatchCalls;
@@ -33,8 +34,8 @@ contract MockHomeConnector is Test {
         router = XcmRouterLike(xcmRouter);
     }
 
-    function addPool(uint64 poolId) public {
-        bytes memory _message = ConnectorMessages.formatAddPool(poolId);
+    function addPool(uint64 poolId, uint128 currency, uint8 decimals) public {
+        bytes memory _message = ConnectorMessages.formatAddPool(poolId, currency, decimals);
         router.handle(_message);
     }
 
@@ -55,26 +56,38 @@ contract MockHomeConnector is Test {
     }
 
     function updateTokenPrice(uint64 poolId, bytes16 trancheId, uint128 price) public {
-        bytes memory _message = ConnectorMessages.formatUpdateTokenPrice(poolId, trancheId, price);
+        bytes memory _message = ConnectorMessages.formatUpdateTrancheTokenPrice(poolId, trancheId, price);
         router.handle(_message);
     }
 
     // Trigger an incoming (e.g. Centrifuge Chain -> EVM) transfer
-    function transfer(
+    function incomingTransfer(
         uint64 poolId,
         bytes16 trancheId,
-        bytes9 destinationDomain,
+        uint256 destinationChainId,
         address destinationAddress,
         uint128 amount
     ) public {
-        bytes memory _message =
-            ConnectorMessages.formatTransfer(poolId, trancheId, destinationDomain, destinationAddress, amount);
+        bytes memory _message = ConnectorMessages.formatTransferTrancheTokens(
+            poolId,
+            trancheId,
+            ConnectorMessages.formatDomain(ConnectorMessages.Domain.EVM),
+            destinationChainId,
+            destinationAddress,
+            amount
+        );
         router.handle(_message);
     }
 
-    function dispatch(uint32 _destinationDomain, bytes32 _recipientAddress, bytes memory _messageBody) external {
+    function dispatch(
+        uint32 _destinationDomain,
+        uint256 _destinationChainId,
+        bytes32 _recipientAddress,
+        bytes memory _messageBody
+    ) external {
         dispatchCalls++;
         dispatchDomain = _destinationDomain;
+        dispatchChainId = _destinationChainId;
         dispatchMessage = _messageBody;
         dispatchRecipient = _recipientAddress;
     }

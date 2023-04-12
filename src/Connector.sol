@@ -5,11 +5,21 @@ pragma abicoder v2;
 import {TrancheTokenFactoryLike, MemberlistFactoryLike} from "./token/factory.sol";
 import {RestrictedTokenLike, ERC20Like} from "./token/restricted.sol";
 import {MemberlistLike} from "./token/memberlist.sol";
-// TODO: remove dependency on Messages.sol
-import {ConnectorMessages} from "src/Messages.sol";
 
-interface RouterLike {
-    function send(bytes memory message) external;
+interface GatewayLike {
+    function transferTrancheTokensToCentrifuge(
+        uint64 poolId,
+        bytes16 trancheId,
+        bytes32 destinationAddress,
+        uint128 amount
+    ) external;
+    function transferTrancheTokensToEVM(
+        uint64 poolId,
+        bytes16 trancheId,
+        uint256 destinationChainId,
+        address destinationAddress,
+        uint128 amount
+    ) external;
 }
 
 interface EscrowLike {
@@ -37,8 +47,8 @@ contract CentrifugeConnector {
     mapping(uint64 => Pool) public pools;
     mapping(uint64 => mapping(bytes16 => Tranche)) public tranches;
 
-    RouterLike public router;
-    EscrowLike public immutable escrow;
+    GatewayLike public gateway;
+    EscrowLike public escrow;
 
     TrancheTokenFactoryLike public immutable tokenFactory;
     MemberlistFactoryLike public immutable memberlistFactory;
@@ -53,7 +63,6 @@ contract CentrifugeConnector {
 
     constructor(address escrow_, address tokenFactory_, address memberlistFactory_) {
         escrow = EscrowLike(escrow_);
-
         tokenFactory = TrancheTokenFactoryLike(tokenFactory_);
         memberlistFactory = MemberlistFactoryLike(memberlistFactory_);
 
@@ -66,8 +75,8 @@ contract CentrifugeConnector {
         _;
     }
 
-    modifier onlyRouter() {
-        require(msg.sender == address(router), "CentrifugeConnector/not-the-router");
+    modifier onlyGateway() {
+        require(msg.sender == address(gateway), "CentrifugeConnector/not-the-gateway");
         _;
     }
 
@@ -83,30 +92,41 @@ contract CentrifugeConnector {
     }
 
     function file(bytes32 what, address data) external auth {
-        if (what == "router") router = RouterLike(data);
+        if (what == "gateway") gateway = GatewayLike(data);
         else revert("CentrifugeConnector/file-unrecognized-param");
         emit File(what, data);
     }
 
     // --- Outgoing message handling ---
-    function transferToCentrifuge(uint64 poolId, bytes16 trancheId, bytes32 destinationAddress, uint128 amount)
-        public
-    {
+    function transferTrancheTokensToCentrifuge(
+        uint64 poolId,
+        bytes16 trancheId,
+        bytes32 destinationAddress,
+        uint128 amount
+    ) public {
         RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
         require(address(token) != address(0), "CentrifugeConnector/unknown-token");
 
         require(token.balanceOf(msg.sender) >= amount, "CentrifugeConnector/insufficient-balance");
         token.burn(msg.sender, amount);
 
-        router.send(
-            ConnectorMessages.formatTransfer(
-                poolId,
-                trancheId,
-                ConnectorMessages.formatDomain(ConnectorMessages.Domain.Centrifuge),
-                destinationAddress,
-                amount
-            )
-        );
+        gateway.transferTrancheTokensToCentrifuge(poolId, trancheId, destinationAddress, amount);
+    }
+
+    function transferTrancheTokensToEVM(
+        uint64 poolId,
+        bytes16 trancheId,
+        uint256 destinationChainId,
+        address destinationAddress,
+        uint128 amount
+    ) public {
+        RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
+        require(address(token) != address(0), "CentrifugeConnector/unknown-token");
+
+        require(token.balanceOf(msg.sender) >= amount, "CentrifugeConnector/insufficient-balance");
+        token.burn(msg.sender, amount);
+
+        gateway.transferTrancheTokensToEVM(poolId, trancheId, destinationChainId, destinationAddress, amount);
     }
 
     function increaseInvestOrder(uint64 poolId, bytes16 trancheId, uint128 amount) public {
@@ -125,8 +145,44 @@ contract CentrifugeConnector {
         // TODO: send message to the gateway. Depends on https://github.com/centrifuge/connectors/pull/52
     }
 
+    function decreaseInvestOrder(uint64 poolId, bytes16 trancheId, uint128 amount) public {
+        Pool storage pool = pools[poolId];
+        require(pool.createdAt > 0, "CentrifugeConnector/invalid-pool");
+
+        RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
+        require(address(token) != address(0), "CentrifugeConnector/unknown-token");
+        require(token.hasMember(msg.sender), "CentrifugeConnector/not-a-member");
+
+        // TODO: send message to the gateway. Depends on https://github.com/centrifuge/connectors/pull/52
+    }
+
+    function increaseRedeemOrder(uint64 poolId, bytes16 trancheId, uint128 amount) public {
+        // TODO(nuno)
+    }
+
+    function decreaseRedeemOrder(uint64 poolId, bytes16 trancheId, uint128 amount) public {
+        // TODO(nuno)
+    }
+
+    function collectRedeem(uint64 poolId, bytes16 trancheId) public {
+        // TODO(nuno)
+    }
+
+    function collectForRedeem(uint64 poolId, bytes16 trancheId, bytes32 userAddress) public {
+        // TODO(nuno)
+    }
+
+    function collectInvest(uint64 poolId, bytes16 trancheId) public {
+        // TODO(nuno)
+    }
+
+    function collectForInvest(uint64 poolId, bytes16 trancheId, bytes32 userAddress) public {
+        // TODO(nuno)
+    }
+
     // --- Incoming message handling ---
-    function addPool(uint64 poolId) public onlyRouter {
+    // todo(nuno): store currency and decimals
+    function addPool(uint64 poolId, uint128 currency, uint8 decimals) public onlyGateway {
         Pool storage pool = pools[poolId];
         require(pool.createdAt == 0, "CentrifugeConnector/pool-already-added");
         pool.poolId = poolId;
@@ -140,7 +196,7 @@ contract CentrifugeConnector {
         string memory tokenName,
         string memory tokenSymbol,
         uint128 price
-    ) public onlyRouter {
+    ) public onlyGateway {
         Pool storage pool = pools[poolId];
         require(pool.createdAt > 0, "CentrifugeConnector/invalid-pool");
 
@@ -171,14 +227,14 @@ contract CentrifugeConnector {
         emit TrancheDeployed(poolId, trancheId, token);
     }
 
-    function updateTokenPrice(uint64 poolId, bytes16 trancheId, uint128 price) public onlyRouter {
+    function updateTokenPrice(uint64 poolId, bytes16 trancheId, uint128 price) public onlyGateway {
         Tranche storage tranche = tranches[poolId][trancheId];
         require(tranche.lastPriceUpdate > 0, "CentrifugeConnector/invalid-pool-or-tranche");
         tranche.latestPrice = price;
         tranche.lastPriceUpdate = block.timestamp;
     }
 
-    function updateMember(uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) public onlyRouter {
+    function updateMember(uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) public onlyGateway {
         Tranche storage tranche = tranches[poolId][trancheId];
         require(tranche.lastPriceUpdate > 0, "CentrifugeConnector/invalid-pool-or-tranche");
         RestrictedTokenLike token = RestrictedTokenLike(tranche.token);
@@ -186,10 +242,14 @@ contract CentrifugeConnector {
         memberlist.updateMember(user, validUntil);
     }
 
-    function handleTransfer(uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 amount)
-        public
-        onlyRouter
-    {
+    function handleTransferTrancheTokens(
+        uint64 poolId,
+        bytes16 trancheId,
+        uint256 destinationChainId,
+        address destinationAddress,
+        uint128 amount
+    ) public onlyGateway {
+        require(destinationChainId == block.chainid, "CentrifugeConnector/invalid-chain-id");
         RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
         require(address(token) != address(0), "CentrifugeConnector/unknown-token");
 
