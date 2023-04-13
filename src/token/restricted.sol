@@ -12,7 +12,6 @@ interface ERC20Like {
     function mint(address user, uint256 value) external;
     function name() external view returns (string memory);
     function symbol() external view returns (string memory);
-    //todo(nuno): add decimals() ?
     function decimals() external view returns (uint8);
     function balanceOf(address user) external view returns (uint256 value);
     function burn(address user, uint256 value) external;
