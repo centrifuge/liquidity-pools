@@ -97,17 +97,19 @@ library ConnectorMessages {
      *
      * 0: call type (uint8 = 1 byte)
      * 1-16: currency (uint128 = 16 bytes)
+     * 17-24: poolId (uint64 = 8 bytes)
      */
-    function formatAllowPoolCurrency(uint128 currency) internal pure returns (bytes memory) {
-        return abi.encodePacked(uint8(Call.AllowPoolCurrency), currency);
+    function formatAllowPoolCurrency(uint128 currency, uint64 poolId) internal pure returns (bytes memory) {
+        return abi.encodePacked(uint8(Call.AllowPoolCurrency), currency, poolId);
     }
 
     function isAllowPoolCurrency(bytes29 _msg) internal pure returns (bool) {
         return messageType(_msg) == Call.AllowPoolCurrency;
     }
 
-    function parseAllowPoolCurrency(bytes29 _msg) internal pure returns (uint128 currency) {
+    function parseAllowPoolCurrency(bytes29 _msg) internal pure returns (uint128 currency, uint64 poolId) {
         currency = uint128(_msg.indexUint(1, 16));
+        poolId = uint64(_msg.indexUint(17, 8));
     }
 
     /**
