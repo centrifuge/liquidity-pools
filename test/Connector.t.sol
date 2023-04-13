@@ -61,6 +61,14 @@ contract ConnectorTest is Test {
         assertTrue(bridgedConnector.poolCurrencies(poolId, currency));
     }
 
+    function testAllowPoolCurrencyWithUnknownCurrencyFails(uint128 currency, uint64 poolId) public {
+        ERC20 token = new ERC20("X's Dollar", "USDX", 42);
+
+        connector.addPool(poolId);
+        vm.expectRevert(bytes("CentrifugeConnector/unknown-currency"));
+        connector.allowPoolCurrency(currency, poolId);
+    }
+
     function testAddingPoolAsNonRouterFails(uint64 poolId) public {
         vm.expectRevert(bytes("CentrifugeConnector/not-the-gateway"));
         bridgedConnector.addPool(poolId);
