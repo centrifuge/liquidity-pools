@@ -216,9 +216,6 @@ contract CentrifugeConnector {
 
     // --- Incoming message handling ---
     function addCurrency(uint128 currency, address currencyAddress) public onlyGateway {
-        // todo(nuno): verify decimals() > 0 instead for example
-        require(ERC20Like(currencyAddress).decimals() > 0, "CentrifugeConnector/invalid-erc20-token");
-
         currencies[currency] = currencyAddress;
         emit CurrencyAdded(currency, currencyAddress);
     }

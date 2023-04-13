@@ -51,13 +51,6 @@ contract ConnectorTest is Test {
         assertEq(address_, address(token));
     }
 
-    // Verify AddCurrency fails if the given address is not a valid ERC20 token.
-    // We simulate that by not deploying the token before calling `AddCurrency`.
-    function testAddingCurrencyFailsForInvalidAddress(uint128 currency, address currencyAddress) public {
-        vm.expectRevert(bytes("CentrifugeConnector/invalid-erc20-token"));
-        connector.addCurrency(currency, currencyAddress);
-    }
-
     function testAddingPoolAsNonRouterFails(uint64 poolId) public {
         vm.expectRevert(bytes("CentrifugeConnector/not-the-gateway"));
         bridgedConnector.addPool(poolId);
