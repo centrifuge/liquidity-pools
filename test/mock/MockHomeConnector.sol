@@ -34,8 +34,18 @@ contract MockHomeConnector is Test {
         router = XcmRouterLike(xcmRouter);
     }
 
+    function addCurrency(uint128 currency, address currencyAddress) public {
+        bytes memory _message = ConnectorMessages.formatAddCurrency(currency, currencyAddress);
+        router.handle(_message);
+    }
+
     function addPool(uint64 poolId) public {
         bytes memory _message = ConnectorMessages.formatAddPool(poolId);
+        router.handle(_message);
+    }
+
+    function allowPoolCurrency(uint128 currency) public {
+        bytes memory _message = ConnectorMessages.formatAllowPoolCurrency(currency);
         router.handle(_message);
     }
 
