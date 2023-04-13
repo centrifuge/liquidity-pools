@@ -13,6 +13,28 @@ contract MessagesTest is Test {
 
     function setUp() public {}
 
+
+
+    function testAddCurrencyEncoding() public {
+        assertEq(
+            ConnectorMessages.formatAddCurrency(42, 0x1234567890123456789012345678901234567890), fromHex("010000000000000000000000000000002a1234567890123456789012345678901234567890")
+        );
+    }
+
+    function testAddCurrencyDecoding() public {
+        (uint128 currency, address currencyAddress) =
+        ConnectorMessages.parseAddCurrency(fromHex("010000000000000000000000000000002a1234567890123456789012345678901234567890").ref(0));
+        assertEq(uint256(currency), 42);
+        assertEq(currencyAddress, 0x1234567890123456789012345678901234567890);
+    }
+
+    function testAddCurrencyEquivalence(uint128 currency, address currencyAddress) public {
+        bytes memory _message = ConnectorMessages.formatAddCurrency(currency, currencyAddress);
+        (uint128 decodedCurrency, address decodedCurrencyAddress) = ConnectorMessages.parseAddCurrency(_message.ref(0));
+        assertEq(decodedCurrency, uint256(currency));
+        assertEq(decodedCurrencyAddress, currencyAddress);
+    }
+
     function testAddPoolEncoding() public {
         assertEq(
             ConnectorMessages.formatAddPool(0, 0, 0), fromHex("0200000000000000000000000000000000000000000000000000")

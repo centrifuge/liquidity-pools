@@ -70,7 +70,7 @@ library ConnectorMessages {
     }
 
     function parseAddCurrency(bytes29 _msg) internal pure returns (uint128 currency, address currencyAddress) {
-        currency = uint64(_msg.indexUint(1, 16));
+        currency = uint128(_msg.indexUint(1, 16));
         currencyAddress = address(bytes20(_msg.index(17, 20)));
     }
 
