@@ -55,6 +55,26 @@ library ConnectorMessages {
     }
 
     /**
+     * Add Currency
+     *
+     * 0: call type (uint8 = 1 byte)
+     * 1-16: The Connector's global currency id (uint128 = 16 bytes)
+     * 17-36: The EVM address of the currency (address = 20 bytes)
+     */
+    function formatAddCurrency(uint128 currency, address currencyAddress) internal pure returns (bytes memory) {
+        return abi.encodePacked(uint8(Call.AddCurrency), currency, currencyAddress);
+    }
+
+    function isAddCurrency(bytes29 _msg) internal pure returns (bool) {
+        return messageType(_msg) == Call.AddCurrency;
+    }
+
+    function parseAddCurrency(bytes29 _msg) internal pure returns (uint128 currency, address currencyAddress) {
+        currency = uint64(_msg.indexUint(1, 16));
+        currencyAddress = address(bytes20(_msg.index(17, 20)));
+    }
+
+    /**
      * Add pool
      *
      * 0: call type (uint8 = 1 byte)
