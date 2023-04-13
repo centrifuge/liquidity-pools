@@ -180,7 +180,7 @@ contract ConnectorTest is Test {
         vm.assume(user != address(0));
 
         connector.addPool(poolId);
-        connector.addTranche(poolId, trancheId, "Some Name", "SYMBOL", 18, 123);
+        connector.addTranche(poolId, trancheId, "Some Name", "SYMBOL", decimals, 123);
         bridgedConnector.deployTranche(poolId, trancheId);
         connector.updateMember(poolId, trancheId, user, validUntil);
 
@@ -216,7 +216,6 @@ contract ConnectorTest is Test {
 
     function testUpdatingMemberForNonExistentTrancheFails(
         uint64 poolId,
-        uint8 decimals,
         bytes16 trancheId,
         address user,
         uint64 validUntil
@@ -230,7 +229,7 @@ contract ConnectorTest is Test {
 
     function testUpdatingTokenPriceWorks(uint64 poolId, uint8 decimals, bytes16 trancheId, uint128 price) public {
         connector.addPool(poolId);
-        connector.addTranche(poolId, trancheId, "Some Name", "SYMBOL", 18, 123);
+        connector.addTranche(poolId, trancheId, "Some Name", "SYMBOL", decimals, 123);
         connector.updateTokenPrice(poolId, trancheId, price);
 
         (, uint256 latestPrice, uint256 lastPriceUpdate,,,) = bridgedConnector.tranches(poolId, trancheId);
@@ -242,7 +241,7 @@ contract ConnectorTest is Test {
         public
     {
         connector.addPool(poolId);
-        connector.addTranche(poolId, trancheId, "Some Name", "SYMBOL", 18, 123);
+        connector.addTranche(poolId, trancheId, "Some Name", "SYMBOL", decimals, 123);
         vm.expectRevert(bytes("CentrifugeConnector/not-the-gateway"));
         bridgedConnector.updateTokenPrice(poolId, trancheId, price);
     }
@@ -255,7 +254,6 @@ contract ConnectorTest is Test {
 
     function testUpdatingTokenPriceForNonExistentTrancheFails(
         uint64 poolId,
-        uint8 decimals,
         bytes16 trancheId,
         uint128 price
     ) public {
@@ -264,6 +262,7 @@ contract ConnectorTest is Test {
         vm.expectRevert(bytes("CentrifugeConnector/invalid-pool-or-tranche"));
         bridgedConnector.updateTokenPrice(poolId, trancheId, price);
     }
+    //
 
     // Test transferring `amount` to the address(this)'s account (Centrifuge Chain -> EVM like) and then try
     // transferring that amount to a `centChainAddress` (EVM -> Centrifuge Chain like).
@@ -326,9 +325,7 @@ contract ConnectorTest is Test {
         bridgedConnector.deployTranche(poolId, trancheId);
         connector.updateMember(poolId, trancheId, destinationAddress, validUntil);
 
-        bytes9 encodedDomain = ConnectorMessages.formatDomain(ConnectorMessages.Domain.Centrifuge);
         connector.incomingTransfer(poolId, trancheId, 1, destinationAddress, amount);
-
         (address token,,,,,) = bridgedConnector.tranches(poolId, trancheId);
         assertEq(ERC20Like(token).balanceOf(destinationAddress), amount);
     }
@@ -347,7 +344,6 @@ contract ConnectorTest is Test {
         connector.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price);
         bridgedConnector.deployTranche(poolId, trancheId);
 
-        bytes9 encodedDomain = ConnectorMessages.formatDomain(ConnectorMessages.Domain.EVM);
         vm.expectRevert(bytes("CentrifugeConnector/not-a-member"));
         connector.incomingTransfer(poolId, trancheId, 1, destinationAddress, amount);
 
@@ -363,7 +359,6 @@ contract ConnectorTest is Test {
         uint8 decimals,
         uint128 price,
         uint64 validUntil,
-        uint64 destinationChainId,
         address destinationAddress,
         uint128 amount
     ) public {
