@@ -24,10 +24,10 @@ interface GatewayLike {
     function decreaseInvestOrder(uint64 poolId, bytes16 trancheId, uint128 amount) external;
     function increaseRedeemOrder(uint64 poolId, bytes16 trancheId, uint128 amount) external;
     function decreaseRedeemOrder(uint64 poolId, bytes16 trancheId, uint128 amount) external;
-    function collectRedeem(uint64 poolId, bytes16 trancheId) external;
-    function collectForRedeem(uint64 poolId, bytes16 trancheId, bytes32 userAddress) external;
-    function collectInvest(uint64 poolId, bytes16 trancheId) external;
-    function collectForInvest(uint64 poolId, bytes16 trancheId, bytes32 userAddress)external;
+    function collectRedeem(uint64 poolId, bytes16 trancheId, address caller) external;
+    function collectForRedeem(uint64 poolId, bytes16 trancheId, address caller, bytes32 recipient) external;
+    function collectInvest(uint64 poolId, bytes16 trancheId, address caller) external;
+    function collectForInvest(uint64 poolId, bytes16 trancheId, address caller, bytes32 recipient) external;
 
 }
 
@@ -151,7 +151,7 @@ contract CentrifugeConnector {
             "Centrifuge/Connector/currency-transfer-failed"
         );
 
-        // TODO: send message to the gateway. Depends on https://github.com/centrifuge/connectors/pull/52
+        gateway.increaseInvestOrder(poolId, trancheId, amount);
     }
 
     function decreaseInvestOrder(uint64 poolId, bytes16 trancheId, uint128 amount) public {
@@ -162,31 +162,44 @@ contract CentrifugeConnector {
         require(address(token) != address(0), "CentrifugeConnector/unknown-token");
         require(token.hasMember(msg.sender), "CentrifugeConnector/not-a-member");
 
-        // TODO: send message to the gateway. Depends on https://github.com/centrifuge/connectors/pull/52
+        gateway.decreaseInvestOrder(poolId, trancheId, amount);
     }
 
     function increaseRedeemOrder(uint64 poolId, bytes16 trancheId, uint128 amount) public {
         // TODO(nuno)
+
+        gateway.increaseRedeemOrder(poolId, trancheId, amount);
+
     }
 
     function decreaseRedeemOrder(uint64 poolId, bytes16 trancheId, uint128 amount) public {
         // TODO(nuno)
+
+        gateway.decreaseRedeemOrder(poolId, trancheId, amount);
     }
 
     function collectRedeem(uint64 poolId, bytes16 trancheId) public {
         // TODO(nuno)
+
+        gateway.collectRedeem(poolId, trancheId, address(msg.sender));
     }
 
-    function collectForRedeem(uint64 poolId, bytes16 trancheId, bytes32 userAddress) public {
+    function collectForRedeem(uint64 poolId, bytes16 trancheId, bytes32 recipient) public {
         // TODO(nuno)
+
+        gateway.collectForRedeem(poolId, trancheId, address(msg.sender), recipient);
     }
 
     function collectInvest(uint64 poolId, bytes16 trancheId) public {
         // TODO(nuno)
+
+        gateway.collectInvest(poolId, trancheId, address(msg.sender));
     }
 
-    function collectForInvest(uint64 poolId, bytes16 trancheId, bytes32 userAddress) public {
+    function collectForInvest(uint64 poolId, bytes16 trancheId, bytes32 recipient) public {
         // TODO(nuno)
+
+        gateway.collectForInvest(poolId, trancheId, address(msg.sender), recipient);
     }
 
     // --- Incoming message handling ---
