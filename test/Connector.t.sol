@@ -7,6 +7,7 @@ import {ConnectorGateway} from "src/routers/Gateway.sol";
 import {ConnectorEscrow} from "src/Escrow.sol";
 import {RestrictedTokenFactory, MemberlistFactory} from "src/token/factory.sol";
 import {RestrictedTokenLike} from "src/token/restricted.sol";
+import {ERC20} from "src/token/erc20.sol";
 import {MemberlistLike, Memberlist} from "src/token/memberlist.sol";
 import {MockHomeConnector} from "./mock/MockHomeConnector.sol";
 import {MockXcmRouter} from "./mock/MockXcmRouter.sol";
@@ -43,11 +44,19 @@ contract ConnectorTest is Test {
     }
 
 
-    //todo(nuno): shouldn't we need to deploy the currency as a ERC20 so that it works?
-    function testAddingCurrencyWorks(uint128 currency, address currencyAddress) public {
-        connector.addCurrency(currency, currencyAddress);
+    function testAddingCurrencyWorks(uint128 currency) public {
+        ERC20 token = new ERC20("X's Dollar", "USDX", 42);
+
+        connector.addCurrency(currency, address(token));
         (address address_) = bridgedConnector.currencies(currency);
-        assertEq(address_, currencyAddress);
+        assertEq(address_, address(token));
+    }
+
+    // Verify AddCurrency fails if the given address is not a valid ERC20 token.
+    // We simulate that by not deploying the token before calling `AddCurrency`.
+    function testAddingCurrencyFailsForInvalidAddress(uint128 currency, address currencyAddress) public {
+        vm.expectRevert(bytes("CentrifugeConnector/invalid-erc20-token"));
+        connector.addCurrency(currency, currencyAddress);
     }
 
     function testAddingPoolAsNonRouterFails(uint64 poolId) public {
