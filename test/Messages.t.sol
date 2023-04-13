@@ -37,44 +37,35 @@ contract MessagesTest is Test {
 
     function testAddPoolEncoding() public {
         assertEq(
-            ConnectorMessages.formatAddPool(0, 0, 0), fromHex("0200000000000000000000000000000000000000000000000000")
+            ConnectorMessages.formatAddPool(0), fromHex("020000000000000000")
         );
         assertEq(
-            ConnectorMessages.formatAddPool(1, 2, 3), fromHex("0200000000000000010000000000000000000000000000000203")
+            ConnectorMessages.formatAddPool(1), fromHex("020000000000000001")
         );
         assertEq(
-            ConnectorMessages.formatAddPool(12378532, 123, 18),
-            fromHex("020000000000bce1a40000000000000000000000000000007b12")
+            ConnectorMessages.formatAddPool(12378532),
+            fromHex("020000000000bce1a4")
         );
     }
 
     function testAddPoolDecoding() public {
-        (uint64 actualPoolId1, uint128 actualCurrency1, uint8 actualDecimals1) =
-            ConnectorMessages.parseAddPool(fromHex("0200000000000000000000000000000000000000000000000000").ref(0));
+        (uint64 actualPoolId1) =
+            ConnectorMessages.parseAddPool(fromHex("020000000000000000").ref(0));
         assertEq(uint256(actualPoolId1), 0);
-        assertEq(uint256(actualCurrency1), 0);
-        assertEq(uint256(actualDecimals1), 0);
 
-        (uint64 actualPoolId2, uint128 actualCurrency2, uint8 actualDecimals2) =
-            ConnectorMessages.parseAddPool(fromHex("0100000000000000010000000000000000000000000000000203").ref(0));
+        (uint64 actualPoolId2) =
+            ConnectorMessages.parseAddPool(fromHex("020000000000000001").ref(0));
         assertEq(uint256(actualPoolId2), 1);
-        assertEq(uint256(actualCurrency2), 2);
-        assertEq(uint256(actualDecimals2), 3);
 
-        (uint64 actualPoolId3, uint128 actualCurrency3, uint8 actualDecimals3) =
-            ConnectorMessages.parseAddPool(fromHex("010000000000bce1a40000000000000000000000000000007b12").ref(0));
+        (uint64 actualPoolId3) =
+            ConnectorMessages.parseAddPool(fromHex("020000000000bce1a4").ref(0));
         assertEq(uint256(actualPoolId3), 12378532);
-        assertEq(uint256(actualCurrency3), 123);
-        assertEq(uint256(actualDecimals3), 18);
     }
 
-    function testAddPoolEquivalence(uint64 poolId, uint128 currency, uint8 decimals) public {
-        bytes memory _message = ConnectorMessages.formatAddPool(poolId, currency, decimals);
-        (uint64 decodedPoolId, uint128 decodedCurrency, uint8 decodedDecimals) =
-            ConnectorMessages.parseAddPool(_message.ref(0));
-        assertEq(uint256(decodedPoolId), uint256(poolId));
-        assertEq(uint256(decodedCurrency), uint256(currency));
-        assertEq(decodedDecimals, decimals);
+    function testAddPoolEquivalence(uint64 poolId) public {
+        bytes memory _message = ConnectorMessages.formatAddPool(poolId);
+        (uint64 decodedPoolId) = ConnectorMessages.parseAddPool(_message.ref(0));
+        assertEq(decodedPoolId, uint256(poolId));
     }
 
     function testAddTrancheEncoding() public {

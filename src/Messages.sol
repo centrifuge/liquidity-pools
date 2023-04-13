@@ -79,21 +79,17 @@ library ConnectorMessages {
      *
      * 0: call type (uint8 = 1 byte)
      * 1-8: poolId (uint64 = 8 bytes)
-     * 9-24: The pool currency id (uint128 = 16 bytes)
-     * 25: Currency decimals (uint8 = 1 byte)
      */
-    function formatAddPool(uint64 poolId, uint128 currency, uint8 decimals) internal pure returns (bytes memory) {
-        return abi.encodePacked(uint8(Call.AddPool), poolId, currency, decimals);
+    function formatAddPool(uint64 poolId) internal pure returns (bytes memory) {
+        return abi.encodePacked(uint8(Call.AddPool), poolId);
     }
 
     function isAddPool(bytes29 _msg) internal pure returns (bool) {
         return messageType(_msg) == Call.AddPool;
     }
 
-    function parseAddPool(bytes29 _msg) internal pure returns (uint64 poolId, uint128 currency, uint8 decimals) {
+    function parseAddPool(bytes29 _msg) internal pure returns (uint64 poolId) {
         poolId = uint64(_msg.indexUint(1, 8));
-        currency = uint128(_msg.indexUint(9, 16));
-        decimals = uint8(_msg.indexUint(25, 1));
     }
 
     /**

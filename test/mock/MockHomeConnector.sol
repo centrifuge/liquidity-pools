@@ -34,8 +34,8 @@ contract MockHomeConnector is Test {
         router = XcmRouterLike(xcmRouter);
     }
 
-    function addPool(uint64 poolId, uint128 currency, uint8 decimals) public {
-        bytes memory _message = ConnectorMessages.formatAddPool(poolId, currency, decimals);
+    function addPool(uint64 poolId) public {
+        bytes memory _message = ConnectorMessages.formatAddPool(poolId);
         router.handle(_message);
     }
 

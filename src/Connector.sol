@@ -181,8 +181,7 @@ contract CentrifugeConnector {
     }
 
     // --- Incoming message handling ---
-    // todo(nuno): store currency and decimals
-    function addPool(uint64 poolId, uint128 currency, uint8 decimals) public onlyGateway {
+    function addPool(uint64 poolId) public onlyGateway {
         Pool storage pool = pools[poolId];
         pool.poolId = poolId;
         pool.createdAt = block.timestamp;
