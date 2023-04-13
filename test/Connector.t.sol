@@ -37,18 +37,28 @@ contract ConnectorTest is Test {
         mockXcmRouter.file("gateway", address(gateway));
     }
 
-    function testAddingPoolWorks(uint64 poolId) public {
-        connector.addPool(poolId);
-        (uint64 actualPoolId,,) = bridgedConnector.pools(poolId);
-        assertEq(uint256(actualPoolId), uint256(poolId));
-    }
-
     function testAddingCurrencyWorks(uint128 currency) public {
         ERC20 token = new ERC20("X's Dollar", "USDX", 42);
 
         connector.addCurrency(currency, address(token));
         (address address_) = bridgedConnector.currencies(currency);
         assertEq(address_, address(token));
+    }
+
+    function testAddingPoolWorks(uint64 poolId) public {
+        connector.addPool(poolId);
+        (uint64 actualPoolId,,) = bridgedConnector.pools(poolId);
+        assertEq(uint256(actualPoolId), uint256(poolId));
+    }
+
+    function testAllowPoolCurrencyWorks(uint128 currency, uint64 poolId) public {
+        ERC20 token = new ERC20("X's Dollar", "USDX", 42);
+
+        connector.addCurrency(currency, address(token));
+        connector.addPool(poolId);
+
+        connector.allowPoolCurrency(currency, poolId);
+        assertTrue(bridgedConnector.poolCurrencies(poolId, currency));
     }
 
     function testAddingPoolAsNonRouterFails(uint64 poolId) public {

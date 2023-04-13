@@ -231,6 +231,7 @@ contract CentrifugeConnector {
         address currencyAddress = currencies[currency];
         require(currencyAddress != address(0), "CentrifugeConnector/unknown-currency");
 
+        poolCurrencies[poolId][currency] = true;
         emit PoolCurrencyAllowed(currency, poolId);
     }
 
