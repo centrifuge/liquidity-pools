@@ -52,26 +52,13 @@ struct Tranche {
     uint8 decimals;
 }
 
-enum CurrencyLevel {
-    // Unknown currency
-    None,
-    // A currency has been added so we know the id -> address mapping
-    Added,
-    // A currency has been added AND allowed as a pool currency
-    Allowed
-}
-
-struct Currency {
-    //todo(nuno): name deviation here but it seems that's what we use for `Tranche`
-    address token;
-    CurrencyLevel level;
-}
-
 contract CentrifugeConnector {
     mapping(address => uint256) public wards;
     mapping(uint64 => Pool) public pools;
     mapping(uint64 => mapping(bytes16 => Tranche)) public tranches;
-    mapping(uint128 => Currency) public currencies;
+    mapping(uint128 => address) public currencies;
+    // The currencies allowed for a given pool
+    mapping(uint64 => mapping(uint128 => bool)) public poolCurrencies;
 
     GatewayLike public gateway;
     EscrowLike public escrow;
@@ -85,7 +72,7 @@ contract CentrifugeConnector {
     event File(bytes32 indexed what, address data);
     event CurrencyAdded(uint128 indexed currency, address indexed currencyAddress);
     event PoolAdded(uint256 indexed poolId);
-    event PoolCurrencyAllowed(uint128 currency);
+    event PoolCurrencyAllowed(uint128 currency, uint64 poolId);
     event TrancheAdded(uint256 indexed poolId, bytes16 indexed trancheId);
     event TrancheDeployed(uint256 indexed poolId, bytes16 indexed trancheId, address indexed token);
 
@@ -229,13 +216,10 @@ contract CentrifugeConnector {
 
     // --- Incoming message handling ---
     function addCurrency(uint128 currency, address currencyAddress) public onlyGateway {
+        // todo(nuno): verify decimals() > 0 instead for example
         require(address(ERC20Like(currencyAddress)) != address(0), "CentrifugeConnector/unknown-token");
 
-        Currency storage entry = currencies[currency];
-        require(entry.level == CurrencyLevel.None, "CentrifugeConnector/currency-already-added");
-
-        entry.token = currencyAddress;
-        entry.level = CurrencyLevel.Added;
+        currencies[currency] = currencyAddress;
         emit CurrencyAdded(currency, currencyAddress);
     }
 
@@ -246,12 +230,11 @@ contract CentrifugeConnector {
         emit PoolAdded(poolId);
     }
 
-    function allowPoolCurrency(uint128 currency) public onlyGateway {
-        Currency storage entry = currencies[currency];
-        require(entry.level != CurrencyLevel.Allowed, "CentrifugeConnector/currency-already-allowed");
+    function allowPoolCurrency(uint128 currency, uint64 poolId) public onlyGateway {
+        address currencyAddress = currencies[currency];
+        require(currencyAddress != address(0), "CentrifugeConnector/unknown-currency");
 
-        entry.level = CurrencyLevel.Allowed;
-        emit PoolCurrencyAllowed(currency);
+        emit PoolCurrencyAllowed(currency, poolId);
     }
 
     function addTranche(

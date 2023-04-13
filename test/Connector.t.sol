@@ -2,7 +2,7 @@
 pragma solidity ^0.8.18;
 pragma abicoder v2;
 
-import {CentrifugeConnector, CurrencyLevel} from "src/Connector.sol";
+import {CentrifugeConnector} from "src/Connector.sol";
 import {ConnectorGateway} from "src/routers/Gateway.sol";
 import {ConnectorEscrow} from "src/Escrow.sol";
 import {RestrictedTokenFactory, MemberlistFactory} from "src/token/factory.sol";
@@ -46,9 +46,8 @@ contract ConnectorTest is Test {
     //todo(nuno): shouldn't we need to deploy the currency as a ERC20 so that it works?
     function testAddingCurrencyWorks(uint128 currency, address currencyAddress) public {
         connector.addCurrency(currency, currencyAddress);
-        (address address_, CurrencyLevel level) = bridgedConnector.currencies(currency);
+        (address address_) = bridgedConnector.currencies(currency);
         assertEq(address_, currencyAddress);
-        assertTrue(level == CurrencyLevel.Added);
     }
 
     function testAddingPoolAsNonRouterFails(uint64 poolId) public {
