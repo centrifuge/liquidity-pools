@@ -85,6 +85,7 @@ contract ConnectorTest is Test {
         RestrictedTokenLike token = RestrictedTokenLike(token_);
         assertEq(token.name(), bytes32ToString(stringToBytes32(tokenName)));
         assertEq(token.symbol(), bytes32ToString(stringToBytes32(tokenSymbol)));
+        assertEq(token.decimals(), decimals);
     }
 
     function testAddingMultipleTranchesWorks(

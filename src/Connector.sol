@@ -242,9 +242,7 @@ contract CentrifugeConnector {
         Tranche storage tranche = tranches[poolId][trancheId];
         require(tranche.lastPriceUpdate > 0, "CentrifugeConnector/invalid-pool-or-tranche");
 
-        // TODO: use actual decimals
-        uint8 decimals = 18;
-        address token = tokenFactory.newRestrictedToken(tranche.tokenName, tranche.tokenSymbol, decimals);
+        address token = tokenFactory.newRestrictedToken(tranche.tokenName, tranche.tokenSymbol, tranche.decimals);
         tranche.token = token;
 
         address memberlist = memberlistFactory.newMemberlist();

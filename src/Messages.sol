@@ -247,7 +247,6 @@ library ConnectorMessages {
      * 49-80: receiver address (32 bytes)
      * 81-96: amount (uint128 = 16 bytes)
      */
-    // todo(nuno): we probably need to include the domain
     function formatTransfer(uint128 currency, bytes32 sender, bytes32 receiver, uint128 amount)
         internal
         pure
