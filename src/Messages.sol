@@ -199,7 +199,7 @@ library ConnectorMessages {
     }
 
     /**
-     * Update token price
+     * Update a Tranche token's price
      *
      * 0: call type (uint8 = 1 byte)
      * 1-8: poolId (uint64 = 8 bytes)
@@ -232,18 +232,18 @@ library ConnectorMessages {
      * Transfer Message - Transfer stable coins
      *
      * 0: call type (uint8 = 1 byte)
-     * 1-16: token (uint128 = 16 bytes)
+     * 1-16: currency (uint128 = 16 bytes)
      * 17-48: sender address (32 bytes)
      * 49-80: receiver address (32 bytes)
      * 81-96: amount (uint128 = 16 bytes)
      */
     // todo(nuno): we probably need to include the domain
-    function formatTransfer(uint128 token, bytes32 sender, bytes32 receiver, uint128 amount)
+    function formatTransfer(uint128 currency, bytes32 sender, bytes32 receiver, uint128 amount)
         internal
         pure
         returns (bytes memory)
     {
-        return abi.encodePacked(uint8(Call.Transfer), token, sender, receiver, amount);
+        return abi.encodePacked(uint8(Call.Transfer), currency, sender, receiver, amount);
     }
 
     function isTransfer(bytes29 _msg) internal pure returns (bool) {
@@ -253,9 +253,9 @@ library ConnectorMessages {
     function parseTransfer(bytes29 _msg)
         internal
         pure
-        returns (uint128 token, bytes32 sender, bytes32 receiver, uint128 amount)
+        returns (uint128 currency, bytes32 sender, bytes32 receiver, uint128 amount)
     {
-        token = uint128(_msg.indexUint(1, 16));
+        currency = uint128(_msg.indexUint(1, 16));
         sender = bytes32(_msg.index(17, 32));
         receiver = bytes32(_msg.index(49, 32));
         amount = uint128(_msg.indexUint(81, 16));
@@ -365,17 +365,17 @@ library ConnectorMessages {
      * 1-8: poolId (uint64 = 8 bytes)
      * 9-24: trancheId (16 bytes)
      * 25-56: investor address (32 bytes)
-     * 57-72: token (uint128 = 16 bytes)
+     * 57-72: currency (uint128 = 16 bytes)
      * 73-89: amount (uint128 = 16 bytes)
      */
     function formatIncreaseInvestOrder(
         uint64 poolId,
         bytes16 trancheId,
         bytes32 investor,
-        uint128 token,
+        uint128 currency,
         uint128 amount
     ) internal pure returns (bytes memory) {
-        return abi.encodePacked(uint8(Call.IncreaseInvestOrder), poolId, trancheId, investor, token, amount);
+        return abi.encodePacked(uint8(Call.IncreaseInvestOrder), poolId, trancheId, investor, currency, amount);
     }
 
     function isIncreaseInvestOrder(bytes29 _msg) internal pure returns (bool) {
@@ -385,12 +385,12 @@ library ConnectorMessages {
     function parseIncreaseInvestOrder(bytes29 _msg)
         internal
         pure
-        returns (uint64 poolId, bytes16 trancheId, bytes32 investor, uint128 token, uint128 amount)
+        returns (uint64 poolId, bytes16 trancheId, bytes32 investor, uint128 currency, uint128 amount)
     {
         poolId = uint64(_msg.indexUint(1, 8));
         trancheId = bytes16(_msg.index(9, 16));
         investor = bytes32(_msg.index(25, 32));
-        token = uint128(_msg.indexUint(57, 16));
+        currency = uint128(_msg.indexUint(57, 16));
         amount = uint128(_msg.indexUint(73, 16));
     }
 
@@ -401,17 +401,17 @@ library ConnectorMessages {
      * 1-8: poolId (uint64 = 8 bytes)
      * 9-24: trancheId (16 bytes)
      * 25-56: investor address (32 bytes)
-     * 57-72: token (uint128 = 16 bytes)
+     * 57-72: currency (uint128 = 16 bytes)
      * 73-89: amount (uint128 = 16 bytes)
      */
     function formatDecreaseInvestOrder(
         uint64 poolId,
         bytes16 trancheId,
         bytes32 investor,
-        uint128 token,
+        uint128 currency,
         uint128 amount
     ) internal pure returns (bytes memory) {
-        return abi.encodePacked(uint8(Call.DecreaseInvestOrder), poolId, trancheId, investor, token, amount);
+        return abi.encodePacked(uint8(Call.DecreaseInvestOrder), poolId, trancheId, investor, currency, amount);
     }
 
     function isDecreaseInvestOrder(bytes29 _msg) internal pure returns (bool) {
@@ -421,7 +421,7 @@ library ConnectorMessages {
     function parseDecreaseInvestOrder(bytes29 _msg)
         internal
         pure
-        returns (uint64 poolId, bytes16 trancheId, bytes32 investor, uint128 token, uint128 amount)
+        returns (uint64 poolId, bytes16 trancheId, bytes32 investor, uint128 currency, uint128 amount)
     {
         return parseIncreaseInvestOrder(_msg);
     }
@@ -433,17 +433,17 @@ library ConnectorMessages {
      * 1-8: poolId (uint64 = 8 bytes)
      * 9-24: trancheId (16 bytes)
      * 25-56: investor address (32 bytes)
-     * 57-72: token (uint128 = 16 bytes)
+     * 57-72: currency (uint128 = 16 bytes)
      * 73-89: amount (uint128 = 16 bytes)
      */
     function formatIncreaseRedeemOrder(
         uint64 poolId,
         bytes16 trancheId,
         bytes32 investor,
-        uint128 token,
+        uint128 currency,
         uint128 amount
     ) internal pure returns (bytes memory) {
-        return abi.encodePacked(uint8(Call.IncreaseRedeemOrder), poolId, trancheId, investor, token, amount);
+        return abi.encodePacked(uint8(Call.IncreaseRedeemOrder), poolId, trancheId, investor, currency, amount);
     }
 
     function isIncreaseRedeemOrder(bytes29 _msg) internal pure returns (bool) {
@@ -453,7 +453,7 @@ library ConnectorMessages {
     function parseIncreaseRedeemOrder(bytes29 _msg)
         internal
         pure
-        returns (uint64 poolId, bytes16 trancheId, bytes32 investor, uint128 token, uint128 amount)
+        returns (uint64 poolId, bytes16 trancheId, bytes32 investor, uint128 currency, uint128 amount)
     {
         return parseIncreaseInvestOrder(_msg);
     }
@@ -465,17 +465,17 @@ library ConnectorMessages {
      * 1-8: poolId (uint64 = 8 bytes)
      * 9-24: trancheId (16 bytes)
      * 25-56: investor address (32 bytes)
-     * 57-72: token (uint128 = 16 bytes)
+     * 57-72: currency (uint128 = 16 bytes)
      * 73-89: amount (uint128 = 16 bytes)
      */
     function formatDecreaseRedeemOrder(
         uint64 poolId,
         bytes16 trancheId,
         bytes32 investor,
-        uint128 token,
+        uint128 currency,
         uint128 amount
     ) internal pure returns (bytes memory) {
-        return abi.encodePacked(uint8(Call.DecreaseRedeemOrder), poolId, trancheId, investor, token, amount);
+        return abi.encodePacked(uint8(Call.DecreaseRedeemOrder), poolId, trancheId, investor, currency, amount);
     }
 
     function isDecreaseRedeemOrder(bytes29 _msg) internal pure returns (bool) {
@@ -485,7 +485,7 @@ library ConnectorMessages {
     function parseDecreaseRedeemOrder(bytes29 _msg)
         internal
         pure
-        returns (uint64 poolId, bytes16 trancheId, bytes32 investor, uint128 token, uint128 amount)
+        returns (uint64 poolId, bytes16 trancheId, bytes32 investor, uint128 currency, uint128 amount)
     {
         return parseDecreaseInvestOrder(_msg);
     }
