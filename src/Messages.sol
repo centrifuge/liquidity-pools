@@ -11,33 +11,37 @@ library ConnectorMessages {
     /// 0 - An invalid message
     {
         Invalid,
-        /// 1 - Add Pool
+        /// 1 - Add a currency id -> EVM address mapping
+        AddCurrency,
+        /// 2 - Add Pool
         AddPool,
-        /// 2 - Add a Pool's Tranche Token
+        /// 3 - Allow a registered currency to be used as a pool currency or as an investment currency
+        AllowPoolCurrency,
+        /// 4 - Add a Pool's Tranche Token
         AddTranche,
-        /// 3 - Update the price of a Tranche Token
+        /// 5 - Update the price of a Tranche Token
         UpdateTrancheTokenPrice,
-        /// 4 - Update the member list of a tranche token with a new member
+        /// 6 - Update the member list of a tranche token with a new member
         UpdateMember,
-        /// 5 - A transfer of Stable Coins
+        /// 7 - A transfer of Stable Coins
         Transfer,
-        /// 6 - A transfer of Tranche tokens
+        /// 8 - A transfer of Tranche tokens
         TransferTrancheTokens,
-        /// 7 - Increase an investment order by a given amount
+        /// 9 - Increase an investment order by a given amount
         IncreaseInvestOrder,
-        /// 8 - Decrease an investment order by a given amount
+        /// 10 - Decrease an investment order by a given amount
         DecreaseInvestOrder,
-        /// 9 - Increase a Redeem order by a given amount
+        /// 11 - Increase a Redeem order by a given amount
         IncreaseRedeemOrder,
-        /// 10 - Decrease a Redeem order by a given amount
+        /// 12 - Decrease a Redeem order by a given amount
         DecreaseRedeemOrder,
-        /// 11 - Collect Redeem
+        /// 13 - Collect Redeem
         CollectRedeem,
-        /// 12 - Collect for another user
+        /// 14 - Collect for another user
         CollectForRedeem,
-        /// 13 - Collect investment
+        /// 15 - Collect investment
         CollectInvest,
-        /// 14 - Collect investment for another user
+        /// 16 - Collect investment for another user
         CollectForInvest
     }
 
