@@ -6,7 +6,9 @@ import {TypedMemView} from "memview-sol/TypedMemView.sol";
 import {ConnectorMessages} from "../Messages.sol";
 
 interface ConnectorLike {
+    function addCurrency(uint128 currency, address currencyAddress) external;
     function addPool(uint64 poolId) external;
+    function allowPoolCurrency(uint128 currency) external;
     function addTranche(
         uint64 poolId,
         bytes16 trancheId,
@@ -184,9 +186,16 @@ contract ConnectorGateway {
     // --- Incoming ---
     function handle(bytes memory _message) external onlyRouter {
         bytes29 _msg = _message.ref(0);
-        if (ConnectorMessages.isAddPool(_msg)) {
+
+        if (ConnectorMessages.isAddCurrency(_msg)) {
+            (uint128 currency, address currencyAddress) = ConnectorMessages.parseAddCurrency(_msg);
+            connector.addCurrency(currency, currencyAddress);
+        } else if (ConnectorMessages.isAddPool(_msg)) {
             (uint64 poolId) = ConnectorMessages.parseAddPool(_msg);
             connector.addPool(poolId);
+        } else if (ConnectorMessages.isAllowPoolCurrency(_msg)) {
+            (uint128 currency) = ConnectorMessages.parseAllowPoolCurrency(_msg);
+            connector.allowPoolCurrency(currency);
         } else if (ConnectorMessages.isAddTranche(_msg)) {
             (
                 uint64 poolId,
