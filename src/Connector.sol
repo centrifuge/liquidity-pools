@@ -20,6 +20,15 @@ interface GatewayLike {
         address destinationAddress,
         uint128 amount
     ) external;
+    function increaseInvestOrder(uint64 poolId, bytes16 trancheId, uint128 amount) external;
+    function decreaseInvestOrder(uint64 poolId, bytes16 trancheId, uint128 amount) external;
+    function increaseRedeemOrder(uint64 poolId, bytes16 trancheId, uint128 amount) external;
+    function decreaseRedeemOrder(uint64 poolId, bytes16 trancheId, uint128 amount) external;
+    function collectRedeem(uint64 poolId, bytes16 trancheId) external;
+    function collectForRedeem(uint64 poolId, bytes16 trancheId, bytes32 userAddress) external;
+    function collectInvest(uint64 poolId, bytes16 trancheId) external;
+    function collectForInvest(uint64 poolId, bytes16 trancheId, bytes32 userAddress)external;
+
 }
 
 interface EscrowLike {
