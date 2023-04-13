@@ -13,17 +13,17 @@ contract MessagesTest is Test {
 
     function setUp() public {}
 
-
-
     function testAddCurrencyEncoding() public {
         assertEq(
-            ConnectorMessages.formatAddCurrency(42, 0x1234567890123456789012345678901234567890), fromHex("010000000000000000000000000000002a1234567890123456789012345678901234567890")
+            ConnectorMessages.formatAddCurrency(42, 0x1234567890123456789012345678901234567890),
+            fromHex("010000000000000000000000000000002a1234567890123456789012345678901234567890")
         );
     }
 
     function testAddCurrencyDecoding() public {
-        (uint128 currency, address currencyAddress) =
-        ConnectorMessages.parseAddCurrency(fromHex("010000000000000000000000000000002a1234567890123456789012345678901234567890").ref(0));
+        (uint128 currency, address currencyAddress) = ConnectorMessages.parseAddCurrency(
+            fromHex("010000000000000000000000000000002a1234567890123456789012345678901234567890").ref(0)
+        );
         assertEq(uint256(currency), 42);
         assertEq(currencyAddress, 0x1234567890123456789012345678901234567890);
     }
@@ -36,29 +36,19 @@ contract MessagesTest is Test {
     }
 
     function testAddPoolEncoding() public {
-        assertEq(
-            ConnectorMessages.formatAddPool(0), fromHex("020000000000000000")
-        );
-        assertEq(
-            ConnectorMessages.formatAddPool(1), fromHex("020000000000000001")
-        );
-        assertEq(
-            ConnectorMessages.formatAddPool(12378532),
-            fromHex("020000000000bce1a4")
-        );
+        assertEq(ConnectorMessages.formatAddPool(0), fromHex("020000000000000000"));
+        assertEq(ConnectorMessages.formatAddPool(1), fromHex("020000000000000001"));
+        assertEq(ConnectorMessages.formatAddPool(12378532), fromHex("020000000000bce1a4"));
     }
 
     function testAddPoolDecoding() public {
-        (uint64 actualPoolId1) =
-            ConnectorMessages.parseAddPool(fromHex("020000000000000000").ref(0));
+        (uint64 actualPoolId1) = ConnectorMessages.parseAddPool(fromHex("020000000000000000").ref(0));
         assertEq(uint256(actualPoolId1), 0);
 
-        (uint64 actualPoolId2) =
-            ConnectorMessages.parseAddPool(fromHex("020000000000000001").ref(0));
+        (uint64 actualPoolId2) = ConnectorMessages.parseAddPool(fromHex("020000000000000001").ref(0));
         assertEq(uint256(actualPoolId2), 1);
 
-        (uint64 actualPoolId3) =
-            ConnectorMessages.parseAddPool(fromHex("020000000000bce1a4").ref(0));
+        (uint64 actualPoolId3) = ConnectorMessages.parseAddPool(fromHex("020000000000bce1a4").ref(0));
         assertEq(uint256(actualPoolId3), 12378532);
     }
 
@@ -69,16 +59,13 @@ contract MessagesTest is Test {
     }
 
     function testAllowPoolCurrencyEncoding() public {
-        assertEq(
-            ConnectorMessages.formatAllowPoolCurrency(42), hex"030000000000000000000000000000002a"
-        );
+        assertEq(ConnectorMessages.formatAllowPoolCurrency(42), hex"030000000000000000000000000000002a");
     }
 
     function testAllowPoolCurrencyDecoding() public {
         (uint128 actualCurrency) =
-        ConnectorMessages.parseAllowPoolCurrency(fromHex("030000000000000000000000000000002a").ref(0));
+            ConnectorMessages.parseAllowPoolCurrency(fromHex("030000000000000000000000000000002a").ref(0));
         assertEq(uint256(actualCurrency), 42);
-
     }
 
     function testAllowPoolCurrencyEquivalence(uint128 currency) public {
@@ -94,6 +81,7 @@ contract MessagesTest is Test {
                 bytes16(hex"811acd5b3f17c06841c7e41e9e04cb1b"),
                 "Some Name",
                 "SYMBOL",
+                18,
                 1000000000000000000000000000
             ),
             hex"040000000000bce1a4811acd5b3f17c06841c7e41e9e04cb1b536f6d65204e616d65000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000053594d424f4c000000000000000000000000000000000000000000000000000000000000033b2e3c9fd0803ce8000000"
@@ -106,6 +94,7 @@ contract MessagesTest is Test {
             bytes16 decodedTrancheId,
             string memory decodedTokenName,
             string memory decodedTokenSymbol,
+            uint8 decodedDecimals,
             uint128 decodedPrice
         ) = ConnectorMessages.parseAddTranche(
             fromHex(
@@ -116,6 +105,7 @@ contract MessagesTest is Test {
         assertEq(decodedTrancheId, bytes16(hex"811acd5b3f17c06841c7e41e9e04cb1b"));
         assertEq(decodedTokenName, bytes32ToString(bytes32("Some Name")));
         assertEq(decodedTokenSymbol, bytes32ToString(bytes32("SYMBOL")));
+        assertEq(decodedDecimals, 18);
         assertEq(decodedPrice, uint256(1000000000000000000000000000));
     }
 
@@ -124,14 +114,17 @@ contract MessagesTest is Test {
         bytes16 trancheId,
         string memory tokenName,
         string memory tokenSymbol,
+        uint8 decimals,
         uint128 price
     ) public {
-        bytes memory _message = ConnectorMessages.formatAddTranche(poolId, trancheId, tokenName, tokenSymbol, price);
+        bytes memory _message =
+            ConnectorMessages.formatAddTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price);
         (
             uint64 decodedPoolId,
             bytes16 decodedTrancheId,
             string memory decodedTokenName,
             string memory decodedTokenSymbol,
+            uint8 decodedDecimals,
             uint128 decodedPrice
         ) = ConnectorMessages.parseAddTranche(_message.ref(0));
         assertEq(uint256(decodedPoolId), uint256(poolId));
@@ -142,6 +135,7 @@ contract MessagesTest is Test {
         // this intended behaviour.
         assertEq(decodedTokenName, bytes32ToString(stringToBytes32(tokenName)));
         assertEq(decodedTokenSymbol, bytes32ToString(stringToBytes32(tokenSymbol)));
+        assertEq(decodedDecimals, decimals);
         assertEq(uint256(decodedPrice), uint256(price));
     }
 

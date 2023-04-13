@@ -29,7 +29,6 @@ interface GatewayLike {
     function collectForRedeem(uint64 poolId, bytes16 trancheId, address caller, bytes32 recipient) external;
     function collectInvest(uint64 poolId, bytes16 trancheId, address caller) external;
     function collectForInvest(uint64 poolId, bytes16 trancheId, address caller, bytes32 recipient) external;
-
 }
 
 interface EscrowLike {
@@ -50,6 +49,7 @@ struct Tranche {
     // This leads to duplicate storage (also in the ERC20 contract), ideally we should refactor this somehow
     string tokenName;
     string tokenSymbol;
+    uint8 decimals;
 }
 
 contract CentrifugeConnector {
@@ -177,7 +177,6 @@ contract CentrifugeConnector {
         // TODO(nuno)
 
         gateway.increaseRedeemOrder(poolId, trancheId, amount);
-
     }
 
     function decreaseRedeemOrder(uint64 poolId, bytes16 trancheId, uint128 amount) public {
@@ -223,6 +222,7 @@ contract CentrifugeConnector {
         bytes16 trancheId,
         string memory tokenName,
         string memory tokenSymbol,
+        uint8 decimals,
         uint128 price
     ) public onlyGateway {
         Pool storage pool = pools[poolId];
@@ -233,6 +233,7 @@ contract CentrifugeConnector {
         tranche.lastPriceUpdate = block.timestamp;
         tranche.tokenName = tokenName;
         tranche.tokenSymbol = tokenSymbol;
+        tranche.decimals = decimals;
 
         emit TrancheAdded(poolId, trancheId);
     }

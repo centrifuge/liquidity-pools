@@ -12,6 +12,7 @@ interface ConnectorLike {
         bytes16 trancheId,
         string memory tokenName,
         string memory tokenSymbol,
+        uint8 decimals,
         uint128 price
     ) external;
     function updateMember(uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) external;
@@ -122,27 +123,50 @@ contract ConnectorGateway {
         router.send(ConnectorMessages.formatTransfer(token, addressToBytes32(sender), receiver, amount));
     }
 
-    function increaseInvestOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount) public onlyConnector {
-        router.send(ConnectorMessages.formatIncreaseInvestOrder(poolId, trancheId, addressToBytes32(investor), currency, amount));
+    function increaseInvestOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount)
+        public
+        onlyConnector
+    {
+        router.send(
+            ConnectorMessages.formatIncreaseInvestOrder(poolId, trancheId, addressToBytes32(investor), currency, amount)
+        );
     }
 
-    function decreaseInvestOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount) public onlyConnector {
-        router.send(ConnectorMessages.formatDecreaseInvestOrder(poolId, trancheId, addressToBytes32(investor), currency, amount));
+    function decreaseInvestOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount)
+        public
+        onlyConnector
+    {
+        router.send(
+            ConnectorMessages.formatDecreaseInvestOrder(poolId, trancheId, addressToBytes32(investor), currency, amount)
+        );
     }
 
-    function increaseRedeemOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount) public onlyConnector {
-        router.send(ConnectorMessages.formatIncreaseRedeemOrder(poolId, trancheId, addressToBytes32(investor), currency, amount));
+    function increaseRedeemOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount)
+        public
+        onlyConnector
+    {
+        router.send(
+            ConnectorMessages.formatIncreaseRedeemOrder(poolId, trancheId, addressToBytes32(investor), currency, amount)
+        );
     }
 
-    function decreaseRedeemOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount) public onlyConnector {
-        router.send(ConnectorMessages.formatDecreaseRedeemOrder(poolId, trancheId, addressToBytes32(investor), currency, amount));
+    function decreaseRedeemOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount)
+        public
+        onlyConnector
+    {
+        router.send(
+            ConnectorMessages.formatDecreaseRedeemOrder(poolId, trancheId, addressToBytes32(investor), currency, amount)
+        );
     }
 
     function collectRedeem(uint64 poolId, bytes16 trancheId, address caller) public onlyConnector {
         router.send(ConnectorMessages.formatCollectRedeem(poolId, trancheId, addressToBytes32(caller)));
     }
 
-    function collectForRedeem(uint64 poolId, bytes16 trancheId, address caller, bytes32 recipient) public onlyConnector {
+    function collectForRedeem(uint64 poolId, bytes16 trancheId, address caller, bytes32 recipient)
+        public
+        onlyConnector
+    {
         router.send(ConnectorMessages.formatCollectForRedeem(poolId, trancheId, addressToBytes32(caller), recipient));
     }
 
@@ -150,7 +174,10 @@ contract ConnectorGateway {
         router.send(ConnectorMessages.formatCollectInvest(poolId, trancheId, addressToBytes32(caller)));
     }
 
-    function collectForInvest(uint64 poolId, bytes16 trancheId, address caller, bytes32 recipient) public onlyConnector {
+    function collectForInvest(uint64 poolId, bytes16 trancheId, address caller, bytes32 recipient)
+        public
+        onlyConnector
+    {
         router.send(ConnectorMessages.formatCollectForInvest(poolId, trancheId, addressToBytes32(caller), recipient));
     }
 
@@ -161,9 +188,15 @@ contract ConnectorGateway {
             (uint64 poolId) = ConnectorMessages.parseAddPool(_msg);
             connector.addPool(poolId);
         } else if (ConnectorMessages.isAddTranche(_msg)) {
-            (uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol, uint128 price) =
-                ConnectorMessages.parseAddTranche(_msg);
-            connector.addTranche(poolId, trancheId, tokenName, tokenSymbol, price);
+            (
+                uint64 poolId,
+                bytes16 trancheId,
+                string memory tokenName,
+                string memory tokenSymbol,
+                uint8 decimals,
+                uint128 price
+            ) = ConnectorMessages.parseAddTranche(_msg);
+            connector.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price);
         } else if (ConnectorMessages.isUpdateMember(_msg)) {
             (uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) =
                 ConnectorMessages.parseUpdateMember(_msg);
@@ -181,7 +214,7 @@ contract ConnectorGateway {
     }
 
     // Utils
-    function addressToBytes32(address x) private pure returns (bytes32)  {
+    function addressToBytes32(address x) private pure returns (bytes32) {
         return bytes32(bytes20(x));
     }
 }

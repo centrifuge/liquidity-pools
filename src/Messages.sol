@@ -110,22 +110,23 @@ library ConnectorMessages {
         currency = uint128(_msg.indexUint(1, 16));
     }
 
-
     /**
      * Add tranche
      *
      * 0: call type (uint8 = 1 byte)
      * 1-8: poolId (uint64 = 8 bytes)
      * 9-24: trancheId (16 bytes)
-     * 25-154: tokenName (string = 128 bytes)
-     * 155-187: tokenSymbol (string = 32 bytes)
-     * 185-200: price (uint128 = 16 bytes)
+     * 25-152: tokenName (string = 128 bytes)
+     * 153-184: tokenSymbol (string = 32 bytes)
+     * 185: decimals (uint8 = 1 byte)
+     * 186-202: price (uint128 = 16 bytes)
      */
     function formatAddTranche(
         uint64 poolId,
         bytes16 trancheId,
         string memory tokenName,
         string memory tokenSymbol,
+        uint8 decimals,
         uint128 price
     ) internal pure returns (bytes memory) {
         // TODO(nuno): Now, we encode `tokenName` as a 128-bytearray by first encoding `tokenName`
@@ -140,6 +141,7 @@ library ConnectorMessages {
             bytes32(""),
             bytes32(""),
             stringToBytes32(tokenSymbol),
+            decimals,
             price
         );
     }
@@ -151,13 +153,21 @@ library ConnectorMessages {
     function parseAddTranche(bytes29 _msg)
         internal
         pure
-        returns (uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol, uint128 price)
+        returns (
+            uint64 poolId,
+            bytes16 trancheId,
+            string memory tokenName,
+            string memory tokenSymbol,
+            uint8 decimals,
+            uint128 price
+        )
     {
         poolId = uint64(_msg.indexUint(1, 8));
         trancheId = bytes16(_msg.index(9, 16));
         tokenName = bytes32ToString(bytes32(_msg.index(25, 32)));
         tokenSymbol = bytes32ToString(bytes32(_msg.index(153, 32)));
-        price = uint128(_msg.indexUint(185, 16));
+        decimals = uint8(_msg.indexUint(185, 1));
+        price = uint128(_msg.indexUint(186, 16));
     }
 
     /**
