@@ -118,40 +118,40 @@ contract ConnectorGateway {
         );
     }
 
-    function transfer(uint128 token, bytes32 sender, bytes32 receiver, uint128 amount) public onlyConnector {
-        router.send(ConnectorMessages.formatTransfer(token, sender, receiver, amount));
+    function transfer(uint128 token, address sender, bytes32 receiver, uint128 amount) public onlyConnector {
+        router.send(ConnectorMessages.formatTransfer(token, addressToBytes32(sender), receiver, amount));
     }
 
-    function increaseInvestOrder(uint64 poolId, bytes16 trancheId, uint128 amount) public onlyConnector {
-      // todo(nuno)
+    function increaseInvestOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount) public onlyConnector {
+        router.send(ConnectorMessages.formatIncreaseInvestOrder(poolId, trancheId, addressToBytes32(investor), currency, amount));
     }
 
-    function decreaseInvestOrder(uint64 poolId, bytes16 trancheId, uint128 amount) public onlyConnector {
-        // todo(nuno)
+    function decreaseInvestOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount) public onlyConnector {
+        router.send(ConnectorMessages.formatDecreaseInvestOrder(poolId, trancheId, addressToBytes32(investor), currency, amount));
     }
 
-    function increaseRedeemOrder(uint64 poolId, bytes16 trancheId, uint128 amount) public onlyConnector {
-        // todo(nuno)
+    function increaseRedeemOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount) public onlyConnector {
+        router.send(ConnectorMessages.formatIncreaseRedeemOrder(poolId, trancheId, addressToBytes32(investor), currency, amount));
     }
 
-    function decreaseRedeemOrder(uint64 poolId, bytes16 trancheId, uint128 amount) public onlyConnector {
-        // todo(nuno)
+    function decreaseRedeemOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount) public onlyConnector {
+        router.send(ConnectorMessages.formatDecreaseRedeemOrder(poolId, trancheId, addressToBytes32(investor), currency, amount));
     }
 
     function collectRedeem(uint64 poolId, bytes16 trancheId, address caller) public onlyConnector {
-        // todo(nuno)
+        router.send(ConnectorMessages.formatCollectRedeem(poolId, trancheId, addressToBytes32(caller)));
     }
 
     function collectForRedeem(uint64 poolId, bytes16 trancheId, address caller, bytes32 recipient) public onlyConnector {
-        // todo(nuno)
+        router.send(ConnectorMessages.formatCollectForRedeem(poolId, trancheId, addressToBytes32(caller), recipient));
     }
 
     function collectInvest(uint64 poolId, bytes16 trancheId, address caller) public onlyConnector {
-        // todo(nuno)
+        router.send(ConnectorMessages.formatCollectInvest(poolId, trancheId, addressToBytes32(caller)));
     }
 
     function collectForInvest(uint64 poolId, bytes16 trancheId, address caller, bytes32 recipient) public onlyConnector {
-        // todo(nuno)
+        router.send(ConnectorMessages.formatCollectForInvest(poolId, trancheId, addressToBytes32(caller), recipient));
     }
 
     // --- Incoming ---
@@ -178,5 +178,10 @@ contract ConnectorGateway {
         } else {
             revert("ConnectorGateway/invalid-message");
         }
+    }
+
+    // Utils
+    function addressToBytes32(address x) private pure returns (bytes32)  {
+        return bytes32(bytes20(x));
     }
 }

@@ -20,7 +20,7 @@ interface GatewayLike {
         address destinationAddress,
         uint128 amount
     ) external;
-    function transfer(uint128 currency, bytes32 sender, bytes32 recipient, uint128 amount) external;
+    function transfer(uint128 currency, address sender, bytes32 recipient, uint128 amount) external;
     function increaseInvestOrder(uint64 poolId, bytes16 trancheId, uint128 amount) external;
     function decreaseInvestOrder(uint64 poolId, bytes16 trancheId, uint128 amount) external;
     function increaseRedeemOrder(uint64 poolId, bytes16 trancheId, uint128 amount) external;
@@ -112,7 +112,7 @@ contract CentrifugeConnector {
         // todo(nuno)
         // 1. Ensure currency exists
 
-        gateway.transfer(currency, addressToBytes32(msg.sender), recipient, amount);
+        gateway.transfer(currency, msg.sender, recipient, amount);
     }
 
     function transferTrancheTokensToCentrifuge(
@@ -280,10 +280,5 @@ contract CentrifugeConnector {
 
         require(token.hasMember(destinationAddress), "CentrifugeConnector/not-a-member");
         token.mint(destinationAddress, amount);
-    }
-
-    // Utils
-    function addressToBytes32(address x) private returns (bytes32)  {
-        return bytes32(bytes20(x));
     }
 }
