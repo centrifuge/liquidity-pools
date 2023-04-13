@@ -232,7 +232,7 @@ contract CentrifugeConnector {
         require(address(ERC20Like(currencyAddress)) != address(0), "CentrifugeConnector/unknown-token");
 
         Currency storage entry = currencies[currency];
-        require(entry.level != CurrencyLevel.None, "CentrifugeConnector/currency-already-added");
+        require(entry.level == CurrencyLevel.None, "CentrifugeConnector/currency-already-added");
 
         entry.token = currencyAddress;
         entry.level = CurrencyLevel.Added;
@@ -244,6 +244,14 @@ contract CentrifugeConnector {
         pool.poolId = poolId;
         pool.createdAt = block.timestamp;
         emit PoolAdded(poolId);
+    }
+
+    function allowPoolCurrency(uint128 currency) public onlyGateway {
+        Currency storage entry = currencies[currency];
+        require(entry.level != CurrencyLevel.Allowed, "CentrifugeConnector/currency-already-allowed");
+
+        entry.level = CurrencyLevel.Allowed;
+        emit PoolCurrencyAllowed(currency);
     }
 
     function addTranche(
