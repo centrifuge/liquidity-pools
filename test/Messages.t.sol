@@ -68,6 +68,25 @@ contract MessagesTest is Test {
         assertEq(decodedPoolId, uint256(poolId));
     }
 
+    function testAllowPoolCurrencyEncoding() public {
+        assertEq(
+            ConnectorMessages.formatAllowPoolCurrency(42), hex"030000000000000000000000000000002a"
+        );
+    }
+
+    function testAllowPoolCurrencyDecoding() public {
+        (uint128 actualCurrency) =
+        ConnectorMessages.parseAllowPoolCurrency(fromHex("030000000000000000000000000000002a").ref(0));
+        assertEq(uint256(actualCurrency), 42);
+
+    }
+
+    function testAllowPoolCurrencyEquivalence(uint128 currency) public {
+        bytes memory _message = ConnectorMessages.formatAllowPoolCurrency(currency);
+        (uint128 decodedCurrency) = ConnectorMessages.parseAllowPoolCurrency(_message.ref(0));
+        assertEq(decodedCurrency, uint256(currency));
+    }
+
     function testAddTrancheEncoding() public {
         assertEq(
             ConnectorMessages.formatAddTranche(
