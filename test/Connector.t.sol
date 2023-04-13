@@ -79,10 +79,8 @@ contract ConnectorTest is Test {
         // Intended behaviour is that byte strings will be treated as bytes and converted to strings
         // instead of treated as strings themselves. This conversion from string to bytes32 to string
         // is used to simulate this intended behaviour.
-        console.log(tokenName);
         assertEq(actualTokenName, bytes32ToString(stringToBytes32(tokenName)));
         assertEq(actualTokenSymbol, bytes32ToString(stringToBytes32(tokenSymbol)));
-        console.log(tokenSymbol);
 
         RestrictedTokenLike token = RestrictedTokenLike(token_);
         assertEq(token.name(), bytes32ToString(stringToBytes32(tokenName)));
