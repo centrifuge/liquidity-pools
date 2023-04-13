@@ -43,7 +43,6 @@ contract ConnectorTest is Test {
         assertEq(uint256(actualPoolId), uint256(poolId));
     }
 
-
     function testAddingCurrencyWorks(uint128 currency) public {
         ERC20 token = new ERC20("X's Dollar", "USDX", 42);
 

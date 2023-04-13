@@ -59,12 +59,15 @@ contract MessagesTest is Test {
     }
 
     function testAllowPoolCurrencyEncoding() public {
-        assertEq(ConnectorMessages.formatAllowPoolCurrency(42, 99), hex"030000000000000000000000000000002a0000000000000063");
+        assertEq(
+            ConnectorMessages.formatAllowPoolCurrency(42, 99), hex"030000000000000000000000000000002a0000000000000063"
+        );
     }
 
     function testAllowPoolCurrencyDecoding() public {
-        (uint128 actualCurrency, uint64 actualPoolId) =
-            ConnectorMessages.parseAllowPoolCurrency(fromHex("030000000000000000000000000000002a0000000000000063").ref(0));
+        (uint128 actualCurrency, uint64 actualPoolId) = ConnectorMessages.parseAllowPoolCurrency(
+            fromHex("030000000000000000000000000000002a0000000000000063").ref(0)
+        );
         assertEq(uint256(actualCurrency), 42);
         assertEq(actualPoolId, 99);
     }
