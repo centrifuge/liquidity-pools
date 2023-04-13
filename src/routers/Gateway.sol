@@ -122,6 +122,38 @@ contract ConnectorGateway {
         router.send(ConnectorMessages.formatTransfer(token, sender, receiver, amount));
     }
 
+    function increaseInvestOrder(uint64 poolId, bytes16 trancheId, uint128 amount) public onlyConnector {
+      // todo(nuno)
+    }
+
+    function decreaseInvestOrder(uint64 poolId, bytes16 trancheId, uint128 amount) public onlyConnector {
+        // todo(nuno)
+    }
+
+    function increaseRedeemOrder(uint64 poolId, bytes16 trancheId, uint128 amount) public onlyConnector {
+        // todo(nuno)
+    }
+
+    function decreaseRedeemOrder(uint64 poolId, bytes16 trancheId, uint128 amount) public onlyConnector {
+        // todo(nuno)
+    }
+
+    function collectRedeem(uint64 poolId, bytes16 trancheId, address caller) public onlyConnector {
+        // todo(nuno)
+    }
+
+    function collectForRedeem(uint64 poolId, bytes16 trancheId, address caller, bytes32 recipient) public onlyConnector {
+        // todo(nuno)
+    }
+
+    function collectInvest(uint64 poolId, bytes16 trancheId, address caller) public onlyConnector {
+        // todo(nuno)
+    }
+
+    function collectForInvest(uint64 poolId, bytes16 trancheId, address caller, bytes32 recipient) public onlyConnector {
+        // todo(nuno)
+    }
+
     // --- Incoming ---
     function handle(bytes memory _message) external onlyRouter {
         bytes29 _msg = _message.ref(0);
