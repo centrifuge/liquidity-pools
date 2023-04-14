@@ -62,8 +62,6 @@ contract ConnectorTest is Test {
     }
 
     function testAllowPoolCurrencyWithUnknownCurrencyFails(uint128 currency, uint64 poolId) public {
-        ERC20 token = new ERC20("X's Dollar", "USDX", 42);
-
         connector.addPool(poolId);
         vm.expectRevert(bytes("CentrifugeConnector/unknown-currency"));
         connector.allowPoolCurrency(currency, poolId);
@@ -331,17 +329,10 @@ contract ConnectorTest is Test {
     }
 
     function testOutgoingTransferUnknownCurrencyFails(
-        string memory tokenName,
-        string memory tokenSymbol,
-        uint8 decimals,
-        uint128 initialBalance,
         uint128 currency,
         bytes32 recipient,
         uint128 amount
     ) public {
-        vm.assume(decimals > 6);
-        ERC20 erc20 = new ERC20(tokenName, tokenSymbol, decimals);
-
         vm.expectRevert(bytes("CentrifugeConnector/unknown-currency"));
         bridgedConnector.transfer(currency, recipient, amount);
     }
