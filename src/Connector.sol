@@ -2,7 +2,7 @@
 pragma solidity ^0.8.18;
 pragma abicoder v2;
 
-import {RestrictedTokenFactoryLike, MemberlistFactoryLike} from "./token/factory.sol";
+import {TrancheTokenFactoryLike, MemberlistFactoryLike} from "./token/factory.sol";
 import {RestrictedTokenLike, ERC20Like} from "./token/restricted.sol";
 import {MemberlistLike} from "./token/memberlist.sol";
 
@@ -50,7 +50,7 @@ contract CentrifugeConnector {
     GatewayLike public gateway;
     EscrowLike public escrow;
 
-    RestrictedTokenFactoryLike public immutable tokenFactory;
+    TrancheTokenFactoryLike public immutable tokenFactory;
     MemberlistFactoryLike public immutable memberlistFactory;
 
     // --- Events ---
@@ -63,7 +63,7 @@ contract CentrifugeConnector {
 
     constructor(address escrow_, address tokenFactory_, address memberlistFactory_) {
         escrow = EscrowLike(escrow_);
-        tokenFactory = RestrictedTokenFactoryLike(tokenFactory_);
+        tokenFactory = TrancheTokenFactoryLike(tokenFactory_);
         memberlistFactory = MemberlistFactoryLike(memberlistFactory_);
 
         wards[msg.sender] = 1;
@@ -184,6 +184,7 @@ contract CentrifugeConnector {
     // todo(nuno): store currency and decimals
     function addPool(uint64 poolId, uint128 currency, uint8 decimals) public onlyGateway {
         Pool storage pool = pools[poolId];
+        require(pool.createdAt == 0, "CentrifugeConnector/pool-already-added");
         pool.poolId = poolId;
         pool.createdAt = block.timestamp;
         emit PoolAdded(poolId);
@@ -200,6 +201,7 @@ contract CentrifugeConnector {
         require(pool.createdAt > 0, "CentrifugeConnector/invalid-pool");
 
         Tranche storage tranche = tranches[poolId][trancheId];
+        require(tranche.lastPriceUpdate == 0, "CentrifugeConnector/tranche-already-added");
         tranche.latestPrice = price;
         tranche.lastPriceUpdate = block.timestamp;
         tranche.tokenName = tokenName;
@@ -211,10 +213,12 @@ contract CentrifugeConnector {
     function deployTranche(uint64 poolId, bytes16 trancheId) public {
         Tranche storage tranche = tranches[poolId][trancheId];
         require(tranche.lastPriceUpdate > 0, "CentrifugeConnector/invalid-pool-or-tranche");
+        require(tranche.token == address(0), "CentrifugeConnector/tranche-already-deployed");
 
         // TODO: use actual decimals
         uint8 decimals = 18;
-        address token = tokenFactory.newRestrictedToken(tranche.tokenName, tranche.tokenSymbol, decimals);
+        address token =
+            tokenFactory.newTrancheToken(poolId, trancheId, tranche.tokenName, tranche.tokenSymbol, decimals);
         tranche.token = token;
 
         address memberlist = memberlistFactory.newMemberlist();

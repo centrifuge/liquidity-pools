@@ -14,7 +14,7 @@ contract ERC20 {
     string public name;
     string public symbol;
     string public constant version = "3";
-    uint8 public decimals;
+    uint8 public immutable decimals;
     uint256 public totalSupply;
 
     mapping(address => uint256) public balanceOf;
@@ -34,9 +34,7 @@ contract ERC20 {
     event Approval(address indexed owner, address indexed spender, uint256 value);
     event Transfer(address indexed from, address indexed to, uint256 value);
 
-    constructor(string memory name_, string memory symbol_, uint8 decimals_) {
-        name = name_;
-        symbol = symbol_;
+    constructor(uint8 decimals_) {
         decimals = decimals_;
 
         wards[msg.sender] = 1;
@@ -63,7 +61,7 @@ contract ERC20 {
     }
 
     modifier auth() {
-        require(wards[msg.sender] == 1, "not-authorized");
+        require(wards[msg.sender] == 1, "ERC20/not-authorized");
         _;
     }
 
@@ -79,8 +77,8 @@ contract ERC20 {
     }
 
     function file(bytes32 what, string memory data) external auth {
-        if (what == "name") name = name;
-        else if (what == "symbol") symbol = symbol;
+        if (what == "name") name = data;
+        else if (what == "symbol") symbol = data;
         else revert("ERC20/file-unrecognized-param");
         emit File(what, data);
     }

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.18;
 pragma abicoder v2;
 
-import {RestrictedTokenFactory, MemberlistFactory} from "src/token/factory.sol";
+import {TrancheTokenFactory, MemberlistFactory} from "src/token/factory.sol";
 import {RestrictedTokenLike} from "src/token/restricted.sol";
 import {MemberlistLike, Memberlist} from "src/token/memberlist.sol";
 import "forge-std/Test.sol";
@@ -16,10 +16,10 @@ contract RestrictedTokenTest is Test {
     MemberlistLike memberlist;
 
     function setUp() public {
-        RestrictedTokenFactory tokenFactory = new RestrictedTokenFactory();
+        TrancheTokenFactory tokenFactory = new TrancheTokenFactory();
         MemberlistFactory memberlistFactory = new MemberlistFactory();
 
-        token = RestrictedTokenLike(tokenFactory.newRestrictedToken("Some Token", "ST", 18));
+        token = RestrictedTokenLike(tokenFactory.newTrancheToken(1, "1", "Some Token", "ST", 18));
 
         memberlist = MemberlistLike(memberlistFactory.newMemberlist());
         token.file("memberlist", address(memberlist));

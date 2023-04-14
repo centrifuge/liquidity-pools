@@ -7,7 +7,7 @@ import {ConnectorEscrow} from "src/Escrow.sol";
 import {MockHomeConnector} from "./mock/MockHomeConnector.sol";
 import "./mock/MockXcmRouter.sol";
 import {ConnectorGateway} from "src/routers/Gateway.sol";
-import {RestrictedTokenFactory, MemberlistFactory} from "src/token/factory.sol";
+import {TrancheTokenFactory, MemberlistFactory} from "src/token/factory.sol";
 import {InvariantPoolManager} from "./accounts/PoolManager.sol";
 import "forge-std/Test.sol";
 import "../src/Connector.sol";
@@ -24,7 +24,7 @@ contract ConnectorInvariants is Test {
 
     function setUp() public {
         address escrow_ = address(new ConnectorEscrow());
-        address tokenFactory_ = address(new RestrictedTokenFactory());
+        address tokenFactory_ = address(new TrancheTokenFactory());
         address memberlistFactory_ = address(new MemberlistFactory());
         bridgedConnector = new CentrifugeConnector(escrow_, tokenFactory_, memberlistFactory_);
         mockXcmRouter = new MockXcmRouter(address(bridgedConnector));
