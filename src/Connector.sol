@@ -287,11 +287,7 @@ contract CentrifugeConnector {
         memberlist.updateMember(user, validUntil);
     }
 
-    function handleTransfer(
-        uint128 currency,
-        address recipient,
-        uint128 amount
-    ) public onlyGateway {
+    function handleTransfer(uint128 currency, address recipient, uint128 amount) public onlyGateway {
         address currencyAddress = currencies[currency];
         require(currencyAddress != address(0), "CentrifugeConnector/unknown-currency");
 

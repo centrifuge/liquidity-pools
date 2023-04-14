@@ -307,7 +307,6 @@ contract ConnectorTest is Test {
         assertEq(erc20.balanceOf(recipient), amount);
     }
 
-
     function testOutgoingTransferWorks(
         string memory tokenName,
         string memory tokenSymbol,

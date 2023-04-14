@@ -73,21 +73,10 @@ contract MockHomeConnector is Test {
     }
 
     // Trigger an incoming (e.g. Centrifuge Chain -> EVM) transfer of stable coins
-    function incomingTransfer(
-        uint128 currency,
-        bytes32 sender,
-        bytes32 recipient,
-        uint128 amount
-    ) public {
-        bytes memory _message = ConnectorMessages.formatTransfer(
-            currency,
-            sender,
-            recipient,
-            amount
-        );
+    function incomingTransfer(uint128 currency, bytes32 sender, bytes32 recipient, uint128 amount) public {
+        bytes memory _message = ConnectorMessages.formatTransfer(currency, sender, recipient, amount);
         router.handle(_message);
     }
-
 
     // Trigger an incoming (e.g. Centrifuge Chain -> EVM) transfer of tranche tokens
     function incomingTransferTrancheTokens(
