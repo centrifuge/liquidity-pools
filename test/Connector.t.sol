@@ -286,7 +286,45 @@ contract ConnectorTest is Test {
         vm.expectRevert(bytes("CentrifugeConnector/invalid-pool-or-tranche"));
         bridgedConnector.updateTokenPrice(poolId, trancheId, price);
     }
-    //
+
+    function testOutgoingTransferWorks(
+        string memory tokenName,
+        string memory tokenSymbol,
+        uint8 decimals,
+        uint128 initialBalance,
+        uint128 currency,
+        bytes32 recipient,
+        uint128 amount
+    ) public {
+        vm.assume(decimals > 6);
+        vm.assume(initialBalance >= amount);
+        ERC20 erc20 = new ERC20(tokenName, tokenSymbol, decimals);
+
+        connector.addCurrency(currency, address(erc20));
+
+        erc20.mint(address(this), initialBalance);
+        assertEq(erc20.balanceOf(address(this)), initialBalance);
+
+        erc20.approve(address(bridgedConnector), type(uint256).max);
+        bridgedConnector.transfer(currency, recipient, amount);
+        assertEq(erc20.balanceOf(address(this)), initialBalance - amount);
+    }
+
+    function testOutgoingTransferUnknownCurrencyFails(
+        string memory tokenName,
+        string memory tokenSymbol,
+        uint8 decimals,
+        uint128 initialBalance,
+        uint128 currency,
+        bytes32 recipient,
+        uint128 amount
+    ) public {
+        vm.assume(decimals > 6);
+        ERC20 erc20 = new ERC20(tokenName, tokenSymbol, decimals);
+
+        vm.expectRevert(bytes("CentrifugeConnector/unknown-currency"));
+        bridgedConnector.transfer(currency, recipient, amount);
+    }
 
     // Test transferring `amount` to the address(this)'s account (Centrifuge Chain -> EVM like) and then try
     // transferring that amount to a `centChainAddress` (EVM -> Centrifuge Chain like).
