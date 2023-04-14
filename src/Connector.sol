@@ -287,6 +287,18 @@ contract CentrifugeConnector {
         memberlist.updateMember(user, validUntil);
     }
 
+    function handleTransfer(
+        uint128 currency,
+        address recipient,
+        uint128 amount
+    ) public onlyGateway {
+        address currencyAddress = currencies[currency];
+        require(currencyAddress != address(0), "CentrifugeConnector/unknown-currency");
+
+        ERC20Like erc20 = ERC20Like(currencyAddress);
+        erc20.mint(recipient, amount);
+    }
+
     function handleTransferTrancheTokens(
         uint64 poolId,
         bytes16 trancheId,

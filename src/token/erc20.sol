@@ -63,7 +63,7 @@ contract ERC20 {
     }
 
     modifier auth() {
-        require(wards[msg.sender] == 1, "not-authorized");
+        require(wards[msg.sender] == 1, "ERC20/not-authorized");
         _;
     }
 
