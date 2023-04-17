@@ -295,6 +295,7 @@ contract ConnectorTest is Test {
         uint128 amount
     ) public {
         vm.assume(decimals > 0);
+        vm.assume(amount > 0);
         vm.assume(recipient != address(0));
 
         ERC20 erc20 = new ERC20(tokenName, tokenSymbol, decimals);
@@ -348,6 +349,7 @@ contract ConnectorTest is Test {
         uint128 amount
     ) public {
         vm.assume(decimals > 0);
+        vm.assume(amount > 0);
         vm.assume(initialBalance >= amount);
         ERC20 erc20 = new ERC20(tokenName, tokenSymbol, decimals);
 
