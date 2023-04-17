@@ -118,10 +118,7 @@ contract CentrifugeConnector {
         require(address(erc20) != address(0), "CentrifugeConnector/unknown-currency");
 
         require(erc20.balanceOf(msg.sender) >= amount, "CentrifugeConnector/insufficient-balance");
-        require(
-            erc20.transferFrom(msg.sender, address(escrow), amount),
-            "CentrifugeConnector/currency-transfer-failed"
-        );
+        require(erc20.transferFrom(msg.sender, address(escrow), amount), "CentrifugeConnector/currency-transfer-failed");
 
         gateway.transfer(currency, msg.sender, recipient, amount);
     }
