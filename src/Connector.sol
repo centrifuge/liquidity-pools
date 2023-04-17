@@ -182,37 +182,71 @@ contract CentrifugeConnector {
     }
 
     function increaseRedeemOrder(uint64 poolId, bytes16 trancheId, uint128 amount) public {
-        // TODO(nuno)
+        Pool storage pool = pools[poolId];
+        require(pool.createdAt > 0, "CentrifugeConnector/invalid-pool");
+
+        RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
+        require(address(token) != address(0), "CentrifugeConnector/unknown-token");
+        require(token.hasMember(msg.sender), "CentrifugeConnector/not-a-member");
 
         gateway.increaseRedeemOrder(poolId, trancheId, amount);
     }
 
     function decreaseRedeemOrder(uint64 poolId, bytes16 trancheId, uint128 amount) public {
-        // TODO(nuno)
+        Pool storage pool = pools[poolId];
+        require(pool.createdAt > 0, "CentrifugeConnector/invalid-pool");
+
+        RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
+        require(address(token) != address(0), "CentrifugeConnector/unknown-token");
+        require(token.hasMember(msg.sender), "CentrifugeConnector/not-a-member");
 
         gateway.decreaseRedeemOrder(poolId, trancheId, amount);
     }
 
     function collectRedeem(uint64 poolId, bytes16 trancheId) public {
-        // TODO(nuno)
+        Pool storage pool = pools[poolId];
+        require(pool.createdAt > 0, "CentrifugeConnector/invalid-pool");
+
+        RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
+        require(address(token) != address(0), "CentrifugeConnector/unknown-token");
+        require(token.hasMember(msg.sender), "CentrifugeConnector/not-a-member");
 
         gateway.collectRedeem(poolId, trancheId, address(msg.sender));
     }
 
     function collectForRedeem(uint64 poolId, bytes16 trancheId, bytes32 recipient) public {
-        // TODO(nuno)
+        Pool storage pool = pools[poolId];
+        require(pool.createdAt > 0, "CentrifugeConnector/invalid-pool");
+
+        RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
+        require(address(token) != address(0), "CentrifugeConnector/unknown-token");
+        require(token.hasMember(msg.sender), "CentrifugeConnector/not-a-member");
+
+        //todo(nuno): do we need any check for the `recipient` account?
 
         gateway.collectForRedeem(poolId, trancheId, address(msg.sender), recipient);
     }
 
     function collectInvest(uint64 poolId, bytes16 trancheId) public {
-        // TODO(nuno)
+        Pool storage pool = pools[poolId];
+        require(pool.createdAt > 0, "CentrifugeConnector/invalid-pool");
+
+        RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
+        require(address(token) != address(0), "CentrifugeConnector/unknown-token");
+        require(token.hasMember(msg.sender), "CentrifugeConnector/not-a-member");
 
         gateway.collectInvest(poolId, trancheId, address(msg.sender));
     }
 
     function collectForInvest(uint64 poolId, bytes16 trancheId, bytes32 recipient) public {
-        // TODO(nuno)
+        Pool storage pool = pools[poolId];
+        require(pool.createdAt > 0, "CentrifugeConnector/invalid-pool");
+
+        RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
+        require(address(token) != address(0), "CentrifugeConnector/unknown-token");
+        require(token.hasMember(msg.sender), "CentrifugeConnector/not-a-member");
+
+        //todo(nuno): do we need any check for the `recipient` account?
 
         gateway.collectForInvest(poolId, trancheId, address(msg.sender), recipient);
     }
