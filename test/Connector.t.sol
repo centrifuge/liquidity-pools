@@ -285,6 +285,28 @@ contract ConnectorTest is Test {
         bridgedConnector.updateTokenPrice(poolId, trancheId, price);
     }
 
+    function testIncomingTransferWithoutEscrowFundsFails(
+        string memory tokenName,
+        string memory tokenSymbol,
+        uint8 decimals,
+        uint128 currency,
+        bytes32 sender,
+        address recipient,
+        uint128 amount
+    ) public {
+        vm.assume(decimals > 0);
+        vm.assume(recipient != address(0));
+
+        ERC20 erc20 = new ERC20(tokenName, tokenSymbol, decimals);
+        connector.addCurrency(currency, address(erc20));
+
+        assertEq(erc20.balanceOf(address(bridgedConnector.escrow())), 0);
+        vm.expectRevert(bytes("ERC20/insufficient-balance"));
+        connector.incomingTransfer(currency, sender, bytes32(bytes20(recipient)), amount);
+        assertEq(erc20.balanceOf(address(bridgedConnector.escrow())), 0);
+        assertEq(erc20.balanceOf(recipient), 0);
+    }
+
     function testIncomingTransferWorks(
         string memory tokenName,
         string memory tokenSymbol,
@@ -299,12 +321,23 @@ contract ConnectorTest is Test {
 
         ERC20 erc20 = new ERC20(tokenName, tokenSymbol, decimals);
         connector.addCurrency(currency, address(erc20));
-        erc20.rely(address(bridgedConnector));
 
+        // First, an outgoing transfer must take place which has funds currency of the currency moved to
+        // the escrow account, from which funds are moved from into the recipient on an incoming transfer.
+        erc20.approve(address(bridgedConnector), type(uint256).max);
+        erc20.mint(address(this), amount);
+        bridgedConnector.transfer(currency, bytes32(bytes20(recipient)), amount);
+        assertEq(erc20.balanceOf(address(bridgedConnector.escrow())), amount);
+
+        // Now we test the incoming message
         connector.incomingTransfer(currency, sender, bytes32(bytes20(recipient)), amount);
-        assertEq(erc20.balanceOf(recipient), amount);
+        erc20.approve(address(bridgedConnector.escrow()), type(uint256).max);
+
+    assertEq(erc20.balanceOf(address(bridgedConnector.escrow())), 0);
+        assertEq(erc20.balanceOf(recipient), 0);
     }
 
+    // Verify that funds are moved from the msg.sender into the escrow account
     function testOutgoingTransferWorks(
         string memory tokenName,
         string memory tokenSymbol,
@@ -322,17 +355,16 @@ contract ConnectorTest is Test {
 
         erc20.mint(address(this), initialBalance);
         assertEq(erc20.balanceOf(address(this)), initialBalance);
+        assertEq(erc20.balanceOf(address(bridgedConnector.escrow())), 0);
 
         erc20.approve(address(bridgedConnector), type(uint256).max);
         bridgedConnector.transfer(currency, recipient, amount);
+
         assertEq(erc20.balanceOf(address(this)), initialBalance - amount);
+        assertEq(erc20.balanceOf(address(bridgedConnector.escrow())), amount);
     }
 
-    function testOutgoingTransferUnknownCurrencyFails(
-        uint128 currency,
-        bytes32 recipient,
-        uint128 amount
-    ) public {
+    function testOutgoingTransferUnknownCurrencyFails(uint128 currency, bytes32 recipient, uint128 amount) public {
         vm.expectRevert(bytes("CentrifugeConnector/unknown-currency"));
         bridgedConnector.transfer(currency, recipient, amount);
     }

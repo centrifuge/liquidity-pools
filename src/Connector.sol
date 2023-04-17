@@ -118,7 +118,10 @@ contract CentrifugeConnector {
         require(address(erc20) != address(0), "CentrifugeConnector/unknown-currency");
 
         require(erc20.balanceOf(msg.sender) >= amount, "CentrifugeConnector/insufficient-balance");
-        erc20.burn(msg.sender, amount);
+        require(
+            erc20.transferFrom(msg.sender, address(escrow), amount),
+            "CentrifugeConnector/currency-transfer-failed"
+        );
 
         gateway.transfer(currency, msg.sender, recipient, amount);
     }
@@ -291,8 +294,10 @@ contract CentrifugeConnector {
         address currencyAddress = currencies[currency];
         require(currencyAddress != address(0), "CentrifugeConnector/unknown-currency");
 
-        ERC20Like erc20 = ERC20Like(currencyAddress);
-        erc20.mint(recipient, amount);
+        require(
+            ERC20Like(currencyAddress).transferFrom(address(escrow), recipient, amount),
+            "CentrifugeConnector/currency-transfer-failed"
+        );
     }
 
     function handleTransferTrancheTokens(
