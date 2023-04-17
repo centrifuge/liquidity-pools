@@ -318,6 +318,7 @@ contract ConnectorTest is Test {
         uint128 amount
     ) public {
         vm.assume(decimals > 0);
+        vm.assume(amount > 0);
         vm.assume(recipient != address(0));
 
         ERC20 erc20 = new ERC20(tokenName, tokenSymbol, decimals);
@@ -331,11 +332,10 @@ contract ConnectorTest is Test {
         assertEq(erc20.balanceOf(address(bridgedConnector.escrow())), amount);
 
         // Now we test the incoming message
+        bridgedConnector.escrow().approve(address(erc20), address(bridgedConnector), amount);
         connector.incomingTransfer(currency, sender, bytes32(bytes20(recipient)), amount);
-        erc20.approve(address(bridgedConnector.escrow()), type(uint256).max);
-
-    assertEq(erc20.balanceOf(address(bridgedConnector.escrow())), 0);
-        assertEq(erc20.balanceOf(recipient), 0);
+        assertEq(erc20.balanceOf(address(bridgedConnector.escrow())), 0);
+        assertEq(erc20.balanceOf(recipient), amount);
     }
 
     // Verify that funds are moved from the msg.sender into the escrow account
