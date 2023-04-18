@@ -648,6 +648,36 @@ contract ConnectorTest is Test {
         bridgedConnector.increaseRedeemOrder(poolId, trancheId, address(erc20), amount);
     }
 
+    function testIncreaseRedeemOrderWithNotAllowedCurrencyFails(
+        uint64 poolId,
+        bytes16 trancheId,
+        string memory trancheTokenName,
+        string memory trancheTokenSymbol,
+        uint8 trancheDecimals,
+        uint128 price,
+        uint64 validUntil,
+        uint128 currency,
+        uint8 erc20Decimals,
+        uint128 amount
+    ) public {
+        vm.assume(amount > 0);
+        vm.assume(trancheDecimals & erc20Decimals > 0);
+        vm.assume(validUntil > block.timestamp + 7 days);
+        vm.assume(currency != 0);
+
+        ERC20 erc20 = new ERC20("X's Dollar", "USDX", erc20Decimals);
+
+        connector.addCurrency(currency, address(erc20));
+        connector.addPool(poolId);
+//        connector.allowPoolCurrency(currency, poolId);
+        connector.addTranche(poolId, trancheId, trancheTokenName, trancheTokenSymbol, trancheDecimals, price);
+        bridgedConnector.deployTranche(poolId, trancheId);
+        connector.updateMember(poolId, trancheId, address(this), validUntil);
+
+        vm.expectRevert(bytes("CentrifugeConnector/pool-currency-not-allowed"));
+        bridgedConnector.increaseRedeemOrder(poolId, trancheId, address(erc20), amount);
+    }
+
     function testIncreaseRedeemOrderWithoutMemberFails(
         uint64 poolId,
         bytes16 trancheId,

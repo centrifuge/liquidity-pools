@@ -210,6 +210,8 @@ contract CentrifugeConnector {
         uint128 currency = revCurrencies[currencyAddress];
         require(currency != 0, "CentrifugeConnector/unknown-currency");
 
+        require(poolCurrencies[poolId][currencyAddress], "CentrifugeConnector/pool-currency-not-allowed");
+
         gateway.increaseRedeemOrder(poolId, trancheId, msg.sender, currency, amount);
     }
 
