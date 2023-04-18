@@ -21,13 +21,14 @@ interface GatewayLike {
         uint128 amount
     ) external;
     function transfer(uint128 currency, address sender, bytes32 recipient, uint128 amount) external;
-    function increaseInvestOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount) external;
+    function increaseInvestOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount)
+        external;
     function decreaseInvestOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount)
-    external;
+        external;
     function increaseRedeemOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount)
-    external;
+        external;
     function decreaseRedeemOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount)
-    external;
+        external;
     function collectRedeem(uint64 poolId, bytes16 trancheId, address caller) external;
     function collectForRedeem(uint64 poolId, bytes16 trancheId, address caller, bytes32 recipient) external;
     function collectInvest(uint64 poolId, bytes16 trancheId, address caller) external;
