@@ -270,6 +270,9 @@ contract CentrifugeConnector {
     }
 
     function allowPoolCurrency(uint128 currency, uint64 poolId) public onlyGateway {
+        Pool storage pool = pools[poolId];
+        require(pool.createdAt > 0, "CentrifugeConnector/invalid-pool");
+
         address currencyAddress = currencies[currency];
         require(currencyAddress != address(0), "CentrifugeConnector/unknown-currency");
 
