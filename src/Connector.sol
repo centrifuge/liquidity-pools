@@ -56,11 +56,13 @@ contract CentrifugeConnector {
     mapping(address => uint256) public wards;
     mapping(uint64 => Pool) public pools;
     mapping(uint64 => mapping(bytes16 => Tranche)) public tranches;
-    mapping(uint128 => address) public currencies;
+
     // todo(nuno): keep one of these two
+    mapping(uint128 => address) public currencies;
     mapping(address => uint128) public revCurrencies;
+
     // The currencies allowed for a given pool
-    mapping(uint64 => mapping(uint128 => bool)) public poolCurrencies;
+    mapping(uint64 => mapping(address => bool)) public poolCurrencies;
 
     GatewayLike public gateway;
     EscrowLike public escrow;
@@ -271,7 +273,7 @@ contract CentrifugeConnector {
         address currencyAddress = currencies[currency];
         require(currencyAddress != address(0), "CentrifugeConnector/unknown-currency");
 
-        poolCurrencies[poolId][currency] = true;
+        poolCurrencies[poolId][currencyAddress] = true;
         emit PoolCurrencyAllowed(currency, poolId);
     }
 
