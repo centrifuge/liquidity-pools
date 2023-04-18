@@ -489,7 +489,7 @@ contract ConnectorTest is Test {
         assertEq(ERC20Like(token).balanceOf(address(this)), 0);
     }
 
-    function testIncreaseInvestOrder(
+    function testIncreaseInvestOrderWorks(
         uint64 poolId,
         bytes16 trancheId,
         string memory trancheTokenName,
@@ -516,7 +516,6 @@ contract ConnectorTest is Test {
         connector.updateMember(poolId, trancheId, address(this), validUntil);
 
         erc20.approve(address(bridgedConnector), type(uint256).max);
-        // Fund `this` account first
         erc20.mint(address(this), amount);
 
         bridgedConnector.increaseInvestOrder(poolId, trancheId, address(erc20), amount);
@@ -553,7 +552,35 @@ contract ConnectorTest is Test {
         bridgedConnector.increaseInvestOrder(poolId, trancheId, address(erc20), amount);
     }
 
-    function testDecreaseInvestOrder(
+    function testIncreaseInvestOrderWithNotAllowedCurrencyFails(
+        uint64 poolId,
+        bytes16 trancheId,
+        string memory trancheTokenName,
+        string memory trancheTokenSymbol,
+        uint8 trancheDecimals,
+        uint128 price,
+        uint64 validUntil,
+        uint128 currency,
+        uint8 erc20Decimals,
+        uint128 amount
+    ) public {
+        vm.assume(amount > 0);
+        vm.assume(trancheDecimals & erc20Decimals > 0);
+        vm.assume(validUntil > block.timestamp + 7 days);
+        vm.assume(currency != 0);
+
+        ERC20 erc20 = new ERC20("X's Dollar", "USDX", erc20Decimals);
+        connector.addCurrency(currency, address(erc20));
+        connector.addPool(poolId);
+        connector.addTranche(poolId, trancheId, trancheTokenName, trancheTokenSymbol, trancheDecimals, price);
+        bridgedConnector.deployTranche(poolId, trancheId);
+        connector.updateMember(poolId, trancheId, address(this), validUntil);
+
+    vm.expectRevert(bytes("CentrifugeConnector/pool-currency-not-allowed"));
+        bridgedConnector.increaseInvestOrder(poolId, trancheId, address(erc20), amount);
+    }
+
+    function testDecreaseInvestOrderWorks(
         uint64 poolId,
         bytes16 trancheId,
         string memory trancheTokenName,
@@ -604,7 +631,6 @@ contract ConnectorTest is Test {
         vm.assume(currency != 0);
 
         ERC20 erc20 = new ERC20("X's Dollar", "USDX", erc20Decimals);
-
         connector.addCurrency(currency, address(erc20));
         connector.addPool(poolId);
         connector.allowPoolCurrency(currency, poolId);
@@ -615,7 +641,7 @@ contract ConnectorTest is Test {
         bridgedConnector.decreaseInvestOrder(poolId, trancheId, address(erc20), amount);
     }
 
-    function testIncreaseRedeemOrder(
+    function testDecreaseInvestOrderWithNotAllowedCurrencyFails(
         uint64 poolId,
         bytes16 trancheId,
         string memory trancheTokenName,
@@ -633,7 +659,34 @@ contract ConnectorTest is Test {
         vm.assume(currency != 0);
 
         ERC20 erc20 = new ERC20("X's Dollar", "USDX", erc20Decimals);
+        connector.addCurrency(currency, address(erc20));
+        connector.addPool(poolId);
+        connector.addTranche(poolId, trancheId, trancheTokenName, trancheTokenSymbol, trancheDecimals, price);
+        bridgedConnector.deployTranche(poolId, trancheId);
+        connector.updateMember(poolId, trancheId, address(this), validUntil);
 
+        vm.expectRevert(bytes("CentrifugeConnector/pool-currency-not-allowed"));
+        bridgedConnector.decreaseInvestOrder(poolId, trancheId, address(erc20), amount);
+    }
+
+    function testIncreaseRedeemOrderWorks(
+        uint64 poolId,
+        bytes16 trancheId,
+        string memory trancheTokenName,
+        string memory trancheTokenSymbol,
+        uint8 trancheDecimals,
+        uint128 price,
+        uint64 validUntil,
+        uint128 currency,
+        uint8 erc20Decimals,
+        uint128 amount
+    ) public {
+        vm.assume(amount > 0);
+        vm.assume(trancheDecimals & erc20Decimals > 0);
+        vm.assume(validUntil > block.timestamp + 7 days);
+        vm.assume(currency != 0);
+
+        ERC20 erc20 = new ERC20("X's Dollar", "USDX", erc20Decimals);
         connector.addCurrency(currency, address(erc20));
         connector.addPool(poolId);
         connector.allowPoolCurrency(currency, poolId);
@@ -642,7 +695,6 @@ contract ConnectorTest is Test {
         connector.updateMember(poolId, trancheId, address(this), validUntil);
 
         erc20.approve(address(bridgedConnector), type(uint256).max);
-        // Fund `this` account first
         erc20.mint(address(this), amount);
 
         bridgedConnector.increaseRedeemOrder(poolId, trancheId, address(erc20), amount);
@@ -666,10 +718,8 @@ contract ConnectorTest is Test {
         vm.assume(currency != 0);
 
         ERC20 erc20 = new ERC20("X's Dollar", "USDX", erc20Decimals);
-
         connector.addCurrency(currency, address(erc20));
         connector.addPool(poolId);
-        //        connector.allowPoolCurrency(currency, poolId);
         connector.addTranche(poolId, trancheId, trancheTokenName, trancheTokenSymbol, trancheDecimals, price);
         bridgedConnector.deployTranche(poolId, trancheId);
         connector.updateMember(poolId, trancheId, address(this), validUntil);
@@ -707,7 +757,7 @@ contract ConnectorTest is Test {
         bridgedConnector.increaseRedeemOrder(poolId, trancheId, address(erc20), amount);
     }
 
-    function testDecreaseRedeemOrder(
+    function testDecreaseRedeemOrderWorks(
         uint64 poolId,
         bytes16 trancheId,
         string memory trancheTokenName,
@@ -734,7 +784,6 @@ contract ConnectorTest is Test {
         connector.updateMember(poolId, trancheId, address(this), validUntil);
 
         erc20.approve(address(bridgedConnector), type(uint256).max);
-        // Fund `this` account first
         erc20.mint(address(this), amount);
 
         bridgedConnector.decreaseRedeemOrder(poolId, trancheId, address(erc20), amount);
@@ -766,6 +815,34 @@ contract ConnectorTest is Test {
         bridgedConnector.deployTranche(poolId, trancheId);
 
         vm.expectRevert(bytes("CentrifugeConnector/not-a-member"));
+        bridgedConnector.decreaseRedeemOrder(poolId, trancheId, address(erc20), amount);
+    }
+
+    function testDecreaseRedeemOrderWithNotAllowedCurrencyFails(
+        uint64 poolId,
+        bytes16 trancheId,
+        string memory trancheTokenName,
+        string memory trancheTokenSymbol,
+        uint8 trancheDecimals,
+        uint128 price,
+        uint64 validUntil,
+        uint128 currency,
+        uint8 erc20Decimals,
+        uint128 amount
+    ) public {
+        vm.assume(amount > 0);
+        vm.assume(trancheDecimals & erc20Decimals > 0);
+        vm.assume(validUntil > block.timestamp + 7 days);
+        vm.assume(currency != 0);
+
+        ERC20 erc20 = new ERC20("X's Dollar", "USDX", erc20Decimals);
+
+        connector.addCurrency(currency, address(erc20));
+        connector.addPool(poolId);
+        connector.addTranche(poolId, trancheId, trancheTokenName, trancheTokenSymbol, trancheDecimals, price);
+        connector.updateMember(poolId, trancheId, address(this), validUntil);
+
+        vm.expectRevert(bytes("CentrifugeConnector/pool-currency-not-allowed"));
         bridgedConnector.decreaseRedeemOrder(poolId, trancheId, address(erc20), amount);
     }
 
