@@ -199,7 +199,7 @@ contract CentrifugeConnector {
         gateway.decreaseInvestOrder(poolId, trancheId, msg.sender, currency, amount);
     }
 
-    function increaseRedeemOrder(uint64 poolId, bytes16 trancheId,  address currencyAddress, uint128 amount) public {
+    function increaseRedeemOrder(uint64 poolId, bytes16 trancheId, address currencyAddress, uint128 amount) public {
         Pool storage pool = pools[poolId];
         require(pool.createdAt > 0, "CentrifugeConnector/invalid-pool");
 
