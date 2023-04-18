@@ -185,7 +185,7 @@ contract CentrifugeConnector {
         gateway.increaseInvestOrder(poolId, trancheId, msg.sender, currency, amount);
     }
 
-    function decreaseInvestOrder(uint64 poolId, bytes16 trancheId, uint128 amount) public {
+    function decreaseInvestOrder(uint64 poolId, bytes16 trancheId, address currencyAddress, uint128 amount) public {
         Pool storage pool = pools[poolId];
         require(pool.createdAt > 0, "CentrifugeConnector/invalid-pool");
 
@@ -193,11 +193,13 @@ contract CentrifugeConnector {
         require(address(token) != address(0), "CentrifugeConnector/unknown-token");
         require(token.hasMember(msg.sender), "CentrifugeConnector/not-a-member");
 
-        // todo(nuno): fix params
-        gateway.decreaseInvestOrder(poolId, trancheId, msg.sender, 404, amount);
+        uint128 currency = revCurrencies[currencyAddress];
+        require(currency != 0, "CentrifugeConnector/unknown-currency");
+
+        gateway.decreaseInvestOrder(poolId, trancheId, msg.sender, currency, amount);
     }
 
-    function increaseRedeemOrder(uint64 poolId, bytes16 trancheId, uint128 amount) public {
+    function increaseRedeemOrder(uint64 poolId, bytes16 trancheId,  address currencyAddress, uint128 amount) public {
         Pool storage pool = pools[poolId];
         require(pool.createdAt > 0, "CentrifugeConnector/invalid-pool");
 
@@ -205,11 +207,13 @@ contract CentrifugeConnector {
         require(address(token) != address(0), "CentrifugeConnector/unknown-token");
         require(token.hasMember(msg.sender), "CentrifugeConnector/not-a-member");
 
-        // todo(nuno): fix params
-        gateway.increaseRedeemOrder(poolId, trancheId, msg.sender, 404, amount);
+        uint128 currency = revCurrencies[currencyAddress];
+        require(currency != 0, "CentrifugeConnector/unknown-currency");
+
+        gateway.increaseRedeemOrder(poolId, trancheId, msg.sender, currency, amount);
     }
 
-    function decreaseRedeemOrder(uint64 poolId, bytes16 trancheId, uint128 amount) public {
+    function decreaseRedeemOrder(uint64 poolId, bytes16 trancheId, address currencyAddress, uint128 amount) public {
         Pool storage pool = pools[poolId];
         require(pool.createdAt > 0, "CentrifugeConnector/invalid-pool");
 
@@ -217,8 +221,10 @@ contract CentrifugeConnector {
         require(address(token) != address(0), "CentrifugeConnector/unknown-token");
         require(token.hasMember(msg.sender), "CentrifugeConnector/not-a-member");
 
-        // todo(nuno): fix params
-        gateway.decreaseRedeemOrder(poolId, trancheId, msg.sender, 404, amount);
+        uint128 currency = revCurrencies[currencyAddress];
+        require(currency != 0, "CentrifugeConnector/unknown-currency");
+
+        gateway.decreaseRedeemOrder(poolId, trancheId, msg.sender, currency, amount);
     }
 
     function collectRedeem(uint64 poolId, bytes16 trancheId) public {
