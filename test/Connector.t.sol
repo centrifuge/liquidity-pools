@@ -669,7 +669,7 @@ contract ConnectorTest is Test {
 
         connector.addCurrency(currency, address(erc20));
         connector.addPool(poolId);
-//        connector.allowPoolCurrency(currency, poolId);
+        //        connector.allowPoolCurrency(currency, poolId);
         connector.addTranche(poolId, trancheId, trancheTokenName, trancheTokenSymbol, trancheDecimals, price);
         bridgedConnector.deployTranche(poolId, trancheId);
         connector.updateMember(poolId, trancheId, address(this), validUntil);
