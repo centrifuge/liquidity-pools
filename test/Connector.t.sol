@@ -492,42 +492,36 @@ contract ConnectorTest is Test {
     function testIncreaseInvestOrder(
         uint64 poolId,
         bytes16 trancheId,
-        uint128 currency,
-        string memory tokenName,
-        string memory tokenSymbol,
-        uint8 decimals,
+        string memory trancheTokenName,
+        string memory trancheTokenSymbol,
+        uint8 trancheDecimals,
         uint128 price,
         uint64 validUntil,
+        uint128 currency,
+        uint8 erc20Decimals,
         uint128 amount
     ) public {
         vm.assume(amount > 0);
-        vm.assume(decimals > 0);
+        vm.assume(trancheDecimals & erc20Decimals > 0);
         vm.assume(validUntil > block.timestamp + 7 days);
+        vm.assume(currency != 0);
 
+        ERC20 erc20 = new ERC20("X's Dollar", "USDX", erc20Decimals);
+
+        connector.addCurrency(currency, address(erc20));
         connector.addPool(poolId);
-        connector.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price);
+        connector.allowPoolCurrency(currency, poolId);
+        connector.addTranche(poolId, trancheId, trancheTokenName, trancheTokenSymbol, trancheDecimals, price);
         bridgedConnector.deployTranche(poolId, trancheId);
         connector.updateMember(poolId, trancheId, address(this), validUntil);
 
-        (address token_,,,,,) = bridgedConnector.tranches(poolId, trancheId);
-        RestrictedTokenLike token = RestrictedTokenLike(token_);
-
-        token.approve(address(bridgedConnector), type(uint256).max);
+        erc20.approve(address(bridgedConnector), type(uint256).max);
         // Fund `this` account first
-        connector.incomingTransferTrancheTokens(poolId, trancheId, 1, address(this), amount);
+        erc20.mint(address(this), amount);
 
-        bridgedConnector.increaseInvestOrder(poolId, trancheId, amount);
-        assertEq(token.balanceOf(address(bridgedConnector.escrow())), amount);
-        assertEq(token.balanceOf(address(this)), 0);
-
-        // todo(nuno): we need to first agree on the currencyId/address discussion
-        // and then be able to pass the right param to `addPool`, make sure the
-        // corresponding currency is a deployed ERC20Like token, mint sufficient
-        // funds to the right account; then we call bridgedConnector.increaseInvestOrder
-        // and verified the `amount` was transferred from the caller account into
-        // the escrow contract.
-
-
+        bridgedConnector.increaseInvestOrder(poolId, trancheId, address(erc20), amount);
+        assertEq(erc20.balanceOf(address(bridgedConnector.escrow())), amount);
+        assertEq(erc20.balanceOf(address(this)), 0);
     }
 
     // helpers
