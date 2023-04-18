@@ -576,7 +576,7 @@ contract ConnectorTest is Test {
         bridgedConnector.deployTranche(poolId, trancheId);
         connector.updateMember(poolId, trancheId, address(this), validUntil);
 
-    vm.expectRevert(bytes("CentrifugeConnector/pool-currency-not-allowed"));
+        vm.expectRevert(bytes("CentrifugeConnector/pool-currency-not-allowed"));
         bridgedConnector.increaseInvestOrder(poolId, trancheId, address(erc20), amount);
     }
 
