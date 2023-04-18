@@ -57,6 +57,8 @@ contract CentrifugeConnector {
     mapping(uint64 => Pool) public pools;
     mapping(uint64 => mapping(bytes16 => Tranche)) public tranches;
     mapping(uint128 => address) public currencies;
+    // todo(nuno): keep one of these two
+    mapping(address => uint128) public revCurrencies;
     // The currencies allowed for a given pool
     mapping(uint64 => mapping(uint128 => bool)) public poolCurrencies;
 
@@ -254,6 +256,7 @@ contract CentrifugeConnector {
     // --- Incoming message handling ---
     function addCurrency(uint128 currency, address currencyAddress) public onlyGateway {
         currencies[currency] = currencyAddress;
+        revCurrencies[currencyAddress] = currency;
         emit CurrencyAdded(currency, currencyAddress);
     }
 

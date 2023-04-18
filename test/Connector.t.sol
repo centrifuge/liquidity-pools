@@ -483,7 +483,7 @@ contract ConnectorTest is Test {
         (address token,,,,,) = bridgedConnector.tranches(poolId, trancheId);
         assertEq(ERC20Like(token).balanceOf(address(this)), amount);
 
-        // Approve and transfer amont from this address to destinationAddress
+        // Approve and transfer amount from this address to destinationAddress
         ERC20Like(token).approve(address(bridgedConnector), amount);
         bridgedConnector.transferTrancheTokensToEVM(poolId, trancheId, 2, destinationAddress, amount);
         assertEq(ERC20Like(token).balanceOf(address(this)), 0);
@@ -492,13 +492,16 @@ contract ConnectorTest is Test {
     function testIncreaseInvestOrder(
         uint64 poolId,
         bytes16 trancheId,
-        uint128 amount,
+        uint128 currency,
         string memory tokenName,
         string memory tokenSymbol,
         uint8 decimals,
         uint128 price,
-        uint64 validUntil
+        uint64 validUntil,
+        uint128 amount
     ) public {
+        vm.assume(amount > 0);
+        vm.assume(decimals > 0);
         vm.assume(validUntil > block.timestamp + 7 days);
 
         connector.addPool(poolId);
@@ -506,12 +509,25 @@ contract ConnectorTest is Test {
         bridgedConnector.deployTranche(poolId, trancheId);
         connector.updateMember(poolId, trancheId, address(this), validUntil);
 
+        (address token_,,,,,) = bridgedConnector.tranches(poolId, trancheId);
+        RestrictedTokenLike token = RestrictedTokenLike(token_);
+
+        token.approve(address(bridgedConnector), type(uint256).max);
+        // Fund `this` account first
+        connector.incomingTransferTrancheTokens(poolId, trancheId, 1, address(this), amount);
+
+        bridgedConnector.increaseInvestOrder(poolId, trancheId, amount);
+        assertEq(token.balanceOf(address(bridgedConnector.escrow())), amount);
+        assertEq(token.balanceOf(address(this)), 0);
+
         // todo(nuno): we need to first agree on the currencyId/address discussion
         // and then be able to pass the right param to `addPool`, make sure the
         // corresponding currency is a deployed ERC20Like token, mint sufficient
         // funds to the right account; then we call bridgedConnector.increaseInvestOrder
         // and verified the `amount` was transferred from the caller account into
         // the escrow contract.
+
+
     }
 
     // helpers
