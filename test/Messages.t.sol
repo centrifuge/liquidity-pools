@@ -252,7 +252,8 @@ contract MessagesTest is Test {
         assertEq(decodedAmount, amount);
 
         // Test the optimised `parseIncomingTransfer` now
-        (uint128 decodedToken2, address decodedRecipient2, uint128 decodedAmount2) = ConnectorMessages.parseIncomingTransfer(_message.ref(0));
+        (uint128 decodedToken2, address decodedRecipient2, uint128 decodedAmount2) =
+            ConnectorMessages.parseIncomingTransfer(_message.ref(0));
         assertEq(uint256(decodedToken2), uint256(decodedToken));
         assertEq(decodedRecipient2, address(bytes20(decodedReceiver)));
         assertEq(decodedAmount, decodedAmount2);
