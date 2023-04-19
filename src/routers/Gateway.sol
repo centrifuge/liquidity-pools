@@ -215,10 +215,8 @@ contract ConnectorGateway {
             (uint64 poolId, bytes16 trancheId, uint128 price) = ConnectorMessages.parseUpdateTrancheTokenPrice(_msg);
             connector.updateTokenPrice(poolId, trancheId, price);
         } else if (ConnectorMessages.isTransfer(_msg)) {
-            (uint128 currency,, bytes32 recipient, uint128 amount) = ConnectorMessages.parseTransfer(_msg);
-            // todo(nuno): consider having a specialised "parseIncomingTransfer" that doesn't parse the `sender`
-            // and that returns the recipient as `address` already
-            connector.handleTransfer(currency, address(bytes20(recipient)), amount);
+            (uint128 currency, address recipient, uint128 amount) = ConnectorMessages.parseIncomingTransfer(_msg);
+            connector.handleTransfer(currency, recipient, amount);
         } else if (ConnectorMessages.isTransferTrancheTokens(_msg)) {
             (uint64 poolId, bytes16 trancheId,, uint256 destinationChainId, address destinationAddress, uint128 amount)
             = ConnectorMessages.parseTransferTrancheTokens20(_msg);
