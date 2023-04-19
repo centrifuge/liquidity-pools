@@ -5,7 +5,7 @@ pragma abicoder v2;
 import {CentrifugeConnector} from "src/Connector.sol";
 import {ConnectorGateway} from "src/routers/Gateway.sol";
 import {ConnectorEscrow} from "src/Escrow.sol";
-import {RestrictedTokenFactory, MemberlistFactory} from "src/token/factory.sol";
+import {TrancheTokenFactory, MemberlistFactory} from "src/token/factory.sol";
 import {RestrictedTokenLike} from "src/token/restricted.sol";
 import {ERC20} from "src/token/erc20.sol";
 import {MemberlistLike, Memberlist} from "src/token/memberlist.sol";
@@ -24,7 +24,7 @@ contract ConnectorTest is Test {
     function setUp() public {
         vm.chainId(1);
         address escrow_ = address(new ConnectorEscrow());
-        address tokenFactory_ = address(new RestrictedTokenFactory());
+        address tokenFactory_ = address(new TrancheTokenFactory());
         address memberlistFactory_ = address(new MemberlistFactory());
 
         bridgedConnector = new CentrifugeConnector(escrow_, tokenFactory_, memberlistFactory_);
@@ -53,7 +53,6 @@ contract ConnectorTest is Test {
 
     function testAllowPoolCurrencyWorks(uint128 currency, uint64 poolId) public {
         ERC20 token = new ERC20("X's Dollar", "USDX", 42);
-
         connector.addCurrency(currency, address(token));
         connector.addPool(poolId);
 
@@ -67,7 +66,14 @@ contract ConnectorTest is Test {
         connector.allowPoolCurrency(currency, poolId);
     }
 
-    function testAddingPoolAsNonRouterFails(uint64 poolId) public {
+    function testAddingPoolMultipleTimesFails(uint64 poolId, uint128 currency, uint8 decimals) public {
+        connector.addPool(poolId);
+
+        vm.expectRevert(bytes("CentrifugeConnector/pool-already-added"));
+        connector.addPool(poolId);
+    }
+
+    function testAddingPoolAsNonRouterFails(uint64 poolId, uint128 currency, uint8 decimals) public {
         vm.expectRevert(bytes("CentrifugeConnector/not-the-gateway"));
         bridgedConnector.addPool(poolId);
     }
@@ -112,6 +118,22 @@ contract ConnectorTest is Test {
         assertEq(token.decimals(), decimals);
     }
 
+    function testAddingTrancheMultipleTimesFails(
+        uint64 poolId,
+        uint128 currency,
+        uint8 decimals,
+        string memory tokenName,
+        string memory tokenSymbol,
+        bytes16 trancheId,
+        uint128 price
+    ) public {
+        connector.addPool(poolId);
+        connector.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price);
+
+        vm.expectRevert(bytes("CentrifugeConnector/tranche-already-added"));
+        connector.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price);
+    }
+
     function testAddingMultipleTranchesWorks(
         uint64 poolId,
         bytes16[] calldata trancheIds,
@@ -120,13 +142,14 @@ contract ConnectorTest is Test {
         uint8 decimals,
         uint128 price
     ) public {
+        vm.assume(trancheIds.length > 0 && trancheIds.length < 5);
+        vm.assume(!hasDuplicates(trancheIds));
         connector.addPool(poolId);
 
         for (uint256 i = 0; i < trancheIds.length; i++) {
             connector.addTranche(poolId, trancheIds[i], tokenName, tokenSymbol, decimals, price);
             bridgedConnector.deployTranche(poolId, trancheIds[i]);
-            (address token, uint256 latestPrice,,,, uint8 actualDecimals) =
-                bridgedConnector.tranches(poolId, trancheIds[i]);
+            (address token, uint256 latestPrice,,,, uint8 actualDecimals) = bridgedConnector.tranches(poolId, trancheIds[i]);
             assertEq(latestPrice, price);
             assertTrue(token != address(0));
             assertEq(actualDecimals, decimals);
@@ -156,6 +179,23 @@ contract ConnectorTest is Test {
     ) public {
         vm.expectRevert(bytes("CentrifugeConnector/invalid-pool"));
         connector.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price);
+    }
+
+    function testDeployingTrancheMultipleTimesFails(
+        uint64 poolId,
+        uint128 currency,
+        uint8 decimals,
+        string memory tokenName,
+        string memory tokenSymbol,
+        bytes16 trancheId,
+        uint128 price
+    ) public {
+        connector.addPool(poolId);
+        connector.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price);
+        bridgedConnector.deployTranche(poolId, trancheId);
+
+        vm.expectRevert(bytes("CentrifugeConnector/tranche-already-deployed"));
+        bridgedConnector.deployTranche(poolId, trancheId);
     }
 
     function testDeployingWrongTrancheFails(
@@ -246,10 +286,10 @@ contract ConnectorTest is Test {
         uint64 validUntil
     ) public {
         vm.assume(validUntil > block.timestamp);
-        bridgedConnector.file("gateway", address(this));
-        bridgedConnector.addPool(poolId);
+        connector.addPool(poolId);
+
         vm.expectRevert(bytes("CentrifugeConnector/invalid-pool-or-tranche"));
-        bridgedConnector.updateMember(poolId, trancheId, user, validUntil);
+        connector.updateMember(poolId, trancheId, user, validUntil);
     }
 
     function testUpdatingTokenPriceWorks(uint64 poolId, uint8 decimals, bytes16 trancheId, uint128 price) public {
@@ -277,11 +317,17 @@ contract ConnectorTest is Test {
         bridgedConnector.updateTokenPrice(poolId, trancheId, price);
     }
 
-    function testUpdatingTokenPriceForNonExistentTrancheFails(uint64 poolId, bytes16 trancheId, uint128 price) public {
-        bridgedConnector.file("gateway", address(this));
-        bridgedConnector.addPool(poolId);
+    function testUpdatingTokenPriceForNonExistentTrancheFails(
+        uint64 poolId,
+        uint128 currency,
+        uint8 decimals,
+        bytes16 trancheId,
+        uint128 price
+    ) public {
+        connector.addPool(poolId);
+
         vm.expectRevert(bytes("CentrifugeConnector/invalid-pool-or-tranche"));
-        bridgedConnector.updateTokenPrice(poolId, trancheId, price);
+        connector.updateTokenPrice(poolId, trancheId, price);
     }
 
     function testIncomingTransferWithoutEscrowFundsFails(
@@ -807,5 +853,17 @@ contract ConnectorTest is Test {
             fc := mload(add(f, 29))
         }
         return fc;
+    }
+
+    function hasDuplicates(bytes16[] calldata array) internal pure returns (bool) {
+        uint256 length = array.length;
+        for (uint256 i = 0; i < length; i++) {
+            for (uint256 j = i + 1; j < length; j++) {
+                if (array[i] == array[j]) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }
