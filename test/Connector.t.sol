@@ -66,14 +66,14 @@ contract ConnectorTest is Test {
         connector.allowPoolCurrency(currency, poolId);
     }
 
-    function testAddingPoolMultipleTimesFails(uint64 poolId, uint128 currency, uint8 decimals) public {
+    function testAddingPoolMultipleTimesFails(uint64 poolId) public {
         connector.addPool(poolId);
 
         vm.expectRevert(bytes("CentrifugeConnector/pool-already-added"));
         connector.addPool(poolId);
     }
 
-    function testAddingPoolAsNonRouterFails(uint64 poolId, uint128 currency, uint8 decimals) public {
+    function testAddingPoolAsNonRouterFails(uint64 poolId) public {
         vm.expectRevert(bytes("CentrifugeConnector/not-the-gateway"));
         bridgedConnector.addPool(poolId);
     }
@@ -120,7 +120,6 @@ contract ConnectorTest is Test {
 
     function testAddingTrancheMultipleTimesFails(
         uint64 poolId,
-        uint128 currency,
         uint8 decimals,
         string memory tokenName,
         string memory tokenSymbol,
@@ -183,7 +182,6 @@ contract ConnectorTest is Test {
 
     function testDeployingTrancheMultipleTimesFails(
         uint64 poolId,
-        uint128 currency,
         uint8 decimals,
         string memory tokenName,
         string memory tokenSymbol,
@@ -319,8 +317,6 @@ contract ConnectorTest is Test {
 
     function testUpdatingTokenPriceForNonExistentTrancheFails(
         uint64 poolId,
-        uint128 currency,
-        uint8 decimals,
         bytes16 trancheId,
         uint128 price
     ) public {
