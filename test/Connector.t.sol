@@ -666,6 +666,112 @@ contract ConnectorTest is Test {
         assertEq(erc20.balanceOf(address(this)), 0);
     }
 
+    function testCollectRedeem(
+        uint64 poolId,
+        bytes16 trancheId,
+        string memory trancheTokenName,
+        string memory trancheTokenSymbol,
+        uint8 trancheDecimals,
+        uint128 price,
+        uint64 validUntil,
+        uint128 amount
+    ) public {
+        vm.assume(amount > 0);
+        vm.assume(trancheDecimals > 0);
+        vm.assume(validUntil > block.timestamp + 7 days);
+
+        vm.expectRevert(bytes("CentrifugeConnector/unknown-tranche-token"));
+        bridgedConnector.collectRedeem(poolId, trancheId);
+        connector.addPool(poolId);
+        connector.addTranche(poolId, trancheId, trancheTokenName, trancheTokenSymbol, trancheDecimals, price);
+        bridgedConnector.deployTranche(poolId, trancheId);
+
+        vm.expectRevert(bytes("CentrifugeConnector/not-a-member"));
+        bridgedConnector.collectRedeem(poolId, trancheId);
+        connector.updateMember(poolId, trancheId, address(this), validUntil);
+
+        bridgedConnector.collectRedeem(poolId, trancheId);
+    }
+
+    function testCollectForRedeem(
+        uint64 poolId,
+        bytes16 trancheId,
+        string memory trancheTokenName,
+        string memory trancheTokenSymbol,
+        uint8 trancheDecimals,
+        uint128 price,
+        uint64 validUntil,
+        bytes32 recipient
+    ) public {
+        vm.assume(trancheDecimals > 0);
+        vm.assume(validUntil > block.timestamp + 7 days);
+
+        vm.expectRevert(bytes("CentrifugeConnector/unknown-tranche-token"));
+        bridgedConnector.collectForRedeem(poolId, trancheId, recipient);
+        connector.addPool(poolId);
+        connector.addTranche(poolId, trancheId, trancheTokenName, trancheTokenSymbol, trancheDecimals, price);
+        bridgedConnector.deployTranche(poolId, trancheId);
+
+        vm.expectRevert(bytes("CentrifugeConnector/not-a-member"));
+        bridgedConnector.collectForRedeem(poolId, trancheId, recipient);
+        connector.updateMember(poolId, trancheId, address(this), validUntil);
+
+        bridgedConnector.collectForRedeem(poolId, trancheId, recipient);
+    }
+
+    function testCollectInvest(
+        uint64 poolId,
+        bytes16 trancheId,
+        string memory trancheTokenName,
+        string memory trancheTokenSymbol,
+        uint8 trancheDecimals,
+        uint128 price,
+        uint64 validUntil,
+        uint128 amount
+    ) public {
+        vm.assume(amount > 0);
+        vm.assume(trancheDecimals > 0);
+        vm.assume(validUntil > block.timestamp + 7 days);
+
+        vm.expectRevert(bytes("CentrifugeConnector/unknown-tranche-token"));
+        bridgedConnector.collectInvest(poolId, trancheId);
+        connector.addPool(poolId);
+        connector.addTranche(poolId, trancheId, trancheTokenName, trancheTokenSymbol, trancheDecimals, price);
+        bridgedConnector.deployTranche(poolId, trancheId);
+
+        vm.expectRevert(bytes("CentrifugeConnector/not-a-member"));
+        bridgedConnector.collectInvest(poolId, trancheId);
+        connector.updateMember(poolId, trancheId, address(this), validUntil);
+
+        bridgedConnector.collectInvest(poolId, trancheId);
+    }
+
+    function testCollectForInvest(
+        uint64 poolId,
+        bytes16 trancheId,
+        string memory trancheTokenName,
+        string memory trancheTokenSymbol,
+        uint8 trancheDecimals,
+        uint128 price,
+        uint64 validUntil,
+        bytes32 recipient
+    ) public {
+        vm.assume(trancheDecimals > 0);
+        vm.assume(validUntil > block.timestamp + 7 days);
+
+        vm.expectRevert(bytes("CentrifugeConnector/unknown-tranche-token"));
+        bridgedConnector.collectForInvest(poolId, trancheId, recipient);
+        connector.addPool(poolId);
+        connector.addTranche(poolId, trancheId, trancheTokenName, trancheTokenSymbol, trancheDecimals, price);
+        bridgedConnector.deployTranche(poolId, trancheId);
+
+        vm.expectRevert(bytes("CentrifugeConnector/not-a-member"));
+        bridgedConnector.collectForInvest(poolId, trancheId, recipient);
+        connector.updateMember(poolId, trancheId, address(this), validUntil);
+
+        bridgedConnector.collectForInvest(poolId, trancheId, recipient);
+    }
+
     // helpers
     function stringToBytes32(string memory source) internal pure returns (bytes32 result) {
         bytes memory tempEmptyStringTest = bytes(source);
