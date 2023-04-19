@@ -272,6 +272,18 @@ library ConnectorMessages {
         amount = uint128(_msg.indexUint(81, 16));
     }
 
+    // An optimised `parseTransfer` function that saves gas by ignoring the `sender` field and that
+    // parses and returns the `recipient` as an `address` instead of the `bytes32` the message holds.
+    function parseIncomingTransfer(bytes29 _msg)
+    internal
+    pure
+    returns (uint128 currency, address recipient, uint128 amount)
+    {
+        currency = uint128(_msg.indexUint(1, 16));
+        recipient = address(bytes20(_msg.index(49, 20)));
+        amount = uint128(_msg.indexUint(81, 16));
+    }
+
     /**
      * TransferTrancheTokens
      *
