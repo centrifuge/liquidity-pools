@@ -38,7 +38,7 @@ contract ConnectorTest is Test {
     }
 
     function testAddingCurrencyWorks(uint128 currency) public {
-        ERC20 token = new ERC20("X's Dollar", "USDX", 42);
+        ERC20 token = newErc20("X's Dollar", "USDX", 42);
 
         connector.addCurrency(currency, address(token));
         (address address_) = bridgedConnector.currencyIdToAddress(currency);
@@ -52,7 +52,7 @@ contract ConnectorTest is Test {
     }
 
     function testAllowPoolCurrencyWorks(uint128 currency, uint64 poolId) public {
-        ERC20 token = new ERC20("X's Dollar", "USDX", 42);
+        ERC20 token = newErc20("X's Dollar", "USDX", 42);
         connector.addCurrency(currency, address(token));
         connector.addPool(poolId);
 
@@ -343,7 +343,7 @@ contract ConnectorTest is Test {
         vm.assume(amount > 0);
         vm.assume(recipient != address(0));
 
-        ERC20 erc20 = new ERC20(tokenName, tokenSymbol, decimals);
+        ERC20 erc20 = newErc20(tokenName, tokenSymbol, decimals);
         connector.addCurrency(currency, address(erc20));
 
         assertEq(erc20.balanceOf(address(bridgedConnector.escrow())), 0);
@@ -367,7 +367,7 @@ contract ConnectorTest is Test {
         vm.assume(currency != 0);
         vm.assume(recipient != address(0));
 
-        ERC20 erc20 = new ERC20(tokenName, tokenSymbol, decimals);
+        ERC20 erc20 = newErc20(tokenName, tokenSymbol, decimals);
         connector.addCurrency(currency, address(erc20));
 
         // First, an outgoing transfer must take place which has funds currency of the currency moved to
@@ -399,7 +399,7 @@ contract ConnectorTest is Test {
         vm.assume(currency != 0);
         vm.assume(initialBalance >= amount);
 
-        ERC20 erc20 = new ERC20(tokenName, tokenSymbol, decimals);
+        ERC20 erc20 = newErc20(tokenName, tokenSymbol, decimals);
 
         vm.expectRevert(bytes("CentrifugeConnector/unknown-currency"));
         bridgedConnector.transfer(address(erc20), recipient, amount);
@@ -550,7 +550,7 @@ contract ConnectorTest is Test {
         vm.assume(validUntil > block.timestamp + 7 days);
         vm.assume(currency != 0);
 
-        ERC20 erc20 = new ERC20("X's Dollar", "USDX", erc20Decimals);
+        ERC20 erc20 = newErc20("X's Dollar", "USDX", erc20Decimals);
 
         vm.expectRevert(bytes("CentrifugeConnector/unknown-tranche-token"));
         bridgedConnector.increaseInvestOrder(poolId, trancheId, address(erc20), amount);
@@ -595,7 +595,7 @@ contract ConnectorTest is Test {
         vm.assume(validUntil > block.timestamp + 7 days);
         vm.assume(currency != 0);
 
-        ERC20 erc20 = new ERC20("X's Dollar", "USDX", erc20Decimals);
+        ERC20 erc20 = newErc20("X's Dollar", "USDX", erc20Decimals);
 
         vm.expectRevert(bytes("CentrifugeConnector/unknown-tranche-token"));
         bridgedConnector.decreaseInvestOrder(poolId, trancheId, address(erc20), amount);
@@ -639,7 +639,7 @@ contract ConnectorTest is Test {
         vm.assume(validUntil > block.timestamp + 7 days);
         vm.assume(currency != 0);
 
-        ERC20 erc20 = new ERC20("X's Dollar", "USDX", erc20Decimals);
+        ERC20 erc20 = newErc20("X's Dollar", "USDX", erc20Decimals);
 
         vm.expectRevert(bytes("CentrifugeConnector/unknown-tranche-token"));
         bridgedConnector.increaseRedeemOrder(poolId, trancheId, address(erc20), amount);
@@ -683,7 +683,7 @@ contract ConnectorTest is Test {
         vm.assume(validUntil > block.timestamp + 7 days);
         vm.assume(currency != 0);
 
-        ERC20 erc20 = new ERC20("X's Dollar", "USDX", erc20Decimals);
+        ERC20 erc20 = newErc20("X's Dollar", "USDX", erc20Decimals);
 
         vm.expectRevert(bytes("CentrifugeConnector/unknown-tranche-token"));
         bridgedConnector.decreaseRedeemOrder(poolId, trancheId, address(erc20), amount);
@@ -817,6 +817,14 @@ contract ConnectorTest is Test {
     }
 
     // helpers
+    function newErc20(string memory name, string memory symbol, uint8 decimals) internal returns (ERC20) {
+        ERC20 erc20 = new ERC20(decimals);
+        erc20.file("name", name);
+        erc20.file("symbol", symbol);
+        
+        return erc20;
+    }
+
     function stringToBytes32(string memory source) internal pure returns (bytes32 result) {
         bytes memory tempEmptyStringTest = bytes(source);
         if (tempEmptyStringTest.length == 0) {
