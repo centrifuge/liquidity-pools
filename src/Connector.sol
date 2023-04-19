@@ -70,7 +70,7 @@ contract CentrifugeConnector {
     mapping(uint64 => mapping(address => bool)) public poolCurrencies;
 
     GatewayLike public gateway;
-    EscrowLike public escrow;
+    EscrowLike public immutable escrow;
 
     RestrictedTokenFactoryLike public immutable tokenFactory;
     MemberlistFactoryLike public immutable memberlistFactory;
