@@ -225,15 +225,21 @@ contract MessagesTest is Test {
     }
 
     function testTransferDecoding() public {
-        (uint128 token, bytes32 sender, bytes32 receiver, uint128 amount) = ConnectorMessages.parseTransfer(
-            fromHex(
-                "070000000000000000000000000000002a1111111111111111111111111111111111111111111111111111111111111111222222222222222222222222222222222222222222222222222222222222222200000000033b2e3c9fd0803ce8000000"
-            ).ref(0)
-        );
+        bytes29 message = fromHex(
+            "070000000000000000000000000000002a1111111111111111111111111111111111111111111111111111111111111111222222222222222222222222222222222222222222222222222222222222222200000000033b2e3c9fd0803ce8000000"
+        ).ref(0);
+
+        (uint128 token, bytes32 sender, bytes32 recipient, uint128 amount) = ConnectorMessages.parseTransfer(message);
         assertEq(uint256(token), uint256(42));
         assertEq(sender, 0x1111111111111111111111111111111111111111111111111111111111111111);
-        assertEq(receiver, 0x2222222222222222222222222222222222222222222222222222222222222222);
+        assertEq(recipient, 0x2222222222222222222222222222222222222222222222222222222222222222);
         assertEq(amount, uint256(1000000000000000000000000000));
+
+        // Test the optimised `parseIncomingTransfer` now
+        (uint128 token2, address recipient2, uint128 amount2) = ConnectorMessages.parseIncomingTransfer(message);
+        assertEq(uint256(token2), uint256(token));
+        assertEq(recipient2, address(bytes20(recipient)));
+        assertEq(amount, amount2);
     }
 
     function testTransferEquivalence(uint128 token, bytes32 sender, bytes32 receiver, uint128 amount) public {
@@ -244,6 +250,12 @@ contract MessagesTest is Test {
         assertEq(decodedSender, sender);
         assertEq(decodedReceiver, receiver);
         assertEq(decodedAmount, amount);
+
+        // Test the optimised `parseIncomingTransfer` now
+        (uint128 decodedToken2, address decodedRecipient2, uint128 decodedAmount2) = ConnectorMessages.parseIncomingTransfer(_message.ref(0));
+        assertEq(uint256(decodedToken2), uint256(decodedToken));
+        assertEq(decodedRecipient2, address(bytes20(decodedReceiver)));
+        assertEq(decodedAmount, decodedAmount2);
     }
 
     function testTransferTrancheTokensToEvmDomainEncoding() public {
