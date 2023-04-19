@@ -148,7 +148,8 @@ contract ConnectorTest is Test {
         for (uint256 i = 0; i < trancheIds.length; i++) {
             connector.addTranche(poolId, trancheIds[i], tokenName, tokenSymbol, decimals, price);
             bridgedConnector.deployTranche(poolId, trancheIds[i]);
-            (address token, uint256 latestPrice,,,, uint8 actualDecimals) = bridgedConnector.tranches(poolId, trancheIds[i]);
+            (address token, uint256 latestPrice,,,, uint8 actualDecimals) =
+                bridgedConnector.tranches(poolId, trancheIds[i]);
             assertEq(latestPrice, price);
             assertTrue(token != address(0));
             assertEq(actualDecimals, decimals);
@@ -315,11 +316,7 @@ contract ConnectorTest is Test {
         bridgedConnector.updateTokenPrice(poolId, trancheId, price);
     }
 
-    function testUpdatingTokenPriceForNonExistentTrancheFails(
-        uint64 poolId,
-        bytes16 trancheId,
-        uint128 price
-    ) public {
+    function testUpdatingTokenPriceForNonExistentTrancheFails(uint64 poolId, bytes16 trancheId, uint128 price) public {
         connector.addPool(poolId);
 
         vm.expectRevert(bytes("CentrifugeConnector/invalid-pool-or-tranche"));
@@ -817,7 +814,7 @@ contract ConnectorTest is Test {
         ERC20 erc20 = new ERC20(decimals);
         erc20.file("name", name);
         erc20.file("symbol", symbol);
-        
+
         return erc20;
     }
 
