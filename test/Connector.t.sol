@@ -318,6 +318,7 @@ contract ConnectorTest is Test {
     ) public {
         vm.assume(decimals > 0);
         vm.assume(amount > 0);
+        vm.assume(currency != 0);
         vm.assume(recipient != address(0));
 
         ERC20 erc20 = new ERC20(tokenName, tokenSymbol, decimals);
@@ -327,7 +328,7 @@ contract ConnectorTest is Test {
         // the escrow account, from which funds are moved from into the recipient on an incoming transfer.
         erc20.approve(address(bridgedConnector), type(uint256).max);
         erc20.mint(address(this), amount);
-        bridgedConnector.transfer(currency, bytes32(bytes20(recipient)), amount);
+        bridgedConnector.transfer(address(erc20), bytes32(bytes20(recipient)), amount);
         assertEq(erc20.balanceOf(address(bridgedConnector.escrow())), amount);
 
         // Now we test the incoming message
@@ -349,27 +350,24 @@ contract ConnectorTest is Test {
     ) public {
         vm.assume(decimals > 0);
         vm.assume(amount > 0);
+        vm.assume(currency != 0);
         vm.assume(initialBalance >= amount);
+
         ERC20 erc20 = new ERC20(tokenName, tokenSymbol, decimals);
 
+        vm.expectRevert(bytes("CentrifugeConnector/unknown-currency"));
+        bridgedConnector.transfer(address(erc20), recipient, amount);
         connector.addCurrency(currency, address(erc20));
 
         erc20.mint(address(this), initialBalance);
         assertEq(erc20.balanceOf(address(this)), initialBalance);
         assertEq(erc20.balanceOf(address(bridgedConnector.escrow())), 0);
-
         erc20.approve(address(bridgedConnector), type(uint256).max);
-        bridgedConnector.transfer(currency, recipient, amount);
 
+        bridgedConnector.transfer(address(erc20), recipient, amount);
         assertEq(erc20.balanceOf(address(this)), initialBalance - amount);
         assertEq(erc20.balanceOf(address(bridgedConnector.escrow())), amount);
     }
-
-    function testOutgoingTransferUnknownCurrencyFails(uint128 currency, bytes32 recipient, uint128 amount) public {
-        vm.expectRevert(bytes("CentrifugeConnector/unknown-currency"));
-        bridgedConnector.transfer(currency, recipient, amount);
-    }
-
     // Test transferring `amount` to the address(this)'s account (Centrifuge Chain -> EVM like) and then try
     // transferring that amount to a `centChainAddress` (EVM -> Centrifuge Chain like).
     function testTransferTrancheTokensToCentrifuge(

@@ -122,10 +122,11 @@ contract CentrifugeConnector {
     }
 
     // --- Outgoing message handling ---
-    function transfer(uint128 currency, bytes32 recipient, uint128 amount) public {
-        ERC20Like erc20 = ERC20Like(currencyIdToAddress[currency]);
-        require(address(erc20) != address(0), "CentrifugeConnector/unknown-currency");
+    function transfer(address currencyAddress, bytes32 recipient, uint128 amount) public {
+        uint128 currency = currencyAddressToId[currencyAddress];
+        require(currency != 0, "CentrifugeConnector/unknown-currency");
 
+        ERC20Like erc20 = ERC20Like(currencyAddress);
         require(erc20.balanceOf(msg.sender) >= amount, "CentrifugeConnector/insufficient-balance");
         require(erc20.transferFrom(msg.sender, address(escrow), amount), "CentrifugeConnector/currency-transfer-failed");
 
