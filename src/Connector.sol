@@ -61,9 +61,10 @@ contract CentrifugeConnector {
     mapping(uint64 => Pool) public pools;
     mapping(uint64 => mapping(bytes16 => Tranche)) public tranches;
 
-    // todo(nuno): keep one of these two
-    mapping(uint128 => address) public currencies;
-    mapping(address => uint128) public revCurrencies;
+    // todo(nuno): do we need both or can we get away with one somehow?
+    mapping(uint128 => address) public currencyIdToAddress;
+    // The reverse mapping of `currencyIdToAddress`
+    mapping(address => uint128) public currencyAddressToId;
 
     // The currencies allowed for a given pool
     mapping(uint64 => mapping(address => bool)) public poolCurrencies;
@@ -122,7 +123,7 @@ contract CentrifugeConnector {
 
     // --- Outgoing message handling ---
     function transfer(uint128 currency, bytes32 recipient, uint128 amount) public {
-        ERC20Like erc20 = ERC20Like(currencies[currency]);
+        ERC20Like erc20 = ERC20Like(currencyIdToAddress[currency]);
         require(address(erc20) != address(0), "CentrifugeConnector/unknown-currency");
 
         require(erc20.balanceOf(msg.sender) >= amount, "CentrifugeConnector/insufficient-balance");
@@ -167,7 +168,7 @@ contract CentrifugeConnector {
         require(address(token) != address(0), "CentrifugeConnector/unknown-tranche-token");
         require(token.hasMember(msg.sender), "CentrifugeConnector/not-a-member");
 
-        uint128 currency = revCurrencies[currencyAddress];
+        uint128 currency = currencyAddressToId[currencyAddress];
         require(currency != 0, "CentrifugeConnector/unknown-currency");
         require(poolCurrencies[poolId][currencyAddress], "CentrifugeConnector/pool-currency-not-allowed");
 
@@ -184,7 +185,7 @@ contract CentrifugeConnector {
         require(address(token) != address(0), "CentrifugeConnector/unknown-tranche-token");
         require(token.hasMember(msg.sender), "CentrifugeConnector/not-a-member");
 
-        uint128 currency = revCurrencies[currencyAddress];
+        uint128 currency = currencyAddressToId[currencyAddress];
         require(currency != 0, "CentrifugeConnector/unknown-currency");
         require(poolCurrencies[poolId][currencyAddress], "CentrifugeConnector/pool-currency-not-allowed");
 
@@ -196,7 +197,7 @@ contract CentrifugeConnector {
         require(address(token) != address(0), "CentrifugeConnector/unknown-tranche-token");
         require(token.hasMember(msg.sender), "CentrifugeConnector/not-a-member");
 
-        uint128 currency = revCurrencies[currencyAddress];
+        uint128 currency = currencyAddressToId[currencyAddress];
         require(currency != 0, "CentrifugeConnector/unknown-currency");
         require(poolCurrencies[poolId][currencyAddress], "CentrifugeConnector/pool-currency-not-allowed");
 
@@ -208,7 +209,7 @@ contract CentrifugeConnector {
         require(address(token) != address(0), "CentrifugeConnector/unknown-tranche-token");
         require(token.hasMember(msg.sender), "CentrifugeConnector/not-a-member");
 
-        uint128 currency = revCurrencies[currencyAddress];
+        uint128 currency = currencyAddressToId[currencyAddress];
         require(currency != 0, "CentrifugeConnector/unknown-currency");
         require(poolCurrencies[poolId][currencyAddress], "CentrifugeConnector/pool-currency-not-allowed");
 
@@ -249,8 +250,8 @@ contract CentrifugeConnector {
 
     // --- Incoming message handling ---
     function addCurrency(uint128 currency, address currencyAddress) public onlyGateway {
-        currencies[currency] = currencyAddress;
-        revCurrencies[currencyAddress] = currency;
+        currencyIdToAddress[currency] = currencyAddress;
+        currencyAddressToId[currencyAddress] = currency;
         emit CurrencyAdded(currency, currencyAddress);
     }
 
@@ -265,7 +266,7 @@ contract CentrifugeConnector {
         Pool storage pool = pools[poolId];
         require(pool.createdAt > 0, "CentrifugeConnector/invalid-pool");
 
-        address currencyAddress = currencies[currency];
+        address currencyAddress = currencyIdToAddress[currency];
         require(currencyAddress != address(0), "CentrifugeConnector/unknown-currency");
 
         poolCurrencies[poolId][currencyAddress] = true;
@@ -322,7 +323,7 @@ contract CentrifugeConnector {
     }
 
     function handleTransfer(uint128 currency, address recipient, uint128 amount) public onlyGateway {
-        address currencyAddress = currencies[currency];
+        address currencyAddress = currencyIdToAddress[currency];
         require(currencyAddress != address(0), "CentrifugeConnector/unknown-currency");
 
         require(

@@ -41,7 +41,7 @@ contract ConnectorTest is Test {
         ERC20 token = new ERC20("X's Dollar", "USDX", 42);
 
         connector.addCurrency(currency, address(token));
-        (address address_) = bridgedConnector.currencies(currency);
+        (address address_) = bridgedConnector.currencyIdToAddress(currency);
         assertEq(address_, address(token));
     }
 
@@ -106,7 +106,6 @@ contract ConnectorTest is Test {
         assertEq(actualTokenSymbol, bytes32ToString(stringToBytes32(tokenSymbol)));
         assertEq(actualDecimals, decimals);
 
-        // todo(nuno): we prob should verify that the decimals were passed down correctly
         RestrictedTokenLike token = RestrictedTokenLike(token_);
         assertEq(token.name(), bytes32ToString(stringToBytes32(tokenName)));
         assertEq(token.symbol(), bytes32ToString(stringToBytes32(tokenSymbol)));
