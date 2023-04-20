@@ -30,9 +30,7 @@ interface GatewayLike {
     function decreaseRedeemOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount)
         external;
     function collectRedeem(uint64 poolId, bytes16 trancheId, address caller) external;
-    function collectForRedeem(uint64 poolId, bytes16 trancheId, address caller, bytes32 recipient) external;
     function collectInvest(uint64 poolId, bytes16 trancheId, address caller) external;
-    function collectForInvest(uint64 poolId, bytes16 trancheId, address caller, bytes32 recipient) external;
 }
 
 interface EscrowLike {
@@ -225,28 +223,12 @@ contract CentrifugeConnector {
         gateway.collectRedeem(poolId, trancheId, address(msg.sender));
     }
 
-    function collectForRedeem(uint64 poolId, bytes16 trancheId, bytes32 recipient) public {
-        RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
-        require(address(token) != address(0), "CentrifugeConnector/unknown-tranche-token");
-        require(token.hasMember(msg.sender), "CentrifugeConnector/not-a-member");
-
-        gateway.collectForRedeem(poolId, trancheId, address(msg.sender), recipient);
-    }
-
     function collectInvest(uint64 poolId, bytes16 trancheId) public {
         RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
         require(address(token) != address(0), "CentrifugeConnector/unknown-tranche-token");
         require(token.hasMember(msg.sender), "CentrifugeConnector/not-a-member");
 
         gateway.collectInvest(poolId, trancheId, address(msg.sender));
-    }
-
-    function collectForInvest(uint64 poolId, bytes16 trancheId, bytes32 recipient) public {
-        RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
-        require(address(token) != address(0), "CentrifugeConnector/unknown-tranche-token");
-        require(token.hasMember(msg.sender), "CentrifugeConnector/not-a-member");
-
-        gateway.collectForInvest(poolId, trancheId, address(msg.sender), recipient);
     }
 
     // --- Incoming message handling ---
