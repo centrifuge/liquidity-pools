@@ -10,42 +10,29 @@ contract FactoryTest is Test {
     // address(0)[0:20] + keccak("Centrifuge")[21:32]
     bytes32 SALT = 0x000000000000000000000000000000000000000075eb27011b69f002dc094d05;
 
-    bool isFirstRun = false;
-    address tokenFactoryAddress;
-    address tokenAddress;
-
     function setUp() public {}
 
-    // function testTokenAddressShouldBeDeterministic1(
-    //     address sender,
-    //     uint64 chainId,
-    //     string memory name,
-    //     string memory symbol
-    // ) public {
-    //     TrancheTokenFactory tokenFactory = new TrancheTokenFactory{ salt: SALT }();
+    function testTokenFactoryAddressIsDeterministicAcrossChains(
+        address sender,
+        string memory name,
+        string memory symbol,
+        uint64 poolId,
+        bytes16 trancheId,
+        uint8 decimals
+    ) public {
+        uint256 mainnetFork = vm.createFork(vm.envString("MAINNET_RPC_URL"));
+        uint256 polygonFork = vm.createFork(vm.envString("POLYGON_RPC_URL"));
+        vm.selectFork(mainnetFork);
+        TrancheTokenFactory tokenFactory1 = new TrancheTokenFactory{ salt: SALT }();
+        address token1 = tokenFactory1.newTrancheToken(poolId, trancheId, name, symbol, decimals);
 
-    //     if (isFirstRun) {
-    //         tokenFactoryAddress = address(tokenFactory);
-    //     } else {
-    //         assertEq(address(tokenFactory), tokenFactoryAddress);
-    //     }
-
-    //     vm.prank(sender);
-    //     vm.chainId(uint256(chainId));
-
-    //     uint64 fixedPoolId = 1;
-    //     bytes16 fixedTrancheId = "1";
-    //     uint8 fixedDecimals = 18;
-
-    //     address token = tokenFactory.newTrancheToken(fixedPoolId, fixedTrancheId, name, symbol, fixedDecimals);
-
-    //     if (isFirstRun) {
-    //         tokenAddress = address(tokenFactory);
-    //         isFirstRun = false;
-    //     } else {
-    //         assertEq(token, tokenAddress);
-    //     }
-    // }
+        vm.selectFork(polygonFork);
+        TrancheTokenFactory tokenFactory2 = new TrancheTokenFactory{ salt: SALT }();
+        assertEq(address(tokenFactory1), address(tokenFactory2));
+        vm.prank(sender);
+        address token2 = tokenFactory2.newTrancheToken(poolId, trancheId, name, symbol, decimals);
+        assertEq(address(token1), address(token2));
+    }
 
     function testTokenFactoryAddressShouldBeDeterministic() public {
         address predictedAddress = address(uint160(uint(keccak256(abi.encodePacked(
@@ -79,7 +66,7 @@ contract FactoryTest is Test {
         assertEq(address(token), predictedAddress);
     }
 
-    function testDeployingDeterministicAddressTwice() public {
+    function testDeployingDeterministicAddressTwiceReverts() public {
         address predictedAddress = address(uint160(uint(keccak256(abi.encodePacked(
             bytes1(0xff),
             address(this),
@@ -89,8 +76,8 @@ contract FactoryTest is Test {
             ))
         )))));
         TrancheTokenFactory tokenFactory1 = new TrancheTokenFactory{ salt: SALT }();
-        TrancheTokenFactory tokenFactory2 = new TrancheTokenFactory{ salt: SALT }();
         assertEq(address(tokenFactory1), predictedAddress);
-        assertEq(address(tokenFactory2), predictedAddress);
+        vm.expectRevert();
+        TrancheTokenFactory tokenFactory2 = new TrancheTokenFactory{ salt: SALT }();
     }
 }
