@@ -300,13 +300,7 @@ library ConnectorMessages {
         uint128 amount
     ) internal pure returns (bytes memory) {
         return abi.encodePacked(
-            uint8(Call.TransferTrancheTokens),
-            poolId,
-            trancheId,
-            sender,
-            destinationDomain,
-            destinationAddress,
-            amount
+            uint8(Call.TransferTrancheTokens), poolId, trancheId, sender, destinationDomain, destinationAddress, amount
         );
     }
 
@@ -357,12 +351,7 @@ library ConnectorMessages {
     function parseTransferTrancheTokens20(bytes29 _msg)
         internal
         pure
-        returns (
-            uint64 poolId,
-            bytes16 trancheId,
-            address destinationAddress,
-            uint128 amount
-        )
+        returns (uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 amount)
     {
         poolId = uint64(_msg.indexUint(1, 8));
         trancheId = bytes16(_msg.index(9, 16));

@@ -20,12 +20,8 @@ interface ConnectorLike {
     function updateMember(uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) external;
     function updateTokenPrice(uint64 poolId, bytes16 trancheId, uint128 price) external;
     function handleTransfer(uint128 currency, address recipient, uint128 amount) external;
-    function handleTransferTrancheTokens(
-        uint64 poolId,
-        bytes16 trancheId,
-        address destinationAddress,
-        uint128 amount
-    ) external;
+    function handleTransferTrancheTokens(uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 amount)
+        external;
 }
 
 interface RouterLike {
@@ -205,8 +201,8 @@ contract ConnectorGateway {
             (uint128 currency, address recipient, uint128 amount) = ConnectorMessages.parseIncomingTransfer(_msg);
             connector.handleTransfer(currency, recipient, amount);
         } else if (ConnectorMessages.isTransferTrancheTokens(_msg)) {
-            (uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 amount)
-            = ConnectorMessages.parseTransferTrancheTokens20(_msg);
+            (uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 amount) =
+                ConnectorMessages.parseTransferTrancheTokens20(_msg);
             connector.handleTransferTrancheTokens(poolId, trancheId, destinationAddress, amount);
         } else {
             revert("ConnectorGateway/invalid-message");

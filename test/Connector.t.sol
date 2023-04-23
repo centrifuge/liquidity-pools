@@ -522,7 +522,9 @@ contract ConnectorTest is Test {
 
         // Approve and transfer amount from this address to destinationAddress
         ERC20Like(token).approve(address(bridgedConnector), amount);
-        bridgedConnector.transferTrancheTokensToEVM(poolId, trancheId, uint64(block.chainid), destinationAddress, amount);
+        bridgedConnector.transferTrancheTokensToEVM(
+            poolId, trancheId, uint64(block.chainid), destinationAddress, amount
+        );
         assertEq(ERC20Like(token).balanceOf(address(this)), 0);
     }
 

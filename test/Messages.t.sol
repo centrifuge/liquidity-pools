@@ -274,12 +274,8 @@ contract MessagesTest is Test {
     }
 
     function testTransferTrancheTokensToEvmDomainDecoding() public {
-        (
-            uint64 poolId,
-            bytes16 trancheId,
-            address destinationAddress,
-            uint128 amount
-        ) = ConnectorMessages.parseTransferTrancheTokens20(
+        (uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 amount) = ConnectorMessages
+            .parseTransferTrancheTokens20(
             fromHex(
                 "080000000000000001811acd5b3f17c06841c7e41e9e04cb1b1231231231231231231231231231231231231231231231231231231231231231010000000000000504123123123123123123123123123123123123123100000000000000000000000000000000033b2e3c9fd0803ce8000000"
             ).ref(0)
@@ -305,14 +301,8 @@ contract MessagesTest is Test {
     }
 
     function testTransferTrancheTokensToCentrifugeDecoding() public {
-        (
-            uint64 poolId,
-            bytes16 trancheId,
-            bytes32 sender,
-            bytes9 domain,
-            bytes32 destinationAddress,
-            uint128 amount
-        ) = ConnectorMessages.parseTransferTrancheTokens32(
+        (uint64 poolId, bytes16 trancheId, bytes32 sender, bytes9 domain, bytes32 destinationAddress, uint128 amount) =
+        ConnectorMessages.parseTransferTrancheTokens32(
             fromHex(
                 "080000000000000001811acd5b3f17c06841c7e41e9e04cb1b1231231231231231231231231231231231231231000000000000000000000000000000000000000000123123123123123123123123123123123123123123123123123123123123123100000000033b2e3c9fd0803ce8000000"
             ).ref(0)
@@ -334,15 +324,16 @@ contract MessagesTest is Test {
         uint128 amount
     ) public {
         bytes memory _message = ConnectorMessages.formatTransferTrancheTokens(
-            poolId, trancheId, sender, ConnectorMessages.formatDomain(ConnectorMessages.Domain.EVM, destinationChainId), destinationAddress, amount
+            poolId,
+            trancheId,
+            sender,
+            ConnectorMessages.formatDomain(ConnectorMessages.Domain.EVM, destinationChainId),
+            destinationAddress,
+            amount
         );
 
-        (
-            uint64 decodedPoolId,
-            bytes16 decodedTrancheId,
-            address decodedDestinationAddress,
-            uint256 decodedAmount
-        ) = ConnectorMessages.parseTransferTrancheTokens20(_message.ref(0));
+        (uint64 decodedPoolId, bytes16 decodedTrancheId, address decodedDestinationAddress, uint256 decodedAmount) =
+            ConnectorMessages.parseTransferTrancheTokens20(_message.ref(0));
         assertEq(uint256(decodedPoolId), uint256(poolId));
         assertEq(decodedTrancheId, trancheId);
         assertEq(decodedDestinationAddress, destinationAddress);
