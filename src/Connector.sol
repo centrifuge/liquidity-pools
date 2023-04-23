@@ -16,7 +16,7 @@ interface GatewayLike {
     function transferTrancheTokensToEVM(
         uint64 poolId,
         bytes16 trancheId,
-        uint256 destinationChainId,
+        uint64 destinationChainId,
         address destinationAddress,
         uint128 amount
     ) external;
@@ -149,7 +149,7 @@ contract CentrifugeConnector {
     function transferTrancheTokensToEVM(
         uint64 poolId,
         bytes16 trancheId,
-        uint256 destinationChainId,
+        uint64 destinationChainId,
         address destinationAddress,
         uint128 amount
     ) public {
@@ -322,11 +322,11 @@ contract CentrifugeConnector {
     function handleTransferTrancheTokens(
         uint64 poolId,
         bytes16 trancheId,
-        uint256 destinationChainId,
+        uint64 destinationChainId,
         address destinationAddress,
         uint128 amount
     ) public onlyGateway {
-        require(destinationChainId == block.chainid, "CentrifugeConnector/invalid-chain-id");
+        require(uint256(destinationChainId) == block.chainid, "CentrifugeConnector/invalid-chain-id");
         RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
         require(address(token) != address(0), "CentrifugeConnector/unknown-token");
 

@@ -82,15 +82,15 @@ contract MockHomeConnector is Test {
     function incomingTransferTrancheTokens(
         uint64 poolId,
         bytes16 trancheId,
-        uint256 destinationChainId,
+        uint64 destinationChainId,
         address destinationAddress,
         uint128 amount
     ) public {
         bytes memory _message = ConnectorMessages.formatTransferTrancheTokens(
             poolId,
             trancheId,
-            ConnectorMessages.formatDomain(ConnectorMessages.Domain.EVM),
-            destinationChainId,
+            bytes32(bytes20(msg.sender)),
+            ConnectorMessages.formatDomain(ConnectorMessages.Domain.EVM, destinationChainId),
             destinationAddress,
             amount
         );

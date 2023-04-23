@@ -23,7 +23,7 @@ interface ConnectorLike {
     function handleTransferTrancheTokens(
         uint64 poolId,
         bytes16 trancheId,
-        uint256 destinationChainId,
+        uint64 destinationChainId,
         address destinationAddress,
         uint128 amount
     ) external;
@@ -88,6 +88,7 @@ contract ConnectorGateway {
     function transferTrancheTokensToCentrifuge(
         uint64 poolId,
         bytes16 trancheId,
+        address sender,
         bytes32 destinationAddress,
         uint128 amount
     ) public onlyConnector {
@@ -95,8 +96,8 @@ contract ConnectorGateway {
             ConnectorMessages.formatTransferTrancheTokens(
                 poolId,
                 trancheId,
+                addressToBytes32(sender),
                 ConnectorMessages.formatDomain(ConnectorMessages.Domain.Centrifuge),
-                uint256(0),
                 destinationAddress,
                 amount
             )
@@ -106,7 +107,8 @@ contract ConnectorGateway {
     function transferTrancheTokensToEVM(
         uint64 poolId,
         bytes16 trancheId,
-        uint256 destinationChainId,
+        address sender,
+        uint64 destinationChainId,
         address destinationAddress,
         uint128 amount
     ) public onlyConnector {
@@ -114,8 +116,8 @@ contract ConnectorGateway {
             ConnectorMessages.formatTransferTrancheTokens(
                 poolId,
                 trancheId,
-                ConnectorMessages.formatDomain(ConnectorMessages.Domain.EVM),
-                destinationChainId,
+                addressToBytes32(sender),
+                ConnectorMessages.formatDomain(ConnectorMessages.Domain.EVM, destinationChainId),
                 destinationAddress,
                 amount
             )
@@ -204,9 +206,10 @@ contract ConnectorGateway {
             (uint128 currency, address recipient, uint128 amount) = ConnectorMessages.parseIncomingTransfer(_msg);
             connector.handleTransfer(currency, recipient, amount);
         } else if (ConnectorMessages.isTransferTrancheTokens(_msg)) {
-            (uint64 poolId, bytes16 trancheId,, uint256 destinationChainId, address destinationAddress, uint128 amount)
+            (uint64 poolId, bytes16 trancheId, bytes9 decodedDomain, address destinationAddress, uint128 amount)
             = ConnectorMessages.parseTransferTrancheTokens20(_msg);
-            connector.handleTransferTrancheTokens(poolId, trancheId, destinationChainId, destinationAddress, amount);
+            // todo(nuno): pass correct chainId here
+            connector.handleTransferTrancheTokens(poolId, trancheId, uint64(block.chainid), destinationAddress, amount);
         } else {
             revert("ConnectorGateway/invalid-message");
         }

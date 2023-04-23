@@ -428,7 +428,7 @@ contract ConnectorTest is Test {
         connector.updateMember(poolId, trancheId, address(this), validUntil);
 
         // fund this account with amount
-        connector.incomingTransferTrancheTokens(poolId, trancheId, 1, address(this), amount);
+        connector.incomingTransferTrancheTokens(poolId, trancheId, uint64(block.chainid), address(this), amount);
 
         // Verify the address(this) has the expected amount
         (address tokenAddress,,,,,) = bridgedConnector.tranches(poolId, trancheId);
@@ -444,8 +444,8 @@ contract ConnectorTest is Test {
         bytes memory message = ConnectorMessages.formatTransferTrancheTokens(
             poolId,
             trancheId,
+            bytes32(bytes20(msg.sender)),
             ConnectorMessages.formatDomain(ConnectorMessages.Domain.Centrifuge),
-            0,
             centChainAddress,
             amount
         );
@@ -469,7 +469,7 @@ contract ConnectorTest is Test {
         bridgedConnector.deployTranche(poolId, trancheId);
         connector.updateMember(poolId, trancheId, destinationAddress, validUntil);
 
-        connector.incomingTransferTrancheTokens(poolId, trancheId, 1, destinationAddress, amount);
+        connector.incomingTransferTrancheTokens(poolId, trancheId, uint64(block.chainid), destinationAddress, amount);
         (address token,,,,,) = bridgedConnector.tranches(poolId, trancheId);
         assertEq(ERC20Like(token).balanceOf(destinationAddress), amount);
     }
@@ -489,7 +489,7 @@ contract ConnectorTest is Test {
         bridgedConnector.deployTranche(poolId, trancheId);
 
         vm.expectRevert(bytes("CentrifugeConnector/not-a-member"));
-        connector.incomingTransferTrancheTokens(poolId, trancheId, 1, destinationAddress, amount);
+        connector.incomingTransferTrancheTokens(poolId, trancheId, uint64(block.chainid), destinationAddress, amount);
 
         (address token,,,,,) = bridgedConnector.tranches(poolId, trancheId);
         assertEq(ERC20Like(token).balanceOf(destinationAddress), 0);
@@ -516,13 +516,13 @@ contract ConnectorTest is Test {
         connector.updateMember(poolId, trancheId, address(this), validUntil);
 
         // Fund this address with amount
-        connector.incomingTransferTrancheTokens(poolId, trancheId, 1, address(this), amount);
+        connector.incomingTransferTrancheTokens(poolId, trancheId, uint64(block.chainid), address(this), amount);
         (address token,,,,,) = bridgedConnector.tranches(poolId, trancheId);
         assertEq(ERC20Like(token).balanceOf(address(this)), amount);
 
         // Approve and transfer amount from this address to destinationAddress
         ERC20Like(token).approve(address(bridgedConnector), amount);
-        bridgedConnector.transferTrancheTokensToEVM(poolId, trancheId, 2, destinationAddress, amount);
+        bridgedConnector.transferTrancheTokensToEVM(poolId, trancheId, uint64(block.chainid), destinationAddress, amount);
         assertEq(ERC20Like(token).balanceOf(address(this)), 0);
     }
 
