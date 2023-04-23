@@ -61,7 +61,6 @@ contract CentrifugeConnector {
     mapping(uint64 => Pool) public pools;
     mapping(uint64 => mapping(bytes16 => Tranche)) public tranches;
 
-    // todo(nuno): do we need both or can we get away with one somehow?
     mapping(uint128 => address) public currencyIdToAddress;
     // The reverse mapping of `currencyIdToAddress`
     mapping(address => uint128) public currencyAddressToId;
