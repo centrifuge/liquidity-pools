@@ -318,6 +318,7 @@ contract CentrifugeConnector {
         address currencyAddress = currencyIdToAddress[currency];
         require(currencyAddress != address(0), "CentrifugeConnector/unknown-currency");
 
+        EscrowLike(escrow).approve(currencyAddress, address(this), amount);
         require(
             ERC20Like(currencyAddress).transferFrom(address(escrow), recipient, amount),
             "CentrifugeConnector/currency-transfer-failed"

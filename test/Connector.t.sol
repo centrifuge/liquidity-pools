@@ -15,6 +15,12 @@ import {ConnectorMessages} from "../src/Messages.sol";
 import "forge-std/Test.sol";
 import "../src/Connector.sol";
 
+
+interface EscrowLike_ {
+    function approve(address token, address spender, uint256 value) external;
+    function rely(address usr) external;
+}
+
 contract ConnectorTest is Test {
     CentrifugeConnector bridgedConnector;
     ConnectorGateway gateway;
@@ -34,6 +40,7 @@ contract ConnectorTest is Test {
         connector = new MockHomeConnector(address(mockXcmRouter));
         gateway = new ConnectorGateway(address(bridgedConnector), address(mockXcmRouter));
         bridgedConnector.file("gateway", address(gateway));
+        EscrowLike_(escrow_).rely(address(bridgedConnector));
         mockXcmRouter.file("gateway", address(gateway));
     }
 
@@ -375,7 +382,6 @@ contract ConnectorTest is Test {
         assertEq(erc20.balanceOf(address(bridgedConnector.escrow())), amount);
 
         // Now we test the incoming message
-        bridgedConnector.escrow().approve(address(erc20), address(bridgedConnector), amount);
         connector.incomingTransfer(currency, sender, bytes32(bytes20(recipient)), amount);
         assertEq(erc20.balanceOf(address(bridgedConnector.escrow())), 0);
         assertEq(erc20.balanceOf(recipient), amount);
