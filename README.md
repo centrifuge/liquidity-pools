@@ -18,7 +18,6 @@ Connectors enables seamless deployment of Centrifuge RWA pools on any EVM-compat
 git clone git@github.com:centrifuge/connectors.git
 cd connectors
 forge update
-cd lib/monorepo && yarn && cd ..
 ```
 
 #### Testing
