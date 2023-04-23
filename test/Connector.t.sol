@@ -67,7 +67,7 @@ contract ConnectorTest is Test {
 
     function testAddPoolWorks(uint64 poolId) public {
         connector.addPool(poolId);
-        (uint64 actualPoolId,,) = bridgedConnector.pools(poolId);
+        (uint64 actualPoolId,) =bridgedConnector.pools(poolId);
         assertEq(uint256(actualPoolId), uint256(poolId));
     }
 
@@ -107,7 +107,7 @@ contract ConnectorTest is Test {
         uint128 price
     ) public {
         connector.addPool(poolId);
-        (uint64 actualPoolId,,) = bridgedConnector.pools(poolId);
+        (uint64 actualPoolId,) =bridgedConnector.pools(poolId);
         assertEq(uint256(actualPoolId), uint256(poolId));
 
         connector.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price);
@@ -229,7 +229,7 @@ contract ConnectorTest is Test {
         vm.assume(trancheId != wrongTrancheId);
 
         connector.addPool(poolId);
-        (uint64 actualPoolId,,) = bridgedConnector.pools(poolId);
+        (uint64 actualPoolId,) =bridgedConnector.pools(poolId);
         assertEq(uint256(actualPoolId), uint256(poolId));
 
         connector.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price);
@@ -249,7 +249,7 @@ contract ConnectorTest is Test {
         vm.assume(poolId != wrongPoolId);
 
         connector.addPool(poolId);
-        (uint64 actualPoolId,,) = bridgedConnector.pools(poolId);
+        (uint64 actualPoolId,) =bridgedConnector.pools(poolId);
         assertEq(uint256(actualPoolId), uint256(poolId));
 
         connector.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price);
