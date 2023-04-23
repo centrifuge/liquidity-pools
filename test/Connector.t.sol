@@ -374,7 +374,7 @@ contract ConnectorTest is Test {
         uint128 amount
     ) public {
         vm.assume(validUntil > block.timestamp + 7 days);
-        vm.assume(destinationAddress != address(0)));
+        vm.assume(destinationAddress != address(0));
         connector.addPool(poolId, currency, decimals);
         connector.addTranche(poolId, trancheId, tokenName, tokenSymbol, price);
         bridgedConnector.deployTranche(poolId, trancheId);
