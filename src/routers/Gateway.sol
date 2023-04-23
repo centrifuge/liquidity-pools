@@ -159,12 +159,12 @@ contract ConnectorGateway {
         );
     }
 
-    function collectRedeem(uint64 poolId, bytes16 trancheId, address caller) public onlyConnector {
-        router.send(ConnectorMessages.formatCollectRedeem(poolId, trancheId, addressToBytes32(caller)));
+    function collectRedeem(uint64 poolId, bytes16 trancheId, address investor) public onlyConnector {
+        router.send(ConnectorMessages.formatCollectRedeem(poolId, trancheId, addressToBytes32(investor)));
     }
 
-    function collectInvest(uint64 poolId, bytes16 trancheId, address caller) public onlyConnector {
-        router.send(ConnectorMessages.formatCollectInvest(poolId, trancheId, addressToBytes32(caller)));
+    function collectInvest(uint64 poolId, bytes16 trancheId, address investor) public onlyConnector {
+        router.send(ConnectorMessages.formatCollectInvest(poolId, trancheId, addressToBytes32(investor)));
     }
 
     // --- Incoming ---

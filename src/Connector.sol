@@ -31,8 +31,8 @@ interface GatewayLike {
         external;
     function decreaseRedeemOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount)
         external;
-    function collectRedeem(uint64 poolId, bytes16 trancheId, address caller) external;
-    function collectInvest(uint64 poolId, bytes16 trancheId, address caller) external;
+    function collectRedeem(uint64 poolId, bytes16 trancheId, address investor) external;
+    function collectInvest(uint64 poolId, bytes16 trancheId, address investor) external;
 }
 
 interface EscrowLike {
