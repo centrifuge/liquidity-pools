@@ -38,11 +38,15 @@ contract ConnectorTest is Test {
     }
 
     function testAddingCurrencyWorks(uint128 currency) public {
-        ERC20 token = newErc20("X's Dollar", "USDX", 42);
-
-        connector.addCurrency(currency, address(token));
+        ERC20 erc20 = newErc20("X's Dollar", "USDX", 42);
+        connector.addCurrency(currency, address(erc20));
         (address address_) = bridgedConnector.currencyIdToAddress(currency);
-        assertEq(address_, address(token));
+        assertEq(address_, address(erc20));
+
+        ERC20 badErc20 = newErc20("BadActor's Dollar", "BADUSD", 66);
+        vm.expectRevert(bytes("CentrifugeConnector/currency-already-added"));
+        connector.addCurrency(currency, address(badErc20));
+        assertEq(bridgedConnector.currencyIdToAddress(currency), address(erc20));
     }
 
     function testAddingPoolWorks(uint64 poolId) public {
