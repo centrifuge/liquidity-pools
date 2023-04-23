@@ -597,7 +597,7 @@ contract MessagesTest is Test {
     function testCollectInvestEquivalence(uint64 poolId, bytes16 trancheId, bytes32 user) public {
         bytes memory _message = ConnectorMessages.formatCollectInvest(poolId, trancheId, user);
         (uint64 decodedPoolId, bytes16 decodedTrancheId, bytes32 decodedUser) =
-        ConnectorMessages.parseCollectInvest(_message.ref(0));
+            ConnectorMessages.parseCollectInvest(_message.ref(0));
 
         assertEq(uint256(decodedPoolId), uint256(poolId));
         assertEq(decodedTrancheId, trancheId);
