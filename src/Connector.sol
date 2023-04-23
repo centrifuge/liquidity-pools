@@ -31,8 +31,8 @@ interface GatewayLike {
         external;
     function decreaseRedeemOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount)
         external;
-    function collectRedeem(uint64 poolId, bytes16 trancheId, address investor) external;
     function collectInvest(uint64 poolId, bytes16 trancheId, address investor) external;
+    function collectRedeem(uint64 poolId, bytes16 trancheId, address investor) external;
 }
 
 interface EscrowLike {
@@ -217,20 +217,20 @@ contract CentrifugeConnector {
         gateway.decreaseRedeemOrder(poolId, trancheId, msg.sender, currency, amount);
     }
 
-    function collectRedeem(uint64 poolId, bytes16 trancheId) public {
-        RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
-        require(address(token) != address(0), "CentrifugeConnector/unknown-tranche-token");
-        require(token.hasMember(msg.sender), "CentrifugeConnector/not-a-member");
-
-        gateway.collectRedeem(poolId, trancheId, address(msg.sender));
-    }
-
     function collectInvest(uint64 poolId, bytes16 trancheId) public {
         RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
         require(address(token) != address(0), "CentrifugeConnector/unknown-tranche-token");
         require(token.hasMember(msg.sender), "CentrifugeConnector/not-a-member");
 
         gateway.collectInvest(poolId, trancheId, address(msg.sender));
+    }
+
+    function collectRedeem(uint64 poolId, bytes16 trancheId) public {
+        RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
+        require(address(token) != address(0), "CentrifugeConnector/unknown-tranche-token");
+        require(token.hasMember(msg.sender), "CentrifugeConnector/not-a-member");
+
+        gateway.collectRedeem(poolId, trancheId, address(msg.sender));
     }
 
     // --- Incoming message handling ---
