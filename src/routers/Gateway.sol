@@ -23,7 +23,6 @@ interface ConnectorLike {
     function handleTransferTrancheTokens(
         uint64 poolId,
         bytes16 trancheId,
-        uint64 destinationChainId,
         address destinationAddress,
         uint128 amount
     ) external;
@@ -206,10 +205,9 @@ contract ConnectorGateway {
             (uint128 currency, address recipient, uint128 amount) = ConnectorMessages.parseIncomingTransfer(_msg);
             connector.handleTransfer(currency, recipient, amount);
         } else if (ConnectorMessages.isTransferTrancheTokens(_msg)) {
-            (uint64 poolId, bytes16 trancheId, bytes9 decodedDomain, address destinationAddress, uint128 amount)
+            (uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 amount)
             = ConnectorMessages.parseTransferTrancheTokens20(_msg);
-            // todo(nuno): pass correct chainId here
-            connector.handleTransferTrancheTokens(poolId, trancheId, uint64(block.chainid), destinationAddress, amount);
+            connector.handleTransferTrancheTokens(poolId, trancheId, destinationAddress, amount);
         } else {
             revert("ConnectorGateway/invalid-message");
         }

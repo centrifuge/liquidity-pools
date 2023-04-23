@@ -353,22 +353,21 @@ library ConnectorMessages {
     }
 
     // Parse a TransferTrancheTokens to an EVM-based `destinationAddress` (20-byte long).
-    // We ignore the `sender` since it's not relevant when parsing an incoming message.
+    // We ignore the `sender` and the `domain` since it's not relevant when parsing an incoming message.
     function parseTransferTrancheTokens20(bytes29 _msg)
         internal
         pure
         returns (
             uint64 poolId,
             bytes16 trancheId,
-            bytes9 encodedDomain,
             address destinationAddress,
             uint128 amount
         )
     {
         poolId = uint64(_msg.indexUint(1, 8));
         trancheId = bytes16(_msg.index(9, 16));
-        // ignore sender at bytes 25-56
-        encodedDomain = bytes9(_msg.index(57, 9));
+        // ignore: `sender` at bytes 25-56
+        // ignore: `domain` at bytes 57-65
         destinationAddress = address(bytes20(_msg.index(66, 20)));
         amount = uint128(_msg.indexUint(98, 16));
     }

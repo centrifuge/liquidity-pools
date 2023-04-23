@@ -277,7 +277,6 @@ contract MessagesTest is Test {
         (
             uint64 poolId,
             bytes16 trancheId,
-            bytes9 domain,
             address destinationAddress,
             uint128 amount
         ) = ConnectorMessages.parseTransferTrancheTokens20(
@@ -287,7 +286,6 @@ contract MessagesTest is Test {
         );
         assertEq(uint256(poolId), uint256(1));
         assertEq(trancheId, bytes16(hex"811acd5b3f17c06841c7e41e9e04cb1b"));
-        assertEq(domain, ConnectorMessages.formatDomain(ConnectorMessages.Domain.EVM, 1284));
         assertEq(destinationAddress, 0x1231231231231231231231231231231231231231);
         assertEq(amount, uint256(1000000000000000000000000000));
     }
@@ -321,6 +319,7 @@ contract MessagesTest is Test {
         );
         assertEq(uint256(poolId), uint256(1));
         assertEq(trancheId, bytes16(hex"811acd5b3f17c06841c7e41e9e04cb1b"));
+        assertEq(sender, 0x1231231231231231231231231231231231231231000000000000000000000000);
         assertEq(domain, ConnectorMessages.formatDomain(ConnectorMessages.Domain.Centrifuge));
         assertEq(destinationAddress, bytes32(hex"1231231231231231231231231231231231231231231231231231231231231231"));
         assertEq(amount, uint256(1000000000000000000000000000));
@@ -334,20 +333,18 @@ contract MessagesTest is Test {
         address destinationAddress,
         uint128 amount
     ) public {
-        bytes9 inputEncodedDomain = ConnectorMessages.formatDomain(ConnectorMessages.Domain.EVM, destinationChainId);
         bytes memory _message = ConnectorMessages.formatTransferTrancheTokens(
-            poolId, trancheId, sender, inputEncodedDomain, destinationAddress, amount
+            poolId, trancheId, sender, ConnectorMessages.formatDomain(ConnectorMessages.Domain.EVM, destinationChainId), destinationAddress, amount
         );
+
         (
             uint64 decodedPoolId,
             bytes16 decodedTrancheId,
-            bytes9 encodedDomain,
             address decodedDestinationAddress,
             uint256 decodedAmount
         ) = ConnectorMessages.parseTransferTrancheTokens20(_message.ref(0));
         assertEq(uint256(decodedPoolId), uint256(poolId));
         assertEq(decodedTrancheId, trancheId);
-        assertEq(encodedDomain, inputEncodedDomain);
         assertEq(decodedDestinationAddress, destinationAddress);
         assertEq(decodedAmount, amount);
     }
