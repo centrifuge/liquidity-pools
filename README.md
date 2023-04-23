@@ -3,7 +3,7 @@ Connectors enables seamless deployment of Centrifuge RWA pools on any EVM-compat
 
 ## How it works
 <a href="https://github.com/centrifuge/connectors">
-  <img alt="Centrifuge" src="contracts.svg">
+  <img alt="Centrifuge" src="contracts.png">
 </a>
 
 - **Investor Pool** (WIP): A [ERC-4626](https://ethereum.org/en/developers/docs/standards/tokens/erc-4626/) compatible contract that enables investors to deposit and withdraw stablecoins to invest in tranches of pools.
