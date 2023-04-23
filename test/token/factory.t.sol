@@ -38,52 +38,80 @@ contract FactoryTest is Test {
     }
 
     function testTokenFactoryShouldBeDeterministic() public {
-        address predictedAddress = address(uint160(uint(keccak256(abi.encodePacked(
-            bytes1(0xff),
-            address(this),
-            SALT,
-            keccak256(abi.encodePacked(
-                type(TrancheTokenFactory).creationCode
-            ))
-        )))));
+        address predictedAddress = address(
+            uint160(
+                uint256(
+                    keccak256(
+                        abi.encodePacked(
+                            bytes1(0xff),
+                            address(this),
+                            SALT,
+                            keccak256(abi.encodePacked(type(TrancheTokenFactory).creationCode))
+                        )
+                    )
+                )
+            )
+        );
         TrancheTokenFactory tokenFactory = new TrancheTokenFactory{ salt: SALT }();
         assertEq(address(tokenFactory), predictedAddress);
     }
 
-    function testTrancheTokenShouldBeDeterministic(uint64 poolId, bytes16 trancheId, string memory name, string memory symbol, uint8 decimals) public {
+    function testTrancheTokenShouldBeDeterministic(
+        uint64 poolId,
+        bytes16 trancheId,
+        string memory name,
+        string memory symbol,
+        uint8 decimals
+    ) public {
         TrancheTokenFactory tokenFactory = new TrancheTokenFactory{ salt: SALT }();
 
         bytes32 salt = keccak256(abi.encodePacked(poolId, trancheId));
-        address predictedAddress = address(uint160(uint(keccak256(abi.encodePacked(
-            bytes1(0xff),
-            address(tokenFactory),
-            salt,
-            keccak256(abi.encodePacked(
-                type(RestrictedToken).creationCode,
-                abi.encode(decimals)
-            ))
-        )))));
+        address predictedAddress = address(
+            uint160(
+                uint256(
+                    keccak256(
+                        abi.encodePacked(
+                            bytes1(0xff),
+                            address(tokenFactory),
+                            salt,
+                            keccak256(abi.encodePacked(type(RestrictedToken).creationCode, abi.encode(decimals)))
+                        )
+                    )
+                )
+            )
+        );
 
         address token = tokenFactory.newTrancheToken(poolId, trancheId, name, symbol, decimals);
 
         assertEq(address(token), predictedAddress);
     }
 
-    function testDeployingDeterministicAddressTwiceReverts(uint64 poolId, bytes16 trancheId, string memory name, string memory symbol, uint8 decimals) public {
-        address predictedAddress = address(uint160(uint(keccak256(abi.encodePacked(
-            bytes1(0xff),
-            address(this),
-            SALT,
-            keccak256(abi.encodePacked(
-                type(TrancheTokenFactory).creationCode
-            ))
-        )))));
+    function testDeployingDeterministicAddressTwiceReverts(
+        uint64 poolId,
+        bytes16 trancheId,
+        string memory name,
+        string memory symbol,
+        uint8 decimals
+    ) public {
+        address predictedAddress = address(
+            uint160(
+                uint256(
+                    keccak256(
+                        abi.encodePacked(
+                            bytes1(0xff),
+                            address(this),
+                            SALT,
+                            keccak256(abi.encodePacked(type(TrancheTokenFactory).creationCode))
+                        )
+                    )
+                )
+            )
+        );
         TrancheTokenFactory tokenFactory = new TrancheTokenFactory{ salt: SALT }();
         assertEq(address(tokenFactory), predictedAddress);
         address token1 = tokenFactory.newTrancheToken(poolId, trancheId, name, symbol, decimals);
         vm.expectRevert();
         address token2 = tokenFactory.newTrancheToken(poolId, trancheId, name, symbol, decimals);
-        
     }
 
     function testMemberlistFactoryIsDeterministicAcrossChains(
@@ -105,16 +133,21 @@ contract FactoryTest is Test {
     }
 
     function testMemberlistShouldBeDeterministic() public {
-        address predictedAddress = address(uint160(uint(keccak256(abi.encodePacked(
-            bytes1(0xff),
-            address(this),
-            SALT,
-            keccak256(abi.encodePacked(
-                type(MemberlistFactory).creationCode
-            ))
-        )))));
+        address predictedAddress = address(
+            uint160(
+                uint256(
+                    keccak256(
+                        abi.encodePacked(
+                            bytes1(0xff),
+                            address(this),
+                            SALT,
+                            keccak256(abi.encodePacked(type(MemberlistFactory).creationCode))
+                        )
+                    )
+                )
+            )
+        );
         MemberlistFactory memberlistFactory = new MemberlistFactory{ salt: SALT }();
         assertEq(address(memberlistFactory), predictedAddress);
-        
     }
 }
