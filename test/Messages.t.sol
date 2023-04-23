@@ -306,26 +306,25 @@ contract MessagesTest is Test {
         );
     }
 
-    // nuno
-//    function testTransferTrancheTokensToCentrifugeDecoding() public {
-//        (
-//            uint64 poolId,
-//            bytes16 trancheId,
-//            bytes32 sender,
-//            bytes9 domain,
-//            bytes32 destinationAddress,
-//            uint128 amount
-//        ) = ConnectorMessages.parseTransferTrancheTokens32(
-//            fromHex(
-//                "080000000000000001811acd5b3f17c06841c7e41e9e04cb1b0000000000000000000000000000000000000000000000000000000000000000000000000000000001123123123123123123123123123123123123123123123123123123123123123100000000033b2e3c9fd0803ce8000000"
-//            ).ref(0)
-//        );
-//        assertEq(uint256(poolId), uint256(1));
-//        assertEq(trancheId, bytes16(hex"811acd5b3f17c06841c7e41e9e04cb1b"));
-//        assertEq(domain, ConnectorMessages.formatDomain(ConnectorMessages.Domain.Centrifuge));
-//        assertEq(destinationAddress, bytes32(hex"1231231231231231231231231231231231231231231231231231231231231231"));
-//        assertEq(amount, uint256(1000000000000000000000000000));
-//    }
+    function testTransferTrancheTokensToCentrifugeDecoding() public {
+        (
+            uint64 poolId,
+            bytes16 trancheId,
+            bytes32 sender,
+            bytes9 domain,
+            bytes32 destinationAddress,
+            uint128 amount
+        ) = ConnectorMessages.parseTransferTrancheTokens32(
+            fromHex(
+                "080000000000000001811acd5b3f17c06841c7e41e9e04cb1b1231231231231231231231231231231231231231000000000000000000000000000000000000000000123123123123123123123123123123123123123123123123123123123123123100000000033b2e3c9fd0803ce8000000"
+            ).ref(0)
+        );
+        assertEq(uint256(poolId), uint256(1));
+        assertEq(trancheId, bytes16(hex"811acd5b3f17c06841c7e41e9e04cb1b"));
+        assertEq(domain, ConnectorMessages.formatDomain(ConnectorMessages.Domain.Centrifuge));
+        assertEq(destinationAddress, bytes32(hex"1231231231231231231231231231231231231231231231231231231231231231"));
+        assertEq(amount, uint256(1000000000000000000000000000));
+    }
 
     function testTransferTrancheTokensToEvmEquivalence(
         uint64 poolId,

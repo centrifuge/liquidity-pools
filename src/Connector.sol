@@ -10,12 +10,14 @@ interface GatewayLike {
     function transferTrancheTokensToCentrifuge(
         uint64 poolId,
         bytes16 trancheId,
+        address sender,
         bytes32 destinationAddress,
         uint128 amount
     ) external;
     function transferTrancheTokensToEVM(
         uint64 poolId,
         bytes16 trancheId,
+        address sender,
         uint64 destinationChainId,
         address destinationAddress,
         uint128 amount
@@ -143,7 +145,7 @@ contract CentrifugeConnector {
         require(token.balanceOf(msg.sender) >= amount, "CentrifugeConnector/insufficient-balance");
         token.burn(msg.sender, amount);
 
-        gateway.transferTrancheTokensToCentrifuge(poolId, trancheId, destinationAddress, amount);
+        gateway.transferTrancheTokensToCentrifuge(poolId, trancheId, msg.sender, destinationAddress, amount);
     }
 
     function transferTrancheTokensToEVM(
@@ -159,7 +161,7 @@ contract CentrifugeConnector {
         require(token.balanceOf(msg.sender) >= amount, "CentrifugeConnector/insufficient-balance");
         token.burn(msg.sender, amount);
 
-        gateway.transferTrancheTokensToEVM(poolId, trancheId, destinationChainId, destinationAddress, amount);
+        gateway.transferTrancheTokensToEVM(poolId, trancheId, msg.sender, destinationChainId, destinationAddress, amount);
     }
 
     function increaseInvestOrder(uint64 poolId, bytes16 trancheId, address currencyAddress, uint128 amount) public {

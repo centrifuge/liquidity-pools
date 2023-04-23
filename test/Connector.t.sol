@@ -444,7 +444,7 @@ contract ConnectorTest is Test {
         bytes memory message = ConnectorMessages.formatTransferTrancheTokens(
             poolId,
             trancheId,
-            bytes32(bytes20(msg.sender)),
+            bytes32(bytes20(address(this))),
             ConnectorMessages.formatDomain(ConnectorMessages.Domain.Centrifuge),
             centChainAddress,
             amount
