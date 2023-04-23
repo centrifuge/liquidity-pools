@@ -42,7 +42,6 @@ interface EscrowLike {
 struct Pool {
     uint64 poolId;
     uint256 createdAt;
-    address currency;
 }
 
 struct Tranche {
