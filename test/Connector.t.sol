@@ -483,6 +483,8 @@ contract ConnectorTest is Test {
         uint128 amount
     ) public {
         vm.assume(validUntil > block.timestamp + 7 days);
+        vm.assume(destinationAddress != address(0));
+        
         connector.addPool(poolId);
         connector.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price);
         bridgedConnector.deployTranche(poolId, trancheId);
@@ -503,6 +505,7 @@ contract ConnectorTest is Test {
         address destinationAddress,
         uint128 amount
     ) public {
+        vm.assume(destinationAddress != address(0));
         connector.addPool(poolId);
         connector.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price);
         bridgedConnector.deployTranche(poolId, trancheId);
