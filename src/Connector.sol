@@ -235,8 +235,8 @@ contract CentrifugeConnector {
 
     // --- Incoming message handling ---
     function addCurrency(uint128 currency, address currencyAddress) public onlyGateway {
-        require(currencyIdToAddress[currency] == address(0), "CentrifugeConnector/currency-already-added");
-        require(currencyAddressToId[currencyAddress] == 0, "CentrifugeConnector/currency-already-added");
+        require(currencyIdToAddress[currency] == address(0), "CentrifugeConnector/currency-id-in-use");
+        require(currencyAddressToId[currencyAddress] == 0, "CentrifugeConnector/currency-address-in-use");
 
         currencyIdToAddress[currency] = currencyAddress;
         currencyAddressToId[currencyAddress] = currency;
