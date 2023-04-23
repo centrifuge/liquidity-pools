@@ -77,7 +77,7 @@ contract ConnectorTest is Test {
         connector.addPool(poolId);
 
         connector.allowPoolCurrency(currency, poolId);
-        assertTrue(bridgedConnector.poolCurrencies(poolId, address(token)));
+        assertTrue(bridgedConnector.allowedPoolCurrencies(poolId, address(token)));
     }
 
     function testAllowPoolCurrencyWithUnknownCurrencyFails(uint128 currency, uint64 poolId) public {

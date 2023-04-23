@@ -65,8 +65,7 @@ contract CentrifugeConnector {
     // The reverse mapping of `currencyIdToAddress`
     mapping(address => uint128) public currencyAddressToId;
 
-    // The currencies allowed for a given pool
-    mapping(uint64 => mapping(address => bool)) public poolCurrencies;
+    mapping(uint64 => mapping(address => bool)) public allowedPoolCurrencies;
 
     GatewayLike public gateway;
     EscrowLike public immutable escrow;
@@ -172,7 +171,7 @@ contract CentrifugeConnector {
 
         uint128 currency = currencyAddressToId[currencyAddress];
         require(currency != 0, "CentrifugeConnector/unknown-currency");
-        require(poolCurrencies[poolId][currencyAddress], "CentrifugeConnector/pool-currency-not-allowed");
+        require(allowedPoolCurrencies[poolId][currencyAddress], "CentrifugeConnector/pool-currency-not-allowed");
 
         require(
             ERC20Like(currencyAddress).transferFrom(msg.sender, address(escrow), amount),
@@ -189,7 +188,7 @@ contract CentrifugeConnector {
 
         uint128 currency = currencyAddressToId[currencyAddress];
         require(currency != 0, "CentrifugeConnector/unknown-currency");
-        require(poolCurrencies[poolId][currencyAddress], "CentrifugeConnector/pool-currency-not-allowed");
+        require(allowedPoolCurrencies[poolId][currencyAddress], "CentrifugeConnector/pool-currency-not-allowed");
 
         gateway.decreaseInvestOrder(poolId, trancheId, msg.sender, currency, amount);
     }
@@ -201,7 +200,7 @@ contract CentrifugeConnector {
 
         uint128 currency = currencyAddressToId[currencyAddress];
         require(currency != 0, "CentrifugeConnector/unknown-currency");
-        require(poolCurrencies[poolId][currencyAddress], "CentrifugeConnector/pool-currency-not-allowed");
+        require(allowedPoolCurrencies[poolId][currencyAddress], "CentrifugeConnector/pool-currency-not-allowed");
 
         gateway.increaseRedeemOrder(poolId, trancheId, msg.sender, currency, amount);
     }
@@ -213,7 +212,7 @@ contract CentrifugeConnector {
 
         uint128 currency = currencyAddressToId[currencyAddress];
         require(currency != 0, "CentrifugeConnector/unknown-currency");
-        require(poolCurrencies[poolId][currencyAddress], "CentrifugeConnector/pool-currency-not-allowed");
+        require(allowedPoolCurrencies[poolId][currencyAddress], "CentrifugeConnector/pool-currency-not-allowed");
 
         gateway.decreaseRedeemOrder(poolId, trancheId, msg.sender, currency, amount);
     }
@@ -259,7 +258,7 @@ contract CentrifugeConnector {
         address currencyAddress = currencyIdToAddress[currency];
         require(currencyAddress != address(0), "CentrifugeConnector/unknown-currency");
 
-        poolCurrencies[poolId][currencyAddress] = true;
+        allowedPoolCurrencies[poolId][currencyAddress] = true;
         emit PoolCurrencyAllowed(currency, poolId);
     }
 
