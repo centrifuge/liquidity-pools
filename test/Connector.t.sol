@@ -43,19 +43,29 @@ contract ConnectorTest is Test {
         mockXcmRouter.file("gateway", address(gateway));
     }
 
-    function testAddingCurrencyWorks(uint128 currency) public {
+    function testAddCurrencyWorks(uint128 currency, uint128 badCurrency) public {
+        vm.assume(currency > 0);
+        vm.assume(badCurrency > 0);
+        vm.assume(currency != badCurrency);
+
         ERC20 erc20 = newErc20("X's Dollar", "USDX", 42);
         connector.addCurrency(currency, address(erc20));
         (address address_) = bridgedConnector.currencyIdToAddress(currency);
         assertEq(address_, address(erc20));
 
+        // Verify we can't override the same currency id another address
         ERC20 badErc20 = newErc20("BadActor's Dollar", "BADUSD", 66);
         vm.expectRevert(bytes("CentrifugeConnector/currency-already-added"));
         connector.addCurrency(currency, address(badErc20));
         assertEq(bridgedConnector.currencyIdToAddress(currency), address(erc20));
+
+        // Verify we can't add a currency address that already exists associated with a different currency id
+        vm.expectRevert(bytes("CentrifugeConnector/currency-already-added"));
+        connector.addCurrency(badCurrency, address(erc20));
+        assertEq(bridgedConnector.currencyIdToAddress(currency), address(erc20));
     }
 
-    function testAddingPoolWorks(uint64 poolId) public {
+    function testAddPoolWorks(uint64 poolId) public {
         connector.addPool(poolId);
         (uint64 actualPoolId,,) = bridgedConnector.pools(poolId);
         assertEq(uint256(actualPoolId), uint256(poolId));
