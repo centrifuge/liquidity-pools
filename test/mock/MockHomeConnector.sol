@@ -44,8 +44,8 @@ contract MockHomeConnector is Test {
         router.handle(_message);
     }
 
-    function allowPoolCurrency(uint128 currency, uint64 poolId) public {
-        bytes memory _message = ConnectorMessages.formatAllowPoolCurrency(currency, poolId);
+    function allowPoolCurrency(uint64 poolId, uint128 currency) public {
+        bytes memory _message = ConnectorMessages.formatAllowPoolCurrency(poolId, currency);
         router.handle(_message);
     }
 

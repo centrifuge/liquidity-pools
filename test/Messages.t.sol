@@ -60,23 +60,23 @@ contract MessagesTest is Test {
 
     function testAllowPoolCurrencyEncoding() public {
         assertEq(
-            ConnectorMessages.formatAllowPoolCurrency(42, 99), hex"030000000000000000000000000000002a0000000000000063"
+            ConnectorMessages.formatAllowPoolCurrency(99, 42), hex"0300000000000000630000000000000000000000000000002a"
         );
     }
 
     function testAllowPoolCurrencyDecoding() public {
-        (uint128 actualCurrency, uint64 actualPoolId) = ConnectorMessages.parseAllowPoolCurrency(
-            fromHex("030000000000000000000000000000002a0000000000000063").ref(0)
+        (uint64 actualPoolId, uint128 actualCurrency) = ConnectorMessages.parseAllowPoolCurrency(
+            fromHex("0300000000000000630000000000000000000000000000002a").ref(0)
         );
-        assertEq(uint256(actualCurrency), 42);
         assertEq(actualPoolId, 99);
+        assertEq(uint256(actualCurrency), 42);
     }
 
     function testAllowPoolCurrencyEquivalence(uint128 currency, uint64 poolId) public {
-        bytes memory _message = ConnectorMessages.formatAllowPoolCurrency(currency, poolId);
-        (uint128 decodedCurrency, uint64 decodedPoolId) = ConnectorMessages.parseAllowPoolCurrency(_message.ref(0));
-        assertEq(decodedCurrency, uint256(currency));
+        bytes memory _message = ConnectorMessages.formatAllowPoolCurrency(poolId, currency);
+        (uint64 decodedPoolId, uint128 decodedCurrency) = ConnectorMessages.parseAllowPoolCurrency(_message.ref(0));
         assertEq(uint256(decodedPoolId), uint256(poolId));
+        assertEq(decodedCurrency, uint256(currency));
     }
 
     function testAddTrancheEncoding() public {

@@ -8,7 +8,7 @@ import {ConnectorMessages} from "../Messages.sol";
 interface ConnectorLike {
     function addCurrency(uint128 currency, address currencyAddress) external;
     function addPool(uint64 poolId) external;
-    function allowPoolCurrency(uint128 currency, uint64 poolId) external;
+    function allowPoolCurrency(uint64 poolId, uint128 currency) external;
     function addTranche(
         uint64 poolId,
         bytes16 trancheId,
@@ -178,8 +178,8 @@ contract ConnectorGateway {
             (uint64 poolId) = ConnectorMessages.parseAddPool(_msg);
             connector.addPool(poolId);
         } else if (ConnectorMessages.isAllowPoolCurrency(_msg)) {
-            (uint128 currency, uint64 poolId) = ConnectorMessages.parseAllowPoolCurrency(_msg);
-            connector.allowPoolCurrency(currency, poolId);
+            (uint64 poolId, uint128 currency) = ConnectorMessages.parseAllowPoolCurrency(_msg);
+            connector.allowPoolCurrency(poolId, currency);
         } else if (ConnectorMessages.isAddTranche(_msg)) {
             (
                 uint64 poolId,

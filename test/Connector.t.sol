@@ -76,14 +76,14 @@ contract ConnectorTest is Test {
         connector.addCurrency(currency, address(token));
         connector.addPool(poolId);
 
-        connector.allowPoolCurrency(currency, poolId);
+        connector.allowPoolCurrency(poolId, currency);
         assertTrue(bridgedConnector.allowedPoolCurrencies(poolId, address(token)));
     }
 
     function testAllowPoolCurrencyWithUnknownCurrencyFails(uint128 currency, uint64 poolId) public {
         connector.addPool(poolId);
         vm.expectRevert(bytes("CentrifugeConnector/unknown-currency"));
-        connector.allowPoolCurrency(currency, poolId);
+        connector.allowPoolCurrency(poolId, currency);
     }
 
     function testAddingPoolMultipleTimesFails(uint64 poolId) public {
@@ -585,7 +585,7 @@ contract ConnectorTest is Test {
 
         vm.expectRevert(bytes("CentrifugeConnector/pool-currency-not-allowed"));
         bridgedConnector.increaseInvestOrder(poolId, trancheId, address(erc20), amount);
-        connector.allowPoolCurrency(currency, poolId);
+        connector.allowPoolCurrency(poolId, currency);
 
         erc20.approve(address(bridgedConnector), type(uint256).max);
         erc20.mint(address(this), amount);
@@ -630,7 +630,7 @@ contract ConnectorTest is Test {
 
         vm.expectRevert(bytes("CentrifugeConnector/pool-currency-not-allowed"));
         bridgedConnector.decreaseInvestOrder(poolId, trancheId, address(erc20), amount);
-        connector.allowPoolCurrency(currency, poolId);
+        connector.allowPoolCurrency(poolId, currency);
 
         assertEq(erc20.balanceOf(address(bridgedConnector.escrow())), 0);
         assertEq(erc20.balanceOf(address(this)), 0);
@@ -674,7 +674,7 @@ contract ConnectorTest is Test {
 
         vm.expectRevert(bytes("CentrifugeConnector/pool-currency-not-allowed"));
         bridgedConnector.increaseRedeemOrder(poolId, trancheId, address(erc20), amount);
-        connector.allowPoolCurrency(currency, poolId);
+        connector.allowPoolCurrency(poolId, currency);
 
         assertEq(erc20.balanceOf(address(bridgedConnector.escrow())), 0);
         assertEq(erc20.balanceOf(address(this)), 0);
@@ -718,7 +718,7 @@ contract ConnectorTest is Test {
 
         vm.expectRevert(bytes("CentrifugeConnector/pool-currency-not-allowed"));
         bridgedConnector.decreaseRedeemOrder(poolId, trancheId, address(erc20), amount);
-        connector.allowPoolCurrency(currency, poolId);
+        connector.allowPoolCurrency(poolId, currency);
 
         assertEq(erc20.balanceOf(address(bridgedConnector.escrow())), 0);
         assertEq(erc20.balanceOf(address(this)), 0);
