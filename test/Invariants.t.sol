@@ -63,7 +63,7 @@ contract ConnectorInvariants is Test {
     // Invariant 2: The tranche token supply should equal the sum of all
     // transfers in minus the sum of all the transfers out
     function invariant_tokenSolvency() external {
-        (address token,,,,) = bridgedConnector.tranches(investor.fixedPoolId(), investor.fixedTrancheId());
+        (address token,,,,,) = bridgedConnector.tranches(investor.fixedPoolId(), investor.fixedTrancheId());
         assertEq(ERC20Like(token).totalSupply(), investor.totalTransferredIn() - investor.totalTransferredOut());
     }
 }

@@ -29,17 +29,17 @@ contract InvariantInvestor is Test {
         bridgedConnector = bridgedConnector_;
 
         connector.addPool(fixedPoolId);
-        connector.addTranche(fixedPoolId, fixedTrancheId, "TKN", "Token", uint128(1000));
+        connector.addTranche(fixedPoolId, fixedTrancheId, "TKN", "Token", 18, uint128(1000));
         bridgedConnector.deployTranche(fixedPoolId, fixedTrancheId);
         connector.updateMember(fixedPoolId, fixedTrancheId, address(this), type(uint64).max);
 
-        (address token,,,,) = bridgedConnector.tranches(fixedPoolId, fixedTrancheId);
+        (address token,,,,,) = bridgedConnector.tranches(fixedPoolId, fixedTrancheId);
         fixedToken = ERC20Like(token);
     }
 
     function transferIn(uint256 amount) public {
         amount = bound(amount, 0, uint256(investorBalanceOnCentrifugeChain));
-        connector.transfer(fixedPoolId, fixedTrancheId, "1", address(this), uint128(amount));
+        connector.incomingTransferTrancheTokens(fixedPoolId, fixedTrancheId, 1, address(this), uint128(amount));
 
         investorBalanceOnCentrifugeChain -= uint128(amount);
         totalTransferredIn += amount;
@@ -48,9 +48,7 @@ contract InvariantInvestor is Test {
     function transferOut(uint256 amount) public {
         amount = bound(amount, 0, fixedToken.balanceOf(address(this)));
         fixedToken.approve(address(bridgedConnector), amount);
-        bridgedConnector.transfer(
-            fixedPoolId, fixedTrancheId, ConnectorMessages.Domain.Centrifuge, address(this), uint128(amount)
-        );
+        bridgedConnector.transferTrancheTokensToCentrifuge(fixedPoolId, fixedTrancheId, "1", uint128(amount));
 
         investorBalanceOnCentrifugeChain += uint128(amount);
         totalTransferredOut += amount;
