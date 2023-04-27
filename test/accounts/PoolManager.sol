@@ -22,9 +22,9 @@ contract InvariantPoolManager is Test {
         allPools.push(poolId);
     }
 
-    function addPoolAndTranche(uint64 poolId, bytes16 trancheId, uint128 price) public {
+    function addPoolAndTranche(uint64 poolId, bytes16 trancheId, uint8 decimals, uint128 price) public {
         addPool(poolId);
-        connector.addTranche(poolId, trancheId, "-", "-", price);
+        connector.addTranche(poolId, trancheId, "-", "-", decimals, price);
 
         allTranches.push(trancheId);
         trancheIdToPoolId[trancheId] = poolId;

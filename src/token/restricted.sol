@@ -12,8 +12,10 @@ interface ERC20Like {
     function mint(address user, uint256 value) external;
     function name() external view returns (string memory);
     function symbol() external view returns (string memory);
+    function decimals() external view returns (uint8);
     function balanceOf(address user) external view returns (uint256 value);
     function burn(address user, uint256 value) external;
+    function transfer(address to, uint256 amount) external returns (bool);
     function transferFrom(address from, address to, uint256 amount) external returns (bool);
     function totalSupply() external returns (uint256);
     function approve(address _spender, uint256 _value) external returns (bool);
@@ -28,10 +30,10 @@ interface RestrictedTokenLike is ERC20Like {
 contract RestrictedToken is ERC20 {
     MemberlistLike public memberlist;
 
-    /// --- Events ---
+    // --- Events ---
     event File(bytes32 indexed what, address data);
 
-    constructor(string memory name_, string memory symbol_, uint8 decimals_) ERC20(name_, symbol_, decimals_) {}
+    constructor(uint8 decimals_) ERC20(decimals_) {}
 
     modifier checkMember(address user) {
         memberlist.member(user);
@@ -50,7 +52,15 @@ contract RestrictedToken is ERC20 {
         return memberlist.hasMember(user);
     }
 
+    function transfer(address to, uint256 value) public override checkMember(to) returns (bool) {
+        return super.transfer(to, value);
+    }
+
     function transferFrom(address from, address to, uint256 value) public override checkMember(to) returns (bool) {
         return super.transferFrom(from, to, value);
+    }
+
+    function mint(address to, uint256 value) public override checkMember(to) {
+        return super.mint(to, value);
     }
 }

@@ -3,10 +3,12 @@ pragma solidity ^0.8.18;
 pragma abicoder v2;
 
 import {CentrifugeConnector} from "src/Connector.sol";
+import {ConnectorEscrow} from "src/Escrow.sol";
 import {MockHomeConnector} from "./mock/MockHomeConnector.sol";
 import "./mock/MockXcmRouter.sol";
-import {RestrictedTokenFactory, MemberlistFactory} from "src/token/factory.sol";
 import {ERC20Like} from "src/token/restricted.sol";
+import {ConnectorGateway} from "src/routers/Gateway.sol";
+import {TrancheTokenFactory, MemberlistFactory} from "src/token/factory.sol";
 import {InvariantPoolManager} from "./accounts/PoolManager.sol";
 import {InvariantInvestor} from "./accounts/Investor.sol";
 import "forge-std/Test.sol";
@@ -16,6 +18,7 @@ contract ConnectorInvariants is Test {
     CentrifugeConnector bridgedConnector;
     MockHomeConnector connector;
     MockXcmRouter mockXcmRouter;
+    ConnectorGateway gateway;
 
     InvariantPoolManager poolManager;
     InvariantInvestor investor;
@@ -23,14 +26,16 @@ contract ConnectorInvariants is Test {
     address[] private targetContracts_;
 
     function setUp() public {
-        address tokenFactory_ = address(new RestrictedTokenFactory());
+        address escrow_ = address(new ConnectorEscrow());
+        address tokenFactory_ = address(new TrancheTokenFactory());
         address memberlistFactory_ = address(new MemberlistFactory());
-        bridgedConnector = new CentrifugeConnector(tokenFactory_, memberlistFactory_);
-        bridgedConnector = new CentrifugeConnector(tokenFactory_, memberlistFactory_);
-        mockXcmRouter = new MockXcmRouter(bridgedConnector);
-
+        bridgedConnector = new CentrifugeConnector(escrow_, tokenFactory_, memberlistFactory_);
+        mockXcmRouter = new MockXcmRouter(address(bridgedConnector));
         connector = new MockHomeConnector(address(mockXcmRouter));
-        bridgedConnector.file("router", address(mockXcmRouter));
+        gateway = new ConnectorGateway(address(bridgedConnector), address(mockXcmRouter));
+
+        mockXcmRouter.file("gateway", address(gateway));
+        bridgedConnector.file("gateway", address(gateway));
 
         // Performs random pool and tranches creations
         poolManager = new InvariantPoolManager(connector);
