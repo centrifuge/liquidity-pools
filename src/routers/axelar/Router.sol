@@ -9,6 +9,7 @@ interface ConnectorLike {
         bytes16 trancheId,
         string memory tokenName,
         string memory tokenSymbol,
+        uint8 decimals,
         uint128 price
     ) external;
     function updateMember(uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) external;
