@@ -7,7 +7,7 @@ Connectors enables seamless deployment of Centrifuge RWA pools on any EVM-compat
 </a>
 
 Investors can invest in multiple tranches for each RWA pool. Each of these tranches is a separate deployment of an Investor Pool and a Tranche Token.
-- **Investor Pool** (WIP): A [ERC-4626](https://ethereum.org/en/developers/docs/standards/tokens/erc-4626/) compatible contract that enables investors to deposit and withdraw stablecoins to invest in tranches of pools.
+- **Liquidity Pool** (WIP): A [ERC-4626](https://ethereum.org/en/developers/docs/standards/tokens/erc-4626/) compatible contract that enables investors to deposit and withdraw stablecoins to invest in tranches of pools.
 - [**Tranche Token**](https://github.com/centrifuge/connectors/blob/main/src/token/restricted.sol): An [ERC-20](https://ethereum.org/en/developers/docs/standards/tokens/erc-20/) token for the tranche, linked to a [`Memberlist`](https://github.com/centrifuge/connectors/blob/main/src/token/memberlist.sol) that manages transfer restrictions.
 
 The deployment of these tranches and the management of investments is controlled by the underlying Connector, Gateway, and Routers.
