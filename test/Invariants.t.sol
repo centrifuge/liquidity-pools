@@ -48,7 +48,7 @@ contract ConnectorInvariants is Test {
         for (uint256 i = 0; i < poolManager.allTranchesLength(); i++) {
             bytes16 trancheId = poolManager.allTranches(i);
             uint64 poolId = poolManager.trancheIdToPoolId(trancheId);
-            (, uint256 createdAt,) = bridgedConnector.pools(poolId);
+            (, uint256 createdAt) = bridgedConnector.pools(poolId);
             assertTrue(createdAt > 0);
         }
     }

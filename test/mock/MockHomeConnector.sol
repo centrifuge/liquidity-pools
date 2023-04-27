@@ -34,8 +34,18 @@ contract MockHomeConnector is Test {
         router = XcmRouterLike(xcmRouter);
     }
 
-    function addPool(uint64 poolId, uint128 currency, uint8 decimals) public {
-        bytes memory _message = ConnectorMessages.formatAddPool(poolId, currency, decimals);
+    function addCurrency(uint128 currency, address currencyAddress) public {
+        bytes memory _message = ConnectorMessages.formatAddCurrency(currency, currencyAddress);
+        router.handle(_message);
+    }
+
+    function addPool(uint64 poolId) public {
+        bytes memory _message = ConnectorMessages.formatAddPool(poolId);
+        router.handle(_message);
+    }
+
+    function allowPoolCurrency(uint64 poolId, uint128 currency) public {
+        bytes memory _message = ConnectorMessages.formatAllowPoolCurrency(poolId, currency);
         router.handle(_message);
     }
 
@@ -44,9 +54,11 @@ contract MockHomeConnector is Test {
         bytes16 trancheId,
         string memory tokenName,
         string memory tokenSymbol,
+        uint8 decimals,
         uint128 price
     ) public {
-        bytes memory _message = ConnectorMessages.formatAddTranche(poolId, trancheId, tokenName, tokenSymbol, price);
+        bytes memory _message =
+            ConnectorMessages.formatAddTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price);
         router.handle(_message);
     }
 
@@ -60,19 +72,25 @@ contract MockHomeConnector is Test {
         router.handle(_message);
     }
 
-    // Trigger an incoming (e.g. Centrifuge Chain -> EVM) transfer
-    function incomingTransfer(
+    // Trigger an incoming (e.g. Centrifuge Chain -> EVM) transfer of stable coins
+    function incomingTransfer(uint128 currency, bytes32 sender, bytes32 recipient, uint128 amount) public {
+        bytes memory _message = ConnectorMessages.formatTransfer(currency, sender, recipient, amount);
+        router.handle(_message);
+    }
+
+    // Trigger an incoming (e.g. Centrifuge Chain -> EVM) transfer of tranche tokens
+    function incomingTransferTrancheTokens(
         uint64 poolId,
         bytes16 trancheId,
-        uint256 destinationChainId,
+        uint64 destinationChainId,
         address destinationAddress,
         uint128 amount
     ) public {
         bytes memory _message = ConnectorMessages.formatTransferTrancheTokens(
             poolId,
             trancheId,
-            ConnectorMessages.formatDomain(ConnectorMessages.Domain.EVM),
-            destinationChainId,
+            bytes32(bytes20(msg.sender)),
+            ConnectorMessages.formatDomain(ConnectorMessages.Domain.EVM, destinationChainId),
             destinationAddress,
             amount
         );

@@ -6,23 +6,22 @@ import {TypedMemView} from "memview-sol/TypedMemView.sol";
 import {ConnectorMessages} from "../Messages.sol";
 
 interface ConnectorLike {
-    function addPool(uint64 poolId, uint128 currency, uint8 decimals) external;
+    function addCurrency(uint128 currency, address currencyAddress) external;
+    function addPool(uint64 poolId) external;
+    function allowPoolCurrency(uint64 poolId, uint128 currency) external;
     function addTranche(
         uint64 poolId,
         bytes16 trancheId,
         string memory tokenName,
         string memory tokenSymbol,
+        uint8 decimals,
         uint128 price
     ) external;
     function updateMember(uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) external;
     function updateTokenPrice(uint64 poolId, bytes16 trancheId, uint128 price) external;
-    function handleTransferTrancheTokens(
-        uint64 poolId,
-        bytes16 trancheId,
-        uint256 destinationChainId,
-        address destinationAddress,
-        uint128 amount
-    ) external;
+    function handleTransfer(uint128 currency, address recipient, uint128 amount) external;
+    function handleTransferTrancheTokens(uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 amount)
+        external;
 }
 
 interface RouterLike {
@@ -84,6 +83,7 @@ contract ConnectorGateway {
     function transferTrancheTokensToCentrifuge(
         uint64 poolId,
         bytes16 trancheId,
+        address sender,
         bytes32 destinationAddress,
         uint128 amount
     ) public onlyConnector {
@@ -91,8 +91,8 @@ contract ConnectorGateway {
             ConnectorMessages.formatTransferTrancheTokens(
                 poolId,
                 trancheId,
+                addressToBytes32(sender),
                 ConnectorMessages.formatDomain(ConnectorMessages.Domain.Centrifuge),
-                uint256(0),
                 destinationAddress,
                 amount
             )
@@ -102,7 +102,8 @@ contract ConnectorGateway {
     function transferTrancheTokensToEVM(
         uint64 poolId,
         bytes16 trancheId,
-        uint256 destinationChainId,
+        address sender,
+        uint64 destinationChainId,
         address destinationAddress,
         uint128 amount
     ) public onlyConnector {
@@ -110,28 +111,85 @@ contract ConnectorGateway {
             ConnectorMessages.formatTransferTrancheTokens(
                 poolId,
                 trancheId,
-                ConnectorMessages.formatDomain(ConnectorMessages.Domain.EVM),
-                destinationChainId,
+                addressToBytes32(sender),
+                ConnectorMessages.formatDomain(ConnectorMessages.Domain.EVM, destinationChainId),
                 destinationAddress,
                 amount
             )
         );
     }
 
-    function transfer(uint128 token, bytes32 sender, bytes32 receiver, uint128 amount) public onlyConnector {
-        router.send(ConnectorMessages.formatTransfer(token, sender, receiver, amount));
+    function transfer(uint128 token, address sender, bytes32 receiver, uint128 amount) public onlyConnector {
+        router.send(ConnectorMessages.formatTransfer(token, addressToBytes32(sender), receiver, amount));
+    }
+
+    function increaseInvestOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount)
+        public
+        onlyConnector
+    {
+        router.send(
+            ConnectorMessages.formatIncreaseInvestOrder(poolId, trancheId, addressToBytes32(investor), currency, amount)
+        );
+    }
+
+    function decreaseInvestOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount)
+        public
+        onlyConnector
+    {
+        router.send(
+            ConnectorMessages.formatDecreaseInvestOrder(poolId, trancheId, addressToBytes32(investor), currency, amount)
+        );
+    }
+
+    function increaseRedeemOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount)
+        public
+        onlyConnector
+    {
+        router.send(
+            ConnectorMessages.formatIncreaseRedeemOrder(poolId, trancheId, addressToBytes32(investor), currency, amount)
+        );
+    }
+
+    function decreaseRedeemOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount)
+        public
+        onlyConnector
+    {
+        router.send(
+            ConnectorMessages.formatDecreaseRedeemOrder(poolId, trancheId, addressToBytes32(investor), currency, amount)
+        );
+    }
+
+    function collectInvest(uint64 poolId, bytes16 trancheId, address investor) public onlyConnector {
+        router.send(ConnectorMessages.formatCollectInvest(poolId, trancheId, addressToBytes32(investor)));
+    }
+
+    function collectRedeem(uint64 poolId, bytes16 trancheId, address investor) public onlyConnector {
+        router.send(ConnectorMessages.formatCollectRedeem(poolId, trancheId, addressToBytes32(investor)));
     }
 
     // --- Incoming ---
     function handle(bytes memory _message) external onlyRouter {
         bytes29 _msg = _message.ref(0);
-        if (ConnectorMessages.isAddPool(_msg)) {
-            (uint64 poolId, uint128 currency, uint8 decimals) = ConnectorMessages.parseAddPool(_msg);
-            connector.addPool(poolId, currency, decimals);
+
+        if (ConnectorMessages.isAddCurrency(_msg)) {
+            (uint128 currency, address currencyAddress) = ConnectorMessages.parseAddCurrency(_msg);
+            connector.addCurrency(currency, currencyAddress);
+        } else if (ConnectorMessages.isAddPool(_msg)) {
+            (uint64 poolId) = ConnectorMessages.parseAddPool(_msg);
+            connector.addPool(poolId);
+        } else if (ConnectorMessages.isAllowPoolCurrency(_msg)) {
+            (uint64 poolId, uint128 currency) = ConnectorMessages.parseAllowPoolCurrency(_msg);
+            connector.allowPoolCurrency(poolId, currency);
         } else if (ConnectorMessages.isAddTranche(_msg)) {
-            (uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol, uint128 price) =
-                ConnectorMessages.parseAddTranche(_msg);
-            connector.addTranche(poolId, trancheId, tokenName, tokenSymbol, price);
+            (
+                uint64 poolId,
+                bytes16 trancheId,
+                string memory tokenName,
+                string memory tokenSymbol,
+                uint8 decimals,
+                uint128 price
+            ) = ConnectorMessages.parseAddTranche(_msg);
+            connector.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price);
         } else if (ConnectorMessages.isUpdateMember(_msg)) {
             (uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) =
                 ConnectorMessages.parseUpdateMember(_msg);
@@ -139,12 +197,20 @@ contract ConnectorGateway {
         } else if (ConnectorMessages.isUpdateTrancheTokenPrice(_msg)) {
             (uint64 poolId, bytes16 trancheId, uint128 price) = ConnectorMessages.parseUpdateTrancheTokenPrice(_msg);
             connector.updateTokenPrice(poolId, trancheId, price);
+        } else if (ConnectorMessages.isTransfer(_msg)) {
+            (uint128 currency, address recipient, uint128 amount) = ConnectorMessages.parseIncomingTransfer(_msg);
+            connector.handleTransfer(currency, recipient, amount);
         } else if (ConnectorMessages.isTransferTrancheTokens(_msg)) {
-            (uint64 poolId, bytes16 trancheId,, uint256 destinationChainId, address destinationAddress, uint128 amount)
-            = ConnectorMessages.parseTransferTrancheTokens20(_msg);
-            connector.handleTransferTrancheTokens(poolId, trancheId, destinationChainId, destinationAddress, amount);
+            (uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 amount) =
+                ConnectorMessages.parseTransferTrancheTokens20(_msg);
+            connector.handleTransferTrancheTokens(poolId, trancheId, destinationAddress, amount);
         } else {
             revert("ConnectorGateway/invalid-message");
         }
+    }
+
+    // Utils
+    function addressToBytes32(address x) private pure returns (bytes32) {
+        return bytes32(bytes20(x));
     }
 }
