@@ -3,7 +3,7 @@ Connectors enables seamless deployment of Centrifuge RWA pools on any EVM-compat
 
 ## How it works
 <a href="https://github.com/centrifuge/connectors">
-  <img alt="Centrifuge" src="contracts.svg">
+  <img alt="Centrifuge" src="contracts.png">
 </a>
 
 Investors can invest in multiple tranches for each RWA pool. Each of these tranches is a separate deployment of an Liquidity Pool and a Tranche Token.
