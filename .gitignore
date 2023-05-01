@@ -3,3 +3,4 @@ out/
 broadcast/
 .env
 .idea/
+.DS_Store
