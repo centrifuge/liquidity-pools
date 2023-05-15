@@ -177,18 +177,21 @@ library ConnectorMessages {
      * 25-45: user (Ethereum address, 20 bytes - Skip 12 bytes from 32-byte addresses)
      * 57-65: validUntil (uint64 = 8 bytes)
      *
-     * TODO: use bytes32 for user (for non-EVM compatibility)
      */
-    function formatUpdateMember(uint64 poolId, bytes16 trancheId, address user, uint64 validUntil)
+    function formatUpdateMember(uint64 poolId, bytes16 trancheId, address member, uint64 validUntil)
         internal
         pure
         returns (bytes memory)
     {
-        // NOTE: Since parseUpdateMember parses the first 20 bytes of `user` and skips the following 12
-        // here we need to append 12 zeros to make it right. Drop once we support 32-byte addresses.
-        return abi.encodePacked(
-            uint8(Call.UpdateMember), poolId, trancheId, user, bytes(hex"000000000000000000000000"), validUntil
-        );
+        return formatUpdateMember(poolId, trancheId, bytes32(bytes20(member)), validUntil);
+    }
+
+    function formatUpdateMember(uint64 poolId, bytes16 trancheId, bytes32 member, uint64 validUntil)
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(uint8(Call.UpdateMember), poolId, trancheId, member, validUntil);
     }
 
     function isUpdateMember(bytes29 _msg) internal pure returns (bool) {
