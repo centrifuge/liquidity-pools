@@ -3,13 +3,14 @@
 // Copyright (C) 2021-2022 Foundation
 pragma solidity ^0.8.18;
 
+import "./../auth/auth.sol";
+
 interface IERC1271 {
     function isValidSignature(bytes32, bytes memory) external view returns (bytes4);
 }
 
 // Adapted from https://github.com/makerdao/xdomain-dss/blob/master/src/Dai.sol
-contract ERC20 {
-    mapping(address => uint256) public wards;
+contract ERC20 is Auth {
 
     string public name;
     string public symbol;
@@ -28,18 +29,14 @@ contract ERC20 {
         keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
 
     // --- Events ---
-    event Rely(address indexed user);
-    event Deny(address indexed user);
     event File(bytes32 indexed what, string data);
     event Approval(address indexed owner, address indexed spender, uint256 value);
     event Transfer(address indexed from, address indexed to, uint256 value);
 
     constructor(uint8 decimals_) {
         decimals = decimals_;
-
         wards[msg.sender] = 1;
-        emit Rely(msg.sender);
-
+    
         deploymentChainId = block.chainid;
         _DOMAIN_SEPARATOR = _calculateDomainSeparator(block.chainid);
     }
@@ -58,22 +55,6 @@ contract ERC20 {
 
     function DOMAIN_SEPARATOR() external view returns (bytes32) {
         return block.chainid == deploymentChainId ? _DOMAIN_SEPARATOR : _calculateDomainSeparator(block.chainid);
-    }
-
-    modifier auth() {
-        require(wards[msg.sender] == 1, "ERC20/not-authorized");
-        _;
-    }
-
-    // --- Administration ---
-    function rely(address user) external auth {
-        wards[user] = 1;
-        emit Rely(user);
-    }
-
-    function deny(address user) external auth {
-        wards[user] = 0;
-        emit Deny(user);
     }
 
     function file(bytes32 what, string memory data) external auth {
