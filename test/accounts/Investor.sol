@@ -22,7 +22,7 @@ contract InvariantInvestor is Test {
     uint128 public investorBalanceOnCentrifugeChain = 10_000_000 * 10 ** 18;
 
     uint256 public totalTransferredIn;
-    uint256 public totalTransferredOut = 10;
+    uint256 public totalTransferredOut;
 
     constructor(MockHomeConnector connector_, CentrifugeConnector bridgedConnector_) {
         connector = connector_;
