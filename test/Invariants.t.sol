@@ -70,6 +70,10 @@ contract ConnectorInvariants is Test {
     // Invariant 3: An investor should not be able to transfer out more tranche tokens than were transferred in
     function invariant_investorSolvency() external {
         assertTrue(investor.totalTransferredIn() >= investor.totalTransferredOut());
+        for (uint256 i = 0; i < investor.allInvestorsLength(); i++) {
+            address investorAddress = investor.allInvestors(i);
+            assertTrue(investor.investorTransferredIn(investorAddress) >= investor.investorTransferredOut(investorAddress));
+        }
     }
 
     // Invariant 4: The total supply of tranche tokens should equal the sum of all the investors balances
@@ -82,6 +86,4 @@ contract ConnectorInvariants is Test {
         }
         assertEq(totalSupply, totalBalance);
     }
-
-    // Invariant 5:
 }

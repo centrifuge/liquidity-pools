@@ -24,6 +24,8 @@ contract InvariantInvestor is Test {
     uint256 public totalTransferredIn;
     uint256 public totalTransferredOut;
     address[] public allInvestors;
+    mapping(address => uint256) public investorTransferredIn;
+    mapping(address => uint256) public investorTransferredOut;
 
     constructor(MockHomeConnector connector_, CentrifugeConnector bridgedConnector_) {
         connector = connector_;
@@ -44,18 +46,25 @@ contract InvariantInvestor is Test {
         allInvestors.push(investor);
     }
 
-    function transferIn(uint256 amount) public {
+    function transferIn(uint256 investorIndex, uint256 amount) public {
+        investorIndex = bound(investorIndex, 0, allInvestors.length - 1);
+        address investor = allInvestors[investorIndex];
         amount = bound(amount, 0, uint256(investorBalanceOnCentrifugeChain));
-        connector.incomingTransferTrancheTokens(fixedPoolId, fixedTrancheId, 1, address(this), uint128(amount));
+        connector.incomingTransferTrancheTokens(fixedPoolId, fixedTrancheId, 1, investor, uint128(amount));
 
         investorBalanceOnCentrifugeChain -= uint128(amount);
         totalTransferredIn += amount;
+        investorTransferredIn[investor] += amount;
     }
 
-    function transferOut(uint256 amount) public {
-        amount = bound(amount, 0, fixedToken.balanceOf(address(this)));
+    function transferOut(uint256 investorIndex, uint256 amount) public {
+        investorIndex = bound(investorIndex, 0, allInvestors.length - 1);
+        address investor = allInvestors[investorIndex];
+        amount = bound(amount, 0, fixedToken.balanceOf(investor));
+        vm.startPrank(investor);
         fixedToken.approve(address(bridgedConnector), amount);
         bridgedConnector.transferTrancheTokensToCentrifuge(fixedPoolId, fixedTrancheId, "1", uint128(amount));
+        vm.stopPrank();
 
         investorBalanceOnCentrifugeChain += uint128(amount);
         totalTransferredOut += amount;
