@@ -66,4 +66,22 @@ contract ConnectorInvariants is Test {
         (address token,,,,,) = bridgedConnector.tranches(investor.fixedPoolId(), investor.fixedTrancheId());
         assertEq(ERC20Like(token).totalSupply(), investor.totalTransferredIn() - investor.totalTransferredOut());
     }
+
+    // Invariant 3: An investor should not be able to transfer out more tranche tokens than were transferred in
+    function invariant_investorSolvency() external {
+        assertTrue(investor.totalTransferredIn() >= investor.totalTransferredOut());
+    }
+
+    // Invariant 4: The total supply of tranche tokens should equal the sum of all the investors balances
+    function invariant_totalSupply() external {
+        (address token,,,,,) = bridgedConnector.tranches(investor.fixedPoolId(), investor.fixedTrancheId());
+        uint256 totalSupply = ERC20Like(token).totalSupply();
+        uint256 totalBalance = 0;
+        for (uint256 i = 0; i < investor.allInvestorsLength(); i++) {
+            totalBalance += ERC20Like(token).balanceOf(investor.allInvestors(i));
+        }
+        assertEq(totalSupply, totalBalance);
+    }
+
+    // Invariant 5:
 }

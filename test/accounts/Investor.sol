@@ -23,6 +23,7 @@ contract InvariantInvestor is Test {
 
     uint256 public totalTransferredIn;
     uint256 public totalTransferredOut;
+    address[] public allInvestors;
 
     constructor(MockHomeConnector connector_, CentrifugeConnector bridgedConnector_) {
         connector = connector_;
@@ -35,6 +36,12 @@ contract InvariantInvestor is Test {
 
         (address token,,,,,) = bridgedConnector.tranches(fixedPoolId, fixedTrancheId);
         fixedToken = ERC20Like(token);
+        allInvestors.push(address(this));
+    }
+
+    function addInvestor(uint64 poolId, bytes16 trancheId, address investor, uint128 amount) public {
+        connector.updateMember(poolId, trancheId, investor, type(uint64).max);
+        allInvestors.push(investor);
     }
 
     function transferIn(uint256 amount) public {
@@ -52,5 +59,9 @@ contract InvariantInvestor is Test {
 
         investorBalanceOnCentrifugeChain += uint128(amount);
         totalTransferredOut += amount;
+    }
+
+    function allInvestorsLength() public view returns (uint256) {
+        return allInvestors.length;
     }
 }
