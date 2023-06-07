@@ -10,7 +10,7 @@ import {ERC20Like} from "src/token/restricted.sol";
 import {ConnectorGateway} from "src/routers/Gateway.sol";
 import {TrancheTokenFactory, MemberlistFactory} from "src/token/factory.sol";
 import {InvariantPoolManager} from "./accounts/PoolManager.sol";
-import {InvariantInvestor} from "./accounts/Investor.sol";
+import {InvariantInvestor} from "./accounts/InvestorManager.sol";
 import "forge-std/Test.sol";
 import "../src/Connector.sol";
 
