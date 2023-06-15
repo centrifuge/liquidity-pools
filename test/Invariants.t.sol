@@ -72,7 +72,9 @@ contract ConnectorInvariants is Test {
         assertTrue(investor.totalTransferredIn() >= investor.totalTransferredOut());
         for (uint256 i = 0; i < investor.allInvestorsLength(); i++) {
             address investorAddress = investor.allInvestors(i);
-            assertTrue(investor.investorTransferredIn(investorAddress) >= investor.investorTransferredOut(investorAddress));
+            assertTrue(
+                investor.investorTransferredIn(investorAddress) >= investor.investorTransferredOut(investorAddress)
+            );
         }
     }
 
