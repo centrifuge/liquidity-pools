@@ -46,11 +46,15 @@ contract ConnectorAdmin {
 
     // --- Admin ---
 
-    function pause() external auth {
+    function pause() public auth {
         gateway.pause();
     }
 
-    function unpause() external auth {
+    function unpause() public auth {
         gateway.unpause();
+    }
+
+    function cancelSchedule(address spell) public auth {
+        // gateway.cancelSchedule(spell);
     }
 }
