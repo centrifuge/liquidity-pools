@@ -35,6 +35,7 @@ contract ConnectorGateway {
     using ConnectorMessages for bytes29;
 
     mapping(address => uint256) public wards;
+    bool public paused = false;
 
     ConnectorLike public immutable connector;
     // TODO: support multiple incoming routers (just a single outgoing router) to simplify router migrations
@@ -68,6 +69,11 @@ contract ConnectorGateway {
         _;
     }
 
+    modifier pauseable() {
+        require(!paused, "ConnectorGateway/paused");
+        _;
+    }
+
     // --- Administration ---
     function rely(address user) external auth {
         wards[user] = 1;
@@ -79,6 +85,14 @@ contract ConnectorGateway {
         emit Deny(user);
     }
 
+    function pause() external auth {
+        paused = true;
+    }
+
+    function unpause() external auth {
+        paused = false;
+    }
+
     // --- Outgoing ---
     function transferTrancheTokensToCentrifuge(
         uint64 poolId,
@@ -86,7 +100,7 @@ contract ConnectorGateway {
         address sender,
         bytes32 destinationAddress,
         uint128 amount
-    ) public onlyConnector {
+    ) public onlyConnector pauseable {
         router.send(
             ConnectorMessages.formatTransferTrancheTokens(
                 poolId,
@@ -106,7 +120,7 @@ contract ConnectorGateway {
         uint64 destinationChainId,
         address destinationAddress,
         uint128 amount
-    ) public onlyConnector {
+    ) public onlyConnector pauseable {
         router.send(
             ConnectorMessages.formatTransferTrancheTokens(
                 poolId,
@@ -119,13 +133,14 @@ contract ConnectorGateway {
         );
     }
 
-    function transfer(uint128 token, address sender, bytes32 receiver, uint128 amount) public onlyConnector {
+    function transfer(uint128 token, address sender, bytes32 receiver, uint128 amount) public onlyConnector pauseable {
         router.send(ConnectorMessages.formatTransfer(token, addressToBytes32(sender), receiver, amount));
     }
 
     function increaseInvestOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount)
         public
         onlyConnector
+        pauseable
     {
         router.send(
             ConnectorMessages.formatIncreaseInvestOrder(poolId, trancheId, addressToBytes32(investor), currency, amount)
@@ -135,6 +150,7 @@ contract ConnectorGateway {
     function decreaseInvestOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount)
         public
         onlyConnector
+        pauseable
     {
         router.send(
             ConnectorMessages.formatDecreaseInvestOrder(poolId, trancheId, addressToBytes32(investor), currency, amount)
@@ -144,6 +160,7 @@ contract ConnectorGateway {
     function increaseRedeemOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount)
         public
         onlyConnector
+        pauseable
     {
         router.send(
             ConnectorMessages.formatIncreaseRedeemOrder(poolId, trancheId, addressToBytes32(investor), currency, amount)
@@ -153,22 +170,23 @@ contract ConnectorGateway {
     function decreaseRedeemOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount)
         public
         onlyConnector
+        pauseable
     {
         router.send(
             ConnectorMessages.formatDecreaseRedeemOrder(poolId, trancheId, addressToBytes32(investor), currency, amount)
         );
     }
 
-    function collectInvest(uint64 poolId, bytes16 trancheId, address investor) public onlyConnector {
+    function collectInvest(uint64 poolId, bytes16 trancheId, address investor) public onlyConnector pauseable {
         router.send(ConnectorMessages.formatCollectInvest(poolId, trancheId, addressToBytes32(investor)));
     }
 
-    function collectRedeem(uint64 poolId, bytes16 trancheId, address investor) public onlyConnector {
+    function collectRedeem(uint64 poolId, bytes16 trancheId, address investor) public onlyConnector pauseable {
         router.send(ConnectorMessages.formatCollectRedeem(poolId, trancheId, addressToBytes32(investor)));
     }
 
     // --- Incoming ---
-    function handle(bytes memory _message) external onlyRouter {
+    function handle(bytes memory _message) external onlyRouter pauseable {
         bytes29 _msg = _message.ref(0);
 
         if (ConnectorMessages.isAddCurrency(_msg)) {
