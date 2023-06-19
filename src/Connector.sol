@@ -5,6 +5,7 @@ pragma abicoder v2;
 import {TrancheTokenFactoryLike, MemberlistFactoryLike} from "./token/factory.sol";
 import {RestrictedTokenLike, ERC20Like} from "./token/restricted.sol";
 import {MemberlistLike} from "./token/memberlist.sol";
+import "./auth/auth.sol";
 
 interface GatewayLike {
     function transferTrancheTokensToCentrifuge(
@@ -33,6 +34,7 @@ interface GatewayLike {
         external;
     function collectInvest(uint64 poolId, bytes16 trancheId, address investor) external;
     function collectRedeem(uint64 poolId, bytes16 trancheId, address investor) external;
+    function active() external returns(bool);
 }
 
 interface EscrowLike {
@@ -42,6 +44,7 @@ interface EscrowLike {
 struct Pool {
     uint64 poolId;
     uint256 createdAt;
+    bool isActive;
 }
 
 struct Tranche {
@@ -49,16 +52,26 @@ struct Tranche {
     uint128 latestPrice; // Fixed point integer with 27 decimals
     uint256 lastPriceUpdate;
     // TODO: the token name & symbol need to be stored because of the separation between adding and deploying tranches.
-    // This leads to duplicate storage (also in the ERC20 contract), ideally we should refactor this somehow
+    // This leads to duplicate storage (also in the ERC20 contract), ideally we should r efactor this somehow
     string tokenName;
     string tokenSymbol;
     uint8 decimals;
 }
 
-contract CentrifugeConnector {
-    mapping(address => uint256) public wards;
+struct UserTrancheValues {
+    uint256 maxDeposit;
+    uint256 maxMint;
+    uint256 maxWithdraw;
+    uint256 maxRedeem;
+    uint256 openRedeem;
+    uint256 openDeposit;
+}
+
+contract CentrifugeConnector is Auth {
+
     mapping(uint64 => Pool) public pools;
     mapping(uint64 => mapping(bytes16 => Tranche)) public tranches;
+    mapping(address => mapping(address => UserTrancheValues)) public orderbook; // contains outstanding orders and limits for each user and tranche
 
     mapping(uint128 => address) public currencyIdToAddress;
     // The reverse mapping of `currencyIdToAddress`
@@ -73,8 +86,6 @@ contract CentrifugeConnector {
     MemberlistFactoryLike public immutable memberlistFactory;
 
     // --- Events ---
-    event Rely(address indexed user);
-    event Deny(address indexed user);
     event File(bytes32 indexed what, address data);
     event CurrencyAdded(uint128 indexed currency, address indexed currencyAddress);
     event PoolAdded(uint256 indexed poolId);
@@ -91,8 +102,13 @@ contract CentrifugeConnector {
         emit Rely(msg.sender);
     }
 
-    modifier auth() {
-        require(wards[msg.sender] == 1, "CentrifugeConnector/not-authorized");
+    modifier poolActive(uint64 poolId) {
+        require(pools[poolId].isActive, "CentrifugeConnector/pool-deactivated");
+        _;
+    }
+
+    modifier connectorsActive() {
+        require(gateway.active(), "CentrifugeConnector/not-the-gateway");
         _;
     }
 
@@ -102,16 +118,6 @@ contract CentrifugeConnector {
     }
 
     // --- Administration ---
-    function rely(address user) external auth {
-        wards[user] = 1;
-        emit Rely(user);
-    }
-
-    function deny(address user) external auth {
-        wards[user] = 0;
-        emit Deny(user);
-    }
-
     function file(bytes32 what, address data) external auth {
         if (what == "gateway") gateway = GatewayLike(data);
         else revert("CentrifugeConnector/file-unrecognized-param");
@@ -119,6 +125,31 @@ contract CentrifugeConnector {
     }
 
     // --- Outgoing message handling ---
+
+    // auth functions
+    function deposit(uint64 _poolId, address _tranche, address _receiver, uint256 _assets) public poolActive(_poolId) connectorsActive auth returns (uint256) {
+        require((_assets <= orderbook[_receiver][_tranche].maxDeposit), "CentrifugeConnector/amount-exceeds-deposit-limits");
+        uint256 sharePrice = calcUserSharePrice( _receiver, _tranche);
+        require((sharePrice > 0), "Tranche4626/amount-exceeds-deposit-limits");
+        uint256 sharesToTransfer = _assets / sharePrice;
+        decreaseDepositLimits(_receiver, _tranche, _assets, sharesToTransfer); // decrease the possible deposit limits
+        ERC20Like erc20 = ERC20Like(_tranche);
+        require(erc20.transferFrom(address(escrow), _receiver, sharesToTransfer), "CentrifugeConnector/shares-transfer-failed");
+        return sharesToTransfer;
+    }
+
+    function mint(uint64 _poolId, address _tranche, address _receiver, uint256 _shares) public poolActive(_poolId) connectorsActive auth returns (uint256) {
+        require((_shares <= orderbook[_receiver][_tranche].maxMint), "CentrifugeConnector/amount-exceeds-mint-limits");
+        uint256 sharePrice = calcUserSharePrice( _receiver, _tranche);
+        require((sharePrice > 0), "Tranche4626/amount-exceeds-deposit-limits");
+        uint256 requiredDeposit = _shares * sharePrice;
+        decreaseDepositLimits(_receiver, _tranche, requiredDeposit, _shares); // decrease the possible deposit limits
+        ERC20Like erc20 = ERC20Like(_tranche);
+        require(erc20.transferFrom(address(escrow), _receiver, _shares), "CentrifugeConnector/shares-transfer-failed");
+        return requiredDeposit;
+    }
+
+
     function transfer(address currencyAddress, bytes32 recipient, uint128 amount) public {
         uint128 currency = currencyAddressToId[currencyAddress];
         require(currency != 0, "CentrifugeConnector/unknown-currency");
@@ -247,6 +278,7 @@ contract CentrifugeConnector {
         require(pool.createdAt == 0, "CentrifugeConnector/pool-already-added");
         pool.poolId = poolId;
         pool.createdAt = block.timestamp;
+        pool.isActive = true;
         emit PoolAdded(poolId);
     }
 
@@ -334,4 +366,56 @@ contract CentrifugeConnector {
         require(token.hasMember(destinationAddress), "CentrifugeConnector/not-a-member");
         token.mint(destinationAddress, amount);
     }
+
+    function handleDecreaseInvestOrder(uint64 poolId, bytes16 trancheId, address destinationAddress, address currency, uint128 currencyPayout, uint128 remainingInvestOrder) public onlyGateway {};
+    function handleDecreaseRedeemOrder(uint64 poolId, bytes16 trancheId, address destinationAddress, address currency, uint128 trancheTokensPayout, uint128 remainingRedeemOrder) public onlyGateway {};
+    function handleCollectInvest(uint64 poolId, bytes16 trancheId, address destinationAddress, address currency, uint128 currencyInvested, uint128 tokensPayout, uint128 remainingInvestOrder) public onlyGateway {};
+    function handleCollectRedeem(uint64 poolId, bytes16 trancheId, address destinationAddress, address currency, uint128 currencyPayout, uint128 tokensRedeemed, uint128 remainingRedeemOrder) public onlyGateway {};
+
+
+    // ------ EIP 4626 helper functions
+
+    // function decreaseRedemptionsLimit(uint256 _assets, uint256 _shares) public auth {}
+
+    //TODO: rounding 
+    function decreaseDepositLimits(address _user, address _tranche, uint256 _assets, uint256 _shares) internal {
+        UserTrancheValues values = orderbook[_user][_tranche];
+        if (values.maxDeposit < _assets) {
+            values.maxDeposit = 0;
+        } else {
+             values.maxDeposit = values.maxDeposit - _assets;
+        }
+
+        if (values.maxMint < _shares) {
+            values.maxMint = 0;
+        } else {
+             values.maxMint = values.maxMint - _shares;
+        }
+    }
+
+    /// @dev calculates the avg share price for the deposited assets of a specific user
+    function calcUserSharePrice(address _user, address _tranche) public view returns (uint256 sharePrice) {
+        UserTrancheValues values = orderbook[_user][_tranche];
+        if(values.maxMint == 0) {
+            return 0;
+        }
+        sharePrice = values.maxDeposit / orderbook[_user].maxMint;
+    }
+
+    function maxDeposit(address _user, address _tranche) public view returns (uint256) {
+        return orderbook[_user][_tranche].maxDeposit;
+    }
+
+    function maxMint(address _user, address _tranche) public view returns (uint256) {
+        return orderbook[_user][_tranche].maxMint;
+    }
+
+    function maxWithdraw(address _user, address _tranche) public view returns (uint256) {
+        return orderbook[_user][_tranche].maxWithdraw;
+    }
+
+    function maxRedeem(address _user, address _tranche) public view returns (uint256) {
+        return orderbook[_user][_tranche].maxRedeem;
+    }
+    
 }
