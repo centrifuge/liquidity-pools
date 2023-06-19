@@ -37,6 +37,11 @@ interface GatewayLike {
     function active() external returns(bool);
 }
 
+interface TrancheLike {
+    function updateTokenPrice(uint128 _tokenPrice) external;
+    function asset() external returns (address);
+}
+
 interface EscrowLike {
     function approve(address token, address spender, uint256 value) external;
 }
@@ -47,30 +52,19 @@ struct Pool {
     bool isActive;
 }
 
-struct Tranche {
-    address token;
-    uint128 latestPrice; // Fixed point integer with 27 decimals
-    uint256 lastPriceUpdate;
-    // TODO: the token name & symbol need to be stored because of the separation between adding and deploying tranches.
-    // This leads to duplicate storage (also in the ERC20 contract), ideally we should r efactor this somehow
-    string tokenName;
-    string tokenSymbol;
-    uint8 decimals;
-}
-
 struct UserTrancheValues {
     uint256 maxDeposit;
     uint256 maxMint;
     uint256 maxWithdraw;
     uint256 maxRedeem;
     uint256 openRedeem;
-    uint256 openDeposit;
+    uint256 openInvest;
 }
 
 contract CentrifugeConnector is Auth {
 
     mapping(uint64 => Pool) public pools;
-    mapping(uint64 => mapping(bytes16 => Tranche)) public tranches;
+    mapping(uint64 => mapping(bytes16 => address)) public tranches;
     mapping(address => mapping(address => UserTrancheValues)) public orderbook; // contains outstanding orders and limits for each user and tranche
 
     mapping(uint128 => address) public currencyIdToAddress;
@@ -127,7 +121,7 @@ contract CentrifugeConnector is Auth {
     // --- Outgoing message handling ---
 
     // auth functions
-    function deposit(uint64 _poolId, address _tranche, address _receiver, uint256 _assets) public poolActive(_poolId) connectorsActive auth returns (uint256) {
+    function deposit(address _tranche, address _receiver, uint256 _assets) public poolActive(_poolId) connectorsActive auth returns (uint256) {
         require((_assets <= orderbook[_receiver][_tranche].maxDeposit), "CentrifugeConnector/amount-exceeds-deposit-limits");
         uint256 sharePrice = calcUserSharePrice( _receiver, _tranche);
         require((sharePrice > 0), "Tranche4626/amount-exceeds-deposit-limits");
@@ -138,7 +132,7 @@ contract CentrifugeConnector is Auth {
         return sharesToTransfer;
     }
 
-    function mint(uint64 _poolId, address _tranche, address _receiver, uint256 _shares) public poolActive(_poolId) connectorsActive auth returns (uint256) {
+    function mint(address _tranche, address _receiver, uint256 _shares) public poolActive(_poolId) connectorsActive auth returns (uint256) {
         require((_shares <= orderbook[_receiver][_tranche].maxMint), "CentrifugeConnector/amount-exceeds-mint-limits");
         uint256 sharePrice = calcUserSharePrice( _receiver, _tranche);
         require((sharePrice > 0), "Tranche4626/amount-exceeds-deposit-limits");
@@ -148,7 +142,6 @@ contract CentrifugeConnector is Auth {
         require(erc20.transferFrom(address(escrow), _receiver, _shares), "CentrifugeConnector/shares-transfer-failed");
         return requiredDeposit;
     }
-
 
     function transfer(address currencyAddress, bytes32 recipient, uint128 amount) public {
         uint128 currency = currencyAddressToId[currencyAddress];
@@ -167,7 +160,7 @@ contract CentrifugeConnector is Auth {
         bytes32 destinationAddress,
         uint128 amount
     ) public {
-        RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
+        RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId]);
         require(address(token) != address(0), "CentrifugeConnector/unknown-token");
 
         require(token.balanceOf(msg.sender) >= amount, "CentrifugeConnector/insufficient-balance");
@@ -183,7 +176,7 @@ contract CentrifugeConnector is Auth {
         address destinationAddress,
         uint128 amount
     ) public {
-        RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
+        RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId]);
         require(address(token) != address(0), "CentrifugeConnector/unknown-token");
 
         require(token.balanceOf(msg.sender) >= amount, "CentrifugeConnector/insufficient-balance");
@@ -195,7 +188,7 @@ contract CentrifugeConnector is Auth {
     }
 
     function increaseInvestOrder(uint64 poolId, bytes16 trancheId, address currencyAddress, uint128 amount) public {
-        RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
+        RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId]);
         require(address(token) != address(0), "CentrifugeConnector/unknown-tranche-token");
         require(token.hasMember(msg.sender), "CentrifugeConnector/not-a-member");
 
@@ -224,7 +217,7 @@ contract CentrifugeConnector is Auth {
     }
 
     function increaseRedeemOrder(uint64 poolId, bytes16 trancheId, address currencyAddress, uint128 amount) public {
-        RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
+        RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId]);
         require(address(token) != address(0), "CentrifugeConnector/unknown-tranche-token");
         require(token.hasMember(msg.sender), "CentrifugeConnector/not-a-member");
 
@@ -236,7 +229,7 @@ contract CentrifugeConnector is Auth {
     }
 
     function decreaseRedeemOrder(uint64 poolId, bytes16 trancheId, address currencyAddress, uint128 amount) public {
-        RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
+        RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId]);
         require(address(token) != address(0), "CentrifugeConnector/unknown-tranche-token");
         require(token.hasMember(msg.sender), "CentrifugeConnector/not-a-member");
 
@@ -248,7 +241,7 @@ contract CentrifugeConnector is Auth {
     }
 
     function collectInvest(uint64 poolId, bytes16 trancheId) public {
-        RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
+        RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId]);
         require(address(token) != address(0), "CentrifugeConnector/unknown-tranche-token");
         require(token.hasMember(msg.sender), "CentrifugeConnector/not-a-member");
 
@@ -256,7 +249,7 @@ contract CentrifugeConnector is Auth {
     }
 
     function collectRedeem(uint64 poolId, bytes16 trancheId) public {
-        RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
+        RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId]);
         require(address(token) != address(0), "CentrifugeConnector/unknown-tranche-token");
         require(token.hasMember(msg.sender), "CentrifugeConnector/not-a-member");
 
@@ -294,54 +287,37 @@ contract CentrifugeConnector is Auth {
     }
 
     function addTranche(
-        uint64 poolId,
-        bytes16 trancheId,
-        string memory tokenName,
-        string memory tokenSymbol,
-        uint8 decimals,
-        uint128 price
+        uint64 _poolId,
+        bytes16 _trancheId,
+        string memory _tokenName,
+        string memory _tokenSymbol,
+        uint8 _decimals,
+        uint128 _price
     ) public onlyGateway {
-        Pool storage pool = pools[poolId];
+        Pool storage pool = pools[_poolId];
         require(pool.createdAt > 0, "CentrifugeConnector/invalid-pool");
 
-        Tranche storage tranche = tranches[poolId][trancheId];
-        require(tranche.lastPriceUpdate == 0, "CentrifugeConnector/tranche-already-added");
-        tranche.latestPrice = price;
-        tranche.lastPriceUpdate = block.timestamp;
-        tranche.tokenName = tokenName;
-        tranche.tokenSymbol = tokenSymbol;
-        tranche.decimals = decimals;
+        address token = tranches[_poolId][_trancheId];
+        require(token == address(0), "CentrifugeConnector/tranche-already-added");
+        address asset = address(0x6B175474E89094C44Da98b954EedeAC495271d0F); // TODO FIX : provide tranche currency / assets : default DAI?
+        token = deployTranche(poolId, trancheId, asset, tokenName, tokenSymbol, decimals);
+        
+        TrancheLike(token).updateTokenPrice(_price);
 
         emit TrancheAdded(poolId, trancheId);
     }
 
-    function deployTranche(uint64 poolId, bytes16 trancheId) public {
-        Tranche storage tranche = tranches[poolId][trancheId];
-        require(tranche.lastPriceUpdate > 0, "CentrifugeConnector/invalid-pool-or-tranche");
-        require(tranche.token == address(0), "CentrifugeConnector/tranche-already-deployed");
-
-        address token =
-            tokenFactory.newTrancheToken(poolId, trancheId, tranche.tokenName, tranche.tokenSymbol, tranche.decimals);
-        tranche.token = token;
-
-        address memberlist = memberlistFactory.newMemberlist();
-        RestrictedTokenLike(token).file("memberlist", memberlist);
-        MemberlistLike(memberlist).updateMember(address(this), type(uint256).max); // required to be able to receive tokens in case of withdrawals
-        emit TrancheDeployed(poolId, trancheId, token);
-    }
-
-    function updateTokenPrice(uint64 poolId, bytes16 trancheId, uint128 price) public onlyGateway {
-        Tranche storage tranche = tranches[poolId][trancheId];
-        require(tranche.lastPriceUpdate > 0, "CentrifugeConnector/invalid-pool-or-tranche");
-        tranche.latestPrice = price;
-        tranche.lastPriceUpdate = block.timestamp;
+    function updateTokenPrice(uint64 _poolId, bytes16 _trancheId, uint128 _price) public onlyGateway {
+        address token = tranches[_poolId][_trancheId];
+        require(token != address(0), "CentrifugeConnector/invalid-pool-or-tranche");
+        TrancheLike(token).updateTokenPrice(_price);
     }
 
     function updateMember(uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) public onlyGateway {
-        Tranche storage tranche = tranches[poolId][trancheId];
-        require(tranche.lastPriceUpdate > 0, "CentrifugeConnector/invalid-pool-or-tranche");
-        RestrictedTokenLike token = RestrictedTokenLike(tranche.token);
-        MemberlistLike memberlist = MemberlistLike(token.memberlist());
+        address token = tranches[_poolId][_trancheId];
+        require(token != address(0), "CentrifugeConnector/invalid-pool-or-tranche");
+        RestrictedTokenLike trancheToken = RestrictedTokenLike(tranche.token);
+        MemberlistLike memberlist = RestrictedTokenLike(token).memberlist();
         memberlist.updateMember(user, validUntil);
     }
 
@@ -360,22 +336,52 @@ contract CentrifugeConnector is Auth {
         public
         onlyGateway
     {
-        RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId].token);
+        RestrictedTokenLike token = RestrictedTokenLike(tranches[poolId][trancheId]);
         require(address(token) != address(0), "CentrifugeConnector/unknown-token");
 
         require(token.hasMember(destinationAddress), "CentrifugeConnector/not-a-member");
         token.mint(destinationAddress, amount);
     }
 
-    function handleDecreaseInvestOrder(uint64 poolId, bytes16 trancheId, address destinationAddress, address currency, uint128 currencyPayout, uint128 remainingInvestOrder) public onlyGateway {};
-    function handleDecreaseRedeemOrder(uint64 poolId, bytes16 trancheId, address destinationAddress, address currency, uint128 trancheTokensPayout, uint128 remainingRedeemOrder) public onlyGateway {};
-    function handleCollectInvest(uint64 poolId, bytes16 trancheId, address destinationAddress, address currency, uint128 currencyInvested, uint128 tokensPayout, uint128 remainingInvestOrder) public onlyGateway {};
-    function handleCollectRedeem(uint64 poolId, bytes16 trancheId, address destinationAddress, address currency, uint128 currencyPayout, uint128 tokensRedeemed, uint128 remainingRedeemOrder) public onlyGateway {};
+    function handleDecreaseInvestOrder(uint64 _poolId, bytes16 _trancheId, address _recipient, uint128 _currency, uint128 _currencyPayout, uint128 _remainingInvestOrder) public onlyGateway {
+        require(_currencyPayout != 0, "CentrifugeConnector/zero-payout");
+        address currencyAddress = currencyIdToAddress[_currency];
+        address tranche = tranches[_poolId][_trancheId];
+
+        require(allowedPoolCurrencies[_poolId][currencyAddress], "CentrifugeConnector/pool-currency-not-allowed");
+        require(currencyAddress != address(0), "CentrifugeConnector/unknown-currency");
+        require(currencyAddress == TrancheLike(tranche).asset(), "CentrifugeConnector/not-tranche-currency");
+
+        // TODO: escrow should give max approval on deployment
+        EscrowLike(escrow).approve(currencyAddress, address(this), _currencyPayout);
+   
+        require(
+            ERC20Like(currencyAddress).transferFrom(address(escrow), _recipient, _currencyPayout),
+            "CentrifugeConnector/currency-transfer-failed"
+        );
+        orderbook[_recipient][tranche].openInvest = _remainingInvestOrder;
+    }
+
+    //TODO: currency not really required here
+    function handleDecreaseRedeemOrder(uint64 _poolId, bytes16 _trancheId, address _recipient, uint128 _currency, uint128 _trancheTokensPayout, uint128 _remainingRedeemOrder) public onlyGateway {
+        require(_trancheTokensPayout != 0, "CentrifugeConnector/zero-payout");
+        address tranche = tranches[poolId][trancheId];
+
+        require(RestrictedTokenLike(tranche).hasMember(_recipient), "CentrifugeConnector/not-a-member");
+        // TODO: escrow should give max approval on deployment
+        EscrowLike(escrow).approve(tranche, address(this), _trancheTokensPayout);
+        require(
+            ERC20Like(tranche).transferFrom(address(escrow), _recipient, _trancheTokensPayout),
+            "CentrifugeConnector/trancheTokens-transfer-failed"
+        );
+        orderbook[_recipient][tranche].openRedeem = _remainingRedeemOrder;
+    }
+    
+    function handleCollectInvest(uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 currency, uint128 currencyInvested, uint128 tokensPayout, uint128 remainingInvestOrder) public onlyGateway {};
+    function handleCollectRedeem(uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 currency, uint128 currencyPayout, uint128 tokensRedeemed, uint128 remainingRedeemOrder) public onlyGateway {};
 
 
-    // ------ EIP 4626 helper functions
-
-    // function decreaseRedemptionsLimit(uint256 _assets, uint256 _shares) public auth {}
+    // ------ internal helper functions 
 
     //TODO: rounding 
     function decreaseDepositLimits(address _user, address _tranche, uint256 _assets, uint256 _shares) internal {
@@ -385,7 +391,6 @@ contract CentrifugeConnector is Auth {
         } else {
              values.maxDeposit = values.maxDeposit - _assets;
         }
-
         if (values.maxMint < _shares) {
             values.maxMint = 0;
         } else {
@@ -393,13 +398,37 @@ contract CentrifugeConnector is Auth {
         }
     }
 
+    // function decreaseRedemptionsLimit(uint256 _assets, uint256 _shares) public auth {}
+
+
+    // TODO: add decimals to constructor of restricted token
+    // TODO: ward setup on tranche contract
+    function deployTranche(
+        uint64 _poolId,
+        bytes16 _trancheId,
+        address _asset, 
+        uint8 _decimals,
+        string memory _tokenName,
+        string memory _tokenSymbol) internal returns (address) {
+            require(tranches[_poolId][_trancheId] == address(0), "CentrifugeConnector/tranche-already-deployed");
+            address token = deployTranche(_asset, address(this), _decimals, _tokenName, _tokenSymbol); // TODO: use factory 
+            tranches[_poolId][_trancheId] = token;
+
+            address memberlist = memberlistFactory.newMemberlist();
+            RestrictedTokenLike(token).file("memberlist", memberlist);
+            MemberlistLike(memberlist).updateMember(address(escrow), type(uint256).max); // add escrow to tranche tokens memberlist
+            emit TrancheDeployed(poolId, trancheId, token);
+    }
+
+    // ------ EIP 4626 view functions
+   
     /// @dev calculates the avg share price for the deposited assets of a specific user
     function calcUserSharePrice(address _user, address _tranche) public view returns (uint256 sharePrice) {
         UserTrancheValues values = orderbook[_user][_tranche];
         if(values.maxMint == 0) {
             return 0;
         }
-        sharePrice = values.maxDeposit / orderbook[_user].maxMint;
+        sharePrice = values.maxDeposit / values.maxMint;
     }
 
     function maxDeposit(address _user, address _tranche) public view returns (uint256) {

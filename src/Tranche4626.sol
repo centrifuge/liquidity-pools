@@ -31,8 +31,8 @@ pragma solidity ^0.8.18;
 import "./token/restricted.sol";
 
 interface ConnectorLike {
-    function deposit(uint64 _poolId, address _tranche, address _receiver, uint256 _assets) external returns (uint256);
-    function mint(uint64 _poolId, address _tranche, address _receiver, uint256 _shares) external returns (uint256);
+    function deposit(address _tranche, address _receiver, uint256 _assets) external returns (uint256);
+    function mint(address _tranche, address _receiver, uint256 _shares) external returns (uint256);
     function maxDeposit(address _user, address _tranche) external returns (uint256);
     function maxMint(address _user, address _tranche) external returns (uint256);
     function maxWithdraw(address _user, address _tranche) external returns (uint256);
@@ -47,8 +47,6 @@ contract Tranche4626 is RestrictedToken {
 
     address public asset; // underlying stable ERC-20 stable currency.
     uint256 public maxAssetDeposit = 2 ** 256 - 1; // max stable currency deposit into the tranche -> default: no limit.
-    uint64 public poolId; // the id of the Centrifuge pool the Tranche belongs to.
-    bytes16 trancheId; // the trancheId valid across all chains. 
 
     uint128 latestPrice; // lates share / token price 
     uint256 lastPriceUpdate; // timestamp of the latest share / token price update
@@ -57,13 +55,13 @@ contract Tranche4626 is RestrictedToken {
     event Deposit(address indexed sender, address indexed owner, uint256 assets, uint256 shares);
     event Withdraw(address indexed sender, address indexed receiver, address indexed owner, uint256 assets, uint256 shares);
     
-    constructor(address _asset, bytes16 _trancheId, uint64 _poolId, address _connector) {
+    constructor(address _asset, address _connector, uint8 _decimals, string memory _name, string memory _symbol) super(decimals) {
+        name = _name;
+        symbol = _symbol;
         asset = _asset;
-        trancheId = _trancheId;
-        poolId = _poolId;
         connector = ConnectorLike(_connector);
 
-        wards[msg.sender] = 1;
+        wards[_connector] = 1;
         emit Rely(msg.sender);
     }
 
@@ -102,14 +100,14 @@ contract Tranche4626 is RestrictedToken {
     /// @dev collect shares for deposited funds after pool epoch execution. maxMint is the max amount of shares that can be collected. Required assets must already be locked.
     /// maxDeposit is the amount of funds that was successfully invested into the pool on Centrifuge chain
     function deposit(uint256 _assets, address _receiver)  auth public returns (uint256 shares) {
-        uint transferredShares = connector.deposit(poolId, address(this), _receiver, _assets);
+        uint transferredShares = connector.deposit(address(this), _receiver, _assets);
         Deposit(address(this), _receiver, _assets, transferredShares);
     }
 
     /// @dev collect shares for deposited funds after pool epoch execution. maxMint is the max amount of shares that can be collected. Required assets must already be locked.
     /// maxDeposit is the amount of funds that was successfully invested into the pool on Centrifuge chain
     function mint(uint256 _shares, address _receiver)  auth public returns (uint256 assets) {
-      uint lockedAssets = connector.mint(poolId, address(this), _receiver, _shares); 
+      uint lockedAssets = connector.mint(address(this), _receiver, _shares); 
       Deposit(address(this), _receiver, lockedAssets, _shares);
     }
 
@@ -139,7 +137,7 @@ contract Tranche4626 is RestrictedToken {
     function maxRedeem(address owner) external view returns (uint256 maxShares) {
          return connector.maxRedeem(_owner, address(this));
     }
-    
+
     /// @dev 
     /// @return
     function previewRedeem(uint256 shares) external view returns (uint256 assets);
@@ -151,13 +149,4 @@ contract Tranche4626 is RestrictedToken {
         latestPrice = _tokenPrice;
         lastPriceUpdate = block.timestamp;
     }
-
-   function updateTotalAssets(uint128 _tokenPrice) public auth {
-        latestPrice = _tokenPrice;
-        lastPriceUpdate = block.timestamp;
-    }
-
-
-
-
 }

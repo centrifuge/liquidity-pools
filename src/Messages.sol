@@ -364,42 +364,42 @@ library ConnectorMessages {
 //     function parseCollectRedeem(bytes29 _msg) 
 //     internal
 //         pure
-//         returns (uint64 poolId, bytes16 trancheId, address destinationAddress, address currency, uint128 currencyPayout, uint128 tokensRedeemed, uint128 remainingRedeemOrder) {}
+//         returns (uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 currency, uint128 currencyPayout, uint128 tokensRedeemed, uint128 remainingRedeemOrder) {}
 
 //     function isCollectRedeem(bytes29 _msg) 
 //     internal
 //         pure
-//         returns (uint64 poolId, bytes16 trancheId, address destinationAddress, address currency, uint128 currencyPayout, uint128 tokensRedeemed, uint128 remainingRedeemOrder) {}
+//         returns (uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 currency, uint128 currencyPayout, uint128 tokensRedeemed, uint128 remainingRedeemOrder) {}
 
 //     function parseCollectInvest(bytes29 _msg) 
 //     internal
 //         pure
-//         returns (uint64 poolId, bytes16 trancheId, address destinationAddress, address currency, uint128 currencyInvested, uint128 tokensPayout, uint128 remainingInvestOrder){}
+//         returns (uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 currency, uint128 currencyInvested, uint128 tokensPayout, uint128 remainingInvestOrder){}
 
 //     function isCollectInvest(bytes29 _msg) 
 //     internal
 //         pure
-//         returns (uint64 poolId, bytes16 trancheId, address destinationAddress, address currency, uint128 currencyInvested, uint128 tokensPayout, uint128 remainingInvestOrder){}
+//         returns (uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 currency, uint128 currencyInvested, uint128 tokensPayout, uint128 remainingInvestOrder){}
 
 //     function parseDecreaseInvestOrder(bytes29 _msg) 
 //     internal
 //         pure
-//         returns (uint64 poolId, bytes16 trancheId, address destinationAddress, address currency, uint128 currencyPayout, uint128 remainingInvestOrder){}
+//         returns (uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 currency, uint128 currencyPayout, uint128 remainingInvestOrder){}
 
 //     function isDecreaseInvestOrder(bytes29 _msg) 
 //     internal
 //         pure
-//         returns (uint64 poolId, bytes16 trancheId, address destinationAddress, address currency, uint128 currencyPayout, uint128 remainingInvestOrder){}
+//         returns (uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 currency, uint128 currencyPayout, uint128 remainingInvestOrder){}
 
 //    function parseDecreaseRedeemOrder(bytes29 _msg) 
 //     internal
 //         pure
-//         returns (uint64 poolId, bytes16 trancheId, address destinationAddress, address currency, uint128 currencyPayout, uint128 remainingInvestOrder){}
+//         returns (uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 currency, uint128 currencyPayout, uint128 remainingInvestOrder){}
 
 //     function isDecreaseRedeemOrder(bytes29 _msg)     
 //     internal
 //         pure
-//         returns (uint64 poolId, bytes16 trancheId, address destinationAddress, address currency, uint128 currencyPayout, uint128 remainingInvestOrder){}
+//         returns (uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 currency, uint128 currencyPayout, uint128 remainingInvestOrder){}
 
     /*
      * IncreaseInvestOrder Message
