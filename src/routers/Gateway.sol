@@ -22,6 +22,10 @@ interface ConnectorLike {
     function handleTransfer(uint128 currency, address recipient, uint128 amount) external;
     function handleTransferTrancheTokens(uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 amount)
         external;
+    function handleDecreaseInvestOrder(uint64 poolId, bytes16 trancheId, address destinationAddress, address currency, uint128 currencyPayout, uint128 remainingInvestOrder) external;
+    function handleDecreaseRedeemOrder(uint64 poolId, bytes16 trancheId, address destinationAddress, address currency, uint128 trancheTokensPayout, uint128 remainingRedeemOrder) external;
+    function handleCollectInvest(uint64 poolId, bytes16 trancheId, address destinationAddress, address currency, uint128 currencyInvested, uint128 tokensPayout, uint128 remainingInvestOrder) external;
+    function handleCollectRedeem(uint64 poolId, bytes16 trancheId, address destinationAddress, address currency, uint128 currencyPayout, uint128 tokensRedeemed, uint128 remainingRedeemOrder) external;
 }
 
 interface RouterLike {
@@ -40,6 +44,8 @@ contract ConnectorGateway {
     // TODO: support multiple incoming routers (just a single outgoing router) to simplify router migrations
     RouterLike public immutable router;
 
+    bool public active;
+
     /// --- Events ---
     event Rely(address indexed user);
     event Deny(address indexed user);
@@ -48,6 +54,7 @@ contract ConnectorGateway {
     constructor(address connector_, address router_) {
         connector = ConnectorLike(connector_);
         router = RouterLike(router_);
+        active = true;
 
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
@@ -204,7 +211,24 @@ contract ConnectorGateway {
             (uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 amount) =
                 ConnectorMessages.parseTransferTrancheTokens20(_msg);
             connector.handleTransferTrancheTokens(poolId, trancheId, destinationAddress, amount);
-        } else {
+        }  else if (ConnectorMessages.isCollectRedeem(_msg)) {
+            (uint64 poolId, bytes16 trancheId, address destinationAddress, address currency, uint128 currencyPayout, uint128 tokensRedeemed, uint128 remainingRedeemOrder) =
+                ConnectorMessages.parseCollectRedeem(_msg);
+            connector.handleCollectRedeem(poolId, trancheId, destinationAddress, currency, currencyPayout, tokensRedeemed, remainingRedeemOrder);
+        } else if (ConnectorMessages.isCollectInvest(_msg)) {
+             (uint64 poolId, bytes16 trancheId, address destinationAddress, address currency, uint128 currencyInvested, uint128 tokensPayout, uint128 remainingInvestOrder) =
+                ConnectorMessages.parseCollectInvest(_msg);
+            connector.handleCollectInvest(poolId, trancheId, destinationAddress, currency, currencyInvested, tokensPayout, remainingInvestOrder);
+        } else if (ConnectorMessages.isDecreaseInvestOrder(_msg)) {
+            (uint64 poolId, bytes16 trancheId, address destinationAddress, address currency, uint128 currencyPayout, uint128 remainingInvestOrder) =
+                ConnectorMessages.parseDecreaseInvestOrder(_msg);
+            connector.handleDecreaseInvestOrder(poolId, trancheId, destinationAddress, currency, currencyPayout, remainingInvestOrder);
+        } else if (ConnectorMessages.isDecreaseRedeemOrder(_msg)) {
+            (uint64 poolId, bytes16 trancheId, address destinationAddress, address currency, uint128 trancheTokensPayout, uint128 remainingRedeemOrder) =
+                ConnectorMessages.parseDecreaseRedeemOrder(_msg);
+            connector.handleDecreaseRedeemOrder(poolId, trancheId, destinationAddress, currency, trancheTokensPayout, remainingRedeemOrder);
+        }   
+        else {
             revert("ConnectorGateway/invalid-message");
         }
     }
