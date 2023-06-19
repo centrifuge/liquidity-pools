@@ -4,7 +4,7 @@ pragma abicoder v2;
 
 import {ConnectorGateway} from "./routers/Gateway.sol";
 
-contract ConnectorAdmin {
+contract ConnectorDelayedAdmin {
     ConnectorGateway public gateway;
 
     mapping(address => uint256) public wards;
@@ -46,15 +46,11 @@ contract ConnectorAdmin {
 
     // --- Admin ---
 
-    function pause() public auth {
-        gateway.pause();
-    }
-
-    function unpause() public auth {
-        gateway.unpause();
+    function schedule(address spell) public auth {
+        gateway.scheduleRely48hr(spell);
     }
 
     function cancelSchedule(address spell) public auth {
-        // gateway.cancelSchedule(spell);
+        gateway.cancelSchedule(spell);
     }
 }

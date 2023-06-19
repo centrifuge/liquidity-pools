@@ -11,7 +11,8 @@ import {ConnectorGateway} from "src/routers/Gateway.sol";
 import {TrancheTokenFactory, MemberlistFactory} from "src/token/factory.sol";
 import {InvariantPoolManager} from "./accounts/PoolManager.sol";
 import {InvariantInvestor} from "./accounts/InvestorManager.sol";
-import {ConnectorAdmin} from "src/Admin.sol";
+import {ConnectorPauseAdmin} from "src/PauseAdmin.sol";
+import {ConnectorDelayedAdmin} from "src/DelayedAdmin.sol";
 import "forge-std/Test.sol";
 import "../src/Connector.sol";
 
@@ -33,12 +34,17 @@ contract ConnectorInvariants is Test {
         bridgedConnector = new CentrifugeConnector(escrow_, tokenFactory_, memberlistFactory_);
         mockXcmRouter = new MockXcmRouter(address(bridgedConnector));
         connector = new MockHomeConnector(address(mockXcmRouter));
-        ConnectorAdmin pauseAdmin = new ConnectorAdmin();
-        gateway = new ConnectorGateway(address(bridgedConnector), address(mockXcmRouter), address(pauseAdmin));
+        ConnectorPauseAdmin pauseAdmin = new ConnectorPauseAdmin();
+        ConnectorDelayedAdmin delayedAdmin = new ConnectorDelayedAdmin();
+        gateway = new ConnectorGateway(address(bridgedConnector), address(mockXcmRouter), address(pauseAdmin), address(delayedAdmin));
         pauseAdmin.file("gateway", address(gateway));
+        delayedAdmin.file("gateway", address(gateway));
 
         mockXcmRouter.file("gateway", address(gateway));
         bridgedConnector.file("gateway", address(gateway));
+
+        bridgedConnector.rely(address(gateway));
+        ConnectorEscrow(escrow_).rely(address(gateway));
 
         // Performs random pool and tranches creations
         poolManager = new InvariantPoolManager(connector);

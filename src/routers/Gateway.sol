@@ -30,6 +30,12 @@ interface RouterLike {
 
 interface AdminLike {
     function pause() external;
+    function unpause() external;
+}
+
+interface DelayedAdminLike {
+    function scheduleRely48hr(address spell) external;
+    function cancelSchedule(address spell) external;
 }
 
 interface AuthLike {
@@ -51,16 +57,18 @@ contract ConnectorGateway {
     // TODO: support multiple incoming routers (just a single outgoing router) to simplify router migrations
     RouterLike public immutable router;
     AdminLike public immutable pauseAdmin;
+    DelayedAdminLike public immutable delayedAdmin;
 
     /// --- Events ---
     event Rely(address indexed user);
     event Deny(address indexed user);
     event File(bytes32 indexed what, address addr);
 
-    constructor(address connector_, address router_, address pauseAdmin_) {
+    constructor(address connector_, address router_, address pauseAdmin_, address delayedAdmin_) {
         connector = ConnectorLike(connector_);
         router = RouterLike(router_);
         pauseAdmin = AdminLike(pauseAdmin_);
+        delayedAdmin = DelayedAdminLike(delayedAdmin_);
 
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
@@ -116,6 +124,10 @@ contract ConnectorGateway {
 
     function scheduleRely48hr(address spell) external auth {
         relySchedule[spell] = block.timestamp + 48 hours;
+    }
+
+    function cancelSchedule(address spell) external auth {
+        relySchedule[spell] = 0;
     }
 
     function relySpell(address spell) external {

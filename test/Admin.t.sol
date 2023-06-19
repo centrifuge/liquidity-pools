@@ -5,7 +5,8 @@ pragma abicoder v2;
 import {CentrifugeConnector} from "src/Connector.sol";
 import {ConnectorGateway} from "src/routers/Gateway.sol";
 import {ConnectorEscrow} from "src/Escrow.sol";
-import {ConnectorAdmin} from "src/Admin.sol";
+import {ConnectorPauseAdmin} from "src/PauseAdmin.sol";
+import {ConnectorDelayedAdmin} from "src/DelayedAdmin.sol";
 import {TrancheTokenFactory, MemberlistFactory} from "src/token/factory.sol";
 import {RestrictedTokenLike} from "src/token/restricted.sol";
 import {ERC20} from "src/token/erc20.sol";
@@ -25,7 +26,8 @@ contract AdminTest is Test {
     ConnectorGateway gateway;
     MockHomeConnector centChainConnector;
     MockXcmRouter mockXcmRouter;
-    ConnectorAdmin pauseAdmin;
+    ConnectorPauseAdmin pauseAdmin;
+    ConnectorDelayedAdmin delayedAdmin;
 
     function setUp() public {
         address escrow_ = address(new ConnectorEscrow());
@@ -37,12 +39,17 @@ contract AdminTest is Test {
         mockXcmRouter = new MockXcmRouter(address(connector));
 
         centChainConnector = new MockHomeConnector(address(mockXcmRouter));
-        pauseAdmin = new ConnectorAdmin();
-        gateway = new ConnectorGateway(address(connector), address(mockXcmRouter), address(pauseAdmin));
+        pauseAdmin = new ConnectorPauseAdmin();
+        delayedAdmin = new ConnectorDelayedAdmin();
+        gateway = new ConnectorGateway(address(connector), address(mockXcmRouter), address(pauseAdmin), address(delayedAdmin));
         connector.file("gateway", address(gateway));
         pauseAdmin.file("gateway", address(gateway));
+        delayedAdmin.file("gateway", address(gateway));
         EscrowLike_(escrow_).rely(address(connector));
         mockXcmRouter.file("gateway", address(gateway));
+
+        connector.rely(address(gateway));
+        EscrowLike_(escrow_).rely(address(gateway));
     }
 
     function testPause() public {
@@ -153,5 +160,9 @@ contract AdminTest is Test {
         erc20.file("symbol", symbol);
 
         return erc20;
+    }
+
+    function test48hrRelyWorks() public {
+       
     }
 }
