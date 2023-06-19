@@ -11,7 +11,6 @@ interface IERC1271 {
 
 // Adapted from https://github.com/makerdao/xdomain-dss/blob/master/src/Dai.sol
 contract ERC20 is Auth {
-
     string public name;
     string public symbol;
     string public constant version = "3";
