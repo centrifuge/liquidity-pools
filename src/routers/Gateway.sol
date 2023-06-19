@@ -28,6 +28,10 @@ interface RouterLike {
     function send(bytes memory message) external;
 }
 
+interface AdminLike {
+    function pause() external;
+}
+
 contract ConnectorGateway {
     using TypedMemView for bytes;
     // why bytes29? - https://github.com/summa-tx/memview-sol#why-bytes29
@@ -40,15 +44,17 @@ contract ConnectorGateway {
     ConnectorLike public immutable connector;
     // TODO: support multiple incoming routers (just a single outgoing router) to simplify router migrations
     RouterLike public immutable router;
+    AdminLike public immutable pauseAdmin;
 
     /// --- Events ---
     event Rely(address indexed user);
     event Deny(address indexed user);
     event File(bytes32 indexed what, address addr);
 
-    constructor(address connector_, address router_) {
+    constructor(address connector_, address router_, address pauseAdmin_) {
         connector = ConnectorLike(connector_);
         router = RouterLike(router_);
+        pauseAdmin = AdminLike(pauseAdmin_);
 
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
@@ -74,6 +80,11 @@ contract ConnectorGateway {
         _;
     }
 
+    modifier onlyPauseAdmin() {
+        require(msg.sender == address(pauseAdmin), "ConnectorGateway/not-authorized");
+        _;
+    }
+
     // --- Administration ---
     function rely(address user) external auth {
         wards[user] = 1;
@@ -85,11 +96,11 @@ contract ConnectorGateway {
         emit Deny(user);
     }
 
-    function pause() external auth {
+    function pause() external onlyPauseAdmin {
         paused = true;
     }
 
-    function unpause() external auth {
+    function unpause() external onlyPauseAdmin {
         paused = false;
     }
 

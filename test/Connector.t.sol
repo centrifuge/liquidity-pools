@@ -12,6 +12,7 @@ import {MemberlistLike, Memberlist} from "src/token/memberlist.sol";
 import {MockHomeConnector} from "./mock/MockHomeConnector.sol";
 import {MockXcmRouter} from "./mock/MockXcmRouter.sol";
 import {ConnectorMessages} from "../src/Messages.sol";
+import {ConnectorAdmin} from "../src/Admin.sol";
 import "forge-std/Test.sol";
 import "../src/Connector.sol";
 
@@ -37,7 +38,9 @@ contract ConnectorTest is Test {
         mockXcmRouter = new MockXcmRouter(address(bridgedConnector));
 
         connector = new MockHomeConnector(address(mockXcmRouter));
-        gateway = new ConnectorGateway(address(bridgedConnector), address(mockXcmRouter));
+        ConnectorAdmin pauseAdmin = new ConnectorAdmin();
+        gateway = new ConnectorGateway(address(bridgedConnector), address(mockXcmRouter), address(pauseAdmin));
+        pauseAdmin.file("gateway", address(gateway));
         bridgedConnector.file("gateway", address(gateway));
         EscrowLike_(escrow_).rely(address(bridgedConnector));
         mockXcmRouter.file("gateway", address(gateway));

@@ -11,6 +11,7 @@ import {ConnectorGateway} from "src/routers/Gateway.sol";
 import {TrancheTokenFactory, MemberlistFactory} from "src/token/factory.sol";
 import {InvariantPoolManager} from "./accounts/PoolManager.sol";
 import {InvariantInvestor} from "./accounts/InvestorManager.sol";
+import {ConnectorAdmin} from "src/Admin.sol";
 import "forge-std/Test.sol";
 import "../src/Connector.sol";
 
@@ -32,7 +33,9 @@ contract ConnectorInvariants is Test {
         bridgedConnector = new CentrifugeConnector(escrow_, tokenFactory_, memberlistFactory_);
         mockXcmRouter = new MockXcmRouter(address(bridgedConnector));
         connector = new MockHomeConnector(address(mockXcmRouter));
-        gateway = new ConnectorGateway(address(bridgedConnector), address(mockXcmRouter));
+        ConnectorAdmin pauseAdmin = new ConnectorAdmin();
+        gateway = new ConnectorGateway(address(bridgedConnector), address(mockXcmRouter), address(pauseAdmin));
+        pauseAdmin.file("gateway", address(gateway));
 
         mockXcmRouter.file("gateway", address(gateway));
         bridgedConnector.file("gateway", address(gateway));

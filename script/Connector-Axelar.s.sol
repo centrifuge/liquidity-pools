@@ -5,6 +5,7 @@ import {ConnectorAxelarRouter} from "src/routers/axelar/Router.sol";
 import {ConnectorGateway} from "src/routers/Gateway.sol";
 import {CentrifugeConnector} from "src/Connector.sol";
 import {ConnectorEscrow} from "src/Escrow.sol";
+import {ConnectorAdmin} from "src/Admin.sol";
 import {TrancheTokenFactory, MemberlistFactory} from "src/token/factory.sol";
 import "forge-std/Script.sol";
 
@@ -29,8 +30,15 @@ contract ConnectorAxelarScript is Script {
                 address(vm.envAddress("AXELAR_GATEWAY"))
         );
         connector.file("router", address(router));
-        ConnectorGateway gateway = new ConnectorGateway{ salt: SALT }(address(connector), address(router));
+        ConnectorAdmin pauseAdmin = new ConnectorAdmin();
+        ConnectorGateway gateway = new ConnectorGateway{ salt: SALT }(address(connector), address(router), address(pauseAdmin));
+        pauseAdmin.file("gateway", address(gateway));
         router.file("gateway", address(gateway));
+
+        // rely multisig on pauseAdmin
+        pauseAdmin.rely(address(0));
+        pauseAdmin.deny(address(this));
+
         vm.stopBroadcast();
     }
 }
