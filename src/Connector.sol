@@ -108,7 +108,7 @@ contract CentrifugeConnector is Auth {
     }
 
     modifier connectorsActive() {
-        require(gateway.active(), "CentrifugeConnector/not-the-gateway");
+        require(gateway.active(), "CentrifugeConnector/connectors-deactivated");
         _;
     }
 
