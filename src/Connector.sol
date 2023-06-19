@@ -127,8 +127,7 @@ contract CentrifugeConnector is Auth {
         require((sharePrice > 0), "Tranche4626/amount-exceeds-deposit-limits");
         uint256 sharesToTransfer = _assets / sharePrice;
         decreaseDepositLimits(_receiver, _tranche, _assets, sharesToTransfer); // decrease the possible deposit limits
-        ERC20Like erc20 = ERC20Like(_tranche);
-        require(erc20.transferFrom(address(escrow), _receiver, sharesToTransfer), "CentrifugeConnector/shares-transfer-failed");
+        require(ERC20Like(_tranche).transferFrom(address(escrow), _receiver, sharesToTransfer), "CentrifugeConnector/shares-transfer-failed");
         return sharesToTransfer;
     }
 
@@ -138,8 +137,7 @@ contract CentrifugeConnector is Auth {
         require((sharePrice > 0), "Tranche4626/amount-exceeds-deposit-limits");
         uint256 requiredDeposit = _shares * sharePrice;
         decreaseDepositLimits(_receiver, _tranche, requiredDeposit, _shares); // decrease the possible deposit limits
-        ERC20Like erc20 = ERC20Like(_tranche);
-        require(erc20.transferFrom(address(escrow), _receiver, _shares), "CentrifugeConnector/shares-transfer-failed");
+        require(ERC20Like(_tranche).transferFrom(address(escrow), _receiver, _shares), "CentrifugeConnector/shares-transfer-failed");
         return requiredDeposit;
     }
 
@@ -376,7 +374,7 @@ contract CentrifugeConnector is Auth {
         );
         orderbook[_recipient][tranche].openRedeem = _remainingRedeemOrder;
     }
-    
+
     function handleCollectInvest(uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 currency, uint128 currencyInvested, uint128 tokensPayout, uint128 remainingInvestOrder) public onlyGateway {};
     function handleCollectRedeem(uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 currency, uint128 currencyPayout, uint128 tokensRedeemed, uint128 remainingRedeemOrder) public onlyGateway {};
 
