@@ -32,6 +32,10 @@ interface AdminLike {
     function pause() external;
 }
 
+interface AuthLike {
+    function rely(address usr) external;
+}
+
 contract ConnectorGateway {
     using TypedMemView for bytes;
     // why bytes29? - https://github.com/summa-tx/memview-sol#why-bytes29
@@ -39,6 +43,8 @@ contract ConnectorGateway {
     using ConnectorMessages for bytes29;
 
     mapping(address => uint256) public wards;
+    mapping(address => uint256) public relySchedule;
+    uint256 public constant GRACE_PERIOD = 48 hours;
     bool public paused = false;
 
     ConnectorLike public immutable connector;
@@ -102,6 +108,27 @@ contract ConnectorGateway {
 
     function unpause() external onlyPauseAdmin {
         paused = false;
+    }
+
+    function scheduleRely24hr(address spell) external auth {
+        relySchedule[spell] = block.timestamp + 24 hours;
+    }
+
+    function scheduleRely48hr(address spell) external auth {
+        relySchedule[spell] = block.timestamp + 48 hours;
+    }
+
+    function relySpell(address spell) external {
+        require(relySchedule[spell] != 0, "ConnectorGateway/spell-not-scheduled");
+        require(relySchedule[spell] < block.timestamp, "ConnectorGateway/spell-not-ready");
+        require(relySchedule[spell] + GRACE_PERIOD > block.timestamp, "ConnectorGateway/spell-too-old");
+        relySchedule[spell] = 0;
+        wards[spell] = 1;
+        emit Rely(spell);
+    }
+
+    function relyContract(address target, address usr) public auth {
+        AuthLike(target).rely(usr);
     }
 
     // --- Outgoing ---
