@@ -42,11 +42,11 @@ contract ConnectorAxelarScript is Script {
         router.rely(address(gateway));
         ConnectorEscrow(address(escrow_)).rely(address(gateway));
 
-        // rely multisig on pauseAdmin
+        // TODO: rely pauseMultisig on pauseAdmin
         pauseAdmin.rely(address(0));
         pauseAdmin.deny(address(this));
 
-        // rely delayedMultisig on delayedAdmin
+        // TODO: rely delayedMultisig on delayedAdmin
         delayedAdmin.rely(address(1));
         delayedAdmin.deny(address(this));
 
