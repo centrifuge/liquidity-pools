@@ -41,7 +41,8 @@ contract AdminTest is Test {
         centChainConnector = new MockHomeConnector(address(mockXcmRouter));
         pauseAdmin = new ConnectorPauseAdmin();
         delayedAdmin = new ConnectorDelayedAdmin();
-        gateway = new ConnectorGateway(address(connector), address(mockXcmRouter), address(pauseAdmin), address(delayedAdmin));
+        gateway =
+            new ConnectorGateway(address(connector), address(mockXcmRouter), address(pauseAdmin), address(delayedAdmin));
         connector.file("gateway", address(gateway));
         pauseAdmin.file("gateway", address(gateway));
         delayedAdmin.file("gateway", address(gateway));
@@ -124,7 +125,8 @@ contract AdminTest is Test {
         centChainConnector.incomingTransfer(currency, sender, bytes32(bytes20(recipient)), amount);
     }
 
-    function testUnpausingResumesFunctionality(string memory tokenName,
+    function testUnpausingResumesFunctionality(
+        string memory tokenName,
         string memory tokenSymbol,
         uint8 decimals,
         uint128 currency,

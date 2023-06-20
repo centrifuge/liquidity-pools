@@ -36,7 +36,8 @@ contract ConnectorInvariants is Test {
         connector = new MockHomeConnector(address(mockXcmRouter));
         ConnectorPauseAdmin pauseAdmin = new ConnectorPauseAdmin();
         ConnectorDelayedAdmin delayedAdmin = new ConnectorDelayedAdmin();
-        gateway = new ConnectorGateway(address(bridgedConnector), address(mockXcmRouter), address(pauseAdmin), address(delayedAdmin));
+        gateway =
+        new ConnectorGateway(address(bridgedConnector), address(mockXcmRouter), address(pauseAdmin), address(delayedAdmin));
         pauseAdmin.file("gateway", address(gateway));
         delayedAdmin.file("gateway", address(gateway));
 

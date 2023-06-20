@@ -42,7 +42,7 @@ interface AuthLike {
     function rely(address usr) external;
 }
 
-contract ConnectorGateway{
+contract ConnectorGateway {
     using TypedMemView for bytes;
     // why bytes29? - https://github.com/summa-tx/memview-sol#why-bytes29
     using TypedMemView for bytes29;
@@ -68,7 +68,6 @@ contract ConnectorGateway{
     event RelyCancelled(address indexed spell);
     event Pause();
     event Unpause();
-
 
     constructor(address connector_, address router_, address pauseAdmin_, address delayedAdmin_) {
         connector = ConnectorLike(connector_);

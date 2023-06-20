@@ -34,7 +34,8 @@ contract ConnectorXCMScript is Script {
         connector.file("router", address(router));
         ConnectorPauseAdmin pauseAdmin = new ConnectorPauseAdmin();
         ConnectorDelayedAdmin delayedAdmin = new ConnectorDelayedAdmin();
-        ConnectorGateway gateway = new ConnectorGateway{ salt: SALT }(address(connector), address(router), address(pauseAdmin), address(delayedAdmin));
+        ConnectorGateway gateway =
+        new ConnectorGateway{ salt: SALT }(address(connector), address(router), address(pauseAdmin), address(delayedAdmin));
         pauseAdmin.file("gateway", address(gateway));
         delayedAdmin.file("gateway", address(gateway));
         router.file("gateway", address(gateway));
