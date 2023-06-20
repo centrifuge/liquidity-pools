@@ -97,6 +97,11 @@ contract MockHomeConnector is Test {
         router.handle(_message);
     }
 
+    function incomingScheduleRely(address spell) public {
+        bytes memory _message = ConnectorMessages.formatScheduleRely(spell);
+        router.handle(_message);
+    }
+
     function dispatch(
         uint32 _destinationDomain,
         uint256 _destinationChainId,

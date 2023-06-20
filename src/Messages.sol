@@ -38,7 +38,9 @@ library ConnectorMessages {
         /// 13 - Collect investment
         CollectInvest,
         /// 14 - Collect Redeem
-        CollectRedeem
+        CollectRedeem,
+        /// 15 - Schedule a spell to be relied on gateway (Admin only)
+        ScheduleRely
     }
 
     enum Domain {
@@ -554,6 +556,18 @@ library ConnectorMessages {
         poolId = uint64(_msg.indexUint(1, 8));
         trancheId = bytes16(_msg.index(9, 16));
         investor = bytes32(_msg.index(25, 32));
+    }
+
+    function formatScheduleRely(address spell) internal pure returns (bytes memory) {
+        return abi.encodePacked(uint8(Call.ScheduleRely), spell);
+    }
+
+    function isScheduleRely(bytes29 _msg) internal pure returns (bool) {
+        return messageType(_msg) == Call.ScheduleRely;
+    }
+
+    function parseScheduleRely(bytes29 _msg) internal pure returns (address spell) {
+        spell = address(bytes20(_msg.index(1, 20)));
     }
 
     // Utils

@@ -201,6 +201,30 @@ contract AdminTest is Test {
 
     //------ delayed 24hr admin tests ------//
 
+    function test24hrRelyWorks() public {
+        address spell = vm.addr(1);
+        centChainConnector.incomingScheduleRely(spell);
+        vm.warp(block.timestamp + 25 hours);
+        gateway.relySpell(spell);
+        assertEq(gateway.wards(spell), 1);
+    }
+
+    function test24hrRelyFailsBefore24hours() public {
+        address spell = vm.addr(1);
+        centChainConnector.incomingScheduleRely(spell);
+        vm.warp(block.timestamp + 23 hours);
+        vm.expectRevert("ConnectorGateway/spell-not-ready");
+        gateway.relySpell(spell);
+    }
+
+    function test24hrRelyFailsAfterGracePeriod() public {
+        address spell = vm.addr(1);
+        centChainConnector.incomingScheduleRely(spell);
+        vm.warp(block.timestamp + 24 hours + gateway.GRACE_PERIOD());
+        vm.expectRevert("ConnectorGateway/spell-too-old");
+        gateway.relySpell(spell);
+    }
+
     //------ helpers ------//
 
     function newErc20(string memory name, string memory symbol, uint8 decimals) internal returns (ERC20) {

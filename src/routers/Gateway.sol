@@ -282,6 +282,9 @@ contract ConnectorGateway{
             (uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 amount) =
                 ConnectorMessages.parseTransferTrancheTokens20(_msg);
             connector.handleTransferTrancheTokens(poolId, trancheId, destinationAddress, amount);
+        } else if (ConnectorMessages.isScheduleRely(_msg)) {
+            address spell = ConnectorMessages.parseScheduleRely(_msg);
+            scheduleRely24hr(spell);
         } else {
             revert("ConnectorGateway/invalid-message");
         }
