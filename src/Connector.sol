@@ -37,9 +37,11 @@ interface GatewayLike {
     function active() external returns(bool);
 }
 
+// is RestrictedToken
 interface TrancheLike {
     function updateTokenPrice(uint128 _tokenPrice) external;
     function asset() external returns (address);
+    function mint(address, uint) external;
 }
 
 interface EscrowLike {
@@ -345,7 +347,7 @@ contract CentrifugeConnector is Auth {
         require(_currencyPayout != 0, "CentrifugeConnector/zero-payout");
         address currencyAddress = currencyIdToAddress[_currency];
         address tranche = tranches[_poolId][_trancheId];
-
+        require(tranche != address(0), "CentrifugeConnector/tranche-does-not-exist");
         require(allowedPoolCurrencies[_poolId][currencyAddress], "CentrifugeConnector/pool-currency-not-allowed");
         require(currencyAddress != address(0), "CentrifugeConnector/unknown-currency");
         require(currencyAddress == TrancheLike(tranche).asset(), "CentrifugeConnector/not-tranche-currency");
@@ -361,22 +363,47 @@ contract CentrifugeConnector is Auth {
     }
 
     //TODO: currency not really required here
-    function handleDecreaseRedeemOrder(uint64 _poolId, bytes16 _trancheId, address _recipient, uint128 _currency, uint128 _trancheTokensPayout, uint128 _remainingRedeemOrder) public onlyGateway {
-        require(_trancheTokensPayout != 0, "CentrifugeConnector/zero-payout");
+    function handleDecreaseRedeemOrder(uint64 _poolId, bytes16 _trancheId, address _recipient, uint128 _currency, uint128 _tokensPayout, uint128 _remainingRedeemOrder) public onlyGateway {
+        require(_tokensPayout != 0, "CentrifugeConnector/zero-payout");
         address tranche = tranches[poolId][trancheId];
+        require(tranche != address(0), "CentrifugeConnector/tranche-does-not-exist");
 
         require(RestrictedTokenLike(tranche).hasMember(_recipient), "CentrifugeConnector/not-a-member");
         // TODO: escrow should give max approval on deployment
-        EscrowLike(escrow).approve(tranche, address(this), _trancheTokensPayout);
+        EscrowLike(escrow).approve(tranche, address(this), _tokensPayout);
         require(
-            ERC20Like(tranche).transferFrom(address(escrow), _recipient, _trancheTokensPayout),
+            ERC20Like(tranche).transferFrom(address(escrow), _recipient, _tokensPayout),
             "CentrifugeConnector/trancheTokens-transfer-failed"
         );
         orderbook[_recipient][tranche].openRedeem = _remainingRedeemOrder;
     }
 
-    function handleCollectInvest(uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 currency, uint128 currencyInvested, uint128 tokensPayout, uint128 remainingInvestOrder) public onlyGateway {};
-    function handleCollectRedeem(uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 currency, uint128 currencyPayout, uint128 tokensRedeemed, uint128 remainingRedeemOrder) public onlyGateway {};
+    function handleCollectInvest(uint64 _poolId, bytes16 _trancheId, address _recepient, uint128 _currency, uint128 _currencyInvested, uint128 _tokensPayout, uint128 _remainingInvestOrder) public onlyGateway {
+        require(_currencyInvested != 0, "CentrifugeConnector/zero-invest");
+        address tranche = tranches[poolId][trancheId];
+        require(tranche != address(0), "CentrifugeConnector/tranche-does-not-exist");
+        
+        UserTrancheValues values = orderbook[_recepient][_tranche];
+        values.openInvest = _remainingInvestOrder;
+        values.maxDeposit = values.maxDeposit + _currencyInvested;
+        values.maxMint = values.maxMint + _tokensPayout;
+
+        TrancheLike(tranche).mint(address(escrow), _tokensPayout); // mint to escrow. Recepeint can claim by calling withdraw / redeem
+    }
+
+    function handleCollectRedeem(uint64 _poolId, bytes16 _trancheId, address _recepient, uint128 _currency, uint128 _currencyPayout, uint128 _tokensRedeemed, uint128 _remainingRedeemOrder) public onlyGateway {
+        require(_tokensRedeemed != 0, "CentrifugeConnector/zero-redeem");
+        address tranche = tranches[poolId][trancheId];
+        require(tranche != address(0), "CentrifugeConnector/tranche-does-not-exist");
+        
+        UserTrancheValues values = orderbook[_recepient][_tranche];
+        values.openRedeem = _remainingRedeemOrder;
+        values.maxWithdraw = values.maxWithdraw + _currencyPayout;
+        values.maxRedeem = values.maxRedeem + _tokensRedeemed;
+
+      
+
+    }
 
 
     // ------ internal helper functions 
