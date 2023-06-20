@@ -154,6 +154,13 @@ contract AdminTest is Test {
         assertEq(erc20.balanceOf(recipient), amount);
     }
 
+    function testPauseAdminCanCancelScheduledRely() public {
+        address spell = vm.addr(1);
+        delayedAdmin.schedule(spell);
+        pauseAdmin.cancelSchedule(spell);
+        assertEq(gateway.relySchedule(spell), 0);
+    }
+
     //------ Delayed 48hr admin tests ------///
 
     function test48hrRelyWorks() public {

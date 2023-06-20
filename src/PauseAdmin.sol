@@ -55,6 +55,6 @@ contract ConnectorPauseAdmin {
     }
 
     function cancelSchedule(address spell) public auth {
-        // gateway.cancelSchedule(spell);
+        gateway.cancelSchedule(spell);
     }
 }
