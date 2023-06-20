@@ -148,10 +148,10 @@ contract CentrifugeConnector is Auth {
         return requiredDeposit;
     }
 
-    function requestRedeem(address _tranche, uint256 _shares, address _user) connectorsActive poolActive(_poolId) auth {}
+    function requestRedeem(address _tranche, uint256 _shares, address _user) connectorsActive poolActive(_poolId) public auth {}
 
     // TODO: fix uint256 - uint128
-    function requestDeposit(address _tranche, uint256 _assets, address _user) connectorsActive poolActive(_poolId) auth {
+    function requestDeposit(address _tranche, uint256 _assets, address _user) connectorsActive poolActive(_poolId) public auth {
         UserValues userValues = orderbook[_user][_tranche];
         CFGTranche cfgTranche = cfgTranches[_tranche];
         ERC20Like currency = ERC20Like(TrancheLike(_tranche).asset());
