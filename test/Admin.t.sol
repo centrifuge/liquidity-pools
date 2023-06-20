@@ -52,6 +52,8 @@ contract AdminTest is Test {
         EscrowLike_(escrow_).rely(address(gateway));
     }
 
+    //------ PauseAdmin tests ------//
+
     function testPause() public {
         pauseAdmin.pause();
         assertEq(gateway.paused(), true);
@@ -152,7 +154,54 @@ contract AdminTest is Test {
         assertEq(erc20.balanceOf(recipient), amount);
     }
 
-    // helpers
+    //------ Delayed 48hr admin tests ------///
+
+    function test48hrRelyWorks() public {
+        address spell = vm.addr(1);
+        delayedAdmin.schedule(spell);
+        vm.warp(block.timestamp + 49 hours);
+        gateway.relySpell(spell);
+        assertEq(gateway.wards(spell), 1);
+    }
+
+    function test48hrRelyFailsBefore48hours() public {
+        address spell = vm.addr(1);
+        delayedAdmin.schedule(spell);
+        vm.warp(block.timestamp + 44 hours);
+        vm.expectRevert("ConnectorGateway/spell-not-ready");
+        gateway.relySpell(spell);
+    }
+
+    function test48hrRelyFailsAfterGracePeriod() public {
+        address spell = vm.addr(1);
+        delayedAdmin.schedule(spell);
+        vm.warp(block.timestamp + 48 hours + gateway.GRACE_PERIOD());
+        vm.expectRevert("ConnectorGateway/spell-too-old");
+        gateway.relySpell(spell);
+    }
+
+    function testCancellingScheduleWorks() public {
+        address spell = vm.addr(1);
+        delayedAdmin.schedule(spell);
+        assertEq(gateway.relySchedule(spell), block.timestamp + 48 hours);
+        delayedAdmin.cancelSchedule(spell);
+        assertEq(gateway.relySchedule(spell), 0);
+        vm.warp(block.timestamp + 49 hours);
+        vm.expectRevert("ConnectorGateway/spell-not-scheduled");
+        gateway.relySpell(spell);
+    }
+
+    function testUnauthorizedCancelFails() public {
+        address spell = vm.addr(1);
+        delayedAdmin.schedule(spell);
+        vm.expectRevert("ConnectorAdmin/not-authorized");
+        vm.prank(spell);
+        delayedAdmin.cancelSchedule(spell);
+    }
+
+    //------ delayed 24hr admin tests ------//
+
+    //------ helpers ------//
 
     function newErc20(string memory name, string memory symbol, uint8 decimals) internal returns (ERC20) {
         ERC20 erc20 = new ERC20(decimals);
@@ -160,9 +209,5 @@ contract AdminTest is Test {
         erc20.file("symbol", symbol);
 
         return erc20;
-    }
-
-    function test48hrRelyWorks() public {
-       
     }
 }

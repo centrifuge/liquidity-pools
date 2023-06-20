@@ -42,7 +42,7 @@ interface AuthLike {
     function rely(address usr) external;
 }
 
-contract ConnectorGateway {
+contract ConnectorGateway{
     using TypedMemView for bytes;
     // why bytes29? - https://github.com/summa-tx/memview-sol#why-bytes29
     using TypedMemView for bytes29;
@@ -95,7 +95,17 @@ contract ConnectorGateway {
     }
 
     modifier onlyPauseAdmin() {
-        require(msg.sender == address(pauseAdmin), "ConnectorGateway/not-authorized");
+        require(msg.sender == address(pauseAdmin), "ConnectorGateway/not-pause-admin");
+        _;
+    }
+
+    modifier onlyDelayedAdmin() {
+        require(msg.sender == address(delayedAdmin), "ConnectorGateway/not-delayed-admin");
+        _;
+    }
+
+    modifier onlyAdmins() {
+        require(msg.sender == address(delayedAdmin) || msg.sender == address(pauseAdmin), "ConnectorGateway/not-admin");
         _;
     }
 
@@ -118,19 +128,19 @@ contract ConnectorGateway {
         paused = false;
     }
 
-    function scheduleRely24hr(address spell) external auth {
+    function scheduleRely24hr(address spell) internal {
         relySchedule[spell] = block.timestamp + 24 hours;
     }
 
-    function scheduleRely48hr(address spell) external auth {
+    function scheduleRely48hr(address spell) external onlyDelayedAdmin {
         relySchedule[spell] = block.timestamp + 48 hours;
     }
 
-    function cancelSchedule(address spell) external auth {
+    function cancelSchedule(address spell) external onlyAdmins {
         relySchedule[spell] = 0;
     }
 
-    function relySpell(address spell) external {
+    function relySpell(address spell) public {
         require(relySchedule[spell] != 0, "ConnectorGateway/spell-not-scheduled");
         require(relySchedule[spell] < block.timestamp, "ConnectorGateway/spell-not-ready");
         require(relySchedule[spell] + GRACE_PERIOD > block.timestamp, "ConnectorGateway/spell-too-old");
