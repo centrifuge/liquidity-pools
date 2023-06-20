@@ -63,6 +63,12 @@ contract ConnectorGateway{
     event Rely(address indexed user);
     event Deny(address indexed user);
     event File(bytes32 indexed what, address addr);
+    event RelyScheduled24hr(address indexed spell, uint256 indexed scheduledTime);
+    event RelyScheduled48hr(address indexed spell, uint256 indexed scheduledTime);
+    event RelyCancelled(address indexed spell);
+    event Pause();
+    event Unpause();
+
 
     constructor(address connector_, address router_, address pauseAdmin_, address delayedAdmin_) {
         connector = ConnectorLike(connector_);
@@ -122,22 +128,27 @@ contract ConnectorGateway{
 
     function pause() external onlyPauseAdmin {
         paused = true;
+        emit Pause();
     }
 
     function unpause() external onlyPauseAdmin {
         paused = false;
+        emit Unpause();
     }
 
     function scheduleRely24hr(address spell) internal {
         relySchedule[spell] = block.timestamp + 24 hours;
+        emit RelyScheduled24hr(spell, relySchedule[spell]);
     }
 
     function scheduleRely48hr(address spell) external onlyDelayedAdmin {
         relySchedule[spell] = block.timestamp + 48 hours;
+        emit RelyScheduled48hr(spell, relySchedule[spell]);
     }
 
     function cancelSchedule(address spell) external onlyAdmins {
         relySchedule[spell] = 0;
+        emit RelyCancelled(spell);
     }
 
     function relySpell(address spell) public {
