@@ -20,14 +20,6 @@ pragma solidity ^0.8.18;
 // yearn: https://github.com/yearn/yearn-vaults-v3/blob/master/contracts/VaultV3.vy
 
 
-
-// create deposit flow in connectors
-// create mint flow
-// create redeem flow
-// create withdraw flow 
-// messages collectRedeem & collectInvest
-
-
 import "./token/restricted.sol";
 
 interface ConnectorLike {
@@ -36,7 +28,10 @@ interface ConnectorLike {
     function maxDeposit(address _user, address _tranche) external returns (uint256);
     function maxMint(address _user, address _tranche) external returns (uint256);
     function maxWithdraw(address _user, address _tranche) external returns (uint256);
-    function maxRedeem(address _user, address _tranche) external returns (uint256) 
+    function maxRedeem(address _user, address _tranche) external returns (uint256);
+    function requestRedeem(uint256 _shares, address _receiver) external;
+    function requestDeposit(uint256 _assets, address _receiver) external;
+    
 }
 
 /// @title Tranche4626
@@ -95,6 +90,7 @@ contract Tranche4626 is RestrictedToken {
 
     /// @dev request asset deposit for a receiver to be included in the next epoch execution. Asset is locked in the escrow on request submission.
     function requestDeposit(uint256 _assets, address _receiver) auth public {
+        connector.requestDeposit(address(this), _receiver, _assets);
     }
 
     /// @dev collect shares for deposited funds after pool epoch execution. maxMint is the max amount of shares that can be collected. Required assets must already be locked.
@@ -112,13 +108,18 @@ contract Tranche4626 is RestrictedToken {
     }
 
     /// @dev Maximum amount of shares that can be claimed by the receiver after the epoch has been executed on the Centrifuge chain side.
-    function maxMint(address receiver) external view returns (uint256 maxShares) {
+    function maxMint(address _receiver) external view returns (uint256 maxShares) {
         return connector.maxMint(_receiver, address(this));
     }
 
     /// @return The amount of assets that any user would get for an amount of shares provided -> convertToAssets
     function previewMint(uint256 _shares) external view returns (uint256 assets) {
         assets = convertToAssets(_shares);
+    }
+
+    /// @dev request share redemption for a receiver to be included in the next epoch execution. Shares are locked in the escrow on request submission.
+    function requestRedeem(uint256 _shares, address _receiver) auth public {
+        connector.requestRedeem(address(this), _receiver, _shares);
     }
 
     /// @dev 
