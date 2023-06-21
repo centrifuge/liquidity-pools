@@ -136,24 +136,45 @@ contract CentrifugeConnector is Auth {
 
     // --- Outgoing message handling ---
     // auth functions
-    function deposit(address _tranche, address _user, uint256 _currencyAmount) public poolActive(_tranche) connectorsActive auth returns (uint256) {
+    function processDeposit(address _tranche, address _user, uint256 _currencyAmount) public poolActive(_tranche) connectorsActive auth returns (uint256) {
         require((_currencyAmount <= orderbook[_user][_tranche].maxDeposit), "CentrifugeConnector/amount-exceeds-deposit-limits");
-        uint256 sharePrice = calcUserSharePrice( _user, _tranche);
-        require((sharePrice > 0), "Tranche4626/amount-exceeds-deposit-limits");
-        uint256 trancheTokensToTransfer = _currencyAmount / sharePrice;
-        _decreaseDepositLimits(_user, _tranche, _currencyAmount, trancheTokensToTransfer); // decrease the possible deposit limits
-        require(ERC20Like(_tranche).transferFrom(address(escrow), _user, trancheTokensToTransfer), "CentrifugeConnector/trancheTokens-transfer-failed");
-        return trancheTokensToTransfer;
+        uint256 userTrancheTokenPrice = calcCustomTrancheTokenPrice( _user, _tranche);
+        require((userTrancheTokenPrice > 0), "Tranche4626/amount-exceeds-deposit-limits");
+        uint256 trancheTokensPayout = _currencyAmount / userTrancheTokenPrice;
+        _decreaseDepositLimits(_user, _tranche, _currencyAmount, trancheTokensPayout); // decrease the possible deposit limits
+        require(ERC20Like(_tranche).transferFrom(address(escrow), _user, trancheTokensPayout), "CentrifugeConnector/trancheTokens-transfer-failed");
+        return trancheTokensPayout;
     }
 
-    function mint(address _tranche, address _user, uint256 _trancheTokensAmount) public poolActive(_tranche) connectorsActive auth returns (uint256) {
+    function processMint(address _tranche, address _user, uint256 _trancheTokensAmount) public poolActive(_tranche) connectorsActive auth returns (uint256) {
         require((_trancheTokensAmount <= orderbook[_user][_tranche].maxMint), "CentrifugeConnector/amount-exceeds-mint-limits");
-        uint256 sharePrice = calcUserSharePrice( _user, _tranche);
-        require((sharePrice > 0), "Tranche4626/amount-exceeds-deposit-limits");
-        uint256 requiredDeposit = _trancheTokensAmount * sharePrice;
-        _decreaseDepositLimits(_user, _tranche, requiredDeposit, _trancheTokensAmount); // decrease the possible deposit limits
+        uint256 userTrancheTokenPrice = calcCustomTrancheTokenPrice( _user, _tranche);
+        require((userTrancheTokenPrice > 0), "Tranche4626/amount-exceeds-mint-limits");
+        uint256 currencyDeposited = _trancheTokensAmount * userTrancheTokenPrice;
+        _decreaseDepositLimits(_user, _tranche, currencyDeposited, _trancheTokensAmount); // decrease the possible deposit limits
         require(ERC20Like(_tranche).transferFrom(address(escrow), _user, _trancheTokensAmount), "CentrifugeConnector/shares-transfer-failed");
-        return requiredDeposit;
+        return currencyDeposited;
+    }
+
+    function processWithdraw(address _tranche, uint256 _currencyAmount, address _receiver, address _user) public poolActive(_tranche) connectorsActive auth returns (uint256) {
+        require((_currencyAmount <= orderbook[_user][_tranche].maxWithdaw), "CentrifugeConnector/amount-exceeds-withdraw-limits");
+        TrancheLike tranche = TrancheLike(_tranche);
+        uint256 userTrancheTokenPrice = calcCustomTrancheTokenPrice(_user, _tranche);
+        require((userTrancheTokenPrice > 0), "Tranche4626/amount-exceeds-withdraw-limits");
+        uint256 redeemedTrancheTokens = _currencyAmount / userTrancheTokenPrice;
+        _decreaseRedemptionLimits(_user, _tranche, _currencyAmount, redeemedTrancheTokens);
+        require(ERC20Like(tranche.asset()).transferFrom(address(escrow), _receiver, _currencyAmount), "CentrifugeConnector/trancheTokens-transfer-failed");
+        return redeemedTrancheTokens;
+    }
+
+    function processRedeem(address _tranche, uint256 _trancheTokensAmount, address _receiver, address _user) public poolActive(_tranche) connectorsActive auth returns (uint256) {
+        require((_trancheTokensAmount <= orderbook[_user][_tranche].maxRedeem), "CentrifugeConnector/amount-exceeds-redeem-limits");
+        uint256 userTrancheTokenPrice = calcCustomTrancheTokenPrice( _user, _tranche);
+        require((userTrancheTokenPrice > 0), "Tranche4626/amount-exceeds-redemption-limits");
+        uint256 currencyPayout = _trancheTokensAmount * userTrancheTokenPrice;
+        _decreaseRedemptionLimits(_user, _tranche, currencyPayout, _trancheTokensAmount); // decrease the possible deposit limits
+        require(ERC20Like(_tranche).transferFrom(address(escrow), _receiver, currencyPayout), "CentrifugeConnector/shares-transfer-failed");
+        return currencyPayout;
     }
 
     function requestRedeem(address _tranche, uint256 _trancheTokensAmount, address _user) connectorsActive poolActive(_tranche) public auth {
@@ -173,8 +194,8 @@ contract CentrifugeConnector is Auth {
         }
 
         if(userValues.maxMint >= _trancheTokensAmount) { // case: user has unclaimed trancheTokens in escrow -> more than redemption request
-            uint256 sharePrice = calcUserSharePrice( _user, _tranche);
-            uint256 assets = _trancheTokensAmount * sharePrice;
+            uint256 userTrancheTokenPrice = calcCustomTrancheTokenPrice( _user, _tranche);
+            uint256 assets = _trancheTokensAmount * userTrancheTokenPrice;
             _decreaseDepositLimits(_user, _tranche, assets, _trancheTokensAmount);
         } else {
             uint transferAmount = _trancheTokensAmount - userValues.maxMint;
@@ -206,9 +227,9 @@ contract CentrifugeConnector is Auth {
             return; 
         }
         if(userValues.maxWithdraw >= _currencyAmount) { // case: user has some claimable fund in escrow -> funds > Deposit request
-            uint256 sharePrice = calcUserSharePrice( _user, _tranche);
-            uint256 trancheTokens = _currencyAmount / sharePrice;
-            _decreaseRedemptionLimits(_currencyAmount, trancheTokens);
+            uint256 userTrancheTokenPrice = calcCustomTrancheTokenPrice( _user, _tranche);
+            uint256 trancheTokens = _currencyAmount / userTrancheTokenPrice;
+            _decreaseRedemptionLimits(_user, _tranche, _currencyAmount, trancheTokens);
         } else {
             uint transferAmount = _currencyAmount - userValues.maxWithdraw;
             userValues.maxWithdraw = 0;
@@ -217,6 +238,7 @@ contract CentrifugeConnector is Auth {
             require(currency.balanceOf(_user) >= transferAmount, "CentrifugeConnector/insufficient-balance");
             require(currency.transferFrom(_user, address(escrow), transferAmount), "CentrifugeConnector/currency-transfer-failed");
         } 
+
         gateway.increaseInvestOrder(cfgTranche.poolId, cfgTranche.trancheId, _user, tranche.asset(), _currencyAmount);
     }
          
@@ -478,10 +500,10 @@ contract CentrifugeConnector is Auth {
 
     function handleCollectInvest(uint64 _poolId, bytes16 _trancheId, address _recepient, uint128 _currency, uint128 _currencyInvested, uint128 _tokensPayout, uint128 _remainingInvestOrder) public onlyGateway {
         require(_currencyInvested != 0, "CentrifugeConnector/zero-invest");
-        address tranche = tranches[poolId][trancheId];
+        address tranche = tranches[_poolId][_trancheId];
         require(tranche != address(0), "CentrifugeConnector/tranche-does-not-exist");
         
-        UserTrancheValues values = orderbook[_recepient][_tranche];
+        UserTrancheValues values = orderbook[_recepient][tranche];
         values.openInvest = _remainingInvestOrder;
         values.maxDeposit = values.maxDeposit + _currencyInvested;
         values.maxMint = values.maxMint + _tokensPayout;
@@ -489,15 +511,17 @@ contract CentrifugeConnector is Auth {
         TrancheLike(tranche).mint(address(escrow), _tokensPayout); // mint to escrow. Recepeint can claim by calling withdraw / redeem
     }
 
-    function handleCollectRedeem(uint64 _poolId, bytes16 _trancheId, address _recepient, uint128 _currency, uint128 _currencyPayout, uint128 _tokensRedeemed, uint128 _remainingRedeemOrder) public onlyGateway {
-        require(_tokensRedeemed != 0, "CentrifugeConnector/zero-redeem");
-        address tranche = tranches[poolId][trancheId];
+    function handleCollectRedeem(uint64 _poolId, bytes16 _trancheId, address _recepient, uint128 _currency, uint128 _currencyPayout, uint128 _trancheTokensRedeemed, uint128 _remainingRedeemOrder) public onlyGateway {
+        require(_trancheTokensRedeemed != 0, "CentrifugeConnector/zero-redeem");
+        address tranche = tranches[_poolId][_trancheId];
         require(tranche != address(0), "CentrifugeConnector/tranche-does-not-exist");
         
-        UserTrancheValues values = orderbook[_recepient][_tranche];
+        UserTrancheValues values = orderbook[_recepient][tranche];
         values.openRedeem = _remainingRedeemOrder;
         values.maxWithdraw = values.maxWithdraw + _currencyPayout;
-        values.maxRedeem = values.maxRedeem + _tokensRedeemed;
+        values.maxRedeem = values.maxRedeem + _trancheTokensRedeemed;
+
+        TrancheLike(tranche).burn(address(escrow), _trancheTokensRedeemed); // burned redeemed tokens from escrow
     }
 
     // ------ internal helper functions 
@@ -568,12 +592,12 @@ contract CentrifugeConnector is Auth {
     // ------ EIP 4626 view functions
    
     /// @dev calculates the avg share price for the deposited assets of a specific user
-    function calcUserSharePrice(address _user, address _tranche) public view returns (uint256 sharePrice) {
+    function calcCustomTrancheTokenPrice(address _user, address _tranche) public view returns (uint256 userTrancheTokenPrice) {
         UserTrancheValues values = orderbook[_user][_tranche];
         if(values.maxMint == 0) {
             return 0;
         }
-        sharePrice = values.maxDeposit / values.maxMint;
+        userTrancheTokenPrice = values.maxDeposit / values.maxMint;
     }
 
     function maxDeposit(address _user, address _tranche) public view returns (uint256) {
