@@ -59,7 +59,15 @@ contract ConnectorGateway {
     event Pause();
     event Unpause();
 
-    constructor(address connector_, address router_, address pauseAdmin_, address delayedAdmin, uint256 shortScheduleWait_, uint256 longScheduleWait_, uint256 gracePeriod_) {
+    constructor(
+        address connector_,
+        address router_,
+        address pauseAdmin_,
+        address delayedAdmin,
+        uint256 shortScheduleWait_,
+        uint256 longScheduleWait_,
+        uint256 gracePeriod_
+    ) {
         connector = ConnectorLike(connector_);
         router = RouterLike(router_);
         SHORT_SCHEDULE_WAIT = shortScheduleWait_;

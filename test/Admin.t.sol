@@ -48,7 +48,7 @@ contract AdminTest is Test {
         pauseAdmin = new ConnectorPauseAdmin();
         delayedAdmin = new ConnectorDelayedAdmin();
         gateway =
-            new ConnectorGateway(address(connector), address(mockXcmRouter), address(pauseAdmin), address(delayedAdmin), shortWait, longWait, gracePeriod);
+        new ConnectorGateway(address(connector), address(mockXcmRouter), address(pauseAdmin), address(delayedAdmin), shortWait, longWait, gracePeriod);
         connector.file("gateway", address(gateway));
         pauseAdmin.file("gateway", address(gateway));
         delayedAdmin.file("gateway", address(gateway));
