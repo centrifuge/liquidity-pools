@@ -23,8 +23,9 @@ pragma solidity ^0.8.18;
 import "./token/restricted.sol";
 
 interface ConnectorLike {
-    function deposit(address _tranche, address _receiver, uint256 _assets) external returns (uint256);
-    function mint(address _tranche, address _receiver, uint256 _shares) external returns (uint256);
+    function processDeposit(address _tranche, address _receiver, uint256 _assets) external returns (uint256);
+    function processMint(address _tranche, address _receiver, uint256 _shares) external returns (uint256);
+    function processWithdraw(address _tranche, uint256 _assets, address _receiver, address _owner) external returns (uint256);
     function maxDeposit(address _user, address _tranche) external returns (uint256);
     function maxMint(address _user, address _tranche) external returns (uint256);
     function maxWithdraw(address _user, address _tranche) external returns (uint256);
@@ -96,14 +97,14 @@ contract Tranche4626 is RestrictedToken {
     /// @dev collect shares for deposited funds after pool epoch execution. maxMint is the max amount of shares that can be collected. Required assets must already be locked.
     /// maxDeposit is the amount of funds that was successfully invested into the pool on Centrifuge chain
     function deposit(uint256 _assets, address _receiver)  auth public returns (uint256 shares) {
-        uint transferredShares = connector.deposit(address(this), _receiver, _assets);
+        uint transferredShares = connector.processDeposit(address(this), _receiver, _assets);
         Deposit(address(this), _receiver, _assets, transferredShares);
     }
 
     /// @dev collect shares for deposited funds after pool epoch execution. maxMint is the max amount of shares that can be collected. Required assets must already be locked.
     /// maxDeposit is the amount of funds that was successfully invested into the pool on Centrifuge chain
-    function mint(uint256 _shares, address _receiver)  auth public returns (uint256 assets) {
-      uint lockedAssets = connector.mint(address(this), _receiver, _shares); 
+    function mint(uint256 _shares, address _receiver) auth public returns (uint256 assets) {
+      uint lockedAssets = connector.processMint(address(this), _receiver, _shares); 
       Deposit(address(this), _receiver, lockedAssets, _shares);
     }
 
@@ -122,30 +123,46 @@ contract Tranche4626 is RestrictedToken {
         connector.requestRedeem(address(this), _receiver, _shares);
     }
 
-    /// @dev 
+    /// @dev  
     /// @return
-    function maxWithdraw(address _owner) external view returns (uint256 maxAssets) {
-        return connector.maxWithdraw(_owner, address(this));
+    function maxWithdraw(address _receiver) public view returns (uint256 maxAssets) {
+        return connector.maxWithdraw(_receiver, address(this));
     }
-    /// @dev 
-    /// @return
-    function previewWithdraw(uint256 assets) external view returns (uint256 shares);
-    /// @dev 
-    /// @return
-    function withdraw(uint256 assets, address receiver, address owner) external returns (uint256 shares);
-    /// @dev 
-    /// @return
-    function maxRedeem(address owner) external view returns (uint256 maxShares) {
-         return connector.maxRedeem(_owner, address(this));
+    
+    /// @return The amount of shares a user would need to redeem in order to receive the given amount of assets -> convertToAssets
+    function previewWithdraw(uint256 _assets) public view returns (uint256 shares) {
+        shares = convertToShares(_assets);
     }
 
-    /// @dev 
-    /// @return
-    function previewRedeem(uint256 shares) external view returns (uint256 assets);
-    /// @dev 
-    /// @return
-    function redeem(uint256 shares, address receiver, address owner) external returns (uint256 assets);
+    /// @dev Withdraw assets after successful epoch execution. Receiver will receive an exact amount of _assets for a certain amount of shares that has been redeemed from Owner during epoch execution.
+    /// @return shares that have been redeemed for the excat _assets amount
+    function withdraw(uint256 _assets, address _receiver, address _owner) auth public returns (uint256 shares) {
+        uint sharesRedeemed = connector.processWithdraw(address(this), _assets, _receiver, _owner);
+        Withdraw(address(this), _receiver, _owner, _assets, sharesRedeemed);
+        return sharesRedeemed;
+    }
 
+    /// @dev Max amount of shares that can be redeemed by the owner after redemption was requested
+    function maxRedeem(address owner) public view returns (uint256 maxShares) {
+         return connector.maxRedeem(owner, address(this));
+    }
+
+    
+    /// @return The amount of assets that any user could redeem for an given amount of shares -> convertToAssets
+    function previewRedeem(uint256 _shares) public view returns (uint256 assets) {
+        assets = convertToAssets(_shares);
+    }
+
+    /// @dev Redeem shares after successful epoch execution. Receiver will receive assets for the exact amount of redeemed shares from Owner after epoch execution.
+    /// @return assets currency payout for the exact amount of redeemed _shares
+    function redeem(uint256 _shares, address _receiver, address _owner) auth public returns (uint256 assets) {
+        uint currencyPayout = connector.processWithdraw(address(this), _shares, _receiver, _owner);
+        Withdraw(address(this), _receiver, _owner, currencyPayout, _shares);
+        return currencyPayout;
+    }
+
+
+    // auth functions
     function updateTokenPrice(uint128 _tokenPrice) public auth {
         latestPrice = _tokenPrice;
         lastPriceUpdate = block.timestamp;
