@@ -20,6 +20,9 @@ contract ConnectorAxelarScript is Script {
     function run() public {
         vm.startBroadcast();
 
+        uint256 shortWait = 24 hours;
+        uint256 longWait = 48 hours;
+        uint256 gracePeriod = 48 hours;
         address tokenFactory_ = address(new TrancheTokenFactory{ salt: SALT }());
         address memberlistFactory_ = address(new MemberlistFactory{ salt: SALT }());
         address escrow_ = address(new ConnectorEscrow{ salt: SALT }());
@@ -34,7 +37,7 @@ contract ConnectorAxelarScript is Script {
         ConnectorPauseAdmin pauseAdmin = new ConnectorPauseAdmin();
         ConnectorDelayedAdmin delayedAdmin = new ConnectorDelayedAdmin();
         ConnectorGateway gateway =
-        new ConnectorGateway{ salt: SALT }(address(connector), address(router), address(pauseAdmin), address(delayedAdmin));
+        new ConnectorGateway{ salt: SALT }(address(connector), address(router), address(pauseAdmin), address(delayedAdmin), shortWait, longWait, gracePeriod);
         pauseAdmin.file("gateway", address(gateway));
         delayedAdmin.file("gateway", address(gateway));
         router.file("gateway", address(gateway));

@@ -30,6 +30,9 @@ contract ConnectorTest is Test {
 
     function setUp() public {
         vm.chainId(1);
+        uint256 shortWait = 24 hours;
+        uint256 longWait = 48 hours;
+        uint256 gracePeriod = 48 hours;
         address escrow_ = address(new ConnectorEscrow());
         address tokenFactory_ = address(new TrancheTokenFactory());
         address memberlistFactory_ = address(new MemberlistFactory());
@@ -43,7 +46,7 @@ contract ConnectorTest is Test {
         ConnectorDelayedAdmin delayedAdmin = new ConnectorDelayedAdmin();
 
         gateway =
-        new ConnectorGateway(address(bridgedConnector), address(mockXcmRouter), address(pauseAdmin), address(delayedAdmin));
+        new ConnectorGateway(address(bridgedConnector), address(mockXcmRouter), address(pauseAdmin), address(delayedAdmin), shortWait, longWait, gracePeriod);
         pauseAdmin.file("gateway", address(gateway));
         delayedAdmin.file("gateway", address(gateway));
         bridgedConnector.file("gateway", address(gateway));

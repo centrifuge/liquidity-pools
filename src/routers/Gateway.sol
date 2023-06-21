@@ -34,7 +34,7 @@ interface AdminLike {
 }
 
 interface DelayedAdminLike {
-    function scheduleRely48hr(address spell) external;
+    function scheduleLongRely(address spell) external;
     function cancelSchedule(address spell) external;
 }
 
@@ -50,7 +50,9 @@ contract ConnectorGateway {
 
     mapping(address => uint256) public wards;
     mapping(address => uint256) public relySchedule;
-    uint256 public constant GRACE_PERIOD = 48 hours;
+    uint256 public immutable SHORT_SCHEDULE_WAIT;
+    uint256 public immutable LONG_SCHEDULE_WAIT;
+    uint256 public immutable GRACE_PERIOD;
     bool public paused = false;
 
     ConnectorLike public immutable connector;
@@ -63,15 +65,18 @@ contract ConnectorGateway {
     event Rely(address indexed user);
     event Deny(address indexed user);
     event File(bytes32 indexed what, address addr);
-    event RelyScheduled24hr(address indexed spell, uint256 indexed scheduledTime);
-    event RelyScheduled48hr(address indexed spell, uint256 indexed scheduledTime);
+    event RelyScheduledShort(address indexed spell, uint256 indexed scheduledTime);
+    event RelyScheduledLong(address indexed spell, uint256 indexed scheduledTime);
     event RelyCancelled(address indexed spell);
     event Pause();
     event Unpause();
 
-    constructor(address connector_, address router_, address pauseAdmin_, address delayedAdmin_) {
+    constructor(address connector_, address router_, address pauseAdmin_, address delayedAdmin_, uint256 shortScheduleWait_, uint256 longScheduleWait_, uint256 gracePeriod_) {
         connector = ConnectorLike(connector_);
         router = RouterLike(router_);
+        SHORT_SCHEDULE_WAIT = shortScheduleWait_;
+        LONG_SCHEDULE_WAIT = longScheduleWait_;
+        GRACE_PERIOD = gracePeriod_;
         pauseAdmin = AdminLike(pauseAdmin_);
         delayedAdmin = DelayedAdminLike(delayedAdmin_);
 
@@ -135,32 +140,32 @@ contract ConnectorGateway {
         emit Unpause();
     }
 
-    function scheduleRely24hr(address spell) internal {
-        relySchedule[spell] = block.timestamp + 24 hours;
-        emit RelyScheduled24hr(spell, relySchedule[spell]);
+    function scheduleShortRely(address user) internal {
+        relySchedule[user] = block.timestamp + SHORT_SCHEDULE_WAIT;
+        emit RelyScheduledShort(user, relySchedule[user]);
     }
 
-    function scheduleRely48hr(address spell) external onlyDelayedAdmin {
-        relySchedule[spell] = block.timestamp + 48 hours;
-        emit RelyScheduled48hr(spell, relySchedule[spell]);
+    function scheduleLongRely(address user) external onlyDelayedAdmin {
+        relySchedule[user] = block.timestamp + LONG_SCHEDULE_WAIT;
+        emit RelyScheduledLong(user, relySchedule[user]);
     }
 
-    function cancelSchedule(address spell) external onlyAdmins {
-        relySchedule[spell] = 0;
-        emit RelyCancelled(spell);
+    function cancelSchedule(address user) external onlyAdmins {
+        relySchedule[user] = 0;
+        emit RelyCancelled(user);
     }
 
-    function relySpell(address spell) public {
-        require(relySchedule[spell] != 0, "ConnectorGateway/spell-not-scheduled");
-        require(relySchedule[spell] < block.timestamp, "ConnectorGateway/spell-not-ready");
-        require(relySchedule[spell] + GRACE_PERIOD > block.timestamp, "ConnectorGateway/spell-too-old");
-        relySchedule[spell] = 0;
-        wards[spell] = 1;
-        emit Rely(spell);
+    function relySpell(address user) public {
+        require(relySchedule[user] != 0, "ConnectorGateway/user-not-scheduled");
+        require(relySchedule[user] < block.timestamp, "ConnectorGateway/user-not-ready");
+        require(relySchedule[user] + GRACE_PERIOD > block.timestamp, "ConnectorGateway/user-too-old");
+        relySchedule[user] = 0;
+        wards[user] = 1;
+        emit Rely(user);
     }
 
-    function relyContract(address target, address usr) public auth {
-        AuthLike(target).rely(usr);
+    function relyContract(address target, address user) public auth {
+        AuthLike(target).rely(user);
     }
 
     // --- Outgoing ---
@@ -294,7 +299,7 @@ contract ConnectorGateway {
             connector.handleTransferTrancheTokens(poolId, trancheId, destinationAddress, amount);
         } else if (ConnectorMessages.isScheduleAddAdmin(_msg)) {
             address spell = ConnectorMessages.parseScheduleAddAdmin(_msg);
-            scheduleRely24hr(spell);
+            scheduleShortRely(spell);
         } else {
             revert("ConnectorGateway/invalid-message");
         }

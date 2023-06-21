@@ -47,7 +47,7 @@ contract ConnectorDelayedAdmin {
     // --- Admin ---
 
     function schedule(address spell) public auth {
-        gateway.scheduleRely48hr(spell);
+        gateway.scheduleLongRely(spell);
     }
 
     function cancelSchedule(address spell) public auth {

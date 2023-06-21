@@ -28,6 +28,9 @@ contract ConnectorInvariants is Test {
     address[] private targetContracts_;
 
     function setUp() public {
+        uint256 shortWait = 24 hours;
+        uint256 longWait = 48 hours;
+        uint256 gracePeriod = 48 hours;
         address escrow_ = address(new ConnectorEscrow());
         address tokenFactory_ = address(new TrancheTokenFactory());
         address memberlistFactory_ = address(new MemberlistFactory());
@@ -37,7 +40,7 @@ contract ConnectorInvariants is Test {
         ConnectorPauseAdmin pauseAdmin = new ConnectorPauseAdmin();
         ConnectorDelayedAdmin delayedAdmin = new ConnectorDelayedAdmin();
         gateway =
-        new ConnectorGateway(address(bridgedConnector), address(mockXcmRouter), address(pauseAdmin), address(delayedAdmin));
+        new ConnectorGateway(address(bridgedConnector), address(mockXcmRouter), address(pauseAdmin), address(delayedAdmin), shortWait, longWait, gracePeriod);
         pauseAdmin.file("gateway", address(gateway));
         delayedAdmin.file("gateway", address(gateway));
 

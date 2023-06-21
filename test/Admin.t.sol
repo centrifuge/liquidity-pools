@@ -28,8 +28,14 @@ contract AdminTest is Test {
     MockXcmRouter mockXcmRouter;
     ConnectorPauseAdmin pauseAdmin;
     ConnectorDelayedAdmin delayedAdmin;
+    uint256 shortWait;
+    uint256 longWait;
+    uint256 gracePeriod;
 
     function setUp() public {
+        shortWait = 24 hours;
+        longWait = 48 hours;
+        gracePeriod = 48 hours;
         address escrow_ = address(new ConnectorEscrow());
         address tokenFactory_ = address(new TrancheTokenFactory());
         address memberlistFactory_ = address(new MemberlistFactory());
@@ -42,7 +48,7 @@ contract AdminTest is Test {
         pauseAdmin = new ConnectorPauseAdmin();
         delayedAdmin = new ConnectorDelayedAdmin();
         gateway =
-            new ConnectorGateway(address(connector), address(mockXcmRouter), address(pauseAdmin), address(delayedAdmin));
+            new ConnectorGateway(address(connector), address(mockXcmRouter), address(pauseAdmin), address(delayedAdmin), shortWait, longWait, gracePeriod);
         connector.file("gateway", address(gateway));
         pauseAdmin.file("gateway", address(gateway));
         delayedAdmin.file("gateway", address(gateway));
@@ -163,40 +169,40 @@ contract AdminTest is Test {
         assertEq(gateway.relySchedule(spell), 0);
     }
 
-    //------ Delayed 48hr admin tests ------///
+    //------ Delayed Long admin tests ------///
 
-    function test48hrRelyWorks() public {
+    function testLongRelyWorks() public {
         address spell = vm.addr(1);
         delayedAdmin.schedule(spell);
-        vm.warp(block.timestamp + 49 hours);
+        vm.warp(block.timestamp + longWait + 1 hours);
         gateway.relySpell(spell);
         assertEq(gateway.wards(spell), 1);
     }
 
-    function test48hrRelyFailsBefore48hours() public {
+    function testLongRelyFailsBefore48hours() public {
         address spell = vm.addr(1);
         delayedAdmin.schedule(spell);
-        vm.warp(block.timestamp + 44 hours);
-        vm.expectRevert("ConnectorGateway/spell-not-ready");
+        vm.warp(block.timestamp + longWait - 1 hours);
+        vm.expectRevert("ConnectorGateway/user-not-ready");
         gateway.relySpell(spell);
     }
 
-    function test48hrRelyFailsAfterGracePeriod() public {
+    function testLongRelyFailsAfterGracePeriod() public {
         address spell = vm.addr(1);
         delayedAdmin.schedule(spell);
-        vm.warp(block.timestamp + 48 hours + gateway.GRACE_PERIOD());
-        vm.expectRevert("ConnectorGateway/spell-too-old");
+        vm.warp(block.timestamp + longWait + gateway.GRACE_PERIOD());
+        vm.expectRevert("ConnectorGateway/user-too-old");
         gateway.relySpell(spell);
     }
 
     function testCancellingScheduleWorks() public {
         address spell = vm.addr(1);
         delayedAdmin.schedule(spell);
-        assertEq(gateway.relySchedule(spell), block.timestamp + 48 hours);
+        assertEq(gateway.relySchedule(spell), block.timestamp + longWait);
         delayedAdmin.cancelSchedule(spell);
         assertEq(gateway.relySchedule(spell), 0);
-        vm.warp(block.timestamp + 49 hours);
-        vm.expectRevert("ConnectorGateway/spell-not-scheduled");
+        vm.warp(block.timestamp + longWait + 1 hours);
+        vm.expectRevert("ConnectorGateway/user-not-scheduled");
         gateway.relySpell(spell);
     }
 
@@ -208,29 +214,29 @@ contract AdminTest is Test {
         delayedAdmin.cancelSchedule(spell);
     }
 
-    //------ delayed 24hr admin tests ------//
+    //------ delayed Short admin tests ------//
 
-    function test24hrRelyWorks() public {
+    function testShortRelyWorks() public {
         address spell = vm.addr(1);
         centChainConnector.incomingScheduleRely(spell);
-        vm.warp(block.timestamp + 25 hours);
+        vm.warp(block.timestamp + shortWait + 1 hours);
         gateway.relySpell(spell);
         assertEq(gateway.wards(spell), 1);
     }
 
-    function test24hrRelyFailsBefore24hours() public {
+    function testShortRelyFailsBefore24hours() public {
         address spell = vm.addr(1);
         centChainConnector.incomingScheduleRely(spell);
-        vm.warp(block.timestamp + 23 hours);
-        vm.expectRevert("ConnectorGateway/spell-not-ready");
+        vm.warp(block.timestamp + shortWait - 1 hours);
+        vm.expectRevert("ConnectorGateway/user-not-ready");
         gateway.relySpell(spell);
     }
 
-    function test24hrRelyFailsAfterGracePeriod() public {
+    function testShortRelyFailsAfterGracePeriod() public {
         address spell = vm.addr(1);
         centChainConnector.incomingScheduleRely(spell);
-        vm.warp(block.timestamp + 24 hours + gateway.GRACE_PERIOD());
-        vm.expectRevert("ConnectorGateway/spell-too-old");
+        vm.warp(block.timestamp + shortWait + gateway.GRACE_PERIOD());
+        vm.expectRevert("ConnectorGateway/user-too-old");
         gateway.relySpell(spell);
     }
 
