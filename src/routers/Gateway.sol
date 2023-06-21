@@ -28,16 +28,6 @@ interface RouterLike {
     function send(bytes memory message) external;
 }
 
-interface AdminLike {
-    function pause() external;
-    function unpause() external;
-}
-
-interface DelayedAdminLike {
-    function scheduleLongRely(address spell) external;
-    function cancelSchedule(address spell) external;
-}
-
 interface AuthLike {
     function rely(address usr) external;
 }
@@ -58,8 +48,6 @@ contract ConnectorGateway {
     ConnectorLike public immutable connector;
     // TODO: support multiple incoming routers (just a single outgoing router) to simplify router migrations
     RouterLike public immutable router;
-    AdminLike public immutable pauseAdmin;
-    DelayedAdminLike public immutable delayedAdmin;
 
     /// --- Events ---
     event Rely(address indexed user);
@@ -71,17 +59,19 @@ contract ConnectorGateway {
     event Pause();
     event Unpause();
 
-    constructor(address connector_, address router_, address pauseAdmin_, address delayedAdmin_, uint256 shortScheduleWait_, uint256 longScheduleWait_, uint256 gracePeriod_) {
+    constructor(address connector_, address router_, address pauseAdmin_, address delayedAdmin, uint256 shortScheduleWait_, uint256 longScheduleWait_, uint256 gracePeriod_) {
         connector = ConnectorLike(connector_);
         router = RouterLike(router_);
         SHORT_SCHEDULE_WAIT = shortScheduleWait_;
         LONG_SCHEDULE_WAIT = longScheduleWait_;
         GRACE_PERIOD = gracePeriod_;
-        pauseAdmin = AdminLike(pauseAdmin_);
-        delayedAdmin = DelayedAdminLike(delayedAdmin_);
 
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
+        wards[pauseAdmin_] = 1;
+        emit Rely(pauseAdmin_);
+        wards[delayedAdmin] = 1;
+        emit Rely(delayedAdmin);
     }
 
     modifier auth() {
@@ -104,21 +94,6 @@ contract ConnectorGateway {
         _;
     }
 
-    modifier onlyPauseAdmin() {
-        require(msg.sender == address(pauseAdmin), "ConnectorGateway/not-pause-admin");
-        _;
-    }
-
-    modifier onlyDelayedAdmin() {
-        require(msg.sender == address(delayedAdmin), "ConnectorGateway/not-delayed-admin");
-        _;
-    }
-
-    modifier onlyAdmins() {
-        require(msg.sender == address(delayedAdmin) || msg.sender == address(pauseAdmin), "ConnectorGateway/not-admin");
-        _;
-    }
-
     // --- Administration ---
     function rely(address user) external auth {
         wards[user] = 1;
@@ -130,12 +105,12 @@ contract ConnectorGateway {
         emit Deny(user);
     }
 
-    function pause() external onlyPauseAdmin {
+    function pause() external auth {
         paused = true;
         emit Pause();
     }
 
-    function unpause() external onlyPauseAdmin {
+    function unpause() external auth {
         paused = false;
         emit Unpause();
     }
@@ -145,12 +120,12 @@ contract ConnectorGateway {
         emit RelyScheduledShort(user, relySchedule[user]);
     }
 
-    function scheduleLongRely(address user) external onlyDelayedAdmin {
+    function scheduleLongRely(address user) external auth {
         relySchedule[user] = block.timestamp + LONG_SCHEDULE_WAIT;
         emit RelyScheduledLong(user, relySchedule[user]);
     }
 
-    function cancelSchedule(address user) external onlyAdmins {
+    function cancelSchedule(address user) external auth {
         relySchedule[user] = 0;
         emit RelyCancelled(user);
     }
