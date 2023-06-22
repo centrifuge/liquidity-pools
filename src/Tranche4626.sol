@@ -51,7 +51,7 @@ contract Tranche4626 is RestrictedToken {
     event Deposit(address indexed sender, address indexed owner, uint256 assets, uint256 shares);
     event Withdraw(address indexed sender, address indexed receiver, address indexed owner, uint256 assets, uint256 shares);
     
-    constructor(address _asset, address _connector, uint8 _decimals, string memory _name, string memory _symbol) super(decimals) {
+    constructor(address _asset, address _connector, uint8 _decimals, string memory _name, string memory _symbol) RestrictedToken(_decimals) {
         name = _name;
         symbol = _symbol;
         asset = _asset;
@@ -84,7 +84,7 @@ contract Tranche4626 is RestrictedToken {
         return connector.maxDeposit(_receiver, address(this));
     }
 
-    /// @return The amount of shares that any user would get for an amount of assets provided -> convertToShares
+    /// @return shares that any user would get for an amount of assets provided -> convertToShares
     function previewDeposit(uint256 _assets) public view returns (uint256 shares) {
         shares = convertToShares(_assets);
     }
@@ -113,7 +113,7 @@ contract Tranche4626 is RestrictedToken {
         return connector.maxMint(_receiver, address(this));
     }
 
-    /// @return The amount of assets that any user would get for an amount of shares provided -> convertToAssets
+    /// @return assets that any user would get for an amount of shares provided -> convertToAssets
     function previewMint(uint256 _shares) external view returns (uint256 assets) {
         assets = convertToAssets(_shares);
     }
@@ -123,13 +123,12 @@ contract Tranche4626 is RestrictedToken {
         connector.requestRedeem(address(this), _receiver, _shares);
     }
 
-    /// @dev  
-    /// @return
+    /// @return maxAssets that the receiver can withdraw
     function maxWithdraw(address _receiver) public view returns (uint256 maxAssets) {
         return connector.maxWithdraw(_receiver, address(this));
     }
     
-    /// @return The amount of shares a user would need to redeem in order to receive the given amount of assets -> convertToAssets
+    /// @return shares that a user would need to redeem in order to receive the given amount of assets -> convertToAssets
     function previewWithdraw(uint256 _assets) public view returns (uint256 shares) {
         shares = convertToShares(_assets);
     }
@@ -148,7 +147,7 @@ contract Tranche4626 is RestrictedToken {
     }
 
     
-    /// @return The amount of assets that any user could redeem for an given amount of shares -> convertToAssets
+    /// @return assets that any user could redeem for an given amount of shares -> convertToAssets
     function previewRedeem(uint256 _shares) public view returns (uint256 assets) {
         assets = convertToAssets(_shares);
     }
