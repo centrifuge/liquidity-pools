@@ -47,8 +47,7 @@ contract AdminTest is Test {
         centChainConnector = new MockHomeConnector(address(mockXcmRouter));
         pauseAdmin = new ConnectorPauseAdmin();
         delayedAdmin = new ConnectorDelayedAdmin();
-        gateway =
-        new ConnectorGateway(address(connector), address(mockXcmRouter), shortWait, longWait, gracePeriod);
+        gateway = new ConnectorGateway(address(connector), address(mockXcmRouter), shortWait, longWait, gracePeriod);
         gateway.rely(address(pauseAdmin));
         gateway.rely(address(delayedAdmin));
         connector.file("gateway", address(gateway));

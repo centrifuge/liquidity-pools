@@ -37,7 +37,7 @@ contract ConnectorAxelarScript is Script {
         ConnectorPauseAdmin pauseAdmin = new ConnectorPauseAdmin();
         ConnectorDelayedAdmin delayedAdmin = new ConnectorDelayedAdmin();
         ConnectorGateway gateway =
-        new ConnectorGateway{ salt: SALT }(address(connector), address(router), shortWait, longWait, gracePeriod);
+            new ConnectorGateway{ salt: SALT }(address(connector), address(router), shortWait, longWait, gracePeriod);
         gateway.rely(address(pauseAdmin));
         gateway.rely(address(delayedAdmin));
         pauseAdmin.file("gateway", address(gateway));
