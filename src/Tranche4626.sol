@@ -26,12 +26,12 @@ interface ConnectorLike {
     function processDeposit(address _tranche, address _receiver, uint256 _assets) external returns (uint256);
     function processMint(address _tranche, address _receiver, uint256 _shares) external returns (uint256);
     function processWithdraw(address _tranche, uint256 _assets, address _receiver, address _owner) external returns (uint256);
-    function maxDeposit(address _user, address _tranche) external returns (uint256);
-    function maxMint(address _user, address _tranche) external returns (uint256);
-    function maxWithdraw(address _user, address _tranche) external returns (uint256);
-    function maxRedeem(address _user, address _tranche) external returns (uint256);
-    function requestRedeem(uint256 _shares, address _receiver) external;
-    function requestDeposit(uint256 _assets, address _receiver) external;
+    function maxDeposit(address _user, address _tranche) external  view returns (uint256);
+    function maxMint(address _user, address _tranche) external  view returns (uint256);
+    function maxWithdraw(address _user, address _tranche) external view returns (uint256);
+    function maxRedeem(address _user, address _tranche) external view returns (uint256);
+    function requestRedeem(address _tranche, uint256 _shares, address _receiver) external;
+    function requestDeposit(address _tranche, uint256 _assets, address _receiver) external;
     
 }
 
@@ -64,7 +64,7 @@ contract Tranche4626 is RestrictedToken {
     /// @dev The total amount of vault shares.
     /// @return Total amount of the underlying vault assets including accrued interest.
     function totalAssets() public view returns (uint256) {
-       return totalSupply() * latestPrice; 
+       return totalSupply * latestPrice; 
     }
 
     /// @dev Calculates the amount of shares / tranche tokens that any user would get for the amount of assets provided. The calcultion is based on the token price from the most recent epoch retrieved from Centrifuge chain.
@@ -91,26 +91,26 @@ contract Tranche4626 is RestrictedToken {
 
     /// @dev request asset deposit for a receiver to be included in the next epoch execution. Asset is locked in the escrow on request submission.
     function requestDeposit(uint256 _assets, address _receiver) auth public {
-        connector.requestDeposit(address(this), _receiver, _assets);
+        connector.requestDeposit(address(this), _assets, _receiver);
     }
 
     /// @dev collect shares for deposited funds after pool epoch execution. maxMint is the max amount of shares that can be collected. Required assets must already be locked.
     /// maxDeposit is the amount of funds that was successfully invested into the pool on Centrifuge chain
     function deposit(uint256 _assets, address _receiver)  auth public returns (uint256 shares) {
-        uint transferredShares = connector.processDeposit(address(this), _receiver, _assets);
-        Deposit(address(this), _receiver, _assets, transferredShares);
+        shares = connector.processDeposit(address(this), _receiver, _assets);
+        emit Deposit(address(this), _receiver, _assets, shares);
     }
 
     /// @dev collect shares for deposited funds after pool epoch execution. maxMint is the max amount of shares that can be collected. Required assets must already be locked.
     /// maxDeposit is the amount of funds that was successfully invested into the pool on Centrifuge chain
     function mint(uint256 _shares, address _receiver) auth public returns (uint256 assets) {
-      uint lockedAssets = connector.processMint(address(this), _receiver, _shares); 
-      Deposit(address(this), _receiver, lockedAssets, _shares);
+        assets = connector.processMint(address(this), _receiver, _shares); 
+        emit Deposit(address(this), _receiver, assets, _shares);
     }
 
     /// @dev Maximum amount of shares that can be claimed by the receiver after the epoch has been executed on the Centrifuge chain side.
     function maxMint(address _receiver) external view returns (uint256 maxShares) {
-        return connector.maxMint(_receiver, address(this));
+         maxShares = connector.maxMint(_receiver, address(this));
     }
 
     /// @return assets that any user would get for an amount of shares provided -> convertToAssets
@@ -120,7 +120,7 @@ contract Tranche4626 is RestrictedToken {
 
     /// @dev request share redemption for a receiver to be included in the next epoch execution. Shares are locked in the escrow on request submission.
     function requestRedeem(uint256 _shares, address _receiver) auth public {
-        connector.requestRedeem(address(this), _receiver, _shares);
+        connector.requestRedeem(address(this), _shares, _receiver);
     }
 
     /// @return maxAssets that the receiver can withdraw
@@ -137,13 +137,13 @@ contract Tranche4626 is RestrictedToken {
     /// @return shares that have been redeemed for the excat _assets amount
     function withdraw(uint256 _assets, address _receiver, address _owner) auth public returns (uint256 shares) {
         uint sharesRedeemed = connector.processWithdraw(address(this), _assets, _receiver, _owner);
-        Withdraw(address(this), _receiver, _owner, _assets, sharesRedeemed);
+        emit Withdraw(address(this), _receiver, _owner, _assets, sharesRedeemed);
         return sharesRedeemed;
     }
 
     /// @dev Max amount of shares that can be redeemed by the owner after redemption was requested
-    function maxRedeem(address owner) public view returns (uint256 maxShares) {
-         return connector.maxRedeem(owner, address(this));
+    function maxRedeem(address _owner) public view returns (uint256 maxShares) {
+         return connector.maxRedeem(_owner, address(this));
     }
 
     
@@ -156,7 +156,7 @@ contract Tranche4626 is RestrictedToken {
     /// @return assets currency payout for the exact amount of redeemed _shares
     function redeem(uint256 _shares, address _receiver, address _owner) auth public returns (uint256 assets) {
         uint currencyPayout = connector.processWithdraw(address(this), _shares, _receiver, _owner);
-        Withdraw(address(this), _receiver, _owner, currencyPayout, _shares);
+        emit Withdraw(address(this), _receiver, _owner, currencyPayout, _shares);
         return currencyPayout;
     }
 
