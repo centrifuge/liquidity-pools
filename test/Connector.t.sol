@@ -12,8 +12,8 @@ import {MemberlistLike, Memberlist} from "src/token/memberlist.sol";
 import {MockHomeConnector} from "./mock/MockHomeConnector.sol";
 import {MockXcmRouter} from "./mock/MockXcmRouter.sol";
 import {ConnectorMessages} from "../src/Messages.sol";
-import {ConnectorPauseAdmin} from "../src/PauseAdmin.sol";
-import {ConnectorDelayedAdmin} from "../src/DelayedAdmin.sol";
+import {ConnectorPauseAdmin} from "../src/admin/PauseAdmin.sol";
+import {ConnectorDelayedAdmin} from "../src/admin/DelayedAdmin.sol";
 import "forge-std/Test.sol";
 import "../src/Connector.sol";
 
@@ -46,7 +46,9 @@ contract ConnectorTest is Test {
         ConnectorDelayedAdmin delayedAdmin = new ConnectorDelayedAdmin();
 
         gateway =
-        new ConnectorGateway(address(bridgedConnector), address(mockXcmRouter), address(pauseAdmin), address(delayedAdmin), shortWait, longWait, gracePeriod);
+        new ConnectorGateway(address(bridgedConnector), address(mockXcmRouter), shortWait, longWait, gracePeriod);
+        gateway.rely(address(pauseAdmin));
+        gateway.rely(address(delayedAdmin));
         pauseAdmin.file("gateway", address(gateway));
         delayedAdmin.file("gateway", address(gateway));
         bridgedConnector.file("gateway", address(gateway));

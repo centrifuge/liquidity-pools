@@ -5,8 +5,8 @@ import {ConnectorAxelarRouter} from "src/routers/axelar/Router.sol";
 import {ConnectorGateway} from "src/routers/Gateway.sol";
 import {CentrifugeConnector} from "src/Connector.sol";
 import {ConnectorEscrow} from "src/Escrow.sol";
-import {ConnectorPauseAdmin} from "src/PauseAdmin.sol";
-import {ConnectorDelayedAdmin} from "src/DelayedAdmin.sol";
+import {ConnectorPauseAdmin} from "src/admin/PauseAdmin.sol";
+import {ConnectorDelayedAdmin} from "src/admin/DelayedAdmin.sol";
 import {TrancheTokenFactory, MemberlistFactory} from "src/token/factory.sol";
 import "forge-std/Script.sol";
 
@@ -37,7 +37,9 @@ contract ConnectorAxelarScript is Script {
         ConnectorPauseAdmin pauseAdmin = new ConnectorPauseAdmin();
         ConnectorDelayedAdmin delayedAdmin = new ConnectorDelayedAdmin();
         ConnectorGateway gateway =
-        new ConnectorGateway{ salt: SALT }(address(connector), address(router), address(pauseAdmin), address(delayedAdmin), shortWait, longWait, gracePeriod);
+        new ConnectorGateway{ salt: SALT }(address(connector), address(router), shortWait, longWait, gracePeriod);
+        gateway.rely(address(pauseAdmin));
+        gateway.rely(address(delayedAdmin));
         pauseAdmin.file("gateway", address(gateway));
         delayedAdmin.file("gateway", address(gateway));
         router.file("gateway", address(gateway));

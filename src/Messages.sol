@@ -39,8 +39,8 @@ library ConnectorMessages {
         CollectInvest,
         /// 14 - Collect Redeem
         CollectRedeem,
-        /// 15 - Schedule a spell to be relied on gateway (Admin only)
-        ScheduleAddAdmin
+        /// 15 - Add a new admin
+        AddAdmin
     }
 
     enum Domain {
@@ -558,16 +558,16 @@ library ConnectorMessages {
         investor = bytes32(_msg.index(25, 32));
     }
 
-    function formatScheduleAddAdmin(address spell) internal pure returns (bytes memory) {
-        return abi.encodePacked(uint8(Call.ScheduleAddAdmin), spell);
+    function formatAddAdmin(address user) internal pure returns (bytes memory) {
+        return abi.encodePacked(uint8(Call.AddAdmin), user);
     }
 
-    function isScheduleAddAdmin(bytes29 _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.ScheduleAddAdmin;
+    function isAddAdmin(bytes29 _msg) internal pure returns (bool) {
+        return messageType(_msg) == Call.AddAdmin;
     }
 
-    function parseScheduleAddAdmin(bytes29 _msg) internal pure returns (address spell) {
-        spell = address(bytes20(_msg.index(1, 20)));
+    function parseAddAdmin(bytes29 _msg) internal pure returns (address user) {
+        user = address(bytes20(_msg.index(1, 20)));
     }
 
     // Utils

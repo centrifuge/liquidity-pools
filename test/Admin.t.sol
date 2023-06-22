@@ -5,8 +5,8 @@ pragma abicoder v2;
 import {CentrifugeConnector} from "src/Connector.sol";
 import {ConnectorGateway} from "src/routers/Gateway.sol";
 import {ConnectorEscrow} from "src/Escrow.sol";
-import {ConnectorPauseAdmin} from "src/PauseAdmin.sol";
-import {ConnectorDelayedAdmin} from "src/DelayedAdmin.sol";
+import {ConnectorPauseAdmin} from "src/admin/PauseAdmin.sol";
+import {ConnectorDelayedAdmin} from "src/admin/DelayedAdmin.sol";
 import {TrancheTokenFactory, MemberlistFactory} from "src/token/factory.sol";
 import {RestrictedTokenLike} from "src/token/restricted.sol";
 import {ERC20} from "src/token/erc20.sol";
@@ -48,7 +48,9 @@ contract AdminTest is Test {
         pauseAdmin = new ConnectorPauseAdmin();
         delayedAdmin = new ConnectorDelayedAdmin();
         gateway =
-        new ConnectorGateway(address(connector), address(mockXcmRouter), address(pauseAdmin), address(delayedAdmin), shortWait, longWait, gracePeriod);
+        new ConnectorGateway(address(connector), address(mockXcmRouter), shortWait, longWait, gracePeriod);
+        gateway.rely(address(pauseAdmin));
+        gateway.rely(address(delayedAdmin));
         connector.file("gateway", address(gateway));
         pauseAdmin.file("gateway", address(gateway));
         delayedAdmin.file("gateway", address(gateway));
@@ -175,7 +177,7 @@ contract AdminTest is Test {
         address spell = vm.addr(1);
         delayedAdmin.schedule(spell);
         vm.warp(block.timestamp + longWait + 1 hours);
-        gateway.relySpell(spell);
+        gateway.executeScheduledRely(spell);
         assertEq(gateway.wards(spell), 1);
     }
 
@@ -184,15 +186,15 @@ contract AdminTest is Test {
         delayedAdmin.schedule(spell);
         vm.warp(block.timestamp + longWait - 1 hours);
         vm.expectRevert("ConnectorGateway/user-not-ready");
-        gateway.relySpell(spell);
+        gateway.executeScheduledRely(spell);
     }
 
     function testLongRelyFailsAfterGracePeriod() public {
         address spell = vm.addr(1);
         delayedAdmin.schedule(spell);
-        vm.warp(block.timestamp + longWait + gateway.GRACE_PERIOD());
+        vm.warp(block.timestamp + longWait + gateway.gracePeriod());
         vm.expectRevert("ConnectorGateway/user-too-old");
-        gateway.relySpell(spell);
+        gateway.executeScheduledRely(spell);
     }
 
     function testCancellingScheduleWorks() public {
@@ -203,7 +205,7 @@ contract AdminTest is Test {
         assertEq(gateway.relySchedule(spell), 0);
         vm.warp(block.timestamp + longWait + 1 hours);
         vm.expectRevert("ConnectorGateway/user-not-scheduled");
-        gateway.relySpell(spell);
+        gateway.executeScheduledRely(spell);
     }
 
     function testUnauthorizedCancelFails() public {
@@ -220,7 +222,7 @@ contract AdminTest is Test {
         address spell = vm.addr(1);
         centChainConnector.incomingScheduleRely(spell);
         vm.warp(block.timestamp + shortWait + 1 hours);
-        gateway.relySpell(spell);
+        gateway.executeScheduledRely(spell);
         assertEq(gateway.wards(spell), 1);
     }
 
@@ -229,15 +231,15 @@ contract AdminTest is Test {
         centChainConnector.incomingScheduleRely(spell);
         vm.warp(block.timestamp + shortWait - 1 hours);
         vm.expectRevert("ConnectorGateway/user-not-ready");
-        gateway.relySpell(spell);
+        gateway.executeScheduledRely(spell);
     }
 
     function testShortRelyFailsAfterGracePeriod() public {
         address spell = vm.addr(1);
         centChainConnector.incomingScheduleRely(spell);
-        vm.warp(block.timestamp + shortWait + gateway.GRACE_PERIOD());
+        vm.warp(block.timestamp + shortWait + gateway.gracePeriod());
         vm.expectRevert("ConnectorGateway/user-too-old");
-        gateway.relySpell(spell);
+        gateway.executeScheduledRely(spell);
     }
 
     //------ helpers ------//

@@ -40,9 +40,10 @@ contract ConnectorGateway {
 
     mapping(address => uint256) public wards;
     mapping(address => uint256) public relySchedule;
-    uint256 public immutable SHORT_SCHEDULE_WAIT;
-    uint256 public immutable LONG_SCHEDULE_WAIT;
-    uint256 public immutable GRACE_PERIOD;
+    uint256 public immutable shortScheduleWait;
+    uint256 public immutable longScheduleWait;
+    // gracePeriod is the time after a user is scheduled to be relied that they can still be relied
+    uint256 public immutable gracePeriod;
     bool public paused = false;
 
     ConnectorLike public immutable connector;
@@ -62,24 +63,18 @@ contract ConnectorGateway {
     constructor(
         address connector_,
         address router_,
-        address pauseAdmin_,
-        address delayedAdmin,
         uint256 shortScheduleWait_,
         uint256 longScheduleWait_,
         uint256 gracePeriod_
     ) {
         connector = ConnectorLike(connector_);
         router = RouterLike(router_);
-        SHORT_SCHEDULE_WAIT = shortScheduleWait_;
-        LONG_SCHEDULE_WAIT = longScheduleWait_;
-        GRACE_PERIOD = gracePeriod_;
+        shortScheduleWait = shortScheduleWait_;
+        longScheduleWait = longScheduleWait_;
+        gracePeriod = gracePeriod_;
 
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
-        wards[pauseAdmin_] = 1;
-        emit Rely(pauseAdmin_);
-        wards[delayedAdmin] = 1;
-        emit Rely(delayedAdmin);
     }
 
     modifier auth() {
@@ -124,12 +119,12 @@ contract ConnectorGateway {
     }
 
     function scheduleShortRely(address user) internal {
-        relySchedule[user] = block.timestamp + SHORT_SCHEDULE_WAIT;
+        relySchedule[user] = block.timestamp + shortScheduleWait;
         emit RelyScheduledShort(user, relySchedule[user]);
     }
 
     function scheduleLongRely(address user) external auth {
-        relySchedule[user] = block.timestamp + LONG_SCHEDULE_WAIT;
+        relySchedule[user] = block.timestamp + longScheduleWait;
         emit RelyScheduledLong(user, relySchedule[user]);
     }
 
@@ -138,10 +133,10 @@ contract ConnectorGateway {
         emit RelyCancelled(user);
     }
 
-    function relySpell(address user) public {
+    function executeScheduledRely(address user) public {
         require(relySchedule[user] != 0, "ConnectorGateway/user-not-scheduled");
         require(relySchedule[user] < block.timestamp, "ConnectorGateway/user-not-ready");
-        require(relySchedule[user] + GRACE_PERIOD > block.timestamp, "ConnectorGateway/user-too-old");
+        require(relySchedule[user] + gracePeriod > block.timestamp, "ConnectorGateway/user-too-old");
         relySchedule[user] = 0;
         wards[user] = 1;
         emit Rely(user);
@@ -280,8 +275,8 @@ contract ConnectorGateway {
             (uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 amount) =
                 ConnectorMessages.parseTransferTrancheTokens20(_msg);
             connector.handleTransferTrancheTokens(poolId, trancheId, destinationAddress, amount);
-        } else if (ConnectorMessages.isScheduleAddAdmin(_msg)) {
-            address spell = ConnectorMessages.parseScheduleAddAdmin(_msg);
+        } else if (ConnectorMessages.isAddAdmin(_msg)) {
+            address spell = ConnectorMessages.parseAddAdmin(_msg);
             scheduleShortRely(spell);
         } else {
             revert("ConnectorGateway/invalid-message");

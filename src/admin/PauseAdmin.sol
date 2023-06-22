@@ -2,7 +2,7 @@
 pragma solidity ^0.8.18;
 pragma abicoder v2;
 
-import {ConnectorGateway} from "./routers/Gateway.sol";
+import {ConnectorGateway} from "../routers/Gateway.sol";
 
 contract ConnectorPauseAdmin {
     ConnectorGateway public gateway;

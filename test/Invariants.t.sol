@@ -11,8 +11,8 @@ import {ConnectorGateway} from "src/routers/Gateway.sol";
 import {TrancheTokenFactory, MemberlistFactory} from "src/token/factory.sol";
 import {InvariantPoolManager} from "./accounts/PoolManager.sol";
 import {InvariantInvestor} from "./accounts/InvestorManager.sol";
-import {ConnectorPauseAdmin} from "src/PauseAdmin.sol";
-import {ConnectorDelayedAdmin} from "src/DelayedAdmin.sol";
+import {ConnectorPauseAdmin} from "src/admin/PauseAdmin.sol";
+import {ConnectorDelayedAdmin} from "src/admin/DelayedAdmin.sol";
 import "forge-std/Test.sol";
 import "../src/Connector.sol";
 
@@ -40,7 +40,9 @@ contract ConnectorInvariants is Test {
         ConnectorPauseAdmin pauseAdmin = new ConnectorPauseAdmin();
         ConnectorDelayedAdmin delayedAdmin = new ConnectorDelayedAdmin();
         gateway =
-        new ConnectorGateway(address(bridgedConnector), address(mockXcmRouter), address(pauseAdmin), address(delayedAdmin), shortWait, longWait, gracePeriod);
+        new ConnectorGateway(address(bridgedConnector), address(mockXcmRouter), shortWait, longWait, gracePeriod);
+        gateway.rely(address(pauseAdmin));
+        gateway.rely(address(delayedAdmin));
         pauseAdmin.file("gateway", address(gateway));
         delayedAdmin.file("gateway", address(gateway));
 
