@@ -38,7 +38,9 @@ library ConnectorMessages {
         /// 13 - Collect investment
         CollectInvest,
         /// 14 - Collect Redeem
-        CollectRedeem
+        CollectRedeem,
+        /// 15 - Add a new admin
+        AddAdmin
     }
 
     enum Domain {
@@ -554,6 +556,18 @@ library ConnectorMessages {
         poolId = uint64(_msg.indexUint(1, 8));
         trancheId = bytes16(_msg.index(9, 16));
         investor = bytes32(_msg.index(25, 32));
+    }
+
+    function formatAddAdmin(address user) internal pure returns (bytes memory) {
+        return abi.encodePacked(uint8(Call.AddAdmin), user);
+    }
+
+    function isAddAdmin(bytes29 _msg) internal pure returns (bool) {
+        return messageType(_msg) == Call.AddAdmin;
+    }
+
+    function parseAddAdmin(bytes29 _msg) internal pure returns (address user) {
+        user = address(bytes20(_msg.index(1, 20)));
     }
 
     // Utils

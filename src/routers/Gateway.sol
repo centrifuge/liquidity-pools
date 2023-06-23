@@ -28,6 +28,10 @@ interface RouterLike {
     function send(bytes memory message) external;
 }
 
+interface AuthLike {
+    function rely(address usr) external;
+}
+
 contract ConnectorGateway {
     using TypedMemView for bytes;
     // why bytes29? - https://github.com/summa-tx/memview-sol#why-bytes29
@@ -35,6 +39,12 @@ contract ConnectorGateway {
     using ConnectorMessages for bytes29;
 
     mapping(address => uint256) public wards;
+    mapping(address => uint256) public relySchedule;
+    uint256 public immutable shortScheduleWait;
+    uint256 public immutable longScheduleWait;
+    // gracePeriod is the time after a user is scheduled to be relied that they can still be relied
+    uint256 public immutable gracePeriod;
+    bool public paused = false;
 
     ConnectorLike public immutable connector;
     // TODO: support multiple incoming routers (just a single outgoing router) to simplify router migrations
@@ -44,10 +54,24 @@ contract ConnectorGateway {
     event Rely(address indexed user);
     event Deny(address indexed user);
     event File(bytes32 indexed what, address addr);
+    event RelyScheduledShort(address indexed spell, uint256 indexed scheduledTime);
+    event RelyScheduledLong(address indexed spell, uint256 indexed scheduledTime);
+    event RelyCancelled(address indexed spell);
+    event Pause();
+    event Unpause();
 
-    constructor(address connector_, address router_) {
+    constructor(
+        address connector_,
+        address router_,
+        uint256 shortScheduleWait_,
+        uint256 longScheduleWait_,
+        uint256 gracePeriod_
+    ) {
         connector = ConnectorLike(connector_);
         router = RouterLike(router_);
+        shortScheduleWait = shortScheduleWait_;
+        longScheduleWait = longScheduleWait_;
+        gracePeriod = gracePeriod_;
 
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
@@ -68,6 +92,11 @@ contract ConnectorGateway {
         _;
     }
 
+    modifier pauseable() {
+        require(!paused, "ConnectorGateway/paused");
+        _;
+    }
+
     // --- Administration ---
     function rely(address user) external auth {
         wards[user] = 1;
@@ -79,6 +108,44 @@ contract ConnectorGateway {
         emit Deny(user);
     }
 
+    function pause() external auth {
+        paused = true;
+        emit Pause();
+    }
+
+    function unpause() external auth {
+        paused = false;
+        emit Unpause();
+    }
+
+    function scheduleShortRely(address user) internal {
+        relySchedule[user] = block.timestamp + shortScheduleWait;
+        emit RelyScheduledShort(user, relySchedule[user]);
+    }
+
+    function scheduleLongRely(address user) external auth {
+        relySchedule[user] = block.timestamp + longScheduleWait;
+        emit RelyScheduledLong(user, relySchedule[user]);
+    }
+
+    function cancelSchedule(address user) external auth {
+        relySchedule[user] = 0;
+        emit RelyCancelled(user);
+    }
+
+    function executeScheduledRely(address user) public {
+        require(relySchedule[user] != 0, "ConnectorGateway/user-not-scheduled");
+        require(relySchedule[user] < block.timestamp, "ConnectorGateway/user-not-ready");
+        require(relySchedule[user] + gracePeriod > block.timestamp, "ConnectorGateway/user-too-old");
+        relySchedule[user] = 0;
+        wards[user] = 1;
+        emit Rely(user);
+    }
+
+    function relyContract(address target, address user) public auth {
+        AuthLike(target).rely(user);
+    }
+
     // --- Outgoing ---
     function transferTrancheTokensToCentrifuge(
         uint64 poolId,
@@ -86,7 +153,7 @@ contract ConnectorGateway {
         address sender,
         bytes32 destinationAddress,
         uint128 amount
-    ) public onlyConnector {
+    ) public onlyConnector pauseable {
         router.send(
             ConnectorMessages.formatTransferTrancheTokens(
                 poolId,
@@ -106,7 +173,7 @@ contract ConnectorGateway {
         uint64 destinationChainId,
         address destinationAddress,
         uint128 amount
-    ) public onlyConnector {
+    ) public onlyConnector pauseable {
         router.send(
             ConnectorMessages.formatTransferTrancheTokens(
                 poolId,
@@ -119,13 +186,14 @@ contract ConnectorGateway {
         );
     }
 
-    function transfer(uint128 token, address sender, bytes32 receiver, uint128 amount) public onlyConnector {
+    function transfer(uint128 token, address sender, bytes32 receiver, uint128 amount) public onlyConnector pauseable {
         router.send(ConnectorMessages.formatTransfer(token, addressToBytes32(sender), receiver, amount));
     }
 
     function increaseInvestOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount)
         public
         onlyConnector
+        pauseable
     {
         router.send(
             ConnectorMessages.formatIncreaseInvestOrder(poolId, trancheId, addressToBytes32(investor), currency, amount)
@@ -135,6 +203,7 @@ contract ConnectorGateway {
     function decreaseInvestOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount)
         public
         onlyConnector
+        pauseable
     {
         router.send(
             ConnectorMessages.formatDecreaseInvestOrder(poolId, trancheId, addressToBytes32(investor), currency, amount)
@@ -144,6 +213,7 @@ contract ConnectorGateway {
     function increaseRedeemOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount)
         public
         onlyConnector
+        pauseable
     {
         router.send(
             ConnectorMessages.formatIncreaseRedeemOrder(poolId, trancheId, addressToBytes32(investor), currency, amount)
@@ -153,22 +223,23 @@ contract ConnectorGateway {
     function decreaseRedeemOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount)
         public
         onlyConnector
+        pauseable
     {
         router.send(
             ConnectorMessages.formatDecreaseRedeemOrder(poolId, trancheId, addressToBytes32(investor), currency, amount)
         );
     }
 
-    function collectInvest(uint64 poolId, bytes16 trancheId, address investor) public onlyConnector {
+    function collectInvest(uint64 poolId, bytes16 trancheId, address investor) public onlyConnector pauseable {
         router.send(ConnectorMessages.formatCollectInvest(poolId, trancheId, addressToBytes32(investor)));
     }
 
-    function collectRedeem(uint64 poolId, bytes16 trancheId, address investor) public onlyConnector {
+    function collectRedeem(uint64 poolId, bytes16 trancheId, address investor) public onlyConnector pauseable {
         router.send(ConnectorMessages.formatCollectRedeem(poolId, trancheId, addressToBytes32(investor)));
     }
 
     // --- Incoming ---
-    function handle(bytes memory _message) external onlyRouter {
+    function handle(bytes memory _message) external onlyRouter pauseable {
         bytes29 _msg = _message.ref(0);
 
         if (ConnectorMessages.isAddCurrency(_msg)) {
@@ -204,6 +275,9 @@ contract ConnectorGateway {
             (uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 amount) =
                 ConnectorMessages.parseTransferTrancheTokens20(_msg);
             connector.handleTransferTrancheTokens(poolId, trancheId, destinationAddress, amount);
+        } else if (ConnectorMessages.isAddAdmin(_msg)) {
+            address spell = ConnectorMessages.parseAddAdmin(_msg);
+            scheduleShortRely(spell);
         } else {
             revert("ConnectorGateway/invalid-message");
         }

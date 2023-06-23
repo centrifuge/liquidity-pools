@@ -12,6 +12,8 @@ import {MemberlistLike, Memberlist} from "src/token/memberlist.sol";
 import {MockHomeConnector} from "./mock/MockHomeConnector.sol";
 import {MockXcmRouter} from "./mock/MockXcmRouter.sol";
 import {ConnectorMessages} from "../src/Messages.sol";
+import {ConnectorPauseAdmin} from "../src/admin/PauseAdmin.sol";
+import {ConnectorDelayedAdmin} from "../src/admin/DelayedAdmin.sol";
 import "forge-std/Test.sol";
 import "../src/Connector.sol";
 
@@ -28,6 +30,9 @@ contract ConnectorTest is Test {
 
     function setUp() public {
         vm.chainId(1);
+        uint256 shortWait = 24 hours;
+        uint256 longWait = 48 hours;
+        uint256 gracePeriod = 48 hours;
         address escrow_ = address(new ConnectorEscrow());
         address tokenFactory_ = address(new TrancheTokenFactory());
         address memberlistFactory_ = address(new MemberlistFactory());
@@ -37,10 +42,20 @@ contract ConnectorTest is Test {
         mockXcmRouter = new MockXcmRouter(address(bridgedConnector));
 
         connector = new MockHomeConnector(address(mockXcmRouter));
-        gateway = new ConnectorGateway(address(bridgedConnector), address(mockXcmRouter));
+        ConnectorPauseAdmin pauseAdmin = new ConnectorPauseAdmin();
+        ConnectorDelayedAdmin delayedAdmin = new ConnectorDelayedAdmin();
+
+        gateway =
+            new ConnectorGateway(address(bridgedConnector), address(mockXcmRouter), shortWait, longWait, gracePeriod);
+        gateway.rely(address(pauseAdmin));
+        gateway.rely(address(delayedAdmin));
+        pauseAdmin.file("gateway", address(gateway));
+        delayedAdmin.file("gateway", address(gateway));
         bridgedConnector.file("gateway", address(gateway));
         EscrowLike_(escrow_).rely(address(bridgedConnector));
         mockXcmRouter.file("gateway", address(gateway));
+        bridgedConnector.rely(address(gateway));
+        ConnectorEscrow(escrow_).rely(address(gateway));
     }
 
     function testAddCurrencyWorks(uint128 currency, uint128 badCurrency) public {
