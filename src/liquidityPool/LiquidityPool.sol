@@ -12,7 +12,7 @@ pragma solidity ^0.8.18;
 // Latest Tranche values, like share / token price, tranche asset value, total assets... have to be retrieved from Centrifuge chain in order to provide share <-> asset conversions.
 // 2. Pool Epochs: Deposits into and redemptions from Centrifuge Pools are subject to epochs. Deposit and redemption orders are collected during 24H epoch periods
 // and filled during epoch execution following the rules of the underlying pool. Consequently, deposits and redemptions are not instanty possible and have to follow the epoch schedule. 
-// Tranche4626 is extending the EIP4626 standard by 'requestRedeem' & 'requestDeposit' functions, where redeem and deposit orders are submitted to the pools to be included in the execution of the following epoch.
+// LiquidityPool is extending the EIP4626 standard by 'requestRedeem' & 'requestDeposit' functions, where redeem and deposit orders are submitted to the pools to be included in the execution of the following epoch.
 // After execution users can use the redeem and withdraw functions to get their shares and/or assets from the pools.
 
 // other EIP4626 implementations
@@ -20,14 +20,15 @@ pragma solidity ^0.8.18;
 // yearn: https://github.com/yearn/yearn-vaults-v3/blob/master/contracts/VaultV3.vy
 
 
-import "./token/restricted.sol";
+import "../token/restricted.sol";
+import { Memberlist } from "../token/memberlist.sol";
 
 interface ConnectorLike {
     function processDeposit(address _tranche, address _receiver, uint256 _assets) external returns (uint256);
     function processMint(address _tranche, address _receiver, uint256 _shares) external returns (uint256);
     function processWithdraw(address _tranche, uint256 _assets, address _receiver, address _owner) external returns (uint256);
-    function maxDeposit(address _user, address _tranche) external  view returns (uint256);
-    function maxMint(address _user, address _tranche) external  view returns (uint256);
+    function maxDeposit(address _user, address _tranche) external view returns (uint256);
+    function maxMint(address _user, address _tranche) external view returns (uint256);
     function maxWithdraw(address _user, address _tranche) external view returns (uint256);
     function maxRedeem(address _user, address _tranche) external view returns (uint256);
     function requestRedeem(address _tranche, uint256 _shares, address _receiver) external;
@@ -35,47 +36,47 @@ interface ConnectorLike {
     
 }
 
-/// @title Tranche4626
+/// @title LiquidityPool
 /// @author ilinzweilin
-contract Tranche4626 is RestrictedToken {
+contract LiquidityPool is RestrictedToken {
 
     ConnectorLike public connector;
 
-    address public asset; // underlying stable ERC-20 stable currency.
-    uint256 public maxAssetDeposit = 2 ** 256 - 1; // max stable currency deposit into the tranche -> default: no limit.
+    address public asset; // underlying stable ERC-20 stable currency
+    uint256 public maxAssetDeposit = 2 ** 256 - 1; // max stable currency deposit into the tranche -> default: no limit
 
     uint128 latestPrice; // lates share / token price 
     uint256 lastPriceUpdate; // timestamp of the latest share / token price update
    
-    // ERC4626 events
+    // events
     event Deposit(address indexed sender, address indexed owner, uint256 assets, uint256 shares);
     event Withdraw(address indexed sender, address indexed receiver, address indexed owner, uint256 assets, uint256 shares);
+    event File(bytes32 indexed what, address indexed data);
     
-    constructor(address _asset, address _connector, uint8 _decimals, string memory _name, string memory _symbol) RestrictedToken(_decimals) {
-        name = _name;
-        symbol = _symbol;
-        asset = _asset;
-        connector = ConnectorLike(_connector);
+    constructor(uint8 _decimals) RestrictedToken(_decimals) {}
 
-        wards[_connector] = 1;
-        emit Rely(msg.sender);
+    /// @dev connector and asset address to be filed by the factory on deployment
+    function file(bytes32 _what, address _data) override public auth {
+        if (_what == "connector") connector = ConnectorLike(_data);
+        else if (_what == "asset") asset = _data;
+        else if (_what == "memberlist") memberlist = MemberlistLike(_data);
+        else revert("LiquidityPool/file-unrecognized-param");
+        emit File(_what, _data);
     }
 
-    /// @dev The total amount of vault shares.
-    /// @return Total amount of the underlying vault assets including accrued interest.
+    /// @dev The total amount of vault shares
+    /// @return Total amount of the underlying vault assets including accrued interest
     function totalAssets() public view returns (uint256) {
        return totalSupply * latestPrice; 
     }
 
     /// @dev Calculates the amount of shares / tranche tokens that any user would get for the amount of assets provided. The calcultion is based on the token price from the most recent epoch retrieved from Centrifuge chain.
     function convertToShares(uint256 _assets) public view returns (uint256 shares) {
-        // TODO: it should round DOWN if it’s calculating the amount of shares to issue to a user, given an amount of assets provided.
         shares = _assets / latestPrice;
     }
 
     /// @dev Calculates the asset value for an amount of shares / tranche tokens provided. The calcultion is based on the token price from the most recent epoch retrieved from Centrifuge chain.
     function convertToAssets(uint256 _shares) public view returns (uint256 assets) {
-        // TODO: it should round DOWN if it’s calculating the amount of assets to issue to a user, given an amount of shares provided.
         assets = _shares * latestPrice;
     }
 
@@ -89,19 +90,19 @@ contract Tranche4626 is RestrictedToken {
         shares = convertToShares(_assets);
     }
 
-    /// @dev request asset deposit for a receiver to be included in the next epoch execution. Asset is locked in the escrow on request submission.
+    /// @dev request asset deposit for a receiver to be included in the next epoch execution. Asset is locked in the escrow on request submission
     function requestDeposit(uint256 _assets, address _receiver) auth public {
         connector.requestDeposit(address(this), _assets, _receiver);
     }
 
-    /// @dev collect shares for deposited funds after pool epoch execution. maxMint is the max amount of shares that can be collected. Required assets must already be locked.
+    /// @dev collect shares for deposited funds after pool epoch execution. maxMint is the max amount of shares that can be collected. Required assets must already be locked
     /// maxDeposit is the amount of funds that was successfully invested into the pool on Centrifuge chain
     function deposit(uint256 _assets, address _receiver)  auth public returns (uint256 shares) {
         shares = connector.processDeposit(address(this), _receiver, _assets);
         emit Deposit(address(this), _receiver, _assets, shares);
     }
 
-    /// @dev collect shares for deposited funds after pool epoch execution. maxMint is the max amount of shares that can be collected. Required assets must already be locked.
+    /// @dev collect shares for deposited funds after pool epoch execution. maxMint is the max amount of shares that can be collected. Required assets must already be locked
     /// maxDeposit is the amount of funds that was successfully invested into the pool on Centrifuge chain
     function mint(uint256 _shares, address _receiver) auth public returns (uint256 assets) {
         assets = connector.processMint(address(this), _receiver, _shares); 
@@ -118,7 +119,7 @@ contract Tranche4626 is RestrictedToken {
         assets = convertToAssets(_shares);
     }
 
-    /// @dev request share redemption for a receiver to be included in the next epoch execution. Shares are locked in the escrow on request submission.
+    /// @dev request share redemption for a receiver to be included in the next epoch execution. Shares are locked in the escrow on request submission
     function requestRedeem(uint256 _shares, address _receiver) auth public {
         connector.requestRedeem(address(this), _shares, _receiver);
     }
@@ -159,7 +160,6 @@ contract Tranche4626 is RestrictedToken {
         emit Withdraw(address(this), _receiver, _owner, currencyPayout, _shares);
         return currencyPayout;
     }
-
 
     // auth functions
     function updateTokenPrice(uint128 _tokenPrice) public auth {
