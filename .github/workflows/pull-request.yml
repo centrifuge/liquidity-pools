@@ -3,7 +3,7 @@ name: pull-request
 on: [pull_request]
 
 env:
-  FOUNDRY_PROFILE: ci
+  FOUNDRY_PROFILE: pull_request
 
 jobs:
   test:
