@@ -47,11 +47,14 @@ contract LiquidityPool is RestrictedToken {
 
     uint128 latestPrice; // lates share / token price 
     uint256 lastPriceUpdate; // timestamp of the latest share / token price update
+
+    // centrifuge chain pool and tranche details
+    uint64 public poolId;
+    bytes16 public trancheId;
    
     // events
     event Deposit(address indexed sender, address indexed owner, uint256 assets, uint256 shares);
     event Withdraw(address indexed sender, address indexed receiver, address indexed owner, uint256 assets, uint256 shares);
-    event File(bytes32 indexed what, address indexed data);
     
     constructor(uint8 _decimals) RestrictedToken(_decimals) {}
 
@@ -62,6 +65,13 @@ contract LiquidityPool is RestrictedToken {
         else if (_what == "memberlist") memberlist = MemberlistLike(_data);
         else revert("LiquidityPool/file-unrecognized-param");
         emit File(_what, _data);
+    }
+
+    /// @dev Centrifuge chain pool information to be files by factory on deployment
+    function setPoolDetails(uint64 _poolId, bytes16 _trancheId) public auth {
+        require(poolId == 0, "LiquidityPool/pool-details-already-set");
+        poolId = _poolId;
+        trancheId = _trancheId;
     }
 
     /// @dev The total amount of vault shares
