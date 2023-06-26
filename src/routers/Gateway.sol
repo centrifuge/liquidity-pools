@@ -22,6 +22,40 @@ interface ConnectorLike {
     function handleTransfer(uint128 currency, address recipient, uint128 amount) external;
     function handleTransferTrancheTokens(uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 amount)
         external;
+    function handleExecutedDecreaseInvestOrder(
+        uint64 poolId,
+        bytes16 trancheId,
+        bytes32 investor,
+        uint128 currency,
+        uint128 currencyPayout,
+        uint128 remainingInvestOrder
+    ) external;
+    function handleExecutedDecreaseRedeemOrder(
+        uint64 poolId,
+        bytes16 trancheId,
+        bytes32 investor,
+        uint128 currency,
+        uint128 trancheTokenPayouts,
+        uint128 remainingRedeemOrder
+    ) external;
+    function handleExecutedCollectInvest(
+        uint64 poolId,
+        bytes16 trancheId,
+        bytes32 investor,
+        uint128 currency,
+        uint128 currencyPayout,
+        uint128 trancheTokensPayout,
+        uint128 remainingInvestOrder
+    ) external;
+    function handleExecutedCollectRedeem(
+        uint64 poolId,
+        bytes16 trancheId,
+        bytes32 investor,
+        uint128 currency,
+        uint128 currencyPayout,
+        uint128 trancheTokensPayout,
+        uint128 remainingRedeemOrder
+    ) external;
 }
 
 interface RouterLike {
