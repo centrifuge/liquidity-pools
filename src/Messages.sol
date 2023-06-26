@@ -581,8 +581,8 @@ library ConnectorMessages {
                 trancheId,
                 investor,
                 currency,
-                currency_payout,
-                remaining_invest_order
+                currencyPayout,
+                remainingInvestOrder
             );
     }
 
