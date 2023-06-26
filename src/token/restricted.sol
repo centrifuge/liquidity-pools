@@ -41,7 +41,7 @@ contract RestrictedToken is ERC20 {
     }
 
     // --- Administration ---
-    function file(bytes32 what, address data) external auth {
+    function file(bytes32 what, address data) external virtual auth {
         if (what == "memberlist") memberlist = MemberlistLike(data);
         else revert("file-unrecognized-param");
         emit File(what, data);

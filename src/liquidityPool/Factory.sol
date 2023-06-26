@@ -30,6 +30,7 @@ contract LiquidityPoolFactory {
         lPool.file("symbol", _symbol);
         lPool.file("connector", _connector);
         lPool.file("asset", _asset);
+        lPool.setPoolDetails(_poolId, _trancheId);
 
 
         lPool.deny(msg.sender);
