@@ -75,6 +75,7 @@ struct Tranche {
     string tokenName;
     string tokenSymbol;
     uint8 decimals;
+    address[] liquidityPools; 
  }
 
 /// @dev storing liquidity pool orders and deposit/redemption limits for a user 
@@ -447,20 +448,27 @@ contract CentrifugeConnector is Auth {
         emit TrancheAdded(_poolId, _trancheId);
     }
  
-    // TODO: updateTokenPrice for all the liquiditypools without providing currency 
-    // function updateTokenPrice(uint64 _poolId, bytes16 _trancheId, uint128 _price) public onlyGateway {
-    //     address lPool = liquidityPools[_poolId][_trancheId][_currency];
-    //     require(lPool != address(0), "CentrifugeConnector/invalid-pool-or-tranche");
-    //     LiquidityPoolLike(lPool).updateTokenPrice(_price);
-    // }
+    function updateTokenPrice(uint64 _poolId, bytes16 _trancheId, uint128 _price) public onlyGateway {
+        Tranche storage tranche = tranches[_poolId][_trancheId];
+        require(tranche.createdAt > 0, "CentrifugeConnector/invalid-pool-or-tranche");
+        for (uint i=0; i<tranche.liquidityPools.length; i++) {
+            address lPool = tranche.liquidityPools[i];
+            require(lPool != address(0), "CentrifugeConnector/invalid-liquidity-pool");
+            LiquidityPoolLike(lPool).updateTokenPrice(_price);
+        }
+    }
 
-    // // TODO: updateTokenPrice for all the liquiditypools without providing currency 
-    // function updateMember(uint64 _poolId, bytes16 _trancheId, address _user, uint64 _validUntil) public onlyGateway {
-    //     LiquidityPoolLike tranche = LiquidityPoolLike(liquidityPools[_poolId][_trancheId]);
-    //     require(address(tranche) != address(0), "CentrifugeConnector/invalid-pool-or-tranche");
-    //     MemberlistLike memberlist = MemberlistLike(tranche.memberlist());
-    //     memberlist.updateMember(_user, _validUntil);
-    // }
+    function updateMember(uint64 _poolId, bytes16 _trancheId, address _user, uint64 _validUntil) public onlyGateway {
+        Tranche storage tranche = tranches[_poolId][_trancheId];
+        require(tranche.createdAt > 0, "CentrifugeConnector/invalid-pool-or-tranche");
+        for (uint i=0; i<tranche.liquidityPools.length; i++) {
+            address lPool_ = tranche.liquidityPools[i];
+            require(lPool_ != address(0), "CentrifugeConnector/invalid-liquidity-pool");
+            LiquidityPoolLike lPool = LiquidityPoolLike(lPool_);
+            MemberlistLike memberlist = MemberlistLike(lPool.memberlist());
+            memberlist.updateMember(_user, _validUntil);
+        }
+    }
 
     function handleTransfer(uint128 currency, address recipient, uint128 amount) public onlyGateway {
         address currencyAddress = currencyIdToAddress[currency];
@@ -563,6 +571,7 @@ contract CentrifugeConnector is Auth {
          // gateway admin on liquidityPool
         liquidityPool = liquidityPoolFactory.newLiquidityPool(_poolId, _trancheId, currencyId, _currency, address(this), address(gateway), tranche.tokenName, tranche.tokenSymbol, tranche.decimals);
         liquidityPools[_poolId][_trancheId][_currency] = liquidityPool;
+        tranche.liquidityPools.push(liquidityPool);
 
         address memberlist = memberlistFactory.newMemberlist(address(gateway)); // gateway admin on memberlist
         LiquidityPoolLike(liquidityPool).file("memberlist", memberlist);
