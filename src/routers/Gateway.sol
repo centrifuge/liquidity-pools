@@ -275,6 +275,56 @@ contract ConnectorGateway {
             (uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 amount) =
                 ConnectorMessages.parseTransferTrancheTokens20(_msg);
             connector.handleTransferTrancheTokens(poolId, trancheId, destinationAddress, amount);
+        } else if (ConnectorMessages.isExecutedDecreaseInvestOrder(_msg)) {
+            (
+                uint64 poolId,
+                bytes16 trancheId,
+                bytes32 investor,
+                uint128 currency,
+                uint128 currencyPayout,
+                uint128 remainingInvestOrder
+            ) = ConnectorMessages.parseExecutedDecreaseInvestOrder(_msg);
+            connector.handleExecutedDecreaseInvestOrder(
+                poolId, trancheId, investor, currency, currencyPayout, remainingInvestOrder
+            );
+        } else if (ConnectorMessages.isExecutedDecreaseRedeemOrder(_msg)) {
+            (
+                uint64 poolId,
+                bytes16 trancheId,
+                bytes32 investor,
+                uint128 currency,
+                uint128 trancheTokenPayouts,
+                uint128 remainingRedeemOrder
+            ) = ConnectorMessages.parseExecutedDecreaseRedeemOrder(_msg);
+            connector.handleExecutedDecreaseRedeemOrder(
+                poolId, trancheId, investor, currency, trancheTokenPayouts, remainingRedeemOrder
+            );
+        } else if (ConnectorMessages.isExecutedCollectInvest(_msg)) {
+            (
+                uint64 poolId,
+                bytes16 trancheId,
+                bytes32 investor,
+                uint128 currency,
+                uint128 currencyPayout,
+                uint128 trancheTokensPayout,
+                uint128 remainingInvestOrder
+            ) = ConnectorMessages.parseExecutedCollectInvest(_msg);
+            connector.handleExecutedCollectInvest(
+                poolId, trancheId, investor, currency, currencyPayout, trancheTokensPayout, remainingInvestOrder
+            );
+        } else if (ConnectorMessages.isExecutedCollectRedeem(_msg)) {
+            (
+                uint64 poolId,
+                bytes16 trancheId,
+                bytes32 investor,
+                uint128 currency,
+                uint128 currencyPayout,
+                uint128 trancheTokensPayout,
+                uint128 remainingRedeemOrder
+            ) = ConnectorMessages.parseExecutedCollectRedeem(_msg);
+            connector.handleExecutedCollectRedeem(
+                poolId, trancheId, investor, currency, currencyPayout, trancheTokensPayout, remainingRedeemOrder
+            );
         } else if (ConnectorMessages.isAddAdmin(_msg)) {
             address spell = ConnectorMessages.parseAddAdmin(_msg);
             scheduleShortRely(spell);
