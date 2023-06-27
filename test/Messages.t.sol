@@ -726,6 +726,7 @@ contract MessagesTest is Test {
             ),
             expectedHex
         );
+        // separate asserts into two functions to avoid stack too deep error
         testParseExecutedCollectInvestPart1(expectedHex, poolId, trancheId, investor, currency);
         testParseExecutedCollectInvestPart2(expectedHex, currencyInvested, trancheTokensPayout, remainingInvestOrder);
     }
@@ -772,6 +773,7 @@ contract MessagesTest is Test {
         bytes memory _message = ConnectorMessages.formatExecutedCollectInvest(
             poolId, trancheId, investor, currency, currencyInvested, trancheTokensPayout, remainingInvestOrder
         );
+        // separate asserts into two functions to avoid stack too deep error
         testParseExecutedCollectInvestPart1(_message, poolId, trancheId, investor, currency);
         testParseExecutedCollectInvestPart2(_message, currencyInvested, trancheTokensPayout, remainingInvestOrder);
     }
@@ -794,7 +796,7 @@ contract MessagesTest is Test {
             ),
             expectedHex
         );
-
+        // separate asserts into two functions to avoid stack too deep error
         testParseExecutedCollectRedeemPart1(expectedHex, poolId, trancheId, investor, currency);
         testParseExecutedCollectRedeemPart2(expectedHex, currencyPayout, trancheTokensRedeemed, remainingRedeemOrder);
     }
@@ -811,6 +813,7 @@ contract MessagesTest is Test {
         bytes memory _message = ConnectorMessages.formatExecutedCollectRedeem(
             poolId, trancheId, investor, currency, currencyPayout, trancheTokensRedeemed, remainingRedeemOrder
         );
+        // separate asserts into two functions to avoid stack too deep error
         testParseExecutedCollectRedeemPart1(_message, poolId, trancheId, investor, currency);
         testParseExecutedCollectRedeemPart2(_message, currencyPayout, trancheTokensRedeemed, remainingRedeemOrder);
     }
