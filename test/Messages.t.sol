@@ -585,6 +585,266 @@ contract MessagesTest is Test {
         assertEq(decodedUser, user);
     }
 
+    function testExecutedDecreaseInvestOrder() public {
+        uint64 poolId = 12378532;
+        bytes16 trancheId = bytes16(hex"811acd5b3f17c06841c7e41e9e04cb1b");
+        bytes32 investor = bytes32(0x1231231231231231231231231231231231231231000000000000000000000000);
+        uint128 currency = 246803579;
+        uint128 currencyPayout = 50000000000000000000000000;
+        uint128 remainingInvestOrder = 200000000000000000000000000;
+        bytes memory expectedHex =
+            hex"0f0000000000bce1a4811acd5b3f17c06841c7e41e9e04cb1b12312312312312312312312312312312312312310000000000000000000000000000000000000000000000000eb5ec7b0000000000295be96e640669720000000000000000a56fa5b99019a5c8000000";
+
+        assertEq(
+            ConnectorMessages.formatExecutedDecreaseInvestOrder(
+                poolId, trancheId, investor, currency, currencyPayout, remainingInvestOrder
+            ),
+            expectedHex
+        );
+
+        (
+            uint64 decodedPoolId,
+            bytes16 decodedTrancheId,
+            bytes32 decodedInvestor,
+            uint128 decodedCurrency,
+            uint128 decodedCurrencyPayout,
+            uint128 decodedRemainingInvestOrder
+        ) = ConnectorMessages.parseExecutedDecreaseInvestOrder(expectedHex.ref(0));
+        assertEq(uint256(decodedPoolId), poolId);
+        assertEq(decodedTrancheId, trancheId);
+        assertEq(decodedInvestor, investor);
+        assertEq(decodedCurrency, currency);
+        assertEq(decodedCurrencyPayout, currencyPayout);
+        assertEq(decodedRemainingInvestOrder, remainingInvestOrder);
+    }
+
+    function testExecutedDecreaseInvestOrderEquivalence(
+        uint64 poolId,
+        bytes16 trancheId,
+        bytes32 investor,
+        uint128 currency,
+        uint128 currencyPayout,
+        uint128 remainingInvestOrder
+    ) public {
+        bytes memory _message = ConnectorMessages.formatExecutedDecreaseInvestOrder(
+            poolId, trancheId, investor, currency, currencyPayout, remainingInvestOrder
+        );
+        (
+            uint64 decodedPoolId,
+            bytes16 decodedTrancheId,
+            bytes32 decodedInvestor,
+            uint128 decodedCurrency,
+            uint128 decodedCurrencyPayout,
+            uint128 decodedRemainingInvestOrder
+        ) = ConnectorMessages.parseExecutedDecreaseInvestOrder(_message.ref(0));
+
+        assertEq(uint256(decodedPoolId), uint256(poolId));
+        assertEq(decodedTrancheId, trancheId);
+        assertEq(decodedInvestor, investor);
+        assertEq(decodedCurrency, currency);
+        assertEq(decodedCurrencyPayout, currencyPayout);
+        assertEq(decodedRemainingInvestOrder, remainingInvestOrder);
+    }
+
+    function testExecutedDecreaseRedeemOrder() public {
+        uint64 poolId = 12378532;
+        bytes16 trancheId = bytes16(hex"811acd5b3f17c06841c7e41e9e04cb1b");
+        bytes32 investor = bytes32(0x1231231231231231231231231231231231231231000000000000000000000000);
+        uint128 currency = 246803579;
+        uint128 currencyPayout = 50000000000000000000000000;
+        uint128 remainingRedeemOrder = 200000000000000000000000000;
+
+        bytes memory expectedHex =
+            hex"100000000000bce1a4811acd5b3f17c06841c7e41e9e04cb1b12312312312312312312312312312312312312310000000000000000000000000000000000000000000000000eb5ec7b0000000000295be96e640669720000000000000000a56fa5b99019a5c8000000";
+
+        assertEq(
+            ConnectorMessages.formatExecutedDecreaseRedeemOrder(
+                poolId, trancheId, investor, currency, currencyPayout, remainingRedeemOrder
+            ),
+            expectedHex
+        );
+
+        (
+            uint64 decodedPoolId,
+            bytes16 decodedTrancheId,
+            bytes32 decodedInvestor,
+            uint128 decodedCurrency,
+            uint128 decodedCurrencyPayout,
+            uint128 decodedRemainingRedeemOrder
+        ) = ConnectorMessages.parseExecutedDecreaseRedeemOrder(expectedHex.ref(0));
+        assertEq(uint256(decodedPoolId), poolId);
+        assertEq(decodedTrancheId, trancheId);
+        assertEq(decodedInvestor, investor);
+        assertEq(decodedCurrency, currency);
+        assertEq(decodedCurrencyPayout, currencyPayout);
+        assertEq(decodedRemainingRedeemOrder, remainingRedeemOrder);
+    }
+
+    function testExecutedDecreaseRedeemOrderEquivalence(
+        uint64 poolId,
+        bytes16 trancheId,
+        bytes32 investor,
+        uint128 currency,
+        uint128 currencyPayout,
+        uint128 remainingRedeemOrder
+    ) public {
+        bytes memory _message = ConnectorMessages.formatExecutedDecreaseRedeemOrder(
+            poolId, trancheId, investor, currency, currencyPayout, remainingRedeemOrder
+        );
+        (
+            uint64 decodedPoolId,
+            bytes16 decodedTrancheId,
+            bytes32 decodedInvestor,
+            uint128 decodedCurrency,
+            uint128 decodedCurrencyPayout,
+            uint128 decodedRemainingRedeemOrder
+        ) = ConnectorMessages.parseExecutedDecreaseRedeemOrder(_message.ref(0));
+
+        assertEq(uint256(decodedPoolId), uint256(poolId));
+        assertEq(decodedTrancheId, trancheId);
+        assertEq(decodedInvestor, investor);
+        assertEq(decodedCurrency, currency);
+        assertEq(decodedCurrencyPayout, currencyPayout);
+        assertEq(decodedRemainingRedeemOrder, remainingRedeemOrder);
+    }
+
+    function testExecutedCollectInvest() public {
+        uint64 poolId = 12378532;
+        bytes16 trancheId = bytes16(hex"811acd5b3f17c06841c7e41e9e04cb1b");
+        bytes32 investor = bytes32(0x1231231231231231231231231231231231231231000000000000000000000000);
+        uint128 currency = 246803579;
+        uint128 currencyInvested = 100000000000000000000000000;
+        uint128 trancheTokensPayout = 50000000000000000000000000;
+        uint128 remainingInvestOrder = 300000000000000000000000000;
+
+        bytes memory expectedHex =
+            hex"110000000000bce1a4811acd5b3f17c06841c7e41e9e04cb1b12312312312312312312312312312312312312310000000000000000000000000000000000000000000000000eb5ec7b000000000052b7d2dcc80cd2e40000000000000000295be96e640669720000000000000000f8277896582678ac000000";
+
+        assertEq(
+            ConnectorMessages.formatExecutedCollectInvest(
+                poolId, trancheId, investor, currency, currencyInvested, trancheTokensPayout, remainingInvestOrder
+            ),
+            expectedHex
+        );
+        testParseExecutedCollectInvestPart1(expectedHex, poolId, trancheId, investor, currency);
+        testParseExecutedCollectInvestPart2(expectedHex, currencyInvested, trancheTokensPayout, remainingInvestOrder);
+    }
+
+    function testParseExecutedCollectInvestPart1(
+        bytes memory expectedHex,
+        uint64 poolId,
+        bytes16 trancheId,
+        bytes32 investor,
+        uint128 currency
+    ) internal {
+        (uint64 decodedPoolId, bytes16 decodedTrancheId, bytes32 decodedInvestor, uint128 decodedCurrency,,,) =
+            ConnectorMessages.parseExecutedCollectInvest(expectedHex.ref(0));
+
+        assertEq(decodedPoolId, poolId);
+        assertEq(decodedTrancheId, trancheId);
+        assertEq(decodedInvestor, investor);
+        assertEq(decodedCurrency, currency);
+    }
+
+    function testParseExecutedCollectInvestPart2(
+        bytes memory expectedHex,
+        uint128 currencyInvested,
+        uint128 trancheTokensPayout,
+        uint128 remainingInvestOrder
+    ) internal {
+        (,,,, uint128 decodedCurrencyInvested, uint128 decodedTrancheTokensPayout, uint128 decodedRemainingInvestOrder)
+        = ConnectorMessages.parseExecutedCollectInvest(expectedHex.ref(0));
+
+        assertEq(decodedCurrencyInvested, currencyInvested);
+        assertEq(decodedTrancheTokensPayout, trancheTokensPayout);
+        assertEq(decodedRemainingInvestOrder, remainingInvestOrder);
+    }
+
+    function testExecutedCollectInvestEquivalence(
+        uint64 poolId,
+        bytes16 trancheId,
+        bytes32 investor,
+        uint128 currency,
+        uint128 currencyInvested,
+        uint128 trancheTokensPayout,
+        uint128 remainingInvestOrder
+    ) public {
+        bytes memory _message = ConnectorMessages.formatExecutedCollectInvest(
+            poolId, trancheId, investor, currency, currencyInvested, trancheTokensPayout, remainingInvestOrder
+        );
+        testParseExecutedCollectInvestPart1(_message, poolId, trancheId, investor, currency);
+        testParseExecutedCollectInvestPart2(_message, currencyInvested, trancheTokensPayout, remainingInvestOrder);
+    }
+
+    function testExecutedCollectRedeem() public {
+        uint64 poolId = 12378532;
+        bytes16 trancheId = bytes16(hex"811acd5b3f17c06841c7e41e9e04cb1b");
+        bytes32 investor = bytes32(0x1231231231231231231231231231231231231231000000000000000000000000);
+        uint128 currency = 246803579;
+        uint128 currencyPayout = 100000000000000000000000000;
+        uint128 trancheTokensRedeemed = 50000000000000000000000000;
+        uint128 remainingRedeemOrder = 300000000000000000000000000;
+
+        bytes memory expectedHex =
+            hex"120000000000bce1a4811acd5b3f17c06841c7e41e9e04cb1b12312312312312312312312312312312312312310000000000000000000000000000000000000000000000000eb5ec7b000000000052b7d2dcc80cd2e40000000000000000295be96e640669720000000000000000f8277896582678ac000000";
+
+        assertEq(
+            ConnectorMessages.formatExecutedCollectRedeem(
+                poolId, trancheId, investor, currency, currencyPayout, trancheTokensRedeemed, remainingRedeemOrder
+            ),
+            expectedHex
+        );
+
+        testParseExecutedCollectRedeemPart1(expectedHex, poolId, trancheId, investor, currency);
+        testParseExecutedCollectRedeemPart2(expectedHex, currencyPayout, trancheTokensRedeemed, remainingRedeemOrder);
+    }
+
+    function testExecutedCollectRedeemEquivalence(
+        uint64 poolId,
+        bytes16 trancheId,
+        bytes32 investor,
+        uint128 currency,
+        uint128 currencyPayout,
+        uint128 trancheTokensRedeemed,
+        uint128 remainingRedeemOrder
+    ) public {
+        bytes memory _message = ConnectorMessages.formatExecutedCollectRedeem(
+            poolId, trancheId, investor, currency, currencyPayout, trancheTokensRedeemed, remainingRedeemOrder
+        );
+        testParseExecutedCollectRedeemPart1(_message, poolId, trancheId, investor, currency);
+        testParseExecutedCollectRedeemPart2(_message, currencyPayout, trancheTokensRedeemed, remainingRedeemOrder);
+    }
+
+    function testParseExecutedCollectRedeemPart1(
+        bytes memory expectedHex,
+        uint64 poolId,
+        bytes16 trancheId,
+        bytes32 investor,
+        uint128 currency
+    ) internal {
+        (uint64 decodedPoolId, bytes16 decodedTrancheId, bytes32 decodedInvestor, uint128 decodedCurrency,,,) =
+            ConnectorMessages.parseExecutedCollectRedeem(expectedHex.ref(0));
+
+        assertEq(decodedPoolId, poolId);
+        assertEq(decodedTrancheId, trancheId);
+        assertEq(decodedInvestor, investor);
+        assertEq(decodedCurrency, currency);
+    }
+
+    function testParseExecutedCollectRedeemPart2(
+        bytes memory expectedHex,
+        uint128 currencyPayout,
+        uint128 trancheTokensRedeemed,
+        uint128 remainingRedeemOrder
+    ) internal {
+        (,,,, uint128 decodedCurrencyPayout, uint128 decodedTrancheTokensRedeemed, uint128 decodedRemainingRedeemOrder) =
+            ConnectorMessages.parseExecutedCollectRedeem(expectedHex.ref(0));
+
+        assertEq(decodedCurrencyPayout, currencyPayout);
+        assertEq(decodedTrancheTokensRedeemed, trancheTokensRedeemed);
+        assertEq(decodedRemainingRedeemOrder, remainingRedeemOrder);
+    }
+
     function testFormatDomainCentrifuge() public {
         assertEq(ConnectorMessages.formatDomain(ConnectorMessages.Domain.Centrifuge), hex"000000000000000000");
     }
