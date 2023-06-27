@@ -38,7 +38,9 @@ library ConnectorMessages {
         /// 13 - Collect investment
         CollectInvest,
         /// 14 - Collect Redeem
-        CollectRedeem
+        CollectRedeem,
+        /// 15 - Add a new admin
+        AddAdmin
     }
 
     enum Domain {
@@ -177,18 +179,21 @@ library ConnectorMessages {
      * 25-45: user (Ethereum address, 20 bytes - Skip 12 bytes from 32-byte addresses)
      * 57-65: validUntil (uint64 = 8 bytes)
      *
-     * TODO: use bytes32 for user (for non-EVM compatibility)
      */
-    function formatUpdateMember(uint64 poolId, bytes16 trancheId, address user, uint64 validUntil)
+    function formatUpdateMember(uint64 poolId, bytes16 trancheId, address member, uint64 validUntil)
         internal
         pure
         returns (bytes memory)
     {
-        // NOTE: Since parseUpdateMember parses the first 20 bytes of `user` and skips the following 12
-        // here we need to append 12 zeros to make it right. Drop once we support 32-byte addresses.
-        return abi.encodePacked(
-            uint8(Call.UpdateMember), poolId, trancheId, user, bytes(hex"000000000000000000000000"), validUntil
-        );
+        return formatUpdateMember(poolId, trancheId, bytes32(bytes20(member)), validUntil);
+    }
+
+    function formatUpdateMember(uint64 poolId, bytes16 trancheId, bytes32 member, uint64 validUntil)
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(uint8(Call.UpdateMember), poolId, trancheId, member, validUntil);
     }
 
     function isUpdateMember(bytes29 _msg) internal pure returns (bool) {
@@ -296,11 +301,12 @@ library ConnectorMessages {
         bytes16 trancheId,
         bytes32 sender,
         bytes9 destinationDomain,
+        uint128 currencyId,
         bytes32 destinationAddress,
         uint128 amount
     ) internal pure returns (bytes memory) {
         return abi.encodePacked(
-            uint8(Call.TransferTrancheTokens), poolId, trancheId, sender, destinationDomain, destinationAddress, amount
+            uint8(Call.TransferTrancheTokens), poolId, trancheId, sender, destinationDomain, currencyId, destinationAddress, amount
         );
     }
 
@@ -313,11 +319,12 @@ library ConnectorMessages {
         bytes16 trancheId,
         bytes32 sender,
         bytes9 destinationDomain,
+        uint128 currencyId,
         address destinationAddress,
         uint128 amount
     ) internal pure returns (bytes memory) {
         return formatTransferTrancheTokens(
-            poolId, trancheId, sender, destinationDomain, bytes32(bytes20(destinationAddress)), amount
+            poolId, trancheId, sender, destinationDomain, currencyId, bytes32(bytes20(destinationAddress)), amount
         );
     }
 
@@ -334,6 +341,7 @@ library ConnectorMessages {
             bytes16 trancheId,
             bytes32 sender,
             bytes9 encodedDomain,
+            uint128 currencyId,
             bytes32 destinationAddress,
             uint128 amount
         )
@@ -342,8 +350,9 @@ library ConnectorMessages {
         trancheId = bytes16(_msg.index(9, 16));
         sender = bytes32(_msg.index(25, 32));
         encodedDomain = bytes9(_msg.index(57, 9));
-        destinationAddress = bytes32(_msg.index(66, 32));
-        amount = uint128(_msg.indexUint(98, 16));
+        currencyId = uint128(_msg.indexUint(66, 16));
+        destinationAddress = bytes32((_msg.index(83, 20)));
+        amount = uint128(_msg.indexUint(104, 16));
     }
 
     // Parse a TransferTrancheTokens to an EVM-based `destinationAddress` (20-byte long).
@@ -351,55 +360,18 @@ library ConnectorMessages {
     function parseTransferTrancheTokens20(bytes29 _msg)
         internal
         pure
-        returns (uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 amount)
+        returns (uint64 poolId, bytes16 trancheId, uint128 currencyId, address destinationAddress, uint128 amount)
     {
         poolId = uint64(_msg.indexUint(1, 8));
         trancheId = bytes16(_msg.index(9, 16));
+       
         // ignore: `sender` at bytes 25-56
         // ignore: `domain` at bytes 57-65
-        destinationAddress = address(bytes20(_msg.index(66, 20)));
-        amount = uint128(_msg.indexUint(98, 16));
+        currencyId = uint128(_msg.indexUint(66, 16));
+        destinationAddress = address(bytes20(_msg.index(83, 20)));
+        amount = uint128(_msg.indexUint(104, 16));
     }
 
-//     function parseCollectRedeem(bytes29 _msg) 
-//     internal
-//         pure
-//         returns (uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 currency, uint128 currencyPayout, uint128 tokensRedeemed, uint128 remainingRedeemOrder) {}
-
-//     function isCollectRedeem(bytes29 _msg) 
-//     internal
-//         pure
-//         returns (uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 currency, uint128 currencyPayout, uint128 tokensRedeemed, uint128 remainingRedeemOrder) {}
-
-//     function parseCollectInvest(bytes29 _msg) 
-//     internal
-//         pure
-//         returns (uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 currency, uint128 currencyInvested, uint128 tokensPayout, uint128 remainingInvestOrder){}
-
-//     function isCollectInvest(bytes29 _msg) 
-//     internal
-//         pure
-//         returns (uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 currency, uint128 currencyInvested, uint128 tokensPayout, uint128 remainingInvestOrder){}
-
-//     function parseDecreaseInvestOrder(bytes29 _msg) 
-//     internal
-//         pure
-//         returns (uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 currency, uint128 currencyPayout, uint128 remainingInvestOrder){}
-
-//     function isDecreaseInvestOrder(bytes29 _msg) 
-//     internal
-//         pure
-//         returns (uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 currency, uint128 currencyPayout, uint128 remainingInvestOrder){}
-
-//    function parseDecreaseRedeemOrder(bytes29 _msg) 
-//     internal
-//         pure
-//         returns (uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 currency, uint128 currencyPayout, uint128 remainingInvestOrder){}
-
-//     function isDecreaseRedeemOrder(bytes29 _msg)     
-//     internal
-//         pure
-//         returns (uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 currency, uint128 currencyPayout, uint128 remainingInvestOrder){}
 
     /*
      * IncreaseInvestOrder Message
@@ -591,6 +563,18 @@ library ConnectorMessages {
         poolId = uint64(_msg.indexUint(1, 8));
         trancheId = bytes16(_msg.index(9, 16));
         investor = bytes32(_msg.index(25, 32));
+    }
+
+    function formatAddAdmin(address user) internal pure returns (bytes memory) {
+        return abi.encodePacked(uint8(Call.AddAdmin), user);
+    }
+
+    function isAddAdmin(bytes29 _msg) internal pure returns (bool) {
+        return messageType(_msg) == Call.AddAdmin;
+    }
+
+    function parseAddAdmin(bytes29 _msg) internal pure returns (address user) {
+        user = address(bytes20(_msg.index(1, 20)));
     }
 
     // Utils

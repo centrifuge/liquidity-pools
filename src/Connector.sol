@@ -4,8 +4,8 @@ pragma abicoder v2;
 
 import { LiquidityPoolFactoryLike, MemberlistFactoryLike } from "./liquidityPool/Factory.sol";
 import { LiquidityPool } from "./liquidityPool/LiquidityPool.sol";
-import {ERC20Like} from "./token/restricted.sol";
-import {MemberlistLike} from "./token/memberlist.sol";
+import { ERC20Like } from "./token/restricted.sol";
+import { MemberlistLike } from "./token/memberlist.sol";
 import "./auth/auth.sol";
 
 interface GatewayLike {
@@ -35,7 +35,7 @@ interface GatewayLike {
         external;
     function collectInvest(uint64 poolId, bytes16 trancheId, address investor) external;
     function collectRedeem(uint64 poolId, bytes16 trancheId, address investor) external;
-    function active() external returns(bool);
+    function paused() external returns(bool);
 }
 
 interface LiquidityPoolLike {
@@ -93,6 +93,7 @@ contract CentrifugeConnector is Auth {
     mapping(uint64 => Pool) public pools; // pools on Centrifuge chain
 
     mapping(uint64 => mapping(bytes16 => mapping(address => address))) public liquidityPools; // Centrifuge chain tranche -> currency -> liquidity pool address // Todo: add currency
+    mapping(address => uint) public liquidityPoolWards; // liquidityPools that are allowed to call invest/redeem functions 
     mapping(uint64 => mapping(bytes16 => Tranche)) public tranches; // Centrifuge chain tranches
    
    // mapping(address => Tranche) public tranches; // liquidityPool -> Centrifuge chain tranches 
@@ -128,21 +129,31 @@ contract CentrifugeConnector is Auth {
         emit Rely(msg.sender);
     }
 
+    // --- Getters --- 
+    function getLiquidityPoolsForTranche(uint64 _poolId, bytes16 _trancheId) public view returns (address[] memory liquidityPools) {
+      liquidityPools = tranches[_poolId][_trancheId].liquidityPools; 
+}
+
     /// @dev checks whether a Centrifuge pool is active - can be used to prevent deposit / redemption requests to/from certain pools & avoid transfers from escrow related to inactive pools.
-    modifier poolActive(address _liquidityPool) {
-        LiquidityPoolLike lPool = LiquidityPoolLike(_liquidityPool);
+    modifier poolActive() {
+        LiquidityPoolLike lPool = LiquidityPoolLike(msg.sender);
         require(pools[lPool.poolId()].isActive, "CentrifugeConnector/pool-deactivated");
         _;
     }
 
     /// @dev checks whether gateway is active - can be used to prevent any interactions with centrifuge chain and stop all deposits & redemtions from escrow.
     modifier connectorActive() {
-        require(gateway.active(), "CentrifugeConnector/connector-deactivated");
+        require(gateway.paused(), "CentrifugeConnector/connector-deactivated");
         _;
     }
 
     modifier onlyGateway() {
         require(msg.sender == address(gateway), "CentrifugeConnector/not-the-gateway");
+        _;
+    }
+
+   modifier onlyLiquidityPoolWard() {
+        require(liquidityPoolWards[msg.sender] == 1, "CentrifugeConnector/not-liquidity-pool-ward");
         _;
     }
 
@@ -184,14 +195,15 @@ contract CentrifugeConnector is Auth {
     /// @return trancheTokenAmount type of uin256 to support the EIP4626 Liquidity Pool interface 
     function maxRedeem(address _user, address _liquidityPool) public view returns (uint256 trancheTokenAmount) {
         trancheTokenAmount = uint256(orderbook[_user][_liquidityPool].maxRedeem);
-    }   
+    }  
 
-     /// @dev processes user's currency deposit / investment after the epoch has been executed on Centrifuge chain.
-     /// In case user's invest order was fullfilled on Centrifuge chain during epoch execution MaxDeposit and MaxMint are increased and trancheTokens can be transferred to user's wallet on calling processDeposit.
-     /// Note: The currency required to fullfill the invest order is already locked in escrow upon calling requestDeposit.
-     /// @notice trancheTokenAmount return value is type of uint256 to be compliant with EIP4626 LiquidityPool interface
-     /// @return trancheTokenAmount the amount of trancheTokens transferred to the user's wallet after successful depoit
-    function processDeposit(address _liquidityPool, address _user, uint256 _currencyAmount) public poolActive(_liquidityPool) connectorActive auth returns (uint256) {
+    /// @dev processes user's currency deposit / investment after the epoch has been executed on Centrifuge chain.
+    /// In case user's invest order was fullfilled on Centrifuge chain during epoch execution MaxDeposit and MaxMint are increased and trancheTokens can be transferred to user's wallet on calling processDeposit.
+    /// Note: The currency required to fullfill the invest order is already locked in escrow upon calling requestDeposit.
+    /// @notice trancheTokenAmount return value is type of uint256 to be compliant with EIP4626 LiquidityPool interface
+    /// @return trancheTokenAmount the amount of trancheTokens transferred to the user's wallet after successful depoit
+    function processDeposit(address _user, uint256 _currencyAmount) public onlyLiquidityPoolWard connectorActive poolActive auth returns (uint256) {
+        address _liquidityPool = msg.sender;
         uint128 currencyAmount = _toUint128(_currencyAmount);
         LiquidityPoolLike lPool = LiquidityPoolLike(_liquidityPool);
 
@@ -208,13 +220,14 @@ contract CentrifugeConnector is Auth {
         return uint256(trancheTokenAmount);
     }
 
-     /// @dev processes user's currency deposit / investment after the epoch has been executed on Centrifuge chain.
-     /// In case user's invest order was fullfilled on Centrifuge chain during epoch execution MaxDeposit and MaxMint are increased and trancheTokens can be transferred to user's wallet on calling processDeposit or processMint.
-     /// Note: The currency amount required to fullfill the invest order is already locked in escrow upon calling requestDeposit.
-     /// Note: The tranche tokens are already minted on collectInvest and are deposited to the escrow account until the users calls mint, or deposit.
-     /// @notice currencyAmount return value is type of uint256 to be compliant with EIP4626 LiquidityPool interface
-     /// @return currencyAmount the amount of liquidityPool assets invested and locked in escrow in order for the amount of tranche received after successful investment into the pool.
-    function processMint(address _liquidityPool, address _user, uint256 _trancheTokenAmount) public poolActive(_liquidityPool) connectorActive auth returns (uint256) {
+    /// @dev processes user's currency deposit / investment after the epoch has been executed on Centrifuge chain.
+    /// In case user's invest order was fullfilled on Centrifuge chain during epoch execution MaxDeposit and MaxMint are increased and trancheTokens can be transferred to user's wallet on calling processDeposit or processMint.
+    /// Note: The currency amount required to fullfill the invest order is already locked in escrow upon calling requestDeposit.
+    /// Note: The tranche tokens are already minted on collectInvest and are deposited to the escrow account until the users calls mint, or deposit.
+    /// @notice currencyAmount return value is type of uint256 to be compliant with EIP4626 LiquidityPool interface
+    /// @return currencyAmount the amount of liquidityPool assets invested and locked in escrow in order for the amount of tranche received after successful investment into the pool.
+    function processMint(address _user, uint256 _trancheTokenAmount) public onlyLiquidityPoolWard poolActive connectorActive auth returns (uint256) {
+        address _liquidityPool = msg.sender;
         uint128 trancheTokenAmount = _toUint128(_trancheTokenAmount);
         LiquidityPoolLike lPool = LiquidityPoolLike(_liquidityPool);
 
@@ -231,12 +244,13 @@ contract CentrifugeConnector is Auth {
         return uint256(currencyAmount); 
     }
 
-     /// @dev processes user's trancheToken redemption after the epoch has been executed on Centrifuge chain.
-     /// In case user's redempion order was fullfilled on Centrifuge chain during epoch execution MaxRedeem and MaxWithdraw are increased and LiquidityPool currency can be transferred to user's wallet on calling processRedeem or processWithdraw.
-     /// Note: The trancheToken amount required to fullfill the redemption order was already locked in escrow upon calling requestRedeem and burned upon collectRedeem.
-     /// @notice currencyAmount return value is type of uint256 to be compliant with EIP4626 LiquidityPool interface
-     /// @return currencyAmount the amount of liquidityPool assets received for the amount of redeemed/burned trancheTokens.
-    function processRedeem(address _liquidityPool, uint256 _trancheTokenAmount, address _receiver, address _user) public poolActive(_liquidityPool) connectorActive auth returns (uint256) {
+    /// @dev processes user's trancheToken redemption after the epoch has been executed on Centrifuge chain.
+    /// In case user's redempion order was fullfilled on Centrifuge chain during epoch execution MaxRedeem and MaxWithdraw are increased and LiquidityPool currency can be transferred to user's wallet on calling processRedeem or processWithdraw.
+    /// Note: The trancheToken amount required to fullfill the redemption order was already locked in escrow upon calling requestRedeem and burned upon collectRedeem.
+    /// @notice currencyAmount return value is type of uint256 to be compliant with EIP4626 LiquidityPool interface
+    /// @return currencyAmount the amount of liquidityPool assets received for the amount of redeemed/burned trancheTokens.
+    function processRedeem(uint256 _trancheTokenAmount, address _receiver, address _user) public onlyLiquidityPoolWard poolActive connectorActive auth returns (uint256) {
+        address _liquidityPool = msg.sender;
         uint128 trancheTokenAmount = _toUint128(_trancheTokenAmount);
         LiquidityPoolLike lPool = LiquidityPoolLike(_liquidityPool);
 
@@ -252,12 +266,13 @@ contract CentrifugeConnector is Auth {
         return uint256(currencyAmount); 
     }
 
-     /// @dev processes user's trancheToken redemption after the epoch has been executed on Centrifuge chain.
-     /// In case user's redempion order was fullfilled on Centrifuge chain during epoch execution MaxRedeem and MaxWithdraw are increased and LiquidityPool currency can be transferred to user's wallet on calling processRedeem or processWithdraw.
-     /// Note: The trancheToken amount required to fullfill the redemption order was already locked in escrow upon calling requestRedeem and burned upon collectRedeem.
-     /// @notice trancheTokenAmount return value is type of uint256 to be compliant with EIP4626 LiquidityPool interface
-     /// @return trancheTokenAmount the amount of trancheTokens redeemed/burned required to receive the currencyAmount payout/withdrawel.
-    function processWithdraw(address _liquidityPool, uint256 _currencyAmount, address _receiver, address _user) public poolActive(_liquidityPool) connectorActive auth returns (uint256) {
+    /// @dev processes user's trancheToken redemption after the epoch has been executed on Centrifuge chain.
+    /// In case user's redempion order was fullfilled on Centrifuge chain during epoch execution MaxRedeem and MaxWithdraw are increased and LiquidityPool currency can be transferred to user's wallet on calling processRedeem or processWithdraw.
+    /// Note: The trancheToken amount required to fullfill the redemption order was already locked in escrow upon calling requestRedeem and burned upon collectRedeem.
+    /// @notice trancheTokenAmount return value is type of uint256 to be compliant with EIP4626 LiquidityPool interface
+    /// @return trancheTokenAmount the amount of trancheTokens redeemed/burned required to receive the currencyAmount payout/withdrawel.
+    function processWithdraw(uint256 _currencyAmount, address _receiver, address _user) public onlyLiquidityPoolWard poolActive connectorActive auth returns (uint256) {
+        address _liquidityPool = msg.sender;
         uint128 currencyAmount = _toUint128(_currencyAmount);
         LiquidityPoolLike lPool = LiquidityPoolLike(_liquidityPool);
 
@@ -271,7 +286,11 @@ contract CentrifugeConnector is Auth {
         return uint256(trancheTokenAmount);
     }
 
-    function requestRedeem(address _liquidityPool, uint256 _trancheTokensAmount, address _user) connectorActive poolActive(_liquidityPool) public auth {
+
+    // --- liquidity pool outgoing message handling ---
+
+    function requestRedeem(uint256 _trancheTokensAmount, address _user) onlyLiquidityPoolWard poolActive connectorActive public auth {
+        address _liquidityPool = msg.sender;
         LPValues storage lpValues = orderbook[_user][ _liquidityPool];
         LiquidityPoolLike lPool = LiquidityPoolLike(_liquidityPool);
         uint128 trancheTokensAmount = _toUint128(_trancheTokensAmount);
@@ -302,7 +321,8 @@ contract CentrifugeConnector is Auth {
         gateway.increaseRedeemOrder(lPool.poolId(), lPool.trancheId(), _user, currencyAddressToId[lPool.asset()], trancheTokensAmount);
     }
     
-    function requestDeposit(address _liquidityPool, uint _currencyAmount, address _user) connectorActive poolActive(_liquidityPool) public auth {
+    function requestDeposit(uint _currencyAmount, address _user) onlyLiquidityPoolWard poolActive connectorActive public auth {
+        address _liquidityPool = msg.sender;
         LPValues storage lpValues = orderbook[_user][ _liquidityPool];
         LiquidityPoolLike lPool = LiquidityPoolLike(_liquidityPool);
         ERC20Like currency = ERC20Like(lPool.asset());
@@ -331,6 +351,24 @@ contract CentrifugeConnector is Auth {
         } 
 
         gateway.increaseInvestOrder(lPool.poolId(), lPool.trancheId(), _user, currencyAddressToId[lPool.asset()], currencyAmount);
+    }
+
+   // --- public Ougoing message handling ---
+
+    function collectInvest(uint64 _poolId, bytes16 _trancheId, address _currency) public {
+        LiquidityPoolLike lPool = LiquidityPoolLike(liquidityPools[_poolId][_trancheId][_currency]);
+        require(address(lPool) != address(0), "CentrifugeConnector/unknown-liquidity-pool");
+        require(lPool.hasMember(msg.sender), "CentrifugeConnector/not-a-member");
+
+        gateway.collectInvest(_poolId, _trancheId, address(msg.sender));
+    }
+
+    function collectRedeem(uint64 _poolId, bytes16 _trancheId, address _currency) public {
+        LiquidityPoolLike lPool = LiquidityPoolLike(liquidityPools[_poolId][_trancheId][_currency]);
+        require(address(lPool) != address(0), "CentrifugeConnector/unknown-liquidity-pool");
+        require(lPool.hasMember(msg.sender), "CentrifugeConnector/not-a-member");
+
+        gateway.collectRedeem(_poolId, _trancheId, address(msg.sender));
     }
          
     function transfer(address currencyAddress, bytes32 recipient, uint128 amount) public {
@@ -379,24 +417,13 @@ contract CentrifugeConnector is Auth {
         );
     }
 
-    function collectInvest(uint64 _poolId, bytes16 _trancheId, address _currency) public {
-        LiquidityPoolLike lPool = LiquidityPoolLike(liquidityPools[_poolId][_trancheId][_currency]);
-        require(address(lPool) != address(0), "CentrifugeConnector/unknown-liquidity-pool");
-        require(lPool.hasMember(msg.sender), "CentrifugeConnector/not-a-member");
-
-        gateway.collectInvest(_poolId, _trancheId, address(msg.sender));
-    }
-
-    function collectRedeem(uint64 _poolId, bytes16 _trancheId, address _currency) public {
-        LiquidityPoolLike lPool = LiquidityPoolLike(liquidityPools[_poolId][_trancheId][_currency]);
-        require(address(lPool) != address(0), "CentrifugeConnector/unknown-liquidity-pool");
-        require(lPool.hasMember(msg.sender), "CentrifugeConnector/not-a-member");
-
-        gateway.collectRedeem(_poolId, _trancheId, address(msg.sender));
-    }
-
     // --- Incoming message handling ---
+    /// @dev a global chain agnostic currency index is maintained on centrifuge chain. This function maps a currency from the centrifuge chain index to its corresponding address on the evm chain.
+    /// The chain agnostic currency id has to be used to pass currency information to the centrifuge chain.
+    /// @notice this function can only be executed by the gateway contract.
     function addCurrency(uint128 currency, address currencyAddress) public onlyGateway {
+        // currency index on the centrifuge chain side should start at 1
+        require(currency > 0, "CentrifugeConnector/currency-id-has-to-be-greater-than-0");
         require(currencyIdToAddress[currency] == address(0), "CentrifugeConnector/currency-id-in-use");
         require(currencyAddressToId[currencyAddress] == 0, "CentrifugeConnector/currency-address-in-use");
 
@@ -405,6 +432,8 @@ contract CentrifugeConnector is Auth {
         emit CurrencyAdded(currency, currencyAddress);
     }
 
+    /// @dev new pool details from an existing centrifuge chain pool are added.
+    /// @notice the function can only be executed by the gateway contract.
     function addPool(uint64 poolId) public onlyGateway {
         Pool storage pool = pools[poolId];
         require(pool.createdAt == 0, "CentrifugeConnector/pool-already-added");
@@ -414,6 +443,9 @@ contract CentrifugeConnector is Auth {
         emit PoolAdded(poolId);
     }
 
+    /// @dev centrifuge pools can support multiple currencies for investing. this function adds a new supported currency to the pool details. 
+    /// Adding new currencies allow the creation of new liquidity pools for the underlying centrifuge chain pool.
+    /// @notice the function can only be executed by the gateway contract.
     function allowPoolCurrency(uint64 poolId, uint128 currency) public onlyGateway {
         Pool storage pool = pools[poolId];
         require(pool.createdAt > 0, "CentrifugeConnector/invalid-pool");
@@ -425,6 +457,8 @@ contract CentrifugeConnector is Auth {
         emit PoolCurrencyAllowed(currency, poolId);
     }
 
+    /// @dev new tranche details from an existng centrifuge chain pool are added.
+    /// @notice the function can only be executed by the gateway contract.
     function addTranche(
         uint64 _poolId,
         bytes16 _trancheId,
@@ -444,7 +478,7 @@ contract CentrifugeConnector is Auth {
         tranche.tokenName = _tokenName;
         tranche.tokenSymbol = _tokenSymbol;
         tranche.createdAt = block.timestamp;
-
+    
         emit TrancheAdded(_poolId, _trancheId);
     }
  
@@ -470,27 +504,33 @@ contract CentrifugeConnector is Auth {
         }
     }
 
-    function handleTransfer(uint128 currency, address recipient, uint128 amount) public onlyGateway {
-        address currencyAddress = currencyIdToAddress[currency];
-        require(currencyAddress != address(0), "CentrifugeConnector/unknown-currency");
+    function handleCollectInvest(uint64 _poolId, bytes16 _trancheId, address _recepient, uint128 _currency, uint128 _currencyInvested, uint128 _tokensPayout, uint128 _remainingInvestOrder) public onlyGateway {
+        require(_currencyInvested != 0, "CentrifugeConnector/zero-invest");
+        address currency = currencyIdToAddress[_currency];
+        address lPool = liquidityPools[_poolId][_trancheId][currency];
+        require(lPool != address(0), "CentrifugeConnector/tranche-does-not-exist");
+        
+        LPValues storage values = orderbook[_recepient][lPool];
+        values.openInvest = _remainingInvestOrder;
+        values.maxDeposit = values.maxDeposit + _currencyInvested;
+        values.maxMint = values.maxMint + _tokensPayout;
 
-        EscrowLike(escrow).approve(currencyAddress, address(this), amount);
-        require(
-            ERC20Like(currencyAddress).transferFrom(address(escrow), recipient, amount),
-            "CentrifugeConnector/currency-transfer-failed"
-        );
+        LiquidityPoolLike(lPool).mint(address(escrow), _tokensPayout); // mint to escrow. Recepeint can claim by calling withdraw / redeem
     }
 
-    // function handleTransferTrancheTokens(uint64 _poolId, bytes16 _trancheId, address _destinationAddress, uint128 _amount)
-    //     public
-    //     onlyGateway
-    // {
-    //     LiquidityPoolLike tranche = LiquidityPoolLike(liquidityPools[_poolId][_trancheId]);
-    //     require(address(tranche) != address(0), "CentrifugeConnector/unknown-token");
+    function handleCollectRedeem(uint64 _poolId, bytes16 _trancheId, address _recepient, uint128 _currency, uint128 _currencyPayout, uint128 _trancheTokensRedeemed, uint128 _remainingRedeemOrder) public onlyGateway {
+        require(_trancheTokensRedeemed != 0, "CentrifugeConnector/zero-redeem");
+        address currency = currencyIdToAddress[_currency];
+        address lPool = liquidityPools[_poolId][_trancheId][currency];
+        require(lPool != address(0), "CentrifugeConnector/tranche-does-not-exist");
+        
+        LPValues storage values = orderbook[_recepient][lPool];
+        values.openRedeem = _remainingRedeemOrder;
+        values.maxWithdraw = values.maxWithdraw + _currencyPayout;
+        values.maxRedeem = values.maxRedeem + _trancheTokensRedeemed;
 
-    //     require(tranche.hasMember(_destinationAddress), "CentrifugeConnector/not-a-member");
-    //     tranche.mint(_destinationAddress, _amount);
-    // }
+        LiquidityPoolLike(lPool).burn(address(escrow), _trancheTokensRedeemed); // burned redeemed tokens from escrow
+    } 
 
     function handleDecreaseInvestOrder(uint64 _poolId, bytes16 _trancheId, address _user, uint128 _currency, uint128 _currencyPayout, uint128 _remainingInvestOrder) public onlyGateway {
         require(_currencyPayout != 0, "CentrifugeConnector/zero-payout");
@@ -527,34 +567,33 @@ contract CentrifugeConnector is Auth {
         orderbook[_user][address(lPool)].openRedeem = _remainingRedeemOrder;
     }
 
-    function handleCollectInvest(uint64 _poolId, bytes16 _trancheId, address _recepient, uint128 _currency, uint128 _currencyInvested, uint128 _tokensPayout, uint128 _remainingInvestOrder) public onlyGateway {
-        require(_currencyInvested != 0, "CentrifugeConnector/zero-invest");
-        address currency = currencyIdToAddress[_currency];
-        address lPool = liquidityPools[_poolId][_trancheId][currency];
-        require(lPool != address(0), "CentrifugeConnector/tranche-does-not-exist");
-        
-        LPValues memory values = orderbook[_recepient][lPool];
-        values.openInvest = _remainingInvestOrder;
-        values.maxDeposit = values.maxDeposit + _currencyInvested;
-        values.maxMint = values.maxMint + _tokensPayout;
+    function handleTransfer(uint128 currency, address recipient, uint128 amount) public onlyGateway {
+        address currencyAddress = currencyIdToAddress[currency];
+        require(currencyAddress != address(0), "CentrifugeConnector/unknown-currency");
 
-        LiquidityPoolLike(lPool).mint(address(escrow), _tokensPayout); // mint to escrow. Recepeint can claim by calling withdraw / redeem
+        EscrowLike(escrow).approve(currencyAddress, address(this), amount);
+        require(
+            ERC20Like(currencyAddress).transferFrom(address(escrow), recipient, amount),
+            "CentrifugeConnector/currency-transfer-failed"
+        );
     }
 
-    function handleCollectRedeem(uint64 _poolId, bytes16 _trancheId, address _recepient, uint128 _currency, uint128 _currencyPayout, uint128 _trancheTokensRedeemed, uint128 _remainingRedeemOrder) public onlyGateway {
-        require(_trancheTokensRedeemed != 0, "CentrifugeConnector/zero-redeem");
-        address currency = currencyIdToAddress[_currency];
-        address lPool = liquidityPools[_poolId][_trancheId][currency];
-        require(lPool != address(0), "CentrifugeConnector/tranche-does-not-exist");
-        
-        LPValues memory values = orderbook[_recepient][lPool];
-        values.openRedeem = _remainingRedeemOrder;
-        values.maxWithdraw = values.maxWithdraw + _currencyPayout;
-        values.maxRedeem = values.maxRedeem + _trancheTokensRedeemed;
+     /// @dev In the current implementation: a tranche token on Centrifuge chain side is mapped to multiple liquidity pool tokens. One for each currency supported. 
+     /// @notice currencyId is required in order to identify the liquidity pool for the token mint. 
 
-        LiquidityPoolLike(lPool).burn(address(escrow), _trancheTokensRedeemed); // burned redeemed tokens from escrow
-    } 
+    function handleTransferTrancheTokens(uint64 _poolId, bytes16 _trancheId, uint128 _currencyId, address _destinationAddress, uint128 _amount)
+        public
+        onlyGateway
+    {
+        address currency = currencyIdToAddress[_currencyId];
+        address liquidityPool_ = liquidityPools[_poolId][_trancheId][currency];
+        require(liquidityPool_ != address(0), "CentrifugeConnector/unknown-liquidityPool");
+        LiquidityPoolLike liquidityPool = LiquidityPoolLike(liquidityPool_);
+        require(liquidityPool.hasMember(_destinationAddress), "CentrifugeConnector/not-a-member");
+        liquidityPool.mint(_destinationAddress, _amount);
+    }
 
+    
     // ----- public functions
     function deployLiquidityPool(   
         uint64 _poolId,
@@ -564,26 +603,27 @@ contract CentrifugeConnector is Auth {
 
         address liquidityPool = liquidityPools[_poolId][_trancheId][_currency];
         require(liquidityPool == address(0), "CentrifugeConnector/liquidityPool-already-deployed");
+        require(pools[_poolId].createdAt > 0, "CentrifugeConnector/pool-does-not-exist");
         Tranche storage tranche = tranches[_poolId][_trancheId];
         require(tranche.createdAt != 0, "CentrifugeConnector/tranche-does-not-exist"); // tranche must have been added
         require(_poolCurrencyCheck(_poolId, _currency), "CentrifugeConnector/currency-not-supported"); // currency must be supported by pool
         uint128 currencyId = currencyAddressToId[_currency];
-         // gateway admin on liquidityPool
-        liquidityPool = liquidityPoolFactory.newLiquidityPool(_poolId, _trancheId, currencyId, _currency, address(this), address(gateway), tranche.tokenName, tranche.tokenSymbol, tranche.decimals);
-        liquidityPools[_poolId][_trancheId][_currency] = liquidityPool;
-        tranche.liquidityPools.push(liquidityPool);
 
-        address memberlist = memberlistFactory.newMemberlist(address(gateway)); // gateway admin on memberlist
-        LiquidityPoolLike(liquidityPool).file("memberlist", memberlist);
+        // gateway admin on liquidityPool & memberlist
+        address memberlist = memberlistFactory.newMemberlist(address(gateway), address(this));
         MemberlistLike(memberlist).updateMember(address(escrow), type(uint256).max); // add escrow to tranche tokens memberlist
-
+        liquidityPool = liquidityPoolFactory.newLiquidityPool(_poolId, _trancheId, currencyId, _currency, address(this), address(gateway), memberlist, tranche.tokenName, tranche.tokenSymbol, tranche.decimals);
+        liquidityPools[_poolId][_trancheId][_currency] = liquidityPool;
+        liquidityPoolWards[liquidityPool] = 1; // give liquidityPool permissions, so that invest & redeem functions can be called
+        tranche.liquidityPools.push(liquidityPool);
+       
         emit LiquidityPoolDeployed(_poolId, _trancheId, liquidityPool);
         return liquidityPool;
     }
                                 
      // ------ helper functions 
     function calcCustomTrancheTokenPrice(address _user, address _liquidityPool) public view returns (uint128 userTrancheTokenPrice) {
-        LPValues memory lpValues = orderbook[_user][_liquidityPool];
+        LPValues storage lpValues = orderbook[_user][_liquidityPool];
         if(lpValues.maxMint == 0) {
             return 0;
         }
@@ -592,14 +632,14 @@ contract CentrifugeConnector is Auth {
 
     function _poolCurrencyCheck(uint64 _poolId, address _currencyAddress) internal view returns (bool) {
         uint128 currency = currencyAddressToId[_currencyAddress];
-        require(currency != 0, "CentrifugeConnector/unknown-currency");
+        require(currency != 0, "CentrifugeConnector/unknown-currency"); // currency index on the centrifuge chain side should start at 1
         require(allowedPoolCurrencies[_poolId][_currencyAddress], "CentrifugeConnector/pool-currency-not-allowed");
         return true;
     }
     
     function _trancheTokenCheck(uint64 _poolId, bytes16 _trancheId, address _currency, address _user) internal returns (bool) {
         LiquidityPoolLike lPool = LiquidityPoolLike(liquidityPools[_poolId][_trancheId][_currency]);
-        require(address(lPool) != address(0), "CentrifugeConnector/unknown-tranche-token");
+        require(address(lPool) != address(0), "CentrifugeConnector/unknown-liquidity-pool");
         require(lPool.hasMember(_user), "CentrifugeConnector/not-a-member");
         return true;
     }
@@ -634,7 +674,7 @@ contract CentrifugeConnector is Auth {
 
     /// @dev safe type conversion from uint256 to uint128. Revert if value is too big to be stored with uint128. Avoid data loss.
     /// @return value - safely converted without data loss
-    function _toUint128(uint256 _value) internal returns (uint128 value) {
+    function _toUint128(uint256 _value) internal pure returns (uint128 value) {
         if (_value > 2 ** 128) {
             revert();
         } else {
