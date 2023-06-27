@@ -840,8 +840,8 @@ contract MessagesTest is Test {
         uint128 trancheTokensRedeemed,
         uint128 remainingRedeemOrder
     ) internal {
-        (,,,, uint128 decodedCurrencyPayout, uint128 decodedTrancheTokensRedeemed, uint128 decodedRemainingRedeemOrder) =
-            ConnectorMessages.parseExecutedCollectRedeem(expectedHex.ref(0));
+        (,,,, uint128 decodedCurrencyPayout, uint128 decodedTrancheTokensRedeemed, uint128 decodedRemainingRedeemOrder)
+        = ConnectorMessages.parseExecutedCollectRedeem(expectedHex.ref(0));
 
         assertEq(decodedCurrencyPayout, currencyPayout);
         assertEq(decodedTrancheTokensRedeemed, trancheTokensRedeemed);
