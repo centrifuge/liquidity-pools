@@ -351,7 +351,7 @@ contract CentrifugeConnector {
         bytes16 trancheId,
         bytes32 investor,
         uint128 currency,
-        uint128 trancheTokenPayouts,
+        uint128 trancheTokensPayout,
         uint128 remainingRedeemOrder
     ) public onlyGateway {
         // TODO: Implement
