@@ -753,8 +753,8 @@ contract MessagesTest is Test {
         uint128 trancheTokensPayout,
         uint128 remainingInvestOrder
     ) internal {
-        (,,,, uint128 decodedcurrencyPayout, uint128 decodedTrancheTokensPayout, uint128 decodedRemainingInvestOrder)
-        = ConnectorMessages.parseExecutedCollectInvest(expectedHex.ref(0));
+        (,,,, uint128 decodedcurrencyPayout, uint128 decodedTrancheTokensPayout, uint128 decodedRemainingInvestOrder) =
+            ConnectorMessages.parseExecutedCollectInvest(expectedHex.ref(0));
 
         assertEq(decodedcurrencyPayout, currencyPayout);
         assertEq(decodedTrancheTokensPayout, trancheTokensPayout);
