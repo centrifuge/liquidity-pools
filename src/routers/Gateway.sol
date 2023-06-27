@@ -35,7 +35,7 @@ interface ConnectorLike {
         bytes16 trancheId,
         bytes32 investor,
         uint128 currency,
-        uint128 trancheTokenPayouts,
+        uint128 trancheTokensPayout,
         uint128 remainingRedeemOrder
     ) external;
     function handleExecutedCollectInvest(
@@ -327,11 +327,11 @@ contract ConnectorGateway {
                 bytes16 trancheId,
                 bytes32 investor,
                 uint128 currency,
-                uint128 trancheTokenPayouts,
+                uint128 trancheTokensPayout,
                 uint128 remainingRedeemOrder
             ) = ConnectorMessages.parseExecutedDecreaseRedeemOrder(_msg);
             connector.handleExecutedDecreaseRedeemOrder(
-                poolId, trancheId, investor, currency, trancheTokenPayouts, remainingRedeemOrder
+                poolId, trancheId, investor, currency, trancheTokensPayout, remainingRedeemOrder
             );
         } else if (ConnectorMessages.isExecutedCollectInvest(_msg)) {
             (

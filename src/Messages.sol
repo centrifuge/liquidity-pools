@@ -640,7 +640,7 @@ library ConnectorMessages {
             bytes16 trancheId,
             bytes32 investor,
             uint128 currency,
-            uint128 trancheTokenPayouts,
+            uint128 trancheTokensPayout,
             uint128 remainingRedeemOrder
         )
     {
@@ -648,7 +648,7 @@ library ConnectorMessages {
         trancheId = bytes16(_msg.index(9, 16));
         investor = bytes32(_msg.index(25, 32));
         currency = uint128(_msg.indexUint(57, 16));
-        trancheTokenPayouts = uint128(_msg.indexUint(73, 16));
+        trancheTokensPayout = uint128(_msg.indexUint(73, 16));
         remainingRedeemOrder = uint128(_msg.indexUint(89, 16));
     }
 
