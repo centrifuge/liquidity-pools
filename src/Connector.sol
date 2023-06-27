@@ -106,7 +106,7 @@ contract CentrifugeConnector is Auth {
     GatewayLike public gateway;
     EscrowLike public immutable escrow;
 
-    LiquidityPoolFactoryLike public immutable liquidityPoolFactory; //TODO use for LPPool deployment
+    LiquidityPoolFactoryLike public immutable liquidityPoolFactory; 
     MemberlistFactoryLike public immutable memberlistFactory;
 
     // --- Events ---
@@ -170,122 +170,6 @@ contract CentrifugeConnector is Auth {
         require(pool.createdAt > 0, "CentrifugeConnector/invalid-pool");
         pool.isActive = _isActive;
     }
-
-    // --- Liquidity Pool Function ---
-    /// @dev calculates the avg share price for the deposited assets of a specific user
-    /// @dev
-    /// @return currencyAmount is type of uin256 to support the EIP4626 Liquidity Pool interface
-    function maxDeposit(address _user, address _liquidityPool) public view returns (uint256 currencyAmount) {
-        currencyAmount = uint256(orderbook[_user][_liquidityPool].maxDeposit);
-    }
-
-    /// @dev 
-    /// @return trancheTokenAmount type of uin256 to support the EIP4626 Liquidity Pool interface 
-    function maxMint(address _user, address _liquidityPool) public view returns (uint256 trancheTokenAmount) {
-        trancheTokenAmount = uint256(orderbook[_user][_liquidityPool].maxMint);
-    }
-
-    /// @dev 
-    /// @return currencyAmount type of uin256 to support the EIP4626 Liquidity Pool interface 
-    function maxWithdraw(address _user, address _liquidityPool) public view returns (uint256 currencyAmount) {
-        currencyAmount = uint256(orderbook[_user][_liquidityPool].maxWithdraw);
-    }
-
-    /// @dev 
-    /// @return trancheTokenAmount type of uin256 to support the EIP4626 Liquidity Pool interface 
-    function maxRedeem(address _user, address _liquidityPool) public view returns (uint256 trancheTokenAmount) {
-        trancheTokenAmount = uint256(orderbook[_user][_liquidityPool].maxRedeem);
-    }  
-
-    /// @dev processes user's currency deposit / investment after the epoch has been executed on Centrifuge chain.
-    /// In case user's invest order was fullfilled on Centrifuge chain during epoch execution MaxDeposit and MaxMint are increased and trancheTokens can be transferred to user's wallet on calling processDeposit.
-    /// Note: The currency required to fullfill the invest order is already locked in escrow upon calling requestDeposit.
-    /// @notice trancheTokenAmount return value is type of uint256 to be compliant with EIP4626 LiquidityPool interface
-    /// @return trancheTokenAmount the amount of trancheTokens transferred to the user's wallet after successful depoit
-    function processDeposit(address _user, uint256 _currencyAmount) public onlyLiquidityPoolWard connectorActive poolActive auth returns (uint256) {
-        address _liquidityPool = msg.sender;
-        uint128 currencyAmount = _toUint128(_currencyAmount);
-        LiquidityPoolLike lPool = LiquidityPoolLike(_liquidityPool);
-
-        require((currencyAmount <= orderbook[_user][_liquidityPool].maxDeposit), "CentrifugeConnector/amount-exceeds-deposit-limits");
-        uint128 userTrancheTokenPriceLP = calcCustomTrancheTokenPrice( _user, _liquidityPool);
-        require((userTrancheTokenPriceLP > 0), "LiquidityPool/amount-exceeds-deposit-limits");
-        uint128 trancheTokenAmount = currencyAmount / userTrancheTokenPriceLP;
-
-        _decreaseDepositLimits(_user, _liquidityPool, currencyAmount, trancheTokenAmount); // decrease user's deposit limits for this lp
-        require(lPool.hasMember( _user), "CentrifugeConnector/trancheTokens-not-a-member");
-        require(lPool.transferFrom(address(escrow), _user, trancheTokenAmount), "CentrifugeConnector/trancheTokens-transfer-failed");
-        
-        emit DepositProcessed(_liquidityPool, _user, currencyAmount);
-        return uint256(trancheTokenAmount);
-    }
-
-    /// @dev processes user's currency deposit / investment after the epoch has been executed on Centrifuge chain.
-    /// In case user's invest order was fullfilled on Centrifuge chain during epoch execution MaxDeposit and MaxMint are increased and trancheTokens can be transferred to user's wallet on calling processDeposit or processMint.
-    /// Note: The currency amount required to fullfill the invest order is already locked in escrow upon calling requestDeposit.
-    /// Note: The tranche tokens are already minted on collectInvest and are deposited to the escrow account until the users calls mint, or deposit.
-    /// @notice currencyAmount return value is type of uint256 to be compliant with EIP4626 LiquidityPool interface
-    /// @return currencyAmount the amount of liquidityPool assets invested and locked in escrow in order for the amount of tranche received after successful investment into the pool.
-    function processMint(address _user, uint256 _trancheTokenAmount) public onlyLiquidityPoolWard poolActive connectorActive auth returns (uint256) {
-        address _liquidityPool = msg.sender;
-        uint128 trancheTokenAmount = _toUint128(_trancheTokenAmount);
-        LiquidityPoolLike lPool = LiquidityPoolLike(_liquidityPool);
-
-        require((trancheTokenAmount <= orderbook[_user][ _liquidityPool].maxMint), "CentrifugeConnector/amount-exceeds-mint-limits");
-        uint128 userTrancheTokenPriceLP = calcCustomTrancheTokenPrice(_user,  _liquidityPool);
-        require((userTrancheTokenPriceLP > 0), "LiquidityPool/amount-exceeds-mint-limits");
-        uint128 currencyAmount = trancheTokenAmount * userTrancheTokenPriceLP;
-
-        _decreaseDepositLimits(_user,  _liquidityPool, currencyAmount, trancheTokenAmount); // decrease the possible deposit limits
-        require(lPool.hasMember( _user), "CentrifugeConnector/trancheTokens-not-a-member");
-        require(lPool.transferFrom(address(escrow), _user, trancheTokenAmount), "CentrifugeConnector/trancheTokens-transfer-failed");
-
-        emit DepositProcessed(_liquidityPool, _user, currencyAmount);
-        return uint256(currencyAmount); 
-    }
-
-    /// @dev processes user's trancheToken redemption after the epoch has been executed on Centrifuge chain.
-    /// In case user's redempion order was fullfilled on Centrifuge chain during epoch execution MaxRedeem and MaxWithdraw are increased and LiquidityPool currency can be transferred to user's wallet on calling processRedeem or processWithdraw.
-    /// Note: The trancheToken amount required to fullfill the redemption order was already locked in escrow upon calling requestRedeem and burned upon collectRedeem.
-    /// @notice currencyAmount return value is type of uint256 to be compliant with EIP4626 LiquidityPool interface
-    /// @return currencyAmount the amount of liquidityPool assets received for the amount of redeemed/burned trancheTokens.
-    function processRedeem(uint256 _trancheTokenAmount, address _receiver, address _user) public onlyLiquidityPoolWard poolActive connectorActive auth returns (uint256) {
-        address _liquidityPool = msg.sender;
-        uint128 trancheTokenAmount = _toUint128(_trancheTokenAmount);
-        LiquidityPoolLike lPool = LiquidityPoolLike(_liquidityPool);
-
-        require((trancheTokenAmount <= orderbook[_user][ _liquidityPool].maxRedeem), "CentrifugeConnector/amount-exceeds-redeem-limits");
-        uint128 userTrancheTokenPriceLP = calcCustomTrancheTokenPrice(_user, _liquidityPool);
-        require((userTrancheTokenPriceLP > 0), "LiquidityPool/amount-exceeds-redemption-limits");
-        uint128 currencyAmount = trancheTokenAmount * userTrancheTokenPriceLP;
-       
-        _decreaseRedemptionLimits(_user,  _liquidityPool, currencyAmount, trancheTokenAmount); // decrease the possible deposit limits
-        require(ERC20Like(lPool.asset()).transferFrom(address(escrow), _receiver, currencyAmount), "CentrifugeConnector/shares-transfer-failed");
-        
-        emit RedemptionProcessed(_liquidityPool, _user, trancheTokenAmount);
-        return uint256(currencyAmount); 
-    }
-
-    /// @dev processes user's trancheToken redemption after the epoch has been executed on Centrifuge chain.
-    /// In case user's redempion order was fullfilled on Centrifuge chain during epoch execution MaxRedeem and MaxWithdraw are increased and LiquidityPool currency can be transferred to user's wallet on calling processRedeem or processWithdraw.
-    /// Note: The trancheToken amount required to fullfill the redemption order was already locked in escrow upon calling requestRedeem and burned upon collectRedeem.
-    /// @notice trancheTokenAmount return value is type of uint256 to be compliant with EIP4626 LiquidityPool interface
-    /// @return trancheTokenAmount the amount of trancheTokens redeemed/burned required to receive the currencyAmount payout/withdrawel.
-    function processWithdraw(uint256 _currencyAmount, address _receiver, address _user) public onlyLiquidityPoolWard poolActive connectorActive auth returns (uint256) {
-        address _liquidityPool = msg.sender;
-        uint128 currencyAmount = _toUint128(_currencyAmount);
-        LiquidityPoolLike lPool = LiquidityPoolLike(_liquidityPool);
-
-        require((currencyAmount <= orderbook[_user][ _liquidityPool].maxWithdraw), "CentrifugeConnector/amount-exceeds-withdraw-limits");
-        uint128 userTrancheTokenPriceLP = calcCustomTrancheTokenPrice(_user, _liquidityPool);
-        require((userTrancheTokenPriceLP > 0), "LiquidityPool/amount-exceeds-withdraw-limits");
-        uint128 trancheTokenAmount = currencyAmount / userTrancheTokenPriceLP;
-
-        _decreaseRedemptionLimits(_user,  _liquidityPool, currencyAmount, trancheTokenAmount);
-        require(ERC20Like(lPool.asset()).transferFrom(address(escrow), _receiver, currencyAmount), "CentrifugeConnector/trancheTokens-transfer-failed");
-        return uint256(trancheTokenAmount);
-    }
-
 
     // --- liquidity pool outgoing message handling ---
 
@@ -353,7 +237,7 @@ contract CentrifugeConnector is Auth {
         gateway.increaseInvestOrder(lPool.poolId(), lPool.trancheId(), _user, currencyAddressToId[lPool.asset()], currencyAmount);
     }
 
-   // --- public Ougoing message handling ---
+   // --- public outgoing message handling ---
 
     function collectInvest(uint64 _poolId, bytes16 _trancheId, address _currency) public {
         LiquidityPoolLike lPool = LiquidityPoolLike(liquidityPools[_poolId][_trancheId][_currency]);
@@ -593,7 +477,123 @@ contract CentrifugeConnector is Auth {
         liquidityPool.mint(_destinationAddress, _amount);
     }
 
-    
+    // ----- liquidity pool functions 
+
+    // --- Liquidity Pool Function ---
+    /// @dev calculates the avg share price for the deposited assets of a specific user
+    /// @return currencyAmount is type of uin256 to support the EIP4626 Liquidity Pool interface
+    function maxDeposit(address _user, address _liquidityPool) public view returns (uint256 currencyAmount) {
+        currencyAmount = uint256(orderbook[_user][_liquidityPool].maxDeposit);
+    }
+
+    /// @dev 
+    /// @return trancheTokenAmount type of uin256 to support the EIP4626 Liquidity Pool interface 
+    function maxMint(address _user, address _liquidityPool) public view returns (uint256 trancheTokenAmount) {
+        trancheTokenAmount = uint256(orderbook[_user][_liquidityPool].maxMint);
+    }
+
+    /// @dev 
+    /// @return currencyAmount type of uin256 to support the EIP4626 Liquidity Pool interface 
+    function maxWithdraw(address _user, address _liquidityPool) public view returns (uint256 currencyAmount) {
+        currencyAmount = uint256(orderbook[_user][_liquidityPool].maxWithdraw);
+    }
+
+    /// @dev 
+    /// @return trancheTokenAmount type of uin256 to support the EIP4626 Liquidity Pool interface 
+    function maxRedeem(address _user, address _liquidityPool) public view returns (uint256 trancheTokenAmount) {
+        trancheTokenAmount = uint256(orderbook[_user][_liquidityPool].maxRedeem);
+    }  
+
+    /// @dev processes user's currency deposit / investment after the epoch has been executed on Centrifuge chain.
+    /// In case user's invest order was fullfilled on Centrifuge chain during epoch execution MaxDeposit and MaxMint are increased and trancheTokens can be transferred to user's wallet on calling processDeposit.
+    /// Note: The currency required to fullfill the invest order is already locked in escrow upon calling requestDeposit.
+    /// @notice trancheTokenAmount return value is type of uint256 to be compliant with EIP4626 LiquidityPool interface
+    /// @return trancheTokenAmount the amount of trancheTokens transferred to the user's wallet after successful depoit
+    function processDeposit(address _user, uint256 _currencyAmount) public onlyLiquidityPoolWard connectorActive poolActive auth returns (uint256) {
+        address _liquidityPool = msg.sender;
+        uint128 currencyAmount = _toUint128(_currencyAmount);
+        LiquidityPoolLike lPool = LiquidityPoolLike(_liquidityPool);
+
+        require((currencyAmount <= orderbook[_user][_liquidityPool].maxDeposit), "CentrifugeConnector/amount-exceeds-deposit-limits");
+        uint128 userTrancheTokenPriceLP = calcCustomTrancheTokenPrice( _user, _liquidityPool);
+        require((userTrancheTokenPriceLP > 0), "LiquidityPool/amount-exceeds-deposit-limits");
+        uint128 trancheTokenAmount = currencyAmount / userTrancheTokenPriceLP;
+
+        _decreaseDepositLimits(_user, _liquidityPool, currencyAmount, trancheTokenAmount); // decrease user's deposit limits for this lp
+        require(lPool.hasMember( _user), "CentrifugeConnector/trancheTokens-not-a-member");
+        require(lPool.transferFrom(address(escrow), _user, trancheTokenAmount), "CentrifugeConnector/trancheTokens-transfer-failed");
+        
+        emit DepositProcessed(_liquidityPool, _user, currencyAmount);
+        return uint256(trancheTokenAmount);
+    }
+
+    /// @dev processes user's currency deposit / investment after the epoch has been executed on Centrifuge chain.
+    /// In case user's invest order was fullfilled on Centrifuge chain during epoch execution MaxDeposit and MaxMint are increased and trancheTokens can be transferred to user's wallet on calling processDeposit or processMint.
+    /// Note: The currency amount required to fullfill the invest order is already locked in escrow upon calling requestDeposit.
+    /// Note: The tranche tokens are already minted on collectInvest and are deposited to the escrow account until the users calls mint, or deposit.
+    /// @notice currencyAmount return value is type of uint256 to be compliant with EIP4626 LiquidityPool interface
+    /// @return currencyAmount the amount of liquidityPool assets invested and locked in escrow in order for the amount of tranche received after successful investment into the pool.
+    function processMint(address _user, uint256 _trancheTokenAmount) public onlyLiquidityPoolWard poolActive connectorActive auth returns (uint256) {
+        address _liquidityPool = msg.sender;
+        uint128 trancheTokenAmount = _toUint128(_trancheTokenAmount);
+        LiquidityPoolLike lPool = LiquidityPoolLike(_liquidityPool);
+
+        require((trancheTokenAmount <= orderbook[_user][ _liquidityPool].maxMint), "CentrifugeConnector/amount-exceeds-mint-limits");
+        uint128 userTrancheTokenPriceLP = calcCustomTrancheTokenPrice(_user,  _liquidityPool);
+        require((userTrancheTokenPriceLP > 0), "LiquidityPool/amount-exceeds-mint-limits");
+        uint128 currencyAmount = trancheTokenAmount * userTrancheTokenPriceLP;
+
+        _decreaseDepositLimits(_user,  _liquidityPool, currencyAmount, trancheTokenAmount); // decrease the possible deposit limits
+        require(lPool.hasMember( _user), "CentrifugeConnector/trancheTokens-not-a-member");
+        require(lPool.transferFrom(address(escrow), _user, trancheTokenAmount), "CentrifugeConnector/trancheTokens-transfer-failed");
+
+        emit DepositProcessed(_liquidityPool, _user, currencyAmount);
+        return uint256(currencyAmount); 
+    }
+
+    /// @dev processes user's trancheToken redemption after the epoch has been executed on Centrifuge chain.
+    /// In case user's redempion order was fullfilled on Centrifuge chain during epoch execution MaxRedeem and MaxWithdraw are increased and LiquidityPool currency can be transferred to user's wallet on calling processRedeem or processWithdraw.
+    /// Note: The trancheToken amount required to fullfill the redemption order was already locked in escrow upon calling requestRedeem and burned upon collectRedeem.
+    /// @notice currencyAmount return value is type of uint256 to be compliant with EIP4626 LiquidityPool interface
+    /// @return currencyAmount the amount of liquidityPool assets received for the amount of redeemed/burned trancheTokens.
+    function processRedeem(uint256 _trancheTokenAmount, address _receiver, address _user) public onlyLiquidityPoolWard poolActive connectorActive auth returns (uint256) {
+        address _liquidityPool = msg.sender;
+        uint128 trancheTokenAmount = _toUint128(_trancheTokenAmount);
+        LiquidityPoolLike lPool = LiquidityPoolLike(_liquidityPool);
+
+        require((trancheTokenAmount <= orderbook[_user][ _liquidityPool].maxRedeem), "CentrifugeConnector/amount-exceeds-redeem-limits");
+        uint128 userTrancheTokenPriceLP = calcCustomTrancheTokenPrice(_user, _liquidityPool);
+        require((userTrancheTokenPriceLP > 0), "LiquidityPool/amount-exceeds-redemption-limits");
+        uint128 currencyAmount = trancheTokenAmount * userTrancheTokenPriceLP;
+       
+        _decreaseRedemptionLimits(_user,  _liquidityPool, currencyAmount, trancheTokenAmount); // decrease the possible deposit limits
+        require(ERC20Like(lPool.asset()).transferFrom(address(escrow), _receiver, currencyAmount), "CentrifugeConnector/shares-transfer-failed");
+        
+        emit RedemptionProcessed(_liquidityPool, _user, trancheTokenAmount);
+        return uint256(currencyAmount); 
+    }
+
+    /// @dev processes user's trancheToken redemption after the epoch has been executed on Centrifuge chain.
+    /// In case user's redempion order was fullfilled on Centrifuge chain during epoch execution MaxRedeem and MaxWithdraw are increased and LiquidityPool currency can be transferred to user's wallet on calling processRedeem or processWithdraw.
+    /// Note: The trancheToken amount required to fullfill the redemption order was already locked in escrow upon calling requestRedeem and burned upon collectRedeem.
+    /// @notice trancheTokenAmount return value is type of uint256 to be compliant with EIP4626 LiquidityPool interface
+    /// @return trancheTokenAmount the amount of trancheTokens redeemed/burned required to receive the currencyAmount payout/withdrawel.
+    function processWithdraw(uint256 _currencyAmount, address _receiver, address _user) public onlyLiquidityPoolWard poolActive connectorActive auth returns (uint256) {
+        address _liquidityPool = msg.sender;
+        uint128 currencyAmount = _toUint128(_currencyAmount);
+        LiquidityPoolLike lPool = LiquidityPoolLike(_liquidityPool);
+
+        require((currencyAmount <= orderbook[_user][ _liquidityPool].maxWithdraw), "CentrifugeConnector/amount-exceeds-withdraw-limits");
+        uint128 userTrancheTokenPriceLP = calcCustomTrancheTokenPrice(_user, _liquidityPool);
+        require((userTrancheTokenPriceLP > 0), "LiquidityPool/amount-exceeds-withdraw-limits");
+        uint128 trancheTokenAmount = currencyAmount / userTrancheTokenPriceLP;
+
+        _decreaseRedemptionLimits(_user,  _liquidityPool, currencyAmount, trancheTokenAmount);
+        require(ERC20Like(lPool.asset()).transferFrom(address(escrow), _receiver, currencyAmount), "CentrifugeConnector/trancheTokens-transfer-failed");
+        return uint256(trancheTokenAmount);
+    }
+
+
     // ----- public functions
     function deployLiquidityPool(   
         uint64 _poolId,
