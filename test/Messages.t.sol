@@ -713,7 +713,7 @@ contract MessagesTest is Test {
         bytes16 trancheId = bytes16(hex"811acd5b3f17c06841c7e41e9e04cb1b");
         bytes32 investor = bytes32(0x1231231231231231231231231231231231231231000000000000000000000000);
         uint128 currency = 246803579;
-        uint128 currencyInvested = 100000000000000000000000000;
+        uint128 currencyPayout = 100000000000000000000000000;
         uint128 trancheTokensPayout = 50000000000000000000000000;
         uint128 remainingInvestOrder = 300000000000000000000000000;
 
@@ -722,13 +722,13 @@ contract MessagesTest is Test {
 
         assertEq(
             ConnectorMessages.formatExecutedCollectInvest(
-                poolId, trancheId, investor, currency, currencyInvested, trancheTokensPayout, remainingInvestOrder
+                poolId, trancheId, investor, currency, currencyPayout, trancheTokensPayout, remainingInvestOrder
             ),
             expectedHex
         );
         // separate asserts into two functions to avoid stack too deep error
         testParseExecutedCollectInvestPart1(expectedHex, poolId, trancheId, investor, currency);
-        testParseExecutedCollectInvestPart2(expectedHex, currencyInvested, trancheTokensPayout, remainingInvestOrder);
+        testParseExecutedCollectInvestPart2(expectedHex, currencyPayout, trancheTokensPayout, remainingInvestOrder);
     }
 
     function testParseExecutedCollectInvestPart1(
@@ -749,14 +749,14 @@ contract MessagesTest is Test {
 
     function testParseExecutedCollectInvestPart2(
         bytes memory expectedHex,
-        uint128 currencyInvested,
+        uint128 currencyPayout,
         uint128 trancheTokensPayout,
         uint128 remainingInvestOrder
     ) internal {
-        (,,,, uint128 decodedCurrencyInvested, uint128 decodedTrancheTokensPayout, uint128 decodedRemainingInvestOrder)
+        (,,,, uint128 decodedcurrencyPayout, uint128 decodedTrancheTokensPayout, uint128 decodedRemainingInvestOrder)
         = ConnectorMessages.parseExecutedCollectInvest(expectedHex.ref(0));
 
-        assertEq(decodedCurrencyInvested, currencyInvested);
+        assertEq(decodedcurrencyPayout, currencyPayout);
         assertEq(decodedTrancheTokensPayout, trancheTokensPayout);
         assertEq(decodedRemainingInvestOrder, remainingInvestOrder);
     }
@@ -766,16 +766,16 @@ contract MessagesTest is Test {
         bytes16 trancheId,
         bytes32 investor,
         uint128 currency,
-        uint128 currencyInvested,
+        uint128 currencyPayout,
         uint128 trancheTokensPayout,
         uint128 remainingInvestOrder
     ) public {
         bytes memory _message = ConnectorMessages.formatExecutedCollectInvest(
-            poolId, trancheId, investor, currency, currencyInvested, trancheTokensPayout, remainingInvestOrder
+            poolId, trancheId, investor, currency, currencyPayout, trancheTokensPayout, remainingInvestOrder
         );
         // separate asserts into two functions to avoid stack too deep error
         testParseExecutedCollectInvestPart1(_message, poolId, trancheId, investor, currency);
-        testParseExecutedCollectInvestPart2(_message, currencyInvested, trancheTokensPayout, remainingInvestOrder);
+        testParseExecutedCollectInvestPart2(_message, currencyPayout, trancheTokensPayout, remainingInvestOrder);
     }
 
     function testExecutedCollectRedeem() public {

@@ -339,12 +339,12 @@ contract ConnectorGateway {
                 bytes16 trancheId,
                 bytes32 investor,
                 uint128 currency,
-                uint128 currencyInvested,
+                uint128 currencyPayout,
                 uint128 trancheTokensPayout,
                 uint128 remainingInvestOrder
             ) = ConnectorMessages.parseExecutedCollectInvest(_msg);
             connector.handleExecutedCollectInvest(
-                poolId, trancheId, investor, currency, currencyInvested, trancheTokensPayout, remainingInvestOrder
+                poolId, trancheId, investor, currency, currencyPayout, trancheTokensPayout, remainingInvestOrder
             );
         } else if (ConnectorMessages.isExecutedCollectRedeem(_msg)) {
             (
