@@ -83,6 +83,7 @@ contract MockHomeConnector is Test {
         uint64 poolId,
         bytes16 trancheId,
         uint64 destinationChainId,
+        uint128 currencyId,
         address destinationAddress,
         uint128 amount
     ) public {
@@ -91,9 +92,15 @@ contract MockHomeConnector is Test {
             trancheId,
             bytes32(bytes20(msg.sender)),
             ConnectorMessages.formatDomain(ConnectorMessages.Domain.EVM, destinationChainId),
+            currencyId,
             destinationAddress,
             amount
         );
+        router.handle(_message);
+    }
+
+    function incomingScheduleRely(address spell) public {
+        bytes memory _message = ConnectorMessages.formatAddAdmin(spell);
         router.handle(_message);
     }
 

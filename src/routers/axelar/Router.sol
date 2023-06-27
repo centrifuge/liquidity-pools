@@ -14,7 +14,7 @@ interface ConnectorLike {
     ) external;
     function updateMember(uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) external;
     function updateTokenPrice(uint64 poolId, bytes16 trancheId, uint128 price) external;
-    function handleTransferTrancheTokens(uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 amount)
+    function handleTransferTrancheTokens(uint64 poolId, bytes16 trancheId, uint128 currencyId, address destinationAddress, uint128 amount)
         external;
 }
 

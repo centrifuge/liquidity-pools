@@ -21,18 +21,17 @@ pragma solidity ^0.8.18;
 
 
 import "../token/restricted.sol";
-import { Memberlist } from "../token/memberlist.sol";
 
 interface ConnectorLike {
-    function processDeposit(address _tranche, address _receiver, uint256 _assets) external returns (uint256);
-    function processMint(address _tranche, address _receiver, uint256 _shares) external returns (uint256);
-    function processWithdraw(address _tranche, uint256 _assets, address _receiver, address _owner) external returns (uint256);
+    function processDeposit(address _receiver, uint256 _assets) external returns (uint256);
+    function processMint(address _receiver, uint256 _shares) external returns (uint256);
+    function processWithdraw(uint256 _assets, address _receiver, address _owner) external returns (uint256);
     function maxDeposit(address _user, address _tranche) external view returns (uint256);
     function maxMint(address _user, address _tranche) external view returns (uint256);
     function maxWithdraw(address _user, address _tranche) external view returns (uint256);
     function maxRedeem(address _user, address _tranche) external view returns (uint256);
-    function requestRedeem(address _tranche, uint256 _shares, address _receiver) external;
-    function requestDeposit(address _tranche, uint256 _assets, address _receiver) external;
+    function requestRedeem(uint256 _shares, address _receiver) external;
+    function requestDeposit(uint256 _assets, address _receiver) external;
     
 }
 
@@ -43,12 +42,11 @@ contract LiquidityPool is RestrictedToken {
     ConnectorLike public connector;
 
     address public asset; // underlying stable ERC-20 stable currency
-    uint256 public maxAssetDeposit = 2 ** 256 - 1; // max stable currency deposit into the tranche -> default: no limit
 
-    uint128 latestPrice; // lates share / token price 
-    uint256 lastPriceUpdate; // timestamp of the latest share / token price update
+    uint128 public latestPrice; // share price
+    uint256 public lastPriceUpdate; // timestamp of the latest share price update
 
-    // centrifuge chain pool and tranche details
+    // ids of the existing centrifuge chain pool and tranche that the liquidity pool belongs to
     uint64 public poolId;
     bytes16 public trancheId;
    
@@ -102,20 +100,20 @@ contract LiquidityPool is RestrictedToken {
 
     /// @dev request asset deposit for a receiver to be included in the next epoch execution. Asset is locked in the escrow on request submission
     function requestDeposit(uint256 _assets, address _receiver) auth public {
-        connector.requestDeposit(address(this), _assets, _receiver);
+        connector.requestDeposit(_assets, _receiver);
     }
 
     /// @dev collect shares for deposited funds after pool epoch execution. maxMint is the max amount of shares that can be collected. Required assets must already be locked
     /// maxDeposit is the amount of funds that was successfully invested into the pool on Centrifuge chain
     function deposit(uint256 _assets, address _receiver)  auth public returns (uint256 shares) {
-        shares = connector.processDeposit(address(this), _receiver, _assets);
+        shares = connector.processDeposit( _receiver, _assets);
         emit Deposit(address(this), _receiver, _assets, shares);
     }
 
     /// @dev collect shares for deposited funds after pool epoch execution. maxMint is the max amount of shares that can be collected. Required assets must already be locked
     /// maxDeposit is the amount of funds that was successfully invested into the pool on Centrifuge chain
     function mint(uint256 _shares, address _receiver) auth public returns (uint256 assets) {
-        assets = connector.processMint(address(this), _receiver, _shares); 
+        assets = connector.processMint(_receiver, _shares); 
         emit Deposit(address(this), _receiver, assets, _shares);
     }
 
@@ -131,7 +129,7 @@ contract LiquidityPool is RestrictedToken {
 
     /// @dev request share redemption for a receiver to be included in the next epoch execution. Shares are locked in the escrow on request submission
     function requestRedeem(uint256 _shares, address _receiver) auth public {
-        connector.requestRedeem(address(this), _shares, _receiver);
+        connector.requestRedeem(_shares, _receiver);
     }
 
     /// @return maxAssets that the receiver can withdraw
@@ -147,7 +145,7 @@ contract LiquidityPool is RestrictedToken {
     /// @dev Withdraw assets after successful epoch execution. Receiver will receive an exact amount of _assets for a certain amount of shares that has been redeemed from Owner during epoch execution.
     /// @return shares that have been redeemed for the excat _assets amount
     function withdraw(uint256 _assets, address _receiver, address _owner) auth public returns (uint256 shares) {
-        uint sharesRedeemed = connector.processWithdraw(address(this), _assets, _receiver, _owner);
+        uint sharesRedeemed = connector.processWithdraw( _assets, _receiver, _owner);
         emit Withdraw(address(this), _receiver, _owner, _assets, sharesRedeemed);
         return sharesRedeemed;
     }
@@ -157,7 +155,6 @@ contract LiquidityPool is RestrictedToken {
          return connector.maxRedeem(_owner, address(this));
     }
 
-    
     /// @return assets that any user could redeem for an given amount of shares -> convertToAssets
     function previewRedeem(uint256 _shares) public view returns (uint256 assets) {
         assets = convertToAssets(_shares);
@@ -166,7 +163,7 @@ contract LiquidityPool is RestrictedToken {
     /// @dev Redeem shares after successful epoch execution. Receiver will receive assets for the exact amount of redeemed shares from Owner after epoch execution.
     /// @return assets currency payout for the exact amount of redeemed _shares
     function redeem(uint256 _shares, address _receiver, address _owner) auth public returns (uint256 assets) {
-        uint currencyPayout = connector.processWithdraw(address(this), _shares, _receiver, _owner);
+        uint currencyPayout = connector.processWithdraw(_shares, _receiver, _owner);
         emit Withdraw(address(this), _receiver, _owner, currencyPayout, _shares);
         return currencyPayout;
     }
