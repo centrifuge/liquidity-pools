@@ -144,9 +144,11 @@ contract AdminTest is Test {
         vm.assume(decimals > 0);
         vm.assume(amount > 0);
         vm.assume(currency != 0);
+        vm.assume(recipient != address(connector.escrow()));
         vm.assume(recipient != address(0));
 
         ERC20 erc20 = newErc20(tokenName, tokenSymbol, decimals);
+        vm.assume(recipient != address(erc20));
         centChainConnector.addCurrency(currency, address(erc20));
 
         // First, an outgoing transfer must take place which has funds currency of the currency moved to
