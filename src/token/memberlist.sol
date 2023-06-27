@@ -1,38 +1,17 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.18;
+import "./../auth/auth.sol";
 
 interface MemberlistLike {
     function updateMember(address user, uint256 validUntil) external;
     function members(address user) external view returns (uint256);
 }
 
-contract Memberlist {
-    mapping(address => uint256) public wards;
+contract Memberlist is Auth {
     mapping(address => uint256) public members;
-
-    // --- Events ---
-    event Rely(address indexed user);
-    event Deny(address indexed user);
-
     constructor() {
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
-    }
-
-    modifier auth() {
-        require(wards[msg.sender] == 1);
-        _;
-    }
-
-    // --- Admininistration ---
-    function rely(address user) public auth {
-        wards[user] = 1;
-        emit Rely(msg.sender);
-    }
-
-    function deny(address user) public auth {
-        wards[user] = 0;
-        emit Deny(msg.sender);
     }
 
     // --- Checking members ---

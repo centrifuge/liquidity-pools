@@ -9,11 +9,11 @@ interface ImmutableCreate2Factory {
 }
 
 interface LiquidityPoolFactoryLike {
-    function newLiquidityPool(uint64 _poolId, bytes16 _trancheId, uint _currencyId, address _asset, address _connector, address _admin, string memory _name, string memory _symbol, uint8 _decimals) external returns (address);
+    function newLiquidityPool(uint64 _poolId, bytes16 _trancheId, uint128 _currencyId, address _asset, address _connector, address _admin, address _memberlist, string memory _name, string memory _symbol, uint8 _decimals) external returns (address);
 }
 
 contract LiquidityPoolFactory {
-    function newLiquidityPool(uint64 _poolId, bytes16 _trancheId, uint _currencyId, address _asset, address _connector, address _admin, string memory _name, string memory _symbol, uint8 _decimals)
+    function newLiquidityPool(uint64 _poolId, bytes16 _trancheId, uint128 _currencyId, address _asset, address _connector, address _admin, address _memberlist, string memory _name, string memory _symbol, uint8 _decimals)
         public
         returns (address)
     {
@@ -30,27 +30,30 @@ contract LiquidityPoolFactory {
         lPool.file("symbol", _symbol);
         lPool.file("connector", _connector);
         lPool.file("asset", _asset);
+        lPool.file("memberlist", _memberlist);
         lPool.setPoolDetails(_poolId, _trancheId);
 
-
         lPool.deny(msg.sender);
-        lPool.deny(address(this));
         lPool.rely(_admin);
+        lPool.rely(_connector); // to be able to update tokenPrices
+        lPool.deny(address(this));
         return address(lPool);
     }
 }
 
 interface MemberlistFactoryLike {
-    function newMemberlist(address _admin) external returns (address);
+    function newMemberlist(address _admin, address _connector) external returns (address);
 }
 
 contract MemberlistFactory {
-    function newMemberlist(address _admin) public returns (address memberList) {
+    function newMemberlist(address _admin, address _connector) public returns (address memberList) {
         Memberlist memberlist = new Memberlist();
 
+        
         memberlist.deny(msg.sender);
-        memberlist.deny(address(this));
         memberlist.rely(_admin);
+        memberlist.rely(_connector); // connector is updating members
+        memberlist.deny(address(this));
 
         return (address(memberlist));
     }
