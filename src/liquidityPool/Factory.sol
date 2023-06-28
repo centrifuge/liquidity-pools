@@ -17,13 +17,13 @@ contract LiquidityPoolFactory {
         public
         returns (address)
     {
-        // Salt is hash(poolId + trancheId + asset), to deploy copies of the restricted token contract
-        // on multiple chains with the same address for the same tranche
+        // Salt is hash(poolId + trancheId + asset), to deploy copies of the liquidity pool contract
+        // on multiple chains with the same address for the same tranche and asset
         bytes32 salt = keccak256(abi.encodePacked(_poolId, _trancheId, _currencyId));
 
         LiquidityPool lPool = new LiquidityPool{salt: salt}(_decimals);
 
-        // Name and symbol are not passed on constructor, such that if the same tranche is deployed
+        // Name and symbol are not passed on constructor, such that if the same liquidity pool is deployed
         // on another chain with a different name (it might have changed in between deployments),
         // then the address remains deterministic.
         lPool.file("name", _name);
