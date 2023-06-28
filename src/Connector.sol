@@ -191,7 +191,7 @@ contract CentrifugeConnector is Auth {
         // check if liquidity pool currency is supported by the centrifuge pool
         require(_poolCurrencyCheck(lPool.poolId(), lPool.asset()), "CentrifugeConnector/currency-not-supported"); 
         // check if user is allowed to hold the restriced liquidity pool tokens
-        require(_trancheTokenCheck(lPool.poolId(), lPool.trancheId(), lPool.asset(), _user), "CentrifugeConnector/tranche-tokens-not-supported");
+        require(_liquidityPoolTokensCheck(lPool.poolId(), lPool.trancheId(), lPool.asset(), _user), "CentrifugeConnector/tranche-tokens-not-supported");
        
         if (lpValues.openInvest > 0) { // cancel outstanding deposit orders 
            gateway.decreaseInvestOrder(lPool.poolId(), lPool.trancheId(), _user, currencyAddressToId[lPool.asset()], lpValues.openInvest);
@@ -230,7 +230,7 @@ contract CentrifugeConnector is Auth {
         // check if liquidity pool currency is supported by the centrifuge pool
         require(_poolCurrencyCheck(lPool.poolId(), lPool.asset()), "CentrifugeConnector/currency-not-supported");
         // check if user is allowed to hold the restriced liquidity pool tokens
-        require(_trancheTokenCheck(lPool.poolId(), lPool.trancheId(), lPool.asset(), _user), "CentrifugeConnector/tranche-tokens-not-supported");
+        require(_liquidityPoolTokensCheck(lPool.poolId(), lPool.trancheId(), lPool.asset(), _user), "CentrifugeConnector/tranche-tokens-not-supported");
 
         if (lpValues.openRedeem > 0) { // cancel outstanding redeem orders 
             gateway.decreaseRedeemOrder(lPool.poolId(), lPool.trancheId(), _user, currencyAddressToId[lPool.asset()], lpValues.openRedeem);
@@ -408,7 +408,7 @@ contract CentrifugeConnector is Auth {
         }
     }
 
-    function handleCollectInvest(uint64 _poolId, bytes16 _trancheId, address _recepient, uint128 _currency, uint128 _currencyInvested, uint128 _tokensPayout, uint128 _remainingInvestOrder) public onlyGateway {
+    function handleExecutedCollectInvest(uint64 _poolId, bytes16 _trancheId, address _recepient, uint128 _currency, uint128 _currencyInvested, uint128 _tokensPayout, uint128 _remainingInvestOrder) public onlyGateway {
         require(_currencyInvested != 0, "CentrifugeConnector/zero-invest");
         address currency = currencyIdToAddress[_currency];
         address lPool = liquidityPools[_poolId][_trancheId][currency];
@@ -422,7 +422,7 @@ contract CentrifugeConnector is Auth {
         LiquidityPoolLike(lPool).mint(address(escrow), _tokensPayout); // mint to escrow. Recepeint can claim by calling withdraw / redeem
     }
 
-    function handleCollectRedeem(uint64 _poolId, bytes16 _trancheId, address _recepient, uint128 _currency, uint128 _currencyPayout, uint128 _trancheTokensRedeemed, uint128 _remainingRedeemOrder) public onlyGateway {
+    function handleExecutedCollectRedeem(uint64 _poolId, bytes16 _trancheId, address _recepient, uint128 _currency, uint128 _currencyPayout, uint128 _trancheTokensRedeemed, uint128 _remainingRedeemOrder) public onlyGateway {
         require(_trancheTokensRedeemed != 0, "CentrifugeConnector/zero-redeem");
         address currency = currencyIdToAddress[_currency];
         address lPool = liquidityPools[_poolId][_trancheId][currency];
@@ -436,7 +436,7 @@ contract CentrifugeConnector is Auth {
         LiquidityPoolLike(lPool).burn(address(escrow), _trancheTokensRedeemed); // burned redeemed tokens from escrow
     } 
 
-    function handleDecreaseInvestOrder(uint64 _poolId, bytes16 _trancheId, address _user, uint128 _currency, uint128 _currencyPayout, uint128 _remainingInvestOrder) public onlyGateway {
+    function  handleExecutedDecreaseInvestOrder(uint64 _poolId, bytes16 _trancheId, address _user, uint128 _currency, uint128 _currencyPayout, uint128 _remainingInvestOrder) public onlyGateway {
         require(_currencyPayout != 0, "CentrifugeConnector/zero-payout");
         address currency = currencyIdToAddress[_currency]; 
         LiquidityPoolLike lPool  = LiquidityPoolLike(liquidityPools[_poolId][_trancheId][currency]);
@@ -451,7 +451,7 @@ contract CentrifugeConnector is Auth {
         orderbook[_user][address(lPool)].openInvest = _remainingInvestOrder;
     }
 
-    function handleDecreaseRedeemOrder(uint64 _poolId, bytes16 _trancheId, address _user, uint128 _currency, uint128 _tokensPayout, uint128 _remainingRedeemOrder) public onlyGateway {
+    function handleExecutedDecreaseRedeemOrder(uint64 _poolId, bytes16 _trancheId, address _user, uint128 _currency, uint128 _tokensPayout, uint128 _remainingRedeemOrder) public onlyGateway {
         require(_tokensPayout != 0, "CentrifugeConnector/zero-payout");
         address currency = currencyIdToAddress[_currency];
         LiquidityPoolLike lPool = LiquidityPoolLike(liquidityPools[_poolId][_trancheId][currency]);
@@ -652,7 +652,7 @@ contract CentrifugeConnector is Auth {
         return true;
     }
     
-    function _trancheTokenCheck(uint64 _poolId, bytes16 _trancheId, address _currency, address _user) internal returns (bool) {
+    function _liquidityPoolTokensCheck(uint64 _poolId, bytes16 _trancheId, address _currency, address _user) internal returns (bool) {
         LiquidityPoolLike lPool = LiquidityPoolLike(liquidityPools[_poolId][_trancheId][_currency]);
         require(address(lPool) != address(0), "CentrifugeConnector/unknown-liquidity-pool");
         require(lPool.hasMember(_user), "CentrifugeConnector/not-a-member");
@@ -664,7 +664,7 @@ contract CentrifugeConnector is Auth {
         if (values.maxDeposit < _currency) {
             values.maxDeposit = 0;
         } else {
-             values.maxDeposit = values.maxDeposit - _currency;
+            values.maxDeposit = values.maxDeposit - _currency;
         }
         if (values.maxMint < _trancheTokens) {
             values.maxMint = 0;
@@ -695,51 +695,5 @@ contract CentrifugeConnector is Auth {
         } else {
             value = uint128(_value);
         }
-    }
-
-    function handleExecutedDecreaseInvestOrder(
-        uint64 poolId,
-        bytes16 trancheId,
-        bytes32 investor,
-        uint128 currency,
-        uint128 currencyPayout,
-        uint128 remainingInvestOrder
-    ) public onlyGateway {
-        // TODO: Implement
-    }
-
-    function handleExecutedDecreaseRedeemOrder(
-        uint64 poolId,
-        bytes16 trancheId,
-        bytes32 investor,
-        uint128 currency,
-        uint128 trancheTokensPayout,
-        uint128 remainingRedeemOrder
-    ) public onlyGateway {
-        // TODO: Implement
-    }
-
-    function handleExecutedCollectInvest(
-        uint64 poolId,
-        bytes16 trancheId,
-        bytes32 investor,
-        uint128 currency,
-        uint128 currencyPayout,
-        uint128 trancheTokensPayout,
-        uint128 remainingInvestOrder
-    ) public onlyGateway {
-        // TODO: Implement
-    }
-
-    function handleExecutedCollectRedeem(
-        uint64 poolId,
-        bytes16 trancheId,
-        bytes32 investor,
-        uint128 currency,
-        uint128 currencyPayout,
-        uint128 trancheTokensPayout,
-        uint128 remainingRedeemOrder
-    ) public onlyGateway {
-        // TODO: Implement
     }
 }
