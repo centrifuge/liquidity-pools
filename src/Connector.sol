@@ -696,4 +696,50 @@ contract CentrifugeConnector is Auth {
             value = uint128(_value);
         }
     }
+
+    function handleExecutedDecreaseInvestOrder(
+        uint64 poolId,
+        bytes16 trancheId,
+        bytes32 investor,
+        uint128 currency,
+        uint128 currencyPayout,
+        uint128 remainingInvestOrder
+    ) public onlyGateway {
+        // TODO: Implement
+    }
+
+    function handleExecutedDecreaseRedeemOrder(
+        uint64 poolId,
+        bytes16 trancheId,
+        bytes32 investor,
+        uint128 currency,
+        uint128 trancheTokensPayout,
+        uint128 remainingRedeemOrder
+    ) public onlyGateway {
+        // TODO: Implement
+    }
+
+    function handleExecutedCollectInvest(
+        uint64 poolId,
+        bytes16 trancheId,
+        bytes32 investor,
+        uint128 currency,
+        uint128 currencyPayout,
+        uint128 trancheTokensPayout,
+        uint128 remainingInvestOrder
+    ) public onlyGateway {
+        // TODO: Implement
+    }
+
+    function handleExecutedCollectRedeem(
+        uint64 poolId,
+        bytes16 trancheId,
+        bytes32 investor,
+        uint128 currency,
+        uint128 currencyPayout,
+        uint128 trancheTokensPayout,
+        uint128 remainingRedeemOrder
+    ) public onlyGateway {
+        // TODO: Implement
+    }
 }
