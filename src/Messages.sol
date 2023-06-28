@@ -39,7 +39,15 @@ library ConnectorMessages {
         CollectInvest,
         /// 14 - Collect Redeem
         CollectRedeem,
-        /// 15 - Add a new admin
+        /// 15 - Executed Decrease Invest Order
+        ExecutedDecreaseInvestOrder,
+        /// 16 - Executed Decrease Redeem Order
+        ExecutedDecreaseRedeemOrder,
+        /// 17 - Executed Collect Invest
+        ExecutedCollectInvest,
+        /// 18 - Executed Collect Redeem
+        ExecutedCollectRedeem,
+        /// 19 - Add a new admin
         AddAdmin
     }
 
@@ -556,6 +564,186 @@ library ConnectorMessages {
         poolId = uint64(_msg.indexUint(1, 8));
         trancheId = bytes16(_msg.index(9, 16));
         investor = bytes32(_msg.index(25, 32));
+    }
+
+    function formatExecutedDecreaseInvestOrder(
+        uint64 poolId,
+        bytes16 trancheId,
+        bytes32 investor,
+        uint128 currency,
+        uint128 currencyPayout,
+        uint128 remainingInvestOrder
+    ) internal pure returns (bytes memory) {
+        return abi.encodePacked(
+            uint8(Call.ExecutedDecreaseInvestOrder),
+            poolId,
+            trancheId,
+            investor,
+            currency,
+            currencyPayout,
+            remainingInvestOrder
+        );
+    }
+
+    function isExecutedDecreaseInvestOrder(bytes29 _msg) internal pure returns (bool) {
+        return messageType(_msg) == Call.ExecutedDecreaseInvestOrder;
+    }
+
+    function parseExecutedDecreaseInvestOrder(bytes29 _msg)
+        internal
+        pure
+        returns (
+            uint64 poolId,
+            bytes16 trancheId,
+            bytes32 investor,
+            uint128 currency,
+            uint128 currencyPayout,
+            uint128 remainingInvestOrder
+        )
+    {
+        poolId = uint64(_msg.indexUint(1, 8));
+        trancheId = bytes16(_msg.index(9, 16));
+        investor = bytes32(_msg.index(25, 32));
+        currency = uint128(_msg.indexUint(57, 16));
+        currencyPayout = uint128(_msg.indexUint(73, 16));
+        remainingInvestOrder = uint128(_msg.indexUint(89, 16));
+    }
+
+    function formatExecutedDecreaseRedeemOrder(
+        uint64 poolId,
+        bytes16 trancheId,
+        bytes32 investor,
+        uint128 currency,
+        uint128 currencyPayout,
+        uint128 remainingRedeemOrder
+    ) internal pure returns (bytes memory) {
+        return abi.encodePacked(
+            uint8(Call.ExecutedDecreaseRedeemOrder),
+            poolId,
+            trancheId,
+            investor,
+            currency,
+            currencyPayout,
+            remainingRedeemOrder
+        );
+    }
+
+    function isExecutedDecreaseRedeemOrder(bytes29 _msg) internal pure returns (bool) {
+        return messageType(_msg) == Call.ExecutedDecreaseRedeemOrder;
+    }
+
+    function parseExecutedDecreaseRedeemOrder(bytes29 _msg)
+        internal
+        pure
+        returns (
+            uint64 poolId,
+            bytes16 trancheId,
+            bytes32 investor,
+            uint128 currency,
+            uint128 trancheTokensPayout,
+            uint128 remainingRedeemOrder
+        )
+    {
+        poolId = uint64(_msg.indexUint(1, 8));
+        trancheId = bytes16(_msg.index(9, 16));
+        investor = bytes32(_msg.index(25, 32));
+        currency = uint128(_msg.indexUint(57, 16));
+        trancheTokensPayout = uint128(_msg.indexUint(73, 16));
+        remainingRedeemOrder = uint128(_msg.indexUint(89, 16));
+    }
+
+    function formatExecutedCollectInvest(
+        uint64 poolId,
+        bytes16 trancheId,
+        bytes32 investor,
+        uint128 currency,
+        uint128 currencyPayout,
+        uint128 trancheTokensPayout,
+        uint128 remainingInvestOrder
+    ) internal pure returns (bytes memory) {
+        return abi.encodePacked(
+            uint8(Call.ExecutedCollectInvest),
+            poolId,
+            trancheId,
+            investor,
+            currency,
+            currencyPayout,
+            trancheTokensPayout,
+            remainingInvestOrder
+        );
+    }
+
+    function isExecutedCollectInvest(bytes29 _msg) internal pure returns (bool) {
+        return messageType(_msg) == Call.ExecutedCollectInvest;
+    }
+
+    function parseExecutedCollectInvest(bytes29 _msg)
+        internal
+        pure
+        returns (
+            uint64 poolId,
+            bytes16 trancheId,
+            bytes32 investor,
+            uint128 currency,
+            uint128 currencyPayout,
+            uint128 trancheTokensPayout,
+            uint128 remainingInvestOrder
+        )
+    {
+        poolId = uint64(_msg.indexUint(1, 8));
+        trancheId = bytes16(_msg.index(9, 16));
+        investor = bytes32(_msg.index(25, 32));
+        currency = uint128(_msg.indexUint(57, 16));
+        currencyPayout = uint128(_msg.indexUint(73, 16));
+        trancheTokensPayout = uint128(_msg.indexUint(89, 16));
+        remainingInvestOrder = uint128(_msg.indexUint(105, 16));
+    }
+
+    function formatExecutedCollectRedeem(
+        uint64 poolId,
+        bytes16 trancheId,
+        bytes32 investor,
+        uint128 currency,
+        uint128 currencyPayout,
+        uint128 trancheTokensRedeemed,
+        uint128 remainingRedeemOrder
+    ) internal pure returns (bytes memory) {
+        return abi.encodePacked(
+            uint8(Call.ExecutedCollectRedeem),
+            poolId,
+            trancheId,
+            investor,
+            currency,
+            currencyPayout,
+            trancheTokensRedeemed,
+            remainingRedeemOrder
+        );
+    }
+
+    function isExecutedCollectRedeem(bytes29 _msg) internal pure returns (bool) {
+        return messageType(_msg) == Call.ExecutedCollectRedeem;
+    }
+
+    function parseExecutedCollectRedeem(bytes29 _msg)
+        internal
+        pure
+        returns (
+            uint64 poolId,
+            bytes16 trancheId,
+            bytes32 investor,
+            uint128 currency,
+            uint128 currencyPayout,
+            uint128 trancheTokensRedeemed,
+            uint128 remainingRedeemOrder
+        )
+    {
+        poolId = uint64(_msg.indexUint(1, 8));
+        trancheId = bytes16(_msg.index(9, 16));
+        investor = bytes32(_msg.index(25, 32));
+        currency = uint128(_msg.indexUint(57, 16));
+        currencyPayout = uint128(_msg.indexUint(73, 16));
+        trancheTokensRedeemed = uint128(_msg.indexUint(89, 16));
+        remainingRedeemOrder = uint128(_msg.indexUint(105, 16));
     }
 
     function formatAddAdmin(address user) internal pure returns (bytes memory) {
