@@ -47,9 +47,6 @@ contract ConnectorAxelarScript is Script {
         router.rely(address(gateway));
         ConnectorEscrow(address(escrow_)).rely(address(gateway));
 
-        // escrow give full permissions 
-
-        
         // TODO: rely pauseMultisig on pauseAdmin
         pauseAdmin.rely(address(0));
         pauseAdmin.deny(address(this));
