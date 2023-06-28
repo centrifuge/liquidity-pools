@@ -213,7 +213,6 @@ contract CentrifugeConnector is Auth {
             require(lPool.balanceOf(_user) >= transferAmount, "CentrifugeConnector/insufficient-tranche-token-balance");
             require(lPool.transferFrom(_user, address(escrow), transferAmount), "CentrifugeConnector/tranche-token-transfer-failed");
         } 
-
         gateway.increaseRedeemOrder(lPool.poolId(), lPool.trancheId(), _user, currencyAddressToId[lPool.asset()], trancheTokenAmount);
     }
     
@@ -497,25 +496,22 @@ contract CentrifugeConnector is Auth {
     // ----- liquidity pool functions 
 
     // --- Liquidity Pool Function ---
-    /// @dev calculates the avg share price for the deposited assets of a specific user
+
     /// @return currencyAmount is type of uin256 to support the EIP4626 Liquidity Pool interface
     function maxDeposit(address _user, address _liquidityPool) public view returns (uint256 currencyAmount) {
         currencyAmount = uint256(orderbook[_user][_liquidityPool].maxDeposit);
     }
 
-    /// @dev 
     /// @return trancheTokenAmount type of uin256 to support the EIP4626 Liquidity Pool interface 
     function maxMint(address _user, address _liquidityPool) public view returns (uint256 trancheTokenAmount) {
         trancheTokenAmount = uint256(orderbook[_user][_liquidityPool].maxMint);
     }
 
-    /// @dev 
     /// @return currencyAmount type of uin256 to support the EIP4626 Liquidity Pool interface 
     function maxWithdraw(address _user, address _liquidityPool) public view returns (uint256 currencyAmount) {
         currencyAmount = uint256(orderbook[_user][_liquidityPool].maxWithdraw);
     }
 
-    /// @dev 
     /// @return trancheTokenAmount type of uin256 to support the EIP4626 Liquidity Pool interface 
     function maxRedeem(address _user, address _liquidityPool) public view returns (uint256 trancheTokenAmount) {
         trancheTokenAmount = uint256(orderbook[_user][_liquidityPool].maxRedeem);
