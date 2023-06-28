@@ -22,10 +22,40 @@ interface ConnectorLike {
     function handleTransfer(uint128 currency, address recipient, uint128 amount) external;
     function handleTransferTrancheTokens(uint64 poolId, bytes16 trancheId, uint128 currency, address destinationAddress, uint128 amount)
         external;
-    function handleDecreaseInvestOrder(uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 currency, uint128 currencyPayout, uint128 remainingInvestOrder) external;
-    function handleDecreaseRedeemOrder(uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 currency, uint128 trancheTokensPayout, uint128 remainingRedeemOrder) external;
-    function handleCollectInvest(uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 currency, uint128 currencyInvested, uint128 tokensPayout, uint128 remainingInvestOrder) external;
-    function handleCollectRedeem(uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 currency, uint128 currencyPayout, uint128 tokensRedeemed, uint128 remainingRedeemOrder) external;
+    function handleExecutedDecreaseInvestOrder(
+        uint64 poolId,
+        bytes16 trancheId,
+        bytes32 investor,
+        uint128 currency,
+        uint128 currencyPayout,
+        uint128 remainingInvestOrder
+    ) external;
+    function handleExecutedDecreaseRedeemOrder(
+        uint64 poolId,
+        bytes16 trancheId,
+        bytes32 investor,
+        uint128 currency,
+        uint128 trancheTokensPayout,
+        uint128 remainingRedeemOrder
+    ) external;
+    function handleExecutedCollectInvest(
+        uint64 poolId,
+        bytes16 trancheId,
+        bytes32 investor,
+        uint128 currency,
+        uint128 currencyPayout,
+        uint128 trancheTokensPayout,
+        uint128 remainingInvestOrder
+    ) external;
+    function handleExecutedCollectRedeem(
+        uint64 poolId,
+        bytes16 trancheId,
+        bytes32 investor,
+        uint128 currency,
+        uint128 currencyPayout,
+        uint128 trancheTokensPayout,
+        uint128 remainingRedeemOrder
+    ) external;
 }
 
 interface RouterLike {
@@ -283,7 +313,57 @@ contract ConnectorGateway {
         } else if (ConnectorMessages.isTransferTrancheTokens(_msg)) {
             (uint64 poolId, bytes16 trancheId, uint128 currencyId, address destinationAddress, uint128 amount) =
                 ConnectorMessages.parseTransferTrancheTokens20(_msg);
-            connector.handleTransferTrancheTokens(poolId, trancheId, currencyId, destinationAddress, amount);
+           connector.handleTransferTrancheTokens(poolId, trancheId, currencyId, destinationAddress, amount);
+        } else if (ConnectorMessages.isExecutedDecreaseInvestOrder(_msg)) {
+            (
+                uint64 poolId,
+                bytes16 trancheId,
+                bytes32 investor,
+                uint128 currency,
+                uint128 currencyPayout,
+                uint128 remainingInvestOrder
+            ) = ConnectorMessages.parseExecutedDecreaseInvestOrder(_msg);
+            connector.handleExecutedDecreaseInvestOrder(
+                poolId, trancheId, investor, currency, currencyPayout, remainingInvestOrder
+            );
+        } else if (ConnectorMessages.isExecutedDecreaseRedeemOrder(_msg)) {
+            (
+                uint64 poolId,
+                bytes16 trancheId,
+                bytes32 investor,
+                uint128 currency,
+                uint128 trancheTokensPayout,
+                uint128 remainingRedeemOrder
+            ) = ConnectorMessages.parseExecutedDecreaseRedeemOrder(_msg);
+            connector.handleExecutedDecreaseRedeemOrder(
+                poolId, trancheId, investor, currency, trancheTokensPayout, remainingRedeemOrder
+            );
+        } else if (ConnectorMessages.isExecutedCollectInvest(_msg)) {
+            (
+                uint64 poolId,
+                bytes16 trancheId,
+                bytes32 investor,
+                uint128 currency,
+                uint128 currencyPayout,
+                uint128 trancheTokensPayout,
+                uint128 remainingInvestOrder
+            ) = ConnectorMessages.parseExecutedCollectInvest(_msg);
+            connector.handleExecutedCollectInvest(
+                poolId, trancheId, investor, currency, currencyPayout, trancheTokensPayout, remainingInvestOrder
+            );
+        } else if (ConnectorMessages.isExecutedCollectRedeem(_msg)) {
+            (
+                uint64 poolId,
+                bytes16 trancheId,
+                bytes32 investor,
+                uint128 currency,
+                uint128 currencyPayout,
+                uint128 trancheTokensRedeemed,
+                uint128 remainingRedeemOrder
+            ) = ConnectorMessages.parseExecutedCollectRedeem(_msg);
+            connector.handleExecutedCollectRedeem(
+                poolId, trancheId, investor, currency, currencyPayout, trancheTokensRedeemed, remainingRedeemOrder
+            );
         } else if (ConnectorMessages.isAddAdmin(_msg)) {
             address spell = ConnectorMessages.parseAddAdmin(_msg);
             scheduleShortRely(spell);

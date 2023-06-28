@@ -471,6 +471,7 @@ contract ConnectorTest is Test {
         vm.assume(recipient != address(0));
 
         ERC20 erc20 = newErc20(tokenName, tokenSymbol, decimals);
+        vm.assume(recipient != address(erc20));
         connector.addCurrency(currency, address(erc20));
 
         assertEq(erc20.balanceOf(address(evmConnector.escrow())), 0);

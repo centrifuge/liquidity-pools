@@ -6,7 +6,7 @@ on:
       - main
 
 env:
-  FOUNDRY_PROFILE: ci
+  FOUNDRY_PROFILE: push_to_main
 
 jobs:
   check:
