@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.18;
 
-// Tranche implementation for Centrifuge Pools following the EIP4626 standard. 
-// Each Tranche is a tokenized vault issuing shares as restricted ERC20 tokens against stable currency deposits based on the current share price.
-// tranche vault: tranche asset value.
-// asset: The underlying stable currency of the Centrifuge pool. 
-// share: The restricted ERC-20 Tranche token (TIN/DROP). Has a ratio (token price) of underlying assets exchanged on deposit/withdraw/redeem
+// Liquidity Pool implementation for Centrifuge Pools following the EIP4626 standard. 
+// Each Liquidity Pool is a tokenized vault issuing shares as restricted ERC20 tokens against stable currency deposits based on the current share price.
+// Liquidity Pool vault: Liquidity Pool asset value.
+// asset: The underlying stable currency of the Liquidity Pool. Note: 1 Centrifuge Pool can have multiple Liquidity Pools for the same Tranche token with different underlying currencies (assets).
+// share: The restricted ERC-20 Liquidity pool token. Has a ratio (token price) of underlying assets exchanged on deposit/withdraw/redeem. Liquidity pool tokens on evm represent tranche tokens on centrifuge chain (even though in the current implementation one tranche token on centrifuge chain can be split across multiple liquidity pool tokens on EVM). 
 
 // Challenges: 
 // 1. Centrifuge Pools and corresponding Tranches live on Centchain having their liquidity spread across multiple chains. 
-// Latest Tranche values, like share / token price, tranche asset value, total assets... have to be retrieved from Centrifuge chain in order to provide share <-> asset conversions.
+// Latest Tranche Token token price is not available in the same block and is updated in an async manner from Centrifuge chain. Deposit & Redemption previews can only be made based on the latest price updates from Centrifuge chain.
 // 2. Pool Epochs: Deposits into and redemptions from Centrifuge Pools are subject to epochs. Deposit and redemption orders are collected during 24H epoch periods
 // and filled during epoch execution following the rules of the underlying pool. Consequently, deposits and redemptions are not instanty possible and have to follow the epoch schedule. 
 // LiquidityPool is extending the EIP4626 standard by 'requestRedeem' & 'requestDeposit' functions, where redeem and deposit orders are submitted to the pools to be included in the execution of the following epoch.
@@ -65,7 +65,7 @@ contract LiquidityPool is RestrictedToken {
         emit File(_what, _data);
     }
 
-    /// @dev Centrifuge chain pool information to be files by factory on deployment
+    /// @dev Centrifuge chain pool information to be filed by factory on deployment
     function setPoolDetails(uint64 _poolId, bytes16 _trancheId) public auth {
         require(poolId == 0, "LiquidityPool/pool-details-already-set");
         poolId = _poolId;
