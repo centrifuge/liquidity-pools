@@ -97,6 +97,62 @@ contract MockHomeConnector is Test {
         router.handle(_message);
     }
 
+    function incomingExecutedDecreaseInvestOrder(
+        uint64 poolId,
+        bytes16 trancheId,
+        address investor,
+        uint128 currency,
+        uint128 currencyPayout,
+        uint128 remainingInvestOrder
+    ) public {
+        bytes memory _message = ConnectorMessages.formatExecutedDecreaseInvestOrder(
+            poolId, trancheId, addressToBytes32(investor), currency, currencyPayout, remainingInvestOrder
+        );
+        router.handle(_message);
+    }
+
+    function incomingExecutedCollectInvest(
+        uint64 poolId,
+        bytes16 trancheId,
+        address investor,
+        uint128 currency,
+        uint128 currencyPayout,
+        uint128 trancheTokensPayout,
+        uint128 remainingInvestOrder
+    ) public {
+        bytes memory _message = ConnectorMessages.formatExecutedCollectInvest(
+            poolId,
+            trancheId,
+            addressToBytes32(investor),
+            currency,
+            currencyPayout,
+            trancheTokensPayout,
+            remainingInvestOrder
+        );
+        router.handle(_message);
+    }
+
+    function incomingExecutedCollectRedeem(
+        uint64 poolId,
+        bytes16 trancheId,
+        address investor,
+        uint128 currency,
+        uint128 currencyPayout,
+        uint128 trancheTokensPayout,
+        uint128 remainingRedeemOrder
+    ) public {
+        bytes memory _message = ConnectorMessages.formatExecutedCollectRedeem(
+            poolId,
+            trancheId,
+            addressToBytes32(investor),
+            currency,
+            currencyPayout,
+            trancheTokensPayout,
+            remainingRedeemOrder
+        );
+        router.handle(_message);
+    }
+
     function incomingScheduleRely(address spell) public {
         bytes memory _message = ConnectorMessages.formatAddAdmin(spell);
         router.handle(_message);
@@ -113,5 +169,10 @@ contract MockHomeConnector is Test {
         dispatchChainId = _destinationChainId;
         dispatchMessage = _messageBody;
         dispatchRecipient = _recipientAddress;
+    }
+
+    // Utils
+    function addressToBytes32(address x) private pure returns (bytes32) {
+        return bytes32(bytes20(x));
     }
 }
