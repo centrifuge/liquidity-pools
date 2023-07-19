@@ -22,7 +22,6 @@ interface ApproveLike {
 }
 
 contract MigrationsTest is Test {
-
     CentrifugeConnector bridgedConnector;
     ConnectorGateway gateway;
     MockHomeConnector connector;
@@ -96,12 +95,7 @@ contract MigrationsTest is Test {
         Memberlist(token.memberlist());
     }
 
-    function addMember(
-        uint64 poolId,
-        bytes16 trancheId,
-        address user,
-        uint64 validUntil
-    ) public {
+    function addMember(uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) public {
         (address token_,,,,,) = bridgedConnector.tranches(poolId, trancheId);
         connector.updateMember(poolId, trancheId, user, validUntil);
 
@@ -112,18 +106,15 @@ contract MigrationsTest is Test {
         assertEq(memberlist.members(user), validUntil);
     }
 
-    function runFullCycle(
-        uint64 poolId,
-        bytes16 trancheId,
-        string memory tokenName,
-        string memory tokenSymbol
-    ) public {
+    function runFullCycle(uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol)
+        public
+    {
         address user = address(0x123);
         uint64 validUntil = uint64(block.timestamp + 10 days);
         address DAI = address(0x6B175474E89094C44Da98b954EedeAC495271d0F);
         uint8 decimals = ERC20(DAI).decimals();
         uint128 price = uint128(10 ** uint128(decimals));
-        
+
         deployPoolAndTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price);
         addMember(poolId, trancheId, user, validUntil);
         (address token_,,,,,) = bridgedConnector.tranches(poolId, trancheId);
@@ -146,29 +137,21 @@ contract MigrationsTest is Test {
         assertEq(ERC20(DAI).balanceOf(user), 0);
         bridgedConnector.decreaseInvestOrder(poolId, trancheId, DAI, 100);
         vm.stopPrank();
-        connector.incomingExecutedDecreaseInvestOrder(poolId, trancheId, user, currency, 100, 900);  // TODO: Not implemeted yet
+        connector.incomingExecutedDecreaseInvestOrder(poolId, trancheId, user, currency, 100, 900); // TODO: Not implemeted yet
         // assertEq(ERC20(DAI).balanceOf(address(escrow)), 100);
 
         // Assume bot has triggered epoch execution. Then we can collect tranche tokens
         vm.prank(user);
         bridgedConnector.collectInvest(poolId, trancheId);
         uint128 trancheAmount = uint128(900 * price / 10 ** uint128(decimals));
-        connector.incomingExecutedCollectInvest(
-            poolId,
-            trancheId,
-            user,
-            currency,
-            0,
-            900,
-            trancheAmount
-        );  // TODO: Not implemeted yet
+        connector.incomingExecutedCollectInvest(poolId, trancheId, user, currency, 0, 900, trancheAmount); // TODO: Not implemeted yet
         // TODO: bridgedConnector.deposit(1000)
         assertEq(ERC20(token_).balanceOf(user), trancheAmount);
 
         // time passes
         vm.warp(100 days);
         connector.updateTokenPrice(poolId, trancheId, price * 2);
-        (,price,,,,) = bridgedConnector.tranches(poolId, trancheId);
+        (, price,,,,) = bridgedConnector.tranches(poolId, trancheId);
 
         // user submits redeem order
         // TODO: bridgedConnector.requestRedeem(trancheAmount)
@@ -180,27 +163,15 @@ contract MigrationsTest is Test {
         vm.prank(user);
         bridgedConnector.collectRedeem(poolId, trancheId);
         uint128 daiAmount = uint128(trancheAmount * price / 10 ** uint128(decimals));
-        connector.incomingExecutedCollectRedeem(
-            poolId,
-            trancheId,
-            user,
-            currency,
-            daiAmount,
-            0,
-            0
-        ); // TODO: Not implemeted yet
-        // TODO: bridgedConnector.redeem(trancheAmount)
-        // assertEq(ERC20(DAI).balanceOf(user), daiAmount);
-        // assertEq(ERC20(token).balanceOf(user), 0);
-
+        connector.incomingExecutedCollectRedeem(poolId, trancheId, user, currency, daiAmount, 0, 0); // TODO: Not implemeted yet
+            // TODO: bridgedConnector.redeem(trancheAmount)
+            // assertEq(ERC20(DAI).balanceOf(user), daiAmount);
+            // assertEq(ERC20(token).balanceOf(user), 0);
     }
 
-    function testMigrateGateway(
-        uint64 poolId,
-        bytes16 trancheId,
-        string memory tokenName,
-        string memory tokenSymbol
-    ) public {
+    function testMigrateGateway(uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol)
+        public
+    {
         runFullCycle(poolId, trancheId, tokenName, tokenSymbol);
         // ConnectorGateway newGateway = new ConnectorGateway(
         //     address(bridgedConnector),
