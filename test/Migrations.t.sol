@@ -53,6 +53,8 @@ contract MigrationsTest is Test {
         gateway.rely(address(delayedAdmin));
         pauseAdmin.file("gateway", address(gateway));
         delayedAdmin.file("gateway", address(gateway));
+        pauseAdmin.rely(address(gateway));
+        delayedAdmin.rely(address(gateway));
         bridgedConnector.file("gateway", address(gateway));
         escrow.rely(address(bridgedConnector));
         mockXcmRouter.file("gateway", address(gateway));
@@ -171,16 +173,51 @@ contract MigrationsTest is Test {
             // assertEq(ERC20(token).balanceOf(user), 0);
     }
 
-    function pauseTest(address pauseAdmin, address gateway) public {
+    function adminTest(address pauseAdmin, address delayedAdmin, address gateway) public {
         ConnectorPauseAdmin(pauseAdmin).pause();
         assertTrue(ConnectorGateway(gateway).paused());
         ConnectorPauseAdmin(pauseAdmin).unpause();
         assertFalse(ConnectorGateway(gateway).paused());
+        address fakeSpell = address(0xBEEF);
+        ConnectorDelayedAdmin(delayedAdmin).schedule(fakeSpell);
+        assertEq(ConnectorGateway(gateway).relySchedule(fakeSpell), block.timestamp + 48 hours);
+        ConnectorDelayedAdmin(delayedAdmin).cancelSchedule(fakeSpell);
+        assertEq(ConnectorGateway(gateway).relySchedule(fakeSpell), 0);
     }
 
     function testMigrateGateway(uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol)
         public
     {
+        // TODO: Needs to test the admin functionality works for migrating contracts
+        // TODO: Needs to test stateful contracts successfully migrate state
+
+        // Setup: Add a user with delayedAdmin rights and deny this test, which acts as the spell.
+        address adminUser = address(0xFED);
+        delayedAdmin.rely(adminUser);
+
+        pauseAdmin.deny(address(this));
+        delayedAdmin.deny(address(this));
+        gateway.deny(address(this));
+        bridgedConnector.deny(address(this));
+        escrow.deny(address(this));
+
+        // Mock the priviledge granting system
+        vm.prank(adminUser);
+        delayedAdmin.schedule(address(this));
+        console.log(block.timestamp);
+        console.log(gateway.relySchedule(address(this)));
+        vm.warp(block.timestamp + 49 hours);
+        console.log(block.timestamp);
+        vm.prank(adminUser);
+        gateway.executeScheduledRely(address(this));
+
+
+        // <--- Start of mock spell Contents --->
+        gateway.relyContract(address(bridgedConnector), address(this));
+        gateway.relyContract(address(escrow), address(this));
+        gateway.relyContract(address(pauseAdmin), address(this));
+        gateway.relyContract(address(delayedAdmin), address(this));
+
         ConnectorGateway newGateway = new ConnectorGateway(
             address(bridgedConnector),
             address(mockXcmRouter),
@@ -188,6 +225,8 @@ contract MigrationsTest is Test {
             48 hours,
             48 hours
         );
+
+
         newGateway.rely(address(pauseAdmin));
         newGateway.rely(address(delayedAdmin));
 
@@ -199,7 +238,7 @@ contract MigrationsTest is Test {
         bridgedConnector.rely(address(newGateway));
         escrow.rely(address(newGateway));
         runFullInvestRedeemCycle(poolId, trancheId, tokenName, tokenSymbol);
-        pauseTest(address(pauseAdmin), address(newGateway));
+        adminTest(address(pauseAdmin), address(delayedAdmin), address(newGateway));
     }
 
     function stringToBytes32(string memory source) internal pure returns (bytes32 result) {
