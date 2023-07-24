@@ -42,6 +42,8 @@ contract ConnectorAxelarScript is Script {
         gateway.rely(address(delayedAdmin));
         pauseAdmin.file("gateway", address(gateway));
         delayedAdmin.file("gateway", address(gateway));
+        pauseAdmin.rely(address(gateway));
+        delayedAdmin.rely(address(gateway));
         router.file("gateway", address(gateway));
         connector.rely(address(gateway));
         router.rely(address(gateway));
