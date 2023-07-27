@@ -226,7 +226,6 @@ contract MigrationsTest is Test {
             48 hours
         );
 
-
         newGateway.rely(address(pauseAdmin));
         newGateway.rely(address(delayedAdmin));
 
@@ -237,6 +236,10 @@ contract MigrationsTest is Test {
         mockXcmRouter.file("gateway", address(newGateway));
         bridgedConnector.rely(address(newGateway));
         escrow.rely(address(newGateway));
+
+        // <--- End of mock spell Contents --->
+
+        // Test that the migration was successful
         runFullInvestRedeemCycle(poolId, trancheId, tokenName, tokenSymbol);
         adminTest(address(pauseAdmin), address(delayedAdmin), address(newGateway));
     }
