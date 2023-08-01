@@ -48,7 +48,7 @@ interface AxelarGatewayLike {
         external;
 }
 
-contract ConnectorMoonbeamAxelarRouter is AxelarExecutableLike {
+contract ConnectorAxelarXCMRouter is AxelarExecutableLike {
     address constant XCM_TRANSACTOR_V2_ADDRESS = 0x000000000000000000000000000000000000080D;
 
     mapping(address => uint256) public wards;
@@ -87,12 +87,12 @@ contract ConnectorMoonbeamAxelarRouter is AxelarExecutableLike {
     }
 
     modifier auth() {
-        require(wards[msg.sender] == 1, "ConnectorMoonbeamAxelarRouter/not-authorized");
+        require(wards[msg.sender] == 1, "ConnectorAxelarXCMRouter/not-authorized");
         _;
     }
 
     modifier onlyCentrifugeChainOrigin() {
-        require(msg.sender == address(centrifugeChainOrigin), "ConnectorMoonbeamAxelarRouter/invalid-origin");
+        require(msg.sender == address(centrifugeChainOrigin), "ConnectorAxelarXCMRouter/invalid-origin");
         _;
     }
 
@@ -101,7 +101,7 @@ contract ConnectorMoonbeamAxelarRouter is AxelarExecutableLike {
         // the point on using it here if we already check that msg.sender == sourceOrigin.
         require(
             msg.sender == address(sourceOrigin) && sourceOrigin == sourceChain,
-            "ConnectorMoonbeamAxelarRouter/only-source-origin-allowed-to-call"
+            "ConnectorAxelarXCMRouter/only-source-origin-allowed-to-call"
         );
         _;
     }

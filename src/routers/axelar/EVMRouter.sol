@@ -36,7 +36,7 @@ interface ConnectorGatewayLike {
     function handle(bytes memory message) external;
 }
 
-contract ConnectorAxelarRouter is AxelarExecutableLike {
+contract ConnectorAxelarEVMRouter is AxelarExecutableLike {
     mapping(address => uint256) public wards;
 
     ConnectorLike public immutable connector;
@@ -59,7 +59,7 @@ contract ConnectorAxelarRouter is AxelarExecutableLike {
     }
 
     modifier auth() {
-        require(wards[msg.sender] == 1, "ConnectorAxelarRouter/not-authorized");
+        require(wards[msg.sender] == 1, "ConnectorAxelarEVMRouter/not-authorized");
         _;
     }
 
@@ -67,13 +67,13 @@ contract ConnectorAxelarRouter is AxelarExecutableLike {
         require(
             msg.sender == address(axelarGateway)
                 && keccak256(bytes(axelarCentrifugeChainId)) == keccak256(bytes(sourceChain)),
-            "ConnectorAxelarRouter/invalid-origin"
+            "ConnectorAxelarEVMRouter/invalid-origin"
         );
         _;
     }
 
     modifier onlyConnector() {
-        require(msg.sender == address(connector), "ConnectorAxelarRouter/only-connector-allowed-to-call");
+        require(msg.sender == address(connector), "ConnectorAxelarEVMRouter/only-connector-allowed-to-call");
         _;
     }
 
