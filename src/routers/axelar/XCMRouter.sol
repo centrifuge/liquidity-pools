@@ -97,10 +97,7 @@ contract ConnectorAxelarXCMRouter is AxelarExecutableLike {
     }
 
     modifier onlySourceOrigin() {
-        require(
-            msg.sender == address(sourceOrigin),
-            "ConnectorAxelarXCMRouter/only-source-origin-allowed-to-call"
-        );
+        require(msg.sender == address(sourceOrigin), "ConnectorAxelarXCMRouter/only-source-origin-allowed-to-call");
         _;
     }
 
