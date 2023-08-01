@@ -58,7 +58,7 @@ contract ConnectorAxelarXCMRouter is AxelarExecutableLike {
     address public immutable centrifugeChainOrigin;
     /// The origin of EVM -> Centrifuge messages; the trusted source origin of the Axelar-bridged
     /// messages to be handled by this router.
-    address public sourceOrigin;
+    address public axelarEVMRouterOrigin;
     AxelarGatewayLike public immutable axelarGateway;
     XcmWeightInfo internal xcmWeightInfo;
 
@@ -72,10 +72,10 @@ contract ConnectorAxelarXCMRouter is AxelarExecutableLike {
     event File(bytes32 indexed what, address addr);
     event Executed(bytes32 indexed payload);
 
-    constructor(address centrifugeChainOrigin_, address axelarGateway_, address sourceOrigin_) {
+    constructor(address centrifugeChainOrigin_, address axelarGateway_, address axelarEVMRouterOrigin_) {
         centrifugeChainOrigin = centrifugeChainOrigin_;
         axelarGateway = AxelarGatewayLike(axelarGateway_);
-        sourceOrigin = sourceOrigin_;
+        axelarEVMRouterOrigin = axelarEVMRouterOrigin_;
         xcmWeightInfo = XcmWeightInfo({
             buyExecutionWeightLimit: 19000000000,
             transactWeightAtMost: 8000000000,
@@ -96,8 +96,8 @@ contract ConnectorAxelarXCMRouter is AxelarExecutableLike {
         _;
     }
 
-    modifier onlySourceOrigin() {
-        require(msg.sender == address(sourceOrigin), "ConnectorAxelarXCMRouter/only-source-origin-allowed-to-call");
+    modifier onlyAxelarEVMRouterOrigin() {
+        require(msg.sender == address(axelarEVMRouterOrigin), "ConnectorAxelarXCMRouter/only-axelar-evm-router-origin-allowed");
         _;
     }
 
@@ -112,10 +112,10 @@ contract ConnectorAxelarXCMRouter is AxelarExecutableLike {
         emit Deny(user);
     }
 
-    function file(bytes32 what, address sourceOrigin_) external auth {
-        if (what == "sourceOrigin") {
-            sourceOrigin = sourceOrigin_;
-            emit File(what, sourceOrigin_);
+    function file(bytes32 what, address axelarEVMRouterOrigin_) external auth {
+        if (what == "axelarEVMRouterOrigin") {
+            axelarEVMRouterOrigin = axelarEVMRouterOrigin_;
+            emit File(what, axelarEVMRouterOrigin_);
         } else {
             revert("ConnectorXCMRouter/file-unrecognized-param");
         }
@@ -138,7 +138,7 @@ contract ConnectorAxelarXCMRouter is AxelarExecutableLike {
     // A message that's coming from another EVM chain, headed to the Centrifuge Chain.
     function execute(bytes32, string calldata sourceChain, string calldata, bytes calldata payload)
         external
-        onlySourceOrigin
+        onlyAxelarEVMRouterOrigin
     {
         // todo(nuno): why do we hash this?
         bytes32 hh = keccak256(payload);

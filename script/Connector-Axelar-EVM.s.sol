@@ -10,8 +10,8 @@ import {ConnectorDelayedAdmin} from "src/admin/DelayedAdmin.sol";
 import {TrancheTokenFactory, MemberlistFactory} from "src/token/factory.sol";
 import "forge-std/Script.sol";
 
-// Script to deploy Connectors with an Axelar router.
-contract ConnectorAxelarScript is Script {
+// Script to deploy Connectors with an AxelarEVM router.
+contract ConnectorAxelarEVMScript is Script {
     // address(0)[0:20] + keccak("Centrifuge")[21:32]
     bytes32 SALT = 0x000000000000000000000000000000000000000075eb27011b69f002dc094d05;
 
