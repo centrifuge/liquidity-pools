@@ -113,19 +113,19 @@ contract ConnectorAxelarRouter is AxelarExecutableLike {
     }
 
     // todo(nuno)
-//    function file(bytes32 what, address gateway_) external auth {
-//        if (what == "gateway") {
-//            connectorGateway = ConnectorGatewayLike(gateway_);
-//        } else {
-//            revert("ConnectorXCMRouter/file-unrecognized-param");
-//        }
-//
-//        emit File(what, gateway_);
-//    }
+    //    function file(bytes32 what, address gateway_) external auth {
+    //        if (what == "gateway") {
+    //            connectorGateway = ConnectorGatewayLike(gateway_);
+    //        } else {
+    //            revert("ConnectorXCMRouter/file-unrecognized-param");
+    //        }
+    //
+    //        emit File(what, gateway_);
+    //    }
 
     function file(bytes32 what, uint64 buyExecutionWeightLimit, uint64 transactWeightAtMost, uint256 feeAmount)
-    external
-    auth
+        external
+        auth
     {
         if (what == "xcmWeightInfo") {
             xcmWeightInfo = XcmWeightInfo(buyExecutionWeightLimit, transactWeightAtMost, feeAmount);
@@ -171,11 +171,10 @@ contract ConnectorAxelarRouter is AxelarExecutableLike {
 
     // --- Outgoing ---
     // A message that has been sent from the Centrifuge Chain, heading to a specific destination EVM chain
-    function send(
-        string calldata destinationChain,
-        string calldata destinationAddress,
-        bytes calldata payload
-    ) external payable {
+    function send(string calldata destinationChain, string calldata destinationAddress, bytes calldata payload)
+        external
+        payable
+    {
         axelarGateway.callContract(destinationChain, destinationAddress, payload);
     }
 
