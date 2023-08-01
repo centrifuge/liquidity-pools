@@ -97,7 +97,10 @@ contract ConnectorAxelarXCMRouter is AxelarExecutableLike {
     }
 
     modifier onlyAxelarEVMRouterOrigin() {
-        require(msg.sender == address(axelarEVMRouterOrigin), "ConnectorAxelarXCMRouter/only-axelar-evm-router-origin-allowed");
+        require(
+            msg.sender == address(axelarEVMRouterOrigin),
+            "ConnectorAxelarXCMRouter/only-axelar-evm-router-origin-allowed"
+        );
         _;
     }
 
