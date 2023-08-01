@@ -96,11 +96,9 @@ contract ConnectorAxelarXCMRouter is AxelarExecutableLike {
         _;
     }
 
-    modifier onlySourceOrigin(address sourceChain) {
-        // todo(nuno): I am not sure what to do with `sourceChain`; it is part of the `execute` API but I don't see
-        // the point on using it here if we already check that msg.sender == sourceOrigin.
+    modifier onlySourceOrigin() {
         require(
-            msg.sender == address(sourceOrigin) && sourceOrigin == sourceChain,
+            msg.sender == address(sourceOrigin),
             "ConnectorAxelarXCMRouter/only-source-origin-allowed-to-call"
         );
         _;
@@ -143,7 +141,7 @@ contract ConnectorAxelarXCMRouter is AxelarExecutableLike {
     // A message that's coming from another EVM chain, headed to the Centrifuge Chain.
     function execute(bytes32, string calldata sourceChain, string calldata, bytes calldata payload)
         external
-        onlySourceOrigin(sourceOrigin)
+        onlySourceOrigin
     {
         // todo(nuno): why do we hash this?
         bytes32 hh = keccak256(payload);

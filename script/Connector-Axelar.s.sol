@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.18;
 
-import {ConnectorAxelarEVMRouter} from "src/routers/axelar/Router.sol";
+import {ConnectorAxelarEVMRouter} from "src/routers/axelar/EVMRouter.sol";
 import {ConnectorGateway} from "src/routers/Gateway.sol";
 import {CentrifugeConnector} from "src/Connector.sol";
 import {ConnectorEscrow} from "src/Escrow.sol";
