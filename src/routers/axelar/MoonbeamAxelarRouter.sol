@@ -48,7 +48,7 @@ interface AxelarGatewayLike {
         external;
 }
 
-contract ConnectorAxelarRouter is AxelarExecutableLike {
+contract ConnectorMoonbeamAxelarRouter is AxelarExecutableLike {
     address constant XCM_TRANSACTOR_V2_ADDRESS = 0x000000000000000000000000000000000000080D;
 
     mapping(address => uint256) public wards;
@@ -56,6 +56,9 @@ contract ConnectorAxelarRouter is AxelarExecutableLike {
     mapping(bytes32 => uint32) public executedCalls;
 
     address public immutable centrifugeChainOrigin;
+    /// The origin of EVM -> Centrifuge messages; the trusted source origin of the Axelar-bridged
+    /// messages to be handled by this router.
+    address public sourceOrigin;
     AxelarGatewayLike public immutable axelarGateway;
     XcmWeightInfo internal xcmWeightInfo;
 
@@ -69,9 +72,10 @@ contract ConnectorAxelarRouter is AxelarExecutableLike {
     event File(bytes32 indexed what, address addr);
     event Executed(bytes32 indexed payload);
 
-    constructor(address centrifugeChainOrigin_, address axelarGateway_) {
+    constructor(address centrifugeChainOrigin_, address axelarGateway_, address sourceOrigin_) {
         centrifugeChainOrigin = centrifugeChainOrigin_;
         axelarGateway = AxelarGatewayLike(axelarGateway_);
+        sourceOrigin = sourceOrigin_;
         xcmWeightInfo = XcmWeightInfo({
             buyExecutionWeightLimit: 19000000000,
             transactWeightAtMost: 8000000000,
@@ -83,7 +87,7 @@ contract ConnectorAxelarRouter is AxelarExecutableLike {
     }
 
     modifier auth() {
-        require(wards[msg.sender] == 1, "ConnectorAxelarRouter/not-authorized");
+        require(wards[msg.sender] == 1, "ConnectorMoonbeamAxelarRouter/not-authorized");
         _;
     }
 
@@ -92,12 +96,13 @@ contract ConnectorAxelarRouter is AxelarExecutableLike {
         _;
     }
 
-    modifier onlyConnector() {
-        // todo(nuno): this should ensure that it was a connector from another,
-        // axelar-bridged EVM chain. How can we do that? and can we support multiple
-        // connector addresses so to support multiple source chains?
-
-        // require(msg.sender == address(connector), "ConnectorAxelarRouter/only-connector-allowed-to-call");
+    modifier onlySourceOrigin(address sourceChain) {
+        // todo(nuno): I am not sure what to do with `sourceChain`; it is part of the `execute` API but I don't see
+        // the point on using it here if we already check that msg.sender == sourceOrigin.
+        require(
+            msg.sender == address(sourceOrigin) && sourceOrigin == sourceChain,
+            "ConnectorMoonbeamAxelarRouter/only-source-origin-allowed-to-call"
+        );
         _;
     }
 
@@ -112,16 +117,14 @@ contract ConnectorAxelarRouter is AxelarExecutableLike {
         emit Deny(user);
     }
 
-    // todo(nuno)
-    //    function file(bytes32 what, address gateway_) external auth {
-    //        if (what == "gateway") {
-    //            connectorGateway = ConnectorGatewayLike(gateway_);
-    //        } else {
-    //            revert("ConnectorXCMRouter/file-unrecognized-param");
-    //        }
-    //
-    //        emit File(what, gateway_);
-    //    }
+    function file(bytes32 what, address sourceOrigin_) external auth {
+        if (what == "sourceOrigin") {
+            sourceOrigin = sourceOrigin_;
+            emit File(what, sourceOrigin_);
+        } else {
+            revert("ConnectorXCMRouter/file-unrecognized-param");
+        }
+    }
 
     function file(bytes32 what, uint64 buyExecutionWeightLimit, uint64 transactWeightAtMost, uint256 feeAmount)
         external
@@ -140,7 +143,7 @@ contract ConnectorAxelarRouter is AxelarExecutableLike {
     // A message that's coming from another EVM chain, headed to the Centrifuge Chain.
     function execute(bytes32, string calldata sourceChain, string calldata, bytes calldata payload)
         external
-        onlyConnector
+        onlySourceOrigin(sourceOrigin)
     {
         // todo(nuno): why do we hash this?
         bytes32 hh = keccak256(payload);
@@ -174,6 +177,7 @@ contract ConnectorAxelarRouter is AxelarExecutableLike {
     function send(string calldata destinationChain, string calldata destinationAddress, bytes calldata payload)
         external
         payable
+        onlyCentrifugeChainOrigin
     {
         axelarGateway.callContract(destinationChain, destinationAddress, payload);
     }
