@@ -120,7 +120,7 @@ contract ConnectorAxelarXCMRouter is AxelarExecutableLike {
             axelarEVMRouterOrigin = axelarEVMRouterOrigin_;
             emit File(what, axelarEVMRouterOrigin_);
         } else {
-            revert("ConnectorXCMRouter/file-unrecognized-param");
+            revert("ConnectorAxelarXCMRouter/file-unrecognized-param");
         }
     }
 
@@ -131,7 +131,7 @@ contract ConnectorAxelarXCMRouter is AxelarExecutableLike {
         if (what == "xcmWeightInfo") {
             xcmWeightInfo = XcmWeightInfo(buyExecutionWeightLimit, transactWeightAtMost, feeAmount);
         } else {
-            revert("CentrifugeXCMRouter/file-unrecognized-param");
+            revert("ConnectorAxelarXCMRouter/file-unrecognized-param");
         }
 
         emit File(what, xcmWeightInfo);
