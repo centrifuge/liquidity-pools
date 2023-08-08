@@ -51,6 +51,7 @@ interface AxelarGatewayLike {
 contract ConnectorAxelarXCMRouter is AxelarExecutableLike {
     address constant XCM_TRANSACTOR_V2_ADDRESS = 0x000000000000000000000000000000000000080D;
 
+    // todo(alina|nuno): inherit from Auth directly once https://github.com/centrifuge/connectors/pull/66 is merged
     mapping(address => uint256) public wards;
     //todo(nuno): do we really need this?
     mapping(bytes32 => uint32) public executedCalls;
