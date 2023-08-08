@@ -175,7 +175,6 @@ contract ConnectorAxelarXCMRouter is AxelarExecutableLike {
     // A message that has been sent from the Centrifuge Chain, heading to a specific destination EVM chain
     function send(string calldata destinationChain, string calldata destinationAddress, bytes calldata payload)
         external
-        payable
         onlyCentrifugeChainOrigin
     {
         axelarGateway.callContract(destinationChain, destinationAddress, payload);
