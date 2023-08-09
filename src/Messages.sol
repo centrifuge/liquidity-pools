@@ -8,8 +8,8 @@ library ConnectorMessages {
     using TypedMemView for bytes29;
 
     enum Call
-    /// 0 - An invalid message
     {
+        /// 0 - An invalid message
         Invalid,
         /// 1 - Add a currency id -> EVM address mapping
         AddCurrency,
@@ -47,8 +47,8 @@ library ConnectorMessages {
         ExecutedCollectInvest,
         /// 18 - Executed Collect Redeem
         ExecutedCollectRedeem,
-        /// 19 - Add a new admin
-        AddAdmin
+        /// 19 - Schedule an address to be given admin rights which can be executed after a delay
+        ScheduleRely
     }
 
     enum Domain {
@@ -746,15 +746,15 @@ library ConnectorMessages {
         remainingRedeemOrder = uint128(_msg.indexUint(105, 16));
     }
 
-    function formatAddAdmin(address user) internal pure returns (bytes memory) {
-        return abi.encodePacked(uint8(Call.AddAdmin), user);
+    function formatScheduleRely(address user) internal pure returns (bytes memory) {
+        return abi.encodePacked(uint8(Call.ScheduleRely), user);
     }
 
-    function isAddAdmin(bytes29 _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.AddAdmin;
+    function isScheduleRely(bytes29 _msg) internal pure returns (bool) {
+        return messageType(_msg) == Call.ScheduleRely;
     }
 
-    function parseAddAdmin(bytes29 _msg) internal pure returns (address user) {
+    function parseScheduleRely(bytes29 _msg) internal pure returns (address user) {
         user = address(bytes20(_msg.index(1, 20)));
     }
 
