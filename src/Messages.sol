@@ -8,8 +8,8 @@ library ConnectorMessages {
     using TypedMemView for bytes29;
 
     enum Call
+    /// 0 - An invalid message
     {
-        /// 0 - An invalid message
         Invalid,
         /// 1 - Add a currency id -> EVM address mapping
         AddCurrency,
