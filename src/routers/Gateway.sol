@@ -359,8 +359,8 @@ contract ConnectorGateway {
             connector.handleExecutedCollectRedeem(
                 poolId, trancheId, investor, currency, currencyPayout, trancheTokensRedeemed, remainingRedeemOrder
             );
-        } else if (ConnectorMessages.isScheduleRely(_msg)) {
-            address spell = ConnectorMessages.parseScheduleRely(_msg);
+        } else if (ConnectorMessages.isScheduleUpgrade(_msg)) {
+            address spell = ConnectorMessages.parseScheduleUpgrade(_msg);
             scheduleShortRely(spell);
         } else {
             revert("ConnectorGateway/invalid-message");

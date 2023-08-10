@@ -47,8 +47,8 @@ library ConnectorMessages {
         ExecutedCollectInvest,
         /// 18 - Executed Collect Redeem
         ExecutedCollectRedeem,
-        /// 19 - Schedule an address to be given admin rights which can be executed after a delay
-        ScheduleRely
+        /// 19 - Schedule an upgrade contract to be granted admin rights
+        ScheduleUpgrade
     }
 
     enum Domain {
@@ -746,15 +746,15 @@ library ConnectorMessages {
         remainingRedeemOrder = uint128(_msg.indexUint(105, 16));
     }
 
-    function formatScheduleRely(address user) internal pure returns (bytes memory) {
-        return abi.encodePacked(uint8(Call.ScheduleRely), user);
+    function formatScheduleUpgrade(address user) internal pure returns (bytes memory) {
+        return abi.encodePacked(uint8(Call.ScheduleUpgrade), user);
     }
 
-    function isScheduleRely(bytes29 _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.ScheduleRely;
+    function isScheduleUpgrade(bytes29 _msg) internal pure returns (bool) {
+        return messageType(_msg) == Call.ScheduleUpgrade;
     }
 
-    function parseScheduleRely(bytes29 _msg) internal pure returns (address user) {
+    function parseScheduleUpgrade(bytes29 _msg) internal pure returns (address user) {
         user = address(bytes20(_msg.index(1, 20)));
     }
 
