@@ -188,9 +188,6 @@ contract MigrationsTest is Test {
     function testMigrateGateway(uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol)
         public
     {
-        // TODO: Needs to test the admin functionality works for migrating contracts
-        // TODO: Needs to test stateful contracts successfully migrate state
-
         // Setup: Add a user with delayedAdmin rights and deny this test, which acts as the spell.
         address adminUser = address(0xFED);
         delayedAdmin.rely(adminUser);
@@ -204,13 +201,9 @@ contract MigrationsTest is Test {
         // Mock the priviledge granting system
         vm.prank(adminUser);
         delayedAdmin.schedule(address(this));
-        console.log(block.timestamp);
-        console.log(gateway.relySchedule(address(this)));
         vm.warp(block.timestamp + 49 hours);
-        console.log(block.timestamp);
         vm.prank(adminUser);
         gateway.executeScheduledRely(address(this));
-
 
         // <--- Start of mock spell Contents --->
         gateway.relyContract(address(bridgedConnector), address(this));
@@ -242,6 +235,30 @@ contract MigrationsTest is Test {
         // Test that the migration was successful
         runFullInvestRedeemCycle(poolId, trancheId, tokenName, tokenSymbol);
         adminTest(address(pauseAdmin), address(delayedAdmin), address(newGateway));
+    }
+
+    function testMigrateConnector() public {
+
+    }
+
+    function testMigrateEscrow() public {
+
+    }
+
+    function testMigrateMessages() public {
+
+    }
+
+    function testMigrateRouter() public {
+
+    }
+
+    function testMigrateDelayedAdmin() public {
+
+    }
+
+    function testMigratePauseAdmin() public {
+
     }
 
     function stringToBytes32(string memory source) internal pure returns (bytes32 result) {
