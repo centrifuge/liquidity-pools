@@ -11,6 +11,7 @@ import {ERC20} from "src/token/erc20.sol";
 import {MemberlistLike, Memberlist} from "src/token/memberlist.sol";
 import {MockHomeConnector} from "./mock/MockHomeConnector.sol";
 import {MockXcmRouter} from "./mock/MockXcmRouter.sol";
+import {ConnectorAxelarEVMRouter} from "src/routers/axelar/EVMRouter.sol";
 import {ConnectorMessages} from "../src/Messages.sol";
 import {ConnectorPauseAdmin} from "../src/admin/PauseAdmin.sol";
 import {ConnectorDelayedAdmin} from "../src/admin/DelayedAdmin.sol";
@@ -99,8 +100,8 @@ contract MigrationsTest is Test {
         Memberlist(token.memberlist());
     }
 
-    function addMember(uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) public {
-        (address token_,,,,,) = bridgedConnector.tranches(poolId, trancheId);
+    function addMember(CentrifugeConnector activeConnector, uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) public {
+        (address token_,,,,,) = activeConnector.tranches(poolId, trancheId);
         connector.updateMember(poolId, trancheId, user, validUntil);
 
         RestrictedTokenLike token = RestrictedTokenLike(token_);
@@ -110,7 +111,7 @@ contract MigrationsTest is Test {
         assertEq(memberlist.members(user), validUntil);
     }
 
-    function runFullInvestRedeemCycle(uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol)
+    function runFullInvestRedeemCycle(CentrifugeConnector activeConnector, uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol)
         public
     {
         address user = address(0x123);
@@ -120,8 +121,8 @@ contract MigrationsTest is Test {
         uint128 price = uint128(10 ** uint128(decimals));
 
         deployPoolAndTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price);
-        addMember(poolId, trancheId, user, validUntil);
-        (address token_,,,,,) = bridgedConnector.tranches(poolId, trancheId);
+        addMember(activeConnector, poolId, trancheId, user, validUntil);
+        (address token_,,,,,) = activeConnector.tranches(poolId, trancheId);
 
         // Add DAI to the pool
         uint128 currency = 1;
@@ -131,44 +132,44 @@ contract MigrationsTest is Test {
         // deal fake investor fake DAI and add allowance to escrow
         deal(DAI, user, 1000);
         vm.prank(user);
-        ApproveLike(DAI).approve(address(bridgedConnector), 1000);
+        ApproveLike(DAI).approve(address(activeConnector), 1000);
         // assertEq(ERC20(DAI).balanceOf(user), 1000);
-        // TODO: bridgedConnector.requestDeposit(1000)
+        // TODO: activeConnector.requestDeposit(1000)
 
         // increase invest order and decrease by a smaller amount
         vm.startPrank(user);
-        bridgedConnector.increaseInvestOrder(poolId, trancheId, DAI, 1000);
+        activeConnector.increaseInvestOrder(poolId, trancheId, DAI, 1000);
         assertEq(ERC20(DAI).balanceOf(user), 0);
-        bridgedConnector.decreaseInvestOrder(poolId, trancheId, DAI, 100);
+        activeConnector.decreaseInvestOrder(poolId, trancheId, DAI, 100);
         vm.stopPrank();
         connector.incomingExecutedDecreaseInvestOrder(poolId, trancheId, user, currency, 100, 900); // TODO: Not implemeted yet
         // assertEq(ERC20(DAI).balanceOf(address(escrow)), 100);
 
         // Assume bot has triggered epoch execution. Then we can collect tranche tokens
         vm.prank(user);
-        bridgedConnector.collectInvest(poolId, trancheId);
+        activeConnector.collectInvest(poolId, trancheId);
         uint128 trancheAmount = uint128(900 * price / 10 ** uint128(decimals));
         connector.incomingExecutedCollectInvest(poolId, trancheId, user, currency, 0, 900, trancheAmount); // TODO: Not implemeted yet
-        // TODO: bridgedConnector.deposit(1000)
+        // TODO: activeConnector.deposit(1000)
         // assertEq(ERC20(token_).balanceOf(user), trancheAmount);
 
         // time passes
         vm.warp(100 days);
         connector.updateTokenPrice(poolId, trancheId, price * 2);
-        (, price,,,,) = bridgedConnector.tranches(poolId, trancheId);
+        (, price,,,,) = activeConnector.tranches(poolId, trancheId);
 
         // user submits redeem order
-        // TODO: bridgedConnector.requestRedeem(trancheAmount)
+        // TODO: activeConnector.requestRedeem(trancheAmount)
         vm.prank(user);
-        bridgedConnector.increaseRedeemOrder(poolId, trancheId, DAI, trancheAmount);
+        activeConnector.increaseRedeemOrder(poolId, trancheId, DAI, trancheAmount);
         // assertEq(ERC20(token_).balanceOf(user), 0);
 
         //bot executs epoch, and user redeems
         vm.prank(user);
-        bridgedConnector.collectRedeem(poolId, trancheId);
+        activeConnector.collectRedeem(poolId, trancheId);
         uint128 daiAmount = uint128(trancheAmount * price / 10 ** uint128(decimals));
         connector.incomingExecutedCollectRedeem(poolId, trancheId, user, currency, daiAmount, 0, 0); // TODO: Not implemeted yet
-            // TODO: bridgedConnector.redeem(trancheAmount)
+            // TODO: activeConnector.redeem(trancheAmount)
             // assertEq(ERC20(DAI).balanceOf(user), daiAmount);
             // assertEq(ERC20(token).balanceOf(user), 0);
     }
@@ -185,9 +186,7 @@ contract MigrationsTest is Test {
         assertEq(ConnectorGateway(gateway).relySchedule(fakeSpell), 0);
     }
 
-    function testMigrateGateway(uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol)
-        public
-    {
+    function mockAdminSetup() public {
         // Setup: Add a user with delayedAdmin rights and deny this test, which acts as the spell.
         address adminUser = address(0xFED);
         delayedAdmin.rely(adminUser);
@@ -202,8 +201,13 @@ contract MigrationsTest is Test {
         vm.prank(adminUser);
         delayedAdmin.schedule(address(this));
         vm.warp(block.timestamp + 49 hours);
-        vm.prank(adminUser);
         gateway.executeScheduledRely(address(this));
+    }
+
+    function testMigrateGateway(uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol)
+        public
+    {
+        mockAdminSetup();
 
         // <--- Start of mock spell Contents --->
         gateway.relyContract(address(bridgedConnector), address(this));
@@ -225,19 +229,63 @@ contract MigrationsTest is Test {
         // file new gateway on other contracts
         pauseAdmin.file("gateway", address(newGateway));
         delayedAdmin.file("gateway", address(newGateway));
+        pauseAdmin.rely(address(newGateway));
+        delayedAdmin.rely(address(newGateway));
         bridgedConnector.file("gateway", address(newGateway));
         mockXcmRouter.file("gateway", address(newGateway));
         bridgedConnector.rely(address(newGateway));
         escrow.rely(address(newGateway));
+        mockXcmRouter.rely(address(newGateway));
 
         // <--- End of mock spell Contents --->
 
         // Test that the migration was successful
-        runFullInvestRedeemCycle(poolId, trancheId, tokenName, tokenSymbol);
+        runFullInvestRedeemCycle(bridgedConnector, poolId, trancheId, tokenName, tokenSymbol);
         adminTest(address(pauseAdmin), address(delayedAdmin), address(newGateway));
     }
 
-    function testMigrateConnector() public {
+    function testMigrateConnector(uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol) public {
+        mockAdminSetup();
+
+        // <--- Start of mock spell Contents --->
+        gateway.relyContract(address(bridgedConnector), address(this));
+        gateway.relyContract(address(escrow), address(this));
+        gateway.relyContract(address(pauseAdmin), address(this));
+        gateway.relyContract(address(delayedAdmin), address(this));
+
+        CentrifugeConnector newConnector =
+            new CentrifugeConnector(address(escrow), address(bridgedConnector.tokenFactory()), address(bridgedConnector.memberlistFactory()));
+        
+        MockXcmRouter newMockRouter = new MockXcmRouter(address(newConnector));
+        newConnector.file("router", address(newMockRouter));
+
+       ConnectorGateway newGateway = new ConnectorGateway(
+            address(newConnector),
+            address(newMockRouter),
+            24 hours,
+            48 hours,
+            48 hours
+        );
+        newGateway.rely(address(pauseAdmin));
+        newGateway.rely(address(delayedAdmin));
+
+        // file new gateway on other contracts
+        pauseAdmin.file("gateway", address(newGateway));
+        delayedAdmin.file("gateway", address(newGateway));
+        newConnector.file("gateway", address(newGateway));
+        newMockRouter.file("gateway", address(newGateway));
+        newConnector.rely(address(newGateway));
+        escrow.rely(address(newGateway));
+        pauseAdmin.rely(address(newGateway));
+        delayedAdmin.rely(address(newGateway));
+        newMockRouter.rely(address(newGateway));
+
+        // <--- End of mock spell Contents --->
+
+        // Test that the migration was successful
+        assertTrue(address(connector) != address(newConnector));
+        runFullInvestRedeemCycle(newConnector, poolId, trancheId, tokenName, tokenSymbol);
+        adminTest(address(pauseAdmin), address(delayedAdmin), address(newGateway));
 
     }
 

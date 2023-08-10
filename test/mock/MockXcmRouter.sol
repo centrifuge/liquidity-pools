@@ -15,10 +15,24 @@ contract MockXcmRouter is Test {
     address public immutable centrifugeChainOrigin;
     address public gateway;
 
+    mapping(address => uint256) public wards;
     mapping(bytes => bool) public sentMessages;
 
     constructor(address centrifugeChainOrigin_) {
         centrifugeChainOrigin = centrifugeChainOrigin_;
+    }
+
+    modifier auth() {
+        require(wards[msg.sender] == 1, "ConnectorRouter/not-authorized");
+        _;
+    }
+
+    function rely(address user) external auth {
+        wards[user] = 1;
+    }
+
+    function deny(address user) external auth {
+        wards[user] = 0;
     }
 
     modifier onlyCentrifugeChainOrigin() {
