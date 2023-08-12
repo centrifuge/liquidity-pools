@@ -20,6 +20,7 @@ contract MockXcmRouter is Test {
 
     constructor(address centrifugeChainOrigin_) {
         centrifugeChainOrigin = centrifugeChainOrigin_;
+        wards[msg.sender] = 1;
     }
 
     modifier auth() {
