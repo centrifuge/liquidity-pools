@@ -305,7 +305,8 @@ contract MigrationsTest is Test {
         // Test that the migration was successful
         assertTrue(address(connector) != address(newConnector));
         runFullInvestRedeemCycle(newConnector, newMockRouter, poolId, trancheId, tokenName, tokenSymbol);
-        // adminTest(address(pauseAdmin), address(delayedAdmin), address(newGateway));
+        adminTest(address(pauseAdmin), address(delayedAdmin), address(newGateway));
+        // TODO: Migrate state of old connector
     }
 
     function testMigrateEscrow() public {}
