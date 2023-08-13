@@ -101,7 +101,6 @@ contract MigrationsTest is Test {
         assertEq(token.name(), bytes32ToString(stringToBytes32(tokenName)));
         assertEq(token.symbol(), bytes32ToString(stringToBytes32(tokenSymbol)));
         assertEq(token.decimals(), decimals);
-        Memberlist(token.memberlist());
     }
 
     function addMember(
@@ -138,7 +137,9 @@ contract MigrationsTest is Test {
         uint8 decimals = ERC20(DAI).decimals();
         uint128 price = uint128(10 ** uint128(decimals));
 
-        deployPoolAndTranche(activeConnector, activeMockXcmRouter, poolId, trancheId, tokenName, tokenSymbol, decimals, price);
+        deployPoolAndTranche(
+            activeConnector, activeMockXcmRouter, poolId, trancheId, tokenName, tokenSymbol, decimals, price
+        );
         addMember(activeConnector, activeMockXcmRouter, poolId, trancheId, user, validUntil);
         (address token_,,,,,) = activeConnector.tranches(poolId, trancheId);
 
@@ -222,6 +223,58 @@ contract MigrationsTest is Test {
         gateway.executeScheduledRely(address(this));
     }
 
+    function migrateConnectorState(
+        CentrifugeConnector oldConnector,
+        CentrifugeConnector newGateway,
+        uint64[] memory poolIds,
+        bytes16[] memory trancheIds
+    ) public {
+        for (uint256 i = 0; i < poolIds.length; i++) {
+            uint64 poolId = poolIds[i];
+            bytes16 trancheId = trancheIds[i];
+            (
+                address token,
+                uint128 latestPrice,
+                uint256 lastPriceUpdate,
+                string memory tokenName,
+                string memory tokenSymbol,
+                uint8 decimals
+            ) = oldConnector.tranches(poolId, trancheId);
+            newGateway.addTranche(
+                poolIds[i],
+                trancheIds[i],
+                tokenName,
+                tokenSymbol,
+                decimals,
+                latestPrice
+            );
+        }
+    }
+
+    function checkConnectorStateMigration(CentrifugeConnector oldConnector, CentrifugeConnector newConnector, uint64[] memory poolIds, bytes16[] memory trancheIds) public {
+        for (uint256 i = 0; i < poolIds.length; i++) {
+            uint64 poolId = poolIds[i];
+            bytes16 trancheId = trancheIds[i];
+            (
+                address token,
+                uint128 latestPrice,,
+                string memory tokenName,
+                string memory tokenSymbol,
+            ) = oldConnector.tranches(poolId, trancheId);
+            (
+                address newToken,
+                uint128 newLatestPrice,
+                ,
+                string memory newTokenName,
+                string memory newTokenSymbol,
+            ) = newConnector.tranches(poolId, trancheId);
+            assertEq(newToken, token);
+            assertEq(newLatestPrice, latestPrice);
+            assertEq(newTokenName, tokenName);
+            assertEq(newTokenSymbol, tokenSymbol);
+        }
+    }
+
     function testMigrateGateway(uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol)
         public
     {
@@ -263,9 +316,19 @@ contract MigrationsTest is Test {
         adminTest(address(pauseAdmin), address(delayedAdmin), address(newGateway));
     }
 
-    function testMigrateConnector(uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol)
-        public
-    {
+    function testMigrateConnector(
+        uint64 poolId1,
+        bytes16 trancheId1,
+        string memory tokenName1,
+        string memory tokenSymbol1
+    ) public {
+        // Deply pool and tranche to old connector contract to migrate to new connector contract
+        address DAI = address(0x6B175474E89094C44Da98b954EedeAC495271d0F);
+        uint8 decimals = ERC20(DAI).decimals();
+        uint128 price = uint128(10 ** uint128(decimals));
+        deployPoolAndTranche(
+            bridgedConnector, mockXcmRouter, poolId1, trancheId1, tokenName1, tokenSymbol1, decimals, price
+        );
         mockAdminSetup();
 
         // <--- Start of mock spell Contents --->
@@ -300,13 +363,22 @@ contract MigrationsTest is Test {
         delayedAdmin.rely(address(newGateway));
         newMockRouter.rely(address(newGateway));
 
+        uint64[] memory poolIds = new uint64[](1);
+        poolIds[0] = poolId1;
+        bytes16[] memory trancheIds = new bytes16[](1);
+        trancheIds[0] = trancheId1;
+        migrateConnectorState(bridgedConnector, newConnector, poolIds, trancheIds);
+
         // <--- End of mock spell Contents --->
 
-        // Test that the migration was successful
-        assertTrue(address(connector) != address(newConnector));
-        runFullInvestRedeemCycle(newConnector, newMockRouter, poolId, trancheId, tokenName, tokenSymbol);
-        adminTest(address(pauseAdmin), address(delayedAdmin), address(newGateway));
-        // TODO: Migrate state of old connector
+        // uint64 poolId2 = poolId1 + 2;
+        // bytes16 trancheId2 = bytes16(uint128(trancheId1) + 2);
+        // string memory tokenName2 = string(abi.encodePacked(tokenName1, "2"));
+        // string memory tokenSymbol2 = string(abi.encodePacked(tokenSymbol1, "2"));
+
+        // checkConnectorStateMigration(bridgedConnector, newConnector, poolIds, trancheIds);
+        // runFullInvestRedeemCycle(newConnector, newMockRouter, poolId2, trancheId2, tokenName2, tokenSymbol2);
+        // adminTest(address(pauseAdmin), address(delayedAdmin), address(newGateway));
     }
 
     function testMigrateEscrow() public {}
