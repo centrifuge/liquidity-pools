@@ -746,16 +746,16 @@ library ConnectorMessages {
         remainingRedeemOrder = uint128(_msg.indexUint(105, 16));
     }
 
-    function formatScheduleUpgrade(address user) internal pure returns (bytes memory) {
-        return abi.encodePacked(uint8(Call.ScheduleUpgrade), user);
+    function formatScheduleUpgrade(address _contract) internal pure returns (bytes memory) {
+        return abi.encodePacked(uint8(Call.ScheduleUpgrade), _contract);
     }
 
     function isScheduleUpgrade(bytes29 _msg) internal pure returns (bool) {
         return messageType(_msg) == Call.ScheduleUpgrade;
     }
 
-    function parseScheduleUpgrade(bytes29 _msg) internal pure returns (address user) {
-        user = address(bytes20(_msg.index(1, 20)));
+    function parseScheduleUpgrade(bytes29 _msg) internal pure returns (address _contract) {
+        _contract = address(bytes20(_msg.index(1, 20)));
     }
 
     // Utils
