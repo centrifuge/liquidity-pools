@@ -47,8 +47,8 @@ library ConnectorMessages {
         ExecutedCollectInvest,
         /// 18 - Executed Collect Redeem
         ExecutedCollectRedeem,
-        /// 19 - Add a new admin
-        AddAdmin
+        /// 19 - Schedule an upgrade contract to be granted admin rights
+        ScheduleUpgrade
     }
 
     enum Domain {
@@ -746,16 +746,16 @@ library ConnectorMessages {
         remainingRedeemOrder = uint128(_msg.indexUint(105, 16));
     }
 
-    function formatAddAdmin(address user) internal pure returns (bytes memory) {
-        return abi.encodePacked(uint8(Call.AddAdmin), user);
+    function formatScheduleUpgrade(address _contract) internal pure returns (bytes memory) {
+        return abi.encodePacked(uint8(Call.ScheduleUpgrade), _contract);
     }
 
-    function isAddAdmin(bytes29 _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.AddAdmin;
+    function isScheduleUpgrade(bytes29 _msg) internal pure returns (bool) {
+        return messageType(_msg) == Call.ScheduleUpgrade;
     }
 
-    function parseAddAdmin(bytes29 _msg) internal pure returns (address user) {
-        user = address(bytes20(_msg.index(1, 20)));
+    function parseScheduleUpgrade(bytes29 _msg) internal pure returns (address _contract) {
+        _contract = address(bytes20(_msg.index(1, 20)));
     }
 
     // Utils

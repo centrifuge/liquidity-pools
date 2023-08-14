@@ -221,7 +221,7 @@ contract AdminTest is Test {
 
     function testShortRelyWorks() public {
         address spell = vm.addr(1);
-        centChainConnector.incomingScheduleRely(spell);
+        centChainConnector.incomingScheduleUpgrade(spell);
         vm.warp(block.timestamp + shortWait + 1 hours);
         gateway.executeScheduledRely(spell);
         assertEq(gateway.wards(spell), 1);
@@ -229,7 +229,7 @@ contract AdminTest is Test {
 
     function testShortRelyFailsBefore24hours() public {
         address spell = vm.addr(1);
-        centChainConnector.incomingScheduleRely(spell);
+        centChainConnector.incomingScheduleUpgrade(spell);
         vm.warp(block.timestamp + shortWait - 1 hours);
         vm.expectRevert("ConnectorGateway/user-not-ready");
         gateway.executeScheduledRely(spell);
@@ -237,7 +237,7 @@ contract AdminTest is Test {
 
     function testShortRelyFailsAfterGracePeriod() public {
         address spell = vm.addr(1);
-        centChainConnector.incomingScheduleRely(spell);
+        centChainConnector.incomingScheduleUpgrade(spell);
         vm.warp(block.timestamp + shortWait + gateway.gracePeriod());
         vm.expectRevert("ConnectorGateway/user-too-old");
         gateway.executeScheduledRely(spell);

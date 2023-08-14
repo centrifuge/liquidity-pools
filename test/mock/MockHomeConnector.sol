@@ -97,8 +97,8 @@ contract MockHomeConnector is Test {
         router.handle(_message);
     }
 
-    function incomingScheduleRely(address spell) public {
-        bytes memory _message = ConnectorMessages.formatAddAdmin(spell);
+    function incomingScheduleUpgrade(address spell) public {
+        bytes memory _message = ConnectorMessages.formatScheduleUpgrade(spell);
         router.handle(_message);
     }
 
