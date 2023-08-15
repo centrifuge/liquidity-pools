@@ -416,22 +416,10 @@ contract CentrifugeConnector {
         for (uint256 i = 0; i < _poolIds.length; i++) {
             (uint64 poolId, uint256 createdAt) = source.pools(_poolIds[i]);
             pools[_poolIds[i]] = Pool(poolId, createdAt);
+
             uint256 lastTrancheMappingUsed = 0;
             for (uint256 j = 0; j < _poolTrancheMapping[i]; j++) {
-                (address token,
-                uint128 latestPrice,
-                uint256 lastPriceUpdate,
-                string memory tokenName,
-                string memory tokenSymbol,
-                uint8 decimals) = source.tranches(_poolIds[i], _trancheIds[lastTrancheMappingUsed + j]);
-                tranches[_poolIds[i]][_trancheIds[i]] = Tranche(
-                    token,
-                    latestPrice,
-                    lastPriceUpdate,
-                    tokenName,
-                    tokenSymbol,
-                    decimals
-                );
+                migrateTranche(source, _poolIds[i], _trancheIds[lastTrancheMappingUsed + j]);
             }
             for (uint256 j = 0; j < _poolCurrencyMapping[i]; j++) {
                 allowedPoolCurrencies[_poolIds[i]][_currencyAddresses[j]] = true;
@@ -442,5 +430,22 @@ contract CentrifugeConnector {
             currencyIdToAddress[currencyId] = _currencyAddresses[i];
             currencyAddressToId[_currencyAddresses[i]] = currencyId;
         }
+    }
+
+    function migrateTranche(CentrifugeConnector _migrationSource, uint64 _poolId, bytes16 _trancheId) private {
+        (address token,
+                uint128 latestPrice,
+                uint256 lastPriceUpdate,
+                string memory tokenName,
+                string memory tokenSymbol,
+                uint8 decimals) = _migrationSource.tranches(_poolId, _trancheId);
+                tranches[_poolId][_trancheId] = Tranche(
+                    token,
+                    latestPrice,
+                    lastPriceUpdate,
+                    tokenName,
+                    tokenSymbol,
+                    decimals
+                );
     }
 }
