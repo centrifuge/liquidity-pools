@@ -2,9 +2,9 @@
 pragma solidity ^0.8.18;
 pragma abicoder v2;
 
-import {TrancheTokenFactoryLike, MemberlistFactoryLike} from "./token/factory.sol";
-import {RestrictedTokenLike, ERC20Like} from "./token/restricted.sol";
-import {MemberlistLike} from "./token/memberlist.sol";
+import {TrancheTokenFactoryLike, MemberlistFactoryLike} from "src/token/factory.sol";
+import {RestrictedTokenLike, ERC20Like} from "src/token/restricted.sol";
+import {MemberlistLike} from "src/token/memberlist.sol";
 
 interface GatewayLike {
     function transferTrancheTokensToCentrifuge(
@@ -82,10 +82,22 @@ contract CentrifugeConnector {
     event TrancheAdded(uint256 indexed poolId, bytes16 indexed trancheId);
     event TrancheDeployed(uint256 indexed poolId, bytes16 indexed trancheId, address indexed token);
 
-    constructor(address escrow_, address tokenFactory_, address memberlistFactory_) {
+    constructor(
+        address escrow_,
+        address tokenFactory_,
+        address memberlistFactory_,
+        address _migrationSource,
+        uint64[] memory _poolIds,
+        bytes16[] memory _trancheIds,
+        uint8[] memory _poolTrancheMapping,
+        address[] memory _currencyAddresses,
+        uint8[] memory _poolCurrencyMapping
+    ) {
         escrow = EscrowLike(escrow_);
         tokenFactory = TrancheTokenFactoryLike(tokenFactory_);
         memberlistFactory = MemberlistFactoryLike(memberlistFactory_);
+
+        migrateContractState(_migrationSource, _poolIds, _trancheIds, _poolTrancheMapping, _currencyAddresses, _poolCurrencyMapping);
 
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
@@ -384,8 +396,51 @@ contract CentrifugeConnector {
     function migrateContractState(
         address _migrationSource,
         uint64[] memory _poolIds,
-        mapping(uint64 => bytes16) storage _trancheIds
+        bytes16[] memory _trancheIds,
+        uint8[] memory _poolTrancheMapping,
+        address[] memory _currencyAddresses,
+        uint8[] memory _poolCurrencyMapping
     ) private {
+        // Because constructors can't have mappings as parameters, we use three arrays to keep track of pools and their tranches.
+        // _poolIds: Array of pool Ids to be migrated
+        // _trancheIds: Array of tranche Ids, ordered by pool
+        // _poolTrancheMapping: Array of uint8s signifying the number of tranche ids from the _trancheIds array that belong to the pool at the same position as the uint8 in the _poolIds array.
+        // Example:
+        // pools = [1, 22, 13]
+        // tranches = ['one', 'two', 'three', 'junior', 'senior', 'main']
+        // poolTrancheMapping = [3, 2, 1]
+        // pool 1 has 3 tranches ('one', 'two', 'three')
+        // pool 22 has 2 tranches ('junior', 'senior')
+        // pool 13 has 1 tranche ('main')
         CentrifugeConnector source = CentrifugeConnector(_migrationSource);
+        for (uint256 i = 0; i < _poolIds.length; i++) {
+            (uint64 poolId, uint256 createdAt) = source.pools(_poolIds[i]);
+            pools[_poolIds[i]] = Pool(poolId, createdAt);
+            uint256 lastTrancheMappingUsed = 0;
+            for (uint256 j = 0; j < _poolTrancheMapping[i]; j++) {
+                (address token,
+                uint128 latestPrice,
+                uint256 lastPriceUpdate,
+                string memory tokenName,
+                string memory tokenSymbol,
+                uint8 decimals) = source.tranches(_poolIds[i], _trancheIds[lastTrancheMappingUsed + j]);
+                tranches[_poolIds[i]][_trancheIds[i]] = Tranche(
+                    token,
+                    latestPrice,
+                    lastPriceUpdate,
+                    tokenName,
+                    tokenSymbol,
+                    decimals
+                );
+            }
+            for (uint256 j = 0; j < _poolCurrencyMapping[i]; j++) {
+                allowedPoolCurrencies[_poolIds[i]][_currencyAddresses[j]] = true;
+            }
+        }
+        for (uint256 i = 0; i < _currencyAddresses.length; i++) {
+            uint128 currencyId = source.currencyAddressToId(_currencyAddresses[i]);
+            currencyIdToAddress[currencyId] = _currencyAddresses[i];
+            currencyAddressToId[_currencyAddresses[i]] = currencyId;
+        }
     }
 }

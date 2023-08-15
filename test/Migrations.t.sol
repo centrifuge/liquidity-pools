@@ -240,34 +240,23 @@ contract MigrationsTest is Test {
                 string memory tokenSymbol,
                 uint8 decimals
             ) = oldConnector.tranches(poolId, trancheId);
-            newGateway.addTranche(
-                poolIds[i],
-                trancheIds[i],
-                tokenName,
-                tokenSymbol,
-                decimals,
-                latestPrice
-            );
+            newGateway.addTranche(poolIds[i], trancheIds[i], tokenName, tokenSymbol, decimals, latestPrice);
         }
     }
 
-    function checkConnectorStateMigration(CentrifugeConnector oldConnector, CentrifugeConnector newConnector, uint64[] memory poolIds, bytes16[] memory trancheIds) public {
+    function checkConnectorStateMigration(
+        CentrifugeConnector oldConnector,
+        CentrifugeConnector newConnector,
+        uint64[] memory poolIds,
+        bytes16[] memory trancheIds
+    ) public {
         for (uint256 i = 0; i < poolIds.length; i++) {
             uint64 poolId = poolIds[i];
             bytes16 trancheId = trancheIds[i];
-            (
-                address token,
-                uint128 latestPrice,,
-                string memory tokenName,
-                string memory tokenSymbol,
-            ) = oldConnector.tranches(poolId, trancheId);
-            (
-                address newToken,
-                uint128 newLatestPrice,
-                ,
-                string memory newTokenName,
-                string memory newTokenSymbol,
-            ) = newConnector.tranches(poolId, trancheId);
+            (address token, uint128 latestPrice,, string memory tokenName, string memory tokenSymbol,) =
+                oldConnector.tranches(poolId, trancheId);
+            (address newToken, uint128 newLatestPrice,, string memory newTokenName, string memory newTokenSymbol,) =
+                newConnector.tranches(poolId, trancheId);
             assertEq(newToken, token);
             assertEq(newLatestPrice, latestPrice);
             assertEq(newTokenName, tokenName);
