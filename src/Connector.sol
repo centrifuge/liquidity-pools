@@ -380,12 +380,4 @@ contract CentrifugeConnector {
     ) public onlyGateway {
         // TODO: Implement
     }
-
-    function migrateContractState(
-        address _migrationSource,
-        uint64[] memory _poolIds,
-        mapping(uint64 => bytes16) storage _trancheIds
-    ) private {
-        CentrifugeConnector source = CentrifugeConnector(_migrationSource);
-    }
 }

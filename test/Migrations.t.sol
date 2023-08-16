@@ -15,6 +15,7 @@ import {ConnectorAxelarEVMRouter} from "src/routers/axelar/EVMRouter.sol";
 import {ConnectorMessages} from "../src/Messages.sol";
 import {ConnectorPauseAdmin} from "../src/admin/PauseAdmin.sol";
 import {ConnectorDelayedAdmin} from "../src/admin/DelayedAdmin.sol";
+import {MigratedCentrifugeConnector, ConnectorLike} from "./templates/MigratedConnector.sol";
 import "forge-std/Test.sol";
 import "../src/Connector.sol";
 
@@ -245,23 +246,63 @@ contract MigrationsTest is Test {
     }
 
     function checkConnectorStateMigration(
-        CentrifugeConnector oldConnector,
-        CentrifugeConnector newConnector,
-        uint64[] memory poolIds,
-        bytes16[] memory trancheIds
+        ConnectorLike _oldConnector,
+        ConnectorLike _newConnector,
+        uint64[] memory _poolIds,
+        bytes16[] memory _trancheIds,
+        uint8[] memory _poolTrancheMapping,
+        address[] memory _currencyAddresses,
+        uint8[] memory _poolCurrencyMapping
     ) public {
-        for (uint256 i = 0; i < poolIds.length; i++) {
-            uint64 poolId = poolIds[i];
-            bytes16 trancheId = trancheIds[i];
-            (address token, uint128 latestPrice,, string memory tokenName, string memory tokenSymbol,) =
-                oldConnector.tranches(poolId, trancheId);
-            (address newToken, uint128 newLatestPrice,, string memory newTokenName, string memory newTokenSymbol,) =
-                newConnector.tranches(poolId, trancheId);
-            assertEq(newToken, token);
-            assertEq(newLatestPrice, latestPrice);
-            assertEq(newTokenName, tokenName);
-            assertEq(newTokenSymbol, tokenSymbol);
+        for (uint256 i = 0; i < _poolIds.length; i++) {
+            (uint64 poolId, uint256 createdAt) = _oldConnector.pools(_poolIds[i]);
+            (uint64 newPoolId, uint256 newCreatedAt) = _newConnector.pools(_poolIds[i]);
+            assertEq(poolId, newPoolId);
+            assertEq(createdAt, newCreatedAt);
+
+            uint256 lastTrancheMappingUsed = 0;
+            uint256 lastCurrencyMappingUsed = 0;
+            for (uint256 j = 0; j < _poolTrancheMapping[i]; j++) {
+                checkTrancheStateMigration(_oldConnector, _newConnector, _poolIds[i], _trancheIds[lastTrancheMappingUsed + j]);
+            }
+            for (uint256 j = 0; j < _poolCurrencyMapping[i]; j++) {
+                checkCurrencyStateMigration(_oldConnector, _newConnector, _poolIds[i], _currencyAddresses[lastCurrencyMappingUsed + j]);
+            }
+            lastTrancheMappingUsed += _poolTrancheMapping[i];
+            lastCurrencyMappingUsed += _poolCurrencyMapping[i];
+
         }
+        for (uint256 i = 0; i < _currencyAddresses.length; i++) {
+            assertEq(_oldConnector.currencyAddressToId(_currencyAddresses[i]), _newConnector.currencyAddressToId(_currencyAddresses[i]));
+            uint128 currencyId = _newConnector.currencyAddressToId(_currencyAddresses[i]);
+            assertEq(_oldConnector.currencyIdToAddress(currencyId), _newConnector.currencyIdToAddress(currencyId));
+        }
+    }
+
+    function checkTrancheStateMigration(
+        ConnectorLike _oldConnector,
+        ConnectorLike _newConnector,
+        uint64 _poolId,
+        bytes16 _trancheId
+    ) public {
+        (address token, uint128 latestPrice, uint256 lastPriceUpdate, string memory tokenName, string memory tokenSymbol,) =
+            _oldConnector.tranches(_poolId, _trancheId);
+        (address newToken, uint128 newLatestPrice, uint256 newLastPriceUpdate, string memory newTokenName, string memory newTokenSymbol,) =
+            _newConnector.tranches(_poolId, _trancheId);
+        assertEq(newToken, token);
+        assertEq(newLatestPrice, latestPrice);
+        assertEq(newLastPriceUpdate, lastPriceUpdate);
+        assertEq(newTokenName, tokenName);
+        assertEq(newTokenSymbol, tokenSymbol);
+    }
+
+    function checkCurrencyStateMigration(
+        ConnectorLike _oldConnector,
+        ConnectorLike _newConnector,
+        uint64 _poolId,
+        address _currencyAddress
+    ) public {
+        assertEq(_oldConnector.allowedPoolCurrencies(_poolId, _currencyAddress), _newConnector.allowedPoolCurrencies(_poolId, _currencyAddress));
     }
 
     function testMigrateGateway(uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol)
@@ -313,6 +354,10 @@ contract MigrationsTest is Test {
     ) public {
         // Deply pool and tranche to old connector contract to migrate to new connector contract
         address DAI = address(0x6B175474E89094C44Da98b954EedeAC495271d0F);
+        poolId1 = 1;
+        trancheId1 = bytes16(uint128(1));
+        tokenName1 = "Token1";
+        tokenSymbol1 = "TKN1";
         uint8 decimals = ERC20(DAI).decimals();
         uint128 price = uint128(10 ** uint128(decimals));
         deployPoolAndTranche(
@@ -326,8 +371,22 @@ contract MigrationsTest is Test {
         gateway.relyContract(address(pauseAdmin), address(this));
         gateway.relyContract(address(delayedAdmin), address(this));
 
-        CentrifugeConnector newConnector =
-        new CentrifugeConnector(address(escrow), address(bridgedConnector.tokenFactory()), address(bridgedConnector.memberlistFactory()));
+        uint64[] memory poolIds = new uint64[](1);
+        poolIds[0] = poolId1;
+        bytes16[] memory trancheIds = new bytes16[](1);
+        trancheIds[0] = trancheId1;
+        uint8[] memory poolTrancheMapping = new uint8[](1);
+        poolTrancheMapping[0] = 1;
+        address[] memory currencyAddresses = new address[](1);
+        currencyAddresses[0] = DAI;
+        uint8[] memory poolCurrencyMapping = new uint8[](1);
+        poolCurrencyMapping[0] = 1;
+
+
+        // TODO: migrate allowed currencies
+
+        MigratedCentrifugeConnector newConnector =
+        new MigratedCentrifugeConnector(address(escrow), address(bridgedConnector.tokenFactory()), address(bridgedConnector.memberlistFactory()), address(bridgedConnector), poolIds, trancheIds, poolTrancheMapping, currencyAddresses, poolCurrencyMapping);
 
         MockXcmRouter newMockRouter = new MockXcmRouter(address(newConnector));
 
@@ -352,12 +411,6 @@ contract MigrationsTest is Test {
         delayedAdmin.rely(address(newGateway));
         newMockRouter.rely(address(newGateway));
 
-        uint64[] memory poolIds = new uint64[](1);
-        poolIds[0] = poolId1;
-        bytes16[] memory trancheIds = new bytes16[](1);
-        trancheIds[0] = trancheId1;
-        migrateConnectorState(bridgedConnector, newConnector, poolIds, trancheIds);
-
         // <--- End of mock spell Contents --->
 
         // uint64 poolId2 = poolId1 + 2;
@@ -365,7 +418,7 @@ contract MigrationsTest is Test {
         // string memory tokenName2 = string(abi.encodePacked(tokenName1, "2"));
         // string memory tokenSymbol2 = string(abi.encodePacked(tokenSymbol1, "2"));
 
-        // checkConnectorStateMigration(bridgedConnector, newConnector, poolIds, trancheIds);
+        checkConnectorStateMigration(ConnectorLike(address(bridgedConnector)), ConnectorLike(address(newConnector)), poolIds, trancheIds, poolTrancheMapping, currencyAddresses, poolCurrencyMapping);
         // runFullInvestRedeemCycle(newConnector, newMockRouter, poolId2, trancheId2, tokenName2, tokenSymbol2);
         // adminTest(address(pauseAdmin), address(delayedAdmin), address(newGateway));
     }

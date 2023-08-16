@@ -6,6 +6,17 @@ import {TrancheTokenFactoryLike, MemberlistFactoryLike} from "src/token/factory.
 import {RestrictedTokenLike, ERC20Like} from "src/token/restricted.sol";
 import {MemberlistLike} from "src/token/memberlist.sol";
 
+interface ConnectorLike {
+    function pools(uint64) external view returns (uint64, uint256);
+    function tranches(uint64, bytes16)
+        external
+        view
+        returns (address, uint128, uint256, string memory, string memory, uint8);
+    function currencyIdToAddress(uint128) external view returns (address);
+    function currencyAddressToId(address) external view returns (uint128);
+    function allowedPoolCurrencies(uint64, address) external view returns (bool);
+}
+
 interface GatewayLike {
     function transferTrancheTokensToCentrifuge(
         uint64 poolId,
@@ -55,7 +66,7 @@ struct Tranche {
     uint8 decimals;
 }
 
-contract CentrifugeConnector {
+contract MigratedCentrifugeConnector {
     mapping(address => uint256) public wards;
     mapping(uint64 => Pool) public pools;
     mapping(uint64 => mapping(bytes16 => Tranche)) public tranches;
@@ -97,7 +108,9 @@ contract CentrifugeConnector {
         tokenFactory = TrancheTokenFactoryLike(tokenFactory_);
         memberlistFactory = MemberlistFactoryLike(memberlistFactory_);
 
-        migrateContractState(_migrationSource, _poolIds, _trancheIds, _poolTrancheMapping, _currencyAddresses, _poolCurrencyMapping);
+        migrateContractState(
+            _migrationSource, _poolIds, _trancheIds, _poolTrancheMapping, _currencyAddresses, _poolCurrencyMapping
+        );
 
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
@@ -412,18 +425,21 @@ contract CentrifugeConnector {
         // pool 1 has 3 tranches ('one', 'two', 'three')
         // pool 22 has 2 tranches ('junior', 'senior')
         // pool 13 has 1 tranche ('main')
-        CentrifugeConnector source = CentrifugeConnector(_migrationSource);
+        ConnectorLike source = ConnectorLike(_migrationSource);
         for (uint256 i = 0; i < _poolIds.length; i++) {
             (uint64 poolId, uint256 createdAt) = source.pools(_poolIds[i]);
             pools[_poolIds[i]] = Pool(poolId, createdAt);
 
             uint256 lastTrancheMappingUsed = 0;
+            uint256 lastPoolCurrencyMappingUsed = 0;
             for (uint256 j = 0; j < _poolTrancheMapping[i]; j++) {
                 migrateTranche(source, _poolIds[i], _trancheIds[lastTrancheMappingUsed + j]);
             }
             for (uint256 j = 0; j < _poolCurrencyMapping[i]; j++) {
-                allowedPoolCurrencies[_poolIds[i]][_currencyAddresses[j]] = true;
+                allowedPoolCurrencies[_poolIds[i]][_currencyAddresses[lastPoolCurrencyMappingUsed + j]] = true;
             }
+            lastTrancheMappingUsed += _poolTrancheMapping[i];
+            lastPoolCurrencyMappingUsed += _poolCurrencyMapping[i];
         }
         for (uint256 i = 0; i < _currencyAddresses.length; i++) {
             uint128 currencyId = source.currencyAddressToId(_currencyAddresses[i]);
@@ -432,20 +448,15 @@ contract CentrifugeConnector {
         }
     }
 
-    function migrateTranche(CentrifugeConnector _migrationSource, uint64 _poolId, bytes16 _trancheId) private {
-        (address token,
-                uint128 latestPrice,
-                uint256 lastPriceUpdate,
-                string memory tokenName,
-                string memory tokenSymbol,
-                uint8 decimals) = _migrationSource.tranches(_poolId, _trancheId);
-                tranches[_poolId][_trancheId] = Tranche(
-                    token,
-                    latestPrice,
-                    lastPriceUpdate,
-                    tokenName,
-                    tokenSymbol,
-                    decimals
-                );
+    function migrateTranche(ConnectorLike _migrationSource, uint64 _poolId, bytes16 _trancheId) private {
+        (
+            address token,
+            uint128 latestPrice,
+            uint256 lastPriceUpdate,
+            string memory tokenName,
+            string memory tokenSymbol,
+            uint8 decimals
+        ) = _migrationSource.tranches(_poolId, _trancheId);
+        tranches[_poolId][_trancheId] = Tranche(token, latestPrice, lastPriceUpdate, tokenName, tokenSymbol, decimals);
     }
 }
