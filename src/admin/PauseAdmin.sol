@@ -2,11 +2,11 @@
 pragma solidity ^0.8.18;
 pragma abicoder v2;
 
-import {ConnectorGateway} from "../routers/Gateway.sol";
+import {Gateway} from "../Gateway.sol";
 import "./../auth/auth.sol";
 
-contract ConnectorPauseAdmin is Auth {
-    ConnectorGateway public gateway;
+contract PauseAdmin is Auth {
+    Gateway public gateway;
 
 
     // --- Events ---
@@ -19,9 +19,9 @@ contract ConnectorPauseAdmin is Auth {
 
     function file(bytes32 what, address data) external auth {
         if (what == "gateway") {
-            gateway = ConnectorGateway(data);
+            gateway = Gateway(data);
         } else {
-            revert("ConnectorAdmin/file-unrecognized-param");
+            revert("Admin/file-unrecognized-param");
         }
         emit File(what, data);
     }

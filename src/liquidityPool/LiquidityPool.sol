@@ -22,16 +22,19 @@ pragma solidity ^0.8.18;
 
 import "../token/restricted.sol";
 
-interface ConnectorLike {
+interface InvestmentManagerLike {
     function processDeposit(address _receiver, uint256 _assets) external returns (uint256);
     function processMint(address _receiver, uint256 _shares) external returns (uint256);
     function processWithdraw(uint256 _assets, address _receiver, address _owner) external returns (uint256);
+    function processRedeem(uint256 _shares, address _receiver, address _owner) external returns (uint256);
     function maxDeposit(address _user, address _tranche) external view returns (uint256);
     function maxMint(address _user, address _tranche) external view returns (uint256);
     function maxWithdraw(address _user, address _tranche) external view returns (uint256);
     function maxRedeem(address _user, address _tranche) external view returns (uint256);
     function requestRedeem(uint256 _shares, address _receiver) external;
     function requestDeposit(uint256 _assets, address _receiver) external;
+    function collectInvest(uint64 poolId, bytes16 trancheId, address receiver, address currency) external;
+    function collectRedeem(uint64 poolId, bytes16 trancheId, address receiver, address currency) external;
     
 }
 
@@ -39,7 +42,7 @@ interface ConnectorLike {
 /// @author ilinzweilin
 contract LiquidityPool is RestrictedToken {
 
-    ConnectorLike public connector;
+    InvestmentManagerLike public investmentManager;
 
     address public asset; // underlying stable ERC-20 stable currency
 
@@ -56,9 +59,9 @@ contract LiquidityPool is RestrictedToken {
     
     constructor(uint8 _decimals) RestrictedToken(_decimals) {}
 
-    /// @dev connector and asset address to be filed by the factory on deployment
+    /// @dev investmentManager and asset address to be filed by the factory on deployment
     function file(bytes32 _what, address _data) override public auth {
-        if (_what == "connector") connector = ConnectorLike(_data);
+        if (_what == "investmentManager") investmentManager = InvestmentManagerLike(_data);
         else if (_what == "asset") asset = _data;
         else if (_what == "memberlist") memberlist = MemberlistLike(_data);
         else revert("LiquidityPool/file-unrecognized-param");
@@ -90,7 +93,7 @@ contract LiquidityPool is RestrictedToken {
 
     /// @return Maximum amount of stable currency that can be deposited into the Tranche by the receiver after the epoch had been executed on Centrifuge chain.
     function maxDeposit(address _receiver) public view returns (uint256) {
-        return connector.maxDeposit(_receiver, address(this));
+        return investmentManager.maxDeposit(_receiver, address(this));
     }
 
     /// @return shares that any user would get for an amount of assets provided -> convertToShares
@@ -99,27 +102,28 @@ contract LiquidityPool is RestrictedToken {
     }
 
     /// @dev request asset deposit for a receiver to be included in the next epoch execution. Asset is locked in the escrow on request submission
-    function requestDeposit(uint256 _assets, address _receiver) auth public {
-        connector.requestDeposit(_assets, _receiver);
+    function requestDeposit(uint256 _assets) public {
+        investmentManager.requestDeposit(_assets, msg.sender);
     }
 
     /// @dev collect shares for deposited funds after pool epoch execution. maxMint is the max amount of shares that can be collected. Required assets must already be locked
     /// maxDeposit is the amount of funds that was successfully invested into the pool on Centrifuge chain
-    function deposit(uint256 _assets, address _receiver)  auth public returns (uint256 shares) {
-        shares = connector.processDeposit( _receiver, _assets);
+    function deposit(uint256 _assets, address _receiver) public returns (uint256 shares) {
+        shares = investmentManager.processDeposit( _receiver, _assets);
         emit Deposit(address(this), _receiver, _assets, shares);
     }
 
     /// @dev collect shares for deposited funds after pool epoch execution. maxMint is the max amount of shares that can be collected. Required assets must already be locked
     /// maxDeposit is the amount of funds that was successfully invested into the pool on Centrifuge chain
-    function mint(uint256 _shares, address _receiver) auth public returns (uint256 assets) {
-        assets = connector.processMint(_receiver, _shares); 
+    function mint(uint256 _shares, address _receiver) public returns (uint256 assets) {
+        // require(_receiver == msg.sender, "LiquidityPool/not-authorized-to-mint");
+        assets = investmentManager.processMint(_receiver, _shares); 
         emit Deposit(address(this), _receiver, assets, _shares);
     }
 
     /// @dev Maximum amount of shares that can be claimed by the receiver after the epoch has been executed on the Centrifuge chain side.
     function maxMint(address _receiver) external view returns (uint256 maxShares) {
-         maxShares = connector.maxMint(_receiver, address(this));
+         maxShares = investmentManager.maxMint(_receiver, address(this));
     }
 
     /// @return assets that any user would get for an amount of shares provided -> convertToAssets
@@ -128,13 +132,13 @@ contract LiquidityPool is RestrictedToken {
     }
 
     /// @dev request share redemption for a receiver to be included in the next epoch execution. Shares are locked in the escrow on request submission
-    function requestRedeem(uint256 _shares, address _receiver) auth public {
-        connector.requestRedeem(_shares, _receiver);
+    function requestRedeem(uint256 _shares) public {
+        investmentManager.requestRedeem(_shares, msg.sender);
     }
 
     /// @return maxAssets that the receiver can withdraw
     function maxWithdraw(address _receiver) public view returns (uint256 maxAssets) {
-        return connector.maxWithdraw(_receiver, address(this));
+        return investmentManager.maxWithdraw(_receiver, address(this));
     }
     
     /// @return shares that a user would need to redeem in order to receive the given amount of assets -> convertToAssets
@@ -144,15 +148,17 @@ contract LiquidityPool is RestrictedToken {
 
     /// @dev Withdraw assets after successful epoch execution. Receiver will receive an exact amount of _assets for a certain amount of shares that has been redeemed from Owner during epoch execution.
     /// @return shares that have been redeemed for the excat _assets amount
-    function withdraw(uint256 _assets, address _receiver, address _owner) auth public returns (uint256 shares) {
-        uint sharesRedeemed = connector.processWithdraw( _assets, _receiver, _owner);
+    function withdraw(uint256 _assets, address _receiver, address _owner) public returns (uint256 shares) {
+        // check if messgae sender can spend owners funds
+        require(_owner == msg.sender, "LiquidityPool/not-authorized-to-withdraw");
+        uint sharesRedeemed = investmentManager.processWithdraw( _assets, _receiver, _owner);
         emit Withdraw(address(this), _receiver, _owner, _assets, sharesRedeemed);
         return sharesRedeemed;
     }
 
     /// @dev Max amount of shares that can be redeemed by the owner after redemption was requested
     function maxRedeem(address _owner) public view returns (uint256 maxShares) {
-         return connector.maxRedeem(_owner, address(this));
+         return investmentManager.maxRedeem(_owner, address(this));
     }
 
     /// @return assets that any user could redeem for an given amount of shares -> convertToAssets
@@ -162,8 +168,9 @@ contract LiquidityPool is RestrictedToken {
 
     /// @dev Redeem shares after successful epoch execution. Receiver will receive assets for the exact amount of redeemed shares from Owner after epoch execution.
     /// @return assets currency payout for the exact amount of redeemed _shares
-    function redeem(uint256 _shares, address _receiver, address _owner) auth public returns (uint256 assets) {
-        uint currencyPayout = connector.processWithdraw(_shares, _receiver, _owner);
+    function redeem(uint256 _shares, address _receiver, address _owner) public returns (uint256 assets) {
+        require(_owner == msg.sender, "LiquidityPool/not-authorized-to-redeem");
+        uint currencyPayout = investmentManager.processRedeem(_shares, _receiver, _owner);
         emit Withdraw(address(this), _receiver, _owner, currencyPayout, _shares);
         return currencyPayout;
     }
@@ -173,4 +180,13 @@ contract LiquidityPool is RestrictedToken {
         latestPrice = _tokenPrice;
         lastPriceUpdate = block.timestamp;
     }
+
+    function collectRedeem(address _receiver) public {
+        investmentManager.collectRedeem(poolId, trancheId, _receiver, asset);
+    }
+
+    function collectInvest(address _receiver) public {
+        investmentManager.collectInvest(poolId, trancheId, _receiver, asset);
+    }
 }
+

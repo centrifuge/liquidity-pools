@@ -3,7 +3,7 @@ pragma solidity ^0.8.18;
 pragma abicoder v2;
 
 import {TypedMemView} from "memview-sol/TypedMemView.sol";
-import {ConnectorMessages} from "src/Messages.sol";
+import {Messages} from "src/Messages.sol";
 import "forge-std/Test.sol";
 
 /// A place for Misc-like tests
