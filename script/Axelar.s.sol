@@ -26,8 +26,7 @@ contract AxelarScript is Script {
         address tokenFactory_ = address(new TrancheTokenFactory());
         address memberlistFactory_ = address(new MemberlistFactory{ salt: SALT }());
         address escrow_ = address(new Escrow());
-        InvestmentManager investmentManager =
-            new InvestmentManager(escrow_, tokenFactory_, memberlistFactory_);
+        InvestmentManager investmentManager = new InvestmentManager(escrow_, tokenFactory_, memberlistFactory_);
 
         AxelarRouter router = new AxelarRouter(
                 address(investmentManager),
@@ -35,8 +34,7 @@ contract AxelarScript is Script {
         );
         PauseAdmin pauseAdmin = new PauseAdmin();
         DelayedAdmin delayedAdmin = new DelayedAdmin();
-        Gateway gateway =
-            new Gateway(address(investmentManager), address(router), shortWait, longWait, gracePeriod);
+        Gateway gateway = new Gateway(address(investmentManager), address(router), shortWait, longWait, gracePeriod);
         investmentManager.file("gateway", address(gateway));
         gateway.rely(address(pauseAdmin));
         gateway.rely(address(delayedAdmin));

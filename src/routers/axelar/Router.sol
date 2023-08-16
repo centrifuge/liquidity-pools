@@ -14,8 +14,13 @@ interface InvestmentManagerLike {
     ) external;
     function updateMember(uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) external;
     function updateTokenPrice(uint64 poolId, bytes16 trancheId, uint128 price) external;
-    function handleTransferTrancheTokens(uint64 poolId, bytes16 trancheId, uint128 currencyId, address destinationAddress, uint128 amount)
-        external;
+    function handleTransferTrancheTokens(
+        uint64 poolId,
+        bytes16 trancheId,
+        uint128 currencyId,
+        address destinationAddress,
+        uint128 amount
+    ) external;
 }
 
 interface AxelarExecutableLike {
@@ -43,8 +48,8 @@ contract AxelarRouter is AxelarExecutableLike {
     AxelarGatewayLike public immutable axelarGateway;
     GatewayLike public gateway;
 
-    string public constant axelarCentrifugeChainId = "Centrifuge";
-    string public constant axelarCentrifugeChainAddress = "";
+    string public constant axelarCentrifugeChainId = "centrifuge";
+    string public constant axelarCentrifugeChainAddress = "0x0000000000000000000000000000000000000800";
 
     // --- Events ---
     event Rely(address indexed user);

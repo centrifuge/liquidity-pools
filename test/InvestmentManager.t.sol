@@ -2,19 +2,19 @@
 pragma solidity ^0.8.18;
 pragma abicoder v2;
 
-import { InvestmentManager, Tranche } from "../src/InvestmentManager.sol";
-import { Gateway } from "../src/Gateway.sol";
-import { Escrow } from "../src/Escrow.sol";
-import { LiquidityPoolFactory, MemberlistFactory } from "../src/liquidityPool/Factory.sol";
-import { LiquidityPool } from "../src/liquidityPool/LiquidityPool.sol";
-import { ERC20 } from "../src/token/erc20.sol";
+import {InvestmentManager, Tranche} from "../src/InvestmentManager.sol";
+import {Gateway} from "../src/Gateway.sol";
+import {Escrow} from "../src/Escrow.sol";
+import {LiquidityPoolFactory, MemberlistFactory} from "../src/liquidityPool/Factory.sol";
+import {LiquidityPool} from "../src/liquidityPool/LiquidityPool.sol";
+import {ERC20} from "../src/token/erc20.sol";
 
-import { MemberlistLike, Memberlist } from "../src/token/memberlist.sol";
-import { MockHomeLiquidityPools } from "./mock/MockHomeLiquidityPools.sol";
-import { MockXcmRouter } from "./mock/MockXcmRouter.sol";
-import { Messages } from "../src/Messages.sol";
-import { PauseAdmin } from "../src/admin/PauseAdmin.sol";
-import { DelayedAdmin } from "../src/admin/DelayedAdmin.sol";
+import {MemberlistLike, Memberlist} from "../src/token/memberlist.sol";
+import {MockHomeLiquidityPools} from "./mock/MockHomeLiquidityPools.sol";
+import {MockXcmRouter} from "./mock/MockXcmRouter.sol";
+import {Messages} from "../src/Messages.sol";
+import {PauseAdmin} from "../src/admin/PauseAdmin.sol";
+import {DelayedAdmin} from "../src/admin/DelayedAdmin.sol";
 import "forge-std/Test.sol";
 import "../src/InvestmentManager.sol";
 
@@ -24,7 +24,7 @@ interface EscrowLike_ {
 }
 
 interface AuthLike {
-    function wards(address user) external returns (uint);
+    function wards(address user) external returns (uint256);
 }
 
 contract InvestmentManagerTest is Test {
@@ -50,8 +50,7 @@ contract InvestmentManagerTest is Test {
         PauseAdmin pauseAdmin = new PauseAdmin();
         DelayedAdmin delayedAdmin = new DelayedAdmin();
 
-        gateway =
-            new Gateway(address(evmInvestmentManager), address(mockXcmRouter), shortWait, longWait, gracePeriod);
+        gateway = new Gateway(address(evmInvestmentManager), address(mockXcmRouter), shortWait, longWait, gracePeriod);
         gateway.rely(address(pauseAdmin));
         gateway.rely(address(delayedAdmin));
         pauseAdmin.file("gateway", address(gateway));
@@ -67,8 +66,7 @@ contract InvestmentManagerTest is Test {
     //     gateway.pause();
     //     vm.expectRevert(bytes("InvestmentManager/connector-deactivated"));
     //     evmInvestmentManager.processDeposit(address(0), address(0), 0);
-    // } 
-
+    // }
 
     function testAddCurrencyWorks(uint128 currency, uint128 badCurrency) public {
         vm.assume(currency > 0);
@@ -77,19 +75,19 @@ contract InvestmentManagerTest is Test {
 
         ERC20 erc20 = newErc20("X's Dollar", "USDX", 42);
         homePools.addCurrency(currency, address(erc20));
-        (address address_) =  evmInvestmentManager.currencyIdToAddress(currency);
+        (address address_) = evmInvestmentManager.currencyIdToAddress(currency);
         assertEq(address_, address(erc20));
 
         // Verify we can't override the same currency id another address
         ERC20 badErc20 = newErc20("BadActor's Dollar", "BADUSD", 66);
         vm.expectRevert(bytes("InvestmentManager/currency-id-in-use"));
         homePools.addCurrency(currency, address(badErc20));
-        assertEq( evmInvestmentManager.currencyIdToAddress(currency), address(erc20));
+        assertEq(evmInvestmentManager.currencyIdToAddress(currency), address(erc20));
 
         // Verify we can't add a currency address that already exists associated with a different currency id
         vm.expectRevert(bytes("InvestmentManager/currency-address-in-use"));
         homePools.addCurrency(badCurrency, address(erc20));
-        assertEq( evmInvestmentManager.currencyIdToAddress(currency), address(erc20));
+        assertEq(evmInvestmentManager.currencyIdToAddress(currency), address(erc20));
     }
 
     function testAddPoolWorks(uint64 poolId) public {
@@ -148,16 +146,15 @@ contract InvestmentManagerTest is Test {
             string memory tokenSymbol_
         ) = evmInvestmentManager.tranches(poolId, trancheId);
 
-
-        address[] memory liquidityPools_ = evmInvestmentManager.getLiquidityPoolsForTranche(poolId, trancheId);
+        address[] memory liquidityPools_ = evmInvestmentManager.tranches[poolId][trancheId].liquidityPools;
 
         assertEq(poolId, poolId_);
         assertEq(trancheId, trancheId_);
         assertEq(block.timestamp, createdAt_);
-        assertEq( bytes32ToString(stringToBytes32(tokenName)), bytes32ToString(stringToBytes32(tokenName_)));
-        assertEq( bytes32ToString(stringToBytes32(tokenSymbol)), bytes32ToString(stringToBytes32(tokenSymbol_)));
+        assertEq(bytes32ToString(stringToBytes32(tokenName)), bytes32ToString(stringToBytes32(tokenName_)));
+        assertEq(bytes32ToString(stringToBytes32(tokenSymbol)), bytes32ToString(stringToBytes32(tokenSymbol_)));
         assertEq(decimals, decimals_);
-        assertEq(liquidityPools_.length, 0);  
+        assertEq(liquidityPools_.length, 0);
     }
 
     function testAddingTrancheMultipleTimesFails(
@@ -189,10 +186,7 @@ contract InvestmentManagerTest is Test {
 
         for (uint256 i = 0; i < trancheIds.length; i++) {
             homePools.addTranche(poolId, trancheIds[i], tokenName, tokenSymbol, decimals, price);
-            (
-                uint64 poolId_,
-                bytes16 trancheId_,,,,
-            ) = evmInvestmentManager.tranches(poolId, trancheIds[i]);
+            (uint64 poolId_, bytes16 trancheId_,,,,) = evmInvestmentManager.tranches(poolId, trancheIds[i]);
 
             assertEq(poolId, poolId_);
             assertEq(trancheIds[i], trancheId_);
@@ -232,23 +226,23 @@ contract InvestmentManagerTest is Test {
         bytes16 trancheId,
         uint128 price,
         uint128 currency
-    ) public { 
+    ) public {
         vm.assume(currency > 0);
         ERC20 erc20 = newErc20("X's Dollar", "USDX", 42);
-        homePools.addPool(poolId); // add pool 
+        homePools.addPool(poolId); // add pool
         homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price); // add tranche
-        
+
         homePools.addCurrency(currency, address(erc20));
         homePools.allowPoolCurrency(poolId, currency);
-       
-        address lPoolAddress = evmInvestmentManager.deployLiquidityPool(poolId, trancheId, address(erc20)); 
-        address lPool_ = evmInvestmentManager.liquidityPools(poolId, trancheId, address(erc20)); // make sure the pool was stored in connectors 
-        address[] memory liquidityPools = evmInvestmentManager.getLiquidityPoolsForTranche(poolId, trancheId);
+
+        address lPoolAddress = evmInvestmentManager.deployLiquidityPool(poolId, trancheId, address(erc20));
+        address lPool_ = evmInvestmentManager.liquidityPools(poolId, trancheId, address(erc20)); // make sure the pool was stored in connectors
+        address[] memory liquidityPools = evmInvestmentManager.tranches[poolId][trancheId].liquidityPools;
 
         // make sure the pool was added to the tranche struct
         assertEq(lPoolAddress, lPool_);
         bool lPoolIncluded;
-        for (uint i=0; i<liquidityPools.length; i++) {
+        for (uint256 i = 0; i < liquidityPools.length; i++) {
             if (liquidityPools[i] == lPool_) {
                 lPoolIncluded = true;
             }
@@ -288,9 +282,9 @@ contract InvestmentManagerTest is Test {
         vm.assume(trancheId != wrongTrancheId);
 
         ERC20 erc20 = newErc20("X's Dollar", "USDX", 42);
-        homePools.addPool(poolId); // add pool 
+        homePools.addPool(poolId); // add pool
         homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price); // add tranche
-        
+
         homePools.addCurrency(currency, address(erc20));
         homePools.allowPoolCurrency(poolId, currency);
         vm.expectRevert(bytes("InvestmentManager/tranche-does-not-exist"));
@@ -303,17 +297,17 @@ contract InvestmentManagerTest is Test {
         string memory tokenName,
         string memory tokenSymbol,
         bytes16 trancheId,
-        uint64  wrongPoolId,
+        uint64 wrongPoolId,
         uint128 price,
         uint128 currency
-      ) public {
+    ) public {
         vm.assume(currency > 0);
         vm.assume(poolId != wrongPoolId);
 
         ERC20 erc20 = newErc20("X's Dollar", "USDX", 42);
-        homePools.addPool(poolId); // add pool 
+        homePools.addPool(poolId); // add pool
         homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price); // add tranche
-        
+
         homePools.addCurrency(currency, address(erc20));
         homePools.allowPoolCurrency(poolId, currency);
         vm.expectRevert(bytes("InvestmentManager/pool-does-not-exist"));
@@ -328,15 +322,15 @@ contract InvestmentManagerTest is Test {
         bytes16 trancheId,
         uint128 price,
         uint128 currency
-     ) public {
+    ) public {
         vm.assume(currency > 0);
 
         ERC20 erc20 = newErc20("X's Dollar", "USDX", 42);
-        homePools.addPool(poolId); // add pool 
+        homePools.addPool(poolId); // add pool
         homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price); // add tranche
-        
+
         homePools.addCurrency(currency, address(erc20));
-        
+
         vm.expectRevert(bytes("InvestmentManager/pool-currency-not-allowed"));
         evmInvestmentManager.deployLiquidityPool(poolId, trancheId, address(erc20));
     }
@@ -349,41 +343,52 @@ contract InvestmentManagerTest is Test {
         bytes16 trancheId,
         uint128 price,
         uint128 currency
-    ) public { 
+    ) public {
         vm.assume(currency > 0);
         ERC20 erc20 = newErc20("X's Dollar", "USDX", 42);
-        homePools.addPool(poolId); // add pool 
+        homePools.addPool(poolId); // add pool
         homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price); // add tranche
-        
+
         homePools.addCurrency(currency, address(erc20));
         homePools.allowPoolCurrency(poolId, currency);
-       
-        evmInvestmentManager.deployLiquidityPool(poolId, trancheId, address(erc20)); 
+
+        evmInvestmentManager.deployLiquidityPool(poolId, trancheId, address(erc20));
         vm.expectRevert(bytes("InvestmentManager/liquidityPool-already-deployed"));
-        evmInvestmentManager.deployLiquidityPool(poolId, trancheId, address(erc20)); 
-        
+        evmInvestmentManager.deployLiquidityPool(poolId, trancheId, address(erc20));
     }
 
-    function testUpdatingMemberWorks(uint64 poolId, uint8 decimals, uint128 currency, string memory tokenName, string memory tokenSymbol, bytes16 trancheId, address user, uint64 validUntil, uint128 price)
-        public
-    {
+    function testUpdatingMemberWorks(
+        uint64 poolId,
+        uint8 decimals,
+        uint128 currency,
+        string memory tokenName,
+        string memory tokenSymbol,
+        bytes16 trancheId,
+        address user,
+        uint64 validUntil,
+        uint128 price
+    ) public {
         vm.assume(validUntil >= block.timestamp);
         vm.assume(user != address(0));
         vm.assume(currency > 0);
         ERC20 erc20 = newErc20("X's Dollar", "USDX", 42);
-        homePools.addPool(poolId); // add pool 
+        homePools.addPool(poolId); // add pool
         homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price); // add tranche
         homePools.addCurrency(currency, address(erc20));
         homePools.allowPoolCurrency(poolId, currency);
-        address lPool_ = evmInvestmentManager.deployLiquidityPool(poolId, trancheId, address(erc20)); 
+        address lPool_ = evmInvestmentManager.deployLiquidityPool(poolId, trancheId, address(erc20));
 
         homePools.updateMember(poolId, trancheId, user, validUntil);
         assertTrue(LiquidityPool(lPool_).hasMember(user));
     }
- 
-    function testUpdatingMemberAsNonRouterFails(uint64 poolId, uint128 currency, bytes16 trancheId, address user, uint64 validUntil)
-        public
-    {
+
+    function testUpdatingMemberAsNonRouterFails(
+        uint64 poolId,
+        uint128 currency,
+        bytes16 trancheId,
+        address user,
+        uint64 validUntil
+    ) public {
         vm.assume(validUntil >= block.timestamp);
         vm.assume(user != address(0));
         vm.assume(currency > 0);
@@ -417,29 +422,45 @@ contract InvestmentManagerTest is Test {
         homePools.updateMember(poolId, trancheId, user, validUntil);
     }
 
-    function testUpdatingTokenPriceWorks(uint64 poolId, uint8 decimals, uint128 currency, string memory tokenName, string memory tokenSymbol, bytes16 trancheId, uint128 price) public {
+    function testUpdatingTokenPriceWorks(
+        uint64 poolId,
+        uint8 decimals,
+        uint128 currency,
+        string memory tokenName,
+        string memory tokenSymbol,
+        bytes16 trancheId,
+        uint128 price
+    ) public {
         vm.assume(currency > 0);
         ERC20 erc20 = newErc20("X's Dollar", "USDX", 42);
-        homePools.addPool(poolId); // add pool 
+        homePools.addPool(poolId); // add pool
         homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price); // add tranche
         homePools.addCurrency(currency, address(erc20));
         homePools.allowPoolCurrency(poolId, currency);
-        address lPool_ = evmInvestmentManager.deployLiquidityPool(poolId, trancheId, address(erc20)); 
-       
+        address lPool_ = evmInvestmentManager.deployLiquidityPool(poolId, trancheId, address(erc20));
+
         homePools.updateTokenPrice(poolId, trancheId, price);
         assertEq(LiquidityPool(lPool_).latestPrice(), price);
         assertEq(LiquidityPool(lPool_).lastPriceUpdate(), block.timestamp);
     }
 
-    function testUpdatingTokenPriceAsNonRouterFails(uint64 poolId, uint8 decimals, uint128 currency, string memory tokenName, string memory tokenSymbol, bytes16 trancheId, uint128 price) public {
+    function testUpdatingTokenPriceAsNonRouterFails(
+        uint64 poolId,
+        uint8 decimals,
+        uint128 currency,
+        string memory tokenName,
+        string memory tokenSymbol,
+        bytes16 trancheId,
+        uint128 price
+    ) public {
         vm.assume(currency > 0);
         ERC20 erc20 = newErc20("X's Dollar", "USDX", 42);
-        homePools.addPool(poolId); // add pool 
+        homePools.addPool(poolId); // add pool
         homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price); // add tranche
         homePools.addCurrency(currency, address(erc20));
         homePools.allowPoolCurrency(poolId, currency);
-        evmInvestmentManager.deployLiquidityPool(poolId, trancheId, address(erc20)); 
-        
+        evmInvestmentManager.deployLiquidityPool(poolId, trancheId, address(erc20));
+
         vm.expectRevert(bytes("InvestmentManager/not-the-gateway"));
         evmInvestmentManager.updateTokenPrice(poolId, trancheId, price);
     }
@@ -542,7 +563,7 @@ contract InvestmentManagerTest is Test {
         assertEq(erc20.balanceOf(address(this)), initialBalance - amount);
         assertEq(erc20.balanceOf(address(evmInvestmentManager.escrow())), amount);
     }
-   
+
     // function testTransferTrancheTokensToCentrifuge(
     //     uint64 validUntil,
     //     bytes32 centChainAddress,
@@ -553,11 +574,11 @@ contract InvestmentManagerTest is Test {
     //     string memory tokenSymbol,
     //     bytes16 trancheId,
     //     uint128 currency
-    // ) public { 
+    // ) public {
     //     vm.assume(currency > 0);
     //     vm.assume(validUntil > block.timestamp + 7 days);
 
-    //     address lPool_ = deployLiquidityPool(poolId, decimals, tokenName, tokenSymbol, trancheId, currency); 
+    //     address lPool_ = deployLiquidityPool(poolId, decimals, tokenName, tokenSymbol, trancheId, currency);
     //     homePools.updateMember(poolId, trancheId, address(this), validUntil);
 
     //     // fund this account with amount
@@ -599,9 +620,9 @@ contract InvestmentManagerTest is Test {
     //     vm.assume(validUntil >= block.timestamp);
     //     vm.assume(destinationAddress != address(0));
     //     vm.assume(currency > 0);
-        
-    //     address lPool_ = deployLiquidityPool(poolId, decimals, tokenName, tokenSymbol, trancheId, currency); 
-       
+
+    //     address lPool_ = deployLiquidityPool(poolId, decimals, tokenName, tokenSymbol, trancheId, currency);
+
     //     homePools.updateMember(poolId, trancheId, destinationAddress, validUntil);
     //     assertTrue(LiquidityPool(lPool_).hasMember(destinationAddress));
     //     homePools.incomingTransferTrancheTokens(poolId, trancheId, uint64(block.chainid), currency, destinationAddress, amount);
@@ -620,7 +641,7 @@ contract InvestmentManagerTest is Test {
     // ) public {
     //     vm.assume(destinationAddress != address(0));
     //     vm.assume(currency > 0);
-       
+
     //     deployLiquidityPool(poolId, decimals, tokenName, tokenSymbol, trancheId, currency);
 
     //     vm.expectRevert(bytes("InvestmentManager/not-a-member"));
@@ -635,7 +656,7 @@ contract InvestmentManagerTest is Test {
     //     uint8 decimals,
     //     uint64 validUntil,
     //     address destinationAddress,
-    //     uint128 amount, 
+    //     uint128 amount,
     //     uint128 currency
     // ) public {
     //     vm.assume(validUntil > block.timestamp + 7 days);
@@ -663,7 +684,6 @@ contract InvestmentManagerTest is Test {
     //     assertEq(LiquidityPool(lPool_).balanceOf(address(this)), 0);
     // }
 
-
     // helpers
     function deployLiquidityPool(
         uint64 poolId,
@@ -671,15 +691,16 @@ contract InvestmentManagerTest is Test {
         string memory tokenName,
         string memory tokenSymbol,
         bytes16 trancheId,
-        uint128 currency) internal returns (address lPool) {
+        uint128 currency
+    ) internal returns (address lPool) {
         // deploy liquidityPool
         ERC20 erc20 = newErc20("X's Dollar", "USDX", 42);
-        homePools.addPool(poolId); // add pool 
+        homePools.addPool(poolId); // add pool
         homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, 0); // add tranche
         homePools.addCurrency(currency, address(erc20));
         homePools.allowPoolCurrency(poolId, currency);
-    
-        lPool = evmInvestmentManager.deployLiquidityPool(poolId, trancheId, address(erc20)); 
+
+        lPool = evmInvestmentManager.deployLiquidityPool(poolId, trancheId, address(erc20));
     }
 
     function newErc20(string memory name, string memory symbol, uint8 decimals) internal returns (ERC20) {

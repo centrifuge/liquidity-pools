@@ -57,8 +57,7 @@ contract MockHomeLiquidityPools is Test {
         uint8 decimals,
         uint128 price
     ) public {
-        bytes memory _message =
-            Messages.formatAddTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price);
+        bytes memory _message = Messages.formatAddTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price);
         router.handle(_message);
     }
 
@@ -113,7 +112,8 @@ contract MockHomeLiquidityPools is Test {
         uint128 trancheTokensPayout
     ) public {
         bytes memory _message = Messages.formatExecutedCollectInvest(
-        poolId, trancheId, investor, currency, currencyPayout, trancheTokensPayout);
+            poolId, trancheId, investor, currency, currencyPayout, trancheTokensPayout
+        );
         router.handle(_message);
     }
 
@@ -126,10 +126,10 @@ contract MockHomeLiquidityPools is Test {
         uint128 trancheTokensPayout
     ) public {
         bytes memory _message = Messages.formatExecutedCollectRedeem(
-        poolId, trancheId, investor, currency, currencyPayout, trancheTokensPayout);
+            poolId, trancheId, investor, currency, currencyPayout, trancheTokensPayout
+        );
         router.handle(_message);
-    } 
-
+    }
 
     function dispatch(
         uint32 _destinationDomain,
