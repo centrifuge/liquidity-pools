@@ -7,7 +7,6 @@ import { LiquidityPool } from "./liquidityPool/LiquidityPool.sol";
 import { ERC20Like } from "./token/restricted.sol";
 import { MemberlistLike } from "./token/memberlist.sol";
 import "./auth/auth.sol";
-import "forge-std/Test.sol";
 
 interface GatewayLike {
     function transferTrancheTokensToCentrifuge(
@@ -89,7 +88,7 @@ struct LPValues {
     uint128 maxRedeem;
 }
 
-contract InvestmentManager is Auth, Test {
+contract InvestmentManager is Auth {
 
     mapping(uint64 => Pool) public pools; // pools on centrifuge chain
     mapping(uint64 => mapping(bytes16 => Tranche)) public tranches; // centrifuge chain tranches
@@ -543,7 +542,6 @@ contract InvestmentManager is Auth, Test {
     function processMint(address _user, uint256 _trancheTokenAmount) poolActive  gatewayActive  public onlyLiquidityPoolWard returns (uint256) {
         address _liquidityPool = msg.sender;
         uint128 trancheTokenAmount = _toUint128(_trancheTokenAmount);
-        console.logUint(trancheTokenAmount);
         LiquidityPoolLike lPool = LiquidityPoolLike(_liquidityPool);
 
         require((trancheTokenAmount <= orderbook[_user][ _liquidityPool].maxMint), "InvestmentManager/amount-exceeds-mint-limits");
@@ -551,7 +549,6 @@ contract InvestmentManager is Auth, Test {
         uint128 userTrancheTokenPriceLP = calcDepositTrancheTokenPrice(_user, _liquidityPool);
         require((userTrancheTokenPriceLP > 0), "LiquidityPool/amount-exceeds-mint-limits");
         uint128 currencyAmount = trancheTokenAmount * userTrancheTokenPriceLP;
-        //console.logUint( currencyAmount);
         _decreaseDepositLimits(_user,  _liquidityPool, currencyAmount, trancheTokenAmount); // decrease the possible deposit limits
         require(lPool.hasMember( _user), "InvestmentManager/trancheTokens-not-a-member");
         require(lPool.transferFrom(address(escrow), _user, trancheTokenAmount), "InvestmentManager/trancheTokens-transfer-failed");

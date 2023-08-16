@@ -4,7 +4,6 @@ pragma abicoder v2;
 
 import {TypedMemView} from "memview-sol/TypedMemView.sol";
 import {Messages} from "./Messages.sol";
-import "forge-std/Test.sol";
 
 interface InvestmentManagerLike {
     function addCurrency(uint128 currency, address currencyAddress) external;
@@ -63,7 +62,7 @@ interface AuthLike {
     function rely(address usr) external;
 }
 
-contract Gateway is Test {
+contract Gateway {
     using TypedMemView for bytes;
     // why bytes29? - https://github.com/summa-tx/memview-sol#why-bytes29
     using TypedMemView for bytes29;
