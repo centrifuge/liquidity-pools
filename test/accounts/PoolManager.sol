@@ -2,29 +2,29 @@
 pragma solidity ^0.8.18;
 pragma abicoder v2;
 
-import {MockHomeConnector} from "../mock/MockHomeConnector.sol";
+import {MockHomeLiquidityPools} from "../mock/MockHomeLiquidityPools.sol";
 import "forge-std/Test.sol";
 
 contract InvariantPoolManager is Test {
-    MockHomeConnector connector;
+    MockHomeLiquidityPools homePools;
 
     uint64[] public allPools;
     bytes16[] public allTranches;
     mapping(bytes16 => uint64) public trancheIdToPoolId;
 
-    constructor(MockHomeConnector connector_) {
-        connector = connector_;
+    constructor(MockHomeLiquidityPools homePools_) {
+        homePools = homePools_;
     }
 
     function addPool(uint64 poolId) public {
-        connector.addPool(poolId);
+        homePools.addPool(poolId);
 
         allPools.push(poolId);
     }
 
     function addPoolAndTranche(uint64 poolId, bytes16 trancheId, uint8 decimals, uint128 price) public {
         addPool(poolId);
-        connector.addTranche(poolId, trancheId, "-", "-", decimals, price);
+        homePools.addTranche(poolId, trancheId, "-", "-", decimals, price);
 
         allTranches.push(trancheId);
         trancheIdToPoolId[trancheId] = poolId;
