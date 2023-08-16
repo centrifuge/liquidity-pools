@@ -23,21 +23,21 @@ contract AxelarScript is Script {
         uint256 shortWait = 24 hours;
         uint256 longWait = 48 hours;
         uint256 gracePeriod = 48 hours;
-        address tokenFactory_ = address(new TrancheTokenFactory{ salt: SALT }());
+        address tokenFactory_ = address(new TrancheTokenFactory());
         address memberlistFactory_ = address(new MemberlistFactory{ salt: SALT }());
-        address escrow_ = address(new Escrow{ salt: SALT }());
+        address escrow_ = address(new Escrow());
         InvestmentManager investmentManager =
-            new InvestmentManager{ salt: SALT }(escrow_, tokenFactory_, memberlistFactory_);
+            new InvestmentManager(escrow_, tokenFactory_, memberlistFactory_);
 
-        AxelarRouter router = new AxelarRouter{ salt: SALT }(
+        AxelarRouter router = new AxelarRouter(
                 address(investmentManager),
                 address(vm.envAddress("AXELAR_GATEWAY"))
         );
-        investmentManager.file("router", address(router));
         PauseAdmin pauseAdmin = new PauseAdmin();
         DelayedAdmin delayedAdmin = new DelayedAdmin();
         Gateway gateway =
-            new Gateway{ salt: SALT }(address(investmentManager), address(router), shortWait, longWait, gracePeriod);
+            new Gateway(address(investmentManager), address(router), shortWait, longWait, gracePeriod);
+        investmentManager.file("gateway", address(gateway));
         gateway.rely(address(pauseAdmin));
         gateway.rely(address(delayedAdmin));
         pauseAdmin.file("gateway", address(gateway));
