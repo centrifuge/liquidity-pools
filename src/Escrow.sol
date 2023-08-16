@@ -8,7 +8,7 @@ interface ApproveLike {
     function approve(address, uint256) external;
 }
 
-contract ConnectorEscrow is Auth {
+contract Escrow is Auth {
 
     event Approve(address indexed token, address indexed spender, uint256 value);
 

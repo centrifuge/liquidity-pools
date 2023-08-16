@@ -4,9 +4,9 @@ pragma abicoder v2;
 
 import {TypedMemView} from "memview-sol/TypedMemView.sol";
 import "forge-std/Test.sol";
-import {CentrifugeConnector} from "src/Connector.sol";
-import {ConnectorMessages} from "src/Messages.sol";
-import {ConnectorGateway} from "src/routers/Gateway.sol";
+import {InvestmentManager} from "src/InvestmentManager.sol";
+import {Messages} from "src/Messages.sol";
+import {Gateway} from "src/Gateway.sol";
 
 contract MockXcmRouter is Test {
     using TypedMemView for bytes;
@@ -40,7 +40,7 @@ contract MockXcmRouter is Test {
     }
 
     function handle(bytes memory _message) external {
-        ConnectorGateway(gateway).handle(_message);
+        Gateway(gateway).handle(_message);
     }
 
     function send(bytes memory message) public onlyGateway {

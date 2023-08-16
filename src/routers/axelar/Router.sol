@@ -2,7 +2,7 @@
 pragma solidity ^0.8.18;
 pragma abicoder v2;
 
-interface ConnectorLike {
+interface InvestmentManagerLike {
     function addPool(uint64 poolId, uint128 currency, uint8 decimals) external;
     function addTranche(
         uint64 poolId,
@@ -32,16 +32,16 @@ interface AxelarGatewayLike {
         external;
 }
 
-interface ConnectorGatewayLike {
+interface GatewayLike {
     function handle(bytes memory message) external;
 }
 
-contract ConnectorAxelarRouter is AxelarExecutableLike {
+contract AxelarRouter is AxelarExecutableLike {
     mapping(address => uint256) public wards;
 
-    ConnectorLike public immutable connector;
+    InvestmentManagerLike public immutable investmentManager;
     AxelarGatewayLike public immutable axelarGateway;
-    ConnectorGatewayLike public connectorGateway;
+    GatewayLike public gateway;
 
     string public constant axelarCentrifugeChainId = "Centrifuge";
     string public constant axelarCentrifugeChainAddress = "";
@@ -51,15 +51,15 @@ contract ConnectorAxelarRouter is AxelarExecutableLike {
     event Deny(address indexed user);
     event File(bytes32 indexed what, address addr);
 
-    constructor(address connector_, address axelarGateway_) {
-        connector = ConnectorLike(connector_);
+    constructor(address investmentManager_, address axelarGateway_) {
+        investmentManager = InvestmentManagerLike(investmentManager_);
         axelarGateway = AxelarGatewayLike(axelarGateway_);
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
     }
 
     modifier auth() {
-        require(wards[msg.sender] == 1, "ConnectorAxelarRouter/not-authorized");
+        require(wards[msg.sender] == 1, "AxelarRouter/not-authorized");
         _;
     }
 
@@ -67,13 +67,13 @@ contract ConnectorAxelarRouter is AxelarExecutableLike {
         require(
             msg.sender == address(axelarGateway)
                 && keccak256(bytes(axelarCentrifugeChainId)) == keccak256(bytes(sourceChain)),
-            "ConnectorAxelarRouter/invalid-origin"
+            "AxelarRouter/invalid-origin"
         );
         _;
     }
 
-    modifier onlyConnector() {
-        require(msg.sender == address(connector), "ConnectorAxelarRouter/only-connector-allowed-to-call");
+    modifier onlyInvestmentManager() {
+        require(msg.sender == address(investmentManager), "AxelarRouter/only-investmentManager-allowed-to-call");
         _;
     }
 
@@ -90,7 +90,7 @@ contract ConnectorAxelarRouter is AxelarExecutableLike {
 
     function file(bytes32 what, address gateway_) external auth {
         if (what == "gateway") {
-            connectorGateway = ConnectorGatewayLike(gateway_);
+            gateway = GatewayLike(gateway_);
         } else {
             revert("ConnectorXCMRouter/file-unrecognized-param");
         }
@@ -103,11 +103,11 @@ contract ConnectorAxelarRouter is AxelarExecutableLike {
         external
         onlyCentrifugeChainOrigin(sourceChain)
     {
-        connectorGateway.handle(payload);
+        gateway.handle(payload);
     }
 
     // --- Outgoing ---
-    function send(bytes memory message) public onlyConnector {
+    function send(bytes memory message) public onlyInvestmentManager {
         axelarGateway.callContract(axelarCentrifugeChainId, axelarCentrifugeChainAddress, message);
     }
 }
