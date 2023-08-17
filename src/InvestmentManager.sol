@@ -3,7 +3,6 @@ pragma solidity ^0.8.18;
 pragma abicoder v2;
 
 import { LiquidityPoolFactoryLike, MemberlistFactoryLike } from "./liquidityPool/Factory.sol";
-import { LiquidityPool } from "./liquidityPool/LiquidityPool.sol";
 import { ERC20Like } from "./token/restricted.sol";
 import { MemberlistLike } from "./token/memberlist.sol";
 import "./auth/auth.sol";
@@ -168,12 +167,12 @@ contract InvestmentManager is Auth {
         emit File(what, data);
     }
 
-    /// @dev activate / deactivate pool
-    function setPoolActive(uint64 _poolId, bool _isActive) external auth { 
-        Pool storage pool = pools[_poolId];
-        require(pool.createdAt > 0, "InvestmentManager/invalid-pool");
-        pool.isActive = _isActive;
-    }
+    // /// @dev activate / deactivate pool
+    // function setPoolActive(uint64 _poolId, bool _isActive) external auth { 
+    //     Pool storage pool = pools[_poolId];
+    //     require(pool.createdAt > 0, "InvestmentManager/invalid-pool");
+    //     pool.isActive = _isActive;
+    // }
 
     // --- liquidity pool outgoing message handling ---
     /// @dev request tranche token redemption. Liquidity pools have to request redemptions from the centrifuge chain before actual currency payouts can be done. 
@@ -280,43 +279,6 @@ contract InvestmentManager is Auth {
         gateway.transfer(currency, msg.sender, recipient, amount);
     }
 
-    // function transferTrancheTokensToCentrifuge(
-    //     uint64 poolId,
-    //     bytes16 trancheId,
-    //     address currency, // we need this as there is liquidityPool per supported currency
-    //     bytes32 destinationAddress,
-    //     uint128 amount
-    // ) public {
-    //     LiquidityPoolLike lPool = LiquidityPoolLike(liquidityPools[poolId][trancheId][currency]);
-    //     require(address(lPool) != address(0), "InvestmentManager/unknown-token");
-
-    //     require(lPool.balanceOf(msg.sender) >= amount, "InvestmentManager/insufficient-balance");
-    //     lPool.burn(msg.sender, amount);
-
-    //     gateway.transferTrancheTokensToCentrifuge(poolId, trancheId, msg.sender, destinationAddress, amount);
-    // }
-
-    // function transferTrancheTokensToEVM(
-    //     uint64 poolId,
-    //     bytes16 trancheId,
-    //     address currency,
-    //     uint64 destinationChainId,
-    //     address destinationAddress,
-    //     uint128 amount
-    // ) public {
-    //     LiquidityPoolLike lPool = LiquidityPoolLike(liquidityPools[poolId][trancheId][currency]);
-    //     require(address(lPool) != address(0), "InvestmentManager/unknown-token");
-
-    //     require(lPool.balanceOf(msg.sender) >= amount, "InvestmentManager/insufficient-balance");
-    //     lPool.burn(msg.sender, amount);
-
-    //     uint128 currencyId = currencyAddressToId[currency];
-    //     require(currencyId != 0, "InvestmentManager/unknown-currency");
-
-    //     gateway.transferTrancheTokensToEVM(
-    //         poolId, trancheId, msg.sender, destinationChainId, currencyId, destinationAddress, amount
-    //     );
-    // }
 
     // --- Incoming message handling ---
     /// @dev a global chain agnostic currency index is maintained on centrifuge chain. This function maps a currency from the centrifuge chain index to its corresponding address on the evm chain.
@@ -471,22 +433,6 @@ contract InvestmentManager is Auth {
             "InvestmentManager/currency-transfer-failed"
         );
     }
-
-     /// @dev In the current implementation: a tranche token on Centrifuge chain side is mapped to multiple liquidity pool tokens. One for each currency supported. 
-     /// @notice currencyId is required in order to identify the liquidity pool for the token mint. 
-
-    // function handleTransferTrancheTokens(uint64 _poolId, bytes16 _trancheId, uint128 _currencyId, address _destinationAddress, uint128 _amount)
-    //     public
-    //     onlyGateway
-    // {
-    //     address currency = currencyIdToAddress[_currencyId];
-    //     address liquidityPool_ = liquidityPools[_poolId][_trancheId][currency];
-    //     require(liquidityPool_ != address(0), "InvestmentManager/unknown-liquidityPool");
-    //     LiquidityPoolLike liquidityPool = LiquidityPoolLike(liquidityPool_);
-    //     require(liquidityPool.hasMember(_destinationAddress), "InvestmentManager/not-a-member");
-    //     liquidityPool.mint(_destinationAddress, _amount);
-       
-    // }
 
     // --- Liquidity Pool Function ---
 

@@ -64,7 +64,7 @@ contract AxelarXCMRouter is AxelarExecutableLike {
     XcmWeightInfo internal xcmWeightInfo;
 
     string public constant axelarCentrifugeChainId = "Centrifuge";
-    string public constant axelarCentrifugeChainAddress = "";
+    string public constant axelarCentrifugeChainAddress = "0x2048";
 
     // --- Events ---
     event Rely(address indexed user);

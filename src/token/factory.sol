@@ -22,6 +22,7 @@ contract TrancheTokenFactory {
         bytes32 salt = keccak256(abi.encodePacked(poolId, trancheId));
 
         RestrictedToken token = new RestrictedToken{salt: salt}(decimals);
+        // RestrictedToken token = new RestrictedToken(decimals);
 
         // Name and symbol are not passed on constructor, such that if the same tranche is deployed
         // on another chain with a different name (it might have changed in between deployments),
