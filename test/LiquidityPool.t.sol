@@ -91,7 +91,7 @@ contract LiquidityPoolTest is Test {
         erc20.mint(address(this), amount);
 
         // will fail - user not member: can not receive trancheToken
-        vm.expectRevert(bytes("InvestmentManager/not-a-member"));
+        vm.expectRevert(bytes("IM/not-a-member"));
         lPool.requestDeposit(amount);
         homePools.updateMember(poolId, trancheId, address(this), validUntil); // add user as member
 
@@ -158,7 +158,7 @@ contract LiquidityPoolTest is Test {
         LiquidityPool lPool = LiquidityPool(lPool_);
 
         // will fail - user did not give tranche token allowance to investmentManager
-        vm.expectRevert(bytes("InvestmentManager/insufficient-balance"));
+        vm.expectRevert(bytes("IM/insufficient-balance"));
         lPool.requestDeposit(amount);
         lPool.approve(address(evmInvestmentManager), amount); // add allowance
 
@@ -213,7 +213,7 @@ contract LiquidityPoolTest is Test {
         LiquidityPool lPool = LiquidityPool(lPool_);
 
         // will fail - user did not give tranche token allowance to investmentManager
-        vm.expectRevert(bytes("InvestmentManager/insufficient-balance"));
+        vm.expectRevert(bytes("IM/insufficient-balance"));
         lPool.requestDeposit(amount);
         lPool.approve(address(evmInvestmentManager), amount); // add allowance
 
@@ -263,7 +263,7 @@ contract LiquidityPoolTest is Test {
             deployLiquidityPool(poolId, decimals, tokenName, tokenSymbol, trancheId, price, currency, address(erc20));
         LiquidityPool lPool = LiquidityPool(lPool_);
 
-        vm.expectRevert(bytes("InvestmentManager/not-a-member"));
+        vm.expectRevert(bytes("IM/not-a-member"));
         lPool.collectInvest(address(this));
 
         homePools.updateMember(poolId, trancheId, address(this), validUntil);
@@ -292,7 +292,7 @@ contract LiquidityPoolTest is Test {
         LiquidityPool lPool = LiquidityPool(lPool_);
         homePools.allowPoolCurrency(poolId, currency);
 
-        vm.expectRevert(bytes("InvestmentManager/not-a-member"));
+        vm.expectRevert(bytes("IM/not-a-member"));
         lPool.collectRedeem(address(this));
         homePools.updateMember(poolId, trancheId, address(this), validUntil);
 

@@ -5,6 +5,37 @@ pragma abicoder v2;
 import {TypedMemView} from "memview-sol/TypedMemView.sol";
 import {Messages} from "./Messages.sol";
 
+interface GatewayLike {
+    function transferTrancheTokensToCentrifuge(
+        uint64 poolId,
+        bytes16 trancheId,
+        address sender,
+        bytes32 destinationAddress,
+        uint128 amount
+    ) external;
+    function transferTrancheTokensToEVM(
+        uint64 poolId,
+        bytes16 trancheId,
+        address sender,
+        uint64 destinationChainId,
+        uint128 currencyId,
+        address destinationAddress,
+        uint128 amount
+    ) external;
+    function transfer(uint128 currency, address sender, bytes32 recipient, uint128 amount) external;
+    function increaseInvestOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount)
+        external;
+    function decreaseInvestOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount)
+        external;
+    function increaseRedeemOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount)
+        external;
+    function decreaseRedeemOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount)
+        external;
+    function collectInvest(uint64 poolId, bytes16 trancheId, address investor, uint128 currency) external;
+    function collectRedeem(uint64 poolId, bytes16 trancheId, address investor, uint128 currency) external;
+    function paused() external returns (bool);
+}
+
 interface InvestmentManagerLike {
     function addCurrency(uint128 currency, address currencyAddress) external;
     function addPool(uint64 poolId) external;

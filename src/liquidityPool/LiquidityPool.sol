@@ -21,6 +21,20 @@ pragma solidity ^0.8.18;
 
 import "../token/restricted.sol";
 
+interface LiquidityPoolLike {
+    function memberlist() external returns (address);
+    function hasMember(address) external returns (bool);
+    function file(bytes32 what, address data) external;
+    function mint(address, uint256) external;
+    function burn(address, uint256) external;
+    function balanceOf(address) external returns (uint256);
+    function transferFrom(address, address, uint256) external returns (bool);
+    function updateTokenPrice(uint128 _tokenPrice) external;
+    function asset() external returns (address);
+    function poolId() external returns (uint64);
+    function trancheId() external returns (bytes16);
+}
+
 interface InvestmentManagerLike {
     function processDeposit(address _receiver, uint256 _assets) external returns (uint256);
     function processMint(address _receiver, uint256 _shares) external returns (uint256);
