@@ -358,8 +358,8 @@ contract Gateway {
             investmentManager.handleExecutedCollectRedeem(
                 poolId, trancheId, investor, currency, currencyPayout, trancheTokensRedeemed
             );
-        } else if (Messages.isAddAdmin(_msg)) {
-            address spell = Messages.parseAddAdmin(_msg);
+        } else if (Messages.isScheduleUpgrade(_msg)) {
+            address spell = Messages.parseScheduleUpgrade(_msg);
             scheduleShortRely(spell);
         } else {
             revert("Gateway/invalid-message");

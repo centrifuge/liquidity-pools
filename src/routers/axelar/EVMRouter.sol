@@ -36,7 +36,7 @@ interface GatewayLike {
     function handle(bytes memory message) external;
 }
 
-contract AxelarRouter is AxelarExecutableLike {
+contract AxelarEVMRouter is AxelarExecutableLike {
     mapping(address => uint256) public wards;
 
     InvestmentManagerLike public immutable investmentManager;
