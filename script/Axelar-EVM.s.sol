@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.18;
 
-import {AxelarRouter} from "src/routers/axelar/Router.sol";
+import {AxelarEVMRouter} from "src/routers/axelar/EVMRouter.sol";
 import {Gateway} from "src/Gateway.sol";
 import {InvestmentManager} from "src/InvestmentManager.sol";
 import {Escrow} from "src/Escrow.sol";
@@ -10,8 +10,8 @@ import {DelayedAdmin} from "src/admin/DelayedAdmin.sol";
 import {TrancheTokenFactory, MemberlistFactory} from "src/token/factory.sol";
 import "forge-std/Script.sol";
 
-// Script to deploy Connectors with an Axelar router.
-contract AxelarScript is Script {
+// Script to deploy Connectors with an AxelarEVM router.
+contract AxelarEVMScript is Script {
     // address(0)[0:20] + keccak("Centrifuge")[21:32]
     bytes32 SALT = 0x000000000000000000000000000000000000000075eb27011b69f002dc094d05;
 
@@ -29,7 +29,7 @@ contract AxelarScript is Script {
         InvestmentManager investmentManager =
             new InvestmentManager{ salt: SALT }(escrow_, tokenFactory_, memberlistFactory_);
 
-        AxelarRouter router = new AxelarRouter{ salt: SALT }(
+        AxelarEVMRouter router = new AxelarEVMRouter{ salt: SALT }(
                 address(investmentManager),
                 address(vm.envAddress("AXELAR_GATEWAY"))
         );

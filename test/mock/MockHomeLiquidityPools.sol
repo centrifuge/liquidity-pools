@@ -99,8 +99,8 @@ contract MockHomeLiquidityPools is Test {
         router.handle(_message);
     }
 
-    function incomingScheduleRely(address spell) public {
-        bytes memory _message = Messages.formatAddAdmin(spell);
+    function incomingScheduleUpgrade(address spell) public {
+        bytes memory _message = Messages.formatScheduleUpgrade(spell);
         router.handle(_message);
     }
 
