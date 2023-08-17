@@ -227,11 +227,12 @@ contract AdminTest is Test {
         assertEq(gateway.wards(spell), 1);
     }
 
+
     function testShortRelyFailsBefore24hours() public {
         address spell = vm.addr(1);
         centChainLiquidityPools.incomingScheduleUpgrade(spell);
         vm.warp(block.timestamp + shortWait - 1 hours);
-        vm.expectRevert("Gateway/user-not-ready");
+        vm.expectRevert("Gateway/user--not-ready");
         gateway.executeScheduledRely(spell);
     }
 
