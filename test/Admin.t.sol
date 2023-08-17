@@ -7,7 +7,7 @@ import {Gateway} from "src/Gateway.sol";
 import {Escrow} from "src/Escrow.sol";
 import {PauseAdmin} from "src/admin/PauseAdmin.sol";
 import {DelayedAdmin} from "src/admin/DelayedAdmin.sol";
-import {TrancheTokenFactory, MemberlistFactory} from "src/token/factory.sol";
+import {LiquidityPoolFactory, MemberlistFactory} from "src/liquidityPool/Factory.sol";
 import {RestrictedTokenLike} from "src/token/restricted.sol";
 import {ERC20} from "src/token/erc20.sol";
 import {MemberlistLike, Memberlist} from "src/token/memberlist.sol";
@@ -37,10 +37,10 @@ contract AdminTest is Test {
         longWait = 48 hours;
         gracePeriod = 48 hours;
         address escrow_ = address(new Escrow());
-        address tokenFactory_ = address(new TrancheTokenFactory());
+        address liquidityPoolFactory_ = address(new LiquidityPoolFactory());
         address memberlistFactory_ = address(new MemberlistFactory());
 
-        investmentManager = new InvestmentManager(escrow_, tokenFactory_, memberlistFactory_);
+        investmentManager = new InvestmentManager(escrow_, liquidityPoolFactory_, memberlistFactory_);
 
         mockXcmRouter = new MockXcmRouter(address(investmentManager));
 
