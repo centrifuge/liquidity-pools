@@ -48,7 +48,7 @@ interface AxelarGatewayLike {
         external;
 }
 
-contract ConnectorAxelarXCMRouter is AxelarExecutableLike {
+contract AxelarXCMRouter is AxelarExecutableLike {
     address constant XCM_TRANSACTOR_V2_ADDRESS = 0x000000000000000000000000000000000000080D;
 
     // todo(alina|nuno): inherit from Auth directly once https://github.com/centrifuge/connectors/pull/66 is merged

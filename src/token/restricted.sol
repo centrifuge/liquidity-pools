@@ -33,7 +33,7 @@ contract RestrictedToken is ERC20 {
     // --- Events ---
     event File(bytes32 indexed what, address data);
 
-    constructor(uint8 decimals_) ERC20(decimals_) {}
+    constructor(uint8 decimals_) ERC20(decimals_) { }
 
     modifier checkMember(address user) {
         memberlist.member(user);
@@ -41,7 +41,7 @@ contract RestrictedToken is ERC20 {
     }
 
     // --- Administration ---
-    function file(bytes32 what, address data) external auth {
+    function file(bytes32 what, address data) external virtual auth {
         if (what == "memberlist") memberlist = MemberlistLike(data);
         else revert("file-unrecognized-param");
         emit File(what, data);
