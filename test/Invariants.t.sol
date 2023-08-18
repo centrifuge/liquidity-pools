@@ -6,7 +6,7 @@
 // import {ConnectorEscrow} from "src/Escrow.sol";
 // import {MockHomeConnector} from "./mock/MockHomeConnector.sol";
 // import "./mock/MockXcmRouter.sol";
-// import {ERC20Like} from "src/token/restricted.sol";
+// import {ERC20Like} from "src/token/Restricted.sol";
 // import {ConnectorGateway} from "src/routers/Gateway.sol";
 // import {TrancheTokenFactory, MemberlistFactory} from "src/token/factory.sol";
 // import {InvariantPoolManager} from "./accounts/PoolManager.sol";

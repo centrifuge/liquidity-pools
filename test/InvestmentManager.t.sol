@@ -7,9 +7,9 @@ import { Gateway } from "../src/Gateway.sol";
 import { Escrow } from "../src/Escrow.sol";
 import { LiquidityPoolFactory, MemberlistFactory } from "../src/liquidityPool/Factory.sol";
 import { LiquidityPool } from "../src/liquidityPool/LiquidityPool.sol";
-import { ERC20 } from "../src/token/erc20.sol";
+import { ERC20 } from "../src/token/ERC20.sol";
 
-import { MemberlistLike, Memberlist } from "../src/token/memberlist.sol";
+import { MemberlistLike, Memberlist } from "../src/token/Memberlist.sol";
 import { MockHomeLiquidityPools } from "./mock/MockHomeLiquidityPools.sol";
 import { MockXcmRouter } from "./mock/MockXcmRouter.sol";
 import { Messages } from "../src/Messages.sol";

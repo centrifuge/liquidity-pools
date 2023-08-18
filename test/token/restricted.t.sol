@@ -2,8 +2,8 @@
 pragma solidity ^0.8.18;
 pragma abicoder v2;
 
-import {RestrictedToken} from "src/token/restricted.sol";
-import {MemberlistLike, Memberlist} from "src/token/memberlist.sol";
+import {RestrictedToken} from "src/token/Restricted.sol";
+import {MemberlistLike, Memberlist} from "src/token/Memberlist.sol";
 import "forge-std/Test.sol";
 
 interface ERC20Like {

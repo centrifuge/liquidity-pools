@@ -20,7 +20,7 @@ pragma solidity ^0.8.18;
 // yearn: https://github.com/yearn/yearn-vaults-v3/blob/master/contracts/VaultV3.vy
 
 
-import "../token/restricted.sol";
+import "../token/Restricted.sol";
 
 interface InvestmentManagerLike {
     function processDeposit(address _receiver, uint256 _assets) external returns (uint256);
