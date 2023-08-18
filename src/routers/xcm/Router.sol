@@ -3,7 +3,7 @@ pragma solidity ^0.8.18;
 pragma abicoder v2;
 
 import {TypedMemView} from "memview-sol/TypedMemView.sol";
-import {ConnectorMessages} from "../../Messages.sol";
+import {Messages} from "../../Messages.sol";
 
 struct Multilocation {
     uint8 parents;
@@ -41,7 +41,7 @@ interface GatewayLike {
     function handle(bytes memory message) external;
 }
 
-contract ConnectorXCMRouter {
+contract XCMRouter {
     using TypedMemView for bytes;
 
     address constant XCM_TRANSACTOR_V2_ADDRESS = 0x000000000000000000000000000000000000080D;
@@ -51,8 +51,8 @@ contract ConnectorXCMRouter {
 
     GatewayLike public gateway;
     address public immutable centrifugeChainOrigin;
-    uint8 public immutable centrifugeChainConnectorsPalletIndex;
-    uint8 public immutable centrifugeChainConnectorsPalletHandleIndex;
+    uint8 public immutable centrifugeChainLiquidityPoolsPalletIndex;
+    uint8 public immutable centrifugeChainLiquidityPoolsPalletHandleIndex;
 
     // --- Events ---
     event Rely(address indexed user);
@@ -62,12 +62,12 @@ contract ConnectorXCMRouter {
 
     constructor(
         address centrifugeChainOrigin_,
-        uint8 centrifugeChainConnectorsPalletIndex_,
-        uint8 centrifugeChainConnectorsPalletHandleIndex_
+        uint8 centrifugeChainLiquidityPoolsPalletIndex_,
+        uint8 centrifugeChainLiquidityPoolsPalletHandleIndex_
     ) {
         centrifugeChainOrigin = centrifugeChainOrigin_;
-        centrifugeChainConnectorsPalletIndex = centrifugeChainConnectorsPalletIndex_;
-        centrifugeChainConnectorsPalletHandleIndex = centrifugeChainConnectorsPalletHandleIndex_;
+        centrifugeChainLiquidityPoolsPalletIndex = centrifugeChainLiquidityPoolsPalletIndex_;
+        centrifugeChainLiquidityPoolsPalletHandleIndex = centrifugeChainLiquidityPoolsPalletHandleIndex_;
         xcmWeightInfo = XcmWeightInfo({
             buyExecutionWeightLimit: 19000000000,
             transactWeightAtMost: 8000000000,
@@ -79,17 +79,17 @@ contract ConnectorXCMRouter {
     }
 
     modifier auth() {
-        require(wards[msg.sender] == 1, "ConnectorXCMRouter/not-authorized");
+        require(wards[msg.sender] == 1, "XCMRouter/not-authorized");
         _;
     }
 
     modifier onlyCentrifugeChainOrigin() {
-        require(msg.sender == address(centrifugeChainOrigin), "ConnectorXCMRouter/invalid-origin");
+        require(msg.sender == address(centrifugeChainOrigin), "XCMRouter/invalid-origin");
         _;
     }
 
     modifier onlyGateway() {
-        require(msg.sender == address(gateway), "ConnectorXCMRouter/only-gateway-allowed-to-call");
+        require(msg.sender == address(gateway), "XCMRouter/only-gateway-allowed-to-call");
         _;
     }
 
@@ -108,7 +108,7 @@ contract ConnectorXCMRouter {
         if (what == "gateway") {
             gateway = GatewayLike(gateway_);
         } else {
-            revert("ConnectorXCMRouter/file-unrecognized-param");
+            revert("XCMRouter/file-unrecognized-param");
         }
 
         emit File(what, gateway_);
@@ -159,9 +159,9 @@ contract ConnectorXCMRouter {
     function centrifuge_handle_call(bytes memory message) internal view returns (bytes memory) {
         return abi.encodePacked(
             // The centrifuge chain Connectors pallet index
-            centrifugeChainConnectorsPalletIndex,
+            centrifugeChainLiquidityPoolsPalletIndex,
             // The `handle` call index within the Connectors pallet
-            centrifugeChainConnectorsPalletHandleIndex,
+            centrifugeChainLiquidityPoolsPalletHandleIndex,
             // We need to specify the length of the message in the scale-encoding format
             message_length_scale_encoded(message),
             // The connector message itself
@@ -174,25 +174,25 @@ contract ConnectorXCMRouter {
     function message_length_scale_encoded(bytes memory message) internal pure returns (bytes memory) {
         bytes29 _msg = message.ref(0);
 
-        if (ConnectorMessages.isTransfer(_msg)) {
+        if (Messages.isTransfer(_msg)) {
             return hex"8501";
-        } else if (ConnectorMessages.isTransferTrancheTokens(_msg)) {
+        } else if (Messages.isTransferTrancheTokens(_msg)) {
             // A TransferTrancheTokens message is 82 bytes long which encodes to 0x4901 in Scale
             return hex"4901";
-        } else if (ConnectorMessages.isIncreaseInvestOrder(_msg)) {
+        } else if (Messages.isIncreaseInvestOrder(_msg)) {
             return hex"6501";
-        } else if (ConnectorMessages.isDecreaseInvestOrder(_msg)) {
+        } else if (Messages.isDecreaseInvestOrder(_msg)) {
             return hex"6501";
-        } else if (ConnectorMessages.isIncreaseRedeemOrder(_msg)) {
+        } else if (Messages.isIncreaseRedeemOrder(_msg)) {
             return hex"6501";
-        } else if (ConnectorMessages.isDecreaseRedeemOrder(_msg)) {
+        } else if (Messages.isDecreaseRedeemOrder(_msg)) {
             return hex"6501";
-        } else if (ConnectorMessages.isCollectInvest(_msg)) {
+        } else if (Messages.isCollectInvest(_msg)) {
             return hex"e4";
-        } else if (ConnectorMessages.isCollectRedeem(_msg)) {
+        } else if (Messages.isCollectRedeem(_msg)) {
             return hex"e4";
         } else {
-            revert("ConnectorXCMRouter/unsupported-outgoing-message");
+            revert("XCMRouter/unsupported-outgoing-message");
         }
     }
 

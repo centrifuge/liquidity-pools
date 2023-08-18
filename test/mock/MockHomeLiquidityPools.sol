@@ -3,19 +3,19 @@ pragma solidity ^0.8.18;
 pragma abicoder v2;
 
 import {TypedMemView} from "memview-sol/TypedMemView.sol";
-import {ConnectorMessages} from "src/Messages.sol";
+import {Messages} from "src/Messages.sol";
 import "forge-std/Test.sol";
-import {ConnectorXCMRouter} from "src/routers/xcm/Router.sol";
+import {XCMRouter} from "src/routers/xcm/Router.sol";
 
 interface XcmRouterLike {
     function handle(bytes memory _message) external;
     function send(bytes memory message) external;
 }
 
-contract MockHomeConnector is Test {
+contract MockHomeLiquidityPools is Test {
     using TypedMemView for bytes;
     using TypedMemView for bytes29;
-    using ConnectorMessages for bytes29;
+    using Messages for bytes29;
 
     XcmRouterLike public immutable router;
 
@@ -35,17 +35,17 @@ contract MockHomeConnector is Test {
     }
 
     function addCurrency(uint128 currency, address currencyAddress) public {
-        bytes memory _message = ConnectorMessages.formatAddCurrency(currency, currencyAddress);
+        bytes memory _message = Messages.formatAddCurrency(currency, currencyAddress);
         router.handle(_message);
     }
 
     function addPool(uint64 poolId) public {
-        bytes memory _message = ConnectorMessages.formatAddPool(poolId);
+        bytes memory _message = Messages.formatAddPool(poolId);
         router.handle(_message);
     }
 
     function allowPoolCurrency(uint64 poolId, uint128 currency) public {
-        bytes memory _message = ConnectorMessages.formatAllowPoolCurrency(poolId, currency);
+        bytes memory _message = Messages.formatAllowPoolCurrency(poolId, currency);
         router.handle(_message);
     }
 
@@ -58,23 +58,23 @@ contract MockHomeConnector is Test {
         uint128 price
     ) public {
         bytes memory _message =
-            ConnectorMessages.formatAddTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price);
+            Messages.formatAddTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price);
         router.handle(_message);
     }
 
     function updateMember(uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) public {
-        bytes memory _message = ConnectorMessages.formatUpdateMember(poolId, trancheId, user, validUntil);
+        bytes memory _message = Messages.formatUpdateMember(poolId, trancheId, user, validUntil);
         router.handle(_message);
     }
 
     function updateTokenPrice(uint64 poolId, bytes16 trancheId, uint128 price) public {
-        bytes memory _message = ConnectorMessages.formatUpdateTrancheTokenPrice(poolId, trancheId, price);
+        bytes memory _message = Messages.formatUpdateTrancheTokenPrice(poolId, trancheId, price);
         router.handle(_message);
     }
 
     // Trigger an incoming (e.g. Centrifuge Chain -> EVM) transfer of stable coins
     function incomingTransfer(uint128 currency, bytes32 sender, bytes32 recipient, uint128 amount) public {
-        bytes memory _message = ConnectorMessages.formatTransfer(currency, sender, recipient, amount);
+        bytes memory _message = Messages.formatTransfer(currency, sender, recipient, amount);
         router.handle(_message);
     }
 
@@ -83,14 +83,16 @@ contract MockHomeConnector is Test {
         uint64 poolId,
         bytes16 trancheId,
         uint64 destinationChainId,
+        uint128 currencyId,
         address destinationAddress,
         uint128 amount
     ) public {
-        bytes memory _message = ConnectorMessages.formatTransferTrancheTokens(
+        bytes memory _message = Messages.formatTransferTrancheTokens(
             poolId,
             trancheId,
             bytes32(bytes20(msg.sender)),
-            ConnectorMessages.formatDomain(ConnectorMessages.Domain.EVM, destinationChainId),
+            Messages.formatDomain(Messages.Domain.EVM, destinationChainId),
+            currencyId,
             destinationAddress,
             amount
         );
@@ -153,10 +155,37 @@ contract MockHomeConnector is Test {
         router.handle(_message);
     }
 
-    function incomingScheduleRely(address spell) public {
-        bytes memory _message = ConnectorMessages.formatAddAdmin(spell);
+    function incomingScheduleUpgrade(address spell) public {
+        bytes memory _message = Messages.formatScheduleUpgrade(spell);
         router.handle(_message);
     }
+
+    function isExecutedCollectInvest(
+        uint64 poolId,
+        bytes16 trancheId,
+        bytes32 investor,
+        uint128 currency,
+        uint128 currencyPayout,
+        uint128 trancheTokensPayout
+    ) public {
+        bytes memory _message = Messages.formatExecutedCollectInvest(
+        poolId, trancheId, investor, currency, currencyPayout, trancheTokensPayout);
+        router.handle(_message);
+    }
+
+    function isExecutedCollectRedeem(
+        uint64 poolId,
+        bytes16 trancheId,
+        bytes32 investor,
+        uint128 currency,
+        uint128 currencyPayout,
+        uint128 trancheTokensPayout
+    ) public {
+        bytes memory _message = Messages.formatExecutedCollectRedeem(
+        poolId, trancheId, investor, currency, currencyPayout, trancheTokensPayout);
+        router.handle(_message);
+    } 
+
 
     function dispatch(
         uint32 _destinationDomain,
