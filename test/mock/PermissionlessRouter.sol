@@ -7,12 +7,23 @@ interface GatewayLike {
 }
 
 contract PermissionlessRouter {
+    mapping(address => uint256) public wards;
     GatewayLike public gateway;
 
+    event Rely(address indexed user);
+    event Deny(address indexed user);
     event Send(bytes message);
     event File(bytes32 indexed what, address addr);
 
-    constructor() {}
+    constructor() {
+        wards[msg.sender] = 1;
+        emit Rely(msg.sender);
+    }
+
+    modifier auth() {
+        require(wards[msg.sender] == 1, "PermissionlessRouter/not-authorized");
+        _;
+    }
 
     function file(bytes32 what, address gateway_) external {
         if (what == "gateway") {
@@ -22,6 +33,17 @@ contract PermissionlessRouter {
         }
 
         emit File(what, gateway_);
+    }
+
+    // --- Administration ---
+    function rely(address user) external auth {
+        wards[user] = 1;
+        emit Rely(user);
+    }
+
+    function deny(address user) external auth {
+        wards[user] = 0;
+        emit Deny(user);
     }
 
     // --- Incoming ---

@@ -17,7 +17,7 @@ contract AxelarEVMScript is Script {
 
         address admin = vm.envAddress("ADMIN");
 
-        Deployer deployer = new Deployer();
+        Deployer deployer = new Deployer(admin);
         address investmentManager = deployer.deployInvestmentManager();
 
         AxelarEVMRouter router = new AxelarEVMRouter(
@@ -26,6 +26,9 @@ contract AxelarEVMScript is Script {
         );
 
         deployer.wire(address(router));
+
+        deployer.giveAdminAccess();
+        deployer.removeDeployerAccess(address(router));
 
         vm.stopBroadcast();
     }

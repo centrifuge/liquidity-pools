@@ -24,7 +24,10 @@ contract Deployer {
     address admin;
 
     InvestmentManager investmentManager;
-    address escrow;
+    Escrow escrow;
+    PauseAdmin pauseAdmin;
+    DelayedAdmin delayedAdmin;
+    Gateway gateway;
 
     constructor(address admin_) {
         admin = admin_;
@@ -33,17 +36,17 @@ contract Deployer {
     function deployInvestmentManager() public returns (address) {
         address liquidityPoolFactory = address(new LiquidityPoolFactory());
         address memberlistFactory_ = address(new MemberlistFactory());
-        escrow = address(new Escrow());
-        investmentManager = new InvestmentManager(escrow, liquidityPoolFactory, memberlistFactory_);
+        escrow = new Escrow();
+        investmentManager = new InvestmentManager(address(escrow), liquidityPoolFactory, memberlistFactory_);
 
         return address(investmentManager);
     }
 
     function wire(address router) public {
-        // Deploy gateway an admins
-        PauseAdmin pauseAdmin = new PauseAdmin();
-        DelayedAdmin delayedAdmin = new DelayedAdmin();
-        Gateway gateway = new Gateway(address(investmentManager), address(router), shortWait, longWait, gracePeriod);
+        // Deploy gateway and admins
+        pauseAdmin = new PauseAdmin();
+        delayedAdmin = new DelayedAdmin();
+        gateway = new Gateway(address(investmentManager), address(router), shortWait, longWait, gracePeriod);
 
         // Wire gateway
         investmentManager.file("gateway", address(gateway));
@@ -58,15 +61,12 @@ contract Deployer {
         Escrow(address(escrow)).rely(address(investmentManager));
     }
 
-    function giveAdminAccess() {
-        gateway.deny(address(this));
-        escrow.rely(address(admin));
-        gateway.rely(address(admin));
+    function giveAdminAccess() public {
         pauseAdmin.rely(address(admin));
         delayedAdmin.rely(address(admin));
     }
 
-    function removeDeployerAccess() {
+    function removeDeployerAccess(address router) public {
         RouterLike(router).deny(address(this));
         escrow.deny(address(this));
         gateway.deny(address(this));
