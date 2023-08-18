@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.18;
+
 import "./../auth/auth.sol";
 
 interface MemberlistLike {
@@ -9,6 +10,7 @@ interface MemberlistLike {
 
 contract Memberlist is Auth {
     mapping(address => uint256) public members;
+
     constructor() {
         wards[msg.sender] = 1;
         emit Rely(msg.sender);

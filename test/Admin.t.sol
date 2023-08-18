@@ -227,7 +227,6 @@ contract AdminTest is Test {
         assertEq(gateway.wards(spell), 1);
     }
 
-
     function testShortRelyFailsBefore24hours() public {
         address spell = vm.addr(1);
         centChainLiquidityPools.incomingScheduleUpgrade(spell);

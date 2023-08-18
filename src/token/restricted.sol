@@ -33,7 +33,7 @@ contract RestrictedToken is ERC20 {
     // --- Events ---
     event File(bytes32 indexed what, address data);
 
-    constructor(uint8 decimals_) ERC20(decimals_) { }
+    constructor(uint8 decimals_) ERC20(decimals_) {}
 
     modifier checkMember(address user) {
         memberlist.member(user);

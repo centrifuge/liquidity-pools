@@ -32,13 +32,17 @@ contract FactoryTest is Test {
     ) public {
         vm.selectFork(mainnetFork);
         LiquidityPoolFactory lpFactory1 = new LiquidityPoolFactory{ salt: SALT }();
-        address lp1 = lpFactory1.newLiquidityPool(poolId, trancheId, currency, asset, investmentManager, admin, memberlist, name, symbol, decimals);
+        address lp1 = lpFactory1.newLiquidityPool(
+            poolId, trancheId, currency, asset, investmentManager, admin, memberlist, name, symbol, decimals
+        );
 
         vm.selectFork(polygonFork);
         LiquidityPoolFactory lpFactory2 = new LiquidityPoolFactory{ salt: SALT }();
         assertEq(address(lpFactory1), address(lpFactory2));
         vm.prank(sender);
-        address lp2 = lpFactory2.newLiquidityPool(poolId, trancheId, currency, asset, investmentManager, admin, memberlist, name, symbol, decimals);
+        address lp2 = lpFactory2.newLiquidityPool(
+            poolId, trancheId, currency, asset, investmentManager, admin, memberlist, name, symbol, decimals
+        );
         assertEq(address(lp1), address(lp2));
     }
 
@@ -91,7 +95,9 @@ contract FactoryTest is Test {
             )
         );
 
-        address token = lpFactory.newLiquidityPool(poolId, trancheId, currency, asset, investmentManager, admin, memberlist, name, symbol, decimals);
+        address token = lpFactory.newLiquidityPool(
+            poolId, trancheId, currency, asset, investmentManager, admin, memberlist, name, symbol, decimals
+        );
 
         assertEq(address(token), predictedAddress);
     }
@@ -124,16 +130,18 @@ contract FactoryTest is Test {
         );
         LiquidityPoolFactory lpFactory = new LiquidityPoolFactory{ salt: SALT }();
         assertEq(address(lpFactory), predictedAddress);
-        address lp1 = lpFactory.newLiquidityPool(poolId, trancheId, currency, asset, investmentManager, admin, memberlist, name, symbol, decimals);
+        address lp1 = lpFactory.newLiquidityPool(
+            poolId, trancheId, currency, asset, investmentManager, admin, memberlist, name, symbol, decimals
+        );
         vm.expectRevert();
-        address lp2 = lpFactory.newLiquidityPool(poolId, trancheId, currency, asset, investmentManager, admin, memberlist, name, symbol, decimals);
+        address lp2 = lpFactory.newLiquidityPool(
+            poolId, trancheId, currency, asset, investmentManager, admin, memberlist, name, symbol, decimals
+        );
     }
 
-    function testMemberlistFactoryIsDeterministicAcrossChains(
-        address sender,
-        address admin,
-        address investmentManager
-    ) public {
+    function testMemberlistFactoryIsDeterministicAcrossChains(address sender, address admin, address investmentManager)
+        public
+    {
         vm.selectFork(mainnetFork);
         MemberlistFactory memberlistFactory1 = new MemberlistFactory{ salt: SALT }();
         address memberlist1 = memberlistFactory1.newMemberlist(admin, investmentManager);
