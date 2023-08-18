@@ -116,7 +116,6 @@
 //         );
 //     }
 
-
 //     // --- Incoming message handling ---
 //     function handleTransfer(uint128 currency, address recipient, uint128 amount) public onlyGateway {
 //         address currencyAddress = currencyIdToAddress[currency];

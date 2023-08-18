@@ -15,6 +15,8 @@ contract AxelarEVMScript is Script {
     function run() public {
         vm.startBroadcast();
 
+        address admin = vm.envAddress("ADMIN");
+
         Deployer deployer = new Deployer();
         address investmentManager = deployer.deployInvestmentManager();
 
@@ -23,7 +25,7 @@ contract AxelarEVMScript is Script {
                 address(vm.envAddress("AXELAR_GATEWAY"))
         );
 
-        deployer.wire(router);
+        deployer.wire(address(router));
 
         vm.stopBroadcast();
     }

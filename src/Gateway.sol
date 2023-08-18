@@ -253,7 +253,9 @@ contract Gateway {
         onlyInvestmentManager
         pauseable
     {
-        outgoingRouter.send(Messages.formatIncreaseInvestOrder(poolId, trancheId, addressToBytes32(investor), currency, amount));
+        outgoingRouter.send(
+            Messages.formatIncreaseInvestOrder(poolId, trancheId, addressToBytes32(investor), currency, amount)
+        );
     }
 
     function decreaseInvestOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount)
@@ -261,7 +263,9 @@ contract Gateway {
         onlyInvestmentManager
         pauseable
     {
-        outgoingRouter.send(Messages.formatDecreaseInvestOrder(poolId, trancheId, addressToBytes32(investor), currency, amount));
+        outgoingRouter.send(
+            Messages.formatDecreaseInvestOrder(poolId, trancheId, addressToBytes32(investor), currency, amount)
+        );
     }
 
     function increaseRedeemOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount)
@@ -269,7 +273,9 @@ contract Gateway {
         onlyInvestmentManager
         pauseable
     {
-        outgoingRouter.send(Messages.formatIncreaseRedeemOrder(poolId, trancheId, addressToBytes32(investor), currency, amount));
+        outgoingRouter.send(
+            Messages.formatIncreaseRedeemOrder(poolId, trancheId, addressToBytes32(investor), currency, amount)
+        );
     }
 
     function decreaseRedeemOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount)
@@ -277,7 +283,9 @@ contract Gateway {
         onlyInvestmentManager
         pauseable
     {
-        outgoingRouter.send(Messages.formatDecreaseRedeemOrder(poolId, trancheId, addressToBytes32(investor), currency, amount));
+        outgoingRouter.send(
+            Messages.formatDecreaseRedeemOrder(poolId, trancheId, addressToBytes32(investor), currency, amount)
+        );
     }
 
     function collectInvest(uint64 poolId, bytes16 trancheId, address investor, uint128 currency)
