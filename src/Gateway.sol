@@ -83,7 +83,8 @@ contract Gateway {
 
     InvestmentManagerLike public immutable investmentManager;
     // TODO: support multiple incoming routers (just a single outgoing router) to simplify router migrations
-    RouterLike public immutable router;
+    mapping(address => bool) public incomingRouters;
+    RouterLike public outgoingRouter;
 
     /// --- Events ---
     event Rely(address indexed user);
@@ -152,6 +153,18 @@ contract Gateway {
     function unpause() external auth {
         paused = false;
         emit Unpause();
+    }
+
+    function addIncomingRouter(address router) internal {
+        incomingRouters[router] = true;
+    }
+
+    function removeIncomingRouter(address router) internal {
+        incomingRouters[router] = false;
+    }
+
+    function setOutgoingRouter(address router) internal {
+        outgoingRouter = router;
     }
 
     function scheduleShortRely(address user) internal {
