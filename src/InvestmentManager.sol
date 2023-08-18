@@ -151,12 +151,6 @@ contract InvestmentManager is Auth {
         _;
     }
 
-    /// @dev gateway must be message.sender. permissions check for incoming message handling.
-    modifier onlyGateway() {
-        // require(msg.sender == address(gateway), "InvestmentManager/not-the-gateway");
-        _;
-    }
-
     /// @dev liquidity pool must be message.sender. permissions check for liquidity pool gated functions.
     modifier onlyLiquidityPoolWard() {
         require(liquidityPoolWards[msg.sender] == 1, "InvestmentManager/not-liquidity-pool");
@@ -322,7 +316,7 @@ contract InvestmentManager is Auth {
     /// @dev a global chain agnostic currency index is maintained on centrifuge chain. This function maps a currency from the centrifuge chain index to its corresponding address on the evm chain.
     /// The chain agnostic currency id has to be used to pass currency information to the centrifuge chain.
     /// @notice this function can only be executed by the gateway contract.
-    function addCurrency(uint128 currency, address currencyAddress) public onlyGateway {
+    function addCurrency(uint128 currency, address currencyAddress) public {
         // currency index on the centrifuge chain side should start at 1
         require(currency > 0, "InvestmentManager/currency-id-has-to-be-greater-than-0");
         require(currencyIdToAddress[currency] == address(0), "InvestmentManager/currency-id-in-use");
@@ -338,7 +332,7 @@ contract InvestmentManager is Auth {
 
     /// @dev new pool details from an existing centrifuge chain pool are added.
     /// @notice the function can only be executed by the gateway contract.
-    function addPool(uint64 poolId) public onlyGateway {
+    function addPool(uint64 poolId) public {
         Pool storage pool = pools[poolId];
         require(pool.createdAt == 0, "InvestmentManager/pool-already-added");
         pool.poolId = poolId;
@@ -350,7 +344,7 @@ contract InvestmentManager is Auth {
     /// @dev centrifuge pools can support multiple currencies for investing. this function adds a new supported currency to the pool details.
     /// Adding new currencies allow the creation of new liquidity pools for the underlying centrifuge chain pool.
     /// @notice the function can only be executed by the gateway contract.
-    function allowPoolCurrency(uint64 poolId, uint128 currency) public onlyGateway {
+    function allowPoolCurrency(uint64 poolId, uint128 currency) public {
         Pool storage pool = pools[poolId];
         require(pool.createdAt > 0, "InvestmentManager/invalid-pool");
 
@@ -370,7 +364,7 @@ contract InvestmentManager is Auth {
         string memory _tokenSymbol,
         uint8 _decimals,
         uint128 _price // not required here
-    ) public onlyGateway {
+    ) public {
         Pool storage pool = pools[_poolId];
         require(pool.createdAt > 0, "InvestmentManager/invalid-pool");
         Tranche storage tranche = tranches[_poolId][_trancheId];
@@ -386,7 +380,7 @@ contract InvestmentManager is Auth {
         emit TrancheAdded(_poolId, _trancheId);
     }
 
-    function updateTokenPrice(uint64 _poolId, bytes16 _trancheId, uint128 _price) public onlyGateway {
+    function updateTokenPrice(uint64 _poolId, bytes16 _trancheId, uint128 _price) public {
         Tranche storage tranche = tranches[_poolId][_trancheId];
         require(tranche.createdAt > 0, "InvestmentManager/invalid-pool-or-tranche");
         for (uint256 i = 0; i < tranche.liquidityPools.length; i++) {
@@ -396,7 +390,7 @@ contract InvestmentManager is Auth {
         }
     }
 
-    function updateMember(uint64 _poolId, bytes16 _trancheId, address _user, uint64 _validUntil) public onlyGateway {
+    function updateMember(uint64 _poolId, bytes16 _trancheId, address _user, uint64 _validUntil) public {
         Tranche storage tranche = tranches[_poolId][_trancheId];
         require(tranche.createdAt > 0, "InvestmentManager/invalid-pool-or-tranche");
         for (uint256 i = 0; i < tranche.liquidityPools.length; i++) {
@@ -415,7 +409,7 @@ contract InvestmentManager is Auth {
         uint128 _currency,
         uint128 _currencyInvested,
         uint128 _tokensPayout
-    ) public onlyGateway {
+    ) public {
         require(_currencyInvested != 0, "InvestmentManager/zero-invest");
         address currency = currencyIdToAddress[_currency];
         address lPool = liquidityPools[_poolId][_trancheId][currency];
@@ -435,7 +429,7 @@ contract InvestmentManager is Auth {
         uint128 _currency,
         uint128 _currencyPayout,
         uint128 _trancheTokensRedeemed
-    ) public onlyGateway {
+    ) public {
         require(_trancheTokensRedeemed != 0, "InvestmentManager/zero-redeem");
         address currency = currencyIdToAddress[_currency];
         address lPool = liquidityPools[_poolId][_trancheId][currency];
@@ -454,7 +448,7 @@ contract InvestmentManager is Auth {
         address _user,
         uint128 _currency,
         uint128 _currencyPayout
-    ) public onlyGateway {
+    ) public {
         require(_currencyPayout != 0, "InvestmentManager/zero-payout");
         address currency = currencyIdToAddress[_currency];
         LiquidityPoolLike lPool = LiquidityPoolLike(liquidityPools[_poolId][_trancheId][currency]);
@@ -474,7 +468,7 @@ contract InvestmentManager is Auth {
         address _user,
         uint128 _currency,
         uint128 _tokensPayout
-    ) public onlyGateway {
+    ) public {
         require(_tokensPayout != 0, "InvestmentManager/zero-payout");
         address currency = currencyIdToAddress[_currency];
         LiquidityPoolLike lPool = LiquidityPoolLike(liquidityPools[_poolId][_trancheId][currency]);
@@ -486,7 +480,7 @@ contract InvestmentManager is Auth {
         );
     }
 
-    function handleTransfer(uint128 currency, address recipient, uint128 amount) public onlyGateway {
+    function handleTransfer(uint128 currency, address recipient, uint128 amount) public {
         address currencyAddress = currencyIdToAddress[currency];
         require(currencyAddress != address(0), "InvestmentManager/unknown-currency");
 

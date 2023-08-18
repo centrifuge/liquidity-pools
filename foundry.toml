@@ -4,7 +4,7 @@ out = 'out'
 libs = ['lib']
 
 solc_version = "0.8.18"   # Override for the solc version (setting this ignores `auto_detect_solc`)
-optimizer = false         # Enable or disable the solc optimizer
+optimizer = true         # Enable or disable the solc optimizer
 verbosity = 3             # The verbosity of tests
 
 [profile.default.fuzz]

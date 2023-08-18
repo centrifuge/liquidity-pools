@@ -16,7 +16,7 @@ interface RouterLike {
     function deny(address who) external;
 }
 
-contract Deployer {
+contract Deployer is Script {
     uint256 shortWait = 24 hours;
     uint256 longWait = 48 hours;
     uint256 gracePeriod = 48 hours;
@@ -28,10 +28,6 @@ contract Deployer {
     PauseAdmin pauseAdmin;
     DelayedAdmin delayedAdmin;
     Gateway gateway;
-
-    constructor(address admin_) {
-        admin = admin_;
-    }
 
     function deployInvestmentManager() public returns (address) {
         address liquidityPoolFactory = address(new LiquidityPoolFactory());

@@ -4,10 +4,9 @@ pragma solidity ^0.8.18;
 import {PermissionlessRouter} from "test/mock/PermissionlessRouter.sol";
 import {InvestmentManager} from "src/InvestmentManager.sol";
 import {Deployer} from "./Deployer.sol";
-import "forge-std/Script.sol";
 
 // Script to deploy Liquidity Pools with a permissionless router for testing.
-contract PermissionlessScript is Script {
+contract PermissionlessScript is Deployer {
     // address(0)[0:20] + keccak("Centrifuge")[21:32]
     bytes32 SALT = 0x000000000000000000000000000000000000000075eb27011b69f002dc094d05;
 
@@ -16,14 +15,12 @@ contract PermissionlessScript is Script {
     function run() public {
         vm.startBroadcast();
 
-        address admin = msg.sender;
+        admin = msg.sender;
 
         // Deploy contracts
-        Deployer deployer = new Deployer(admin);
-        address investmentManager = deployer.deployInvestmentManager();
+        address investmentManager = deployInvestmentManager();
         PermissionlessRouter router = new PermissionlessRouter();
-        router.rely(address(deployer));
-        deployer.wire(address(router));
+        wire(address(router));
 
         // Set up test data
         InvestmentManager mgr = InvestmentManager(investmentManager);
@@ -36,8 +33,8 @@ contract PermissionlessScript is Script {
         );
         mgr.updateMember(1171854325, 0x102f4ef817340a8839a515d2c73a7c1d, admin, type(uint64).max);
 
-        deployer.giveAdminAccess();
-        deployer.removeDeployerAccess(address(router));
+        giveAdminAccess();
+        removeDeployerAccess(address(router));
 
         vm.stopBroadcast();
     }
