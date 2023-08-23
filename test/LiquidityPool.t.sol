@@ -124,7 +124,6 @@ contract LiquidityPoolTest is Test {
         assertEq(lPool.balanceOf(address(this)), trancheTokensPayout / share);
         assertEq(lPool.balanceOf(address(escrow)), trancheTokensPayout - trancheTokensPayout / share);
         assertEq(lPool.maxMint(address(this)), trancheTokensPayout - trancheTokensPayout / share); // max deposit
-        console.logUint(amount);
         assertEq(lPool.maxDeposit(address(this)), amount - amount / share); // max deposit
 
         // mint the rest
