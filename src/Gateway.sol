@@ -274,16 +274,6 @@ contract Gateway {
         pauseable
     {
         outgoingRouter.send(
-            Messages.formatIncreaseRedeemOrder(poolId, trancheId, addressToBytes32(investor), currency, amount)
-        );
-    }
-
-    function decreaseRedeemOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount)
-        public
-        onlyInvestmentManager
-        pauseable
-    {
-        outgoingRouter.send(
             Messages.formatDecreaseRedeemOrder(poolId, trancheId, addressToBytes32(investor), currency, amount)
         );
     }
