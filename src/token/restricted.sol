@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.18;
 
-import "./erc20.sol";
+import "./ERC20.sol";
 
 interface MemberlistLike {
     function hasMember(address) external view returns (bool);
