@@ -563,7 +563,7 @@ contract InvestmentManagerTest is Test {
     //     assertEq(erc20.balanceOf(address(this)), initialBalance - amount);
     //     assertEq(erc20.balanceOf(address(evmInvestmentManager.escrow())), amount);
     // }
-   
+
     // function testTransferTrancheTokensToCentrifuge(
     //     uint64 validUntil,
     //     bytes32 centChainAddress,
