@@ -8,7 +8,6 @@ import "./../auth/auth.sol";
 contract PauseAdmin is Auth {
     Gateway public gateway;
 
-
     // --- Events ---
     event File(bytes32 indexed what, address indexed data);
 
