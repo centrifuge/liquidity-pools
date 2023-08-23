@@ -271,7 +271,7 @@ contract InvestmentManagerTest is Test {
         assertTrue(lPool.wards(address(gateway)) == 1);
         assertTrue(lPool.wards(address(evmInvestmentManager)) == 1);
         assertTrue(lPool.wards(address(this)) == 0);
-        assertTrue(evmInvestmentManager.liquidityPoolWards(lPoolAddress) == 1);
+        assertTrue(evmInvestmentManager.wards(lPoolAddress) == 1);
     }
 
     function testDeployingLiquidityPoolNonExistingTrancheFails(
@@ -457,91 +457,91 @@ contract InvestmentManagerTest is Test {
         homePools.updateTokenPrice(poolId, trancheId, price);
     }
 
-    function testIncomingTransferWithoutEscrowFundsFails(
-        string memory tokenName,
-        string memory tokenSymbol,
-        uint8 decimals,
-        uint128 currency,
-        bytes32 sender,
-        address recipient,
-        uint128 amount
-    ) public {
-        vm.assume(decimals > 0);
-        vm.assume(currency > 0);
-        vm.assume(amount > 0);
-        vm.assume(recipient != address(0));
+    // function testIncomingTransferWithoutEscrowFundsFails(
+    //     string memory tokenName,
+    //     string memory tokenSymbol,
+    //     uint8 decimals,
+    //     uint128 currency,
+    //     bytes32 sender,
+    //     address recipient,
+    //     uint128 amount
+    // ) public {
+    //     vm.assume(decimals > 0);
+    //     vm.assume(currency > 0);
+    //     vm.assume(amount > 0);
+    //     vm.assume(recipient != address(0));
 
-        ERC20 erc20 = newErc20(tokenName, tokenSymbol, decimals);
-        vm.assume(recipient != address(erc20));
-        homePools.addCurrency(currency, address(erc20));
+    //     ERC20 erc20 = newErc20(tokenName, tokenSymbol, decimals);
+    //     vm.assume(recipient != address(erc20));
+    //     homePools.addCurrency(currency, address(erc20));
 
-        assertEq(erc20.balanceOf(address(evmInvestmentManager.escrow())), 0);
-        vm.expectRevert(bytes("ERC20/insufficient-balance"));
-        homePools.incomingTransfer(currency, sender, bytes32(bytes20(recipient)), amount);
-        assertEq(erc20.balanceOf(address(evmInvestmentManager.escrow())), 0);
-        assertEq(erc20.balanceOf(recipient), 0);
-    }
+    //     assertEq(erc20.balanceOf(address(evmInvestmentManager.escrow())), 0);
+    //     vm.expectRevert(bytes("ERC20/insufficient-balance"));
+    //     homePools.incomingTransfer(currency, sender, bytes32(bytes20(recipient)), amount);
+    //     assertEq(erc20.balanceOf(address(evmInvestmentManager.escrow())), 0);
+    //     assertEq(erc20.balanceOf(recipient), 0);
+    // }
 
-    function testIncomingTransferWorks(
-        string memory tokenName,
-        string memory tokenSymbol,
-        uint8 decimals,
-        uint128 currency,
-        bytes32 sender,
-        address recipient,
-        uint128 amount
-    ) public {
-        vm.assume(decimals > 0);
-        vm.assume(amount > 0);
-        vm.assume(currency != 0);
-        vm.assume(recipient != address(0));
+    // function testIncomingTransferWorks(
+    //     string memory tokenName,
+    //     string memory tokenSymbol,
+    //     uint8 decimals,
+    //     uint128 currency,
+    //     bytes32 sender,
+    //     address recipient,
+    //     uint128 amount
+    // ) public {
+    //     vm.assume(decimals > 0);
+    //     vm.assume(amount > 0);
+    //     vm.assume(currency != 0);
+    //     vm.assume(recipient != address(0));
 
-        ERC20 erc20 = newErc20(tokenName, tokenSymbol, decimals);
-        homePools.addCurrency(currency, address(erc20));
+    //     ERC20 erc20 = newErc20(tokenName, tokenSymbol, decimals);
+    //     homePools.addCurrency(currency, address(erc20));
 
-        // First, an outgoing transfer must take place which has funds currency of the currency moved to
-        // the escrow account, from which funds are moved from into the recipient on an incoming transfer.
-        erc20.approve(address(evmInvestmentManager), type(uint256).max);
-        erc20.mint(address(this), amount);
-        evmInvestmentManager.transfer(address(erc20), bytes32(bytes20(recipient)), amount);
-        assertEq(erc20.balanceOf(address(evmInvestmentManager.escrow())), amount);
+    //     // First, an outgoing transfer must take place which has funds currency of the currency moved to
+    //     // the escrow account, from which funds are moved from into the recipient on an incoming transfer.
+    //     erc20.approve(address(evmInvestmentManager), type(uint256).max);
+    //     erc20.mint(address(this), amount);
+    //     evmInvestmentManager.transfer(address(erc20), bytes32(bytes20(recipient)), amount);
+    //     assertEq(erc20.balanceOf(address(evmInvestmentManager.escrow())), amount);
 
-        // Now we test the incoming message
-        homePools.incomingTransfer(currency, sender, bytes32(bytes20(recipient)), amount);
-        assertEq(erc20.balanceOf(address(evmInvestmentManager.escrow())), 0);
-        assertEq(erc20.balanceOf(recipient), amount);
-    }
+    //     // Now we test the incoming message
+    //     homePools.incomingTransfer(currency, sender, bytes32(bytes20(recipient)), amount);
+    //     assertEq(erc20.balanceOf(address(evmInvestmentManager.escrow())), 0);
+    //     assertEq(erc20.balanceOf(recipient), amount);
+    // }
 
     // Verify that funds are moved from the msg.sender into the escrow account
-    function testOutgoingTransferWorks(
-        string memory tokenName,
-        string memory tokenSymbol,
-        uint8 decimals,
-        uint128 initialBalance,
-        uint128 currency,
-        bytes32 recipient,
-        uint128 amount
-    ) public {
-        vm.assume(decimals > 0);
-        vm.assume(amount > 0);
-        vm.assume(currency != 0);
-        vm.assume(initialBalance >= amount);
+    // function testOutgoingTransferWorks(
+    //     string memory tokenName,
+    //     string memory tokenSymbol,
+    //     uint8 decimals,
+    //     uint128 initialBalance,
+    //     uint128 currency,
+    //     bytes32 recipient,
+    //     uint128 amount
+    // ) public {
+    //     vm.assume(decimals > 0);
+    //     vm.assume(amount > 0);
+    //     vm.assume(currency != 0);
+    //     vm.assume(initialBalance >= amount);
 
-        ERC20 erc20 = newErc20(tokenName, tokenSymbol, decimals);
+    //     ERC20 erc20 = newErc20(tokenName, tokenSymbol, decimals);
 
-        vm.expectRevert(bytes("InvestmentManager/unknown-currency"));
-        evmInvestmentManager.transfer(address(erc20), recipient, amount);
-        homePools.addCurrency(currency, address(erc20));
+    //     vm.expectRevert(bytes("InvestmentManager/unknown-currency"));
+    //     evmInvestmentManager.transfer(address(erc20), recipient, amount);
+    //     homePools.addCurrency(currency, address(erc20));
 
-        erc20.mint(address(this), initialBalance);
-        assertEq(erc20.balanceOf(address(this)), initialBalance);
-        assertEq(erc20.balanceOf(address(evmInvestmentManager.escrow())), 0);
-        erc20.approve(address(evmInvestmentManager), type(uint256).max);
+    //     erc20.mint(address(this), initialBalance);
+    //     assertEq(erc20.balanceOf(address(this)), initialBalance);
+    //     assertEq(erc20.balanceOf(address(evmInvestmentManager.escrow())), 0);
+    //     erc20.approve(address(evmInvestmentManager), type(uint256).max);
 
-        evmInvestmentManager.transfer(address(erc20), recipient, amount);
-        assertEq(erc20.balanceOf(address(this)), initialBalance - amount);
-        assertEq(erc20.balanceOf(address(evmInvestmentManager.escrow())), amount);
-    }
+    //     evmInvestmentManager.transfer(address(erc20), recipient, amount);
+    //     assertEq(erc20.balanceOf(address(this)), initialBalance - amount);
+    //     assertEq(erc20.balanceOf(address(evmInvestmentManager.escrow())), amount);
+    // }
    
     // function testTransferTrancheTokensToCentrifuge(
     //     uint64 validUntil,

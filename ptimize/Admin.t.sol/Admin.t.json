@@ -1,0 +1,21 @@
+{
+  "abi": [],
+  "bytecode": {
+    "object": "0x",
+    "linkReferences": {}
+  },
+  "deployedBytecode": {
+    "object": "0x",
+    "linkReferences": {}
+  },
+  "ast": {
+    "absolutePath": "test/Admin.t.sol",
+    "id": 40858,
+    "exportedSymbols": {},
+    "nodeType": "SourceUnit",
+    "src": "10380:0:39",
+    "nodes": [],
+    "license": "AGPL-3.0-only"
+  },
+  "id": 39
+}
