@@ -4,7 +4,7 @@
 
 // import {MockHomeConnector} from "../mock/MockHomeConnector.sol";
 // import {CentrifugeConnector} from "src/Connector.sol";
-// import {ERC20Like} from "src/token/restricted.sol";
+// import {ERC20Like} from "src/token/Restricted.sol";
 // import {ConnectorMessages} from "src/Messages.sol";
 
 // import "forge-std/Test.sol";
