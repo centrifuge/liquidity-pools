@@ -2,9 +2,8 @@
 pragma solidity ^0.8.18;
 pragma abicoder v2;
 
-import {TrancheTokenFactory, MemberlistFactory} from "src/token/factory.sol";
-import {RestrictedTokenLike} from "src/token/restricted.sol";
-import {MemberlistLike, Memberlist} from "src/token/memberlist.sol";
+import {RestrictedToken} from "src/token/Restricted.sol";
+import {MemberlistLike, Memberlist} from "src/token/Memberlist.sol";
 import "forge-std/Test.sol";
 
 interface ERC20Like {
@@ -12,16 +11,15 @@ interface ERC20Like {
 }
 
 contract RestrictedTokenTest is Test {
-    RestrictedTokenLike token;
-    MemberlistLike memberlist;
+    RestrictedToken token;
+    Memberlist memberlist;
 
     function setUp() public {
-        TrancheTokenFactory tokenFactory = new TrancheTokenFactory();
-        MemberlistFactory memberlistFactory = new MemberlistFactory();
+        token = new RestrictedToken(18);
+        token.file("name", "Some Token");
+        token.file("symbol", "ST");
 
-        token = RestrictedTokenLike(tokenFactory.newTrancheToken(1, "1", "Some Token", "ST", 18));
-
-        memberlist = MemberlistLike(memberlistFactory.newMemberlist());
+        memberlist = new Memberlist();
         token.file("memberlist", address(memberlist));
 
         memberlist.updateMember(address(this), type(uint256).max);

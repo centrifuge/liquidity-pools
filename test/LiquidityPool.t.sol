@@ -2,19 +2,19 @@
 pragma solidity ^0.8.18;
 pragma abicoder v2;
 
-import { InvestmentManager, Tranche } from "../src/InvestmentManager.sol";
-import { Gateway } from "../src/Gateway.sol";
-import { Escrow } from "../src/Escrow.sol";
-import { LiquidityPoolFactory, MemberlistFactory } from "../src/liquidityPool/Factory.sol";
-import { LiquidityPool } from "../src/liquidityPool/LiquidityPool.sol";
-import { ERC20 } from "../src/token/erc20.sol";
+import {InvestmentManager, Tranche} from "../src/InvestmentManager.sol";
+import {Gateway} from "../src/Gateway.sol";
+import {Escrow} from "../src/Escrow.sol";
+import {LiquidityPoolFactory, MemberlistFactory} from "../src/liquidityPool/Factory.sol";
+import {LiquidityPool} from "../src/liquidityPool/LiquidityPool.sol";
+import {ERC20} from "../src/token/ERC20.sol";
 
-import { MemberlistLike, Memberlist } from "../src/token/memberlist.sol";
-import { MockHomeLiquidityPools } from "./mock/MockHomeLiquidityPools.sol";
-import { MockXcmRouter } from "./mock/MockXcmRouter.sol";
-import { Messages } from "../src/Messages.sol";
-import { PauseAdmin } from "../src/admin/PauseAdmin.sol";
-import { DelayedAdmin } from "../src/admin/DelayedAdmin.sol";
+import {MemberlistLike, Memberlist} from "../src/token/Memberlist.sol";
+import {MockHomeLiquidityPools} from "./mock/MockHomeLiquidityPools.sol";
+import {MockXcmRouter} from "./mock/MockXcmRouter.sol";
+import {Messages} from "../src/Messages.sol";
+import {PauseAdmin} from "../src/admin/PauseAdmin.sol";
+import {DelayedAdmin} from "../src/admin/DelayedAdmin.sol";
 import "forge-std/Test.sol";
 import "../src/InvestmentManager.sol";
 
@@ -24,11 +24,10 @@ interface EscrowLike_ {
 }
 
 interface AuthLike {
-    function wards(address user) external returns (uint);
+    function wards(address user) external returns (uint256);
 }
 
 contract LiquidityPoolTest is Test {
-
     uint128 constant MAX_UINT128 = type(uint128).max;
 
     InvestmentManager evmInvestmentManager;
@@ -37,7 +36,6 @@ contract LiquidityPoolTest is Test {
     MockXcmRouter mockXcmRouter;
     Escrow escrow;
     ERC20 erc20;
-
 
     function setUp() public {
         vm.chainId(1);
@@ -57,8 +55,7 @@ contract LiquidityPoolTest is Test {
         PauseAdmin pauseAdmin = new PauseAdmin();
         DelayedAdmin delayedAdmin = new DelayedAdmin();
 
-        gateway =
-            new Gateway(address(evmInvestmentManager), address(mockXcmRouter), shortWait, longWait, gracePeriod);
+        gateway = new Gateway(address(evmInvestmentManager), address(mockXcmRouter), shortWait, longWait, gracePeriod);
         gateway.rely(address(pauseAdmin));
         gateway.rely(address(delayedAdmin));
         pauseAdmin.file("gateway", address(gateway));
@@ -70,7 +67,7 @@ contract LiquidityPoolTest is Test {
         escrow.rely(address(gateway));
     }
 
-   function testDepositMint( 
+    function testDepositMint(
         uint64 poolId,
         uint8 decimals,
         string memory tokenName,
@@ -128,15 +125,15 @@ contract LiquidityPoolTest is Test {
             console.logUint(amount);
             assertEq(lPool.maxDeposit(address(this)), amount - amount/share); // max deposit
  
-            // // mint the rest
-            // lPool.mint(lPool.maxMint(address(this)), address(this)); 
-            // assertEq(lPool.balanceOf(address(this)), trancheTokensPayout - lPool.maxMint(address(this)));
-            // assertTrue(lPool.balanceOf(address(escrow)) <= 1);
-            // assertTrue(lPool.maxMint(address(this)) <= 1 );
-            // // assertTrue(lPool.maxDeposit(address(this)) <= 2); // todo: fix rounding
+            // mint the rest
+            lPool.mint(lPool.maxMint(address(this)), address(this)); 
+            assertEq(lPool.balanceOf(address(this)), trancheTokensPayout - lPool.maxMint(address(this)));
+            assertTrue(lPool.balanceOf(address(escrow)) <= 1);
+            assertTrue(lPool.maxMint(address(this)) <= 1 );
+            // assertTrue(lPool.maxDeposit(address(this)) <= 2); // todo: fix rounding
     }
 
-    function testRedeem( 
+    function testRedeem(
         uint64 poolId,
         uint8 decimals,
         string memory tokenName,
@@ -256,14 +253,13 @@ contract LiquidityPoolTest is Test {
 
         address lPool_ = deployLiquidityPool(poolId, decimals, tokenName, tokenSymbol, trancheId, price, currency);
         LiquidityPool lPool = LiquidityPool(lPool_);
-        
+
         vm.expectRevert(bytes("InvestmentManager/not-a-member"));
         lPool.collectInvest(address(this));
-        
+
         homePools.updateMember(poolId, trancheId, address(this), validUntil);
         lPool.collectInvest(address(this));
     }
-
 
     function testCollectRedeem(
         uint64 poolId,
@@ -293,13 +289,7 @@ contract LiquidityPoolTest is Test {
         lPool.collectRedeem(address(this));
     }
 
-    function deposit(
-        address _lPool,
-        uint64 poolId,
-        bytes16 trancheId,
-        uint256 amount,
-        uint64 validUntil) 
-    public {
+    function deposit(address _lPool, uint64 poolId, bytes16 trancheId, uint256 amount, uint64 validUntil) public {
         LiquidityPool lPool = LiquidityPool(_lPool);
         erc20.mint(address(this), amount);
         homePools.updateMember(poolId, trancheId, address(this), validUntil); // add user as member
@@ -307,7 +297,9 @@ contract LiquidityPoolTest is Test {
         lPool.requestDeposit(amount);
         // trigger executed collectInvest
         uint128 currencyId = evmInvestmentManager.currencyAddressToId(address(erc20)); // retrieve currencyId
-        homePools.isExecutedCollectInvest(poolId, trancheId, bytes32(bytes20(address(this))), currencyId, uint128(amount), uint128(amount));
+        homePools.isExecutedCollectInvest(
+            poolId, trancheId, bytes32(bytes20(address(this))), currencyId, uint128(amount), uint128(amount)
+        );
         lPool.deposit(amount, address(this)); // withdraw hald the amount
     }
 
@@ -320,12 +312,12 @@ contract LiquidityPoolTest is Test {
         uint128 price,
         uint128 currency
     ) public returns (address) {
-        homePools.addPool(poolId); // add pool 
-        homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price); // add tranche  
+        homePools.addPool(poolId); // add pool
+        homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price); // add tranche
         homePools.addCurrency(currency, address(erc20));
         homePools.allowPoolCurrency(poolId, currency);
-       
-        address lPoolAddress = evmInvestmentManager.deployLiquidityPool(poolId, trancheId, address(erc20)); 
+
+        address lPoolAddress = evmInvestmentManager.deployLiquidityPool(poolId, trancheId, address(erc20));
         return lPoolAddress;
     }
 
@@ -335,6 +327,4 @@ contract LiquidityPoolTest is Test {
         currency.file("symbol", symbol);
         return currency;
     }
-
-
 }

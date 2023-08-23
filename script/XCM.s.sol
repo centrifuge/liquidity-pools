@@ -7,7 +7,7 @@ import {InvestmentManager} from "src/InvestmentManager.sol";
 import {Escrow} from "src/Escrow.sol";
 import {PauseAdmin} from "src/admin/PauseAdmin.sol";
 import {DelayedAdmin} from "src/admin/DelayedAdmin.sol";
-import {TrancheTokenFactory, MemberlistFactory} from "src/token/factory.sol";
+import {LiquidityPoolFactory, MemberlistFactory} from "src/liquidityPool/Factory.sol";
 import "forge-std/Script.sol";
 
 // Script to deploy Connectors with an XCM router.
@@ -23,11 +23,11 @@ contract XCMScript is Script {
         uint256 shortWait = 24 hours;
         uint256 longWait = 48 hours;
         uint256 gracePeriod = 48 hours;
-        address tokenFactory_ = address(new TrancheTokenFactory{ salt: SALT }());
+        address liquidityPoolFactory = address(new LiquidityPoolFactory{ salt: SALT }());
         address memberlistFactory_ = address(new MemberlistFactory{ salt: SALT }());
         address escrow_ = address(new Escrow{ salt: SALT }());
         InvestmentManager investmentManager =
-            new InvestmentManager{ salt: SALT }(escrow_, tokenFactory_, memberlistFactory_);
+            new InvestmentManager{ salt: SALT }(escrow_, liquidityPoolFactory, memberlistFactory_);
 
         XCMRouter router = new XCMRouter{ salt: SALT }(
                 address(vm.envAddress("CENTRIFUGE_CHAIN_ORIGIN")),

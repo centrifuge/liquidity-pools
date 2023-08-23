@@ -314,7 +314,14 @@ library Messages {
         uint128 amount
     ) internal pure returns (bytes memory) {
         return abi.encodePacked(
-            uint8(Call.TransferTrancheTokens), poolId, trancheId, sender, destinationDomain, currencyId, destinationAddress, amount
+            uint8(Call.TransferTrancheTokens),
+            poolId,
+            trancheId,
+            sender,
+            destinationDomain,
+            currencyId,
+            destinationAddress,
+            amount
         );
     }
 
@@ -334,7 +341,7 @@ library Messages {
         return formatTransferTrancheTokens(
             poolId, trancheId, sender, destinationDomain, currencyId, bytes32(bytes20(destinationAddress)), amount
         );
-    } 
+    }
 
     function isTransferTrancheTokens(bytes29 _msg) internal pure returns (bool) {
         return messageType(_msg) == Call.TransferTrancheTokens;
@@ -362,7 +369,7 @@ library Messages {
         destinationAddress = bytes32((_msg.index(82, 20)));
         amount = uint128(_msg.indexUint(114, 16));
     }
-    
+
     // Parse a TransferTrancheTokens to an EVM-based `destinationAddress` (20-byte long).
     // We ignore the `sender` and the `domain` since it's not relevant when parsing an incoming message.
     function parseTransferTrancheTokens20(bytes29 _msg)
@@ -372,7 +379,7 @@ library Messages {
     {
         poolId = uint64(_msg.indexUint(1, 8));
         trancheId = bytes16(_msg.index(9, 16));
-       
+
         // ignore: `sender` at bytes 25-56
         // ignore: `domain` at bytes 57-65
         currencyId = uint128(_msg.indexUint(66, 16));
@@ -572,7 +579,6 @@ library Messages {
         trancheId = bytes16(_msg.index(9, 16));
         investor = bytes32(_msg.index(25, 32));
         currency = uint128(_msg.indexUint(57, 16));
-
     }
 
     function formatExecutedDecreaseInvestOrder(
@@ -583,12 +589,7 @@ library Messages {
         uint128 currencyPayout
     ) internal pure returns (bytes memory) {
         return abi.encodePacked(
-            uint8(Call.ExecutedDecreaseInvestOrder),
-            poolId,
-            trancheId,
-            investor,
-            currency,
-            currencyPayout
+            uint8(Call.ExecutedDecreaseInvestOrder), poolId, trancheId, investor, currency, currencyPayout
         );
     }
 
@@ -599,13 +600,7 @@ library Messages {
     function parseExecutedDecreaseInvestOrder(bytes29 _msg)
         internal
         pure
-        returns (
-            uint64 poolId,
-            bytes16 trancheId,
-            address investor,
-            uint128 currency,
-            uint128 currencyPayout
-        )
+        returns (uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 currencyPayout)
     {
         poolId = uint64(_msg.indexUint(1, 8));
         trancheId = bytes16(_msg.index(9, 16));
@@ -622,12 +617,7 @@ library Messages {
         uint128 currencyPayout
     ) internal pure returns (bytes memory) {
         return abi.encodePacked(
-            uint8(Call.ExecutedDecreaseRedeemOrder),
-            poolId,
-            trancheId,
-            investor,
-            currency,
-            currencyPayout
+            uint8(Call.ExecutedDecreaseRedeemOrder), poolId, trancheId, investor, currency, currencyPayout
         );
     }
 
@@ -638,13 +628,7 @@ library Messages {
     function parseExecutedDecreaseRedeemOrder(bytes29 _msg)
         internal
         pure
-        returns (
-            uint64 poolId,
-            bytes16 trancheId,
-            address investor,
-            uint128 currency,
-            uint128 trancheTokensPayout
-        )
+        returns (uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 trancheTokensPayout)
     {
         poolId = uint64(_msg.indexUint(1, 8));
         trancheId = bytes16(_msg.index(9, 16));
