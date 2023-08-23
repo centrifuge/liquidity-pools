@@ -128,7 +128,7 @@ contract InvestmentManager is Auth {
     }
 
     // --- Getters ---
-    /// @dev returns all `existing liquidity pools for a centrifuge tranche
+    /// @dev returns all existing liquidity pools for a centrifuge tranche
     function getLiquidityPoolsForTranche(uint64 _poolId, bytes16 _trancheId)
         public
         view
