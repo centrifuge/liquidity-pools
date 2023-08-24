@@ -4,6 +4,7 @@ pragma abicoder v2;
 
 import {TypedMemView} from "memview-sol/TypedMemView.sol";
 import {Messages} from "./Messages.sol";
+import "./auth/auth.sol";
 
 interface InvestmentManagerLike {
     function addPool(uint64 poolId) external;
@@ -70,7 +71,7 @@ interface AuthLike {
     function rely(address usr) external;
 }
 
-contract Gateway {
+contract Gateway is Auth {
     using TypedMemView for bytes;
     // why bytes29? - https://github.com/summa-tx/memview-sol#why-bytes29
     using TypedMemView for bytes29;
@@ -90,8 +91,6 @@ contract Gateway {
     RouterLike public outgoingRouter;
 
     /// --- Events ---
-    event Rely(address indexed user);
-    event Deny(address indexed user);
     event File(bytes32 indexed what, address addr);
     event RelyScheduledShort(address indexed spell, uint256 indexed scheduledTime);
     event RelyScheduledLong(address indexed spell, uint256 indexed scheduledTime);
@@ -118,11 +117,6 @@ contract Gateway {
 
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
-    }
-
-    modifier auth() {
-        require(wards[msg.sender] == 1, "Gateway/not-authorized");
-        _;
     }
 
     modifier onlyInvestmentManager() {
