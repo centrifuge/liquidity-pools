@@ -4,10 +4,6 @@ pragma solidity ^0.8.18;
 import {LiquidityPool} from "./LiquidityPool.sol";
 import {Memberlist} from "../token/Memberlist.sol";
 
-interface ImmutableCreate2Factory {
-    function safeCreate2(bytes32 salt, bytes calldata initCode) external payable returns (address deploymentAddress);
-}
-
 interface LiquidityPoolFactoryLike {
     function newLiquidityPool(
         uint64 _poolId,
@@ -68,7 +64,6 @@ contract MemberlistFactory {
     function newMemberlist(address _admin, address _investmentManager) public returns (address memberList) {
         Memberlist memberlist = new Memberlist();
 
-        memberlist.deny(msg.sender);
         memberlist.rely(_admin);
         memberlist.rely(_investmentManager);
         memberlist.deny(address(this));

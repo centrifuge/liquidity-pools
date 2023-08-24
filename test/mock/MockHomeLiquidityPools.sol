@@ -82,7 +82,6 @@ contract MockHomeLiquidityPools is Test {
         uint64 poolId,
         bytes16 trancheId,
         uint64 destinationChainId,
-        uint128 currencyId,
         address destinationAddress,
         uint128 amount
     ) public {
@@ -91,7 +90,6 @@ contract MockHomeLiquidityPools is Test {
             trancheId,
             bytes32(bytes20(msg.sender)),
             Messages.formatDomain(Messages.Domain.EVM, destinationChainId),
-            currencyId,
             destinationAddress,
             amount
         );

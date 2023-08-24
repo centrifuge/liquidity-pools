@@ -203,7 +203,7 @@ contract MessagesTest is Test {
             Messages.parseIncomingTransfer(expectedHex.ref(0));
         assertEq(uint256(decodedCurrency2), currency);
         assertEq(decodedReceiver2, receiver);
-        assertEq(decodedAmount, amount);
+        assertEq(decodedAmount2, amount);
     }
 
     function testTransferEquivalence(uint128 token, bytes32 sender, bytes32 receiver, uint128 amount) public {
@@ -230,25 +230,15 @@ contract MessagesTest is Test {
         bytes9 domain = Messages.formatDomain(Messages.Domain.EVM, 1284);
         address receiver = 0x1231231231231231231231231231231231231231;
         uint128 amount = 100000000000000000000000000;
-        uint128 currency = 1;
         bytes memory expectedHex =
-            hex"080000000000000001811acd5b3f17c06841c7e41e9e04cb1b4564564564564564564564564564564564564564564564564564564564564564010000000000000504000000000000000000000000000000011231231231231231231231231231231231231231000000000000000000000000000000000052b7d2dcc80cd2e4000000";
+            hex"080000000000000001811acd5b3f17c06841c7e41e9e04cb1b45645645645645645645645645645645645645645645645645645645645645640100000000000005041231231231231231231231231231231231231231000000000000000000000000000000000052b7d2dcc80cd2e4000000";
 
-        assertEq(
-            Messages.formatTransferTrancheTokens(poolId, trancheId, sender, domain, currency, receiver, amount),
-            expectedHex
-        );
+        assertEq(Messages.formatTransferTrancheTokens(poolId, trancheId, sender, domain, receiver, amount), expectedHex);
 
-        (
-            uint64 decodedPoolId,
-            bytes16 decodedTrancheId,
-            uint256 decodedCurrency,
-            address decodedReceiver,
-            uint128 decodedAmount
-        ) = Messages.parseTransferTrancheTokens20(expectedHex.ref(0));
+        (uint64 decodedPoolId, bytes16 decodedTrancheId, address decodedReceiver, uint128 decodedAmount) =
+            Messages.parseTransferTrancheTokens20(expectedHex.ref(0));
         assertEq(uint256(decodedPoolId), poolId);
         assertEq(decodedTrancheId, trancheId);
-        assertEq(decodedCurrency, currency);
         assertEq(decodedReceiver, receiver);
         assertEq(decodedAmount, amount);
     }
@@ -295,7 +285,6 @@ contract MessagesTest is Test {
         bytes16 trancheId,
         bytes32 sender,
         uint64 destinationChainId,
-        uint128 currency,
         address destinationAddress,
         uint128 amount
     ) public {
@@ -304,21 +293,14 @@ contract MessagesTest is Test {
             trancheId,
             sender,
             Messages.formatDomain(Messages.Domain.EVM, destinationChainId),
-            currency,
             destinationAddress,
             amount
         );
 
-        (
-            uint64 decodedPoolId,
-            bytes16 decodedTrancheId,
-            uint128 decodedCurrency,
-            address decodedDestinationAddress,
-            uint256 decodedAmount
-        ) = Messages.parseTransferTrancheTokens20(_message.ref(0));
+        (uint64 decodedPoolId, bytes16 decodedTrancheId, address decodedDestinationAddress, uint256 decodedAmount) =
+            Messages.parseTransferTrancheTokens20(_message.ref(0));
         assertEq(uint256(decodedPoolId), uint256(poolId));
         assertEq(decodedTrancheId, trancheId);
-        assertEq(decodedCurrency, currency);
         assertEq(decodedDestinationAddress, destinationAddress);
         assertEq(decodedAmount, amount);
     }
