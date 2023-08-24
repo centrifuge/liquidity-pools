@@ -66,6 +66,7 @@ contract LiquidityPoolTest is Test {
         delayedAdmin.file("gateway", address(gateway));
         evmInvestmentManager.file("gateway", address(gateway));
         evmInvestmentManager.file("tokenManager", address(evmTokenManager));
+        evmTokenManager.file("gateway", address(gateway));
         evmTokenManager.file("investmentManager", address(evmInvestmentManager));
         escrow.rely(address(evmInvestmentManager));
         escrow.rely(address(evmTokenManager));

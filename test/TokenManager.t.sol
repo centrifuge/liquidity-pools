@@ -28,7 +28,7 @@ interface AuthLike {
     function wards(address user) external returns (uint256);
 }
 
-contract InvestmentManagerTest is Test {
+contract TokenManagerTest is Test {
     InvestmentManager evmInvestmentManager;
     TokenManager evmTokenManager;
     Gateway gateway;

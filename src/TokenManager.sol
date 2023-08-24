@@ -33,6 +33,10 @@ interface EscrowLike {
     function approve(address token, address spender, uint256 value) external;
 }
 
+interface LiquidityPoolLike is ERC20Like {
+    function hasMember(address user) external view returns (bool);
+}
+
 contract TokenManager is Auth {
     GatewayLike public gateway;
     InvestmentManagerLike public investmentManager;
@@ -85,11 +89,11 @@ contract TokenManager is Auth {
         bytes32 destinationAddress,
         uint128 amount
     ) public {
-        ERC20Like lPool = ERC20Like(investmentManager.liquidityPools(poolId, trancheId, currency));
-        require(address(lPool) != address(0), "TokenManager/unknown-token");
+        LiquidityPoolLike liquidityPool = LiquidityPoolLike(investmentManager.liquidityPools(poolId, trancheId, currency));
+        require(address(liquidityPool) != address(0), "TokenManager/unknown-token");
 
-        require(lPool.balanceOf(msg.sender) >= amount, "TokenManager/insufficient-balance");
-        lPool.burn(msg.sender, amount);
+        require(liquidityPool.balanceOf(msg.sender) >= amount, "TokenManager/insufficient-balance");
+        liquidityPool.burn(msg.sender, amount);
 
         gateway.transferTrancheTokensToCentrifuge(poolId, trancheId, msg.sender, destinationAddress, amount);
     }
@@ -102,11 +106,11 @@ contract TokenManager is Auth {
         address destinationAddress,
         uint128 amount
     ) public {
-        ERC20Like lPool = ERC20Like(investmentManager.liquidityPools(poolId, trancheId, currency));
-        require(address(lPool) != address(0), "TokenManager/unknown-token");
+        LiquidityPoolLike liquidityPool = LiquidityPoolLike(investmentManager.liquidityPools(poolId, trancheId, currency));
+        require(address(liquidityPool) != address(0), "TokenManager/unknown-token");
 
-        require(lPool.balanceOf(msg.sender) >= amount, "TokenManager/insufficient-balance");
-        lPool.burn(msg.sender, amount);
+        require(liquidityPool.balanceOf(msg.sender) >= amount, "TokenManager/insufficient-balance");
+        liquidityPool.burn(msg.sender, amount);
 
         uint128 currencyId = currencyAddressToId[currency];
         require(currencyId != 0, "TokenManager/unknown-currency");
@@ -143,5 +147,19 @@ contract TokenManager is Auth {
             ERC20Like(currencyAddress).transferFrom(address(escrow), recipient, amount),
             "TokenManager/currency-transfer-failed"
         );
+    }
+
+    function handleTransferTrancheTokens(uint64 poolId, bytes16 trancheId, uint128 currencyId, address destinationAddress, uint128 amount)
+        public
+        onlyGateway
+    {
+        address currencyAddress = currencyIdToAddress[currencyId];
+        require(currencyAddress != address(0), "TokenManager/unknown-currency");
+
+        LiquidityPoolLike liquidityPool = LiquidityPoolLike(investmentManager.liquidityPools(poolId, trancheId, currencyAddress));
+        require(address(liquidityPool) != address(0), "TokenManager/unknown-token");
+
+        require(liquidityPool.hasMember(destinationAddress), "TokenManager/not-a-member");
+        liquidityPool.mint(destinationAddress, amount);
     }
 }
