@@ -7,7 +7,7 @@ import {InvestmentManager} from "src/InvestmentManager.sol";
 import {Escrow} from "src/Escrow.sol";
 import {PauseAdmin} from "src/admin/PauseAdmin.sol";
 import {DelayedAdmin} from "src/admin/DelayedAdmin.sol";
-import {LiquidityPoolFactory, MemberlistFactory} from "src/liquidityPool/Factory.sol";
+import {LiquidityPoolFactory, TrancheTokenFactory, MemberlistFactory} from "src/liquidityPool/Factory.sol";
 import "forge-std/Script.sol";
 
 // Script to deploy Connectors with an Axelar router.
@@ -23,10 +23,11 @@ contract AxelarEVMScript is Script {
         uint256 shortWait = 24 hours;
         uint256 longWait = 48 hours;
         uint256 gracePeriod = 48 hours;
-        address liquidityPoolFactory = address(new LiquidityPoolFactory());
+        address liquidityPoolFactory_ = address(new LiquidityPoolFactory());
+        address trancheTokenFactory_ = address(new TrancheTokenFactory());
         address memberlistFactory_ = address(new MemberlistFactory());
         address escrow_ = address(new Escrow());
-        InvestmentManager investmentManager = new InvestmentManager(escrow_, liquidityPoolFactory, memberlistFactory_);
+        InvestmentManager investmentManager = new InvestmentManager(escrow_, liquidityPoolFactory_, trancheTokenFactory_, memberlistFactory_);
 
         AxelarEVMRouter router = new AxelarEVMRouter(
                 address(investmentManager),
