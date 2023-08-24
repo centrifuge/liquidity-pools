@@ -337,7 +337,7 @@ contract InvestmentManager is Auth {
     function updateTokenPrice(uint64 _poolId, bytes16 _trancheId, uint128 _price) public onlyGateway {
         Tranche storage tranche = tranches[_poolId][_trancheId];
         require(tranche.token != address(0), "InvestmentManager/tranche-not-deployed");
-       TrancheTokenLike(tranche.token).updateTokenPrice(_price);       
+        TrancheTokenLike(tranche.token).updateTokenPrice(_price);       
     }
 
     function updateMember(uint64 _poolId, bytes16 _trancheId, address _user, uint64 _validUntil) public onlyGateway {
@@ -459,7 +459,6 @@ contract InvestmentManager is Auth {
             (currencyAmount <= orderbook[_user][_liquidityPool].maxDeposit && currencyAmount > 0),
             "InvestmentManager/amount-exceeds-deposit-limits"
         );
-
         (trancheTokenAmount,) = _deposit(0, currencyAmount, _liquidityPool, _user);
     }
 
@@ -487,6 +486,7 @@ contract InvestmentManager is Auth {
         LiquidityPoolLike lPool = LiquidityPoolLike(_liquidityPool);
         uint128 depositPrice = calcDepositPrice(_user, _liquidityPool);
         require((depositPrice > 0), "LiquidityPool/deposit-token-price-0");
+
 
         if (_currencyAmount == 0) {
             currencyAmount = _trancheTokenAmount * depositPrice;
@@ -591,6 +591,7 @@ contract InvestmentManager is Auth {
             address(gateway)
         );
 
+        EscrowLike(escrow).approve(tranche.token, liquidityPool, MAX_UINT256);
         liquidityPools[_poolId][_trancheId][_currency] = liquidityPool;
         wards[liquidityPool] = 1;
         // enable connectors to take the liquidity pool tokens out of escrow in case if investments
@@ -619,7 +620,6 @@ contract InvestmentManager is Auth {
             address(gateway)
         );
 
-        EscrowLike(escrow).approve(token, address(this), MAX_UINT256);
         tranche.token = token;
         emit TrancheTokenDeployed(_poolId, _trancheId);
         return token;

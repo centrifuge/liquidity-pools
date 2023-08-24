@@ -216,11 +216,12 @@ contract LiquidityPool is Auth {
          return share.balanceOf(_owner);
     }
 
-    function transfer(address _recipient, uint256 _amount) public auth returns (bool) {
+    function transfer(address _recipient, uint256 _amount) public returns (bool) {
         return share.transferFrom(msg.sender, _recipient, _amount);   
     }
 
-    function transferFrom(address _sender, address _recipient, uint256 _amount) public auth returns (bool) {
+    // test allowance
+    function transferFrom(address _sender, address _recipient, uint256 _amount) public returns (bool) {
         return share.transferFrom(_sender, _recipient, _amount);   
     }
 

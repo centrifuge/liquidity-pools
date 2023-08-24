@@ -370,6 +370,7 @@ contract InvestmentManagerTest is Test {
         homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price); // add tranche
         homePools.addCurrency(currency, address(erc20));
         homePools.allowPoolCurrency(poolId, currency);
+        evmInvestmentManager.deployTranche(poolId, trancheId);
         address lPool_ = evmInvestmentManager.deployLiquidityPool(poolId, trancheId, address(erc20));
 
         homePools.updateMember(poolId, trancheId, user, validUntil);
@@ -391,18 +392,6 @@ contract InvestmentManagerTest is Test {
         evmInvestmentManager.updateMember(poolId, trancheId, user, validUntil);
     }
 
-    function testUpdatingMemberForNonExistentPoolFails(
-        uint64 poolId,
-        bytes16 trancheId,
-        address user,
-        uint64 validUntil
-    ) public {
-        vm.assume(validUntil > block.timestamp);
-        evmInvestmentManager.file("gateway", address(this));
-        vm.expectRevert(bytes("InvestmentManager/invalid-pool-or-tranche"));
-        evmInvestmentManager.updateMember(poolId, trancheId, user, validUntil);
-    }
-
     function testUpdatingMemberForNonExistentTrancheFails(
         uint64 poolId,
         bytes16 trancheId,
@@ -412,7 +401,7 @@ contract InvestmentManagerTest is Test {
         vm.assume(validUntil > block.timestamp);
         homePools.addPool(poolId);
 
-        vm.expectRevert(bytes("InvestmentManager/invalid-pool-or-tranche"));
+        vm.expectRevert(bytes("InvestmentManager/tranche-not-deployed"));
         homePools.updateMember(poolId, trancheId, user, validUntil);
     }
 
@@ -452,22 +441,17 @@ contract InvestmentManagerTest is Test {
         homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price); // add tranche
         homePools.addCurrency(currency, address(erc20));
         homePools.allowPoolCurrency(poolId, currency);
+        evmInvestmentManager.deployTranche(poolId, trancheId);
         evmInvestmentManager.deployLiquidityPool(poolId, trancheId, address(erc20));
 
         vm.expectRevert(bytes("InvestmentManager/not-the-gateway"));
         evmInvestmentManager.updateTokenPrice(poolId, trancheId, price);
     }
 
-    function testUpdatingTokenPriceForNonExistentPoolFails(uint64 poolId, bytes16 trancheId, uint128 price) public {
-        evmInvestmentManager.file("gateway", address(this));
-        vm.expectRevert(bytes("InvestmentManager/invalid-pool-or-tranche"));
-        evmInvestmentManager.updateTokenPrice(poolId, trancheId, price);
-    }
-
     function testUpdatingTokenPriceForNonExistentTrancheFails(uint64 poolId, bytes16 trancheId, uint128 price) public {
         homePools.addPool(poolId);
 
-        vm.expectRevert(bytes("InvestmentManager/invalid-pool-or-tranche"));
+        vm.expectRevert(bytes("InvestmentManager/tranche-not-deployed"));
         homePools.updateTokenPrice(poolId, trancheId, price);
     }
 

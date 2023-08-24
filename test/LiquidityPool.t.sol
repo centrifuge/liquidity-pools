@@ -122,17 +122,17 @@ contract LiquidityPoolTest is Test {
         // deposit a share of the amount
         uint256 share = 2;
         lPool.deposit(amount / share, address(this)); // mint hald the amount
-        // assertEq(lPool.balanceOf(address(this)), trancheTokensPayout / share);
-        // assertEq(lPool.balanceOf(address(escrow)), trancheTokensPayout - trancheTokensPayout / share);
-        // assertEq(lPool.maxMint(address(this)), trancheTokensPayout - trancheTokensPayout / share); // max deposit
-        // assertEq(lPool.maxDeposit(address(this)), amount - amount / share); // max deposit
+        assertEq(lPool.balanceOf(address(this)), trancheTokensPayout / share);
+        assertEq(lPool.balanceOf(address(escrow)), trancheTokensPayout - trancheTokensPayout / share);
+        assertEq(lPool.maxMint(address(this)), trancheTokensPayout - trancheTokensPayout / share); // max deposit
+        assertEq(lPool.maxDeposit(address(this)), amount - amount / share); // max deposit
 
-        // // mint the rest
-        // lPool.mint(lPool.maxMint(address(this)), address(this));
-        // assertEq(lPool.balanceOf(address(this)), trancheTokensPayout - lPool.maxMint(address(this)));
-        // assertTrue(lPool.balanceOf(address(escrow)) <= 1);
-        // assertTrue(lPool.maxMint(address(this)) <= 1);
-        // assertTrue(lPool.maxDeposit(address(this)) <= 2); // todo: fix rounding
+        // mint the rest
+        lPool.mint(lPool.maxMint(address(this)), address(this));
+        assertEq(lPool.balanceOf(address(this)), trancheTokensPayout - lPool.maxMint(address(this)));
+        assertTrue(lPool.balanceOf(address(escrow)) <= 1);
+        assertTrue(lPool.maxMint(address(this)) <= 1);
+        //assertTrue(lPool.maxDeposit(address(this)) <= 2); // todo: fix rounding
     }
 
     function testRedeem(
@@ -159,7 +159,7 @@ contract LiquidityPoolTest is Test {
         // will fail - user did not give tranche token allowance to investmentManager
         vm.expectRevert(bytes("InvestmentManager/insufficient-balance"));
         lPool.requestDeposit(amount);
-        lPool.approve(address(evmInvestmentManager), amount); // add allowance
+        lPool.approve(address(lPool), amount); // add allowance
 
         lPool.requestRedeem(amount);
         assertEq(lPool.balanceOf(address(escrow)), amount);
@@ -213,7 +213,7 @@ contract LiquidityPoolTest is Test {
         // will fail - user did not give tranche token allowance to investmentManager
         vm.expectRevert(bytes("InvestmentManager/insufficient-balance"));
         lPool.requestDeposit(amount);
-        lPool.approve(address(evmInvestmentManager), amount); // add allowance
+        lPool.approve(address(lPool), amount); // add allowance
 
         lPool.requestRedeem(amount);
         assertEq(lPool.balanceOf(address(escrow)), amount);
