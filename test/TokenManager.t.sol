@@ -6,7 +6,7 @@ import {InvestmentManager, Tranche} from "../src/InvestmentManager.sol";
 import {TokenManager} from "../src/TokenManager.sol";
 import {Gateway} from "../src/Gateway.sol";
 import {Escrow} from "../src/Escrow.sol";
-import {LiquidityPoolFactory, MemberlistFactory} from "../src/liquidityPool/Factory.sol";
+import {LiquidityPoolFactory, MemberlistFactory, TrancheTokenFactory} from "../src/liquidityPool/Factory.sol";
 import {LiquidityPool} from "../src/liquidityPool/LiquidityPool.sol";
 import {ERC20} from "../src/token/ERC20.sol";
 
@@ -16,16 +16,13 @@ import {MockXcmRouter} from "./mock/MockXcmRouter.sol";
 import {Messages} from "../src/Messages.sol";
 import {PauseAdmin} from "../src/admin/PauseAdmin.sol";
 import {DelayedAdmin} from "../src/admin/DelayedAdmin.sol";
+
 import "forge-std/Test.sol";
 import "../src/InvestmentManager.sol";
 
 interface EscrowLike_ {
     function approve(address token, address spender, uint256 value) external;
     function rely(address usr) external;
-}
-
-interface AuthLike {
-    function wards(address user) external returns (uint256);
 }
 
 contract TokenManagerTest is Test {
@@ -42,9 +39,11 @@ contract TokenManagerTest is Test {
         uint256 gracePeriod = 48 hours;
         address escrow_ = address(new Escrow());
         address liquidityPoolFactory_ = address(new LiquidityPoolFactory());
+        address trancheTokenFactory_ = address(new TrancheTokenFactory());
         address memberlistFactory_ = address(new MemberlistFactory());
 
-        evmInvestmentManager = new InvestmentManager(escrow_, liquidityPoolFactory_, memberlistFactory_);
+        evmInvestmentManager =
+            new InvestmentManager(escrow_, liquidityPoolFactory_, trancheTokenFactory_, memberlistFactory_);
         evmTokenManager = new TokenManager(escrow_);
 
         mockXcmRouter = new MockXcmRouter(address(evmInvestmentManager));
@@ -204,7 +203,7 @@ contract TokenManagerTest is Test {
         // Now send the transfer from EVM -> Cent Chain
         LiquidityPool(lPool_).approve(address(evmTokenManager), amount);
         evmTokenManager.transferTrancheTokensToCentrifuge(
-            poolId, trancheId, LiquidityPool(lPool_).asset(), centChainAddress, amount
+            poolId, trancheId, centChainAddress, amount
         );
         assertEq(LiquidityPool(lPool_).balanceOf(address(this)), 0);
 
@@ -312,6 +311,7 @@ contract TokenManagerTest is Test {
         homePools.addCurrency(currency, address(erc20));
         homePools.allowPoolCurrency(poolId, currency);
 
+        evmInvestmentManager.deployTranche(poolId, trancheId);
         lPool = evmInvestmentManager.deployLiquidityPool(poolId, trancheId, address(erc20));
     }
 

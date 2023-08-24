@@ -1,6 +1,34 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.18;
 
+import "./../auth/auth.sol";
+
+interface RestrictedTokenERC20 {
+    // erc20 functions
+    function mint(address owner, uint256 amount) external;
+    function burn(address owner, uint256 amount) external;
+
+    function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);
+    function transfer(address recipient, uint256 amount) external returns (bool);
+    // function approve(address spender, uint256 amount) external returns (bool);
+    function approveForOwner(address owner, address spender, uint256 value) external returns (bool);
+
+    function totalSupply() external view returns (uint256);
+    function balanceOf(address owner) external returns (uint256);
+    function allowance(address owner, address spender) external returns (uint256);
+    // function increaseAllowance(address spender, uint256 addedValue) external returns (bool);
+    // function decreaseAllowance(address spender, uint256 subtractedValue) external returns (bool);
+    function increaseAllowanceForOwner(address owner, address spender, uint256 addedValue) external returns (bool);
+    function decreaseAllowanceForOwner(address owner, address spender, uint256 subtractedValue)
+        external
+        returns (bool);
+
+    // restricted token functions
+    function latestPrice() external view returns (uint256);
+    function memberlist() external returns (address);
+    function hasMember(address) external returns (bool);
+}
+
 // Liquidity Pool implementation for Centrifuge Pools following the EIP4626 standard.
 // Each Liquidity Pool is a tokenized vault issuing shares as restricted ERC20 tokens against stable currency deposits based on the current share price.
 // Liquidity Pool vault: Liquidity Pool asset value.
@@ -19,8 +47,6 @@ pragma solidity ^0.8.18;
 // maple: https://github.com/maple-labs/pool-v2/blob/301f05b4fe5e9202eef988b4c8321310b4e86dc8/contracts/Pool.sol
 // yearn: https://github.com/yearn/yearn-vaults-v3/blob/master/contracts/VaultV3.vy
 
-import "../token/Restricted.sol";
-
 interface InvestmentManagerLike {
     function processDeposit(address _receiver, uint256 _assets) external returns (uint256);
     function processMint(address _receiver, uint256 _shares) external returns (uint256);
@@ -38,13 +64,12 @@ interface InvestmentManagerLike {
 
 /// @title LiquidityPool
 /// @author ilinzweilin
-contract LiquidityPool is RestrictedToken {
+/// @dev LiquidityPool is compliant with the EIP4626 & ERC20 standards
+contract LiquidityPool is Auth {
     InvestmentManagerLike public investmentManager;
 
     address public asset; // underlying stable ERC-20 stable currency
-
-    uint128 public latestPrice; // share price
-    uint256 public lastPriceUpdate; // timestamp of the latest share price update
+    RestrictedTokenERC20 public share; // underlying trache Token
 
     // ids of the existing centrifuge chain pool and tranche that the liquidity pool belongs to
     uint64 public poolId;
@@ -55,14 +80,17 @@ contract LiquidityPool is RestrictedToken {
     event Withdraw(
         address indexed sender, address indexed receiver, address indexed owner, uint256 assets, uint256 shares
     );
+    event File(bytes32 indexed what, address data);
 
-    constructor(uint8 _decimals) RestrictedToken(_decimals) {}
+    constructor() {
+        wards[msg.sender] = 1;
+    }
 
     /// @dev investmentManager and asset address to be filed by the factory on deployment
-    function file(bytes32 _what, address _data) public override auth {
+    function file(bytes32 _what, address _data) public auth {
         if (_what == "investmentManager") investmentManager = InvestmentManagerLike(_data);
         else if (_what == "asset") asset = _data;
-        else if (_what == "memberlist") memberlist = MemberlistLike(_data);
+        else if (_what == "share") share = RestrictedTokenERC20(_data);
         else revert("LiquidityPool/file-unrecognized-param");
         emit File(_what, _data);
     }
@@ -77,17 +105,17 @@ contract LiquidityPool is RestrictedToken {
     /// @dev The total amount of vault shares
     /// @return Total amount of the underlying vault assets including accrued interest
     function totalAssets() public view returns (uint256) {
-        return totalSupply * latestPrice;
+        return totalSupply() * latestPrice();
     }
 
     /// @dev Calculates the amount of shares / tranche tokens that any user would get for the amount of assets provided. The calcultion is based on the token price from the most recent epoch retrieved from Centrifuge chain.
     function convertToShares(uint256 _assets) public view returns (uint256 shares) {
-        shares = _assets / latestPrice;
+        shares = _assets / latestPrice();
     }
 
     /// @dev Calculates the asset value for an amount of shares / tranche tokens provided. The calcultion is based on the token price from the most recent epoch retrieved from Centrifuge chain.
     function convertToAssets(uint256 _shares) public view returns (uint256 assets) {
-        assets = _shares * latestPrice;
+        assets = _shares * latestPrice();
     }
 
     /// @return Maximum amount of stable currency that can be deposited into the Tranche by the receiver after the epoch had been executed on Centrifuge chain.
@@ -174,17 +202,63 @@ contract LiquidityPool is RestrictedToken {
         return currencyPayout;
     }
 
-    // auth functions
-    function updateTokenPrice(uint128 _tokenPrice) public auth {
-        latestPrice = _tokenPrice;
-        lastPriceUpdate = block.timestamp;
-    }
-
     function collectRedeem(address _receiver) public {
         investmentManager.collectRedeem(poolId, trancheId, _receiver, asset);
     }
 
     function collectInvest(address _receiver) public {
         investmentManager.collectInvest(poolId, trancheId, _receiver, asset);
+    }
+
+    // overwrite all ERC20 functions and pass the calls to the shares contract
+    function totalSupply() public view returns (uint256) {
+        return share.totalSupply();
+    }
+
+    function balanceOf(address _owner) public returns (uint256) {
+        return share.balanceOf(_owner);
+    }
+
+    function transfer(address _recipient, uint256 _amount) public auth returns (bool) {
+        return share.transferFrom(msg.sender, _recipient, _amount);
+    }
+
+    // test allowance
+    function transferFrom(address _sender, address _recipient, uint256 _amount) public auth returns (bool) {
+        return share.transferFrom(_sender, _recipient, _amount);
+    }
+
+    function approve(address _spender, uint256 _amount) public returns (bool) {
+        return share.approveForOwner(msg.sender, _spender, _amount);
+    }
+
+    function increaseAllowance(address _spender, uint256 _addedValue) public returns (bool) {
+        return share.increaseAllowanceForOwner(msg.sender, _spender, _addedValue);
+    }
+
+    function decreaseAllowance(address _spender, uint256 _subtractedValue) public returns (bool) {
+        return share.decreaseAllowanceForOwner(msg.sender, _spender, _subtractedValue);
+    }
+
+    function mint(address _owner, uint256 _amount) public auth {
+        share.mint(_owner, _amount);
+    }
+
+    function burn(address _owner, uint256 _amount) public auth {
+        share.burn(_owner, _amount);
+    }
+
+    function allowance(address _owner, address _spender) public returns (uint256) {
+        return share.allowance(_owner, _spender);
+    }
+
+    // restricted token functions
+
+    function latestPrice() public view returns (uint256) {
+        return share.latestPrice();
+    }
+
+    function hasMember(address _user) public returns (bool) {
+        return share.hasMember(_user);
     }
 }

@@ -6,7 +6,7 @@ import {InvestmentManager, Tranche} from "../src/InvestmentManager.sol";
 import {TokenManager} from "../src/TokenManager.sol";
 import {Gateway} from "../src/Gateway.sol";
 import {Escrow} from "../src/Escrow.sol";
-import {LiquidityPoolFactory, MemberlistFactory} from "../src/liquidityPool/Factory.sol";
+import {LiquidityPoolFactory, TrancheTokenFactory, MemberlistFactory} from "../src/liquidityPool/Factory.sol";
 import {LiquidityPool} from "../src/liquidityPool/LiquidityPool.sol";
 import {ERC20} from "../src/token/ERC20.sol";
 
@@ -24,7 +24,7 @@ interface EscrowLike_ {
     function rely(address usr) external;
 }
 
-interface AuthLike {
+interface AuthLike_ {
     function wards(address user) external returns (uint256);
 }
 
@@ -48,8 +48,10 @@ contract LiquidityPoolTest is Test {
         erc20 = newErc20("X's Dollar", "USDX", 42);
         address liquidityPoolFactory_ = address(new LiquidityPoolFactory());
         address memberlistFactory_ = address(new MemberlistFactory());
+        address trancheTokenFactory_ = address(new TrancheTokenFactory());
 
-        evmInvestmentManager = new InvestmentManager(address(escrow), liquidityPoolFactory_, memberlistFactory_);
+        evmInvestmentManager =
+            new InvestmentManager(address(escrow), liquidityPoolFactory_, trancheTokenFactory_, memberlistFactory_);
         evmTokenManager = new TokenManager(address(escrow));
 
         mockXcmRouter = new MockXcmRouter(address(evmInvestmentManager));
@@ -102,7 +104,7 @@ contract LiquidityPoolTest is Test {
         lPool.requestDeposit(amount);
         homePools.updateMember(poolId, trancheId, address(this), validUntil); // add user as member
 
-        // will fail - user did not give currency allowance to investmentManager
+        // // will fail - user did not give currency allowance to investmentManager
         vm.expectRevert(bytes("ERC20/insufficient-allowance"));
         lPool.requestDeposit(amount);
         erc20.approve(address(evmInvestmentManager), amount); // add allowance
@@ -139,7 +141,7 @@ contract LiquidityPoolTest is Test {
         assertEq(lPool.balanceOf(address(this)), trancheTokensPayout - lPool.maxMint(address(this)));
         assertTrue(lPool.balanceOf(address(escrow)) <= 1);
         assertTrue(lPool.maxMint(address(this)) <= 1);
-        // assertTrue(lPool.maxDeposit(address(this)) <= 2); // todo: fix rounding
+        //assertTrue(lPool.maxDeposit(address(this)) <= 2); // todo: fix rounding
     }
 
     function testRedeem(
@@ -166,7 +168,7 @@ contract LiquidityPoolTest is Test {
         // will fail - user did not give tranche token allowance to investmentManager
         vm.expectRevert(bytes("InvestmentManager/insufficient-balance"));
         lPool.requestDeposit(amount);
-        lPool.approve(address(evmInvestmentManager), amount); // add allowance
+        lPool.approve(address(lPool), amount); // add allowance
 
         lPool.requestRedeem(amount);
         assertEq(lPool.balanceOf(address(escrow)), amount);
@@ -220,7 +222,7 @@ contract LiquidityPoolTest is Test {
         // will fail - user did not give tranche token allowance to investmentManager
         vm.expectRevert(bytes("InvestmentManager/insufficient-balance"));
         lPool.requestDeposit(amount);
-        lPool.approve(address(evmInvestmentManager), amount); // add allowance
+        lPool.approve(address(lPool), amount); // add allowance
 
         lPool.requestRedeem(amount);
         assertEq(lPool.balanceOf(address(escrow)), amount);
@@ -329,6 +331,7 @@ contract LiquidityPoolTest is Test {
         homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price); // add tranche
         homePools.addCurrency(currency, address(erc20));
         homePools.allowPoolCurrency(poolId, currency);
+        evmInvestmentManager.deployTranche(poolId, trancheId);
 
         address lPoolAddress = evmInvestmentManager.deployLiquidityPool(poolId, trancheId, address(erc20));
         return lPoolAddress;

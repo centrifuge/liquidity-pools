@@ -135,6 +135,44 @@ contract ERC20 is Auth {
         return true;
     }
 
+    function approveForOwner(address owner, address spender, uint256 value) external auth returns (bool) {
+        allowance[owner][spender] = value;
+
+        emit Approval(owner, spender, value);
+
+        return true;
+    }
+
+    function increaseAllowanceForOwner(address owner, address spender, uint256 addedValue)
+        external
+        auth
+        returns (bool)
+    {
+        uint256 newValue = allowance[owner][spender] + addedValue;
+        allowance[owner][spender] = newValue;
+
+        emit Approval(owner, spender, newValue);
+
+        return true;
+    }
+
+    function decreaseAllowanceForOwner(address owner, address spender, uint256 subtractedValue)
+        external
+        auth
+        returns (bool)
+    {
+        uint256 allowed = allowance[owner][spender];
+        require(allowed >= subtractedValue, "ERC20/insufficient-allowance");
+        unchecked {
+            allowed = allowed - subtractedValue;
+        }
+        allowance[owner][spender] = allowed;
+
+        emit Approval(owner, spender, allowed);
+
+        return true;
+    }
+
     // --- Mint/Burn ---
     function mint(address to, uint256 value) public virtual auth {
         require(to != address(0) && to != address(this), "ERC20/invalid-address");
@@ -146,7 +184,7 @@ contract ERC20 is Auth {
         emit Transfer(address(0), to, value);
     }
 
-    function burn(address from, uint256 value) external {
+    function burn(address from, uint256 value) external auth {
         uint256 balance = balanceOf[from];
         require(balance >= value, "ERC20/insufficient-balance");
 

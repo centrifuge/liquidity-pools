@@ -30,6 +30,9 @@ interface RestrictedTokenLike is ERC20Like {
 contract RestrictedToken is ERC20 {
     MemberlistLike public memberlist;
 
+    uint128 public latestPrice; // tokenPrice
+    uint256 public lastPriceUpdate; // timestamp of the latest share price update
+
     // --- Events ---
     event File(bytes32 indexed what, address data);
 
@@ -62,5 +65,11 @@ contract RestrictedToken is ERC20 {
 
     function mint(address to, uint256 value) public override checkMember(to) {
         return super.mint(to, value);
+    }
+
+    // auth functions
+    function updateTokenPrice(uint128 _tokenPrice) public auth {
+        latestPrice = _tokenPrice;
+        lastPriceUpdate = block.timestamp;
     }
 }
