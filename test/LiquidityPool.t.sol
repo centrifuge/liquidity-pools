@@ -64,7 +64,10 @@ contract LiquidityPoolTest is Test {
         pauseAdmin.file("gateway", address(gateway));
         delayedAdmin.file("gateway", address(gateway));
         evmInvestmentManager.file("gateway", address(gateway));
+        evmInvestmentManager.file("tokenManager", address(evmTokenManager));
+        evmTokenManager.file("investmentManager", address(evmInvestmentManager));
         escrow.rely(address(evmInvestmentManager));
+        escrow.rely(address(evmTokenManager));
         mockXcmRouter.file("gateway", address(gateway));
         evmInvestmentManager.rely(address(gateway));
         escrow.rely(address(gateway));

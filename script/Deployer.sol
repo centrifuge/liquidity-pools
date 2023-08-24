@@ -70,6 +70,8 @@ contract Deployer is Script {
 
     function removeDeployerAccess(address router) public {
         RouterLike(router).deny(address(this));
+        investmentManager.deny(address(this));
+        tokenManager.deny(address(this));
         escrow.deny(address(this));
         gateway.deny(address(this));
         pauseAdmin.deny(address(this));

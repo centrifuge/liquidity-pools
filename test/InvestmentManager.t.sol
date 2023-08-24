@@ -59,7 +59,10 @@ contract InvestmentManagerTest is Test {
         pauseAdmin.file("gateway", address(gateway));
         delayedAdmin.file("gateway", address(gateway));
         evmInvestmentManager.file("gateway", address(gateway));
+        evmInvestmentManager.file("tokenManager", address(evmTokenManager));
+        evmTokenManager.file("investmentManager", address(evmInvestmentManager));
         EscrowLike_(escrow_).rely(address(evmInvestmentManager));
+        EscrowLike_(escrow_).rely(address(evmTokenManager));
         mockXcmRouter.file("gateway", address(gateway));
         evmInvestmentManager.rely(address(gateway));
         Escrow(escrow_).rely(address(gateway));
