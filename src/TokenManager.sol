@@ -89,7 +89,8 @@ contract TokenManager is Auth {
         bytes32 destinationAddress,
         uint128 amount
     ) public {
-        LiquidityPoolLike liquidityPool = LiquidityPoolLike(investmentManager.liquidityPools(poolId, trancheId, currency));
+        LiquidityPoolLike liquidityPool =
+            LiquidityPoolLike(investmentManager.liquidityPools(poolId, trancheId, currency));
         require(address(liquidityPool) != address(0), "TokenManager/unknown-token");
 
         require(liquidityPool.balanceOf(msg.sender) >= amount, "TokenManager/insufficient-balance");
@@ -106,7 +107,8 @@ contract TokenManager is Auth {
         address destinationAddress,
         uint128 amount
     ) public {
-        LiquidityPoolLike liquidityPool = LiquidityPoolLike(investmentManager.liquidityPools(poolId, trancheId, currency));
+        LiquidityPoolLike liquidityPool =
+            LiquidityPoolLike(investmentManager.liquidityPools(poolId, trancheId, currency));
         require(address(liquidityPool) != address(0), "TokenManager/unknown-token");
 
         require(liquidityPool.balanceOf(msg.sender) >= amount, "TokenManager/insufficient-balance");
@@ -149,14 +151,18 @@ contract TokenManager is Auth {
         );
     }
 
-    function handleTransferTrancheTokens(uint64 poolId, bytes16 trancheId, uint128 currencyId, address destinationAddress, uint128 amount)
-        public
-        onlyGateway
-    {
+    function handleTransferTrancheTokens(
+        uint64 poolId,
+        bytes16 trancheId,
+        uint128 currencyId,
+        address destinationAddress,
+        uint128 amount
+    ) public onlyGateway {
         address currencyAddress = currencyIdToAddress[currencyId];
         require(currencyAddress != address(0), "TokenManager/unknown-currency");
 
-        LiquidityPoolLike liquidityPool = LiquidityPoolLike(investmentManager.liquidityPools(poolId, trancheId, currencyAddress));
+        LiquidityPoolLike liquidityPool =
+            LiquidityPoolLike(investmentManager.liquidityPools(poolId, trancheId, currencyAddress));
         require(address(liquidityPool) != address(0), "TokenManager/unknown-token");
 
         require(liquidityPool.hasMember(destinationAddress), "TokenManager/not-a-member");

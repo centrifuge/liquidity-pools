@@ -21,6 +21,7 @@ interface GatewayLike {
 }
 
 interface LiquidityPoolLike {
+    function rely(address) external;
     // restricted token functions
     function memberlist() external returns (address);
     function hasMember(address) external returns (bool);
@@ -573,6 +574,8 @@ contract InvestmentManager is Auth {
             tranche.tokenSymbol,
             tranche.decimals
         );
+        LiquidityPoolLike(liquidityPool).rely(address(tokenManager)); // to be able to mint for incoming transfers
+
         liquidityPools[_poolId][_trancheId][_currency] = liquidityPool;
         wards[liquidityPool] = 1;
         tranche.liquidityPools.push(liquidityPool);
