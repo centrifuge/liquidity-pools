@@ -561,7 +561,6 @@ contract InvestmentManager is Auth {
         liquidityPool = liquidityPoolFactory.newLiquidityPool(
             _poolId, _trancheId, currencyId, _currency, tranche.token, address(this), address(gateway)
         );
-        LiquidityPoolLike(liquidityPool).rely(address(tokenManager)); // to be able to mint for incoming transfers
 
         EscrowLike(escrow).approve(tranche.token, liquidityPool, MAX_UINT256);
         liquidityPools[_poolId][_trancheId][_currency] = liquidityPool;
@@ -591,6 +590,7 @@ contract InvestmentManager is Auth {
             tranche.decimals,
             address(gateway)
         );
+        AuthLike(token).rely(address(tokenManager)); // to be able to mint for incoming transfers
 
         tranche.token = token;
         emit TrancheTokenDeployed(_poolId, _trancheId);
