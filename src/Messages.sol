@@ -47,8 +47,14 @@ library Messages {
         ExecutedCollectInvest,
         /// 18 - Executed Collect Redeem
         ExecutedCollectRedeem,
-        /// 19 - Schedule an upgrade contract to be granted admin rights
-        ScheduleUpgrade
+        /// 19 - Cancel an investment order
+        CancelInvestOrder,
+        /// 20 - Cancel a redeem order
+        CancelRedeemOrder,
+        /// 21 - Schedule an upgrade contract to be granted admin rights
+        ScheduleUpgrade,
+        /// 22 - Update tranche token metadata
+        UpdateTrancheTokenMetadata
     }
 
     enum Domain {
