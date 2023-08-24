@@ -117,15 +117,15 @@ contract XCMRouter is Auth {
 
     // --- Outgoing ---
     function send(bytes memory message) public onlyGateway {
-        bytes memory centChainCall = centrifugeHandleCall(message);
+        bytes memory centChainCall = _centrifugeHandleCall(message);
 
         XcmTransactorV2 transactorContract = XcmTransactorV2(XCM_TRANSACTOR_V2_ADDRESS);
 
         transactorContract.transactThroughSignedMultilocation(
             // dest chain
-            centrifugeParachainMultilocation(),
+            _centrifugeParachainMultilocation(),
             // fee asset
-            cfgAssetMultilocation(),
+            _cfgAssetMultilocation(),
             // the weight limit for the transact call execution
             xcmWeightInfo.transactWeightAtMost,
             // the call to be executed on the cent chain
@@ -139,7 +139,7 @@ contract XCMRouter is Auth {
     }
 
     // --- Utilities ---
-    function centrifugeHandleCall(bytes memory message) internal view returns (bytes memory) {
+    function _centrifugeHandleCall(bytes memory message) internal view returns (bytes memory) {
         return abi.encodePacked(
             // The centrifuge chain Connectors pallet index
             centrifugeChainLiquidityPoolsPalletIndex,
@@ -181,22 +181,22 @@ contract XCMRouter is Auth {
 
     // Docs on the encoding of a MultiLocation value can be found here:
     // https://docs.moonbeam.network/builders/interoperability/xcm/xcm-transactor/
-    function centrifugeParachainMultilocation() internal pure returns (Multilocation memory) {
+    function _centrifugeParachainMultilocation() internal pure returns (Multilocation memory) {
         bytes[] memory interior = new bytes[](1);
-        interior[0] = parachainId();
+        interior[0] = _parachainId();
 
         return Multilocation({parents: 1, interior: interior});
     }
 
-    function cfgAssetMultilocation() internal pure returns (Multilocation memory) {
+    function _cfgAssetMultilocation() internal pure returns (Multilocation memory) {
         bytes[] memory interior = new bytes[](2);
-        interior[0] = parachainId();
+        interior[0] = _parachainId();
         interior[1] = hex"060001";
 
         return Multilocation({parents: 1, interior: interior});
     }
 
-    function parachainId() internal pure returns (bytes memory) {
+    function _parachainId() internal pure returns (bytes memory) {
         return abi.encodePacked(uint8(0), uint32(2031));
     }
 }

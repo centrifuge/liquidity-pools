@@ -61,9 +61,9 @@ contract AxelarXCMRouter is Auth, AxelarExecutableLike {
     /// messages to be handled by this router.
     address public axelarEVMRouterOrigin;
     AxelarGatewayLike public immutable axelarGateway;
-    XcmWeightInfo internal xcmWeightInfo;
+    XcmWeightInfo public xcmWeightInfo;
 
-    string public constant axelarCentrifugeChainId = "Centrifuge";
+    string public constant axelarCentrifugeChainId = "centrifuge";
     string public constant axelarCentrifugeChainAddress = "0x2048";
 
     // --- Events ---
@@ -123,7 +123,7 @@ contract AxelarXCMRouter is Auth, AxelarExecutableLike {
 
     // --- Incoming ---
     // A message that's coming from another EVM chain, headed to the Centrifuge Chain.
-    function execute(bytes32, string calldata sourceChain, string calldata, bytes calldata payload)
+    function execute(bytes32, string calldata, string calldata, bytes calldata payload)
         external
         onlyAxelarEVMRouterOrigin
     {
@@ -134,9 +134,9 @@ contract AxelarXCMRouter is Auth, AxelarExecutableLike {
 
         transactorContract.transactThroughSignedMultilocation(
             // dest chain
-            centrifuge_parachain_multilocation(),
+            _centrifugeParachainMultilocation(),
             // fee asset
-            cfg_asset_multilocation(),
+            _cfgAssetMultilocation(),
             // the weight limit for the transact call execution
             xcmWeightInfo.transactWeightAtMost,
             // the call to be executed on the cent chain
@@ -163,16 +163,16 @@ contract AxelarXCMRouter is Auth, AxelarExecutableLike {
         axelarGateway.callContract(destinationChain, destinationAddress, payload);
     }
 
-    function centrifuge_parachain_multilocation() internal pure returns (Multilocation memory) {
+    function _centrifugeParachainMultilocation() internal pure returns (Multilocation memory) {
         bytes[] memory interior = new bytes[](1);
-        interior[0] = parachain_id();
+        interior[0] = _parachainId();
 
         return Multilocation({parents: 1, interior: interior});
     }
 
-    function cfg_asset_multilocation() internal pure returns (Multilocation memory) {
+    function _cfgAssetMultilocation() internal pure returns (Multilocation memory) {
         bytes[] memory interior = new bytes[](2);
-        interior[0] = parachain_id();
+        interior[0] = _parachainId();
         // Multilocation V3
         // GeneralKey prefix - 06
         // Length - 2 bytes
@@ -182,7 +182,7 @@ contract AxelarXCMRouter is Auth, AxelarExecutableLike {
         return Multilocation({parents: 1, interior: interior});
     }
 
-    function parachain_id() internal pure returns (bytes memory) {
+    function _parachainId() internal pure returns (bytes memory) {
         return abi.encodePacked(uint8(0), uint32(2031));
     }
 }

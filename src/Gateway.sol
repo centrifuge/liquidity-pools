@@ -156,7 +156,7 @@ contract Gateway is Auth {
         outgoingRouter = RouterLike(router);
     }
 
-    function scheduleShortRely(address user) internal {
+    function _scheduleShortRely(address user) internal {
         relySchedule[user] = block.timestamp + shortScheduleWait;
         emit RelyScheduledShort(user, relySchedule[user]);
     }
@@ -354,7 +354,7 @@ contract Gateway is Auth {
             );
         } else if (Messages.isScheduleUpgrade(_msg)) {
             address spell = Messages.parseScheduleUpgrade(_msg);
-            scheduleShortRely(spell);
+            _scheduleShortRely(spell);
         } else {
             revert("Gateway/invalid-message");
         }
