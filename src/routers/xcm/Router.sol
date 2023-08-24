@@ -47,7 +47,6 @@ contract XCMRouter is Auth {
 
     address constant XCM_TRANSACTOR_V2_ADDRESS = 0x000000000000000000000000000000000000080D;
 
-    mapping(address => uint256) public wards;
     XcmWeightInfo internal xcmWeightInfo;
 
     GatewayLike public gateway;

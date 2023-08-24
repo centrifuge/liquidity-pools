@@ -2,6 +2,8 @@
 pragma solidity ^0.8.18;
 pragma abicoder v2;
 
+import "./../../auth/auth.sol";
+
 interface InvestmentManagerLike {
     function addPool(uint64 poolId, uint128 currency, uint8 decimals) external;
     function addTranche(
@@ -41,9 +43,7 @@ interface GatewayLike {
     function handle(bytes memory message) external;
 }
 
-contract AxelarEVMRouter is AxelarExecutableLike {
-    mapping(address => uint256) public wards;
-
+contract AxelarEVMRouter is Auth, AxelarExecutableLike {
     InvestmentManagerLike public immutable investmentManager;
     AxelarGatewayLike public immutable axelarGateway;
     GatewayLike public gateway;
@@ -52,8 +52,6 @@ contract AxelarEVMRouter is AxelarExecutableLike {
     string public constant axelarCentrifugeChainAddress = "";
 
     // --- Events ---
-    event Rely(address indexed user);
-    event Deny(address indexed user);
     event File(bytes32 indexed what, address addr);
 
     constructor(address investmentManager_, address axelarGateway_) {
@@ -62,12 +60,6 @@ contract AxelarEVMRouter is AxelarExecutableLike {
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
     }
-
-    modifier auth() {
-        require(wards[msg.sender] == 1, "AxelarRouter/not-authorized");
-        _;
-    }
-
     modifier onlyCentrifugeChainOrigin(string memory sourceChain) {
         require(
             msg.sender == address(axelarGateway)
@@ -83,16 +75,6 @@ contract AxelarEVMRouter is AxelarExecutableLike {
     }
 
     // --- Administration ---
-    function rely(address user) external auth {
-        wards[user] = 1;
-        emit Rely(user);
-    }
-
-    function deny(address user) external auth {
-        wards[user] = 0;
-        emit Deny(user);
-    }
-
     function file(bytes32 what, address gateway_) external auth {
         if (what == "gateway") {
             gateway = GatewayLike(gateway_);

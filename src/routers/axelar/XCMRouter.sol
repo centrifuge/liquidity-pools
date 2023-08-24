@@ -2,6 +2,8 @@
 pragma solidity ^0.8.18;
 pragma abicoder v2;
 
+import "./../../auth/auth.sol";
+
 struct Multilocation {
     uint8 parents;
     bytes[] interior;
@@ -48,11 +50,9 @@ interface AxelarGatewayLike {
         external;
 }
 
-contract AxelarXCMRouter is AxelarExecutableLike {
+contract AxelarXCMRouter is Auth, AxelarExecutableLike {
     address constant XCM_TRANSACTOR_V2_ADDRESS = 0x000000000000000000000000000000000000080D;
 
-    // todo(alina|nuno): inherit from Auth directly once https://github.com/centrifuge/connectors/pull/66 is merged
-    mapping(address => uint256) public wards;
     //todo(nuno): do we really need this?
     mapping(bytes32 => uint32) public executedCalls;
 
@@ -67,8 +67,6 @@ contract AxelarXCMRouter is AxelarExecutableLike {
     string public constant axelarCentrifugeChainAddress = "0x2048";
 
     // --- Events ---
-    event Rely(address indexed user);
-    event Deny(address indexed user);
     event File(bytes32 indexed what, XcmWeightInfo xcmWeightInfo);
     event File(bytes32 indexed what, address addr);
     event Executed(bytes32 indexed payload);
@@ -87,11 +85,6 @@ contract AxelarXCMRouter is AxelarExecutableLike {
         emit Rely(msg.sender);
     }
 
-    modifier auth() {
-        require(wards[msg.sender] == 1, "ConnectorAxelarXCMRouter/not-authorized");
-        _;
-    }
-
     modifier onlyCentrifugeChainOrigin() {
         require(msg.sender == address(centrifugeChainOrigin), "ConnectorAxelarXCMRouter/invalid-origin");
         _;
@@ -106,16 +99,6 @@ contract AxelarXCMRouter is AxelarExecutableLike {
     }
 
     // --- Administration ---
-    function rely(address user) external auth {
-        wards[user] = 1;
-        emit Rely(user);
-    }
-
-    function deny(address user) external auth {
-        wards[user] = 0;
-        emit Deny(user);
-    }
-
     function file(bytes32 what, address axelarEVMRouterOrigin_) external auth {
         if (what == "axelarEVMRouterOrigin") {
             axelarEVMRouterOrigin = axelarEVMRouterOrigin_;
