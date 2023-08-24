@@ -202,9 +202,7 @@ contract TokenManagerTest is Test {
 
         // Now send the transfer from EVM -> Cent Chain
         LiquidityPool(lPool_).approve(address(evmTokenManager), amount);
-        evmTokenManager.transferTrancheTokensToCentrifuge(
-            poolId, trancheId, centChainAddress, amount
-        );
+        evmTokenManager.transferTrancheTokensToCentrifuge(poolId, trancheId, centChainAddress, amount);
         assertEq(LiquidityPool(lPool_).balanceOf(address(this)), 0);
 
         // Finally, verify the connector called `router.send`
