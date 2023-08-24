@@ -58,7 +58,8 @@ contract LiquidityPoolTest is Test {
         PauseAdmin pauseAdmin = new PauseAdmin();
         DelayedAdmin delayedAdmin = new DelayedAdmin();
 
-        gateway = new Gateway(address(evmInvestmentManager), address(evmTokenManager), address(mockXcmRouter), shortWait, longWait, gracePeriod);
+        gateway =
+        new Gateway(address(evmInvestmentManager), address(evmTokenManager), address(mockXcmRouter), shortWait, longWait, gracePeriod);
         gateway.rely(address(pauseAdmin));
         gateway.rely(address(delayedAdmin));
         pauseAdmin.file("gateway", address(gateway));

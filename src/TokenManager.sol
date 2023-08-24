@@ -144,5 +144,4 @@ contract TokenManager is Auth {
             "TokenManager/currency-transfer-failed"
         );
     }
-
 }

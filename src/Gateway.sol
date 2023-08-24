@@ -334,7 +334,7 @@ contract Gateway {
         } else if (Messages.isTransferTrancheTokens(_msg)) {
             (uint64 poolId, bytes16 trancheId, uint128 currencyId, address destinationAddress, uint128 amount) =
                 Messages.parseTransferTrancheTokens20(_msg);
-           tokenManager.handleTransferTrancheTokens(poolId, trancheId, currencyId, destinationAddress, amount);
+            tokenManager.handleTransferTrancheTokens(poolId, trancheId, currencyId, destinationAddress, amount);
         } else if (Messages.isExecutedDecreaseInvestOrder(_msg)) {
             (uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 currencyPayout) =
                 Messages.parseExecutedDecreaseInvestOrder(_msg);

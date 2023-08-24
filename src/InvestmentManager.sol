@@ -181,7 +181,11 @@ contract InvestmentManager is Auth {
             );
         }
         gateway.increaseRedeemOrder(
-            lPool.poolId(), lPool.trancheId(), _user, tokenManager.currencyAddressToId(lPool.asset()), trancheTokenAmount
+            lPool.poolId(),
+            lPool.trancheId(),
+            _user,
+            tokenManager.currencyAddressToId(lPool.asset()),
+            trancheTokenAmount
         );
     }
 

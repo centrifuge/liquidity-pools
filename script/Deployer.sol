@@ -45,7 +45,8 @@ contract Deployer is Script {
         // Deploy gateway and admins
         pauseAdmin = new PauseAdmin();
         delayedAdmin = new DelayedAdmin();
-        gateway = new Gateway(address(investmentManager), address(tokenManager), address(router), shortWait, longWait, gracePeriod);
+        gateway =
+        new Gateway(address(investmentManager), address(tokenManager), address(router), shortWait, longWait, gracePeriod);
 
         // Wire gateway
         investmentManager.file("gateway", address(gateway));
