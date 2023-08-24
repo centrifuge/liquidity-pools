@@ -161,15 +161,15 @@ contract Gateway {
         emit Unpause();
     }
 
-    function addIncomingRouter(address router) internal {
+    function addIncomingRouter(address router) public auth {
         incomingRouters[router] = true;
     }
 
-    function removeIncomingRouter(address router) internal {
+    function removeIncomingRouter(address router) public auth {
         incomingRouters[router] = false;
     }
 
-    function setOutgoingRouter(address router) internal {
+    function setOutgoingRouter(address router) public auth {
         outgoingRouter = RouterLike(router);
     }
 
