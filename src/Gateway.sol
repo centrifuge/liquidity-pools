@@ -135,16 +135,6 @@ contract Gateway is Auth {
     }
 
     // --- Administration ---
-    function rely(address user) external auth {
-        wards[user] = 1;
-        emit Rely(user);
-    }
-
-    function deny(address user) external auth {
-        wards[user] = 0;
-        emit Deny(user);
-    }
-
     function pause() external auth {
         paused = true;
         emit Pause();

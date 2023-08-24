@@ -4,6 +4,7 @@ pragma abicoder v2;
 
 import {TypedMemView} from "memview-sol/TypedMemView.sol";
 import {Messages} from "../../Messages.sol";
+import "./../../auth/auth.sol";
 
 struct Multilocation {
     uint8 parents;
@@ -41,7 +42,7 @@ interface GatewayLike {
     function handle(bytes memory message) external;
 }
 
-contract XCMRouter {
+contract XCMRouter is Auth {
     using TypedMemView for bytes;
 
     address constant XCM_TRANSACTOR_V2_ADDRESS = 0x000000000000000000000000000000000000080D;
@@ -55,8 +56,6 @@ contract XCMRouter {
     uint8 public immutable centrifugeChainLiquidityPoolsPalletHandleIndex;
 
     // --- Events ---
-    event Rely(address indexed user);
-    event Deny(address indexed user);
     event File(bytes32 indexed what, XcmWeightInfo xcmWeightInfo);
     event File(bytes32 indexed what, address addr);
 
@@ -78,11 +77,6 @@ contract XCMRouter {
         emit Rely(msg.sender);
     }
 
-    modifier auth() {
-        require(wards[msg.sender] == 1, "XCMRouter/not-authorized");
-        _;
-    }
-
     modifier onlyCentrifugeChainOrigin() {
         require(msg.sender == address(centrifugeChainOrigin), "XCMRouter/invalid-origin");
         _;
@@ -94,16 +88,6 @@ contract XCMRouter {
     }
 
     // --- Administration ---
-    function rely(address user) external auth {
-        wards[user] = 1;
-        emit Rely(user);
-    }
-
-    function deny(address user) external auth {
-        wards[user] = 0;
-        emit Deny(user);
-    }
-
     function file(bytes32 what, address gateway_) external auth {
         if (what == "gateway") {
             gateway = GatewayLike(gateway_);
@@ -134,15 +118,15 @@ contract XCMRouter {
 
     // --- Outgoing ---
     function send(bytes memory message) public onlyGateway {
-        bytes memory centChainCall = centrifuge_handle_call(message);
+        bytes memory centChainCall = centrifugeHandleCall(message);
 
         XcmTransactorV2 transactorContract = XcmTransactorV2(XCM_TRANSACTOR_V2_ADDRESS);
 
         transactorContract.transactThroughSignedMultilocation(
             // dest chain
-            centrifuge_parachain_multilocation(),
+            centrifugeParachainMultilocation(),
             // fee asset
-            cfg_asset_multilocation(),
+            cfgAssetMultilocation(),
             // the weight limit for the transact call execution
             xcmWeightInfo.transactWeightAtMost,
             // the call to be executed on the cent chain
@@ -156,14 +140,14 @@ contract XCMRouter {
     }
 
     // --- Utilities ---
-    function centrifuge_handle_call(bytes memory message) internal view returns (bytes memory) {
+    function centrifugeHandleCall(bytes memory message) internal view returns (bytes memory) {
         return abi.encodePacked(
             // The centrifuge chain Connectors pallet index
             centrifugeChainLiquidityPoolsPalletIndex,
             // The `handle` call index within the Connectors pallet
             centrifugeChainLiquidityPoolsPalletHandleIndex,
             // We need to specify the length of the message in the scale-encoding format
-            message_length_scale_encoded(message),
+            messageLengthScaleEncoded(message),
             // The connector message itself
             message
         );
@@ -171,7 +155,7 @@ contract XCMRouter {
 
     // Obtain the Scale-encoded length of a given message. Each Connector Message is fixed-sized and
     // have thus a fixed scale-encoded length associated to which message variant (aka Call).
-    function message_length_scale_encoded(bytes memory message) internal pure returns (bytes memory) {
+    function messageLengthScaleEncoded(bytes memory message) internal pure returns (bytes memory) {
         bytes29 _msg = message.ref(0);
 
         if (Messages.isTransfer(_msg)) {
@@ -198,22 +182,22 @@ contract XCMRouter {
 
     // Docs on the encoding of a MultiLocation value can be found here:
     // https://docs.moonbeam.network/builders/interoperability/xcm/xcm-transactor/
-    function centrifuge_parachain_multilocation() internal pure returns (Multilocation memory) {
+    function centrifugeParachainMultilocation() internal pure returns (Multilocation memory) {
         bytes[] memory interior = new bytes[](1);
-        interior[0] = parachain_id();
+        interior[0] = parachainId();
 
         return Multilocation({parents: 1, interior: interior});
     }
 
-    function cfg_asset_multilocation() internal pure returns (Multilocation memory) {
+    function cfgAssetMultilocation() internal pure returns (Multilocation memory) {
         bytes[] memory interior = new bytes[](2);
-        interior[0] = parachain_id();
+        interior[0] = parachainId();
         interior[1] = hex"060001";
 
         return Multilocation({parents: 1, interior: interior});
     }
 
-    function parachain_id() internal pure returns (bytes memory) {
+    function parachainId() internal pure returns (bytes memory) {
         return abi.encodePacked(uint8(0), uint32(2031));
     }
 }
