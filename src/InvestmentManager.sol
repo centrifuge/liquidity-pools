@@ -254,7 +254,7 @@ contract InvestmentManager is Auth {
     // --- Incoming message handling ---
     /// @dev new pool details from an existing centrifuge chain pool are added.
     /// @notice the function can only be executed by the gateway contract.
-    function addPool(uint64 poolId) public {
+    function addPool(uint64 poolId) public onlyGateway {
         Pool storage pool = pools[poolId];
         require(pool.createdAt == 0, "InvestmentManager/pool-already-added");
         pool.poolId = poolId;
@@ -266,7 +266,7 @@ contract InvestmentManager is Auth {
     /// @dev centrifuge pools can support multiple currencies for investing. this function adds a new supported currency to the pool details.
     /// Adding new currencies allow the creation of new liquidity pools for the underlying centrifuge chain pool.
     /// @notice the function can only be executed by the gateway contract.
-    function allowPoolCurrency(uint64 poolId, uint128 currency) public {
+    function allowPoolCurrency(uint64 poolId, uint128 currency) public onlyGateway {
         Pool storage pool = pools[poolId];
         require(pool.createdAt > 0, "InvestmentManager/invalid-pool");
 
@@ -286,7 +286,7 @@ contract InvestmentManager is Auth {
         string memory _tokenSymbol,
         uint8 _decimals,
         uint128
-    ) public {
+    ) public onlyGateway {
         Pool storage pool = pools[_poolId];
         require(pool.createdAt > 0, "InvestmentManager/invalid-pool");
         Tranche storage tranche = tranches[_poolId][_trancheId];
@@ -312,7 +312,7 @@ contract InvestmentManager is Auth {
         }
     }
 
-    function updateMember(uint64 _poolId, bytes16 _trancheId, address _user, uint64 _validUntil) public {
+    function updateMember(uint64 _poolId, bytes16 _trancheId, address _user, uint64 _validUntil) public onlyGateway {
         Tranche storage tranche = tranches[_poolId][_trancheId];
         require(tranche.createdAt > 0, "InvestmentManager/invalid-pool-or-tranche");
         for (uint256 i = 0; i < tranche.liquidityPools.length; i++) {
