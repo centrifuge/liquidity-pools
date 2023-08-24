@@ -119,7 +119,12 @@ contract Gateway is Auth {
     }
 
     modifier onlyInvestmentManager() {
-        require(msg.sender == address(investmentManager), "Gateway/only-investmentManager-allowed-to-call");
+        require(msg.sender == address(investmentManager), "Gateway/only-investment-manager-allowed-to-call");
+        _;
+    }
+
+    modifier onlyTokenManager() {
+        require(msg.sender == address(tokenManager), "Gateway/only-token-manager-allowed-to-call");
         _;
     }
 
@@ -192,7 +197,7 @@ contract Gateway is Auth {
         bytes32 destinationAddress,
         uint128 currencyId,
         uint128 amount
-    ) public onlyInvestmentManager pauseable {
+    ) public onlyTokenManager pauseable {
         outgoingRouter.send(
             Messages.formatTransferTrancheTokens(
                 poolId,
@@ -214,7 +219,7 @@ contract Gateway is Auth {
         uint128 currencyId,
         address destinationAddress,
         uint128 amount
-    ) public onlyInvestmentManager pauseable {
+    ) public onlyTokenManager pauseable {
         outgoingRouter.send(
             Messages.formatTransferTrancheTokens(
                 poolId,
@@ -230,7 +235,7 @@ contract Gateway is Auth {
 
     function transfer(uint128 token, address sender, bytes32 receiver, uint128 amount)
         public
-        onlyInvestmentManager
+        onlyTokenManager
         pauseable
     {
         outgoingRouter.send(Messages.formatTransfer(token, addressToBytes32(sender), receiver, amount));

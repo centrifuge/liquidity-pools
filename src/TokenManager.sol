@@ -120,11 +120,11 @@ contract TokenManager is Auth {
     /// @dev a global chain agnostic currency index is maintained on centrifuge chain. This function maps a currency from the centrifuge chain index to its corresponding address on the evm chain.
     /// The chain agnostic currency id has to be used to pass currency information to the centrifuge chain.
     /// @notice this function can only be executed by the gateway contract.
-    function addCurrency(uint128 currency, address currencyAddress) public {
+    function addCurrency(uint128 currency, address currencyAddress) public onlyGateway {
         // currency index on the centrifuge chain side should start at 1
-        require(currency > 0, "InvestmentManager/currency-id-has-to-be-greater-than-0");
-        require(currencyIdToAddress[currency] == address(0), "InvestmentManager/currency-id-in-use");
-        require(currencyAddressToId[currencyAddress] == 0, "InvestmentManager/currency-address-in-use");
+        require(currency > 0, "TokenManager/currency-id-has-to-be-greater-than-0");
+        require(currencyIdToAddress[currency] == address(0), "TokenManager/currency-id-in-use");
+        require(currencyAddressToId[currencyAddress] == 0, "TokenManager/currency-address-in-use");
 
         currencyIdToAddress[currency] = currencyAddress;
         currencyAddressToId[currencyAddress] = currency;
