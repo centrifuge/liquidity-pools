@@ -6,7 +6,6 @@ import {TypedMemView} from "memview-sol/TypedMemView.sol";
 import {Messages} from "./Messages.sol";
 
 interface InvestmentManagerLike {
-    function addCurrency(uint128 currency, address currencyAddress) external;
     function addPool(uint64 poolId) external;
     function allowPoolCurrency(uint64 poolId, uint128 currency) external;
     function addTranche(
@@ -19,14 +18,6 @@ interface InvestmentManagerLike {
     ) external;
     function updateMember(uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) external;
     function updateTokenPrice(uint64 poolId, bytes16 trancheId, uint128 price) external;
-    function handleTransfer(uint128 currency, address recipient, uint128 amount) external;
-    function handleTransferTrancheTokens(
-        uint64 poolId,
-        bytes16 trancheId,
-        uint128 currency,
-        address destinationAddress,
-        uint128 amount
-    ) external;
     function handleExecutedDecreaseInvestOrder(
         uint64 poolId,
         bytes16 trancheId,
@@ -59,6 +50,18 @@ interface InvestmentManagerLike {
     ) external;
 }
 
+interface TokenManagerLike {
+    function addCurrency(uint128 currency, address currencyAddress) external;
+    function handleTransfer(uint128 currency, address recipient, uint128 amount) external;
+    function handleTransferTrancheTokens(
+        uint64 poolId,
+        bytes16 trancheId,
+        uint128 currency,
+        address destinationAddress,
+        uint128 amount
+    ) external;
+}
+
 interface RouterLike {
     function send(bytes memory message) external;
 }
@@ -82,7 +85,7 @@ contract Gateway {
     bool public paused = false;
 
     InvestmentManagerLike public immutable investmentManager;
-    // TODO: support multiple incoming routers (just a single outgoing router) to simplify router migrations
+    TokenManagerLike public immutable tokenManager;
     mapping(address => bool) public incomingRouters;
     RouterLike public outgoingRouter;
 
@@ -98,12 +101,14 @@ contract Gateway {
 
     constructor(
         address investmentManager_,
+        address tokenManager_,
         address router_,
         uint256 shortScheduleWait_,
         uint256 longScheduleWait_,
         uint256 gracePeriod_
     ) {
         investmentManager = InvestmentManagerLike(investmentManager_);
+        tokenManager = TokenManagerLike(tokenManager_);
         incomingRouters[router_] = true;
         outgoingRouter = RouterLike(router_);
 
@@ -300,7 +305,7 @@ contract Gateway {
 
         if (Messages.isAddCurrency(_msg)) {
             (uint128 currency, address currencyAddress) = Messages.parseAddCurrency(_msg);
-            investmentManager.addCurrency(currency, currencyAddress);
+            tokenManager.addCurrency(currency, currencyAddress);
         } else if (Messages.isAddPool(_msg)) {
             (uint64 poolId) = Messages.parseAddPool(_msg);
             investmentManager.addPool(poolId);
@@ -325,14 +330,12 @@ contract Gateway {
             investmentManager.updateTokenPrice(poolId, trancheId, price);
         } else if (Messages.isTransfer(_msg)) {
             (uint128 currency, address recipient, uint128 amount) = Messages.parseIncomingTransfer(_msg);
-            investmentManager.handleTransfer(currency, recipient, amount);
-        }
-        // else if (Messages.isTransferTrancheTokens(_msg)) {
-        //     (uint64 poolId, bytes16 trancheId, uint128 currencyId, address destinationAddress, uint128 amount) =
-        //         Messages.parseTransferTrancheTokens20(_msg);
-        //    investmentManager.handleTransferTrancheTokens(poolId, trancheId, currencyId, destinationAddress, amount);
-        // }
-        else if (Messages.isExecutedDecreaseInvestOrder(_msg)) {
+            tokenManager.handleTransfer(currency, recipient, amount);
+        } else if (Messages.isTransferTrancheTokens(_msg)) {
+            (uint64 poolId, bytes16 trancheId, uint128 currencyId, address destinationAddress, uint128 amount) =
+                Messages.parseTransferTrancheTokens20(_msg);
+           tokenManager.handleTransferTrancheTokens(poolId, trancheId, currencyId, destinationAddress, amount);
+        } else if (Messages.isExecutedDecreaseInvestOrder(_msg)) {
             (uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 currencyPayout) =
                 Messages.parseExecutedDecreaseInvestOrder(_msg);
             investmentManager.handleExecutedDecreaseInvestOrder(poolId, trancheId, investor, currency, currencyPayout);

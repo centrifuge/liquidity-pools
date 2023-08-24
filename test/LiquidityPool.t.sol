@@ -3,6 +3,7 @@ pragma solidity ^0.8.18;
 pragma abicoder v2;
 
 import {InvestmentManager, Tranche} from "../src/InvestmentManager.sol";
+import {TokenManager} from "../src/TokenManager.sol";
 import {Gateway} from "../src/Gateway.sol";
 import {Escrow} from "../src/Escrow.sol";
 import {LiquidityPoolFactory, MemberlistFactory} from "../src/liquidityPool/Factory.sol";
@@ -31,6 +32,7 @@ contract LiquidityPoolTest is Test {
     uint128 constant MAX_UINT128 = type(uint128).max;
 
     InvestmentManager evmInvestmentManager;
+    TokenManager evmTokenManager;
     Gateway gateway;
     MockHomeLiquidityPools homePools;
     MockXcmRouter mockXcmRouter;
@@ -48,6 +50,7 @@ contract LiquidityPoolTest is Test {
         address memberlistFactory_ = address(new MemberlistFactory());
 
         evmInvestmentManager = new InvestmentManager(address(escrow), liquidityPoolFactory_, memberlistFactory_);
+        evmTokenManager = new TokenManager(address(escrow));
 
         mockXcmRouter = new MockXcmRouter(address(evmInvestmentManager));
 
@@ -55,7 +58,7 @@ contract LiquidityPoolTest is Test {
         PauseAdmin pauseAdmin = new PauseAdmin();
         DelayedAdmin delayedAdmin = new DelayedAdmin();
 
-        gateway = new Gateway(address(evmInvestmentManager), address(mockXcmRouter), shortWait, longWait, gracePeriod);
+        gateway = new Gateway(address(evmInvestmentManager), address(evmTokenManager), address(mockXcmRouter), shortWait, longWait, gracePeriod);
         gateway.rely(address(pauseAdmin));
         gateway.rely(address(delayedAdmin));
         pauseAdmin.file("gateway", address(gateway));
@@ -106,7 +109,7 @@ contract LiquidityPoolTest is Test {
         assertEq(erc20.balanceOf(address(this)), 0);
 
         // trigger executed collectInvest
-        uint128 _currencyId = evmInvestmentManager.currencyAddressToId(address(erc20)); // retrieve currencyId
+        uint128 _currencyId = evmTokenManager.currencyAddressToId(address(erc20)); // retrieve currencyId
         uint128 trancheTokensPayout = uint128(amount) / price; // trancheTokenPrice = 2$
         homePools.isExecutedCollectInvest(
             poolId, trancheId, bytes32(bytes20(address(this))), _currencyId, uint128(amount), trancheTokensPayout
@@ -164,7 +167,7 @@ contract LiquidityPoolTest is Test {
         assertEq(lPool.balanceOf(address(escrow)), amount);
 
         // trigger executed collectRedeem
-        uint128 _currencyId = evmInvestmentManager.currencyAddressToId(address(erc20)); // retrieve currencyId
+        uint128 _currencyId = evmTokenManager.currencyAddressToId(address(erc20)); // retrieve currencyId
         uint128 currencyPayout = uint128(amount) / price;
         homePools.isExecutedCollectRedeem(
             poolId, trancheId, bytes32(bytes20(address(this))), _currencyId, currencyPayout, uint128(amount)
@@ -218,7 +221,7 @@ contract LiquidityPoolTest is Test {
         assertEq(lPool.balanceOf(address(escrow)), amount);
 
         // trigger executed collectRedeem
-        uint128 _currencyId = evmInvestmentManager.currencyAddressToId(address(erc20)); // retrieve currencyId
+        uint128 _currencyId = evmTokenManager.currencyAddressToId(address(erc20)); // retrieve currencyId
         uint128 currencyPayout = uint128(amount) / price;
         homePools.isExecutedCollectRedeem(
             poolId, trancheId, bytes32(bytes20(address(this))), _currencyId, currencyPayout, uint128(amount)
@@ -301,7 +304,7 @@ contract LiquidityPoolTest is Test {
         erc20.approve(address(evmInvestmentManager), amount); // add allowance
         lPool.requestDeposit(amount);
         // trigger executed collectInvest
-        uint128 currencyId = evmInvestmentManager.currencyAddressToId(address(erc20)); // retrieve currencyId
+        uint128 currencyId = evmTokenManager.currencyAddressToId(address(erc20)); // retrieve currencyId
         homePools.isExecutedCollectInvest(
             poolId, trancheId, bytes32(bytes20(address(this))), currencyId, uint128(amount), uint128(amount)
         );

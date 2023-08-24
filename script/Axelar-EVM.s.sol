@@ -16,9 +16,9 @@ contract AxelarEVMScript is Deployer {
 
         admin = vm.envAddress("ADMIN");
 
-        address investmentManager = deployInvestmentManager();
+        deployInvestmentManager();
         AxelarEVMRouter router = new AxelarEVMRouter(
-                investmentManager,
+                address(investmentManager),
                 address(vm.envAddress("AXELAR_GATEWAY"))
         );
         wire(address(router));

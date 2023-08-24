@@ -18,20 +18,19 @@ contract PermissionlessScript is Deployer {
         admin = msg.sender;
 
         // Deploy contracts
-        address investmentManager = deployInvestmentManager();
+        deployInvestmentManager();
         PermissionlessRouter router = new PermissionlessRouter();
         wire(address(router));
 
         // Set up test data
-        InvestmentManager mgr = InvestmentManager(investmentManager);
-        mgr.addPool(1171854325);
-        mgr.addTranche(1171854325, 0x102f4ef817340a8839a515d2c73a7c1d, "Some Token", "ST", 6, 1e27);
-        mgr.addCurrency(1, 0xd35CCeEAD182dcee0F148EbaC9447DA2c4D449c4);
-        mgr.allowPoolCurrency(1171854325, 1);
-        mgr.deployLiquidityPool(
+        tokenManager.addCurrency(1, 0xd35CCeEAD182dcee0F148EbaC9447DA2c4D449c4);
+        investmentManager.addPool(1171854325);
+        investmentManager.addTranche(1171854325, 0x102f4ef817340a8839a515d2c73a7c1d, "Some Token", "ST", 6, 1e27);
+        investmentManager.allowPoolCurrency(1171854325, 1);
+        investmentManager.deployLiquidityPool(
             1171854325, 0x102f4ef817340a8839a515d2c73a7c1d, 0xd35CCeEAD182dcee0F148EbaC9447DA2c4D449c4
         );
-        mgr.updateMember(1171854325, 0x102f4ef817340a8839a515d2c73a7c1d, admin, type(uint64).max);
+        investmentManager.updateMember(1171854325, 0x102f4ef817340a8839a515d2c73a7c1d, admin, type(uint64).max);
 
         giveAdminAccess();
         removeDeployerAccess(address(router));

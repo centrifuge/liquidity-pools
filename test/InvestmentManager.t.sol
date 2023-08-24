@@ -3,6 +3,7 @@ pragma solidity ^0.8.18;
 pragma abicoder v2;
 
 import {InvestmentManager, Tranche} from "../src/InvestmentManager.sol";
+import {TokenManager} from "../src/TokenManager.sol";
 import {Gateway} from "../src/Gateway.sol";
 import {Escrow} from "../src/Escrow.sol";
 import {LiquidityPoolFactory, MemberlistFactory} from "../src/liquidityPool/Factory.sol";
@@ -29,6 +30,7 @@ interface AuthLike {
 
 contract InvestmentManagerTest is Test {
     InvestmentManager evmInvestmentManager;
+    TokenManager evmTokenManager;
     Gateway gateway;
     MockHomeLiquidityPools homePools;
     MockXcmRouter mockXcmRouter;
@@ -43,6 +45,7 @@ contract InvestmentManagerTest is Test {
         address memberlistFactory_ = address(new MemberlistFactory());
 
         evmInvestmentManager = new InvestmentManager(escrow_, liquidityPoolFactory_, memberlistFactory_);
+        evmTokenManager = new TokenManager(escrow_);
 
         mockXcmRouter = new MockXcmRouter(address(evmInvestmentManager));
 
@@ -50,7 +53,7 @@ contract InvestmentManagerTest is Test {
         PauseAdmin pauseAdmin = new PauseAdmin();
         DelayedAdmin delayedAdmin = new DelayedAdmin();
 
-        gateway = new Gateway(address(evmInvestmentManager), address(mockXcmRouter), shortWait, longWait, gracePeriod);
+        gateway = new Gateway(address(evmInvestmentManager), address(evmTokenManager), address(mockXcmRouter), shortWait, longWait, gracePeriod);
         gateway.rely(address(pauseAdmin));
         gateway.rely(address(delayedAdmin));
         pauseAdmin.file("gateway", address(gateway));
@@ -75,19 +78,19 @@ contract InvestmentManagerTest is Test {
 
         ERC20 erc20 = newErc20("X's Dollar", "USDX", 42);
         homePools.addCurrency(currency, address(erc20));
-        (address address_) = evmInvestmentManager.currencyIdToAddress(currency);
+        (address address_) = evmTokenManager.currencyIdToAddress(currency);
         assertEq(address_, address(erc20));
 
         // Verify we can't override the same currency id another address
         ERC20 badErc20 = newErc20("BadActor's Dollar", "BADUSD", 66);
         vm.expectRevert(bytes("InvestmentManager/currency-id-in-use"));
         homePools.addCurrency(currency, address(badErc20));
-        assertEq(evmInvestmentManager.currencyIdToAddress(currency), address(erc20));
+        assertEq(evmTokenManager.currencyIdToAddress(currency), address(erc20));
 
         // Verify we can't add a currency address that already exists associated with a different currency id
         vm.expectRevert(bytes("InvestmentManager/currency-address-in-use"));
         homePools.addCurrency(badCurrency, address(erc20));
-        assertEq(evmInvestmentManager.currencyIdToAddress(currency), address(erc20));
+        assertEq(evmTokenManager.currencyIdToAddress(currency), address(erc20));
     }
 
     function testAddPoolWorks(uint64 poolId) public {
