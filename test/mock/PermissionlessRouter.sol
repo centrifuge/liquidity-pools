@@ -2,27 +2,21 @@
 pragma solidity ^0.8.18;
 pragma abicoder v2;
 
+import "./../../src/auth/auth.sol";
+
 interface GatewayLike {
     function handle(bytes memory message) external;
 }
 
-contract PermissionlessRouter {
-    mapping(address => uint256) public wards;
+contract PermissionlessRouter is Auth {
     GatewayLike public gateway;
 
-    event Rely(address indexed user);
-    event Deny(address indexed user);
     event Send(bytes message);
     event File(bytes32 indexed what, address addr);
 
     constructor() {
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
-    }
-
-    modifier auth() {
-        require(wards[msg.sender] == 1, "PermissionlessRouter/not-authorized");
-        _;
     }
 
     function file(bytes32 what, address gateway_) external {
@@ -33,17 +27,6 @@ contract PermissionlessRouter {
         }
 
         emit File(what, gateway_);
-    }
-
-    // --- Administration ---
-    function rely(address user) external auth {
-        wards[user] = 1;
-        emit Rely(user);
-    }
-
-    function deny(address user) external auth {
-        wards[user] = 0;
-        emit Deny(user);
     }
 
     // --- Incoming ---

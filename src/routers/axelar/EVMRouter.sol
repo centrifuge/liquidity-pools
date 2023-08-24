@@ -60,6 +60,7 @@ contract AxelarEVMRouter is Auth, AxelarExecutableLike {
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
     }
+
     modifier onlyCentrifugeChainOrigin(string memory sourceChain) {
         require(
             msg.sender == address(axelarGateway)

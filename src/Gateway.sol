@@ -77,7 +77,6 @@ contract Gateway is Auth {
     using TypedMemView for bytes29;
     using Messages for bytes29;
 
-    mapping(address => uint256) public wards;
     mapping(address => uint256) public relySchedule;
     uint256 public immutable shortScheduleWait;
     uint256 public immutable longScheduleWait;
