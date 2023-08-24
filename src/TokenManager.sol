@@ -128,8 +128,9 @@ contract TokenManager is Auth {
         currencyIdToAddress[currency] = currencyAddress;
         currencyAddressToId[currencyAddress] = currency;
 
-        // enable connectors to take the currency out of escrow in case of redemptions
+        // enable taking the currency out of escrow in case of redemptions
         EscrowLike(escrow).approve(currencyAddress, address(investmentManager), type(uint256).max);
+        EscrowLike(escrow).approve(currencyAddress, address(this), type(uint256).max);
         emit CurrencyAdded(currency, currencyAddress);
     }
 

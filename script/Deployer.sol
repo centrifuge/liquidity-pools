@@ -51,6 +51,8 @@ contract Deployer is Script {
         new Gateway(address(investmentManager), address(tokenManager), address(router), shortWait, longWait, gracePeriod);
 
         // Wire gateway
+        investmentManager.file("tokenManager", address(tokenManager));
+        tokenManager.file("investmentManager", address(investmentManager));
         investmentManager.file("gateway", address(gateway));
         tokenManager.file("gateway", address(gateway));
         gateway.rely(address(pauseAdmin));
