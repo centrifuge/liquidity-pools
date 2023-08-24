@@ -18,7 +18,6 @@ interface GatewayLike {
         bytes16 trancheId,
         address sender,
         uint64 destinationChainId,
-        uint128 currencyId,
         address destinationAddress,
         uint128 amount
     ) external;
@@ -27,6 +26,10 @@ interface GatewayLike {
 
 interface InvestmentManagerLike {
     function liquidityPools(uint64 poolId, bytes16 trancheId, address currency) external returns (address);
+    function getLiquidityPoolsForTranche(uint64 _poolId, bytes16 _trancheId)
+        external
+        view
+        returns (address[] memory lPools);
 }
 
 interface EscrowLike {
@@ -102,23 +105,20 @@ contract TokenManager is Auth {
     function transferTrancheTokensToEVM(
         uint64 poolId,
         bytes16 trancheId,
-        address currency,
         uint64 destinationChainId,
         address destinationAddress,
         uint128 amount
     ) public {
+        // TODO: this should get the underlying tranche token once the single tranche token change has been merged
         LiquidityPoolLike liquidityPool =
-            LiquidityPoolLike(investmentManager.liquidityPools(poolId, trancheId, currency));
+            LiquidityPoolLike(investmentManager.getLiquidityPoolsForTranche(poolId, trancheId)[0]);
         require(address(liquidityPool) != address(0), "TokenManager/unknown-token");
 
         require(liquidityPool.balanceOf(msg.sender) >= amount, "TokenManager/insufficient-balance");
         liquidityPool.burn(msg.sender, amount);
 
-        uint128 currencyId = currencyAddressToId[currency];
-        require(currencyId != 0, "TokenManager/unknown-currency");
-
         gateway.transferTrancheTokensToEVM(
-            poolId, trancheId, msg.sender, destinationChainId, currencyId, destinationAddress, amount
+            poolId, trancheId, msg.sender, destinationChainId, destinationAddress, amount
         );
     }
 
@@ -155,13 +155,9 @@ contract TokenManager is Auth {
         public
         onlyGateway
     {
-        // TODO: this logic should look up the correct tranche token
-        uint128 HARDCODED_CURRENCY_ID = 1;
-        address currencyAddress = currencyIdToAddress[HARDCODED_CURRENCY_ID];
-        require(currencyAddress != address(0), "TokenManager/unknown-currency");
-
+        // TODO: this should get the underlying tranche token once the single tranche token change has been merged
         LiquidityPoolLike liquidityPool =
-            LiquidityPoolLike(investmentManager.liquidityPools(poolId, trancheId, currencyAddress));
+            LiquidityPoolLike(investmentManager.getLiquidityPoolsForTranche(poolId, trancheId)[0]);
         require(address(liquidityPool) != address(0), "TokenManager/unknown-token");
 
         require(liquidityPool.hasMember(destinationAddress), "TokenManager/not-a-member");

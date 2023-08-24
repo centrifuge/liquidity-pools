@@ -292,9 +292,7 @@ contract TokenManagerTest is Test {
         LiquidityPool(lPool_).approve(address(evmTokenManager), amount);
         console.logAddress(lPool_);
         console.logAddress(LiquidityPool(lPool_).asset());
-        evmTokenManager.transferTrancheTokensToEVM(
-            poolId, trancheId, LiquidityPool(lPool_).asset(), uint64(block.chainid), destinationAddress, amount
-        );
+        evmTokenManager.transferTrancheTokensToEVM(poolId, trancheId, uint64(block.chainid), destinationAddress, amount);
         assertEq(LiquidityPool(lPool_).balanceOf(address(this)), 0);
     }
 
