@@ -309,19 +309,11 @@ library Messages {
         bytes16 trancheId,
         bytes32 sender,
         bytes9 destinationDomain,
-        uint128 currencyId,
         bytes32 destinationAddress,
         uint128 amount
     ) internal pure returns (bytes memory) {
         return abi.encodePacked(
-            uint8(Call.TransferTrancheTokens),
-            poolId,
-            trancheId,
-            sender,
-            destinationDomain,
-            currencyId,
-            destinationAddress,
-            amount
+            uint8(Call.TransferTrancheTokens), poolId, trancheId, sender, destinationDomain, destinationAddress, amount
         );
     }
 
@@ -334,12 +326,11 @@ library Messages {
         bytes16 trancheId,
         bytes32 sender,
         bytes9 destinationDomain,
-        uint128 currencyId,
         address destinationAddress,
         uint128 amount
     ) internal pure returns (bytes memory) {
         return formatTransferTrancheTokens(
-            poolId, trancheId, sender, destinationDomain, currencyId, bytes32(bytes20(destinationAddress)), amount
+            poolId, trancheId, sender, destinationDomain, bytes32(bytes20(destinationAddress)), amount
         );
     }
 
@@ -375,16 +366,15 @@ library Messages {
     function parseTransferTrancheTokens20(bytes29 _msg)
         internal
         pure
-        returns (uint64 poolId, bytes16 trancheId, uint128 currencyId, address destinationAddress, uint128 amount)
+        returns (uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 amount)
     {
         poolId = uint64(_msg.indexUint(1, 8));
         trancheId = bytes16(_msg.index(9, 16));
 
         // ignore: `sender` at bytes 25-56
         // ignore: `domain` at bytes 57-65
-        currencyId = uint128(_msg.indexUint(66, 16));
-        destinationAddress = address(bytes20(_msg.index(82, 20)));
-        amount = uint128(_msg.indexUint(114, 16));
+        destinationAddress = address(bytes20(_msg.index(66, 20)));
+        amount = uint128(_msg.indexUint(98, 16));
     }
 
     /*

@@ -196,9 +196,7 @@ contract TokenManagerTest is Test {
         homePools.updateMember(poolId, trancheId, address(this), validUntil);
 
         // fund this account with amount
-        homePools.incomingTransferTrancheTokens(
-            poolId, trancheId, uint64(block.chainid), currency, address(this), amount
-        );
+        homePools.incomingTransferTrancheTokens(poolId, trancheId, uint64(block.chainid), address(this), amount);
 
         // Verify the address(this) has the expected amount
         assertEq(LiquidityPool(lPool_).balanceOf(address(this)), amount);
@@ -216,7 +214,6 @@ contract TokenManagerTest is Test {
             trancheId,
             bytes32(bytes20(address(this))),
             Messages.formatDomain(Messages.Domain.Centrifuge),
-            currency,
             centChainAddress,
             amount
         );
@@ -242,9 +239,7 @@ contract TokenManagerTest is Test {
 
         homePools.updateMember(poolId, trancheId, destinationAddress, validUntil);
         assertTrue(LiquidityPool(lPool_).hasMember(destinationAddress));
-        homePools.incomingTransferTrancheTokens(
-            poolId, trancheId, uint64(block.chainid), currency, destinationAddress, amount
-        );
+        homePools.incomingTransferTrancheTokens(poolId, trancheId, uint64(block.chainid), destinationAddress, amount);
         assertEq(LiquidityPoolLike(lPool_).balanceOf(destinationAddress), amount);
     }
 
@@ -264,9 +259,7 @@ contract TokenManagerTest is Test {
         deployLiquidityPool(poolId, decimals, tokenName, tokenSymbol, trancheId, currency);
 
         vm.expectRevert(bytes("TokenManager/not-a-member"));
-        homePools.incomingTransferTrancheTokens(
-            poolId, trancheId, uint64(block.chainid), currency, destinationAddress, amount
-        );
+        homePools.incomingTransferTrancheTokens(poolId, trancheId, uint64(block.chainid), destinationAddress, amount);
     }
 
     function testTransferTrancheTokensToEVM(
@@ -292,9 +285,7 @@ contract TokenManagerTest is Test {
         assertTrue(LiquidityPool(lPool_).hasMember(destinationAddress));
 
         // Fund this address with amount
-        homePools.incomingTransferTrancheTokens(
-            poolId, trancheId, uint64(block.chainid), currency, address(this), amount
-        );
+        homePools.incomingTransferTrancheTokens(poolId, trancheId, uint64(block.chainid), address(this), amount);
         assertEq(LiquidityPool(lPool_).balanceOf(address(this)), amount);
 
         // Approve and transfer amount from this address to destinationAddress

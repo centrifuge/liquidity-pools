@@ -151,14 +151,13 @@ contract TokenManager is Auth {
         );
     }
 
-    function handleTransferTrancheTokens(
-        uint64 poolId,
-        bytes16 trancheId,
-        uint128 currencyId,
-        address destinationAddress,
-        uint128 amount
-    ) public onlyGateway {
-        address currencyAddress = currencyIdToAddress[currencyId];
+    function handleTransferTrancheTokens(uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 amount)
+        public
+        onlyGateway
+    {
+        // TODO: this logic should look up the correct tranche token
+        uint128 HARDCODED_CURRENCY_ID = 1;
+        address currencyAddress = currencyIdToAddress[HARDCODED_CURRENCY_ID];
         require(currencyAddress != address(0), "TokenManager/unknown-currency");
 
         LiquidityPoolLike liquidityPool =

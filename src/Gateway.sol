@@ -54,13 +54,8 @@ interface InvestmentManagerLike {
 interface TokenManagerLike {
     function addCurrency(uint128 currency, address currencyAddress) external;
     function handleTransfer(uint128 currency, address recipient, uint128 amount) external;
-    function handleTransferTrancheTokens(
-        uint64 poolId,
-        bytes16 trancheId,
-        uint128 currency,
-        address destinationAddress,
-        uint128 amount
-    ) external;
+    function handleTransferTrancheTokens(uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 amount)
+        external;
 }
 
 interface RouterLike {
@@ -195,7 +190,6 @@ contract Gateway is Auth {
         bytes16 trancheId,
         address sender,
         bytes32 destinationAddress,
-        uint128 currencyId,
         uint128 amount
     ) public onlyTokenManager pauseable {
         outgoingRouter.send(
@@ -204,7 +198,6 @@ contract Gateway is Auth {
                 trancheId,
                 addressToBytes32(sender),
                 Messages.formatDomain(Messages.Domain.Centrifuge),
-                currencyId,
                 destinationAddress,
                 amount
             )
@@ -216,7 +209,6 @@ contract Gateway is Auth {
         bytes16 trancheId,
         address sender,
         uint64 destinationChainId,
-        uint128 currencyId,
         address destinationAddress,
         uint128 amount
     ) public onlyTokenManager pauseable {
@@ -226,7 +218,6 @@ contract Gateway is Auth {
                 trancheId,
                 addressToBytes32(sender),
                 Messages.formatDomain(Messages.Domain.EVM, destinationChainId),
-                currencyId,
                 destinationAddress,
                 amount
             )
@@ -320,9 +311,9 @@ contract Gateway is Auth {
             (uint128 currency, address recipient, uint128 amount) = Messages.parseIncomingTransfer(_msg);
             tokenManager.handleTransfer(currency, recipient, amount);
         } else if (Messages.isTransferTrancheTokens(_msg)) {
-            (uint64 poolId, bytes16 trancheId, uint128 currencyId, address destinationAddress, uint128 amount) =
+            (uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 amount) =
                 Messages.parseTransferTrancheTokens20(_msg);
-            tokenManager.handleTransferTrancheTokens(poolId, trancheId, currencyId, destinationAddress, amount);
+            tokenManager.handleTransferTrancheTokens(poolId, trancheId, destinationAddress, amount);
         } else if (Messages.isExecutedDecreaseInvestOrder(_msg)) {
             (uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 currencyPayout) =
                 Messages.parseExecutedDecreaseInvestOrder(_msg);
