@@ -44,21 +44,20 @@ contract LiquidityPoolFactory {
         // on multiple chains with the same address for the same tranche and asset
         bytes32 salt = keccak256(abi.encodePacked(_poolId, _trancheId, _currencyId));
 
-        LiquidityPool lPool = new LiquidityPool{salt: salt}();
+        LiquidityPool liquidityPool = new LiquidityPool{salt: salt}();
 
         // Name and symbol are not passed on constructor, such that if the same liquidity pool is deployed
         // on another chain with a different name (it might have changed in between deployments),
         // then the address remains deterministic.
-        lPool.file("investmentManager", _investmentManager);
-        lPool.file("asset", _asset);
-        lPool.file("share", _tranche);
-        lPool.setPoolDetails(_poolId, _trancheId);
+        liquidityPool.file("investmentManager", _investmentManager);
+        liquidityPool.file("asset", _asset);
+        liquidityPool.file("share", _tranche);
+        liquidityPool.setPoolDetails(_poolId, _trancheId);
 
-        lPool.deny(msg.sender);
-        lPool.rely(_admin);
-        lPool.rely(_investmentManager); // to be able to update tokenPrices
-        lPool.deny(address(this));
-        return address(lPool);
+        liquidityPool.rely(_admin);
+        liquidityPool.rely(_investmentManager); // to be able to update tokenPrices
+        liquidityPool.deny(address(this));
+        return address(liquidityPool);
     }
 }
 
