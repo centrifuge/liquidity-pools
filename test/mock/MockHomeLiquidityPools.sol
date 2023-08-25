@@ -66,7 +66,7 @@ contract MockHomeLiquidityPools is Test {
         router.handle(_message);
     }
 
-    function updateTokenPrice(uint64 poolId, bytes16 trancheId, uint128 price) public {
+    function updateTrancheTokenPrice(uint64 poolId, bytes16 trancheId, uint128 price) public {
         bytes memory _message = Messages.formatUpdateTrancheTokenPrice(poolId, trancheId, price);
         router.handle(_message);
     }

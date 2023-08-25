@@ -9,6 +9,7 @@ import {Escrow} from "../src/Escrow.sol";
 import {LiquidityPoolFactory, MemberlistFactory, TrancheTokenFactory} from "../src/liquidityPool/Factory.sol";
 import {LiquidityPool} from "../src/liquidityPool/LiquidityPool.sol";
 import {ERC20} from "../src/token/ERC20.sol";
+import {RestrictedToken} from "../src/token/Restricted.sol";
 
 import {MemberlistLike, Memberlist} from "../src/token/Memberlist.sol";
 import {MockHomeLiquidityPools} from "./mock/MockHomeLiquidityPools.sol";
@@ -290,6 +291,110 @@ contract TokenManagerTest is Test {
         console.logAddress(LiquidityPool(lPool_).asset());
         evmTokenManager.transferTrancheTokensToEVM(poolId, trancheId, uint64(block.chainid), destinationAddress, amount);
         assertEq(LiquidityPool(lPool_).balanceOf(address(this)), 0);
+    }
+
+    function testUpdatingMemberWorks(
+        uint64 poolId,
+        uint8 decimals,
+        uint128 currency,
+        string memory tokenName,
+        string memory tokenSymbol,
+        bytes16 trancheId,
+        address user,
+        uint64 validUntil,
+        uint128 price
+    ) public {
+        vm.assume(validUntil >= block.timestamp);
+        vm.assume(user != address(0));
+        vm.assume(currency > 0);
+        ERC20 erc20 = newErc20("X's Dollar", "USDX", 42);
+        homePools.addPool(poolId); // add pool
+        homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price); // add tranche
+        homePools.addCurrency(currency, address(erc20));
+        homePools.allowPoolCurrency(poolId, currency);
+        evmInvestmentManager.deployTranche(poolId, trancheId);
+        address lPool_ = evmInvestmentManager.deployLiquidityPool(poolId, trancheId, address(erc20));
+
+        homePools.updateMember(poolId, trancheId, user, validUntil);
+        assertTrue(LiquidityPool(lPool_).hasMember(user));
+    }
+
+    function testUpdatingMemberAsNonRouterFails(
+        uint64 poolId,
+        uint128 currency,
+        bytes16 trancheId,
+        address user,
+        uint64 validUntil
+    ) public {
+        vm.assume(validUntil >= block.timestamp);
+        vm.assume(user != address(0));
+        vm.assume(currency > 0);
+
+        vm.expectRevert(bytes("TokenManager/not-the-gateway"));
+        evmTokenManager.updateMember(poolId, trancheId, user, validUntil);
+    }
+
+    function testUpdatingMemberForNonExistentTrancheFails(
+        uint64 poolId,
+        bytes16 trancheId,
+        address user,
+        uint64 validUntil
+    ) public {
+        vm.assume(validUntil > block.timestamp);
+        homePools.addPool(poolId);
+
+        vm.expectRevert(bytes("TokenManager/unknown-token"));
+        homePools.updateMember(poolId, trancheId, user, validUntil);
+    }
+
+    function testUpdatingTokenPriceWorks(
+        uint64 poolId,
+        uint8 decimals,
+        uint128 currency,
+        string memory tokenName,
+        string memory tokenSymbol,
+        bytes16 trancheId,
+        uint128 price
+    ) public {
+        vm.assume(currency > 0);
+        ERC20 erc20 = newErc20("X's Dollar", "USDX", 42);
+        homePools.addPool(poolId); // add pool
+        homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price); // add tranche
+
+        address tranche_ = evmInvestmentManager.deployTranche(poolId, trancheId);
+
+        homePools.updateTrancheTokenPrice(poolId, trancheId, price);
+        assertEq(RestrictedToken(tranche_).latestPrice(), price);
+        assertEq(RestrictedToken(tranche_).lastPriceUpdate(), block.timestamp);
+    }
+
+    function testUpdatingTokenPriceAsNonRouterFails(
+        uint64 poolId,
+        uint8 decimals,
+        uint128 currency,
+        string memory tokenName,
+        string memory tokenSymbol,
+        bytes16 trancheId,
+        uint128 price
+    ) public {
+        vm.assume(currency > 0);
+        ERC20 erc20 = newErc20("X's Dollar", "USDX", 42);
+        homePools.addPool(poolId); // add pool
+        homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price); // add tranche
+        homePools.addCurrency(currency, address(erc20));
+        homePools.allowPoolCurrency(poolId, currency);
+        evmInvestmentManager.deployTranche(poolId, trancheId);
+        evmInvestmentManager.deployLiquidityPool(poolId, trancheId, address(erc20));
+
+        vm.expectRevert(bytes("TokenManager/not-the-gateway"));
+        evmTokenManager.updateTrancheTokenPrice(poolId, trancheId, price);
+    }
+
+    function testUpdatingTokenPriceForNonExistentTrancheFails(uint64 poolId, bytes16 trancheId, uint128 price) public {
+        homePools.addPool(poolId);
+
+        vm.expectRevert(bytes("TokenManager/unknown-token"));
+        homePools.updateTrancheTokenPrice(poolId, trancheId, price);
     }
 
     // helpers

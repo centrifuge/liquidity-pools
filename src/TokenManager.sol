@@ -3,6 +3,7 @@ pragma solidity ^0.8.18;
 pragma abicoder v2;
 
 import {ERC20Like} from "./token/Restricted.sol";
+import {MemberlistLike} from "./token/Memberlist.sol";
 import "./auth/auth.sol";
 
 interface GatewayLike {
@@ -35,6 +36,9 @@ interface EscrowLike {
 
 interface RestrictedTokenLike is ERC20Like {
     function hasMember(address user) external view returns (bool);
+    function updatePrice(uint128 _tokenPrice) external;
+    function memberlist() external returns (address);
+    function file(bytes32 what, string memory data) external;
 }
 
 contract TokenManager is Auth {
@@ -116,6 +120,34 @@ contract TokenManager is Auth {
     }
 
     // --- Incoming message handling ---
+    function updateTrancheTokenPrice(uint64 poolId, bytes16 trancheId, uint128 _price) public onlyGateway {
+        RestrictedTokenLike trancheToken = RestrictedTokenLike(investmentManager.getTrancheToken(poolId, trancheId));
+        require(address(trancheToken) != address(0), "TokenManager/unknown-token");
+
+        trancheToken.updatePrice(_price);
+    }
+
+    function updateTrancheTokenPrice(
+        uint64 poolId,
+        bytes16 trancheId,
+        string memory _tokenName,
+        string memory _tokenSymbol
+    ) public onlyGateway {
+        RestrictedTokenLike trancheToken = RestrictedTokenLike(investmentManager.getTrancheToken(poolId, trancheId));
+        require(address(trancheToken) != address(0), "TokenManager/unknown-token");
+
+        trancheToken.file("name", _tokenName);
+        trancheToken.file("symbol", _tokenSymbol);
+    }
+
+    function updateMember(uint64 poolId, bytes16 trancheId, address _user, uint64 _validUntil) public onlyGateway {
+        RestrictedTokenLike trancheToken = RestrictedTokenLike(investmentManager.getTrancheToken(poolId, trancheId));
+        require(address(trancheToken) != address(0), "TokenManager/unknown-token");
+
+        MemberlistLike memberlist = MemberlistLike(trancheToken.memberlist());
+        memberlist.updateMember(_user, _validUntil);
+    }
+
     /// @dev a global chain agnostic currency index is maintained on centrifuge chain. This function maps a currency from the centrifuge chain index to its corresponding address on the evm chain.
     /// The chain agnostic currency id has to be used to pass currency information to the centrifuge chain.
     /// @notice this function can only be executed by the gateway contract.

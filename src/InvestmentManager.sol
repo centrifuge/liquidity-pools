@@ -41,11 +41,6 @@ interface TokenManagerLike {
     function currencyAddressToId(address addr) external view returns (uint128);
 }
 
-interface TrancheTokenLike {
-    function updateTokenPrice(uint128 _tokenPrice) external;
-    function memberlist() external returns (address);
-}
-
 interface ERC20Like {
     function transferFrom(address from, address to, uint256 amount) external returns (bool);
     function balanceOf(address) external returns (uint256);
@@ -312,19 +307,6 @@ contract InvestmentManager is Auth {
         emit TrancheAdded(_poolId, _trancheId);
     }
 
-    function updateTokenPrice(uint64 _poolId, bytes16 _trancheId, uint128 _price) public onlyGateway {
-        Tranche storage tranche = tranches[_poolId][_trancheId];
-        require(tranche.token != address(0), "InvestmentManager/tranche-not-deployed");
-        TrancheTokenLike(tranche.token).updateTokenPrice(_price);
-    }
-
-    function updateMember(uint64 _poolId, bytes16 _trancheId, address _user, uint64 _validUntil) public onlyGateway {
-        Tranche storage tranche = tranches[_poolId][_trancheId];
-        require(tranche.token != address(0), "InvestmentManager/tranche-not-deployed");
-        MemberlistLike memberlist = MemberlistLike(TrancheTokenLike(tranche.token).memberlist());
-        memberlist.updateMember(_user, _validUntil);
-    }
-
     function handleExecutedCollectInvest(
         uint64 _poolId,
         bytes16 _trancheId,
@@ -578,6 +560,7 @@ contract InvestmentManager is Auth {
         require(tranche.createdAt > 0, "InvestmentManager/tranche-not-added");
         // deploy liquidity pool set gateway as admin on liquidityPool & memberlist
         address memberlist = memberlistFactory.newMemberlist(address(gateway), address(this));
+        AuthLike(memberlist).rely(address(tokenManager));
         MemberlistLike(memberlist).updateMember(address(escrow), type(uint256).max); // add escrow to tranche tokens memberlist
 
         address token = trancheTokenFactory.newTrancheToken(

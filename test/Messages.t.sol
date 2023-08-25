@@ -795,6 +795,52 @@ contract MessagesTest is Test {
         assertEq(decodedTrancheTokensRedeemed, trancheTokensRedeemed);
     }
 
+    function testUpdateTrancheTokenMetadata() public {
+        uint64 poolId = 1;
+        bytes16 trancheId = bytes16(hex"811acd5b3f17c06841c7e41e9e04cb1b");
+        string memory name = "Some Name";
+        string memory symbol = "SYMBOL";
+        bytes memory expectedHex =
+            hex"040000000000000001811acd5b3f17c06841c7e41e9e04cb1b536f6d65204e616d65000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000053594d424f4c0000000000000000000000000000000000000000000000000000";
+
+        assertEq(Messages.formatUpdateTrancheTokenMetadata(poolId, trancheId, name, symbol), expectedHex);
+
+        (
+            uint64 decodedPoolId,
+            bytes16 decodedTrancheId,
+            string memory decodedTokenName,
+            string memory decodedTokenSymbol
+        ) = Messages.parseUpdateTrancheTokenMetadata(expectedHex.ref(0));
+
+        assertEq(uint256(decodedPoolId), poolId);
+        assertEq(decodedTrancheId, trancheId);
+        assertEq(decodedTokenName, name);
+        assertEq(decodedTokenSymbol, symbol);
+    }
+
+    function testUpdateTrancheTokenMetadataEquivalence(
+        uint64 poolId,
+        bytes16 trancheId,
+        string memory tokenName,
+        string memory tokenSymbol
+    ) public {
+        bytes memory _message = Messages.formatUpdateTrancheTokenMetadata(poolId, trancheId, tokenName, tokenSymbol);
+        (
+            uint64 decodedPoolId,
+            bytes16 decodedTrancheId,
+            string memory decodedTokenName,
+            string memory decodedTokenSymbol
+        ) = Messages.parseUpdateTrancheTokenMetadata(_message.ref(0));
+        assertEq(uint256(decodedPoolId), uint256(poolId));
+        assertEq(decodedTrancheId, trancheId);
+        // Comparing raw input to output can erroneously fail when a byte string is given.
+        // Intended behaviour is that byte strings will be treated as bytes and converted to strings instead
+        // of treated as strings themselves. This conversion from string to bytes32 to string is used to simulate
+        // this intended behaviour.
+        assertEq(decodedTokenName, bytes32ToString(stringToBytes32(tokenName)));
+        assertEq(decodedTokenSymbol, bytes32ToString(stringToBytes32(tokenSymbol)));
+    }
+
     function testFormatDomainCentrifuge() public {
         assertEq(Messages.formatDomain(Messages.Domain.Centrifuge), hex"000000000000000000");
     }

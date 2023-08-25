@@ -17,8 +17,6 @@ interface InvestmentManagerLike {
         uint8 decimals,
         uint128 price
     ) external;
-    function updateMember(uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) external;
-    function updateTokenPrice(uint64 poolId, bytes16 trancheId, uint128 price) external;
     function handleExecutedDecreaseInvestOrder(
         uint64 poolId,
         bytes16 trancheId,
@@ -52,6 +50,14 @@ interface InvestmentManagerLike {
 }
 
 interface TokenManagerLike {
+    function updateMember(uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) external;
+    function updateTrancheTokenPrice(uint64 poolId, bytes16 trancheId, uint128 price) external;
+    function updateTrancheTokenMetadata(
+        uint64 poolId,
+        bytes16 trancheId,
+        string memory tokenName,
+        string memory tokenSymbol
+    ) external;
     function addCurrency(uint128 currency, address currencyAddress) external;
     function handleTransfer(uint128 currency, address recipient, uint128 amount) external;
     function handleTransferTrancheTokens(uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 amount)
@@ -303,10 +309,10 @@ contract Gateway is Auth {
             investmentManager.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price);
         } else if (Messages.isUpdateMember(_msg)) {
             (uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) = Messages.parseUpdateMember(_msg);
-            investmentManager.updateMember(poolId, trancheId, user, validUntil);
+            tokenManager.updateMember(poolId, trancheId, user, validUntil);
         } else if (Messages.isUpdateTrancheTokenPrice(_msg)) {
             (uint64 poolId, bytes16 trancheId, uint128 price) = Messages.parseUpdateTrancheTokenPrice(_msg);
-            investmentManager.updateTokenPrice(poolId, trancheId, price);
+            tokenManager.updateTrancheTokenPrice(poolId, trancheId, price);
         } else if (Messages.isTransfer(_msg)) {
             (uint128 currency, address recipient, uint128 amount) = Messages.parseIncomingTransfer(_msg);
             tokenManager.handleTransfer(currency, recipient, amount);
@@ -351,6 +357,10 @@ contract Gateway is Auth {
         } else if (Messages.isScheduleUpgrade(_msg)) {
             address spell = Messages.parseScheduleUpgrade(_msg);
             _scheduleShortRely(spell);
+        } else if (Messages.isUpdateTrancheTokenMetadata(_msg)) {
+            (uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol) =
+                Messages.parseUpdateTrancheTokenMetadata(_msg);
+            tokenManager.updateTrancheTokenMetadata(poolId, trancheId, tokenName, tokenSymbol);
         } else {
             revert("Gateway/invalid-message");
         }

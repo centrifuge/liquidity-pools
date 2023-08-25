@@ -68,8 +68,8 @@ contract RestrictedToken is ERC20 {
     }
 
     // auth functions
-    function updateTokenPrice(uint128 _tokenPrice) public auth {
-        latestPrice = _tokenPrice;
+    function updatePrice(uint128 _price) public auth {
+        latestPrice = _price;
         lastPriceUpdate = block.timestamp;
     }
 }
