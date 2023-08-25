@@ -29,24 +29,6 @@ interface TrancheTokenLike {
     function hasMember(address) external returns (bool);
 }
 
-// Liquidity Pool implementation for Centrifuge Pools following the EIP4626 standard.
-// Each Liquidity Pool is a tokenized vault issuing shares as restricted ERC20 tokens against stable currency deposits based on the current share price.
-// Liquidity Pool vault: Liquidity Pool asset value.
-// asset: The underlying stable currency of the Liquidity Pool. Note: 1 Centrifuge Pool can have multiple Liquidity Pools for the same Tranche token with different underlying currencies (assets).
-// share: The restricted ERC-20 Liquidity pool token. Has a ratio (token price) of underlying assets exchanged on deposit/withdraw/redeem. Liquidity pool tokens on evm represent tranche tokens on centrifuge chain (even though in the current implementation one tranche token on centrifuge chain can be split across multiple liquidity pool tokens on EVM).
-
-// Challenges:
-// 1. Centrifuge Pools and corresponding Tranches live on Centchain having their liquidity spread across multiple chains.
-// Latest Tranche Token token price is not available in the same block and is updated in an async manner from Centrifuge chain. Deposit & Redemption previews can only be made based on the latest price updates from Centrifuge chain.
-// 2. Pool Epochs: Deposits into and redemptions from Centrifuge Pools are subject to epochs. Deposit and redemption orders are collected during 24H epoch periods
-// and filled during epoch execution following the rules of the underlying pool. Consequently, deposits and redemptions are not instanty possible and have to follow the epoch schedule.
-// LiquidityPool is extending the EIP4626 standard by 'requestRedeem' & 'requestDeposit' functions, where redeem and deposit orders are submitted to the pools to be included in the execution of the following epoch.
-// After execution users can use the redeem and withdraw functions to get their shares and/or assets from the pools.
-
-// other EIP4626 implementations
-// maple: https://github.com/maple-labs/pool-v2/blob/301f05b4fe5e9202eef988b4c8321310b4e86dc8/contracts/Pool.sol
-// yearn: https://github.com/yearn/yearn-vaults-v3/blob/master/contracts/VaultV3.vy
-
 interface InvestmentManagerLike {
     function processDeposit(address _receiver, uint256 _assets) external returns (uint256);
     function processMint(address _receiver, uint256 _shares) external returns (uint256);
@@ -64,36 +46,43 @@ interface InvestmentManagerLike {
 
 /// @title LiquidityPool
 /// @author ilinzweilin
-/// @dev LiquidityPool is compliant with the EIP4626 & ERC20 standards
+/// @dev Liquidity Pool implementation for Centrifuge Pools following the EIP4626 standard.
+///
+/// @notice Each Liquidity Pool is a tokenized vault issuing shares as restricted ERC20 tokens against currency deposits based on the current share price.
+/// This is extending the EIP4626 standard by 'requestRedeem' & 'requestDeposit' functions, where redeem and deposit orders are submitted to the pools
+/// to be included in the execution of the following epoch. After execution users can use the redeem and withdraw functions to get their shares and/or assets from the pools.
 contract LiquidityPool is Auth {
     InvestmentManagerLike public investmentManager;
 
-    address public asset; // underlying stable ERC-20 stable currency
-    TrancheTokenLike public share; // underlying trache Token
+    /// @notice asset: The underlying stable currency of the Liquidity Pool. Note: 1 Centrifuge Pool can have multiple Liquidity Pools for the same Tranche token with different underlying currencies (assets).
+    address public asset;
 
-    // ids of the existing centrifuge chain pool and tranche that the liquidity pool belongs to
+    /// @notice share: The restricted ERC-20 Liquidity pool token. Has a ratio (token price) of underlying assets exchanged on deposit/withdraw/redeem. Liquidity pool tokens on evm represent tranche tokens on centrifuge chain (even though in the current implementation one tranche token on centrifuge chain can be split across multiple liquidity pool tokens on EVM).
+    TrancheTokenLike public share;
+
     uint64 public poolId;
     bytes16 public trancheId;
 
-    // events
+    // --- Events ---
+    event File(bytes32 indexed what, address data);
     event Deposit(address indexed sender, address indexed owner, uint256 assets, uint256 shares);
     event Withdraw(
         address indexed sender, address indexed receiver, address indexed owner, uint256 assets, uint256 shares
     );
-    event File(bytes32 indexed what, address data);
 
     constructor() {
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
     }
 
+    // --- Administration ---
     /// @dev investmentManager and asset address to be filed by the factory on deployment
-    function file(bytes32 _what, address _data) public auth {
-        if (_what == "investmentManager") investmentManager = InvestmentManagerLike(_data);
-        else if (_what == "asset") asset = _data;
-        else if (_what == "share") share = TrancheTokenLike(_data);
+    function file(bytes32 what, address data) public auth {
+        if (what == "investmentManager") investmentManager = InvestmentManagerLike(data);
+        else if (what == "asset") asset = data;
+        else if (what == "share") share = TrancheTokenLike(data);
         else revert("LiquidityPool/file-unrecognized-param");
-        emit File(_what, _data);
+        emit File(what, data);
     }
 
     /// @dev Centrifuge chain pool information to be filed by factory on deployment
@@ -103,6 +92,7 @@ contract LiquidityPool is Auth {
         trancheId = _trancheId;
     }
 
+    // --- ERC4626 functions ---
     /// @dev The total amount of vault shares
     /// @return Total amount of the underlying vault assets including accrued interest
     function totalAssets() public view returns (uint256) {
@@ -211,7 +201,7 @@ contract LiquidityPool is Auth {
         investmentManager.collectInvest(poolId, trancheId, _receiver, asset);
     }
 
-    // overwrite all ERC20 functions and pass the calls to the shares contract
+    // --- ERC20 overrides ---
     function totalSupply() public view returns (uint256) {
         return share.totalSupply();
     }
@@ -224,7 +214,6 @@ contract LiquidityPool is Auth {
         return share.transferFrom(msg.sender, _recipient, _amount);
     }
 
-    // test allowance
     function transferFrom(address _sender, address _recipient, uint256 _amount) public auth returns (bool) {
         return share.transferFrom(_sender, _recipient, _amount);
     }
@@ -253,8 +242,7 @@ contract LiquidityPool is Auth {
         return share.allowance(_owner, _spender);
     }
 
-    // restricted token functions
-
+    // --- Restrictions ---
     function latestPrice() public view returns (uint256) {
         return share.latestPrice();
     }

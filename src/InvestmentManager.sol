@@ -140,7 +140,7 @@ contract InvestmentManager is Auth {
         emit File(what, data);
     }
 
-    // --- liquidity pool outgoing message handling ---
+    // --- Outgoing message handling ---
     /// @dev request tranche token redemption. Liquidity pools have to request redemptions from the centrifuge chain before actual currency payouts can be done.
     /// The redemption requests are added to the order book on centrifuge chain. Once the next epoch is executed on centrifuge chain, liquidity pools can proceed with currency payouts in case their orders got fullfilled.
     /// @notice The user tranche tokens required to fullfill the redemption request have to be locked, even though the currency payout can only happen after epoch execution.

@@ -67,7 +67,7 @@ contract TokenManager is Auth {
         emit File(what, data);
     }
 
-    // --- public outgoing message handling ---
+    // --- Outgoing message handling ---
     function transfer(address currencyAddress, bytes32 recipient, uint128 amount) public {
         uint128 currency = currencyAddressToId[currencyAddress];
         require(currency != 0, "TokenManager/unknown-currency");
