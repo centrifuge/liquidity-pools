@@ -83,7 +83,6 @@ contract TrancheTokenFactory {
         token.file("symbol", _symbol);
         token.file("memberlist", _memberlist);
 
-        token.deny(msg.sender);
         token.rely(_admin);
         token.rely(_investmentManager); // to be able to update tokenPrices
         token.deny(address(this));
