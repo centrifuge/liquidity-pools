@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.18;
+// SPDX-License-Identifier: AGPL-3.0-only
 pragma abicoder v2;
 
 import {Root} from "../src/Root.sol";
@@ -227,7 +227,6 @@ contract InvestmentManagerTest is Test {
         assertEq(lPool.poolId(), poolId);
         assertEq(lPool.trancheId(), trancheId);
 
-        assertTrue(lPool.wards(address(gateway)) == 1);
         assertTrue(lPool.wards(address(evmInvestmentManager)) == 1);
         assertTrue(lPool.wards(address(this)) == 0);
         assertTrue(evmInvestmentManager.wards(lPoolAddress) == 1);
@@ -237,7 +236,6 @@ contract InvestmentManagerTest is Test {
         assertEq(trancheToken.decimals(), decimals);
         assertTrue(trancheToken.hasMember(address(evmInvestmentManager.escrow())));
 
-        assertTrue(trancheToken.wards(address(gateway)) == 1);
         assertTrue(trancheToken.wards(address(evmInvestmentManager)) == 1);
         assertTrue(trancheToken.wards(lPool_) == 1);
         assertTrue(trancheToken.wards(address(this)) == 0);
@@ -322,6 +320,7 @@ contract InvestmentManagerTest is Test {
     ) public {
         vm.assume(currency > 0);
         ERC20 erc20 = newErc20("X's Dollar", "USDX", 42);
+
         homePools.addPool(poolId); // add pool
         homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price); // add tranche
 

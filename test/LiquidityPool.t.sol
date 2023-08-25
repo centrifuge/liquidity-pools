@@ -44,11 +44,13 @@ contract LiquidityPoolTest is Test {
         escrow = new Escrow();
         root = new Root(address(escrow), 48 hours);
         erc20 = newErc20("X's Dollar", "USDX", 42);
-        address liquidityPoolFactory_ = address(new LiquidityPoolFactory(address(root)));
-        address trancheTokenFactory_ = address(new TrancheTokenFactory(address(root)));
+        LiquidityPoolFactory liquidityPoolFactory_ = new LiquidityPoolFactory(address(root));
+        TrancheTokenFactory trancheTokenFactory_ = new TrancheTokenFactory(address(root));
 
         evmInvestmentManager =
-            new InvestmentManager(address(escrow), liquidityPoolFactory_, trancheTokenFactory_);
+            new InvestmentManager(address(escrow), address(liquidityPoolFactory_), address(trancheTokenFactory_));
+        liquidityPoolFactory_.rely(address(evmInvestmentManager));
+        trancheTokenFactory_.rely(address(evmInvestmentManager));
         evmTokenManager = new TokenManager(address(escrow));
 
         mockXcmRouter = new MockXcmRouter(address(evmInvestmentManager));

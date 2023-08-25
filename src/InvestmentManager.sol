@@ -107,11 +107,7 @@ contract InvestmentManager is Auth {
     event LiquidityPoolDeployed(uint64 indexed poolId, bytes16 indexed trancheId, address indexed liquidityPoool);
     event TrancheTokenDeployed(uint64 indexed poolId, bytes16 indexed trancheId);
 
-    constructor(
-        address escrow_,
-        address liquidityPoolFactory_,
-        address trancheTokenFactory_
-    ) {
+    constructor(address escrow_, address liquidityPoolFactory_, address trancheTokenFactory_) {
         escrow = EscrowLike(escrow_);
         liquidityPoolFactory = LiquidityPoolFactoryLike(liquidityPoolFactory_);
         trancheTokenFactory = TrancheTokenFactoryLike(trancheTokenFactory_);
@@ -525,29 +521,6 @@ contract InvestmentManager is Auth {
     }
 
     // ----- public functions
-    function deployLiquidityPool(uint64 poolId, bytes16 trancheId, address _currency) public returns (address) {
-        address liquidityPool = liquidityPools[poolId][trancheId][_currency];
-        require(liquidityPool == address(0), "InvestmentManager/liquidityPool-already-deployed");
-        require(pools[poolId].createdAt > 0, "InvestmentManager/pool-does-not-exist");
-        Tranche storage tranche = tranches[poolId][trancheId];
-        require(tranche.token != address(0), "InvestmentManager/tranche-does-not-exist"); // tranche must have been added
-        require(_poolCurrencyCheck(poolId, _currency), "InvestmentManager/currency-not-supported"); // currency must be supported by pool
-        uint128 currencyId = tokenManager.currencyAddressToId(_currency);
-
-        liquidityPool = liquidityPoolFactory.newLiquidityPool(
-            poolId, trancheId, currencyId, _currency, tranche.token, address(this)
-        );
-
-        EscrowLike(escrow).approve(tranche.token, liquidityPool, type(uint256).max);
-        liquidityPools[poolId][trancheId][_currency] = liquidityPool;
-        wards[liquidityPool] = 1;
-        // enable connectors to take the liquidity pool tokens out of escrow in case if investments
-        AuthLike(tranche.token).rely(liquidityPool); // add liquidityPool as ward on tranche Token
-
-        emit LiquidityPoolDeployed(poolId, trancheId, liquidityPool);
-        return liquidityPool;
-    }
-
     function deployTranche(uint64 poolId, bytes16 trancheId) public returns (address) {
         Tranche storage tranche = tranches[poolId][trancheId];
         require(tranche.token == address(0), "InvestmentManager/tranche-already-deployed");
@@ -556,6 +529,7 @@ contract InvestmentManager is Auth {
         address token = trancheTokenFactory.newTrancheToken(
             poolId,
             trancheId,
+            address(this),
             address(tokenManager),
             tranche.tokenName,
             tranche.tokenSymbol,
@@ -565,6 +539,31 @@ contract InvestmentManager is Auth {
         tranche.token = token;
         emit TrancheTokenDeployed(poolId, trancheId);
         return token;
+    }
+
+    function deployLiquidityPool(uint64 poolId, bytes16 trancheId, address _currency) public returns (address) {
+        address liquidityPool = liquidityPools[poolId][trancheId][_currency];
+        require(liquidityPool == address(0), "InvestmentManager/liquidityPool-already-deployed");
+        require(pools[poolId].createdAt > 0, "InvestmentManager/pool-does-not-exist");
+
+        Tranche storage tranche = tranches[poolId][trancheId];
+        require(tranche.token != address(0), "InvestmentManager/tranche-does-not-exist"); // tranche must have been added
+        require(_poolCurrencyCheck(poolId, _currency), "InvestmentManager/currency-not-supported"); // currency must be supported by pool
+
+        uint128 currencyId = tokenManager.currencyAddressToId(_currency);
+        liquidityPool = liquidityPoolFactory.newLiquidityPool(
+            poolId, trancheId, currencyId, _currency, tranche.token, address(this)
+        );
+
+        EscrowLike(escrow).approve(tranche.token, liquidityPool, type(uint256).max);
+        liquidityPools[poolId][trancheId][_currency] = liquidityPool;
+        wards[liquidityPool] = 1;
+
+        // enable connectors to take the liquidity pool tokens out of escrow in case if investments
+        AuthLike(tranche.token).rely(liquidityPool); // add liquidityPool as ward on tranche Token
+
+        emit LiquidityPoolDeployed(poolId, trancheId, liquidityPool);
+        return liquidityPool;
     }
 
     // ------ helper functions

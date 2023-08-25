@@ -22,7 +22,6 @@ interface LiquidityPoolFactoryLike {
 }
 
 contract LiquidityPoolFactory is Auth {
-
     address root;
 
     constructor(address _root) {
@@ -65,6 +64,7 @@ interface TrancheTokenFactoryLike {
     function newTrancheToken(
         uint64 poolId,
         bytes16 trancheId,
+        address investmentManager,
         address tokenManager,
         string memory name,
         string memory symbol,
@@ -85,6 +85,7 @@ contract TrancheTokenFactory is Auth {
     function newTrancheToken(
         uint64 poolId,
         bytes16 trancheId,
+        address investmentManager,
         address tokenManager,
         string memory name,
         string memory symbol,
@@ -103,7 +104,8 @@ contract TrancheTokenFactory is Auth {
         token.file("memberlist", memberlist);
 
         token.rely(root);
-        token.rely(tokenManager); // to be able to update tokenPrices
+        token.rely(investmentManager); // to be able to add LPs as wards
+        token.rely(tokenManager); // to be able to update token prices
         token.deny(address(this));
 
         return address(token);

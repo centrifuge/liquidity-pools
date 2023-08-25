@@ -35,9 +35,13 @@ contract TokenManagerTest is Test {
         vm.chainId(1);
         address escrow_ = address(new Escrow());
         address root_ = address(new Root(address(escrow_), 48 hours));
+        LiquidityPoolFactory liquidityPoolFactory_ = new LiquidityPoolFactory(root_);
+        TrancheTokenFactory trancheTokenFactory_ = new TrancheTokenFactory(root_);
 
         evmInvestmentManager =
-            new InvestmentManager(escrow_, address(new LiquidityPoolFactory(root_)), address(new TrancheTokenFactory(root_)));
+            new InvestmentManager(escrow_, address(liquidityPoolFactory_), address(trancheTokenFactory_));
+        liquidityPoolFactory_.rely(address(evmInvestmentManager));
+        trancheTokenFactory_.rely(address(evmInvestmentManager));
         evmTokenManager = new TokenManager(escrow_);
 
         mockXcmRouter = new MockXcmRouter(address(evmInvestmentManager));

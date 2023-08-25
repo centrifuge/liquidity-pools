@@ -36,8 +36,7 @@ contract Deployer is Script {
         root = new Root(address(escrow), delay);
         address liquidityPoolFactory = address(new LiquidityPoolFactory(address(root)));
         address trancheTokenFactory = address(new TrancheTokenFactory(address(root)));
-        investmentManager =
-            new InvestmentManager(address(escrow), liquidityPoolFactory, trancheTokenFactory);
+        investmentManager = new InvestmentManager(address(escrow), liquidityPoolFactory, trancheTokenFactory);
     }
 
     function wire(address router) public {
