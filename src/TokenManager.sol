@@ -113,32 +113,32 @@ contract TokenManager is Auth {
     }
 
     // --- Incoming message handling ---
-    function updateTrancheTokenPrice(uint64 poolId, bytes16 trancheId, uint128 _price) public onlyGateway {
+    function updateTrancheTokenPrice(uint64 poolId, bytes16 trancheId, uint128 price) public onlyGateway {
         TrancheTokenLike trancheToken = TrancheTokenLike(investmentManager.getTrancheToken(poolId, trancheId));
         require(address(trancheToken) != address(0), "TokenManager/unknown-token");
 
-        trancheToken.updatePrice(_price);
+        trancheToken.updatePrice(price);
     }
 
     function updateTrancheTokenPrice(
         uint64 poolId,
         bytes16 trancheId,
-        string memory _tokenName,
-        string memory _tokenSymbol
+        string memory tokenName,
+        string memory tokenSymbol
     ) public onlyGateway {
         TrancheTokenLike trancheToken = TrancheTokenLike(investmentManager.getTrancheToken(poolId, trancheId));
         require(address(trancheToken) != address(0), "TokenManager/unknown-token");
 
-        trancheToken.file("name", _tokenName);
-        trancheToken.file("symbol", _tokenSymbol);
+        trancheToken.file("name", tokenName);
+        trancheToken.file("symbol", tokenSymbol);
     }
 
-    function updateMember(uint64 poolId, bytes16 trancheId, address _user, uint64 _validUntil) public onlyGateway {
+    function updateMember(uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) public onlyGateway {
         TrancheTokenLike trancheToken = TrancheTokenLike(investmentManager.getTrancheToken(poolId, trancheId));
         require(address(trancheToken) != address(0), "TokenManager/unknown-token");
 
         MemberlistLike memberlist = MemberlistLike(trancheToken.memberlist());
-        memberlist.updateMember(_user, _validUntil);
+        memberlist.updateMember(user, validUntil);
     }
 
     /// @dev a global chain agnostic currency index is maintained on centrifuge chain. This function maps a currency from the centrifuge chain index to its corresponding address on the evm chain.
