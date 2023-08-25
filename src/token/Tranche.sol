@@ -21,13 +21,14 @@ interface ERC20Like {
     function approve(address _spender, uint256 _value) external returns (bool);
 }
 
-interface RestrictedTokenLike is ERC20Like {
-    function memberlist() external view returns (address);
+interface TrancheTokenLike is ERC20Like {
     function hasMember(address user) external view returns (bool);
-    function file(bytes32 contractName, address addr) external;
+    function updatePrice(uint128 _tokenPrice) external;
+    function memberlist() external returns (address);
+    function file(bytes32 what, string memory data) external;
 }
 
-contract RestrictedToken is ERC20 {
+contract TrancheToken is ERC20 {
     MemberlistLike public memberlist;
 
     uint128 public latestPrice; // tokenPrice
@@ -46,7 +47,7 @@ contract RestrictedToken is ERC20 {
     // --- Administration ---
     function file(bytes32 what, address data) external virtual auth {
         if (what == "memberlist") memberlist = MemberlistLike(data);
-        else revert("file-unrecognized-param");
+        else revert("TrancheToken/file-unrecognized-param");
         emit File(what, data);
     }
 
@@ -67,9 +68,9 @@ contract RestrictedToken is ERC20 {
         return super.mint(to, value);
     }
 
-    // auth functions
-    function updateTokenPrice(uint128 _tokenPrice) public auth {
-        latestPrice = _tokenPrice;
+    // --- Pricing ---
+    function updatePrice(uint128 _price) public auth {
+        latestPrice = _price;
         lastPriceUpdate = block.timestamp;
     }
 }

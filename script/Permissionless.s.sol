@@ -30,7 +30,7 @@ contract PermissionlessScript is Deployer {
         investmentManager.deployLiquidityPool(
             1171854325, 0x102f4ef817340a8839a515d2c73a7c1d, 0xd35CCeEAD182dcee0F148EbaC9447DA2c4D449c4
         );
-        investmentManager.updateMember(1171854325, 0x102f4ef817340a8839a515d2c73a7c1d, admin, type(uint64).max);
+        tokenManager.updateMember(1171854325, 0x102f4ef817340a8839a515d2c73a7c1d, admin, type(uint64).max);
 
         giveAdminAccess();
         removeDeployerAccess(address(router));

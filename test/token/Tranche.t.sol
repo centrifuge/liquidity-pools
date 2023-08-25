@@ -2,7 +2,7 @@
 pragma solidity ^0.8.18;
 pragma abicoder v2;
 
-import {RestrictedToken} from "src/token/Restricted.sol";
+import {TrancheToken} from "src/token/Tranche.sol";
 import {MemberlistLike, Memberlist} from "src/token/Memberlist.sol";
 import "forge-std/Test.sol";
 
@@ -10,12 +10,12 @@ interface ERC20Like {
     function balanceOf(address) external view returns (uint256);
 }
 
-contract RestrictedTokenTest is Test {
-    RestrictedToken token;
+contract TrancheTokenTest is Test {
+    TrancheToken token;
     Memberlist memberlist;
 
     function setUp() public {
-        token = new RestrictedToken(18);
+        token = new TrancheToken(18);
         token.file("name", "Some Token");
         token.file("symbol", "ST");
 
@@ -41,7 +41,7 @@ contract RestrictedTokenTest is Test {
         vm.assume(baseAssumptions(validUntil, targetUser));
 
         token.mint(address(this), amount);
-        vm.expectRevert(bytes("RestrictedToken/not-allowed-to-hold-token"));
+        vm.expectRevert(bytes("Memberlist/not-allowed-to-hold-token"));
         token.transferFrom(address(this), targetUser, amount);
         assertEq(token.balanceOf(targetUser), 0);
     }
@@ -55,7 +55,7 @@ contract RestrictedTokenTest is Test {
         vm.warp(block.timestamp + 1);
 
         token.mint(address(this), amount);
-        vm.expectRevert(bytes("RestrictedToken/not-allowed-to-hold-token"));
+        vm.expectRevert(bytes("Memberlist/not-allowed-to-hold-token"));
         token.transferFrom(address(this), targetUser, amount);
         assertEq(token.balanceOf(targetUser), 0);
     }
@@ -76,7 +76,7 @@ contract RestrictedTokenTest is Test {
         vm.assume(baseAssumptions(validUntil, targetUser));
 
         token.mint(address(this), amount);
-        vm.expectRevert(bytes("RestrictedToken/not-allowed-to-hold-token"));
+        vm.expectRevert(bytes("Memberlist/not-allowed-to-hold-token"));
         token.transfer(targetUser, amount);
         assertEq(token.balanceOf(targetUser), 0);
     }
@@ -90,7 +90,7 @@ contract RestrictedTokenTest is Test {
         vm.warp(block.timestamp + 1);
 
         token.mint(address(this), amount);
-        vm.expectRevert(bytes("RestrictedToken/not-allowed-to-hold-token"));
+        vm.expectRevert(bytes("Memberlist/not-allowed-to-hold-token"));
         token.transfer(targetUser, amount);
         assertEq(token.balanceOf(targetUser), 0);
     }
@@ -109,7 +109,7 @@ contract RestrictedTokenTest is Test {
     function testMintTokensToNonMemberFails(uint256 amount, address targetUser, uint256 validUntil) public {
         vm.assume(baseAssumptions(validUntil, targetUser));
 
-        vm.expectRevert(bytes("RestrictedToken/not-allowed-to-hold-token"));
+        vm.expectRevert(bytes("Memberlist/not-allowed-to-hold-token"));
         token.mint(targetUser, amount);
         assertEq(token.balanceOf(targetUser), 0);
     }
@@ -122,7 +122,7 @@ contract RestrictedTokenTest is Test {
 
         vm.warp(block.timestamp + 1);
 
-        vm.expectRevert(bytes("RestrictedToken/not-allowed-to-hold-token"));
+        vm.expectRevert(bytes("Memberlist/not-allowed-to-hold-token"));
         token.mint(targetUser, amount);
         assertEq(token.balanceOf(targetUser), 0);
     }
