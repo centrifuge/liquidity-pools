@@ -559,7 +559,7 @@ contract InvestmentManager is Auth {
         liquidityPools[poolId][trancheId][_currency] = liquidityPool;
         wards[liquidityPool] = 1;
 
-        // enable connectors to take the liquidity pool tokens out of escrow in case if investments
+        // enable LP to take the liquidity pool tokens out of escrow in case if investments
         AuthLike(tranche.token).rely(liquidityPool); // add liquidityPool as ward on tranche Token
 
         emit LiquidityPoolDeployed(poolId, trancheId, liquidityPool);

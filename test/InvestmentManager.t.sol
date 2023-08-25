@@ -214,7 +214,7 @@ contract InvestmentManagerTest is Test {
 
         address trancheToken_ = evmInvestmentManager.deployTranche(poolId, trancheId);
         address lPoolAddress = evmInvestmentManager.deployLiquidityPool(poolId, trancheId, address(erc20));
-        address lPool_ = evmInvestmentManager.liquidityPools(poolId, trancheId, address(erc20)); // make sure the pool was stored in connectors
+        address lPool_ = evmInvestmentManager.liquidityPools(poolId, trancheId, address(erc20)); // make sure the pool was stored in LP
 
         // make sure the pool was added to the tranche struct
         assertEq(lPoolAddress, lPool_);
