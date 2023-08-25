@@ -71,7 +71,7 @@ contract Root is Auth {
         schedule[target] = 0;
     }
 
-    /// --- Ward management ---
+    /// --- External contract ward management ---
     /// @notice  can be called by any ward on the Root contract
     /// to make an arbitrary address a ward on any contract(requires the root contract to be a ward)
     /// @param target the address of the contract

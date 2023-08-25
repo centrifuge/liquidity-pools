@@ -375,8 +375,7 @@ contract InvestmentManager is Auth {
         );
     }
 
-    // --- Liquidity Pool Function ---
-
+    // --- View functions ---
     /// @return currencyAmount is type of uin256 to support the EIP4626 Liquidity Pool interface
     function maxDeposit(address user, address liquidityPool) public view returns (uint256 currencyAmount) {
         currencyAmount = uint256(orderbook[user][liquidityPool].maxDeposit);
@@ -397,6 +396,7 @@ contract InvestmentManager is Auth {
         trancheTokenAmount = uint256(orderbook[user][liquidityPool].maxRedeem);
     }
 
+    // --- Liquidity Pool processing functions ---
     /// @dev processes user's currency deposit / investment after the epoch has been executed on Centrifuge chain.
     /// In case user's invest order was fullfilled on Centrifuge chain during epoch execution MaxDeposit and MaxMint are increased and trancheTokens can be transferred to user's wallet on calling processDeposit.
     /// Note: The currency required to fullfill the invest order is already locked in escrow upon calling requestDeposit.
@@ -520,7 +520,7 @@ contract InvestmentManager is Auth {
         emit RedemptionProcessed(liquidityPool, user, _trancheTokenAmount);
     }
 
-    // ----- public functions
+    // --- Public functions ---
     function deployTranche(uint64 poolId, bytes16 trancheId) public returns (address) {
         Tranche storage tranche = tranches[poolId][trancheId];
         require(tranche.token == address(0), "InvestmentManager/tranche-already-deployed");
@@ -566,7 +566,7 @@ contract InvestmentManager is Auth {
         return liquidityPool;
     }
 
-    // ------ helper functions
+    // --- Helpers ---
     function getTrancheToken(uint64 poolId, bytes16 trancheId) public view returns (address) {
         Tranche storage tranche = tranches[poolId][trancheId];
         return tranche.token;
