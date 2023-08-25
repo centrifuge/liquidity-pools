@@ -15,8 +15,6 @@ import {MemberlistLike, Memberlist} from "../src/token/Memberlist.sol";
 import {MockHomeLiquidityPools} from "./mock/MockHomeLiquidityPools.sol";
 import {MockXcmRouter} from "./mock/MockXcmRouter.sol";
 import {Messages} from "../src/gateway/Messages.sol";
-import {PauseAdmin} from "../src//admins/PauseAdmin.sol";
-import {DelayedAdmin} from "../src//admins/DelayedAdmin.sol";
 import "forge-std/Test.sol";
 import "../src/InvestmentManager.sol";
 
@@ -57,15 +55,9 @@ contract LiquidityPoolTest is Test {
         mockXcmRouter = new MockXcmRouter(address(evmInvestmentManager));
 
         homePools = new MockHomeLiquidityPools(address(mockXcmRouter));
-        PauseAdmin pauseAdmin = new PauseAdmin();
-        DelayedAdmin delayedAdmin = new DelayedAdmin();
 
         gateway =
             new Gateway(address(root), address(evmInvestmentManager), address(evmTokenManager), address(mockXcmRouter));
-        gateway.rely(address(pauseAdmin));
-        gateway.rely(address(delayedAdmin));
-        pauseAdmin.file("root", address(root));
-        delayedAdmin.file("root", address(root));
         evmInvestmentManager.file("gateway", address(gateway));
         evmInvestmentManager.file("tokenManager", address(evmTokenManager));
         evmTokenManager.file("gateway", address(gateway));

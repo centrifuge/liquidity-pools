@@ -7,8 +7,8 @@ import {Gateway, InvestmentManagerLike} from "src/gateway/Gateway.sol";
 import {InvestmentManager} from "src/InvestmentManager.sol";
 import {TokenManager} from "src/TokenManager.sol";
 import {Escrow} from "src/Escrow.sol";
-import {PauseAdmin} from "src//admins/PauseAdmin.sol";
-import {DelayedAdmin} from "src//admins/DelayedAdmin.sol";
+import {PauseAdmin} from "src/admins/PauseAdmin.sol";
+import {DelayedAdmin} from "src/admins/DelayedAdmin.sol";
 import {LiquidityPoolFactory, MemberlistFactory, TrancheTokenFactory} from "src/util/Factory.sol";
 import "forge-std/Script.sol";
 
