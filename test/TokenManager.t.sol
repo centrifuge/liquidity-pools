@@ -9,7 +9,7 @@ import {Escrow} from "../src/Escrow.sol";
 import {LiquidityPoolFactory, MemberlistFactory, TrancheTokenFactory} from "../src/liquidityPool/Factory.sol";
 import {LiquidityPool} from "../src/liquidityPool/LiquidityPool.sol";
 import {ERC20} from "../src/token/ERC20.sol";
-import {RestrictedToken} from "../src/token/Restricted.sol";
+import {TrancheToken} from "../src/token/Tranche.sol";
 
 import {MemberlistLike, Memberlist} from "../src/token/Memberlist.sol";
 import {MockHomeLiquidityPools} from "./mock/MockHomeLiquidityPools.sol";
@@ -364,8 +364,8 @@ contract TokenManagerTest is Test {
         address tranche_ = evmInvestmentManager.deployTranche(poolId, trancheId);
 
         homePools.updateTrancheTokenPrice(poolId, trancheId, price);
-        assertEq(RestrictedToken(tranche_).latestPrice(), price);
-        assertEq(RestrictedToken(tranche_).lastPriceUpdate(), block.timestamp);
+        assertEq(TrancheToken(tranche_).latestPrice(), price);
+        assertEq(TrancheToken(tranche_).lastPriceUpdate(), block.timestamp);
     }
 
     function testUpdatingTokenPriceAsNonRouterFails(

@@ -8,7 +8,7 @@ import {Gateway} from "../src/Gateway.sol";
 import {Escrow} from "../src/Escrow.sol";
 import {LiquidityPoolFactory, TrancheTokenFactory, MemberlistFactory} from "../src/liquidityPool/Factory.sol";
 import {LiquidityPool} from "../src/liquidityPool/LiquidityPool.sol";
-import {RestrictedToken} from "../src/token/Restricted.sol";
+import {TrancheToken} from "../src/token/Tranche.sol";
 import {ERC20} from "../src/token/ERC20.sol";
 
 import {MemberlistLike, Memberlist} from "../src/token/Memberlist.sol";
@@ -230,7 +230,7 @@ contract InvestmentManagerTest is Test {
 
         // check LiquidityPool state
         LiquidityPool lPool = LiquidityPool(lPool_);
-        RestrictedToken trancheToken = RestrictedToken(trancheToken_);
+        TrancheToken trancheToken = TrancheToken(trancheToken_);
         assertEq(address(lPool.investmentManager()), address(evmInvestmentManager));
         assertEq(lPool.asset(), address(erc20));
         assertEq(lPool.poolId(), poolId);

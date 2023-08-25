@@ -2,7 +2,7 @@
 pragma solidity ^0.8.18;
 pragma abicoder v2;
 
-import {ERC20Like} from "./token/Restricted.sol";
+import {TrancheTokenLike, ERC20Like} from "./token/Tranche.sol";
 import {MemberlistLike} from "./token/Memberlist.sol";
 import "./auth/auth.sol";
 
@@ -32,13 +32,6 @@ interface InvestmentManagerLike {
 
 interface EscrowLike {
     function approve(address token, address spender, uint256 value) external;
-}
-
-interface RestrictedTokenLike is ERC20Like {
-    function hasMember(address user) external view returns (bool);
-    function updatePrice(uint128 _tokenPrice) external;
-    function memberlist() external returns (address);
-    function file(bytes32 what, string memory data) external;
 }
 
 contract TokenManager is Auth {
@@ -92,7 +85,7 @@ contract TokenManager is Auth {
         bytes32 destinationAddress,
         uint128 amount
     ) public {
-        RestrictedTokenLike trancheToken = RestrictedTokenLike(investmentManager.getTrancheToken(poolId, trancheId));
+        TrancheTokenLike trancheToken = TrancheTokenLike(investmentManager.getTrancheToken(poolId, trancheId));
         require(address(trancheToken) != address(0), "TokenManager/unknown-token");
 
         require(trancheToken.balanceOf(msg.sender) >= amount, "TokenManager/insufficient-balance");
@@ -108,7 +101,7 @@ contract TokenManager is Auth {
         address destinationAddress,
         uint128 amount
     ) public {
-        RestrictedTokenLike trancheToken = RestrictedTokenLike(investmentManager.getTrancheToken(poolId, trancheId));
+        TrancheTokenLike trancheToken = TrancheTokenLike(investmentManager.getTrancheToken(poolId, trancheId));
         require(address(trancheToken) != address(0), "TokenManager/unknown-token");
 
         require(trancheToken.balanceOf(msg.sender) >= amount, "TokenManager/insufficient-balance");
@@ -121,7 +114,7 @@ contract TokenManager is Auth {
 
     // --- Incoming message handling ---
     function updateTrancheTokenPrice(uint64 poolId, bytes16 trancheId, uint128 _price) public onlyGateway {
-        RestrictedTokenLike trancheToken = RestrictedTokenLike(investmentManager.getTrancheToken(poolId, trancheId));
+        TrancheTokenLike trancheToken = TrancheTokenLike(investmentManager.getTrancheToken(poolId, trancheId));
         require(address(trancheToken) != address(0), "TokenManager/unknown-token");
 
         trancheToken.updatePrice(_price);
@@ -133,7 +126,7 @@ contract TokenManager is Auth {
         string memory _tokenName,
         string memory _tokenSymbol
     ) public onlyGateway {
-        RestrictedTokenLike trancheToken = RestrictedTokenLike(investmentManager.getTrancheToken(poolId, trancheId));
+        TrancheTokenLike trancheToken = TrancheTokenLike(investmentManager.getTrancheToken(poolId, trancheId));
         require(address(trancheToken) != address(0), "TokenManager/unknown-token");
 
         trancheToken.file("name", _tokenName);
@@ -141,7 +134,7 @@ contract TokenManager is Auth {
     }
 
     function updateMember(uint64 poolId, bytes16 trancheId, address _user, uint64 _validUntil) public onlyGateway {
-        RestrictedTokenLike trancheToken = RestrictedTokenLike(investmentManager.getTrancheToken(poolId, trancheId));
+        TrancheTokenLike trancheToken = TrancheTokenLike(investmentManager.getTrancheToken(poolId, trancheId));
         require(address(trancheToken) != address(0), "TokenManager/unknown-token");
 
         MemberlistLike memberlist = MemberlistLike(trancheToken.memberlist());
@@ -181,7 +174,7 @@ contract TokenManager is Auth {
         public
         onlyGateway
     {
-        RestrictedTokenLike trancheToken = RestrictedTokenLike(investmentManager.getTrancheToken(poolId, trancheId));
+        TrancheTokenLike trancheToken = TrancheTokenLike(investmentManager.getTrancheToken(poolId, trancheId));
         require(address(trancheToken) != address(0), "TokenManager/unknown-token");
 
         require(trancheToken.hasMember(destinationAddress), "TokenManager/not-a-member");

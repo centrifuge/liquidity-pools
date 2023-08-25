@@ -8,7 +8,6 @@
 // import {PauseAdmin} from "src/admin/PauseAdmin.sol";
 // import {DelayedAdmin} from "src/admin/DelayedAdmin.sol";
 // import {LiquidityPoolFactory, MemberlistFactory} from "src/liquidityPool/Factory.sol";
-// import {RestrictedTokenLike} from "src/token/Restricted.sol";
 // import {ERC20} from "src/token/ERC20.sol";
 // import {MemberlistLike, Memberlist} from "src/token/Memberlist.sol";
 // import {MockHomeLiquidityPools} from "./mock/MockHomeLiquidityPools.sol";

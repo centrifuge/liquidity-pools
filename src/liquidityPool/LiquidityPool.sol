@@ -3,7 +3,7 @@ pragma solidity ^0.8.18;
 
 import "./../auth/auth.sol";
 
-interface RestrictedTokenERC20 {
+interface TrancheTokenLike {
     // erc20 functions
     function mint(address owner, uint256 amount) external;
     function burn(address owner, uint256 amount) external;
@@ -69,7 +69,7 @@ contract LiquidityPool is Auth {
     InvestmentManagerLike public investmentManager;
 
     address public asset; // underlying stable ERC-20 stable currency
-    RestrictedTokenERC20 public share; // underlying trache Token
+    TrancheTokenLike public share; // underlying trache Token
 
     // ids of the existing centrifuge chain pool and tranche that the liquidity pool belongs to
     uint64 public poolId;
@@ -91,7 +91,7 @@ contract LiquidityPool is Auth {
     function file(bytes32 _what, address _data) public auth {
         if (_what == "investmentManager") investmentManager = InvestmentManagerLike(_data);
         else if (_what == "asset") asset = _data;
-        else if (_what == "share") share = RestrictedTokenERC20(_data);
+        else if (_what == "share") share = TrancheTokenLike(_data);
         else revert("LiquidityPool/file-unrecognized-param");
         emit File(_what, _data);
     }

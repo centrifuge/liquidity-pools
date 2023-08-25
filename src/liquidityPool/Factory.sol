@@ -2,7 +2,7 @@
 pragma solidity ^0.8.18;
 
 import {LiquidityPool} from "./LiquidityPool.sol";
-import {RestrictedToken} from "../token/Restricted.sol";
+import {TrancheToken} from "../token/Tranche.sol";
 import {Memberlist} from "../token/Memberlist.sol";
 
 interface LiquidityPoolFactoryLike {
@@ -77,7 +77,7 @@ contract TrancheTokenFactory {
         // same tracnhe token address on every evm chain
         bytes32 salt = keccak256(abi.encodePacked(_poolId, _trancheId));
 
-        RestrictedToken token = new RestrictedToken{salt: salt}(_decimals);
+        TrancheToken token = new TrancheToken{salt: salt}(_decimals);
 
         token.file("name", _name);
         token.file("symbol", _symbol);
