@@ -3,7 +3,7 @@ pragma solidity ^0.8.18;
 pragma abicoder v2;
 
 import {Gateway} from "../Gateway.sol";
-import "./../auth/auth.sol";
+import "./../../util/Auth.sol";
 
 contract DelayedAdmin is Auth {
     Gateway public gateway;

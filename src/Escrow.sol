@@ -3,7 +3,7 @@
 // Copyright (C) 2021 Dai Foundation
 pragma solidity ^0.8.18;
 
-import "./auth/auth.sol";
+import "./util/Auth.sol";
 
 interface ApproveLike {
     function approve(address, uint256) external;

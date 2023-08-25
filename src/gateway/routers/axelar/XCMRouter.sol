@@ -2,7 +2,7 @@
 pragma solidity ^0.8.18;
 pragma abicoder v2;
 
-import "./../../auth/auth.sol";
+import "./../../../util/Auth.sol";
 
 struct Multilocation {
     uint8 parents;

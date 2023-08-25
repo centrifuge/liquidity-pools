@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.18;
 
-import {AxelarEVMRouter} from "src/routers/axelar/EVMRouter.sol";
-import {Gateway, InvestmentManagerLike} from "src/Gateway.sol";
+import {AxelarEVMRouter} from "src/gateway/routers/axelar/EVMRouter.sol";
+import {Gateway, InvestmentManagerLike} from "src/gateway/Gateway.sol";
 import {InvestmentManager} from "src/InvestmentManager.sol";
 import {TokenManager} from "src/TokenManager.sol";
 import {Escrow} from "src/Escrow.sol";
-import {PauseAdmin} from "src/admin/PauseAdmin.sol";
-import {DelayedAdmin} from "src/admin/DelayedAdmin.sol";
-import {LiquidityPoolFactory, MemberlistFactory, TrancheTokenFactory} from "src/liquidityPool/Factory.sol";
+import {PauseAdmin} from "src/gateway/admins/PauseAdmin.sol";
+import {DelayedAdmin} from "src/gateway/admins/DelayedAdmin.sol";
+import {LiquidityPoolFactory, MemberlistFactory, TrancheTokenFactory} from "src/util/Factory.sol";
 import "forge-std/Script.sol";
 
 interface RouterLike {

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.18;
 pragma abicoder v2;
 
-import "./../../src/auth/auth.sol";
+import "./../../src/util/Auth.sol";
 
 interface GatewayLike {
     function handle(bytes memory message) external;

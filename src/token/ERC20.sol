@@ -3,7 +3,7 @@
 // Copyright (C) 2021-2022 Foundation
 pragma solidity ^0.8.18;
 
-import "./../auth/auth.sol";
+import "./../util/Auth.sol";
 
 interface IERC1271 {
     function isValidSignature(bytes32, bytes memory) external view returns (bytes4);

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.18;
 
-import {LiquidityPool} from "./LiquidityPool.sol";
+import {LiquidityPool} from "../LiquidityPool.sol";
 import {TrancheToken} from "../token/Tranche.sol";
 import {Memberlist} from "../token/Memberlist.sol";
 

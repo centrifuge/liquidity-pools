@@ -2,8 +2,8 @@
 pragma solidity ^0.8.18;
 pragma abicoder v2;
 
-import {LiquidityPoolFactory, MemberlistFactory} from "src/liquidityPool/Factory.sol";
-import {LiquidityPool} from "src/liquidityPool/LiquidityPool.sol";
+import {LiquidityPoolFactory, MemberlistFactory} from "src/util/Factory.sol";
+import {LiquidityPool} from "src/LiquidityPool.sol";
 import "forge-std/Test.sol";
 
 contract FactoryTest is Test {

@@ -4,7 +4,7 @@ pragma abicoder v2;
 
 import {TypedMemView} from "memview-sol/TypedMemView.sol";
 import {Messages} from "./Messages.sol";
-import "./auth/auth.sol";
+import "../util/Auth.sol";
 
 interface InvestmentManagerLike {
     function addPool(uint64 poolId) external;
