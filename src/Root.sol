@@ -9,6 +9,8 @@ interface AuthLike {
 }
 
 contract Root is Auth {
+    address public immutable escrow;
+
     mapping(address => uint256) public schedule;
     uint256 public delay;
     bool public paused = false;
@@ -22,7 +24,8 @@ contract Root is Auth {
     event RelyContract(address target, address indexed user);
     event DenyContract(address target, address indexed user);
 
-    constructor(uint256 _delay) {
+    constructor(address _escrow, uint256 _delay) {
+        escrow = _escrow;
         delay = _delay;
 
         wards[msg.sender] = 1;

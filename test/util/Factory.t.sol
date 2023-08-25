@@ -2,8 +2,10 @@
 pragma solidity ^0.8.18;
 pragma abicoder v2;
 
-import {LiquidityPoolFactory, MemberlistFactory} from "src/util/Factory.sol";
+import {LiquidityPoolFactory} from "src/util/Factory.sol";
 import {LiquidityPool} from "src/LiquidityPool.sol";
+import {Root} from "src/Root.sol";
+import {Escrow} from "src/Escrow.sol";
 import "forge-std/Test.sol";
 
 contract FactoryTest is Test {
@@ -12,9 +14,13 @@ contract FactoryTest is Test {
     uint256 mainnetFork;
     uint256 polygonFork;
 
+    address root;
+
     function setUp() public {
         mainnetFork = vm.createFork(vm.envString("MAINNET_RPC_URL"));
         polygonFork = vm.createFork(vm.envString("POLYGON_RPC_URL"));
+
+        root = address(new Root(address(new Escrow()), 48 hours));
     }
 
     function testTokenFactoryIsDeterministicAcrossChains(
@@ -28,14 +34,14 @@ contract FactoryTest is Test {
         address admin
     ) public {
         vm.selectFork(mainnetFork);
-        LiquidityPoolFactory lpFactory1 = new LiquidityPoolFactory{ salt: SALT }();
-        address lp1 = lpFactory1.newLiquidityPool(poolId, trancheId, currency, asset, token, investmentManager, admin);
+        LiquidityPoolFactory lpFactory1 = new LiquidityPoolFactory{ salt: SALT }(root);
+        address lp1 = lpFactory1.newLiquidityPool(poolId, trancheId, currency, asset, token, investmentManager);
 
         vm.selectFork(polygonFork);
-        LiquidityPoolFactory lpFactory2 = new LiquidityPoolFactory{ salt: SALT }();
+        LiquidityPoolFactory lpFactory2 = new LiquidityPoolFactory{ salt: SALT }(root);
         assertEq(address(lpFactory1), address(lpFactory2));
         vm.prank(sender);
-        address lp2 = lpFactory2.newLiquidityPool(poolId, trancheId, currency, asset, token, investmentManager, admin);
+        address lp2 = lpFactory2.newLiquidityPool(poolId, trancheId, currency, asset, token, investmentManager);
         assertEq(address(lp1), address(lp2));
     }
 
@@ -54,7 +60,7 @@ contract FactoryTest is Test {
                 )
             )
         );
-        LiquidityPoolFactory lpFactory = new LiquidityPoolFactory{ salt: SALT }();
+        LiquidityPoolFactory lpFactory = new LiquidityPoolFactory{ salt: SALT }(root);
         assertEq(address(lpFactory), predictedAddress);
     }
 
@@ -67,7 +73,7 @@ contract FactoryTest is Test {
         address investmentManager,
         address admin
     ) public {
-        LiquidityPoolFactory lpFactory = new LiquidityPoolFactory{ salt: SALT }();
+        LiquidityPoolFactory lpFactory = new LiquidityPoolFactory{ salt: SALT }(root);
 
         bytes32 salt = keccak256(abi.encodePacked(poolId, trancheId, currency));
         address predictedAddress = address(
@@ -85,7 +91,7 @@ contract FactoryTest is Test {
             )
         );
 
-        address token = lpFactory.newLiquidityPool(poolId, trancheId, currency, asset, token, investmentManager, admin);
+        address token = lpFactory.newLiquidityPool(poolId, trancheId, currency, asset, token, investmentManager);
 
         assertEq(address(token), predictedAddress);
     }
@@ -113,44 +119,10 @@ contract FactoryTest is Test {
                 )
             )
         );
-        LiquidityPoolFactory lpFactory = new LiquidityPoolFactory{ salt: SALT }();
+        LiquidityPoolFactory lpFactory = new LiquidityPoolFactory{ salt: SALT }(root);
         assertEq(address(lpFactory), predictedAddress);
-        address lp1 = lpFactory.newLiquidityPool(poolId, trancheId, currency, asset, token, investmentManager, admin);
+        address lp1 = lpFactory.newLiquidityPool(poolId, trancheId, currency, asset, token, investmentManager);
         vm.expectRevert();
-        address lp2 = lpFactory.newLiquidityPool(poolId, trancheId, currency, asset, token, investmentManager, admin);
-    }
-
-    function testMemberlistFactoryIsDeterministicAcrossChains(address sender, address admin, address investmentManager)
-        public
-    {
-        vm.selectFork(mainnetFork);
-        MemberlistFactory memberlistFactory1 = new MemberlistFactory{ salt: SALT }();
-        address memberlist1 = memberlistFactory1.newMemberlist(admin, investmentManager);
-
-        vm.selectFork(polygonFork);
-        MemberlistFactory memberlistFactory2 = new MemberlistFactory{ salt: SALT }();
-        assertEq(address(memberlistFactory1), address(memberlistFactory2));
-        vm.prank(sender);
-        address memberlist2 = memberlistFactory2.newMemberlist(admin, investmentManager);
-        assertEq(address(memberlist1), address(memberlist2));
-    }
-
-    function testMemberlistShouldBeDeterministic() public {
-        address predictedAddress = address(
-            uint160(
-                uint256(
-                    keccak256(
-                        abi.encodePacked(
-                            bytes1(0xff),
-                            address(this),
-                            SALT,
-                            keccak256(abi.encodePacked(type(MemberlistFactory).creationCode))
-                        )
-                    )
-                )
-            )
-        );
-        MemberlistFactory memberlistFactory = new MemberlistFactory{ salt: SALT }();
-        assertEq(address(memberlistFactory), predictedAddress);
+        address lp2 = lpFactory.newLiquidityPool(poolId, trancheId, currency, asset, token, investmentManager);
     }
 }

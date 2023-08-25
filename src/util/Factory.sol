@@ -4,101 +4,118 @@ pragma solidity ^0.8.18;
 import {LiquidityPool} from "../LiquidityPool.sol";
 import {TrancheToken} from "../token/Tranche.sol";
 import {Memberlist} from "../token/Memberlist.sol";
+import {Auth} from "./Auth.sol";
+
+interface RootLike {
+    function escrow() external view returns (address);
+}
 
 interface LiquidityPoolFactoryLike {
     function newLiquidityPool(
-        uint64 _poolId,
-        bytes16 _trancheId,
-        uint128 _currencyId,
-        address _asset,
-        address _tranche,
-        address _investmentManager,
-        address _admin
+        uint64 poolId,
+        bytes16 trancheId,
+        uint128 currencyId,
+        address asset,
+        address trancheToken,
+        address investmentManager
     ) external returns (address);
 }
 
-interface TrancheTokenFactoryLike {
-    function newTrancheToken(
-        uint64 _poolId,
-        bytes16 _trancheId,
-        address _investmentManager,
-        address _memberlist,
-        string memory _name,
-        string memory _symbol,
-        uint8 _decimals,
-        address _admin
-    ) external returns (address);
-}
+contract LiquidityPoolFactory is Auth {
 
-contract LiquidityPoolFactory {
+    address root;
+
+    constructor(address _root) {
+        root = _root;
+
+        wards[msg.sender] = 1;
+        emit Rely(msg.sender);
+    }
+
     function newLiquidityPool(
-        uint64 _poolId,
-        bytes16 _trancheId,
-        uint128 _currencyId,
-        address _asset,
-        address _tranche,
-        address _investmentManager,
-        address _admin
-    ) public returns (address) {
+        uint64 poolId,
+        bytes16 trancheId,
+        uint128 currencyId,
+        address asset,
+        address trancheToken,
+        address investmentManager
+    ) public auth returns (address) {
         // Salt is hash(poolId + trancheId + asset), to deploy copies of the liquidity pool contract
         // on multiple chains with the same address for the same tranche and asset
-        bytes32 salt = keccak256(abi.encodePacked(_poolId, _trancheId, _currencyId));
+        bytes32 salt = keccak256(abi.encodePacked(poolId, trancheId, currencyId));
 
         LiquidityPool liquidityPool = new LiquidityPool{salt: salt}();
 
         // Name and symbol are not passed on constructor, such that if the same liquidity pool is deployed
         // on another chain with a different name (it might have changed in between deployments),
         // then the address remains deterministic.
-        liquidityPool.file("investmentManager", _investmentManager);
-        liquidityPool.file("asset", _asset);
-        liquidityPool.file("share", _tranche);
-        liquidityPool.setPoolDetails(_poolId, _trancheId);
+        liquidityPool.file("investmentManager", investmentManager);
+        liquidityPool.file("asset", asset);
+        liquidityPool.file("share", trancheToken);
+        liquidityPool.setPoolDetails(poolId, trancheId);
 
-        liquidityPool.rely(_admin);
-        liquidityPool.rely(_investmentManager); // to be able to update tokenPrices
+        liquidityPool.rely(root);
+        liquidityPool.rely(investmentManager); // to be able to update tokenPrices
         liquidityPool.deny(address(this));
         return address(liquidityPool);
     }
 }
 
-contract TrancheTokenFactory {
+interface TrancheTokenFactoryLike {
     function newTrancheToken(
-        uint64 _poolId,
-        bytes16 _trancheId,
-        address _investmentManager,
-        address _memberlist,
-        string memory _name,
-        string memory _symbol,
-        uint8 _decimals,
-        address _admin
-    ) public returns (address) {
+        uint64 poolId,
+        bytes16 trancheId,
+        address tokenManager,
+        string memory name,
+        string memory symbol,
+        uint8 decimals
+    ) external returns (address);
+}
+
+contract TrancheTokenFactory is Auth {
+    address root;
+
+    constructor(address _root) {
+        root = _root;
+
+        wards[msg.sender] = 1;
+        emit Rely(msg.sender);
+    }
+
+    function newTrancheToken(
+        uint64 poolId,
+        bytes16 trancheId,
+        address tokenManager,
+        string memory name,
+        string memory symbol,
+        uint8 decimals
+    ) public auth returns (address) {
+        address memberlist = _newMemberlist(tokenManager);
+
         // Salt is hash(poolId + trancheId )
         // same tracnhe token address on every evm chain
-        bytes32 salt = keccak256(abi.encodePacked(_poolId, _trancheId));
+        bytes32 salt = keccak256(abi.encodePacked(poolId, trancheId));
 
-        TrancheToken token = new TrancheToken{salt: salt}(_decimals);
+        TrancheToken token = new TrancheToken{salt: salt}(decimals);
 
-        token.file("name", _name);
-        token.file("symbol", _symbol);
-        token.file("memberlist", _memberlist);
+        token.file("name", name);
+        token.file("symbol", symbol);
+        token.file("memberlist", memberlist);
 
-        token.rely(_admin);
-        token.rely(_investmentManager); // to be able to update tokenPrices
+        token.rely(root);
+        token.rely(tokenManager); // to be able to update tokenPrices
         token.deny(address(this));
+
         return address(token);
     }
-}
 
-interface MemberlistFactoryLike {
-    function newMemberlist(address _admin, address _investmentManager) external returns (address);
-}
-
-contract MemberlistFactory {
-    function newMemberlist(address _admin, address _investmentManager) public returns (address memberList) {
+    function _newMemberlist(address tokenManager) internal returns (address memberList) {
         Memberlist memberlist = new Memberlist();
 
-        memberlist.rely(_admin);
-        memberlist.rely(_investmentManager);
+        memberlist.updateMember(RootLike(root).escrow(), type(uint256).max);
+
+        memberlist.rely(root);
+        memberlist.rely(tokenManager); // to be able to add members
         memberlist.deny(address(this));
 
         return (address(memberlist));

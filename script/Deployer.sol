@@ -9,7 +9,7 @@ import {TokenManager} from "src/TokenManager.sol";
 import {Escrow} from "src/Escrow.sol";
 import {PauseAdmin} from "src/admins/PauseAdmin.sol";
 import {DelayedAdmin} from "src/admins/DelayedAdmin.sol";
-import {LiquidityPoolFactory, MemberlistFactory, TrancheTokenFactory} from "src/util/Factory.sol";
+import {LiquidityPoolFactory, TrancheTokenFactory} from "src/util/Factory.sol";
 import "forge-std/Script.sol";
 
 interface RouterLike {
@@ -32,13 +32,12 @@ contract Deployer is Script {
     Gateway gateway;
 
     function deployInvestmentManager() public {
-        address liquidityPoolFactory = address(new LiquidityPoolFactory());
-        address trancheTokenFactory = address(new TrancheTokenFactory());
-        address memberlistFactory_ = address(new MemberlistFactory());
-        root = new Root(delay);
         escrow = new Escrow();
+        root = new Root(address(escrow), delay);
+        address liquidityPoolFactory = address(new LiquidityPoolFactory(address(root)));
+        address trancheTokenFactory = address(new TrancheTokenFactory(address(root)));
         investmentManager =
-            new InvestmentManager(address(escrow), liquidityPoolFactory, trancheTokenFactory, memberlistFactory_);
+            new InvestmentManager(address(escrow), liquidityPoolFactory, trancheTokenFactory);
     }
 
     function wire(address router) public {

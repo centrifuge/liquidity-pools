@@ -7,7 +7,7 @@ import {TokenManager} from "../src/TokenManager.sol";
 import {Gateway} from "../src/gateway/Gateway.sol";
 import {Root} from "../src/Root.sol";
 import {Escrow} from "../src/Escrow.sol";
-import {LiquidityPoolFactory, MemberlistFactory, TrancheTokenFactory} from "../src/util/Factory.sol";
+import {LiquidityPoolFactory, TrancheTokenFactory} from "../src/util/Factory.sol";
 import {LiquidityPool} from "../src/LiquidityPool.sol";
 import {ERC20} from "../src/token/ERC20.sol";
 import {TrancheToken} from "../src/token/Tranche.sol";
@@ -33,14 +33,11 @@ contract TokenManagerTest is Test {
 
     function setUp() public {
         vm.chainId(1);
-        address root_ = address(new Root(48 hours));
         address escrow_ = address(new Escrow());
-        address liquidityPoolFactory_ = address(new LiquidityPoolFactory());
-        address trancheTokenFactory_ = address(new TrancheTokenFactory());
-        address memberlistFactory_ = address(new MemberlistFactory());
+        address root_ = address(new Root(address(escrow_), 48 hours));
 
         evmInvestmentManager =
-            new InvestmentManager(escrow_, liquidityPoolFactory_, trancheTokenFactory_, memberlistFactory_);
+            new InvestmentManager(escrow_, address(new LiquidityPoolFactory(root_)), address(new TrancheTokenFactory(root_)));
         evmTokenManager = new TokenManager(escrow_);
 
         mockXcmRouter = new MockXcmRouter(address(evmInvestmentManager));
