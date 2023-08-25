@@ -5,6 +5,7 @@ pragma abicoder v2;
 import {InvestmentManager, Tranche} from "../src/InvestmentManager.sol";
 import {TokenManager} from "../src/TokenManager.sol";
 import {Gateway} from "../src/gateway/Gateway.sol";
+import {Root} from "../src/Root.sol";
 import {Escrow} from "../src/Escrow.sol";
 import {LiquidityPoolFactory, TrancheTokenFactory, MemberlistFactory} from "../src/util//Factory.sol";
 import {LiquidityPool} from "../src/LiquidityPool.sol";
@@ -14,8 +15,8 @@ import {MemberlistLike, Memberlist} from "../src/token/Memberlist.sol";
 import {MockHomeLiquidityPools} from "./mock/MockHomeLiquidityPools.sol";
 import {MockXcmRouter} from "./mock/MockXcmRouter.sol";
 import {Messages} from "../src/gateway/Messages.sol";
-import {PauseAdmin} from "../src/gateway/admins/PauseAdmin.sol";
-import {DelayedAdmin} from "../src/gateway/admins/DelayedAdmin.sol";
+import {PauseAdmin} from "../src//admins/PauseAdmin.sol";
+import {DelayedAdmin} from "../src//admins/DelayedAdmin.sol";
 import "forge-std/Test.sol";
 import "../src/InvestmentManager.sol";
 
@@ -31,6 +32,7 @@ interface AuthLike_ {
 contract LiquidityPoolTest is Test {
     uint128 constant MAX_UINT128 = type(uint128).max;
 
+    Root root;
     InvestmentManager evmInvestmentManager;
     TokenManager evmTokenManager;
     Gateway gateway;
@@ -41,9 +43,7 @@ contract LiquidityPoolTest is Test {
 
     function setUp() public {
         vm.chainId(1);
-        uint256 shortWait = 24 hours;
-        uint256 longWait = 48 hours;
-        uint256 gracePeriod = 48 hours;
+        root = new Root(48 hours);
         escrow = new Escrow();
         erc20 = newErc20("X's Dollar", "USDX", 42);
         address liquidityPoolFactory_ = address(new LiquidityPoolFactory());
@@ -61,11 +61,11 @@ contract LiquidityPoolTest is Test {
         DelayedAdmin delayedAdmin = new DelayedAdmin();
 
         gateway =
-        new Gateway(address(evmInvestmentManager), address(evmTokenManager), address(mockXcmRouter), shortWait, longWait, gracePeriod);
+            new Gateway(address(root), address(evmInvestmentManager), address(evmTokenManager), address(mockXcmRouter));
         gateway.rely(address(pauseAdmin));
         gateway.rely(address(delayedAdmin));
-        pauseAdmin.file("gateway", address(gateway));
-        delayedAdmin.file("gateway", address(gateway));
+        pauseAdmin.file("root", address(root));
+        delayedAdmin.file("root", address(root));
         evmInvestmentManager.file("gateway", address(gateway));
         evmInvestmentManager.file("tokenManager", address(evmTokenManager));
         evmTokenManager.file("gateway", address(gateway));

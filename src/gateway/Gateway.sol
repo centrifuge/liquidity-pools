@@ -72,48 +72,30 @@ interface AuthLike {
     function rely(address usr) external;
 }
 
+interface RootLike {
+    function paused() external returns (bool);
+    function scheduleRely(address target) external;
+}
+
 contract Gateway is Auth {
     using TypedMemView for bytes;
     // why bytes29? - https://github.com/summa-tx/memview-sol#why-bytes29
     using TypedMemView for bytes29;
     using Messages for bytes29;
 
-    mapping(address => uint256) public relySchedule;
-    uint256 public immutable shortScheduleWait;
-    uint256 public immutable longScheduleWait;
-    // gracePeriod is the time after a user is scheduled to be relied that they can still be relied
-    uint256 public immutable gracePeriod;
-    bool public paused = false;
-
+    RootLike public immutable root;
     InvestmentManagerLike public immutable investmentManager;
     TokenManagerLike public immutable tokenManager;
+
     mapping(address => bool) public incomingRouters;
     RouterLike public outgoingRouter;
 
-    /// --- Events ---
-    event File(bytes32 indexed what, address addr);
-    event RelyScheduledShort(address indexed spell, uint256 indexed scheduledTime);
-    event RelyScheduledLong(address indexed spell, uint256 indexed scheduledTime);
-    event RelyCancelled(address indexed spell);
-    event Pause();
-    event Unpause();
-
-    constructor(
-        address investmentManager_,
-        address tokenManager_,
-        address router_,
-        uint256 shortScheduleWait_,
-        uint256 longScheduleWait_,
-        uint256 gracePeriod_
-    ) {
+    constructor(address root_, address investmentManager_, address tokenManager_, address router_) {
+        root = RootLike(root_);
         investmentManager = InvestmentManagerLike(investmentManager_);
         tokenManager = TokenManagerLike(tokenManager_);
         incomingRouters[router_] = true;
         outgoingRouter = RouterLike(router_);
-
-        shortScheduleWait = shortScheduleWait_;
-        longScheduleWait = longScheduleWait_;
-        gracePeriod = gracePeriod_;
 
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
@@ -135,21 +117,11 @@ contract Gateway is Auth {
     }
 
     modifier pauseable() {
-        require(!paused, "Gateway/paused");
+        require(!root.paused(), "Gateway/paused");
         _;
     }
 
     // --- Administration ---
-    function pause() external auth {
-        paused = true;
-        emit Pause();
-    }
-
-    function unpause() external auth {
-        paused = false;
-        emit Unpause();
-    }
-
     function addIncomingRouter(address router) public auth {
         incomingRouters[router] = true;
     }
@@ -160,34 +132,6 @@ contract Gateway is Auth {
 
     function setOutgoingRouter(address router) public auth {
         outgoingRouter = RouterLike(router);
-    }
-
-    function _scheduleShortRely(address user) internal {
-        relySchedule[user] = block.timestamp + shortScheduleWait;
-        emit RelyScheduledShort(user, relySchedule[user]);
-    }
-
-    function scheduleLongRely(address user) external auth {
-        relySchedule[user] = block.timestamp + longScheduleWait;
-        emit RelyScheduledLong(user, relySchedule[user]);
-    }
-
-    function cancelSchedule(address user) external auth {
-        relySchedule[user] = 0;
-        emit RelyCancelled(user);
-    }
-
-    function executeScheduledRely(address user) public {
-        require(relySchedule[user] != 0, "Gateway/user-not-scheduled");
-        require(relySchedule[user] < block.timestamp, "Gateway/user-not-ready");
-        require(relySchedule[user] + gracePeriod > block.timestamp, "Gateway/user-too-old");
-        relySchedule[user] = 0;
-        wards[user] = 1;
-        emit Rely(user);
-    }
-
-    function relyContract(address target, address user) public auth {
-        AuthLike(target).rely(user);
     }
 
     // --- Outgoing ---
@@ -355,8 +299,8 @@ contract Gateway is Auth {
                 poolId, trancheId, investor, currency, currencyPayout, trancheTokensRedeemed
             );
         } else if (Messages.isScheduleUpgrade(_msg)) {
-            address spell = Messages.parseScheduleUpgrade(_msg);
-            _scheduleShortRely(spell);
+            address target = Messages.parseScheduleUpgrade(_msg);
+            root.scheduleRely(target);
         } else if (Messages.isUpdateTrancheTokenMetadata(_msg)) {
             (uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol) =
                 Messages.parseUpdateTrancheTokenMetadata(_msg);

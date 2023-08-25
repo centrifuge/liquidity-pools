@@ -2,6 +2,7 @@
 pragma solidity ^0.8.18;
 pragma abicoder v2;
 
+import {Root} from "../src/Root.sol";
 import {InvestmentManager, Tranche} from "../src/InvestmentManager.sol";
 import {TokenManager} from "../src/TokenManager.sol";
 import {Gateway} from "../src/gateway/Gateway.sol";
@@ -15,8 +16,8 @@ import {MemberlistLike, Memberlist} from "../src/token/Memberlist.sol";
 import {MockHomeLiquidityPools} from "./mock/MockHomeLiquidityPools.sol";
 import {MockXcmRouter} from "./mock/MockXcmRouter.sol";
 import {Messages} from "../src/gateway/Messages.sol";
-import {PauseAdmin} from "../src/gateway/admins/PauseAdmin.sol";
-import {DelayedAdmin} from "../src/gateway/admins/DelayedAdmin.sol";
+import {PauseAdmin} from "../src//admins/PauseAdmin.sol";
+import {DelayedAdmin} from "../src//admins/DelayedAdmin.sol";
 import "forge-std/Test.sol";
 import "../src/InvestmentManager.sol";
 
@@ -38,9 +39,7 @@ contract InvestmentManagerTest is Test {
 
     function setUp() public {
         vm.chainId(1);
-        uint256 shortWait = 24 hours;
-        uint256 longWait = 48 hours;
-        uint256 gracePeriod = 48 hours;
+        address root_ = address(new Root(48 hours));
         address escrow_ = address(new Escrow());
         address liquidityPoolFactory_ = address(new LiquidityPoolFactory());
         address trancheTokenFactory_ = address(new TrancheTokenFactory());
@@ -56,12 +55,11 @@ contract InvestmentManagerTest is Test {
         PauseAdmin pauseAdmin = new PauseAdmin();
         DelayedAdmin delayedAdmin = new DelayedAdmin();
 
-        gateway =
-        new Gateway(address(evmInvestmentManager), address(evmTokenManager), address(mockXcmRouter), shortWait, longWait, gracePeriod);
+        gateway = new Gateway(root_, address(evmInvestmentManager), address(evmTokenManager), address(mockXcmRouter));
         gateway.rely(address(pauseAdmin));
         gateway.rely(address(delayedAdmin));
-        pauseAdmin.file("gateway", address(gateway));
-        delayedAdmin.file("gateway", address(gateway));
+        pauseAdmin.file("root", root_);
+        delayedAdmin.file("root", root_);
         evmInvestmentManager.file("gateway", address(gateway));
         evmInvestmentManager.file("tokenManager", address(evmTokenManager));
         evmTokenManager.file("gateway", address(gateway));

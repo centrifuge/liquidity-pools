@@ -2,11 +2,11 @@
 pragma solidity ^0.8.18;
 pragma abicoder v2;
 
-import {Gateway} from "../Gateway.sol";
-import "./../../util/Auth.sol";
+import {Root} from "../Root.sol";
+import "./../util/Auth.sol";
 
 contract PauseAdmin is Auth {
-    Gateway public gateway;
+    Root public root;
 
     // --- Events ---
     event File(bytes32 indexed what, address indexed data);
@@ -17,25 +17,24 @@ contract PauseAdmin is Auth {
     }
 
     function file(bytes32 what, address data) external auth {
-        if (what == "gateway") {
-            gateway = Gateway(data);
+        if (what == "root") {
+            root = Root(data);
         } else {
-            revert("Admin/file-unrecognized-param");
+            revert("PauseAdmin/file-unrecognized-param");
         }
         emit File(what, data);
     }
 
-    // --- Admin ---
-
+    // --- Admin actions ---
     function pause() public auth {
-        gateway.pause();
+        root.pause();
     }
 
     function unpause() public auth {
-        gateway.unpause();
+        root.unpause();
     }
 
-    function cancelSchedule(address spell) public auth {
-        gateway.cancelSchedule(spell);
+    function cancelRely(address target) public auth {
+        root.cancelRely(target);
     }
 }

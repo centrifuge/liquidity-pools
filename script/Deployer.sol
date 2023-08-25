@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.18;
 
+import {Root} from "src/Root.sol";
 import {AxelarEVMRouter} from "src/gateway/routers/axelar/EVMRouter.sol";
 import {Gateway, InvestmentManagerLike} from "src/gateway/Gateway.sol";
 import {InvestmentManager} from "src/InvestmentManager.sol";
 import {TokenManager} from "src/TokenManager.sol";
 import {Escrow} from "src/Escrow.sol";
-import {PauseAdmin} from "src/gateway/admins/PauseAdmin.sol";
-import {DelayedAdmin} from "src/gateway/admins/DelayedAdmin.sol";
+import {PauseAdmin} from "src//admins/PauseAdmin.sol";
+import {DelayedAdmin} from "src//admins/DelayedAdmin.sol";
 import {LiquidityPoolFactory, MemberlistFactory, TrancheTokenFactory} from "src/util/Factory.sol";
 import "forge-std/Script.sol";
 
@@ -18,12 +19,11 @@ interface RouterLike {
 }
 
 contract Deployer is Script {
-    uint256 shortWait = 24 hours;
-    uint256 longWait = 48 hours;
-    uint256 gracePeriod = 48 hours;
+    uint256 delay = 48 hours;
 
     address admin;
 
+    Root root;
     InvestmentManager investmentManager;
     TokenManager tokenManager;
     Escrow escrow;
@@ -35,6 +35,7 @@ contract Deployer is Script {
         address liquidityPoolFactory = address(new LiquidityPoolFactory());
         address trancheTokenFactory = address(new TrancheTokenFactory());
         address memberlistFactory_ = address(new MemberlistFactory());
+        root = new Root(delay);
         escrow = new Escrow();
         investmentManager =
             new InvestmentManager(address(escrow), liquidityPoolFactory, trancheTokenFactory, memberlistFactory_);
@@ -47,8 +48,7 @@ contract Deployer is Script {
         // Deploy gateway and admins
         pauseAdmin = new PauseAdmin();
         delayedAdmin = new DelayedAdmin();
-        gateway =
-        new Gateway(address(investmentManager), address(tokenManager), address(router), shortWait, longWait, gracePeriod);
+        gateway = new Gateway(address(root), address(investmentManager), address(tokenManager), address(router));
 
         // Wire gateway
         investmentManager.file("tokenManager", address(tokenManager));
