@@ -26,17 +26,14 @@ interface GatewayLike {
 
 interface InvestmentManagerLike {
     function liquidityPools(uint64 poolId, bytes16 trancheId, address currency) external returns (address);
-    function getLiquidityPoolsForTranche(uint64 _poolId, bytes16 _trancheId)
-        external
-        view
-        returns (address[] memory lPools);
+    function getTrancheToken(uint64 _poolId, bytes16 _trancheId) external view returns (address);
 }
 
 interface EscrowLike {
     function approve(address token, address spender, uint256 value) external;
 }
 
-interface LiquidityPoolLike is ERC20Like {
+interface RestrictedTokenLike is ERC20Like {
     function hasMember(address user) external view returns (bool);
 }
 
@@ -88,16 +85,14 @@ contract TokenManager is Auth {
     function transferTrancheTokensToCentrifuge(
         uint64 poolId,
         bytes16 trancheId,
-        address currency, // we need this as there is liquidityPool per supported currency
         bytes32 destinationAddress,
         uint128 amount
     ) public {
-        LiquidityPoolLike liquidityPool =
-            LiquidityPoolLike(investmentManager.liquidityPools(poolId, trancheId, currency));
-        require(address(liquidityPool) != address(0), "TokenManager/unknown-token");
+        RestrictedTokenLike trancheToken = RestrictedTokenLike(investmentManager.getTrancheToken(poolId, trancheId));
+        require(address(trancheToken) != address(0), "TokenManager/unknown-token");
 
-        require(liquidityPool.balanceOf(msg.sender) >= amount, "TokenManager/insufficient-balance");
-        liquidityPool.burn(msg.sender, amount);
+        require(trancheToken.balanceOf(msg.sender) >= amount, "TokenManager/insufficient-balance");
+        trancheToken.burn(msg.sender, amount);
 
         gateway.transferTrancheTokensToCentrifuge(poolId, trancheId, msg.sender, destinationAddress, amount);
     }
@@ -109,13 +104,11 @@ contract TokenManager is Auth {
         address destinationAddress,
         uint128 amount
     ) public {
-        // TODO: this should get the underlying tranche token once the single tranche token change has been merged
-        LiquidityPoolLike liquidityPool =
-            LiquidityPoolLike(investmentManager.getLiquidityPoolsForTranche(poolId, trancheId)[0]);
-        require(address(liquidityPool) != address(0), "TokenManager/unknown-token");
+        RestrictedTokenLike trancheToken = RestrictedTokenLike(investmentManager.getTrancheToken(poolId, trancheId));
+        require(address(trancheToken) != address(0), "TokenManager/unknown-token");
 
-        require(liquidityPool.balanceOf(msg.sender) >= amount, "TokenManager/insufficient-balance");
-        liquidityPool.burn(msg.sender, amount);
+        require(trancheToken.balanceOf(msg.sender) >= amount, "TokenManager/insufficient-balance");
+        trancheToken.burn(msg.sender, amount);
 
         gateway.transferTrancheTokensToEVM(
             poolId, trancheId, msg.sender, destinationChainId, destinationAddress, amount
@@ -135,7 +128,7 @@ contract TokenManager is Auth {
         currencyIdToAddress[currency] = currencyAddress;
         currencyAddressToId[currencyAddress] = currency;
 
-        // enable connectors to take the currency out of escrow in case of redemptions
+        // enable taking the currency out of escrow in case of redemptions
         EscrowLike(escrow).approve(currencyAddress, address(investmentManager), type(uint256).max);
         EscrowLike(escrow).approve(currencyAddress, address(this), type(uint256).max);
         emit CurrencyAdded(currency, currencyAddress);
@@ -156,12 +149,10 @@ contract TokenManager is Auth {
         public
         onlyGateway
     {
-        // TODO: this should get the underlying tranche token once the single tranche token change has been merged
-        LiquidityPoolLike liquidityPool =
-            LiquidityPoolLike(investmentManager.getLiquidityPoolsForTranche(poolId, trancheId)[0]);
-        require(address(liquidityPool) != address(0), "TokenManager/unknown-token");
+        RestrictedTokenLike trancheToken = RestrictedTokenLike(investmentManager.getTrancheToken(poolId, trancheId));
+        require(address(trancheToken) != address(0), "TokenManager/unknown-token");
 
-        require(liquidityPool.hasMember(destinationAddress), "TokenManager/not-a-member");
-        liquidityPool.mint(destinationAddress, amount);
+        require(trancheToken.hasMember(destinationAddress), "TokenManager/not-a-member");
+        trancheToken.mint(destinationAddress, amount);
     }
 }
