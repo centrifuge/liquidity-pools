@@ -35,6 +35,7 @@ contract ERC20 is Auth {
     constructor(uint8 decimals_) {
         decimals = decimals_;
         wards[msg.sender] = 1;
+        emit Rely(msg.sender);
 
         deploymentChainId = block.chainid;
         _DOMAIN_SEPARATOR = _calculateDomainSeparator(block.chainid);

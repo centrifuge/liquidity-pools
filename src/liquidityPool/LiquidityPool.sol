@@ -84,6 +84,7 @@ contract LiquidityPool is Auth {
 
     constructor() {
         wards[msg.sender] = 1;
+        emit Rely(msg.sender);
     }
 
     /// @dev investmentManager and asset address to be filed by the factory on deployment
