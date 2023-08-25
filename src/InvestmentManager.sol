@@ -361,14 +361,14 @@ contract InvestmentManager is Auth {
         uint128 currencyPayout
     ) public onlyGateway {
         require(currencyPayout != 0, "InvestmentManager/zero-payout");
-        address currency = tokenManager.currencyIdToAddress(currency);
-        LiquidityPoolLike liquidityPool = LiquidityPoolLike(liquidityPools[poolId][trancheId][currency]);
+        address _currency = tokenManager.currencyIdToAddress(currency);
+        LiquidityPoolLike liquidityPool = LiquidityPoolLike(liquidityPools[poolId][trancheId][_currency]);
         require(address(liquidityPool) != address(0), "InvestmentManager/tranche-does-not-exist");
-        require(allowedPoolCurrencies[poolId][currency], "InvestmentManager/pool-currency-not-allowed");
-        require(currency != address(0), "InvestmentManager/unknown-currency");
-        require(currency == liquidityPool.asset(), "InvestmentManager/not-tranche-currency");
+        require(allowedPoolCurrencies[poolId][_currency], "InvestmentManager/pool-currency-not-allowed");
+        require(_currency != address(0), "InvestmentManager/unknown-currency");
+        require(_currency == liquidityPool.asset(), "InvestmentManager/not-tranche-currency");
         require(
-            ERC20Like(currency).transferFrom(address(escrow), user, currencyPayout),
+            ERC20Like(_currency).transferFrom(address(escrow), user, currencyPayout),
             "InvestmentManager/currency-transfer-failed"
         );
     }
@@ -381,8 +381,8 @@ contract InvestmentManager is Auth {
         uint128 tokensPayout
     ) public onlyGateway {
         require(tokensPayout != 0, "InvestmentManager/zero-payout");
-        address currency = tokenManager.currencyIdToAddress(currency);
-        LiquidityPoolLike liquidityPool = LiquidityPoolLike(liquidityPools[poolId][trancheId][currency]);
+        address _currency = tokenManager.currencyIdToAddress(currency);
+        LiquidityPoolLike liquidityPool = LiquidityPoolLike(liquidityPools[poolId][trancheId][_currency]);
         require(address(liquidityPool) != address(0), "InvestmentManager/tranche-does-not-exist");
 
         require(LiquidityPoolLike(liquidityPool).hasMember(user), "InvestmentManager/not-a-member");
