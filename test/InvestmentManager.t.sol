@@ -4,19 +4,19 @@ pragma abicoder v2;
 
 import {InvestmentManager, Tranche} from "../src/InvestmentManager.sol";
 import {TokenManager} from "../src/TokenManager.sol";
-import {Gateway} from "../src/Gateway.sol";
+import {Gateway} from "../src/gateway/Gateway.sol";
 import {Escrow} from "../src/Escrow.sol";
-import {LiquidityPoolFactory, TrancheTokenFactory, MemberlistFactory} from "../src/liquidityPool/Factory.sol";
-import {LiquidityPool} from "../src/liquidityPool/LiquidityPool.sol";
+import {LiquidityPoolFactory, TrancheTokenFactory, MemberlistFactory} from "../src/util/Factory.sol";
+import {LiquidityPool} from "../src/LiquidityPool.sol";
 import {TrancheToken} from "../src/token/Tranche.sol";
 import {ERC20} from "../src/token/ERC20.sol";
 
 import {MemberlistLike, Memberlist} from "../src/token/Memberlist.sol";
 import {MockHomeLiquidityPools} from "./mock/MockHomeLiquidityPools.sol";
 import {MockXcmRouter} from "./mock/MockXcmRouter.sol";
-import {Messages} from "../src/Messages.sol";
-import {PauseAdmin} from "../src/admin/PauseAdmin.sol";
-import {DelayedAdmin} from "../src/admin/DelayedAdmin.sol";
+import {Messages} from "../src/gateway/Messages.sol";
+import {PauseAdmin} from "../src/gateway/admins/PauseAdmin.sol";
+import {DelayedAdmin} from "../src/gateway/admins/DelayedAdmin.sol";
 import "forge-std/Test.sol";
 import "../src/InvestmentManager.sol";
 

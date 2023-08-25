@@ -4,7 +4,7 @@ pragma abicoder v2;
 
 import {TrancheTokenLike, ERC20Like} from "./token/Tranche.sol";
 import {MemberlistLike} from "./token/Memberlist.sol";
-import "./auth/auth.sol";
+import "./util/Auth.sol";
 
 interface GatewayLike {
     function transferTrancheTokensToCentrifuge(

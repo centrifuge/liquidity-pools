@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.18;
 
-import "./../auth/auth.sol";
+import "./util/Auth.sol";
 
 interface TrancheTokenLike {
     // erc20 functions

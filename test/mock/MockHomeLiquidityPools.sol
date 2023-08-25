@@ -3,9 +3,9 @@ pragma solidity ^0.8.18;
 pragma abicoder v2;
 
 import {TypedMemView} from "memview-sol/TypedMemView.sol";
-import {Messages} from "src/Messages.sol";
+import {Messages} from "src/gateway/Messages.sol";
 import "forge-std/Test.sol";
-import {XCMRouter} from "src/routers/xcm/Router.sol";
+import {XCMRouter} from "src/gateway/routers/xcm/Router.sol";
 
 interface XcmRouterLike {
     function handle(bytes memory _message) external;

@@ -2,9 +2,9 @@
 pragma solidity ^0.8.18;
 pragma abicoder v2;
 
-import {TrancheTokenFactoryLike, LiquidityPoolFactoryLike, MemberlistFactoryLike} from "./liquidityPool/Factory.sol";
+import {TrancheTokenFactoryLike, LiquidityPoolFactoryLike, MemberlistFactoryLike} from "./util/Factory.sol";
 import {MemberlistLike} from "./token/Memberlist.sol";
-import "./auth/auth.sol";
+import "./util/Auth.sol";
 
 interface GatewayLike {
     function increaseInvestOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount)

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.18;
 
-import {AxelarEVMRouter} from "src/routers/axelar/EVMRouter.sol";
+import {AxelarEVMRouter} from "src/gateway/routers/axelar/EVMRouter.sol";
 import {Deployer} from "./Deployer.sol";
 
 // Script to deploy Liquidity Pools with an Axelar router.
