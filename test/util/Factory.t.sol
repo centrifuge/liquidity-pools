@@ -9,8 +9,6 @@ import {Escrow} from "src/Escrow.sol";
 import "forge-std/Test.sol";
 
 contract FactoryTest is Test {
-    // address(0)[0:20] + keccak("Centrifuge")[21:32]
-    bytes32 SALT = 0x000000000000000000000000000000000000000075eb27011b69f002dc094d05;
     uint256 mainnetFork;
     uint256 polygonFork;
 
@@ -24,6 +22,7 @@ contract FactoryTest is Test {
     }
 
     function testTokenFactoryIsDeterministicAcrossChains(
+        bytes32 salt,
         address sender,
         uint64 poolId,
         bytes16 trancheId,
@@ -36,18 +35,19 @@ contract FactoryTest is Test {
         vm.assume(sender != address(0));
 
         vm.selectFork(mainnetFork);
-        LiquidityPoolFactory lpFactory1 = new LiquidityPoolFactory{ salt: SALT }(root);
+        LiquidityPoolFactory lpFactory1 = new LiquidityPoolFactory{ salt: salt }(root);
         address lp1 = lpFactory1.newLiquidityPool(poolId, trancheId, currency, asset, token, investmentManager);
 
         vm.selectFork(polygonFork);
-        LiquidityPoolFactory lpFactory2 = new LiquidityPoolFactory{ salt: SALT }(root);
+        LiquidityPoolFactory lpFactory2 = new LiquidityPoolFactory{ salt: salt }(root);
         assertEq(address(lpFactory1), address(lpFactory2));
         vm.prank(sender);
         address lp2 = lpFactory2.newLiquidityPool(poolId, trancheId, currency, asset, token, investmentManager);
         assertEq(address(lp1), address(lp2));
     }
 
-    function testTokenFactoryShouldBeDeterministic() public {
+    function testTokenFactoryShouldBeDeterministic(
+        bytes32 salt) public {
         address predictedAddress = address(
             uint160(
                 uint256(
@@ -55,18 +55,19 @@ contract FactoryTest is Test {
                         abi.encodePacked(
                             bytes1(0xff),
                             address(this),
-                            SALT,
+                            salt,
                             keccak256(abi.encodePacked(type(LiquidityPoolFactory).creationCode, abi.encode(root)))
                         )
                     )
                 )
             )
         );
-        LiquidityPoolFactory lpFactory = new LiquidityPoolFactory{ salt: SALT }(root);
+        LiquidityPoolFactory lpFactory = new LiquidityPoolFactory{ salt: salt }(root);
         assertEq(address(lpFactory), predictedAddress);
     }
 
     function testLiquidityPoolShouldBeDeterministic(
+        bytes32 salt,
         uint64 poolId,
         bytes16 trancheId,
         uint128 currency,
@@ -75,7 +76,7 @@ contract FactoryTest is Test {
         address investmentManager,
         address admin
     ) public {
-        LiquidityPoolFactory lpFactory = new LiquidityPoolFactory{ salt: SALT }(root);
+        LiquidityPoolFactory lpFactory = new LiquidityPoolFactory{ salt: salt }(root);
 
         bytes32 salt = keccak256(abi.encodePacked(poolId, trancheId, currency));
         address predictedAddress = address(
@@ -99,6 +100,7 @@ contract FactoryTest is Test {
     }
 
     function testDeployingDeterministicAddressTwiceReverts(
+        bytes32 salt,
         uint64 poolId,
         bytes16 trancheId,
         uint128 currency,
@@ -114,14 +116,14 @@ contract FactoryTest is Test {
                         abi.encodePacked(
                             bytes1(0xff),
                             address(this),
-                            SALT,
+                            salt,
                             keccak256(abi.encodePacked(type(LiquidityPoolFactory).creationCode, abi.encode(root)))
                         )
                     )
                 )
             )
         );
-        LiquidityPoolFactory lpFactory = new LiquidityPoolFactory{ salt: SALT }(root);
+        LiquidityPoolFactory lpFactory = new LiquidityPoolFactory{ salt: salt }(root);
         assertEq(address(lpFactory), predictedAddress);
         address lp1 = lpFactory.newLiquidityPool(poolId, trancheId, currency, asset, token, investmentManager);
         vm.expectRevert();
