@@ -46,8 +46,7 @@ contract FactoryTest is Test {
         assertEq(address(lp1), address(lp2));
     }
 
-    function testTokenFactoryShouldBeDeterministic(
-        bytes32 salt) public {
+    function testTokenFactoryShouldBeDeterministic(bytes32 salt) public {
         address predictedAddress = address(
             uint160(
                 uint256(
