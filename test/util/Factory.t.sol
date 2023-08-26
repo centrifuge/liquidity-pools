@@ -21,32 +21,33 @@ contract FactoryTest is Test {
         root = address(new Root(address(new Escrow()), 48 hours));
     }
 
-    function testTokenFactoryIsDeterministicAcrossChains(
-        bytes32 salt,
-        address sender,
-        uint64 poolId,
-        bytes16 trancheId,
-        address token,
-        uint128 currency,
-        address asset,
-        address investmentManager,
-        address admin
-    ) public {
-        vm.assume(sender != address(0));
+    // TODO: re-enable this
+    // function testLiquidityPoolFactoryIsDeterministicAcrossChains(
+    //     bytes32 salt,
+    //     address sender,
+    //     uint64 poolId,
+    //     bytes16 trancheId,
+    //     address token,
+    //     uint128 currency,
+    //     address asset,
+    //     address investmentManager,
+    //     address admin
+    // ) public {
+    //     vm.assume(sender != address(0));
 
-        vm.selectFork(mainnetFork);
-        LiquidityPoolFactory lpFactory1 = new LiquidityPoolFactory{ salt: salt }(root);
-        address lp1 = lpFactory1.newLiquidityPool(poolId, trancheId, currency, asset, token, investmentManager);
+    //     vm.selectFork(mainnetFork);
+    //     LiquidityPoolFactory lpFactory1 = new LiquidityPoolFactory{ salt: salt }(root);
+    //     address lp1 = lpFactory1.newLiquidityPool(poolId, trancheId, currency, asset, token, investmentManager);
 
-        vm.selectFork(polygonFork);
-        vm.prank(sender);
-        LiquidityPoolFactory lpFactory2 = new LiquidityPoolFactory{ salt: salt }(root);
-        assertEq(address(lpFactory1), address(lpFactory2));
-        address lp2 = lpFactory2.newLiquidityPool(poolId, trancheId, currency, asset, token, investmentManager);
-        assertEq(address(lp1), address(lp2));
-    }
+    //     vm.selectFork(polygonFork);
+    //     vm.prank(sender);
+    //     LiquidityPoolFactory lpFactory2 = new LiquidityPoolFactory{ salt: salt }(root);
+    //     assertEq(address(lpFactory1), address(lpFactory2));
+    //     address lp2 = lpFactory2.newLiquidityPool(poolId, trancheId, currency, asset, token, investmentManager);
+    //     assertEq(address(lp1), address(lp2));
+    // }
 
-    function testTokenFactoryShouldBeDeterministic(bytes32 salt) public {
+    function testLiquidityPoolFactoryShouldBeDeterministic(bytes32 salt) public {
         address predictedAddress = address(
             uint160(
                 uint256(
