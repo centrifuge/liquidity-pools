@@ -29,12 +29,4 @@ contract PauseAdmin is Auth {
     function pause() public auth {
         root.pause();
     }
-
-    function unpause() public auth {
-        root.unpause();
-    }
-
-    function cancelRely(address target) public auth {
-        root.cancelRely(target);
-    }
 }

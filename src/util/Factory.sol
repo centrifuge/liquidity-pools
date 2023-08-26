@@ -39,7 +39,7 @@ contract LiquidityPoolFactory is Auth {
         address trancheToken,
         address investmentManager
     ) public auth returns (address) {
-        // Salt is hash(poolId + trancheId + asset), to deploy copies of the liquidity pool contract
+        // Salt is hash(poolId + trancheId + currencyId), to deploy copies of the liquidity pool contract
         // on multiple chains with the same address for the same tranche and asset
         bytes32 salt = keccak256(abi.encodePacked(poolId, trancheId, currencyId));
 
@@ -93,8 +93,8 @@ contract TrancheTokenFactory is Auth {
     ) public auth returns (address) {
         address memberlist = _newMemberlist(tokenManager);
 
-        // Salt is hash(poolId + trancheId )
-        // same tracnhe token address on every evm chain
+        // Salt is hash(poolId + trancheId)
+        // same tranche token address on every evm chain
         bytes32 salt = keccak256(abi.encodePacked(poolId, trancheId));
 
         TrancheToken token = new TrancheToken{salt: salt}(decimals);

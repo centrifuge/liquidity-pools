@@ -26,6 +26,14 @@ contract DelayedAdmin is Auth {
     }
 
     // --- Admin actions ---
+    function pause() public auth {
+        root.pause();
+    }
+
+    function unpause() public auth {
+        root.unpause();
+    }
+
     function schedule(address target) public auth {
         root.scheduleRely(target);
     }
