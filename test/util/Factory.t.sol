@@ -33,6 +33,8 @@ contract FactoryTest is Test {
         address investmentManager,
         address admin
     ) public {
+        vm.assume(sender != address(0));
+
         vm.selectFork(mainnetFork);
         LiquidityPoolFactory lpFactory1 = new LiquidityPoolFactory{ salt: SALT }(root);
         address lp1 = lpFactory1.newLiquidityPool(poolId, trancheId, currency, asset, token, investmentManager);
