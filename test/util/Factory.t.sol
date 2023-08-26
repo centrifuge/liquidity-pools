@@ -64,7 +64,7 @@ contract FactoryTest is Test {
         assertEq(address(lpFactory), predictedAddress);
     }
 
-    function testTrancheTokenShouldBeDeterministic(
+    function testLiquidityPoolShouldBeDeterministic(
         uint64 poolId,
         bytes16 trancheId,
         uint128 currency,
@@ -84,7 +84,7 @@ contract FactoryTest is Test {
                             bytes1(0xff),
                             address(lpFactory),
                             salt,
-                            keccak256(abi.encodePacked(type(LiquidityPool).creationCode, abi.encode(root)))
+                            keccak256(abi.encodePacked(type(LiquidityPool).creationCode))
                         )
                     )
                 )
