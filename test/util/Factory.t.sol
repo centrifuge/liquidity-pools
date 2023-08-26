@@ -54,7 +54,7 @@ contract FactoryTest is Test {
                             bytes1(0xff),
                             address(this),
                             SALT,
-                            keccak256(abi.encodePacked(type(LiquidityPoolFactory).creationCode))
+                            keccak256(abi.encodePacked(type(LiquidityPoolFactory).creationCode, abi.encode(root)))
                         )
                     )
                 )
@@ -84,7 +84,7 @@ contract FactoryTest is Test {
                             bytes1(0xff),
                             address(lpFactory),
                             salt,
-                            keccak256(abi.encodePacked(type(LiquidityPool).creationCode))
+                            keccak256(abi.encodePacked(type(LiquidityPool).creationCode, abi.encode(root)))
                         )
                     )
                 )
@@ -113,7 +113,7 @@ contract FactoryTest is Test {
                             bytes1(0xff),
                             address(this),
                             SALT,
-                            keccak256(abi.encodePacked(type(LiquidityPoolFactory).creationCode))
+                            keccak256(abi.encodePacked(type(LiquidityPoolFactory).creationCode, abi.encode(root)))
                         )
                     )
                 )
