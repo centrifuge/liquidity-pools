@@ -39,9 +39,9 @@ contract FactoryTest is Test {
         address lp1 = lpFactory1.newLiquidityPool(poolId, trancheId, currency, asset, token, investmentManager);
 
         vm.selectFork(polygonFork);
+        vm.prank(sender);
         LiquidityPoolFactory lpFactory2 = new LiquidityPoolFactory{ salt: salt }(root);
         assertEq(address(lpFactory1), address(lpFactory2));
-        vm.prank(sender);
         address lp2 = lpFactory2.newLiquidityPool(poolId, trancheId, currency, asset, token, investmentManager);
         assertEq(address(lp1), address(lp2));
     }
