@@ -64,12 +64,6 @@ contract InvestmentManagerTest is Test {
         Escrow(escrow_).rely(address(gateway));
     }
 
-    // function testConnectorDeactivationWorks() public {
-    //     gateway.pause();
-    //     vm.expectRevert(bytes("InvestmentManager/connector-deactivated"));
-    //     evmInvestmentManager.processDeposit(address(0), address(0), 0);
-    // }
-
     function testAddPoolWorks(uint64 poolId) public {
         homePools.addPool(poolId);
         (uint64 actualPoolId,,) = evmInvestmentManager.pools(poolId);

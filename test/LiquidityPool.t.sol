@@ -15,6 +15,7 @@ import {MemberlistLike, Memberlist} from "../src/token/Memberlist.sol";
 import {MockHomeLiquidityPools} from "./mock/MockHomeLiquidityPools.sol";
 import {MockXcmRouter} from "./mock/MockXcmRouter.sol";
 import {Messages} from "../src/gateway/Messages.sol";
+import {Investor} from "./accounts/Investor.sol";
 import "forge-std/Test.sol";
 import "../src/InvestmentManager.sol";
 
@@ -38,6 +39,8 @@ contract LiquidityPoolTest is Test {
     MockXcmRouter mockXcmRouter;
     Escrow escrow;
     ERC20 erc20;
+
+    address self;
 
     function setUp() public {
         vm.chainId(1);
@@ -68,7 +71,85 @@ contract LiquidityPoolTest is Test {
         mockXcmRouter.file("gateway", address(gateway));
         evmInvestmentManager.rely(address(gateway));
         escrow.rely(address(gateway));
+
+        self = address(this);
+
     }
+
+    function testTransferFrom(
+        uint64 poolId,
+        uint8 decimals,
+        string memory tokenName,
+        string memory tokenSymbol,
+        bytes16 trancheId,
+        uint128 price,
+        uint128 currencyId,
+        uint256 amount,
+        uint64 validUntil
+    ) public {
+        vm.assume(currencyId > 0);
+        vm.assume(amount < MAX_UINT128);
+        vm.assume(amount > 100);
+        vm.assume(validUntil >= block.timestamp);
+        price = 1;
+        Investor investor = new Investor();
+
+        
+        address lPool_ = deployLiquidityPool(poolId, decimals, tokenName, tokenSymbol, trancheId, price, currencyId);
+        investorDeposit(address(investor), lPool_, poolId, trancheId, amount, validUntil); // deposit funds first
+        LiquidityPool lPool = LiquidityPool(lPool_);
+        homePools.updateMember(poolId, trancheId, self, validUntil); // put self on memberlist to be able to receive tranche tokens
+
+        // investor fails to transfer tranche tokens no approval on LPool
+        vm.expectRevert(bytes("ERC20/insufficient-allowance")); // Todo -> discuss to add auto-approval on transfer
+        investor.transferFrom(lPool_, address(investor), self, amount / 4);
+
+        // investor can transfer tranche tokens
+        investor.approve(lPool_, lPool_, type(uint256).max); 
+        investor.transferFrom(lPool_, address(investor), self, amount / 4);
+
+        // Random user (self) can not transfer tokens on behalf of user
+        vm.expectRevert(bytes("LiquidityPool/no-token-allowance"));
+        lPool.transferFrom(address(investor), self, amount / 4);
+
+        // Random user (self) can transfer tokens on behalf of user after approval granted 
+        investor.approve(lPool_, self, amount / 4); 
+        lPool.transferFrom(address(investor), self, amount / 4);
+    }
+
+    function testTransfer(
+        uint64 poolId,
+        uint8 decimals,
+        string memory tokenName,
+        string memory tokenSymbol,
+        bytes16 trancheId,
+        uint128 price,
+        uint128 currencyId,
+        uint256 amount,
+        uint64 validUntil
+    ) public {
+        vm.assume(currencyId > 0);
+        vm.assume(amount < MAX_UINT128);
+        vm.assume(amount > 100);
+        vm.assume(validUntil >= block.timestamp);
+        price = 1;
+        Investor investor = new Investor();
+
+        
+        address lPool_ = deployLiquidityPool(poolId, decimals, tokenName, tokenSymbol, trancheId, price, currencyId);
+        investorDeposit(address(investor), lPool_, poolId, trancheId, amount, validUntil); // deposit funds first
+        LiquidityPool lPool = LiquidityPool(lPool_);
+        homePools.updateMember(poolId, trancheId, self, validUntil); // put self on memberlist to be able to receive tranche tokens
+
+        // investor fails to transfer tranche tokens no approval on LPool
+        vm.expectRevert(bytes("ERC20/insufficient-allowance")); // Todo -> discuss to add auto-approval on transfer
+        investor.transfer(lPool_, self, amount / 4);
+
+        // investor can transfer tranche tokens
+        investor.approve(lPool_, lPool_, type(uint256).max); 
+        investor.transfer(lPool_, self, amount / 4);
+    }
+
 
     function testDepositMint(
         uint64 poolId,
@@ -90,50 +171,50 @@ contract LiquidityPoolTest is Test {
         address lPool_ = deployLiquidityPool(poolId, decimals, tokenName, tokenSymbol, trancheId, price, currencyId);
         LiquidityPool lPool = LiquidityPool(lPool_);
 
-        erc20.mint(address(this), amount);
+        erc20.mint(self, amount);
 
         // will fail - user not member: can not receive trancheToken
         vm.expectRevert(bytes("InvestmentManager/not-a-member"));
-        lPool.requestDeposit(amount);
-        homePools.updateMember(poolId, trancheId, address(this), validUntil); // add user as member
+        lPool.requestDeposit(self, amount);
+        homePools.updateMember(poolId, trancheId, self, validUntil); // add user as member
 
         // // will fail - user did not give currency allowance to investmentManager
         vm.expectRevert(bytes("ERC20/insufficient-allowance"));
-        lPool.requestDeposit(amount);
+        lPool.requestDeposit(self, amount);
         erc20.approve(address(evmInvestmentManager), amount); // add allowance
 
-        lPool.requestDeposit(amount);
+        lPool.requestDeposit(self, amount);
 
         // ensure funds are locked in escrow
         assertEq(erc20.balanceOf(address(escrow)), amount);
-        assertEq(erc20.balanceOf(address(this)), 0);
+        assertEq(erc20.balanceOf(self), 0);
 
         // trigger executed collectInvest
         uint128 _currencyId = evmTokenManager.currencyAddressToId(address(erc20)); // retrieve currencyId
         uint128 trancheTokensPayout = uint128(amount) / price; // trancheTokenPrice = 2$
         homePools.isExecutedCollectInvest(
-            poolId, trancheId, bytes32(bytes20(address(this))), _currencyId, uint128(amount), trancheTokensPayout
+            poolId, trancheId, bytes32(bytes20(self)), _currencyId, uint128(amount), trancheTokensPayout
         );
 
         // assert deposit & mint values adjusted
-        assertEq(lPool.maxMint(address(this)), trancheTokensPayout); // max deposit
-        assertEq(lPool.maxDeposit(address(this)), amount); // max deposit
+        assertEq(lPool.maxMint(self), trancheTokensPayout); // max deposit
+        assertEq(lPool.maxDeposit(self), amount); // max deposit
         // assert tranche tokens minted
         assertEq(lPool.balanceOf(address(escrow)), trancheTokensPayout);
 
         // deposit a share of the amount
         uint256 share = 2;
-        lPool.deposit(amount / share, address(this)); // mint hald the amount
-        assertEq(lPool.balanceOf(address(this)), trancheTokensPayout / share);
+        lPool.deposit(amount / share, self); // mint hald the amount
+        assertEq(lPool.balanceOf(self), trancheTokensPayout / share);
         assertEq(lPool.balanceOf(address(escrow)), trancheTokensPayout - trancheTokensPayout / share);
-        assertEq(lPool.maxMint(address(this)), trancheTokensPayout - trancheTokensPayout / share); // max deposit
-        assertEq(lPool.maxDeposit(address(this)), amount - amount / share); // max deposit
+        assertEq(lPool.maxMint(self), trancheTokensPayout - trancheTokensPayout / share); // max deposit
+        assertEq(lPool.maxDeposit(self), amount - amount / share); // max deposit
 
         // mint the rest
-        lPool.mint(lPool.maxMint(address(this)), address(this));
-        assertEq(lPool.balanceOf(address(this)), trancheTokensPayout - lPool.maxMint(address(this)));
+        lPool.mint(lPool.maxMint(self), self);
+        assertEq(lPool.balanceOf(self), trancheTokensPayout - lPool.maxMint(self));
         assertTrue(lPool.balanceOf(address(escrow)) <= 1);
-        assertTrue(lPool.maxMint(address(this)) <= 1);
+        assertTrue(lPool.maxMint(self) <= 1);
         //assertTrue(lPool.maxDeposit(address(this)) <= 2); // todo: fix rounding
     }
 
@@ -153,17 +234,17 @@ contract LiquidityPoolTest is Test {
         vm.assume(amount > 1);
         vm.assume(validUntil >= block.timestamp);
         price = 1;
-
+        
         address lPool_ = deployLiquidityPool(poolId, decimals, tokenName, tokenSymbol, trancheId, price, currencyId);
         deposit(lPool_, poolId, trancheId, amount, validUntil); // deposit funds first
         LiquidityPool lPool = LiquidityPool(lPool_);
 
         // will fail - user did not give tranche token allowance to investmentManager
-        vm.expectRevert(bytes("InvestmentManager/insufficient-balance"));
-        lPool.requestDeposit(amount);
+        vm.expectRevert(bytes("ERC20/insufficient-allowance"));
+        lPool.requestRedeem(self, amount);
         lPool.approve(address(lPool), amount); // add allowance
 
-        lPool.requestRedeem(amount);
+        lPool.requestRedeem(self, amount);
         assertEq(lPool.balanceOf(address(escrow)), amount);
 
         // trigger executed collectRedeem
@@ -189,8 +270,6 @@ contract LiquidityPoolTest is Test {
         assertEq(lPool.maxDeposit(address(this)), 0);
     }
 
-    // helpers
-
     function testWithdraw(
         uint64 poolId,
         uint8 decimals,
@@ -214,33 +293,33 @@ contract LiquidityPoolTest is Test {
 
         // will fail - user did not give tranche token allowance to investmentManager
         vm.expectRevert(bytes("InvestmentManager/insufficient-balance"));
-        lPool.requestDeposit(amount);
+        lPool.requestDeposit(self, amount);
         lPool.approve(address(lPool), amount); // add allowance
 
-        lPool.requestRedeem(amount);
+        lPool.requestRedeem(self, amount);
         assertEq(lPool.balanceOf(address(escrow)), amount);
 
         // trigger executed collectRedeem
         uint128 _currencyId = evmTokenManager.currencyAddressToId(address(erc20)); // retrieve currencyId
         uint128 currencyPayout = uint128(amount) / price;
         homePools.isExecutedCollectRedeem(
-            poolId, trancheId, bytes32(bytes20(address(this))), _currencyId, currencyPayout, uint128(amount)
+            poolId, trancheId, bytes32(bytes20(self)), _currencyId, currencyPayout, uint128(amount)
         );
 
         // assert withdraw & redeem values adjusted
-        assertEq(lPool.maxWithdraw(address(this)), currencyPayout); // max deposit
-        assertEq(lPool.maxRedeem(address(this)), amount); // max deposit
+        assertEq(lPool.maxWithdraw(self), currencyPayout); // max deposit
+        assertEq(lPool.maxRedeem(self), amount); // max deposit
         assertEq(lPool.balanceOf(address(escrow)), 0);
 
-        console.logUint(lPool.maxRedeem(address(this)));
+        console.logUint(lPool.maxRedeem(self));
         console.logUint(amount);
 
-        lPool.withdraw(amount, address(this), address(this)); // mint hald the amount
-        assertEq(lPool.balanceOf(address(this)), 0);
+        lPool.withdraw(amount, self, self); // mint hald the amount
+        assertEq(lPool.balanceOf(self), 0);
         assertEq(lPool.balanceOf(address(escrow)), 0);
-        assertEq(erc20.balanceOf(address(this)), amount);
-        assertEq(lPool.maxMint(address(this)), 0);
-        assertEq(lPool.maxDeposit(address(this)), 0);
+        assertEq(erc20.balanceOf(self), amount);
+        assertEq(lPool.maxMint(self), 0);
+        assertEq(lPool.maxDeposit(self), 0);
     }
 
     function testCollectInvest(
@@ -297,18 +376,34 @@ contract LiquidityPoolTest is Test {
         lPool.collectRedeem(address(this));
     }
 
+
+    // helpers
     function deposit(address _lPool, uint64 poolId, bytes16 trancheId, uint256 amount, uint64 validUntil) public {
         LiquidityPool lPool = LiquidityPool(_lPool);
-        erc20.mint(address(this), amount);
-        homePools.updateMember(poolId, trancheId, address(this), validUntil); // add user as member
+        erc20.mint(self, amount);
+        homePools.updateMember(poolId, trancheId, self, validUntil); // add user as member
         erc20.approve(address(evmInvestmentManager), amount); // add allowance
-        lPool.requestDeposit(amount);
+        lPool.requestDeposit(self, amount);
         // trigger executed collectInvest
         uint128 currencyId = evmTokenManager.currencyAddressToId(address(erc20)); // retrieve currencyId
         homePools.isExecutedCollectInvest(
-            poolId, trancheId, bytes32(bytes20(address(this))), currencyId, uint128(amount), uint128(amount)
+            poolId, trancheId, bytes32(bytes20(self)), currencyId, uint128(amount), uint128(amount)
         );
-        lPool.deposit(amount, address(this)); // withdraw hald the amount
+        lPool.deposit(amount, self); // withdraw hald the amount
+    }
+
+    function investorDeposit(address _investor, address _lPool, uint64 poolId, bytes16 trancheId, uint256 amount, uint64 validUntil) public {
+        Investor investor = Investor(_investor);
+        LiquidityPool lPool = LiquidityPool(_lPool);
+        erc20.mint(_investor, amount);
+        homePools.updateMember(poolId, trancheId, _investor, validUntil); // add user as member
+        investor.approve(address(erc20), address(evmInvestmentManager), amount); // add allowance
+        investor.requestDeposit(_lPool, _investor, amount);
+        uint128 currencyId = evmTokenManager.currencyAddressToId(address(erc20)); // retrieve currencyId
+        homePools.isExecutedCollectInvest(
+            poolId, trancheId, bytes32(bytes20(_investor)), currencyId, uint128(amount), uint128(amount)
+        );
+        investor.deposit(_lPool, amount, _investor); // withdraw hald the amount
     }
 
     function deployLiquidityPool(
