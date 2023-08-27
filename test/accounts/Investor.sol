@@ -18,15 +18,12 @@ interface ERC20Like {
     function approve(address spender, uint256 value) external returns (bool);
     function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);
     function transfer(address recipient, uint256 amount) external returns (bool);
-}   
+}
 
 contract Investor is Test {
-    
+    constructor() {}
 
-    constructor() {
-    }
-
-    function approve(address erc20, address spender, uint amount) public {
+    function approve(address erc20, address spender, uint256 amount) public {
         ERC20Like(erc20).approve(spender, amount);
     }
 
@@ -36,7 +33,7 @@ contract Investor is Test {
 
     function requestDeposit(address lPool, address owner, uint256 assets) public {
         LiquidityPoolLike(lPool).requestDeposit(owner, assets);
-    }   
+    }
 
     function deposit(address lPool, uint256 assets, address receiver) public {
         LiquidityPoolLike(lPool).deposit(assets, receiver);
@@ -57,8 +54,8 @@ contract Investor is Test {
     function transferFrom(address erc20, address sender, address recipient, uint256 amount) public returns (bool) {
         ERC20Like(erc20).transferFrom(sender, recipient, amount);
     }
+
     function transfer(address erc20, address recipient, uint256 amount) public returns (bool) {
         ERC20Like(erc20).transfer(recipient, amount);
     }
-
 }
