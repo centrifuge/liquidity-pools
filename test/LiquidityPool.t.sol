@@ -73,7 +73,6 @@ contract LiquidityPoolTest is Test {
         escrow.rely(address(gateway));
 
         self = address(this);
-
     }
 
     function testTransferFrom(
@@ -94,7 +93,6 @@ contract LiquidityPoolTest is Test {
         price = 1;
         Investor investor = new Investor();
 
-        
         address lPool_ = deployLiquidityPool(poolId, decimals, tokenName, tokenSymbol, trancheId, price, currencyId);
         investorDeposit(address(investor), lPool_, poolId, trancheId, amount, validUntil); // deposit funds first
         LiquidityPool lPool = LiquidityPool(lPool_);
@@ -105,15 +103,15 @@ contract LiquidityPoolTest is Test {
         investor.transferFrom(lPool_, address(investor), self, amount / 4);
 
         // investor can transfer tranche tokens
-        investor.approve(lPool_, lPool_, type(uint256).max); 
+        investor.approve(lPool_, lPool_, type(uint256).max);
         investor.transferFrom(lPool_, address(investor), self, amount / 4);
 
         // Random user (self) can not transfer tokens on behalf of user
         vm.expectRevert(bytes("LiquidityPool/no-token-allowance"));
         lPool.transferFrom(address(investor), self, amount / 4);
 
-        // Random user (self) can transfer tokens on behalf of user after approval granted 
-        investor.approve(lPool_, self, amount / 4); 
+        // Random user (self) can transfer tokens on behalf of user after approval granted
+        investor.approve(lPool_, self, amount / 4);
         lPool.transferFrom(address(investor), self, amount / 4);
     }
 
@@ -135,7 +133,6 @@ contract LiquidityPoolTest is Test {
         price = 1;
         Investor investor = new Investor();
 
-        
         address lPool_ = deployLiquidityPool(poolId, decimals, tokenName, tokenSymbol, trancheId, price, currencyId);
         investorDeposit(address(investor), lPool_, poolId, trancheId, amount, validUntil); // deposit funds first
         LiquidityPool lPool = LiquidityPool(lPool_);
@@ -146,10 +143,9 @@ contract LiquidityPoolTest is Test {
         investor.transfer(lPool_, self, amount / 4);
 
         // investor can transfer tranche tokens
-        investor.approve(lPool_, lPool_, type(uint256).max); 
+        investor.approve(lPool_, lPool_, type(uint256).max);
         investor.transfer(lPool_, self, amount / 4);
     }
-
 
     function testDepositMint(
         uint64 poolId,
@@ -234,7 +230,7 @@ contract LiquidityPoolTest is Test {
         vm.assume(amount > 1);
         vm.assume(validUntil >= block.timestamp);
         price = 1;
-        
+
         address lPool_ = deployLiquidityPool(poolId, decimals, tokenName, tokenSymbol, trancheId, price, currencyId);
         deposit(lPool_, poolId, trancheId, amount, validUntil); // deposit funds first
         LiquidityPool lPool = LiquidityPool(lPool_);
@@ -376,7 +372,6 @@ contract LiquidityPoolTest is Test {
         lPool.collectRedeem(address(this));
     }
 
-
     // helpers
     function deposit(address _lPool, uint64 poolId, bytes16 trancheId, uint256 amount, uint64 validUntil) public {
         LiquidityPool lPool = LiquidityPool(_lPool);
@@ -392,7 +387,14 @@ contract LiquidityPoolTest is Test {
         lPool.deposit(amount, self); // withdraw hald the amount
     }
 
-    function investorDeposit(address _investor, address _lPool, uint64 poolId, bytes16 trancheId, uint256 amount, uint64 validUntil) public {
+    function investorDeposit(
+        address _investor,
+        address _lPool,
+        uint64 poolId,
+        bytes16 trancheId,
+        uint256 amount,
+        uint64 validUntil
+    ) public {
         Investor investor = Investor(_investor);
         LiquidityPool lPool = LiquidityPool(_lPool);
         erc20.mint(_investor, amount);
