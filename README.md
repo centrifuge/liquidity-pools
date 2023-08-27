@@ -18,8 +18,8 @@ The deployment of these tranches and the management of investments is controlled
 ## Developing
 #### Getting started
 ```sh
-git clone git@github.com:centrifuge/connectors.git
-cd connectors
+git clone git@github.com:centrifuge/liquidity-pools.git
+cd liquidity-pools
 forge update
 ```
 

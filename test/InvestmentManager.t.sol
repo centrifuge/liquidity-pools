@@ -1,12 +1,13 @@
-// SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.18;
+// SPDX-License-Identifier: AGPL-3.0-only
 pragma abicoder v2;
 
+import {Root} from "../src/Root.sol";
 import {InvestmentManager, Tranche} from "../src/InvestmentManager.sol";
 import {TokenManager} from "../src/TokenManager.sol";
 import {Gateway} from "../src/gateway/Gateway.sol";
 import {Escrow} from "../src/Escrow.sol";
-import {LiquidityPoolFactory, TrancheTokenFactory, MemberlistFactory} from "../src/util/Factory.sol";
+import {LiquidityPoolFactory, TrancheTokenFactory} from "../src/util/Factory.sol";
 import {LiquidityPool} from "../src/LiquidityPool.sol";
 import {TrancheToken} from "../src/token/Tranche.sol";
 import {ERC20} from "../src/token/ERC20.sol";
@@ -15,8 +16,6 @@ import {MemberlistLike, Memberlist} from "../src/token/Memberlist.sol";
 import {MockHomeLiquidityPools} from "./mock/MockHomeLiquidityPools.sol";
 import {MockXcmRouter} from "./mock/MockXcmRouter.sol";
 import {Messages} from "../src/gateway/Messages.sol";
-import {PauseAdmin} from "../src/gateway/admins/PauseAdmin.sol";
-import {DelayedAdmin} from "../src/gateway/admins/DelayedAdmin.sol";
 import "forge-std/Test.sol";
 import "../src/InvestmentManager.sol";
 
@@ -38,30 +37,22 @@ contract InvestmentManagerTest is Test {
 
     function setUp() public {
         vm.chainId(1);
-        uint256 shortWait = 24 hours;
-        uint256 longWait = 48 hours;
-        uint256 gracePeriod = 48 hours;
         address escrow_ = address(new Escrow());
-        address liquidityPoolFactory_ = address(new LiquidityPoolFactory());
-        address trancheTokenFactory_ = address(new TrancheTokenFactory());
-        address memberlistFactory_ = address(new MemberlistFactory());
+        address root_ = address(new Root(address(escrow_), 48 hours));
+        LiquidityPoolFactory liquidityPoolFactory_ = new LiquidityPoolFactory(root_);
+        TrancheTokenFactory trancheTokenFactory_ = new TrancheTokenFactory(root_);
 
         evmInvestmentManager =
-            new InvestmentManager(escrow_, liquidityPoolFactory_, trancheTokenFactory_, memberlistFactory_);
+            new InvestmentManager(escrow_, address(liquidityPoolFactory_), address(trancheTokenFactory_));
+        liquidityPoolFactory_.rely(address(evmInvestmentManager));
+        trancheTokenFactory_.rely(address(evmInvestmentManager));
         evmTokenManager = new TokenManager(escrow_);
 
         mockXcmRouter = new MockXcmRouter(address(evmInvestmentManager));
 
         homePools = new MockHomeLiquidityPools(address(mockXcmRouter));
-        PauseAdmin pauseAdmin = new PauseAdmin();
-        DelayedAdmin delayedAdmin = new DelayedAdmin();
 
-        gateway =
-        new Gateway(address(evmInvestmentManager), address(evmTokenManager), address(mockXcmRouter), shortWait, longWait, gracePeriod);
-        gateway.rely(address(pauseAdmin));
-        gateway.rely(address(delayedAdmin));
-        pauseAdmin.file("gateway", address(gateway));
-        delayedAdmin.file("gateway", address(gateway));
+        gateway = new Gateway(root_, address(evmInvestmentManager), address(evmTokenManager), address(mockXcmRouter));
         evmInvestmentManager.file("gateway", address(gateway));
         evmInvestmentManager.file("tokenManager", address(evmTokenManager));
         evmTokenManager.file("gateway", address(gateway));
@@ -223,7 +214,7 @@ contract InvestmentManagerTest is Test {
 
         address trancheToken_ = evmInvestmentManager.deployTranche(poolId, trancheId);
         address lPoolAddress = evmInvestmentManager.deployLiquidityPool(poolId, trancheId, address(erc20));
-        address lPool_ = evmInvestmentManager.liquidityPools(poolId, trancheId, address(erc20)); // make sure the pool was stored in connectors
+        address lPool_ = evmInvestmentManager.liquidityPools(poolId, trancheId, address(erc20)); // make sure the pool was stored in LP
 
         // make sure the pool was added to the tranche struct
         assertEq(lPoolAddress, lPool_);
@@ -236,7 +227,6 @@ contract InvestmentManagerTest is Test {
         assertEq(lPool.poolId(), poolId);
         assertEq(lPool.trancheId(), trancheId);
 
-        assertTrue(lPool.wards(address(gateway)) == 1);
         assertTrue(lPool.wards(address(evmInvestmentManager)) == 1);
         assertTrue(lPool.wards(address(this)) == 0);
         assertTrue(evmInvestmentManager.wards(lPoolAddress) == 1);
@@ -246,7 +236,6 @@ contract InvestmentManagerTest is Test {
         assertEq(trancheToken.decimals(), decimals);
         assertTrue(trancheToken.hasMember(address(evmInvestmentManager.escrow())));
 
-        assertTrue(trancheToken.wards(address(gateway)) == 1);
         assertTrue(trancheToken.wards(address(evmInvestmentManager)) == 1);
         assertTrue(trancheToken.wards(lPool_) == 1);
         assertTrue(trancheToken.wards(address(this)) == 0);
@@ -331,6 +320,7 @@ contract InvestmentManagerTest is Test {
     ) public {
         vm.assume(currency > 0);
         ERC20 erc20 = newErc20("X's Dollar", "USDX", 42);
+
         homePools.addPool(poolId); // add pool
         homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price); // add tranche
 
