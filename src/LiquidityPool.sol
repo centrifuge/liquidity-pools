@@ -239,7 +239,7 @@ contract LiquidityPool is Auth {
         withTokenApproval(sender, amount)
         returns (bool)
     {
-        // discuss if we should add this here
+        // discuss if we should add this
         // approveForOwner(sender, address(this), amount);
         return share.transferFrom(sender, recipient, amount);
     }
