@@ -77,7 +77,7 @@ contract InvestmentManagerTest is Test {
         homePools.addPool(poolId);
 
         homePools.allowPoolCurrency(poolId, currency);
-        assertTrue(evmInvestmentManager.allowedPoolCurrencies(poolId, address(token)));
+        assertTrue(evmInvestmentManager.isAllowedAsPoolCurrency(poolId, address(token)));
     }
 
     function testAllowPoolCurrencyWithUnknownCurrencyFails(uint128 currency, uint64 poolId) public {
@@ -110,22 +110,13 @@ contract InvestmentManagerTest is Test {
         (uint64 actualPoolId,,) = evmInvestmentManager.pools(poolId);
         assertEq(uint256(actualPoolId), uint256(poolId));
         homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price);
-        (
-            address token,
-            uint64 poolId_,
-            bytes16 trancheId_,
-            uint8 decimals_,
-            uint256 createdAt_,
-            string memory tokenName_,
-            string memory tokenSymbol_
-        ) = evmInvestmentManager.tranches(poolId, trancheId);
+        evmInvestmentManager.deployTranche(poolId, trancheId);
 
-        assertEq(poolId, poolId_);
-        assertEq(trancheId, trancheId_);
-        assertEq(block.timestamp, createdAt_);
-        assertEq(bytes32ToString(stringToBytes32(tokenName)), bytes32ToString(stringToBytes32(tokenName_)));
-        assertEq(bytes32ToString(stringToBytes32(tokenSymbol)), bytes32ToString(stringToBytes32(tokenSymbol_)));
-        assertEq(decimals, decimals_);
+        TrancheToken trancheToken = TrancheToken(evmInvestmentManager.getTrancheToken(poolId, trancheId));
+
+        assertEq(bytes32ToString(stringToBytes32(tokenName)), bytes32ToString(stringToBytes32(trancheToken.name())));
+        assertEq(bytes32ToString(stringToBytes32(tokenSymbol)), bytes32ToString(stringToBytes32(trancheToken.symbol())));
+        assertEq(decimals, trancheToken.decimals());
     }
 
     function testAddingTrancheMultipleTimesFails(
@@ -157,10 +148,9 @@ contract InvestmentManagerTest is Test {
 
         for (uint256 i = 0; i < trancheIds.length; i++) {
             homePools.addTranche(poolId, trancheIds[i], tokenName, tokenSymbol, decimals, price);
-            (, uint64 poolId_, bytes16 trancheId_,,,,) = evmInvestmentManager.tranches(poolId, trancheIds[i]);
-
-            assertEq(poolId, poolId_);
-            assertEq(trancheIds[i], trancheId_);
+            evmInvestmentManager.deployTranche(poolId, trancheIds[i]);
+            TrancheToken trancheToken = TrancheToken(evmInvestmentManager.getTrancheToken(poolId, trancheIds[i]));
+            assertEq(decimals, trancheToken.decimals());
         }
     }
 
@@ -208,7 +198,7 @@ contract InvestmentManagerTest is Test {
 
         address trancheToken_ = evmInvestmentManager.deployTranche(poolId, trancheId);
         address lPoolAddress = evmInvestmentManager.deployLiquidityPool(poolId, trancheId, address(erc20));
-        address lPool_ = evmInvestmentManager.liquidityPools(poolId, trancheId, address(erc20)); // make sure the pool was stored in LP
+        address lPool_ = evmInvestmentManager.getLiquidityPool(poolId, trancheId, address(erc20)); // make sure the pool was stored in LP
 
         // make sure the pool was added to the tranche struct
         assertEq(lPoolAddress, lPool_);
@@ -277,7 +267,7 @@ contract InvestmentManagerTest is Test {
 
         homePools.addCurrency(currency, address(erc20));
         homePools.allowPoolCurrency(poolId, currency);
-        vm.expectRevert(bytes("InvestmentManager/pool-does-not-exist"));
+        vm.expectRevert(bytes("InvestmentManager/tranche-does-not-exist"));
         evmInvestmentManager.deployLiquidityPool(wrongPoolId, trancheId, address(erc20));
     }
 

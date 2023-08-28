@@ -33,4 +33,7 @@ contract InvariantPoolManager is Test {
     function allTranchesLength() public view returns (uint256) {
         return allTranches.length;
     }
+
+    // Added to be ignored in coverage report
+    function test() public {}
 }

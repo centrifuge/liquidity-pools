@@ -5,21 +5,21 @@ pragma solidity ^0.8.18;
 contract Auth {
     mapping(address => uint256) public wards;
 
-    event Rely(address indexed usr);
-    event Deny(address indexed usr);
+    event Rely(address indexed user);
+    event Deny(address indexed user);
 
-    function rely(address usr) external auth {
-        wards[usr] = 1;
-        emit Rely(usr);
+    function rely(address user) external auth {
+        wards[user] = 1;
+        emit Rely(user);
     }
 
-    function deny(address usr) external auth {
-        wards[usr] = 0;
-        emit Deny(usr);
+    function deny(address user) external auth {
+        wards[user] = 0;
+        emit Deny(user);
     }
 
     modifier auth() {
-        require(wards[msg.sender] == 1, "not-authorized");
+        require(wards[msg.sender] == 1, "Auth/not-authorized");
         _;
     }
 }

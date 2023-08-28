@@ -66,6 +66,16 @@ contract MockHomeLiquidityPools is Test {
         router.handle(_message);
     }
 
+    function updateTrancheTokenMetadata(
+        uint64 poolId,
+        bytes16 trancheId,
+        string memory tokenName,
+        string memory tokenSymbol
+    ) public {
+        bytes memory _message = Messages.formatUpdateTrancheTokenMetadata(poolId, trancheId, tokenName, tokenSymbol);
+        router.handle(_message);
+    }
+
     function updateTrancheTokenPrice(uint64 poolId, bytes16 trancheId, uint128 price) public {
         bytes memory _message = Messages.formatUpdateTrancheTokenPrice(poolId, trancheId, price);
         router.handle(_message);
@@ -141,4 +151,7 @@ contract MockHomeLiquidityPools is Test {
         dispatchMessage = _messageBody;
         dispatchRecipient = _recipientAddress;
     }
+
+    // Added to be ignored in coverage report
+    function test() public {}
 }

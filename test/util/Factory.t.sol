@@ -2,8 +2,8 @@
 pragma solidity ^0.8.18;
 pragma abicoder v2;
 
-import {LiquidityPoolFactory} from "src/util/Factory.sol";
-import {LiquidityPool} from "src/LiquidityPool.sol";
+import {TrancheTokenFactory} from "src/util/Factory.sol";
+import {TrancheToken} from "src/token/Tranche.sol";
 import {Root} from "src/Root.sol";
 import {Escrow} from "src/Escrow.sol";
 import "forge-std/Test.sol";
@@ -22,32 +22,38 @@ contract FactoryTest is Test {
     }
 
     // TODO: re-enable this
-    // function testLiquidityPoolFactoryIsDeterministicAcrossChains(
+    // function testTrancheTokenFactoryIsDeterministicAcrossChains(
     //     bytes32 salt,
     //     address sender,
     //     uint64 poolId,
     //     bytes16 trancheId,
-    //     address token,
-    //     uint128 currency,
-    //     address asset,
-    //     address investmentManager,
-    //     address admin
+    //     address investmentManager1,
+    //     address investmentManager2,
+    //     address tokenManager1,
+    //     address tokenManager2,
+    //     string memory name,
+    //     string memory symbol,
+    //     uint8 decimals
     // ) public {
     //     vm.assume(sender != address(0));
 
     //     vm.selectFork(mainnetFork);
-    //     LiquidityPoolFactory lpFactory1 = new LiquidityPoolFactory{ salt: salt }(root);
-    //     address lp1 = lpFactory1.newLiquidityPool(poolId, trancheId, currency, asset, token, investmentManager);
+    //     TrancheTokenFactory trancheTokenFactory1 = new TrancheTokenFactory{ salt: salt }(root);
+    //     address trancheToken1 = trancheTokenFactory1.newTrancheToken(
+    //         poolId, trancheId, investmentManager1, tokenManager1, name, symbol, decimals
+    //     );
 
     //     vm.selectFork(polygonFork);
     //     vm.prank(sender);
-    //     LiquidityPoolFactory lpFactory2 = new LiquidityPoolFactory{ salt: salt }(root);
-    //     assertEq(address(lpFactory1), address(lpFactory2));
-    //     address lp2 = lpFactory2.newLiquidityPool(poolId, trancheId, currency, asset, token, investmentManager);
-    //     assertEq(address(lp1), address(lp2));
+    //     TrancheTokenFactory trancheTokenFactory2 = new TrancheTokenFactory{ salt: salt }(root);
+    //     assertEq(address(trancheTokenFactory1), address(trancheTokenFactory2));
+    //     address trancheToken2 = trancheTokenFactory2.newTrancheToken(
+    //         poolId, trancheId, investmentManager2, tokenManager2, name, symbol, decimals
+    //     );
+    //     assertEq(address(trancheToken1), address(trancheToken2));
     // }
 
-    function testLiquidityPoolFactoryShouldBeDeterministic(bytes32 salt) public {
+    function testTrancheTokenFactoryShouldBeDeterministic(bytes32 salt) public {
         address predictedAddress = address(
             uint160(
                 uint256(
@@ -56,45 +62,47 @@ contract FactoryTest is Test {
                             bytes1(0xff),
                             address(this),
                             salt,
-                            keccak256(abi.encodePacked(type(LiquidityPoolFactory).creationCode, abi.encode(root)))
+                            keccak256(abi.encodePacked(type(TrancheTokenFactory).creationCode, abi.encode(root)))
                         )
                     )
                 )
             )
         );
-        LiquidityPoolFactory lpFactory = new LiquidityPoolFactory{ salt: salt }(root);
-        assertEq(address(lpFactory), predictedAddress);
+        TrancheTokenFactory trancheTokenFactory = new TrancheTokenFactory{ salt: salt }(root);
+        assertEq(address(trancheTokenFactory), predictedAddress);
     }
 
-    function testLiquidityPoolShouldBeDeterministic(
+    function testTrancheTokenShouldBeDeterministic(
         bytes32 salt,
         uint64 poolId,
         bytes16 trancheId,
-        uint128 currency,
-        address asset,
-        address token,
         address investmentManager,
-        address admin
+        address tokenManager,
+        string memory name,
+        string memory symbol,
+        uint8 decimals
     ) public {
-        LiquidityPoolFactory lpFactory = new LiquidityPoolFactory{ salt: salt }(root);
+        TrancheTokenFactory trancheTokenFactory = new TrancheTokenFactory{ salt: salt }(root);
 
-        bytes32 salt = keccak256(abi.encodePacked(poolId, trancheId, currency));
+        bytes32 salt = keccak256(abi.encodePacked(poolId, trancheId));
         address predictedAddress = address(
             uint160(
                 uint256(
                     keccak256(
                         abi.encodePacked(
                             bytes1(0xff),
-                            address(lpFactory),
+                            address(trancheTokenFactory),
                             salt,
-                            keccak256(abi.encodePacked(type(LiquidityPool).creationCode))
+                            keccak256(abi.encodePacked(type(TrancheToken).creationCode, abi.encode(decimals)))
                         )
                     )
                 )
             )
         );
 
-        address token = lpFactory.newLiquidityPool(poolId, trancheId, currency, asset, token, investmentManager);
+        address token = trancheTokenFactory.newTrancheToken(
+            poolId, trancheId, investmentManager, tokenManager, name, symbol, decimals
+        );
 
         assertEq(address(token), predictedAddress);
     }
@@ -103,11 +111,11 @@ contract FactoryTest is Test {
         bytes32 salt,
         uint64 poolId,
         bytes16 trancheId,
-        uint128 currency,
-        address asset,
-        address token,
         address investmentManager,
-        address admin
+        address tokenManager,
+        string memory name,
+        string memory symbol,
+        uint8 decimals
     ) public {
         address predictedAddress = address(
             uint160(
@@ -117,16 +125,16 @@ contract FactoryTest is Test {
                             bytes1(0xff),
                             address(this),
                             salt,
-                            keccak256(abi.encodePacked(type(LiquidityPoolFactory).creationCode, abi.encode(root)))
+                            keccak256(abi.encodePacked(type(TrancheTokenFactory).creationCode, abi.encode(root)))
                         )
                     )
                 )
             )
         );
-        LiquidityPoolFactory lpFactory = new LiquidityPoolFactory{ salt: salt }(root);
-        assertEq(address(lpFactory), predictedAddress);
-        address lp1 = lpFactory.newLiquidityPool(poolId, trancheId, currency, asset, token, investmentManager);
+        TrancheTokenFactory trancheTokenFactory = new TrancheTokenFactory{ salt: salt }(root);
+        assertEq(address(trancheTokenFactory), predictedAddress);
+        trancheTokenFactory.newTrancheToken(poolId, trancheId, investmentManager, tokenManager, name, symbol, decimals);
         vm.expectRevert();
-        address lp2 = lpFactory.newLiquidityPool(poolId, trancheId, currency, asset, token, investmentManager);
+        trancheTokenFactory.newTrancheToken(poolId, trancheId, investmentManager, tokenManager, name, symbol, decimals);
     }
 }

@@ -50,7 +50,7 @@ interface AxelarGatewayLike {
         external;
 }
 
-contract AxelarXCMRouter is Auth, AxelarExecutableLike {
+contract AxelarXCMRelayer is Auth, AxelarExecutableLike {
     address constant XCM_TRANSACTOR_V2_ADDRESS = 0x000000000000000000000000000000000000080D;
 
     //todo(nuno): do we really need this?
@@ -86,14 +86,14 @@ contract AxelarXCMRouter is Auth, AxelarExecutableLike {
     }
 
     modifier onlyCentrifugeChainOrigin() {
-        require(msg.sender == address(centrifugeChainOrigin), "ConnectorAxelarXCMRouter/invalid-origin");
+        require(msg.sender == address(centrifugeChainOrigin), "ConnectorAxelarXCMRelayer/invalid-origin");
         _;
     }
 
     modifier onlyAxelarEVMRouterOrigin() {
         require(
             msg.sender == address(axelarEVMRouterOrigin),
-            "ConnectorAxelarXCMRouter/only-axelar-evm-router-origin-allowed"
+            "ConnectorAxelarXCMRelayer/only-axelar-evm-router-origin-allowed"
         );
         _;
     }
@@ -104,7 +104,7 @@ contract AxelarXCMRouter is Auth, AxelarExecutableLike {
             axelarEVMRouterOrigin = axelarEVMRouterOrigin_;
             emit File(what, axelarEVMRouterOrigin_);
         } else {
-            revert("ConnectorAxelarXCMRouter/file-unrecognized-param");
+            revert("ConnectorAxelarXCMRelayer/file-unrecognized-param");
         }
     }
 
@@ -115,7 +115,7 @@ contract AxelarXCMRouter is Auth, AxelarExecutableLike {
         if (what == "xcmWeightInfo") {
             xcmWeightInfo = XcmWeightInfo(buyExecutionWeightLimit, transactWeightAtMost, feeAmount);
         } else {
-            revert("ConnectorAxelarXCMRouter/file-unrecognized-param");
+            revert("ConnectorAxelarXCMRelayer/file-unrecognized-param");
         }
 
         emit File(what, xcmWeightInfo);
