@@ -20,11 +20,11 @@ echo "Network = $(cast chain)"
 echo "Balance = $(echo "$(cast balance $ETH_FROM)/10^18" | bc -l) ETH"
 
 case "$1" in
-  Permissionless|AxelarEVM|AxelarXCM)
+  Permissionless|AxelarEVM|AxelarXCMRelayer)
     forge script script/$1.s.sol:$1Script --optimize --rpc-url $RPC_URL --private-key $PRIVATE_KEY --verify --broadcast --chain-id $CHAIN_ID --etherscan-api-key $ETHERSCAN_KEY $2
     ;;
   *)
-    echo "Router should be one of Permissionless, AxelarEVM, AxelarXCM"
+    echo "Router should be one of Permissionless, AxelarEVM, AxelarXCMRelayer"
     exit 1
     ;;
 esac
