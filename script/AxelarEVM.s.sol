@@ -18,10 +18,10 @@ contract AxelarEVMScript is Deployer {
 
         deployInvestmentManager();
         AxelarEVMRouter router = new AxelarEVMRouter(
-                address(investmentManager),
                 address(vm.envAddress("AXELAR_GATEWAY"))
         );
         wire(address(router));
+        router.file("gateway", address(gateway));
 
         // Set up test data
         if (vm.envBool("SETUP_TEST_DATA")) {
