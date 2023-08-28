@@ -348,7 +348,6 @@ contract TokenManagerTest is Test {
         uint128 price
     ) public {
         vm.assume(currency > 0);
-        ERC20 erc20 = newErc20("X's Dollar", "USDX", 42);
         homePools.addPool(poolId); // add pool
         homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price); // add tranche
 
@@ -400,11 +399,10 @@ contract TokenManagerTest is Test {
         string memory updatedTokenSymbol
     ) public {
         vm.assume(currency > 0);
-        ERC20 erc20 = newErc20("X's Dollar", "USDX", 42);
         homePools.addPool(poolId); // add pool
         homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price); // add tranche
 
-        address tranche_ = evmInvestmentManager.deployTranche(poolId, trancheId);
+        evmInvestmentManager.deployTranche(poolId, trancheId);
 
         homePools.updateTrancheTokenMetadata(poolId, trancheId, updatedTokenName, updatedTokenSymbol);
     }
@@ -436,7 +434,6 @@ contract TokenManagerTest is Test {
     function testUpdatingTokenMetadataForNonExistentTrancheFails(
         uint64 poolId,
         bytes16 trancheId,
-        uint128 price,
         string memory updatedTokenName,
         string memory updatedTokenSymbol
     ) public {

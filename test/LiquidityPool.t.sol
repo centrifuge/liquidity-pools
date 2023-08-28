@@ -214,60 +214,92 @@ contract LiquidityPoolTest is Test {
         //assertTrue(lPool.maxDeposit(address(this)) <= 2); // todo: fix rounding
     }
 
-    // function testDepositAndRedeemWithPermit(
-    //     uint64 poolId,
-    //     uint8 decimals,
-    //     string memory tokenName,
-    //     string memory tokenSymbol,
-    //     bytes16 trancheId,
-    //     uint128 price,
-    //     uint128 currencyId,
-    //     uint64 validUntil
-    // ) public {
-    //     vm.assume(currencyId > 0);
-    //     vm.assume(validUntil >= block.timestamp);
-    //     price = 2;
+    function testDepositAndRedeemWithPermit(
+        uint64 poolId,
+        uint8 decimals,
+        string memory tokenName,
+        string memory tokenSymbol,
+        bytes16 trancheId,
+        uint128 currencyId,
+        uint256 amount
+    ) public {
+        vm.assume(currencyId > 0);
+        vm.assume(amount < MAX_UINT128);
+        vm.assume(amount > 1);
 
-    //     address lPool_ = deployLiquidityPool(poolId, decimals, tokenName, tokenSymbol, trancheId, price, currencyId);
-    //     LiquidityPool lPool = LiquidityPool(lPool_);
+        // Use a wallet with a known private key so we can sign the permit message
+        address investor = vm.addr(0xABCD);
+        vm.prank(vm.addr(0xABCD));
 
-    //     // Use a wallet with a known private key so we can sign the permit message
-    //     uint256 privateKey = 0xABCD;
-    //     address owner = vm.addr(privateKey);
+        LiquidityPool lPool =
+            LiquidityPool(deployLiquidityPool(poolId, decimals, tokenName, tokenSymbol, trancheId, 1, currencyId));
+        erc20.mint(investor, amount);
+        homePools.updateMember(poolId, trancheId, investor, type(uint64).max);
 
-    //     erc20.mint(owner, 1e6);
-    //     homePools.updateMember(poolId, trancheId, owner, validUntil);
+        // Sign permit for depositing investment currency
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
+            0xABCD,
+            keccak256(
+                abi.encodePacked(
+                    "\x19\x01",
+                    erc20.DOMAIN_SEPARATOR(),
+                    keccak256(
+                        abi.encode(
+                            erc20.PERMIT_TYPEHASH(), investor, address(evmInvestmentManager), amount, 0, block.timestamp
+                        )
+                    )
+                )
+            )
+        );
 
-    //     TrancheTokenLike trancheToken = TrancheTokenLike(lPool.share());
-    //     (uint8 v, bytes32 r, bytes32 s) = vm.sign(
-    //         privateKey,
-    //         keccak256(
-    //             abi.encodePacked(
-    //                 "\x19\x01",
-    //                 trancheToken.DOMAIN_SEPARATOR(),
-    //                 keccak256(
-    //                     abi.encode(
-    //                         trancheToken.PERMIT_TYPEHASH(),
-    //                         owner,
-    //                         address(evmInvestmentManager),
-    //                         1e6,
-    //                         0,
-    //                         block.timestamp
-    //                     )
-    //                 )
-    //             )
-    //         )
-    //     );
+        lPool.requestDepositWithPermit(amount, investor, block.timestamp, v, r, s);
 
-    //     vm.prank(owner);
-    //     lPool.requestDepositWithPermit(1e6, owner, block.timestamp, v, r, s);
+        // To avoid stack too deep errors
+        delete v;
+        delete r;
+        delete s;
 
-    //     // ensure funds are locked in escrow
-    //     assertEq(erc20.balanceOf(address(escrow)), 1e6);
-    //     assertEq(erc20.balanceOf(owner), 0);
+        // ensure funds are locked in escrow
+        assertEq(erc20.balanceOf(address(escrow)), amount);
+        assertEq(erc20.balanceOf(investor), 0);
 
-    //     // TODO: collect, then redeem with permit
-    // }
+        // collect 50% of the tranche tokens
+        homePools.isExecutedCollectInvest(
+            poolId,
+            trancheId,
+            bytes32(bytes20(investor)),
+            evmTokenManager.currencyAddressToId(address(erc20)),
+            uint128(amount),
+            uint128(amount)
+        );
+        uint256 maxMint = lPool.maxMint(investor);
+        lPool.mint(maxMint, investor);
+
+        TrancheTokenLike trancheToken = lPool.share();
+        assertEq(trancheToken.balanceOf(address(investor)), maxMint);
+
+        // Sign permit for redeeming tranche tokens
+        (v, r, s) = vm.sign(
+            0xABCD,
+            keccak256(
+                abi.encodePacked(
+                    "\x19\x01",
+                    trancheToken.DOMAIN_SEPARATOR(),
+                    keccak256(
+                        abi.encode(
+                            trancheToken.PERMIT_TYPEHASH(), investor, address(lPool), maxMint, 0, block.timestamp
+                        )
+                    )
+                )
+            )
+        );
+
+        lPool.requestRedeemWithPermit(maxMint, investor, block.timestamp, v, r, s);
+
+        // ensure tokens are locked in escrow
+        assertEq(trancheToken.balanceOf(address(escrow)), maxMint);
+        assertEq(trancheToken.balanceOf(investor), 0);
+    }
 
     function testRedeem(
         uint64 poolId,

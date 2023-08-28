@@ -144,12 +144,12 @@ contract LiquidityPool is Auth {
         investmentManager.requestDeposit(assets, owner);
     }
 
-    // function requestDepositWithPermit(uint256 assets, address owner, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
-    //     public
-    // {
-    //     ERC20Like(asset).permit(owner, address(investmentManager), assets, deadline, v, r, s);
-    //     investmentManager.requestDeposit(assets, owner);
-    // }
+    function requestDepositWithPermit(uint256 assets, address owner, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
+        public
+    {
+        ERC20Like(asset).permit(owner, address(investmentManager), assets, deadline, v, r, s);
+        investmentManager.requestDeposit(assets, owner);
+    }
 
     /// @dev collect shares for deposited funds after pool epoch execution. maxMint is the max amount of shares that can be collected. Required assets must already be locked
     /// maxDeposit is the amount of funds that was successfully invested into the pool on Centrifuge chain
@@ -181,12 +181,12 @@ contract LiquidityPool is Auth {
         investmentManager.requestRedeem(shares, owner);
     }
 
-    // function requestRedeemWithPermit(uint256 shares, address owner, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
-    //     public
-    // {
-    //     share.permit(owner, address(investmentManager), shares, deadline, v, r, s);
-    //     investmentManager.requestRedeem(shares, owner);
-    // }
+    function requestRedeemWithPermit(uint256 shares, address owner, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
+        public
+    {
+        share.permit(owner, address(this), shares, deadline, v, r, s);
+        investmentManager.requestRedeem(shares, owner);
+    }
 
     /// @return maxAssets that the receiver can withdraw
     function maxWithdraw(address receiver) public view returns (uint256 maxAssets) {
