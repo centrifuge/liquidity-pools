@@ -68,6 +68,11 @@ contract LiquidityPool is Auth {
         address indexed sender, address indexed receiver, address indexed owner, uint256 assets, uint256 shares
     );
 
+    constructor() {
+        wards[msg.sender] = 1;
+        emit Rely(msg.sender);
+    }
+
     /// @dev function either called by a ward or message.sender has approval to spent sender´s tokens
     modifier withTokenApproval(address sender, uint256 amount) {
         require(
@@ -84,11 +89,6 @@ contract LiquidityPool is Auth {
             "LiquidityPool/no-currency-allowance"
         );
         _;
-    }
-
-    constructor() {
-        wards[msg.sender] = 1;
-        emit Rely(msg.sender);
     }
 
     // --- Administration ---
@@ -136,7 +136,7 @@ contract LiquidityPool is Auth {
     }
 
     /// @dev request asset deposit for a receiver to be included in the next epoch execution. Asset is locked in the escrow on request submission
-    function requestDeposit(address owner, uint256 assets) public withCurrencyApproval(owner, assets) {
+    function requestDeposit(uint256 assets, address owner) public withCurrencyApproval(owner, assets) {
         investmentManager.requestDeposit(assets, owner);
     }
 
@@ -166,7 +166,7 @@ contract LiquidityPool is Auth {
     }
 
     /// @dev request share redemption for a receiver to be included in the next epoch execution. Shares are locked in the escrow on request submission
-    function requestRedeem(address owner, uint256 shares) public withTokenApproval(owner, shares) {
+    function requestRedeem(uint256 shares, address owner) public withTokenApproval(owner, shares) {
         investmentManager.requestRedeem(shares, owner);
     }
 
@@ -206,7 +206,6 @@ contract LiquidityPool is Auth {
     /// @dev Redeem shares after successful epoch execution. Receiver will receive assets for the exact amount of redeemed shares from Owner after epoch execution.
     /// @return assets currency payout for the exact amount of redeemed shares
     function redeem(uint256 shares, address receiver, address owner) public returns (uint256 assets) {
-        require(owner == msg.sender, "LiquidityPool/not-authorized-to-redeem");
         uint256 currencyPayout = investmentManager.processRedeem(shares, receiver, owner);
         // make sure msg.sender has the allowance to delegate owner's funds
         require(
