@@ -46,6 +46,7 @@ contract Deployer is Script {
         // Deploy gateway and admins
         pauseAdmin = new PauseAdmin();
         delayedAdmin = new DelayedAdmin();
+        pauseAdmin.rely(address(delayedAdmin));
         gateway = new Gateway(address(root), address(investmentManager), address(tokenManager), address(router));
 
         // Wire gateway
