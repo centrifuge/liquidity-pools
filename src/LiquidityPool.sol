@@ -106,7 +106,6 @@ contract LiquidityPool is Auth {
     }
 
     // --- Administration ---
-    /// @dev investmentManager and asset address to be filed by the factory on deployment
     function file(bytes32 what, address data) public auth {
         if (what == "investmentManager") investmentManager = InvestmentManagerLike(data);
         else revert("LiquidityPool/file-unrecognized-param");
