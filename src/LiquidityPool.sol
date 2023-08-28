@@ -7,26 +7,24 @@ interface TrancheTokenLike {
     // erc20 functions
     function mint(address owner, uint256 amount) external;
     function burn(address owner, uint256 amount) external;
-
     function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);
     function transfer(address recipient, uint256 amount) external returns (bool);
-    // function approve(address spender, uint256 amount) external returns (bool);
     function approveForOwner(address owner, address spender, uint256 value) external returns (bool);
-
     function totalSupply() external view returns (uint256);
     function balanceOf(address owner) external returns (uint256);
     function allowance(address owner, address spender) external returns (uint256);
-    // function increaseAllowance(address spender, uint256 addedValue) external returns (bool);
-    // function decreaseAllowance(address spender, uint256 subtractedValue) external returns (bool);
     function increaseAllowanceForOwner(address owner, address spender, uint256 addedValue) external returns (bool);
     function decreaseAllowanceForOwner(address owner, address spender, uint256 subtractedValue)
         external
         returns (bool);
-
     // restricted token functions
     function latestPrice() external view returns (uint256);
     function memberlist() external returns (address);
     function hasMember(address) external returns (bool);
+}
+
+interface ERC20Like {
+    function allowance(address owner, address spender) external returns (uint256);
 }
 
 interface InvestmentManagerLike {
@@ -75,6 +73,24 @@ contract LiquidityPool is Auth {
         emit Rely(msg.sender);
     }
 
+    /// @dev function either called by a ward or message.sender has approval to spent sender´s tokens
+    modifier withTokenApproval(address sender, uint256 amount) {
+        require(
+            wards[msg.sender] == 1 || msg.sender == sender || share.allowance(sender, msg.sender) >= amount,
+            "LiquidityPool/no-token-allowance"
+        );
+        _;
+    }
+
+    /// @dev function either called by a ward or message.sender has approval to spent sender´s currency
+    modifier withCurrencyApproval(address sender, uint256 amount) {
+        require(
+            wards[msg.sender] == 1 || msg.sender == sender || ERC20Like(asset).allowance(sender, msg.sender) >= amount,
+            "LiquidityPool/no-currency-allowance"
+        );
+        _;
+    }
+
     // --- Administration ---
     /// @dev investmentManager and asset address to be filed by the factory on deployment
     function file(bytes32 what, address data) public auth {
@@ -120,8 +136,8 @@ contract LiquidityPool is Auth {
     }
 
     /// @dev request asset deposit for a receiver to be included in the next epoch execution. Asset is locked in the escrow on request submission
-    function requestDeposit(uint256 assets) public {
-        investmentManager.requestDeposit(assets, msg.sender);
+    function requestDeposit(uint256 assets, address owner) public withCurrencyApproval(owner, assets) {
+        investmentManager.requestDeposit(assets, owner);
     }
 
     /// @dev collect shares for deposited funds after pool epoch execution. maxMint is the max amount of shares that can be collected. Required assets must already be locked
@@ -150,8 +166,8 @@ contract LiquidityPool is Auth {
     }
 
     /// @dev request share redemption for a receiver to be included in the next epoch execution. Shares are locked in the escrow on request submission
-    function requestRedeem(uint256 shares) public {
-        investmentManager.requestRedeem(shares, msg.sender);
+    function requestRedeem(uint256 shares, address owner) public withTokenApproval(owner, shares) {
+        investmentManager.requestRedeem(shares, owner);
     }
 
     /// @return maxAssets that the receiver can withdraw
@@ -166,9 +182,12 @@ contract LiquidityPool is Auth {
 
     /// @dev Withdraw assets after successful epoch execution. Receiver will receive an exact amount of assets for a certain amount of shares that has been redeemed from Owner during epoch execution.
     /// @return shares that have been redeemed for the excat assets amount
-    function withdraw(uint256 assets, address receiver, address owner) public returns (uint256 shares) {
+    function withdraw(uint256 assets, address receiver, address owner)
+        public
+        withCurrencyApproval(owner, assets)
+        returns (uint256 shares)
+    {
         // check if messgae sender can spend owners funds
-        require(owner == msg.sender, "LiquidityPool/not-authorized-to-withdraw");
         uint256 sharesRedeemed = investmentManager.processWithdraw(assets, receiver, owner);
         emit Withdraw(address(this), receiver, owner, assets, sharesRedeemed);
         return sharesRedeemed;
@@ -187,8 +206,13 @@ contract LiquidityPool is Auth {
     /// @dev Redeem shares after successful epoch execution. Receiver will receive assets for the exact amount of redeemed shares from Owner after epoch execution.
     /// @return assets currency payout for the exact amount of redeemed shares
     function redeem(uint256 shares, address receiver, address owner) public returns (uint256 assets) {
-        require(owner == msg.sender, "LiquidityPool/not-authorized-to-redeem");
         uint256 currencyPayout = investmentManager.processRedeem(shares, receiver, owner);
+        // make sure msg.sender has the allowance to delegate owner's funds
+        require(
+            wards[msg.sender] == 1 || msg.sender == owner
+                || ERC20Like(asset).allowance(owner, msg.sender) >= currencyPayout,
+            "LiquidityPool/no-currency-allowance"
+        );
         emit Withdraw(address(this), receiver, owner, currencyPayout, shares);
         return currencyPayout;
     }
@@ -210,12 +234,18 @@ contract LiquidityPool is Auth {
         return share.balanceOf(owner);
     }
 
-    function transfer(address recipient, uint256 amount) public auth returns (bool) {
-        return share.transferFrom(msg.sender, recipient, amount);
+    function transferFrom(address sender, address recipient, uint256 amount)
+        public
+        withTokenApproval(sender, amount)
+        returns (bool)
+    {
+        // discuss if we should add this
+        // approveForOwner(sender, address(this), amount);
+        return share.transferFrom(sender, recipient, amount);
     }
 
-    function transferFrom(address sender, address recipient, uint256 amount) public auth returns (bool) {
-        return share.transferFrom(sender, recipient, amount);
+    function transfer(address recipient, uint256 amount) public returns (bool) {
+        return transferFrom(msg.sender, recipient, amount);
     }
 
     function approve(address spender, uint256 amount) public returns (bool) {
