@@ -2,7 +2,7 @@
 pragma solidity ^0.8.18;
 
 import {AxelarEVMRouter} from "src/gateway/routers/axelar/EVMRouter.sol";
-import {Deployer} from "./Deployer.sol";
+import {Deployer, RouterLike} from "./Deployer.sol";
 
 // Script to deploy Liquidity Pools with an Axelar router.
 contract AxelarEVMScript is Deployer {
@@ -22,6 +22,7 @@ contract AxelarEVMScript is Deployer {
                 address(vm.envAddress("AXELAR_GATEWAY"))
         );
         wire(address(router));
+        RouterLike(address(router)).file("gateway", address(gateway));
 
         giveAdminAccess();
         removeDeployerAccess(address(router));

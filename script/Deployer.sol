@@ -58,7 +58,6 @@ contract Deployer is Script {
         tokenManager.file("gateway", address(gateway));
         gateway.rely(address(pauseAdmin));
         gateway.rely(address(delayedAdmin));
-        RouterLike(router).file("gateway", address(gateway));
         investmentManager.rely(address(gateway));
         tokenManager.rely(address(gateway));
         RouterLike(router).rely(address(gateway));

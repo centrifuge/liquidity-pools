@@ -3,7 +3,7 @@ pragma solidity ^0.8.18;
 
 import {PermissionlessRouter} from "test/mock/PermissionlessRouter.sol";
 import {InvestmentManager} from "src/InvestmentManager.sol";
-import {Deployer} from "./Deployer.sol";
+import {Deployer, RouterLike} from "./Deployer.sol";
 
 // Script to deploy Liquidity Pools with a permissionless router for testing.
 contract PermissionlessScript is Deployer {
@@ -21,6 +21,7 @@ contract PermissionlessScript is Deployer {
         deployInvestmentManager();
         PermissionlessRouter router = new PermissionlessRouter();
         wire(address(router));
+        RouterLike(address(router)).file("gateway", address(gateway));
 
         // Set up test data
         tokenManager.addCurrency(1, 0xd35CCeEAD182dcee0F148EbaC9447DA2c4D449c4);
