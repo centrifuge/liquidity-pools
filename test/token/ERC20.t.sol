@@ -35,6 +35,9 @@ contract MockMultisig is IERC1271 {
             }
         }
     }
+
+    // Added to be ignored in coverage report
+    function test() public {}
 }
 
 contract ERC20Test is Test {

@@ -12,8 +12,8 @@ import {DelayedAdmin} from "src/admins/DelayedAdmin.sol";
 import {LiquidityPoolFactory, TrancheTokenFactory} from "src/util/Factory.sol";
 import {ERC20} from "src/token/ERC20.sol";
 import {MemberlistLike, Memberlist} from "src/token/Memberlist.sol";
-import {MockHomeLiquidityPools} from "../mock/MockHomeLiquidityPools.sol";
-import {MockXcmRouter} from "../mock/MockXcmRouter.sol";
+import {MockHomeLiquidityPools} from "./mock/MockHomeLiquidityPools.sol";
+import {MockXcmRouter} from "./mock/MockXcmRouter.sol";
 import {Messages} from "src/gateway/Messages.sol";
 import "forge-std/Test.sol";
 

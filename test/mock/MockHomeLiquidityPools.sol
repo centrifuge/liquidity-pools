@@ -151,4 +151,7 @@ contract MockHomeLiquidityPools is Test {
         dispatchMessage = _messageBody;
         dispatchRecipient = _recipientAddress;
     }
+
+    // Added to be ignored in coverage report
+    function test() public {}
 }
