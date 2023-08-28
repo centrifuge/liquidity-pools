@@ -388,6 +388,64 @@ contract TokenManagerTest is Test {
         homePools.updateTrancheTokenPrice(poolId, trancheId, price);
     }
 
+    function testUpdatingTokenMetadataWorks(
+        uint64 poolId,
+        uint8 decimals,
+        uint128 currency,
+        string memory tokenName,
+        string memory tokenSymbol,
+        bytes16 trancheId,
+        uint128 price,
+        string memory updatedTokenName,
+        string memory updatedTokenSymbol
+    ) public {
+        vm.assume(currency > 0);
+        ERC20 erc20 = newErc20("X's Dollar", "USDX", 42);
+        homePools.addPool(poolId); // add pool
+        homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price); // add tranche
+
+        address tranche_ = evmInvestmentManager.deployTranche(poolId, trancheId);
+
+        homePools.updateTrancheTokenMetadata(poolId, trancheId, updatedTokenName, updatedTokenSymbol);
+    }
+
+    function testUpdatingTokenMetadataAsNonRouterFails(
+        uint64 poolId,
+        uint8 decimals,
+        uint128 currency,
+        string memory tokenName,
+        string memory tokenSymbol,
+        bytes16 trancheId,
+        uint128 price,
+        string memory updatedTokenName,
+        string memory updatedTokenSymbol
+    ) public {
+        vm.assume(currency > 0);
+        ERC20 erc20 = newErc20("X's Dollar", "USDX", 42);
+        homePools.addPool(poolId); // add pool
+        homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price); // add tranche
+        homePools.addCurrency(currency, address(erc20));
+        homePools.allowPoolCurrency(poolId, currency);
+        evmInvestmentManager.deployTranche(poolId, trancheId);
+        evmInvestmentManager.deployLiquidityPool(poolId, trancheId, address(erc20));
+
+        vm.expectRevert(bytes("TokenManager/not-the-gateway"));
+        evmTokenManager.updateTrancheTokenMetadata(poolId, trancheId, updatedTokenName, updatedTokenSymbol);
+    }
+
+    function testUpdatingTokenMetadataForNonExistentTrancheFails(
+        uint64 poolId,
+        bytes16 trancheId,
+        uint128 price,
+        string memory updatedTokenName,
+        string memory updatedTokenSymbol
+    ) public {
+        homePools.addPool(poolId);
+
+        vm.expectRevert(bytes("TokenManager/unknown-token"));
+        homePools.updateTrancheTokenMetadata(poolId, trancheId, updatedTokenName, updatedTokenSymbol);
+    }
+
     // helpers
     function deployLiquidityPool(
         uint64 poolId,
