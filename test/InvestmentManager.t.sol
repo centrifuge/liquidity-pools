@@ -267,7 +267,7 @@ contract InvestmentManagerTest is Test {
 
         homePools.addCurrency(currency, address(erc20));
         homePools.allowPoolCurrency(poolId, currency);
-        vm.expectRevert(bytes("InvestmentManager/pool-does-not-exist"));
+        vm.expectRevert(bytes("InvestmentManager/tranche-does-not-exist"));
         evmInvestmentManager.deployLiquidityPool(wrongPoolId, trancheId, address(erc20));
     }
 
