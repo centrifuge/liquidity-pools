@@ -8,7 +8,7 @@ import {Gateway} from "../src/gateway/Gateway.sol";
 import {Root} from "../src/Root.sol";
 import {Escrow} from "../src/Escrow.sol";
 import {LiquidityPoolFactory, TrancheTokenFactory} from "../src/util//Factory.sol";
-import {LiquidityPool} from "../src/LiquidityPool.sol";
+import {LiquidityPool, TrancheTokenLike} from "../src/LiquidityPool.sol";
 import {ERC20} from "../src/token/ERC20.sol";
 
 import {MemberlistLike, Memberlist} from "../src/token/Memberlist.sol";
@@ -212,6 +212,61 @@ contract LiquidityPoolTest is Test {
         assertTrue(lPool.balanceOf(address(escrow)) <= 1);
         assertTrue(lPool.maxMint(self) <= 1);
         //assertTrue(lPool.maxDeposit(address(this)) <= 2); // todo: fix rounding
+    }
+
+    function testDepositAndRedeemWithPermit(
+        uint64 poolId,
+        uint8 decimals,
+        string memory tokenName,
+        string memory tokenSymbol,
+        bytes16 trancheId,
+        uint128 price,
+        uint128 currencyId,
+        uint64 validUntil
+    ) public {
+        vm.assume(currencyId > 0);
+        vm.assume(validUntil >= block.timestamp);
+        price = 2;
+
+        address lPool_ = deployLiquidityPool(poolId, decimals, tokenName, tokenSymbol, trancheId, price, currencyId);
+        LiquidityPool lPool = LiquidityPool(lPool_);
+
+        // Use a wallet with a known private key so we can sign the permit message
+        uint256 privateKey = 0xABCD;
+        address owner = vm.addr(privateKey);
+
+        erc20.mint(owner, 1e6);
+        homePools.updateMember(poolId, trancheId, owner, validUntil);
+
+        TrancheTokenLike trancheToken = TrancheTokenLike(lPool.share());
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
+            privateKey,
+            keccak256(
+                abi.encodePacked(
+                    "\x19\x01",
+                    trancheToken.DOMAIN_SEPARATOR(),
+                    keccak256(
+                        abi.encode(
+                            trancheToken.PERMIT_TYPEHASH(),
+                            owner,
+                            address(evmInvestmentManager),
+                            1e6,
+                            0,
+                            block.timestamp
+                        )
+                    )
+                )
+            )
+        );
+
+        vm.prank(owner);
+        lPool.requestDepositWithPermit(1e6, owner, block.timestamp, v, r, s);
+
+        // ensure funds are locked in escrow
+        assertEq(erc20.balanceOf(address(escrow)), 1e6);
+        assertEq(erc20.balanceOf(owner), 0);
+
+        // TODO: collect, then redeem with permit
     }
 
     function testRedeem(

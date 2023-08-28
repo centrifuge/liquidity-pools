@@ -11,12 +11,15 @@ interface ERC20Like {
 
 interface TrancheTokenLike is ERC20Like {
     // erc20 functions
+    function name() external view returns (string memory);
+    function symbol() external view returns (string memory);
+    function decimals() external view returns (uint8);
+    function totalSupply() external view returns (uint256);
     function mint(address owner, uint256 amount) external;
     function burn(address owner, uint256 amount) external;
     function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);
     function transfer(address recipient, uint256 amount) external returns (bool);
     function approveForOwner(address owner, address spender, uint256 value) external returns (bool);
-    function totalSupply() external view returns (uint256);
     function balanceOf(address owner) external returns (uint256);
     function allowance(address owner, address spender) external returns (uint256);
     function increaseAllowanceForOwner(address owner, address spender, uint256 addedValue) external returns (bool);
@@ -27,6 +30,9 @@ interface TrancheTokenLike is ERC20Like {
     function latestPrice() external view returns (uint256);
     function memberlist() external returns (address);
     function hasMember(address) external returns (bool);
+    // erc2612 functions
+    function PERMIT_TYPEHASH() external view returns (bytes32);
+    function DOMAIN_SEPARATOR() external view returns (bytes32);
 }
 
 interface InvestmentManagerLike {
@@ -142,11 +148,10 @@ contract LiquidityPool is Auth {
         investmentManager.requestDeposit(assets, owner);
     }
 
-    function requestDepositWithPermit(address owner, uint256 assets, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
+    function requestDepositWithPermit(uint256 assets, address owner, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
         public
-        withCurrencyApproval(owner, assets)
     {
-        ERC20Like(asset).permit(msg.sender, address(this), assets, deadline, v, r, s);
+        ERC20Like(asset).permit(owner, address(investmentManager), assets, deadline, v, r, s);
         investmentManager.requestDeposit(assets, owner);
     }
 
@@ -180,11 +185,10 @@ contract LiquidityPool is Auth {
         investmentManager.requestRedeem(shares, owner);
     }
 
-    function requestRedeemWithPermit(address owner, uint256 shares, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
+    function requestRedeemWithPermit(uint256 shares, address owner, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
         public
-        withTokenApproval(owner, shares)
     {
-        share.permit(msg.sender, address(this), shares, deadline, v, r, s);
+        share.permit(owner, address(investmentManager), shares, deadline, v, r, s);
         investmentManager.requestRedeem(shares, owner);
     }
 
@@ -244,6 +248,18 @@ contract LiquidityPool is Auth {
     }
 
     // --- ERC20 overrides ---
+    function name() public view returns (string memory) {
+        return share.name();
+    }
+
+    function symbol() public view returns (string memory) {
+        return share.symbol();
+    }
+
+    function decimals() public view returns (uint8) {
+        return share.decimals();
+    }
+
     function totalSupply() public view returns (uint256) {
         return share.totalSupply();
     }
