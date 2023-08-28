@@ -46,7 +46,6 @@ contract PauseAdmin is Auth {
         emit RemovePauser(user);
     }
 
-
     // --- Admin actions ---
     function pause() public canPause {
         root.pause();
