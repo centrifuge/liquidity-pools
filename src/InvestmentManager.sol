@@ -551,9 +551,8 @@ contract InvestmentManager is Auth {
         require(_poolCurrencyCheck(poolId, _currency), "InvestmentManager/currency-not-supported"); // currency must be supported by pool
 
         uint128 currencyId = tokenManager.currencyAddressToId(_currency);
-        liquidityPool = liquidityPoolFactory.newLiquidityPool(
-            poolId, trancheId, currencyId, _currency, tranche.token, address(this)
-        );
+        liquidityPool =
+            liquidityPoolFactory.newLiquidityPool(poolId, trancheId, _currency, tranche.token, address(this));
 
         EscrowLike(escrow).approve(tranche.token, liquidityPool, type(uint256).max);
         liquidityPools[poolId][trancheId][_currency] = liquidityPool;

@@ -60,14 +60,14 @@ interface InvestmentManagerLike {
 contract LiquidityPool is Auth {
     InvestmentManagerLike public investmentManager;
 
+    uint64 public immutable poolId;
+    bytes16 public immutable trancheId;
+
     /// @notice asset: The underlying stable currency of the Liquidity Pool. Note: 1 Centrifuge Pool can have multiple Liquidity Pools for the same Tranche token with different underlying currencies (assets).
-    address public asset;
+    address public immutable asset;
 
     /// @notice share: The restricted ERC-20 Liquidity pool token. Has a ratio (token price) of underlying assets exchanged on deposit/withdraw/redeem. Liquidity pool tokens on evm represent tranche tokens on centrifuge chain (even though in the current implementation one tranche token on centrifuge chain can be split across multiple liquidity pool tokens on EVM).
-    TrancheTokenLike public share;
-
-    uint64 public poolId;
-    bytes16 public trancheId;
+    TrancheTokenLike public immutable share;
 
     // --- Events ---
     event File(bytes32 indexed what, address data);
@@ -76,7 +76,13 @@ contract LiquidityPool is Auth {
         address indexed sender, address indexed receiver, address indexed owner, uint256 assets, uint256 shares
     );
 
-    constructor() {
+    constructor(uint64 poolId_, bytes16 trancheId_, address asset_, address share_, address investmentManager_) {
+        poolId = poolId_;
+        trancheId = trancheId_;
+        asset = asset_;
+        share = TrancheTokenLike(share_);
+        investmentManager = InvestmentManagerLike(investmentManager_);
+
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
     }
@@ -103,17 +109,8 @@ contract LiquidityPool is Auth {
     /// @dev investmentManager and asset address to be filed by the factory on deployment
     function file(bytes32 what, address data) public auth {
         if (what == "investmentManager") investmentManager = InvestmentManagerLike(data);
-        else if (what == "asset") asset = data;
-        else if (what == "share") share = TrancheTokenLike(data);
         else revert("LiquidityPool/file-unrecognized-param");
         emit File(what, data);
-    }
-
-    /// @dev Centrifuge chain pool information to be filed by factory on deployment
-    function setPoolDetails(uint64 _poolId, bytes16 _trancheId) public auth {
-        require(poolId == 0, "LiquidityPool/pool-details-already-set");
-        poolId = _poolId;
-        trancheId = _trancheId;
     }
 
     // --- ERC4626 functions ---
