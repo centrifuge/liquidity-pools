@@ -372,7 +372,7 @@ contract LiquidityPoolTest is Test {
         lPool.collectRedeem(address(this));
     }
 
-    // helper functions
+    // helpers
     function deposit(address _lPool, uint64 poolId, bytes16 trancheId, uint256 amount, uint64 validUntil) public {
         LiquidityPool lPool = LiquidityPool(_lPool);
         erc20.mint(self, amount);
