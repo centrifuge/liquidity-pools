@@ -3,7 +3,12 @@ pragma solidity ^0.8.18;
 
 import "./util/Auth.sol";
 
-interface TrancheTokenLike {
+interface ERC20Like {
+    function allowance(address owner, address spender) external returns (uint256);
+    function permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external;
+}
+
+interface TrancheTokenLike is ERC20Like {
     // erc20 functions
     function mint(address owner, uint256 amount) external;
     function burn(address owner, uint256 amount) external;
@@ -21,10 +26,6 @@ interface TrancheTokenLike {
     function latestPrice() external view returns (uint256);
     function memberlist() external returns (address);
     function hasMember(address) external returns (bool);
-}
-
-interface ERC20Like {
-    function allowance(address owner, address spender) external returns (uint256);
 }
 
 interface InvestmentManagerLike {
@@ -140,6 +141,14 @@ contract LiquidityPool is Auth {
         investmentManager.requestDeposit(assets, owner);
     }
 
+    function requestDepositWithPermit(address owner, uint256 assets, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
+        public
+        withCurrencyApproval(owner, assets)
+    {
+        ERC20Like(asset).permit(msg.sender, address(this), assets, deadline, v, r, s);
+        investmentManager.requestDeposit(assets, owner);
+    }
+
     /// @dev collect shares for deposited funds after pool epoch execution. maxMint is the max amount of shares that can be collected. Required assets must already be locked
     /// maxDeposit is the amount of funds that was successfully invested into the pool on Centrifuge chain
     function deposit(uint256 assets, address receiver) public returns (uint256 shares) {
@@ -167,6 +176,14 @@ contract LiquidityPool is Auth {
 
     /// @dev request share redemption for a receiver to be included in the next epoch execution. Shares are locked in the escrow on request submission
     function requestRedeem(address owner, uint256 shares) public withTokenApproval(owner, shares) {
+        investmentManager.requestRedeem(shares, owner);
+    }
+
+    function requestRedeemWithPermit(address owner, uint256 shares, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
+        public
+        withTokenApproval(owner, shares)
+    {
+        share.permit(msg.sender, address(this), shares, deadline, v, r, s);
         investmentManager.requestRedeem(shares, owner);
     }
 
