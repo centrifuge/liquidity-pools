@@ -6,8 +6,8 @@ import "forge-std/Test.sol";
 
 interface LiquidityPoolLike {
     function approve(address spender, uint256 value) external returns (bool);
-    function requestRedeem(address owner, uint256 shares) external;
-    function requestDeposit(address owner, uint256 assets) external;
+    function requestRedeem(uint256 shares, address owner) external;
+    function requestDeposit(uint256 assets, address owner) external;
     function deposit(uint256 assets, address receiver) external returns (uint256 shares);
     function mint(uint256 shares, address receiver) external returns (uint256 assets);
     function withdraw(uint256 assets, address receiver, address owner) external returns (uint256 shares);
@@ -27,12 +27,12 @@ contract Investor is Test {
         ERC20Like(erc20).approve(spender, amount);
     }
 
-    function requestRedeem(address lPool, address owner, uint256 shares) public {
-        LiquidityPoolLike(lPool).requestRedeem(owner, shares);
+    function requestRedeem(address lPool, uint256 shares, address owner) public {
+        LiquidityPoolLike(lPool).requestRedeem(shares, owner);
     }
 
-    function requestDeposit(address lPool, address owner, uint256 assets) public {
-        LiquidityPoolLike(lPool).requestDeposit(owner, assets);
+    function requestDeposit(address lPool, uint256 assets, address owner) public {
+        LiquidityPoolLike(lPool).requestDeposit(assets, owner);
     }
 
     function deposit(address lPool, uint256 assets, address receiver) public {
