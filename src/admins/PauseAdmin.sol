@@ -16,7 +16,9 @@ contract PauseAdmin is Auth {
     // --- Events ---
     event File(bytes32 indexed what, address indexed data);
 
-    constructor() {
+    constructor(address root_) {
+        root = Root(root_);
+
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
     }
@@ -27,15 +29,6 @@ contract PauseAdmin is Auth {
     }
 
     // --- Administration ---
-    function file(bytes32 what, address data) external auth {
-        if (what == "root") {
-            root = Root(data);
-        } else {
-            revert("PauseAdmin/file-unrecognized-param");
-        }
-        emit File(what, data);
-    }
-
     function addPauser(address user) external auth {
         pausers[user] = 1;
         emit AddPauser(user);
