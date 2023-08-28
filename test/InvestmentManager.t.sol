@@ -110,6 +110,7 @@ contract InvestmentManagerTest is Test {
         (uint64 actualPoolId,,) = evmInvestmentManager.pools(poolId);
         assertEq(uint256(actualPoolId), uint256(poolId));
         homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price);
+        evmInvestmentManager.deployTranche(poolId, trancheId);
 
         TrancheToken trancheToken = TrancheToken(evmInvestmentManager.getTrancheToken(poolId, trancheId));
 
@@ -147,6 +148,7 @@ contract InvestmentManagerTest is Test {
 
         for (uint256 i = 0; i < trancheIds.length; i++) {
             homePools.addTranche(poolId, trancheIds[i], tokenName, tokenSymbol, decimals, price);
+            evmInvestmentManager.deployTranche(poolId, trancheIds[i]);
             TrancheToken trancheToken = TrancheToken(evmInvestmentManager.getTrancheToken(poolId, trancheIds[i]));
             assertEq(decimals, trancheToken.decimals());
         }
