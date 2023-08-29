@@ -8,7 +8,7 @@ import "forge-std/Test.sol";
 import {XCMRouter} from "src/gateway/routers/xcm/Router.sol";
 
 interface XcmRouterLike {
-    function handle(bytes memory _message) external;
+    function execute(bytes memory _message) external;
     function send(bytes memory message) external;
 }
 
@@ -36,17 +36,17 @@ contract MockHomeLiquidityPools is Test {
 
     function addCurrency(uint128 currency, address currencyAddress) public {
         bytes memory _message = Messages.formatAddCurrency(currency, currencyAddress);
-        router.handle(_message);
+        router.execute(_message);
     }
 
     function addPool(uint64 poolId) public {
         bytes memory _message = Messages.formatAddPool(poolId);
-        router.handle(_message);
+        router.execute(_message);
     }
 
     function allowPoolCurrency(uint64 poolId, uint128 currency) public {
         bytes memory _message = Messages.formatAllowPoolCurrency(poolId, currency);
-        router.handle(_message);
+        router.execute(_message);
     }
 
     function addTranche(
@@ -58,12 +58,12 @@ contract MockHomeLiquidityPools is Test {
         uint128 price
     ) public {
         bytes memory _message = Messages.formatAddTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price);
-        router.handle(_message);
+        router.execute(_message);
     }
 
     function updateMember(uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) public {
         bytes memory _message = Messages.formatUpdateMember(poolId, trancheId, user, validUntil);
-        router.handle(_message);
+        router.execute(_message);
     }
 
     function updateTrancheTokenMetadata(
@@ -73,18 +73,18 @@ contract MockHomeLiquidityPools is Test {
         string memory tokenSymbol
     ) public {
         bytes memory _message = Messages.formatUpdateTrancheTokenMetadata(poolId, trancheId, tokenName, tokenSymbol);
-        router.handle(_message);
+        router.execute(_message);
     }
 
     function updateTrancheTokenPrice(uint64 poolId, bytes16 trancheId, uint128 price) public {
         bytes memory _message = Messages.formatUpdateTrancheTokenPrice(poolId, trancheId, price);
-        router.handle(_message);
+        router.execute(_message);
     }
 
     // Trigger an incoming (e.g. Centrifuge Chain -> EVM) transfer of stable coins
     function incomingTransfer(uint128 currency, bytes32 sender, bytes32 recipient, uint128 amount) public {
         bytes memory _message = Messages.formatTransfer(currency, sender, recipient, amount);
-        router.handle(_message);
+        router.execute(_message);
     }
 
     // Trigger an incoming (e.g. Centrifuge Chain -> EVM) transfer of tranche tokens
@@ -103,15 +103,15 @@ contract MockHomeLiquidityPools is Test {
             destinationAddress,
             amount
         );
-        router.handle(_message);
+        router.execute(_message);
     }
 
     function incomingScheduleUpgrade(address spell) public {
         bytes memory _message = Messages.formatScheduleUpgrade(spell);
-        router.handle(_message);
+        router.execute(_message);
     }
 
-    function incomingExecutedCollectInvest(
+    function isExecutedCollectInvest(
         uint64 poolId,
         bytes16 trancheId,
         bytes32 investor,
@@ -122,10 +122,10 @@ contract MockHomeLiquidityPools is Test {
         bytes memory _message = Messages.formatExecutedCollectInvest(
             poolId, trancheId, investor, currency, currencyPayout, trancheTokensPayout
         );
-        router.handle(_message);
+        router.execute(_message);
     }
 
-    function incomingExecutedCollectRedeem(
+    function isExecutedCollectRedeem(
         uint64 poolId,
         bytes16 trancheId,
         bytes32 investor,
@@ -136,7 +136,7 @@ contract MockHomeLiquidityPools is Test {
         bytes memory _message = Messages.formatExecutedCollectRedeem(
             poolId, trancheId, investor, currency, currencyPayout, trancheTokensPayout
         );
-        router.handle(_message);
+        router.execute(_message);
     }
 
     function incomingExecutedDecreaseInvestOrder(
@@ -147,10 +147,9 @@ contract MockHomeLiquidityPools is Test {
         uint128 currencyPayout,
         uint128 remainingInvestOrder
     ) public {
-        bytes memory _message = Messages.formatExecutedDecreaseInvestOrder(
-            poolId, trancheId, investor, currency, currencyPayout
-        );
-        router.handle(_message);
+        bytes memory _message =
+            Messages.formatExecutedDecreaseInvestOrder(poolId, trancheId, investor, currency, currencyPayout);
+        router.execute(_message);
     }
 
     function dispatch(
