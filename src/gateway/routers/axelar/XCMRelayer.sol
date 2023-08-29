@@ -59,7 +59,7 @@ contract AxelarXCMRelayer is Auth, AxelarExecutableLike {
     address public immutable centrifugeChainOrigin;
     /// The origin of EVM -> Centrifuge messages; the trusted source origin of the Axelar-bridged
     /// messages to be handled by this router.
-    mapping(string => string) public axelarEvmRouters;
+    mapping(string => string) public axelarEVMRouters;
     AxelarGatewayLike public immutable axelarGateway;
     XcmWeightInfo public xcmWeightInfo;
 
@@ -88,20 +88,20 @@ contract AxelarXCMRelayer is Auth, AxelarExecutableLike {
 
     modifier onlyAxelarEVMRouter(string memory sourceChain, string memory sourceAddress) {
         require(
-            keccak256(abi.encodePacked(axelarEvmRouters[sourceChain])) == keccak256(abi.encodePacked(sourceAddress)),
+            keccak256(abi.encodePacked(axelarEVMRouters[sourceChain])) == keccak256(abi.encodePacked(sourceAddress)),
             "AxelarXCMRelayer/only-axelar-evm-router-allowed"
         );
         _;
     }
 
     // --- Administration ---
-    function file(bytes32 what, string memory axelarEVMRouterOriginChain, string memory axelarEVMRouterOriginAddress)
+    function file(bytes32 what, string memory axelarEVMRouterChain, string memory axelarEVMRouterAddress)
         external
         auth
     {
-        if (what == "axelarEVMRouterOrigin") {
-            axelarEvmRouters[axelarEVMRouterOriginChain] = axelarEVMRouterOriginAddress;
-            emit File(what, axelarEVMRouterOriginChain, axelarEVMRouterOriginAddress);
+        if (what == "axelarEVMRouter") {
+            axelarEVMRouters[axelarEVMRouterChain] = axelarEVMRouterAddress;
+            emit File(what, axelarEVMRouterChain, axelarEVMRouterAddress);
         } else {
             revert("AxelarXCMRelayer/file-unrecognized-param");
         }

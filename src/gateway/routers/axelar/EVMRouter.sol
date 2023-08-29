@@ -63,13 +63,13 @@ contract AxelarEVMRouter is Auth, AxelarExecutableLike {
         require(
             msg.sender == address(axelarGateway)
                 && keccak256(bytes(axelarCentrifugeChainId)) == keccak256(bytes(sourceChain)),
-            "AxelarRouter/invalid-origin"
+            "AxelarEVMRouter/invalid-origin"
         );
         _;
     }
 
     modifier onlyGateway() {
-        require(msg.sender == address(gateway), "AxelarRouter/only-gateway-allowed-to-call");
+        require(msg.sender == address(gateway), "AxelarEVMRouter/only-gateway-allowed-to-call");
         _;
     }
 
