@@ -24,12 +24,12 @@ contract Deployer is Script {
     address admin;
 
     Root root;
-    InvestmentManager investmentManager;
-    TokenManager tokenManager;
-    Escrow escrow;
-    PauseAdmin pauseAdmin;
-    DelayedAdmin delayedAdmin;
-    Gateway gateway;
+    InvestmentManager public investmentManager;
+    TokenManager public tokenManager;
+    Escrow public escrow;
+    PauseAdmin public pauseAdmin;
+    DelayedAdmin public delayedAdmin;
+    Gateway public gateway;
 
     function deployInvestmentManager() public {
         escrow = new Escrow();

@@ -111,7 +111,7 @@ contract MockHomeLiquidityPools is Test {
         router.handle(_message);
     }
 
-    function isExecutedCollectInvest(
+    function incomingExecutedCollectInvest(
         uint64 poolId,
         bytes16 trancheId,
         bytes32 investor,
@@ -125,7 +125,7 @@ contract MockHomeLiquidityPools is Test {
         router.handle(_message);
     }
 
-    function isExecutedCollectRedeem(
+    function incomingExecutedCollectRedeem(
         uint64 poolId,
         bytes16 trancheId,
         bytes32 investor,
@@ -135,6 +135,20 @@ contract MockHomeLiquidityPools is Test {
     ) public {
         bytes memory _message = Messages.formatExecutedCollectRedeem(
             poolId, trancheId, investor, currency, currencyPayout, trancheTokensPayout
+        );
+        router.handle(_message);
+    }
+
+    function incomingExecutedDecreaseInvestOrder(
+        uint64 poolId,
+        bytes16 trancheId,
+        bytes32 investor,
+        uint128 currency,
+        uint128 currencyPayout,
+        uint128 remainingInvestOrder
+    ) public {
+        bytes memory _message = Messages.formatExecutedDecreaseInvestOrder(
+            poolId, trancheId, investor, currency, currencyPayout
         );
         router.handle(_message);
     }
