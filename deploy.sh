@@ -10,14 +10,14 @@ fi
 if [[ -z "$RPC_URL" ]]; then
     error_exit "RPC_URL is not defined"
 fi
-echo "RPC URL = $RPC_URL"
+echo "RPC endpoint = $RPC_URL"
 
 if [[ -z "$ETH_FROM" ]]; then
     error_exit "ETH_FROM is not defined"
 fi
-echo "Account = $ETH_FROM"
-echo "Network = $(cast chain)"
-echo "Balance = $(echo "$(cast balance $ETH_FROM)/10^18" | bc -l) ETH"
+echo "Account = 0x$ETH_FROM"
+# echo "Network = $(cast chain)"
+# echo "Balance = $(echo "$(cast balance $ETH_FROM)/10^18" | bc -l) ETH"
 
 case "$1" in
   Permissionless|AxelarEVM|AxelarXCMRelayer)

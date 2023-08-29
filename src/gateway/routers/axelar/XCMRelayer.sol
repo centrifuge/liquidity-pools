@@ -59,22 +59,18 @@ contract AxelarXCMRelayer is Auth, AxelarExecutableLike {
     address public immutable centrifugeChainOrigin;
     /// The origin of EVM -> Centrifuge messages; the trusted source origin of the Axelar-bridged
     /// messages to be handled by this router.
-    address public axelarEVMRouterOrigin;
+    mapping(string => string) public axelarEVMRouters;
     AxelarGatewayLike public immutable axelarGateway;
     XcmWeightInfo public xcmWeightInfo;
 
-    string public constant axelarCentrifugeChainId = "centrifuge";
-    string public constant axelarCentrifugeChainAddress = "0x2048";
-
     // --- Events ---
     event File(bytes32 indexed what, XcmWeightInfo xcmWeightInfo);
-    event File(bytes32 indexed what, address addr);
+    event File(bytes32 indexed what, string chain, string addr);
     event Executed(bytes32 indexed payload);
 
-    constructor(address centrifugeChainOrigin_, address axelarGateway_, address axelarEVMRouterOrigin_) {
+    constructor(address centrifugeChainOrigin_, address axelarGateway_) {
         centrifugeChainOrigin = centrifugeChainOrigin_;
         axelarGateway = AxelarGatewayLike(axelarGateway_);
-        axelarEVMRouterOrigin = axelarEVMRouterOrigin_;
         xcmWeightInfo = XcmWeightInfo({
             buyExecutionWeightLimit: 19000000000,
             transactWeightAtMost: 8000000000,
@@ -85,26 +81,29 @@ contract AxelarXCMRelayer is Auth, AxelarExecutableLike {
         emit Rely(msg.sender);
     }
 
-    modifier onlyCentrifugeChainOrigin() {
-        require(msg.sender == address(centrifugeChainOrigin), "ConnectorAxelarXCMRelayer/invalid-origin");
+    modifier onlyCentrifugeChain() {
+        require(msg.sender == address(centrifugeChainOrigin), "AxelarXCMRelayer/only-centrifuge-chain-allowed");
         _;
     }
 
-    modifier onlyAxelarEVMRouterOrigin() {
+    modifier onlyAxelarEVMRouter(string memory sourceChain, string memory sourceAddress) {
         require(
-            msg.sender == address(axelarEVMRouterOrigin),
-            "ConnectorAxelarXCMRelayer/only-axelar-evm-router-origin-allowed"
+            keccak256(abi.encodePacked(axelarEVMRouters[sourceChain])) == keccak256(abi.encodePacked(sourceAddress)),
+            "AxelarXCMRelayer/only-axelar-evm-router-allowed"
         );
         _;
     }
 
     // --- Administration ---
-    function file(bytes32 what, address axelarEVMRouterOrigin_) external auth {
-        if (what == "axelarEVMRouterOrigin") {
-            axelarEVMRouterOrigin = axelarEVMRouterOrigin_;
-            emit File(what, axelarEVMRouterOrigin_);
+    function file(bytes32 what, string memory axelarEVMRouterChain, string memory axelarEVMRouterAddress)
+        external
+        auth
+    {
+        if (what == "axelarEVMRouter") {
+            axelarEVMRouters[axelarEVMRouterChain] = axelarEVMRouterAddress;
+            emit File(what, axelarEVMRouterChain, axelarEVMRouterAddress);
         } else {
-            revert("ConnectorAxelarXCMRelayer/file-unrecognized-param");
+            revert("AxelarXCMRelayer/file-unrecognized-param");
         }
     }
 
@@ -115,7 +114,7 @@ contract AxelarXCMRelayer is Auth, AxelarExecutableLike {
         if (what == "xcmWeightInfo") {
             xcmWeightInfo = XcmWeightInfo(buyExecutionWeightLimit, transactWeightAtMost, feeAmount);
         } else {
-            revert("ConnectorAxelarXCMRelayer/file-unrecognized-param");
+            revert("AxelarXCMRelayer/file-unrecognized-param");
         }
 
         emit File(what, xcmWeightInfo);
@@ -123,9 +122,9 @@ contract AxelarXCMRelayer is Auth, AxelarExecutableLike {
 
     // --- Incoming ---
     // A message that's coming from another EVM chain, headed to the Centrifuge Chain.
-    function execute(bytes32, string calldata, string calldata, bytes calldata payload)
+    function execute(bytes32, string calldata sourceChain, string calldata sourceAddress, bytes calldata payload)
         external
-        onlyAxelarEVMRouterOrigin
+        onlyAxelarEVMRouter(sourceChain, sourceAddress)
     {
         // todo(nuno): why do we hash this?
         bytes32 hh = keccak256(payload);
@@ -158,7 +157,7 @@ contract AxelarXCMRelayer is Auth, AxelarExecutableLike {
     // A message that has been sent from the Centrifuge Chain, heading to a specific destination EVM chain
     function send(string calldata destinationChain, string calldata destinationAddress, bytes calldata payload)
         external
-        onlyCentrifugeChainOrigin
+        onlyCentrifugeChain
     {
         axelarGateway.callContract(destinationChain, destinationAddress, payload);
     }

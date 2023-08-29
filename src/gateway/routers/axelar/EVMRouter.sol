@@ -48,7 +48,7 @@ contract AxelarEVMRouter is Auth, AxelarExecutableLike {
     GatewayLike public gateway;
 
     string public constant axelarCentrifugeChainId = "Moonbeam";
-    string public constant axelarCentrifugeChainAddress = "0x7100fc671a443920606F01D5FD12dF72776a25CC";
+    string public constant axelarCentrifugeChainAddress = "0x56c4Db5bEaD29FC19158aA1f85673D9865732be4";
 
     // --- Events ---
     event File(bytes32 indexed what, address addr);
@@ -63,13 +63,13 @@ contract AxelarEVMRouter is Auth, AxelarExecutableLike {
         require(
             msg.sender == address(axelarGateway)
                 && keccak256(bytes(axelarCentrifugeChainId)) == keccak256(bytes(sourceChain)),
-            "AxelarRouter/invalid-origin"
+            "AxelarEVMRouter/invalid-origin"
         );
         _;
     }
 
     modifier onlyGateway() {
-        require(msg.sender == address(gateway), "AxelarRouter/only-gateway-allowed-to-call");
+        require(msg.sender == address(gateway), "AxelarEVMRouter/only-gateway-allowed-to-call");
         _;
     }
 

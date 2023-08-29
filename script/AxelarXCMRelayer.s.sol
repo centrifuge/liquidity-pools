@@ -15,8 +15,7 @@ contract AxelarXCMRelayerScript is Deployer {
 
         AxelarXCMRelayer router = new AxelarXCMRelayer(
                 address(vm.envAddress("CENTRIFUGE_CHAIN_ORIGIN")),
-                address(vm.envAddress("AXELAR_GATEWAY")),
-                address(vm.envAddress("AXELAR_EVM_ROUTER"))
+                address(vm.envAddress("AXELAR_GATEWAY"))
         );
 
         router.rely(admin);
