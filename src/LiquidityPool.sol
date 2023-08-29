@@ -71,6 +71,8 @@ contract LiquidityPool is Auth {
 
     // --- Events ---
     event File(bytes32 indexed what, address data);
+    event DepositRequested(address indexed owner, uint256 assets);
+    event RedeemRequested(address indexed owner, uint256 shares);
     event Deposit(address indexed sender, address indexed owner, uint256 assets, uint256 shares);
     event Withdraw(
         address indexed sender, address indexed receiver, address indexed owner, uint256 assets, uint256 shares
@@ -142,6 +144,7 @@ contract LiquidityPool is Auth {
     /// @dev request asset deposit for a receiver to be included in the next epoch execution. Asset is locked in the escrow on request submission
     function requestDeposit(uint256 assets, address owner) public withCurrencyApproval(owner, assets) {
         investmentManager.requestDeposit(assets, owner);
+        emit DepositRequested(owner, assets);
     }
 
     function requestDepositWithPermit(uint256 assets, address owner, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
@@ -179,6 +182,7 @@ contract LiquidityPool is Auth {
     /// @dev request share redemption for a receiver to be included in the next epoch execution. Shares are locked in the escrow on request submission
     function requestRedeem(uint256 shares, address owner) public withTokenApproval(owner, shares) {
         investmentManager.requestRedeem(shares, owner);
+        emit RedeemRequested(owner, shares);
     }
 
     function requestRedeemWithPermit(uint256 shares, address owner, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
