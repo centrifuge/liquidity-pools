@@ -151,7 +151,8 @@ contract LiquidityPool is Auth {
         public
     {
         ERC20Like(asset).permit(owner, address(investmentManager), assets, deadline, v, r, s);
-        requestDeposit(assets, owner);
+        investmentManager.requestDeposit(assets, owner);
+        emit DepositRequested(owner, assets);
     }
 
     /// @dev collect shares for deposited funds after pool epoch execution. maxMint is the max amount of shares that can be collected. Required assets must already be locked
@@ -189,7 +190,8 @@ contract LiquidityPool is Auth {
         public
     {
         share.permit(owner, address(this), shares, deadline, v, r, s);
-        requestRedeem(shares, owner);
+        investmentManager.requestRedeem(shares, owner);
+        emit RedeemRequested(owner, shares);
     }
 
     /// @return maxAssets that the receiver can withdraw
