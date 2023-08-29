@@ -65,7 +65,9 @@ interface TokenManagerLike {
 }
 
 interface RouterLike {
+    function execute(bytes32, string calldata, string calldata, bytes calldata) external;
     function send(bytes memory message) external;
+    function file(bytes32 what, address addr) external;
 }
 
 interface AuthLike {

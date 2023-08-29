@@ -23,7 +23,7 @@ contract Deployer is Script {
 
     address admin;
 
-    Root root;
+    Root public root;
     InvestmentManager public investmentManager;
     TokenManager public tokenManager;
     Escrow public escrow;

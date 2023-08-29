@@ -4,7 +4,7 @@ pragma abicoder v2;
 
 import {InvestmentManager, Tranche} from "../src/InvestmentManager.sol";
 import {TokenManager} from "../src/TokenManager.sol";
-import {Gateway} from "../src/gateway/Gateway.sol";
+import {Gateway, RouterLike} from "../src/gateway/Gateway.sol";
 import {Root} from "../src/Root.sol";
 import {Escrow} from "../src/Escrow.sol";
 import {LiquidityPoolFactory, TrancheTokenFactory} from "../src/util//Factory.sol";
@@ -36,7 +36,7 @@ contract LiquidityPoolTest is Test {
     TokenManager evmTokenManager;
     Gateway gateway;
     MockHomeLiquidityPools homePools;
-    MockXcmRouter mockXcmRouter;
+    RouterLike mockXcmRouter;
     Escrow escrow;
     ERC20 erc20;
 
@@ -56,7 +56,7 @@ contract LiquidityPoolTest is Test {
         trancheTokenFactory_.rely(address(evmInvestmentManager));
         evmTokenManager = new TokenManager(address(escrow));
 
-        mockXcmRouter = new MockXcmRouter(address(evmInvestmentManager));
+        mockXcmRouter = RouterLike(address(new MockXcmRouter(address(evmInvestmentManager))));
 
         homePools = new MockHomeLiquidityPools(address(mockXcmRouter));
 
@@ -73,6 +73,28 @@ contract LiquidityPoolTest is Test {
         escrow.rely(address(gateway));
 
         self = address(this);
+    }
+
+    function setUpOverride(
+        Root root_,
+        InvestmentManager evmInvestmentManager_,
+        TokenManager evmTokenManager_,
+        Gateway gateway_,
+        MockHomeLiquidityPools homePools_,
+        RouterLike mockXcmRouter_,
+        Escrow escrow_,
+        ERC20 erc20_,
+        address self_
+    ) public {
+        root = root_;
+        evmInvestmentManager = evmInvestmentManager_;
+        evmTokenManager = evmTokenManager_;
+        gateway = gateway_;
+        homePools = homePools_;
+        mockXcmRouter = mockXcmRouter_;
+        escrow = escrow_;
+        erc20 = erc20_;
+        self = self_;
     }
 
     function testTransferFrom(
@@ -167,7 +189,7 @@ contract LiquidityPoolTest is Test {
         address lPool_ = deployLiquidityPool(poolId, decimals, tokenName, tokenSymbol, trancheId, price, currencyId);
         LiquidityPool lPool = LiquidityPool(lPool_);
 
-        erc20.mint(self, amount);
+        deal(address(erc20), self, amount);
 
         // will fail - user not member: can not receive trancheToken
         vm.expectRevert(bytes("InvestmentManager/not-a-member"));
