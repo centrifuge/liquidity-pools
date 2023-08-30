@@ -35,6 +35,8 @@ interface EscrowLike {
 }
 
 contract TokenManager is Auth {
+    uint8 internal constant MAX_CURRENCY_DECIMALS = 18;
+
     GatewayLike public gateway;
     InvestmentManagerLike public investmentManager;
     EscrowLike public immutable escrow;
@@ -149,6 +151,9 @@ contract TokenManager is Auth {
         require(currency > 0, "TokenManager/currency-id-has-to-be-greater-than-0");
         require(currencyIdToAddress[currency] == address(0), "TokenManager/currency-id-in-use");
         require(currencyAddressToId[currencyAddress] == 0, "TokenManager/currency-address-in-use");
+        require(
+            ERC20Like(currencyAddress).decimals() <= MAX_CURRENCY_DECIMALS, "TokenManager/too-many-currency-decimals"
+        );
 
         currencyIdToAddress[currency] = currencyAddress;
         currencyAddressToId[currencyAddress] = currency;

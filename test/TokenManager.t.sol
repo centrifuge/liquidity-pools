@@ -65,13 +65,13 @@ contract TokenManagerTest is Test {
         vm.assume(badCurrency > 0);
         vm.assume(currency != badCurrency);
 
-        ERC20 erc20 = newErc20("X's Dollar", "USDX", 42);
+        ERC20 erc20 = newErc20("X's Dollar", "USDX", 18);
         homePools.addCurrency(currency, address(erc20));
         (address address_) = evmTokenManager.currencyIdToAddress(currency);
         assertEq(address_, address(erc20));
 
         // Verify we can't override the same currency id another address
-        ERC20 badErc20 = newErc20("BadActor's Dollar", "BADUSD", 66);
+        ERC20 badErc20 = newErc20("BadActor's Dollar", "BADUSD", 18);
         vm.expectRevert(bytes("TokenManager/currency-id-in-use"));
         homePools.addCurrency(currency, address(badErc20));
         assertEq(evmTokenManager.currencyIdToAddress(currency), address(erc20));
@@ -80,6 +80,18 @@ contract TokenManagerTest is Test {
         vm.expectRevert(bytes("TokenManager/currency-address-in-use"));
         homePools.addCurrency(badCurrency, address(erc20));
         assertEq(evmTokenManager.currencyIdToAddress(currency), address(erc20));
+    }
+
+    function testAddCurrencyHasMaxDecimals() public {
+        ERC20 erc20_invalid = newErc20("X's Dollar", "USDX", 42);
+        vm.expectRevert(bytes("TokenManager/too-many-currency-decimals"));
+        homePools.addCurrency(1, address(erc20_invalid));
+
+        ERC20 erc20_valid = newErc20("X's Dollar", "USDX", 18);
+        homePools.addCurrency(2, address(erc20_valid));
+
+        ERC20 erc20_valid2 = newErc20("X's Dollar", "USDX", 6);
+        homePools.addCurrency(3, address(erc20_valid2));
     }
 
     function testIncomingTransferWithoutEscrowFundsFails(
@@ -92,6 +104,7 @@ contract TokenManagerTest is Test {
         uint128 amount
     ) public {
         vm.assume(decimals > 0);
+        vm.assume(decimals <= 18);
         vm.assume(currency > 0);
         vm.assume(amount > 0);
         vm.assume(recipient != address(0));
@@ -117,6 +130,7 @@ contract TokenManagerTest is Test {
         uint128 amount
     ) public {
         vm.assume(decimals > 0);
+        vm.assume(decimals <= 18);
         vm.assume(amount > 0);
         vm.assume(currency != 0);
         vm.assume(recipient != address(0));
@@ -148,6 +162,7 @@ contract TokenManagerTest is Test {
         uint128 amount
     ) public {
         vm.assume(decimals > 0);
+        vm.assume(decimals <= 18);
         vm.assume(amount > 0);
         vm.assume(currency != 0);
         vm.assume(initialBalance >= amount);
@@ -179,6 +194,7 @@ contract TokenManagerTest is Test {
         bytes16 trancheId,
         uint128 currency
     ) public {
+        vm.assume(decimals <= 18);
         vm.assume(currency > 0);
         vm.assume(validUntil > block.timestamp + 7 days);
 
@@ -219,6 +235,7 @@ contract TokenManagerTest is Test {
         address destinationAddress,
         uint128 amount
     ) public {
+        vm.assume(decimals <= 18);
         vm.assume(validUntil >= block.timestamp);
         vm.assume(destinationAddress != address(0));
         vm.assume(currency > 0);
@@ -241,6 +258,7 @@ contract TokenManagerTest is Test {
         address destinationAddress,
         uint128 amount
     ) public {
+        vm.assume(decimals <= 18);
         vm.assume(destinationAddress != address(0));
         vm.assume(currency > 0);
 
@@ -261,6 +279,7 @@ contract TokenManagerTest is Test {
         uint128 amount,
         uint128 currency
     ) public {
+        vm.assume(decimals <= 18);
         vm.assume(validUntil > block.timestamp + 7 days);
         vm.assume(destinationAddress != address(0));
         vm.assume(currency > 0);
@@ -295,10 +314,11 @@ contract TokenManagerTest is Test {
         uint64 validUntil,
         uint128 price
     ) public {
+        vm.assume(decimals <= 18);
         vm.assume(validUntil >= block.timestamp);
         vm.assume(user != address(0));
         vm.assume(currency > 0);
-        ERC20 erc20 = newErc20("X's Dollar", "USDX", 42);
+        ERC20 erc20 = newErc20("X's Dollar", "USDX", 18);
         homePools.addPool(poolId); // add pool
         homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price); // add tranche
         homePools.addCurrency(currency, address(erc20));
@@ -347,6 +367,7 @@ contract TokenManagerTest is Test {
         bytes16 trancheId,
         uint128 price
     ) public {
+        vm.assume(decimals <= 18);
         vm.assume(currency > 0);
         homePools.addPool(poolId); // add pool
         homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price); // add tranche
@@ -367,8 +388,9 @@ contract TokenManagerTest is Test {
         bytes16 trancheId,
         uint128 price
     ) public {
+        vm.assume(decimals <= 18);
         vm.assume(currency > 0);
-        ERC20 erc20 = newErc20("X's Dollar", "USDX", 42);
+        ERC20 erc20 = newErc20("X's Dollar", "USDX", 18);
         homePools.addPool(poolId); // add pool
         homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price); // add tranche
         homePools.addCurrency(currency, address(erc20));
@@ -398,6 +420,7 @@ contract TokenManagerTest is Test {
         string memory updatedTokenName,
         string memory updatedTokenSymbol
     ) public {
+        vm.assume(decimals <= 18);
         vm.assume(currency > 0);
         homePools.addPool(poolId); // add pool
         homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price); // add tranche
@@ -418,8 +441,9 @@ contract TokenManagerTest is Test {
         string memory updatedTokenName,
         string memory updatedTokenSymbol
     ) public {
+        vm.assume(decimals <= 18);
         vm.assume(currency > 0);
-        ERC20 erc20 = newErc20("X's Dollar", "USDX", 42);
+        ERC20 erc20 = newErc20("X's Dollar", "USDX", 18);
         homePools.addPool(poolId); // add pool
         homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price); // add tranche
         homePools.addCurrency(currency, address(erc20));
@@ -453,7 +477,7 @@ contract TokenManagerTest is Test {
         uint128 currency
     ) internal returns (address lPool) {
         // deploy liquidityPool
-        ERC20 erc20 = newErc20("X's Dollar", "USDX", 42);
+        ERC20 erc20 = newErc20("X's Dollar", "USDX", 18);
         homePools.addPool(poolId); // add pool
         homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, 0); // add tranche
         homePools.addCurrency(currency, address(erc20));

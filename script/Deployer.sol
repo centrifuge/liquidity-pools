@@ -19,7 +19,7 @@ interface RouterLike {
 }
 
 contract Deployer is Script {
-    uint256 delay = 48 hours;
+    uint256 constant delay = 48 hours;
 
     address admin;
 

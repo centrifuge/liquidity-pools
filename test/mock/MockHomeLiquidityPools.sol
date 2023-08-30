@@ -19,9 +19,6 @@ contract MockHomeLiquidityPools is Test {
 
     XcmRouterLike public immutable router;
 
-    uint32 immutable CENTRIFUGE_CHAIN_DOMAIN = 3000;
-    uint32 immutable NONCE = 1;
-
     uint32 public dispatchDomain;
     uint256 public dispatchChainId;
     bytes public dispatchMessage;

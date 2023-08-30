@@ -6,7 +6,7 @@ import {Root} from "../Root.sol";
 import "./../util/Auth.sol";
 
 contract PauseAdmin is Auth {
-    Root public root;
+    Root public immutable root;
 
     mapping(address => uint256) public pausers;
 
