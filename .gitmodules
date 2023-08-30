@@ -5,6 +5,3 @@
 	path = lib/memview-sol
 	url = https://github.com/LayneHaber/memview-sol
 	branch = latest-solidity
-[submodule "hello_foundry/lib/forge-std"]
-	path = hello_foundry/lib/forge-std
-	url = https://github.com/foundry-rs/forge-std
