@@ -5,6 +5,7 @@ pragma abicoder v2;
 import {TrancheTokenFactoryLike, LiquidityPoolFactoryLike} from "./util/Factory.sol";
 import {MemberlistLike} from "./token/Memberlist.sol";
 import "./util/Auth.sol";
+import "./util/Math.sol";
 
 interface GatewayLike {
     function increaseInvestOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount)
@@ -29,6 +30,7 @@ interface LiquidityPoolLike {
     function burn(address, uint256) external;
     function balanceOf(address) external returns (uint256);
     function transferFrom(address, address, uint256) external returns (bool);
+    function decimals() external view returns (uint8);
     // 4626 functions
     function asset() external returns (address);
     // centrifuge chain info functions
@@ -44,6 +46,7 @@ interface TokenManagerLike {
 interface ERC20Like {
     function transferFrom(address from, address to, uint256 amount) external returns (bool);
     function balanceOf(address) external returns (uint256);
+    function decimals() external returns (uint8);
 }
 
 interface EscrowLike {
@@ -87,6 +90,8 @@ struct LPValues {
 }
 
 contract InvestmentManager is Auth {
+    using Math for uint128;
+
     mapping(uint64 => Pool) public pools; // Mapping of all deployed Centrifuge pools
     mapping(address => mapping(address => LPValues)) public orderbook; // Liquidity pool orders & limits per user
 
@@ -581,16 +586,23 @@ contract InvestmentManager is Auth {
     }
 
     // TODO: check rounding
-    function calcDepositPrice(address user, address liquidityPool)
-        public
-        view
-        returns (uint128 userTrancheTokenPrice)
-    {
+    function calcDepositPrice(address user, address liquidityPool) public returns (uint128 userTrancheTokenPrice) {
         LPValues storage lpValues = orderbook[user][liquidityPool];
         if (lpValues.maxMint == 0) {
             return 0;
         }
-        userTrancheTokenPrice = lpValues.maxDeposit / lpValues.maxMint;
+
+        uint8 assetPrecision = ERC20Like(LiquidityPoolLike(liquidityPool).asset()).decimals();
+        uint8 trancheTokenPrecision = LiquidityPoolLike(liquidityPool).decimals();
+        uint8 PRICE_PRECISION = 27;
+
+        // userTrancheTokenPrice = lpValues.maxDeposit / lpValues.maxMint;
+        // TODO: assumes trancheTokenPrecision > assetPrecision
+        userTrancheTokenPrice = uint128(
+            lpValues.maxDeposit.mulDiv(
+                10 ** (trancheTokenPrecision - assetPrecision + PRICE_PRECISION), lpValues.maxMint, Math.Rounding.Down
+            )
+        );
     }
 
     function calcRedeemTokenPrice(address user, address liquidityPool)

@@ -46,7 +46,7 @@ contract LiquidityPoolTest is Test {
         vm.chainId(1);
         escrow = new Escrow();
         root = new Root(address(escrow), 48 hours);
-        erc20 = newErc20("X's Dollar", "USDX", 42);
+        erc20 = newErc20("X's Dollar", "USDX", 6);
         LiquidityPoolFactory liquidityPoolFactory_ = new LiquidityPoolFactory(address(root));
         TrancheTokenFactory trancheTokenFactory_ = new TrancheTokenFactory(address(root));
 
@@ -145,6 +145,50 @@ contract LiquidityPoolTest is Test {
         // investor can transfer tranche tokens
         investor.approve(lPool_, lPool_, type(uint256).max);
         investor.transfer(lPool_, self, amount / 4);
+    }
+
+    function testPrecision(uint64 poolId, bytes16 trancheId, uint128 currencyId, uint64 validUntil) public {
+        vm.assume(currencyId > 0);
+        vm.assume(validUntil >= block.timestamp);
+
+        uint8 TRANCHE_TOKEN_DECIMALS = 18; // Like DAI
+        uint8 INVESTMENT_CURRENCY_DECIMALS = 6; // 6, like USDC
+        uint8 PRICE_DECIMALS = 27; // Prices are always 27 decimals
+
+        uint128 trancheTokenInitialPrice = 1000000000000000000000000000; // 1.0 with 27 decimals
+
+        address lPool_ =
+            deployLiquidityPool(poolId, TRANCHE_TOKEN_DECIMALS, "", "", trancheId, trancheTokenInitialPrice, currencyId);
+        LiquidityPool lPool = LiquidityPool(lPool_);
+
+        uint256 investmentAmount = 100000000; // 100 * 10**6
+
+        homePools.updateMember(poolId, trancheId, self, type(uint64).max); // add user as member
+        erc20.approve(address(evmInvestmentManager), investmentAmount * 10 ** INVESTMENT_CURRENCY_DECIMALS); // add allowance
+
+        erc20.mint(self, investmentAmount * 10 ** INVESTMENT_CURRENCY_DECIMALS);
+        lPool.requestDeposit(investmentAmount * 10 ** INVESTMENT_CURRENCY_DECIMALS, self);
+
+        // ensure funds are locked in escrow
+        assertEq(erc20.balanceOf(address(escrow)), investmentAmount * 10 ** INVESTMENT_CURRENCY_DECIMALS);
+        assertEq(erc20.balanceOf(self), 0);
+
+        // trigger executed collectInvest
+        // price is now 1.2
+        uint128 _currencyId = evmTokenManager.currencyAddressToId(address(erc20)); // retrieve currencyId
+        uint128 currencyPayout = 100000000; // 100 * 10**6
+        uint128 trancheTokensPayout = 83333333333333333333; // 100 * 10**18 / 1.2, rounded down
+        homePools.isExecutedCollectInvest(
+            poolId, trancheId, bytes32(bytes20(self)), _currencyId, currencyPayout, trancheTokensPayout
+        );
+
+        // assert deposit & mint values adjusted
+        assertEq(lPool.maxDeposit(self), currencyPayout);
+        assertEq(lPool.maxMint(self), trancheTokensPayout);
+
+        // price should be ~1.2*10**18. max precision possible is limited by 18 decimals of the tranche tokens
+        uint128 trancheTokenPrice = 1200000000000000000004800000; // 1.2 with 27 decimals
+        assertEq(evmInvestmentManager.calcDepositPrice(self, address(lPool)), trancheTokenPrice);
     }
 
     function testDepositMint(
