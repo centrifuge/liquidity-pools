@@ -211,22 +211,6 @@ contract DeployTest is Test {
         return lPool;
     }
 
-    function deposit(address _lPool, uint64 poolId, bytes16 trancheId, uint256 amount, uint64 validUntil) public {
-        LiquidityPool lPool = LiquidityPool(_lPool);
-        deal(address(erc20), self, amount);
-        vm.prank(address(gateway));
-        tokenManager.updateMember(poolId, trancheId, self, validUntil); // add user as member
-        erc20.approve(address(investmentManager), amount); // add allowance
-        lPool.requestDeposit(amount, self);
-        // trigger executed collectInvest
-        uint128 currencyId = tokenManager.currencyAddressToId(address(erc20)); // retrieve currencyId
-        vm.prank(address(gateway));
-        investmentManager.handleExecutedCollectInvest(
-            poolId, trancheId, self, currencyId, uint128(amount), uint128(amount)
-        );
-        lPool.deposit(amount, self); // withdraw the amount
-    }
-
     function _toUint128(uint256 _value) internal pure returns (uint128 value) {
         if (_value > type(uint128).max) {
             revert();

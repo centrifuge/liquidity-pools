@@ -526,7 +526,6 @@ contract InvestmentManager is Auth {
     ) internal returns (uint128 _trancheTokenAmount, uint128 _currencyAmount) {
         LiquidityPoolLike lPool = LiquidityPoolLike(liquidityPool);
         uint128 redeemPrice = calculateRedeemPrice(user, liquidityPool);
-        console.log("redeemPrice", redeemPrice);
         require((redeemPrice > 0), "LiquidityPool/redeem-token-price-0");
 
         uint8 assetPrecision = ERC20Like(LiquidityPoolLike(liquidityPool).asset()).decimals();
@@ -538,7 +537,6 @@ contract InvestmentManager is Auth {
                 )
             );
             _trancheTokenAmount = trancheTokenAmount;
-            console.log("_currencyAmount", _currencyAmount);
         } else {
             _trancheTokenAmount = _toUint128(
                 currencyAmount.mulDiv(
