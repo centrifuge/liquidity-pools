@@ -35,7 +35,7 @@ interface EscrowLike {
 }
 
 contract TokenManager is Auth {
-    uint8 internal MAX_CURRENCY_DECIMALS = 18;
+    uint8 internal constant MAX_CURRENCY_DECIMALS = 18;
 
     GatewayLike public gateway;
     InvestmentManagerLike public investmentManager;

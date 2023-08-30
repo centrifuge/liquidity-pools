@@ -21,7 +21,7 @@ interface LiquidityPoolFactoryLike {
 }
 
 contract LiquidityPoolFactory is Auth {
-    address root;
+    address immutable root;
 
     constructor(address _root) {
         root = _root;
@@ -61,7 +61,7 @@ interface TrancheTokenFactoryLike {
 }
 
 contract TrancheTokenFactory is Auth {
-    address root;
+    address immutable root;
 
     constructor(address _root) {
         root = _root;
