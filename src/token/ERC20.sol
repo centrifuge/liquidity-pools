@@ -4,13 +4,14 @@
 pragma solidity ^0.8.18;
 
 import "./../util/Auth.sol";
+import {Context} from "../util/Context.sol";
 
 interface IERC1271 {
     function isValidSignature(bytes32, bytes memory) external view returns (bytes4);
 }
 
 // Adapted from https://github.com/makerdao/xdomain-dss/blob/master/src/Dai.sol
-contract ERC20 is Auth {
+contract ERC20 is Auth, Context  {
     string public name;
     string public symbol;
     string public constant version = "3";
@@ -27,6 +28,10 @@ contract ERC20 is Auth {
     bytes32 public constant PERMIT_TYPEHASH =
         keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
 
+    // ERC2771Context
+    // trusted forwarders that are allowed to forward the msg.sender
+    mapping(address => bool) private _trustedForwarders; 
+
     // --- Events ---
     event File(bytes32 indexed what, string data);
     event Approval(address indexed owner, address indexed spender, uint256 value);
@@ -34,8 +39,8 @@ contract ERC20 is Auth {
 
     constructor(uint8 decimals_) {
         decimals = decimals_;
-        wards[msg.sender] = 1;
-        emit Rely(msg.sender);
+        wards[_msgSender()] = 1;
+        emit Rely(_msgSender());
 
         deploymentChainId = block.chainid;
         _DOMAIN_SEPARATOR = _calculateDomainSeparator(block.chainid);
@@ -64,18 +69,62 @@ contract ERC20 is Auth {
         emit File(what, data);
     }
 
+    // --- ERC2771Context ---
+    function addTrustedForwarder(address forwarder) public auth {
+        _trustedForwarders[forwarder] = true;
+    }
+
+    function removeTrustedForwarder(address forwarder) public auth {
+        _trustedForwarders[forwarder] = false;
+    }
+
+    function isTrustedForwarder(address forwarder) public view virtual returns (bool) {
+        return _trustedForwarders[forwarder] == true;
+    }
+
+    // Trusted Forwarder logic
+    /**
+     * @dev Override for `msg.sender`. Defaults to the original `msg.sender` whenever
+     * a call is not performed by the trusted forwarder or the calldata length is less than
+     * 20 bytes (an address length).
+     */
+    function _msgSender() internal view virtual override returns (address sender) {
+        if (isTrustedForwarder(msg.sender) && msg.data.length >= 20) {
+            // The assembly code is more direct than the Solidity version using `abi.decode`.
+            /// @solidity memory-safe-assembly
+            assembly {
+                sender := shr(96, calldataload(sub(calldatasize(), 20)))
+            }
+        } else {
+            return super._msgSender();
+        }
+    }
+
+    /**
+     * @dev Override for `msg.data`. Defaults to the original `msg.data` whenever
+     * a call is not performed by the trusted forwarder or the calldata length is less than
+     * 20 bytes (an address length).
+     */
+    function _msgData() internal view virtual override returns (bytes calldata) {
+        if (isTrustedForwarder(msg.sender) && msg.data.length >= 20) {
+            return msg.data[:msg.data.length - 20];
+        } else {
+            return super._msgData();
+        }
+    }
+
     // --- ERC20 Mutations ---
     function transfer(address to, uint256 value) public virtual returns (bool) {
         require(to != address(0) && to != address(this), "ERC20/invalid-address");
-        uint256 balance = balanceOf[msg.sender];
+        uint256 balance = balanceOf[_msgSender()];
         require(balance >= value, "ERC20/insufficient-balance");
 
         unchecked {
-            balanceOf[msg.sender] = balance - value;
+            balanceOf[_msgSender()] = balance - value;
             balanceOf[to] += value;
         }
 
-        emit Transfer(msg.sender, to, value);
+        emit Transfer(_msgSender(), to, value);
 
         return true;
     }
@@ -85,13 +134,13 @@ contract ERC20 is Auth {
         uint256 balance = balanceOf[from];
         require(balance >= value, "ERC20/insufficient-balance");
 
-        if (from != msg.sender) {
-            uint256 allowed = allowance[from][msg.sender];
+        if (from != _msgSender()) {
+            uint256 allowed = allowance[from][_msgSender()];
             if (allowed != type(uint256).max) {
                 require(allowed >= value, "ERC20/insufficient-allowance");
 
                 unchecked {
-                    allowance[from][msg.sender] = allowed - value;
+                    allowance[from][_msgSender()] = allowed - value;
                 }
             }
         }
@@ -107,31 +156,31 @@ contract ERC20 is Auth {
     }
 
     function approve(address spender, uint256 value) external returns (bool) {
-        allowance[msg.sender][spender] = value;
+        allowance[_msgSender()][spender] = value;
 
-        emit Approval(msg.sender, spender, value);
+        emit Approval(_msgSender(), spender, value);
 
         return true;
     }
 
     function increaseAllowance(address spender, uint256 addedValue) external returns (bool) {
-        uint256 newValue = allowance[msg.sender][spender] + addedValue;
-        allowance[msg.sender][spender] = newValue;
+        uint256 newValue = allowance[_msgSender()][spender] + addedValue;
+        allowance[_msgSender()][spender] = newValue;
 
-        emit Approval(msg.sender, spender, newValue);
+        emit Approval(_msgSender(), spender, newValue);
 
         return true;
     }
 
     function decreaseAllowance(address spender, uint256 subtractedValue) external returns (bool) {
-        uint256 allowed = allowance[msg.sender][spender];
+        uint256 allowed = allowance[_msgSender()][spender];
         require(allowed >= subtractedValue, "ERC20/insufficient-allowance");
         unchecked {
             allowed = allowed - subtractedValue;
         }
-        allowance[msg.sender][spender] = allowed;
+        allowance[_msgSender()][spender] = allowed;
 
-        emit Approval(msg.sender, spender, allowed);
+        emit Approval(_msgSender(), spender, allowed);
 
         return true;
     }
@@ -189,13 +238,13 @@ contract ERC20 is Auth {
         uint256 balance = balanceOf[from];
         require(balance >= value, "ERC20/insufficient-balance");
 
-        if (from != msg.sender) {
-            uint256 allowed = allowance[from][msg.sender];
+        if (from != _msgSender()) {
+            uint256 allowed = allowance[from][_msgSender()];
             if (allowed != type(uint256).max) {
                 require(allowed >= value, "ERC20/insufficient-allowance");
 
                 unchecked {
-                    allowance[from][msg.sender] = allowed - value;
+                    allowance[from][_msgSender()] = allowed - value;
                 }
             }
         }

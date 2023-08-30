@@ -29,6 +29,8 @@ interface TrancheTokenLike is ERC20Like {
 }
 
 contract TrancheToken is ERC20 {
+
+    address private
     MemberlistLike public memberlist;
 
     uint128 public latestPrice; // tokenPrice
@@ -55,7 +57,7 @@ contract TrancheToken is ERC20 {
     function hasMember(address user) public view returns (bool) {
         return memberlist.hasMember(user);
     }
-
+    
     function transfer(address to, uint256 value) public override checkMember(to) returns (bool) {
         return super.transfer(to, value);
     }
@@ -72,5 +74,36 @@ contract TrancheToken is ERC20 {
     function updatePrice(uint128 _price) public auth {
         latestPrice = _price;
         lastPriceUpdate = block.timestamp;
+    }
+
+    // Trusted Forwarder logic
+    /**
+     * @dev Override for `msg.sender`. Defaults to the original `msg.sender` whenever
+     * a call is not performed by the trusted forwarder or the calldata length is less than
+     * 20 bytes (an address length).
+     */
+    function _msgSender() internal view virtual override returns (address sender) {
+        if (isTrustedForwarder(msg.sender) && msg.data.length >= 20) {
+            // The assembly code is more direct than the Solidity version using `abi.decode`.
+            /// @solidity memory-safe-assembly
+            assembly {
+                sender := shr(96, calldataload(sub(calldatasize(), 20)))
+            }
+        } else {
+            return super._msgSender();
+        }
+    }
+
+    /**
+     * @dev Override for `msg.data`. Defaults to the original `msg.data` whenever
+     * a call is not performed by the trusted forwarder or the calldata length is less than
+     * 20 bytes (an address length).
+     */
+    function _msgData() internal view virtual override returns (bytes calldata) {
+        if (isTrustedForwarder(msg.sender) && msg.data.length >= 20) {
+            return msg.data[:msg.data.length - 20];
+        } else {
+            return super._msgData();
+        }
     }
 }
