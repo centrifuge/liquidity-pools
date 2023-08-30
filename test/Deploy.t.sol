@@ -19,6 +19,7 @@ import {LiquidityPool} from "src/LiquidityPool.sol";
 
 import {AxelarEVMScript} from "script/AxelarEVM.s.sol";
 import {PermissionlessScript} from "script/Permissionless.s.sol";
+import "src/util/Math.sol";
 import "forge-std/Test.sol";
 
 interface ApproveLike {
@@ -26,6 +27,8 @@ interface ApproveLike {
 }
 
 contract DeployTest is Test {
+    using Math for uint128;
+
     InvestmentManager investmentManager;
     Gateway gateway;
     Root root;
@@ -63,25 +66,24 @@ contract DeployTest is Test {
         bytes16 trancheId
     ) public {
         uint8 decimals = 6;
-        uint128 price = 2;
+        uint128 price = uint128(2 * 10 ** 27);
         uint128 currencyId = 1;
-        uint256 amount = 1000;
+        uint256 amount = 1000 * 10 ** erc20.decimals();
         uint64 validUntil = uint64(block.timestamp + 1000 days);
         address lPool_ = deployPoolAndTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price);
         LiquidityPool lPool = LiquidityPool(lPool_);
+
         deal(address(erc20), self, amount);
+
         vm.prank(address(gateway));
         tokenManager.updateMember(poolId, trancheId, self, validUntil);
+
         depositMint(poolId, decimals, tokenName, tokenSymbol, trancheId, price, currencyId, amount, validUntil, lPool);
-        // time passes and price changes
-        // vm.warp(block.timestamp + 500 days);
-        // vm.prank(address(gateway));
-        // price = price * 2;
-        // tokenManager.updateTrancheTokenPrice(poolId, trancheId, price);
-        // TrancheToken token = TrancheToken(investmentManager.getTrancheToken(poolId, trancheId));
-        // amount = token.balanceOf(self);
         amount = lPool.balanceOf(self);
-        redeem(poolId, decimals, tokenName, tokenSymbol, trancheId, price, currencyId, amount, validUntil, lPool);
+
+        redeemWithdraw(
+            poolId, decimals, tokenName, tokenSymbol, trancheId, price, currencyId, amount, validUntil, lPool
+        );
     }
 
     function depositMint(
@@ -105,7 +107,10 @@ contract DeployTest is Test {
 
         // trigger executed collectInvest
         uint128 _currencyId = tokenManager.currencyAddressToId(address(erc20)); // retrieve currencyId
-        uint128 trancheTokensPayout = uint128(amount) / price; // 1000 / 2 = 500
+
+        uint128 trancheTokensPayout = _toUint128(
+            uint128(amount).mulDiv(10 ** (27 - erc20.decimals() + lPool.decimals()), price, Math.Rounding.Down)
+        );
 
         // Assume an epoch execution happens on cent chain
         // Assume a bot calls collectInvest for this user on cent chain
@@ -115,30 +120,27 @@ contract DeployTest is Test {
             poolId, trancheId, self, _currencyId, uint128(amount), trancheTokensPayout
         );
 
-        assertEq(lPool.maxMint(self), trancheTokensPayout); // max deposit
-        assertEq(lPool.maxDeposit(self), amount); // max deposit
+        assertEq(lPool.maxMint(self), trancheTokensPayout);
+        assertEq(lPool.maxDeposit(self), amount);
         assertEq(lPool.balanceOf(address(escrow)), trancheTokensPayout);
         assertEq(erc20.balanceOf(self), 0);
 
-        // deposit half of the amount
         uint256 div = 2;
-        lPool.deposit(amount / div, self); // mint half the amount
+        lPool.deposit(amount / div, self);
 
         assertEq(lPool.balanceOf(self), trancheTokensPayout / div);
         assertEq(lPool.balanceOf(address(escrow)), trancheTokensPayout - trancheTokensPayout / div);
         assertEq(lPool.maxMint(self), trancheTokensPayout - trancheTokensPayout / div);
         assertEq(lPool.maxDeposit(self), amount - amount / div); // max deposit
 
-        // mint the rest
         lPool.mint(lPool.maxMint(self), self);
 
         assertEq(lPool.balanceOf(self), trancheTokensPayout);
         assertTrue(lPool.balanceOf(address(escrow)) <= 1);
         assertTrue(lPool.maxMint(self) <= 1);
-
     }
 
-    function redeem(
+    function redeemWithdraw(
         uint64 poolId,
         uint8 decimals,
         string memory tokenName,
@@ -155,8 +157,9 @@ contract DeployTest is Test {
 
         // redeem
         uint128 _currencyId = tokenManager.currencyAddressToId(address(erc20)); // retrieve currencyId
-        uint128 currencyPayout = uint128(amount) / price;
-        assertEq(currencyPayout, 250);
+        uint128 currencyPayout = _toUint128(
+            uint128(amount).mulDiv(price, 10 ** (27 - erc20.decimals() + lPool.decimals()), Math.Rounding.Down)
+        );
         // Assume an epoch execution happens on cent chain
         // Assume a bot calls collectRedeem for this user on cent chain
         vm.prank(address(gateway));
@@ -165,17 +168,23 @@ contract DeployTest is Test {
         );
 
         assertEq(lPool.maxWithdraw(self), currencyPayout);
-        assertEq(lPool.maxWithdraw(self), 250);
         assertEq(lPool.maxRedeem(self), amount);
-        assertEq(lPool.maxRedeem(self), 500);
         assertEq(lPool.balanceOf(address(escrow)), 0);
 
-        lPool.redeem(amount, self, self);
+        uint128 div = 2;
+        lPool.redeem(amount / div, self, self);
         assertEq(lPool.balanceOf(self), 0);
         assertEq(lPool.balanceOf(address(escrow)), 0);
-        assertEq(erc20.balanceOf(self), amount);
-        assertEq(lPool.maxMint(self), 0);
-        assertEq(lPool.maxDeposit(self), 0);
+        assertEq(erc20.balanceOf(self), currencyPayout / div);
+        assertEq(lPool.maxWithdraw(self), currencyPayout / div);
+        assertEq(lPool.maxRedeem(self), amount / div);
+
+        lPool.withdraw(lPool.maxWithdraw(self), self, self);
+        assertEq(lPool.balanceOf(self), 0);
+        assertEq(lPool.balanceOf(address(escrow)), 0);
+        assertEq(erc20.balanceOf(self), currencyPayout);
+        assertEq(lPool.maxWithdraw(self), 0);
+        assertEq(lPool.maxRedeem(self), 0);
     }
 
     // helpers
@@ -216,5 +225,13 @@ contract DeployTest is Test {
             poolId, trancheId, self, currencyId, uint128(amount), uint128(amount)
         );
         lPool.deposit(amount, self); // withdraw the amount
+    }
+
+    function _toUint128(uint256 _value) internal pure returns (uint128 value) {
+        if (_value > type(uint128).max) {
+            revert();
+        } else {
+            value = uint128(_value);
+        }
     }
 }
