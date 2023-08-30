@@ -76,6 +76,7 @@ struct Tranche {
     uint256 createdAt;
     string tokenName;
     string tokenSymbol;
+    uint128 latestPrice;
     /// @dev Each tranche can have multiple liquidity pools deployed,
     /// each linked to a unique investment currency (asset)
     mapping(address => address) liquidityPools; // currency -> liquidity pool address
@@ -92,7 +93,7 @@ struct LPValues {
 contract InvestmentManager is Auth {
     using Math for uint128;
 
-    uint8 internal PRICE_PRECISION = 27;
+    uint8 public PRICE_DECIMALS = 27; // Prices are fixed-point integers with 27 decimals
 
     mapping(uint64 => Pool) public pools; // Mapping of all deployed Centrifuge pools
     mapping(address => mapping(address => LPValues)) public orderbook; // Liquidity pool orders & limits per user
@@ -169,7 +170,10 @@ contract InvestmentManager is Auth {
         if (lpValues.maxMint >= _trancheTokenAmount) {
             // case: user has unclaimed trancheTokens in escrow -> more than redemption request
             uint128 userTrancheTokenPrice = calculateDepositPrice(user, liquidityPool);
-            uint128 currencyAmount = _trancheTokenAmount * userTrancheTokenPrice;
+
+            uint128 currencyAmount =
+                _toUint128(_trancheTokenAmount.mulDiv(userTrancheTokenPrice, 10 ** PRICE_DECIMALS, Math.Rounding.Down));
+
             _decreaseDepositLimits(user, liquidityPool, currencyAmount, _trancheTokenAmount);
         } else {
             uint256 transferAmount = _trancheTokenAmount - lpValues.maxMint;
@@ -288,7 +292,7 @@ contract InvestmentManager is Auth {
         string memory tokenName,
         string memory tokenSymbol,
         uint8 decimals,
-        uint128
+        uint128 latestPrice
     ) public onlyGateway {
         Pool storage pool = pools[poolId];
         require(pool.createdAt > 0, "InvestmentManager/invalid-pool");
@@ -301,6 +305,7 @@ contract InvestmentManager is Auth {
         tranche.tokenName = tokenName;
         tranche.tokenSymbol = tokenSymbol;
         tranche.createdAt = block.timestamp;
+        tranche.latestPrice = latestPrice;
 
         emit TrancheAdded(poolId, trancheId);
     }
@@ -448,11 +453,11 @@ contract InvestmentManager is Auth {
 
         if (currencyAmount == 0) {
             _currencyAmount =
-                _toUint128(trancheTokenAmount.mulDiv(depositPrice, 10 ** PRICE_PRECISION, Math.Rounding.Down));
+                _toUint128(trancheTokenAmount.mulDiv(depositPrice, 10 ** PRICE_DECIMALS, Math.Rounding.Down));
             _trancheTokenAmount = trancheTokenAmount;
         } else {
             _trancheTokenAmount =
-                _toUint128(currencyAmount.mulDiv(10 ** PRICE_PRECISION, depositPrice, Math.Rounding.Down));
+                _toUint128(currencyAmount.mulDiv(10 ** PRICE_DECIMALS, depositPrice, Math.Rounding.Down));
             _currencyAmount = currencyAmount;
         }
 
@@ -517,11 +522,11 @@ contract InvestmentManager is Auth {
 
         if (currencyAmount == 0) {
             _currencyAmount =
-                _toUint128(trancheTokenAmount.mulDiv(redeemPrice, 10 ** PRICE_PRECISION, Math.Rounding.Down));
+                _toUint128(trancheTokenAmount.mulDiv(redeemPrice, 10 ** PRICE_DECIMALS, Math.Rounding.Down));
             _trancheTokenAmount = trancheTokenAmount;
         } else {
             _trancheTokenAmount =
-                _toUint128(currencyAmount.mulDiv(10 ** PRICE_PRECISION, redeemPrice, Math.Rounding.Down));
+                _toUint128(currencyAmount.mulDiv(10 ** PRICE_DECIMALS, redeemPrice, Math.Rounding.Down));
             _currencyAmount = currencyAmount;
         }
 
@@ -546,7 +551,8 @@ contract InvestmentManager is Auth {
             address(tokenManager),
             tranche.tokenName,
             tranche.tokenSymbol,
-            tranche.decimals
+            tranche.decimals,
+            tranche.latestPrice
         );
 
         tranche.token = token;
@@ -605,7 +611,7 @@ contract InvestmentManager is Auth {
 
         userTrancheTokenPrice = _toUint128(
             lpValues.maxDeposit.mulDiv(
-                10 ** (trancheTokenPrecision - assetPrecision + PRICE_PRECISION), lpValues.maxMint, Math.Rounding.Down
+                10 ** (trancheTokenPrecision - assetPrecision + PRICE_DECIMALS), lpValues.maxMint, Math.Rounding.Down
             )
         );
     }
@@ -621,7 +627,7 @@ contract InvestmentManager is Auth {
 
         userTrancheTokenPrice = _toUint128(
             lpValues.maxWithdraw.mulDiv(
-                10 ** (trancheTokenPrecision - assetPrecision + PRICE_PRECISION), lpValues.maxRedeem, Math.Rounding.Down
+                10 ** (trancheTokenPrecision - assetPrecision + PRICE_DECIMALS), lpValues.maxRedeem, Math.Rounding.Down
             )
         );
     }

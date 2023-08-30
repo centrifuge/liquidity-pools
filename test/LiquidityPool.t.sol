@@ -156,18 +156,17 @@ contract LiquidityPoolTest is Test {
         uint8 INVESTMENT_CURRENCY_DECIMALS = 6; // 6, like USDC
         uint8 PRICE_DECIMALS = 27; // Prices are always 27 decimals
 
-        uint128 trancheTokenInitialPrice = 1000000000000000000000000000; // 1.0 with 27 decimals
-
-        address lPool_ =
-            deployLiquidityPool(poolId, TRANCHE_TOKEN_DECIMALS, "", "", trancheId, trancheTokenInitialPrice, currencyId);
+        address lPool_ = deployLiquidityPool(
+            poolId, TRANCHE_TOKEN_DECIMALS, "", "", trancheId, 1000000000000000000000000000, currencyId
+        );
         LiquidityPool lPool = LiquidityPool(lPool_);
 
         // invest
         uint256 investmentAmount = 100000000; // 100 * 10**6
         homePools.updateMember(poolId, trancheId, self, type(uint64).max);
-        erc20.approve(address(evmInvestmentManager), investmentAmount * 10 ** INVESTMENT_CURRENCY_DECIMALS);
-        erc20.mint(self, investmentAmount * 10 ** INVESTMENT_CURRENCY_DECIMALS);
-        lPool.requestDeposit(investmentAmount * 10 ** INVESTMENT_CURRENCY_DECIMALS, self);
+        erc20.approve(address(evmInvestmentManager), investmentAmount);
+        erc20.mint(self, investmentAmount);
+        lPool.requestDeposit(investmentAmount, self);
 
         // trigger executed collectInvest of the first 50% at a price of 1.2
         uint128 _currencyId = evmTokenManager.currencyAddressToId(address(erc20)); // retrieve currencyId
@@ -207,6 +206,9 @@ contract LiquidityPoolTest is Test {
         // when redeeming at a price of 1.5, this leads to ~115.5 currency
         currencyPayout = 115500000; // 115.5*10**6
 
+        // mint interest into escrow
+        erc20.mint(address(escrow), currencyPayout - investmentAmount);
+
         homePools.isExecutedCollectRedeem(
             poolId,
             trancheId,
@@ -222,6 +224,48 @@ contract LiquidityPoolTest is Test {
         // collect the currency
         lPool.withdraw(currencyPayout, self, self);
         assertEq(erc20.balanceOf(self), currencyPayout);
+    }
+
+    function testPriceConversion(uint64 poolId, bytes16 trancheId, uint128 currencyId) public {
+        vm.assume(currencyId > 0);
+
+        uint8 TRANCHE_TOKEN_DECIMALS = 18; // Like DAI
+        uint8 INVESTMENT_CURRENCY_DECIMALS = 6; // 6, like USDC
+        uint8 PRICE_DECIMALS = 27; // Prices are always 27 decimals
+
+        address lPool_ = deployLiquidityPool(
+            poolId, TRANCHE_TOKEN_DECIMALS, "", "", trancheId, 1000000000000000000000000000, currencyId
+        );
+        LiquidityPool lPool = LiquidityPool(lPool_);
+
+        // invest
+        uint256 investmentAmount = 100000000; // 100 * 10**6
+        homePools.updateMember(poolId, trancheId, self, type(uint64).max);
+        erc20.approve(address(evmInvestmentManager), investmentAmount);
+        erc20.mint(self, investmentAmount);
+        lPool.requestDeposit(investmentAmount, self);
+
+        // trigger executed collectInvest at a price of 1.0
+        uint128 _currencyId = evmTokenManager.currencyAddressToId(address(erc20)); // retrieve currencyId
+        uint128 trancheTokenPayout = 100000000000000000000; // 100 * 10**18
+        homePools.isExecutedCollectInvest(
+            poolId, trancheId, bytes32(bytes20(self)), _currencyId, uint128(investmentAmount), trancheTokenPayout
+        );
+        lPool.mint(trancheTokenPayout, self);
+
+        // assert share/asset conversion
+        assertEq(lPool.latestPrice(), 1000000000000000000000000000);
+        assertEq(lPool.totalAssets(), 100000000000000000000);
+        assertEq(lPool.convertToShares(100000000000000000000), 100000000000000000000);
+        assertEq(lPool.convertToAssets(lPool.convertToShares(100000000000000000000)), 100000000000000000000);
+
+        // assert share/asset conversion after price update
+        homePools.updateTrancheTokenPrice(poolId, trancheId, 1200000000000000000000000000);
+
+        assertEq(lPool.latestPrice(), 1200000000000000000000000000);
+        assertEq(lPool.totalAssets(), 120000000000000000000);
+        assertEq(lPool.convertToShares(120000000000000000000), 100000000000000000000);
+        assertEq(lPool.convertToAssets(lPool.convertToShares(120000000000000000000)), 120000000000000000000);
     }
 
     function testDepositMint(
