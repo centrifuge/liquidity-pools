@@ -130,7 +130,7 @@ contract Gateway is Auth {
         incomingRouters[router] = false;
     }
 
-    function setOutgoingRouter(address router) public auth {
+    function updateOutgoingRouter(address router) public auth {
         outgoingRouter = RouterLike(router);
     }
 

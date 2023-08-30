@@ -93,7 +93,7 @@ contract TrancheTokenFactory is Auth {
         token.file("symbol", symbol);
         token.file("memberlist", memberlist);
 
-        token.setInitialPrice(latestPrice, priceAge);
+        token.setPrice(latestPrice, priceAge);
 
         token.rely(root);
         token.rely(investmentManager); // to be able to add LPs as wards
