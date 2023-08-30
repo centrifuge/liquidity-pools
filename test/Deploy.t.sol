@@ -54,7 +54,7 @@ contract DeployTest is Test {
         delayedAdmin = script.delayedAdmin();
         tokenManager = script.tokenManager();
 
-        erc20 = ERC20(0x6B175474E89094C44Da98b954EedeAC495271d0F); //Mainnet Dai
+        erc20 = newErc20("Test", "TEST", 6); // TODO: fuzz decimals
         self = address(this);
     }
 
@@ -65,8 +65,8 @@ contract DeployTest is Test {
         string memory tokenSymbol,
         bytes16 trancheId
     ) public {
-        uint8 decimals = 6;
-        uint128 price = uint128(2 * 10 ** 27);
+        uint8 decimals = 6; // TODO: use fuzzed decimals
+        uint128 price = uint128(2 * 10 ** 27); //TODO: fuzz price
         uint128 currencyId = 1;
         uint256 amount = 1000 * 10 ** erc20.decimals();
         uint64 validUntil = uint64(block.timestamp + 1000 days);
@@ -217,5 +217,12 @@ contract DeployTest is Test {
         } else {
             value = uint128(_value);
         }
+    }
+
+    function newErc20(string memory name, string memory symbol, uint8 decimals) internal returns (ERC20) {
+        ERC20 currency = new ERC20(decimals);
+        currency.file("name", name);
+        currency.file("symbol", symbol);
+        return currency;
     }
 }
