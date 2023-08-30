@@ -54,9 +54,6 @@ contract DeployTest is Test {
         delayedAdmin = script.delayedAdmin();
         tokenManager = script.tokenManager();
 
-        RouterLike router = RouterLike(gateway.outgoingRouter());
-        mockLiquidityPools = new MockHomeLiquidityPools(address(router));
-
         self = address(this);
     }
 
@@ -128,7 +125,8 @@ contract DeployTest is Test {
         // will fail - user not member: can not receive trancheToken
         vm.expectRevert(bytes("InvestmentManager/not-a-member"));
         lPool.requestDeposit(amount, self);
-        mockLiquidityPools.updateMember(poolId, trancheId, self, validUntil); // add user as member
+        vm.prank(address(gateway));
+        tokenManager.updateMember(poolId, trancheId, self, validUntil); // add user as member
 
         // // will fail - user did not give currency allowance to investmentManager
         vm.expectRevert(bytes("Dai/insufficient-allowance"));
@@ -144,8 +142,9 @@ contract DeployTest is Test {
         // trigger executed collectInvest
         uint128 _currencyId = tokenManager.currencyAddressToId(address(erc20)); // retrieve currencyId
         uint128 trancheTokensPayout = uint128(amount) / price; // trancheTokenPrice = 2$
-        mockLiquidityPools.isExecutedCollectInvest(
-            poolId, trancheId, bytes32(bytes20(self)), _currencyId, uint128(amount), trancheTokensPayout
+        vm.prank(address(gateway));
+        investmentManager.handleExecutedCollectInvest(
+            poolId, trancheId, self, _currencyId, uint128(amount), trancheTokensPayout
         );
 
         // assert deposit & mint values adjusted
