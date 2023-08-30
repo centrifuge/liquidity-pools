@@ -30,7 +30,7 @@ contract PermissionlessRouter is Auth {
     }
 
     // --- Incoming ---
-    function execute(bytes calldata payload) external {
+    function execute(bytes32, string calldata, string calldata, bytes calldata payload) external {
         gateway.handle(payload);
     }
 
