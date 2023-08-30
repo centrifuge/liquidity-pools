@@ -2,6 +2,7 @@
 pragma solidity ^0.8.18;
 
 import "./util/Auth.sol";
+import "./util/Math.sol";
 
 interface ERC20Like {
     function allowance(address owner, address spender) external returns (uint256);
@@ -48,6 +49,7 @@ interface InvestmentManagerLike {
     function requestDeposit(uint256 assets, address receiver) external;
     function collectInvest(uint64 poolId, bytes16 trancheId, address receiver, address currency) external;
     function collectRedeem(uint64 poolId, bytes16 trancheId, address receiver, address currency) external;
+    function PRICE_DECIMALS() external view returns (uint8);
 }
 
 /// @title LiquidityPool
@@ -58,6 +60,8 @@ interface InvestmentManagerLike {
 /// This is extending the EIP4626 standard by 'requestRedeem' & 'requestDeposit' functions, where redeem and deposit orders are submitted to the pools
 /// to be included in the execution of the following epoch. After execution users can use the redeem and withdraw functions to get their shares and/or assets from the pools.
 contract LiquidityPool is Auth {
+    using Math for uint256;
+
     InvestmentManagerLike public investmentManager;
 
     uint64 public immutable poolId;
@@ -118,17 +122,17 @@ contract LiquidityPool is Auth {
     /// @dev The total amount of vault shares
     /// @return Total amount of the underlying vault assets including accrued interest
     function totalAssets() public view returns (uint256) {
-        return totalSupply() * latestPrice();
+        return totalSupply().mulDiv(latestPrice(), 10 ** investmentManager.PRICE_DECIMALS(), Math.Rounding.Down);
     }
 
     /// @dev Calculates the amount of shares / tranche tokens that any user would get for the amount of assets provided. The calcultion is based on the token price from the most recent epoch retrieved from Centrifuge chain.
     function convertToShares(uint256 assets) public view returns (uint256 shares) {
-        shares = assets / latestPrice();
+        shares = assets.mulDiv(10 ** investmentManager.PRICE_DECIMALS(), latestPrice(), Math.Rounding.Down);
     }
 
     /// @dev Calculates the asset value for an amount of shares / tranche tokens provided. The calcultion is based on the token price from the most recent epoch retrieved from Centrifuge chain.
     function convertToAssets(uint256 shares) public view returns (uint256 assets) {
-        assets = shares * latestPrice();
+        assets = shares.mulDiv(latestPrice(), 10 ** investmentManager.PRICE_DECIMALS(), Math.Rounding.Down);
     }
 
     /// @return Maximum amount of stable currency that can be deposited into the Tranche by the receiver after the epoch had been executed on Centrifuge chain.

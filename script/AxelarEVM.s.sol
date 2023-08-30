@@ -6,9 +6,6 @@ import {Deployer, RouterLike} from "./Deployer.sol";
 
 // Script to deploy Liquidity Pools with an Axelar router.
 contract AxelarEVMScript is Deployer {
-    // address(0)[0:20] + keccak("Centrifuge")[21:32]
-    bytes32 SALT = 0x000000000000000000000000000000000000000075eb27011b69f002dc094d05;
-
     function setUp() public {}
 
     function run() public {

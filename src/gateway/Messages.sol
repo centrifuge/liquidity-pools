@@ -344,29 +344,6 @@ library Messages {
         return messageType(_msg) == Call.TransferTrancheTokens;
     }
 
-    // Parse a TransferTrancheTokens to a Centrifuge-based `destinationAddress` (32-byte long)
-    function parseTransferTrancheTokens32(bytes29 _msg)
-        internal
-        pure
-        returns (
-            uint64 poolId,
-            bytes16 trancheId,
-            bytes32 sender,
-            bytes9 encodedDomain,
-            uint128 currencyId,
-            bytes32 destinationAddress,
-            uint128 amount
-        )
-    {
-        poolId = uint64(_msg.indexUint(1, 8));
-        trancheId = bytes16(_msg.index(9, 16));
-        sender = bytes32(_msg.index(25, 32));
-        encodedDomain = bytes9(_msg.index(57, 9));
-        currencyId = uint128(_msg.indexUint(66, 16));
-        destinationAddress = bytes32((_msg.index(82, 20)));
-        amount = uint128(_msg.indexUint(114, 16));
-    }
-
     // Parse a TransferTrancheTokens to an EVM-based `destinationAddress` (20-byte long).
     // We ignore the `sender` and the `domain` since it's not relevant when parsing an incoming message.
     function parseTransferTrancheTokens20(bytes29 _msg)
@@ -682,7 +659,7 @@ library Messages {
         bytes32 investor,
         uint128 currency,
         uint128 currencyPayout,
-        uint128 trancheTokensRedeemed
+        uint128 trancheTokensPayout
     ) internal pure returns (bytes memory) {
         return abi.encodePacked(
             uint8(Call.ExecutedCollectRedeem),
@@ -691,7 +668,7 @@ library Messages {
             investor,
             currency,
             currencyPayout,
-            trancheTokensRedeemed
+            trancheTokensPayout
         );
     }
 
@@ -708,7 +685,7 @@ library Messages {
             address investor,
             uint128 currency,
             uint128 currencyPayout,
-            uint128 trancheTokensRedeemed
+            uint128 trancheTokensPayout
         )
     {
         poolId = uint64(_msg.indexUint(1, 8));
@@ -716,7 +693,7 @@ library Messages {
         investor = address(bytes20(_msg.index(25, 32)));
         currency = uint128(_msg.indexUint(57, 16));
         currencyPayout = uint128(_msg.indexUint(73, 16));
-        trancheTokensRedeemed = uint128(_msg.indexUint(89, 16));
+        trancheTokensPayout = uint128(_msg.indexUint(89, 16));
     }
 
     function formatScheduleUpgrade(address _contract) internal pure returns (bytes memory) {

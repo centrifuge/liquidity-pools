@@ -243,43 +243,6 @@ contract MessagesTest is Test {
         assertEq(decodedAmount, amount);
     }
 
-    //TODO: fix stack issue
-    // function testTransferTrancheTokensToCentrifuge() public {
-    //     uint64 poolId = 1;
-    //     bytes16 trancheId = bytes16(hex"811acd5b3f17c06841c7e41e9e04cb1b");
-    //     address sender = 0x1231231231231231231231231231231231231231;
-    //     bytes9 domain = Messages.formatDomain(Messages.Domain.Centrifuge);
-    //     bytes32 receiver = bytes32(0x4564564564564564564564564564564564564564564564564564564564564564);
-    //     uint128 amount = 100000000000000000000000000;
-    //     uint128 currency = 1;
-    //     bytes memory expectedHex =
-    //         hex"080000000000000001811acd5b3f17c06841c7e41e9e04cb1b12312312312312312312312312312312312312310000000000000000000000000000000000000000004564564564564564564564564564564564564564564564564564564564564564000000000052b7d2dcc80cd2e4000000";
-
-    //     assertEq(
-    //         Messages.formatTransferTrancheTokens(
-    //             poolId, trancheId, bytes32(bytes20(sender)), domain, currency, receiver, amount
-    //         ),
-    //         expectedHex
-    //     );
-
-    //     (
-    //         uint64 decodedPoolId,
-    //         bytes16 decodedTrancheId,
-    //         bytes32 decodedSender,
-    //         bytes9 decodedDomain,
-    //         uint128 decodedCurrency,
-    //         bytes32 decodedReceiver,
-    //         uint128 decodedAmount
-    //     ) = Messages.parseTransferTrancheTokens32(expectedHex.ref(0));
-    //     assertEq(uint256(decodedPoolId), poolId);
-    //     assertEq(decodedTrancheId, trancheId);
-    //     assertEq(decodedSender, bytes32(bytes20(sender)));
-    //     assertEq(decodedDomain, domain);
-    //     assertEq(decodedCurrency, currency);
-    //     assertEq(decodedReceiver, receiver);
-    //     assertEq(decodedAmount, amount);
-    // }
-
     function testTransferTrancheTokensToEvmEquivalence(
         uint64 poolId,
         bytes16 trancheId,
@@ -734,20 +697,20 @@ contract MessagesTest is Test {
         bytes32 investor = bytes32(0x1231231231231231231231231231231231231231000000000000000000000000);
         uint128 currency = 246803579;
         uint128 currencyPayout = 100000000000000000000000000;
-        uint128 trancheTokensRedeemed = 50000000000000000000000000;
+        uint128 trancheTokensPayout = 50000000000000000000000000;
 
         bytes memory expectedHex =
             hex"120000000000bce1a4811acd5b3f17c06841c7e41e9e04cb1b12312312312312312312312312312312312312310000000000000000000000000000000000000000000000000eb5ec7b000000000052b7d2dcc80cd2e40000000000000000295be96e64066972000000";
 
         assertEq(
             Messages.formatExecutedCollectRedeem(
-                poolId, trancheId, investor, currency, currencyPayout, trancheTokensRedeemed
+                poolId, trancheId, investor, currency, currencyPayout, trancheTokensPayout
             ),
             expectedHex
         );
         // separate asserts into two functions to avoid stack too deep error
         testParseExecutedCollectRedeemPart1(expectedHex, poolId, trancheId, investor, currency);
-        testParseExecutedCollectRedeemPart2(expectedHex, currencyPayout, trancheTokensRedeemed);
+        testParseExecutedCollectRedeemPart2(expectedHex, currencyPayout, trancheTokensPayout);
     }
 
     function testExecutedCollectRedeemEquivalence(
@@ -756,14 +719,14 @@ contract MessagesTest is Test {
         bytes32 investor,
         uint128 currency,
         uint128 currencyPayout,
-        uint128 trancheTokensRedeemed
+        uint128 trancheTokensPayout
     ) public {
         bytes memory _message = Messages.formatExecutedCollectRedeem(
-            poolId, trancheId, investor, currency, currencyPayout, trancheTokensRedeemed
+            poolId, trancheId, investor, currency, currencyPayout, trancheTokensPayout
         );
         // separate asserts into two functions to avoid stack too deep error
         testParseExecutedCollectRedeemPart1(_message, poolId, trancheId, investor, currency);
-        testParseExecutedCollectRedeemPart2(_message, currencyPayout, trancheTokensRedeemed);
+        testParseExecutedCollectRedeemPart2(_message, currencyPayout, trancheTokensPayout);
     }
 
     function testParseExecutedCollectRedeemPart1(
@@ -786,13 +749,13 @@ contract MessagesTest is Test {
     function testParseExecutedCollectRedeemPart2(
         bytes memory expectedHex,
         uint128 currencyPayout,
-        uint128 trancheTokensRedeemed
+        uint128 trancheTokensPayout
     ) internal {
-        (,,,, uint128 decodedCurrencyPayout, uint128 decodedTrancheTokensRedeemed) =
+        (,,,, uint128 decodedCurrencyPayout, uint128 decodedtrancheTokensPayout) =
             Messages.parseExecutedCollectRedeem(expectedHex.ref(0));
 
         assertEq(decodedCurrencyPayout, currencyPayout);
-        assertEq(decodedTrancheTokensRedeemed, trancheTokensRedeemed);
+        assertEq(decodedtrancheTokensPayout, trancheTokensPayout);
     }
 
     function testUpdateTrancheTokenMetadata() public {

@@ -7,8 +7,8 @@ import "forge-std/Test.sol";
 
 // Adapted from https://github.com/makerdao/xdomain-dss/blob/master/src/test/Dai.t.sol
 contract MockMultisig is IERC1271 {
-    address public signer1;
-    address public signer2;
+    address public immutable signer1;
+    address public immutable signer2;
 
     constructor(address signer1_, address signer2_) {
         signer1 = signer1_;

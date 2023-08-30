@@ -6,7 +6,7 @@ import {MockHomeLiquidityPools} from "../mock/MockHomeLiquidityPools.sol";
 import "forge-std/Test.sol";
 
 contract InvariantPoolManager is Test {
-    MockHomeLiquidityPools homePools;
+    MockHomeLiquidityPools immutable homePools;
 
     uint64[] public allPools;
     bytes16[] public allTranches;
