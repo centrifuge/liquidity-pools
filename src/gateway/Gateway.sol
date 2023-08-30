@@ -111,8 +111,8 @@ contract Gateway is Auth {
         _;
     }
 
-    modifier onlyRouter() {
-        require(incomingRouters[msg.sender] == true, "Gateway/only-router-allowed-to-call");
+    modifier onlyIncomingRouter() {
+        require(incomingRouters[msg.sender], "Gateway/only-router-allowed-to-call");
         _;
     }
 
@@ -130,7 +130,7 @@ contract Gateway is Auth {
         incomingRouters[router] = false;
     }
 
-    function setOutgoingRouter(address router) public auth {
+    function updateOutgoingRouter(address router) public auth {
         outgoingRouter = RouterLike(router);
     }
 
@@ -229,7 +229,7 @@ contract Gateway is Auth {
     }
 
     // --- Incoming ---
-    function handle(bytes memory _message) external onlyRouter pauseable {
+    function handle(bytes memory _message) external onlyIncomingRouter pauseable {
         bytes29 _msg = _message.ref(0);
 
         if (Messages.isAddCurrency(_msg)) {
@@ -293,10 +293,10 @@ contract Gateway is Auth {
                 address investor,
                 uint128 currency,
                 uint128 currencyPayout,
-                uint128 trancheTokensRedeemed
+                uint128 trancheTokensPayout
             ) = Messages.parseExecutedCollectRedeem(_msg);
             investmentManager.handleExecutedCollectRedeem(
-                poolId, trancheId, investor, currency, currencyPayout, trancheTokensRedeemed
+                poolId, trancheId, investor, currency, currencyPayout, trancheTokensPayout
             );
         } else if (Messages.isScheduleUpgrade(_msg)) {
             address target = Messages.parseScheduleUpgrade(_msg);

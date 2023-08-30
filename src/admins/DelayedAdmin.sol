@@ -6,7 +6,7 @@ import {Root} from "../Root.sol";
 import "./../util/Auth.sol";
 
 contract DelayedAdmin is Auth {
-    Root public root;
+    Root public immutable root;
 
     // --- Events ---
     event File(bytes32 indexed what, address indexed data);

@@ -94,6 +94,7 @@ contract AdminTest is Test {
         uint128 amount
     ) public {
         vm.assume(decimals > 0);
+        vm.assume(decimals <= 18);
         vm.assume(amount > 0);
         vm.assume(currency != 0);
         vm.assume(recipient != address(0));
@@ -120,6 +121,7 @@ contract AdminTest is Test {
         uint128 amount
     ) public {
         vm.assume(decimals > 0);
+        vm.assume(decimals <= 18);
         vm.assume(amount > 0);
         vm.assume(currency != 0);
         vm.assume(recipient != address(0));
@@ -149,6 +151,7 @@ contract AdminTest is Test {
         uint128 amount
     ) public {
         vm.assume(decimals > 0);
+        vm.assume(decimals <= 18);
         vm.assume(amount > 0);
         vm.assume(currency != 0);
         vm.assume(recipient != address(evmInvestmentManager.escrow()));

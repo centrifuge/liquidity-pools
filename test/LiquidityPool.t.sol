@@ -52,7 +52,7 @@ contract LiquidityPoolTest is Test {
         vm.chainId(1);
         escrow = new Escrow();
         root = new Root(address(escrow), 48 hours);
-        erc20 = newErc20("X's Dollar", "USDX", 42);
+        erc20 = newErc20("X's Dollar", "USDX", 6);
         LiquidityPoolFactory liquidityPoolFactory_ = new LiquidityPoolFactory(address(root));
         TrancheTokenFactory trancheTokenFactory_ = new TrancheTokenFactory(address(root));
 
@@ -99,7 +99,8 @@ contract LiquidityPoolTest is Test {
         price = 1;
         Investor investor = new Investor();
 
-        address lPool_ = deployLiquidityPool(poolId, decimals, tokenName, tokenSymbol, trancheId, price, currencyId);
+        address lPool_ =
+            deployLiquidityPool(poolId, erc20.decimals(), tokenName, tokenSymbol, trancheId, price, currencyId);
         investorDeposit(address(investor), lPool_, poolId, trancheId, amount, validUntil); // deposit funds first
         LiquidityPool lPool = LiquidityPool(lPool_);
         homePools.updateMember(poolId, trancheId, self, validUntil); // put self on memberlist to be able to receive tranche tokens
@@ -144,16 +145,14 @@ contract LiquidityPoolTest is Test {
     ) public {
         vm.assume(currencyId > 0);
         vm.assume(amount < MAX_UINT128);
-        vm.assume(amount > 4);
+        vm.assume(amount > 100);
         vm.assume(validUntil >= block.timestamp);
         price = 1;
         Investor investor = new Investor();
 
         address lPool_ = deployLiquidityPool(poolId, decimals, tokenName, tokenSymbol, trancheId, price, currencyId);
-        investorDeposit(address(investor), lPool_, poolId, trancheId, amount, validUntil); // deposit funds first
         LiquidityPool lPool = LiquidityPool(lPool_);
-        homePools.updateMember(poolId, trancheId, self, validUntil); // put self on memberlist to be able to receive tranche tokens
-
+        
         TrancheToken trancheToken = TrancheToken(address(lPool.share()));
         assert(trancheToken.isTrustedForwarder(lPool_) == true); // Lpool is not trusted forwarder on token
     
@@ -203,7 +202,8 @@ contract LiquidityPoolTest is Test {
         price = 1;
         Investor investor = new Investor();
 
-        address lPool_ = deployLiquidityPool(poolId, decimals, tokenName, tokenSymbol, trancheId, price, currencyId);
+        address lPool_ =
+            deployLiquidityPool(poolId, erc20.decimals(), tokenName, tokenSymbol, trancheId, price, currencyId);
         investorDeposit(address(investor), lPool_, poolId, trancheId, amount, validUntil); // deposit funds first
         LiquidityPool lPool = LiquidityPool(lPool_);
         homePools.updateMember(poolId, trancheId, self, validUntil); // put self on memberlist to be able to receive tranche tokens
@@ -236,6 +236,125 @@ contract LiquidityPoolTest is Test {
         assert(lPool.balanceOf(self) == transferAmount);
     }
 
+    function testDepositAndRedeemPrecision(uint64 poolId, bytes16 trancheId, uint128 currencyId) public {
+        vm.assume(currencyId > 0);
+
+        uint8 TRANCHE_TOKEN_DECIMALS = 18; // Like DAI
+        uint8 INVESTMENT_CURRENCY_DECIMALS = 6; // 6, like USDC
+        uint8 PRICE_DECIMALS = 27; // Prices are always 27 decimals
+
+        address lPool_ = deployLiquidityPool(
+            poolId, TRANCHE_TOKEN_DECIMALS, "", "", trancheId, 1000000000000000000000000000, currencyId
+        );
+        LiquidityPool lPool = LiquidityPool(lPool_);
+
+        // invest
+        uint256 investmentAmount = 100000000; // 100 * 10**6
+        homePools.updateMember(poolId, trancheId, self, type(uint64).max);
+        erc20.approve(address(evmInvestmentManager), investmentAmount);
+        erc20.mint(self, investmentAmount);
+        lPool.requestDeposit(investmentAmount, self);
+
+        // trigger executed collectInvest of the first 50% at a price of 1.2
+        uint128 _currencyId = evmTokenManager.currencyAddressToId(address(erc20)); // retrieve currencyId
+        uint128 currencyPayout = 50000000; // 50 * 10**6
+        uint128 firstTrancheTokenPayout = 41666666666666666666; // 50 * 10**18 / 1.2, rounded down
+        homePools.isExecutedCollectInvest(
+            poolId, trancheId, bytes32(bytes20(self)), _currencyId, currencyPayout, firstTrancheTokenPayout
+        );
+
+        // assert deposit & mint values adjusted
+        assertEq(lPool.maxDeposit(self), currencyPayout);
+        assertEq(lPool.maxMint(self), firstTrancheTokenPayout);
+
+        // deposit price should be ~1.2*10**27. max precision possible is limited by 18 decimals of the tranche tokens
+        assertEq(evmInvestmentManager.calculateDepositPrice(self, address(lPool)), 1200000000000000000019200000);
+
+        // trigger executed collectInvest of the second 50% at a price of 1.4
+        currencyPayout = 50000000; // 50 * 10**6
+        uint128 secondTrancheTokenPayout = 35714285714285714285; // 50 * 10**18 / 1.4, rounded down
+        homePools.isExecutedCollectInvest(
+            poolId, trancheId, bytes32(bytes20(self)), _currencyId, currencyPayout, secondTrancheTokenPayout
+        );
+
+        // deposit price should now be 50% * 1.2 + 50% * 1.4 = ~1.3*10**27.
+        assertEq(evmInvestmentManager.calculateDepositPrice(self, address(lPool)), 1292307692307692307715370414);
+
+        // collect the tranche tokens
+        lPool.mint(firstTrancheTokenPayout + secondTrancheTokenPayout, self);
+        assertEq(lPool.balanceOf(self), firstTrancheTokenPayout + secondTrancheTokenPayout);
+
+        // redeem
+        lPool.approve(address(evmInvestmentManager), firstTrancheTokenPayout + secondTrancheTokenPayout);
+        lPool.requestRedeem(firstTrancheTokenPayout + secondTrancheTokenPayout, self);
+
+        // trigger executed collectRedeem at a price of 1.5
+        // 50% invested at 1.2 and 50% invested at 1.4 leads to ~77 tranche tokens
+        // when redeeming at a price of 1.5, this leads to ~115.5 currency
+        currencyPayout = 115500000; // 115.5*10**6
+
+        // mint interest into escrow
+        erc20.mint(address(escrow), currencyPayout - investmentAmount);
+
+        homePools.isExecutedCollectRedeem(
+            poolId,
+            trancheId,
+            bytes32(bytes20(self)),
+            _currencyId,
+            currencyPayout,
+            firstTrancheTokenPayout + secondTrancheTokenPayout
+        );
+
+        // redeem price should now be ~1.5*10**27.
+        assertEq(evmInvestmentManager.calculateRedeemPrice(self, address(lPool)), 1492615384615384615411252828);
+
+        // collect the currency
+        lPool.withdraw(currencyPayout, self, self);
+        assertEq(erc20.balanceOf(self), currencyPayout);
+    }
+
+    function testAssetShareConversion(uint64 poolId, bytes16 trancheId, uint128 currencyId) public {
+        vm.assume(currencyId > 0);
+
+        uint8 TRANCHE_TOKEN_DECIMALS = 18; // Like DAI
+        uint8 INVESTMENT_CURRENCY_DECIMALS = 6; // 6, like USDC
+        uint8 PRICE_DECIMALS = 27; // Prices are always 27 decimals
+
+        address lPool_ = deployLiquidityPool(
+            poolId, TRANCHE_TOKEN_DECIMALS, "", "", trancheId, 1000000000000000000000000000, currencyId
+        );
+        LiquidityPool lPool = LiquidityPool(lPool_);
+
+        // invest
+        uint256 investmentAmount = 100000000; // 100 * 10**6
+        homePools.updateMember(poolId, trancheId, self, type(uint64).max);
+        erc20.approve(address(evmInvestmentManager), investmentAmount);
+        erc20.mint(self, investmentAmount);
+        lPool.requestDeposit(investmentAmount, self);
+
+        // trigger executed collectInvest at a price of 1.0
+        uint128 _currencyId = evmTokenManager.currencyAddressToId(address(erc20)); // retrieve currencyId
+        uint128 trancheTokenPayout = 100000000000000000000; // 100 * 10**18
+        homePools.isExecutedCollectInvest(
+            poolId, trancheId, bytes32(bytes20(self)), _currencyId, uint128(investmentAmount), trancheTokenPayout
+        );
+        lPool.mint(trancheTokenPayout, self);
+
+        // assert share/asset conversion
+        assertEq(lPool.latestPrice(), 1000000000000000000000000000);
+        assertEq(lPool.totalAssets(), 100000000000000000000);
+        assertEq(lPool.convertToShares(100000000000000000000), 100000000000000000000);
+        assertEq(lPool.convertToAssets(lPool.convertToShares(100000000000000000000)), 100000000000000000000);
+
+        // assert share/asset conversion after price update
+        homePools.updateTrancheTokenPrice(poolId, trancheId, 1200000000000000000000000000);
+
+        assertEq(lPool.latestPrice(), 1200000000000000000000000000);
+        assertEq(lPool.totalAssets(), 120000000000000000000);
+        assertEq(lPool.convertToShares(120000000000000000000), 100000000000000000000);
+        assertEq(lPool.convertToAssets(lPool.convertToShares(120000000000000000000)), 120000000000000000000);
+    }
+
     function testDepositMint(
         uint64 poolId,
         uint8 decimals,
@@ -251,9 +370,10 @@ contract LiquidityPoolTest is Test {
         vm.assume(amount < MAX_UINT128);
         vm.assume(amount > 1);
         vm.assume(validUntil >= block.timestamp);
-        price = 2;
+        price = 2 * 10 ** 27;
 
-        address lPool_ = deployLiquidityPool(poolId, decimals, tokenName, tokenSymbol, trancheId, price, currencyId);
+        address lPool_ =
+            deployLiquidityPool(poolId, erc20.decimals(), tokenName, tokenSymbol, trancheId, price, currencyId);
         LiquidityPool lPool = LiquidityPool(lPool_);
 
         erc20.mint(self, amount);
@@ -276,7 +396,8 @@ contract LiquidityPoolTest is Test {
 
         // trigger executed collectInvest
         uint128 _currencyId = evmTokenManager.currencyAddressToId(address(erc20)); // retrieve currencyId
-        uint128 trancheTokensPayout = uint128(amount) / price; // trancheTokenPrice = 2$
+        uint128 trancheTokensPayout = uint128(amount * 10 ** 27 / price); // trancheTokenPrice = 2$
+        assertApproxEqAbs(trancheTokensPayout, amount / 2, 1);
         homePools.isExecutedCollectInvest(
             poolId, trancheId, bytes32(bytes20(self)), _currencyId, uint128(amount), trancheTokensPayout
         );
@@ -287,25 +408,28 @@ contract LiquidityPoolTest is Test {
         // assert tranche tokens minted
         assertEq(lPool.balanceOf(address(escrow)), trancheTokensPayout);
 
-        // deposit a share of the amount
+        // deposit 50% of the amount
         uint256 share = 2;
-        lPool.deposit(amount / share, self); // mint hald the amount
-        assertEq(lPool.balanceOf(self), trancheTokensPayout / share);
-        assertEq(lPool.balanceOf(address(escrow)), trancheTokensPayout - trancheTokensPayout / share);
-        assertEq(lPool.maxMint(self), trancheTokensPayout - trancheTokensPayout / share); // max deposit
-        assertEq(lPool.maxDeposit(self), amount - amount / share); // max deposit
+        lPool.deposit(amount / 2, self); // mint half the amount
+
+        // Allow 1 difference because of rounding
+        assertApproxEqAbs(lPool.balanceOf(self), trancheTokensPayout / 2, 1);
+        assertApproxEqAbs(lPool.balanceOf(address(escrow)), trancheTokensPayout - trancheTokensPayout / 2, 1);
+        assertApproxEqAbs(lPool.maxMint(self), trancheTokensPayout - trancheTokensPayout / 2, 1);
+        assertApproxEqAbs(lPool.maxDeposit(self), amount - amount / 2, 1);
 
         // mint the rest
         lPool.mint(lPool.maxMint(self), self);
         assertEq(lPool.balanceOf(self), trancheTokensPayout - lPool.maxMint(self));
         assertTrue(lPool.balanceOf(address(escrow)) <= 1);
         assertTrue(lPool.maxMint(self) <= 1);
-        //assertTrue(lPool.maxDeposit(address(this)) <= 2); // todo: fix rounding
+
+        // remainder is rounding difference
+        assertTrue(lPool.maxDeposit(address(this)) <= amount * 0.01e18);
     }
 
     function testDepositAndRedeemWithPermit(
         uint64 poolId,
-        uint8 decimals,
         string memory tokenName,
         string memory tokenSymbol,
         bytes16 trancheId,
@@ -320,8 +444,9 @@ contract LiquidityPoolTest is Test {
         address investor = vm.addr(0xABCD);
         vm.prank(vm.addr(0xABCD));
 
-        LiquidityPool lPool =
-            LiquidityPool(deployLiquidityPool(poolId, decimals, tokenName, tokenSymbol, trancheId, 1, currencyId));
+        LiquidityPool lPool = LiquidityPool(
+            deployLiquidityPool(poolId, erc20.decimals(), tokenName, tokenSymbol, trancheId, 1, currencyId)
+        );
         erc20.mint(investor, amount);
         homePools.updateMember(poolId, trancheId, investor, type(uint64).max);
 
@@ -405,7 +530,8 @@ contract LiquidityPoolTest is Test {
         vm.assume(validUntil >= block.timestamp);
         price = 1;
 
-        address lPool_ = deployLiquidityPool(poolId, decimals, tokenName, tokenSymbol, trancheId, price, currencyId);
+        address lPool_ =
+            deployLiquidityPool(poolId, erc20.decimals(), tokenName, tokenSymbol, trancheId, price, currencyId);
         deposit(lPool_, poolId, trancheId, amount, validUntil); // deposit funds first
         LiquidityPool lPool = LiquidityPool(lPool_);
 
@@ -454,7 +580,8 @@ contract LiquidityPoolTest is Test {
         vm.assume(validUntil >= block.timestamp);
         price = 1;
 
-        address lPool_ = deployLiquidityPool(poolId, decimals, tokenName, tokenSymbol, trancheId, price, currencyId);
+        address lPool_ =
+            deployLiquidityPool(poolId, erc20.decimals(), tokenName, tokenSymbol, trancheId, price, currencyId);
         deposit(lPool_, poolId, trancheId, amount, validUntil); // deposit funds first
         LiquidityPool lPool = LiquidityPool(lPool_);
 
