@@ -189,6 +189,9 @@ contract LiquidityPoolTest is Test {
         // price should be ~1.2*10**18. max precision possible is limited by 18 decimals of the tranche tokens
         uint128 trancheTokenPrice = 1200000000000000000004800000; // 1.2 with 27 decimals
         assertEq(evmInvestmentManager.calcDepositPrice(self, address(lPool)), trancheTokenPrice);
+
+        // collect the tranche tokens
+        lPool.mint(trancheTokensPayout, self);
     }
 
     function testDepositMint(

@@ -596,9 +596,7 @@ contract InvestmentManager is Auth {
         uint8 trancheTokenPrecision = LiquidityPoolLike(liquidityPool).decimals();
         uint8 PRICE_PRECISION = 27;
 
-        // userTrancheTokenPrice = lpValues.maxDeposit / lpValues.maxMint;
-        // TODO: assumes trancheTokenPrecision > assetPrecision
-        userTrancheTokenPrice = uint128(
+        userTrancheTokenPrice = _toUint128(
             lpValues.maxDeposit.mulDiv(
                 10 ** (trancheTokenPrecision - assetPrecision + PRICE_PRECISION), lpValues.maxMint, Math.Rounding.Down
             )
