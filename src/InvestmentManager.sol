@@ -503,6 +503,7 @@ contract InvestmentManager is Auth {
         address user
     ) internal returns (uint128 _trancheTokenAmount, uint128 _currencyAmount) {
         LiquidityPoolLike lPool = LiquidityPoolLike(liquidityPool);
+
         uint128 redeemPrice = calcRedeemTokenPrice(user, liquidityPool);
         require((redeemPrice > 0), "LiquidityPool/redeem-token-price-0");
 
@@ -603,6 +604,7 @@ contract InvestmentManager is Auth {
             return 0;
         }
         userTrancheTokenPrice = lpValues.maxWithdraw / lpValues.maxRedeem;
+        return userTrancheTokenPrice;
     }
 
     function _poolCurrencyCheck(uint64 poolId, address currencyAddress) internal view returns (bool) {

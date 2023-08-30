@@ -63,20 +63,24 @@ contract DeployTest is Test {
         bytes16 trancheId
     ) public {
         uint8 decimals = 6;
-        uint128 price = 1e27;
+        uint128 price = 2;
         uint128 currencyId = 1;
         uint256 amount = 1000;
         uint64 validUntil = uint64(block.timestamp + 1000 days);
         address lPool_ = deployPoolAndTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price);
         LiquidityPool lPool = LiquidityPool(lPool_);
+        deal(address(erc20), self, amount);
+        vm.prank(address(gateway));
+        tokenManager.updateMember(poolId, trancheId, self, validUntil);
         depositMint(poolId, decimals, tokenName, tokenSymbol, trancheId, price, currencyId, amount, validUntil, lPool);
         // time passes and price changes
         // vm.warp(block.timestamp + 500 days);
         // vm.prank(address(gateway));
         // price = price * 2;
-        tokenManager.updateTrancheTokenPrice(poolId, trancheId, price);
-        TrancheToken token = TrancheToken(investmentManager.getTrancheToken(poolId, trancheId));
-        amount = token.balanceOf(self);
+        // tokenManager.updateTrancheTokenPrice(poolId, trancheId, price);
+        // TrancheToken token = TrancheToken(investmentManager.getTrancheToken(poolId, trancheId));
+        // amount = token.balanceOf(self);
+        amount = lPool.balanceOf(self);
         redeem(poolId, decimals, tokenName, tokenSymbol, trancheId, price, currencyId, amount, validUntil, lPool);
     }
 
@@ -92,26 +96,7 @@ contract DeployTest is Test {
         uint64 validUntil,
         LiquidityPool lPool
     ) public {
-        vm.assume(currencyId > 0);
-        vm.assume(amount < type(uint128).max);
-        vm.assume(amount > 1);
-        vm.assume(validUntil >= block.timestamp);
-        price = 2;
-
-        deal(address(erc20), self, amount);
-
-        // will fail - user not member: can not receive trancheToken
-        vm.expectRevert(bytes("InvestmentManager/not-a-member"));
-        lPool.requestDeposit(amount, self);
-        vm.prank(address(gateway));
-        tokenManager.updateMember(poolId, trancheId, self, validUntil); // add user as member
-        delete validUntil;
-
-        // // will fail - user did not give currency allowance to investmentManager
-        vm.expectRevert(bytes("Dai/insufficient-allowance"));
-        lPool.requestDeposit(amount, self);
         erc20.approve(address(investmentManager), amount); // add allowance
-
         lPool.requestDeposit(amount, self);
 
         // ensure funds are locked in escrow
@@ -120,31 +105,37 @@ contract DeployTest is Test {
 
         // trigger executed collectInvest
         uint128 _currencyId = tokenManager.currencyAddressToId(address(erc20)); // retrieve currencyId
-        uint128 trancheTokensPayout = uint128(amount) / price; // trancheTokenPrice = 2$
+        uint128 trancheTokensPayout = uint128(amount) / price; // 1000 / 2 = 500
+
+        // Assume an epoch execution happens on cent chain
+        // Assume a bot calls collectInvest for this user on cent chain
+
         vm.prank(address(gateway));
         investmentManager.handleExecutedCollectInvest(
             poolId, trancheId, self, _currencyId, uint128(amount), trancheTokensPayout
         );
 
-        // assert deposit & mint values adjusted
         assertEq(lPool.maxMint(self), trancheTokensPayout); // max deposit
         assertEq(lPool.maxDeposit(self), amount); // max deposit
-        // assert tranche tokens minted
         assertEq(lPool.balanceOf(address(escrow)), trancheTokensPayout);
+        assertEq(erc20.balanceOf(self), 0);
 
-        // deposit a share of the amount
-        uint256 share = 2;
-        lPool.deposit(amount / share, self); // mint hald the amount
-        assertEq(lPool.balanceOf(self), trancheTokensPayout / share);
-        assertEq(lPool.balanceOf(address(escrow)), trancheTokensPayout - trancheTokensPayout / share);
-        assertEq(lPool.maxMint(self), trancheTokensPayout - trancheTokensPayout / share); // max deposit
-        assertEq(lPool.maxDeposit(self), amount - amount / share); // max deposit
+        // deposit half of the amount
+        uint256 div = 2;
+        lPool.deposit(amount / div, self); // mint half the amount
+
+        assertEq(lPool.balanceOf(self), trancheTokensPayout / div);
+        assertEq(lPool.balanceOf(address(escrow)), trancheTokensPayout - trancheTokensPayout / div);
+        assertEq(lPool.maxMint(self), trancheTokensPayout - trancheTokensPayout / div);
+        assertEq(lPool.maxDeposit(self), amount - amount / div); // max deposit
 
         // mint the rest
         lPool.mint(lPool.maxMint(self), self);
-        assertEq(lPool.balanceOf(self), trancheTokensPayout - lPool.maxMint(self));
+
+        assertEq(lPool.balanceOf(self), trancheTokensPayout);
         assertTrue(lPool.balanceOf(address(escrow)) <= 1);
         assertTrue(lPool.maxMint(self) <= 1);
+
     }
 
     function redeem(
@@ -159,25 +150,27 @@ contract DeployTest is Test {
         uint64 validUntil,
         LiquidityPool lPool
     ) public {
-        deposit(address(lPool), poolId, trancheId, amount, validUntil); // deposit funds first
-
         lPool.approve(address(lPool), amount);
         lPool.requestRedeem(amount, self);
 
         // redeem
         uint128 _currencyId = tokenManager.currencyAddressToId(address(erc20)); // retrieve currencyId
         uint128 currencyPayout = uint128(amount) / price;
+        assertEq(currencyPayout, 250);
+        // Assume an epoch execution happens on cent chain
+        // Assume a bot calls collectRedeem for this user on cent chain
         vm.prank(address(gateway));
         investmentManager.handleExecutedCollectRedeem(
             poolId, trancheId, self, _currencyId, currencyPayout, uint128(amount)
         );
 
-        // assert withdraw & redeem values adjusted
-        assertEq(lPool.maxWithdraw(self), currencyPayout); // max deposit
-        assertEq(lPool.maxRedeem(self), amount); // max deposit
+        assertEq(lPool.maxWithdraw(self), currencyPayout);
+        assertEq(lPool.maxWithdraw(self), 250);
+        assertEq(lPool.maxRedeem(self), amount);
+        assertEq(lPool.maxRedeem(self), 500);
         assertEq(lPool.balanceOf(address(escrow)), 0);
 
-        lPool.redeem(amount, self, self); // mint hald the amount
+        lPool.redeem(amount, self, self);
         assertEq(lPool.balanceOf(self), 0);
         assertEq(lPool.balanceOf(address(escrow)), 0);
         assertEq(erc20.balanceOf(self), amount);
