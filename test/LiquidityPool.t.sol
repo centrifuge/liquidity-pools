@@ -149,7 +149,7 @@ contract LiquidityPoolTest is Test {
         investor.transfer(lPool_, self, amount / 4);
     }
 
-    function testPrecision(uint64 poolId, bytes16 trancheId, uint128 currencyId) public {
+    function testDepositAndRedeemPrecision(uint64 poolId, bytes16 trancheId, uint128 currencyId) public {
         vm.assume(currencyId > 0);
 
         uint8 TRANCHE_TOKEN_DECIMALS = 18; // Like DAI
@@ -226,7 +226,7 @@ contract LiquidityPoolTest is Test {
         assertEq(erc20.balanceOf(self), currencyPayout);
     }
 
-    function testPriceConversion(uint64 poolId, bytes16 trancheId, uint128 currencyId) public {
+    function testAssetShareConversion(uint64 poolId, bytes16 trancheId, uint128 currencyId) public {
         vm.assume(currencyId > 0);
 
         uint8 TRANCHE_TOKEN_DECIMALS = 18; // Like DAI
@@ -283,7 +283,7 @@ contract LiquidityPoolTest is Test {
         vm.assume(amount < MAX_UINT128);
         vm.assume(amount > 1);
         vm.assume(validUntil >= block.timestamp);
-        price = 2;
+        price = 2 * 10 ** 27;
 
         address lPool_ =
             deployLiquidityPool(poolId, erc20.decimals(), tokenName, tokenSymbol, trancheId, price, currencyId);
@@ -309,7 +309,8 @@ contract LiquidityPoolTest is Test {
 
         // trigger executed collectInvest
         uint128 _currencyId = evmTokenManager.currencyAddressToId(address(erc20)); // retrieve currencyId
-        uint128 trancheTokensPayout = uint128(amount) / price; // trancheTokenPrice = 2$
+        uint128 trancheTokensPayout = uint128(amount * 10 ** 27 / price); // trancheTokenPrice = 2$
+        assertApproxEqAbs(trancheTokensPayout, amount / 2, 1);
         homePools.isExecutedCollectInvest(
             poolId, trancheId, bytes32(bytes20(self)), _currencyId, uint128(amount), trancheTokensPayout
         );
@@ -320,22 +321,24 @@ contract LiquidityPoolTest is Test {
         // assert tranche tokens minted
         assertEq(lPool.balanceOf(address(escrow)), trancheTokensPayout);
 
-        // deposit a share of the amount
+        // deposit 50% of the amount
         uint256 share = 2;
-        lPool.deposit(amount / share, self); // mint hald the amount
+        lPool.deposit(amount / 2, self); // mint half the amount
 
         // Allow 1 difference because of rounding
-        assertApproxEqAbs(lPool.balanceOf(self), trancheTokensPayout / share - 1, 1);
-        assertApproxEqAbs(lPool.balanceOf(address(escrow)), trancheTokensPayout - trancheTokensPayout / share + 1, 1);
-        assertApproxEqAbs(lPool.maxMint(self), trancheTokensPayout - trancheTokensPayout / share + 1, 1);
-        assertApproxEqAbs(lPool.maxDeposit(self), amount - amount / share - 1, 1);
+        assertApproxEqAbs(lPool.balanceOf(self), trancheTokensPayout / 2, 1);
+        assertApproxEqAbs(lPool.balanceOf(address(escrow)), trancheTokensPayout - trancheTokensPayout / 2, 1);
+        assertApproxEqAbs(lPool.maxMint(self), trancheTokensPayout - trancheTokensPayout / 2, 1);
+        assertApproxEqAbs(lPool.maxDeposit(self), amount - amount / 2, 1);
 
         // mint the rest
         lPool.mint(lPool.maxMint(self), self);
         assertEq(lPool.balanceOf(self), trancheTokensPayout - lPool.maxMint(self));
         assertTrue(lPool.balanceOf(address(escrow)) <= 1);
         assertTrue(lPool.maxMint(self) <= 1);
-        //assertTrue(lPool.maxDeposit(address(this)) <= 2); // todo: fix rounding
+
+        // remainder is rounding difference
+        assertTrue(lPool.maxDeposit(address(this)) <= amount * 0.01e18);
     }
 
     function testDepositAndRedeemWithPermit(
