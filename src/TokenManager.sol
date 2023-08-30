@@ -2,8 +2,9 @@
 pragma solidity ^0.8.18;
 pragma abicoder v2;
 
-import {TrancheTokenLike, ERC20Like} from "./token/Tranche.sol";
+import {TrancheTokenLike} from "./token/Tranche.sol";
 import {MemberlistLike} from "./token/Memberlist.sol";
+import "./token/IERC20.sol";
 import "./util/Auth.sol";
 
 interface GatewayLike {

@@ -2,38 +2,21 @@
 pragma solidity ^0.8.18;
 
 import "./util/Auth.sol";
+import "./token/IERC20.sol";
 import "./util/Math.sol";
 
-interface ERC20Like {
-    function allowance(address owner, address spender) external returns (uint256);
+interface ERC20PermitLike {
     function permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
         external;
-}
-
-interface TrancheTokenLike is ERC20Like {
-    // erc20 functions
-    function name() external view returns (string memory);
-    function symbol() external view returns (string memory);
-    function decimals() external view returns (uint8);
-    function totalSupply() external view returns (uint256);
-    function mint(address owner, uint256 amount) external;
-    function burn(address owner, uint256 amount) external;
-    function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);
-    function transfer(address recipient, uint256 amount) external returns (bool);
-    function approveForOwner(address owner, address spender, uint256 value) external returns (bool);
-    function balanceOf(address owner) external returns (uint256);
-    function allowance(address owner, address spender) external returns (uint256);
-    function increaseAllowanceForOwner(address owner, address spender, uint256 addedValue) external returns (bool);
-    function decreaseAllowanceForOwner(address owner, address spender, uint256 subtractedValue)
-        external
-        returns (bool);
-    // restricted token functions
-    function latestPrice() external view returns (uint256);
-    function memberlist() external returns (address);
-    function hasMember(address) external returns (bool);
     // erc2612 functions
     function PERMIT_TYPEHASH() external view returns (bytes32);
     function DOMAIN_SEPARATOR() external view returns (bytes32);
+}
+
+interface TrancheTokenLike is ERC20Like, ERC20PermitLike {
+    function latestPrice() external view returns (uint256);
+    function memberlist() external returns (address);
+    function hasMember(address) external returns (bool);
 }
 
 interface InvestmentManagerLike {
@@ -59,7 +42,7 @@ interface InvestmentManagerLike {
 /// @notice Each Liquidity Pool is a tokenized vault issuing shares as restricted ERC20 tokens against currency deposits based on the current share price.
 /// This is extending the EIP4626 standard by 'requestRedeem' & 'requestDeposit' functions, where redeem and deposit orders are submitted to the pools
 /// to be included in the execution of the following epoch. After execution users can use the redeem and withdraw functions to get their shares and/or assets from the pools.
-contract LiquidityPool is Auth {
+contract LiquidityPool is Auth, ERC20Like {
     using Math for uint256;
 
     InvestmentManagerLike public investmentManager;
@@ -154,7 +137,7 @@ contract LiquidityPool is Auth {
     function requestDepositWithPermit(uint256 assets, address owner, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
         public
     {
-        ERC20Like(asset).permit(owner, address(investmentManager), assets, deadline, v, r, s);
+        ERC20PermitLike(asset).permit(owner, address(investmentManager), assets, deadline, v, r, s);
         investmentManager.requestDeposit(assets, owner);
         emit DepositRequested(owner, assets);
     }
@@ -193,7 +176,7 @@ contract LiquidityPool is Auth {
     function requestRedeemWithPermit(uint256 shares, address owner, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
         public
     {
-        share.permit(owner, address(this), shares, deadline, v, r, s);
+        share.permit(owner, address(investmentManager), shares, deadline, v, r, s);
         investmentManager.requestRedeem(shares, owner);
         emit RedeemRequested(owner, shares);
     }
@@ -270,46 +253,40 @@ contract LiquidityPool is Auth {
         return share.totalSupply();
     }
 
-    function balanceOf(address owner) public returns (uint256) {
+    function balanceOf(address owner) public view returns (uint256) {
         return share.balanceOf(owner);
     }
 
-    function transferFrom(address sender, address recipient, uint256 amount)
-        public
-        withTokenApproval(sender, amount)
-        returns (bool)
-    {
-        // discuss if we should add this here
-        // approveForOwner(sender, address(this), amount);
-        return share.transferFrom(sender, recipient, amount);
+    function allowance(address owner, address spender) public view returns (uint256) {
+        return share.allowance(owner, spender);
+    }
+
+    function transferFrom(address sender, address recipient, uint256 amount) public returns (bool) {
+        (bool success, bytes memory data) = address(share).call(bytes.concat(msg.data, bytes20(msg.sender)));
+        _successCheck(success);
+        return abi.decode(data, (bool));
     }
 
     function transfer(address recipient, uint256 amount) public returns (bool) {
-        return transferFrom(msg.sender, recipient, amount);
+        (bool success, bytes memory data) = address(share).call(bytes.concat(msg.data, bytes20(msg.sender)));
+        _successCheck(success);
+        return abi.decode(data, (bool));
     }
 
     function approve(address spender, uint256 amount) public returns (bool) {
-        return share.approveForOwner(msg.sender, spender, amount);
-    }
-
-    function increaseAllowance(address spender, uint256 _addedValue) public returns (bool) {
-        return share.increaseAllowanceForOwner(msg.sender, spender, _addedValue);
-    }
-
-    function decreaseAllowance(address spender, uint256 _subtractedValue) public returns (bool) {
-        return share.decreaseAllowanceForOwner(msg.sender, spender, _subtractedValue);
+        (bool success, bytes memory data) = address(share).call(bytes.concat(msg.data, bytes20(msg.sender)));
+        _successCheck(success);
+        return abi.decode(data, (bool));
     }
 
     function mint(address owner, uint256 amount) public auth {
-        share.mint(owner, amount);
+        (bool success,) = address(share).call(bytes.concat(msg.data, bytes20(address(this))));
+        _successCheck(success);
     }
 
     function burn(address owner, uint256 amount) public auth {
-        share.burn(owner, amount);
-    }
-
-    function allowance(address owner, address spender) public returns (uint256) {
-        return share.allowance(owner, spender);
+        (bool success,) = address(share).call(bytes.concat(msg.data, bytes20(address(this))));
+        _successCheck(success);
     }
 
     // --- Restrictions ---
@@ -319,5 +296,18 @@ contract LiquidityPool is Auth {
 
     function hasMember(address user) public returns (bool) {
         return share.hasMember(user);
+    }
+
+    // helpers
+    /// @dev In case of unsuccessful tx, parse the revert message
+    function _successCheck(bool success) internal {
+        if (success == false) {
+            assembly {
+                let ptr := mload(0x40)
+                let size := returndatasize()
+                returndatacopy(ptr, 0, size)
+                revert(ptr, size)
+            }
+        }
     }
 }

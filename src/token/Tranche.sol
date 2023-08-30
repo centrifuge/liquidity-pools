@@ -2,23 +2,11 @@
 pragma solidity ^0.8.18;
 
 import "./ERC20.sol";
+import "./IERC20.sol";
 
 interface MemberlistLike {
     function hasMember(address) external view returns (bool);
     function member(address) external;
-}
-
-interface ERC20Like {
-    function mint(address user, uint256 value) external;
-    function name() external view returns (string memory);
-    function symbol() external view returns (string memory);
-    function decimals() external view returns (uint8);
-    function balanceOf(address user) external view returns (uint256 value);
-    function burn(address user, uint256 value) external;
-    function transfer(address to, uint256 amount) external returns (bool);
-    function transferFrom(address from, address to, uint256 amount) external returns (bool);
-    function totalSupply() external returns (uint256);
-    function approve(address _spender, uint256 _value) external returns (bool);
 }
 
 interface TrancheTokenLike is ERC20Like {
