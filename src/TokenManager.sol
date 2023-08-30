@@ -4,7 +4,7 @@ pragma abicoder v2;
 
 import {TrancheTokenLike} from "./token/Tranche.sol";
 import {MemberlistLike} from "./token/Memberlist.sol";
-import "./token/IERC20.sol";
+import "./token/ERC20Like.sol";
 import "./util/Auth.sol";
 
 interface GatewayLike {

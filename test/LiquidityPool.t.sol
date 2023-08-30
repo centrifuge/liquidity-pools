@@ -30,8 +30,8 @@ interface AuthLike_ {
 
 interface TrancheToken {
     function isTrustedForwarder(address forwarder) external view returns (bool);
-    function addTrustedForwarder(address forwarder) external;
-    function removeTrustedForwarder(address forwarder) external;
+    function addLiquidityPool(address forwarder) external;
+    function removeLiquidityPool(address forwarder) external;
 }
 
 contract LiquidityPoolTest is Test {
@@ -126,14 +126,14 @@ contract LiquidityPoolTest is Test {
 
         // remove LiquidityPool as trusted forwarder
         root.relyContract(address(trancheToken), self);
-        trancheToken.removeTrustedForwarder(lPool_);
+        trancheToken.removeLiquidityPool(lPool_);
         assert(trancheToken.isTrustedForwarder(lPool_) == false); // adding trusted forwarder works
 
         vm.expectRevert(bytes("ERC20/insufficient-allowance"));
         investor.transferFrom(lPool_, address(investor), self, transferAmount);
 
         // add liquidityPool back as trusted forwarder
-        trancheToken.addTrustedForwarder(lPool_);
+        trancheToken.addLiquidityPool(lPool_);
 
         investor.transferFrom(lPool_, address(investor), self, transferAmount);
         assert(lPool.balanceOf(address(investor)) == (initBalance - transferAmount));
@@ -181,7 +181,7 @@ contract LiquidityPoolTest is Test {
 
         // remove LiquidityPool as trusted forwarder
         root.relyContract(address(trancheToken), self);
-        trancheToken.removeTrustedForwarder(lPool_);
+        trancheToken.removeLiquidityPool(lPool_);
         assert(trancheToken.isTrustedForwarder(lPool_) == false); // adding trusted forwarder works
 
         investor.approve(lPool_, address(random), approvalAmount);
@@ -189,7 +189,7 @@ contract LiquidityPoolTest is Test {
         assertEq(lPool.allowance(address(investor), address(random)), 0);
 
         // add liquidityPool back as trusted forwarder
-        trancheToken.addTrustedForwarder(lPool_);
+        trancheToken.addLiquidityPool(lPool_);
 
         investor.approve(lPool_, address(random), approvalAmount);
         assertEq(lPool.allowance(address(investor), address(random)), approvalAmount);
@@ -236,14 +236,14 @@ contract LiquidityPoolTest is Test {
 
         // remove LiquidityPool as trusted forwarder
         root.relyContract(address(trancheToken), self);
-        trancheToken.removeTrustedForwarder(lPool_);
+        trancheToken.removeLiquidityPool(lPool_);
         assert(trancheToken.isTrustedForwarder(lPool_) == false); // adding trusted forwarder works
 
         vm.expectRevert(bytes("ERC20/insufficient-balance"));
         investor.transfer(lPool_, self, transferAmount);
 
         // add liquidityPool back as trusted forwarder
-        trancheToken.addTrustedForwarder(lPool_);
+        trancheToken.addLiquidityPool(lPool_);
         investor.transfer(lPool_, self, transferAmount);
 
         // investor.transfer(lPool_, self, transferAmount);

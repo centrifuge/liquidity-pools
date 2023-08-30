@@ -2,7 +2,7 @@
 pragma solidity ^0.8.18;
 
 import "./util/Auth.sol";
-import "./token/IERC20.sol";
+import "./token/ERC20Like.sol";
 import "./util/Math.sol";
 
 interface ERC20PermitLike {

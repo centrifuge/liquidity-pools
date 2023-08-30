@@ -50,7 +50,7 @@ interface ERC20Like {
 }
 
 interface ERC2771Like {
-    function addTrustedForwarder(address forwarder) external;
+    function addLiquidityPool(address forwarder) external;
 }
 
 interface EscrowLike {
@@ -581,7 +581,7 @@ contract InvestmentManager is Auth {
 
         // enable LP to take the liquidity pool tokens out of escrow in case if investments
         AuthLike(tranche.token).rely(liquidityPool); // add liquidityPool as ward on tranche Token
-        ERC2771Like(tranche.token).addTrustedForwarder(liquidityPool);
+        ERC2771Like(tranche.token).addLiquidityPool(liquidityPool);
         EscrowLike(escrow).approve(liquidityPool, address(this), type(uint256).max); // approve investment manager on tranche token for coordinating transfers
         EscrowLike(escrow).approve(liquidityPool, liquidityPool, type(uint256).max); // approve liquidityPool on tranche token to be able to burn
 

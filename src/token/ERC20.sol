@@ -11,6 +11,8 @@ interface IERC1271 {
 
 // Adapted from https://github.com/makerdao/xdomain-dss/blob/master/src/Dai.sol
 contract ERC20 is Context {
+    mapping(address => uint256) public wards;
+
     string public name;
     string public symbol;
     string public constant version = "3";
@@ -27,20 +29,12 @@ contract ERC20 is Context {
     bytes32 public constant PERMIT_TYPEHASH =
         keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
 
-    // ERC2771Context
-    // trusted forwarders that are allowed to forward the msg.sender
-    mapping(address => bool) private _trustedForwarders;
-
     // --- Events ---
+    event Rely(address indexed user);
+    event Deny(address indexed user);
     event File(bytes32 indexed what, string data);
     event Approval(address indexed owner, address indexed spender, uint256 value);
     event Transfer(address indexed from, address indexed to, uint256 value);
-
-    // --- AUTH ---
-    mapping(address => uint256) public wards;
-
-    event Rely(address indexed user);
-    event Deny(address indexed user);
 
     constructor(uint8 decimals_) {
         decimals = decimals_;
@@ -51,8 +45,8 @@ contract ERC20 is Context {
         _DOMAIN_SEPARATOR = _calculateDomainSeparator(block.chainid);
     }
 
-    // custom auth modifier that uses _msgSender()
     modifier auth() {
+        // Custom auth modifier that uses _msgSender()
         require(wards[_msgSender()] == 1, "Auth/not-authorized");
         _;
     }
@@ -91,17 +85,7 @@ contract ERC20 is Context {
     }
 
     // --- ERC2771Context ---
-    function addTrustedForwarder(address forwarder) public auth {
-        _trustedForwarders[forwarder] = true;
-    }
-
-    function removeTrustedForwarder(address forwarder) public auth {
-        _trustedForwarders[forwarder] = false;
-    }
-
-    function isTrustedForwarder(address forwarder) public view virtual returns (bool) {
-        return _trustedForwarders[forwarder] == true;
-    }
+    function isTrustedForwarder(address forwarder) public view virtual returns (bool) {}
 
     // Trusted Forwarder logic
     /**
