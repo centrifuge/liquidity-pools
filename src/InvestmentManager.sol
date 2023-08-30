@@ -6,7 +6,6 @@ import {TrancheTokenFactoryLike, LiquidityPoolFactoryLike} from "./util/Factory.
 import {MemberlistLike} from "./token/Memberlist.sol";
 import "./util/Auth.sol";
 import "./util/Math.sol";
-import "forge-std/console.sol";
 
 interface GatewayLike {
     function increaseInvestOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount)
