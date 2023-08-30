@@ -298,7 +298,8 @@ contract LiquidityPool is Auth, ERC20Like {
         return share.hasMember(user);
     }
 
-    // helpers    
+    // helpers   
+    /// @dev In case of unsuccessful tx, parse the revert message
     function _successCheck(bool success) internal {
     if (success == false) {
             assembly {

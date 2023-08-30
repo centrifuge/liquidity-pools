@@ -34,7 +34,6 @@ interface LiquidityPoolLike {
     // centrifuge chain info functions
     function poolId() external returns (uint64);
     function trancheId() external returns (bytes16);
-    function allowance(address owner, address spender) external view returns (uint256);
 }
 
 interface TokenManagerLike {
