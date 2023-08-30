@@ -189,7 +189,7 @@ contract LiquidityPoolTest is Test {
         address lPool_ = deployLiquidityPool(poolId, decimals, tokenName, tokenSymbol, trancheId, price, currencyId);
         LiquidityPool lPool = LiquidityPool(lPool_);
 
-        deal(address(erc20), self, amount);
+        erc20.mint(self, amount);
 
         // will fail - user not member: can not receive trancheToken
         vm.expectRevert(bytes("InvestmentManager/not-a-member"));
