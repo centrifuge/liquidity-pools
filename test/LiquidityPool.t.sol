@@ -181,7 +181,7 @@ contract LiquidityPoolTest is Test {
         assertEq(lPool.maxDeposit(self), currencyPayout);
         assertEq(lPool.maxMint(self), firstTrancheTokenPayout);
 
-        // deposit price should be ~1.2*10**18. max precision possible is limited by 18 decimals of the tranche tokens
+        // deposit price should be ~1.2*10**27. max precision possible is limited by 18 decimals of the tranche tokens
         assertEq(evmInvestmentManager.calculateDepositPrice(self, address(lPool)), 1200000000000000000019200000);
 
         // trigger executed collectInvest of the second 50% at a price of 1.4
@@ -449,7 +449,8 @@ contract LiquidityPoolTest is Test {
         vm.assume(validUntil >= block.timestamp);
         price = 1;
 
-        address lPool_ = deployLiquidityPool(poolId, erc20.decimals(), tokenName, tokenSymbol, trancheId, price, currencyId);
+        address lPool_ =
+            deployLiquidityPool(poolId, erc20.decimals(), tokenName, tokenSymbol, trancheId, price, currencyId);
         deposit(lPool_, poolId, trancheId, amount, validUntil); // deposit funds first
         LiquidityPool lPool = LiquidityPool(lPool_);
 
