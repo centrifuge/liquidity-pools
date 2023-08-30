@@ -103,8 +103,13 @@ contract MockHomeLiquidityPools is Test {
         router.handle(_message);
     }
 
-    function incomingScheduleUpgrade(address spell) public {
-        bytes memory _message = Messages.formatScheduleUpgrade(spell);
+    function incomingScheduleUpgrade(address target) public {
+        bytes memory _message = Messages.formatScheduleUpgrade(target);
+        router.handle(_message);
+    }
+
+    function incomingCancelUpgrade(address target) public {
+        bytes memory _message = Messages.formatCancelUpgrade(target);
         router.handle(_message);
     }
 
