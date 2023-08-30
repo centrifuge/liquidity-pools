@@ -69,6 +69,12 @@ contract TrancheToken is ERC20 {
     }
 
     // --- Pricing ---
+    function setInitialPrice(uint128 price, uint256 priceAge) public auth {
+        require(lastPriceUpdate == 0, "TrancheToken/price-already-set");
+        latestPrice = price;
+        lastPriceUpdate = priceAge;
+    }
+
     function updatePrice(uint128 price) public auth {
         latestPrice = price;
         lastPriceUpdate = block.timestamp;

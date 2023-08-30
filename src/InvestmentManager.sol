@@ -552,7 +552,8 @@ contract InvestmentManager is Auth {
             tranche.tokenName,
             tranche.tokenSymbol,
             tranche.decimals,
-            tranche.latestPrice
+            tranche.latestPrice,
+            tranche.createdAt
         );
 
         tranche.token = token;

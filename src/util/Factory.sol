@@ -55,7 +55,8 @@ interface TrancheTokenFactoryLike {
         string memory name,
         string memory symbol,
         uint8 decimals,
-        uint128 latestPrice
+        uint128 latestPrice,
+        uint256 priceAge
     ) external returns (address);
 }
 
@@ -77,7 +78,8 @@ contract TrancheTokenFactory is Auth {
         string memory name,
         string memory symbol,
         uint8 decimals,
-        uint128 latestPrice
+        uint128 latestPrice,
+        uint256 priceAge
     ) public auth returns (address) {
         address memberlist = _newMemberlist(tokenManager);
 
@@ -91,7 +93,7 @@ contract TrancheTokenFactory is Auth {
         token.file("symbol", symbol);
         token.file("memberlist", memberlist);
 
-        token.updatePrice(latestPrice);
+        token.setInitialPrice(latestPrice, priceAge);
 
         token.rely(root);
         token.rely(investmentManager); // to be able to add LPs as wards
