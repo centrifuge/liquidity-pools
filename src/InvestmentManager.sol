@@ -6,6 +6,7 @@ import {TrancheTokenFactoryLike, LiquidityPoolFactoryLike} from "./util/Factory.
 import {MemberlistLike} from "./token/Memberlist.sol";
 import "./util/Auth.sol";
 import "./util/Math.sol";
+import "forge-std/console.sol";
 
 interface GatewayLike {
     function increaseInvestOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount)
@@ -92,6 +93,8 @@ struct LPValues {
 contract InvestmentManager is Auth {
     using Math for uint128;
 
+    uint8 internal PRICE_PRECISION = 27;
+
     mapping(uint64 => Pool) public pools; // Mapping of all deployed Centrifuge pools
     mapping(address => mapping(address => LPValues)) public orderbook; // Liquidity pool orders & limits per user
 
@@ -166,7 +169,7 @@ contract InvestmentManager is Auth {
 
         if (lpValues.maxMint >= _trancheTokenAmount) {
             // case: user has unclaimed trancheTokens in escrow -> more than redemption request
-            uint128 userTrancheTokenPrice = calcDepositPrice(user, liquidityPool);
+            uint128 userTrancheTokenPrice = calculateDepositPrice(user, liquidityPool);
             uint128 currencyAmount = _trancheTokenAmount * userTrancheTokenPrice;
             _decreaseDepositLimits(user, liquidityPool, currencyAmount, _trancheTokenAmount);
         } else {
@@ -218,7 +221,7 @@ contract InvestmentManager is Auth {
         }
         if (lpValues.maxWithdraw >= _currencyAmount) {
             // case: user has some claimable funds in escrow -> funds > depositRequest _currencyAmount
-            uint128 userTrancheTokenPrice = calcRedeemTokenPrice(user, liquidityPool);
+            uint128 userTrancheTokenPrice = calculateRedeemPrice(user, liquidityPool);
             uint128 trancheTokens = _currencyAmount / userTrancheTokenPrice;
             _decreaseRedemptionLimits(user, liquidityPool, _currencyAmount, trancheTokens);
         } else {
@@ -329,18 +332,18 @@ contract InvestmentManager is Auth {
         address _recepient,
         uint128 currency,
         uint128 currencyPayout,
-        uint128 trancheTokensRedeemed
+        uint128 trancheTokensPayout
     ) public onlyGateway {
-        require(trancheTokensRedeemed != 0, "InvestmentManager/zero-redeem");
+        require(trancheTokensPayout != 0, "InvestmentManager/zero-redeem");
         address _currency = tokenManager.currencyIdToAddress(currency);
         address lPool = pools[poolId].tranches[trancheId].liquidityPools[_currency];
         require(lPool != address(0), "InvestmentManager/tranche-does-not-exist");
 
         LPValues storage values = orderbook[_recepient][lPool];
         values.maxWithdraw = values.maxWithdraw + currencyPayout;
-        values.maxRedeem = values.maxRedeem + trancheTokensRedeemed;
+        values.maxRedeem = values.maxRedeem + trancheTokensPayout;
 
-        LiquidityPoolLike(lPool).burn(address(escrow), trancheTokensRedeemed); // burned redeemed tokens from escrow
+        LiquidityPoolLike(lPool).burn(address(escrow), trancheTokensPayout); // burned redeemed tokens from escrow
     }
 
     function handleExecutedDecreaseInvestOrder(
@@ -441,14 +444,17 @@ contract InvestmentManager is Auth {
         returns (uint128 _trancheTokenAmount, uint128 _currencyAmount)
     {
         LiquidityPoolLike lPool = LiquidityPoolLike(liquidityPool);
-        uint128 depositPrice = calcDepositPrice(user, liquidityPool);
+        uint128 depositPrice = calculateDepositPrice(user, liquidityPool);
         require((depositPrice > 0), "LiquidityPool/deposit-token-price-0");
+        console.logUint(depositPrice);
 
         if (currencyAmount == 0) {
-            _currencyAmount = trancheTokenAmount * depositPrice;
+            _currencyAmount =
+                _toUint128(trancheTokenAmount.mulDiv(depositPrice, 10 ** PRICE_PRECISION, Math.Rounding.Down));
             _trancheTokenAmount = trancheTokenAmount;
         } else {
-            _trancheTokenAmount = currencyAmount / depositPrice;
+            _trancheTokenAmount =
+                _toUint128(currencyAmount.mulDiv(10 ** PRICE_PRECISION, depositPrice, Math.Rounding.Down));
             _currencyAmount = currencyAmount;
         }
 
@@ -508,14 +514,16 @@ contract InvestmentManager is Auth {
         address user
     ) internal returns (uint128 _trancheTokenAmount, uint128 _currencyAmount) {
         LiquidityPoolLike lPool = LiquidityPoolLike(liquidityPool);
-        uint128 redeemPrice = calcRedeemTokenPrice(user, liquidityPool);
+        uint128 redeemPrice = calculateRedeemPrice(user, liquidityPool);
         require((redeemPrice > 0), "LiquidityPool/redeem-token-price-0");
 
         if (currencyAmount == 0) {
-            _currencyAmount = trancheTokenAmount * redeemPrice;
+            _currencyAmount =
+                _toUint128(trancheTokenAmount.mulDiv(redeemPrice, 10 ** PRICE_PRECISION, Math.Rounding.Down));
             _trancheTokenAmount = trancheTokenAmount;
         } else {
-            _trancheTokenAmount = currencyAmount / redeemPrice;
+            _trancheTokenAmount =
+                _toUint128(currencyAmount.mulDiv(10 ** PRICE_PRECISION, redeemPrice, Math.Rounding.Down));
             _currencyAmount = currencyAmount;
         }
 
@@ -585,8 +593,10 @@ contract InvestmentManager is Auth {
         return pools[poolId].allowedCurrencies[currency];
     }
 
-    // TODO: check rounding
-    function calcDepositPrice(address user, address liquidityPool) public returns (uint128 userTrancheTokenPrice) {
+    function calculateDepositPrice(address user, address liquidityPool)
+        public
+        returns (uint128 userTrancheTokenPrice)
+    {
         LPValues storage lpValues = orderbook[user][liquidityPool];
         if (lpValues.maxMint == 0) {
             return 0;
@@ -594,7 +604,6 @@ contract InvestmentManager is Auth {
 
         uint8 assetPrecision = ERC20Like(LiquidityPoolLike(liquidityPool).asset()).decimals();
         uint8 trancheTokenPrecision = LiquidityPoolLike(liquidityPool).decimals();
-        uint8 PRICE_PRECISION = 27;
 
         userTrancheTokenPrice = _toUint128(
             lpValues.maxDeposit.mulDiv(
@@ -603,16 +612,20 @@ contract InvestmentManager is Auth {
         );
     }
 
-    function calcRedeemTokenPrice(address user, address liquidityPool)
-        public
-        view
-        returns (uint128 userTrancheTokenPrice)
-    {
+    function calculateRedeemPrice(address user, address liquidityPool) public returns (uint128 userTrancheTokenPrice) {
         LPValues storage lpValues = orderbook[user][liquidityPool];
         if (lpValues.maxRedeem == 0) {
             return 0;
         }
-        userTrancheTokenPrice = lpValues.maxWithdraw / lpValues.maxRedeem;
+
+        uint8 assetPrecision = ERC20Like(LiquidityPoolLike(liquidityPool).asset()).decimals();
+        uint8 trancheTokenPrecision = LiquidityPoolLike(liquidityPool).decimals();
+
+        userTrancheTokenPrice = _toUint128(
+            lpValues.maxWithdraw.mulDiv(
+                10 ** (trancheTokenPrecision - assetPrecision + PRICE_PRECISION), lpValues.maxRedeem, Math.Rounding.Down
+            )
+        );
     }
 
     function _poolCurrencyCheck(uint64 poolId, address currencyAddress) internal view returns (bool) {

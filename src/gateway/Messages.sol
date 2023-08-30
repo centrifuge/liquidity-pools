@@ -682,7 +682,7 @@ library Messages {
         bytes32 investor,
         uint128 currency,
         uint128 currencyPayout,
-        uint128 trancheTokensRedeemed
+        uint128 trancheTokensPayout
     ) internal pure returns (bytes memory) {
         return abi.encodePacked(
             uint8(Call.ExecutedCollectRedeem),
@@ -691,7 +691,7 @@ library Messages {
             investor,
             currency,
             currencyPayout,
-            trancheTokensRedeemed
+            trancheTokensPayout
         );
     }
 
@@ -708,7 +708,7 @@ library Messages {
             address investor,
             uint128 currency,
             uint128 currencyPayout,
-            uint128 trancheTokensRedeemed
+            uint128 trancheTokensPayout
         )
     {
         poolId = uint64(_msg.indexUint(1, 8));
@@ -716,7 +716,7 @@ library Messages {
         investor = address(bytes20(_msg.index(25, 32)));
         currency = uint128(_msg.indexUint(57, 16));
         currencyPayout = uint128(_msg.indexUint(73, 16));
-        trancheTokensRedeemed = uint128(_msg.indexUint(89, 16));
+        trancheTokensPayout = uint128(_msg.indexUint(89, 16));
     }
 
     function formatScheduleUpgrade(address _contract) internal pure returns (bytes memory) {

@@ -293,10 +293,10 @@ contract Gateway is Auth {
                 address investor,
                 uint128 currency,
                 uint128 currencyPayout,
-                uint128 trancheTokensRedeemed
+                uint128 trancheTokensPayout
             ) = Messages.parseExecutedCollectRedeem(_msg);
             investmentManager.handleExecutedCollectRedeem(
-                poolId, trancheId, investor, currency, currencyPayout, trancheTokensRedeemed
+                poolId, trancheId, investor, currency, currencyPayout, trancheTokensPayout
             );
         } else if (Messages.isScheduleUpgrade(_msg)) {
             address target = Messages.parseScheduleUpgrade(_msg);
