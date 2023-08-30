@@ -14,7 +14,6 @@ interface LiquidityPoolFactoryLike {
     function newLiquidityPool(
         uint64 poolId,
         bytes16 trancheId,
-        uint128 currencyId,
         address asset,
         address trancheToken,
         address investmentManager
@@ -34,24 +33,11 @@ contract LiquidityPoolFactory is Auth {
     function newLiquidityPool(
         uint64 poolId,
         bytes16 trancheId,
-        uint128 currencyId,
         address asset,
         address trancheToken,
         address investmentManager
     ) public auth returns (address) {
-        // Salt is hash(poolId + trancheId + currencyId), to deploy copies of the liquidity pool contract
-        // on multiple chains with the same address for the same tranche and asset
-        bytes32 salt = keccak256(abi.encodePacked(poolId, trancheId, currencyId));
-
-        LiquidityPool liquidityPool = new LiquidityPool{salt: salt}();
-
-        // Name and symbol are not passed on constructor, such that if the same liquidity pool is deployed
-        // on another chain with a different name (it might have changed in between deployments),
-        // then the address remains deterministic.
-        liquidityPool.file("investmentManager", investmentManager);
-        liquidityPool.file("asset", asset);
-        liquidityPool.file("share", trancheToken);
-        liquidityPool.setPoolDetails(poolId, trancheId);
+        LiquidityPool liquidityPool = new LiquidityPool(poolId, trancheId, asset, trancheToken, investmentManager);
 
         liquidityPool.rely(root);
         liquidityPool.rely(investmentManager); // to be able to update tokenPrices

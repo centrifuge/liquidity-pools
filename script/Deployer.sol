@@ -37,6 +37,9 @@ contract Deployer is Script {
         address liquidityPoolFactory = address(new LiquidityPoolFactory(address(root)));
         address trancheTokenFactory = address(new TrancheTokenFactory(address(root)));
         investmentManager = new InvestmentManager(address(escrow), liquidityPoolFactory, trancheTokenFactory);
+
+        LiquidityPoolFactory(liquidityPoolFactory).rely(address(investmentManager));
+        TrancheTokenFactory(trancheTokenFactory).rely(address(investmentManager));
     }
 
     function wire(address router) public {
@@ -44,8 +47,11 @@ contract Deployer is Script {
         tokenManager = new TokenManager(address(escrow));
 
         // Deploy gateway and admins
-        pauseAdmin = new PauseAdmin();
-        delayedAdmin = new DelayedAdmin();
+        pauseAdmin = new PauseAdmin(address(root));
+        delayedAdmin = new DelayedAdmin(address(root));
+        pauseAdmin.rely(address(delayedAdmin));
+        root.rely(address(pauseAdmin));
+        root.rely(address(delayedAdmin));
         gateway = new Gateway(address(root), address(investmentManager), address(tokenManager), address(router));
 
         // Wire gateway
@@ -55,13 +61,10 @@ contract Deployer is Script {
         tokenManager.file("gateway", address(gateway));
         gateway.rely(address(pauseAdmin));
         gateway.rely(address(delayedAdmin));
-        pauseAdmin.file("gateway", address(gateway));
-        delayedAdmin.file("gateway", address(gateway));
-        RouterLike(router).file("gateway", address(gateway));
-        investmentManager.rely(address(gateway));
-        tokenManager.rely(address(gateway));
-        RouterLike(router).rely(address(gateway));
-        Escrow(address(escrow)).rely(address(gateway));
+        investmentManager.rely(address(root));
+        tokenManager.rely(address(root));
+        RouterLike(router).rely(address(root));
+        Escrow(address(escrow)).rely(address(root));
         Escrow(address(escrow)).rely(address(investmentManager));
         Escrow(address(escrow)).rely(address(tokenManager));
     }
@@ -73,6 +76,7 @@ contract Deployer is Script {
 
     function removeDeployerAccess(address router) public {
         RouterLike(router).deny(address(this));
+        root.deny(address(this));
         investmentManager.deny(address(this));
         tokenManager.deny(address(this));
         escrow.deny(address(this));

@@ -44,18 +44,16 @@ interface GatewayLike {
 }
 
 contract AxelarEVMRouter is Auth, AxelarExecutableLike {
-    InvestmentManagerLike public immutable investmentManager;
     AxelarGatewayLike public immutable axelarGateway;
     GatewayLike public gateway;
 
-    string public constant axelarCentrifugeChainId = "centrifuge";
-    string public constant axelarCentrifugeChainAddress = "";
+    string public constant axelarCentrifugeChainId = "Moonbeam";
+    string public constant axelarCentrifugeChainAddress = "0x56c4Db5bEaD29FC19158aA1f85673D9865732be4";
 
     // --- Events ---
     event File(bytes32 indexed what, address addr);
 
-    constructor(address investmentManager_, address axelarGateway_) {
-        investmentManager = InvestmentManagerLike(investmentManager_);
+    constructor(address axelarGateway_) {
         axelarGateway = AxelarGatewayLike(axelarGateway_);
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
@@ -65,13 +63,13 @@ contract AxelarEVMRouter is Auth, AxelarExecutableLike {
         require(
             msg.sender == address(axelarGateway)
                 && keccak256(bytes(axelarCentrifugeChainId)) == keccak256(bytes(sourceChain)),
-            "AxelarRouter/invalid-origin"
+            "AxelarEVMRouter/invalid-origin"
         );
         _;
     }
 
-    modifier onlyInvestmentManager() {
-        require(msg.sender == address(investmentManager), "AxelarRouter/only-investmentManager-allowed-to-call");
+    modifier onlyGateway() {
+        require(msg.sender == address(gateway), "AxelarEVMRouter/only-gateway-allowed-to-call");
         _;
     }
 
@@ -95,7 +93,7 @@ contract AxelarEVMRouter is Auth, AxelarExecutableLike {
     }
 
     // --- Outgoing ---
-    function send(bytes memory message) public onlyInvestmentManager {
+    function send(bytes memory message) public onlyGateway {
         axelarGateway.callContract(axelarCentrifugeChainId, axelarCentrifugeChainAddress, message);
     }
 }

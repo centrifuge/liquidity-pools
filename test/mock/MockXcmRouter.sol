@@ -46,4 +46,7 @@ contract MockXcmRouter is Test {
     function send(bytes memory message) public onlyGateway {
         sentMessages[message] = true;
     }
+
+    // Added to be ignored in coverage report
+    function test() public {}
 }

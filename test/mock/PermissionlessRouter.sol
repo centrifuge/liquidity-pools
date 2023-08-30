@@ -38,4 +38,7 @@ contract PermissionlessRouter is Auth {
     function send(bytes memory message) public {
         emit Send(message);
     }
+
+    // Added to be ignored in coverage report
+    function test() public {}
 }

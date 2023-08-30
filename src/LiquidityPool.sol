@@ -3,14 +3,23 @@ pragma solidity ^0.8.18;
 
 import "./util/Auth.sol";
 
-interface TrancheTokenLike {
+interface ERC20Like {
+    function allowance(address owner, address spender) external returns (uint256);
+    function permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
+        external;
+}
+
+interface TrancheTokenLike is ERC20Like {
     // erc20 functions
+    function name() external view returns (string memory);
+    function symbol() external view returns (string memory);
+    function decimals() external view returns (uint8);
+    function totalSupply() external view returns (uint256);
     function mint(address owner, uint256 amount) external;
     function burn(address owner, uint256 amount) external;
     function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);
     function transfer(address recipient, uint256 amount) external returns (bool);
     function approveForOwner(address owner, address spender, uint256 value) external returns (bool);
-    function totalSupply() external view returns (uint256);
     function balanceOf(address owner) external returns (uint256);
     function allowance(address owner, address spender) external returns (uint256);
     function increaseAllowanceForOwner(address owner, address spender, uint256 addedValue) external returns (bool);
@@ -21,6 +30,9 @@ interface TrancheTokenLike {
     function latestPrice() external view returns (uint256);
     function memberlist() external returns (address);
     function hasMember(address) external returns (bool);
+    // erc2612 functions
+    function PERMIT_TYPEHASH() external view returns (bytes32);
+    function DOMAIN_SEPARATOR() external view returns (bytes32);
 }
 
 interface ERC20Like {
@@ -52,23 +64,31 @@ interface InvestmentManagerLike {
 contract LiquidityPool is Auth {
     InvestmentManagerLike public investmentManager;
 
+    uint64 public immutable poolId;
+    bytes16 public immutable trancheId;
+
     /// @notice asset: The underlying stable currency of the Liquidity Pool. Note: 1 Centrifuge Pool can have multiple Liquidity Pools for the same Tranche token with different underlying currencies (assets).
-    address public asset;
+    address public immutable asset;
 
     /// @notice share: The restricted ERC-20 Liquidity pool token. Has a ratio (token price) of underlying assets exchanged on deposit/withdraw/redeem. Liquidity pool tokens on evm represent tranche tokens on centrifuge chain (even though in the current implementation one tranche token on centrifuge chain can be split across multiple liquidity pool tokens on EVM).
-    TrancheTokenLike public share;
-
-    uint64 public poolId;
-    bytes16 public trancheId;
+    TrancheTokenLike public immutable share;
 
     // --- Events ---
     event File(bytes32 indexed what, address data);
+    event DepositRequested(address indexed owner, uint256 assets);
+    event RedeemRequested(address indexed owner, uint256 shares);
     event Deposit(address indexed sender, address indexed owner, uint256 assets, uint256 shares);
     event Withdraw(
         address indexed sender, address indexed receiver, address indexed owner, uint256 assets, uint256 shares
     );
 
-    constructor() {
+    constructor(uint64 poolId_, bytes16 trancheId_, address asset_, address share_, address investmentManager_) {
+        poolId = poolId_;
+        trancheId = trancheId_;
+        asset = asset_;
+        share = TrancheTokenLike(share_);
+        investmentManager = InvestmentManagerLike(investmentManager_);
+
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
     }
@@ -92,20 +112,10 @@ contract LiquidityPool is Auth {
     }
 
     // --- Administration ---
-    /// @dev investmentManager and asset address to be filed by the factory on deployment
     function file(bytes32 what, address data) public auth {
         if (what == "investmentManager") investmentManager = InvestmentManagerLike(data);
-        else if (what == "asset") asset = data;
-        else if (what == "share") share = TrancheTokenLike(data);
         else revert("LiquidityPool/file-unrecognized-param");
         emit File(what, data);
-    }
-
-    /// @dev Centrifuge chain pool information to be filed by factory on deployment
-    function setPoolDetails(uint64 _poolId, bytes16 _trancheId) public auth {
-        require(poolId == 0, "LiquidityPool/pool-details-already-set");
-        poolId = _poolId;
-        trancheId = _trancheId;
     }
 
     // --- ERC4626 functions ---
@@ -138,6 +148,15 @@ contract LiquidityPool is Auth {
     /// @dev request asset deposit for a receiver to be included in the next epoch execution. Asset is locked in the escrow on request submission
     function requestDeposit(uint256 assets, address owner) public withCurrencyApproval(owner, assets) {
         investmentManager.requestDeposit(assets, owner);
+        emit DepositRequested(owner, assets);
+    }
+
+    function requestDepositWithPermit(uint256 assets, address owner, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
+        public
+    {
+        ERC20Like(asset).permit(owner, address(investmentManager), assets, deadline, v, r, s);
+        investmentManager.requestDeposit(assets, owner);
+        emit DepositRequested(owner, assets);
     }
 
     /// @dev collect shares for deposited funds after pool epoch execution. maxMint is the max amount of shares that can be collected. Required assets must already be locked
@@ -168,6 +187,15 @@ contract LiquidityPool is Auth {
     /// @dev request share redemption for a receiver to be included in the next epoch execution. Shares are locked in the escrow on request submission
     function requestRedeem(uint256 shares, address owner) public withTokenApproval(owner, shares) {
         investmentManager.requestRedeem(shares, owner);
+        emit RedeemRequested(owner, shares);
+    }
+
+    function requestRedeemWithPermit(uint256 shares, address owner, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
+        public
+    {
+        share.permit(owner, address(this), shares, deadline, v, r, s);
+        investmentManager.requestRedeem(shares, owner);
+        emit RedeemRequested(owner, shares);
     }
 
     /// @return maxAssets that the receiver can withdraw
@@ -226,6 +254,18 @@ contract LiquidityPool is Auth {
     }
 
     // --- ERC20 overrides ---
+    function name() public view returns (string memory) {
+        return share.name();
+    }
+
+    function symbol() public view returns (string memory) {
+        return share.symbol();
+    }
+
+    function decimals() public view returns (uint8) {
+        return share.decimals();
+    }
+
     function totalSupply() public view returns (uint256) {
         return share.totalSupply();
     }
@@ -239,7 +279,7 @@ contract LiquidityPool is Auth {
         withTokenApproval(sender, amount)
         returns (bool)
     {
-        // discuss if we should add this
+        // discuss if we should add this here
         // approveForOwner(sender, address(this), amount);
         return share.transferFrom(sender, recipient, amount);
     }

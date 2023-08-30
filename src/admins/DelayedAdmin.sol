@@ -11,18 +11,11 @@ contract DelayedAdmin is Auth {
     // --- Events ---
     event File(bytes32 indexed what, address indexed data);
 
-    constructor() {
+    constructor(address root_) {
+        root = Root(root_);
+
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
-    }
-
-    function file(bytes32 what, address data) external auth {
-        if (what == "root") {
-            root = Root(data);
-        } else {
-            revert("DelayedAdmin/file-unrecognized-param");
-        }
-        emit File(what, data);
     }
 
     // --- Admin actions ---

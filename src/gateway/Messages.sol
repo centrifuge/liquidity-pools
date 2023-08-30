@@ -750,7 +750,7 @@ library Messages {
         // to bytes32 and then we encode three empty bytes32's, which sum up to a total of 128 bytes.
         // Add support to actually encode `tokenName` fully as a 128 bytes string.
         return abi.encodePacked(
-            uint8(Call.AddTranche),
+            uint8(Call.UpdateTrancheTokenMetadata),
             poolId,
             trancheId,
             stringToBytes32(tokenName),

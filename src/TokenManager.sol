@@ -120,7 +120,7 @@ contract TokenManager is Auth {
         trancheToken.updatePrice(price);
     }
 
-    function updateTrancheTokenPrice(
+    function updateTrancheTokenMetadata(
         uint64 poolId,
         bytes16 trancheId,
         string memory tokenName,

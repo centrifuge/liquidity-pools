@@ -23,7 +23,7 @@ interface ERC20Like {
 
 interface TrancheTokenLike is ERC20Like {
     function hasMember(address user) external view returns (bool);
-    function updatePrice(uint128 _tokenPrice) external;
+    function updatePrice(uint128 price) external;
     function memberlist() external returns (address);
     function file(bytes32 what, string memory data) external;
 }
@@ -33,8 +33,8 @@ contract TrancheToken is ERC20 {
     address private
     MemberlistLike public memberlist;
 
-    uint128 public latestPrice; // tokenPrice
-    uint256 public lastPriceUpdate; // timestamp of the latest share price update
+    uint128 public latestPrice; // tranche token price
+    uint256 public lastPriceUpdate; // timestamp of the price update
 
     // --- Events ---
     event File(bytes32 indexed what, address data);
@@ -71,8 +71,8 @@ contract TrancheToken is ERC20 {
     }
 
     // --- Pricing ---
-    function updatePrice(uint128 _price) public auth {
-        latestPrice = _price;
+    function updatePrice(uint128 price) public auth {
+        latestPrice = price;
         lastPriceUpdate = block.timestamp;
     }
 

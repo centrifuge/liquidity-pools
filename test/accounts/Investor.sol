@@ -58,4 +58,7 @@ contract Investor is Test {
     function transfer(address erc20, address recipient, uint256 amount) public returns (bool) {
         ERC20Like(erc20).transfer(recipient, amount);
     }
+
+    // Added to be ignored in coverage report
+    function test() public {}
 }
