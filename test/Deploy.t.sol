@@ -57,6 +57,41 @@ contract DeployTest is Test {
         self = address(this);
     }
 
+    function testDeployAndInvestRedeem(
+        uint64 poolId,
+        uint8 decimals,
+        string memory tokenName,
+        string memory tokenSymbol,
+        bytes16 trancheId
+    ) public {
+        uint8 decimals = 6;
+        uint128 price = 1e27;
+        uint128 currencyId = 1;
+        uint256 amount = 1000;
+        uint64 validUntil = uint64(block.timestamp + 1000 days);
+        address lPool_ = deployPoolAndTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price, ERC20(DAI));
+        LiquidityPool lPool = LiquidityPool(lPool_);
+        DepositMint(
+            poolId,
+            decimals,
+            tokenName,
+            tokenSymbol,
+            trancheId,
+            price,
+            currencyId,
+            amount,
+            validUntil,
+            ERC20(DAI),
+            lPool
+        );
+        // time passes and price changes
+        vm.warp(block.timestamp + 500 days);
+        vm.prank(address(gateway));
+        tokenManager.updateTrancheTokenPrice(poolId, trancheId, price * 2);
+
+        redeem(poolId, decimals, tokenName, tokenSymbol, trancheId, price, currencyId, amount, ERC20(DAI), lPool);
+    }
+
     function deployPoolAndTranche(
         uint64 poolId,
         bytes16 trancheId,
@@ -80,24 +115,6 @@ contract DeployTest is Test {
         return lPool;
     }
 
-    function testDeployAndInvestRedeem(
-        uint64 poolId,
-        uint8 decimals,
-        string memory tokenName,
-        string memory tokenSymbol,
-        bytes16 trancheId
-    ) public {
-        uint8 decimals = 6;
-        uint128 price = 1e27;
-        uint128 currencyId = 1;
-        uint256 amount = 1000;
-        uint64 validUntil = uint64(block.timestamp + 1000 days);
-        // deployPoolAndTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price);
-        DepositMint(
-            poolId, decimals, tokenName, tokenSymbol, trancheId, price, currencyId, amount, validUntil, ERC20(DAI)
-        );
-    }
-
     function DepositMint(
         uint64 poolId,
         uint8 decimals,
@@ -108,17 +125,14 @@ contract DeployTest is Test {
         uint128 currencyId,
         uint256 amount,
         uint64 validUntil,
-        ERC20 erc20
+        ERC20 erc20,
+        LiquidityPool lPool
     ) public {
         vm.assume(currencyId > 0);
         vm.assume(amount < type(uint128).max);
         vm.assume(amount > 1);
         vm.assume(validUntil >= block.timestamp);
         price = 2;
-
-        address lPool_ = deployPoolAndTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price, erc20);
-        // address lPool_ = deployLiquidityPool(poolId, decimals, tokenName, tokenSymbol, trancheId, price, currencyId, erc20);
-        LiquidityPool lPool = LiquidityPool(lPool_);
 
         deal(address(erc20), self, amount);
 
@@ -127,6 +141,7 @@ contract DeployTest is Test {
         lPool.requestDeposit(amount, self);
         vm.prank(address(gateway));
         tokenManager.updateMember(poolId, trancheId, self, validUntil); // add user as member
+        delete validUntil;
 
         // // will fail - user did not give currency allowance to investmentManager
         vm.expectRevert(bytes("Dai/insufficient-allowance"));
@@ -166,5 +181,37 @@ contract DeployTest is Test {
         assertEq(lPool.balanceOf(self), trancheTokensPayout - lPool.maxMint(self));
         assertTrue(lPool.balanceOf(address(escrow)) <= 1);
         assertTrue(lPool.maxMint(self) <= 1);
+    }
+
+    function redeem(
+        uint64 poolId,
+        uint8 decimals,
+        string memory tokenName,
+        string memory tokenSymbol,
+        bytes16 trancheId,
+        uint128 price,
+        uint128 currencyId,
+        uint256 amount,
+        ERC20 erc20,
+        LiquidityPool lPool
+    ) public {
+        // redeem
+        uint128 currencyPayout = uint128(amount) / price * 2;
+        vm.prank(address(gateway));
+        investmentManager.handleExecutedCollectRedeem(
+            poolId, trancheId, address(this), 1, currencyPayout, uint128(amount)
+        );
+
+        // assert withdraw & redeem values adjusted
+        assertEq(lPool.maxWithdraw(address(this)), currencyPayout); // max deposit
+        assertEq(lPool.maxRedeem(address(this)), amount); // max deposit
+        assertEq(lPool.balanceOf(address(escrow)), 0);
+
+        lPool.redeem(amount, address(this), address(this)); // mint hald the amount
+        assertEq(lPool.balanceOf(address(this)), 0);
+        assertEq(lPool.balanceOf(address(escrow)), 0);
+        assertEq(erc20.balanceOf(address(this)), amount);
+        assertEq(lPool.maxMint(address(this)), 0);
+        assertEq(lPool.maxDeposit(address(this)), 0);
     }
 }
