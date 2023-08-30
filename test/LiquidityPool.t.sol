@@ -93,7 +93,8 @@ contract LiquidityPoolTest is Test {
         price = 1;
         Investor investor = new Investor();
 
-        address lPool_ = deployLiquidityPool(poolId, decimals, tokenName, tokenSymbol, trancheId, price, currencyId);
+        address lPool_ =
+            deployLiquidityPool(poolId, erc20.decimals(), tokenName, tokenSymbol, trancheId, price, currencyId);
         investorDeposit(address(investor), lPool_, poolId, trancheId, amount, validUntil); // deposit funds first
         LiquidityPool lPool = LiquidityPool(lPool_);
         homePools.updateMember(poolId, trancheId, self, validUntil); // put self on memberlist to be able to receive tranche tokens
@@ -133,7 +134,8 @@ contract LiquidityPoolTest is Test {
         price = 1;
         Investor investor = new Investor();
 
-        address lPool_ = deployLiquidityPool(poolId, decimals, tokenName, tokenSymbol, trancheId, price, currencyId);
+        address lPool_ =
+            deployLiquidityPool(poolId, erc20.decimals(), tokenName, tokenSymbol, trancheId, price, currencyId);
         investorDeposit(address(investor), lPool_, poolId, trancheId, amount, validUntil); // deposit funds first
         LiquidityPool lPool = LiquidityPool(lPool_);
         homePools.updateMember(poolId, trancheId, self, validUntil); // put self on memberlist to be able to receive tranche tokens
@@ -239,7 +241,8 @@ contract LiquidityPoolTest is Test {
         vm.assume(validUntil >= block.timestamp);
         price = 2;
 
-        address lPool_ = deployLiquidityPool(poolId, decimals, tokenName, tokenSymbol, trancheId, price, currencyId);
+        address lPool_ =
+            deployLiquidityPool(poolId, erc20.decimals(), tokenName, tokenSymbol, trancheId, price, currencyId);
         LiquidityPool lPool = LiquidityPool(lPool_);
 
         erc20.mint(self, amount);
@@ -291,7 +294,6 @@ contract LiquidityPoolTest is Test {
 
     function testDepositAndRedeemWithPermit(
         uint64 poolId,
-        uint8 decimals,
         string memory tokenName,
         string memory tokenSymbol,
         bytes16 trancheId,
@@ -306,8 +308,9 @@ contract LiquidityPoolTest is Test {
         address investor = vm.addr(0xABCD);
         vm.prank(vm.addr(0xABCD));
 
-        LiquidityPool lPool =
-            LiquidityPool(deployLiquidityPool(poolId, decimals, tokenName, tokenSymbol, trancheId, 1, currencyId));
+        LiquidityPool lPool = LiquidityPool(
+            deployLiquidityPool(poolId, erc20.decimals(), tokenName, tokenSymbol, trancheId, 1, currencyId)
+        );
         erc20.mint(investor, amount);
         homePools.updateMember(poolId, trancheId, investor, type(uint64).max);
 
@@ -393,7 +396,8 @@ contract LiquidityPoolTest is Test {
         vm.assume(validUntil >= block.timestamp);
         price = 1;
 
-        address lPool_ = deployLiquidityPool(poolId, decimals, tokenName, tokenSymbol, trancheId, price, currencyId);
+        address lPool_ =
+            deployLiquidityPool(poolId, erc20.decimals(), tokenName, tokenSymbol, trancheId, price, currencyId);
         deposit(lPool_, poolId, trancheId, amount, validUntil); // deposit funds first
         LiquidityPool lPool = LiquidityPool(lPool_);
 
