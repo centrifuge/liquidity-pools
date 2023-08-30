@@ -60,7 +60,6 @@ contract DeployTest is Test {
 
     function testDeployAndInvestRedeem(
         uint64 poolId,
-        uint8 decimals,
         string memory tokenName,
         string memory tokenSymbol,
         bytes16 trancheId
