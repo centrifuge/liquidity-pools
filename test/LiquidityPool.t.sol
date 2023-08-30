@@ -191,7 +191,7 @@ contract LiquidityPoolTest is Test {
             poolId, trancheId, bytes32(bytes20(self)), _currencyId, currencyPayout, secondTrancheTokenPayout
         );
 
-        // deposit price should now be 50% * 1.2 + 50% * 1.4 = ~1.3*10**18.
+        // deposit price should now be 50% * 1.2 + 50% * 1.4 = ~1.3*10**27.
         assertEq(evmInvestmentManager.calculateDepositPrice(self, address(lPool)), 1292307692307692307715370414);
 
         // collect the tranche tokens
@@ -216,7 +216,7 @@ contract LiquidityPoolTest is Test {
             firstTrancheTokenPayout + secondTrancheTokenPayout
         );
 
-        // redeem price should now be ~1.5*10**18.
+        // redeem price should now be ~1.5*10**27.
         assertEq(evmInvestmentManager.calculateRedeemPrice(self, address(lPool)), 1492615384615384615411252828);
 
         // collect the currency
