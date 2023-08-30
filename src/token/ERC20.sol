@@ -3,7 +3,6 @@
 // Copyright (C) 2021-2022 Foundation
 pragma solidity ^0.8.18;
 
-import "./../util/Auth.sol";
 import {Context} from "../util/Context.sol";
 
 interface IERC1271 {
@@ -11,7 +10,7 @@ interface IERC1271 {
 }
 
 // Adapted from https://github.com/makerdao/xdomain-dss/blob/master/src/Dai.sol
-contract ERC20 is Auth, Context  {
+contract ERC20 is Context {
     string public name;
     string public symbol;
     string public constant version = "3";
@@ -37,6 +36,11 @@ contract ERC20 is Auth, Context  {
     event Approval(address indexed owner, address indexed spender, uint256 value);
     event Transfer(address indexed from, address indexed to, uint256 value);
 
+    // --- AUTH ---
+    mapping(address => uint256) public wards;
+    event Rely(address indexed user);
+    event Deny(address indexed user);
+
     constructor(uint8 decimals_) {
         decimals = decimals_;
         wards[_msgSender()] = 1;
@@ -44,6 +48,22 @@ contract ERC20 is Auth, Context  {
 
         deploymentChainId = block.chainid;
         _DOMAIN_SEPARATOR = _calculateDomainSeparator(block.chainid);
+    }
+
+    // custom auth modifier that uses _msgSender()
+    modifier auth() {
+        require(wards[_msgSender()] == 1, "Auth/not-authorized");
+        _;
+    }
+
+    function rely(address user) external auth {
+        wards[user] = 1;
+        emit Rely(user);
+    }
+
+    function deny(address user) external auth {
+        wards[user] = 0;
+        emit Deny(user);
     }
 
     function _calculateDomainSeparator(uint256 chainId) private view returns (bytes32) {
@@ -129,7 +149,7 @@ contract ERC20 is Auth, Context  {
         return true;
     }
 
-    function transferFrom(address from, address to, uint256 value) public virtual returns (bool) {
+    function transferFrom(address from, address to, uint256 value) public virtual returns (bool) {       
         require(to != address(0) && to != address(this), "ERC20/invalid-address");
         uint256 balance = balanceOf[from];
         require(balance >= value, "ERC20/insufficient-balance");
@@ -137,8 +157,8 @@ contract ERC20 is Auth, Context  {
         if (from != _msgSender()) {
             uint256 allowed = allowance[from][_msgSender()];
             if (allowed != type(uint256).max) {
+               
                 require(allowed >= value, "ERC20/insufficient-allowance");
-
                 unchecked {
                     allowance[from][_msgSender()] = allowed - value;
                 }
@@ -181,44 +201,6 @@ contract ERC20 is Auth, Context  {
         allowance[_msgSender()][spender] = allowed;
 
         emit Approval(_msgSender(), spender, allowed);
-
-        return true;
-    }
-
-    function approveForOwner(address owner, address spender, uint256 value) external auth returns (bool) {
-        allowance[owner][spender] = value;
-
-        emit Approval(owner, spender, value);
-
-        return true;
-    }
-
-    function increaseAllowanceForOwner(address owner, address spender, uint256 addedValue)
-        external
-        auth
-        returns (bool)
-    {
-        uint256 newValue = allowance[owner][spender] + addedValue;
-        allowance[owner][spender] = newValue;
-
-        emit Approval(owner, spender, newValue);
-
-        return true;
-    }
-
-    function decreaseAllowanceForOwner(address owner, address spender, uint256 subtractedValue)
-        external
-        auth
-        returns (bool)
-    {
-        uint256 allowed = allowance[owner][spender];
-        require(allowed >= subtractedValue, "ERC20/insufficient-allowance");
-        unchecked {
-            allowed = allowed - subtractedValue;
-        }
-        allowance[owner][spender] = allowed;
-
-        emit Approval(owner, spender, allowed);
 
         return true;
     }

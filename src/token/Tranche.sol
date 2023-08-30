@@ -2,23 +2,11 @@
 pragma solidity ^0.8.18;
 
 import "./ERC20.sol";
+import "./IERC20.sol";
 
 interface MemberlistLike {
     function hasMember(address) external view returns (bool);
     function member(address) external;
-}
-
-interface ERC20Like {
-    function mint(address user, uint256 value) external;
-    function name() external view returns (string memory);
-    function symbol() external view returns (string memory);
-    function decimals() external view returns (uint8);
-    function balanceOf(address user) external view returns (uint256 value);
-    function burn(address user, uint256 value) external;
-    function transfer(address to, uint256 amount) external returns (bool);
-    function transferFrom(address from, address to, uint256 amount) external returns (bool);
-    function totalSupply() external returns (uint256);
-    function approve(address _spender, uint256 _value) external returns (bool);
 }
 
 interface TrancheTokenLike is ERC20Like {
@@ -30,7 +18,6 @@ interface TrancheTokenLike is ERC20Like {
 
 contract TrancheToken is ERC20 {
 
-    address private
     MemberlistLike public memberlist;
 
     uint128 public latestPrice; // tranche token price
@@ -76,34 +63,4 @@ contract TrancheToken is ERC20 {
         lastPriceUpdate = block.timestamp;
     }
 
-    // Trusted Forwarder logic
-    /**
-     * @dev Override for `msg.sender`. Defaults to the original `msg.sender` whenever
-     * a call is not performed by the trusted forwarder or the calldata length is less than
-     * 20 bytes (an address length).
-     */
-    function _msgSender() internal view virtual override returns (address sender) {
-        if (isTrustedForwarder(msg.sender) && msg.data.length >= 20) {
-            // The assembly code is more direct than the Solidity version using `abi.decode`.
-            /// @solidity memory-safe-assembly
-            assembly {
-                sender := shr(96, calldataload(sub(calldatasize(), 20)))
-            }
-        } else {
-            return super._msgSender();
-        }
-    }
-
-    /**
-     * @dev Override for `msg.data`. Defaults to the original `msg.data` whenever
-     * a call is not performed by the trusted forwarder or the calldata length is less than
-     * 20 bytes (an address length).
-     */
-    function _msgData() internal view virtual override returns (bytes calldata) {
-        if (isTrustedForwarder(msg.sender) && msg.data.length >= 20) {
-            return msg.data[:msg.data.length - 20];
-        } else {
-            return super._msgData();
-        }
-    }
 }

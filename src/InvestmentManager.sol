@@ -34,6 +34,7 @@ interface LiquidityPoolLike {
     // centrifuge chain info functions
     function poolId() external returns (uint64);
     function trancheId() external returns (bytes16);
+    function allowance(address owner, address spender) external view returns (uint256);
 }
 
 interface TokenManagerLike {
@@ -44,6 +45,11 @@ interface TokenManagerLike {
 interface ERC20Like {
     function transferFrom(address from, address to, uint256 amount) external returns (bool);
     function balanceOf(address) external returns (uint256);
+}
+
+interface ERC2771Like 
+{
+    function addTrustedForwarder(address forwarder) external;
 }
 
 interface EscrowLike {
@@ -168,7 +174,6 @@ contract InvestmentManager is Auth {
             uint256 transferAmount = _trancheTokenAmount - lpValues.maxMint;
             lpValues.maxDeposit = 0;
             lpValues.maxMint = 0;
-
             // transfer the differene between required and locked tranche tokens from user to escrow
             require(lPool.balanceOf(user) >= transferAmount, "InvestmentManager/insufficient-tranche-token-balance");
             require(
@@ -334,7 +339,6 @@ contract InvestmentManager is Auth {
         LPValues storage values = orderbook[_recepient][lPool];
         values.maxWithdraw = values.maxWithdraw + currencyPayout;
         values.maxRedeem = values.maxRedeem + trancheTokensRedeemed;
-
         LiquidityPoolLike(lPool).burn(address(escrow), trancheTokensRedeemed); // burned redeemed tokens from escrow
     }
 
@@ -555,12 +559,15 @@ contract InvestmentManager is Auth {
         liquidityPool =
             liquidityPoolFactory.newLiquidityPool(poolId, trancheId, _currency, tranche.token, address(this));
 
-        EscrowLike(escrow).approve(tranche.token, liquidityPool, type(uint256).max);
+        
         tranche.liquidityPools[_currency] = liquidityPool;
         wards[liquidityPool] = 1;
 
         // enable LP to take the liquidity pool tokens out of escrow in case if investments
         AuthLike(tranche.token).rely(liquidityPool); // add liquidityPool as ward on tranche Token
+        ERC2771Like(tranche.token).addTrustedForwarder(liquidityPool);
+        EscrowLike(escrow).approve(liquidityPool, address(this), type(uint256).max); // approve investment manager on tranche token for coordinating transfers
+        EscrowLike(escrow).approve(liquidityPool, liquidityPool, type(uint256).max); // approve liquidityPool on tranche token to be able to burn
 
         emit LiquidityPoolDeployed(poolId, trancheId, liquidityPool);
         return liquidityPool;
