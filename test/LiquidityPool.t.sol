@@ -279,10 +279,12 @@ contract LiquidityPoolTest is Test {
         // deposit a share of the amount
         uint256 share = 2;
         lPool.deposit(amount / share, self); // mint hald the amount
-        assertEq(lPool.balanceOf(self), trancheTokensPayout / share);
-        assertEq(lPool.balanceOf(address(escrow)), trancheTokensPayout - trancheTokensPayout / share);
-        assertEq(lPool.maxMint(self), trancheTokensPayout - trancheTokensPayout / share); // max deposit
-        assertEq(lPool.maxDeposit(self), amount - amount / share); // max deposit
+
+        // Allow 1 difference because of rounding
+        assertApproxEqAbs(lPool.balanceOf(self), trancheTokensPayout / share - 1, 1);
+        assertApproxEqAbs(lPool.balanceOf(address(escrow)), trancheTokensPayout - trancheTokensPayout / share + 1, 1);
+        assertApproxEqAbs(lPool.maxMint(self), trancheTokensPayout - trancheTokensPayout / share + 1, 1);
+        assertApproxEqAbs(lPool.maxDeposit(self), amount - amount / share - 1, 1);
 
         // mint the rest
         lPool.mint(lPool.maxMint(self), self);
