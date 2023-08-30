@@ -243,43 +243,6 @@ contract MessagesTest is Test {
         assertEq(decodedAmount, amount);
     }
 
-    //TODO: fix stack issue
-    // function testTransferTrancheTokensToCentrifuge() public {
-    //     uint64 poolId = 1;
-    //     bytes16 trancheId = bytes16(hex"811acd5b3f17c06841c7e41e9e04cb1b");
-    //     address sender = 0x1231231231231231231231231231231231231231;
-    //     bytes9 domain = Messages.formatDomain(Messages.Domain.Centrifuge);
-    //     bytes32 receiver = bytes32(0x4564564564564564564564564564564564564564564564564564564564564564);
-    //     uint128 amount = 100000000000000000000000000;
-    //     uint128 currency = 1;
-    //     bytes memory expectedHex =
-    //         hex"080000000000000001811acd5b3f17c06841c7e41e9e04cb1b12312312312312312312312312312312312312310000000000000000000000000000000000000000004564564564564564564564564564564564564564564564564564564564564564000000000052b7d2dcc80cd2e4000000";
-
-    //     assertEq(
-    //         Messages.formatTransferTrancheTokens(
-    //             poolId, trancheId, bytes32(bytes20(sender)), domain, currency, receiver, amount
-    //         ),
-    //         expectedHex
-    //     );
-
-    //     (
-    //         uint64 decodedPoolId,
-    //         bytes16 decodedTrancheId,
-    //         bytes32 decodedSender,
-    //         bytes9 decodedDomain,
-    //         uint128 decodedCurrency,
-    //         bytes32 decodedReceiver,
-    //         uint128 decodedAmount
-    //     ) = Messages.parseTransferTrancheTokens32(expectedHex.ref(0));
-    //     assertEq(uint256(decodedPoolId), poolId);
-    //     assertEq(decodedTrancheId, trancheId);
-    //     assertEq(decodedSender, bytes32(bytes20(sender)));
-    //     assertEq(decodedDomain, domain);
-    //     assertEq(decodedCurrency, currency);
-    //     assertEq(decodedReceiver, receiver);
-    //     assertEq(decodedAmount, amount);
-    // }
-
     function testTransferTrancheTokensToEvmEquivalence(
         uint64 poolId,
         bytes16 trancheId,
