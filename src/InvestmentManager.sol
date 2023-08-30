@@ -445,7 +445,6 @@ contract InvestmentManager is Auth {
         LiquidityPoolLike lPool = LiquidityPoolLike(liquidityPool);
         uint128 depositPrice = calculateDepositPrice(user, liquidityPool);
         require((depositPrice > 0), "LiquidityPool/deposit-token-price-0");
-        console.logUint(depositPrice);
 
         if (currencyAmount == 0) {
             _currencyAmount =
