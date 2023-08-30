@@ -49,8 +49,7 @@ interface ERC20Like {
     function decimals() external returns (uint8);
 }
 
-interface ERC2771Like 
-{
+interface ERC2771Like {
     function addTrustedForwarder(address forwarder) external;
 }
 
@@ -577,7 +576,6 @@ contract InvestmentManager is Auth {
         liquidityPool =
             liquidityPoolFactory.newLiquidityPool(poolId, trancheId, _currency, tranche.token, address(this));
 
-        
         tranche.liquidityPools[_currency] = liquidityPool;
         wards[liquidityPool] = 1;
 

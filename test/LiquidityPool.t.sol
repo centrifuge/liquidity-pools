@@ -29,10 +29,10 @@ interface AuthLike_ {
 }
 
 interface TrancheToken {
-    function isTrustedForwarder(address forwarder) external view  returns (bool);
+    function isTrustedForwarder(address forwarder) external view returns (bool);
     function addTrustedForwarder(address forwarder) external;
     function removeTrustedForwarder(address forwarder) external;
- }   
+}
 
 contract LiquidityPoolTest is Test {
     uint128 constant MAX_UINT128 = type(uint128).max;
@@ -107,13 +107,21 @@ contract LiquidityPoolTest is Test {
 
         TrancheToken trancheToken = TrancheToken(address(lPool.share()));
         assert(trancheToken.isTrustedForwarder(lPool_) == true); // Lpool is not trusted forwarder on token
-    
-        uint initBalance = lPool.balanceOf(address(investor));
-        uint transferAmount = amount / 4;
-    
+
+        uint256 initBalance = lPool.balanceOf(address(investor));
+        uint256 transferAmount = amount / 4;
+
         // replacing msg sender only possible for trusted forwarder
         assert(trancheToken.isTrustedForwarder(self) == false); // Lpool is not trusted forwarder on token
-        (bool success, bytes memory data) = address(trancheToken).call(abi.encodeWithSelector(bytes4(keccak256(bytes("transferFrom(address,address,uint256)"))), address(investor), self, transferAmount, address(investor)));
+        (bool success, bytes memory data) = address(trancheToken).call(
+            abi.encodeWithSelector(
+                bytes4(keccak256(bytes("transferFrom(address,address,uint256)"))),
+                address(investor),
+                self,
+                transferAmount,
+                address(investor)
+            )
+        );
         assertEq(success, false);
 
         // remove LiquidityPool as trusted forwarder
@@ -121,7 +129,7 @@ contract LiquidityPoolTest is Test {
         trancheToken.removeTrustedForwarder(lPool_);
         assert(trancheToken.isTrustedForwarder(lPool_) == false); // adding trusted forwarder works
 
-        vm.expectRevert(bytes("ERC20/insufficient-allowance")); 
+        vm.expectRevert(bytes("ERC20/insufficient-allowance"));
         investor.transferFrom(lPool_, address(investor), self, transferAmount);
 
         // add liquidityPool back as trusted forwarder
@@ -132,7 +140,7 @@ contract LiquidityPoolTest is Test {
         assert(lPool.balanceOf(self) == transferAmount);
     }
 
-       function testApprove(
+    function testApprove(
         uint64 poolId,
         uint8 decimals,
         string memory tokenName,
@@ -152,21 +160,24 @@ contract LiquidityPoolTest is Test {
 
         address lPool_ = deployLiquidityPool(poolId, decimals, tokenName, tokenSymbol, trancheId, price, currencyId);
         LiquidityPool lPool = LiquidityPool(lPool_);
-        
+
         TrancheToken trancheToken = TrancheToken(address(lPool.share()));
         assert(trancheToken.isTrustedForwarder(lPool_) == true); // Lpool is not trusted forwarder on token
-    
-        uint initBalance = lPool.balanceOf(address(investor));
-        uint approvalAmount = amount / 4;
+
+        uint256 initBalance = lPool.balanceOf(address(investor));
+        uint256 approvalAmount = amount / 4;
 
         Investor random = new Investor();
-    
+
         // replacing msg sender only possible for trusted forwarder
         assert(trancheToken.isTrustedForwarder(self) == false); // Lpool is not trusted forwarder on token
-        (bool success, bytes memory data) = address(trancheToken).call(abi.encodeWithSelector(bytes4(keccak256(bytes("approve(address,uint256)"))), address(random), approvalAmount, address(investor)));
+        (bool success, bytes memory data) = address(trancheToken).call(
+            abi.encodeWithSelector(
+                bytes4(keccak256(bytes("approve(address,uint256)"))), address(random), approvalAmount, address(investor)
+            )
+        );
         assertEq(lPool.allowance(self, address(random)), approvalAmount);
         assertEq(lPool.allowance(address(investor), address(random)), 0);
-
 
         // remove LiquidityPool as trusted forwarder
         root.relyContract(address(trancheToken), self);
@@ -210,13 +221,17 @@ contract LiquidityPoolTest is Test {
 
         TrancheToken trancheToken = TrancheToken(address(lPool.share()));
         assert(trancheToken.isTrustedForwarder(lPool_) == true); // Lpool is not trusted forwarder on token
-    
-        uint initBalance = lPool.balanceOf(address(investor));
-        uint transferAmount = amount / 4;
+
+        uint256 initBalance = lPool.balanceOf(address(investor));
+        uint256 transferAmount = amount / 4;
 
         // replacing msg sender only possible for trusted forwarder
         assert(trancheToken.isTrustedForwarder(self) == false); // Lpool is not trusted forwarder on token
-        (bool success, bytes memory data) = address(trancheToken).call(abi.encodeWithSelector(bytes4(keccak256(bytes("transfer(address,uint256)"))), self, transferAmount, address(investor)));
+        (bool success, bytes memory data) = address(trancheToken).call(
+            abi.encodeWithSelector(
+                bytes4(keccak256(bytes("transfer(address,uint256)"))), self, transferAmount, address(investor)
+            )
+        );
         assertEq(success, false);
 
         // remove LiquidityPool as trusted forwarder
@@ -224,7 +239,7 @@ contract LiquidityPoolTest is Test {
         trancheToken.removeTrustedForwarder(lPool_);
         assert(trancheToken.isTrustedForwarder(lPool_) == false); // adding trusted forwarder works
 
-        vm.expectRevert(bytes("ERC20/insufficient-balance")); 
+        vm.expectRevert(bytes("ERC20/insufficient-balance"));
         investor.transfer(lPool_, self, transferAmount);
 
         // add liquidityPool back as trusted forwarder
@@ -490,7 +505,7 @@ contract LiquidityPoolTest is Test {
         lPool.mint(maxMint, investor);
         TrancheTokenLike trancheToken = lPool.share();
         assertEq(trancheToken.balanceOf(address(investor)), maxMint);
-        
+
         // Sign permit for redeeming tranche tokens
         (v, r, s) = vm.sign(
             0xABCD,
@@ -500,13 +515,18 @@ contract LiquidityPoolTest is Test {
                     trancheToken.DOMAIN_SEPARATOR(),
                     keccak256(
                         abi.encode(
-                            trancheToken.PERMIT_TYPEHASH(), investor, address(evmInvestmentManager), maxMint, 0, block.timestamp
+                            trancheToken.PERMIT_TYPEHASH(),
+                            investor,
+                            address(evmInvestmentManager),
+                            maxMint,
+                            0,
+                            block.timestamp
                         )
                     )
                 )
             )
         );
-       
+
         lPool.requestRedeemWithPermit(maxMint, investor, block.timestamp, v, r, s);
         // ensure tokens are locked in escrow
         assertEq(trancheToken.balanceOf(address(escrow)), maxMint);

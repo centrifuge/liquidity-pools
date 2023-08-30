@@ -29,7 +29,7 @@ contract ERC20 is Context {
 
     // ERC2771Context
     // trusted forwarders that are allowed to forward the msg.sender
-    mapping(address => bool) private _trustedForwarders; 
+    mapping(address => bool) private _trustedForwarders;
 
     // --- Events ---
     event File(bytes32 indexed what, string data);
@@ -38,6 +38,7 @@ contract ERC20 is Context {
 
     // --- AUTH ---
     mapping(address => uint256) public wards;
+
     event Rely(address indexed user);
     event Deny(address indexed user);
 
@@ -149,7 +150,7 @@ contract ERC20 is Context {
         return true;
     }
 
-    function transferFrom(address from, address to, uint256 value) public virtual returns (bool) {       
+    function transferFrom(address from, address to, uint256 value) public virtual returns (bool) {
         require(to != address(0) && to != address(this), "ERC20/invalid-address");
         uint256 balance = balanceOf[from];
         require(balance >= value, "ERC20/insufficient-balance");
@@ -157,7 +158,6 @@ contract ERC20 is Context {
         if (from != _msgSender()) {
             uint256 allowed = allowance[from][_msgSender()];
             if (allowed != type(uint256).max) {
-               
                 require(allowed >= value, "ERC20/insufficient-allowance");
                 unchecked {
                     allowance[from][_msgSender()] = allowed - value;

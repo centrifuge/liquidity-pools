@@ -8,7 +8,7 @@ import "./util/Math.sol";
 interface ERC20PermitLike {
     function permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
         external;
-        // erc2612 functions
+    // erc2612 functions
     function PERMIT_TYPEHASH() external view returns (bytes32);
     function DOMAIN_SEPARATOR() external view returns (bytes32);
 }
@@ -257,15 +257,11 @@ contract LiquidityPool is Auth, ERC20Like {
         return share.balanceOf(owner);
     }
 
-
     function allowance(address owner, address spender) public view returns (uint256) {
-       return share.allowance(owner, spender);
+        return share.allowance(owner, spender);
     }
 
-    function transferFrom(address sender, address recipient, uint256 amount)
-        public
-        returns (bool)
-    {
+    function transferFrom(address sender, address recipient, uint256 amount) public returns (bool) {
         (bool success, bytes memory data) = address(share).call(bytes.concat(msg.data, bytes20(msg.sender)));
         _successCheck(success);
         return abi.decode(data, (bool));
@@ -278,18 +274,18 @@ contract LiquidityPool is Auth, ERC20Like {
     }
 
     function approve(address spender, uint256 amount) public returns (bool) {
-       (bool success, bytes memory data) = address(share).call(bytes.concat(msg.data, bytes20(msg.sender)));
+        (bool success, bytes memory data) = address(share).call(bytes.concat(msg.data, bytes20(msg.sender)));
         _successCheck(success);
         return abi.decode(data, (bool));
     }
 
     function mint(address owner, uint256 amount) public auth {
-        (bool success, ) = address(share).call(bytes.concat(msg.data, bytes20(address(this))));
+        (bool success,) = address(share).call(bytes.concat(msg.data, bytes20(address(this))));
         _successCheck(success);
     }
 
     function burn(address owner, uint256 amount) public auth {
-        (bool success, ) = address(share).call(bytes.concat(msg.data, bytes20(address(this))));
+        (bool success,) = address(share).call(bytes.concat(msg.data, bytes20(address(this))));
         _successCheck(success);
     }
 
@@ -302,18 +298,16 @@ contract LiquidityPool is Auth, ERC20Like {
         return share.hasMember(user);
     }
 
-    // helpers   
+    // helpers
     /// @dev In case of unsuccessful tx, parse the revert message
     function _successCheck(bool success) internal {
-    if (success == false) {
+        if (success == false) {
             assembly {
-            let ptr := mload(0x40)
-            let size := returndatasize()
-            returndatacopy(ptr, 0, size)
-            revert(ptr, size)
+                let ptr := mload(0x40)
+                let size := returndatasize()
+                returndatacopy(ptr, 0, size)
+                revert(ptr, size)
             }
         }
     }
- 
-
 }

@@ -17,7 +17,6 @@ interface TrancheTokenLike is ERC20Like {
 }
 
 contract TrancheToken is ERC20 {
-
     MemberlistLike public memberlist;
 
     uint128 public latestPrice; // tranche token price
@@ -44,7 +43,7 @@ contract TrancheToken is ERC20 {
     function hasMember(address user) public view returns (bool) {
         return memberlist.hasMember(user);
     }
-    
+
     function transfer(address to, uint256 value) public override checkMember(to) returns (bool) {
         return super.transfer(to, value);
     }
@@ -68,5 +67,4 @@ contract TrancheToken is ERC20 {
         latestPrice = price;
         lastPriceUpdate = block.timestamp;
     }
-
 }
