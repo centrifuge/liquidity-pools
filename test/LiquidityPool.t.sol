@@ -192,13 +192,19 @@ contract LiquidityPoolTest is Test {
         // deposit price should now be 50% * 1.2 + 50% * 1.4 = ~1.3*10**18.
         assertEq(evmInvestmentManager.calculateDepositPrice(self, address(lPool)), 1292307692307692307715370414);
 
-        // collect the tranche tokens and redeem
+        // collect the tranche tokens
         lPool.mint(firstTrancheTokenPayout + secondTrancheTokenPayout, self);
+        assertEq(lPool.balanceOf(self), firstTrancheTokenPayout + secondTrancheTokenPayout);
+
+        // redeem
         lPool.approve(address(lPool), firstTrancheTokenPayout + secondTrancheTokenPayout);
         lPool.requestRedeem(firstTrancheTokenPayout + secondTrancheTokenPayout, self);
 
         // trigger executed collectRedeem at a price of 1.5
-        currencyPayout = 150000000; // 100*1.5*10**6
+        // 50% invested at 1.2 and 50% invested at 1.4 leads to ~77 tranche tokens
+        // when redeeming at a price of 1.5, this leads to ~115.5 currency
+        currencyPayout = 115500000; // 115.5*10**6
+
         homePools.isExecutedCollectRedeem(
             poolId,
             trancheId,
@@ -209,7 +215,11 @@ contract LiquidityPoolTest is Test {
         );
 
         // redeem price should now be ~1.5*10**18.
-        assertEq(evmInvestmentManager.calculateRedeemPrice(self, address(lPool)), 1292307692307692307715370414);
+        assertEq(evmInvestmentManager.calculateRedeemPrice(self, address(lPool)), 1492615384615384615411252828);
+
+        // collect the currency
+        lPool.withdraw(currencyPayout, self, self);
+        assertEq(erc20.balanceOf(self), currencyPayout);
     }
 
     function testDepositMint(
