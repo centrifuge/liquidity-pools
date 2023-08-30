@@ -111,8 +111,8 @@ contract Gateway is Auth {
         _;
     }
 
-    modifier onlyRouter() {
-        require(incomingRouters[msg.sender] == true, "Gateway/only-router-allowed-to-call");
+    modifier onlyIncomingRouter() {
+        require(incomingRouters[msg.sender], "Gateway/only-router-allowed-to-call");
         _;
     }
 
@@ -229,7 +229,7 @@ contract Gateway is Auth {
     }
 
     // --- Incoming ---
-    function handle(bytes memory _message) external onlyRouter pauseable {
+    function handle(bytes memory _message) external onlyIncomingRouter pauseable {
         bytes29 _msg = _message.ref(0);
 
         if (Messages.isAddCurrency(_msg)) {
