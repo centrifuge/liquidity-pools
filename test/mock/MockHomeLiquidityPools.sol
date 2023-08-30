@@ -136,19 +136,6 @@ contract MockHomeLiquidityPools is Test {
         router.execute(_message);
     }
 
-    function incomingExecutedDecreaseInvestOrder(
-        uint64 poolId,
-        bytes16 trancheId,
-        bytes32 investor,
-        uint128 currency,
-        uint128 currencyPayout,
-        uint128 remainingInvestOrder
-    ) public {
-        bytes memory _message =
-            Messages.formatExecutedDecreaseInvestOrder(poolId, trancheId, investor, currency, currencyPayout);
-        router.execute(_message);
-    }
-
     function dispatch(
         uint32 _destinationDomain,
         uint256 _destinationChainId,
