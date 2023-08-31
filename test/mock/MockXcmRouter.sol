@@ -2,16 +2,12 @@
 pragma solidity ^0.8.18;
 pragma abicoder v2;
 
-import {TypedMemView} from "memview-sol/TypedMemView.sol";
 import "forge-std/Test.sol";
 import {InvestmentManager} from "src/InvestmentManager.sol";
 import {Messages} from "src/gateway/Messages.sol";
 import {Gateway} from "src/gateway/Gateway.sol";
 
 contract MockXcmRouter is Test {
-    using TypedMemView for bytes;
-    using TypedMemView for bytes29;
-
     address public immutable centrifugeChainOrigin;
     address public gateway;
 

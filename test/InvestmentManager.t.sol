@@ -378,13 +378,6 @@ contract InvestmentManagerTest is Test {
         return fc;
     }
 
-    function toBytes29(bytes memory f) internal pure returns (bytes29 fc) {
-        assembly {
-            fc := mload(add(f, 29))
-        }
-        return fc;
-    }
-
     function hasDuplicates(bytes16[] calldata array) internal pure returns (bool) {
         uint256 length = array.length;
         for (uint256 i = 0; i < length; i++) {

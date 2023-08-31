@@ -2,15 +2,10 @@
 pragma solidity ^0.8.18;
 pragma abicoder v2;
 
-import {TypedMemView} from "memview-sol/TypedMemView.sol";
 import {Messages} from "src/gateway/Messages.sol";
 import "forge-std/Test.sol";
 
 contract MessagesTest is Test {
-    using TypedMemView for bytes;
-    using TypedMemView for bytes29;
-    using Messages for bytes29;
-
     function setUp() public {}
 
     function testAddCurrency() public {
@@ -20,14 +15,14 @@ contract MessagesTest is Test {
 
         assertEq(Messages.formatAddCurrency(currency, currencyAddress), expectedHex);
 
-        (uint128 decodedCurrency, address decodedCurrencyAddress) = Messages.parseAddCurrency(expectedHex.ref(0));
+        (uint128 decodedCurrency, address decodedCurrencyAddress) = Messages.parseAddCurrency(expectedHex);
         assertEq(uint256(decodedCurrency), currency);
         assertEq(decodedCurrencyAddress, currencyAddress);
     }
 
     function testAddCurrencyEquivalence(uint128 currency, address currencyAddress) public {
         bytes memory _message = Messages.formatAddCurrency(currency, currencyAddress);
-        (uint128 decodedCurrency, address decodedCurrencyAddress) = Messages.parseAddCurrency(_message.ref(0));
+        (uint128 decodedCurrency, address decodedCurrencyAddress) = Messages.parseAddCurrency(_message);
         assertEq(decodedCurrency, uint256(currency));
         assertEq(decodedCurrencyAddress, currencyAddress);
     }
@@ -38,13 +33,13 @@ contract MessagesTest is Test {
 
         assertEq(Messages.formatAddPool(poolId), expectedHex);
 
-        (uint64 decodedPoolId) = Messages.parseAddPool(expectedHex.ref(0));
+        (uint64 decodedPoolId) = Messages.parseAddPool(expectedHex);
         assertEq(uint256(decodedPoolId), poolId);
     }
 
     function testAddPoolEquivalence(uint64 poolId) public {
         bytes memory _message = Messages.formatAddPool(poolId);
-        (uint64 decodedPoolId) = Messages.parseAddPool(_message.ref(0));
+        (uint64 decodedPoolId) = Messages.parseAddPool(_message);
         assertEq(decodedPoolId, uint256(poolId));
     }
 
@@ -55,14 +50,14 @@ contract MessagesTest is Test {
 
         assertEq(Messages.formatAllowPoolCurrency(poolId, currency), expectedHex);
 
-        (uint64 decodedPoolId, uint128 decodedCurrency) = Messages.parseAllowPoolCurrency(expectedHex.ref(0));
+        (uint64 decodedPoolId, uint128 decodedCurrency) = Messages.parseAllowPoolCurrency(expectedHex);
         assertEq(decodedPoolId, poolId);
         assertEq(uint256(decodedCurrency), currency);
     }
 
     function testAllowPoolCurrencyEquivalence(uint128 currency, uint64 poolId) public {
         bytes memory _message = Messages.formatAllowPoolCurrency(poolId, currency);
-        (uint64 decodedPoolId, uint128 decodedCurrency) = Messages.parseAllowPoolCurrency(_message.ref(0));
+        (uint64 decodedPoolId, uint128 decodedCurrency) = Messages.parseAllowPoolCurrency(_message);
         assertEq(uint256(decodedPoolId), uint256(poolId));
         assertEq(decodedCurrency, uint256(currency));
     }
@@ -86,7 +81,7 @@ contract MessagesTest is Test {
             string memory decodedTokenSymbol,
             uint8 decodedDecimals,
             uint128 decodedPrice
-        ) = Messages.parseAddTranche(expectedHex.ref(0));
+        ) = Messages.parseAddTranche(expectedHex);
 
         assertEq(uint256(decodedPoolId), poolId);
         assertEq(decodedTrancheId, trancheId);
@@ -112,7 +107,7 @@ contract MessagesTest is Test {
             string memory decodedTokenSymbol,
             uint8 decodedDecimals,
             uint128 decodedPrice
-        ) = Messages.parseAddTranche(_message.ref(0));
+        ) = Messages.parseAddTranche(_message);
         assertEq(uint256(decodedPoolId), uint256(poolId));
         assertEq(decodedTrancheId, trancheId);
         // Comparing raw input to output can erroneously fail when a byte string is given.
@@ -135,7 +130,7 @@ contract MessagesTest is Test {
         assertEq(Messages.formatUpdateTrancheTokenPrice(poolId, trancheId, price), expectedHex);
 
         (uint64 decodedPoolId, bytes16 decodedTrancheId, uint128 decodedPrice) =
-            Messages.parseUpdateTrancheTokenPrice(expectedHex.ref(0));
+            Messages.parseUpdateTrancheTokenPrice(expectedHex);
         assertEq(uint256(decodedPoolId), poolId);
         assertEq(decodedTrancheId, trancheId);
         assertEq(decodedPrice, price);
@@ -144,7 +139,7 @@ contract MessagesTest is Test {
     function testUpdateTrancheTokenPriceEquivalence(uint64 poolId, bytes16 trancheId, uint128 price) public {
         bytes memory _message = Messages.formatUpdateTrancheTokenPrice(poolId, trancheId, price);
         (uint64 decodedPoolId, bytes16 decodedTrancheId, uint128 decodedPrice) =
-            Messages.parseUpdateTrancheTokenPrice(_message.ref(0));
+            Messages.parseUpdateTrancheTokenPrice(_message);
         assertEq(uint256(decodedPoolId), uint256(poolId));
         assertEq(decodedTrancheId, trancheId);
         assertEq(uint256(decodedPrice), uint256(price));
@@ -164,7 +159,7 @@ contract MessagesTest is Test {
         assertEq(Messages.formatUpdateMember(poolId, trancheId, member, validUntil), expectedHex);
 
         (uint64 decodedPoolId, bytes16 decodedTrancheId, address decodedMember, uint64 decodedValidUntil) =
-            Messages.parseUpdateMember(expectedHex.ref(0));
+            Messages.parseUpdateMember(expectedHex);
         assertEq(uint256(decodedPoolId), poolId);
         assertEq(decodedTrancheId, trancheId);
         assertEq(decodedMember, address(bytes20(member)));
@@ -174,7 +169,7 @@ contract MessagesTest is Test {
     function testUpdateMemberEquivalence(uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) public {
         bytes memory _message = Messages.formatUpdateMember(poolId, trancheId, user, validUntil);
         (uint64 decodedPoolId, bytes16 decodedTrancheId, address decodedUser, uint64 decodedValidUntil) =
-            Messages.parseUpdateMember(_message.ref(0));
+            Messages.parseUpdateMember(_message);
         assertEq(uint256(decodedPoolId), uint256(poolId));
         assertEq(decodedTrancheId, trancheId);
         assertEq(decodedUser, user);
@@ -192,7 +187,7 @@ contract MessagesTest is Test {
         assertEq(Messages.formatTransfer(currency, sender, bytes32(bytes20(receiver)), amount), expectedHex);
 
         (uint128 decodedCurrency, bytes32 decodedSender, bytes32 decodedReceiver, uint128 decodedAmount) =
-            Messages.parseTransfer(expectedHex.ref(0));
+            Messages.parseTransfer(expectedHex);
         assertEq(uint256(decodedCurrency), currency);
         assertEq(decodedSender, sender);
         assertEq(decodedReceiver, bytes32(bytes20(receiver)));
@@ -200,7 +195,7 @@ contract MessagesTest is Test {
 
         // Test the optimised `parseIncomingTransfer` now
         (uint128 decodedCurrency2, address decodedReceiver2, uint128 decodedAmount2) =
-            Messages.parseIncomingTransfer(expectedHex.ref(0));
+            Messages.parseIncomingTransfer(expectedHex);
         assertEq(uint256(decodedCurrency2), currency);
         assertEq(decodedReceiver2, receiver);
         assertEq(decodedAmount2, amount);
@@ -209,7 +204,7 @@ contract MessagesTest is Test {
     function testTransferEquivalence(uint128 token, bytes32 sender, bytes32 receiver, uint128 amount) public {
         bytes memory _message = Messages.formatTransfer(token, sender, receiver, amount);
         (uint128 decodedToken, bytes32 decodedSender, bytes32 decodedReceiver, uint128 decodedAmount) =
-            Messages.parseTransfer(_message.ref(0));
+            Messages.parseTransfer(_message);
         assertEq(uint256(decodedToken), uint256(token));
         assertEq(decodedSender, sender);
         assertEq(decodedReceiver, receiver);
@@ -217,7 +212,7 @@ contract MessagesTest is Test {
 
         // Test the optimised `parseIncomingTransfer` now
         (uint128 decodedToken2, address decodedRecipient2, uint128 decodedAmount2) =
-            Messages.parseIncomingTransfer(_message.ref(0));
+            Messages.parseIncomingTransfer(_message);
         assertEq(uint256(decodedToken2), uint256(decodedToken));
         assertEq(decodedRecipient2, address(bytes20(decodedReceiver)));
         assertEq(decodedAmount, decodedAmount2);
@@ -236,7 +231,7 @@ contract MessagesTest is Test {
         assertEq(Messages.formatTransferTrancheTokens(poolId, trancheId, sender, domain, receiver, amount), expectedHex);
 
         (uint64 decodedPoolId, bytes16 decodedTrancheId, address decodedReceiver, uint128 decodedAmount) =
-            Messages.parseTransferTrancheTokens20(expectedHex.ref(0));
+            Messages.parseTransferTrancheTokens20(expectedHex);
         assertEq(uint256(decodedPoolId), poolId);
         assertEq(decodedTrancheId, trancheId);
         assertEq(decodedReceiver, receiver);
@@ -261,7 +256,7 @@ contract MessagesTest is Test {
         );
 
         (uint64 decodedPoolId, bytes16 decodedTrancheId, address decodedDestinationAddress, uint256 decodedAmount) =
-            Messages.parseTransferTrancheTokens20(_message.ref(0));
+            Messages.parseTransferTrancheTokens20(_message);
         assertEq(uint256(decodedPoolId), uint256(poolId));
         assertEq(decodedTrancheId, trancheId);
         assertEq(decodedDestinationAddress, destinationAddress);
@@ -285,7 +280,7 @@ contract MessagesTest is Test {
             bytes32 decodedInvestor,
             uint128 decodedCurrency,
             uint128 decodedAmount
-        ) = Messages.parseIncreaseInvestOrder(expectedHex.ref(0));
+        ) = Messages.parseIncreaseInvestOrder(expectedHex);
         assertEq(uint256(decodedPoolId), poolId);
         assertEq(decodedTrancheId, trancheId);
         assertEq(decodedInvestor, investor);
@@ -307,7 +302,7 @@ contract MessagesTest is Test {
             bytes32 decodedInvestor,
             uint128 decodedToken,
             uint128 decodedAmount
-        ) = Messages.parseIncreaseInvestOrder(_message.ref(0));
+        ) = Messages.parseIncreaseInvestOrder(_message);
 
         assertEq(uint256(decodedPoolId), uint256(poolId));
         assertEq(decodedTrancheId, trancheId);
@@ -333,7 +328,7 @@ contract MessagesTest is Test {
             bytes32 decodedInvestor,
             uint128 decodedCurrency,
             uint128 decodedAmount
-        ) = Messages.parseDecreaseInvestOrder(expectedHex.ref(0));
+        ) = Messages.parseDecreaseInvestOrder(expectedHex);
         assertEq(uint256(decodedPoolId), poolId);
         assertEq(decodedTrancheId, trancheId);
         assertEq(decodedInvestor, investor);
@@ -355,7 +350,7 @@ contract MessagesTest is Test {
             bytes32 decodedInvestor,
             uint128 decodedToken,
             uint128 decodedAmount
-        ) = Messages.parseDecreaseInvestOrder(_message.ref(0));
+        ) = Messages.parseDecreaseInvestOrder(_message);
 
         assertEq(uint256(decodedPoolId), uint256(poolId));
         assertEq(decodedTrancheId, trancheId);
@@ -381,7 +376,7 @@ contract MessagesTest is Test {
             bytes32 decodedInvestor,
             uint128 decodedCurrency,
             uint128 decodedAmount
-        ) = Messages.parseIncreaseRedeemOrder(expectedHex.ref(0));
+        ) = Messages.parseIncreaseRedeemOrder(expectedHex);
         assertEq(uint256(decodedPoolId), poolId);
         assertEq(decodedTrancheId, trancheId);
         assertEq(decodedInvestor, investor);
@@ -403,7 +398,7 @@ contract MessagesTest is Test {
             bytes32 decodedInvestor,
             uint128 decodedToken,
             uint128 decodedAmount
-        ) = Messages.parseIncreaseRedeemOrder(_message.ref(0));
+        ) = Messages.parseIncreaseRedeemOrder(_message);
 
         assertEq(uint256(decodedPoolId), uint256(poolId));
         assertEq(decodedTrancheId, trancheId);
@@ -429,7 +424,7 @@ contract MessagesTest is Test {
             bytes32 decodedInvestor,
             uint128 decodedCurrency,
             uint128 decodedAmount
-        ) = Messages.parseDecreaseRedeemOrder(expectedHex.ref(0));
+        ) = Messages.parseDecreaseRedeemOrder(expectedHex);
         assertEq(uint256(decodedPoolId), poolId);
         assertEq(decodedTrancheId, trancheId);
         assertEq(decodedInvestor, investor);
@@ -451,7 +446,7 @@ contract MessagesTest is Test {
             bytes32 decodedInvestor,
             uint128 decodedToken,
             uint128 decodedAmount
-        ) = Messages.parseDecreaseRedeemOrder(_message.ref(0));
+        ) = Messages.parseDecreaseRedeemOrder(_message);
 
         assertEq(uint256(decodedPoolId), uint256(poolId));
         assertEq(decodedTrancheId, trancheId);
@@ -472,7 +467,7 @@ contract MessagesTest is Test {
         assertEq(Messages.formatCollectInvest(poolId, trancheId, investor, currency), expectedHex);
 
         (uint64 decodedPoolId, bytes16 decodedTrancheId, bytes32 decodedInvestor, uint128 decodedCurrency) =
-            Messages.parseCollectInvest(expectedHex.ref(0));
+            Messages.parseCollectInvest(expectedHex);
         assertEq(uint256(decodedPoolId), poolId);
         assertEq(decodedTrancheId, trancheId);
         assertEq(decodedInvestor, investor);
@@ -482,7 +477,7 @@ contract MessagesTest is Test {
     function testCollectInvestEquivalence(uint64 poolId, bytes16 trancheId, bytes32 user, uint128 currency) public {
         bytes memory _message = Messages.formatCollectInvest(poolId, trancheId, user, currency);
         (uint64 decodedPoolId, bytes16 decodedTrancheId, bytes32 decodedUser, uint128 decodedCurrency) =
-            Messages.parseCollectInvest(_message.ref(0));
+            Messages.parseCollectInvest(_message);
 
         assertEq(uint256(decodedPoolId), uint256(poolId));
         assertEq(decodedTrancheId, trancheId);
@@ -502,7 +497,7 @@ contract MessagesTest is Test {
         assertEq(Messages.formatCollectRedeem(poolId, trancheId, investor, currency), expectedHex);
 
         (uint64 decodedPoolId, bytes16 decodedTrancheId, bytes32 decodedInvestor, uint128 decodedCurrency) =
-            Messages.parseCollectRedeem(expectedHex.ref(0));
+            Messages.parseCollectRedeem(expectedHex);
         assertEq(uint256(decodedPoolId), poolId);
         assertEq(decodedTrancheId, trancheId);
         assertEq(decodedInvestor, investor);
@@ -512,7 +507,7 @@ contract MessagesTest is Test {
     function testCollectRedeemEquivalence(uint64 poolId, bytes16 trancheId, bytes32 user, uint128 currency) public {
         bytes memory _message = Messages.formatCollectRedeem(poolId, trancheId, user, currency);
         (uint64 decodedPoolId, bytes16 decodedTrancheId, bytes32 decodedUser, uint128 decodedCurrency) =
-            Messages.parseCollectRedeem(_message.ref(0));
+            Messages.parseCollectRedeem(_message);
 
         assertEq(uint256(decodedPoolId), uint256(poolId));
         assertEq(decodedTrancheId, trancheId);
@@ -540,7 +535,7 @@ contract MessagesTest is Test {
             address decodedInvestor,
             uint128 decodedCurrency,
             uint128 decodedCurrencyPayout
-        ) = Messages.parseExecutedDecreaseInvestOrder(expectedHex.ref(0));
+        ) = Messages.parseExecutedDecreaseInvestOrder(expectedHex);
         assertEq(uint256(decodedPoolId), poolId);
         assertEq(decodedTrancheId, trancheId);
         assertEq(decodedInvestor, address(bytes20(investor)));
@@ -563,7 +558,7 @@ contract MessagesTest is Test {
             address decodedInvestor,
             uint128 decodedCurrency,
             uint128 decodedCurrencyPayout
-        ) = Messages.parseExecutedDecreaseInvestOrder(_message.ref(0));
+        ) = Messages.parseExecutedDecreaseInvestOrder(_message);
 
         assertEq(uint256(decodedPoolId), uint256(poolId));
         assertEq(decodedTrancheId, trancheId);
@@ -593,7 +588,7 @@ contract MessagesTest is Test {
             address decodedInvestor,
             uint128 decodedCurrency,
             uint128 decodedCurrencyPayout
-        ) = Messages.parseExecutedDecreaseRedeemOrder(expectedHex.ref(0));
+        ) = Messages.parseExecutedDecreaseRedeemOrder(expectedHex);
         assertEq(uint256(decodedPoolId), poolId);
         assertEq(decodedTrancheId, trancheId);
         assertEq(bytes32(bytes20(decodedInvestor)), investor);
@@ -616,7 +611,7 @@ contract MessagesTest is Test {
             address decodedInvestor,
             uint128 decodedCurrency,
             uint128 decodedCurrencyPayout
-        ) = Messages.parseExecutedDecreaseRedeemOrder(_message.ref(0));
+        ) = Messages.parseExecutedDecreaseRedeemOrder(_message);
 
         assertEq(uint256(decodedPoolId), uint256(poolId));
         assertEq(decodedTrancheId, trancheId);
@@ -655,7 +650,7 @@ contract MessagesTest is Test {
         uint128 currency
     ) internal {
         (uint64 decodedPoolId, bytes16 decodedTrancheId, address decodedInvestor, uint128 decodedCurrency,,) =
-            Messages.parseExecutedCollectInvest(expectedHex.ref(0));
+            Messages.parseExecutedCollectInvest(expectedHex);
 
         assertEq(decodedPoolId, poolId);
         assertEq(decodedTrancheId, trancheId);
@@ -669,7 +664,7 @@ contract MessagesTest is Test {
         uint128 trancheTokensPayout
     ) internal {
         (,,,, uint128 decodedcurrencyPayout, uint128 decodedTrancheTokensPayout) =
-            Messages.parseExecutedCollectInvest(expectedHex.ref(0));
+            Messages.parseExecutedCollectInvest(expectedHex);
 
         assertEq(decodedcurrencyPayout, currencyPayout);
         assertEq(decodedTrancheTokensPayout, trancheTokensPayout);
@@ -737,7 +732,7 @@ contract MessagesTest is Test {
         uint128 currency
     ) internal {
         (uint64 decodedPoolId, bytes16 decodedTrancheId, address decodedInvestor, uint128 decodedCurrency,,) =
-            Messages.parseExecutedCollectRedeem(expectedHex.ref(0));
+            Messages.parseExecutedCollectRedeem(expectedHex);
 
         assertEq(decodedPoolId, poolId);
         assertEq(decodedTrancheId, trancheId);
@@ -752,7 +747,7 @@ contract MessagesTest is Test {
         uint128 trancheTokensPayout
     ) internal {
         (,,,, uint128 decodedCurrencyPayout, uint128 decodedtrancheTokensPayout) =
-            Messages.parseExecutedCollectRedeem(expectedHex.ref(0));
+            Messages.parseExecutedCollectRedeem(expectedHex);
 
         assertEq(decodedCurrencyPayout, currencyPayout);
         assertEq(decodedtrancheTokensPayout, trancheTokensPayout);
@@ -773,7 +768,7 @@ contract MessagesTest is Test {
             bytes16 decodedTrancheId,
             string memory decodedTokenName,
             string memory decodedTokenSymbol
-        ) = Messages.parseUpdateTrancheTokenMetadata(expectedHex.ref(0));
+        ) = Messages.parseUpdateTrancheTokenMetadata(expectedHex);
 
         assertEq(uint256(decodedPoolId), poolId);
         assertEq(decodedTrancheId, trancheId);
@@ -793,7 +788,7 @@ contract MessagesTest is Test {
             bytes16 decodedTrancheId,
             string memory decodedTokenName,
             string memory decodedTokenSymbol
-        ) = Messages.parseUpdateTrancheTokenMetadata(_message.ref(0));
+        ) = Messages.parseUpdateTrancheTokenMetadata(_message);
         assertEq(uint256(decodedPoolId), uint256(poolId));
         assertEq(decodedTrancheId, trancheId);
         // Comparing raw input to output can erroneously fail when a byte string is given.
@@ -815,7 +810,7 @@ contract MessagesTest is Test {
         assertEq(Messages.formatCancelInvestOrder(poolId, trancheId, investor, currency), expectedHex);
 
         (uint64 decodedPoolId, bytes16 decodedTrancheId, address decodedInvestor, uint128 decodedCurrency) =
-            Messages.parseCancelInvestOrder(expectedHex.ref(0));
+            Messages.parseCancelInvestOrder(expectedHex);
         assertEq(uint256(decodedPoolId), poolId);
         assertEq(decodedTrancheId, trancheId);
         assertEq(decodedInvestor, address(bytes20(investor)));
@@ -827,7 +822,7 @@ contract MessagesTest is Test {
     {
         bytes memory _message = Messages.formatCancelInvestOrder(poolId, trancheId, investor, currency);
         (uint64 decodedPoolId, bytes16 decodedTrancheId, address decodedInvestor, uint128 decodedCurrency) =
-            Messages.parseCancelInvestOrder(_message.ref(0));
+            Messages.parseCancelInvestOrder(_message);
 
         assertEq(uint256(decodedPoolId), uint256(poolId));
         assertEq(decodedTrancheId, trancheId);
@@ -846,7 +841,7 @@ contract MessagesTest is Test {
         assertEq(Messages.formatCancelRedeemOrder(poolId, trancheId, investor, currency), expectedHex);
 
         (uint64 decodedPoolId, bytes16 decodedTrancheId, address decodedInvestor, uint128 decodedCurrency) =
-            Messages.parseCancelRedeemOrder(expectedHex.ref(0));
+            Messages.parseCancelRedeemOrder(expectedHex);
         assertEq(uint256(decodedPoolId), poolId);
         assertEq(decodedTrancheId, trancheId);
         assertEq(decodedInvestor, address(bytes20(investor)));
@@ -858,7 +853,7 @@ contract MessagesTest is Test {
     {
         bytes memory _message = Messages.formatCancelRedeemOrder(poolId, trancheId, investor, currency);
         (uint64 decodedPoolId, bytes16 decodedTrancheId, address decodedInvestor, uint128 decodedCurrency) =
-            Messages.parseCancelRedeemOrder(_message.ref(0));
+            Messages.parseCancelRedeemOrder(_message);
 
         assertEq(uint256(decodedPoolId), uint256(poolId));
         assertEq(decodedTrancheId, trancheId);

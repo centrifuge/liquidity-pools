@@ -2,7 +2,6 @@
 pragma solidity ^0.8.18;
 pragma abicoder v2;
 
-import {TypedMemView} from "memview-sol/TypedMemView.sol";
 import {Messages} from "src/gateway/Messages.sol";
 import "forge-std/Test.sol";
 import {XCMRouter} from "src/gateway/routers/xcm/Router.sol";
@@ -13,10 +12,6 @@ interface XcmRouterLike {
 }
 
 contract MockHomeLiquidityPools is Test {
-    using TypedMemView for bytes;
-    using TypedMemView for bytes29;
-    using Messages for bytes29;
-
     XcmRouterLike public immutable router;
 
     uint32 public dispatchDomain;
