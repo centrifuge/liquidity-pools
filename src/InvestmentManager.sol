@@ -6,6 +6,7 @@ import {TrancheTokenFactoryLike, LiquidityPoolFactoryLike} from "./util/Factory.
 import {MemberlistLike} from "./token/Memberlist.sol";
 import "./util/Auth.sol";
 import "./util/Math.sol";
+import "forge-std/console.sol";
 
 interface GatewayLike {
     function increaseInvestOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount)
@@ -609,9 +610,14 @@ contract InvestmentManager is Auth {
             return 0;
         }
 
+        uint8 poolDecimals = _getPoolDecimals(liquidityPool);
         (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getTokenDecimals(liquidityPool);
-        userTrancheTokenPrice = _toPoolDecimals(lpValues.maxDeposit, currencyDecimals, liquidityPool)
-            / _toPoolDecimals(lpValues.maxMint, trancheTokenDecimals, liquidityPool);
+
+        uint128 maxDepositInPoolDecimals = _toPoolDecimals(lpValues.maxDeposit, currencyDecimals, liquidityPool);
+        uint128 maxMintInPoolDecimals = _toPoolDecimals(lpValues.maxMint, trancheTokenDecimals, liquidityPool);
+
+        userTrancheTokenPrice =
+            _toUint128(maxDepositInPoolDecimals.mulDiv(10 ** poolDecimals, maxMintInPoolDecimals, Math.Rounding.Down));
     }
 
     function calculateRedeemPrice(address user, address liquidityPool)
@@ -624,9 +630,15 @@ contract InvestmentManager is Auth {
             return 0;
         }
 
+        uint8 poolDecimals = _getPoolDecimals(liquidityPool);
         (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getTokenDecimals(liquidityPool);
-        userTrancheTokenPrice = _toPoolDecimals(lpValues.maxWithdraw, currencyDecimals, liquidityPool)
-            / _toPoolDecimals(lpValues.maxRedeem, trancheTokenDecimals, liquidityPool);
+
+        uint128 maxWithdrawInPoolDecimals = _toPoolDecimals(lpValues.maxWithdraw, currencyDecimals, liquidityPool);
+        uint128 maxRedeemInPoolDecimals = _toPoolDecimals(lpValues.maxRedeem, trancheTokenDecimals, liquidityPool);
+
+        userTrancheTokenPrice = _toUint128(
+            maxWithdrawInPoolDecimals.mulDiv(10 ** poolDecimals, maxRedeemInPoolDecimals, Math.Rounding.Down)
+        );
     }
 
     function _poolCurrencyCheck(uint64 poolId, address currencyAddress) internal view returns (bool) {
