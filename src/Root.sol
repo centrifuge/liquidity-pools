@@ -40,8 +40,9 @@ contract Root is Auth {
         if (what == "delay") {
             require(delay <= MAX_DELAY, "Root/delay-too-long");
             delay = data;
+        } else {
+            revert("Root/file-unrecognized-param");
         }
-        else revert("Root/file-unrecognized-param");
         emit File(what, data);
     }
 
