@@ -62,7 +62,7 @@ contract LiquidityPoolTest is Test {
         trancheTokenFactory_.rely(address(evmInvestmentManager));
         evmTokenManager = new TokenManager(address(escrow));
 
-        mockXcmRouter = new MockXcmRouter(address(evmInvestmentManager));
+        mockXcmRouter = MockXcmRouter(address(new MockXcmRouter(address(evmInvestmentManager))));
 
         homePools = new MockHomeLiquidityPools(address(mockXcmRouter));
 

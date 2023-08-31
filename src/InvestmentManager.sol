@@ -454,13 +454,21 @@ contract InvestmentManager is Auth {
         uint128 depositPrice = calculateDepositPrice(user, liquidityPool);
         require((depositPrice > 0), "LiquidityPool/deposit-token-price-0");
 
+        uint8 assetPrecision = ERC20Like(LiquidityPoolLike(liquidityPool).asset()).decimals();
+        uint8 trancheTokenPrecision = LiquidityPoolLike(liquidityPool).decimals();
         if (currencyAmount == 0) {
-            _currencyAmount =
-                _toUint128(trancheTokenAmount.mulDiv(depositPrice, 10 ** PRICE_DECIMALS, Math.Rounding.Down));
+            _currencyAmount = _toUint128(
+                trancheTokenAmount.mulDiv(
+                    depositPrice, 10 ** (PRICE_DECIMALS - trancheTokenPrecision + assetPrecision), Math.Rounding.Down
+                )
+            );
             _trancheTokenAmount = trancheTokenAmount;
         } else {
-            _trancheTokenAmount =
-                _toUint128(currencyAmount.mulDiv(10 ** PRICE_DECIMALS, depositPrice, Math.Rounding.Down));
+            _trancheTokenAmount = _toUint128(
+                currencyAmount.mulDiv(
+                    10 ** (PRICE_DECIMALS + trancheTokenPrecision - assetPrecision), depositPrice, Math.Rounding.Down
+                )
+            );
             _currencyAmount = currencyAmount;
         }
 
@@ -523,13 +531,21 @@ contract InvestmentManager is Auth {
         uint128 redeemPrice = calculateRedeemPrice(user, liquidityPool);
         require((redeemPrice > 0), "LiquidityPool/redeem-token-price-0");
 
+        uint8 assetPrecision = ERC20Like(LiquidityPoolLike(liquidityPool).asset()).decimals();
+        uint8 trancheTokenPrecision = LiquidityPoolLike(liquidityPool).decimals();
         if (currencyAmount == 0) {
-            _currencyAmount =
-                _toUint128(trancheTokenAmount.mulDiv(redeemPrice, 10 ** PRICE_DECIMALS, Math.Rounding.Down));
+            _currencyAmount = _toUint128(
+                trancheTokenAmount.mulDiv(
+                    redeemPrice, 10 ** (PRICE_DECIMALS + trancheTokenPrecision - assetPrecision), Math.Rounding.Down
+                )
+            );
             _trancheTokenAmount = trancheTokenAmount;
         } else {
-            _trancheTokenAmount =
-                _toUint128(currencyAmount.mulDiv(10 ** PRICE_DECIMALS, redeemPrice, Math.Rounding.Down));
+            _trancheTokenAmount = _toUint128(
+                currencyAmount.mulDiv(
+                    10 ** (PRICE_DECIMALS + assetPrecision - trancheTokenPrecision), redeemPrice, Math.Rounding.Down
+                )
+            );
             _currencyAmount = currencyAmount;
         }
 
@@ -614,10 +630,9 @@ contract InvestmentManager is Auth {
 
         uint8 assetPrecision = ERC20Like(LiquidityPoolLike(liquidityPool).asset()).decimals();
         uint8 trancheTokenPrecision = LiquidityPoolLike(liquidityPool).decimals();
-
         userTrancheTokenPrice = _toUint128(
             lpValues.maxDeposit.mulDiv(
-                10 ** (trancheTokenPrecision - assetPrecision + PRICE_DECIMALS), lpValues.maxMint, Math.Rounding.Down
+                10 ** (PRICE_DECIMALS + trancheTokenPrecision - assetPrecision), lpValues.maxMint, Math.Rounding.Down
             )
         );
     }
@@ -630,10 +645,9 @@ contract InvestmentManager is Auth {
 
         uint8 assetPrecision = ERC20Like(LiquidityPoolLike(liquidityPool).asset()).decimals();
         uint8 trancheTokenPrecision = LiquidityPoolLike(liquidityPool).decimals();
-
         userTrancheTokenPrice = _toUint128(
             lpValues.maxWithdraw.mulDiv(
-                10 ** (trancheTokenPrecision - assetPrecision + PRICE_DECIMALS), lpValues.maxRedeem, Math.Rounding.Down
+                10 ** (PRICE_DECIMALS + trancheTokenPrecision - assetPrecision), lpValues.maxRedeem, Math.Rounding.Down
             )
         );
     }
