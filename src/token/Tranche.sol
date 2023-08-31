@@ -2,23 +2,11 @@
 pragma solidity ^0.8.18;
 
 import "./ERC20.sol";
+import "./ERC20Like.sol";
 
 interface MemberlistLike {
     function hasMember(address) external view returns (bool);
     function member(address) external;
-}
-
-interface ERC20Like {
-    function mint(address user, uint256 value) external;
-    function name() external view returns (string memory);
-    function symbol() external view returns (string memory);
-    function decimals() external view returns (uint8);
-    function balanceOf(address user) external view returns (uint256 value);
-    function burn(address user, uint256 value) external;
-    function transfer(address to, uint256 amount) external returns (bool);
-    function transferFrom(address from, address to, uint256 amount) external returns (bool);
-    function totalSupply() external returns (uint256);
-    function approve(address _spender, uint256 _value) external returns (bool);
 }
 
 interface TrancheTokenLike is ERC20Like {
@@ -33,6 +21,8 @@ contract TrancheToken is ERC20 {
 
     uint128 public latestPrice; // tranche token price
     uint256 public lastPriceUpdate; // timestamp of the price update
+
+    mapping(address => bool) public liquidityPools;
 
     // --- Events ---
     event File(bytes32 indexed what, address data);
@@ -51,6 +41,14 @@ contract TrancheToken is ERC20 {
         emit File(what, data);
     }
 
+    function addLiquidityPool(address liquidityPool) public auth {
+        liquidityPools[liquidityPool] = true;
+    }
+
+    function removeLiquidityPool(address liquidityPool) public auth {
+        liquidityPools[liquidityPool] = false;
+    }
+
     // --- Restrictions ---
     function hasMember(address user) public view returns (bool) {
         return memberlist.hasMember(user);
@@ -66,6 +64,14 @@ contract TrancheToken is ERC20 {
 
     function mint(address to, uint256 value) public override checkMember(to) {
         return super.mint(to, value);
+    }
+
+    // --- Manage liquidity pools ---
+    function isTrustedForwarder(address forwarder) public view override returns (bool) {
+        // Liquiditiy Pools are considered trusted forwarders
+        // for the ERC2771Context implementation of the underlying
+        // ERC20 token
+        return liquidityPools[forwarder] == true;
     }
 
     // --- Pricing ---
