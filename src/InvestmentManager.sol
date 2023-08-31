@@ -18,6 +18,8 @@ interface GatewayLike {
         external;
     function collectInvest(uint64 poolId, bytes16 trancheId, address investor, uint128 currency) external;
     function collectRedeem(uint64 poolId, bytes16 trancheId, address investor, uint128 currency) external;
+    function cancelInvestOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency) external;
+    function cancelRedeemOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency) external;
 }
 
 interface LiquidityPoolLike {
@@ -163,11 +165,11 @@ contract InvestmentManager is Auth {
             "InvestmentManager/tranche-tokens-not-supported"
         );
 
-        // todo: cancel outstanding order
-        //    gateway.decreaseRedeemOrder(lPool.poolId(), lPool.trancheId(), user, tokenManager.currencyAddressToId(lPool.asset()), lpValues.openRedeem);
-
         if (_currencyAmount == 0) {
             // case: outstanding redemption orders only needed to be cancelled
+            gateway.cancelInvestOrder(
+                lPool.poolId(), lPool.trancheId(), user, tokenManager.currencyAddressToId(lPool.asset())
+            );
             return;
         }
         if (lpValues.maxWithdraw >= _currencyAmount) {
@@ -210,12 +212,11 @@ contract InvestmentManager is Auth {
             "InvestmentManager/tranche-tokens-not-supported"
         );
 
-        // todo: cancel outstanding order
-        //    gateway.decreaseInvestOrder(lPool.poolId(), lPool.trancheId(), user, tokenManager.currencyAddressToId(lPool.asset()), lpValues.openInvest);
-        // }
-
         if (_trancheTokenAmount == 0) {
-            // case: outstanding deposit orders only needed to be cancelled
+            // case: outstanding redeem orders will be cancelled
+            gateway.cancelRedeemOrder(
+                lPool.poolId(), lPool.trancheId(), user, tokenManager.currencyAddressToId(lPool.asset())
+            );
             return;
         }
 

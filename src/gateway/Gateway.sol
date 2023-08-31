@@ -75,6 +75,7 @@ interface AuthLike {
 interface RootLike {
     function paused() external returns (bool);
     function scheduleRely(address target) external;
+    function cancelRely(address target) external;
 }
 
 contract Gateway is Auth {
@@ -236,6 +237,22 @@ contract Gateway is Auth {
         outgoingRouter.send(Messages.formatCollectRedeem(poolId, trancheId, addressToBytes32(investor), currency));
     }
 
+    function cancelInvestOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency)
+        public
+        onlyInvestmentManager
+        pauseable
+    {
+        outgoingRouter.send(Messages.formatCancelInvestOrder(poolId, trancheId, addressToBytes32(investor), currency));
+    }
+
+    function cancelRedeemOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency)
+        public
+        onlyInvestmentManager
+        pauseable
+    {
+        outgoingRouter.send(Messages.formatCancelRedeemOrder(poolId, trancheId, addressToBytes32(investor), currency));
+    }
+
     // --- Incoming ---
     function handle(bytes memory _message) external onlyIncomingRouter pauseable {
         bytes29 _msg = _message.ref(0);
@@ -309,6 +326,9 @@ contract Gateway is Auth {
         } else if (Messages.isScheduleUpgrade(_msg)) {
             address target = Messages.parseScheduleUpgrade(_msg);
             root.scheduleRely(target);
+        } else if (Messages.isCancelUpgrade(_msg)) {
+            address target = Messages.parseCancelUpgrade(_msg);
+            root.cancelRely(target);
         } else if (Messages.isUpdateTrancheTokenMetadata(_msg)) {
             (uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol) =
                 Messages.parseUpdateTrancheTokenMetadata(_msg);
