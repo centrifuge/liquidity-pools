@@ -88,10 +88,10 @@ struct Tranche {
 
 /// @dev liquidity pool orders and deposit/redemption limits per user
 struct LPValues {
-    uint128 maxDeposit;
-    uint128 maxMint;
-    uint128 maxWithdraw;
-    uint128 maxRedeem;
+    uint128 maxDeposit; // denominated in assets
+    uint128 maxMint; // denominated in tranche tokens
+    uint128 maxWithdraw; // denominated in assets
+    uint128 maxRedeem; // denominated in tranche tokens
 }
 
 contract InvestmentManager is Auth {
@@ -608,8 +608,27 @@ contract InvestmentManager is Auth {
             return 0;
         }
 
-        userTrancheTokenPrice =
-            _toUint128(lpValues.maxDeposit.mulDiv(10 ** PRICE_DECIMALS, lpValues.maxMint, Math.Rounding.Down));
+        (uint8 assetDecimals, uint8 trancheTokenDecimals) = _getTokenDecimals(liquidityPool);
+
+        if (assetDecimals > trancheTokenDecimals) {
+            // case 1 (currency decimals > tranche token decimals):
+            //
+            // maxDeposit = 120 * 10**18
+            // maxMint = 100 * 10**6
+            // userTrancheTokenPrice = 1.2 * 10**12
+
+            userTrancheTokenPrice =
+                _toUint128(lpValues.maxDeposit.mulDiv(10 ** trancheTokenDecimals, lpValues.maxMint, Math.Rounding.Down));
+        } else {
+            // case 2 (tranche token decimals > currency decimals):
+            //
+            // maxDeposit = 120 * 10**6
+            // maxMint = 100 * 10**18
+            // userTrancheTokenPrice = 1.2 * 10**12
+
+            userTrancheTokenPrice =
+                _toUint128(lpValues.maxMint.mulDiv(10 ** assetDecimals, lpValues.maxDeposit, Math.Rounding.Down));
+        }
     }
 
     function calculateRedeemPrice(address user, address liquidityPool)
@@ -622,8 +641,28 @@ contract InvestmentManager is Auth {
             return 0;
         }
 
-        userTrancheTokenPrice =
-            _toUint128(lpValues.maxWithdraw.mulDiv(10 ** PRICE_DECIMALS, lpValues.maxRedeem, Math.Rounding.Down));
+        (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getTokenDecimals(liquidityPool);
+
+        if (currencyDecimals > trancheTokenDecimals) {
+            // case 1 (currency decimals > tranche token decimals):
+            //
+            // maxWithdraw = 120 * 10**18
+            // maxRedeem = 100 * 10**6
+            // userTrancheTokenPrice = 1.2 * 10**12
+
+            userTrancheTokenPrice = _toUint128(
+                lpValues.maxWithdraw.mulDiv(10 ** trancheTokenDecimals, lpValues.maxRedeem, Math.Rounding.Down)
+            );
+        } else {
+            // case 2 (tranche token decimals > currency decimals):
+            //
+            // maxWithdraw = 120 * 10**6
+            // maxRedeem = 100 * 10**18
+            // userTrancheTokenPrice = 1.2 * 10**12
+
+            userTrancheTokenPrice =
+                _toUint128(lpValues.maxRedeem.mulDiv(10 ** currencyDecimals, lpValues.maxWithdraw, Math.Rounding.Down));
+        }
     }
 
     function _poolCurrencyCheck(uint64 poolId, address currencyAddress) internal view returns (bool) {
@@ -643,12 +682,39 @@ contract InvestmentManager is Auth {
         return true;
     }
 
+    function _getTokenDecimals(address liquidityPool)
+        internal
+        view
+        returns (uint8 currencyDecimals, uint8 trancheTokenDecimals)
+    {
+        currencyDecimals = ERC20Like(LiquidityPoolLike(liquidityPool).asset()).decimals();
+        trancheTokenDecimals = LiquidityPoolLike(liquidityPool).decimals();
+    }
+
     function _calculateTrancheTokenAmount(uint128 currencyAmount, address liquidityPool, uint256 price)
         internal
         view
         returns (uint128 trancheTokenAmount)
     {
-        trancheTokenAmount = _toUint128(currencyAmount.mulDiv(10 ** PRICE_DECIMALS, price, Math.Rounding.Down));
+        (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getTokenDecimals(liquidityPool);
+
+        if (currencyDecimals > trancheTokenDecimals) {
+            // case 1 (currency decimals > tranche token decimals):
+            //
+            // currencyAmount = 120 * 10**18
+            // price = 1.2 * 10**12
+            // trancheTokenAmount = 100 * 10**6
+
+            trancheTokenAmount = _toUint128(currencyAmount / price);
+        } else {
+            // case 2 (tranche token decimals > currency decimals):
+            //
+            // currencyAmount = 120 * 10**6
+            // price = 1.2 * 10**12
+            // trancheTokenAmount = 100 * 10**18
+
+            trancheTokenAmount = _toUint128(currencyAmount * 10 ** trancheTokenDecimals / price);
+        }
     }
 
     function _calculateCurrencyAmount(uint128 trancheTokenAmount, address liquidityPool, uint256 price)
@@ -656,7 +722,25 @@ contract InvestmentManager is Auth {
         view
         returns (uint128 currencyAmount)
     {
-        currencyAmount = _toUint128(trancheTokenAmount.mulDiv(price, 10 ** PRICE_DECIMALS, Math.Rounding.Down));
+        (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getTokenDecimals(liquidityPool);
+
+        if (currencyDecimals > trancheTokenDecimals) {
+            // case 1 (currency decimals > tranche token decimals):
+            //
+            // trancheTokenAmount = 100 * 10**6
+            // price = 1.2 * 10**12
+            // currencyAmount = 120 * 10**18
+
+            trancheTokenAmount = _toUint128(trancheTokenAmount * price);
+        } else {
+            // case 2 (tranche token decimals > currency decimals):
+            //
+            // trancheTokenAmount = 100 * 10**18
+            // price = 1.2 * 10**12
+            // currencyAmount = 120 * 10**6
+
+            currencyAmount = _toUint128(trancheTokenAmount * price / 10 ** trancheTokenDecimals);
+        }
     }
 
     function _decreaseDepositLimits(address user, address liquidityPool, uint128 _currency, uint128 trancheTokens)

@@ -256,11 +256,9 @@ contract LiquidityPoolTest is Test {
 
         uint8 TRANCHE_TOKEN_DECIMALS = 18; // Like DAI
         uint8 INVESTMENT_CURRENCY_DECIMALS = 6; // 6, like USDC
-        uint8 PRICE_DECIMALS = 27; // Prices are always 27 decimals
 
-        address lPool_ = deployLiquidityPool(
-            poolId, TRANCHE_TOKEN_DECIMALS, "", "", trancheId, 1000000000000000000000000000, currencyId
-        );
+        address lPool_ =
+            deployLiquidityPool(poolId, TRANCHE_TOKEN_DECIMALS, "", "", trancheId, 1000000000000000000, currencyId);
         LiquidityPool lPool = LiquidityPool(lPool_);
 
         // invest
@@ -335,7 +333,6 @@ contract LiquidityPoolTest is Test {
 
         uint8 TRANCHE_TOKEN_DECIMALS = 6; // Like DAI
         uint8 INVESTMENT_CURRENCY_DECIMALS = 18; // 18, like USDC
-        uint8 PRICE_DECIMALS = 27; // Prices are always 27 decimals
 
         address lPool_ = deployLiquidityPool(
             poolId, TRANCHE_TOKEN_DECIMALS, "", "", trancheId, 1000000000000000000000000000, currencyId
@@ -361,8 +358,8 @@ contract LiquidityPoolTest is Test {
         assertEq(lPool.maxDeposit(self), currencyPayout);
         assertEq(lPool.maxMint(self), firstTrancheTokenPayout);
 
-        // deposit price should be ~1.2*10**(18+6)
-        assertEq(evmInvestmentManager.calculateDepositPrice(self, address(lPool)), 1200000019200000307200004915200);
+        // deposit price should be ~1.2*10**(18-6)
+        assertEq(evmInvestmentManager.calculateDepositPrice(self, address(lPool)), 1200000019200000307);
 
         // trigger executed collectInvest of the second 50% at a price of 1.4
         currencyPayout = 50000000000000000000; // 50 * 10**18
@@ -371,8 +368,8 @@ contract LiquidityPoolTest is Test {
             poolId, trancheId, bytes32(bytes20(self)), _currencyId, currencyPayout, secondTrancheTokenPayout
         );
 
-        // deposit price should now be 50% * 1.2 + 50% * 1.4 = ~1.3*10**(18+6).
-        assertEq(evmInvestmentManager.calculateDepositPrice(self, address(lPool)), 1292307715370414612764322320101);
+        // deposit price should now be 50% * 1.2 + 50% * 1.4 = ~1.3*10**(18-6).
+        assertEq(evmInvestmentManager.calculateDepositPrice(self, address(lPool)), 1292307715370414612);
 
         // collect the tranche tokens
         lPool.mint(firstTrancheTokenPayout + secondTrancheTokenPayout, self);
@@ -399,8 +396,8 @@ contract LiquidityPoolTest is Test {
             firstTrancheTokenPayout + secondTrancheTokenPayout
         );
 
-        // redeem price should now be ~1.5*10**(18+6).
-        assertEq(evmInvestmentManager.calculateRedeemPrice(self, address(lPool)), 1492615411252828877742792279717);
+        // redeem price should now be ~1.5*10**(18-6).
+        assertEq(evmInvestmentManager.calculateRedeemPrice(self, address(lPool)), 1492615411252828877);
 
         // // collect the currency
         lPool.withdraw(currencyPayout, self, self);
@@ -412,11 +409,9 @@ contract LiquidityPoolTest is Test {
 
         uint8 TRANCHE_TOKEN_DECIMALS = 18; // Like DAI
         uint8 INVESTMENT_CURRENCY_DECIMALS = 6; // 6, like USDC
-        uint8 PRICE_DECIMALS = 27; // Prices are always 27 decimals
 
-        address lPool_ = deployLiquidityPool(
-            poolId, TRANCHE_TOKEN_DECIMALS, "", "", trancheId, 1000000000000000000000000000, currencyId
-        );
+        address lPool_ =
+            deployLiquidityPool(poolId, TRANCHE_TOKEN_DECIMALS, "", "", trancheId, 1000000000000000000, currencyId);
         LiquidityPool lPool = LiquidityPool(lPool_);
 
         // invest
@@ -435,17 +430,17 @@ contract LiquidityPoolTest is Test {
         lPool.mint(trancheTokenPayout, self);
 
         // assert share/asset conversion
-        assertEq(lPool.latestPrice(), 1000000000000000000000000000);
+        assertEq(lPool.latestPrice(), 1000000000000000000);
         assertEq(lPool.totalAssets(), 100000000000000000000);
         assertEq(lPool.convertToShares(100000000000000000000), 100000000000000000000000000000000); // tranche tokens have 12 more decimals than assets
         assertEq(lPool.convertToAssets(lPool.convertToShares(100000000000000000000)), 100000000000000000000);
 
         // assert share/asset conversion after price update
-        homePools.updateTrancheTokenPrice(poolId, trancheId, 1200000000000000000000000000);
+        homePools.updateTrancheTokenPrice(poolId, trancheId, 120000000000000000000);
 
-        assertEq(lPool.latestPrice(), 1200000000000000000000000000);
-        assertEq(lPool.totalAssets(), 120000000000000000000);
-        assertEq(lPool.convertToShares(120000000000000000000), 100000000000000000000000000000000); // tranche tokens have 12 more decimals than assets
+        assertEq(lPool.latestPrice(), 120000000000000000000);
+        assertEq(lPool.totalAssets(), 12000000000000000000000);
+        assertEq(lPool.convertToShares(120000000000000000000), 1000000000000000000000000000000); // tranche tokens have 12 more decimals than assets
         assertEq(lPool.convertToAssets(lPool.convertToShares(120000000000000000000)), 120000000000000000000);
     }
 
