@@ -239,7 +239,7 @@ contract Gateway is Auth {
 
     function cancelRedeemOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency)
         public
-        onlyInvestmentManager()
+        onlyInvestmentManager
         pauseable
     {
         outgoingRouter.send(Messages.formatCancelRedeemOrder(poolId, trancheId, addressToBytes32(investor), currency));

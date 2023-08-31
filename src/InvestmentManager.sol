@@ -164,12 +164,11 @@ contract InvestmentManager is Auth {
             "InvestmentManager/tranche-tokens-not-supported"
         );
 
-        gateway.cancelInvestOrder(
-            lPool.poolId(), lPool.trancheId(), user, tokenManager.currencyAddressToId(lPool.asset())
-        );
-
         if (_trancheTokenAmount == 0) {
             // case: outstanding deposit orders only needed to be cancelled
+            gateway.cancelInvestOrder(
+                lPool.poolId(), lPool.trancheId(), user, tokenManager.currencyAddressToId(lPool.asset())
+            );
             return;
         }
 
@@ -220,12 +219,11 @@ contract InvestmentManager is Auth {
             "InvestmentManager/tranche-tokens-not-supported"
         );
 
-        gateway.cancelRedeemOrder(
-            lPool.poolId(), lPool.trancheId(), user, tokenManager.currencyAddressToId(lPool.asset())
-        );
-
         if (_currencyAmount == 0) {
             // case: outstanding redemption orders only needed to be cancelled
+            gateway.cancelRedeemOrder(
+                lPool.poolId(), lPool.trancheId(), user, tokenManager.currencyAddressToId(lPool.asset())
+            );
             return;
         }
         if (lpValues.maxWithdraw >= _currencyAmount) {
