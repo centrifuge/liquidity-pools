@@ -609,7 +609,8 @@ contract InvestmentManager is Auth {
         }
 
         (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getTokenDecimals(liquidityPool);
-        userTrancheTokenPrice = _normalizeToPoolDecimals(lpValues.maxDeposit, currencyDecimals, liquidityPool) / _normalizeToPoolDecimals(lpValues.maxMint, trancheTokenDecimals, liquidityPool);
+        userTrancheTokenPrice = _toPoolDecimals(lpValues.maxDeposit, currencyDecimals, liquidityPool)
+            / _toPoolDecimals(lpValues.maxMint, trancheTokenDecimals, liquidityPool);
     }
 
     function calculateRedeemPrice(address user, address liquidityPool)
@@ -623,8 +624,8 @@ contract InvestmentManager is Auth {
         }
 
         (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getTokenDecimals(liquidityPool);
-        userTrancheTokenPrice = _normalizeToPoolDecimals(lpValues.maxWithdraw, currencyDecimals, liquidityPool) / _normalizeToPoolDecimals(lpValues.maxRedeem, trancheTokenDecimals, liquidityPool);
-        
+        userTrancheTokenPrice = _toPoolDecimals(lpValues.maxWithdraw, currencyDecimals, liquidityPool)
+            / _toPoolDecimals(lpValues.maxRedeem, trancheTokenDecimals, liquidityPool);
     }
 
     function _poolCurrencyCheck(uint64 poolId, address currencyAddress) internal view returns (bool) {
@@ -649,10 +650,12 @@ contract InvestmentManager is Auth {
         view
         returns (uint128 trancheTokenAmount)
     {
-
         (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getTokenDecimals(liquidityPool);
-        trancheTokenAmount = _normalizeToNativeDecimals((_normalizeToPoolDecimals(currencyAmount, currencyDecimals, liquidityPool) / price), trancheTokenDecimals, liquidityPool);
-
+        trancheTokenAmount = _fromPoolDecimals(
+            (_toPoolDecimals(currencyAmount, currencyDecimals, liquidityPool) / price),
+            trancheTokenDecimals,
+            liquidityPool
+        );
     }
 
     function _calculateCurrencyAmount(uint128 trancheTokenAmount, address liquidityPool, uint128 price)
@@ -661,7 +664,11 @@ contract InvestmentManager is Auth {
         returns (uint128 currencyAmount)
     {
         (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getTokenDecimals(liquidityPool);
-        currencyAmount = _normalizeToNativeDecimals((_normalizeToPoolDecimals(trancheTokenAmount, trancheTokenDecimals, liquidityPool) / price), currencyDecimals, liquidityPool);
+        currencyAmount = _fromPoolDecimals(
+            (_toPoolDecimals(trancheTokenAmount, trancheTokenDecimals, liquidityPool) / price),
+            currencyDecimals,
+            liquidityPool
+        );
     }
 
     function _decreaseDepositLimits(address user, address liquidityPool, uint128 _currency, uint128 trancheTokens)
@@ -706,22 +713,32 @@ contract InvestmentManager is Auth {
         }
     }
 
-    function _normalizeToPoolDecimals(uint128 _value, uint8 decimals, address liquidityPool) internal view returns (uint128 value) {
-        uint8 maxDecimals = _getPoolDecimals(liquidityPool);
-        return _toUint128(_value * 10**(maxDecimals - decimals));
-    }
-
-    function _normalizeToNativeDecimals(uint128 _value, uint8 decimals, address liquidityPool) internal view returns (uint128 value) {
-        uint8 maxDecimals = _getPoolDecimals(liquidityPool);
-        return _toUint128(_value / 10**(maxDecimals - decimals));
-    }
-
-    function _getPoolDecimals(address liquidityPool)
+    /// @dev convert decimals of the value into the pool decimals
+    function _toPoolDecimals(uint128 _value, uint8 decimals, address liquidityPool)
         internal
         view
-        returns (uint8 poolDecimals)
+        returns (uint128 value)
     {
-        return uint8(Math.max(ERC20Like(LiquidityPoolLike(liquidityPool).asset()).decimals(), LiquidityPoolLike(liquidityPool).decimals()));
+        uint8 maxDecimals = _getPoolDecimals(liquidityPool);
+        if (maxDecimals == decimals) return _value;
+        return _toUint128(_value * 10 ** (maxDecimals - decimals));
+    }
+
+    /// @dev convert decimals of the value from the pool decimals back to the intended decimals
+    function _fromPoolDecimals(uint128 _value, uint8 decimals, address liquidityPool)
+        internal
+        view
+        returns (uint128 value)
+    {
+        uint8 maxDecimals = _getPoolDecimals(liquidityPool);
+        if (maxDecimals == decimals) return _value;
+        return _toUint128(_value / 10 ** (maxDecimals - decimals));
+    }
+
+    /// @dev pool decimals are the max of the currency decimals and the tranche token decimals
+    function _getPoolDecimals(address liquidityPool) internal view returns (uint8 poolDecimals) {
+        (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getTokenDecimals(liquidityPool);
+        return uint8(Math.max(currencyDecimals, trancheTokenDecimals));
     }
 
     function _getTokenDecimals(address liquidityPool)
@@ -732,8 +749,4 @@ contract InvestmentManager is Auth {
         currencyDecimals = ERC20Like(LiquidityPoolLike(liquidityPool).asset()).decimals();
         trancheTokenDecimals = LiquidityPoolLike(liquidityPool).decimals();
     }
-
-
-    
- 
 }

@@ -359,7 +359,7 @@ contract LiquidityPoolTest is Test {
         assertEq(lPool.maxMint(self), firstTrancheTokenPayout);
 
         // deposit price should be ~1.2*10**(18-6)
-        assertEq(evmInvestmentManager.calculateDepositPrice(self, address(lPool)), 1200000019200000307);
+        assertEq(evmInvestmentManager.calculateDepositPrice(self, address(lPool)), 1200000019200);
 
         // trigger executed collectInvest of the second 50% at a price of 1.4
         currencyPayout = 50000000000000000000; // 50 * 10**18
@@ -369,7 +369,7 @@ contract LiquidityPoolTest is Test {
         );
 
         // deposit price should now be 50% * 1.2 + 50% * 1.4 = ~1.3*10**(18-6).
-        assertEq(evmInvestmentManager.calculateDepositPrice(self, address(lPool)), 1292307715370414612);
+        assertEq(evmInvestmentManager.calculateDepositPrice(self, address(lPool)), 1292307715370);
 
         // collect the tranche tokens
         lPool.mint(firstTrancheTokenPayout + secondTrancheTokenPayout, self);
@@ -397,7 +397,7 @@ contract LiquidityPoolTest is Test {
         );
 
         // redeem price should now be ~1.5*10**(18-6).
-        assertEq(evmInvestmentManager.calculateRedeemPrice(self, address(lPool)), 1492615411252828877);
+        assertEq(evmInvestmentManager.calculateRedeemPrice(self, address(lPool)), 1492615411252);
 
         // // collect the currency
         lPool.withdraw(currencyPayout, self, self);
