@@ -8,7 +8,6 @@ import {Messages} from "src/gateway/Messages.sol";
 import {Gateway} from "src/gateway/Gateway.sol";
 
 contract MockXcmRouter is Test {
-
     address public immutable centrifugeChainOrigin;
     address public gateway;
 

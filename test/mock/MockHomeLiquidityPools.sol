@@ -12,7 +12,6 @@ interface XcmRouterLike {
 }
 
 contract MockHomeLiquidityPools is Test {
-
     XcmRouterLike public immutable router;
 
     uint32 public dispatchDomain;
