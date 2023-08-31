@@ -75,6 +75,7 @@ interface AuthLike {
 interface RootLike {
     function paused() external returns (bool);
     function scheduleRely(address target) external;
+    function cancelRely(address target) external;
 }
 
 contract Gateway is Auth {
@@ -238,7 +239,7 @@ contract Gateway is Auth {
 
     function cancelRedeemOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency)
         public
-        onlyRedeemmentManager
+        onlyInvestmentManager()
         pauseable
     {
         outgoingRouter.send(Messages.formatCancelRedeemOrder(poolId, trancheId, addressToBytes32(investor), currency));
