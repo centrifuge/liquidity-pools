@@ -53,7 +53,9 @@ library Messages {
         CancelRedeemOrder,
         /// 21 - Schedule an upgrade contract to be granted admin rights
         ScheduleUpgrade,
-        /// 22 - Update tranche token metadata
+        /// 22 - Cancel a previously scheduled upgrade
+        CancelUpgrade,
+        /// 23 - Update tranche token metadata
         UpdateTrancheTokenMetadata
     }
 
@@ -708,6 +710,18 @@ library Messages {
         _contract = address(bytes20(_msg.index(1, 20)));
     }
 
+    function formatCancelUpgrade(address _contract) internal pure returns (bytes memory) {
+        return abi.encodePacked(uint8(Call.CancelUpgrade), _contract);
+    }
+
+    function isCancelUpgrade(bytes29 _msg) internal pure returns (bool) {
+        return messageType(_msg) == Call.CancelUpgrade;
+    }
+
+    function parseCancelUpgrade(bytes29 _msg) internal pure returns (address _contract) {
+        _contract = address(bytes20(_msg.index(1, 20)));
+    }
+
     /**
      * Update tranche token metadata
      *
@@ -751,6 +765,52 @@ library Messages {
         trancheId = bytes16(_msg.index(9, 16));
         tokenName = bytes32ToString(bytes32(_msg.index(25, 32)));
         tokenSymbol = bytes32ToString(bytes32(_msg.index(153, 32)));
+    }
+
+    function formatCancelInvestOrder(uint64 poolId, bytes16 trancheId, bytes32 investor, uint128 currency)
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(uint8(Call.CancelInvestOrder), poolId, trancheId, investor, currency);
+    }
+
+    function isCancelInvestOrder(bytes29 _msg) internal pure returns (bool) {
+        return messageType(_msg) == Call.CancelInvestOrder;
+    }
+
+    function parseCancelInvestOrder(bytes29 _msg)
+        internal
+        pure
+        returns (uint64 poolId, bytes16 trancheId, address investor, uint128 currency)
+    {
+        poolId = uint64(_msg.indexUint(1, 8));
+        trancheId = bytes16(_msg.index(9, 16));
+        investor = address(bytes20(_msg.index(25, 32)));
+        currency = uint128(_msg.indexUint(57, 16));
+    }
+
+    function formatCancelRedeemOrder(uint64 poolId, bytes16 trancheId, bytes32 investor, uint128 currency)
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(uint8(Call.CancelRedeemOrder), poolId, trancheId, investor, currency);
+    }
+
+    function isCancelRedeemOrder(bytes29 _msg) internal pure returns (bool) {
+        return messageType(_msg) == Call.CancelRedeemOrder;
+    }
+
+    function parseCancelRedeemOrder(bytes29 _msg)
+        internal
+        pure
+        returns (uint64 poolId, bytes16 trancheId, address investor, uint128 currency)
+    {
+        poolId = uint64(_msg.indexUint(1, 8));
+        trancheId = bytes16(_msg.index(9, 16));
+        investor = address(bytes20(_msg.index(25, 32)));
+        currency = uint128(_msg.indexUint(57, 16));
     }
 
     // Utils
