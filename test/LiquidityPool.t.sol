@@ -358,7 +358,7 @@ contract LiquidityPoolTest is Test {
         // assert share/asset conversion
         assertEq(lPool.latestPrice(), 1000000000000000000000000000);
         assertEq(lPool.totalAssets(), 100000000000000000000);
-        assertEq(lPool.convertToShares(100000000000000000000), 100000000000000000000);
+        assertEq(lPool.convertToShares(100000000000000000000), 100000000000000000000000000000000); // tranche tokens have 12 more decimals than assets
         assertEq(lPool.convertToAssets(lPool.convertToShares(100000000000000000000)), 100000000000000000000);
 
         // assert share/asset conversion after price update
@@ -366,7 +366,7 @@ contract LiquidityPoolTest is Test {
 
         assertEq(lPool.latestPrice(), 1200000000000000000000000000);
         assertEq(lPool.totalAssets(), 120000000000000000000);
-        assertEq(lPool.convertToShares(120000000000000000000), 100000000000000000000);
+        assertEq(lPool.convertToShares(120000000000000000000), 100000000000000000000000000000000); // tranche tokens have 12 more decimals than assets
         assertEq(lPool.convertToAssets(lPool.convertToShares(120000000000000000000)), 120000000000000000000);
     }
 
