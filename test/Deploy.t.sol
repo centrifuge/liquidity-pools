@@ -153,7 +153,7 @@ contract DeployTest is Test {
     ) public {
         vm.expectRevert(bytes("ERC20/insufficient-allowance"));
         lPool.requestRedeem(amount, self);
-        lPool.approve(address(lPool), amount);
+        lPool.approve(address(investmentManager), amount);
         console.log(lPool.allowance(self, address(lPool)));
         lPool.requestRedeem(amount, self);
 
