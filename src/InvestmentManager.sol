@@ -427,10 +427,9 @@ contract InvestmentManager is Auth {
         uint128 depositPrice = calculateDepositPrice(user, liquidityPool);
         require(depositPrice > 0, "LiquidityPool/deposit-token-price-0");
 
-        // uint128 _trancheTokenAmount = _calculateTrancheTokenAmount(_currencyAmount, liquidityPool, depositPrice);
-        // _deposit(_trancheTokenAmount, _currencyAmount, liquidityPool, user);
-        // trancheTokenAmount = uint256(_trancheTokenAmount);
-        return 1;
+        uint128 _trancheTokenAmount = _calculateTrancheTokenAmount(_currencyAmount, liquidityPool, depositPrice);
+        _deposit(_trancheTokenAmount, _currencyAmount, liquidityPool, user);
+        trancheTokenAmount = uint256(_trancheTokenAmount);
     }
 
     /// @dev processes user's currency deposit / investment after the epoch has been executed on Centrifuge chain.
