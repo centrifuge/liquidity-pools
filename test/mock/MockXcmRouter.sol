@@ -39,7 +39,7 @@ contract MockXcmRouter is Test {
         }
     }
 
-    function handle(bytes memory _message) external {
+    function execute(bytes memory _message) external {
         Gateway(gateway).handle(_message);
     }
 
