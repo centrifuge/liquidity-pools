@@ -2,6 +2,7 @@
 pragma solidity ^0.8.18;
 pragma abicoder v2;
 
+import {AxelarExecutable} from "./AxelarExecutable.sol";
 import "./../../../util/Auth.sol";
 
 interface InvestmentManagerLike {
@@ -25,26 +26,11 @@ interface InvestmentManagerLike {
     ) external;
 }
 
-interface AxelarExecutableLike {
-    function execute(
-        bytes32 commandId,
-        string calldata sourceChain,
-        string calldata sourceAddress,
-        bytes calldata payload
-    ) external;
-}
-
-interface AxelarGatewayLike {
-    function callContract(string calldata destinationChain, string calldata contractAddress, bytes calldata payload)
-        external;
-}
-
 interface GatewayLike {
     function handle(bytes memory message) external;
 }
 
-contract AxelarEVMRouter is Auth, AxelarExecutableLike {
-    AxelarGatewayLike public immutable axelarGateway;
+contract AxelarEVMRouter is Auth, AxelarExecutable {
     GatewayLike public gateway;
 
     string public constant axelarCentrifugeChainId = "Moonbeam";
@@ -53,8 +39,7 @@ contract AxelarEVMRouter is Auth, AxelarExecutableLike {
     // --- Events ---
     event File(bytes32 indexed what, address addr);
 
-    constructor(address axelarGateway_) {
-        axelarGateway = AxelarGatewayLike(axelarGateway_);
+    constructor(address axelarGateway_) AxelarExecutable(axelarGateway_) {
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
     }
@@ -74,19 +59,19 @@ contract AxelarEVMRouter is Auth, AxelarExecutableLike {
     }
 
     // --- Administration ---
-    function file(bytes32 what, address gateway_) external auth {
+    function file(bytes32 what, address data) external auth {
         if (what == "gateway") {
-            gateway = GatewayLike(gateway_);
+            gateway = GatewayLike(data);
         } else {
             revert("ConnectorXCMRouter/file-unrecognized-param");
         }
 
-        emit File(what, gateway_);
+        emit File(what, data);
     }
 
     // --- Incoming ---
-    function execute(bytes32, string calldata sourceChain, string calldata, bytes calldata payload)
-        external
+    function _execute(bytes32, string calldata sourceChain, string calldata, bytes calldata payload)
+        public
         onlyCentrifugeChainOrigin(sourceChain)
     {
         gateway.handle(payload);
