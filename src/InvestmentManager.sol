@@ -165,8 +165,8 @@ contract InvestmentManager is Auth {
         );
 
         if (_trancheTokenAmount == 0) {
-            // case: outstanding deposit orders only needed to be cancelled
-            gateway.cancelInvestOrder(
+            // case: outstanding redeem orders will be cancelled
+            gateway.cancelRedeemOrder(
                 lPool.poolId(), lPool.trancheId(), user, tokenManager.currencyAddressToId(lPool.asset())
             );
             return;
@@ -220,8 +220,8 @@ contract InvestmentManager is Auth {
         );
 
         if (_currencyAmount == 0) {
-            // case: outstanding redemption orders only needed to be cancelled
-            gateway.cancelRedeemOrder(
+            // case: outstanding invest orders will be cancelled
+            gateway.cancelInvestOrder(
                 lPool.poolId(), lPool.trancheId(), user, tokenManager.currencyAddressToId(lPool.asset())
             );
             return;
