@@ -53,24 +53,28 @@ interface AxelarGatewayLike {
 contract AxelarXCMRelayer is Auth, AxelarExecutableLike {
     address constant XCM_TRANSACTOR_V2_ADDRESS = 0x000000000000000000000000000000000000080D;
 
-    //todo(nuno): do we really need this?
-    mapping(bytes32 => uint32) public executedCalls;
-
     address public immutable centrifugeChainOrigin;
-    /// The origin of EVM -> Centrifuge messages; the trusted source origin of the Axelar-bridged
-    /// messages to be handled by this router.
     mapping(string => string) public axelarEVMRouters;
     AxelarGatewayLike public immutable axelarGateway;
+    bytes1 public immutable lpPalletIndex;
+    bytes1 public immutable lpCallIndex;
+
     XcmWeightInfo public xcmWeightInfo;
+
+    //todo(nuno): do we really need this?
+    mapping(bytes32 => uint32) public executedCalls;
 
     // --- Events ---
     event File(bytes32 indexed what, XcmWeightInfo xcmWeightInfo);
     event File(bytes32 indexed what, string chain, string addr);
     event Executed(bytes32 indexed payload);
 
-    constructor(address centrifugeChainOrigin_, address axelarGateway_) {
+    constructor(address centrifugeChainOrigin_, address axelarGateway_, bytes1 lpPalletIndex_, bytes1 lpCallIndex_) {
         centrifugeChainOrigin = centrifugeChainOrigin_;
         axelarGateway = AxelarGatewayLike(axelarGateway_);
+        lpPalletIndex = lpPalletIndex_;
+        lpCallIndex = lpCallIndex_;
+
         xcmWeightInfo = XcmWeightInfo({
             buyExecutionWeightLimit: 19000000000,
             transactWeightAtMost: 8000000000,
@@ -131,6 +135,16 @@ contract AxelarXCMRelayer is Auth, AxelarExecutableLike {
 
         XcmTransactorV2 transactorContract = XcmTransactorV2(XCM_TRANSACTOR_V2_ADDRESS);
 
+        bytes memory payloadWithLocation = bytes.concat(
+            lpPalletIndex,
+            lpCallIndex,
+            bytes32(bytes(sourceChain).length),
+            bytes(sourceChain),
+            bytes32(bytes(sourceAddress).length),
+            bytes(sourceAddress),
+            payload
+        );
+
         transactorContract.transactThroughSignedMultilocation(
             // dest chain
             _centrifugeParachainMultilocation(),
@@ -139,7 +153,7 @@ contract AxelarXCMRelayer is Auth, AxelarExecutableLike {
             // the weight limit for the transact call execution
             xcmWeightInfo.transactWeightAtMost,
             // the call to be executed on the cent chain
-            payload,
+            payloadWithLocation,
             // the CFG we offer to pay for execution fees of the whole XCM
             xcmWeightInfo.feeAmount,
             // overall XCM weight, the total weight the XCM-transactor extrinsic can use.
