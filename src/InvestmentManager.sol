@@ -326,9 +326,9 @@ contract InvestmentManager is Auth {
         address lPool = pools[poolId].tranches[trancheId].liquidityPools[_currency];
         require(lPool != address(0), "InvestmentManager/tranche-does-not-exist");
 
-        LPValues storage values = orderbook[_recepient][lPool];
-        values.maxDeposit = values.maxDeposit + currencyInvested;
-        values.maxMint = values.maxMint + tokensPayout;
+        LPValues storage lpValues = orderbook[_recepient][lPool];
+        lpValues.maxDeposit = lpValues.maxDeposit + currencyInvested;
+        lpValues.maxMint = lpValues.maxMint + tokensPayout;
 
         LiquidityPoolLike(lPool).mint(address(escrow), tokensPayout); // mint to escrow. Recepeint can claim by calling withdraw / redeem
     }
@@ -346,9 +346,9 @@ contract InvestmentManager is Auth {
         address lPool = pools[poolId].tranches[trancheId].liquidityPools[_currency];
         require(lPool != address(0), "InvestmentManager/tranche-does-not-exist");
 
-        LPValues storage values = orderbook[_recepient][lPool];
-        values.maxWithdraw = values.maxWithdraw + currencyPayout;
-        values.maxRedeem = values.maxRedeem + trancheTokensPayout;
+        LPValues storage lpValues = orderbook[_recepient][lPool];
+        lpValues.maxWithdraw = lpValues.maxWithdraw + currencyPayout;
+        lpValues.maxRedeem = lpValues.maxRedeem + trancheTokensPayout;
 
         LiquidityPoolLike(lPool).burn(address(escrow), trancheTokensPayout); // burned redeemed tokens from escrow
     }
@@ -658,32 +658,32 @@ contract InvestmentManager is Auth {
     function _decreaseDepositLimits(address user, address liquidityPool, uint128 _currency, uint128 trancheTokens)
         internal
     {
-        LPValues storage values = orderbook[user][liquidityPool];
-        if (values.maxDeposit < _currency) {
-            values.maxDeposit = 0;
+        LPValues storage lpValues = orderbook[user][liquidityPool];
+        if (lpValues.maxDeposit < _currency) {
+            lpValues.maxDeposit = 0;
         } else {
-            values.maxDeposit = values.maxDeposit - _currency;
+            lpValues.maxDeposit = lpValues.maxDeposit - _currency;
         }
-        if (values.maxMint < trancheTokens) {
-            values.maxMint = 0;
+        if (lpValues.maxMint < trancheTokens) {
+            lpValues.maxMint = 0;
         } else {
-            values.maxMint = values.maxMint - trancheTokens;
+            lpValues.maxMint = lpValues.maxMint - trancheTokens;
         }
     }
 
     function _decreaseRedemptionLimits(address user, address liquidityPool, uint128 _currency, uint128 trancheTokens)
         internal
     {
-        LPValues storage values = orderbook[user][liquidityPool];
-        if (values.maxWithdraw < _currency) {
-            values.maxWithdraw = 0;
+        LPValues storage lpValues = orderbook[user][liquidityPool];
+        if (lpValues.maxWithdraw < _currency) {
+            lpValues.maxWithdraw = 0;
         } else {
-            values.maxWithdraw = values.maxWithdraw - _currency;
+            lpValues.maxWithdraw = lpValues.maxWithdraw - _currency;
         }
-        if (values.maxRedeem < trancheTokens) {
-            values.maxRedeem = 0;
+        if (lpValues.maxRedeem < trancheTokens) {
+            lpValues.maxRedeem = 0;
         } else {
-            values.maxRedeem = values.maxRedeem - trancheTokens;
+            lpValues.maxRedeem = lpValues.maxRedeem - trancheTokens;
         }
     }
 
