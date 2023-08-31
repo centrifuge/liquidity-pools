@@ -97,7 +97,7 @@ struct LPValues {
 contract InvestmentManager is Auth {
     using Math for uint128;
 
-    uint8 public constant PRICE_DECIMALS = 27; // Prices are fixed-point integers with 27 decimals
+    uint8 public constant PRICE_DECIMALS = 18; // Prices are fixed-point integers with 18 decimals
 
     mapping(uint64 => Pool) public pools; // Mapping of all deployed Centrifuge pools
     mapping(address => mapping(address => LPValues)) public orderbook; // Liquidity pool orders & limits per user
