@@ -810,7 +810,7 @@ contract MessagesTest is Test {
         assertEq(Messages.formatCancelInvestOrder(poolId, trancheId, investor, currency), expectedHex);
 
         (uint64 decodedPoolId, bytes16 decodedTrancheId, address decodedInvestor, uint128 decodedCurrency) =
-            Messages.parseCancelInvestOrder(expectedHex.ref(0));
+            Messages.parseCancelInvestOrder(expectedHex);
         assertEq(uint256(decodedPoolId), poolId);
         assertEq(decodedTrancheId, trancheId);
         assertEq(decodedInvestor, address(bytes20(investor)));
@@ -822,7 +822,7 @@ contract MessagesTest is Test {
     {
         bytes memory _message = Messages.formatCancelInvestOrder(poolId, trancheId, investor, currency);
         (uint64 decodedPoolId, bytes16 decodedTrancheId, address decodedInvestor, uint128 decodedCurrency) =
-            Messages.parseCancelInvestOrder(_message.ref(0));
+            Messages.parseCancelInvestOrder(_message);
 
         assertEq(uint256(decodedPoolId), uint256(poolId));
         assertEq(decodedTrancheId, trancheId);
@@ -841,7 +841,7 @@ contract MessagesTest is Test {
         assertEq(Messages.formatCancelRedeemOrder(poolId, trancheId, investor, currency), expectedHex);
 
         (uint64 decodedPoolId, bytes16 decodedTrancheId, address decodedInvestor, uint128 decodedCurrency) =
-            Messages.parseCancelRedeemOrder(expectedHex.ref(0));
+            Messages.parseCancelRedeemOrder(expectedHex);
         assertEq(uint256(decodedPoolId), poolId);
         assertEq(decodedTrancheId, trancheId);
         assertEq(decodedInvestor, address(bytes20(investor)));
@@ -853,7 +853,7 @@ contract MessagesTest is Test {
     {
         bytes memory _message = Messages.formatCancelRedeemOrder(poolId, trancheId, investor, currency);
         (uint64 decodedPoolId, bytes16 decodedTrancheId, address decodedInvestor, uint128 decodedCurrency) =
-            Messages.parseCancelRedeemOrder(_message.ref(0));
+            Messages.parseCancelRedeemOrder(_message);
 
         assertEq(uint256(decodedPoolId), uint256(poolId));
         assertEq(decodedTrancheId, trancheId);
