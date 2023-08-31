@@ -759,7 +759,7 @@ contract MessagesTest is Test {
         string memory name = "Some Name";
         string memory symbol = "SYMBOL";
         bytes memory expectedHex =
-            hex"160000000000000001811acd5b3f17c06841c7e41e9e04cb1b536f6d65204e616d65000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000053594d424f4c0000000000000000000000000000000000000000000000000000";
+            hex"170000000000000001811acd5b3f17c06841c7e41e9e04cb1b536f6d65204e616d65000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000053594d424f4c0000000000000000000000000000000000000000000000000000";
 
         assertEq(Messages.formatUpdateTrancheTokenMetadata(poolId, trancheId, name, symbol), expectedHex);
 
@@ -797,6 +797,68 @@ contract MessagesTest is Test {
         // this intended behaviour.
         assertEq(decodedTokenName, bytes32ToString(stringToBytes32(tokenName)));
         assertEq(decodedTokenSymbol, bytes32ToString(stringToBytes32(tokenSymbol)));
+    }
+
+    function testCancelInvestOrder() public {
+        uint64 poolId = 12378532;
+        bytes16 trancheId = bytes16(hex"811acd5b3f17c06841c7e41e9e04cb1b");
+        bytes32 investor = bytes32(0x1231231231231231231231231231231231231231000000000000000000000000);
+        uint128 currency = 246803579;
+        bytes memory expectedHex =
+            hex"130000000000bce1a4811acd5b3f17c06841c7e41e9e04cb1b12312312312312312312312312312312312312310000000000000000000000000000000000000000000000000eb5ec7b";
+
+        assertEq(Messages.formatCancelInvestOrder(poolId, trancheId, investor, currency), expectedHex);
+
+        (uint64 decodedPoolId, bytes16 decodedTrancheId, address decodedInvestor, uint128 decodedCurrency) =
+            Messages.parseCancelInvestOrder(expectedHex.ref(0));
+        assertEq(uint256(decodedPoolId), poolId);
+        assertEq(decodedTrancheId, trancheId);
+        assertEq(decodedInvestor, address(bytes20(investor)));
+        assertEq(decodedCurrency, currency);
+    }
+
+    function testCancelInvestOrderEquivalence(uint64 poolId, bytes16 trancheId, bytes32 investor, uint128 currency)
+        public
+    {
+        bytes memory _message = Messages.formatCancelInvestOrder(poolId, trancheId, investor, currency);
+        (uint64 decodedPoolId, bytes16 decodedTrancheId, address decodedInvestor, uint128 decodedCurrency) =
+            Messages.parseCancelInvestOrder(_message.ref(0));
+
+        assertEq(uint256(decodedPoolId), uint256(poolId));
+        assertEq(decodedTrancheId, trancheId);
+        assertEq(decodedInvestor, address(bytes20(investor)));
+        assertEq(decodedCurrency, currency);
+    }
+
+    function testCancelRedeemOrder() public {
+        uint64 poolId = 12378532;
+        bytes16 trancheId = bytes16(hex"811acd5b3f17c06841c7e41e9e04cb1b");
+        bytes32 investor = bytes32(0x1231231231231231231231231231231231231231000000000000000000000000);
+        uint128 currency = 246803579;
+        bytes memory expectedHex =
+            hex"140000000000bce1a4811acd5b3f17c06841c7e41e9e04cb1b12312312312312312312312312312312312312310000000000000000000000000000000000000000000000000eb5ec7b";
+
+        assertEq(Messages.formatCancelRedeemOrder(poolId, trancheId, investor, currency), expectedHex);
+
+        (uint64 decodedPoolId, bytes16 decodedTrancheId, address decodedInvestor, uint128 decodedCurrency) =
+            Messages.parseCancelRedeemOrder(expectedHex.ref(0));
+        assertEq(uint256(decodedPoolId), poolId);
+        assertEq(decodedTrancheId, trancheId);
+        assertEq(decodedInvestor, address(bytes20(investor)));
+        assertEq(decodedCurrency, currency);
+    }
+
+    function testCancelRedeemOrderEquivalence(uint64 poolId, bytes16 trancheId, bytes32 investor, uint128 currency)
+        public
+    {
+        bytes memory _message = Messages.formatCancelRedeemOrder(poolId, trancheId, investor, currency);
+        (uint64 decodedPoolId, bytes16 decodedTrancheId, address decodedInvestor, uint128 decodedCurrency) =
+            Messages.parseCancelRedeemOrder(_message.ref(0));
+
+        assertEq(uint256(decodedPoolId), uint256(poolId));
+        assertEq(decodedTrancheId, trancheId);
+        assertEq(decodedInvestor, address(bytes20(investor)));
+        assertEq(decodedCurrency, currency);
     }
 
     function testFormatDomainCentrifuge() public {
