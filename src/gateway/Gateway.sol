@@ -2,7 +2,6 @@
 pragma solidity ^0.8.18;
 pragma abicoder v2;
 
-import {TypedMemView} from "memview-sol/TypedMemView.sol";
 import {Messages} from "./Messages.sol";
 import "../util/Auth.sol";
 
@@ -78,11 +77,6 @@ interface RootLike {
 }
 
 contract Gateway is Auth {
-    using TypedMemView for bytes;
-    // why bytes29? - https://github.com/summa-tx/memview-sol#why-bytes29
-    using TypedMemView for bytes29;
-    using Messages for bytes29;
-
     RootLike public immutable root;
     InvestmentManagerLike public immutable investmentManager;
     TokenManagerLike public immutable tokenManager;
@@ -229,9 +223,7 @@ contract Gateway is Auth {
     }
 
     // --- Incoming ---
-    function handle(bytes memory _message) external onlyIncomingRouter pauseable {
-        bytes29 _msg = _message.ref(0);
-
+    function handle(bytes memory _msg) external onlyIncomingRouter pauseable {
         if (Messages.isAddCurrency(_msg)) {
             (uint128 currency, address currencyAddress) = Messages.parseAddCurrency(_msg);
             tokenManager.addCurrency(currency, currencyAddress);
