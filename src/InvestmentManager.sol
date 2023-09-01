@@ -599,11 +599,7 @@ contract InvestmentManager is Auth {
         return pools[poolId].allowedCurrencies[currency];
     }
 
-    function calculateDepositPrice(address user, address liquidityPool)
-        public
-        view
-        returns (uint128 userTrancheTokenPrice)
-    {
+    function calculateDepositPrice(address user, address liquidityPool) public view returns (uint128 depositPrice) {
         LPValues storage lpValues = orderbook[user][liquidityPool];
         if (lpValues.maxMint == 0) {
             return 0;
@@ -613,15 +609,11 @@ contract InvestmentManager is Auth {
         uint128 maxDepositInPoolDecimals = _toPoolDecimals(lpValues.maxDeposit, currencyDecimals, liquidityPool);
         uint128 maxMintInPoolDecimals = _toPoolDecimals(lpValues.maxMint, trancheTokenDecimals, liquidityPool);
 
-        userTrancheTokenPrice =
+        depositPrice =
             _toUint128(maxDepositInPoolDecimals.mulDiv(10 ** poolDecimals, maxMintInPoolDecimals, Math.Rounding.Down));
     }
 
-    function calculateRedeemPrice(address user, address liquidityPool)
-        public
-        view
-        returns (uint128 userTrancheTokenPrice)
-    {
+    function calculateRedeemPrice(address user, address liquidityPool) public view returns (uint128 redeemPrice) {
         LPValues storage lpValues = orderbook[user][liquidityPool];
         if (lpValues.maxRedeem == 0) {
             return 0;
@@ -631,7 +623,7 @@ contract InvestmentManager is Auth {
         uint128 maxWithdrawInPoolDecimals = _toPoolDecimals(lpValues.maxWithdraw, currencyDecimals, liquidityPool);
         uint128 maxRedeemInPoolDecimals = _toPoolDecimals(lpValues.maxRedeem, trancheTokenDecimals, liquidityPool);
 
-        userTrancheTokenPrice = _toUint128(
+        redeemPrice = _toUint128(
             maxWithdrawInPoolDecimals.mulDiv(10 ** poolDecimals, maxRedeemInPoolDecimals, Math.Rounding.Down)
         );
     }
