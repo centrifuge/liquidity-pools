@@ -5,11 +5,12 @@ import "./util/Auth.sol";
 
 interface TransferLike {
     function transferFrom(address, address, uint256) external;
+    function transfer(address, uint256) external;
 }
 
 contract UserEscrow is Auth {
-    event Approve(address indexed token, address indexed spender, uint256 amount);
-    event Transfer(address indexed user, uint256 amount);
+    event TransferIn(address indexed token, address indexed recipient, uint256 amount);
+    event TransferOut(address indexed user, uint256 amount);
 
     mapping (address => mapping (address => uint256)) destinations; // map by token and destination
 
@@ -19,16 +20,17 @@ contract UserEscrow is Auth {
     }
 
     // --- Token approvals ---
-    function approve(address token, address destination, uint256 amount) external auth {
+    function transferIn(address token, address destination, uint256 amount) external auth {
         destinations[token][destination] = amount;
-        emit Approve(token, destination, amount);
+        require(TransferLike(token).transferFrom(msg.sender, address(this), amount), "UserEscrow/transfer-failed");
+        emit TransferIn(token, destination, amount);
     }
 
-    function transfer(address token, address destination, uint256 amount) external auth {
+    function transferOut(address token, address destination, uint256 amount) external auth {
         require(destinations[token][destination] >= amount, "UserEscrow/transfer-failed");
-        require(TransferLike(token).transferFrom(address(this), destination, amount), "UserEscrow/transfer-failed");
+        require(TransferLike(token).transfer(destination, amount), "UserEscrow/transfer-failed");
 
         destinations[token][destination] -= amount;
-        emit Transfer(token, destination, amount);
+        emit TransferOut(token, destination, amount);
     }
 }

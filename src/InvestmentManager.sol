@@ -44,6 +44,7 @@ interface TokenManagerLike {
 }
 
 interface ERC20Like {
+    function approve(address token, address spender, uint256 value) external;
     function transferFrom(address from, address to, uint256 amount) external returns (bool);
     function balanceOf(address) external returns (uint256);
     function decimals() external returns (uint8);
@@ -55,6 +56,11 @@ interface ERC2771Like {
 
 interface EscrowLike {
     function approve(address token, address spender, uint256 value) external;
+}
+
+interface UserEscrowLike {
+    function approveAndTransfer(address token, address destination, uint256 amount) external;
+    function transfer(address token, address destination, uint256 amount) external;
 }
 
 interface AuthLike {
@@ -105,6 +111,7 @@ contract InvestmentManager is Auth {
     GatewayLike public gateway;
     TokenManagerLike public tokenManager;
     EscrowLike public immutable escrow;
+    UserEscrowLike public immutable userEscrow;
 
     LiquidityPoolFactoryLike public immutable liquidityPoolFactory;
     TrancheTokenFactoryLike public immutable trancheTokenFactory;
@@ -336,7 +343,7 @@ contract InvestmentManager is Auth {
     function handleExecutedCollectRedeem(
         uint64 poolId,
         bytes16 trancheId,
-        address _recepient,
+        address recipient,
         uint128 currency,
         uint128 currencyPayout,
         uint128 trancheTokensPayout
@@ -346,9 +353,12 @@ contract InvestmentManager is Auth {
         address lPool = pools[poolId].tranches[trancheId].liquidityPools[_currency];
         require(lPool != address(0), "InvestmentManager/tranche-does-not-exist");
 
-        LPValues storage values = orderbook[_recepient][lPool];
+        LPValues storage values = orderbook[recipient][lPool];
         values.maxWithdraw = values.maxWithdraw + currencyPayout;
         values.maxRedeem = values.maxRedeem + trancheTokensPayout;
+
+        ERC20Like(_currency).approve(userEscrow, currencyPayout);
+        userEscrow.approveAndTransfer(address(escrow), recipient, currencyPayout);
 
         LiquidityPoolLike(lPool).burn(address(escrow), trancheTokensPayout); // burned redeemed tokens from escrow
     }
