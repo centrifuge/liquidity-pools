@@ -244,9 +244,7 @@ contract InvestmentManager is Auth {
         lpValues.maxWithdraw = lpValues.maxWithdraw + currencyPayout;
         lpValues.maxRedeem = lpValues.maxRedeem + trancheTokensPayout;
 
-        escrow.approve(_currency, address(userEscrow), currencyPayout);
         userEscrow.transferIn(_currency, address(escrow), recipient, currencyPayout);
-
         LiquidityPoolLike(liquidityPool).burn(address(escrow), trancheTokensPayout); // burned redeemed tokens from escrow
     }
 
