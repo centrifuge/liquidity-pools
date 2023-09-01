@@ -27,7 +27,7 @@ contract UserEscrow is Auth {
     // --- Token approvals ---
     function transferIn(address token, address source, address destination, uint256 amount) external auth {
         destinations[token][destination] = amount;
-        
+
         require(TransferLike(token).transferFrom(source, address(this), amount), "UserEscrow/transfer-failed");
         emit TransferIn(token, source, destination, amount);
     }
