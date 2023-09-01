@@ -38,7 +38,7 @@ struct XcmWeightInfo {
 }
 
 contract AxelarXCMRelayer is Auth, AxelarExecutable {
-    address constant XCM_TRANSACTOR_V2_ADDRESS = 0x000000000000000000000000000000000000080D;
+    address private XCM_TRANSACTOR_V2_ADDRESS = 0x000000000000000000000000000000000000080D;
 
     address public immutable centrifugeChainOrigin;
     mapping(string => string) public axelarEVMRouters;
@@ -86,7 +86,7 @@ contract AxelarXCMRelayer is Auth, AxelarExecutable {
     }
 
     // --- Administration ---
-    function file(bytes32 what, string memory axelarEVMRouterChain, string memory axelarEVMRouterAddress)
+    function file(bytes32 what, string calldata axelarEVMRouterChain, string calldata axelarEVMRouterAddress)
         external
         auth
     {
@@ -114,7 +114,7 @@ contract AxelarXCMRelayer is Auth, AxelarExecutable {
 
     // --- Incoming ---
     // A message that's coming from another EVM chain, headed to the Centrifuge Chain.
-    function _execute(bytes32, string calldata sourceChain, string calldata sourceAddress, bytes calldata payload)
+    function _execute(bytes32, string memory sourceChain, string memory sourceAddress, bytes calldata payload)
         public
         onlyAxelarEVMRouter(sourceChain, sourceAddress)
     {

@@ -71,7 +71,7 @@ contract TrancheToken is ERC20 {
         // Liquiditiy Pools are considered trusted forwarders
         // for the ERC2771Context implementation of the underlying
         // ERC20 token
-        return liquidityPools[forwarder] == true;
+        return liquidityPools[forwarder];
     }
 
     // --- Pricing ---

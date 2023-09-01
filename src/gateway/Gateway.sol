@@ -248,7 +248,7 @@ contract Gateway is Auth {
     }
 
     // --- Incoming ---
-    function handle(bytes memory _msg) external onlyIncomingRouter pauseable {
+    function handle(bytes calldata _msg) external onlyIncomingRouter pauseable {
         if (Messages.isAddCurrency(_msg)) {
             (uint128 currency, address currencyAddress) = Messages.parseAddCurrency(_msg);
             poolManager.addCurrency(currency, currencyAddress);

@@ -52,9 +52,9 @@ interface AuthLike {
 
 /// @dev Centrifuge pools
 struct Pool {
+    bool isActive;
     uint64 poolId;
     uint256 createdAt;
-    bool isActive;
     mapping(bytes16 => Tranche) tranches;
     mapping(address => bool) allowedCurrencies;
 }

@@ -313,7 +313,7 @@ contract LiquidityPool is Auth, ERC20Like {
     // --- Helpers ---
     /// @dev In case of unsuccessful tx, parse the revert message
     function _successCheck(bool success) internal pure {
-        if (success == false) {
+        if (!success) {
             assembly {
                 let ptr := mload(0x40)
                 let size := returndatasize()

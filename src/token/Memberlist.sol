@@ -35,7 +35,8 @@ contract Memberlist is Auth {
     }
 
     function updateMembers(address[] memory users, uint256 validUntil) public auth {
-        for (uint256 i = 0; i < users.length; i++) {
+        uint256 userLength = users.length;
+        for (uint256 i = 0; i < userLength; i++) {
             updateMember(users[i], validUntil);
         }
     }
