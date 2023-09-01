@@ -60,6 +60,7 @@ contract InvestmentManagerTest is Test {
         EscrowLike_(escrow_).rely(address(evmPoolManager));
         mockXcmRouter.file("gateway", address(gateway));
         evmInvestmentManager.rely(address(gateway));
+        evmInvestmentManager.rely(address(evmPoolManager));
         Escrow(escrow_).rely(address(gateway));
     }
 

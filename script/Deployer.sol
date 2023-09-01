@@ -62,6 +62,7 @@ contract Deployer is Script {
         gateway.rely(address(pauseAdmin));
         gateway.rely(address(delayedAdmin));
         investmentManager.rely(address(root));
+        investmentManager.rely(address(poolManager));
         poolManager.rely(address(root));
         RouterLike(router).rely(address(root));
         Escrow(address(escrow)).rely(address(root));

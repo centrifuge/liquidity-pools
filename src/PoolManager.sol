@@ -7,6 +7,7 @@ import {TrancheTokenLike} from "./token/Tranche.sol";
 import {MemberlistLike} from "./token/Memberlist.sol";
 import "./token/ERC20Like.sol";
 import "./util/Auth.sol";
+import "forge-std/console.sol";
 
 interface GatewayLike {
     function transferTrancheTokensToCentrifuge(
@@ -138,7 +139,7 @@ contract PoolManager is Auth {
         bytes32 destinationAddress,
         uint128 amount
     ) public {
-        TrancheTokenLike trancheToken = TrancheTokenLike(investmentManager.getTrancheToken(poolId, trancheId));
+        TrancheTokenLike trancheToken = TrancheTokenLike(getTrancheToken(poolId, trancheId));
         require(address(trancheToken) != address(0), "PoolManager/unknown-token");
 
         require(trancheToken.balanceOf(msg.sender) >= amount, "PoolManager/insufficient-balance");
@@ -154,7 +155,7 @@ contract PoolManager is Auth {
         address destinationAddress,
         uint128 amount
     ) public {
-        TrancheTokenLike trancheToken = TrancheTokenLike(investmentManager.getTrancheToken(poolId, trancheId));
+        TrancheTokenLike trancheToken = TrancheTokenLike(getTrancheToken(poolId, trancheId));
         require(address(trancheToken) != address(0), "PoolManager/unknown-token");
 
         require(trancheToken.balanceOf(msg.sender) >= amount, "PoolManager/insufficient-balance");
@@ -218,7 +219,7 @@ contract PoolManager is Auth {
     }
 
     function updateTrancheTokenPrice(uint64 poolId, bytes16 trancheId, uint128 price) public onlyGateway {
-        TrancheTokenLike trancheToken = TrancheTokenLike(investmentManager.getTrancheToken(poolId, trancheId));
+        TrancheTokenLike trancheToken = TrancheTokenLike(getTrancheToken(poolId, trancheId));
         require(address(trancheToken) != address(0), "PoolManager/unknown-token");
 
         trancheToken.updatePrice(price);
@@ -230,7 +231,7 @@ contract PoolManager is Auth {
         string memory tokenName,
         string memory tokenSymbol
     ) public onlyGateway {
-        TrancheTokenLike trancheToken = TrancheTokenLike(investmentManager.getTrancheToken(poolId, trancheId));
+        TrancheTokenLike trancheToken = TrancheTokenLike(getTrancheToken(poolId, trancheId));
         require(address(trancheToken) != address(0), "PoolManager/unknown-token");
 
         trancheToken.file("name", tokenName);
@@ -238,7 +239,7 @@ contract PoolManager is Auth {
     }
 
     function updateMember(uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) public onlyGateway {
-        TrancheTokenLike trancheToken = TrancheTokenLike(investmentManager.getTrancheToken(poolId, trancheId));
+        TrancheTokenLike trancheToken = TrancheTokenLike(getTrancheToken(poolId, trancheId));
         require(address(trancheToken) != address(0), "PoolManager/unknown-token");
 
         MemberlistLike memberlist = MemberlistLike(trancheToken.memberlist());
@@ -281,7 +282,7 @@ contract PoolManager is Auth {
         public
         onlyGateway
     {
-        TrancheTokenLike trancheToken = TrancheTokenLike(investmentManager.getTrancheToken(poolId, trancheId));
+        TrancheTokenLike trancheToken = TrancheTokenLike(getTrancheToken(poolId, trancheId));
         require(address(trancheToken) != address(0), "PoolManager/unknown-token");
 
         require(trancheToken.hasMember(destinationAddress), "PoolManager/not-a-member");
@@ -320,11 +321,12 @@ contract PoolManager is Auth {
         require(liquidityPool == address(0), "PoolManager/liquidityPool-already-deployed");
         require(pools[poolId].createdAt > 0, "PoolManager/pool-does-not-exist");
 
-        liquidityPool =
-            liquidityPoolFactory.newLiquidityPool(poolId, trancheId, _currency, tranche.token, address(this));
+        liquidityPool = liquidityPoolFactory.newLiquidityPool(
+            poolId, trancheId, _currency, tranche.token, address(investmentManager)
+        );
 
         tranche.liquidityPools[_currency] = liquidityPool;
-        wards[liquidityPool] = 1;
+        AuthLike(address(investmentManager)).rely(liquidityPool);
 
         // enable LP to take the liquidity pool tokens out of escrow in case if investments
         AuthLike(tranche.token).rely(liquidityPool); // add liquidityPool as ward on tranche Token

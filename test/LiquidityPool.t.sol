@@ -75,6 +75,7 @@ contract LiquidityPoolTest is Test {
         escrow.rely(address(evmPoolManager));
         mockXcmRouter.file("gateway", address(gateway));
         evmInvestmentManager.rely(address(gateway));
+        evmInvestmentManager.rely(address(evmPoolManager));
         escrow.rely(address(gateway));
 
         self = address(this);

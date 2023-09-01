@@ -56,6 +56,7 @@ contract PoolManagerTest is Test {
         EscrowLike_(escrow_).rely(address(evmPoolManager));
         mockXcmRouter.file("gateway", address(gateway));
         evmInvestmentManager.rely(address(gateway));
+        evmInvestmentManager.rely(address(evmPoolManager));
         Escrow(escrow_).rely(address(gateway));
     }
 
@@ -368,6 +369,8 @@ contract PoolManagerTest is Test {
     ) public {
         vm.assume(decimals <= 18);
         vm.assume(currency > 0);
+        vm.assume(poolId > 0);
+        vm.assume(trancheId > 0);
         homePools.addPool(poolId); // add pool
         homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price); // add tranche
 
