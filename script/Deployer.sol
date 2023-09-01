@@ -7,6 +7,7 @@ import {Gateway, InvestmentManagerLike} from "src/gateway/Gateway.sol";
 import {InvestmentManager} from "src/InvestmentManager.sol";
 import {TokenManager} from "src/TokenManager.sol";
 import {Escrow} from "src/Escrow.sol";
+import {UserEscrow} from "src/UserEscrow.sol";
 import {PauseAdmin} from "src/admins/PauseAdmin.sol";
 import {DelayedAdmin} from "src/admins/DelayedAdmin.sol";
 import {LiquidityPoolFactory, TrancheTokenFactory} from "src/util/Factory.sol";
@@ -27,16 +28,19 @@ contract Deployer is Script {
     InvestmentManager public investmentManager;
     TokenManager public tokenManager;
     Escrow public escrow;
+    UserEscrow public userEscrow;
     PauseAdmin public pauseAdmin;
     DelayedAdmin public delayedAdmin;
     Gateway public gateway;
 
     function deployInvestmentManager() public {
         escrow = new Escrow();
+        userEscrow = new UserEscrow();
         root = new Root(address(escrow), delay);
         address liquidityPoolFactory = address(new LiquidityPoolFactory(address(root)));
         address trancheTokenFactory = address(new TrancheTokenFactory(address(root)));
-        investmentManager = new InvestmentManager(address(escrow), liquidityPoolFactory, trancheTokenFactory);
+        investmentManager =
+            new InvestmentManager(address(escrow), address(userEscrow), liquidityPoolFactory, trancheTokenFactory);
 
         LiquidityPoolFactory(liquidityPoolFactory).rely(address(investmentManager));
         TrancheTokenFactory(trancheTokenFactory).rely(address(investmentManager));
@@ -67,6 +71,8 @@ contract Deployer is Script {
         Escrow(address(escrow)).rely(address(root));
         Escrow(address(escrow)).rely(address(investmentManager));
         Escrow(address(escrow)).rely(address(tokenManager));
+        UserEscrow(address(userEscrow)).rely(address(root));
+        UserEscrow(address(userEscrow)).rely(address(investmentManager));
     }
 
     function giveAdminAccess() public {

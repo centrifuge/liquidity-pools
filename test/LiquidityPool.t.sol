@@ -7,6 +7,7 @@ import {TokenManager} from "../src/TokenManager.sol";
 import {Gateway} from "../src/gateway/Gateway.sol";
 import {Root} from "../src/Root.sol";
 import {Escrow} from "../src/Escrow.sol";
+import {UserEscrow} from "../src/UserEscrow.sol";
 import {LiquidityPoolFactory, TrancheTokenFactory} from "../src/util//Factory.sol";
 import {LiquidityPool, TrancheTokenLike} from "../src/LiquidityPool.sol";
 import {ERC20} from "../src/token/ERC20.sol";
@@ -44,6 +45,7 @@ contract LiquidityPoolTest is Test {
     MockHomeLiquidityPools homePools;
     MockXcmRouter mockXcmRouter;
     Escrow escrow;
+    UserEscrow userEscrow;
     ERC20 erc20;
 
     address self;
@@ -51,13 +53,14 @@ contract LiquidityPoolTest is Test {
     function setUp() public {
         vm.chainId(1);
         escrow = new Escrow();
+        userEscrow = new UserEscrow();
         root = new Root(address(escrow), 48 hours);
         erc20 = newErc20("X's Dollar", "USDX", 6);
         LiquidityPoolFactory liquidityPoolFactory_ = new LiquidityPoolFactory(address(root));
         TrancheTokenFactory trancheTokenFactory_ = new TrancheTokenFactory(address(root));
 
         evmInvestmentManager =
-            new InvestmentManager(address(escrow), address(liquidityPoolFactory_), address(trancheTokenFactory_));
+        new InvestmentManager(address(escrow), address(userEscrow), address(liquidityPoolFactory_), address(trancheTokenFactory_));
         liquidityPoolFactory_.rely(address(evmInvestmentManager));
         trancheTokenFactory_.rely(address(evmInvestmentManager));
         evmTokenManager = new TokenManager(address(escrow));

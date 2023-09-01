@@ -12,7 +12,7 @@ contract UserEscrow is Auth {
     event TransferIn(address indexed token, address indexed recipient, uint256 amount);
     event TransferOut(address indexed token, address indexed recipient, uint256 amount);
 
-    mapping (address => mapping (address => uint256)) destinations; // map by token and destination
+    mapping(address => mapping(address => uint256)) destinations; // map by token and destination
 
     constructor() {
         wards[msg.sender] = 1;
@@ -33,5 +33,4 @@ contract UserEscrow is Auth {
         destinations[token][destination] -= amount;
         emit TransferOut(token, destination, amount);
     }
-
 }

@@ -61,8 +61,8 @@ interface EscrowLike {
 }
 
 interface UserEscrowLike {
-    function approveAndTransfer(address token, address destination, uint256 amount) external;
-    function transfer(address token, address destination, uint256 amount) external;
+    function transferIn(address token, address destination, uint256 amount) external;
+    function transferOut(address token, address destination, uint256 amount) external;
 }
 
 interface AuthLike {
@@ -107,16 +107,16 @@ contract InvestmentManager is Auth {
 
     uint8 public constant PRICE_DECIMALS = 27; // Prices are fixed-point integers with 27 decimals
 
-    mapping(uint64 => Pool) public pools; // Mapping of all deployed Centrifuge pools
-    mapping(address => mapping(address => LPValues)) public orderbook; // Liquidity pool orders & limits per user
+    EscrowLike public immutable escrow;
+    UserEscrowLike public immutable userEscrow;
+    LiquidityPoolFactoryLike public immutable liquidityPoolFactory;
+    TrancheTokenFactoryLike public immutable trancheTokenFactory;
 
     GatewayLike public gateway;
     TokenManagerLike public tokenManager;
-    EscrowLike public immutable escrow;
-    UserEscrowLike public immutable userEscrow;
 
-    LiquidityPoolFactoryLike public immutable liquidityPoolFactory;
-    TrancheTokenFactoryLike public immutable trancheTokenFactory;
+    mapping(uint64 => Pool) public pools; // Mapping of all deployed Centrifuge pools
+    mapping(address => mapping(address => LPValues)) public orderbook; // Liquidity pool orders & limits per user
 
     // --- Events ---
     event File(bytes32 indexed what, address data);
@@ -129,8 +129,9 @@ contract InvestmentManager is Auth {
     event LiquidityPoolDeployed(uint64 indexed poolId, bytes16 indexed trancheId, address indexed liquidityPoool);
     event TrancheTokenDeployed(uint64 indexed poolId, bytes16 indexed trancheId);
 
-    constructor(address escrow_, address liquidityPoolFactory_, address trancheTokenFactory_) {
+    constructor(address escrow_, address userEscrow_, address liquidityPoolFactory_, address trancheTokenFactory_) {
         escrow = EscrowLike(escrow_);
+        userEscrow = UserEscrowLike(userEscrow_);
         liquidityPoolFactory = LiquidityPoolFactoryLike(liquidityPoolFactory_);
         trancheTokenFactory = TrancheTokenFactoryLike(trancheTokenFactory_);
 
@@ -159,7 +160,6 @@ contract InvestmentManager is Auth {
     /// This function automatically closed all the outstading investment orders for the user.
     function requestRedeem(uint256 trancheTokenAmount, address user) public auth {
         address liquidityPool = msg.sender;
-        LPValues storage lpValues = orderbook[user][liquidityPool];
         LiquidityPoolLike lPool = LiquidityPoolLike(liquidityPool);
         uint128 _trancheTokenAmount = _toUint128(trancheTokenAmount);
 
@@ -179,25 +179,13 @@ contract InvestmentManager is Auth {
             return;
         }
 
-        if (lpValues.maxMint >= _trancheTokenAmount) {
-            // case: user has unclaimed trancheTokens in escrow -> more than redemption request
-            uint128 userTrancheTokenPrice = calculateDepositPrice(user, liquidityPool);
+        // transfer the differene between required and locked tranche tokens from user to escrow
+        require(lPool.balanceOf(user) >= _trancheTokenAmount, "InvestmentManager/insufficient-tranche-token-balance");
+        require(
+            lPool.transferFrom(user, address(escrow), _trancheTokenAmount),
+            "InvestmentManager/tranche-token-transfer-failed"
+        );
 
-            uint128 currencyAmount =
-                _toUint128(_trancheTokenAmount.mulDiv(userTrancheTokenPrice, 10 ** PRICE_DECIMALS, Math.Rounding.Down));
-
-            _decreaseDepositLimits(user, liquidityPool, currencyAmount, _trancheTokenAmount);
-        } else {
-            uint256 transferAmount = _trancheTokenAmount - lpValues.maxMint;
-            lpValues.maxDeposit = 0;
-            lpValues.maxMint = 0;
-            // transfer the differene between required and locked tranche tokens from user to escrow
-            require(lPool.balanceOf(user) >= transferAmount, "InvestmentManager/insufficient-tranche-token-balance");
-            require(
-                lPool.transferFrom(user, address(escrow), transferAmount),
-                "InvestmentManager/tranche-token-transfer-failed"
-            );
-        }
         gateway.increaseRedeemOrder(
             lPool.poolId(),
             lPool.trancheId(),
@@ -213,7 +201,6 @@ contract InvestmentManager is Auth {
     /// This function automatically closed all the outstading redemption orders for the user.
     function requestDeposit(uint256 currencyAmount, address user) public auth {
         address liquidityPool = msg.sender;
-        LPValues storage lpValues = orderbook[user][liquidityPool];
         LiquidityPoolLike lPool = LiquidityPoolLike(liquidityPool);
         address currency = lPool.asset();
         uint128 _currencyAmount = _toUint128(currencyAmount);
@@ -233,23 +220,14 @@ contract InvestmentManager is Auth {
             );
             return;
         }
-        if (lpValues.maxWithdraw >= _currencyAmount) {
-            // case: user has some claimable funds in escrow -> funds > depositRequest _currencyAmount
-            uint128 userTrancheTokenPrice = calculateRedeemPrice(user, liquidityPool);
-            uint128 trancheTokens = _currencyAmount / userTrancheTokenPrice;
-            _decreaseRedemptionLimits(user, liquidityPool, _currencyAmount, trancheTokens);
-        } else {
-            uint128 transferAmount = _currencyAmount - lpValues.maxWithdraw;
-            lpValues.maxWithdraw = 0;
-            lpValues.maxRedeem = 0;
 
-            // transfer the differene between required and locked currency from user to escrow
-            require(ERC20Like(currency).balanceOf(user) >= transferAmount, "InvestmentManager/insufficient-balance");
-            require(
-                ERC20Like(currency).transferFrom(user, address(escrow), transferAmount),
-                "InvestmentManager/currency-transfer-failed"
-            );
-        }
+        // transfer the differene between required and locked currency from user to escrow
+        require(ERC20Like(currency).balanceOf(user) >= _currencyAmount, "InvestmentManager/insufficient-balance");
+        require(
+            ERC20Like(currency).transferFrom(user, address(escrow), _currencyAmount),
+            "InvestmentManager/currency-transfer-failed"
+        );
+
         gateway.increaseInvestOrder(
             lPool.poolId(), lPool.trancheId(), user, tokenManager.currencyAddressToId(lPool.asset()), _currencyAmount
         );
@@ -358,8 +336,8 @@ contract InvestmentManager is Auth {
         values.maxWithdraw = values.maxWithdraw + currencyPayout;
         values.maxRedeem = values.maxRedeem + trancheTokensPayout;
 
-        ERC20Like(_currency).approve(userEscrow, currencyPayout);
-        userEscrow.approveAndTransfer(address(escrow), recipient, currencyPayout);
+        escrow.approve(_currency, address(this), currencyPayout);
+        userEscrow.transferIn(address(escrow), recipient, currencyPayout);
 
         LiquidityPoolLike(lPool).burn(address(escrow), trancheTokensPayout); // burned redeemed tokens from escrow
     }
@@ -561,10 +539,9 @@ contract InvestmentManager is Auth {
         }
 
         _decreaseRedemptionLimits(user, liquidityPool, _currencyAmount, _trancheTokenAmount); // decrease the possible deposit limits
-        require(
-            ERC20Like(lPool.asset()).transferFrom(address(escrow), receiver, _currencyAmount),
-            "InvestmentManager/shares-transfer-failed"
-        );
+
+        userEscrow.transferOut(lPool.asset(), receiver, _currencyAmount);
+
         emit RedemptionProcessed(liquidityPool, user, _trancheTokenAmount);
     }
 

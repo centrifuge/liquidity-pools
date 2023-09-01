@@ -7,6 +7,7 @@ import {InvestmentManager, Tranche} from "../src/InvestmentManager.sol";
 import {TokenManager} from "../src/TokenManager.sol";
 import {Gateway} from "../src/gateway/Gateway.sol";
 import {Escrow} from "../src/Escrow.sol";
+import {UserEscrow} from "../src/UserEscrow.sol";
 import {LiquidityPoolFactory, TrancheTokenFactory} from "../src/util/Factory.sol";
 import {LiquidityPool} from "../src/LiquidityPool.sol";
 import {TrancheToken} from "../src/token/Tranche.sol";
@@ -38,12 +39,13 @@ contract InvestmentManagerTest is Test {
     function setUp() public {
         vm.chainId(1);
         address escrow_ = address(new Escrow());
+        address userEscrow_ = address(new UserEscrow());
         address root_ = address(new Root(address(escrow_), 48 hours));
         LiquidityPoolFactory liquidityPoolFactory_ = new LiquidityPoolFactory(root_);
         TrancheTokenFactory trancheTokenFactory_ = new TrancheTokenFactory(root_);
 
         evmInvestmentManager =
-            new InvestmentManager(escrow_, address(liquidityPoolFactory_), address(trancheTokenFactory_));
+            new InvestmentManager(escrow_, userEscrow_, address(liquidityPoolFactory_), address(trancheTokenFactory_));
         liquidityPoolFactory_.rely(address(evmInvestmentManager));
         trancheTokenFactory_.rely(address(evmInvestmentManager));
         evmTokenManager = new TokenManager(escrow_);

@@ -7,6 +7,7 @@ import {TokenManager} from "src/TokenManager.sol";
 import {Gateway} from "src/gateway/Gateway.sol";
 import {Root} from "src/Root.sol";
 import {Escrow} from "src/Escrow.sol";
+import {UserEscrow} from "src/UserEscrow.sol";
 import {PauseAdmin} from "src/admins/PauseAdmin.sol";
 import {DelayedAdmin} from "src/admins/DelayedAdmin.sol";
 import {LiquidityPoolFactory, TrancheTokenFactory} from "src/util/Factory.sol";
@@ -36,12 +37,13 @@ contract AdminTest is Test {
     function setUp() public {
         timelock = 48 hours;
         address escrow_ = address(new Escrow());
+        address userEscrow_ = address(new UserEscrow());
         root = new Root(address(escrow_), 48 hours);
         LiquidityPoolFactory liquidityPoolFactory_ = new LiquidityPoolFactory(address(root));
         TrancheTokenFactory trancheTokenFactory_ = new TrancheTokenFactory(address(root));
 
         evmInvestmentManager =
-            new InvestmentManager(escrow_, address(liquidityPoolFactory_), address(trancheTokenFactory_));
+            new InvestmentManager(escrow_, userEscrow_, address(liquidityPoolFactory_), address(trancheTokenFactory_));
         liquidityPoolFactory_.rely(address(evmInvestmentManager));
         trancheTokenFactory_.rely(address(evmInvestmentManager));
         evmTokenManager = new TokenManager(escrow_);
