@@ -658,10 +658,10 @@ contract LiquidityPoolTest is TestSetup {
         LiquidityPool lPool = LiquidityPool(lPool_);
 
         vm.expectRevert(bytes("InvestmentManager/not-a-member"));
-        lPool.collectInvest(address(this));
+        lPool.collectDeposit(address(this));
 
         homePools.updateMember(poolId, trancheId, address(this), validUntil);
-        lPool.collectInvest(address(this));
+        lPool.collectDeposit(address(this));
     }
 
     function testCollectRedeem(

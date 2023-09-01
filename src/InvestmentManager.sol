@@ -189,7 +189,7 @@ contract InvestmentManager is Auth {
         );
     }
 
-    function collectInvest(uint64 poolId, bytes16 trancheId, address user, address currency) public auth {
+    function collectDeposit(uint64 poolId, bytes16 trancheId, address user, address currency) public auth {
         LiquidityPoolLike lPool = LiquidityPoolLike(msg.sender);
         require(lPool.hasMember(user), "InvestmentManager/not-a-member");
         require(poolManager.isAllowedAsPoolCurrency(poolId, currency), "InvestmentManager/currency-not-supported");

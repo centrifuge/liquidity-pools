@@ -26,6 +26,10 @@ contract TrancheToken is ERC20 {
 
     // --- Events ---
     event File(bytes32 indexed what, address data);
+    event AddLiquidityPool(address indexed liquidityPool);
+    event RemoveLiquidityPool(address indexed liquidityPool);
+    event SetPrice(uint128 price, uint256 priceAge);
+    event UpdatePrice(uint128 price);
 
     constructor(uint8 decimals_) ERC20(decimals_) {}
 
@@ -43,10 +47,12 @@ contract TrancheToken is ERC20 {
 
     function addLiquidityPool(address liquidityPool) public auth {
         liquidityPools[liquidityPool] = true;
+        emit AddLiquidityPool(liquidityPool);
     }
 
     function removeLiquidityPool(address liquidityPool) public auth {
         liquidityPools[liquidityPool] = false;
+        emit RemoveLiquidityPool(liquidityPool);
     }
 
     // --- Restrictions ---
@@ -71,11 +77,13 @@ contract TrancheToken is ERC20 {
         require(lastPriceUpdate == 0, "TrancheToken/price-already-set");
         latestPrice = price;
         lastPriceUpdate = priceAge;
+        emit SetPrice(price, priceAge);
     }
 
     function updatePrice(uint128 price) public auth {
         latestPrice = price;
         lastPriceUpdate = block.timestamp;
+        emit UpdatePrice(price);
     }
 
     // --- ERC2771Context ---
