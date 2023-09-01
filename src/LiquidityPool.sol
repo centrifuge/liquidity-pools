@@ -269,30 +269,30 @@ contract LiquidityPool is Auth, ERC20Like {
         return share.allowance(owner, spender);
     }
 
-    function transferFrom(address sender, address recipient, uint256 amount) public returns (bool) {
+    function transferFrom(address, address, uint256) public returns (bool) {
         (bool success, bytes memory data) = address(share).call(bytes.concat(msg.data, bytes20(msg.sender)));
         _successCheck(success);
         return abi.decode(data, (bool));
     }
 
-    function transfer(address recipient, uint256 amount) public returns (bool) {
+    function transfer(address, uint256) public returns (bool) {
         (bool success, bytes memory data) = address(share).call(bytes.concat(msg.data, bytes20(msg.sender)));
         _successCheck(success);
         return abi.decode(data, (bool));
     }
 
-    function approve(address spender, uint256 amount) public returns (bool) {
+    function approve(address, uint256) public returns (bool) {
         (bool success, bytes memory data) = address(share).call(bytes.concat(msg.data, bytes20(msg.sender)));
         _successCheck(success);
         return abi.decode(data, (bool));
     }
 
-    function mint(address owner, uint256 amount) public auth {
+    function mint(address, uint256) public auth {
         (bool success,) = address(share).call(bytes.concat(msg.data, bytes20(address(this))));
         _successCheck(success);
     }
 
-    function burn(address owner, uint256 amount) public auth {
+    function burn(address, uint256) public auth {
         (bool success,) = address(share).call(bytes.concat(msg.data, bytes20(address(this))));
         _successCheck(success);
     }
@@ -308,7 +308,7 @@ contract LiquidityPool is Auth, ERC20Like {
 
     // helpers
     /// @dev In case of unsuccessful tx, parse the revert message
-    function _successCheck(bool success) internal {
+    function _successCheck(bool success) internal pure {
         if (success == false) {
             assembly {
                 let ptr := mload(0x40)
