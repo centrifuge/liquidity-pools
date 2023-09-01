@@ -354,14 +354,4 @@ contract PoolManager is Auth {
         require(pools[poolId].allowedCurrencies[currencyAddress], "PoolManager/pool-currency-not-allowed");
         return true;
     }
-
-    function isAllowedToInvest(uint64 poolId, bytes16 trancheId, address currency, address user)
-        public
-        returns (bool)
-    {
-        LiquidityPoolLike lPool = LiquidityPoolLike(pools[poolId].tranches[trancheId].liquidityPools[currency]);
-        require(address(lPool) != address(0), "PoolManager/unknown-liquidity-pool");
-        require(lPool.hasMember(user), "PoolManager/not-a-member");
-        return true;
-    }
 }

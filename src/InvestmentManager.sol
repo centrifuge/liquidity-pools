@@ -45,9 +45,6 @@ interface PoolManagerLike {
     function getTrancheToken(uint64 poolId, bytes16 trancheId) external view returns (address);
     function getLiquidityPool(uint64 poolId, bytes16 trancheId, address currency) external view returns (address);
     function isAllowedAsPoolCurrency(uint64 poolId, address currencyAddress) external view returns (bool);
-    function isAllowedToInvest(uint64 poolId, bytes16 trancheId, address currency, address user)
-        external
-        returns (bool);
 }
 
 interface ERC20Like {
@@ -123,7 +120,7 @@ contract InvestmentManager is Auth {
         );
         // check if user is allowed to hold the restriced liquidity pool tokens
         require(
-            poolManager.isAllowedToInvest(lPool.poolId(), lPool.trancheId(), currency, user),
+            _isAllowedToInvest(lPool.poolId(), lPool.trancheId(), currency, user),
             "InvestmentManager/tranche-tokens-not-supported"
         );
 
@@ -173,7 +170,7 @@ contract InvestmentManager is Auth {
         );
         // check if user is allowed to hold the restriced liquidity pool tokens
         require(
-            poolManager.isAllowedToInvest(lPool.poolId(), lPool.trancheId(), lPool.asset(), user),
+            _isAllowedToInvest(lPool.poolId(), lPool.trancheId(), lPool.asset(), user),
             "InvestmentManager/tranche-tokens-not-supported"
         );
 
@@ -539,6 +536,16 @@ contract InvestmentManager is Auth {
         } else {
             lpValues.maxRedeem = lpValues.maxRedeem - trancheTokens;
         }
+    }
+
+    function _isAllowedToInvest(uint64 poolId, bytes16 trancheId, address currency, address user)
+        internal
+        returns (bool)
+    {
+        address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, currency);
+        require(liquidityPool != address(0), "InvestmentManager/unknown-liquidity-pool");
+        require(LiquidityPoolLike(liquidityPool).hasMember(user), "InvestmentManager/not-a-member");
+        return true;
     }
 
     /// @dev safe type conversion from uint256 to uint128. Revert if value is too big to be stored with uint128. Avoid data loss.

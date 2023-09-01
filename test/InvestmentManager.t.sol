@@ -211,9 +211,9 @@ contract InvestmentManagerTest is Test {
         assertEq(lPool.poolId(), poolId);
         assertEq(lPool.trancheId(), trancheId);
 
-        assertTrue(lPool.wards(address(evmPoolManager)) == 1);
+        assertTrue(lPool.wards(address(evmInvestmentManager)) == 1);
         assertTrue(lPool.wards(address(this)) == 0);
-        assertTrue(evmPoolManager.wards(lPoolAddress) == 1);
+        assertTrue(evmInvestmentManager.wards(lPoolAddress) == 1);
 
         assertEq(trancheToken.name(), bytes32ToString(stringToBytes32(tokenName)));
         assertEq(trancheToken.symbol(), bytes32ToString(stringToBytes32(tokenSymbol)));
