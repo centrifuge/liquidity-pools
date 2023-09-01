@@ -149,10 +149,7 @@ library Messages {
             uint8(Call.AddTranche),
             poolId,
             trancheId,
-            stringToBytes32(tokenName),
-            bytes32(""),
-            bytes32(""),
-            bytes32(""),
+            stringToBytes128(tokenName),
             stringToBytes32(tokenSymbol),
             decimals,
             price
@@ -177,7 +174,7 @@ library Messages {
     {
         poolId = BytesLib.toUint64(_msg, 1);
         trancheId = BytesLib.toBytes16(_msg, 9);
-        tokenName = bytes32ToString(BytesLib.toBytes32(_msg, 25));
+        tokenName = bytes128ToString(BytesLib.slice(_msg, 25, 128));
         tokenSymbol = bytes32ToString(BytesLib.toBytes32(_msg, 153));
         decimals = BytesLib.toUint8(_msg, 185);
         price = BytesLib.toUint128(_msg, 186);
@@ -820,6 +817,38 @@ library Messages {
     }
 
     // TODO: should be moved to a util contract
+    function stringToBytes128(string memory source) internal pure returns (bytes memory) {
+        bytes memory temp = bytes(source);
+        bytes memory result = new bytes(128);
+
+        for (uint256 i = 0; i < 128; i++) {
+            if (i < temp.length) {
+                result[i] = temp[i];
+            } else {
+                result[i] = 0x00;
+            }
+        }
+
+        return result;
+    }
+
+    function bytes128ToString(bytes memory _bytes128) internal pure returns (string memory) {
+        require(_bytes128.length == 128, "Input should be 128 bytes");
+
+        uint8 i = 0;
+        while (i < 128 && _bytes128[i] != 0) {
+            i++;
+        }
+
+        bytes memory bytesArray = new bytes(i);
+
+        for (uint8 j = 0; j < i; j++) {
+            bytesArray[j] = _bytes128[j];
+        }
+
+        return string(bytesArray);
+    }
+
     function stringToBytes32(string memory source) internal pure returns (bytes32 result) {
         bytes memory tempEmptyStringTest = bytes(source);
         if (tempEmptyStringTest.length == 0) {
