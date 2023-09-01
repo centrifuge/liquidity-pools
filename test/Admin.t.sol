@@ -3,7 +3,7 @@ pragma solidity ^0.8.18;
 pragma abicoder v2;
 
 import {InvestmentManager} from "src/InvestmentManager.sol";
-import {TokenManager} from "src/TokenManager.sol";
+import {PoolManager} from "src/PoolManager.sol";
 import {Gateway} from "src/gateway/Gateway.sol";
 import {Root} from "src/Root.sol";
 import {Escrow} from "src/Escrow.sol";
@@ -25,7 +25,7 @@ interface EscrowLike_ {
 
 contract AdminTest is Test {
     InvestmentManager evmInvestmentManager;
-    TokenManager evmTokenManager;
+    PoolManager evmPoolManager;
     Root root;
     Gateway gateway;
     MockHomeLiquidityPools centChainLiquidityPools;
@@ -42,11 +42,10 @@ contract AdminTest is Test {
         LiquidityPoolFactory liquidityPoolFactory_ = new LiquidityPoolFactory(address(root));
         TrancheTokenFactory trancheTokenFactory_ = new TrancheTokenFactory(address(root));
 
-        evmInvestmentManager =
-            new InvestmentManager(escrow_, userEscrow_, address(liquidityPoolFactory_), address(trancheTokenFactory_));
-        liquidityPoolFactory_.rely(address(evmInvestmentManager));
-        trancheTokenFactory_.rely(address(evmInvestmentManager));
-        evmTokenManager = new TokenManager(escrow_);
+        evmInvestmentManager = new InvestmentManager(escrow_, userEscrow_);
+        evmPoolManager = new PoolManager(escrow_, address(liquidityPoolFactory_), address(trancheTokenFactory_));
+        liquidityPoolFactory_.rely(address(evmPoolManager));
+        trancheTokenFactory_.rely(address(evmPoolManager));
 
         mockXcmRouter = new MockXcmRouter(address(evmInvestmentManager));
 
@@ -58,13 +57,13 @@ contract AdminTest is Test {
         root.rely(address(delayedAdmin));
 
         gateway =
-            new Gateway(address(root), address(evmInvestmentManager), address(evmTokenManager), address(mockXcmRouter));
+            new Gateway(address(root), address(evmInvestmentManager), address(evmPoolManager), address(mockXcmRouter));
         evmInvestmentManager.file("gateway", address(gateway));
-        evmInvestmentManager.file("tokenManager", address(evmTokenManager));
-        evmTokenManager.file("gateway", address(gateway));
-        evmTokenManager.file("investmentManager", address(evmInvestmentManager));
+        evmInvestmentManager.file("poolManager", address(evmPoolManager));
+        evmPoolManager.file("gateway", address(gateway));
+        evmPoolManager.file("investmentManager", address(evmInvestmentManager));
         EscrowLike_(escrow_).rely(address(evmInvestmentManager));
-        EscrowLike_(escrow_).rely(address(evmTokenManager));
+        EscrowLike_(escrow_).rely(address(evmPoolManager));
         mockXcmRouter.file("gateway", address(gateway));
         evmInvestmentManager.rely(address(gateway));
         Escrow(escrow_).rely(address(gateway));
@@ -106,11 +105,11 @@ contract AdminTest is Test {
 
         // First, an outgoing transfer must take place which has funds currency of the currency moved to
         // the escrow account, from which funds are moved from into the recipient on an incoming transfer.
-        erc20.approve(address(evmTokenManager), type(uint256).max);
+        erc20.approve(address(evmPoolManager), type(uint256).max);
         erc20.mint(address(this), amount);
         pauseAdmin.pause();
         vm.expectRevert("Gateway/paused");
-        evmTokenManager.transfer(address(erc20), bytes32(bytes20(recipient)), amount);
+        evmPoolManager.transfer(address(erc20), bytes32(bytes20(recipient)), amount);
     }
 
     function testIncomingTransferWhilePausedFails(
@@ -133,10 +132,10 @@ contract AdminTest is Test {
 
         // First, an outgoing transfer must take place which has funds currency of the currency moved to
         // the escrow account, from which funds are moved from into the recipient on an incoming transfer.
-        erc20.approve(address(evmTokenManager), type(uint256).max);
+        erc20.approve(address(evmPoolManager), type(uint256).max);
         erc20.mint(address(this), amount);
-        evmTokenManager.transfer(address(erc20), bytes32(bytes20(recipient)), amount);
-        assertEq(erc20.balanceOf(address(evmTokenManager.escrow())), amount);
+        evmPoolManager.transfer(address(erc20), bytes32(bytes20(recipient)), amount);
+        assertEq(erc20.balanceOf(address(evmPoolManager.escrow())), amount);
 
         pauseAdmin.pause();
         vm.expectRevert("Gateway/paused");
@@ -165,15 +164,15 @@ contract AdminTest is Test {
 
         // First, an outgoing transfer must take place which has funds currency of the currency moved to
         // the escrow account, from which funds are moved from into the recipient on an incoming transfer.
-        erc20.approve(address(evmTokenManager), type(uint256).max);
+        erc20.approve(address(evmPoolManager), type(uint256).max);
         erc20.mint(address(this), amount);
         pauseAdmin.pause();
         delayedAdmin.unpause();
-        evmTokenManager.transfer(address(erc20), bytes32(bytes20(recipient)), amount);
-        assertEq(erc20.balanceOf(address(evmTokenManager.escrow())), amount);
+        evmPoolManager.transfer(address(erc20), bytes32(bytes20(recipient)), amount);
+        assertEq(erc20.balanceOf(address(evmPoolManager.escrow())), amount);
 
         centChainLiquidityPools.incomingTransfer(currency, sender, bytes32(bytes20(recipient)), amount);
-        assertEq(erc20.balanceOf(address(evmTokenManager.escrow())), 0);
+        assertEq(erc20.balanceOf(address(evmPoolManager.escrow())), 0);
         assertEq(erc20.balanceOf(recipient), amount);
     }
 

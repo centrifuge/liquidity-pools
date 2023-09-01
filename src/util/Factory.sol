@@ -35,12 +35,12 @@ contract LiquidityPoolFactory is Auth {
         bytes16 trancheId,
         address asset,
         address trancheToken,
-        address investmentManager
+        address poolManager
     ) public auth returns (address) {
-        LiquidityPool liquidityPool = new LiquidityPool(poolId, trancheId, asset, trancheToken, investmentManager);
+        LiquidityPool liquidityPool = new LiquidityPool(poolId, trancheId, asset, trancheToken, poolManager);
 
         liquidityPool.rely(root);
-        liquidityPool.rely(investmentManager); // to be able to update tokenPrices
+        liquidityPool.rely(poolManager); // to be able to update tokenPrices
         liquidityPool.deny(address(this));
         return address(liquidityPool);
     }
@@ -50,8 +50,7 @@ interface TrancheTokenFactoryLike {
     function newTrancheToken(
         uint64 poolId,
         bytes16 trancheId,
-        address investmentManager,
-        address tokenManager,
+        address poolManager,
         string memory name,
         string memory symbol,
         uint8 decimals,
@@ -73,15 +72,14 @@ contract TrancheTokenFactory is Auth {
     function newTrancheToken(
         uint64 poolId,
         bytes16 trancheId,
-        address investmentManager,
-        address tokenManager,
+        address poolManager,
         string memory name,
         string memory symbol,
         uint8 decimals,
         uint128 latestPrice,
         uint256 priceAge
     ) public auth returns (address) {
-        address memberlist = _newMemberlist(tokenManager);
+        address memberlist = _newMemberlist(poolManager);
 
         // Salt is hash(poolId + trancheId)
         // same tranche token address on every evm chain
@@ -96,20 +94,19 @@ contract TrancheTokenFactory is Auth {
         token.setPrice(latestPrice, priceAge);
 
         token.rely(root);
-        token.rely(investmentManager); // to be able to add LPs as wards
-        token.rely(tokenManager); // to be able to update token prices
+        token.rely(poolManager); // to be able to update token prices
         token.deny(address(this));
 
         return address(token);
     }
 
-    function _newMemberlist(address tokenManager) internal returns (address memberList) {
+    function _newMemberlist(address poolManager) internal returns (address memberList) {
         Memberlist memberlist = new Memberlist();
 
         memberlist.updateMember(RootLike(root).escrow(), type(uint256).max);
 
         memberlist.rely(root);
-        memberlist.rely(tokenManager); // to be able to add members
+        memberlist.rely(poolManager); // to be able to add members
         memberlist.deny(address(this));
 
         return (address(memberlist));
