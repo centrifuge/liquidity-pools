@@ -88,7 +88,7 @@ contract TrancheToken is ERC20 {
 
     // --- ERC2771Context ---
     function isTrustedForwarder(address forwarder) public view returns (bool) {
-        // Liquiditiy Pools are considered trusted forwarders
+        // Liquidity Pools are considered trusted forwarders
         // for the ERC2771Context implementation of the underlying
         // ERC20 token
         return liquidityPools[forwarder];
