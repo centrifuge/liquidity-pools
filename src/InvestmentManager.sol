@@ -325,6 +325,8 @@ contract InvestmentManager is Auth {
         returns (uint256 trancheTokenAmount)
     {
         uint128 depositPrice = calculateDepositPrice(user, liquidityPool);
+        if (depositPrice == 0) return 0;
+
         trancheTokenAmount =
             uint256(_calculateTrancheTokenAmount(_toUint128(currencyAmount), liquidityPool, depositPrice));
     }
@@ -336,6 +338,8 @@ contract InvestmentManager is Auth {
         returns (uint256 currencyAmount)
     {
         uint128 depositPrice = calculateDepositPrice(user, liquidityPool);
+        if (depositPrice == 0) return 0;
+
         currencyAmount = uint256(_calculateCurrencyAmount(_toUint128(trancheTokenAmount), liquidityPool, depositPrice));
     }
 
@@ -345,7 +349,9 @@ contract InvestmentManager is Auth {
         view
         returns (uint256 trancheTokenAmount)
     {
-        uint128 redeemPrice = calculateDepositPrice(user, liquidityPool);
+        uint128 redeemPrice = calculateRedeemPrice(user, liquidityPool);
+        if (redeemPrice == 0) return 0;
+
         trancheTokenAmount =
             uint256(_calculateTrancheTokenAmount(_toUint128(currencyAmount), liquidityPool, redeemPrice));
     }
@@ -356,7 +362,9 @@ contract InvestmentManager is Auth {
         view
         returns (uint256 currencyAmount)
     {
-        uint128 redeemPrice = calculateDepositPrice(user, liquidityPool);
+        uint128 redeemPrice = calculateRedeemPrice(user, liquidityPool);
+        if (redeemPrice == 0) return 0;
+
         currencyAmount = uint256(_calculateCurrencyAmount(_toUint128(trancheTokenAmount), liquidityPool, redeemPrice));
     }
 

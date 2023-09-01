@@ -496,6 +496,9 @@ contract LiquidityPoolTest is Test {
         assertEq(lPool.maxDeposit(self), amount); // max deposit
         // assert tranche tokens minted
         assertEq(lPool.balanceOf(address(escrow)), trancheTokensPayout);
+        // assert conversions
+        assertEq(lPool.previewDeposit(amount), trancheTokensPayout);
+        assertApproxEqAbs(lPool.previewMint(trancheTokensPayout), amount, 1);
 
         // deposit 50% of the amount
         uint256 share = 2;
@@ -648,6 +651,9 @@ contract LiquidityPoolTest is Test {
         assertEq(lPool.maxWithdraw(address(this)), currencyPayout); // max deposit
         assertEq(lPool.maxRedeem(address(this)), amount); // max deposit
         assertEq(lPool.balanceOf(address(escrow)), 0);
+        // assert conversions
+        assertEq(lPool.previewWithdraw(currencyPayout), amount);
+        assertEq(lPool.previewRedeem(amount), currencyPayout);
 
         lPool.redeem(amount, address(this), address(this)); // mint hald the amount
         assertEq(lPool.balanceOf(address(this)), 0);
