@@ -28,6 +28,10 @@ interface InvestmentManagerLike {
     function maxMint(address user, address _tranche) external view returns (uint256);
     function maxWithdraw(address user, address _tranche) external view returns (uint256);
     function maxRedeem(address user, address _tranche) external view returns (uint256);
+    function previewDeposit(address user, address liquidityPool, uint256 assets) external view returns (uint256);
+    function previewMint(address user, address liquidityPool, uint256 shares) external view returns (uint256);
+    function previewWithdraw(address user, address liquidityPool, uint256 assets) external view returns (uint256);
+    function previewRedeem(address user, address liquidityPool, uint256 shares) external view returns (uint256);
     function requestRedeem(uint256 shares, address receiver) external;
     function requestDeposit(uint256 assets, address receiver) external;
     function collectInvest(uint64 poolId, bytes16 trancheId, address receiver, address currency) external;
@@ -133,7 +137,7 @@ contract LiquidityPool is Auth, ERC20Like {
 
     /// @return shares that any user would get for an amount of assets provided -> convertToShares
     function previewDeposit(uint256 assets) public view returns (uint256 shares) {
-        shares = convertToShares(assets);
+        shares = investmentManager.previewDeposit(msg.sender, address(this), assets);
     }
 
     /// @dev request asset deposit for a receiver to be included in the next epoch execution. Asset is locked in the escrow on request submission
@@ -172,7 +176,7 @@ contract LiquidityPool is Auth, ERC20Like {
 
     /// @return assets that any user would get for an amount of shares provided -> convertToAssets
     function previewMint(uint256 shares) external view returns (uint256 assets) {
-        assets = convertToAssets(shares);
+        assets = investmentManager.previewMint(msg.sender, address(this), shares);
     }
 
     /// @dev request share redemption for a receiver to be included in the next epoch execution. Shares are locked in the escrow on request submission
@@ -196,7 +200,7 @@ contract LiquidityPool is Auth, ERC20Like {
 
     /// @return shares that a user would need to redeem in order to receive the given amount of assets -> convertToAssets
     function previewWithdraw(uint256 assets) public view returns (uint256 shares) {
-        shares = convertToShares(assets);
+        shares = investmentManager.previewWithdraw(msg.sender, address(this), assets);
     }
 
     /// @dev Withdraw assets after successful epoch execution. Receiver will receive an exact amount of assets for a certain amount of shares that has been redeemed from Owner during epoch execution.
@@ -219,7 +223,7 @@ contract LiquidityPool is Auth, ERC20Like {
 
     /// @return assets that any user could redeem for an given amount of shares -> convertToAssets
     function previewRedeem(uint256 shares) public view returns (uint256 assets) {
-        assets = convertToAssets(shares);
+        assets = investmentManager.previewRedeem(msg.sender, address(this), shares);
     }
 
     /// @dev Redeem shares after successful epoch execution. Receiver will receive assets for the exact amount of redeemed shares from Owner after epoch execution.
@@ -306,7 +310,7 @@ contract LiquidityPool is Auth, ERC20Like {
         return share.hasMember(user);
     }
 
-    // helpers
+    // --- Helpers ---
     /// @dev In case of unsuccessful tx, parse the revert message
     function _successCheck(bool success) internal pure {
         if (success == false) {
