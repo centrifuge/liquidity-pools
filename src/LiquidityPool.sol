@@ -110,12 +110,20 @@ contract LiquidityPool is Auth, ERC20Like {
 
     /// @dev Calculates the amount of shares / tranche tokens that any user would get for the amount of assets provided. The calcultion is based on the token price from the most recent epoch retrieved from Centrifuge chain.
     function convertToShares(uint256 assets) public view returns (uint256 shares) {
-        shares = assets.mulDiv(10 ** investmentManager.PRICE_DECIMALS(), latestPrice(), Math.Rounding.Down);
+        shares = assets.mulDiv(
+            10 ** (investmentManager.PRICE_DECIMALS() + share.decimals() - ERC20Like(asset).decimals()),
+            latestPrice(),
+            Math.Rounding.Down
+        );
     }
 
     /// @dev Calculates the asset value for an amount of shares / tranche tokens provided. The calcultion is based on the token price from the most recent epoch retrieved from Centrifuge chain.
     function convertToAssets(uint256 shares) public view returns (uint256 assets) {
-        assets = shares.mulDiv(latestPrice(), 10 ** investmentManager.PRICE_DECIMALS(), Math.Rounding.Down);
+        assets = shares.mulDiv(
+            latestPrice(),
+            10 ** (investmentManager.PRICE_DECIMALS() + share.decimals() - ERC20Like(asset).decimals()),
+            Math.Rounding.Down
+        );
     }
 
     /// @return Maximum amount of stable currency that can be deposited into the Tranche by the receiver after the epoch had been executed on Centrifuge chain.
@@ -261,30 +269,30 @@ contract LiquidityPool is Auth, ERC20Like {
         return share.allowance(owner, spender);
     }
 
-    function transferFrom(address sender, address recipient, uint256 amount) public returns (bool) {
+    function transferFrom(address, address, uint256) public returns (bool) {
         (bool success, bytes memory data) = address(share).call(bytes.concat(msg.data, bytes20(msg.sender)));
         _successCheck(success);
         return abi.decode(data, (bool));
     }
 
-    function transfer(address recipient, uint256 amount) public returns (bool) {
+    function transfer(address, uint256) public returns (bool) {
         (bool success, bytes memory data) = address(share).call(bytes.concat(msg.data, bytes20(msg.sender)));
         _successCheck(success);
         return abi.decode(data, (bool));
     }
 
-    function approve(address spender, uint256 amount) public returns (bool) {
+    function approve(address, uint256) public returns (bool) {
         (bool success, bytes memory data) = address(share).call(bytes.concat(msg.data, bytes20(msg.sender)));
         _successCheck(success);
         return abi.decode(data, (bool));
     }
 
-    function mint(address owner, uint256 amount) public auth {
+    function mint(address, uint256) public auth {
         (bool success,) = address(share).call(bytes.concat(msg.data, bytes20(address(this))));
         _successCheck(success);
     }
 
-    function burn(address owner, uint256 amount) public auth {
+    function burn(address, uint256) public auth {
         (bool success,) = address(share).call(bytes.concat(msg.data, bytes20(address(this))));
         _successCheck(success);
     }
@@ -300,7 +308,7 @@ contract LiquidityPool is Auth, ERC20Like {
 
     // helpers
     /// @dev In case of unsuccessful tx, parse the revert message
-    function _successCheck(bool success) internal {
+    function _successCheck(bool success) internal pure {
         if (success == false) {
             assembly {
                 let ptr := mload(0x40)

@@ -92,10 +92,11 @@ contract AxelarXCMRelayer is Auth, AxelarExecutable {
     {
         if (what == "axelarEVMRouter") {
             axelarEVMRouters[axelarEVMRouterChain] = axelarEVMRouterAddress;
-            emit File(what, axelarEVMRouterChain, axelarEVMRouterAddress);
         } else {
             revert("AxelarXCMRelayer/file-unrecognized-param");
         }
+
+        emit File(what, axelarEVMRouterChain, axelarEVMRouterAddress);
     }
 
     function file(bytes32 what, uint64 buyExecutionWeightLimit, uint64 transactWeightAtMost, uint256 feeAmount)
