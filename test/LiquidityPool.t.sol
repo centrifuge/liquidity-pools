@@ -280,8 +280,8 @@ contract LiquidityPoolTest is Test {
         assertEq(lPool.maxDeposit(self), currencyPayout);
         assertEq(lPool.maxMint(self), firstTrancheTokenPayout);
 
-        // deposit price should be ~1.2*10**(18-6)
-        assertEq(evmInvestmentManager.calculateDepositPrice(self, address(lPool)), 1200000000000000);
+        // deposit price should be ~1.2*10**18
+        assertEq(evmInvestmentManager.calculateDepositPrice(self, address(lPool)), 1200000000000000000);
 
         // trigger executed collectInvest of the second 50% at a price of 1.4
         currencyPayout = 50000000; // 50 * 10**6
@@ -290,8 +290,8 @@ contract LiquidityPoolTest is Test {
             poolId, trancheId, bytes32(bytes20(self)), _currencyId, currencyPayout, secondTrancheTokenPayout
         );
 
-        // deposit price should now be 50% * 1.2 + 50% * 1.4 = ~1.3*10**(18-6).
-        assertEq(evmInvestmentManager.calculateDepositPrice(self, address(lPool)), 1292307692307692);
+        // deposit price should now be 50% * 1.2 + 50% * 1.4 = ~1.3*10**18.
+        assertEq(evmInvestmentManager.calculateDepositPrice(self, address(lPool)), 1292307692307692307);
 
         // collect the tranche tokens
         lPool.mint(firstTrancheTokenPayout + secondTrancheTokenPayout, self);
@@ -318,8 +318,8 @@ contract LiquidityPoolTest is Test {
             firstTrancheTokenPayout + secondTrancheTokenPayout
         );
 
-        // redeem price should now be ~1.5*10**(18-6).
-        assertEq(evmInvestmentManager.calculateRedeemPrice(self, address(lPool)), 1492615384615384);
+        // redeem price should now be ~1.5*10**18.
+        assertEq(evmInvestmentManager.calculateRedeemPrice(self, address(lPool)), 1492615384615384615);
 
         // collect the currency
         lPool.withdraw(currencyPayout, self, self);
@@ -358,7 +358,7 @@ contract LiquidityPoolTest is Test {
         assertEq(lPool.maxDeposit(self), currencyPayout);
         assertEq(lPool.maxMint(self), firstTrancheTokenPayout);
 
-        // deposit price should be ~1.2*10**(18-6)
+        // deposit price should be ~1.2*10**18
         assertEq(evmInvestmentManager.calculateDepositPrice(self, address(lPool)), 1200000019200000307);
 
         // trigger executed collectInvest of the second 50% at a price of 1.4
@@ -368,7 +368,7 @@ contract LiquidityPoolTest is Test {
             poolId, trancheId, bytes32(bytes20(self)), _currencyId, currencyPayout, secondTrancheTokenPayout
         );
 
-        // deposit price should now be 50% * 1.2 + 50% * 1.4 = ~1.3*10**(18-6).
+        // deposit price should now be 50% * 1.2 + 50% * 1.4 = ~1.3*10**18.
         assertEq(evmInvestmentManager.calculateDepositPrice(self, address(lPool)), 1292307715370414612);
 
         // collect the tranche tokens
@@ -396,7 +396,7 @@ contract LiquidityPoolTest is Test {
             firstTrancheTokenPayout + secondTrancheTokenPayout
         );
 
-        // redeem price should now be ~1.5*10**(18-6).
+        // redeem price should now be ~1.5*10**18.
         assertEq(evmInvestmentManager.calculateRedeemPrice(self, address(lPool)), 1492615411252828877);
 
         // // collect the currency
@@ -486,7 +486,7 @@ contract LiquidityPoolTest is Test {
         // trigger executed collectInvest
         uint128 _currencyId = evmTokenManager.currencyAddressToId(address(erc20)); // retrieve currencyId
         uint128 trancheTokensPayout = uint128(amount * 10 ** 27 / price); // trancheTokenPrice = 2$
-        assertApproxEqAbs(trancheTokensPayout, amount / 2, 1);
+        assertApproxEqAbs(trancheTokensPayout, amount / 2, 2);
         homePools.isExecutedCollectInvest(
             poolId, trancheId, bytes32(bytes20(self)), _currencyId, uint128(amount), trancheTokensPayout
         );
@@ -501,11 +501,11 @@ contract LiquidityPoolTest is Test {
         uint256 share = 2;
         lPool.deposit(amount / 2, self); // mint half the amount
 
-        // Allow 1 difference because of rounding
-        assertApproxEqAbs(lPool.balanceOf(self), trancheTokensPayout / 2, 1);
-        assertApproxEqAbs(lPool.balanceOf(address(escrow)), trancheTokensPayout - trancheTokensPayout / 2, 1);
-        assertApproxEqAbs(lPool.maxMint(self), trancheTokensPayout - trancheTokensPayout / 2, 1);
-        assertApproxEqAbs(lPool.maxDeposit(self), amount - amount / 2, 1);
+        // Allow 2 difference because of rounding
+        assertApproxEqAbs(lPool.balanceOf(self), trancheTokensPayout / 2, 2);
+        assertApproxEqAbs(lPool.balanceOf(address(escrow)), trancheTokensPayout - trancheTokensPayout / 2, 2);
+        assertApproxEqAbs(lPool.maxMint(self), trancheTokensPayout - trancheTokensPayout / 2, 2);
+        assertApproxEqAbs(lPool.maxDeposit(self), amount - amount / 2, 2);
 
         // mint the rest
         lPool.mint(lPool.maxMint(self), self);
