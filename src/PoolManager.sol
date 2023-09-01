@@ -127,7 +127,6 @@ contract PoolManager is Auth {
         require(currency != 0, "PoolManager/unknown-currency");
 
         ERC20Like erc20 = ERC20Like(currencyAddress);
-        require(erc20.balanceOf(msg.sender) >= amount, "PoolManager/insufficient-balance");
         require(erc20.transferFrom(msg.sender, address(escrow), amount), "PoolManager/currency-transfer-failed");
 
         gateway.transfer(currency, msg.sender, recipient, amount);
@@ -142,9 +141,7 @@ contract PoolManager is Auth {
         TrancheTokenLike trancheToken = TrancheTokenLike(getTrancheToken(poolId, trancheId));
         require(address(trancheToken) != address(0), "PoolManager/unknown-token");
 
-        require(trancheToken.balanceOf(msg.sender) >= amount, "PoolManager/insufficient-balance");
         trancheToken.burn(msg.sender, amount);
-
         gateway.transferTrancheTokensToCentrifuge(poolId, trancheId, msg.sender, destinationAddress, amount);
     }
 
@@ -158,9 +155,7 @@ contract PoolManager is Auth {
         TrancheTokenLike trancheToken = TrancheTokenLike(getTrancheToken(poolId, trancheId));
         require(address(trancheToken) != address(0), "PoolManager/unknown-token");
 
-        require(trancheToken.balanceOf(msg.sender) >= amount, "PoolManager/insufficient-balance");
         trancheToken.burn(msg.sender, amount);
-
         gateway.transferTrancheTokensToEVM(
             poolId, trancheId, msg.sender, destinationChainId, destinationAddress, amount
         );

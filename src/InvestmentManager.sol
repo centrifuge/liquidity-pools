@@ -140,7 +140,6 @@ contract InvestmentManager is Auth {
         }
 
         // transfer the differene between required and locked currency from user to escrow
-        require(ERC20Like(currency).balanceOf(user) >= _currencyAmount, "InvestmentManager/insufficient-balance");
         require(
             ERC20Like(currency).transferFrom(user, address(escrow), _currencyAmount),
             "InvestmentManager/currency-transfer-failed"
@@ -180,7 +179,6 @@ contract InvestmentManager is Auth {
         }
 
         // transfer the differene between required and locked tranche tokens from user to escrow
-        require(lPool.balanceOf(user) >= _trancheTokenAmount, "InvestmentManager/insufficient-tranche-token-balance");
         require(
             lPool.transferFrom(user, address(escrow), _trancheTokenAmount),
             "InvestmentManager/tranche-token-transfer-failed"
