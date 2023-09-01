@@ -9,6 +9,9 @@ interface AuthLike {
 }
 
 contract Root is Auth {
+    /// @dev To prevent filing a delay that would block any updates indefinitely
+    uint256 public constant MAX_DELAY = 4 weeks;
+
     address public immutable escrow;
 
     mapping(address => uint256) public schedule;
@@ -34,8 +37,12 @@ contract Root is Auth {
 
     // --- Administration ---
     function file(bytes32 what, uint256 data) external auth {
-        if (what == "delay") delay = data;
-        else revert("Root/file-unrecognized-param");
+        if (what == "delay") {
+            require(delay <= MAX_DELAY, "Root/delay-too-long");
+            delay = data;
+        } else {
+            revert("Root/file-unrecognized-param");
+        }
         emit File(what, data);
     }
 
