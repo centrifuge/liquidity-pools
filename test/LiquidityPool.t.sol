@@ -2,84 +2,9 @@
 pragma solidity ^0.8.18;
 pragma abicoder v2;
 
-import {InvestmentManager} from "../src/InvestmentManager.sol";
-import {PoolManager, Tranche} from "../src/PoolManager.sol";
-import {Gateway} from "../src/gateway/Gateway.sol";
-import {Root} from "../src/Root.sol";
-import {Escrow} from "../src/Escrow.sol";
-import {LiquidityPoolFactory, TrancheTokenFactory} from "../src/util/Factory.sol";
-import {LiquidityPool, TrancheTokenLike} from "../src/LiquidityPool.sol";
-import {ERC20} from "../src/token/ERC20.sol";
+import "./TestSetup.t.sol";
 
-import {MemberlistLike, Memberlist} from "../src/token/Memberlist.sol";
-import {MockHomeLiquidityPools} from "./mock/MockHomeLiquidityPools.sol";
-import {MockXcmRouter} from "./mock/MockXcmRouter.sol";
-import {Messages} from "../src/gateway/Messages.sol";
-import {Investor} from "./accounts/Investor.sol";
-import "forge-std/Test.sol";
-import "../src/InvestmentManager.sol";
-
-interface EscrowLike_ {
-    function approve(address token, address spender, uint256 value) external;
-    function rely(address usr) external;
-}
-
-interface AuthLike_ {
-    function wards(address user) external returns (uint256);
-}
-
-interface TrancheToken {
-    function isTrustedForwarder(address forwarder) external view returns (bool);
-    function addLiquidityPool(address forwarder) external;
-    function removeLiquidityPool(address forwarder) external;
-}
-
-contract LiquidityPoolTest is Test {
-    uint128 constant MAX_UINT128 = type(uint128).max;
-
-    Root root;
-    InvestmentManager evmInvestmentManager;
-    PoolManager evmPoolManager;
-    Gateway gateway;
-    MockHomeLiquidityPools homePools;
-    MockXcmRouter mockXcmRouter;
-    Escrow escrow;
-    ERC20 erc20;
-
-    address self;
-
-    function setUp() public {
-        vm.chainId(1);
-        escrow = new Escrow();
-        root = new Root(address(escrow), 48 hours);
-        erc20 = newErc20("X's Dollar", "USDX", 6);
-        LiquidityPoolFactory liquidityPoolFactory_ = new LiquidityPoolFactory(address(root));
-        TrancheTokenFactory trancheTokenFactory_ = new TrancheTokenFactory(address(root));
-
-        evmInvestmentManager = new InvestmentManager(address(escrow));
-        evmPoolManager = new PoolManager(address(escrow), address(liquidityPoolFactory_), address(trancheTokenFactory_));
-        liquidityPoolFactory_.rely(address(evmPoolManager));
-        trancheTokenFactory_.rely(address(evmPoolManager));
-
-        mockXcmRouter = MockXcmRouter(address(new MockXcmRouter(address(evmInvestmentManager))));
-
-        homePools = new MockHomeLiquidityPools(address(mockXcmRouter));
-
-        gateway =
-            new Gateway(address(root), address(evmInvestmentManager), address(evmPoolManager), address(mockXcmRouter));
-        evmInvestmentManager.file("gateway", address(gateway));
-        evmInvestmentManager.file("poolManager", address(evmPoolManager));
-        evmPoolManager.file("gateway", address(gateway));
-        evmPoolManager.file("investmentManager", address(evmInvestmentManager));
-        escrow.rely(address(evmInvestmentManager));
-        escrow.rely(address(evmPoolManager));
-        mockXcmRouter.file("gateway", address(gateway));
-        evmInvestmentManager.rely(address(gateway));
-        evmInvestmentManager.rely(address(evmPoolManager));
-        escrow.rely(address(gateway));
-
-        self = address(this);
-    }
+contract LiquidityPoolTest is TestSetup  {
 
     function testTransferFrom(
         uint64 poolId,
@@ -577,7 +502,8 @@ contract LiquidityPoolTest is Test {
 
         uint256 maxMint = lPool.maxMint(investor);
         lPool.mint(maxMint, investor);
-        TrancheTokenLike trancheToken = lPool.share();
+        
+        TrancheToken trancheToken = TrancheToken(address(lPool.share()));
         assertEq(trancheToken.balanceOf(address(investor)), maxMint);
 
         // Sign permit for redeeming tranche tokens
@@ -795,31 +721,5 @@ contract LiquidityPoolTest is Test {
             poolId, trancheId, bytes32(bytes20(_investor)), currencyId, uint128(amount), uint128(amount)
         );
         investor.deposit(_lPool, amount, _investor); // withdraw the amount
-    }
-
-    function deployLiquidityPool(
-        uint64 poolId,
-        uint8 decimals,
-        string memory tokenName,
-        string memory tokenSymbol,
-        bytes16 trancheId,
-        uint128 price,
-        uint128 currency
-    ) public returns (address) {
-        homePools.addPool(poolId); // add pool
-        homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price); // add tranche
-        homePools.addCurrency(currency, address(erc20));
-        homePools.allowPoolCurrency(poolId, currency);
-        evmPoolManager.deployTranche(poolId, trancheId);
-
-        address lPoolAddress = evmPoolManager.deployLiquidityPool(poolId, trancheId, address(erc20));
-        return lPoolAddress;
-    }
-
-    function newErc20(string memory name, string memory symbol, uint8 decimals) internal returns (ERC20) {
-        ERC20 currency = new ERC20(decimals);
-        currency.file("name", name);
-        currency.file("symbol", symbol);
-        return currency;
     }
 }
