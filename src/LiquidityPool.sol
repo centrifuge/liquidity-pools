@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.18;
 
-import "./util/Auth.sol";
-import "./token/ERC20Like.sol";
-import "./util/Math.sol";
+import {Auth} from "./util/Auth.sol";
+import {Math} from "./util/Math.sol";
+import {ERC20Like} from "./token/ERC20Like.sol";
 
 interface ERC20PermitLike {
     function permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s)

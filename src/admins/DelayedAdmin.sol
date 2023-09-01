@@ -3,7 +3,7 @@ pragma solidity ^0.8.18;
 pragma abicoder v2;
 
 import {Root} from "../Root.sol";
-import "./../util/Auth.sol";
+import {Auth} from "./../util/Auth.sol";
 
 contract DelayedAdmin is Auth {
     Root public immutable root;

@@ -5,9 +5,8 @@ pragma abicoder v2;
 import {TrancheTokenFactoryLike, LiquidityPoolFactoryLike} from "./util/Factory.sol";
 import {TrancheTokenLike} from "./token/Tranche.sol";
 import {MemberlistLike} from "./token/Memberlist.sol";
-import "./token/ERC20Like.sol";
-import "./util/Auth.sol";
-import "forge-std/console.sol";
+import {ERC20Like} from "./token/ERC20Like.sol";
+import {Auth} from "./util/Auth.sol";
 
 interface GatewayLike {
     function transferTrancheTokensToCentrifuge(

@@ -2,9 +2,8 @@
 pragma solidity ^0.8.18;
 pragma abicoder v2;
 
-import {MemberlistLike} from "./token/Memberlist.sol";
-import "./util/Auth.sol";
-import "./util/Math.sol";
+import {Auth} from "./util/Auth.sol";
+import {Math} from "./util/Math.sol";
 
 interface GatewayLike {
     function increaseInvestOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount)

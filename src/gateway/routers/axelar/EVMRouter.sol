@@ -3,7 +3,7 @@ pragma solidity ^0.8.18;
 pragma abicoder v2;
 
 import {AxelarExecutable} from "./AxelarExecutable.sol";
-import "./../../../util/Auth.sol";
+import {Auth} from "./../../../util/Auth.sol";
 
 interface InvestmentManagerLike {
     function addPool(uint64 poolId, uint128 currency, uint8 decimals) external;
