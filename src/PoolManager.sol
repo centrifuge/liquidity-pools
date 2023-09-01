@@ -178,7 +178,7 @@ contract PoolManager is Auth {
     /// @notice the function can only be executed by the gateway contract.
     function allowPoolCurrency(uint64 poolId, uint128 currency) public onlyGateway {
         Pool storage pool = pools[poolId];
-        require(pool.createdAt > 0, "PoolManager/invalid-pool");
+        require(pool.createdAt != 0, "PoolManager/invalid-pool");
 
         address currencyAddress = currencyIdToAddress[currency];
         require(currencyAddress != address(0), "PoolManager/unknown-currency");
@@ -198,7 +198,7 @@ contract PoolManager is Auth {
         uint128 latestPrice
     ) public onlyGateway {
         Pool storage pool = pools[poolId];
-        require(pool.createdAt > 0, "PoolManager/invalid-pool");
+        require(pool.createdAt != 0, "PoolManager/invalid-pool");
         Tranche storage tranche = pool.tranches[trancheId];
         require(tranche.createdAt == 0, "PoolManager/tranche-already-exists");
 
@@ -246,7 +246,7 @@ contract PoolManager is Auth {
     /// @notice this function can only be executed by the gateway contract.
     function addCurrency(uint128 currency, address currencyAddress) public onlyGateway {
         // currency index on the centrifuge chain side should start at 1
-        require(currency > 0, "PoolManager/currency-id-has-to-be-greater-than-0");
+        require(currency != 0, "PoolManager/currency-id-has-to-be-greater-than-0");
         require(currencyIdToAddress[currency] == address(0), "PoolManager/currency-id-in-use");
         require(currencyAddressToId[currencyAddress] == 0, "PoolManager/currency-address-in-use");
         require(
@@ -288,7 +288,7 @@ contract PoolManager is Auth {
     function deployTranche(uint64 poolId, bytes16 trancheId) public returns (address) {
         Tranche storage tranche = pools[poolId].tranches[trancheId];
         require(tranche.token == address(0), "PoolManager/tranche-already-deployed");
-        require(tranche.createdAt > 0, "PoolManager/tranche-not-added");
+        require(tranche.createdAt != 0, "PoolManager/tranche-not-added");
 
         address token = trancheTokenFactory.newTrancheToken(
             poolId,
@@ -313,7 +313,7 @@ contract PoolManager is Auth {
 
         address liquidityPool = tranche.liquidityPools[currency];
         require(liquidityPool == address(0), "PoolManager/liquidityPool-already-deployed");
-        require(pools[poolId].createdAt > 0, "PoolManager/pool-does-not-exist");
+        require(pools[poolId].createdAt != 0, "PoolManager/pool-does-not-exist");
 
         liquidityPool = liquidityPoolFactory.newLiquidityPool(
             poolId, trancheId, currency, tranche.token, address(investmentManager)

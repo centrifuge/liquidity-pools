@@ -10,7 +10,7 @@ interface AuthLike {
 
 contract Root is Auth {
     /// @dev To prevent filing a delay that would block any updates indefinitely
-    uint256 public constant MAX_DELAY = 4 weeks;
+    uint256 private MAX_DELAY = 4 weeks;
 
     address public immutable escrow;
 

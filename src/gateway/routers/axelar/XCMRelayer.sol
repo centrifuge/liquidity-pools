@@ -39,6 +39,7 @@ struct XcmWeightInfo {
 
 contract AxelarXCMRelayer is Auth, AxelarExecutable {
     address private constant XCM_TRANSACTOR_V2_ADDRESS = 0x000000000000000000000000000000000000080D;
+    uint32 private constant CENTRIFUGE_PARACHAIN_ID = 2031;
 
     address public immutable centrifugeChainOrigin;
     mapping(string => string) public axelarEVMRouters;
@@ -184,6 +185,6 @@ contract AxelarXCMRelayer is Auth, AxelarExecutable {
     }
 
     function _parachainId() internal pure returns (bytes memory) {
-        return abi.encodePacked(uint8(0), uint32(2031));
+        return abi.encodePacked(uint8(0), CENTRIFUGE_PARACHAIN_ID);
     }
 }

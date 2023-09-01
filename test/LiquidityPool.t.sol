@@ -611,7 +611,7 @@ contract LiquidityPoolTest is TestSetup {
         LiquidityPool lPool = LiquidityPool(lPool_);
 
         // will fail - user did not give tranche token allowance to investmentManager
-        vm.expectRevert(bytes("InvestmentManager/insufficient-balance"));
+        vm.expectRevert(bytes("ERC20/insufficient-balance"));
         lPool.requestDeposit(amount, self);
         lPool.approve(address(evmInvestmentManager), amount); // add allowance
 
