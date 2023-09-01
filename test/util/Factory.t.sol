@@ -29,8 +29,8 @@ contract FactoryTest is Test {
     //     bytes16 trancheId,
     //     address investmentManager1,
     //     address investmentManager2,
-    //     address tokenManager1,
-    //     address tokenManager2,
+    //     address poolManager1,
+    //     address poolManager2,
     //     string memory name,
     //     string memory symbol,
     //     uint8 decimals
@@ -40,7 +40,7 @@ contract FactoryTest is Test {
     //     vm.selectFork(mainnetFork);
     //     TrancheTokenFactory trancheTokenFactory1 = new TrancheTokenFactory{ salt: salt }(root);
     //     address trancheToken1 = trancheTokenFactory1.newTrancheToken(
-    //         poolId, trancheId, investmentManager1, tokenManager1, name, symbol, decimals
+    //         poolId, trancheId, investmentManager1, poolManager1, name, symbol, decimals
     //     );
 
     //     vm.selectFork(polygonFork);
@@ -48,7 +48,7 @@ contract FactoryTest is Test {
     //     TrancheTokenFactory trancheTokenFactory2 = new TrancheTokenFactory{ salt: salt }(root);
     //     assertEq(address(trancheTokenFactory1), address(trancheTokenFactory2));
     //     address trancheToken2 = trancheTokenFactory2.newTrancheToken(
-    //         poolId, trancheId, investmentManager2, tokenManager2, name, symbol, decimals
+    //         poolId, trancheId, investmentManager2, poolManager2, name, symbol, decimals
     //     );
     //     assertEq(address(trancheToken1), address(trancheToken2));
     // }
@@ -77,7 +77,7 @@ contract FactoryTest is Test {
         uint64 poolId,
         bytes16 trancheId,
         address investmentManager,
-        address tokenManager,
+        address poolManager,
         string memory name,
         string memory symbol,
         uint8 decimals,
@@ -102,7 +102,7 @@ contract FactoryTest is Test {
         );
 
         address token = trancheTokenFactory.newTrancheToken(
-            poolId, trancheId, investmentManager, tokenManager, name, symbol, decimals, latestPrice, block.timestamp
+            poolId, trancheId, investmentManager, poolManager, name, symbol, decimals, latestPrice, block.timestamp
         );
 
         assertEq(address(token), predictedAddress);
@@ -113,7 +113,7 @@ contract FactoryTest is Test {
         uint64 poolId,
         bytes16 trancheId,
         address investmentManager,
-        address tokenManager,
+        address poolManager,
         string memory name,
         string memory symbol,
         uint8 decimals,
@@ -136,11 +136,11 @@ contract FactoryTest is Test {
         TrancheTokenFactory trancheTokenFactory = new TrancheTokenFactory{ salt: salt }(root);
         assertEq(address(trancheTokenFactory), predictedAddress);
         trancheTokenFactory.newTrancheToken(
-            poolId, trancheId, investmentManager, tokenManager, name, symbol, decimals, latestPrice, block.timestamp
+            poolId, trancheId, investmentManager, poolManager, name, symbol, decimals, latestPrice, block.timestamp
         );
         vm.expectRevert();
         trancheTokenFactory.newTrancheToken(
-            poolId, trancheId, investmentManager, tokenManager, name, symbol, decimals, latestPrice, block.timestamp
+            poolId, trancheId, investmentManager, poolManager, name, symbol, decimals, latestPrice, block.timestamp
         );
     }
 }
