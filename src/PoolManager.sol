@@ -298,7 +298,6 @@ contract PoolManager is Auth {
         address token = trancheTokenFactory.newTrancheToken(
             poolId,
             trancheId,
-            address(investmentManager),
             address(this),
             tranche.tokenName,
             tranche.tokenSymbol,

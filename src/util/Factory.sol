@@ -50,7 +50,6 @@ interface TrancheTokenFactoryLike {
     function newTrancheToken(
         uint64 poolId,
         bytes16 trancheId,
-        address investmentManager,
         address poolManager,
         string memory name,
         string memory symbol,
@@ -73,7 +72,6 @@ contract TrancheTokenFactory is Auth {
     function newTrancheToken(
         uint64 poolId,
         bytes16 trancheId,
-        address investmentManager,
         address poolManager,
         string memory name,
         string memory symbol,
@@ -96,8 +94,6 @@ contract TrancheTokenFactory is Auth {
         token.setPrice(latestPrice, priceAge);
 
         token.rely(root);
-        // TODO: remove?
-        token.rely(investmentManager); // to be able to add LPs as wards
         token.rely(poolManager); // to be able to update token prices
         token.deny(address(this));
 
