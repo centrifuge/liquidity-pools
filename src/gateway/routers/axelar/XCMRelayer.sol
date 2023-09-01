@@ -38,7 +38,7 @@ struct XcmWeightInfo {
 }
 
 contract AxelarXCMRelayer is Auth, AxelarExecutable {
-    address private XCM_TRANSACTOR_V2_ADDRESS = 0x000000000000000000000000000000000000080D;
+    address private constant XCM_TRANSACTOR_V2_ADDRESS = 0x000000000000000000000000000000000000080D;
 
     address public immutable centrifugeChainOrigin;
     mapping(string => string) public axelarEVMRouters;

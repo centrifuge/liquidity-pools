@@ -312,20 +312,20 @@ contract PoolManager is Auth {
         return token;
     }
 
-    function deployLiquidityPool(uint64 poolId, bytes16 trancheId, address _currency) public returns (address) {
+    function deployLiquidityPool(uint64 poolId, bytes16 trancheId, address currency) public returns (address) {
         Tranche storage tranche = pools[poolId].tranches[trancheId];
         require(tranche.token != address(0), "PoolManager/tranche-does-not-exist"); // tranche must have been added
-        require(isAllowedAsPoolCurrency(poolId, _currency), "PoolManager/currency-not-supported"); // currency must be supported by pool
+        require(isAllowedAsPoolCurrency(poolId, currency), "PoolManager/currency-not-supported"); // currency must be supported by pool
 
-        address liquidityPool = tranche.liquidityPools[_currency];
+        address liquidityPool = tranche.liquidityPools[currency];
         require(liquidityPool == address(0), "PoolManager/liquidityPool-already-deployed");
         require(pools[poolId].createdAt > 0, "PoolManager/pool-does-not-exist");
 
         liquidityPool = liquidityPoolFactory.newLiquidityPool(
-            poolId, trancheId, _currency, tranche.token, address(investmentManager)
+            poolId, trancheId, currency, tranche.token, address(investmentManager)
         );
 
-        tranche.liquidityPools[_currency] = liquidityPool;
+        tranche.liquidityPools[currency] = liquidityPool;
         AuthLike(address(investmentManager)).rely(liquidityPool);
 
         // enable LP to take the liquidity pool tokens out of escrow in case if investments

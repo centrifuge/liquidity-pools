@@ -66,14 +66,6 @@ contract TrancheToken is ERC20 {
         return super.mint(to, value);
     }
 
-    // --- Manage liquidity pools ---
-    function isTrustedForwarder(address forwarder) public view override returns (bool) {
-        // Liquiditiy Pools are considered trusted forwarders
-        // for the ERC2771Context implementation of the underlying
-        // ERC20 token
-        return liquidityPools[forwarder];
-    }
-
     // --- Pricing ---
     function setPrice(uint128 price, uint256 priceAge) public auth {
         require(lastPriceUpdate == 0, "TrancheToken/price-already-set");
@@ -84,5 +76,30 @@ contract TrancheToken is ERC20 {
     function updatePrice(uint128 price) public auth {
         latestPrice = price;
         lastPriceUpdate = block.timestamp;
+    }
+
+    // --- ERC2771Context ---
+    function isTrustedForwarder(address forwarder) public view returns (bool) {
+        // Liquiditiy Pools are considered trusted forwarders
+        // for the ERC2771Context implementation of the underlying
+        // ERC20 token
+        return liquidityPools[forwarder];
+    }
+
+    /**
+     * @dev Override for `msg.sender`. Defaults to the original `msg.sender` whenever
+     * a call is not performed by the trusted forwarder or the calldata length is less than
+     * 20 bytes (an address length).
+     */
+    function _msgSender() internal view virtual override returns (address sender) {
+        if (isTrustedForwarder(msg.sender) && msg.data.length >= 20) {
+            // The assembly code is more direct than the Solidity version using `abi.decode`.
+            /// @solidity memory-safe-assembly
+            assembly {
+                sender := shr(96, calldataload(sub(calldatasize(), 20)))
+            }
+        } else {
+            return super._msgSender();
+        }
     }
 }

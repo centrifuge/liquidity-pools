@@ -248,17 +248,17 @@ contract Gateway is Auth {
     }
 
     // --- Incoming ---
-    function handle(bytes calldata _msg) external onlyIncomingRouter pauseable {
-        if (Messages.isAddCurrency(_msg)) {
-            (uint128 currency, address currencyAddress) = Messages.parseAddCurrency(_msg);
+    function handle(bytes calldata message) external onlyIncomingRouter pauseable {
+        if (Messages.isAddCurrency(message)) {
+            (uint128 currency, address currencyAddress) = Messages.parseAddCurrency(message);
             poolManager.addCurrency(currency, currencyAddress);
-        } else if (Messages.isAddPool(_msg)) {
-            (uint64 poolId) = Messages.parseAddPool(_msg);
+        } else if (Messages.isAddPool(message)) {
+            (uint64 poolId) = Messages.parseAddPool(message);
             poolManager.addPool(poolId);
-        } else if (Messages.isAllowPoolCurrency(_msg)) {
-            (uint64 poolId, uint128 currency) = Messages.parseAllowPoolCurrency(_msg);
+        } else if (Messages.isAllowPoolCurrency(message)) {
+            (uint64 poolId, uint128 currency) = Messages.parseAllowPoolCurrency(message);
             poolManager.allowPoolCurrency(poolId, currency);
-        } else if (Messages.isAddTranche(_msg)) {
+        } else if (Messages.isAddTranche(message)) {
             (
                 uint64 poolId,
                 bytes16 trancheId,
@@ -266,32 +266,32 @@ contract Gateway is Auth {
                 string memory tokenSymbol,
                 uint8 decimals,
                 uint128 price
-            ) = Messages.parseAddTranche(_msg);
+            ) = Messages.parseAddTranche(message);
             poolManager.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price);
-        } else if (Messages.isUpdateMember(_msg)) {
-            (uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) = Messages.parseUpdateMember(_msg);
+        } else if (Messages.isUpdateMember(message)) {
+            (uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) = Messages.parseUpdateMember(message);
             poolManager.updateMember(poolId, trancheId, user, validUntil);
-        } else if (Messages.isUpdateTrancheTokenPrice(_msg)) {
-            (uint64 poolId, bytes16 trancheId, uint128 price) = Messages.parseUpdateTrancheTokenPrice(_msg);
+        } else if (Messages.isUpdateTrancheTokenPrice(message)) {
+            (uint64 poolId, bytes16 trancheId, uint128 price) = Messages.parseUpdateTrancheTokenPrice(message);
             poolManager.updateTrancheTokenPrice(poolId, trancheId, price);
-        } else if (Messages.isTransfer(_msg)) {
-            (uint128 currency, address recipient, uint128 amount) = Messages.parseIncomingTransfer(_msg);
+        } else if (Messages.isTransfer(message)) {
+            (uint128 currency, address recipient, uint128 amount) = Messages.parseIncomingTransfer(message);
             poolManager.handleTransfer(currency, recipient, amount);
-        } else if (Messages.isTransferTrancheTokens(_msg)) {
+        } else if (Messages.isTransferTrancheTokens(message)) {
             (uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 amount) =
-                Messages.parseTransferTrancheTokens20(_msg);
+                Messages.parseTransferTrancheTokens20(message);
             poolManager.handleTransferTrancheTokens(poolId, trancheId, destinationAddress, amount);
-        } else if (Messages.isExecutedDecreaseInvestOrder(_msg)) {
+        } else if (Messages.isExecutedDecreaseInvestOrder(message)) {
             (uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 currencyPayout) =
-                Messages.parseExecutedDecreaseInvestOrder(_msg);
+                Messages.parseExecutedDecreaseInvestOrder(message);
             investmentManager.handleExecutedDecreaseInvestOrder(poolId, trancheId, investor, currency, currencyPayout);
-        } else if (Messages.isExecutedDecreaseRedeemOrder(_msg)) {
+        } else if (Messages.isExecutedDecreaseRedeemOrder(message)) {
             (uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 trancheTokensPayout) =
-                Messages.parseExecutedDecreaseRedeemOrder(_msg);
+                Messages.parseExecutedDecreaseRedeemOrder(message);
             investmentManager.handleExecutedDecreaseRedeemOrder(
                 poolId, trancheId, investor, currency, trancheTokensPayout
             );
-        } else if (Messages.isExecutedCollectInvest(_msg)) {
+        } else if (Messages.isExecutedCollectInvest(message)) {
             (
                 uint64 poolId,
                 bytes16 trancheId,
@@ -299,11 +299,11 @@ contract Gateway is Auth {
                 uint128 currency,
                 uint128 currencyPayout,
                 uint128 trancheTokensPayout
-            ) = Messages.parseExecutedCollectInvest(_msg);
+            ) = Messages.parseExecutedCollectInvest(message);
             investmentManager.handleExecutedCollectInvest(
                 poolId, trancheId, investor, currency, currencyPayout, trancheTokensPayout
             );
-        } else if (Messages.isExecutedCollectRedeem(_msg)) {
+        } else if (Messages.isExecutedCollectRedeem(message)) {
             (
                 uint64 poolId,
                 bytes16 trancheId,
@@ -311,19 +311,19 @@ contract Gateway is Auth {
                 uint128 currency,
                 uint128 currencyPayout,
                 uint128 trancheTokensPayout
-            ) = Messages.parseExecutedCollectRedeem(_msg);
+            ) = Messages.parseExecutedCollectRedeem(message);
             investmentManager.handleExecutedCollectRedeem(
                 poolId, trancheId, investor, currency, currencyPayout, trancheTokensPayout
             );
-        } else if (Messages.isScheduleUpgrade(_msg)) {
-            address target = Messages.parseScheduleUpgrade(_msg);
+        } else if (Messages.isScheduleUpgrade(message)) {
+            address target = Messages.parseScheduleUpgrade(message);
             root.scheduleRely(target);
-        } else if (Messages.isCancelUpgrade(_msg)) {
-            address target = Messages.parseCancelUpgrade(_msg);
+        } else if (Messages.isCancelUpgrade(message)) {
+            address target = Messages.parseCancelUpgrade(message);
             root.cancelRely(target);
-        } else if (Messages.isUpdateTrancheTokenMetadata(_msg)) {
+        } else if (Messages.isUpdateTrancheTokenMetadata(message)) {
             (uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol) =
-                Messages.parseUpdateTrancheTokenMetadata(_msg);
+                Messages.parseUpdateTrancheTokenMetadata(message);
             poolManager.updateTrancheTokenMetadata(poolId, trancheId, tokenName, tokenSymbol);
         } else {
             revert("Gateway/invalid-message");
