@@ -678,7 +678,7 @@ contract InvestmentManager is Auth {
 
         uint128 currencyAmountInPoolDecimals = _toUint128(
             _toPoolDecimals(trancheTokenAmount, trancheTokenDecimals, liquidityPool).mulDiv(
-                10 ** poolDecimals, price, Math.Rounding.Down
+                price, 10 ** poolDecimals, Math.Rounding.Down
             )
         );
 
