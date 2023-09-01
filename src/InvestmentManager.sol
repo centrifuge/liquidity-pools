@@ -318,6 +318,48 @@ contract InvestmentManager is Auth {
         trancheTokenAmount = uint256(orderbook[user][liquidityPool].maxRedeem);
     }
 
+    /// @return trancheTokenAmount is type of uin256 to support the EIP4626 Liquidity Pool interface
+    function previewDeposit(address user, address liquidityPool, uint256 currencyAmount)
+        public
+        view
+        returns (uint256 trancheTokenAmount)
+    {
+        uint128 depositPrice = calculateDepositPrice(user, liquidityPool);
+        trancheTokenAmount =
+            uint256(_calculateTrancheTokenAmount(_toUint128(currencyAmount), liquidityPool, depositPrice));
+    }
+
+    /// @return currencyAmount is type of uin256 to support the EIP4626 Liquidity Pool interface
+    function previewMint(address user, address liquidityPool, uint256 trancheTokenAmount)
+        public
+        view
+        returns (uint256 currencyAmount)
+    {
+        uint128 depositPrice = calculateDepositPrice(user, liquidityPool);
+        currencyAmount = uint256(_calculateCurrencyAmount(_toUint128(trancheTokenAmount), liquidityPool, depositPrice));
+    }
+
+    /// @return trancheTokenAmount is type of uin256 to support the EIP4626 Liquidity Pool interface
+    function previewRedeem(address user, address liquidityPool, uint256 currencyAmount)
+        public
+        view
+        returns (uint256 trancheTokenAmount)
+    {
+        uint128 redeemPrice = calculateDepositPrice(user, liquidityPool);
+        trancheTokenAmount =
+            uint256(_calculateTrancheTokenAmount(_toUint128(currencyAmount), liquidityPool, redeemPrice));
+    }
+
+    /// @return currencyAmount is type of uin256 to support the EIP4626 Liquidity Pool interface
+    function previewWithdraw(address user, address liquidityPool, uint256 trancheTokenAmount)
+        public
+        view
+        returns (uint256 currencyAmount)
+    {
+        uint128 redeemPrice = calculateDepositPrice(user, liquidityPool);
+        currencyAmount = uint256(_calculateCurrencyAmount(_toUint128(trancheTokenAmount), liquidityPool, redeemPrice));
+    }
+
     // --- Liquidity Pool processing functions ---
     /// @dev processes user's currency deposit / investment after the epoch has been executed on Centrifuge chain.
     /// In case user's invest order was fullfilled on Centrifuge chain during epoch execution MaxDeposit and MaxMint are increased and trancheTokens can be transferred to user's wallet on calling processDeposit.
