@@ -85,6 +85,11 @@ contract Gateway is Auth {
     mapping(address => bool) public incomingRouters;
     RouterLike public outgoingRouter;
 
+    // --- Events ---
+    event AddIncomingRouter(address indexed router);
+    event RemoveIncomingRouter(address indexed router);
+    event UpdateOutgoingRouter(address indexed router);
+
     constructor(address root_, address investmentManager_, address tokenManager_, address router_) {
         root = RootLike(root_);
         investmentManager = InvestmentManagerLike(investmentManager_);
@@ -119,14 +124,17 @@ contract Gateway is Auth {
     // --- Administration ---
     function addIncomingRouter(address router) public auth {
         incomingRouters[router] = true;
+        emit AddIncomingRouter(router);
     }
 
     function removeIncomingRouter(address router) public auth {
         incomingRouters[router] = false;
+        emit RemoveIncomingRouter(router);
     }
 
     function updateOutgoingRouter(address router) public auth {
         outgoingRouter = RouterLike(router);
+        emit UpdateOutgoingRouter(router);
     }
 
     // --- Outgoing ---
