@@ -4,8 +4,7 @@ pragma abicoder v2;
 
 import "./TestSetup.t.sol";
 
-contract LiquidityPoolTest is TestSetup  {
-
+contract LiquidityPoolTest is TestSetup {
     function testTransferFrom(
         uint64 poolId,
         uint8 decimals,
@@ -502,7 +501,7 @@ contract LiquidityPoolTest is TestSetup  {
 
         uint256 maxMint = lPool.maxMint(investor);
         lPool.mint(maxMint, investor);
-        
+
         TrancheToken trancheToken = TrancheToken(address(lPool.share()));
         assertEq(trancheToken.balanceOf(address(investor)), maxMint);
 

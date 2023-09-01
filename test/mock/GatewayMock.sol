@@ -1,11 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.18;
 
-import"./Mock.sol";
+import "./Mock.sol";
 
 contract GatewayMock is Mock {
-   
-
     constructor() {}
 
     // --- Outgoing ---
@@ -15,7 +13,7 @@ contract GatewayMock is Mock {
         address sender,
         bytes32 destinationAddress,
         uint128 amount
-    ) public { 
+    ) public {
         values_uint64["poolId"] = poolId;
         values_bytes16["trancheId"] = trancheId;
         values_address["sender"] = sender;
@@ -30,21 +28,19 @@ contract GatewayMock is Mock {
         uint64 destinationChainId,
         address destinationAddress,
         uint128 amount
-    ) public { 
+    ) public {
         values_uint64["poolId"] = poolId;
         values_bytes16["trancheId"] = trancheId;
         values_address["sender"] = sender;
         values_uint64["destinationChainId"] = destinationChainId;
-        values_address["destinationAddress"] = destinationAddress; 
+        values_address["destinationAddress"] = destinationAddress;
         values_uint128["amount"] = amount;
     }
 
-    function transfer(uint128 token, address sender, bytes32 receiver, uint128 amount)
-        public
-    { 
+    function transfer(uint128 token, address sender, bytes32 receiver, uint128 amount) public {
         values_uint128["token"] = token;
         values_address["sender"] = sender;
-        values_bytes32["receiver"] = receiver; 
+        values_bytes32["receiver"] = receiver;
         values_uint128["amount"] = amount;
     }
 
@@ -56,11 +52,11 @@ contract GatewayMock is Mock {
         values_address["investor"] = investor;
         values_uint128["currency"] = currency;
         values_uint128["amount"] = amount;
-     }
+    }
 
     function decreaseInvestOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount)
         public
-    { 
+    {
         values_uint64["poolId"] = poolId;
         values_bytes16["trancheId"] = trancheId;
         values_address["investor"] = investor;
@@ -70,45 +66,36 @@ contract GatewayMock is Mock {
 
     function increaseRedeemOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount)
         public
-    { 
+    {
         values_uint64["poolId"] = poolId;
         values_bytes16["trancheId"] = trancheId;
         values_address["investor"] = investor;
         values_uint128["currency"] = currency;
         values_uint128["amount"] = amount;
-
     }
 
-    function collectInvest(uint64 poolId, bytes16 trancheId, address investor, uint128 currency)
-        public
-    { 
+    function collectInvest(uint64 poolId, bytes16 trancheId, address investor, uint128 currency) public {
         values_uint64["poolId"] = poolId;
         values_bytes16["trancheId"] = trancheId;
         values_address["investor"] = investor;
         values_uint128["currency"] = currency;
     }
 
-    function collectRedeem(uint64 poolId, bytes16 trancheId, address investor, uint128 currency)
-        public
-    { 
+    function collectRedeem(uint64 poolId, bytes16 trancheId, address investor, uint128 currency) public {
         values_uint64["poolId"] = poolId;
         values_bytes16["trancheId"] = trancheId;
         values_address["investor"] = investor;
         values_uint128["currency"] = currency;
     }
 
-    function cancelInvestOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency)
-        public
-    { 
+    function cancelInvestOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency) public {
         values_uint64["poolId"] = poolId;
         values_bytes16["trancheId"] = trancheId;
         values_address["investor"] = investor;
         values_uint128["currency"] = currency;
     }
 
-    function cancelRedeemOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency)
-        public
-    { 
+    function cancelRedeemOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency) public {
         values_uint64["poolId"] = poolId;
         values_bytes16["trancheId"] = trancheId;
         values_address["investor"] = investor;

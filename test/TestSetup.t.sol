@@ -24,7 +24,6 @@ import {MockXcmRouter} from "./mock/MockXcmRouter.sol";
 import "forge-std/Test.sol";
 import {Investor} from "./accounts/Investor.sol";
 
-
 contract TestSetup is Test {
     Root root;
     InvestmentManager evmInvestmentManager;
@@ -39,7 +38,7 @@ contract TestSetup is Test {
 
     uint128 constant MAX_UINT128 = type(uint128).max;
 
-    function setUp() virtual public {
+    function setUp() public virtual {
         self = address(this);
         vm.chainId(1);
 
@@ -48,15 +47,15 @@ contract TestSetup is Test {
         address escrow_ = address(escrow);
         root = new Root(escrow_, 48 hours);
         address root_ = address(root);
-        LiquidityPoolFactory liquidityPoolFactory= new LiquidityPoolFactory(root_);
+        LiquidityPoolFactory liquidityPoolFactory = new LiquidityPoolFactory(root_);
         TrancheTokenFactory trancheTokenFactory = new TrancheTokenFactory(root_);
         evmInvestmentManager = new InvestmentManager(escrow_);
-        address evmInvestmentManager_ = address(evmInvestmentManager);    
+        address evmInvestmentManager_ = address(evmInvestmentManager);
         evmPoolManager = new PoolManager(escrow_, address(liquidityPoolFactory), address(trancheTokenFactory));
         address evmPoolManager_ = address(evmPoolManager);
         liquidityPoolFactory.rely(evmPoolManager_);
         trancheTokenFactory.rely(evmPoolManager_);
-        
+
         // deploy mocks
         mockXcmRouter = new MockXcmRouter(evmInvestmentManager_);
         homePools = new MockHomeLiquidityPools(address(mockXcmRouter));
@@ -67,7 +66,7 @@ contract TestSetup is Test {
         address gateway_ = address(gateway);
 
         // wire contracts
-        
+
         evmInvestmentManager.file("gateway", gateway_);
         evmInvestmentManager.file("poolManager", evmPoolManager_);
         evmInvestmentManager.rely(gateway_);
@@ -137,5 +136,4 @@ contract TestSetup is Test {
         }
         return fc;
     }
-
 }

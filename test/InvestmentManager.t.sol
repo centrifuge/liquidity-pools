@@ -4,4 +4,4 @@ pragma abicoder v2;
 
 import "./TestSetup.t.sol";
 
-contract InvestmentManagerTest is TestSetup  {}
+contract InvestmentManagerTest is TestSetup {}

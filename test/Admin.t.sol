@@ -7,12 +7,11 @@ import {PauseAdmin} from "src/admins/PauseAdmin.sol";
 import {DelayedAdmin} from "src/admins/DelayedAdmin.sol";
 
 contract AdminTest is TestSetup {
-
     PauseAdmin pauseAdmin;
     DelayedAdmin delayedAdmin;
     uint256 timelock;
 
-    function setUp() override public {
+    function setUp() public override {
         super.setUp();
         timelock = 48 hours;
 

@@ -5,7 +5,6 @@ pragma abicoder v2;
 import "./TestSetup.t.sol";
 
 contract PoolManagerTest is TestSetup {
-
     function testAddCurrencyWorks(uint128 currency, uint128 badCurrency) public {
         vm.assume(currency > 0);
         vm.assume(badCurrency > 0);
@@ -180,7 +179,7 @@ contract PoolManagerTest is TestSetup {
         uint128 currency,
         uint64 validUntil,
         address destinationAddress,
-        uint128 amount, 
+        uint128 amount,
         uint128 price
     ) public {
         vm.assume(decimals <= 18);
@@ -204,7 +203,7 @@ contract PoolManagerTest is TestSetup {
         bytes16 trancheId,
         uint128 currency,
         address destinationAddress,
-        uint128 amount, 
+        uint128 amount,
         uint128 price
     ) public {
         vm.assume(decimals <= 18);
@@ -226,7 +225,7 @@ contract PoolManagerTest is TestSetup {
         uint64 validUntil,
         address destinationAddress,
         uint128 amount,
-        uint128 currency, 
+        uint128 currency,
         uint128 price
     ) public {
         vm.assume(decimals <= 18);
@@ -417,7 +416,6 @@ contract PoolManagerTest is TestSetup {
         vm.expectRevert(bytes("PoolManager/unknown-token"));
         homePools.updateTrancheTokenMetadata(poolId, trancheId, updatedTokenName, updatedTokenSymbol);
     }
-
 
     function testAddPoolWorks(uint64 poolId) public {
         homePools.addPool(poolId);
