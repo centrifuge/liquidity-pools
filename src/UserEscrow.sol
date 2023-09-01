@@ -9,8 +9,8 @@ interface TransferLike {
 }
 
 contract UserEscrow is Auth {
-    event TransferIn(address indexed token, address indexed recipient, uint256 amount);
-    event TransferOut(address indexed token, address indexed recipient, uint256 amount);
+    event TransferIn(address indexed token, address indexed source, address indexed destination, uint256 amount);
+    event TransferOut(address indexed token, address indexed destination, uint256 amount);
 
     mapping(address => mapping(address => uint256)) destinations; // map by token and destination
 
@@ -20,10 +20,10 @@ contract UserEscrow is Auth {
     }
 
     // --- Token approvals ---
-    function transferIn(address token, address destination, uint256 amount) external auth {
-        require(TransferLike(token).transferFrom(msg.sender, address(this), amount), "UserEscrow/transfer-failed");
+    function transferIn(address token, address source, address destination, uint256 amount) external auth {
+        require(TransferLike(token).transferFrom(source, address(this), amount), "UserEscrow/transfer-failed");
         destinations[token][destination] = amount;
-        emit TransferIn(token, destination, amount);
+        emit TransferIn(token, source, destination, amount);
     }
 
     function transferOut(address token, address destination, uint256 amount) external auth {

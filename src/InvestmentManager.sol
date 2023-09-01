@@ -61,7 +61,7 @@ interface EscrowLike {
 }
 
 interface UserEscrowLike {
-    function transferIn(address token, address destination, uint256 amount) external;
+    function transferIn(address token, address source, address destination, uint256 amount) external;
     function transferOut(address token, address destination, uint256 amount) external;
 }
 
@@ -337,8 +337,8 @@ contract InvestmentManager is Auth {
         lpValues.maxWithdraw = lpValues.maxWithdraw + currencyPayout;
         lpValues.maxRedeem = lpValues.maxRedeem + trancheTokensPayout;
 
-        escrow.approve(_currency, address(this), currencyPayout);
-        userEscrow.transferIn(address(escrow), recipient, currencyPayout);
+        escrow.approve(_currency, address(userEscrow), currencyPayout);
+        userEscrow.transferIn(_currency, address(escrow), recipient, currencyPayout);
 
         LiquidityPoolLike(lPool).burn(address(escrow), trancheTokensPayout); // burned redeemed tokens from escrow
     }
