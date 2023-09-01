@@ -7,6 +7,7 @@ import {Root} from "../src/Root.sol";
 import {InvestmentManager} from "../src/InvestmentManager.sol";
 import {PoolManager, Tranche} from "../src/PoolManager.sol";
 import {Escrow} from "../src/Escrow.sol";
+import {UserEscrow} from "../src/UserEscrow.sol";
 import {LiquidityPoolFactory, TrancheTokenFactory} from "../src/util/Factory.sol";
 import {LiquidityPool} from "../src/LiquidityPool.sol";
 import {TrancheToken} from "../src/token/Tranche.sol";
@@ -32,6 +33,7 @@ contract TestSetup is Test {
     MockHomeLiquidityPools homePools;
     MockXcmRouter mockXcmRouter;
     Escrow escrow;
+    UserEscrow userEscrow;
     ERC20 erc20;
 
     address self;
@@ -44,12 +46,14 @@ contract TestSetup is Test {
 
         // deploy core contracts
         escrow = new Escrow();
+        userEscrow = new UserEscrow();
         address escrow_ = address(escrow);
+        address userEscrow_ = address(userEscrow);
         root = new Root(escrow_, 48 hours);
         address root_ = address(root);
         LiquidityPoolFactory liquidityPoolFactory = new LiquidityPoolFactory(root_);
         TrancheTokenFactory trancheTokenFactory = new TrancheTokenFactory(root_);
-        evmInvestmentManager = new InvestmentManager(escrow_);
+        evmInvestmentManager = new InvestmentManager(escrow_, userEscrow_);
         address evmInvestmentManager_ = address(evmInvestmentManager);
         evmPoolManager = new PoolManager(escrow_, address(liquidityPoolFactory), address(trancheTokenFactory));
         address evmPoolManager_ = address(evmPoolManager);
@@ -75,6 +79,7 @@ contract TestSetup is Test {
         evmPoolManager.file("investmentManager", evmInvestmentManager_);
         escrow.rely(evmInvestmentManager_);
         escrow.rely(evmPoolManager_);
+        userEscrow.rely(evmInvestmentManager_);
         // escrow.rely(gateway_);
         mockXcmRouter.file("gateway", gateway_);
     }

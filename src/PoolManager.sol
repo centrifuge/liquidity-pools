@@ -35,6 +35,7 @@ interface LiquidityPoolLike {
 interface InvestmentManagerLike {
     function liquidityPools(uint64 poolId, bytes16 trancheId, address currency) external returns (address);
     function getTrancheToken(uint64 _poolId, bytes16 _trancheId) external view returns (address);
+    function userEscrow() external view returns (address);
 }
 
 interface EscrowLike {
@@ -262,8 +263,8 @@ contract PoolManager is Auth {
         currencyAddressToId[currencyAddress] = currency;
 
         // enable taking the currency out of escrow in case of redemptions
-        EscrowLike(escrow).approve(currencyAddress, address(investmentManager), type(uint256).max);
-        EscrowLike(escrow).approve(currencyAddress, address(this), type(uint256).max);
+        EscrowLike(escrow).approve(currencyAddress, investmentManager.userEscrow(), type(uint256).max);
+
         emit CurrencyAdded(currency, currencyAddress);
     }
 

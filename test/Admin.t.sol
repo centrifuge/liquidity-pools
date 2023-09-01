@@ -14,7 +14,6 @@ contract AdminTest is TestSetup {
     function setUp() public override {
         super.setUp();
         timelock = 48 hours;
-
         pauseAdmin = new PauseAdmin(address(root));
         delayedAdmin = new DelayedAdmin(address(root));
         pauseAdmin.addPauser(address(this));
