@@ -8,6 +8,11 @@ interface TransferLike {
     function transfer(address, uint256) external returns (bool);
 }
 
+/**
+ * @dev Escrow contract that holds tokens for specific destinations.
+ * Ensures that once tokens are transferred in, they can only be
+ * transferred out to the pre-chosen destinations, by wards.
+ */
 contract UserEscrow is Auth {
     event TransferIn(address indexed token, address indexed source, address indexed destination, uint256 amount);
     event TransferOut(address indexed token, address indexed destination, uint256 amount);
