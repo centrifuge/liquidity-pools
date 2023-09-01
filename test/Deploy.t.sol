@@ -2,14 +2,14 @@
 pragma solidity ^0.8.18;
 pragma abicoder v2;
 
-import {InvestmentManager, Pool, Tranche} from "src/InvestmentManager.sol";
+import {InvestmentManager} from "src/InvestmentManager.sol";
 import {Gateway, RouterLike} from "src/gateway/Gateway.sol";
 import {MockHomeLiquidityPools} from "test/mock/MockHomeLiquidityPools.sol";
 import {Escrow} from "src/Escrow.sol";
 import {PauseAdmin} from "src/admins/PauseAdmin.sol";
 import {DelayedAdmin} from "src/admins/DelayedAdmin.sol";
 import {MockXcmRouter} from "test/mock/MockXcmRouter.sol";
-import {TokenManager} from "src/TokenManager.sol";
+import {PoolManager, Pool, Tranche} from "src/PoolManager.sol";
 import {ERC20} from "src/token/ERC20.sol";
 import {TrancheToken} from "src/token/Tranche.sol";
 import {LiquidityPoolTest} from "test/LiquidityPool.t.sol";
@@ -37,7 +37,7 @@ contract DeployTest is Test {
     Escrow escrow;
     PauseAdmin pauseAdmin;
     DelayedAdmin delayedAdmin;
-    TokenManager tokenManager;
+    PoolManager poolManager;
 
     address self;
     ERC20 erc20;
@@ -52,7 +52,7 @@ contract DeployTest is Test {
         escrow = script.escrow();
         pauseAdmin = script.pauseAdmin();
         delayedAdmin = script.delayedAdmin();
-        tokenManager = script.tokenManager();
+        poolManager = script.poolManager();
 
         erc20 = newErc20("Test", "TEST", 6); // TODO: fuzz decimals
         self = address(this);
@@ -75,7 +75,7 @@ contract DeployTest is Test {
         deal(address(erc20), self, amount);
 
         vm.prank(address(gateway));
-        tokenManager.updateMember(poolId, trancheId, self, validUntil);
+        poolManager.updateMember(poolId, trancheId, self, validUntil);
 
         depositMint(poolId, decimals, tokenName, tokenSymbol, trancheId, price, currencyId, amount, validUntil, lPool);
         amount = lPool.balanceOf(self);
@@ -105,7 +105,7 @@ contract DeployTest is Test {
         assertEq(erc20.balanceOf(self), 0);
 
         // trigger executed collectInvest
-        uint128 _currencyId = tokenManager.currencyAddressToId(address(erc20)); // retrieve currencyId
+        uint128 _currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
 
         uint128 trancheTokensPayout = _toUint128(
             uint128(amount).mulDiv(
@@ -162,7 +162,7 @@ contract DeployTest is Test {
         lPool.requestRedeem(amount, self);
 
         // redeem
-        uint128 _currencyId = tokenManager.currencyAddressToId(address(erc20)); // retrieve currencyId
+        uint128 _currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
         uint128 currencyPayout = _toUint128(
             uint128(amount).mulDiv(price, 10 ** (18 - erc20.decimals() + lPool.decimals()), Math.Rounding.Down)
         );
@@ -206,14 +206,14 @@ contract DeployTest is Test {
         uint64 validUntil = uint64(block.timestamp + 1000 days);
 
         vm.startPrank(address(gateway));
-        investmentManager.addPool(poolId);
-        investmentManager.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price);
-        tokenManager.addCurrency(1, address(erc20));
-        investmentManager.allowPoolCurrency(poolId, 1);
+        poolManager.addPool(poolId);
+        poolManager.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price);
+        poolManager.addCurrency(1, address(erc20));
+        poolManager.allowPoolCurrency(poolId, 1);
         vm.stopPrank();
 
-        investmentManager.deployTranche(poolId, trancheId);
-        address lPool = investmentManager.deployLiquidityPool(poolId, trancheId, address(erc20));
+        poolManager.deployTranche(poolId, trancheId);
+        address lPool = poolManager.deployLiquidityPool(poolId, trancheId, address(erc20));
         return lPool;
     }
 

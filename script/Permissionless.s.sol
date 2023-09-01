@@ -22,19 +22,19 @@ contract PermissionlessScript is Deployer {
 
         // Set up test data
         if (vm.envBool("SETUP_TEST_DATA")) {
-            root.relyContract(address(tokenManager), address(this));
-            tokenManager.file("gateway", admin);
+            root.relyContract(address(poolManager), address(this));
+            poolManager.file("gateway", admin);
             root.relyContract(address(investmentManager), address(this));
             investmentManager.file("gateway", admin);
-            tokenManager.addCurrency(1, 0xd35CCeEAD182dcee0F148EbaC9447DA2c4D449c4);
-            investmentManager.addPool(1171854325);
-            investmentManager.addTranche(1171854325, 0x102f4ef817340a8839a515d2c73a7c1d, "Some Token", "ST", 6, 1e27);
-            investmentManager.deployTranche(1171854325, 0x102f4ef817340a8839a515d2c73a7c1d);
-            investmentManager.allowPoolCurrency(1171854325, 1);
-            investmentManager.deployLiquidityPool(
+            poolManager.addCurrency(1, 0xd35CCeEAD182dcee0F148EbaC9447DA2c4D449c4);
+            poolManager.addPool(1171854325);
+            poolManager.addTranche(1171854325, 0x102f4ef817340a8839a515d2c73a7c1d, "Some Token", "ST", 6, 1e27);
+            poolManager.deployTranche(1171854325, 0x102f4ef817340a8839a515d2c73a7c1d);
+            poolManager.allowPoolCurrency(1171854325, 1);
+            poolManager.deployLiquidityPool(
                 1171854325, 0x102f4ef817340a8839a515d2c73a7c1d, 0xd35CCeEAD182dcee0F148EbaC9447DA2c4D449c4
             );
-            tokenManager.updateMember(1171854325, 0x102f4ef817340a8839a515d2c73a7c1d, admin, type(uint64).max);
+            poolManager.updateMember(1171854325, 0x102f4ef817340a8839a515d2c73a7c1d, admin, type(uint64).max);
         }
 
         giveAdminAccess();
