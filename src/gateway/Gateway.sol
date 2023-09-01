@@ -2,7 +2,6 @@
 pragma solidity ^0.8.18;
 pragma abicoder v2;
 
-import {TypedMemView} from "memview-sol/TypedMemView.sol";
 import {Messages} from "./Messages.sol";
 import "../util/Auth.sol";
 
@@ -75,14 +74,10 @@ interface AuthLike {
 interface RootLike {
     function paused() external returns (bool);
     function scheduleRely(address target) external;
+    function cancelRely(address target) external;
 }
 
 contract Gateway is Auth {
-    using TypedMemView for bytes;
-    // why bytes29? - https://github.com/summa-tx/memview-sol#why-bytes29
-    using TypedMemView for bytes29;
-    using Messages for bytes29;
-
     RootLike public immutable root;
     InvestmentManagerLike public immutable investmentManager;
     TokenManagerLike public immutable tokenManager;
@@ -228,10 +223,24 @@ contract Gateway is Auth {
         outgoingRouter.send(Messages.formatCollectRedeem(poolId, trancheId, addressToBytes32(investor), currency));
     }
 
-    // --- Incoming ---
-    function handle(bytes memory _message) external onlyIncomingRouter pauseable {
-        bytes29 _msg = _message.ref(0);
+    function cancelInvestOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency)
+        public
+        onlyInvestmentManager
+        pauseable
+    {
+        outgoingRouter.send(Messages.formatCancelInvestOrder(poolId, trancheId, addressToBytes32(investor), currency));
+    }
 
+    function cancelRedeemOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency)
+        public
+        onlyInvestmentManager
+        pauseable
+    {
+        outgoingRouter.send(Messages.formatCancelRedeemOrder(poolId, trancheId, addressToBytes32(investor), currency));
+    }
+
+    // --- Incoming ---
+    function handle(bytes memory _msg) external onlyIncomingRouter pauseable {
         if (Messages.isAddCurrency(_msg)) {
             (uint128 currency, address currencyAddress) = Messages.parseAddCurrency(_msg);
             tokenManager.addCurrency(currency, currencyAddress);
@@ -301,6 +310,9 @@ contract Gateway is Auth {
         } else if (Messages.isScheduleUpgrade(_msg)) {
             address target = Messages.parseScheduleUpgrade(_msg);
             root.scheduleRely(target);
+        } else if (Messages.isCancelUpgrade(_msg)) {
+            address target = Messages.parseCancelUpgrade(_msg);
+            root.cancelRely(target);
         } else if (Messages.isUpdateTrancheTokenMetadata(_msg)) {
             (uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol) =
                 Messages.parseUpdateTrancheTokenMetadata(_msg);

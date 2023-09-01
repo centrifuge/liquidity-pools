@@ -2,7 +2,6 @@
 pragma solidity ^0.8.18;
 pragma abicoder v2;
 
-import {TypedMemView} from "memview-sol/TypedMemView.sol";
 import {Messages} from "../../Messages.sol";
 import "./../../../util/Auth.sol";
 
@@ -43,8 +42,6 @@ interface GatewayLike {
 }
 
 contract XCMRouter is Auth {
-    using TypedMemView for bytes;
-
     address constant XCM_TRANSACTOR_V2_ADDRESS = 0x000000000000000000000000000000000000080D;
 
     XcmWeightInfo internal xcmWeightInfo;
@@ -154,9 +151,7 @@ contract XCMRouter is Auth {
 
     // Obtain the Scale-encoded length of a given message. Each Connector Message is fixed-sized and
     // have thus a fixed scale-encoded length associated to which message variant (aka Call).
-    function messageLengthScaleEncoded(bytes memory message) internal pure returns (bytes memory) {
-        bytes29 _msg = message.ref(0);
-
+    function messageLengthScaleEncoded(bytes memory _msg) internal pure returns (bytes memory) {
         if (Messages.isTransfer(_msg)) {
             return hex"8501";
         } else if (Messages.isTransferTrancheTokens(_msg)) {

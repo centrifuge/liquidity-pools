@@ -1,2 +1,1 @@
 forge-std/=lib/forge-std/src/
-memview-sol/=lib/memview-sol/contracts/
