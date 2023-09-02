@@ -86,6 +86,7 @@ contract TrancheToken is ERC20 {
     function realize(address to, uint256 value) public auth checkMember(to) {
         require(unrealizedBalanceOf[to] >= value, "TrancheToken/insufficient-unrealized-balance");
         unrealizedBalanceOf[to] = unrealizedBalanceOf[to] - value;
+        totalRealizedSupply = totalRealizedSupply + value;
     }
 
     // --- Pricing ---
