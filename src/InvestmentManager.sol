@@ -272,6 +272,8 @@ contract InvestmentManager is Auth {
             ERC20Like(_currency).transferFrom(address(escrow), user, currencyPayout),
             "InvestmentManager/currency-transfer-failed"
         );
+        // TODO: will need to burn unrealized tranche tokens. all if there is no remaining invest order,
+        // currencyPayout / tokenPrice if there is a remaining invest order
     }
 
     function handleExecutedDecreaseRedeemOrder(
