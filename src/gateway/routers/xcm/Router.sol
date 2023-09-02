@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity ^0.8.18;
-pragma abicoder v2;
+pragma solidity 0.8.21;
 
 import {Messages} from "../../Messages.sol";
-import "./../../../util/Auth.sol";
+import {Auth} from "./../../../util/Auth.sol";
 
 struct Multilocation {
     uint8 parents;
@@ -43,6 +42,7 @@ interface GatewayLike {
 
 contract XCMRouter is Auth {
     address constant XCM_TRANSACTOR_V2_ADDRESS = 0x000000000000000000000000000000000000080D;
+    uint32 private constant CENTRIFUGE_PARACHAIN_ID = 2031;
 
     XcmWeightInfo internal xcmWeightInfo;
 
@@ -192,6 +192,6 @@ contract XCMRouter is Auth {
     }
 
     function _parachainId() internal pure returns (bytes memory) {
-        return abi.encodePacked(uint8(0), uint32(2031));
+        return abi.encodePacked(uint8(0), CENTRIFUGE_PARACHAIN_ID);
     }
 }

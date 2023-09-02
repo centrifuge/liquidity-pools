@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity ^0.8.18;
-pragma abicoder v2;
+pragma solidity 0.8.21;
 
 import "./TestSetup.t.sol";
 
@@ -419,7 +418,7 @@ contract PoolManagerTest is TestSetup {
 
     function testAddPoolWorks(uint64 poolId) public {
         homePools.addPool(poolId);
-        (uint64 actualPoolId,,) = evmPoolManager.pools(poolId);
+        (, uint64 actualPoolId,) = evmPoolManager.pools(poolId);
         assertEq(uint256(actualPoolId), uint256(poolId));
     }
 
@@ -460,7 +459,7 @@ contract PoolManagerTest is TestSetup {
         uint128 price
     ) public {
         homePools.addPool(poolId);
-        (uint64 actualPoolId,,) = evmPoolManager.pools(poolId);
+        (, uint64 actualPoolId,) = evmPoolManager.pools(poolId);
         assertEq(uint256(actualPoolId), uint256(poolId));
         homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price);
         evmPoolManager.deployTranche(poolId, trancheId);

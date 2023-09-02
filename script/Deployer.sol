@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity ^0.8.18;
+pragma solidity 0.8.21;
 
 import {Root} from "src/Root.sol";
 import {AxelarEVMRouter} from "src/gateway/routers/axelar/EVMRouter.sol";

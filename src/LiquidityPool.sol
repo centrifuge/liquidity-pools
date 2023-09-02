@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity ^0.8.18;
+pragma solidity 0.8.21;
 
-import "./util/Auth.sol";
-import "./token/ERC20Like.sol";
-import "./util/Math.sol";
+import {Auth} from "./util/Auth.sol";
+import {Math} from "./util/Math.sol";
+import {ERC20Like} from "./token/ERC20Like.sol";
 
 interface ERC20PermitLike {
     function permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
@@ -34,7 +34,7 @@ interface InvestmentManagerLike {
     function previewRedeem(address user, address liquidityPool, uint256 shares) external view returns (uint256);
     function requestRedeem(uint256 shares, address receiver) external;
     function requestDeposit(uint256 assets, address receiver) external;
-    function collectInvest(uint64 poolId, bytes16 trancheId, address receiver, address currency) external;
+    function collectDeposit(uint64 poolId, bytes16 trancheId, address receiver, address currency) external;
     function collectRedeem(uint64 poolId, bytes16 trancheId, address receiver, address currency) external;
     function PRICE_DECIMALS() external view returns (uint8);
 }
@@ -49,8 +49,6 @@ interface InvestmentManagerLike {
 contract LiquidityPool is Auth, ERC20Like {
     using Math for uint256;
 
-    InvestmentManagerLike public investmentManager;
-
     uint64 public immutable poolId;
     bytes16 public immutable trancheId;
 
@@ -60,6 +58,8 @@ contract LiquidityPool is Auth, ERC20Like {
     /// @notice share: The restricted ERC-20 Liquidity pool token. Has a ratio (token price) of underlying assets exchanged on deposit/withdraw/redeem. Liquidity pool tokens on evm represent tranche tokens on centrifuge chain (even though in the current implementation one tranche token on centrifuge chain can be split across multiple liquidity pool tokens on EVM).
     TrancheTokenLike public immutable share;
 
+    InvestmentManagerLike public investmentManager;
+
     // --- Events ---
     event File(bytes32 indexed what, address data);
     event DepositRequested(address indexed owner, uint256 assets);
@@ -68,6 +68,8 @@ contract LiquidityPool is Auth, ERC20Like {
     event Withdraw(
         address indexed sender, address indexed receiver, address indexed owner, uint256 assets, uint256 shares
     );
+    event DepositCollected(address indexed owner);
+    event RedeemCollected(address indexed owner);
 
     constructor(uint64 poolId_, bytes16 trancheId_, address asset_, address share_, address investmentManager_) {
         poolId = poolId_;
@@ -140,20 +142,6 @@ contract LiquidityPool is Auth, ERC20Like {
         shares = investmentManager.previewDeposit(msg.sender, address(this), assets);
     }
 
-    /// @dev request asset deposit for a receiver to be included in the next epoch execution. Asset is locked in the escrow on request submission
-    function requestDeposit(uint256 assets, address owner) public withCurrencyApproval(owner, assets) {
-        investmentManager.requestDeposit(assets, owner);
-        emit DepositRequested(owner, assets);
-    }
-
-    function requestDepositWithPermit(uint256 assets, address owner, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
-        public
-    {
-        ERC20PermitLike(asset).permit(owner, address(investmentManager), assets, deadline, v, r, s);
-        investmentManager.requestDeposit(assets, owner);
-        emit DepositRequested(owner, assets);
-    }
-
     /// @dev collect shares for deposited funds after pool epoch execution. maxMint is the max amount of shares that can be collected. Required assets must already be locked
     /// maxDeposit is the amount of funds that was successfully invested into the pool on Centrifuge chain
     function deposit(uint256 assets, address receiver) public returns (uint256 shares) {
@@ -177,20 +165,6 @@ contract LiquidityPool is Auth, ERC20Like {
     /// @return assets that any user would get for an amount of shares provided -> convertToAssets
     function previewMint(uint256 shares) external view returns (uint256 assets) {
         assets = investmentManager.previewMint(msg.sender, address(this), shares);
-    }
-
-    /// @dev request share redemption for a receiver to be included in the next epoch execution. Shares are locked in the escrow on request submission
-    function requestRedeem(uint256 shares, address owner) public withTokenApproval(owner, shares) {
-        investmentManager.requestRedeem(shares, owner);
-        emit RedeemRequested(owner, shares);
-    }
-
-    function requestRedeemWithPermit(uint256 shares, address owner, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
-        public
-    {
-        share.permit(owner, address(investmentManager), shares, deadline, v, r, s);
-        investmentManager.requestRedeem(shares, owner);
-        emit RedeemRequested(owner, shares);
     }
 
     /// @return maxAssets that the receiver can withdraw
@@ -240,12 +214,44 @@ contract LiquidityPool is Auth, ERC20Like {
         return currencyPayout;
     }
 
-    function collectRedeem(address receiver) public {
-        investmentManager.collectRedeem(poolId, trancheId, receiver, asset);
+    // --- Asynchronous 4626 functions ---
+    /// @dev request asset deposit for a receiver to be included in the next epoch execution. Asset is locked in the escrow on request submission
+    function requestDeposit(uint256 assets, address owner) public withCurrencyApproval(owner, assets) {
+        investmentManager.requestDeposit(assets, owner);
+        emit DepositRequested(owner, assets);
     }
 
-    function collectInvest(address receiver) public {
-        investmentManager.collectInvest(poolId, trancheId, receiver, asset);
+    function requestDepositWithPermit(uint256 assets, address owner, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
+        public
+    {
+        ERC20PermitLike(asset).permit(owner, address(investmentManager), assets, deadline, v, r, s);
+        investmentManager.requestDeposit(assets, owner);
+        emit DepositRequested(owner, assets);
+    }
+
+    /// @dev request share redemption for a receiver to be included in the next epoch execution. Shares are locked in the escrow on request submission
+    function requestRedeem(uint256 shares, address owner) public withTokenApproval(owner, shares) {
+        investmentManager.requestRedeem(shares, owner);
+        emit RedeemRequested(owner, shares);
+    }
+
+    function requestRedeemWithPermit(uint256 shares, address owner, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
+        public
+    {
+        share.permit(owner, address(investmentManager), shares, deadline, v, r, s);
+        investmentManager.requestRedeem(shares, owner);
+        emit RedeemRequested(owner, shares);
+    }
+
+    // --- Miscellaneous investment functions ---
+    function collectDeposit(address receiver) public {
+        investmentManager.collectDeposit(poolId, trancheId, receiver, asset);
+        emit DepositCollected(receiver);
+    }
+
+    function collectRedeem(address receiver) public {
+        investmentManager.collectRedeem(poolId, trancheId, receiver, asset);
+        emit RedeemCollected(receiver);
     }
 
     // --- ERC20 overrides ---
@@ -301,7 +307,7 @@ contract LiquidityPool is Auth, ERC20Like {
         _successCheck(success);
     }
 
-    // --- Restrictions ---
+    // --- Restriction overrides ---
     function latestPrice() public view returns (uint256) {
         return share.latestPrice();
     }
@@ -313,7 +319,7 @@ contract LiquidityPool is Auth, ERC20Like {
     // --- Helpers ---
     /// @dev In case of unsuccessful tx, parse the revert message
     function _successCheck(bool success) internal pure {
-        if (success == false) {
+        if (!success) {
             assembly {
                 let ptr := mload(0x40)
                 let size := returndatasize()

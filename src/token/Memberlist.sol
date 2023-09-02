@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity ^0.8.18;
+pragma solidity 0.8.21;
 
-import "./../util/Auth.sol";
+import {Auth} from "./../util/Auth.sol";
 
 interface MemberlistLike {
     function updateMember(address user, uint256 validUntil) external;
@@ -35,7 +35,8 @@ contract Memberlist is Auth {
     }
 
     function updateMembers(address[] memory users, uint256 validUntil) public auth {
-        for (uint256 i = 0; i < users.length; i++) {
+        uint256 userLength = users.length;
+        for (uint256 i = 0; i < userLength; i++) {
             updateMember(users[i], validUntil);
         }
     }

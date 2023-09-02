@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity ^0.8.18;
+pragma solidity 0.8.21;
 
 import {AxelarXCMRelayer} from "src/gateway/routers/axelar/XCMRelayer.sol";
 import {Deployer} from "./Deployer.sol";

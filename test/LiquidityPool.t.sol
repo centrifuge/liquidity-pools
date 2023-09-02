@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity ^0.8.18;
-pragma abicoder v2;
+pragma solidity 0.8.21;
 
 import "./TestSetup.t.sol";
 
@@ -611,7 +610,7 @@ contract LiquidityPoolTest is TestSetup {
         LiquidityPool lPool = LiquidityPool(lPool_);
 
         // will fail - user did not give tranche token allowance to investmentManager
-        vm.expectRevert(bytes("InvestmentManager/insufficient-balance"));
+        vm.expectRevert(bytes("ERC20/insufficient-balance"));
         lPool.requestDeposit(amount, self);
         lPool.approve(address(evmInvestmentManager), amount); // add allowance
 
@@ -658,10 +657,10 @@ contract LiquidityPoolTest is TestSetup {
         LiquidityPool lPool = LiquidityPool(lPool_);
 
         vm.expectRevert(bytes("InvestmentManager/not-a-member"));
-        lPool.collectInvest(address(this));
+        lPool.collectDeposit(address(this));
 
         homePools.updateMember(poolId, trancheId, address(this), validUntil);
-        lPool.collectInvest(address(this));
+        lPool.collectDeposit(address(this));
     }
 
     function testCollectRedeem(

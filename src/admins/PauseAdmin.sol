@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity ^0.8.18;
-pragma abicoder v2;
+pragma solidity 0.8.21;
 
 import {Root} from "../Root.sol";
-import "./../util/Auth.sol";
+import {Auth} from "./../util/Auth.sol";
 
 contract PauseAdmin is Auth {
     Root public immutable root;

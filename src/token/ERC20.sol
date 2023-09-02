@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2017, 2018, 2019 dbrock, rain, mrchico
 // Copyright (C) 2021-2022 Foundation
-pragma solidity ^0.8.18;
+pragma solidity 0.8.21;
 
 import {Context} from "../util/Context.sol";
 
@@ -82,40 +82,6 @@ contract ERC20 is Context {
         else if (what == "symbol") symbol = data;
         else revert("ERC20/file-unrecognized-param");
         emit File(what, data);
-    }
-
-    // --- ERC2771Context ---
-    function isTrustedForwarder(address forwarder) public view virtual returns (bool) {}
-
-    // Trusted Forwarder logic
-    /**
-     * @dev Override for `msg.sender`. Defaults to the original `msg.sender` whenever
-     * a call is not performed by the trusted forwarder or the calldata length is less than
-     * 20 bytes (an address length).
-     */
-    function _msgSender() internal view virtual override returns (address sender) {
-        if (isTrustedForwarder(msg.sender) && msg.data.length >= 20) {
-            // The assembly code is more direct than the Solidity version using `abi.decode`.
-            /// @solidity memory-safe-assembly
-            assembly {
-                sender := shr(96, calldataload(sub(calldatasize(), 20)))
-            }
-        } else {
-            return super._msgSender();
-        }
-    }
-
-    /**
-     * @dev Override for `msg.data`. Defaults to the original `msg.data` whenever
-     * a call is not performed by the trusted forwarder or the calldata length is less than
-     * 20 bytes (an address length).
-     */
-    function _msgData() internal view virtual override returns (bytes calldata) {
-        if (isTrustedForwarder(msg.sender) && msg.data.length >= 20) {
-            return msg.data[:msg.data.length - 20];
-        } else {
-            return super._msgData();
-        }
     }
 
     // --- ERC20 Mutations ---

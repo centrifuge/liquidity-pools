@@ -1,10 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity ^0.8.18;
-pragma abicoder v2;
+pragma solidity 0.8.21;
 
-import {MemberlistLike} from "./token/Memberlist.sol";
-import "./util/Auth.sol";
-import "./util/Math.sol";
+import {Auth} from "./util/Auth.sol";
+import {Math} from "./util/Math.sol";
 
 interface GatewayLike {
     function increaseInvestOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount)
@@ -140,8 +138,7 @@ contract InvestmentManager is Auth {
             return;
         }
 
-        // transfer the differene between required and locked currency from user to escrow
-        require(ERC20Like(currency).balanceOf(user) >= _currencyAmount, "InvestmentManager/insufficient-balance");
+        // transfer the differene between required and locked currency from user to escrwo
         require(
             ERC20Like(currency).transferFrom(user, address(escrow), _currencyAmount),
             "InvestmentManager/currency-transfer-failed"
@@ -181,7 +178,6 @@ contract InvestmentManager is Auth {
         }
 
         // transfer the differene between required and locked tranche tokens from user to escrow
-        require(lPool.balanceOf(user) >= _trancheTokenAmount, "InvestmentManager/insufficient-tranche-token-balance");
         require(
             lPool.transferFrom(user, address(escrow), _trancheTokenAmount),
             "InvestmentManager/tranche-token-transfer-failed"
@@ -192,7 +188,7 @@ contract InvestmentManager is Auth {
         );
     }
 
-    function collectInvest(uint64 poolId, bytes16 trancheId, address user, address currency) public auth {
+    function collectDeposit(uint64 poolId, bytes16 trancheId, address user, address currency) public auth {
         LiquidityPoolLike lPool = LiquidityPoolLike(msg.sender);
         require(lPool.hasMember(user), "InvestmentManager/not-a-member");
         require(poolManager.isAllowedAsPoolCurrency(poolId, currency), "InvestmentManager/currency-not-supported");
@@ -368,12 +364,12 @@ contract InvestmentManager is Auth {
         address liquidityPool = msg.sender;
         uint128 _currencyAmount = _toUint128(currencyAmount);
         require(
-            (_currencyAmount <= orderbook[user][liquidityPool].maxDeposit && _currencyAmount > 0),
+            (_currencyAmount <= orderbook[user][liquidityPool].maxDeposit && _currencyAmount != 0),
             "InvestmentManager/amount-exceeds-deposit-limits"
         );
 
         uint128 depositPrice = calculateDepositPrice(user, liquidityPool);
-        require(depositPrice > 0, "LiquidityPool/deposit-token-price-0");
+        require(depositPrice != 0, "LiquidityPool/deposit-token-price-0");
 
         uint128 _trancheTokenAmount = _calculateTrancheTokenAmount(_currencyAmount, liquidityPool, depositPrice);
         _deposit(_trancheTokenAmount, _currencyAmount, liquidityPool, user);
@@ -390,12 +386,12 @@ contract InvestmentManager is Auth {
         address liquidityPool = msg.sender;
         uint128 _trancheTokenAmount = _toUint128(trancheTokenAmount);
         require(
-            (_trancheTokenAmount <= orderbook[user][liquidityPool].maxMint && _trancheTokenAmount > 0),
+            (_trancheTokenAmount <= orderbook[user][liquidityPool].maxMint && _trancheTokenAmount != 0),
             "InvestmentManager/amount-exceeds-mint-limits"
         );
 
         uint128 depositPrice = calculateDepositPrice(user, liquidityPool);
-        require(depositPrice > 0, "LiquidityPool/deposit-token-price-0");
+        require(depositPrice != 0, "LiquidityPool/deposit-token-price-0");
 
         uint128 _currencyAmount = _calculateCurrencyAmount(_trancheTokenAmount, liquidityPool, depositPrice);
         _deposit(_trancheTokenAmount, _currencyAmount, liquidityPool, user);
@@ -430,12 +426,12 @@ contract InvestmentManager is Auth {
         address liquidityPool = msg.sender;
         uint128 _trancheTokenAmount = _toUint128(trancheTokenAmount);
         require(
-            (_trancheTokenAmount <= orderbook[user][liquidityPool].maxRedeem && _trancheTokenAmount > 0),
+            (_trancheTokenAmount <= orderbook[user][liquidityPool].maxRedeem && _trancheTokenAmount != 0),
             "InvestmentManager/amount-exceeds-redeem-limits"
         );
 
         uint128 redeemPrice = calculateRedeemPrice(user, liquidityPool);
-        require(redeemPrice > 0, "LiquidityPool/redeem-token-price-0");
+        require(redeemPrice != 0, "LiquidityPool/redeem-token-price-0");
 
         uint128 _currencyAmount = _calculateCurrencyAmount(_trancheTokenAmount, liquidityPool, redeemPrice);
         _redeem(_trancheTokenAmount, _currencyAmount, liquidityPool, receiver, user);
@@ -455,12 +451,12 @@ contract InvestmentManager is Auth {
         address liquidityPool = msg.sender;
         uint128 _currencyAmount = _toUint128(currencyAmount);
         require(
-            (_currencyAmount <= orderbook[user][liquidityPool].maxWithdraw && _currencyAmount > 0),
+            (_currencyAmount <= orderbook[user][liquidityPool].maxWithdraw && _currencyAmount != 0),
             "InvestmentManager/amount-exceeds-withdraw-limits"
         );
 
         uint128 redeemPrice = calculateRedeemPrice(user, liquidityPool);
-        require(redeemPrice > 0, "LiquidityPool/redeem-token-price-0");
+        require(redeemPrice != 0, "LiquidityPool/redeem-token-price-0");
 
         uint128 _trancheTokenAmount = _calculateTrancheTokenAmount(_currencyAmount, liquidityPool, redeemPrice);
         _redeem(_trancheTokenAmount, _currencyAmount, liquidityPool, receiver, user);

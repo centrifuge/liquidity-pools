@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity ^0.8.18;
-pragma abicoder v2;
+pragma solidity 0.8.21;
 
 import {AxelarExecutable} from "./AxelarExecutable.sol";
-import "./../../../util/Auth.sol";
+import {Auth} from "./../../../util/Auth.sol";
 
 struct Multilocation {
     uint8 parents;
@@ -38,7 +37,8 @@ struct XcmWeightInfo {
 }
 
 contract AxelarXCMRelayer is Auth, AxelarExecutable {
-    address constant XCM_TRANSACTOR_V2_ADDRESS = 0x000000000000000000000000000000000000080D;
+    address private constant XCM_TRANSACTOR_V2_ADDRESS = 0x000000000000000000000000000000000000080D;
+    uint32 private constant CENTRIFUGE_PARACHAIN_ID = 2031;
 
     address public immutable centrifugeChainOrigin;
     mapping(string => string) public axelarEVMRouters;
@@ -86,7 +86,7 @@ contract AxelarXCMRelayer is Auth, AxelarExecutable {
     }
 
     // --- Administration ---
-    function file(bytes32 what, string memory axelarEVMRouterChain, string memory axelarEVMRouterAddress)
+    function file(bytes32 what, string calldata axelarEVMRouterChain, string calldata axelarEVMRouterAddress)
         external
         auth
     {
@@ -114,7 +114,7 @@ contract AxelarXCMRelayer is Auth, AxelarExecutable {
 
     // --- Incoming ---
     // A message that's coming from another EVM chain, headed to the Centrifuge Chain.
-    function _execute(bytes32, string calldata sourceChain, string calldata sourceAddress, bytes calldata payload)
+    function _execute(bytes32, string memory sourceChain, string memory sourceAddress, bytes calldata payload)
         public
         onlyAxelarEVMRouter(sourceChain, sourceAddress)
     {
@@ -184,6 +184,6 @@ contract AxelarXCMRelayer is Auth, AxelarExecutable {
     }
 
     function _parachainId() internal pure returns (bytes memory) {
-        return abi.encodePacked(uint8(0), uint32(2031));
+        return abi.encodePacked(uint8(0), CENTRIFUGE_PARACHAIN_ID);
     }
 }

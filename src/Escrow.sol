@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-pragma solidity ^0.8.18;
+pragma solidity 0.8.21;
 
-import "./util/Auth.sol";
+import {Auth} from "./util/Auth.sol";
 
 interface ApproveLike {
-    function approve(address, uint256) external;
+    function approve(address, uint256) external returns (bool);
 }
 
 contract Escrow is Auth {
@@ -17,8 +17,7 @@ contract Escrow is Auth {
 
     // --- Token approvals ---
     function approve(address token, address spender, uint256 value) external auth {
+        require(ApproveLike(token).approve(spender, value), "Escrow/approve-failed");
         emit Approve(token, spender, value);
-
-        ApproveLike(token).approve(spender, value);
     }
 }

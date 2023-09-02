@@ -1,13 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity ^0.8.18;
-pragma abicoder v2;
+pragma solidity 0.8.21;
 
 import {TrancheTokenFactoryLike, LiquidityPoolFactoryLike} from "./util/Factory.sol";
 import {TrancheTokenLike} from "./token/Tranche.sol";
 import {MemberlistLike} from "./token/Memberlist.sol";
-import "./token/ERC20Like.sol";
-import "./util/Auth.sol";
-import "forge-std/console.sol";
+import {ERC20Like} from "./token/ERC20Like.sol";
+import {Auth} from "./util/Auth.sol";
 
 interface GatewayLike {
     function transferTrancheTokensToCentrifuge(
@@ -52,9 +50,9 @@ interface AuthLike {
 
 /// @dev Centrifuge pools
 struct Pool {
+    bool isActive;
     uint64 poolId;
     uint256 createdAt;
-    bool isActive;
     mapping(bytes16 => Tranche) tranches;
     mapping(address => bool) allowedCurrencies;
 }
@@ -128,7 +126,6 @@ contract PoolManager is Auth {
         require(currency != 0, "PoolManager/unknown-currency");
 
         ERC20Like erc20 = ERC20Like(currencyAddress);
-        require(erc20.balanceOf(msg.sender) >= amount, "PoolManager/insufficient-balance");
         require(erc20.transferFrom(msg.sender, address(escrow), amount), "PoolManager/currency-transfer-failed");
 
         gateway.transfer(currency, msg.sender, recipient, amount);
@@ -143,9 +140,7 @@ contract PoolManager is Auth {
         TrancheTokenLike trancheToken = TrancheTokenLike(getTrancheToken(poolId, trancheId));
         require(address(trancheToken) != address(0), "PoolManager/unknown-token");
 
-        require(trancheToken.balanceOf(msg.sender) >= amount, "PoolManager/insufficient-balance");
         trancheToken.burn(msg.sender, amount);
-
         gateway.transferTrancheTokensToCentrifuge(poolId, trancheId, msg.sender, destinationAddress, amount);
     }
 
@@ -159,9 +154,7 @@ contract PoolManager is Auth {
         TrancheTokenLike trancheToken = TrancheTokenLike(getTrancheToken(poolId, trancheId));
         require(address(trancheToken) != address(0), "PoolManager/unknown-token");
 
-        require(trancheToken.balanceOf(msg.sender) >= amount, "PoolManager/insufficient-balance");
         trancheToken.burn(msg.sender, amount);
-
         gateway.transferTrancheTokensToEVM(
             poolId, trancheId, msg.sender, destinationChainId, destinationAddress, amount
         );
@@ -184,7 +177,7 @@ contract PoolManager is Auth {
     /// @notice the function can only be executed by the gateway contract.
     function allowPoolCurrency(uint64 poolId, uint128 currency) public onlyGateway {
         Pool storage pool = pools[poolId];
-        require(pool.createdAt > 0, "PoolManager/invalid-pool");
+        require(pool.createdAt != 0, "PoolManager/invalid-pool");
 
         address currencyAddress = currencyIdToAddress[currency];
         require(currencyAddress != address(0), "PoolManager/unknown-currency");
@@ -204,7 +197,7 @@ contract PoolManager is Auth {
         uint128 latestPrice
     ) public onlyGateway {
         Pool storage pool = pools[poolId];
-        require(pool.createdAt > 0, "PoolManager/invalid-pool");
+        require(pool.createdAt != 0, "PoolManager/invalid-pool");
         Tranche storage tranche = pool.tranches[trancheId];
         require(tranche.createdAt == 0, "PoolManager/tranche-already-exists");
 
@@ -252,7 +245,7 @@ contract PoolManager is Auth {
     /// @notice this function can only be executed by the gateway contract.
     function addCurrency(uint128 currency, address currencyAddress) public onlyGateway {
         // currency index on the centrifuge chain side should start at 1
-        require(currency > 0, "PoolManager/currency-id-has-to-be-greater-than-0");
+        require(currency != 0, "PoolManager/currency-id-has-to-be-greater-than-0");
         require(currencyIdToAddress[currency] == address(0), "PoolManager/currency-id-in-use");
         require(currencyAddressToId[currencyAddress] == 0, "PoolManager/currency-address-in-use");
         require(
@@ -294,7 +287,7 @@ contract PoolManager is Auth {
     function deployTranche(uint64 poolId, bytes16 trancheId) public returns (address) {
         Tranche storage tranche = pools[poolId].tranches[trancheId];
         require(tranche.token == address(0), "PoolManager/tranche-already-deployed");
-        require(tranche.createdAt > 0, "PoolManager/tranche-not-added");
+        require(tranche.createdAt != 0, "PoolManager/tranche-not-added");
 
         address token = trancheTokenFactory.newTrancheToken(
             poolId,
@@ -312,20 +305,20 @@ contract PoolManager is Auth {
         return token;
     }
 
-    function deployLiquidityPool(uint64 poolId, bytes16 trancheId, address _currency) public returns (address) {
+    function deployLiquidityPool(uint64 poolId, bytes16 trancheId, address currency) public returns (address) {
         Tranche storage tranche = pools[poolId].tranches[trancheId];
         require(tranche.token != address(0), "PoolManager/tranche-does-not-exist"); // tranche must have been added
-        require(isAllowedAsPoolCurrency(poolId, _currency), "PoolManager/currency-not-supported"); // currency must be supported by pool
+        require(isAllowedAsPoolCurrency(poolId, currency), "PoolManager/currency-not-supported"); // currency must be supported by pool
 
-        address liquidityPool = tranche.liquidityPools[_currency];
+        address liquidityPool = tranche.liquidityPools[currency];
         require(liquidityPool == address(0), "PoolManager/liquidityPool-already-deployed");
-        require(pools[poolId].createdAt > 0, "PoolManager/pool-does-not-exist");
+        require(pools[poolId].createdAt != 0, "PoolManager/pool-does-not-exist");
 
         liquidityPool = liquidityPoolFactory.newLiquidityPool(
-            poolId, trancheId, _currency, tranche.token, address(investmentManager)
+            poolId, trancheId, currency, tranche.token, address(investmentManager)
         );
 
-        tranche.liquidityPools[_currency] = liquidityPool;
+        tranche.liquidityPools[currency] = liquidityPool;
         AuthLike(address(investmentManager)).rely(liquidityPool);
 
         // enable LP to take the liquidity pool tokens out of escrow in case if investments

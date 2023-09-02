@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity ^0.8.18;
-pragma abicoder v2;
+pragma solidity 0.8.21;
 
 import {AxelarExecutable} from "./AxelarExecutable.sol";
-import "./../../../util/Auth.sol";
+import {Auth} from "./../../../util/Auth.sol";
 
 interface InvestmentManagerLike {
     function addPool(uint64 poolId, uint128 currency, uint8 decimals) external;
@@ -33,8 +32,8 @@ interface GatewayLike {
 contract AxelarEVMRouter is Auth, AxelarExecutable {
     GatewayLike public gateway;
 
-    string public constant axelarCentrifugeChainId = "Moonbeam";
-    string public constant axelarCentrifugeChainAddress = "0x56c4Db5bEaD29FC19158aA1f85673D9865732be4";
+    string private constant axelarCentrifugeChainId = "Moonbeam";
+    string private constant axelarCentrifugeChainAddress = "0x56c4Db5bEaD29FC19158aA1f85673D9865732be4";
 
     // --- Events ---
     event File(bytes32 indexed what, address addr);
@@ -44,11 +43,11 @@ contract AxelarEVMRouter is Auth, AxelarExecutable {
         emit Rely(msg.sender);
     }
 
-    modifier onlyCentrifugeChainOrigin(string memory sourceChain) {
+    modifier onlyCentrifugeChainOrigin(string calldata sourceChain) {
+        require(msg.sender == address(axelarGateway), "AxelarEVMRouter/invalid-origin");
         require(
-            msg.sender == address(axelarGateway)
-                && keccak256(bytes(axelarCentrifugeChainId)) == keccak256(bytes(sourceChain)),
-            "AxelarEVMRouter/invalid-origin"
+            keccak256(bytes(axelarCentrifugeChainId)) == keccak256(bytes(sourceChain)),
+            "AxelarEVMRouter/invalid-source-chain"
         );
         _;
     }
@@ -78,7 +77,7 @@ contract AxelarEVMRouter is Auth, AxelarExecutable {
     }
 
     // --- Outgoing ---
-    function send(bytes memory message) public onlyGateway {
+    function send(bytes calldata message) public onlyGateway {
         axelarGateway.callContract(axelarCentrifugeChainId, axelarCentrifugeChainAddress, message);
     }
 }

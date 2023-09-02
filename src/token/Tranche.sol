@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity ^0.8.18;
+pragma solidity 0.8.21;
 
-import "./ERC20.sol";
-import "./ERC20Like.sol";
+import {ERC20} from "./ERC20.sol";
+import {ERC20Like} from "./ERC20Like.sol";
 
 interface MemberlistLike {
     function hasMember(address) external view returns (bool);
@@ -26,6 +26,10 @@ contract TrancheToken is ERC20 {
 
     // --- Events ---
     event File(bytes32 indexed what, address data);
+    event AddLiquidityPool(address indexed liquidityPool);
+    event RemoveLiquidityPool(address indexed liquidityPool);
+    event SetPrice(uint128 price, uint256 priceAge);
+    event UpdatePrice(uint128 price);
 
     constructor(uint8 decimals_) ERC20(decimals_) {}
 
@@ -43,10 +47,12 @@ contract TrancheToken is ERC20 {
 
     function addLiquidityPool(address liquidityPool) public auth {
         liquidityPools[liquidityPool] = true;
+        emit AddLiquidityPool(liquidityPool);
     }
 
     function removeLiquidityPool(address liquidityPool) public auth {
         liquidityPools[liquidityPool] = false;
+        emit RemoveLiquidityPool(liquidityPool);
     }
 
     // --- Restrictions ---
@@ -66,23 +72,42 @@ contract TrancheToken is ERC20 {
         return super.mint(to, value);
     }
 
-    // --- Manage liquidity pools ---
-    function isTrustedForwarder(address forwarder) public view override returns (bool) {
-        // Liquiditiy Pools are considered trusted forwarders
-        // for the ERC2771Context implementation of the underlying
-        // ERC20 token
-        return liquidityPools[forwarder] == true;
-    }
-
     // --- Pricing ---
     function setPrice(uint128 price, uint256 priceAge) public auth {
         require(lastPriceUpdate == 0, "TrancheToken/price-already-set");
         latestPrice = price;
         lastPriceUpdate = priceAge;
+        emit SetPrice(price, priceAge);
     }
 
     function updatePrice(uint128 price) public auth {
         latestPrice = price;
         lastPriceUpdate = block.timestamp;
+        emit UpdatePrice(price);
+    }
+
+    // --- ERC2771Context ---
+    function isTrustedForwarder(address forwarder) public view returns (bool) {
+        // Liquidity Pools are considered trusted forwarders
+        // for the ERC2771Context implementation of the underlying
+        // ERC20 token
+        return liquidityPools[forwarder];
+    }
+
+    /**
+     * @dev Override for `msg.sender`. Defaults to the original `msg.sender` whenever
+     * a call is not performed by the trusted forwarder or the calldata length is less than
+     * 20 bytes (an address length).
+     */
+    function _msgSender() internal view virtual override returns (address sender) {
+        if (isTrustedForwarder(msg.sender) && msg.data.length >= 20) {
+            // The assembly code is more direct than the Solidity version using `abi.decode`.
+            /// @solidity memory-safe-assembly
+            assembly {
+                sender := shr(96, calldataload(sub(calldatasize(), 20)))
+            }
+        } else {
+            return super._msgSender();
+        }
     }
 }

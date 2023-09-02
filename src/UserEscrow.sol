@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-pragma solidity ^0.8.18;
+pragma solidity 0.8.21;
 
-import "./util/Auth.sol";
+import {Auth} from "./util/Auth.sol";
 
 interface TransferLike {
     function transferFrom(address, address, uint256) external returns (bool);
@@ -26,16 +26,17 @@ contract UserEscrow is Auth {
 
     // --- Token approvals ---
     function transferIn(address token, address source, address destination, uint256 amount) external auth {
-        require(TransferLike(token).transferFrom(source, address(this), amount), "UserEscrow/transfer-failed");
         destinations[token][destination] = amount;
+
+        require(TransferLike(token).transferFrom(source, address(this), amount), "UserEscrow/transfer-failed");
         emit TransferIn(token, source, destination, amount);
     }
 
     function transferOut(address token, address destination, uint256 amount) external auth {
         require(destinations[token][destination] >= amount, "UserEscrow/transfer-failed");
-        require(TransferLike(token).transfer(destination, amount), "UserEscrow/transfer-failed");
-
         destinations[token][destination] -= amount;
+
+        require(TransferLike(token).transfer(destination, amount), "UserEscrow/transfer-failed");
         emit TransferOut(token, destination, amount);
     }
 }

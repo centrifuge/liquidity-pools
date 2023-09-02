@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity ^0.8.18;
-pragma abicoder v2;
+pragma solidity 0.8.21;
 
 import {Messages} from "src/gateway/Messages.sol";
 import "forge-std/Test.sol";

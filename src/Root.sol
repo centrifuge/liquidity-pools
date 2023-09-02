@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-pragma solidity ^0.8.18;
+pragma solidity 0.8.21;
 
-import "./util/Auth.sol";
+import {Auth} from "./util/Auth.sol";
 
 interface AuthLike {
     function rely(address) external;
@@ -10,7 +10,7 @@ interface AuthLike {
 
 contract Root is Auth {
     /// @dev To prevent filing a delay that would block any updates indefinitely
-    uint256 public constant MAX_DELAY = 4 weeks;
+    uint256 private MAX_DELAY = 4 weeks;
 
     address public immutable escrow;
 

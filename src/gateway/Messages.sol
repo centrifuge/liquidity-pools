@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity ^0.8.18;
+pragma solidity 0.8.21;
 
 import {BytesLib} from "src/util/BytesLib.sol";
 
@@ -771,10 +771,6 @@ library Messages {
         return abi.encodePacked(uint8(Call.CancelInvestOrder), poolId, trancheId, investor, currency);
     }
 
-    function isCancelInvestOrder(bytes memory _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.CancelInvestOrder;
-    }
-
     function parseCancelInvestOrder(bytes memory _msg)
         internal
         pure
@@ -792,10 +788,6 @@ library Messages {
         returns (bytes memory)
     {
         return abi.encodePacked(uint8(Call.CancelRedeemOrder), poolId, trancheId, investor, currency);
-    }
-
-    function isCancelRedeemOrder(bytes memory _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.CancelRedeemOrder;
     }
 
     function parseCancelRedeemOrder(bytes memory _msg)
