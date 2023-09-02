@@ -114,9 +114,7 @@ contract AxelarXCMRelayer is Auth, AxelarExecutable {
 
     // --- Incoming ---
     // A message that's coming from another EVM chain, headed to the Centrifuge Chain.
-    function _execute(bytes32, string memory sourceChain, string memory sourceAddress, bytes calldata payload)
-        public
-    {
+    function _execute(bytes32, string memory sourceChain, string memory sourceAddress, bytes calldata payload) public {
         // todo(nuno): why do we hash this?
         bytes32 hh = keccak256(payload);
 

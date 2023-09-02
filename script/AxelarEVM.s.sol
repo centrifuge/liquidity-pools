@@ -28,7 +28,7 @@ contract AxelarEVMScript is Deployer {
         // Set up test data
         if (vm.envBool("SETUP_TEST_DATA")) {
             ERC20 currency = new ERC20(18);
-            currency.mint(msg.sender, 1000*10**18);
+            currency.mint(msg.sender, 1000 * 10 ** 18);
 
             root.relyContract(address(poolManager), msg.sender);
             poolManager.file("gateway", msg.sender);
@@ -40,21 +40,21 @@ contract AxelarEVMScript is Deployer {
             poolManager.addTranche(1171854325, 0x102f4ef817340a8839a515d2c73a7c1d, "Some Token", "ST", 6, 1e27);
             poolManager.deployTranche(1171854325, 0x102f4ef817340a8839a515d2c73a7c1d);
             poolManager.allowPoolCurrency(1171854325, 1);
-            poolManager.deployLiquidityPool(
-                1171854325, 0x102f4ef817340a8839a515d2c73a7c1d, address(currency)
-            );
+            poolManager.deployLiquidityPool(1171854325, 0x102f4ef817340a8839a515d2c73a7c1d, address(currency));
             poolManager.updateMember(1171854325, 0x102f4ef817340a8839a515d2c73a7c1d, msg.sender, type(uint64).max);
 
             poolManager.file("gateway", address(gateway));
             investmentManager.file("gateway", address(gateway));
-            
-            LiquidityPoolLike liquidityPool = LiquidityPoolLike(poolManager.getLiquidityPool(1171854325, 0x102f4ef817340a8839a515d2c73a7c1d, address(currency)));
-            currency.approve(address(investmentManager), 1000*10**18);
-            liquidityPool.requestDeposit(200*10**18, msg.sender);
-            liquidityPool.requestDeposit(200*10**18, msg.sender);
-            liquidityPool.requestDeposit(200*10**18, msg.sender);
-            liquidityPool.requestDeposit(200*10**18, msg.sender);
-            liquidityPool.requestDeposit(200*10**18, msg.sender);
+
+            LiquidityPoolLike liquidityPool = LiquidityPoolLike(
+                poolManager.getLiquidityPool(1171854325, 0x102f4ef817340a8839a515d2c73a7c1d, address(currency))
+            );
+            currency.approve(address(investmentManager), 1000 * 10 ** 18);
+            liquidityPool.requestDeposit(200 * 10 ** 18, msg.sender);
+            liquidityPool.requestDeposit(200 * 10 ** 18, msg.sender);
+            liquidityPool.requestDeposit(200 * 10 ** 18, msg.sender);
+            liquidityPool.requestDeposit(200 * 10 ** 18, msg.sender);
+            liquidityPool.requestDeposit(200 * 10 ** 18, msg.sender);
         }
 
         giveAdminAccess();

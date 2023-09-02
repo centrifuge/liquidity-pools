@@ -188,18 +188,50 @@ contract InvestmentManager is Auth {
         );
     }
 
-    function collectDeposit(uint64 poolId, bytes16 trancheId, address user, address currency) public auth {
-        LiquidityPoolLike lPool = LiquidityPoolLike(msg.sender);
-        require(lPool.hasMember(user), "InvestmentManager/not-a-member");
-        require(poolManager.isAllowedAsPoolCurrency(poolId, currency), "InvestmentManager/currency-not-supported");
-        gateway.collectInvest(poolId, trancheId, user, poolManager.currencyAddressToId(currency));
+    function decreaseDepositRequest(uint256 currencyAmount, address user) public auth {
+        LiquidityPoolLike liquidityPool = LiquidityPoolLike(msg.sender);
+        require(liquidityPool.hasMember(user), "InvestmentManager/not-a-member");
+        gateway.decreaseInvestOrder(
+            liquidityPool.poolId(),
+            liquidityPool.trancheId(),
+            user,
+            poolManager.currencyAddressToId(liquidityPool.asset()),
+            _toUint128(currencyAmount)
+        );
     }
 
-    function collectRedeem(uint64 poolId, bytes16 trancheId, address user, address currency) public auth {
-        LiquidityPoolLike lPool = LiquidityPoolLike(msg.sender);
-        require(lPool.hasMember(user), "InvestmentManager/not-a-member");
-        require(poolManager.isAllowedAsPoolCurrency(poolId, currency), "InvestmentManager/currency-not-supported");
-        gateway.collectRedeem(poolId, trancheId, user, poolManager.currencyAddressToId(currency));
+    function decreaseRedeemRequest(uint256 trancheTokenAmount, address user) public auth {
+        LiquidityPoolLike liquidityPool = LiquidityPoolLike(msg.sender);
+        require(liquidityPool.hasMember(user), "InvestmentManager/not-a-member");
+        gateway.decreaseRedeemOrder(
+            liquidityPool.poolId(),
+            liquidityPool.trancheId(),
+            user,
+            poolManager.currencyAddressToId(liquidityPool.asset()),
+            _toUint128(trancheTokenAmount)
+        );
+    }
+
+    function collectDeposit(address user) public auth {
+        LiquidityPoolLike liquidityPool = LiquidityPoolLike(msg.sender);
+        require(liquidityPool.hasMember(user), "InvestmentManager/not-a-member");
+        gateway.collectInvest(
+            liquidityPool.poolId(),
+            liquidityPool.trancheId(),
+            user,
+            poolManager.currencyAddressToId(liquidityPool.asset())
+        );
+    }
+
+    function collectRedeem(address user) public auth {
+        LiquidityPoolLike liquidityPool = LiquidityPoolLike(msg.sender);
+        require(liquidityPool.hasMember(user), "InvestmentManager/not-a-member");
+        gateway.collectRedeem(
+            liquidityPool.poolId(),
+            liquidityPool.trancheId(),
+            user,
+            poolManager.currencyAddressToId(liquidityPool.asset())
+        );
     }
 
     // --- Incoming message handling ---

@@ -34,8 +34,10 @@ interface InvestmentManagerLike {
     function previewRedeem(address user, address liquidityPool, uint256 shares) external view returns (uint256);
     function requestRedeem(uint256 shares, address receiver) external;
     function requestDeposit(uint256 assets, address receiver) external;
-    function collectDeposit(uint64 poolId, bytes16 trancheId, address receiver, address currency) external;
-    function collectRedeem(uint64 poolId, bytes16 trancheId, address receiver, address currency) external;
+    function collectDeposit(address receiver) external;
+    function collectRedeem(address receiver) external;
+    function decreaseDepositRequest(uint256 assets, address receiver) external;
+    function decreaseRedeemRequest(uint256 shares, address receiver) external;
     function PRICE_DECIMALS() external view returns (uint8);
 }
 
@@ -245,13 +247,21 @@ contract LiquidityPool is Auth, ERC20Like {
 
     // --- Miscellaneous investment functions ---
     function collectDeposit(address receiver) public {
-        investmentManager.collectDeposit(poolId, trancheId, receiver, asset);
+        investmentManager.collectDeposit(receiver);
         emit DepositCollected(receiver);
     }
 
     function collectRedeem(address receiver) public {
-        investmentManager.collectRedeem(poolId, trancheId, receiver, asset);
+        investmentManager.collectRedeem(receiver);
         emit RedeemCollected(receiver);
+    }
+
+    function decreaseDepositRequest(uint256 assets) public {
+        investmentManager.decreaseDepositRequest(assets, msg.sender);
+    }
+
+    function decreaseRedeemRequest(uint256 shares) public {
+        investmentManager.decreaseRedeemRequest(shares, msg.sender);
     }
 
     // --- ERC20 overrides ---
