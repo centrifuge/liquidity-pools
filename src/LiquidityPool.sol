@@ -33,7 +33,7 @@ interface InvestmentManagerLike {
     function previewWithdraw(address user, address liquidityPool, uint256 assets) external view returns (uint256);
     function previewRedeem(address user, address liquidityPool, uint256 shares) external view returns (uint256);
     function requestRedeem(uint256 shares, address receiver) external;
-    function requestDeposit(uint256 assets, address receiver) external;
+    function deposit(uint256 assets, address receiver) external returns (uint256);
     function collectDeposit(uint64 poolId, bytes16 trancheId, address receiver, address currency) external;
     function collectRedeem(uint64 poolId, bytes16 trancheId, address receiver, address currency) external;
     function PRICE_DECIMALS() external view returns (uint8);
@@ -62,7 +62,6 @@ contract LiquidityPool is Auth, ERC20Like {
 
     // --- Events ---
     event File(bytes32 indexed what, address data);
-    event DepositRequested(address indexed owner, uint256 assets);
     event RedeemRequested(address indexed owner, uint256 shares);
     event Deposit(address indexed sender, address indexed owner, uint256 assets, uint256 shares);
     event Withdraw(
@@ -92,9 +91,19 @@ contract LiquidityPool is Auth, ERC20Like {
     }
 
     /// @dev function either called by a ward or message.sender has approval to spent sender´s currency
-    modifier withCurrencyApproval(address sender, uint256 amount) {
+    modifier withCurrencyApproval(address sender, uint256 assets) {
         require(
-            wards[msg.sender] == 1 || msg.sender == sender || ERC20Like(asset).allowance(sender, msg.sender) >= amount,
+            wards[msg.sender] == 1 || msg.sender == sender || ERC20Like(asset).allowance(sender, msg.sender) >= assets,
+            "LiquidityPool/no-currency-allowance"
+        );
+        _;
+    }
+
+    modifier withCurrencyApprovalShares(address sender, uint256 shares) {
+        uint256 assets = convertToAssets(shares);
+
+        require(
+            wards[msg.sender] == 1 || msg.sender == sender || ERC20Like(asset).allowance(sender, msg.sender) >= assets,
             "LiquidityPool/no-currency-allowance"
         );
         _;
@@ -111,11 +120,13 @@ contract LiquidityPool is Auth, ERC20Like {
     /// @dev The total amount of vault shares
     /// @return Total amount of the underlying vault assets including accrued interest
     function totalAssets() public view returns (uint256) {
+        // TODO: move to investment manager?
         return totalSupply().mulDiv(latestPrice(), 10 ** investmentManager.PRICE_DECIMALS(), Math.Rounding.Down);
     }
 
     /// @dev Calculates the amount of shares / tranche tokens that any user would get for the amount of assets provided. The calcultion is based on the token price from the most recent epoch retrieved from Centrifuge chain.
     function convertToShares(uint256 assets) public view returns (uint256 shares) {
+        // TODO: move to investment manager?
         shares = assets.mulDiv(
             10 ** (investmentManager.PRICE_DECIMALS() + share.decimals() - ERC20Like(asset).decimals()),
             latestPrice(),
@@ -125,6 +136,7 @@ contract LiquidityPool is Auth, ERC20Like {
 
     /// @dev Calculates the asset value for an amount of shares / tranche tokens provided. The calcultion is based on the token price from the most recent epoch retrieved from Centrifuge chain.
     function convertToAssets(uint256 shares) public view returns (uint256 assets) {
+        // TODO: move to investment manager?
         assets = shares.mulDiv(
             latestPrice(),
             10 ** (investmentManager.PRICE_DECIMALS() + share.decimals() - ERC20Like(asset).decimals()),
@@ -139,21 +151,30 @@ contract LiquidityPool is Auth, ERC20Like {
 
     /// @return shares that any user would get for an amount of assets provided -> convertToShares
     function previewDeposit(uint256 assets) public view returns (uint256 shares) {
-        shares = investmentManager.previewDeposit(msg.sender, address(this), assets);
+        convertToShares(assets);
     }
 
     /// @dev collect shares for deposited funds after pool epoch execution. maxMint is the max amount of shares that can be collected. Required assets must already be locked
     /// maxDeposit is the amount of funds that was successfully invested into the pool on Centrifuge chain
-    function deposit(uint256 assets, address receiver) public returns (uint256 shares) {
-        shares = investmentManager.processDeposit(receiver, assets);
+    function deposit(uint256 assets, address receiver)
+        public
+        withCurrencyApproval(receiver, assets)
+        returns (uint256 shares)
+    {
+        shares = investmentManager.deposit(assets, receiver);
         emit Deposit(address(this), receiver, assets, shares);
     }
 
     /// @dev collect shares for deposited funds after pool epoch execution. maxMint is the max amount of shares that can be collected. Required assets must already be locked
     /// maxDeposit is the amount of funds that was successfully invested into the pool on Centrifuge chain
-    function mint(uint256 shares, address receiver) public returns (uint256 assets) {
-        // require(receiver == msg.sender, "LiquidityPool/not-authorized-to-mint");
-        assets = investmentManager.processMint(receiver, shares);
+    /// @notice the realized shares will differ from the input shares
+    function mint(uint256 shares, address receiver)
+        public
+        withCurrencyApprovalShares(receiver, shares)
+        returns (uint256 assets)
+    {
+        uint256 assets = previewMint(shares);
+        investmentManager.deposit(assets, receiver);
         emit Deposit(address(this), receiver, assets, shares);
     }
 
@@ -163,8 +184,8 @@ contract LiquidityPool is Auth, ERC20Like {
     }
 
     /// @return assets that any user would get for an amount of shares provided -> convertToAssets
-    function previewMint(uint256 shares) external view returns (uint256 assets) {
-        assets = investmentManager.previewMint(msg.sender, address(this), shares);
+    function previewMint(uint256 shares) public view returns (uint256 assets) {
+        convertToAssets(shares);
     }
 
     /// @return maxAssets that the receiver can withdraw
@@ -215,19 +236,13 @@ contract LiquidityPool is Auth, ERC20Like {
     }
 
     // --- Asynchronous 4626 functions ---
-    /// @dev request asset deposit for a receiver to be included in the next epoch execution. Asset is locked in the escrow on request submission
-    function requestDeposit(uint256 assets, address owner) public withCurrencyApproval(owner, assets) {
-        investmentManager.requestDeposit(assets, owner);
-        emit DepositRequested(owner, assets);
-    }
-
-    function requestDepositWithPermit(uint256 assets, address owner, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
-        public
-    {
-        ERC20PermitLike(asset).permit(owner, address(investmentManager), assets, deadline, v, r, s);
-        investmentManager.requestDeposit(assets, owner);
-        emit DepositRequested(owner, assets);
-    }
+    // function requestDepositWithPermit(uint256 assets, address owner, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
+    //     public
+    // {
+    //     ERC20PermitLike(asset).permit(owner, address(investmentManager), assets, deadline, v, r, s);
+    //     investmentManager.requestDeposit(assets, owner);
+    //     emit DepositRequested(owner, assets);
+    // }
 
     /// @dev request share redemption for a receiver to be included in the next epoch execution. Shares are locked in the escrow on request submission
     function requestRedeem(uint256 shares, address owner) public withTokenApproval(owner, shares) {

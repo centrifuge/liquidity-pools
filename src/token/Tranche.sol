@@ -19,6 +19,9 @@ interface TrancheTokenLike is ERC20Like {
 contract TrancheToken is ERC20 {
     MemberlistLike public memberlist;
 
+    uint256 public totalRealizedSupply;
+    mapping(address => uint256) public unrealizedBalanceOf;
+
     uint128 public latestPrice; // tranche token price
     uint256 public lastPriceUpdate; // timestamp of the price update
 
@@ -61,15 +64,28 @@ contract TrancheToken is ERC20 {
     }
 
     function transfer(address to, uint256 value) public override checkMember(to) returns (bool) {
+        uint256 balance = balanceOf[_msgSender()] - unrealizedBalanceOf[_msgSender()];
+        require(balance >= value, "TrancheToken/insufficient-realized-balance");
+
         return super.transfer(to, value);
     }
 
     function transferFrom(address from, address to, uint256 value) public override checkMember(to) returns (bool) {
+        uint256 balance = balanceOf[_msgSender()] - unrealizedBalanceOf[_msgSender()];
+        require(balance >= value, "TrancheToken/insufficient-realized-balance");
+
         return super.transferFrom(from, to, value);
     }
 
     function mint(address to, uint256 value) public override checkMember(to) {
+        unrealizedBalanceOf[to] = unrealizedBalanceOf[to] + value;
         return super.mint(to, value);
+    }
+
+    // --- Realized tokens ---
+    function realize(address to, uint256 value) public auth checkMember(to) {
+        require(unrealizedBalanceOf[to] >= value, "TrancheToken/insufficient-unrealized-balance");
+        unrealizedBalanceOf[to] = unrealizedBalanceOf[to] - value;
     }
 
     // --- Pricing ---
