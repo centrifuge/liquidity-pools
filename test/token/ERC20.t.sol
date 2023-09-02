@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-pragma solidity ^0.8.18;
+pragma solidity 0.8.21;
 
 import {ERC20, IERC1271} from "src/token/ERC20.sol";
 import "forge-std/Test.sol";

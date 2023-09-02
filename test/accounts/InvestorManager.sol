@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// pragma solidity ^0.8.18;
+// pragma solidity 0.8.21;
 // pragma abicoder v2;
 
 // import {MockHomeConnector} from "../mock/MockHomeConnector.sol";

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Copyright (C) Centrifuge 2020, based on MakerDAO dss https://github.com/makerdao/dss
-pragma solidity ^0.8.18;
+pragma solidity 0.8.21;
 
 contract Auth {
     mapping(address => uint256) public wards;
