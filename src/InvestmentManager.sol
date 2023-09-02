@@ -229,6 +229,7 @@ contract InvestmentManager is Auth {
         }
 
         // TODO: if there is no remaining locked order om cent chain (need to add this info to the message!), the diff is burned
+        // and the unrealized amount is reduced
 
         liquidityPool.realize(recipient, tokensPayout);
     }

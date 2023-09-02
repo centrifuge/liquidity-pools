@@ -82,6 +82,16 @@ contract TrancheToken is ERC20 {
         return super.mint(to, value);
     }
 
+    function burn(address from, uint256 value) public override auth {
+        // Unrealized balance is always burned first
+        if (unrealizedBalanceOf[from] > value) {
+            unrealizedBalanceOf[from] = unrealizedBalanceOf[from] - value;
+        } else {
+            unrealizedBalanceOf[from] = 0;
+        }
+        return super.burn(from, value);
+    }
+
     // --- Realized tokens ---
     function realize(address to, uint256 value) public auth checkMember(to) {
         require(unrealizedBalanceOf[to] >= value, "TrancheToken/insufficient-unrealized-balance");
