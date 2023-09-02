@@ -79,7 +79,6 @@ contract TrancheToken is ERC20 {
 
     function mint(address to, uint256 value) public override checkMember(to) {
         unrealizedBalanceOf[to] = unrealizedBalanceOf[to] + value;
-        totalRealizedSupply = totalRealizedSupply + value;
         return super.mint(to, value);
     }
 
