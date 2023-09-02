@@ -289,15 +289,23 @@ contract PoolManager is Auth {
         require(tranche.token == address(0), "PoolManager/tranche-already-deployed");
         require(tranche.createdAt != 0, "PoolManager/tranche-not-added");
 
+        address[] memory trancheTokenWards = new address[](2);
+        trancheTokenWards[0] = address(investmentManager);
+        trancheTokenWards[1] = address(this);
+
+        address[] memory memberlistWards = new address[](1);
+        memberlistWards[0] = address(this);
+
         address token = trancheTokenFactory.newTrancheToken(
             poolId,
             trancheId,
-            address(this),
             tranche.tokenName,
             tranche.tokenSymbol,
             tranche.decimals,
             tranche.latestPrice,
-            tranche.createdAt
+            tranche.createdAt,
+            trancheTokenWards,
+            memberlistWards
         );
 
         tranche.token = token;
@@ -314,8 +322,10 @@ contract PoolManager is Auth {
         require(liquidityPool == address(0), "PoolManager/liquidityPool-already-deployed");
         require(pools[poolId].createdAt != 0, "PoolManager/pool-does-not-exist");
 
+        address[] memory liquidityPoolWards = new address[](1);
+        liquidityPoolWards[0] = address(investmentManager);
         liquidityPool = liquidityPoolFactory.newLiquidityPool(
-            poolId, trancheId, currency, tranche.token, address(investmentManager)
+            poolId, trancheId, currency, tranche.token, address(investmentManager), liquidityPoolWards
         );
 
         tranche.liquidityPools[currency] = liquidityPool;
