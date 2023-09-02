@@ -87,7 +87,7 @@ contract TrancheToken is ERC20 {
         // Unrealized balance is always burned first
         if (unrealizedBalanceOf[from] > value) {
             unrealizedBalanceOf[from] = unrealizedBalanceOf[from] - value;
-        totalRealizedSupply = totalRealizedSupply - value;
+            totalRealizedSupply = totalRealizedSupply - value;
         } else {
             unrealizedBalanceOf[from] = 0;
         }
