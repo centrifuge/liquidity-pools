@@ -116,7 +116,6 @@ contract AxelarXCMRelayer is Auth, AxelarExecutable {
     // A message that's coming from another EVM chain, headed to the Centrifuge Chain.
     function _execute(bytes32, string memory sourceChain, string memory sourceAddress, bytes calldata payload)
         public
-        onlyAxelarEVMRouter(sourceChain, sourceAddress)
     {
         // todo(nuno): why do we hash this?
         bytes32 hh = keccak256(payload);
@@ -159,7 +158,6 @@ contract AxelarXCMRelayer is Auth, AxelarExecutable {
     // A message that has been sent from the Centrifuge Chain, heading to a specific destination EVM chain
     function send(string calldata destinationChain, string calldata destinationAddress, bytes calldata payload)
         external
-        onlyCentrifugeChain
     {
         axelarGateway.callContract(destinationChain, destinationAddress, payload);
     }

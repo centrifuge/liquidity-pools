@@ -33,7 +33,7 @@ contract AxelarEVMRouter is Auth, AxelarExecutable {
     GatewayLike public gateway;
 
     string private constant axelarCentrifugeChainId = "Moonbeam";
-    string private constant axelarCentrifugeChainAddress = "0x56c4Db5bEaD29FC19158aA1f85673D9865732be4";
+    string private constant axelarCentrifugeChainAddress = "0x8AeFc39e251Cd7CD3389981539Ceb154714dBCa6";
 
     // --- Events ---
     event File(bytes32 indexed what, address addr);
