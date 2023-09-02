@@ -71,7 +71,7 @@ contract TrancheToken is ERC20 {
     }
 
     function transferFrom(address from, address to, uint256 value) public override checkMember(to) returns (bool) {
-        uint256 balance = balanceOf[_msgSender()] - unrealizedBalanceOf[_msgSender()];
+        uint256 balance = balanceOf[from] - unrealizedBalanceOf[from];
         require(balance >= value, "TrancheToken/insufficient-realized-balance");
 
         return super.transferFrom(from, to, value);
