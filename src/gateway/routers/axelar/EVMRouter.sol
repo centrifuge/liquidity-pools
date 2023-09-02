@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {AxelarExecutable} from "./AxelarExecutable.sol";
 import {Auth} from "./../../../util/Auth.sol";
 
 interface InvestmentManagerLike {
@@ -41,9 +40,9 @@ interface GatewayLike {
     function handle(bytes memory message) external;
 }
 
-contract AxelarEVMRouter is Auth, AxelarExecutable {
+contract AxelarEVMRouter is Auth {
     string private constant axelarCentrifugeChainId = "Moonbeam";
-    string private constant axelarCentrifugeChainAddress = "0x8AeFc39e251Cd7CD3389981539Ceb154714dBCa6";
+    string private constant axelarCentrifugeChainAddress = "0x3b4a32efd7bd0290882B4854c86b8CECe534c975";
 
     AxelarGatewayLike public immutable axelarGateway;
 
@@ -52,7 +51,7 @@ contract AxelarEVMRouter is Auth, AxelarExecutable {
     // --- Events ---
     event File(bytes32 indexed what, address addr);
 
-    constructor(address axelarGateway_) AxelarExecutable(axelarGateway_) {
+    constructor(address axelarGateway_) {
         axelarGateway = AxelarGatewayLike(axelarGateway_);
 
         wards[msg.sender] = 1;

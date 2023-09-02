@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {AxelarExecutable} from "./AxelarExecutable.sol";
 import {Auth} from "./../../../util/Auth.sol";
 
 struct Multilocation {
@@ -55,24 +54,26 @@ contract AxelarXCMRelayer is Auth {
     AxelarGatewayLike public immutable axelarGateway;
     address public immutable centrifugeChainOrigin;
     mapping(string => string) public axelarEVMRouters;
-    bytes1 public immutable lpPalletIndex;
-    bytes1 public immutable lpCallIndex;
 
     XcmWeightInfo public xcmWeightInfo;
-
-    //todo(nuno): do we really need this?
-    mapping(bytes32 => uint32) public executedCalls;
 
     // --- Events ---
     event File(bytes32 indexed what, XcmWeightInfo xcmWeightInfo);
     event File(bytes32 indexed what, string chain, string addr);
-    event Executed(bytes32 indexed payload);
+    event Executed(
+        bytes payloadWithHash,
+        bytes lpPalletIndex,
+        bytes lpCallIndex,
+        bytes32 sourceChainLength,
+        bytes sourceChain,
+        bytes32 sourceAddressLength,
+        bytes sourceAddress,
+        bytes payload
+    );
 
-    constructor(address centrifugeChainOrigin_, address axelarGateway_, bytes1 lpPalletIndex_, bytes1 lpCallIndex_) {
+    constructor(address centrifugeChainOrigin_, address axelarGateway_) {
         centrifugeChainOrigin = centrifugeChainOrigin_;
         axelarGateway = AxelarGatewayLike(axelarGateway_);
-        lpPalletIndex = lpPalletIndex_;
-        lpCallIndex = lpCallIndex_;
 
         xcmWeightInfo = XcmWeightInfo({
             buyExecutionWeightLimit: 19000000000,
@@ -132,20 +133,14 @@ contract AxelarXCMRelayer is Auth {
         string calldata sourceAddress,
         bytes calldata payload
     ) public {
-        bytes32 payloadHash = keccak256(payload);
         require(
-            axelarGateway.validateContractCall(commandId, sourceChain, sourceAddress, payloadHash),
+            axelarGateway.validateContractCall(commandId, sourceChain, sourceAddress, keccak256(payload)),
             "XCMRelayer/not-approved-by-gateway"
         );
 
-        // todo(nuno): why do we hash this?
-        bytes32 hh = keccak256(payload);
-
-        XcmTransactorV2 transactorContract = XcmTransactorV2(XCM_TRANSACTOR_V2_ADDRESS);
-
         bytes memory payloadWithLocation = bytes.concat(
-            lpPalletIndex,
-            lpCallIndex,
+            "0x73",
+            "0x05",
             bytes32(bytes(sourceChain).length),
             bytes(sourceChain),
             bytes32(bytes(sourceAddress).length),
@@ -153,7 +148,18 @@ contract AxelarXCMRelayer is Auth {
             payload
         );
 
-        transactorContract.transactThroughSignedMultilocation(
+        emit Executed(
+            payloadWithLocation,
+            "0x73",
+            "0x05",
+            bytes32(bytes(sourceChain).length),
+            bytes(sourceChain),
+            bytes32(bytes(sourceAddress).length),
+            bytes(sourceAddress),
+            payload
+        );
+
+        XcmTransactorV2(XCM_TRANSACTOR_V2_ADDRESS).transactThroughSignedMultilocation(
             // dest chain
             _centrifugeParachainMultilocation(),
             // fee asset
@@ -168,9 +174,6 @@ contract AxelarXCMRelayer is Auth {
             // This includes all the XCM instructions plus the weight of the Transact call itself.
             xcmWeightInfo.buyExecutionWeightLimit
         );
-
-        executedCalls[hh] = 1;
-        emit Executed(hh);
 
         return;
     }
