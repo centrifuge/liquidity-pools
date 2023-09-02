@@ -89,6 +89,7 @@ contract TrancheToken is ERC20 {
             unrealizedBalanceOf[from] = unrealizedBalanceOf[from] - value;
             totalRealizedSupply = totalRealizedSupply - value;
         } else {
+            totalRealizedSupply = totalRealizedSupply - unrealizedBalanceOf[from];
             unrealizedBalanceOf[from] = 0;
         }
         return super.burn(from, value);
