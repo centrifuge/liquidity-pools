@@ -25,20 +25,36 @@ interface InvestmentManagerLike {
     ) external;
 }
 
+interface AxelarGatewayLike {
+    function callContract(string calldata destinationChain, string calldata contractAddress, bytes calldata payload)
+        external;
+
+    function validateContractCall(
+        bytes32 commandId,
+        string calldata sourceChain,
+        string calldata sourceAddress,
+        bytes32 payloadHash
+    ) external returns (bool);
+}
+
 interface GatewayLike {
     function handle(bytes memory message) external;
 }
 
 contract AxelarEVMRouter is Auth, AxelarExecutable {
-    GatewayLike public gateway;
-
     string private constant axelarCentrifugeChainId = "Moonbeam";
     string private constant axelarCentrifugeChainAddress = "0x8AeFc39e251Cd7CD3389981539Ceb154714dBCa6";
+
+    AxelarGatewayLike public immutable axelarGateway;
+
+    GatewayLike public gateway;
 
     // --- Events ---
     event File(bytes32 indexed what, address addr);
 
     constructor(address axelarGateway_) AxelarExecutable(axelarGateway_) {
+        axelarGateway = AxelarGatewayLike(axelarGateway_);
+
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
     }
@@ -69,10 +85,18 @@ contract AxelarEVMRouter is Auth, AxelarExecutable {
     }
 
     // --- Incoming ---
-    function _execute(bytes32, string calldata sourceChain, string calldata, bytes calldata payload)
-        public
-        onlyCentrifugeChainOrigin(sourceChain)
-    {
+    function execute(
+        bytes32 commandId,
+        string calldata sourceChain,
+        string calldata sourceAddress,
+        bytes calldata payload
+    ) public onlyCentrifugeChainOrigin(sourceChain) {
+        bytes32 payloadHash = keccak256(payload);
+        require(
+            axelarGateway.validateContractCall(commandId, sourceChain, sourceAddress, payloadHash),
+            "EVMRouter/not-approved-by-gateway"
+        );
+
         gateway.handle(payload);
     }
 

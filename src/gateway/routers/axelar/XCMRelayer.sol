@@ -36,10 +36,23 @@ struct XcmWeightInfo {
     uint256 feeAmount;
 }
 
-contract AxelarXCMRelayer is Auth, AxelarExecutable {
+interface AxelarGatewayLike {
+    function callContract(string calldata destinationChain, string calldata contractAddress, bytes calldata payload)
+        external;
+
+    function validateContractCall(
+        bytes32 commandId,
+        string calldata sourceChain,
+        string calldata sourceAddress,
+        bytes32 payloadHash
+    ) external returns (bool);
+}
+
+contract AxelarXCMRelayer is Auth {
     address private constant XCM_TRANSACTOR_V2_ADDRESS = 0x000000000000000000000000000000000000080D;
     uint32 private constant CENTRIFUGE_PARACHAIN_ID = 2031;
 
+    AxelarGatewayLike public immutable axelarGateway;
     address public immutable centrifugeChainOrigin;
     mapping(string => string) public axelarEVMRouters;
     bytes1 public immutable lpPalletIndex;
@@ -55,10 +68,9 @@ contract AxelarXCMRelayer is Auth, AxelarExecutable {
     event File(bytes32 indexed what, string chain, string addr);
     event Executed(bytes32 indexed payload);
 
-    constructor(address centrifugeChainOrigin_, address axelarGateway_, bytes1 lpPalletIndex_, bytes1 lpCallIndex_)
-        AxelarExecutable(axelarGateway_)
-    {
+    constructor(address centrifugeChainOrigin_, address axelarGateway_, bytes1 lpPalletIndex_, bytes1 lpCallIndex_) {
         centrifugeChainOrigin = centrifugeChainOrigin_;
+        axelarGateway = AxelarGatewayLike(axelarGateway_);
         lpPalletIndex = lpPalletIndex_;
         lpCallIndex = lpCallIndex_;
 
@@ -114,7 +126,18 @@ contract AxelarXCMRelayer is Auth, AxelarExecutable {
 
     // --- Incoming ---
     // A message that's coming from another EVM chain, headed to the Centrifuge Chain.
-    function _execute(bytes32, string memory sourceChain, string memory sourceAddress, bytes calldata payload) public {
+    function execute(
+        bytes32 commandId,
+        string calldata sourceChain,
+        string calldata sourceAddress,
+        bytes calldata payload
+    ) public {
+        bytes32 payloadHash = keccak256(payload);
+        require(
+            axelarGateway.validateContractCall(commandId, sourceChain, sourceAddress, payloadHash),
+            "XCMRelayer/not-approved-by-gateway"
+        );
+
         // todo(nuno): why do we hash this?
         bytes32 hh = keccak256(payload);
 
