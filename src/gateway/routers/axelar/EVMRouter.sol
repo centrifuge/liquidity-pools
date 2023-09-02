@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.18;
-pragma abicoder v2;
 
 import {AxelarExecutable} from "./AxelarExecutable.sol";
 import {Auth} from "./../../../util/Auth.sol";

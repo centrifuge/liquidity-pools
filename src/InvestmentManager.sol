@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.18;
-pragma abicoder v2;
 
 import {Auth} from "./util/Auth.sol";
 import {Math} from "./util/Math.sol";
