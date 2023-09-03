@@ -101,6 +101,20 @@ contract TrancheToken is ERC20 {
         totalRealizedSupply = totalRealizedSupply + value;
     }
 
+    // Unrealized balance can be burned without allowance
+    function burnUnrealized(address from, uint256 value) public auth {
+        uint256 unrealizedBalance = unrealizedBalanceOf[from];
+        require(unrealizedBalance >= value, "TrancheToken/insufficient-unrealized-balance");
+
+        unchecked {
+            unrealizedBalanceOf[from] = unrealizedBalance - value; // note: we don't need overflow checks b/c require(unrealizedBalance >= value) and unrealizedBalance <= totalSupply
+            balanceOf[from] = balanceOf[from] - value; // note: we don't need overflow checks b/c require(unrealizedBalance >= balance >= value) and unrealizedBalance <= totalSupply
+            totalSupply = totalSupply - value;
+        }
+
+        emit Transfer(from, address(0), value);
+    }
+
     // --- Pricing ---
     function setPrice(uint128 price, uint256 priceAge) public auth {
         require(lastPriceUpdate == 0, "TrancheToken/price-already-set");
