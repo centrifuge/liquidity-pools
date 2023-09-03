@@ -53,9 +53,7 @@ interface TrancheTokenFactoryLike {
         address poolManager,
         string memory name,
         string memory symbol,
-        uint8 decimals,
-        uint128 latestPrice,
-        uint256 priceAge
+        uint8 decimals
     ) external returns (address);
 }
 
@@ -75,9 +73,7 @@ contract TrancheTokenFactory is Auth {
         address poolManager,
         string memory name,
         string memory symbol,
-        uint8 decimals,
-        uint128 latestPrice,
-        uint256 priceAge
+        uint8 decimals
     ) public auth returns (address) {
         address memberlist = _newMemberlist(poolManager);
 
@@ -90,8 +86,6 @@ contract TrancheTokenFactory is Auth {
         token.file("name", name);
         token.file("symbol", symbol);
         token.file("memberlist", memberlist);
-
-        token.setPrice(latestPrice, priceAge);
 
         token.rely(root);
         token.rely(poolManager); // to be able to update token prices

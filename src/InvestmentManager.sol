@@ -39,6 +39,7 @@ interface LiquidityPoolLike {
     // centrifuge chain info functions
     function poolId() external returns (uint64);
     function trancheId() external returns (bytes16);
+    function updatePrice(uint128 price) external;
 }
 
 interface PoolManagerLike {
@@ -65,7 +66,7 @@ interface UserEscrowLike {
     function transferOut(address token, address destination, uint256 amount) external;
 }
 
-/// @dev liquidity pool orders and deposit/redemption limits per user
+/// @dev liquidity pool orders and redemption limits per user
 struct LPValues {
     uint128 maxWithdraw; // denominated in assets
     uint128 maxRedeem; // denominated in tranche tokens
@@ -83,6 +84,7 @@ contract InvestmentManager is Auth {
     PoolManagerLike public poolManager;
 
     mapping(address => mapping(address => LPValues)) public orderbook; // Liquidity pool orders & limits per user
+    mapping(uint64 => mapping(bytes16 => mapping(uint128 => uint128))) public latestPrice; // latest price known per tranche & currency
 
     // --- Events ---
     event File(bytes32 indexed what, address data);
@@ -215,22 +217,27 @@ contract InvestmentManager is Auth {
         bytes16 trancheId,
         address recipient,
         uint128 currency,
-        uint128 currencyInvested,
-        uint128 tokensPayout
+        uint128 currencyPayout,
+        uint128 trancheTokensPayout
     ) public onlyGateway {
-        require(currencyInvested != 0, "InvestmentManager/zero-invest");
+        require(currencyPayout != 0, "InvestmentManager/zero-invest");
         address _currency = poolManager.currencyIdToAddress(currency);
         LiquidityPoolLike liquidityPool = LiquidityPoolLike(poolManager.getLiquidityPool(poolId, trancheId, _currency));
         require(address(liquidityPool) != address(0), "InvestmentManager/tranche-does-not-exist");
 
+        (, uint8 currencyDecimals,) = _getPoolDecimals(address(liquidityPool));
+        uint128 price =
+            _toUint128(trancheTokensPayout.mulDiv(10 ** currencyDecimals, currencyPayout, Math.Rounding.Down));
+        liquidityPool.updatePrice(price);
+
         uint256 unrealizedBalance = liquidityPool.unrealizedBalanceOf(recipient);
-        if (tokensPayout > unrealizedBalance) {
-            liquidityPool.mint(recipient, tokensPayout - unrealizedBalance);
+        if (trancheTokensPayout > unrealizedBalance) {
+            liquidityPool.mint(recipient, trancheTokensPayout - unrealizedBalance);
         }
 
         // TODO: if there is no remaining locked order om cent chain (need to add this info to the message!), the diff is burned through burnUnrealized (which requires no approval)
 
-        liquidityPool.realize(recipient, tokensPayout);
+        liquidityPool.realize(recipient, trancheTokensPayout);
     }
 
     function handleExecutedCollectRedeem(
@@ -245,6 +252,11 @@ contract InvestmentManager is Auth {
         address _currency = poolManager.currencyIdToAddress(currency);
         address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, _currency);
         require(liquidityPool != address(0), "InvestmentManager/tranche-does-not-exist");
+
+        (, uint8 currencyDecimals,) = _getPoolDecimals(liquidityPool);
+        uint128 price =
+            _toUint128(trancheTokensPayout.mulDiv(10 ** currencyDecimals, currencyPayout, Math.Rounding.Down));
+        LiquidityPoolLike(liquidityPool).updatePrice(price);
 
         LPValues storage lpValues = orderbook[recipient][liquidityPool];
         lpValues.maxWithdraw = lpValues.maxWithdraw + currencyPayout;
