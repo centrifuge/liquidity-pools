@@ -12,6 +12,7 @@ contract AxelarEVMRouterTest is Test {
     AxelarEVMRouter router;
 
     string private constant axelarCentrifugeChainId = "Moonbeam";
+    string private constant axelarCentrifugeChainAddress = "0x3b4a32efd7bd0290882B4854c86b8CECe534c975";
 
     function setUp() public {
         axelarGateway = new AxelarGatewayMock();
@@ -19,6 +20,17 @@ contract AxelarEVMRouterTest is Test {
 
         router = new AxelarEVMRouter(address(axelarGateway));
         router.file("gateway", address(gateway));
+    }
+
+    function testFile(address invalidOrigin, address anotherGateway) public {
+        vm.assume(invalidOrigin != address(this));
+
+        vm.prank(invalidOrigin);
+        vm.expectRevert(bytes("Auth/not-authorized"));
+        router.file("gateway", anotherGateway);
+
+        router.file("gateway", anotherGateway);
+        assertEq(address(router.gateway()), anotherGateway);
     }
 
     function testIncomingCalls(
@@ -50,5 +62,19 @@ contract AxelarEVMRouterTest is Test {
         axelarGateway.setReturn("validateContractCall", true);
         vm.prank(address(axelarGateway));
         router.execute(commandId, axelarCentrifugeChainId, sourceAddress, payload);
+    }
+
+    function testOutgoingCalls(bytes calldata message, address invalidOrigin) public {
+        vm.assume(invalidOrigin != address(gateway));
+
+        vm.expectRevert(bytes("AxelarEVMRouter/only-gateway-allowed-to-call"));
+        router.send(message);
+
+        vm.prank(address(gateway));
+        router.send(message);
+
+        assertEq(axelarGateway.values_string("destinationChain"), axelarCentrifugeChainId);
+        assertEq(axelarGateway.values_string("contractAddress"), axelarCentrifugeChainAddress);
+        assertEq(axelarGateway.values_bytes("payload"), message);
     }
 }
