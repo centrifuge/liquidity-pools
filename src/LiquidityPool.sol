@@ -250,6 +250,14 @@ contract LiquidityPool is Auth, ERC20Like {
     }
 
     // --- Miscellaneous investment functions ---
+    function decreaseDepositRequest(uint256 assets, address owner) public withCurrencyApproval(owner, assets) {
+        investmentManager.decreaseDepositRequest(assets, owner);
+    }
+
+    function decreaseRedeemRequest(uint256 shares, address owner) public withTokenApproval(owner, shares) {
+        investmentManager.decreaseRedeemRequest(shares, owner);
+    }
+
     function collectDeposit(address receiver) public {
         investmentManager.collectDeposit(receiver);
         emit DepositCollected(receiver);
