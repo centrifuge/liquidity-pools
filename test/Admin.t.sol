@@ -157,7 +157,7 @@ contract AdminTest is TestSetup {
         delayedAdmin.scheduleRely(address(this));
         vm.warp(block.timestamp + delay + 1 hours);
         root.executeScheduledRely(address(this));
-        
+
         vm.expectRevert("Root/delay-too-long");
         root.file("delay", 5 weeks);
 
@@ -173,7 +173,7 @@ contract AdminTest is TestSetup {
         delayedAdmin.scheduleRely(address(this));
         vm.warp(block.timestamp + delay + 1 hours);
         root.executeScheduledRely(address(this));
-        
+
         assertEq(investmentManager.wards(address(this)), 1);
         root.denyContract(address(investmentManager), address(this));
         assertEq(investmentManager.wards(address(this)), 0);

@@ -20,7 +20,7 @@ contract MemberlistTest is Test {
 
     function testAddMembers(uint64 validUntil) public {
         vm.assume(validUntil >= block.timestamp);
-        
+
         address[] memory members = new address[](3);
         members[0] = address(1);
         members[1] = address(2);
@@ -34,10 +34,9 @@ contract MemberlistTest is Test {
 
     function testIsMember(uint64 validUntil) public {
         vm.assume(validUntil >= block.timestamp);
-        
+
         memberlist.updateMember(address(this), validUntil);
         memberlist.member(address(this));
         assert(memberlist.hasMember(address(this)));
     }
-
 }
