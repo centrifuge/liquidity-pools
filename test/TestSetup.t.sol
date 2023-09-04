@@ -15,6 +15,7 @@ import {ERC20} from "../src/token/ERC20.sol";
 import {Gateway} from "../src/gateway/Gateway.sol";
 import {MemberlistLike, Memberlist} from "../src/token/Memberlist.sol";
 import {Messages} from "../src/gateway/Messages.sol";
+import {Deployer} from "../../script/Deployer.sol";
 import "../src/token/ERC20Like.sol";
 
 // mocks
@@ -25,15 +26,10 @@ import {MockXcmRouter} from "./mock/MockXcmRouter.sol";
 import "forge-std/Test.sol";
 import {Investor} from "./accounts/Investor.sol";
 
-contract TestSetup is Test {
-    Root root;
-    InvestmentManager evmInvestmentManager;
-    PoolManager evmPoolManager;
-    Gateway gateway;
+contract TestSetup is Deployer, Test {
+    
     MockHomeLiquidityPools homePools;
     MockXcmRouter mockXcmRouter;
-    Escrow escrow;
-    UserEscrow userEscrow;
     ERC20 erc20;
 
     address self;
@@ -43,45 +39,23 @@ contract TestSetup is Test {
     function setUp() public virtual {
         self = address(this);
         vm.chainId(1);
+        // make yourself admin
+        admin = self;
 
         // deploy core contracts
-        escrow = new Escrow();
-        userEscrow = new UserEscrow();
-        address escrow_ = address(escrow);
-        address userEscrow_ = address(userEscrow);
-        root = new Root(escrow_, 48 hours);
-        address root_ = address(root);
-        LiquidityPoolFactory liquidityPoolFactory = new LiquidityPoolFactory(root_);
-        TrancheTokenFactory trancheTokenFactory = new TrancheTokenFactory(root_);
-        evmInvestmentManager = new InvestmentManager(escrow_, userEscrow_);
-        address evmInvestmentManager_ = address(evmInvestmentManager);
-        evmPoolManager = new PoolManager(escrow_, address(liquidityPoolFactory), address(trancheTokenFactory));
-        address evmPoolManager_ = address(evmPoolManager);
-        liquidityPoolFactory.rely(evmPoolManager_);
-        trancheTokenFactory.rely(evmPoolManager_);
+        deployInvestmentManager();
+        // deploy mockRouter 
+        mockXcmRouter = new MockXcmRouter(address(investmentManager));
+        // // wire contracts
+        wire(address(mockXcmRouter));
+        // give admin access
+        giveAdminAccess();
+        // remove deployer access
+        removeDeployerAccess(address(mockXcmRouter));
 
-        // deploy mocks
-        mockXcmRouter = new MockXcmRouter(evmInvestmentManager_);
         homePools = new MockHomeLiquidityPools(address(mockXcmRouter));
         erc20 = newErc20("X's Dollar", "USDX", 6);
-
-        // gateway
-        gateway = new Gateway(root_, evmInvestmentManager_, evmPoolManager_, address(mockXcmRouter));
-        address gateway_ = address(gateway);
-
-        // wire contracts
-
-        evmInvestmentManager.file("gateway", gateway_);
-        evmInvestmentManager.file("poolManager", evmPoolManager_);
-        evmInvestmentManager.rely(gateway_);
-        evmInvestmentManager.rely(evmPoolManager_);
-        evmPoolManager.file("gateway", gateway_);
-        evmPoolManager.file("investmentManager", evmInvestmentManager_);
-        escrow.rely(evmInvestmentManager_);
-        escrow.rely(evmPoolManager_);
-        userEscrow.rely(evmInvestmentManager_);
-        // escrow.rely(gateway_);
-        mockXcmRouter.file("gateway", gateway_);
+        mockXcmRouter.file("gateway", address(gateway));
     }
 
     // helpers
@@ -104,9 +78,9 @@ contract TestSetup is Test {
         homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals); // add tranche
         homePools.addCurrency(currency, address(erc20));
         homePools.allowPoolCurrency(poolId, currency);
-        evmPoolManager.deployTranche(poolId, trancheId);
+        poolManager.deployTranche(poolId, trancheId);
 
-        address lPoolAddress = evmPoolManager.deployLiquidityPool(poolId, trancheId, address(erc20));
+        address lPoolAddress = poolManager.deployLiquidityPool(poolId, trancheId, address(erc20));
         return lPoolAddress;
     }
 
