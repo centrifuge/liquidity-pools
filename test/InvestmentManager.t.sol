@@ -10,6 +10,24 @@ interface LiquidityPoolLike {
 }
 
 contract InvestmentManagerTest is TestSetup {
+    // Deployment
+    function testDeployment() public {
+        // values set correctly
+        assertEq(address(investmentManager.escrow()), address(escrow));
+        assertEq(address(investmentManager.userEscrow()), address(userEscrow));
+        assertEq(address(investmentManager.gateway()), address(gateway));
+        assertEq(address(investmentManager.poolManager()), address(poolManager));
+        assertEq(address(gateway.investmentManager()), address(investmentManager));
+        assertEq(address(poolManager.investmentManager()), address(investmentManager));
+
+        // permissions set correctly
+        assertEq(investmentManager.wards(address(root)), 1);
+        assertEq(investmentManager.wards(address(poolManager)), 1);
+        assertEq(escrow.wards(address(investmentManager)), 1);
+        assertEq(userEscrow.wards(address(investmentManager)), 1);
+        // assertEq(investmentManager.wards(self), 0); // deployer has no permissions
+    }
+
     function testUpdatingTokenPriceWorks(
         uint64 poolId,
         uint8 decimals,
@@ -29,9 +47,8 @@ contract InvestmentManagerTest is TestSetup {
         homePools.addCurrency(currencyId, address(erc20)); // add currency
         homePools.allowPoolCurrency(poolId, currencyId);
 
-        address tranche_ = evmPoolManager.deployTranche(poolId, trancheId);
-        LiquidityPoolLike lPool =
-            LiquidityPoolLike(evmPoolManager.deployLiquidityPool(poolId, trancheId, address(erc20)));
+        address tranche_ = poolManager.deployTranche(poolId, trancheId);
+        LiquidityPoolLike lPool = LiquidityPoolLike(poolManager.deployLiquidityPool(poolId, trancheId, address(erc20)));
 
         homePools.updateTrancheTokenPrice(poolId, trancheId, currencyId, price);
         assertEq(lPool.latestPrice(), price);
@@ -54,11 +71,11 @@ contract InvestmentManagerTest is TestSetup {
         homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals); // add tranche
         homePools.addCurrency(currency, address(erc20));
         homePools.allowPoolCurrency(poolId, currency);
-        evmPoolManager.deployTranche(poolId, trancheId);
-        evmPoolManager.deployLiquidityPool(poolId, trancheId, address(erc20));
+        poolManager.deployTranche(poolId, trancheId);
+        poolManager.deployLiquidityPool(poolId, trancheId, address(erc20));
 
         vm.expectRevert(bytes("InvestmentManager/not-the-gateway"));
-        evmInvestmentManager.updateTrancheTokenPrice(poolId, trancheId, currency, price);
+        investmentManager.updateTrancheTokenPrice(poolId, trancheId, currency, price);
     }
 
     function testUpdatingTokenPriceForNonExistentTrancheFails(

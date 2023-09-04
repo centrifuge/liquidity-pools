@@ -5,8 +5,9 @@ import "forge-std/Test.sol";
 import {InvestmentManager} from "src/InvestmentManager.sol";
 import {Messages} from "src/gateway/Messages.sol";
 import {Gateway} from "src/gateway/Gateway.sol";
+import {Auth} from "src/util/Auth.sol";
 
-contract MockXcmRouter is Test {
+contract MockXcmRouter is Auth, Test {
     address public immutable centrifugeChainOrigin;
     address public gateway;
 
@@ -14,6 +15,7 @@ contract MockXcmRouter is Test {
 
     constructor(address centrifugeChainOrigin_) {
         centrifugeChainOrigin = centrifugeChainOrigin_;
+        wards[msg.sender] = 1;
     }
 
     modifier onlyCentrifugeChainOrigin() {
