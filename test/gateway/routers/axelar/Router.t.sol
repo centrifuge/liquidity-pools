@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {AxelarEVMRouter} from "src/gateway/routers/axelar/EVMRouter.sol";
+import {AxelarRouter} from "src/gateway/routers/axelar/Router.sol";
 import {AxelarGatewayMock} from "../../../mock/AxelarGatewayMock.sol";
 import {GatewayMock} from "../../../mock/GatewayMock.sol";
 import "forge-std/Test.sol";
 
-contract AxelarEVMRouterTest is Test {
+contract AxelarRouterTest is Test {
     AxelarGatewayMock axelarGateway;
     GatewayMock gateway;
-    AxelarEVMRouter router;
+    AxelarRouter router;
 
     string private constant axelarCentrifugeChainId = "Moonbeam";
     string private constant axelarCentrifugeChainAddress = "0x3b4a32efd7bd0290882B4854c86b8CECe534c975";
@@ -18,12 +18,12 @@ contract AxelarEVMRouterTest is Test {
         axelarGateway = new AxelarGatewayMock();
         gateway = new GatewayMock();
 
-        router = new AxelarEVMRouter(address(axelarGateway));
+        router = new AxelarRouter(address(axelarGateway));
         router.file("gateway", address(gateway));
     }
 
     function testInvalidFile() public {
-        vm.expectRevert("AxelarEVMRouter/file-unrecognized-param");
+        vm.expectRevert("AxelarRouter/file-unrecognized-param");
         router.file("not-gateway", address(1));
     }
 
@@ -52,16 +52,16 @@ contract AxelarEVMRouterTest is Test {
                 != keccak256(abi.encodePacked(axelarCentrifugeChainId))
         );
 
-        vm.expectRevert(bytes("AxelarEVMRouter/invalid-origin"));
+        vm.expectRevert(bytes("AxelarRouter/invalid-origin"));
         router.execute(commandId, sourceChain, sourceAddress, payload);
 
         vm.prank(address(axelarGateway));
-        vm.expectRevert(bytes("AxelarEVMRouter/invalid-source-chain"));
+        vm.expectRevert(bytes("AxelarRouter/invalid-source-chain"));
         router.execute(commandId, sourceChain, sourceAddress, payload);
 
         axelarGateway.setReturn("validateContractCall", false);
         vm.prank(address(axelarGateway));
-        vm.expectRevert(bytes("EVMRouter/not-approved-by-gateway"));
+        vm.expectRevert(bytes("Router/not-approved-by-gateway"));
         router.execute(commandId, axelarCentrifugeChainId, sourceAddress, payload);
 
         axelarGateway.setReturn("validateContractCall", true);
@@ -72,7 +72,7 @@ contract AxelarEVMRouterTest is Test {
     function testOutgoingCalls(bytes calldata message, address invalidOrigin) public {
         vm.assume(invalidOrigin != address(gateway));
 
-        vm.expectRevert(bytes("AxelarEVMRouter/only-gateway-allowed-to-call"));
+        vm.expectRevert(bytes("AxelarRouter/only-gateway-allowed-to-call"));
         router.send(message);
 
         vm.prank(address(gateway));

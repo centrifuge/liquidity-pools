@@ -16,7 +16,7 @@ import {PermissionlessRouter} from "test/mock/PermissionlessRouter.sol";
 import {Root} from "src/Root.sol";
 import {LiquidityPool} from "src/LiquidityPool.sol";
 
-import {AxelarEVMScript} from "script/AxelarEVM.s.sol";
+import {AxelarScript} from "script/Axelar.s.sol";
 import {PermissionlessScript} from "script/Permissionless.s.sol";
 import "src/util/Math.sol";
 import "forge-std/Test.sol";
