@@ -125,7 +125,7 @@ contract MessagesTest is Test {
         uint128 currencyId = 2;
         uint128 price = 1_000_000_000_000_000_000_000_000_000;
         bytes memory expectedHex =
-            hex"050000000000000001811acd5b3f17c06841c7e41e9e04cb1b00000000033b2e3c9fd0803ce8000000";
+            hex"050000000000000001811acd5b3f17c06841c7e41e9e04cb1b0000000000000000000000000000000200000000033b2e3c9fd0803ce8000000";
 
         assertEq(Messages.formatUpdateTrancheTokenPrice(poolId, trancheId, currencyId, price), expectedHex);
 

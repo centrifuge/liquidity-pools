@@ -237,6 +237,17 @@ contract InvestmentManager is Auth {
     }
 
     // --- Incoming message handling ---
+    function updateTrancheTokenPrice(uint64 poolId, bytes16 trancheId, uint128 currencyId, uint128 price)
+        public
+        onlyGateway
+    {
+        address currency = poolManager.currencyIdToAddress(currencyId);
+        address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, currency);
+        require(liquidityPool != address(0), "InvestmentManager/tranche-does-not-exist");
+
+        LiquidityPoolLike(liquidityPool).updatePrice(price);
+    }
+
     function handleExecutedCollectInvest(
         uint64 poolId,
         bytes16 trancheId,

@@ -209,14 +209,6 @@ contract PoolManager is Auth {
         emit TrancheAdded(poolId, trancheId);
     }
 
-    // TODO: add currency_id to args
-    function updateTrancheTokenPrice(uint64 poolId, bytes16 trancheId, uint128 price) public onlyGateway {
-        TrancheTokenLike trancheToken = TrancheTokenLike(getTrancheToken(poolId, trancheId));
-        require(address(trancheToken) != address(0), "PoolManager/unknown-token");
-
-        trancheToken.updatePrice(price);
-    }
-
     function updateTrancheTokenMetadata(
         uint64 poolId,
         bytes16 trancheId,
