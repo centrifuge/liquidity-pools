@@ -270,6 +270,9 @@ contract Gateway is Auth {
         } else if (Messages.isUpdateMember(message)) {
             (uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) = Messages.parseUpdateMember(message);
             poolManager.updateMember(poolId, trancheId, user, validUntil);
+        } else if (Messages.isUpdateTrancheTokenPrice(message)) {
+            (uint64 poolId, bytes16 trancheId, uint128 price) = Messages.parseUpdateTrancheTokenPrice(message);
+            poolManager.updateTrancheTokenPrice(poolId, trancheId, price);
         } else if (Messages.isTransfer(message)) {
             (uint128 currency, address recipient, uint128 amount) = Messages.parseIncomingTransfer(message);
             poolManager.handleTransfer(currency, recipient, amount);

@@ -67,6 +67,11 @@ contract MockHomeLiquidityPools is Test {
         router.execute(_message);
     }
 
+    function updateTrancheTokenPrice(uint64 poolId, bytes16 trancheId, uint128 price) public {
+        bytes memory _message = Messages.formatUpdateTrancheTokenPrice(poolId, trancheId, price);
+        router.execute(_message);
+    }
+
     // Trigger an incoming (e.g. Centrifuge Chain -> EVM) transfer of stable coins
     function incomingTransfer(uint128 currency, bytes32 sender, bytes32 recipient, uint128 amount) public {
         bytes memory _message = Messages.formatTransfer(currency, sender, recipient, amount);

@@ -224,6 +224,36 @@ library Messages {
         validUntil = BytesLib.toUint64(_msg, 57);
     }
 
+    /**
+     * Update a Tranche token's price
+     *
+     * 0: call type (uint8 = 1 byte)
+     * 1-8: poolId (uint64 = 8 bytes)
+     * 9-24: trancheId (16 bytes)
+     * 25-41: price (uint128 = 16 bytes)
+     */
+    function formatUpdateTrancheTokenPrice(uint64 poolId, bytes16 trancheId, uint128 price)
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(uint8(Call.UpdateTrancheTokenPrice), poolId, trancheId, price);
+    }
+
+    function isUpdateTrancheTokenPrice(bytes memory _msg) internal pure returns (bool) {
+        return messageType(_msg) == Call.UpdateTrancheTokenPrice;
+    }
+
+    function parseUpdateTrancheTokenPrice(bytes memory _msg)
+        internal
+        pure
+        returns (uint64 poolId, bytes16 trancheId, uint128 price)
+    {
+        poolId = BytesLib.toUint64(_msg, 1);
+        trancheId = BytesLib.toBytes16(_msg, 9);
+        price = BytesLib.toUint128(_msg, 25);
+    }
+
     /*
      * Transfer Message - Transfer stable coins
      *
