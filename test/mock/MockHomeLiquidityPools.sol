@@ -127,7 +127,7 @@ contract MockHomeLiquidityPools is Test {
         uint128 trancheTokensPayout
     ) public {
         bytes memory _message =
-            Messages.formatExecutedDecreaseInvestOrder(poolId, trancheId, investor, currency, trancheTokensPayout);
+            Messages.formatExecutedDecreaseRedeemOrder(poolId, trancheId, investor, currency, trancheTokensPayout);
         router.execute(_message);
     }
 
