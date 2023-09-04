@@ -258,6 +258,9 @@ contract PoolManager is Auth {
         // enable taking the currency out of escrow in case of redemptions
         EscrowLike(escrow).approve(currencyAddress, investmentManager.userEscrow(), type(uint256).max);
 
+        // enable taking the currency out of escrow in case of decrease invest orders
+        EscrowLike(escrow).approve(currencyAddress, address(investmentManager), type(uint256).max);
+
         emit CurrencyAdded(currency, currencyAddress);
     }
 

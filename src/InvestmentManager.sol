@@ -284,12 +284,12 @@ contract InvestmentManager is Auth {
         uint128 currencyPayout
     ) public onlyGateway {
         require(currencyPayout != 0, "InvestmentManager/zero-payout");
+
         address _currency = poolManager.currencyIdToAddress(currency);
         address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, _currency);
         require(liquidityPool != address(0), "InvestmentManager/tranche-does-not-exist");
-        require(poolManager.isAllowedAsPoolCurrency(poolId, _currency), "InvestmentManager/currency-not-supported");
-        require(_currency != address(0), "InvestmentManager/unknown-currency");
         require(_currency == LiquidityPoolLike(liquidityPool).asset(), "InvestmentManager/not-tranche-currency");
+
         require(
             ERC20Like(_currency).transferFrom(address(escrow), user, currencyPayout),
             "InvestmentManager/currency-transfer-failed"
@@ -301,16 +301,18 @@ contract InvestmentManager is Auth {
         bytes16 trancheId,
         address user,
         uint128 currency,
-        uint128 tokensPayout
+        uint128 trancheTokenPayout
     ) public onlyGateway {
-        require(tokensPayout != 0, "InvestmentManager/zero-payout");
+        require(trancheTokenPayout != 0, "InvestmentManager/zero-payout");
+
         address _currency = poolManager.currencyIdToAddress(currency);
         address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, _currency);
         require(address(liquidityPool) != address(0), "InvestmentManager/tranche-does-not-exist");
 
         require(LiquidityPoolLike(liquidityPool).hasMember(user), "InvestmentManager/not-a-member");
+
         require(
-            LiquidityPoolLike(liquidityPool).transferFrom(address(escrow), user, tokensPayout),
+            LiquidityPoolLike(liquidityPool).transferFrom(address(escrow), user, trancheTokenPayout),
             "InvestmentManager/trancheTokens-transfer-failed"
         );
     }

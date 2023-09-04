@@ -107,6 +107,30 @@ contract MockHomeLiquidityPools is Test {
         router.execute(_message);
     }
 
+    function isExecutedDecreaseInvestOrder(
+        uint64 poolId,
+        bytes16 trancheId,
+        bytes32 investor,
+        uint128 currency,
+        uint128 currencyPayout
+    ) public {
+        bytes memory _message =
+            Messages.formatExecutedDecreaseInvestOrder(poolId, trancheId, investor, currency, currencyPayout);
+        router.execute(_message);
+    }
+
+    function isExecutedDecreaseRedeemOrder(
+        uint64 poolId,
+        bytes16 trancheId,
+        bytes32 investor,
+        uint128 currency,
+        uint128 trancheTokensPayout
+    ) public {
+        bytes memory _message =
+            Messages.formatExecutedDecreaseInvestOrder(poolId, trancheId, investor, currency, trancheTokensPayout);
+        router.execute(_message);
+    }
+
     function isExecutedCollectInvest(
         uint64 poolId,
         bytes16 trancheId,
