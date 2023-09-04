@@ -22,6 +22,11 @@ contract AxelarEVMRouterTest is Test {
         router.file("gateway", address(gateway));
     }
 
+    function testInvalidFile() public {
+        vm.expectRevert("AxelarEVMRouter/file-unrecognized-param");
+        router.file("not-gateway", address(1));
+    }
+
     function testFile(address invalidOrigin, address anotherGateway) public {
         vm.assume(invalidOrigin != address(this));
 
