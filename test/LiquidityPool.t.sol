@@ -22,11 +22,11 @@ contract LiquidityPoolTest is TestSetup {
         price = 1;
         Investor investor = new Investor();
 
-        address lPool_ =
-            deployLiquidityPool(poolId, erc20.decimals(), tokenName, tokenSymbol, trancheId, price, currencyId);
+        address lPool_ = deployLiquidityPool(poolId, erc20.decimals(), tokenName, tokenSymbol, trancheId, currencyId);
         investorDeposit(address(investor), lPool_, poolId, trancheId, amount, validUntil); // deposit funds first
         LiquidityPool lPool = LiquidityPool(lPool_);
         homePools.updateMember(poolId, trancheId, self, validUntil); // put self on memberlist to be able to receive tranche tokens
+        lPool.updatePrice(price);
 
         TrancheToken trancheToken = TrancheToken(address(lPool.share()));
         assert(trancheToken.isTrustedForwarder(lPool_) == true); // Lpool is not trusted forwarder on token
@@ -81,8 +81,9 @@ contract LiquidityPoolTest is TestSetup {
         price = 1;
         Investor investor = new Investor();
 
-        address lPool_ = deployLiquidityPool(poolId, decimals, tokenName, tokenSymbol, trancheId, price, currencyId);
+        address lPool_ = deployLiquidityPool(poolId, decimals, tokenName, tokenSymbol, trancheId, currencyId);
         LiquidityPool lPool = LiquidityPool(lPool_);
+        lPool.updatePrice(price);
 
         TrancheToken trancheToken = TrancheToken(address(lPool.share()));
         assert(trancheToken.isTrustedForwarder(lPool_) == true); // Lpool is not trusted forwarder on token
@@ -133,11 +134,9 @@ contract LiquidityPoolTest is TestSetup {
         vm.assume(amount < MAX_UINT128);
         vm.assume(amount > 100);
         vm.assume(validUntil >= block.timestamp);
-        price = 1;
         Investor investor = new Investor();
 
-        address lPool_ =
-            deployLiquidityPool(poolId, erc20.decimals(), tokenName, tokenSymbol, trancheId, price, currencyId);
+        address lPool_ = deployLiquidityPool(poolId, erc20.decimals(), tokenName, tokenSymbol, trancheId, currencyId);
         investorDeposit(address(investor), lPool_, poolId, trancheId, amount, validUntil); // deposit funds first
         LiquidityPool lPool = LiquidityPool(lPool_);
         homePools.updateMember(poolId, trancheId, self, validUntil); // put self on memberlist to be able to receive tranche tokens
@@ -180,9 +179,9 @@ contract LiquidityPoolTest is TestSetup {
         uint8 TRANCHE_TOKEN_DECIMALS = 18; // Like DAI
         uint8 INVESTMENT_CURRENCY_DECIMALS = 6; // 6, like USDC
 
-        address lPool_ =
-            deployLiquidityPool(poolId, TRANCHE_TOKEN_DECIMALS, "", "", trancheId, 1000000000000000000, currencyId);
+        address lPool_ = deployLiquidityPool(poolId, TRANCHE_TOKEN_DECIMALS, "", "", trancheId, currencyId);
         LiquidityPool lPool = LiquidityPool(lPool_);
+        lPool.updatePrice(1000000000000000000);
 
         // invest
         uint256 investmentAmount = 100000000; // 100 * 10**6
@@ -257,10 +256,9 @@ contract LiquidityPoolTest is TestSetup {
         uint8 TRANCHE_TOKEN_DECIMALS = 6; // Like DAI
         uint8 INVESTMENT_CURRENCY_DECIMALS = 18; // 18, like USDC
 
-        address lPool_ = deployLiquidityPool(
-            poolId, TRANCHE_TOKEN_DECIMALS, "", "", trancheId, 1000000000000000000000000000, currencyId
-        );
+        address lPool_ = deployLiquidityPool(poolId, TRANCHE_TOKEN_DECIMALS, "", "", trancheId, currencyId);
         LiquidityPool lPool = LiquidityPool(lPool_);
+        lPool.updatePrice(1000000000000000000000000000);
 
         // invest
         uint256 investmentAmount = 100000000000000000000; // 100 * 10**18
@@ -333,9 +331,9 @@ contract LiquidityPoolTest is TestSetup {
         uint8 TRANCHE_TOKEN_DECIMALS = 18; // Like DAI
         uint8 INVESTMENT_CURRENCY_DECIMALS = 6; // 6, like USDC
 
-        address lPool_ =
-            deployLiquidityPool(poolId, TRANCHE_TOKEN_DECIMALS, "", "", trancheId, 1000000000000000000, currencyId);
+        address lPool_ = deployLiquidityPool(poolId, TRANCHE_TOKEN_DECIMALS, "", "", trancheId, currencyId);
         LiquidityPool lPool = LiquidityPool(lPool_);
+        lPool.updatePrice(1000000000000000000);
 
         // invest
         uint256 investmentAmount = 100000000; // 100 * 10**6
@@ -384,9 +382,9 @@ contract LiquidityPoolTest is TestSetup {
         vm.assume(validUntil >= block.timestamp);
         price = 2 * 10 ** 27;
 
-        address lPool_ =
-            deployLiquidityPool(poolId, erc20.decimals(), tokenName, tokenSymbol, trancheId, price, currencyId);
+        address lPool_ = deployLiquidityPool(poolId, erc20.decimals(), tokenName, tokenSymbol, trancheId, currencyId);
         LiquidityPool lPool = LiquidityPool(lPool_);
+        lPool.updatePrice(price);
 
         erc20.mint(self, amount);
 
@@ -459,9 +457,8 @@ contract LiquidityPoolTest is TestSetup {
         address investor = vm.addr(0xABCD);
         vm.prank(vm.addr(0xABCD));
 
-        LiquidityPool lPool = LiquidityPool(
-            deployLiquidityPool(poolId, erc20.decimals(), tokenName, tokenSymbol, trancheId, 1, currencyId)
-        );
+        LiquidityPool lPool =
+            LiquidityPool(deployLiquidityPool(poolId, erc20.decimals(), tokenName, tokenSymbol, trancheId, currencyId));
         erc20.mint(investor, amount);
         homePools.updateMember(poolId, trancheId, investor, type(uint64).max);
 
@@ -551,10 +548,10 @@ contract LiquidityPoolTest is TestSetup {
         vm.assume(validUntil >= block.timestamp);
         price = 1;
 
-        address lPool_ =
-            deployLiquidityPool(poolId, erc20.decimals(), tokenName, tokenSymbol, trancheId, price, currencyId);
+        address lPool_ = deployLiquidityPool(poolId, erc20.decimals(), tokenName, tokenSymbol, trancheId, currencyId);
         deposit(lPool_, poolId, trancheId, amount, validUntil); // deposit funds first
         LiquidityPool lPool = LiquidityPool(lPool_);
+        lPool.updatePrice(price);
 
         // will fail - user did not give tranche token allowance to investmentManager
         vm.expectRevert(bytes("ERC20/insufficient-allowance"));
@@ -604,10 +601,10 @@ contract LiquidityPoolTest is TestSetup {
         vm.assume(validUntil >= block.timestamp);
         price = 1;
 
-        address lPool_ =
-            deployLiquidityPool(poolId, erc20.decimals(), tokenName, tokenSymbol, trancheId, price, currencyId);
+        address lPool_ = deployLiquidityPool(poolId, erc20.decimals(), tokenName, tokenSymbol, trancheId, currencyId);
         deposit(lPool_, poolId, trancheId, amount, validUntil); // deposit funds first
         LiquidityPool lPool = LiquidityPool(lPool_);
+        lPool.updatePrice(price);
 
         // will fail - user did not give tranche token allowance to investmentManager
         vm.expectRevert(bytes("ERC20/insufficient-balance"));
@@ -654,9 +651,9 @@ contract LiquidityPoolTest is TestSetup {
         vm.assume(validUntil >= block.timestamp);
         price = 2 * 10 ** 27;
 
-        address lPool_ =
-            deployLiquidityPool(poolId, erc20.decimals(), tokenName, tokenSymbol, trancheId, price, currencyId);
+        address lPool_ = deployLiquidityPool(poolId, erc20.decimals(), tokenName, tokenSymbol, trancheId, currencyId);
         LiquidityPool lPool = LiquidityPool(lPool_);
+        lPool.updatePrice(price);
 
         erc20.mint(self, amount);
         homePools.updateMember(poolId, trancheId, self, validUntil); // add user as member
@@ -691,10 +688,10 @@ contract LiquidityPoolTest is TestSetup {
         vm.assume(validUntil >= block.timestamp);
         price = 1;
 
-        address lPool_ =
-            deployLiquidityPool(poolId, erc20.decimals(), tokenName, tokenSymbol, trancheId, price, currencyId);
+        address lPool_ = deployLiquidityPool(poolId, erc20.decimals(), tokenName, tokenSymbol, trancheId, currencyId);
         deposit(lPool_, poolId, trancheId, amount, validUntil); // deposit funds first
         LiquidityPool lPool = LiquidityPool(lPool_);
+        lPool.updatePrice(price);
 
         lPool.approve(address(evmInvestmentManager), amount);
         lPool.requestRedeem(amount, self);
@@ -726,8 +723,9 @@ contract LiquidityPoolTest is TestSetup {
         vm.assume(decimals > 0);
         vm.assume(validUntil > block.timestamp + 7 days);
 
-        address lPool_ = deployLiquidityPool(poolId, decimals, tokenName, tokenSymbol, trancheId, price, currency);
+        address lPool_ = deployLiquidityPool(poolId, decimals, tokenName, tokenSymbol, trancheId, currency);
         LiquidityPool lPool = LiquidityPool(lPool_);
+        lPool.updatePrice(price);
 
         vm.expectRevert(bytes("InvestmentManager/not-a-member"));
         lPool.collectDeposit(address(this));
@@ -753,9 +751,10 @@ contract LiquidityPoolTest is TestSetup {
         vm.assume(trancheDecimals > 0);
         vm.assume(validUntil > block.timestamp + 7 days);
 
-        address lPool_ = deployLiquidityPool(poolId, decimals, tokenName, tokenSymbol, trancheId, price, currency);
+        address lPool_ = deployLiquidityPool(poolId, decimals, tokenName, tokenSymbol, trancheId, currency);
         LiquidityPool lPool = LiquidityPool(lPool_);
         homePools.allowPoolCurrency(poolId, currency);
+        lPool.updatePrice(price);
 
         vm.expectRevert(bytes("InvestmentManager/not-a-member"));
         lPool.collectRedeem(address(this));

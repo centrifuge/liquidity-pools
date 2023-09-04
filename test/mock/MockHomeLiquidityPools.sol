@@ -45,10 +45,10 @@ contract MockHomeLiquidityPools is Test {
         bytes16 trancheId,
         string memory tokenName,
         string memory tokenSymbol,
-        uint8 decimals,
-        uint128 price
+        uint8 decimals
     ) public {
-        bytes memory _message = Messages.formatAddTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price);
+        // TODO: remove price arg from the AddTranche message
+        bytes memory _message = Messages.formatAddTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, 0);
         router.execute(_message);
     }
 
