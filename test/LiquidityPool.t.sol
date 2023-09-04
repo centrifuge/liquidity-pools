@@ -357,7 +357,7 @@ contract LiquidityPoolTest is TestSetup {
         assertEq(lPool.convertToAssets(lPool.convertToShares(100000000000000000000)), 100000000000000000000);
 
         // assert share/asset conversion after price update
-        homePools.updateTrancheTokenPrice(poolId, trancheId, 120000000000000000000);
+        homePools.updateTrancheTokenPrice(poolId, trancheId, currencyId, 120000000000000000000);
 
         assertEq(lPool.latestPrice(), 120000000000000000000);
         assertEq(lPool.totalAssets(), 12000000000000000000000);

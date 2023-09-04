@@ -347,11 +347,16 @@ contract PoolManagerTest is TestSetup {
         evmPoolManager.updateTrancheTokenPrice(poolId, trancheId, price);
     }
 
-    function testUpdatingTokenPriceForNonExistentTrancheFails(uint64 poolId, bytes16 trancheId, uint128 price) public {
+    function testUpdatingTokenPriceForNonExistentTrancheFails(
+        uint64 poolId,
+        bytes16 trancheId,
+        uint128 currencyId,
+        uint128 price
+    ) public {
         homePools.addPool(poolId);
 
         vm.expectRevert(bytes("PoolManager/unknown-token"));
-        homePools.updateTrancheTokenPrice(poolId, trancheId, price);
+        homePools.updateTrancheTokenPrice(poolId, trancheId, currencyId, price);
     }
 
     function testUpdatingTokenMetadataWorks(

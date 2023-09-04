@@ -122,25 +122,30 @@ contract MessagesTest is Test {
     function testUpdateTrancheTokenPrice() public {
         uint64 poolId = 1;
         bytes16 trancheId = bytes16(hex"811acd5b3f17c06841c7e41e9e04cb1b");
+        uint128 currencyId = 2;
         uint128 price = 1_000_000_000_000_000_000_000_000_000;
         bytes memory expectedHex =
             hex"050000000000000001811acd5b3f17c06841c7e41e9e04cb1b00000000033b2e3c9fd0803ce8000000";
 
-        assertEq(Messages.formatUpdateTrancheTokenPrice(poolId, trancheId, price), expectedHex);
+        assertEq(Messages.formatUpdateTrancheTokenPrice(poolId, trancheId, currencyId, price), expectedHex);
 
-        (uint64 decodedPoolId, bytes16 decodedTrancheId, uint128 decodedPrice) =
+        (uint64 decodedPoolId, bytes16 decodedTrancheId, uint128 decodedCurrencyId, uint128 decodedPrice) =
             Messages.parseUpdateTrancheTokenPrice(expectedHex);
         assertEq(uint256(decodedPoolId), poolId);
         assertEq(decodedTrancheId, trancheId);
+        assertEq(decodedCurrencyId, currencyId);
         assertEq(decodedPrice, price);
     }
 
-    function testUpdateTrancheTokenPriceEquivalence(uint64 poolId, bytes16 trancheId, uint128 price) public {
-        bytes memory _message = Messages.formatUpdateTrancheTokenPrice(poolId, trancheId, price);
-        (uint64 decodedPoolId, bytes16 decodedTrancheId, uint128 decodedPrice) =
+    function testUpdateTrancheTokenPriceEquivalence(uint64 poolId, bytes16 trancheId, uint128 currencyId, uint128 price)
+        public
+    {
+        bytes memory _message = Messages.formatUpdateTrancheTokenPrice(poolId, trancheId, currencyId, price);
+        (uint64 decodedPoolId, bytes16 decodedTrancheId, uint128 decodedCurrencyId, uint128 decodedPrice) =
             Messages.parseUpdateTrancheTokenPrice(_message);
         assertEq(uint256(decodedPoolId), uint256(poolId));
         assertEq(decodedTrancheId, trancheId);
+        assertEq(decodedCurrencyId, currencyId);
         assertEq(uint256(decodedPrice), uint256(price));
     }
 
