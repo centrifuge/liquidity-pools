@@ -269,27 +269,27 @@ contract LiquidityPool is Auth, ERC20Like {
     }
 
     // --- ERC20 overrides ---
-    function name() public override view returns (string memory) {
+    function name() public view override returns (string memory) {
         return share.name();
     }
 
-    function symbol() public override view returns (string memory) {
+    function symbol() public view override returns (string memory) {
         return share.symbol();
     }
 
-    function decimals() public override view returns (uint8) {
+    function decimals() public view override returns (uint8) {
         return share.decimals();
     }
 
-    function totalSupply() public override view returns (uint256) {
+    function totalSupply() public view override returns (uint256) {
         return share.totalSupply();
     }
 
-    function balanceOf(address owner) public override view returns (uint256) {
+    function balanceOf(address owner) public view override returns (uint256) {
         return share.balanceOf(owner);
     }
 
-    function allowance(address owner, address spender) public override view returns (uint256) {
+    function allowance(address owner, address spender) public view override returns (uint256) {
         return share.allowance(owner, spender);
     }
 

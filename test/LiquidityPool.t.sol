@@ -107,10 +107,9 @@ contract LiquidityPoolTest is TestSetup {
         address lPool_ = deployLiquidityPool(poolId, erc20.decimals(), tokenName, tokenSymbol, trancheId, currencyId);
         LiquidityPool lPool = LiquidityPool(lPool_);
         Investor investor = new Investor();
-        
+
         investorDeposit(address(investor), lPool_, poolId, trancheId, amount, validUntil); // deposit funds first
         investor.approve(lPool_, address(investmentManager), type(uint256).max);
-
 
         // fail: no allowance
         vm.expectRevert(bytes("LiquidityPool/no-token-allowance"));
@@ -121,11 +120,11 @@ contract LiquidityPoolTest is TestSetup {
         vm.expectRevert(bytes("LiquidityPool/no-token-allowance"));
         lPool.requestRedeem(amount + 1, address(investor));
 
-        // success - someone with approval can requestDeposit on behalf of investor
-        lPool.requestRedeem(amount/2, address(investor));
+        // success - someone with approval can requestRedeem on behalf of investor
+        lPool.requestRedeem(amount / 2, address(investor));
 
-        // success - investor can requestDeposit
-        investor.requestRedeem(lPool_, amount/2, address(investor));
+        // success - investor can requestRedeem
+        investor.requestRedeem(lPool_, amount / 2, address(investor));
     }
 
     function testMint(
@@ -172,7 +171,7 @@ contract LiquidityPoolTest is TestSetup {
     ) public {
         vm.assume(currencyId > 0);
         vm.assume(amount < MAX_UINT128);
-         vm.assume(amount > 0);
+        vm.assume(amount > 0);
         vm.assume(validUntil >= block.timestamp);
 
         address lPool_ = deployLiquidityPool(poolId, erc20.decimals(), tokenName, tokenSymbol, trancheId, currencyId);
@@ -188,14 +187,13 @@ contract LiquidityPoolTest is TestSetup {
         vm.expectRevert(bytes("Auth/not-authorized"));
         lPool.burn(address(investor), amount);
 
-
         root.relyContract(lPool_, self); // give self auth permissions
         vm.expectRevert(bytes("ERC20/insufficient-allowance"));
         lPool.burn(address(investor), amount);
 
         // success
         investor.approve(lPool_, lPool_, amount); // approve LP to burn tokens
-        lPool.burn(address(investor), amount); 
+        lPool.burn(address(investor), amount);
 
         assertEq(lPool.balanceOf(address(investor)), 0);
         assertEq(lPool.balanceOf(address(investor)), lPool.share().balanceOf(address(investor)));
