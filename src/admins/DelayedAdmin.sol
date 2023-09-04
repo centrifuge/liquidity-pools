@@ -26,7 +26,7 @@ contract DelayedAdmin is Auth {
         root.unpause();
     }
 
-    function schedule(address target) public auth {
+    function scheduleRely(address target) public auth {
         root.scheduleRely(target);
     }
 
