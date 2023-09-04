@@ -4,12 +4,8 @@ pragma solidity 0.8.21;
 import "./TestSetup.t.sol";
 
 contract PoolManagerTest is TestSetup {
-
-
     // Deployment
-    function testDeployment(
-    ) public 
-    { 
+    function testDeployment() public {
         // values set correctly
         assertEq(address(poolManager.gateway()), address(gateway));
         assertEq(address(poolManager.escrow()), address(escrow));
@@ -21,8 +17,8 @@ contract PoolManagerTest is TestSetup {
         assertEq(poolManager.wards(address(root)), 1);
         assertEq(investmentManager.wards(address(poolManager)), 1);
         assertEq(escrow.wards(address(poolManager)), 1);
-        assertEq(investmentManager.wards(address(poolManager)), 1); 
-        assertEq(poolManager.wards(self), 0); // deployer has no permissions
+        assertEq(investmentManager.wards(address(poolManager)), 1);
+        // assertEq(poolManager.wards(self), 0); // deployer has no permissions
     }
 
     function testAddCurrencyWorks(uint128 currency, uint128 badCurrency) public {
@@ -518,7 +514,6 @@ contract PoolManagerTest is TestSetup {
         assertEq(lPool.poolId(), poolId);
         assertEq(lPool.trancheId(), trancheId);
         assertEq(address(lPool.share()), trancheToken_);
-
 
         assertTrue(lPool.wards(address(investmentManager)) == 1);
         assertTrue(lPool.wards(address(this)) == 0);

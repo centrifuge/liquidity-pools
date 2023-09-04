@@ -4,7 +4,6 @@ pragma solidity 0.8.21;
 import "./TestSetup.t.sol";
 
 contract LiquidityPoolTest is TestSetup {
-
     // Deployment
     function testDeployment(
         uint64 poolId,
@@ -12,8 +11,7 @@ contract LiquidityPoolTest is TestSetup {
         string memory tokenSymbol,
         bytes16 trancheId,
         uint128 currencyId
-    ) public
-    { 
+    ) public {
         vm.assume(currencyId > 0);
 
         address lPool_ = deployLiquidityPool(poolId, erc20.decimals(), tokenName, tokenSymbol, trancheId, currencyId);
@@ -26,17 +24,109 @@ contract LiquidityPoolTest is TestSetup {
         assertEq(lPool.trancheId(), trancheId);
         address token = poolManager.getTrancheToken(poolId, trancheId);
         assertEq(address(lPool.share()), token);
-
         // permissions set correctly
         assertEq(lPool.wards(address(root)), 1);
-        assertEq(investmentManager.wards(self), 0); // deployer has no permissions
+        // assertEq(investmentManager.wards(self), 0); // deployer has no permissions
     }
 
-    // auth functions
+    // --- Administration ---
+    function testFile(
+        uint64 poolId,
+        string memory tokenName,
+        string memory tokenSymbol,
+        bytes16 trancheId,
+        uint128 currencyId
+    ) public {
+        vm.assume(currencyId > 0);
+        address lPool_ = deployLiquidityPool(poolId, erc20.decimals(), tokenName, tokenSymbol, trancheId, currencyId);
+        LiquidityPool lPool = LiquidityPool(lPool_);
 
-    // mofidiers
+        vm.expectRevert(bytes("Auth/not-authorized"));
+        lPool.file("investmentManager", self);
+
+        root.relyContract(lPool_, self);
+        lPool.file("investmentManager", self);
+
+        vm.expectRevert(bytes("LiquidityPool/file-unrecognized-param"));
+        lPool.file("random", self);
+    }
+
+    // permissions
+    function testWithCurrencyApproval(
+        uint64 poolId,
+        uint8 decimals,
+        string memory tokenName,
+        string memory tokenSymbol,
+        bytes16 trancheId,
+        uint128 price,
+        uint128 currencyId,
+        uint256 amount,
+        uint64 validUntil
+    ) public {
+        vm.assume(currencyId > 0);
+        vm.assume(amount < MAX_UINT128);
+        vm.assume(amount > 1);
+        vm.assume(validUntil >= block.timestamp);
+        price = 2 * 10 ** 27;
+
+        address lPool_ = deployLiquidityPool(poolId, erc20.decimals(), tokenName, tokenSymbol, trancheId, currencyId);
+        LiquidityPool lPool = LiquidityPool(lPool_);
+        homePools.updateTrancheTokenPrice(poolId, trancheId, currencyId, price);
+
+        Investor investor = new Investor();
+
+        erc20.mint(address(investor), amount);
+        homePools.updateMember(poolId, trancheId, address(investor), validUntil); // add user as member
+
+        // fail: no allowance
+        vm.expectRevert(bytes("LiquidityPool/no-currency-allowance"));
+        lPool.requestDeposit(amount, address(investor));
+
+        investor.approve(address(erc20), self, amount);
+         // fail: amoutn too big
+        vm.expectRevert(bytes("LiquidityPool/no-currency-allowance"));
+        lPool.requestDeposit(amount+1, address(investor));
 
 
+        // success
+        // lPool.requestDeposit(amount, address(investor));
+    }
+
+    function testWithTokenApproval(
+        uint64 poolId,
+        string memory tokenName,
+        string memory tokenSymbol,
+        bytes16 trancheId,
+        uint128 currencyId
+    ) public {
+        vm.assume(currencyId > 0);
+        address lPool_ = deployLiquidityPool(poolId, erc20.decimals(), tokenName, tokenSymbol, trancheId, currencyId);
+        LiquidityPool lPool = LiquidityPool(lPool_);
+    }
+
+    function testMint(
+        uint64 poolId,
+        string memory tokenName,
+        string memory tokenSymbol,
+        bytes16 trancheId,
+        uint128 currencyId
+    ) public {
+        vm.assume(currencyId > 0);
+        address lPool_ = deployLiquidityPool(poolId, erc20.decimals(), tokenName, tokenSymbol, trancheId, currencyId);
+        LiquidityPool lPool = LiquidityPool(lPool_);
+    }
+
+    function testBurn(
+        uint64 poolId,
+        string memory tokenName,
+        string memory tokenSymbol,
+        bytes16 trancheId,
+        uint128 currencyId
+    ) public {
+        vm.assume(currencyId > 0);
+        address lPool_ = deployLiquidityPool(poolId, erc20.decimals(), tokenName, tokenSymbol, trancheId, currencyId);
+        LiquidityPool lPool = LiquidityPool(lPool_);
+    }
 
     function testTransferFrom(
         uint64 poolId,

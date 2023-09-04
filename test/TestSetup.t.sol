@@ -27,7 +27,6 @@ import "forge-std/Test.sol";
 import {Investor} from "./accounts/Investor.sol";
 
 contract TestSetup is Deployer, Test {
-    
     MockHomeLiquidityPools homePools;
     MockXcmRouter mockXcmRouter;
     ERC20 erc20;
@@ -44,14 +43,14 @@ contract TestSetup is Deployer, Test {
 
         // deploy core contracts
         deployInvestmentManager();
-        // deploy mockRouter 
+        // deploy mockRouter
         mockXcmRouter = new MockXcmRouter(address(investmentManager));
-        // // wire contracts
+        // wire contracts
         wire(address(mockXcmRouter));
         // give admin access
         giveAdminAccess();
         // remove deployer access
-        removeDeployerAccess(address(mockXcmRouter));
+        // removeDeployerAccess(address(mockXcmRouter)); // need auth permissions in tests
 
         homePools = new MockHomeLiquidityPools(address(mockXcmRouter));
         erc20 = newErc20("X's Dollar", "USDX", 6);

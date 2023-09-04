@@ -4,18 +4,15 @@ pragma solidity 0.8.21;
 import "../TestSetup.t.sol";
 
 contract GatewayTest is TestSetup {
-
     // Deployment
-    function testDeployment(
-    ) public 
-    { 
+    function testDeployment() public {
         // values set correctly
         assertEq(address(gateway.investmentManager()), address(investmentManager));
         assertEq(address(gateway.poolManager()), address(poolManager));
         assertEq(address(gateway.root()), address(root));
         assertEq(address(investmentManager.gateway()), address(gateway));
         assertEq(address(poolManager.gateway()), address(gateway));
-        
+
         // router setup
         assertEq(address(gateway.outgoingRouter()), address(mockXcmRouter));
         assert(gateway.incomingRouters(address(mockXcmRouter)));

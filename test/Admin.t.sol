@@ -4,7 +4,6 @@ pragma solidity 0.8.21;
 import "./TestSetup.t.sol";
 
 contract AdminTest is TestSetup {
-
     function setUp() public override {
         super.setUp();
         pauseAdmin.addPauser(address(this));
