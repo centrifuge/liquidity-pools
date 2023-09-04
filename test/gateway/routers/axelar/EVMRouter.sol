@@ -5,7 +5,6 @@ import {AxelarEVMRouter} from "src/gateway/routers/axelar/EVMRouter.sol";
 import {AxelarGatewayMock} from "../../../mock/AxelarGatewayMock.sol";
 import {GatewayMock} from "../../../mock/GatewayMock.sol";
 import "forge-std/Test.sol";
-import "forge-std/console.sol";
 
 contract AxelarEVMRouterTest is Test {
     AxelarGatewayMock axelarGateway;
@@ -19,6 +18,7 @@ contract AxelarEVMRouterTest is Test {
         gateway = new GatewayMock();
 
         router = new AxelarEVMRouter(address(axelarGateway));
+        router.file("gateway", address(gateway));
     }
 
     function testIncomingCalls(
@@ -30,8 +30,11 @@ contract AxelarEVMRouterTest is Test {
         string memory invalidAxelarCentrifugeChainId
     ) public {
         vm.assume(invalidOrigin != address(axelarGateway));
-        vm.assume(keccak256(abi.encodePacked(invalidAxelarCentrifugeChainId)) != keccak256(abi.encodePacked(axelarCentrifugeChainId)));
-        
+        vm.assume(
+            keccak256(abi.encodePacked(invalidAxelarCentrifugeChainId))
+                != keccak256(abi.encodePacked(axelarCentrifugeChainId))
+        );
+
         vm.expectRevert(bytes("AxelarEVMRouter/invalid-origin"));
         router.execute(commandId, sourceChain, sourceAddress, payload);
 
@@ -39,12 +42,13 @@ contract AxelarEVMRouterTest is Test {
         vm.expectRevert(bytes("AxelarEVMRouter/invalid-source-chain"));
         router.execute(commandId, sourceChain, sourceAddress, payload);
 
-        console.log(address(router.axelarGateway()));
-
+        axelarGateway.setReturn("validateContractCall", false);
+        vm.prank(address(axelarGateway));
         vm.expectRevert(bytes("EVMRouter/not-approved-by-gateway"));
         router.execute(commandId, axelarCentrifugeChainId, sourceAddress, payload);
 
         axelarGateway.setReturn("validateContractCall", true);
+        vm.prank(address(axelarGateway));
         router.execute(commandId, axelarCentrifugeChainId, sourceAddress, payload);
     }
 }

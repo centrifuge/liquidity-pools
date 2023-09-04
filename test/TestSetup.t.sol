@@ -15,7 +15,7 @@ import {ERC20} from "../src/token/ERC20.sol";
 import {Gateway} from "../src/gateway/Gateway.sol";
 import {MemberlistLike, Memberlist} from "../src/token/Memberlist.sol";
 import {Messages} from "../src/gateway/Messages.sol";
-import {Deployer} from "../../script/Deployer.sol";
+import {Deployer} from "../script/Deployer.sol";
 import "../src/token/ERC20Like.sol";
 
 // mocks
