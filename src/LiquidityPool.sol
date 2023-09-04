@@ -268,14 +268,6 @@ contract LiquidityPool is Auth, ERC20Like {
         emit RedeemCollected(receiver);
     }
 
-    function decreaseDepositRequest(uint256 assets) public {
-        investmentManager.decreaseDepositRequest(assets, msg.sender);
-    }
-
-    function decreaseRedeemRequest(uint256 shares) public {
-        investmentManager.decreaseRedeemRequest(shares, msg.sender);
-    }
-
     // --- ERC20 overrides ---
     function name() public view returns (string memory) {
         return share.name();
