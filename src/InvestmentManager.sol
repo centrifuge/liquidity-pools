@@ -35,6 +35,8 @@ interface LiquidityPoolLike {
     // centrifuge chain info functions
     function poolId() external returns (uint64);
     function trancheId() external returns (bytes16);
+    // pricing functions
+    function updatePrice(uint128 price) external;
 }
 
 interface PoolManagerLike {
@@ -235,24 +237,36 @@ contract InvestmentManager is Auth {
     }
 
     // --- Incoming message handling ---
+    function updateTrancheTokenPrice(uint64 poolId, bytes16 trancheId, uint128 currencyId, uint128 price)
+        public
+        onlyGateway
+    {
+        address currency = poolManager.currencyIdToAddress(currencyId);
+        address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, currency);
+        require(liquidityPool != address(0), "InvestmentManager/tranche-does-not-exist");
+
+        LiquidityPoolLike(liquidityPool).updatePrice(price);
+    }
+
     function handleExecutedCollectInvest(
         uint64 poolId,
         bytes16 trancheId,
         address recipient,
         uint128 currency,
-        uint128 currencyInvested,
-        uint128 tokensPayout
+        uint128 currencyPayout,
+        uint128 trancheTokensPayout
     ) public onlyGateway {
-        require(currencyInvested != 0, "InvestmentManager/zero-invest");
+        require(currencyPayout != 0, "InvestmentManager/zero-invest");
         address _currency = poolManager.currencyIdToAddress(currency);
         address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, _currency);
         require(liquidityPool != address(0), "InvestmentManager/tranche-does-not-exist");
 
         LPValues storage lpValues = orderbook[recipient][liquidityPool];
-        lpValues.maxDeposit = lpValues.maxDeposit + currencyInvested;
-        lpValues.maxMint = lpValues.maxMint + tokensPayout;
+        lpValues.maxDeposit = lpValues.maxDeposit + currencyPayout;
+        lpValues.maxMint = lpValues.maxMint + trancheTokensPayout;
 
-        LiquidityPoolLike(liquidityPool).mint(address(escrow), tokensPayout); // mint to escrow. Recepeint can claim by calling withdraw / redeem
+        LiquidityPoolLike(liquidityPool).mint(address(escrow), trancheTokensPayout); // mint to escrow. Recepeint can claim by calling withdraw / redeem
+        _updateLiquidityPoolPrice(liquidityPool, currencyPayout, trancheTokensPayout);
     }
 
     function handleExecutedCollectRedeem(
@@ -274,6 +288,7 @@ contract InvestmentManager is Auth {
 
         userEscrow.transferIn(_currency, address(escrow), recipient, currencyPayout);
         LiquidityPoolLike(liquidityPool).burn(address(escrow), trancheTokensPayout); // burned redeemed tokens from escrow
+        _updateLiquidityPoolPrice(liquidityPool, currencyPayout, trancheTokensPayout);
     }
 
     function handleExecutedDecreaseInvestOrder(
@@ -540,6 +555,15 @@ contract InvestmentManager is Auth {
         redeemPrice = _toUint128(
             maxWithdrawInPoolDecimals.mulDiv(10 ** poolDecimals, maxRedeemInPoolDecimals, Math.Rounding.Down)
         );
+    }
+
+    function _updateLiquidityPoolPrice(address liquidityPool, uint128 currencyPayout, uint128 trancheTokensPayout)
+        internal
+    {
+        (, uint8 currencyDecimals,) = _getPoolDecimals(liquidityPool);
+        uint128 price =
+            _toUint128(trancheTokensPayout.mulDiv(10 ** currencyDecimals, currencyPayout, Math.Rounding.Down));
+        LiquidityPoolLike(liquidityPool).updatePrice(price);
     }
 
     function _calculateTrancheTokenAmount(uint128 currencyAmount, address liquidityPool, uint128 price)

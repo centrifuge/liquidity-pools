@@ -19,17 +19,12 @@ interface TrancheTokenLike is ERC20Like {
 contract TrancheToken is ERC20 {
     MemberlistLike public memberlist;
 
-    uint128 public latestPrice; // tranche token price
-    uint256 public lastPriceUpdate; // timestamp of the price update
-
     mapping(address => bool) public liquidityPools;
 
     // --- Events ---
     event File(bytes32 indexed what, address data);
     event AddLiquidityPool(address indexed liquidityPool);
     event RemoveLiquidityPool(address indexed liquidityPool);
-    event SetPrice(uint128 price, uint256 priceAge);
-    event UpdatePrice(uint128 price);
 
     constructor(uint8 decimals_) ERC20(decimals_) {}
 
@@ -70,20 +65,6 @@ contract TrancheToken is ERC20 {
 
     function mint(address to, uint256 value) public override checkMember(to) {
         return super.mint(to, value);
-    }
-
-    // --- Pricing ---
-    function setPrice(uint128 price, uint256 priceAge) public auth {
-        require(lastPriceUpdate == 0, "TrancheToken/price-already-set");
-        latestPrice = price;
-        lastPriceUpdate = priceAge;
-        emit SetPrice(price, priceAge);
-    }
-
-    function updatePrice(uint128 price) public auth {
-        latestPrice = price;
-        lastPriceUpdate = block.timestamp;
-        emit UpdatePrice(price);
     }
 
     // --- ERC2771Context ---

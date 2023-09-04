@@ -67,7 +67,6 @@ struct Tranche {
     uint256 createdAt;
     string tokenName;
     string tokenSymbol;
-    uint128 latestPrice;
     /// @dev Each tranche can have multiple liquidity pools deployed,
     /// each linked to a unique investment currency (asset)
     mapping(address => address) liquidityPools; // currency -> liquidity pool address
@@ -193,8 +192,7 @@ contract PoolManager is Auth {
         bytes16 trancheId,
         string memory tokenName,
         string memory tokenSymbol,
-        uint8 decimals,
-        uint128 latestPrice
+        uint8 decimals
     ) public onlyGateway {
         Pool storage pool = pools[poolId];
         require(pool.createdAt != 0, "PoolManager/invalid-pool");
@@ -207,16 +205,8 @@ contract PoolManager is Auth {
         tranche.tokenName = tokenName;
         tranche.tokenSymbol = tokenSymbol;
         tranche.createdAt = block.timestamp;
-        tranche.latestPrice = latestPrice;
 
         emit TrancheAdded(poolId, trancheId);
-    }
-
-    function updateTrancheTokenPrice(uint64 poolId, bytes16 trancheId, uint128 price) public onlyGateway {
-        TrancheTokenLike trancheToken = TrancheTokenLike(getTrancheToken(poolId, trancheId));
-        require(address(trancheToken) != address(0), "PoolManager/unknown-token");
-
-        trancheToken.updatePrice(price);
     }
 
     function updateTrancheTokenMetadata(
@@ -305,8 +295,6 @@ contract PoolManager is Auth {
             tranche.tokenName,
             tranche.tokenSymbol,
             tranche.decimals,
-            tranche.latestPrice,
-            tranche.createdAt,
             trancheTokenWards,
             memberlistWards
         );

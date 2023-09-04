@@ -98,11 +98,10 @@ contract TestSetup is Test {
         string memory tokenName,
         string memory tokenSymbol,
         bytes16 trancheId,
-        uint128 price,
         uint128 currency
     ) public returns (address) {
         homePools.addPool(poolId); // add pool
-        homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price); // add tranche
+        homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals); // add tranche
         homePools.addCurrency(currency, address(erc20));
         homePools.allowPoolCurrency(poolId, currency);
         evmPoolManager.deployTranche(poolId, trancheId);

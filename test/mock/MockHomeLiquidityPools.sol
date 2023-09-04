@@ -45,10 +45,10 @@ contract MockHomeLiquidityPools is Test {
         bytes16 trancheId,
         string memory tokenName,
         string memory tokenSymbol,
-        uint8 decimals,
-        uint128 price
+        uint8 decimals
     ) public {
-        bytes memory _message = Messages.formatAddTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price);
+        // TODO: remove price arg from the AddTranche message
+        bytes memory _message = Messages.formatAddTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, 0);
         router.execute(_message);
     }
 
@@ -67,8 +67,8 @@ contract MockHomeLiquidityPools is Test {
         router.execute(_message);
     }
 
-    function updateTrancheTokenPrice(uint64 poolId, bytes16 trancheId, uint128 price) public {
-        bytes memory _message = Messages.formatUpdateTrancheTokenPrice(poolId, trancheId, price);
+    function updateTrancheTokenPrice(uint64 poolId, bytes16 trancheId, uint128 currencyId, uint128 price) public {
+        bytes memory _message = Messages.formatUpdateTrancheTokenPrice(poolId, trancheId, currencyId, price);
         router.execute(_message);
     }
 

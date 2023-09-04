@@ -57,8 +57,6 @@ interface TrancheTokenFactoryLike {
         string memory name,
         string memory symbol,
         uint8 decimals,
-        uint128 latestPrice,
-        uint256 priceAge,
         address[] calldata trancheTokenWards,
         address[] calldata memberlistWards
     ) external returns (address);
@@ -80,8 +78,6 @@ contract TrancheTokenFactory is Auth {
         string memory name,
         string memory symbol,
         uint8 decimals,
-        uint128 latestPrice,
-        uint256 priceAge,
         address[] calldata trancheTokenWards,
         address[] calldata memberlistWards
     ) public auth returns (address) {
@@ -96,8 +92,6 @@ contract TrancheTokenFactory is Auth {
         token.file("name", name);
         token.file("symbol", symbol);
         token.file("memberlist", memberlist);
-
-        token.setPrice(latestPrice, priceAge);
 
         token.rely(root);
         for (uint256 i = 0; i < trancheTokenWards.length; i++) {

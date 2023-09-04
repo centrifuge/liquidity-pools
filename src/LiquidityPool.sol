@@ -62,6 +62,9 @@ contract LiquidityPool is Auth, ERC20Like {
 
     InvestmentManagerLike public investmentManager;
 
+    uint128 public latestPrice; // tranche token price
+    uint256 public lastPriceUpdate; // timestamp of the price update
+
     // --- Events ---
     event File(bytes32 indexed what, address data);
     event DepositRequested(address indexed owner, uint256 assets);
@@ -72,6 +75,7 @@ contract LiquidityPool is Auth, ERC20Like {
     );
     event DepositCollected(address indexed owner);
     event RedeemCollected(address indexed owner);
+    event UpdatePrice(uint128 price);
 
     constructor(uint64 poolId_, bytes16 trancheId_, address asset_, address share_, address investmentManager_) {
         poolId = poolId_;
@@ -113,14 +117,14 @@ contract LiquidityPool is Auth, ERC20Like {
     /// @dev The total amount of vault shares
     /// @return Total amount of the underlying vault assets including accrued interest
     function totalAssets() public view returns (uint256) {
-        return totalSupply().mulDiv(latestPrice(), 10 ** investmentManager.PRICE_DECIMALS(), Math.Rounding.Down);
+        return totalSupply().mulDiv(latestPrice, 10 ** investmentManager.PRICE_DECIMALS(), Math.Rounding.Down);
     }
 
     /// @dev Calculates the amount of shares / tranche tokens that any user would get for the amount of assets provided. The calcultion is based on the token price from the most recent epoch retrieved from Centrifuge chain.
     function convertToShares(uint256 assets) public view returns (uint256 shares) {
         shares = assets.mulDiv(
             10 ** (investmentManager.PRICE_DECIMALS() + share.decimals() - ERC20Like(asset).decimals()),
-            latestPrice(),
+            latestPrice,
             Math.Rounding.Down
         );
     }
@@ -128,7 +132,7 @@ contract LiquidityPool is Auth, ERC20Like {
     /// @dev Calculates the asset value for an amount of shares / tranche tokens provided. The calcultion is based on the token price from the most recent epoch retrieved from Centrifuge chain.
     function convertToAssets(uint256 shares) public view returns (uint256 assets) {
         assets = shares.mulDiv(
-            latestPrice(),
+            latestPrice,
             10 ** (investmentManager.PRICE_DECIMALS() + share.decimals() - ERC20Like(asset).decimals()),
             Math.Rounding.Down
         );
@@ -317,11 +321,14 @@ contract LiquidityPool is Auth, ERC20Like {
         _successCheck(success);
     }
 
-    // --- Restriction overrides ---
-    function latestPrice() public view returns (uint256) {
-        return share.latestPrice();
+    // --- Pricing ---
+    function updatePrice(uint128 price) public auth {
+        latestPrice = price;
+        lastPriceUpdate = block.timestamp;
+        emit UpdatePrice(price);
     }
 
+    // --- Restriction overrides ---
     function hasMember(address user) public returns (bool) {
         return share.hasMember(user);
     }
