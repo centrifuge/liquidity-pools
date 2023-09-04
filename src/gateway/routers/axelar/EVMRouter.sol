@@ -77,7 +77,7 @@ contract AxelarEVMRouter is Auth {
         if (what == "gateway") {
             gateway = GatewayLike(data);
         } else {
-            revert("ConnectorXCMRouter/file-unrecognized-param");
+            revert("AxelarEVMRouter/file-unrecognized-param");
         }
 
         emit File(what, data);
