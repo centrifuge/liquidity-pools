@@ -75,11 +75,11 @@ contract FactoryTest is Test {
         bytes32 salt,
         uint64 poolId,
         bytes16 trancheId,
+        address investmentManager,
         address poolManager,
         string memory name,
         string memory symbol,
-        uint8 decimals,
-        uint128 latestPrice
+        uint8 decimals
     ) public {
         TrancheTokenFactory trancheTokenFactory = new TrancheTokenFactory{ salt: salt }(root);
 
@@ -99,8 +99,15 @@ contract FactoryTest is Test {
             )
         );
 
+        address[] memory trancheTokenWards = new address[](2);
+        trancheTokenWards[0] = address(investmentManager);
+        trancheTokenWards[1] = address(poolManager);
+
+        address[] memory memberlistWards = new address[](1);
+        memberlistWards[0] = address(poolManager);
+
         address token = trancheTokenFactory.newTrancheToken(
-            poolId, trancheId, poolManager, name, symbol, decimals, latestPrice, block.timestamp
+            poolId, trancheId, name, symbol, decimals, trancheTokenWards, memberlistWards
         );
 
         assertEq(address(token), predictedAddress);
@@ -110,11 +117,11 @@ contract FactoryTest is Test {
         bytes32 salt,
         uint64 poolId,
         bytes16 trancheId,
+        address investmentManager,
         address poolManager,
         string memory name,
         string memory symbol,
-        uint8 decimals,
-        uint128 latestPrice
+        uint8 decimals
     ) public {
         address predictedAddress = address(
             uint160(
@@ -130,14 +137,22 @@ contract FactoryTest is Test {
                 )
             )
         );
+
+        address[] memory trancheTokenWards = new address[](2);
+        trancheTokenWards[0] = address(investmentManager);
+        trancheTokenWards[1] = address(poolManager);
+
+        address[] memory memberlistWards = new address[](1);
+        memberlistWards[0] = address(poolManager);
+
         TrancheTokenFactory trancheTokenFactory = new TrancheTokenFactory{ salt: salt }(root);
         assertEq(address(trancheTokenFactory), predictedAddress);
         trancheTokenFactory.newTrancheToken(
-            poolId, trancheId, poolManager, name, symbol, decimals, latestPrice, block.timestamp
+            poolId, trancheId, name, symbol, decimals, trancheTokenWards, memberlistWards
         );
         vm.expectRevert();
         trancheTokenFactory.newTrancheToken(
-            poolId, trancheId, poolManager, name, symbol, decimals, latestPrice, block.timestamp
+            poolId, trancheId, name, symbol, decimals, trancheTokenWards, memberlistWards
         );
     }
 }

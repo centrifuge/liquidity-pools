@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {AxelarExecutable} from "./AxelarExecutable.sol";
 import {Auth} from "./../../../util/Auth.sol";
 
 struct Multilocation {
@@ -36,31 +35,45 @@ struct XcmWeightInfo {
     uint256 feeAmount;
 }
 
-contract AxelarXCMRelayer is Auth, AxelarExecutable {
+interface AxelarGatewayLike {
+    function callContract(string calldata destinationChain, string calldata contractAddress, bytes calldata payload)
+        external;
+
+    function validateContractCall(
+        bytes32 commandId,
+        string calldata sourceChain,
+        string calldata sourceAddress,
+        bytes32 payloadHash
+    ) external returns (bool);
+}
+
+contract AxelarXCMRelayer is Auth {
     address private constant XCM_TRANSACTOR_V2_ADDRESS = 0x000000000000000000000000000000000000080D;
     uint32 private constant CENTRIFUGE_PARACHAIN_ID = 2031;
 
+    AxelarGatewayLike public immutable axelarGateway;
     address public immutable centrifugeChainOrigin;
     mapping(string => string) public axelarEVMRouters;
-    bytes1 public immutable lpPalletIndex;
-    bytes1 public immutable lpCallIndex;
 
     XcmWeightInfo public xcmWeightInfo;
-
-    //todo(nuno): do we really need this?
-    mapping(bytes32 => uint32) public executedCalls;
 
     // --- Events ---
     event File(bytes32 indexed what, XcmWeightInfo xcmWeightInfo);
     event File(bytes32 indexed what, string chain, string addr);
-    event Executed(bytes32 indexed payload);
+    event Executed(
+        bytes payloadWithHash,
+        bytes lpPalletIndex,
+        bytes lpCallIndex,
+        bytes32 sourceChainLength,
+        bytes sourceChain,
+        bytes32 sourceAddressLength,
+        bytes sourceAddress,
+        bytes payload
+    );
 
-    constructor(address centrifugeChainOrigin_, address axelarGateway_, bytes1 lpPalletIndex_, bytes1 lpCallIndex_)
-        AxelarExecutable(axelarGateway_)
-    {
+    constructor(address centrifugeChainOrigin_, address axelarGateway_) {
         centrifugeChainOrigin = centrifugeChainOrigin_;
-        lpPalletIndex = lpPalletIndex_;
-        lpCallIndex = lpCallIndex_;
+        axelarGateway = AxelarGatewayLike(axelarGateway_);
 
         xcmWeightInfo = XcmWeightInfo({
             buyExecutionWeightLimit: 19000000000,
@@ -114,18 +127,20 @@ contract AxelarXCMRelayer is Auth, AxelarExecutable {
 
     // --- Incoming ---
     // A message that's coming from another EVM chain, headed to the Centrifuge Chain.
-    function _execute(bytes32, string memory sourceChain, string memory sourceAddress, bytes calldata payload)
-        public
-        onlyAxelarEVMRouter(sourceChain, sourceAddress)
-    {
-        // todo(nuno): why do we hash this?
-        bytes32 hh = keccak256(payload);
-
-        XcmTransactorV2 transactorContract = XcmTransactorV2(XCM_TRANSACTOR_V2_ADDRESS);
+    function execute(
+        bytes32 commandId,
+        string calldata sourceChain,
+        string calldata sourceAddress,
+        bytes calldata payload
+    ) public onlyAxelarEVMRouter(sourceChain, sourceAddress) {
+        require(
+            axelarGateway.validateContractCall(commandId, sourceChain, sourceAddress, keccak256(payload)),
+            "XCMRelayer/not-approved-by-gateway"
+        );
 
         bytes memory payloadWithLocation = bytes.concat(
-            lpPalletIndex,
-            lpCallIndex,
+            "0x73",
+            "0x05",
             bytes32(bytes(sourceChain).length),
             bytes(sourceChain),
             bytes32(bytes(sourceAddress).length),
@@ -133,7 +148,18 @@ contract AxelarXCMRelayer is Auth, AxelarExecutable {
             payload
         );
 
-        transactorContract.transactThroughSignedMultilocation(
+        emit Executed(
+            payloadWithLocation,
+            "0x73",
+            "0x05",
+            bytes32(bytes(sourceChain).length),
+            bytes(sourceChain),
+            bytes32(bytes(sourceAddress).length),
+            bytes(sourceAddress),
+            payload
+        );
+
+        XcmTransactorV2(XCM_TRANSACTOR_V2_ADDRESS).transactThroughSignedMultilocation(
             // dest chain
             _centrifugeParachainMultilocation(),
             // fee asset
@@ -148,9 +174,6 @@ contract AxelarXCMRelayer is Auth, AxelarExecutable {
             // This includes all the XCM instructions plus the weight of the Transact call itself.
             xcmWeightInfo.buyExecutionWeightLimit
         );
-
-        executedCalls[hh] = 1;
-        emit Executed(hh);
 
         return;
     }

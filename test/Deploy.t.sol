@@ -68,7 +68,7 @@ contract DeployTest is Test {
         uint128 currencyId = 1;
         uint256 amount = 1000 * 10 ** erc20.decimals();
         uint64 validUntil = uint64(block.timestamp + 1000 days);
-        address lPool_ = deployPoolAndTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price);
+        address lPool_ = deployPoolAndTranche(poolId, trancheId, tokenName, tokenSymbol, decimals);
         LiquidityPool lPool = LiquidityPool(lPool_);
 
         deal(address(erc20), self, amount);
@@ -199,14 +199,13 @@ contract DeployTest is Test {
         bytes16 trancheId,
         string memory tokenName,
         string memory tokenSymbol,
-        uint8 decimals,
-        uint128 price
+        uint8 decimals
     ) public returns (address) {
         uint64 validUntil = uint64(block.timestamp + 1000 days);
 
         vm.startPrank(address(gateway));
         poolManager.addPool(poolId);
-        poolManager.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price);
+        poolManager.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals);
         poolManager.addCurrency(1, address(erc20));
         poolManager.allowPoolCurrency(poolId, 1);
         vm.stopPrank();

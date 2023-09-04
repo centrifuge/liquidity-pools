@@ -34,8 +34,10 @@ interface InvestmentManagerLike {
     function previewRedeem(address user, address liquidityPool, uint256 shares) external view returns (uint256);
     function requestRedeem(uint256 shares, address receiver) external;
     function deposit(uint256 assets, address receiver) external returns (uint256);
-    function collectDeposit(uint64 poolId, bytes16 trancheId, address receiver, address currency) external;
-    function collectRedeem(uint64 poolId, bytes16 trancheId, address receiver, address currency) external;
+    function collectDeposit(address receiver) external;
+    function collectRedeem(address receiver) external;
+    function decreaseDepositRequest(uint256 assets, address receiver) external;
+    function decreaseRedeemRequest(uint256 shares, address receiver) external;
     function PRICE_DECIMALS() external view returns (uint8);
 }
 
@@ -263,13 +265,21 @@ contract LiquidityPool is Auth, ERC20Like {
     }
 
     // --- Miscellaneous investment functions ---
+    function decreaseDepositRequest(uint256 assets, address owner) public withCurrencyApproval(owner, assets) {
+        investmentManager.decreaseDepositRequest(assets, owner);
+    }
+
+    function decreaseRedeemRequest(uint256 shares, address owner) public withTokenApproval(owner, shares) {
+        investmentManager.decreaseRedeemRequest(shares, owner);
+    }
+
     function collectDeposit(address receiver) public {
-        investmentManager.collectDeposit(poolId, trancheId, receiver, asset);
+        investmentManager.collectDeposit(receiver);
         emit DepositCollected(receiver);
     }
 
     function collectRedeem(address receiver) public {
-        investmentManager.collectRedeem(poolId, trancheId, receiver, asset);
+        investmentManager.collectRedeem(receiver);
         emit RedeemCollected(receiver);
     }
 
@@ -331,6 +341,11 @@ contract LiquidityPool is Auth, ERC20Like {
     function burn(address, uint256) public auth {
         (bool success,) = address(share).call(bytes.concat(msg.data, bytes20(address(this))));
         _successCheck(success);
+    }
+
+    // --- Restriction overrides ---
+    function hasMember(address user) public returns (bool) {
+        return share.hasMember(user);
     }
 
     // --- Helpers ---

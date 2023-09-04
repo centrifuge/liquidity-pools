@@ -69,7 +69,7 @@ library Messages {
      * Add Currency
      *
      * 0: call type (uint8 = 1 byte)
-     * 1-16: The Connector's global currency id (uint128 = 16 bytes)
+     * 1-16: The Liquidity Pool's global currency id (uint128 = 16 bytes)
      * 17-36: The EVM address of the currency (address = 20 bytes)
      */
     function formatAddCurrency(uint128 currency, address currencyAddress) internal pure returns (bytes memory) {
@@ -230,14 +230,15 @@ library Messages {
      * 0: call type (uint8 = 1 byte)
      * 1-8: poolId (uint64 = 8 bytes)
      * 9-24: trancheId (16 bytes)
-     * 25-41: price (uint128 = 16 bytes)
+     * 25-40: currency (uint128 = 16 bytes)
+     * 41-56: price (uint128 = 16 bytes)
      */
-    function formatUpdateTrancheTokenPrice(uint64 poolId, bytes16 trancheId, uint128 price)
+    function formatUpdateTrancheTokenPrice(uint64 poolId, bytes16 trancheId, uint128 currencyId, uint128 price)
         internal
         pure
         returns (bytes memory)
     {
-        return abi.encodePacked(uint8(Call.UpdateTrancheTokenPrice), poolId, trancheId, price);
+        return abi.encodePacked(uint8(Call.UpdateTrancheTokenPrice), poolId, trancheId, currencyId, price);
     }
 
     function isUpdateTrancheTokenPrice(bytes memory _msg) internal pure returns (bool) {
@@ -247,11 +248,12 @@ library Messages {
     function parseUpdateTrancheTokenPrice(bytes memory _msg)
         internal
         pure
-        returns (uint64 poolId, bytes16 trancheId, uint128 price)
+        returns (uint64 poolId, bytes16 trancheId, uint128 currencyId, uint128 price)
     {
         poolId = BytesLib.toUint64(_msg, 1);
         trancheId = BytesLib.toBytes16(_msg, 9);
-        price = BytesLib.toUint128(_msg, 25);
+        currencyId = BytesLib.toUint128(_msg, 25);
+        price = BytesLib.toUint128(_msg, 41);
     }
 
     /*
@@ -571,13 +573,13 @@ library Messages {
     function parseExecutedDecreaseInvestOrder(bytes memory _msg)
         internal
         pure
-        returns (uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 currencyPayout)
+        returns (uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 trancheTokenPayout)
     {
         poolId = BytesLib.toUint64(_msg, 1);
         trancheId = BytesLib.toBytes16(_msg, 9);
         investor = BytesLib.toAddress(_msg, 25);
         currency = BytesLib.toUint128(_msg, 57);
-        currencyPayout = BytesLib.toUint128(_msg, 73);
+        trancheTokenPayout = BytesLib.toUint128(_msg, 73);
     }
 
     function formatExecutedDecreaseRedeemOrder(
@@ -585,10 +587,10 @@ library Messages {
         bytes16 trancheId,
         bytes32 investor,
         uint128 currency,
-        uint128 currencyPayout
+        uint128 trancheTokenPayout
     ) internal pure returns (bytes memory) {
         return abi.encodePacked(
-            uint8(Call.ExecutedDecreaseRedeemOrder), poolId, trancheId, investor, currency, currencyPayout
+            uint8(Call.ExecutedDecreaseRedeemOrder), poolId, trancheId, investor, currency, trancheTokenPayout
         );
     }
 
