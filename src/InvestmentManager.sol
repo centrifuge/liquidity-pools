@@ -37,6 +37,7 @@ interface LiquidityPoolLike {
     function trancheId() external returns (bytes16);
     // pricing functions
     function updatePrice(uint128 price) external;
+    function lastPriceUpdate() external view returns (uint256);
 }
 
 interface PoolManagerLike {

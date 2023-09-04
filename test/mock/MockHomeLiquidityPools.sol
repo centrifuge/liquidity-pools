@@ -72,7 +72,7 @@ contract MockHomeLiquidityPools is Test {
         router.execute(_message);
     }
 
-    function updateTrancheInvestmentLimit(uint64 poolId, bytes16 trancheId, uint128 investmentLImit) public {
+    function updateTrancheInvestmentLimit(uint64 poolId, bytes16 trancheId, uint128 investmentLimit) public {
         bytes memory _message = Messages.formatUpdateTrancheInvestmentLimit(poolId, trancheId, investmentLimit);
         router.execute(_message);
     }
