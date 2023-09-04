@@ -85,10 +85,9 @@ contract LiquidityPoolTest is TestSetup {
         lPool.requestDeposit(amount, address(investor));
 
         investor.approve(address(erc20), self, amount);
-         // fail: amoutn too big
+        // fail: amoutn too big
         vm.expectRevert(bytes("LiquidityPool/no-currency-allowance"));
-        lPool.requestDeposit(amount+1, address(investor));
-
+        lPool.requestDeposit(amount + 1, address(investor));
 
         // success
         lPool.requestDeposit(amount, address(investor));
