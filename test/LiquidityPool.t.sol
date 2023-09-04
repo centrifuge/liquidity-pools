@@ -76,6 +76,8 @@ contract LiquidityPoolTest is TestSetup {
         Investor investor = new Investor();
 
         erc20.mint(address(investor), amount);
+        investor.approve(address(erc20), address(investmentManager), amount); // add allowance
+
         homePools.updateMember(poolId, trancheId, address(investor), validUntil); // add user as member
 
         // fail: no allowance
@@ -89,7 +91,7 @@ contract LiquidityPoolTest is TestSetup {
 
 
         // success
-        // lPool.requestDeposit(amount, address(investor));
+        lPool.requestDeposit(amount, address(investor));
     }
 
     function testWithTokenApproval(
