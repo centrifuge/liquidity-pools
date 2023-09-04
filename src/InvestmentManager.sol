@@ -85,7 +85,6 @@ contract InvestmentManager is Auth {
     PoolManagerLike public poolManager;
 
     mapping(address => mapping(address => LPValues)) public orderbook; // Liquidity pool orders & limits per user
-    mapping(uint64 => mapping(bytes16 => mapping(uint128 => uint128))) public latestPrice; // latest price known per tranche & currency
 
     // --- Events ---
     event File(bytes32 indexed what, address data);
@@ -269,11 +268,6 @@ contract InvestmentManager is Auth {
         LiquidityPoolLike liquidityPool = LiquidityPoolLike(poolManager.getLiquidityPool(poolId, trancheId, _currency));
         require(address(liquidityPool) != address(0), "InvestmentManager/tranche-does-not-exist");
 
-        (, uint8 currencyDecimals,) = _getPoolDecimals(address(liquidityPool));
-        uint128 price =
-            _toUint128(trancheTokensPayout.mulDiv(10 ** currencyDecimals, currencyPayout, Math.Rounding.Down));
-        liquidityPool.updatePrice(price);
-
         uint256 unrealizedBalance = liquidityPool.unrealizedBalanceOf(recipient);
         if (trancheTokensPayout > unrealizedBalance) {
             liquidityPool.mint(recipient, trancheTokensPayout - unrealizedBalance);
@@ -297,11 +291,6 @@ contract InvestmentManager is Auth {
         address _currency = poolManager.currencyIdToAddress(currency);
         address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, _currency);
         require(liquidityPool != address(0), "InvestmentManager/tranche-does-not-exist");
-
-        (, uint8 currencyDecimals,) = _getPoolDecimals(liquidityPool);
-        uint128 price =
-            _toUint128(trancheTokensPayout.mulDiv(10 ** currencyDecimals, currencyPayout, Math.Rounding.Down));
-        LiquidityPoolLike(liquidityPool).updatePrice(price);
 
         LPValues storage lpValues = orderbook[recipient][liquidityPool];
         lpValues.maxWithdraw = lpValues.maxWithdraw + currencyPayout;
