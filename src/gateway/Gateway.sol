@@ -184,33 +184,55 @@ contract Gateway is Auth {
         outgoingRouter.send(Messages.formatTransfer(token, addressToBytes32(sender), receiver, amount));
     }
 
-    function increaseInvestOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount)
-        public
-        onlyInvestmentManager
-        pauseable
-    {
+    function increaseInvestOrder(
+        uint64 poolId,
+        bytes16 trancheId,
+        address investor,
+        uint128 currency,
+        uint128 currencyAmount
+    ) public onlyInvestmentManager pauseable {
         outgoingRouter.send(
-            Messages.formatIncreaseInvestOrder(poolId, trancheId, addressToBytes32(investor), currency, amount)
+            Messages.formatIncreaseInvestOrder(poolId, trancheId, addressToBytes32(investor), currency, currencyAmount)
         );
     }
 
-    function decreaseInvestOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount)
-        public
-        onlyInvestmentManager
-        pauseable
-    {
+    function decreaseInvestOrder(
+        uint64 poolId,
+        bytes16 trancheId,
+        address investor,
+        uint128 currency,
+        uint128 currencyAmount
+    ) public onlyInvestmentManager pauseable {
         outgoingRouter.send(
-            Messages.formatDecreaseInvestOrder(poolId, trancheId, addressToBytes32(investor), currency, amount)
+            Messages.formatDecreaseInvestOrder(poolId, trancheId, addressToBytes32(investor), currency, currencyAmount)
         );
     }
 
-    function increaseRedeemOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount)
-        public
-        onlyInvestmentManager
-        pauseable
-    {
+    function increaseRedeemOrder(
+        uint64 poolId,
+        bytes16 trancheId,
+        address investor,
+        uint128 currency,
+        uint128 trancheTokenAmount
+    ) public onlyInvestmentManager pauseable {
         outgoingRouter.send(
-            Messages.formatDecreaseRedeemOrder(poolId, trancheId, addressToBytes32(investor), currency, amount)
+            Messages.formatIncreaseRedeemOrder(
+                poolId, trancheId, addressToBytes32(investor), currency, trancheTokenAmount
+            )
+        );
+    }
+
+    function decreaseRedeemOrder(
+        uint64 poolId,
+        bytes16 trancheId,
+        address investor,
+        uint128 currency,
+        uint128 trancheTokenAmount
+    ) public onlyInvestmentManager pauseable {
+        outgoingRouter.send(
+            Messages.formatDecreaseRedeemOrder(
+                poolId, trancheId, addressToBytes32(investor), currency, trancheTokenAmount
+            )
         );
     }
 

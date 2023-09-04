@@ -13,17 +13,9 @@ contract AxelarXCMRelayerScript is Deployer {
 
         admin = vm.envAddress("ADMIN");
 
-        bytes memory lpPalletIndex = vm.envBytes("LP_PALLET_INDEX");
-        require(lpPalletIndex.length == 1, "LP_PALLET_INDEX not 1 byte");
-
-        bytes memory lpCallIndex = vm.envBytes("LP_CALL_INDEX");
-        require(lpCallIndex.length == 1, "LP_CALL_INDEX not 1 byte");
-
         AxelarXCMRelayer router = new AxelarXCMRelayer(
-                address(vm.envAddress("CENTRIFUGE_CHAIN_ORIGIN")),
-                address(vm.envAddress("AXELAR_GATEWAY")),
-                bytes1(lpPalletIndex),
-                bytes1(lpCallIndex)
+            address(vm.envAddress("CENTRIFUGE_CHAIN_ORIGIN")),
+            address(vm.envAddress("AXELAR_GATEWAY"))
         );
 
         router.rely(admin);

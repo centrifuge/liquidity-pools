@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {AxelarExecutable} from "./AxelarExecutable.sol";
 import {Auth} from "./../../../util/Auth.sol";
 
 interface InvestmentManagerLike {
@@ -25,20 +24,36 @@ interface InvestmentManagerLike {
     ) external;
 }
 
+interface AxelarGatewayLike {
+    function callContract(string calldata destinationChain, string calldata contractAddress, bytes calldata payload)
+        external;
+
+    function validateContractCall(
+        bytes32 commandId,
+        string calldata sourceChain,
+        string calldata sourceAddress,
+        bytes32 payloadHash
+    ) external returns (bool);
+}
+
 interface GatewayLike {
     function handle(bytes memory message) external;
 }
 
-contract AxelarEVMRouter is Auth, AxelarExecutable {
-    GatewayLike public gateway;
-
+contract AxelarEVMRouter is Auth {
     string private constant axelarCentrifugeChainId = "Moonbeam";
-    string private constant axelarCentrifugeChainAddress = "0x56c4Db5bEaD29FC19158aA1f85673D9865732be4";
+    string private constant axelarCentrifugeChainAddress = "0x3b4a32efd7bd0290882B4854c86b8CECe534c975";
+
+    AxelarGatewayLike public immutable axelarGateway;
+
+    GatewayLike public gateway;
 
     // --- Events ---
     event File(bytes32 indexed what, address addr);
 
-    constructor(address axelarGateway_) AxelarExecutable(axelarGateway_) {
+    constructor(address axelarGateway_) {
+        axelarGateway = AxelarGatewayLike(axelarGateway_);
+
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
     }
@@ -62,17 +77,25 @@ contract AxelarEVMRouter is Auth, AxelarExecutable {
         if (what == "gateway") {
             gateway = GatewayLike(data);
         } else {
-            revert("ConnectorXCMRouter/file-unrecognized-param");
+            revert("AxelarEVMRouter/file-unrecognized-param");
         }
 
         emit File(what, data);
     }
 
     // --- Incoming ---
-    function _execute(bytes32, string calldata sourceChain, string calldata, bytes calldata payload)
-        public
-        onlyCentrifugeChainOrigin(sourceChain)
-    {
+    function execute(
+        bytes32 commandId,
+        string calldata sourceChain,
+        string calldata sourceAddress,
+        bytes calldata payload
+    ) public onlyCentrifugeChainOrigin(sourceChain) {
+        bytes32 payloadHash = keccak256(payload);
+        require(
+            axelarGateway.validateContractCall(commandId, sourceChain, sourceAddress, payloadHash),
+            "EVMRouter/not-approved-by-gateway"
+        );
+
         gateway.handle(payload);
     }
 

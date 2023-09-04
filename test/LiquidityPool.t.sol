@@ -637,6 +637,79 @@ contract LiquidityPoolTest is TestSetup {
         assertEq(lPool.maxDeposit(self), 0);
     }
 
+    function testDecreaseDepositRequest(
+        uint64 poolId,
+        uint8 decimals,
+        string memory tokenName,
+        string memory tokenSymbol,
+        bytes16 trancheId,
+        uint128 price,
+        uint128 currencyId,
+        uint256 amount,
+        uint64 validUntil
+    ) public {
+        vm.assume(currencyId > 0);
+        vm.assume(amount < MAX_UINT128);
+        vm.assume(amount > 1);
+        vm.assume(validUntil >= block.timestamp);
+        price = 2 * 10 ** 27;
+
+        address lPool_ =
+            deployLiquidityPool(poolId, erc20.decimals(), tokenName, tokenSymbol, trancheId, price, currencyId);
+        LiquidityPool lPool = LiquidityPool(lPool_);
+
+        erc20.mint(self, amount);
+        homePools.updateMember(poolId, trancheId, self, validUntil); // add user as member
+        erc20.approve(address(evmInvestmentManager), amount); // add allowance
+        lPool.requestDeposit(amount, self);
+
+        assertEq(erc20.balanceOf(address(escrow)), amount);
+        assertEq(erc20.balanceOf(self), 0);
+
+        // decrease deposit request
+        lPool.decreaseDepositRequest(amount, self);
+        homePools.isExecutedDecreaseInvestOrder(poolId, trancheId, bytes32(bytes20(self)), currencyId, uint128(amount));
+
+        assertEq(erc20.balanceOf(address(escrow)), 0);
+        assertEq(erc20.balanceOf(self), amount);
+    }
+
+    function testDecreaseRedeemRequest(
+        uint64 poolId,
+        uint8 decimals,
+        string memory tokenName,
+        string memory tokenSymbol,
+        bytes16 trancheId,
+        uint128 price,
+        uint128 currencyId,
+        uint256 amount,
+        uint64 validUntil
+    ) public {
+        vm.assume(currencyId > 0);
+        vm.assume(amount < MAX_UINT128);
+        vm.assume(amount > 1);
+        vm.assume(validUntil >= block.timestamp);
+        price = 1;
+
+        address lPool_ =
+            deployLiquidityPool(poolId, erc20.decimals(), tokenName, tokenSymbol, trancheId, price, currencyId);
+        deposit(lPool_, poolId, trancheId, amount, validUntil); // deposit funds first
+        LiquidityPool lPool = LiquidityPool(lPool_);
+
+        lPool.approve(address(evmInvestmentManager), amount);
+        lPool.requestRedeem(amount, self);
+
+        assertEq(lPool.balanceOf(address(escrow)), amount);
+        assertEq(lPool.balanceOf(self), 0);
+
+        // decrease redeem request
+        lPool.decreaseRedeemRequest(amount, self);
+        homePools.isExecutedDecreaseRedeemOrder(poolId, trancheId, bytes32(bytes20(self)), currencyId, uint128(amount));
+
+        assertEq(lPool.balanceOf(address(escrow)), 0);
+        assertEq(lPool.balanceOf(self), amount);
+    }
+
     function testCollectInvest(
         uint64 poolId,
         bytes16 trancheId,
