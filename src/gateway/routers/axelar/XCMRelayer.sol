@@ -132,7 +132,7 @@ contract AxelarXCMRelayer is Auth {
         string calldata sourceChain,
         string calldata sourceAddress,
         bytes calldata payload
-    ) public {
+    ) public onlyAxelarEVMRouter(sourceChain, sourceAddress) {
         require(
             axelarGateway.validateContractCall(commandId, sourceChain, sourceAddress, keccak256(payload)),
             "XCMRelayer/not-approved-by-gateway"
@@ -182,6 +182,7 @@ contract AxelarXCMRelayer is Auth {
     // A message that has been sent from the Centrifuge Chain, heading to a specific destination EVM chain
     function send(string calldata destinationChain, string calldata destinationAddress, bytes calldata payload)
         external
+        onlyCentrifugeChain
     {
         axelarGateway.callContract(destinationChain, destinationAddress, payload);
     }
