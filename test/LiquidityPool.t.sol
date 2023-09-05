@@ -862,7 +862,7 @@ contract LiquidityPoolTest is TestSetup {
 
         // trigger executed collectRedeem
         uint128 _currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
-        uint128 currencyPayout = uint128(amount) / price;
+        uint128 currencyPayout = uint128(amount) / uint128(price);
         homePools.isExecutedCollectRedeem(
             poolId, trancheId, bytes32(bytes20(address(this))), _currencyId, currencyPayout, uint128(amount)
         );

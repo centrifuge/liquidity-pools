@@ -365,7 +365,7 @@ contract InvestmentManager is Auth {
     }
 
     /// @return trancheTokenAmount is type of uin256 to support the EIP4626 Liquidity Pool interface
-    function previewRedeem(address user, address liquidityPool, uint256 currencyAmount)
+    function previewWithdraw(address user, address liquidityPool, uint256 currencyAmount)
         public
         view
         returns (uint256 trancheTokenAmount)
@@ -378,12 +378,12 @@ contract InvestmentManager is Auth {
     }
 
     /// @return currencyAmount is type of uin256 to support the EIP4626 Liquidity Pool interface
-    function previewWithdraw(address user, address liquidityPool, uint256 trancheTokenAmount)
+    function previewRedeem(address user, address liquidityPool, uint256 trancheTokenAmount)
         public
         view
         returns (uint256 currencyAmount)
     {
-        console.log("trancheTokenAmount", trancheTokenAmount);
+        require(trancheTokenAmount < type(uint128).max, "InvestmentManager/amount-too-large");
         uint256 redeemPrice = calculateRedeemPrice(user, liquidityPool);
         if (redeemPrice == 0) return 0;
 
@@ -536,23 +536,11 @@ contract InvestmentManager is Auth {
         }
 
         (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getPoolDecimals(liquidityPool);
-        console.log("maxWithdraw", lpValues.maxWithdraw);
-        console.log("maxRedeem", lpValues.maxRedeem);
-        console.log("currencyDecimals", currencyDecimals);
-        console.log("trancheTokenDecimals", trancheTokenDecimals);
-        uint256 maxWithdrawInPriceDecimals =
-            _toPriceDecimals(lpValues.maxWithdraw, currencyDecimals, liquidityPool);
-        uint256 maxRedeemInPriceDecimals =
-            _toPriceDecimals(lpValues.maxRedeem, trancheTokenDecimals, liquidityPool);
-        console.log("maxWithdrawInPriceDecimals", maxWithdrawInPriceDecimals);
-        console.log("maxRedeemInPriceDecimals", maxRedeemInPriceDecimals);
+        uint256 maxWithdrawInPriceDecimals = _toPriceDecimals(lpValues.maxWithdraw, currencyDecimals, liquidityPool);
+        uint256 maxRedeemInPriceDecimals = _toPriceDecimals(lpValues.maxRedeem, trancheTokenDecimals, liquidityPool);
 
-        if (maxWithdrawInPriceDecimals == maxRedeemInPriceDecimals) {
-            redeemPrice = 10 ** PRICE_DECIMALS;
-        } else {
-            redeemPrice = 
-                maxWithdrawInPriceDecimals.mulDiv(10 ** PRICE_DECIMALS, maxRedeemInPriceDecimals, MathLib.Rounding.Down);
-        }
+        redeemPrice =
+            maxWithdrawInPriceDecimals.mulDiv(10 ** PRICE_DECIMALS, maxRedeemInPriceDecimals, MathLib.Rounding.Down);
     }
 
     // price = currency amount / tranche token amount
@@ -586,11 +574,9 @@ contract InvestmentManager is Auth {
     {
         (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getPoolDecimals(liquidityPool);
 
-        uint256 currencyAmountInPriceDecimals = _toUint128(
-            _toPriceDecimals(trancheTokenAmount, trancheTokenDecimals, liquidityPool).mulDiv(
-                price, 10 ** PRICE_DECIMALS, MathLib.Rounding.Down
-            )
-        );
+        uint256 currencyAmountInPriceDecimals = _toPriceDecimals(
+            trancheTokenAmount, trancheTokenDecimals, liquidityPool
+        ).mulDiv(price, 10 ** PRICE_DECIMALS, MathLib.Rounding.Down);
 
         currencyAmount = _fromPriceDecimals(currencyAmountInPriceDecimals, currencyDecimals, liquidityPool);
     }
