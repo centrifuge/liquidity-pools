@@ -542,12 +542,13 @@ contract InvestmentManager is Auth {
         );
     }
 
+    // price = currency amount / tranche token amount
     function _updateLiquidityPoolPrice(address liquidityPool, uint128 currencyPayout, uint128 trancheTokensPayout)
         internal
     {
-        (, uint8 currencyDecimals,) = _getPoolDecimals(liquidityPool);
+        (,, uint8 trancheTokenDecimals) = _getPoolDecimals(liquidityPool);
         uint128 price =
-            _toUint128(trancheTokensPayout.mulDiv(10 ** currencyDecimals, currencyPayout, MathLib.Rounding.Down));
+            _toUint128(currencyPayout.mulDiv(10 ** trancheTokenDecimals, trancheTokensPayout, MathLib.Rounding.Down));
         LiquidityPoolLike(liquidityPool).updatePrice(price);
     }
 

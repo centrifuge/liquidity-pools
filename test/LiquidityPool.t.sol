@@ -453,8 +453,9 @@ contract LiquidityPoolTest is TestSetup {
     // Test that assumes the swap from usdc (investment currency) to dai (pool currency) has a cost of 1%
     // 
     // currency amount = tranche token amount x price
-    // price = tranche token amount / currency amount
-    function f(uint64 poolId, bytes16 trancheId, uint128 currencyId) public {
+    // tranche token amount = currency amount / price
+    // price = currency amount / tranche token amount
+    function testDepositAndRedeemPrecisionWithSlippage(uint64 poolId, bytes16 trancheId, uint128 currencyId) public {
         vm.assume(currencyId > 0);
 
         uint8 INVESTMENT_CURRENCY_DECIMALS = 6; // 6, like USDC
@@ -465,10 +466,8 @@ contract LiquidityPoolTest is TestSetup {
 
         // 100 usdc = 99 dai = 99 tranche tokens 
         // 100*10**6 = 99 * 10**18 tranche tokens
-        // price = (99 * 10**18) / (100*10**6) = .99 * 10**12
-        //
-        // if you hold 100*10**18 tranche tokens, the value of this is 101 * 10**6 usdc
-        homePools.updateTrancheTokenPrice(poolId, trancheId, currencyId, 990000000000);
+        // price = (100*10**6) /  (99 * 10**18) = 101.010101 * 10**12
+        homePools.updateTrancheTokenPrice(poolId, trancheId, currencyId, 1010101);
 
         // invest
         uint256 investmentAmount = 100000000; // 100 * 10**6
@@ -495,9 +494,10 @@ contract LiquidityPoolTest is TestSetup {
 
         // lp price is value of 1 tranche token in usdc, which is now
         // (.99 * 10**12) * 1.2 = 1188000000000
+        assertEq(lPool.latestPrice(), 1200000);
+
         // lp price is set to the deposit price
-        assertEq(lPool.latestPrice(), 1188000000000);
-        assertEq(investmentManager.calculateDepositPrice(self, address(lPool)), 1188000000000);
+        assertEq(investmentManager.calculateDepositPrice(self, address(lPool)), 1200000000000000000);
     }
 
     function testAssetShareConversion(uint64 poolId, bytes16 trancheId, uint128 currencyId) public {
