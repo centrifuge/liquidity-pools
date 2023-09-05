@@ -13,7 +13,10 @@ contract TrancheTokenTest is Test {
     TrancheToken token;
     Memberlist memberlist;
 
+    address self;
+
     function setUp() public {
+        self = address(this);
         token = new TrancheToken(18);
         token.file("name", "Some Token");
         token.file("symbol", "ST");
@@ -24,6 +27,102 @@ contract TrancheTokenTest is Test {
         memberlist.updateMember(address(this), type(uint256).max);
     }
 
+    // --- Admnistration ---
+
+    function testFile() public {
+        // fail: unrecognized param
+        vm.expectRevert(bytes("TrancheToken/file-unrecognized-param"));
+        token.file("random", self);
+
+        // success
+        token.file("memberlist", self);
+        assertEq(address(token.memberlist()), self);
+
+        // remove self from wards
+        token.deny(self);
+        // auth fail
+        vm.expectRevert(bytes("Auth/not-authorized"));
+        token.file("memberlist", self);
+    }
+
+    // --- TrustedForwarder ---
+    function testAddLiquidityPool() public {
+        assert(!token.isTrustedForwarder(self));
+
+        //success
+        token.addLiquidityPool(self);
+        assert(token.isTrustedForwarder(self));
+
+        // remove self from wards
+        token.deny(self);
+        // auth fail
+        vm.expectRevert(bytes("Auth/not-authorized"));
+        token.addLiquidityPool(self);
+    }
+
+    function testRemoveLiquidityPool() public {
+        token.addLiquidityPool(self);
+        assert(token.isTrustedForwarder(self));
+
+        // success
+        token.removeLiquidityPool(self);
+        assert(!token.isTrustedForwarder(self));
+
+        // remove self from wards
+        token.deny(self);
+        // auth fail
+        vm.expectRevert(bytes("Auth/not-authorized"));
+        token.removeLiquidityPool(self);
+    }
+
+    function testCheckTrustedForderWorks(uint256 validUntil, uint256 amount, address random) public {
+        vm.assume(validUntil > block.timestamp);
+        vm.assume(amount > 0);
+
+        assert(!token.isTrustedForwarder(self));
+        // make self trusted firwarder
+        token.addLiquidityPool(self);
+        assert(token.isTrustedForwarder(self));
+        // add self to memberlist
+        memberlist.updateMember(self, validUntil);
+        memberlist.updateMember(random, validUntil);
+
+        bool success;
+        // test auth works with trustedForwarder
+        // fail -> random not ward
+        (success,) = address(token).call(
+            abi.encodeWithSelector(bytes4(keccak256(bytes("mint(address,uint256)"))), self, amount, random)
+        );
+        assert(!success);
+        assertEq(token.balanceOf(self), 0);
+
+        // success -> self is ward
+        (success,) = address(token).call(
+            abi.encodeWithSelector(bytes4(keccak256(bytes("mint(address,uint256)"))), self, amount, self)
+        );
+        assert(success);
+        assertEq(token.balanceOf(self), amount);
+
+        // test non auth function works with trusted forwarder
+        // fail -> random has no balance
+        (success,) = address(token).call(
+            abi.encodeWithSelector(bytes4(keccak256(bytes("transfer(address,uint256)"))), self, amount, random)
+        );
+
+        assert(!success);
+        assertEq(token.balanceOf(self), amount);
+
+        // success -> self has enough balance to transfer
+        (success,) = address(token).call(
+            abi.encodeWithSelector(bytes4(keccak256(bytes("transfer(address,uint256)"))), random, amount, self)
+        );
+
+        assert(success);
+        assertEq(token.balanceOf(self), 0);
+        assertEq(token.balanceOf(random), amount);
+    }
+
+    // --- Memberlist ---
     // transferFrom
     function testTransferFromTokensToMemberWorks(uint256 amount, address targetUser, uint256 validUntil) public {
         vm.assume(baseAssumptions(validUntil, targetUser));
@@ -38,7 +137,6 @@ contract TrancheTokenTest is Test {
 
     function testTransferFromTokensToNonMemberFails(uint256 amount, address targetUser, uint256 validUntil) public {
         vm.assume(baseAssumptions(validUntil, targetUser));
-
         token.mint(address(this), amount);
         vm.expectRevert(bytes("Memberlist/not-allowed-to-hold-token"));
         token.transferFrom(address(this), targetUser, amount);

@@ -269,54 +269,54 @@ contract LiquidityPool is Auth, ERC20Like {
     }
 
     // --- ERC20 overrides ---
-    function name() public view override returns (string memory) {
+    function name() public view returns (string memory) {
         return share.name();
     }
 
-    function symbol() public view override returns (string memory) {
+    function symbol() public view returns (string memory) {
         return share.symbol();
     }
 
-    function decimals() public view override returns (uint8) {
+    function decimals() public view returns (uint8) {
         return share.decimals();
     }
 
-    function totalSupply() public view override returns (uint256) {
+    function totalSupply() public view returns (uint256) {
         return share.totalSupply();
     }
 
-    function balanceOf(address owner) public view override returns (uint256) {
+    function balanceOf(address owner) public view returns (uint256) {
         return share.balanceOf(owner);
     }
 
-    function allowance(address owner, address spender) public view override returns (uint256) {
+    function allowance(address owner, address spender) public view returns (uint256) {
         return share.allowance(owner, spender);
     }
 
-    function transferFrom(address, address, uint256) public override returns (bool) {
+    function transferFrom(address, address, uint256) public returns (bool) {
         (bool success, bytes memory data) = address(share).call(bytes.concat(msg.data, bytes20(msg.sender)));
         _successCheck(success);
         return abi.decode(data, (bool));
     }
 
-    function transfer(address, uint256) public override returns (bool) {
+    function transfer(address, uint256) public returns (bool) {
         (bool success, bytes memory data) = address(share).call(bytes.concat(msg.data, bytes20(msg.sender)));
         _successCheck(success);
         return abi.decode(data, (bool));
     }
 
-    function approve(address, uint256) public override returns (bool) {
+    function approve(address, uint256) public returns (bool) {
         (bool success, bytes memory data) = address(share).call(bytes.concat(msg.data, bytes20(msg.sender)));
         _successCheck(success);
         return abi.decode(data, (bool));
     }
 
-    function mint(address, uint256) public override auth {
+    function mint(address, uint256) public auth {
         (bool success,) = address(share).call(bytes.concat(msg.data, bytes20(address(this))));
         _successCheck(success);
     }
 
-    function burn(address, uint256) public override auth {
+    function burn(address, uint256) public auth {
         (bool success,) = address(share).call(bytes.concat(msg.data, bytes20(address(this))));
         _successCheck(success);
     }
