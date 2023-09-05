@@ -374,19 +374,21 @@ contract LiquidityPoolTest is TestSetup {
         uint8 TRANCHE_TOKEN_DECIMALS = 18; // Like DAI
         uint8 INVESTMENT_CURRENCY_DECIMALS = 6; // 6, like USDC
 
-        address lPool_ = deployLiquidityPool(poolId, TRANCHE_TOKEN_DECIMALS, "", "", trancheId, currencyId);
+        ERC20 currency = newErc20("Currency", "CR", INVESTMENT_CURRENCY_DECIMALS);
+        address lPool_ =
+            deployLiquidityPool(poolId, TRANCHE_TOKEN_DECIMALS, "", "", trancheId, currencyId, address(currency));
         LiquidityPool lPool = LiquidityPool(lPool_);
         homePools.updateTrancheTokenPrice(poolId, trancheId, currencyId, 1000000000000000000);
 
         // invest
         uint256 investmentAmount = 100000000; // 100 * 10**6
         homePools.updateMember(poolId, trancheId, self, type(uint64).max);
-        erc20.approve(address(investmentManager), investmentAmount);
-        erc20.mint(self, investmentAmount);
+        currency.approve(address(investmentManager), investmentAmount);
+        currency.mint(self, investmentAmount);
         lPool.requestDeposit(investmentAmount, self);
 
         // trigger executed collectInvest of the first 50% at a price of 1.2
-        uint128 _currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
+        uint128 _currencyId = poolManager.currencyAddressToId(address(currency)); // retrieve currencyId
         uint128 currencyPayout = 50000000; // 50 * 10**6
         uint128 firstTrancheTokenPayout = 41666666666666666666; // 50 * 10**18 / 1.2, rounded down
         homePools.isExecutedCollectInvest(
@@ -424,7 +426,7 @@ contract LiquidityPoolTest is TestSetup {
         currencyPayout = 115500000; // 115.5*10**6
 
         // mint interest into escrow
-        erc20.mint(address(escrow), currencyPayout - investmentAmount);
+        currency.mint(address(escrow), currencyPayout - investmentAmount);
 
         homePools.isExecutedCollectRedeem(
             poolId,
@@ -440,7 +442,7 @@ contract LiquidityPoolTest is TestSetup {
 
         // collect the currency
         lPool.withdraw(currencyPayout, self, self);
-        assertEq(erc20.balanceOf(self), currencyPayout);
+        assertEq(currency.balanceOf(self), currencyPayout);
     }
 
     function testDepositAndRedeemPrecisionWithInverseDecimals(uint64 poolId, bytes16 trancheId, uint128 currencyId)
@@ -451,19 +453,21 @@ contract LiquidityPoolTest is TestSetup {
         uint8 TRANCHE_TOKEN_DECIMALS = 6; // Like DAI
         uint8 INVESTMENT_CURRENCY_DECIMALS = 18; // 18, like USDC
 
-        address lPool_ = deployLiquidityPool(poolId, TRANCHE_TOKEN_DECIMALS, "", "", trancheId, currencyId);
+        ERC20 currency = newErc20("Currency", "CR", INVESTMENT_CURRENCY_DECIMALS);
+        address lPool_ =
+            deployLiquidityPool(poolId, TRANCHE_TOKEN_DECIMALS, "", "", trancheId, currencyId, address(currency));
         LiquidityPool lPool = LiquidityPool(lPool_);
         homePools.updateTrancheTokenPrice(poolId, trancheId, currencyId, 1000000000000000000000000000);
 
         // invest
         uint256 investmentAmount = 100000000000000000000; // 100 * 10**18
         homePools.updateMember(poolId, trancheId, self, type(uint64).max);
-        erc20.approve(address(investmentManager), investmentAmount);
-        erc20.mint(self, investmentAmount);
+        currency.approve(address(investmentManager), investmentAmount);
+        currency.mint(self, investmentAmount);
         lPool.requestDeposit(investmentAmount, self);
 
         // trigger executed collectInvest of the first 50% at a price of 1.2
-        uint128 _currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
+        uint128 _currencyId = poolManager.currencyAddressToId(address(currency)); // retrieve currencyId
         uint128 currencyPayout = 50000000000000000000; // 50 * 10**18
         uint128 firstTrancheTokenPayout = 41666666; // 50 * 10**6 / 1.2, rounded down
         homePools.isExecutedCollectInvest(
@@ -501,7 +505,7 @@ contract LiquidityPoolTest is TestSetup {
         currencyPayout = 115500000000000000000; // 115.5*10**18
 
         // mint interest into escrow
-        erc20.mint(address(escrow), currencyPayout - investmentAmount);
+        currency.mint(address(escrow), currencyPayout - investmentAmount);
 
         homePools.isExecutedCollectRedeem(
             poolId,
@@ -517,7 +521,7 @@ contract LiquidityPoolTest is TestSetup {
 
         // // collect the currency
         lPool.withdraw(currencyPayout, self, self);
-        assertEq(erc20.balanceOf(self), currencyPayout);
+        assertEq(currency.balanceOf(self), currencyPayout);
     }
 
     // Test that assumes the swap from usdc (investment currency) to dai (pool currency) has a cost of 1%
@@ -527,7 +531,9 @@ contract LiquidityPoolTest is TestSetup {
         uint8 INVESTMENT_CURRENCY_DECIMALS = 6; // 6, like USDC
         uint8 TRANCHE_TOKEN_DECIMALS = 18; // Like DAI
 
-        address lPool_ = deployLiquidityPool(poolId, TRANCHE_TOKEN_DECIMALS, "", "", trancheId, currencyId);
+        ERC20 currency = newErc20("Currency", "CR", INVESTMENT_CURRENCY_DECIMALS);
+        address lPool_ =
+            deployLiquidityPool(poolId, TRANCHE_TOKEN_DECIMALS, "", "", trancheId, currencyId, address(currency));
         LiquidityPool lPool = LiquidityPool(lPool_);
 
         // 100 usdc = 99 dai = 99 tranche tokens
@@ -538,12 +544,12 @@ contract LiquidityPoolTest is TestSetup {
         // invest
         uint256 investmentAmount = 100000000; // 100 * 10**6
         homePools.updateMember(poolId, trancheId, self, type(uint64).max);
-        erc20.approve(address(investmentManager), investmentAmount);
-        erc20.mint(self, investmentAmount);
+        currency.approve(address(investmentManager), investmentAmount);
+        currency.mint(self, investmentAmount);
         lPool.requestDeposit(investmentAmount, self);
 
         // trigger executed collectInvest at a tranche token price of 1.2
-        uint128 _currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
+        uint128 _currencyId = poolManager.currencyAddressToId(address(currency)); // retrieve currencyId
         uint128 currencyPayout = 99000000; // 99 * 10**6
 
         // invested amount in dai is 99 * 10**18
@@ -577,7 +583,9 @@ contract LiquidityPoolTest is TestSetup {
         uint8 INVESTMENT_CURRENCY_DECIMALS = 18; // 18, like DAI
         uint8 TRANCHE_TOKEN_DECIMALS = 6; // Like USDC
 
-        address lPool_ = deployLiquidityPool(poolId, TRANCHE_TOKEN_DECIMALS, "", "", trancheId, currencyId);
+        ERC20 currency = newErc20("Currency", "CR", INVESTMENT_CURRENCY_DECIMALS);
+        address lPool_ =
+            deployLiquidityPool(poolId, TRANCHE_TOKEN_DECIMALS, "", "", trancheId, currencyId, address(currency));
         LiquidityPool lPool = LiquidityPool(lPool_);
 
         // 100 dai = 99 usc = 99 tranche tokens

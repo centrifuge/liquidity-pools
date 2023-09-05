@@ -67,20 +67,33 @@ contract TestSetup is Deployer, Test {
 
     function deployLiquidityPool(
         uint64 poolId,
+        uint8 trancheTokenDecimals,
+        string memory tokenName,
+        string memory tokenSymbol,
+        bytes16 trancheId,
+        uint128 currencyId,
+        address currency
+    ) public returns (address) {
+        homePools.addPool(poolId); // add pool
+        homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, trancheTokenDecimals); // add tranche
+
+        homePools.addCurrency(currencyId, currency);
+        homePools.allowPoolCurrency(poolId, currencyId);
+        poolManager.deployTranche(poolId, trancheId);
+
+        address lPoolAddress = poolManager.deployLiquidityPool(poolId, trancheId, currency);
+        return lPoolAddress;
+    }
+
+    function deployLiquidityPool(
+        uint64 poolId,
         uint8 decimals,
         string memory tokenName,
         string memory tokenSymbol,
         bytes16 trancheId,
         uint128 currency
     ) public returns (address) {
-        homePools.addPool(poolId); // add pool
-        homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals); // add tranche
-        homePools.addCurrency(currency, address(erc20));
-        homePools.allowPoolCurrency(poolId, currency);
-        poolManager.deployTranche(poolId, trancheId);
-
-        address lPoolAddress = poolManager.deployLiquidityPool(poolId, trancheId, address(erc20));
-        return lPoolAddress;
+        deployLiquidityPool(poolId, decimals, tokenName, tokenSymbol, trancheId, currency, address(erc20));
     }
 
     function stringToBytes32(string memory source) internal pure returns (bytes32 result) {

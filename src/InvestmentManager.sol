@@ -535,8 +535,14 @@ contract InvestmentManager is Auth {
         }
 
         (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getPoolDecimals(liquidityPool);
+        console.log("maxWithdraw", lpValues.maxWithdraw);
+        console.log("maxRedeem", lpValues.maxRedeem);
+        console.log("currencyDecimals", currencyDecimals);
+        console.log("trancheTokenDecimals", trancheTokenDecimals);
         uint256 maxWithdrawInPriceDecimals = _toPriceDecimals(lpValues.maxWithdraw, currencyDecimals, liquidityPool);
         uint256 maxRedeemInPriceDecimals = _toPriceDecimals(lpValues.maxRedeem, trancheTokenDecimals, liquidityPool);
+        console.log("maxWithdrawInPriceDecimals", maxWithdrawInPriceDecimals);
+        console.log("maxRedeemInPriceDecimals", maxRedeemInPriceDecimals);
 
         redeemPrice =
             maxWithdrawInPriceDecimals.mulDiv(10 ** PRICE_DECIMALS, maxRedeemInPriceDecimals, MathLib.Rounding.Down);
