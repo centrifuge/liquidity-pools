@@ -563,12 +563,7 @@ contract InvestmentManager is Auth {
             return 0;
         }
 
-        (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getPoolDecimals(liquidityPool);
-        uint256 maxDepositInPriceDecimals = _toPriceDecimals(lpValues.maxDeposit, currencyDecimals, liquidityPool);
-        uint256 maxMintInPriceDecimals = _toPriceDecimals(lpValues.maxMint, trancheTokenDecimals, liquidityPool);
-
-        depositPrice =
-            maxDepositInPriceDecimals.mulDiv(10 ** PRICE_DECIMALS, maxMintInPriceDecimals, MathLib.Rounding.Down);
+        depositPrice = _calculatePrice(lpValues.maxDeposit, lpValues.maxMint, liquidityPool);
     }
 
     function calculateRedeemPrice(address user, address liquidityPool) public view returns (uint256 redeemPrice) {
@@ -577,28 +572,28 @@ contract InvestmentManager is Auth {
             return 0;
         }
 
-        (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getPoolDecimals(liquidityPool);
-        uint256 maxWithdrawInPriceDecimals = _toPriceDecimals(lpValues.maxWithdraw, currencyDecimals, liquidityPool);
-        uint256 maxRedeemInPriceDecimals = _toPriceDecimals(lpValues.maxRedeem, trancheTokenDecimals, liquidityPool);
-
-        redeemPrice =
-            maxWithdrawInPriceDecimals.mulDiv(10 ** PRICE_DECIMALS, maxRedeemInPriceDecimals, MathLib.Rounding.Down);
+        redeemPrice = _calculatePrice(lpValues.maxWithdraw, lpValues.maxRedeem, liquidityPool);
     }
 
-    // price = currency amount / tranche token amount
+    function _calculatePrice(uint128 currencyAmount, uint128 trancheTokenAmount, address liquidityPool)
+        public
+        view
+        returns (uint256 depositPrice)
+    {
+        (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getPoolDecimals(liquidityPool);
+        uint256 currencyAmountInPriceDecimals = _toPriceDecimals(currencyAmount, currencyDecimals, liquidityPool);
+        uint256 trancheTokenAmountInPriceDecimals =
+            _toPriceDecimals(trancheTokenAmount, trancheTokenDecimals, liquidityPool);
+
+        depositPrice = currencyAmountInPriceDecimals.mulDiv(
+            10 ** PRICE_DECIMALS, trancheTokenAmountInPriceDecimals, MathLib.Rounding.Down
+        );
+    }
+
     function _updateLiquidityPoolPrice(address liquidityPool, uint128 currencyPayout, uint128 trancheTokensPayout)
         internal
     {
-        (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getPoolDecimals(liquidityPool);
-        uint256 currencyPayoutInPriceDecimals = _toPriceDecimals(currencyPayout, currencyDecimals, liquidityPool);
-        uint256 trancheTokenPayoutInPriceDecimals =
-            _toPriceDecimals(trancheTokensPayout, trancheTokenDecimals, liquidityPool);
-
-        uint128 price = _toUint128(
-            currencyPayoutInPriceDecimals.mulDiv(
-                10 ** PRICE_DECIMALS, trancheTokenPayoutInPriceDecimals, MathLib.Rounding.Down
-            )
-        );
+        uint128 price = _toUint128(_calculatePrice(currencyPayout, trancheTokensPayout, liquidityPool));
         LiquidityPoolLike(liquidityPool).updatePrice(price);
     }
 
