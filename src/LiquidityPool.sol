@@ -2,7 +2,7 @@
 pragma solidity 0.8.21;
 
 import {Auth} from "./util/Auth.sol";
-import {Math} from "./util/Math.sol";
+import {MathLib} from "./util/MathLib.sol";
 import {IERC20} from "./interfaces/IERC20.sol";
 import {IERC4626} from "./interfaces/IERC4626.sol";
 
@@ -49,7 +49,7 @@ interface InvestmentManagerLike {
 /// This is extending the EIP4626 standard by 'requestRedeem' & 'requestDeposit' functions, where redeem and deposit orders are submitted to the pools
 /// to be included in the execution of the following epoch. After execution users can use the redeem and withdraw functions to get their shares and/or assets from the pools.
 contract LiquidityPool is Auth, IERC4626 {
-    using Math for uint256;
+    using MathLib for uint256;
 
     uint64 public immutable poolId;
     bytes16 public immutable trancheId;
@@ -113,7 +113,7 @@ contract LiquidityPool is Auth, IERC4626 {
     /// @dev The total amount of vault shares
     /// @return Total amount of the underlying vault assets including accrued interest
     function totalAssets() public view returns (uint256) {
-        return totalSupply().mulDiv(latestPrice, 10 ** investmentManager.PRICE_DECIMALS(), Math.Rounding.Down);
+        return totalSupply().mulDiv(latestPrice, 10 ** investmentManager.PRICE_DECIMALS(), MathLib.Rounding.Down);
     }
 
     /// @dev Calculates the amount of shares / tranche tokens that any user would get for the amount of assets provided. The calcultion is based on the token price from the most recent epoch retrieved from Centrifuge chain.
@@ -121,7 +121,7 @@ contract LiquidityPool is Auth, IERC4626 {
         shares = assets.mulDiv(
             10 ** (investmentManager.PRICE_DECIMALS() + share.decimals() - IERC20(asset).decimals()),
             latestPrice,
-            Math.Rounding.Down
+            MathLib.Rounding.Down
         );
     }
 
@@ -130,7 +130,7 @@ contract LiquidityPool is Auth, IERC4626 {
         assets = shares.mulDiv(
             latestPrice,
             10 ** (investmentManager.PRICE_DECIMALS() + share.decimals() - IERC20(asset).decimals()),
-            Math.Rounding.Down
+            MathLib.Rounding.Down
         );
     }
 

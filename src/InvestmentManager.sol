@@ -2,7 +2,7 @@
 pragma solidity 0.8.21;
 
 import {Auth} from "./util/Auth.sol";
-import {Math} from "./util/Math.sol";
+import {MathLib} from "./util/MathLib.sol";
 import {SafeTransferLib} from "./util/SafeTransferLib.sol";
 
 interface GatewayLike {
@@ -62,7 +62,7 @@ struct LPValues {
 }
 
 contract InvestmentManager is Auth {
-    using Math for uint128;
+    using MathLib for uint128;
 
     uint8 public constant PRICE_DECIMALS = 18; // Prices are fixed-point integers with 18 decimals
 
@@ -522,8 +522,9 @@ contract InvestmentManager is Auth {
         uint128 maxDepositInPoolDecimals = _toPoolDecimals(lpValues.maxDeposit, currencyDecimals, liquidityPool);
         uint128 maxMintInPoolDecimals = _toPoolDecimals(lpValues.maxMint, trancheTokenDecimals, liquidityPool);
 
-        depositPrice =
-            _toUint128(maxDepositInPoolDecimals.mulDiv(10 ** poolDecimals, maxMintInPoolDecimals, Math.Rounding.Down));
+        depositPrice = _toUint128(
+            maxDepositInPoolDecimals.mulDiv(10 ** poolDecimals, maxMintInPoolDecimals, MathLib.Rounding.Down)
+        );
     }
 
     function calculateRedeemPrice(address user, address liquidityPool) public view returns (uint128 redeemPrice) {
@@ -537,7 +538,7 @@ contract InvestmentManager is Auth {
         uint128 maxRedeemInPoolDecimals = _toPoolDecimals(lpValues.maxRedeem, trancheTokenDecimals, liquidityPool);
 
         redeemPrice = _toUint128(
-            maxWithdrawInPoolDecimals.mulDiv(10 ** poolDecimals, maxRedeemInPoolDecimals, Math.Rounding.Down)
+            maxWithdrawInPoolDecimals.mulDiv(10 ** poolDecimals, maxRedeemInPoolDecimals, MathLib.Rounding.Down)
         );
     }
 
@@ -546,7 +547,7 @@ contract InvestmentManager is Auth {
     {
         (, uint8 currencyDecimals,) = _getPoolDecimals(liquidityPool);
         uint128 price =
-            _toUint128(trancheTokensPayout.mulDiv(10 ** currencyDecimals, currencyPayout, Math.Rounding.Down));
+            _toUint128(trancheTokensPayout.mulDiv(10 ** currencyDecimals, currencyPayout, MathLib.Rounding.Down));
         LiquidityPoolLike(liquidityPool).updatePrice(price);
     }
 
@@ -559,7 +560,7 @@ contract InvestmentManager is Auth {
 
         uint128 currencyAmountInPoolDecimals = _toUint128(
             _toPoolDecimals(currencyAmount, currencyDecimals, liquidityPool).mulDiv(
-                10 ** poolDecimals, price, Math.Rounding.Down
+                10 ** poolDecimals, price, MathLib.Rounding.Down
             )
         );
 
@@ -575,7 +576,7 @@ contract InvestmentManager is Auth {
 
         uint128 currencyAmountInPoolDecimals = _toUint128(
             _toPoolDecimals(trancheTokenAmount, trancheTokenDecimals, liquidityPool).mulDiv(
-                price, 10 ** poolDecimals, Math.Rounding.Down
+                price, 10 ** poolDecimals, MathLib.Rounding.Down
             )
         );
 
@@ -664,6 +665,6 @@ contract InvestmentManager is Auth {
     {
         currencyDecimals = ERC20Like(LiquidityPoolLike(liquidityPool).asset()).decimals();
         trancheTokenDecimals = LiquidityPoolLike(liquidityPool).decimals();
-        poolDecimals = uint8(Math.max(currencyDecimals, trancheTokenDecimals));
+        poolDecimals = uint8(MathLib.max(currencyDecimals, trancheTokenDecimals));
     }
 }

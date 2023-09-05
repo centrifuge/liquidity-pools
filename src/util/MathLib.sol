@@ -5,7 +5,7 @@ pragma solidity 0.8.21;
  * @dev Standard math utilities missing in the Solidity language.
  * @dev Adapted from https://github.com/OpenZeppelin/openzeppelin-contracts/blob/c1d6e39aab042a38a90f618c614a298522851f7b/contracts/utils/math/Math.sol
  */
-library Math {
+library MathLib {
     enum Rounding {
         Down, // Toward negative infinity
         Up, // Toward infinity
