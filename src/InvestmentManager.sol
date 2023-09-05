@@ -4,7 +4,6 @@ pragma solidity 0.8.21;
 import {Auth} from "./util/Auth.sol";
 import {MathLib} from "./util/MathLib.sol";
 import {SafeTransferLib} from "./util/SafeTransferLib.sol";
-import "forge-std/console.sol";
 
 interface GatewayLike {
     function increaseInvestOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount)
@@ -547,9 +546,16 @@ contract InvestmentManager is Auth {
     function _updateLiquidityPoolPrice(address liquidityPool, uint128 currencyPayout, uint128 trancheTokensPayout)
         internal
     {
-        (, uint8 trancheTokenDecimals) = _getPoolDecimals(liquidityPool);
-        uint128 price =
-            _toUint128(currencyPayout.mulDiv(10 ** trancheTokenDecimals, trancheTokensPayout, MathLib.Rounding.Down));
+        (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getPoolDecimals(liquidityPool);
+        uint256 currencyPayoutInPriceDecimals = _toPriceDecimals(currencyPayout, currencyDecimals, liquidityPool);
+        uint256 trancheTokenPayoutInPriceDecimals =
+            _toPriceDecimals(trancheTokensPayout, trancheTokenDecimals, liquidityPool);
+
+        uint128 price = _toUint128(
+            currencyPayoutInPriceDecimals.mulDiv(
+                10 ** PRICE_DECIMALS, trancheTokenPayoutInPriceDecimals, MathLib.Rounding.Down
+            )
+        );
         LiquidityPoolLike(liquidityPool).updatePrice(price);
     }
 
