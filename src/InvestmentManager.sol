@@ -283,7 +283,7 @@ contract InvestmentManager is Auth {
         LPValues storage lpValues = orderbook[recipient][liquidityPool];
         lpValues.maxWithdraw = lpValues.maxWithdraw + currencyPayout;
         lpValues.maxRedeem = lpValues.maxRedeem + trancheTokensPayout;
-        lpValues.outstandingRedeemOrder = lpValues.outstandingRedeemOrder - trancheTokenPayout;
+        lpValues.outstandingRedeemOrder = lpValues.outstandingRedeemOrder - trancheTokensPayout;
 
         userEscrow.transferIn(_currency, address(escrow), recipient, currencyPayout);
         LiquidityPoolLike(liquidityPool).burn(address(escrow), trancheTokensPayout); // burned redeemed tokens from escrow
