@@ -2,14 +2,14 @@
 pragma solidity 0.8.21;
 
 import {ERC20} from "./ERC20.sol";
-import {ERC20Like} from "./ERC20Like.sol";
+import {IERC20} from "../interfaces/IERC20.sol";
 
 interface MemberlistLike {
     function hasMember(address) external view returns (bool);
     function member(address) external;
 }
 
-interface TrancheTokenLike is ERC20Like {
+interface TrancheTokenLike is IERC20 {
     function hasMember(address user) external view returns (bool);
     function updatePrice(uint128 price) external;
     function memberlist() external returns (address);

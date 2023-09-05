@@ -11,7 +11,7 @@ contract AxelarRouterTest is Test {
     GatewayMock gateway;
     AxelarRouter router;
 
-    string private constant axelarCentrifugeChainId = "Moonbeam";
+    string private constant axelarCentrifugeChainId = "centrifuge";
     string private constant axelarCentrifugeChainAddress = "0x3b4a32efd7bd0290882B4854c86b8CECe534c975";
 
     function setUp() public {

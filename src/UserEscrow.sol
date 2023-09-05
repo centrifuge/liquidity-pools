@@ -2,6 +2,7 @@
 pragma solidity 0.8.21;
 
 import {Auth} from "./util/Auth.sol";
+import {TransferHelper} from "./util/SafeTransferLib.sol";
 
 interface TransferLike {
     function transferFrom(address, address, uint256) external returns (bool);
@@ -28,7 +29,7 @@ contract UserEscrow is Auth {
     function transferIn(address token, address source, address destination, uint256 amount) external auth {
         destinations[token][destination] = amount;
 
-        require(TransferLike(token).transferFrom(source, address(this), amount), "UserEscrow/transfer-failed");
+        SafeTransferLib.safeTransferFrom(token, source, address(this), amount);
         emit TransferIn(token, source, destination, amount);
     }
 
@@ -36,7 +37,7 @@ contract UserEscrow is Auth {
         require(destinations[token][destination] >= amount, "UserEscrow/transfer-failed");
         destinations[token][destination] -= amount;
 
-        require(TransferLike(token).transfer(destination, amount), "UserEscrow/transfer-failed");
+        SafeTransferLib.safeTransfer(token, destination, amount);
         emit TransferOut(token, destination, amount);
     }
 }

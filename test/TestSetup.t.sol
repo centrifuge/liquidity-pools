@@ -16,7 +16,7 @@ import {Gateway} from "../src/gateway/Gateway.sol";
 import {MemberlistLike, Memberlist} from "../src/token/Memberlist.sol";
 import {Messages} from "../src/gateway/Messages.sol";
 import {Deployer} from "../script/Deployer.sol";
-import "../src/token/ERC20Like.sol";
+import "../src/interfaces/IERC20.sol";
 
 // mocks
 import {MockHomeLiquidityPools} from "./mock/MockHomeLiquidityPools.sol";

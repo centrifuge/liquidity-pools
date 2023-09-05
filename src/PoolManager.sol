@@ -4,8 +4,9 @@ pragma solidity 0.8.21;
 import {TrancheTokenFactoryLike, LiquidityPoolFactoryLike} from "./util/Factory.sol";
 import {TrancheTokenLike} from "./token/Tranche.sol";
 import {MemberlistLike} from "./token/Memberlist.sol";
-import {ERC20Like} from "./token/ERC20Like.sol";
+import {IERC20} from "./interfaces/IERC20.sol";
 import {Auth} from "./util/Auth.sol";
+import {TransferHelper} from "./util/SafeTransferLib.sol";
 
 interface GatewayLike {
     function transferTrancheTokensToCentrifuge(
@@ -124,9 +125,7 @@ contract PoolManager is Auth {
         uint128 currency = currencyAddressToId[currencyAddress];
         require(currency != 0, "PoolManager/unknown-currency");
 
-        ERC20Like erc20 = ERC20Like(currencyAddress);
-        require(erc20.transferFrom(msg.sender, address(escrow), amount), "PoolManager/currency-transfer-failed");
-
+        SafeTransferLib.safeTransferFrom(currencyAddress, msg.sender, address(escrow), amount);
         gateway.transfer(currency, msg.sender, recipient, amount);
     }
 
@@ -238,9 +237,7 @@ contract PoolManager is Auth {
         require(currency != 0, "PoolManager/currency-id-has-to-be-greater-than-0");
         require(currencyIdToAddress[currency] == address(0), "PoolManager/currency-id-in-use");
         require(currencyAddressToId[currencyAddress] == 0, "PoolManager/currency-address-in-use");
-        require(
-            ERC20Like(currencyAddress).decimals() <= MAX_CURRENCY_DECIMALS, "PoolManager/too-many-currency-decimals"
-        );
+        require(IERC20(currencyAddress).decimals() <= MAX_CURRENCY_DECIMALS, "PoolManager/too-many-currency-decimals");
 
         currencyIdToAddress[currency] = currencyAddress;
         currencyAddressToId[currencyAddress] = currency;
@@ -259,10 +256,7 @@ contract PoolManager is Auth {
         require(currencyAddress != address(0), "PoolManager/unknown-currency");
 
         EscrowLike(escrow).approve(currencyAddress, address(this), amount);
-        require(
-            ERC20Like(currencyAddress).transferFrom(address(escrow), recipient, amount),
-            "PoolManager/currency-transfer-failed"
-        );
+        SafeTransferLib.safeTransferFrom(currencyAddress, address(escrow), recipient, amount);
     }
 
     function handleTransferTrancheTokens(uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 amount)

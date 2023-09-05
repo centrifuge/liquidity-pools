@@ -3,6 +3,7 @@ pragma solidity 0.8.21;
 
 import {Auth} from "./util/Auth.sol";
 import {Math} from "./util/Math.sol";
+import {TransferHelper} from "./util/SafeTransferLib.sol";
 
 interface GatewayLike {
     function increaseInvestOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount)
@@ -19,25 +20,20 @@ interface GatewayLike {
     function cancelRedeemOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency) external;
 }
 
-interface LiquidityPoolLike {
-    function rely(address) external;
-    // restricted token functions
-    function hasMember(address) external returns (bool);
-    function file(bytes32 what, address data) external;
-    // erc20 functions
+interface ERC20Like {
+    function approve(address token, address spender, uint256 value) external;
+    function transferFrom(address from, address to, uint256 amount) external returns (bool);
+    function decimals() external view returns (uint8);
     function mint(address, uint256) external;
     function burn(address, uint256) external;
-    function balanceOf(address) external returns (uint256);
-    function transferFrom(address, address, uint256) external returns (bool);
-    function decimals() external view returns (uint8);
-    // 4626 functions
-    function asset() external view returns (address);
-    // centrifuge chain info functions
+}
+
+interface LiquidityPoolLike is ERC20Like {
     function poolId() external returns (uint64);
     function trancheId() external returns (bytes16);
-    // pricing functions
+    function asset() external view returns (address);
+    function hasMember(address) external returns (bool);
     function updatePrice(uint128 price) external;
-    function lastPriceUpdate() external view returns (uint256);
 }
 
 interface PoolManagerLike {
@@ -46,13 +42,6 @@ interface PoolManagerLike {
     function getTrancheToken(uint64 poolId, bytes16 trancheId) external view returns (address);
     function getLiquidityPool(uint64 poolId, bytes16 trancheId, address currency) external view returns (address);
     function isAllowedAsPoolCurrency(uint64 poolId, address currencyAddress) external view returns (bool);
-}
-
-interface ERC20Like {
-    function approve(address token, address spender, uint256 value) external;
-    function transferFrom(address from, address to, uint256 amount) external returns (bool);
-    function balanceOf(address) external returns (uint256);
-    function decimals() external view returns (uint8);
 }
 
 interface EscrowLike {
@@ -143,7 +132,7 @@ contract InvestmentManager is Auth {
 
         // transfer the differene between required and locked currency from user to escrwo
         require(
-            ERC20Like(currency).transferFrom(user, address(escrow), _currencyAmount),
+            SafeTransferLib.safeTransferFrom(currency, user, address(escrow), _currencyAmount),
             "InvestmentManager/currency-transfer-failed"
         );
 
@@ -307,7 +296,7 @@ contract InvestmentManager is Auth {
         require(_currency == LiquidityPoolLike(liquidityPool).asset(), "InvestmentManager/not-tranche-currency");
 
         require(
-            ERC20Like(_currency).transferFrom(address(escrow), user, currencyPayout),
+            SafeTransferLib.safeTransferFrom(_currency, address(escrow), user, currencyPayout),
             "InvestmentManager/currency-transfer-failed"
         );
     }
