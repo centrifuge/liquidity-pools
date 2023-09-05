@@ -34,13 +34,13 @@ contract PoolManagerTest is TestSetup {
 
         vm.expectRevert(bytes("PoolManager/tranche-not-added"));
         poolManager.deployTranche(poolId, trancheId);
-
+        tokenName = "hello there!";
         homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals); // add tranche
         address trancheToken_ = poolManager.deployTranche(poolId, trancheId);
         TrancheToken trancheToken = TrancheToken(trancheToken_);
         assertEq(trancheToken.wards(address(root)), 1);
         assertEq(trancheToken.wards(address(investmentManager)), 1);
-        assertEq(bytes32ToString(stringToBytes32(tokenName)), bytes32ToString(stringToBytes32(trancheToken.name())));
+        assertEq(bytes128ToString(stringToBytes128(tokenName)), bytes128ToString(stringToBytes128(trancheToken.name())));
         assertEq(bytes32ToString(stringToBytes32(tokenSymbol)), bytes32ToString(stringToBytes32(trancheToken.symbol())));
     }
 
@@ -442,7 +442,7 @@ contract PoolManagerTest is TestSetup {
 
         TrancheToken trancheToken = TrancheToken(poolManager.getTrancheToken(poolId, trancheId));
 
-        assertEq(bytes32ToString(stringToBytes32(tokenName)), bytes32ToString(stringToBytes32(trancheToken.name())));
+        assertEq(bytes128ToString(stringToBytes128(tokenName)), bytes128ToString(stringToBytes128(trancheToken.name())));
         assertEq(bytes32ToString(stringToBytes32(tokenSymbol)), bytes32ToString(stringToBytes32(trancheToken.symbol())));
         assertEq(decimals, trancheToken.decimals());
     }
@@ -538,7 +538,7 @@ contract PoolManagerTest is TestSetup {
         assertTrue(lPool.wards(address(this)) == 0);
         assertTrue(investmentManager.wards(lPoolAddress) == 1);
 
-        assertEq(trancheToken.name(), bytes32ToString(stringToBytes32(tokenName)));
+        assertEq(trancheToken.name(), bytes128ToString(stringToBytes128(tokenName)));
         assertEq(trancheToken.symbol(), bytes32ToString(stringToBytes32(tokenSymbol)));
         assertEq(trancheToken.decimals(), decimals);
         assertTrue(trancheToken.hasMember(address(investmentManager.escrow())));
