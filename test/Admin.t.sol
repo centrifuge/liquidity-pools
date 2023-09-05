@@ -44,7 +44,7 @@ contract AdminTest is TestSetup {
         vm.assume(currency != 0);
         vm.assume(recipient != address(0));
 
-        ERC20 erc20 = newErc20(tokenName, tokenSymbol, decimals);
+        ERC20 erc20 = _newErc20(tokenName, tokenSymbol, decimals);
         homePools.addCurrency(currency, address(erc20));
 
         // First, an outgoing transfer must take place which has funds currency of the currency moved to
@@ -71,7 +71,7 @@ contract AdminTest is TestSetup {
         vm.assume(currency != 0);
         vm.assume(recipient != address(0));
 
-        ERC20 erc20 = newErc20(tokenName, tokenSymbol, decimals);
+        ERC20 erc20 = _newErc20(tokenName, tokenSymbol, decimals);
         homePools.addCurrency(currency, address(erc20));
 
         // First, an outgoing transfer must take place which has funds currency of the currency moved to
@@ -102,7 +102,7 @@ contract AdminTest is TestSetup {
         vm.assume(recipient != address(investmentManager.escrow()));
         vm.assume(recipient != address(0));
 
-        ERC20 erc20 = newErc20(tokenName, tokenSymbol, decimals);
+        ERC20 erc20 = _newErc20(tokenName, tokenSymbol, decimals);
         vm.assume(recipient != address(erc20));
         homePools.addCurrency(currency, address(erc20));
 
