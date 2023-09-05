@@ -34,7 +34,7 @@ contract TrancheToken is ERC20 {
     }
 
     // --- Administration ---
-    function file(bytes32 what, address data) external virtual auth {
+    function file(bytes32 what, address data) public auth {
         if (what == "memberlist") memberlist = MemberlistLike(data);
         else revert("TrancheToken/file-unrecognized-param");
         emit File(what, data);
