@@ -737,10 +737,7 @@ library Messages {
             uint8(Call.UpdateTrancheTokenMetadata),
             poolId,
             trancheId,
-            stringToBytes32(tokenName),
-            bytes32(""),
-            bytes32(""),
-            bytes32(""),
+            stringToBytes128(tokenName),
             stringToBytes32(tokenSymbol)
         );
     }
@@ -756,7 +753,7 @@ library Messages {
     {
         poolId = BytesLib.toUint64(_msg, 1);
         trancheId = BytesLib.toBytes16(_msg, 9);
-        tokenName = bytes32ToString(BytesLib.toBytes32(_msg, 25));
+        tokenName = bytes128ToString(BytesLib.slice(_msg, 25, 128));
         tokenSymbol = bytes32ToString(BytesLib.toBytes32(_msg, 153));
     }
 
