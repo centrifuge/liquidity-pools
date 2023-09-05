@@ -75,12 +75,12 @@ contract TrancheTokenTest is Test {
         token.removeLiquidityPool(self);
     }
 
-    function testCheckTrustedForderWorks(uint256 validUntil, uint256 amount, address random) public {
+    function testCheckTrustedForwarderWorks(uint256 validUntil, uint256 amount, address random) public {
         vm.assume(validUntil > block.timestamp);
         vm.assume(amount > 0);
 
         assert(!token.isTrustedForwarder(self));
-        // make self trusted firwarder
+        // make self trusted forwarder
         token.addLiquidityPool(self);
         assert(token.isTrustedForwarder(self));
         // add self to memberlist
