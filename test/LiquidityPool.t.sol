@@ -521,10 +521,6 @@ contract LiquidityPoolTest is TestSetup {
     }
 
     // Test that assumes the swap from usdc (investment currency) to dai (pool currency) has a cost of 1%
-    //
-    // currency amount = tranche token amount x price
-    // tranche token amount = currency amount / price
-    // price = currency amount / tranche token amount
     function testDepositAndRedeemPrecisionWithSlippage(uint64 poolId, bytes16 trancheId, uint128 currencyId) public {
         vm.assume(currencyId > 0);
 
@@ -536,8 +532,58 @@ contract LiquidityPoolTest is TestSetup {
 
         // 100 usdc = 99 dai = 99 tranche tokens
         // 100*10**6 = 99 * 10**18 tranche tokens
-        // price = (100*10**6) /  (99 * 10**18) = 101.010101 * 10**12
+        // price = (100*10**6) /  (99 * 10**18) = 101.010101 * 10**-12 (this doesn't work!)
         homePools.updateTrancheTokenPrice(poolId, trancheId, currencyId, 1010101);
+
+        // invest
+        uint256 investmentAmount = 100000000; // 100 * 10**6
+        homePools.updateMember(poolId, trancheId, self, type(uint64).max);
+        erc20.approve(address(investmentManager), investmentAmount);
+        erc20.mint(self, investmentAmount);
+        lPool.requestDeposit(investmentAmount, self);
+
+        // trigger executed collectInvest at a tranche token price of 1.2
+        uint128 _currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
+        uint128 currencyPayout = 99000000; // 99 * 10**6
+
+        // invested amount in dai is 99 * 10**18
+        // executed at price of 1.2, leads to a tranche token payout of
+        // 99 * 10**18 / 1.2 = 82500000000000000000
+        uint128 trancheTokenPayout = 82500000000000000000;
+        homePools.isExecutedCollectInvest(
+            poolId, trancheId, bytes32(bytes20(self)), _currencyId, currencyPayout, trancheTokenPayout
+        );
+
+        // assert deposit & mint values adjusted
+        assertEq(lPool.maxDeposit(self), currencyPayout);
+        assertEq(lPool.maxMint(self), trancheTokenPayout);
+
+        // lp price is value of 1 tranche token in usdc, which is now
+        // (.99 * 10**12) * 1.2 = 1188000000000
+        assertEq(lPool.latestPrice(), 1200000);
+
+        // lp price is set to the deposit price
+        assertEq(investmentManager.calculateDepositPrice(self, address(lPool)), 1200000000000000000);
+    }
+
+    // Test that assumes the swap from usdc (investment currency) to dai (pool currency) has a cost of 1%
+    function testDepositAndRedeemPrecisionWithSlippageAndWithInverseDecimal(
+        uint64 poolId,
+        bytes16 trancheId,
+        uint128 currencyId
+    ) public {
+        vm.assume(currencyId > 0);
+
+        uint8 INVESTMENT_CURRENCY_DECIMALS = 18; // 18, like DAI
+        uint8 TRANCHE_TOKEN_DECIMALS = 6; // Like USDC
+
+        address lPool_ = deployLiquidityPool(poolId, TRANCHE_TOKEN_DECIMALS, "", "", trancheId, currencyId);
+        LiquidityPool lPool = LiquidityPool(lPool_);
+
+        // 100 dai = 99 usc = 99 tranche tokens
+        // 100*10**12 = 99 * 10**6 tranche tokens
+        // price = (100*10**18) /  (99 * 10**6) = 101.010101 * 10**12
+        homePools.updateTrancheTokenPrice(poolId, trancheId, currencyId, 1010101010101);
 
         // invest
         uint256 investmentAmount = 100000000; // 100 * 10**6
