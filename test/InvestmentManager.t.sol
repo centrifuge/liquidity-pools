@@ -66,7 +66,7 @@ contract InvestmentManagerTest is TestSetup {
     ) public {
         vm.assume(decimals <= 18);
         vm.assume(currency > 0);
-        ERC20 erc20 = newErc20("X's Dollar", "USDX", 18);
+        ERC20 erc20 = _newErc20("X's Dollar", "USDX", 18);
         homePools.addPool(poolId); // add pool
         homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals); // add tranche
         homePools.addCurrency(currency, address(erc20));
