@@ -4,9 +4,8 @@ pragma solidity 0.8.21;
 import {Auth} from "./util/Auth.sol";
 import {SafeTransferLib} from "./util/SafeTransferLib.sol";
 
-interface TransferLike {
-    function transferFrom(address, address, uint256) external returns (bool);
-    function transfer(address, uint256) external returns (bool);
+interface ERC20Like {
+    function allowance(address owner, address spender) external view returns (uint256);
 }
 
 /**
@@ -33,11 +32,15 @@ contract UserEscrow is Auth {
         emit TransferIn(token, source, destination, amount);
     }
 
-    function transferOut(address token, address destination, uint256 amount) external auth {
+    function transferOut(address token, address destination, address receiver, uint256 amount) external auth {
         require(destinations[token][destination] >= amount, "UserEscrow/transfer-failed");
+        require(
+            receiver == destination || (ERC20Like(token).allowance(destination, receiver) >= amount),
+            "UserEscrow/receiver-has-no-allowance"
+        );
         destinations[token][destination] -= amount;
 
-        SafeTransferLib.safeTransfer(token, destination, amount);
-        emit TransferOut(token, destination, amount);
+        SafeTransferLib.safeTransfer(token, receiver, amount);
+        emit TransferOut(token, receiver, amount);
     }
 }
