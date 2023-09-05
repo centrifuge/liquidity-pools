@@ -138,9 +138,9 @@ contract XCMRouter is Auth {
     // --- Utilities ---
     function _centrifugeHandleCall(bytes memory message) internal view returns (bytes memory) {
         return abi.encodePacked(
-            // The centrifuge chain Connectors pallet index
+            // The centrifuge chain liquidity-pools pallet index
             centrifugeChainLiquidityPoolsPalletIndex,
-            // The `handle` call index within the Connectors pallet
+            // The `handle` call index within the liquidity-pools pallet
             centrifugeChainLiquidityPoolsPalletHandleIndex,
             // We need to specify the length of the message in the scale-encoding format
             messageLengthScaleEncoded(message),
@@ -149,7 +149,7 @@ contract XCMRouter is Auth {
         );
     }
 
-    // Obtain the Scale-encoded length of a given message. Each Connector Message is fixed-sized and
+    // Obtain the Scale-encoded length of a given message. Each Liquidity Pools Message is fixed-sized and
     // have thus a fixed scale-encoded length associated to which message variant (aka Call).
     function messageLengthScaleEncoded(bytes memory _msg) internal pure returns (bytes memory) {
         if (Messages.isTransfer(_msg)) {

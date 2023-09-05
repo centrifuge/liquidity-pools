@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {AxelarEVMRouter} from "src/gateway/routers/axelar/EVMRouter.sol";
+import {AxelarRouter} from "src/gateway/routers/axelar/Router.sol";
 import {ERC20} from "src/token/ERC20.sol";
 import {Deployer, RouterLike} from "./Deployer.sol";
 
@@ -10,7 +10,7 @@ interface LiquidityPoolLike {
 }
 
 // Script to deploy Liquidity Pools with an Axelar router.
-contract AxelarEVMScript is Deployer {
+contract AxelarScript is Deployer {
     function setUp() public {}
 
     function run() public {
@@ -19,7 +19,7 @@ contract AxelarEVMScript is Deployer {
         admin = vm.envAddress("ADMIN");
 
         deployInvestmentManager();
-        AxelarEVMRouter router = new AxelarEVMRouter(
+        AxelarRouter router = new AxelarRouter(
                 address(vm.envAddress("AXELAR_GATEWAY"))
         );
         wire(address(router));

@@ -2,18 +2,18 @@
 pragma solidity 0.8.21;
 
 import {Auth} from "./util/Auth.sol";
-import {Math} from "./util/Math.sol";
-import {ERC20Like} from "./token/ERC20Like.sol";
+import {MathLib} from "./util/MathLib.sol";
+import {IERC20} from "./interfaces/IERC20.sol";
+import {IERC4626} from "./interfaces/IERC4626.sol";
 
 interface ERC20PermitLike {
     function permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
         external;
-    // erc2612 functions
     function PERMIT_TYPEHASH() external view returns (bytes32);
     function DOMAIN_SEPARATOR() external view returns (bytes32);
 }
 
-interface TrancheTokenLike is ERC20Like, ERC20PermitLike {
+interface TrancheTokenLike is IERC20, ERC20PermitLike {
     function latestPrice() external view returns (uint256);
     function memberlist() external returns (address);
     function hasMember(address) external returns (bool);
@@ -48,8 +48,8 @@ interface InvestmentManagerLike {
 /// @notice Each Liquidity Pool is a tokenized vault issuing shares as restricted ERC20 tokens against currency deposits based on the current share price.
 /// This is extending the EIP4626 standard by 'requestRedeem' & 'requestDeposit' functions, where redeem and deposit orders are submitted to the pools
 /// to be included in the execution of the following epoch. After execution users can use the redeem and withdraw functions to get their shares and/or assets from the pools.
-contract LiquidityPool is Auth, ERC20Like {
-    using Math for uint256;
+contract LiquidityPool is Auth, IERC4626 {
+    using MathLib for uint256;
 
     uint64 public immutable poolId;
     bytes16 public immutable trancheId;
@@ -69,10 +69,6 @@ contract LiquidityPool is Auth, ERC20Like {
     event File(bytes32 indexed what, address data);
     event DepositRequested(address indexed owner, uint256 assets);
     event RedeemRequested(address indexed owner, uint256 shares);
-    event Deposit(address indexed sender, address indexed owner, uint256 assets, uint256 shares);
-    event Withdraw(
-        address indexed sender, address indexed receiver, address indexed owner, uint256 assets, uint256 shares
-    );
     event DepositCollected(address indexed owner);
     event RedeemCollected(address indexed owner);
     event UpdatePrice(uint128 price);
@@ -100,7 +96,7 @@ contract LiquidityPool is Auth, ERC20Like {
     /// @dev function either called by a ward or message.sender has approval to spent sender´s currency
     modifier withCurrencyApproval(address sender, uint256 amount) {
         require(
-            wards[msg.sender] == 1 || msg.sender == sender || ERC20Like(asset).allowance(sender, msg.sender) >= amount,
+            wards[msg.sender] == 1 || msg.sender == sender || IERC20(asset).allowance(sender, msg.sender) >= amount,
             "LiquidityPool/no-currency-allowance"
         );
         _;
@@ -117,15 +113,15 @@ contract LiquidityPool is Auth, ERC20Like {
     /// @dev The total amount of vault shares
     /// @return Total amount of the underlying vault assets including accrued interest
     function totalAssets() public view returns (uint256) {
-        return totalSupply().mulDiv(latestPrice, 10 ** investmentManager.PRICE_DECIMALS(), Math.Rounding.Down);
+        return totalSupply().mulDiv(latestPrice, 10 ** investmentManager.PRICE_DECIMALS(), MathLib.Rounding.Down);
     }
 
     /// @dev Calculates the amount of shares / tranche tokens that any user would get for the amount of assets provided. The calcultion is based on the token price from the most recent epoch retrieved from Centrifuge chain.
     function convertToShares(uint256 assets) public view returns (uint256 shares) {
         shares = assets.mulDiv(
-            10 ** (investmentManager.PRICE_DECIMALS() + share.decimals() - ERC20Like(asset).decimals()),
+            10 ** (investmentManager.PRICE_DECIMALS() + share.decimals() - IERC20(asset).decimals()),
             latestPrice,
-            Math.Rounding.Down
+            MathLib.Rounding.Down
         );
     }
 
@@ -133,8 +129,8 @@ contract LiquidityPool is Auth, ERC20Like {
     function convertToAssets(uint256 shares) public view returns (uint256 assets) {
         assets = shares.mulDiv(
             latestPrice,
-            10 ** (investmentManager.PRICE_DECIMALS() + share.decimals() - ERC20Like(asset).decimals()),
-            Math.Rounding.Down
+            10 ** (investmentManager.PRICE_DECIMALS() + share.decimals() - IERC20(asset).decimals()),
+            MathLib.Rounding.Down
         );
     }
 
@@ -213,7 +209,7 @@ contract LiquidityPool is Auth, ERC20Like {
         // make sure msg.sender has the allowance to delegate owner's funds
         require(
             wards[msg.sender] == 1 || msg.sender == owner
-                || ERC20Like(asset).allowance(owner, msg.sender) >= currencyPayout,
+                || IERC20(asset).allowance(owner, msg.sender) >= currencyPayout,
             "LiquidityPool/no-currency-allowance"
         );
         emit Withdraw(address(this), receiver, owner, currencyPayout, shares);

@@ -16,9 +16,9 @@ import {PermissionlessRouter} from "test/mock/PermissionlessRouter.sol";
 import {Root} from "src/Root.sol";
 import {LiquidityPool} from "src/LiquidityPool.sol";
 
-import {AxelarEVMScript} from "script/AxelarEVM.s.sol";
+import {AxelarScript} from "script/Axelar.s.sol";
 import {PermissionlessScript} from "script/Permissionless.s.sol";
-import "src/util/Math.sol";
+import "src/util/MathLib.sol";
 import "forge-std/Test.sol";
 
 interface ApproveLike {
@@ -26,7 +26,7 @@ interface ApproveLike {
 }
 
 contract DeployTest is Test {
-    using Math for uint128;
+    using MathLib for uint128;
 
     InvestmentManager investmentManager;
     Gateway gateway;
@@ -110,7 +110,7 @@ contract DeployTest is Test {
             uint128(amount).mulDiv(
                 10 ** (investmentManager.PRICE_DECIMALS() - erc20.decimals() + lPool.decimals()),
                 price,
-                Math.Rounding.Down
+                MathLib.Rounding.Down
             )
         );
 
@@ -163,7 +163,7 @@ contract DeployTest is Test {
         // redeem
         uint128 _currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
         uint128 currencyPayout = _toUint128(
-            uint128(amount).mulDiv(price, 10 ** (18 - erc20.decimals() + lPool.decimals()), Math.Rounding.Down)
+            uint128(amount).mulDiv(price, 10 ** (18 - erc20.decimals() + lPool.decimals()), MathLib.Rounding.Down)
         );
         // Assume an epoch execution happens on cent chain
         // Assume a bot calls collectRedeem for this user on cent chain

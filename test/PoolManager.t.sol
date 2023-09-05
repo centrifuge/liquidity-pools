@@ -75,7 +75,7 @@ contract PoolManagerTest is TestSetup {
         homePools.addCurrency(currency, address(erc20));
 
         assertEq(erc20.balanceOf(address(poolManager.escrow())), 0);
-        vm.expectRevert(bytes("ERC20/insufficient-balance"));
+        vm.expectRevert(bytes("SafeTransferLib/safe-transfer-from-failed"));
         homePools.incomingTransfer(currency, sender, bytes32(bytes20(recipient)), amount);
         assertEq(erc20.balanceOf(address(poolManager.escrow())), 0);
         assertEq(erc20.balanceOf(recipient), 0);

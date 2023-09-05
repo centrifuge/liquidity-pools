@@ -2,7 +2,8 @@
 pragma solidity 0.8.21;
 
 import {Auth} from "./util/Auth.sol";
-import {Math} from "./util/Math.sol";
+import {MathLib} from "./util/MathLib.sol";
+import {SafeTransferLib} from "./util/SafeTransferLib.sol";
 
 interface GatewayLike {
     function increaseInvestOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount)
@@ -19,23 +20,19 @@ interface GatewayLike {
     function cancelRedeemOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency) external;
 }
 
-interface LiquidityPoolLike {
-    function rely(address) external;
-    // restricted token functions
-    function hasMember(address) external returns (bool);
-    function file(bytes32 what, address data) external;
-    // erc20 functions
+interface ERC20Like {
+    function approve(address token, address spender, uint256 value) external;
+    function transferFrom(address from, address to, uint256 amount) external returns (bool);
+    function decimals() external view returns (uint8);
     function mint(address, uint256) external;
     function burn(address, uint256) external;
-    function balanceOf(address) external returns (uint256);
-    function transferFrom(address, address, uint256) external returns (bool);
-    function decimals() external view returns (uint8);
-    // 4626 functions
-    function asset() external view returns (address);
-    // centrifuge chain info functions
+}
+
+interface LiquidityPoolLike is ERC20Like {
     function poolId() external returns (uint64);
     function trancheId() external returns (bytes16);
-    // pricing functions
+    function asset() external view returns (address);
+    function hasMember(address) external returns (bool);
     function updatePrice(uint128 price) external;
 }
 
@@ -45,13 +42,6 @@ interface PoolManagerLike {
     function getTrancheToken(uint64 poolId, bytes16 trancheId) external view returns (address);
     function getLiquidityPool(uint64 poolId, bytes16 trancheId, address currency) external view returns (address);
     function isAllowedAsPoolCurrency(uint64 poolId, address currencyAddress) external view returns (bool);
-}
-
-interface ERC20Like {
-    function approve(address token, address spender, uint256 value) external;
-    function transferFrom(address from, address to, uint256 amount) external returns (bool);
-    function balanceOf(address) external returns (uint256);
-    function decimals() external view returns (uint8);
 }
 
 interface EscrowLike {
@@ -72,7 +62,7 @@ struct LPValues {
 }
 
 contract InvestmentManager is Auth {
-    using Math for uint128;
+    using MathLib for uint128;
 
     uint8 public constant PRICE_DECIMALS = 18; // Prices are fixed-point integers with 18 decimals
 
@@ -141,10 +131,7 @@ contract InvestmentManager is Auth {
         }
 
         // transfer the differene between required and locked currency from user to escrwo
-        require(
-            ERC20Like(currency).transferFrom(user, address(escrow), _currencyAmount),
-            "InvestmentManager/currency-transfer-failed"
-        );
+        SafeTransferLib.safeTransferFrom(currency, user, address(escrow), _currencyAmount);
 
         gateway.increaseInvestOrder(
             lPool.poolId(), lPool.trancheId(), user, poolManager.currencyAddressToId(lPool.asset()), _currencyAmount
@@ -305,10 +292,7 @@ contract InvestmentManager is Auth {
         require(liquidityPool != address(0), "InvestmentManager/tranche-does-not-exist");
         require(_currency == LiquidityPoolLike(liquidityPool).asset(), "InvestmentManager/not-tranche-currency");
 
-        require(
-            ERC20Like(_currency).transferFrom(address(escrow), user, currencyPayout),
-            "InvestmentManager/currency-transfer-failed"
-        );
+        SafeTransferLib.safeTransferFrom(_currency, address(escrow), user, currencyPayout);
     }
 
     function handleExecutedDecreaseRedeemOrder(
@@ -538,8 +522,9 @@ contract InvestmentManager is Auth {
         uint128 maxDepositInPoolDecimals = _toPoolDecimals(lpValues.maxDeposit, currencyDecimals, liquidityPool);
         uint128 maxMintInPoolDecimals = _toPoolDecimals(lpValues.maxMint, trancheTokenDecimals, liquidityPool);
 
-        depositPrice =
-            _toUint128(maxDepositInPoolDecimals.mulDiv(10 ** poolDecimals, maxMintInPoolDecimals, Math.Rounding.Down));
+        depositPrice = _toUint128(
+            maxDepositInPoolDecimals.mulDiv(10 ** poolDecimals, maxMintInPoolDecimals, MathLib.Rounding.Down)
+        );
     }
 
     function calculateRedeemPrice(address user, address liquidityPool) public view returns (uint128 redeemPrice) {
@@ -553,7 +538,7 @@ contract InvestmentManager is Auth {
         uint128 maxRedeemInPoolDecimals = _toPoolDecimals(lpValues.maxRedeem, trancheTokenDecimals, liquidityPool);
 
         redeemPrice = _toUint128(
-            maxWithdrawInPoolDecimals.mulDiv(10 ** poolDecimals, maxRedeemInPoolDecimals, Math.Rounding.Down)
+            maxWithdrawInPoolDecimals.mulDiv(10 ** poolDecimals, maxRedeemInPoolDecimals, MathLib.Rounding.Down)
         );
     }
 
@@ -562,7 +547,7 @@ contract InvestmentManager is Auth {
     {
         (, uint8 currencyDecimals,) = _getPoolDecimals(liquidityPool);
         uint128 price =
-            _toUint128(trancheTokensPayout.mulDiv(10 ** currencyDecimals, currencyPayout, Math.Rounding.Down));
+            _toUint128(trancheTokensPayout.mulDiv(10 ** currencyDecimals, currencyPayout, MathLib.Rounding.Down));
         LiquidityPoolLike(liquidityPool).updatePrice(price);
     }
 
@@ -575,7 +560,7 @@ contract InvestmentManager is Auth {
 
         uint128 currencyAmountInPoolDecimals = _toUint128(
             _toPoolDecimals(currencyAmount, currencyDecimals, liquidityPool).mulDiv(
-                10 ** poolDecimals, price, Math.Rounding.Down
+                10 ** poolDecimals, price, MathLib.Rounding.Down
             )
         );
 
@@ -591,7 +576,7 @@ contract InvestmentManager is Auth {
 
         uint128 currencyAmountInPoolDecimals = _toUint128(
             _toPoolDecimals(trancheTokenAmount, trancheTokenDecimals, liquidityPool).mulDiv(
-                price, 10 ** poolDecimals, Math.Rounding.Down
+                price, 10 ** poolDecimals, MathLib.Rounding.Down
             )
         );
 
@@ -680,6 +665,6 @@ contract InvestmentManager is Auth {
     {
         currencyDecimals = ERC20Like(LiquidityPoolLike(liquidityPool).asset()).decimals();
         trancheTokenDecimals = LiquidityPoolLike(liquidityPool).decimals();
-        poolDecimals = uint8(Math.max(currencyDecimals, trancheTokenDecimals));
+        poolDecimals = uint8(MathLib.max(currencyDecimals, trancheTokenDecimals));
     }
 }

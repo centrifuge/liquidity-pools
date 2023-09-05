@@ -38,7 +38,7 @@ contract Root is Auth {
     // --- Administration ---
     function file(bytes32 what, uint256 data) external auth {
         if (what == "delay") {
-            require(delay <= MAX_DELAY, "Root/delay-too-long");
+            require(data <= MAX_DELAY, "Root/delay-too-long");
             delay = data;
         } else {
             revert("Root/file-unrecognized-param");

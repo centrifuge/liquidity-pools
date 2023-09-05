@@ -6,6 +6,11 @@ import "./Mock.sol";
 contract GatewayMock is Mock {
     constructor() {}
 
+    // --- Incoming ---
+    function handle(bytes calldata message) public {
+        values_bytes["handle_message"] = message;
+    }
+
     // --- Outgoing ---
     function transferTrancheTokensToCentrifuge(
         uint64 poolId,
