@@ -338,14 +338,7 @@ contract InvestmentManagerTest is Test {
         lPool = evmInvestmentManager.deployLiquidityPool(poolId, trancheId, address(erc20));
     }
 
-    function toBytes32(bytes memory f) internal pure returns (bytes16 fc) {
-        assembly {
-            fc := mload(add(f, 32))
-        }
-        return fc;
-    }
-
-    function hasDuplicates(bytes16[] calldata array) public pure returns (bool) {
+    function hasDuplicates(bytes16[] calldata array) internal pure returns (bool) {
         uint256 length = array.length;
         for (uint256 i = 0; i < length; i++) {
             for (uint256 j = i + 1; j < length; j++) {
@@ -357,7 +350,7 @@ contract InvestmentManagerTest is Test {
         return false;
     }
 
-    function newErc20(string memory name, string memory symbol, uint8 decimals) public returns (ERC20) {
+    function newErc20(string memory name, string memory symbol, uint8 decimals) internal returns (ERC20) {
         ERC20 erc20 = new ERC20(decimals);
         erc20.file("name", name);
         erc20.file("symbol", symbol);
@@ -365,7 +358,7 @@ contract InvestmentManagerTest is Test {
         return erc20;
     }
 
-    function stringToBytes128(string memory source) public pure returns (bytes memory) {
+    function stringToBytes128(string memory source) internal pure returns (bytes memory) {
         bytes memory temp = bytes(source);
         bytes memory result = new bytes(128);
 
@@ -380,7 +373,7 @@ contract InvestmentManagerTest is Test {
         return result;
     }
 
-    function bytes128ToString(bytes memory _bytes128) public pure returns (string memory) {
+    function bytes128ToString(bytes memory _bytes128) internal pure returns (string memory) {
         require(_bytes128.length == 128, "Input should be 128 bytes");
 
         uint8 i = 0;
@@ -397,7 +390,7 @@ contract InvestmentManagerTest is Test {
         return string(bytesArray);
     }
 
-    function stringToBytes32(string memory source) public pure returns (bytes32 result) {
+    function stringToBytes32(string memory source) internal pure returns (bytes32 result) {
         bytes memory tempEmptyStringTest = bytes(source);
         if (tempEmptyStringTest.length == 0) {
             return 0x0;
@@ -408,7 +401,7 @@ contract InvestmentManagerTest is Test {
         }
     }
 
-    function bytes32ToString(bytes32 _bytes32) public pure returns (string memory) {
+    function bytes32ToString(bytes32 _bytes32) internal pure returns (string memory) {
         uint8 i = 0;
         while (i < 32 && _bytes32[i] != 0) {
             i++;
