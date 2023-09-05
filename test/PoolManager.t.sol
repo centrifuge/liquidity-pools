@@ -39,8 +39,12 @@ contract PoolManagerTest is TestSetup {
         TrancheToken trancheToken = TrancheToken(trancheToken_);
         assertEq(trancheToken.wards(address(root)), 1);
         assertEq(trancheToken.wards(address(investmentManager)), 1);
-        assertEq(_bytes128ToString(_stringToBytes128(tokenName)), _bytes128ToString(_stringToBytes128(trancheToken.name())));
-        assertEq(_bytes32ToString(_stringToBytes32(tokenSymbol)), _bytes32ToString(_stringToBytes32(trancheToken.symbol())));
+        assertEq(
+            _bytes128ToString(_stringToBytes128(tokenName)), _bytes128ToString(_stringToBytes128(trancheToken.name()))
+        );
+        assertEq(
+            _bytes32ToString(_stringToBytes32(tokenSymbol)), _bytes32ToString(_stringToBytes32(trancheToken.symbol()))
+        );
     }
 
     function testAddCurrencyWorks(uint128 currency, uint128 badCurrency) public {
@@ -441,8 +445,12 @@ contract PoolManagerTest is TestSetup {
 
         TrancheToken trancheToken = TrancheToken(poolManager.getTrancheToken(poolId, trancheId));
 
-        assertEq(_bytes128ToString(_stringToBytes128(tokenName)), _bytes128ToString(_stringToBytes128(trancheToken.name())));
-        assertEq(_bytes32ToString(_stringToBytes32(tokenSymbol)), _bytes32ToString(_stringToBytes32(trancheToken.symbol())));
+        assertEq(
+            _bytes128ToString(_stringToBytes128(tokenName)), _bytes128ToString(_stringToBytes128(trancheToken.name()))
+        );
+        assertEq(
+            _bytes32ToString(_stringToBytes32(tokenSymbol)), _bytes32ToString(_stringToBytes32(trancheToken.symbol()))
+        );
         assertEq(decimals, trancheToken.decimals());
     }
 
