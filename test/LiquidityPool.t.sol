@@ -803,9 +803,9 @@ contract LiquidityPoolTest is TestSetup {
         // success
         lPool.redeem(amount / 2, self, self); // redeem half the amount to own wallet
 
-        // fail -> random does has no approval to receive funds
+        // fail -> random has no approval to receive funds
         vm.expectRevert(bytes("UserEscrow/receiver-has-no-allowance"));
-        lPool.redeem(amount / 2, random, self); // redeem half the amount to oanother wallet
+        lPool.redeem(amount / 2, random, self); // redeem half the amount to another wallet
 
         // success
         erc20.approve(random, lPool.maxWithdraw(self)); // random receives approval to receive funds
@@ -867,11 +867,11 @@ contract LiquidityPoolTest is TestSetup {
         assertEq(lPool.balanceOf(address(escrow)), 0);
         assertEq(erc20.balanceOf(address(userEscrow)), currencyPayout);
 
-        lPool.withdraw(amount / 2, self, self); // mint hald the amount
+        lPool.withdraw(amount / 2, self, self); // withdraw half teh amount
 
-        // fail -> random does has no approval to receive funds
+        // fail -> random has no approval to receive funds
         vm.expectRevert(bytes("UserEscrow/receiver-has-no-allowance"));
-        lPool.withdraw(amount / 2, random, self); // redeem half the amount to oanother wallet
+        lPool.withdraw(amount / 2, random, self); // redeem half the amount to another wallet
 
         // success
         erc20.approve(random, lPool.maxWithdraw(self)); // random receives approval to receive funds
