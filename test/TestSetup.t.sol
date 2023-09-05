@@ -93,7 +93,7 @@ contract TestSetup is Deployer, Test {
         bytes16 trancheId,
         uint128 currency
     ) public returns (address) {
-        deployLiquidityPool(poolId, decimals, tokenName, tokenSymbol, trancheId, currency, address(erc20));
+        return deployLiquidityPool(poolId, decimals, tokenName, tokenSymbol, trancheId, currency, address(erc20));
     }
 
     function stringToBytes32(string memory source) internal pure returns (bytes32 result) {
