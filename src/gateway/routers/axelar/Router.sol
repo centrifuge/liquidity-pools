@@ -42,7 +42,8 @@ interface GatewayLike {
 
 contract AxelarRouter is Auth {
     string private constant axelarCentrifugeChainId = "centrifuge";
-    string private constant axelarCentrifugeChainAddress = "0x3b4a32efd7bd0290882B4854c86b8CECe534c975";
+    string private constant axelarCentrifugeChainAddress = "0x0000000000000000000000000000000000002048";
+    string private constant centrifugeGatewayPrecompileAddress = "0x0000000000000000000000000000000000002048";
 
     AxelarGatewayLike public immutable axelarGateway;
 
@@ -58,11 +59,15 @@ contract AxelarRouter is Auth {
         emit Rely(msg.sender);
     }
 
-    modifier onlyCentrifugeChainOrigin(string calldata sourceChain) {
+    modifier onlyCentrifugeChainOrigin(string calldata sourceChain, string calldata sourceAddress) {
         require(msg.sender == address(axelarGateway), "AxelarRouter/invalid-origin");
         require(
             keccak256(bytes(axelarCentrifugeChainId)) == keccak256(bytes(sourceChain)),
             "AxelarRouter/invalid-source-chain"
+        );
+        require(
+            keccak256(bytes(axelarCentrifugeChainAddress)) == keccak256(bytes(sourceAddress)),
+            "AxelarRouter/invalid-source-address"
         );
         _;
     }
@@ -89,7 +94,7 @@ contract AxelarRouter is Auth {
         string calldata sourceChain,
         string calldata sourceAddress,
         bytes calldata payload
-    ) public onlyCentrifugeChainOrigin(sourceChain) {
+    ) public onlyCentrifugeChainOrigin(sourceChain, sourceAddress) {
         bytes32 payloadHash = keccak256(payload);
         require(
             axelarGateway.validateContractCall(commandId, sourceChain, sourceAddress, payloadHash),
@@ -101,6 +106,6 @@ contract AxelarRouter is Auth {
 
     // --- Outgoing ---
     function send(bytes calldata message) public onlyGateway {
-        axelarGateway.callContract(axelarCentrifugeChainId, axelarCentrifugeChainAddress, message);
+        axelarGateway.callContract(axelarCentrifugeChainId, centrifugeGatewayPrecompileAddress, message);
     }
 }
