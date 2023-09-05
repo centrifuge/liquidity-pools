@@ -85,7 +85,7 @@ contract InvestmentManagerTest is TestSetup {
         uint128 price
     ) public {
         homePools.addPool(poolId);
-        
+
         vm.expectRevert(bytes("InvestmentManager/tranche-does-not-exist"));
         homePools.updateTrancheTokenPrice(poolId, trancheId, currencyId, price);
     }
