@@ -62,8 +62,8 @@ contract LiquidityPool is Auth, IERC4626 {
 
     InvestmentManagerLike public investmentManager;
 
-    uint128 public latestPrice; // tranche token price
-    uint256 public lastPriceUpdate; // timestamp of the price update
+    uint128 public latestPrice; // tranche token price, denominated in the asset
+    uint256 public lastPriceUpdate; // timestamp of the last price update
 
     // --- Events ---
     event File(bytes32 indexed what, address data);
@@ -113,13 +113,13 @@ contract LiquidityPool is Auth, IERC4626 {
     /// @dev The total amount of vault shares
     /// @return Total amount of the underlying vault assets including accrued interest
     function totalAssets() public view returns (uint256) {
-        return totalSupply().mulDiv(latestPrice, 10 ** investmentManager.PRICE_DECIMALS(), MathLib.Rounding.Down);
+        return totalSupply().mulDiv(latestPrice, 10 ** share.decimals(), MathLib.Rounding.Down);
     }
 
     /// @dev Calculates the amount of shares / tranche tokens that any user would get for the amount of assets provided. The calcultion is based on the token price from the most recent epoch retrieved from Centrifuge chain.
     function convertToShares(uint256 assets) public view returns (uint256 shares) {
         shares = assets.mulDiv(
-            10 ** (investmentManager.PRICE_DECIMALS() + share.decimals() - IERC20(asset).decimals()),
+            10 ** share.decimals(),
             latestPrice,
             MathLib.Rounding.Down
         );
@@ -129,7 +129,7 @@ contract LiquidityPool is Auth, IERC4626 {
     function convertToAssets(uint256 shares) public view returns (uint256 assets) {
         assets = shares.mulDiv(
             latestPrice,
-            10 ** (investmentManager.PRICE_DECIMALS() + share.decimals() - IERC20(asset).decimals()),
+            10 ** share.decimals(),
             MathLib.Rounding.Down
         );
     }

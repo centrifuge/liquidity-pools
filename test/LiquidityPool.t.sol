@@ -451,7 +451,7 @@ contract LiquidityPoolTest is TestSetup {
     }
 
     // Test that assumes the swap from usdc (investment currency) to dai (pool currency) has a cost of 1%
-    // 
+    //
     // currency amount = tranche token amount x price
     // tranche token amount = currency amount / price
     // price = currency amount / tranche token amount
@@ -464,7 +464,7 @@ contract LiquidityPoolTest is TestSetup {
         address lPool_ = deployLiquidityPool(poolId, TRANCHE_TOKEN_DECIMALS, "", "", trancheId, currencyId);
         LiquidityPool lPool = LiquidityPool(lPool_);
 
-        // 100 usdc = 99 dai = 99 tranche tokens 
+        // 100 usdc = 99 dai = 99 tranche tokens
         // 100*10**6 = 99 * 10**18 tranche tokens
         // price = (100*10**6) /  (99 * 10**18) = 101.010101 * 10**12
         homePools.updateTrancheTokenPrice(poolId, trancheId, currencyId, 1010101);
@@ -503,12 +503,12 @@ contract LiquidityPoolTest is TestSetup {
     function testAssetShareConversion(uint64 poolId, bytes16 trancheId, uint128 currencyId) public {
         vm.assume(currencyId > 0);
 
-        uint8 TRANCHE_TOKEN_DECIMALS = 18; // Like DAI
         uint8 INVESTMENT_CURRENCY_DECIMALS = 6; // 6, like USDC
+        uint8 TRANCHE_TOKEN_DECIMALS = 18; // Like DAI
 
         address lPool_ = deployLiquidityPool(poolId, TRANCHE_TOKEN_DECIMALS, "", "", trancheId, currencyId);
         LiquidityPool lPool = LiquidityPool(lPool_);
-        homePools.updateTrancheTokenPrice(poolId, trancheId, currencyId, 1000000000000000000);
+        homePools.updateTrancheTokenPrice(poolId, trancheId, currencyId, 1000000);
 
         // invest
         uint256 investmentAmount = 100000000; // 100 * 10**6
@@ -526,17 +526,17 @@ contract LiquidityPoolTest is TestSetup {
         lPool.mint(trancheTokenPayout, self);
 
         // assert share/asset conversion
-        assertEq(lPool.latestPrice(), 1000000000000000000);
-        assertEq(lPool.totalAssets(), 100000000000000000000);
-        assertEq(lPool.convertToShares(100000000000000000000), 100000000000000000000000000000000); // tranche tokens have 12 more decimals than assets
+        assertEq(lPool.latestPrice(), 1000000);
+        assertEq(lPool.totalAssets(), 100000000);
+        assertEq(lPool.convertToShares(100000000), 100000000000000000000); // tranche tokens have 12 more decimals than assets
         assertEq(lPool.convertToAssets(lPool.convertToShares(100000000000000000000)), 100000000000000000000);
 
         // assert share/asset conversion after price update
-        homePools.updateTrancheTokenPrice(poolId, trancheId, currencyId, 120000000000000000000);
+        homePools.updateTrancheTokenPrice(poolId, trancheId, currencyId, 1200000);
 
-        assertEq(lPool.latestPrice(), 120000000000000000000);
-        assertEq(lPool.totalAssets(), 12000000000000000000000);
-        assertEq(lPool.convertToShares(120000000000000000000), 1000000000000000000000000000000); // tranche tokens have 12 more decimals than assets
+        assertEq(lPool.latestPrice(), 1200000);
+        assertEq(lPool.totalAssets(), 120000000);
+        assertEq(lPool.convertToShares(120000000), 100000000000000000000); // tranche tokens have 12 more decimals than assets
         assertEq(lPool.convertToAssets(lPool.convertToShares(120000000000000000000)), 120000000000000000000);
     }
 
