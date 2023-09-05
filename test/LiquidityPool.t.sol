@@ -615,7 +615,7 @@ contract LiquidityPoolTest is TestSetup {
         homePools.updateTrancheTokenPrice(poolId, trancheId, currencyId, 1010101010101010101);
 
         // invest
-        uint256 investmentAmount = 100000000; // 100 * 10**6
+        uint256 investmentAmount = 100000000000000000000; // 100 * 10**18
         homePools.updateMember(poolId, trancheId, self, type(uint64).max);
         currency.approve(address(investmentManager), investmentAmount);
         currency.mint(self, investmentAmount);
@@ -768,6 +768,7 @@ contract LiquidityPoolTest is TestSetup {
         // ensure funds are locked in escrow
         assertEq(erc20.balanceOf(address(escrow)), amount);
         assertEq(erc20.balanceOf(self), 0);
+        assertEq(investmentManager.userDepositRequest(self, address(lPool)), amount);
 
         // trigger executed collectInvest
         uint128 _currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
@@ -780,6 +781,7 @@ contract LiquidityPoolTest is TestSetup {
         // assert deposit & mint values adjusted
         assertEq(lPool.maxMint(self), trancheTokensPayout); // max deposit
         assertEq(lPool.maxDeposit(self), amount); // max deposit
+        assertEq(investmentManager.userDepositRequest(self, address(lPool)), 0);
         // assert tranche tokens minted
         assertEq(lPool.balanceOf(address(escrow)), trancheTokensPayout);
         // assert conversions
@@ -927,6 +929,7 @@ contract LiquidityPoolTest is TestSetup {
 
         lPool.requestRedeem(amount, self);
         assertEq(lPool.balanceOf(address(escrow)), amount);
+        assertEq(investmentManager.userRedeemRequest(self, address(lPool)), amount);
 
         // trigger executed collectRedeem
         uint128 _currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
@@ -938,6 +941,7 @@ contract LiquidityPoolTest is TestSetup {
         // assert withdraw & redeem values adjusted
         assertEq(lPool.maxWithdraw(self), currencyPayout); // max deposit
         assertEq(lPool.maxRedeem(self), amount); // max deposit
+        assertEq(investmentManager.userRedeemRequest(self, address(lPool)), 0);
         assertEq(lPool.balanceOf(address(escrow)), 0);
         assertEq(erc20.balanceOf(address(userEscrow)), currencyPayout);
         // assert conversions

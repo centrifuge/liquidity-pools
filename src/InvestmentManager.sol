@@ -432,6 +432,14 @@ contract InvestmentManager is Auth {
         currencyAmount = uint256(_calculateCurrencyAmount(_toUint128(trancheTokenAmount), liquidityPool, redeemPrice));
     }
 
+    function userDepositRequest(address user, address liquidityPool) public view returns (uint256 currencyAmount) {
+        currencyAmount = uint256(orderbook[user][liquidityPool].outstandingInvestOrder);
+    }
+
+    function userRedeemRequest(address user, address liquidityPool) public view returns (uint256 trancheTokenAmount) {
+        trancheTokenAmount = uint256(orderbook[user][liquidityPool].outstandingRedeemOrder);
+    }
+
     // --- Liquidity Pool processing functions ---
     /// @dev processes user's currency deposit / investment after the epoch has been executed on Centrifuge chain.
     /// In case user's invest order was fullfilled on Centrifuge chain during epoch execution MaxDeposit and MaxMint are increased and trancheTokens can be transferred to user's wallet on calling processDeposit.
