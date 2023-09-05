@@ -131,9 +131,7 @@ contract LiquidityPoolTest is TestSetup {
         // success - investor can requestRedeem
         investor.requestRedeem(lPool_, amount / 2, address(investor));
 
-
-
-        uint tokenAmount =  uint128(lPool.balanceOf(address(escrow)));
+        uint256 tokenAmount = uint128(lPool.balanceOf(address(escrow)));
         // redeem on behalf of investor
         homePools.isExecutedCollectRedeem(
             poolId, trancheId, bytes32(bytes20(address(investor))), currencyId, uint128(amount), uint128(tokenAmount)
@@ -141,18 +139,17 @@ contract LiquidityPoolTest is TestSetup {
 
         assertEq(lPool.maxRedeem(address(investor)), tokenAmount);
         assertEq(lPool.maxWithdraw(address(investor)), uint128(amount));
-    
 
         // fail: self does not have currency approval from investor
         vm.expectRevert(bytes("LiquidityPool/no-currency-allowance"));
-        lPool.redeem(amount/2, address(investor), address(investor));
+        lPool.redeem(amount / 2, address(investor), address(investor));
 
         // investor gives currency approval to self
-        investor.approve(address(erc20), self, amount/2);
+        investor.approve(address(erc20), self, amount / 2);
         // redeem on behalf of investor with currency approval
-        lPool.redeem(amount/2, address(investor), address(investor));
+        lPool.redeem(amount / 2, address(investor), address(investor));
 
-         // investor redeems rest for himself
+        // investor redeems rest for himself
         investor.redeem(lPool_, lPool.maxRedeem(address(investor)), address(investor), address(investor));
     }
 
@@ -804,23 +801,22 @@ contract LiquidityPoolTest is TestSetup {
         assertEq(lPool.previewRedeem(amount), currencyPayout);
 
         // success
-        lPool.redeem(amount/2, self, self); // redeem half the amount to own wallet
+        lPool.redeem(amount / 2, self, self); // redeem half the amount to own wallet
 
         // fail -> random does has no approval to receive funds
         vm.expectRevert(bytes("UserEscrow/recepient-has-no-allowance"));
-        lPool.redeem(amount/2, random, self); // redeem half the amount to oanother wallet
-        
+        lPool.redeem(amount / 2, random, self); // redeem half the amount to oanother wallet
+
         // success
         erc20.approve(random, lPool.maxWithdraw(self)); // random receives approval to receive funds
-        lPool.redeem(amount/2, random, self); // redeem half the amount to random wallet
+        lPool.redeem(amount / 2, random, self); // redeem half the amount to random wallet
 
         assertEq(lPool.balanceOf(self), 0);
         assert(lPool.balanceOf(address(escrow)) <= 1);
         assert(erc20.balanceOf(address(userEscrow)) <= 1);
 
-
-        assertEq(erc20.balanceOf(self), (amount/2)); 
-        assertEq(erc20.balanceOf(random), (amount/2));
+        assertEq(erc20.balanceOf(self), (amount / 2));
+        assertEq(erc20.balanceOf(random), (amount / 2));
         assert(lPool.maxWithdraw(self) <= 1);
         assert(lPool.maxRedeem(self) <= 1);
     }
@@ -871,24 +867,23 @@ contract LiquidityPoolTest is TestSetup {
         assertEq(lPool.balanceOf(address(escrow)), 0);
         assertEq(erc20.balanceOf(address(userEscrow)), currencyPayout);
 
-        lPool.withdraw(amount/2, self, self); // mint hald the amount
+        lPool.withdraw(amount / 2, self, self); // mint hald the amount
 
-       // fail -> random does has no approval to receive funds
+        // fail -> random does has no approval to receive funds
         vm.expectRevert(bytes("UserEscrow/recepient-has-no-allowance"));
-        lPool.withdraw(amount/2, random, self); // redeem half the amount to oanother wallet
-        
+        lPool.withdraw(amount / 2, random, self); // redeem half the amount to oanother wallet
+
         // success
         erc20.approve(random, lPool.maxWithdraw(self)); // random receives approval to receive funds
-        lPool.withdraw(amount/2, random, self); // redeem half the amount to random wallet
+        lPool.withdraw(amount / 2, random, self); // redeem half the amount to random wallet
 
         assert(lPool.balanceOf(self) <= 1);
         assert(erc20.balanceOf(address(userEscrow)) <= 1);
-        assertEq(erc20.balanceOf(self), currencyPayout/2);
-        assertEq(erc20.balanceOf(random), currencyPayout/2);
+        assertEq(erc20.balanceOf(self), currencyPayout / 2);
+        assertEq(erc20.balanceOf(random), currencyPayout / 2);
         assert(lPool.maxRedeem(self) <= 1);
         assert(lPool.maxWithdraw(self) <= 1);
     }
-    
 
     function testDecreaseDepositRequest(
         uint64 poolId,

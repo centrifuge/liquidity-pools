@@ -34,7 +34,10 @@ contract UserEscrow is Auth {
 
     function transferOut(address token, address destination, address recepient, uint256 amount) external auth {
         require(destinations[token][destination] >= amount, "UserEscrow/transfer-failed");
-        require(recepient == destination || (ERC20Like(token).allowance(destination, recepient) >= amount), "UserEscrow/recepient-has-no-allowance");
+        require(
+            recepient == destination || (ERC20Like(token).allowance(destination, recepient) >= amount),
+            "UserEscrow/recepient-has-no-allowance"
+        );
         destinations[token][destination] -= amount;
 
         SafeTransferLib.safeTransfer(token, recepient, amount);
