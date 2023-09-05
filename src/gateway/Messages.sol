@@ -151,8 +151,8 @@ library Messages {
             uint8(Call.AddTranche),
             poolId,
             trancheId,
-            stringToBytes128(tokenName),
-            stringToBytes32(tokenSymbol),
+            _stringToBytes128(tokenName),
+            _stringToBytes32(tokenSymbol),
             decimals,
             price
         );
@@ -176,8 +176,8 @@ library Messages {
     {
         poolId = BytesLib.toUint64(_msg, 1);
         trancheId = BytesLib.toBytes16(_msg, 9);
-        tokenName = bytes128ToString(BytesLib.slice(_msg, 25, 128));
-        tokenSymbol = bytes32ToString(BytesLib.toBytes32(_msg, 153));
+        tokenName = _bytes128ToString(BytesLib.slice(_msg, 25, 128));
+        tokenSymbol = _bytes32ToString(BytesLib.toBytes32(_msg, 153));
         decimals = BytesLib.toUint8(_msg, 185);
         price = BytesLib.toUint128(_msg, 186);
     }
@@ -741,8 +741,8 @@ library Messages {
             uint8(Call.UpdateTrancheTokenMetadata),
             poolId,
             trancheId,
-            stringToBytes128(tokenName),
-            stringToBytes32(tokenSymbol)
+            _stringToBytes128(tokenName),
+            _stringToBytes32(tokenSymbol)
         );
     }
 
@@ -757,8 +757,8 @@ library Messages {
     {
         poolId = BytesLib.toUint64(_msg, 1);
         trancheId = BytesLib.toBytes16(_msg, 9);
-        tokenName = bytes128ToString(BytesLib.slice(_msg, 25, 128));
-        tokenSymbol = bytes32ToString(BytesLib.toBytes32(_msg, 153));
+        tokenName = _bytes128ToString(BytesLib.slice(_msg, 25, 128));
+        tokenSymbol = _bytes32ToString(BytesLib.toBytes32(_msg, 153));
     }
 
     function formatCancelInvestOrder(uint64 poolId, bytes16 trancheId, bytes32 investor, uint128 currency)
@@ -839,8 +839,7 @@ library Messages {
         return bytes9(BytesLib.slice(abi.encodePacked(uint8(domain), chainId), 0, 9));
     }
 
-    // TODO: should be moved to a util contract
-    function stringToBytes128(string memory source) internal pure returns (bytes memory) {
+    function _stringToBytes128(string memory source) internal pure returns (bytes memory) {
         bytes memory temp = bytes(source);
         bytes memory result = new bytes(128);
 
@@ -855,7 +854,7 @@ library Messages {
         return result;
     }
 
-    function bytes128ToString(bytes memory _bytes128) internal pure returns (string memory) {
+    function _bytes128ToString(bytes memory _bytes128) internal pure returns (string memory) {
         require(_bytes128.length == 128, "Input should be 128 bytes");
 
         uint8 i = 0;
@@ -872,7 +871,7 @@ library Messages {
         return string(bytesArray);
     }
 
-    function stringToBytes32(string memory source) internal pure returns (bytes32 result) {
+    function _stringToBytes32(string memory source) internal pure returns (bytes32 result) {
         bytes memory tempEmptyStringTest = bytes(source);
         if (tempEmptyStringTest.length == 0) {
             return 0x0;
@@ -883,8 +882,7 @@ library Messages {
         }
     }
 
-    // TODO: should be moved to a util contract
-    function bytes32ToString(bytes32 _bytes32) internal pure returns (string memory) {
+    function _bytes32ToString(bytes32 _bytes32) internal pure returns (string memory) {
         uint8 i = 0;
         while (i < 32 && _bytes32[i] != 0) {
             i++;

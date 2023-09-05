@@ -113,7 +113,7 @@ contract MessagesTest is Test {
         // Intended behaviour is that byte strings will be treated as bytes and converted to strings instead
         // of treated as strings themselves. This conversion from string to bytes32 to string is used to simulate
         // this intended behaviour.
-        assertEq(decodedTokenName, Messages.bytes128ToString(Messages.stringToBytes128(tokenName)));
+        assertEq(decodedTokenName, Messages._bytes128ToString(Messages._stringToBytes128(tokenName)));
         assertEq(decodedTokenSymbol, bytes32ToString(stringToBytes32(tokenSymbol)));
         assertEq(decodedDecimals, decimals);
         assertEq(uint256(decodedPrice), uint256(price));
@@ -799,7 +799,7 @@ contract MessagesTest is Test {
         // Intended behaviour is that byte strings will be treated as bytes and converted to strings instead
         // of treated as strings themselves. This conversion from string to bytes32 to string is used to simulate
         // this intended behaviour.
-        assertEq(decodedTokenName, Messages.bytes128ToString(Messages.stringToBytes128(tokenName)));
+        assertEq(decodedTokenName, Messages._bytes128ToString(Messages._stringToBytes128(tokenName)));
         assertEq(decodedTokenSymbol, bytes32ToString(stringToBytes32(tokenSymbol)));
     }
 
