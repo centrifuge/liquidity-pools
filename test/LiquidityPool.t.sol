@@ -589,7 +589,7 @@ contract LiquidityPoolTest is TestSetup {
         homePools.updateMember(poolId, trancheId, self, validUntil); // add user as member
 
         // // will fail - user did not give currency allowance to investmentManager
-        vm.expectRevert(bytes("ERC20/insufficient-allowance"));
+        vm.expectRevert(bytes("SafeTransferLib/safe-transfer-from-failed"));
         lPool.requestDeposit(amount, self);
         erc20.approve(address(investmentManager), amount); // add allowance
 
@@ -802,7 +802,7 @@ contract LiquidityPoolTest is TestSetup {
         homePools.updateTrancheTokenPrice(poolId, trancheId, currencyId, price);
 
         // will fail - user did not give tranche token allowance to investmentManager
-        vm.expectRevert(bytes("ERC20/insufficient-balance"));
+        vm.expectRevert(bytes("SafeTransferLib/safe-transfer-from-failed"));
         lPool.requestDeposit(amount, self);
         lPool.approve(address(investmentManager), amount); // add allowance
 

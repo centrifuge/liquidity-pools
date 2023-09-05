@@ -2,7 +2,7 @@
 pragma solidity 0.8.21;
 
 import {Root} from "src/Root.sol";
-import {AxelarEVMRouter} from "src/gateway/routers/axelar/EVMRouter.sol";
+import {AxelarRouter} from "src/gateway/routers/axelar/Router.sol";
 import {Gateway, InvestmentManagerLike} from "src/gateway/Gateway.sol";
 import {InvestmentManager} from "src/InvestmentManager.sol";
 import {PoolManager} from "src/PoolManager.sol";

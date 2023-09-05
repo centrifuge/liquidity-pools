@@ -40,8 +40,8 @@ interface GatewayLike {
     function handle(bytes memory message) external;
 }
 
-contract AxelarEVMRouter is Auth {
-    string private constant axelarCentrifugeChainId = "Moonbeam";
+contract AxelarRouter is Auth {
+    string private constant axelarCentrifugeChainId = "centrifuge";
     string private constant axelarCentrifugeChainAddress = "0x3b4a32efd7bd0290882B4854c86b8CECe534c975";
 
     AxelarGatewayLike public immutable axelarGateway;
@@ -59,16 +59,16 @@ contract AxelarEVMRouter is Auth {
     }
 
     modifier onlyCentrifugeChainOrigin(string calldata sourceChain) {
-        require(msg.sender == address(axelarGateway), "AxelarEVMRouter/invalid-origin");
+        require(msg.sender == address(axelarGateway), "AxelarRouter/invalid-origin");
         require(
             keccak256(bytes(axelarCentrifugeChainId)) == keccak256(bytes(sourceChain)),
-            "AxelarEVMRouter/invalid-source-chain"
+            "AxelarRouter/invalid-source-chain"
         );
         _;
     }
 
     modifier onlyGateway() {
-        require(msg.sender == address(gateway), "AxelarEVMRouter/only-gateway-allowed-to-call");
+        require(msg.sender == address(gateway), "AxelarRouter/only-gateway-allowed-to-call");
         _;
     }
 
@@ -77,7 +77,7 @@ contract AxelarEVMRouter is Auth {
         if (what == "gateway") {
             gateway = GatewayLike(data);
         } else {
-            revert("AxelarEVMRouter/file-unrecognized-param");
+            revert("AxelarRouter/file-unrecognized-param");
         }
 
         emit File(what, data);
@@ -93,7 +93,7 @@ contract AxelarEVMRouter is Auth {
         bytes32 payloadHash = keccak256(payload);
         require(
             axelarGateway.validateContractCall(commandId, sourceChain, sourceAddress, payloadHash),
-            "EVMRouter/not-approved-by-gateway"
+            "Router/not-approved-by-gateway"
         );
 
         gateway.handle(payload);

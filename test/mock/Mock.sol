@@ -9,6 +9,7 @@ contract Mock is Test {
 
     // returns
     mapping(bytes32 => uint128) public values_uint128_return;
+    mapping(bytes32 => bool) public values_bool_return;
 
     // passed parameter
     mapping(bytes32 => uint64) public values_uint64;
@@ -17,6 +18,8 @@ contract Mock is Test {
     mapping(bytes32 => address) public values_address;
     mapping(bytes32 => bytes32) public values_bytes16;
     mapping(bytes32 => bytes32) public values_bytes32;
+    mapping(bytes32 => bytes) public values_bytes;
+    mapping(bytes32 => string) public values_string;
 
     mapping(bytes32 => bool) method_fail;
 
@@ -26,6 +29,10 @@ contract Mock is Test {
 
     function setReturn(bytes32 name, uint128 returnValue) public {
         values_uint128_return[name] = returnValue;
+    }
+
+    function setReturn(bytes32 name, bool returnValue) public {
+        values_bool_return[name] = returnValue;
     }
 
     function setFail(bytes32 name, bool flag) public {

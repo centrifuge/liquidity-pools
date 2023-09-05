@@ -155,7 +155,7 @@ contract Gateway is Auth {
             Messages.formatTransferTrancheTokens(
                 poolId,
                 trancheId,
-                addressToBytes32(sender),
+                _addressToBytes32(sender),
                 Messages.formatDomain(Messages.Domain.Centrifuge),
                 destinationAddress,
                 amount
@@ -175,7 +175,7 @@ contract Gateway is Auth {
             Messages.formatTransferTrancheTokens(
                 poolId,
                 trancheId,
-                addressToBytes32(sender),
+                _addressToBytes32(sender),
                 Messages.formatDomain(Messages.Domain.EVM, destinationChainId),
                 destinationAddress,
                 amount
@@ -188,7 +188,7 @@ contract Gateway is Auth {
         onlyPoolManager
         pauseable
     {
-        outgoingRouter.send(Messages.formatTransfer(token, addressToBytes32(sender), receiver, amount));
+        outgoingRouter.send(Messages.formatTransfer(token, _addressToBytes32(sender), receiver, amount));
     }
 
     function increaseInvestOrder(
@@ -199,7 +199,7 @@ contract Gateway is Auth {
         uint128 currencyAmount
     ) public onlyInvestmentManager pauseable {
         outgoingRouter.send(
-            Messages.formatIncreaseInvestOrder(poolId, trancheId, addressToBytes32(investor), currency, currencyAmount)
+            Messages.formatIncreaseInvestOrder(poolId, trancheId, _addressToBytes32(investor), currency, currencyAmount)
         );
     }
 
@@ -211,7 +211,7 @@ contract Gateway is Auth {
         uint128 currencyAmount
     ) public onlyInvestmentManager pauseable {
         outgoingRouter.send(
-            Messages.formatDecreaseInvestOrder(poolId, trancheId, addressToBytes32(investor), currency, currencyAmount)
+            Messages.formatDecreaseInvestOrder(poolId, trancheId, _addressToBytes32(investor), currency, currencyAmount)
         );
     }
 
@@ -224,7 +224,7 @@ contract Gateway is Auth {
     ) public onlyInvestmentManager pauseable {
         outgoingRouter.send(
             Messages.formatIncreaseRedeemOrder(
-                poolId, trancheId, addressToBytes32(investor), currency, trancheTokenAmount
+                poolId, trancheId, _addressToBytes32(investor), currency, trancheTokenAmount
             )
         );
     }
@@ -238,7 +238,7 @@ contract Gateway is Auth {
     ) public onlyInvestmentManager pauseable {
         outgoingRouter.send(
             Messages.formatDecreaseRedeemOrder(
-                poolId, trancheId, addressToBytes32(investor), currency, trancheTokenAmount
+                poolId, trancheId, _addressToBytes32(investor), currency, trancheTokenAmount
             )
         );
     }
@@ -248,7 +248,7 @@ contract Gateway is Auth {
         onlyInvestmentManager
         pauseable
     {
-        outgoingRouter.send(Messages.formatCollectInvest(poolId, trancheId, addressToBytes32(investor), currency));
+        outgoingRouter.send(Messages.formatCollectInvest(poolId, trancheId, _addressToBytes32(investor), currency));
     }
 
     function collectRedeem(uint64 poolId, bytes16 trancheId, address investor, uint128 currency)
@@ -256,7 +256,7 @@ contract Gateway is Auth {
         onlyInvestmentManager
         pauseable
     {
-        outgoingRouter.send(Messages.formatCollectRedeem(poolId, trancheId, addressToBytes32(investor), currency));
+        outgoingRouter.send(Messages.formatCollectRedeem(poolId, trancheId, _addressToBytes32(investor), currency));
     }
 
     function cancelInvestOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency)
@@ -264,7 +264,7 @@ contract Gateway is Auth {
         onlyInvestmentManager
         pauseable
     {
-        outgoingRouter.send(Messages.formatCancelInvestOrder(poolId, trancheId, addressToBytes32(investor), currency));
+        outgoingRouter.send(Messages.formatCancelInvestOrder(poolId, trancheId, _addressToBytes32(investor), currency));
     }
 
     function cancelRedeemOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency)
@@ -272,7 +272,7 @@ contract Gateway is Auth {
         onlyInvestmentManager
         pauseable
     {
-        outgoingRouter.send(Messages.formatCancelRedeemOrder(poolId, trancheId, addressToBytes32(investor), currency));
+        outgoingRouter.send(Messages.formatCancelRedeemOrder(poolId, trancheId, _addressToBytes32(investor), currency));
     }
 
     // --- Incoming ---
@@ -359,8 +359,8 @@ contract Gateway is Auth {
         }
     }
 
-    // Utils
-    function addressToBytes32(address x) private pure returns (bytes32) {
+    // --- Helpers ---
+    function _addressToBytes32(address x) internal pure returns (bytes32) {
         return bytes32(bytes20(x));
     }
 }

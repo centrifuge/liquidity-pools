@@ -865,6 +865,33 @@ contract MessagesTest is Test {
         assertEq(decodedCurrency, currency);
     }
 
+    function testUpdateTrancheInvestmentLimit() public {
+        uint64 poolId = 1;
+        bytes16 trancheId = bytes16(hex"811acd5b3f17c06841c7e41e9e04cb1b");
+        uint128 investmentLimit = 1000;
+        bytes memory expectedHex =
+            hex"180000000000000001811acd5b3f17c06841c7e41e9e04cb1b000000000000000000000000000003e8";
+
+        assertEq(Messages.formatUpdateTrancheInvestmentLimit(poolId, trancheId, investmentLimit), expectedHex);
+
+        (uint64 decodedPoolId, bytes16 decodedTrancheId, uint128 decodedInvestmentLimit) =
+            Messages.parseUpdateTrancheInvestmentLimit(expectedHex);
+        assertEq(uint256(decodedPoolId), poolId);
+        assertEq(decodedTrancheId, trancheId);
+        assertEq(decodedInvestmentLimit, investmentLimit);
+    }
+
+    function testUpdateTrancheInvestmentLimitEquivalence(uint64 poolId, bytes16 trancheId, uint128 investmentLimit)
+        public
+    {
+        bytes memory _message = Messages.formatUpdateTrancheInvestmentLimit(poolId, trancheId, investmentLimit);
+        (uint64 decodedPoolId, bytes16 decodedTrancheId, uint128 decodedInvestmentLimit) =
+            Messages.parseUpdateTrancheInvestmentLimit(_message);
+        assertEq(uint256(decodedPoolId), uint256(poolId));
+        assertEq(decodedTrancheId, trancheId);
+        assertEq(decodedInvestmentLimit, investmentLimit);
+    }
+
     function testFormatDomainCentrifuge() public {
         assertEq(Messages.formatDomain(Messages.Domain.Centrifuge), hex"000000000000000000");
     }
