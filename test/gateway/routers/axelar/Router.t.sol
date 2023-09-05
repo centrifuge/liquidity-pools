@@ -12,7 +12,8 @@ contract AxelarRouterTest is Test {
     AxelarRouter router;
 
     string private constant axelarCentrifugeChainId = "centrifuge";
-    string private constant axelarCentrifugeChainAddress = "0x3b4a32efd7bd0290882B4854c86b8CECe534c975";
+    string private constant axelarCentrifugeChainAddress = "0x7369626cef070000000000000000000000000000";
+    string private constant centrifugeGatewayPrecompileAddress = "0x0000000000000000000000000000000000002048";
 
     function setUp() public {
         axelarGateway = new AxelarGatewayMock();
@@ -59,14 +60,18 @@ contract AxelarRouterTest is Test {
         vm.expectRevert(bytes("AxelarRouter/invalid-source-chain"));
         router.execute(commandId, sourceChain, sourceAddress, payload);
 
+        vm.prank(address(axelarGateway));
+        vm.expectRevert(bytes("AxelarRouter/invalid-source-address"));
+        router.execute(commandId, axelarCentrifugeChainId, sourceAddress, payload);
+
         axelarGateway.setReturn("validateContractCall", false);
         vm.prank(address(axelarGateway));
         vm.expectRevert(bytes("Router/not-approved-by-gateway"));
-        router.execute(commandId, axelarCentrifugeChainId, sourceAddress, payload);
+        router.execute(commandId, axelarCentrifugeChainId, axelarCentrifugeChainAddress, payload);
 
         axelarGateway.setReturn("validateContractCall", true);
         vm.prank(address(axelarGateway));
-        router.execute(commandId, axelarCentrifugeChainId, sourceAddress, payload);
+        router.execute(commandId, axelarCentrifugeChainId, axelarCentrifugeChainAddress, payload);
     }
 
     function testOutgoingCalls(bytes calldata message, address invalidOrigin) public {
@@ -79,7 +84,7 @@ contract AxelarRouterTest is Test {
         router.send(message);
 
         assertEq(axelarGateway.values_string("destinationChain"), axelarCentrifugeChainId);
-        assertEq(axelarGateway.values_string("contractAddress"), axelarCentrifugeChainAddress);
+        assertEq(axelarGateway.values_string("contractAddress"), centrifugeGatewayPrecompileAddress);
         assertEq(axelarGateway.values_bytes("payload"), message);
     }
 }
