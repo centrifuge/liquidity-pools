@@ -56,10 +56,12 @@ interface UserEscrowLike {
 
 /// @dev liquidity pool orders and deposit/redemption limits per user
 struct LPValues {
-    uint128 maxDeposit; // denominated in assets
+    uint128 maxDeposit; // denominated in currency
     uint128 maxMint; // denominated in tranche tokens
-    uint128 maxWithdraw; // denominated in assets
+    uint128 maxWithdraw; // denominated in currency
     uint128 maxRedeem; // denominated in tranche tokens
+    uint128 outstandingInvestOrder; // denominated in currency
+    uint128 outstandingRedeemOrder; // denominated in tranche tokens
 }
 
 contract InvestmentManager is Auth {
@@ -132,8 +134,11 @@ contract InvestmentManager is Auth {
             return;
         }
 
-        // transfer the differene between required and locked currency from user to escrwo
+        // transfer the currency from user to escrow
         SafeTransferLib.safeTransferFrom(currency, user, address(escrow), _currencyAmount);
+
+        LPValues storage lpValues = orderbook[user][liquidityPool];
+        lpValues.outstandingInvestOrder = lpValues.outstandingInvestOrder + _currencyAmount;
 
         gateway.increaseInvestOrder(
             lPool.poolId(), lPool.trancheId(), user, poolManager.currencyAddressToId(lPool.asset()), _currencyAmount
@@ -168,11 +173,14 @@ contract InvestmentManager is Auth {
             return;
         }
 
-        // transfer the differene between required and locked tranche tokens from user to escrow
+        // transfer the tranche tokens from user to escrow
         require(
             lPool.transferFrom(user, address(escrow), _trancheTokenAmount),
             "InvestmentManager/tranche-token-transfer-failed"
         );
+
+        LPValues storage lpValues = orderbook[user][liquidityPool];
+        lpValues.outstandingRedeemOrder = lpValues.outstandingRedeemOrder + _trancheTokenAmount;
 
         gateway.increaseRedeemOrder(
             lPool.poolId(), lPool.trancheId(), user, poolManager.currencyAddressToId(lPool.asset()), _trancheTokenAmount
@@ -253,6 +261,7 @@ contract InvestmentManager is Auth {
         LPValues storage lpValues = orderbook[recipient][liquidityPool];
         lpValues.maxDeposit = lpValues.maxDeposit + currencyPayout;
         lpValues.maxMint = lpValues.maxMint + trancheTokensPayout;
+        lpValues.outstandingInvestOrder = lpValues.outstandingInvestOrder - currencyPayout;
 
         LiquidityPoolLike(liquidityPool).mint(address(escrow), trancheTokensPayout); // mint to escrow. Recepeint can claim by calling withdraw / redeem
         _updateLiquidityPoolPrice(liquidityPool, currencyPayout, trancheTokensPayout);
@@ -274,6 +283,7 @@ contract InvestmentManager is Auth {
         LPValues storage lpValues = orderbook[recipient][liquidityPool];
         lpValues.maxWithdraw = lpValues.maxWithdraw + currencyPayout;
         lpValues.maxRedeem = lpValues.maxRedeem + trancheTokensPayout;
+        lpValues.outstandingRedeemOrder = lpValues.outstandingRedeemOrder - trancheTokenPayout;
 
         userEscrow.transferIn(_currency, address(escrow), recipient, currencyPayout);
         LiquidityPoolLike(liquidityPool).burn(address(escrow), trancheTokensPayout); // burned redeemed tokens from escrow
@@ -294,6 +304,9 @@ contract InvestmentManager is Auth {
         require(liquidityPool != address(0), "InvestmentManager/tranche-does-not-exist");
         require(_currency == LiquidityPoolLike(liquidityPool).asset(), "InvestmentManager/not-tranche-currency");
 
+        LPValues storage lpValues = orderbook[user][liquidityPool];
+        lpValues.outstandingInvestOrder = lpValues.outstandingInvestOrder - currencyPayout;
+
         SafeTransferLib.safeTransferFrom(_currency, address(escrow), user, currencyPayout);
     }
 
@@ -311,6 +324,9 @@ contract InvestmentManager is Auth {
         require(address(liquidityPool) != address(0), "InvestmentManager/tranche-does-not-exist");
 
         require(LiquidityPoolLike(liquidityPool).hasMember(user), "InvestmentManager/not-a-member");
+
+        LPValues storage lpValues = orderbook[user][liquidityPool];
+        lpValues.outstandingRedeemOrder = lpValues.outstandingRedeemOrder - trancheTokenPayout;
 
         require(
             LiquidityPoolLike(liquidityPool).transferFrom(address(escrow), user, trancheTokenPayout),
