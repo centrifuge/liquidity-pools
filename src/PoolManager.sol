@@ -6,7 +6,7 @@ import {TrancheTokenLike} from "./token/Tranche.sol";
 import {MemberlistLike} from "./token/Memberlist.sol";
 import {IERC20} from "./interfaces/IERC20.sol";
 import {Auth} from "./util/Auth.sol";
-import {TransferHelper} from "./util/SafeTransferLib.sol";
+import {SafeTransferLib} from "./util/SafeTransferLib.sol";
 
 interface GatewayLike {
     function transferTrancheTokensToCentrifuge(

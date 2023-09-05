@@ -3,7 +3,7 @@ pragma solidity 0.8.21;
 
 import {Auth} from "./util/Auth.sol";
 import {Math} from "./util/Math.sol";
-import {TransferHelper} from "./util/SafeTransferLib.sol";
+import {SafeTransferLib} from "./util/SafeTransferLib.sol";
 
 interface GatewayLike {
     function increaseInvestOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount)
@@ -131,10 +131,7 @@ contract InvestmentManager is Auth {
         }
 
         // transfer the differene between required and locked currency from user to escrwo
-        require(
-            SafeTransferLib.safeTransferFrom(currency, user, address(escrow), _currencyAmount),
-            "InvestmentManager/currency-transfer-failed"
-        );
+        SafeTransferLib.safeTransferFrom(currency, user, address(escrow), _currencyAmount);
 
         gateway.increaseInvestOrder(
             lPool.poolId(), lPool.trancheId(), user, poolManager.currencyAddressToId(lPool.asset()), _currencyAmount
@@ -295,10 +292,7 @@ contract InvestmentManager is Auth {
         require(liquidityPool != address(0), "InvestmentManager/tranche-does-not-exist");
         require(_currency == LiquidityPoolLike(liquidityPool).asset(), "InvestmentManager/not-tranche-currency");
 
-        require(
-            SafeTransferLib.safeTransferFrom(_currency, address(escrow), user, currencyPayout),
-            "InvestmentManager/currency-transfer-failed"
-        );
+        SafeTransferLib.safeTransferFrom(_currency, address(escrow), user, currencyPayout);
     }
 
     function handleExecutedDecreaseRedeemOrder(

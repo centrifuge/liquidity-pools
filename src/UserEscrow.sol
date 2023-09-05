@@ -2,7 +2,7 @@
 pragma solidity 0.8.21;
 
 import {Auth} from "./util/Auth.sol";
-import {TransferHelper} from "./util/SafeTransferLib.sol";
+import {SafeTransferLib} from "./util/SafeTransferLib.sol";
 
 interface TransferLike {
     function transferFrom(address, address, uint256) external returns (bool);
