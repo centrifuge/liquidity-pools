@@ -383,6 +383,7 @@ contract InvestmentManager is Auth {
         view
         returns (uint256 currencyAmount)
     {
+        console.log("trancheTokenAmount", trancheTokenAmount);
         uint256 redeemPrice = calculateRedeemPrice(user, liquidityPool);
         if (redeemPrice == 0) return 0;
 
@@ -539,13 +540,19 @@ contract InvestmentManager is Auth {
         console.log("maxRedeem", lpValues.maxRedeem);
         console.log("currencyDecimals", currencyDecimals);
         console.log("trancheTokenDecimals", trancheTokenDecimals);
-        uint256 maxWithdrawInPriceDecimals = _toPriceDecimals(lpValues.maxWithdraw, currencyDecimals, liquidityPool);
-        uint256 maxRedeemInPriceDecimals = _toPriceDecimals(lpValues.maxRedeem, trancheTokenDecimals, liquidityPool);
+        uint256 maxWithdrawInPriceDecimals =
+            _toPriceDecimals(lpValues.maxWithdraw, currencyDecimals, liquidityPool);
+        uint256 maxRedeemInPriceDecimals =
+            _toPriceDecimals(lpValues.maxRedeem, trancheTokenDecimals, liquidityPool);
         console.log("maxWithdrawInPriceDecimals", maxWithdrawInPriceDecimals);
         console.log("maxRedeemInPriceDecimals", maxRedeemInPriceDecimals);
 
-        redeemPrice =
-            maxWithdrawInPriceDecimals.mulDiv(10 ** PRICE_DECIMALS, maxRedeemInPriceDecimals, MathLib.Rounding.Down);
+        if (maxWithdrawInPriceDecimals == maxRedeemInPriceDecimals) {
+            redeemPrice = 10 ** PRICE_DECIMALS;
+        } else {
+            redeemPrice = 
+                maxWithdrawInPriceDecimals.mulDiv(10 ** PRICE_DECIMALS, maxRedeemInPriceDecimals, MathLib.Rounding.Down);
+        }
     }
 
     // price = currency amount / tranche token amount
@@ -647,8 +654,8 @@ contract InvestmentManager is Auth {
         view
         returns (uint256 value)
     {
-        if (PRICE_DECIMALS == decimals) return _value;
-        value = _value * 10 ** (PRICE_DECIMALS - decimals);
+        if (PRICE_DECIMALS == decimals) return uint256(_value);
+        value = uint256(_value) * 10 ** (PRICE_DECIMALS - decimals);
     }
 
     /// @dev convert decimals of the value from the price decimals back to the intended decimals
