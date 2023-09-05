@@ -34,6 +34,7 @@ interface LiquidityPoolLike is ERC20Like {
     function asset() external view returns (address);
     function hasMember(address) external returns (bool);
     function updatePrice(uint128 price) external;
+    function latestPrice() external view returns (uint128);
 }
 
 interface PoolManagerLike {
@@ -318,7 +319,33 @@ contract InvestmentManager is Auth {
     }
 
     // --- View functions ---
+    function totalAssets(uint256 totalSupply, address liquidityPool) public view returns (uint256 totalAssets) {
+        totalAssets = convertToAssets(totalSupply, liquidityPool);
+    }
+
+    /// @dev Calculates the amount of shares / tranche tokens that any user would get for the amount of assets provided. The calcultion is based on the token price from the most recent epoch retrieved from Centrifuge chain.
+    function convertToShares(uint256 assets, address liquidityPool) public view auth returns (uint256 shares) {
+        (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getPoolDecimals(liquidityPool);
+
+        shares = assets.mulDiv(
+            10 ** (PRICE_DECIMALS + trancheTokenDecimals - currencyDecimals),
+            LiquidityPoolLike(liquidityPool).latestPrice(),
+            MathLib.Rounding.Down
+        );
+    }
+
+    /// @dev Calculates the asset value for an amount of shares / tranche tokens provided. The calcultion is based on the token price from the most recent epoch retrieved from Centrifuge chain.
+    function convertToAssets(uint256 shares, address liquidityPool) public view auth returns (uint256 assets) {
+        (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getPoolDecimals(liquidityPool);
+
+        assets = shares.mulDiv(
+            LiquidityPoolLike(liquidityPool).latestPrice(),
+            10 ** (PRICE_DECIMALS + trancheTokenDecimals - currencyDecimals),
+            MathLib.Rounding.Down
+        );
+    }
     /// @return currencyAmount is type of uin256 to support the EIP4626 Liquidity Pool interface
+
     function maxDeposit(address user, address liquidityPool) public view returns (uint256 currencyAmount) {
         currencyAmount = uint256(orderbook[user][liquidityPool].maxDeposit);
     }
