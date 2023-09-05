@@ -52,7 +52,7 @@ contract LiquidityPoolTest is TestSetup {
     }
 
     // --- Permissioned functions ---
-    function testMint(
+    function testWithCurrencyApprovsl(
         uint64 poolId,
         uint8 decimals,
         string memory tokenName,
