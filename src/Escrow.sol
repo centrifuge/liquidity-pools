@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Copyright (C) 2017, 2018, 2019 dbrock, rain, mrchico
-// Copyright (C) 2021 Dai Foundation
-pragma solidity ^0.8.18;
+pragma solidity 0.8.21;
 
-import "./util/Auth.sol";
+import {Auth} from "./util/Auth.sol";
+import {SafeTransferLib} from "./util/SafeTransferLib.sol";
 
 interface ApproveLike {
-    function approve(address, uint256) external;
+    function approve(address, uint256) external returns (bool);
 }
 
 contract Escrow is Auth {
@@ -19,8 +18,7 @@ contract Escrow is Auth {
 
     // --- Token approvals ---
     function approve(address token, address spender, uint256 value) external auth {
+        SafeTransferLib.safeApprove(token, spender, value);
         emit Approve(token, spender, value);
-
-        ApproveLike(token).approve(spender, value);
     }
 }

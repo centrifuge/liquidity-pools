@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity ^0.8.18;
-pragma abicoder v2;
+pragma solidity 0.8.21;
 
 import {Messages} from "src/gateway/Messages.sol";
 import "forge-std/Test.sol";
@@ -46,10 +45,10 @@ contract MockHomeLiquidityPools is Test {
         bytes16 trancheId,
         string memory tokenName,
         string memory tokenSymbol,
-        uint8 decimals,
-        uint128 price
+        uint8 decimals
     ) public {
-        bytes memory _message = Messages.formatAddTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price);
+        // TODO: remove price arg from the AddTranche message
+        bytes memory _message = Messages.formatAddTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, 0);
         router.execute(_message);
     }
 
@@ -68,8 +67,13 @@ contract MockHomeLiquidityPools is Test {
         router.execute(_message);
     }
 
-    function updateTrancheTokenPrice(uint64 poolId, bytes16 trancheId, uint128 price) public {
-        bytes memory _message = Messages.formatUpdateTrancheTokenPrice(poolId, trancheId, price);
+    function updateTrancheTokenPrice(uint64 poolId, bytes16 trancheId, uint128 currencyId, uint128 price) public {
+        bytes memory _message = Messages.formatUpdateTrancheTokenPrice(poolId, trancheId, currencyId, price);
+        router.execute(_message);
+    }
+
+    function updateTrancheInvestmentLimit(uint64 poolId, bytes16 trancheId, uint128 investmentLimit) public {
+        bytes memory _message = Messages.formatUpdateTrancheInvestmentLimit(poolId, trancheId, investmentLimit);
         router.execute(_message);
     }
 
@@ -105,6 +109,30 @@ contract MockHomeLiquidityPools is Test {
 
     function incomingCancelUpgrade(address target) public {
         bytes memory _message = Messages.formatCancelUpgrade(target);
+        router.execute(_message);
+    }
+
+    function isExecutedDecreaseInvestOrder(
+        uint64 poolId,
+        bytes16 trancheId,
+        bytes32 investor,
+        uint128 currency,
+        uint128 currencyPayout
+    ) public {
+        bytes memory _message =
+            Messages.formatExecutedDecreaseInvestOrder(poolId, trancheId, investor, currency, currencyPayout);
+        router.execute(_message);
+    }
+
+    function isExecutedDecreaseRedeemOrder(
+        uint64 poolId,
+        bytes16 trancheId,
+        bytes32 investor,
+        uint128 currency,
+        uint128 trancheTokensPayout
+    ) public {
+        bytes memory _message =
+            Messages.formatExecutedDecreaseRedeemOrder(poolId, trancheId, investor, currency, trancheTokensPayout);
         router.execute(_message);
     }
 

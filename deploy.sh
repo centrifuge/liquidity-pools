@@ -16,15 +16,13 @@ if [[ -z "$ETH_FROM" ]]; then
     error_exit "ETH_FROM is not defined"
 fi
 echo "Account = 0x$ETH_FROM"
-# echo "Network = $(cast chain)"
-# echo "Balance = $(echo "$(cast balance $ETH_FROM)/10^18" | bc -l) ETH"
 
 case "$1" in
-  Permissionless|AxelarEVM|AxelarXCMRelayer)
+  Permissionless|Axelar)
     forge script script/$1.s.sol:$1Script --optimize --rpc-url $RPC_URL --private-key $PRIVATE_KEY --verify --broadcast --chain-id $CHAIN_ID --etherscan-api-key $ETHERSCAN_KEY $2
     ;;
   *)
-    echo "Router should be one of Permissionless, AxelarEVM, AxelarXCMRelayer"
+    echo "Router should be one of Permissionless, Axelar"
     exit 1
     ;;
 esac

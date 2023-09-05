@@ -1,15 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity ^0.8.18;
-pragma abicoder v2;
+pragma solidity 0.8.21;
 
-import {InvestmentManager, Pool, Tranche} from "src/InvestmentManager.sol";
+import {InvestmentManager} from "src/InvestmentManager.sol";
 import {Gateway, RouterLike} from "src/gateway/Gateway.sol";
 import {MockHomeLiquidityPools} from "test/mock/MockHomeLiquidityPools.sol";
 import {Escrow} from "src/Escrow.sol";
 import {PauseAdmin} from "src/admins/PauseAdmin.sol";
 import {DelayedAdmin} from "src/admins/DelayedAdmin.sol";
 import {MockXcmRouter} from "test/mock/MockXcmRouter.sol";
-import {TokenManager} from "src/TokenManager.sol";
+import {PoolManager, Pool, Tranche} from "src/PoolManager.sol";
 import {ERC20} from "src/token/ERC20.sol";
 import {TrancheToken} from "src/token/Tranche.sol";
 import {LiquidityPoolTest} from "test/LiquidityPool.t.sol";
@@ -17,9 +16,9 @@ import {PermissionlessRouter} from "test/mock/PermissionlessRouter.sol";
 import {Root} from "src/Root.sol";
 import {LiquidityPool} from "src/LiquidityPool.sol";
 
-import {AxelarEVMScript} from "script/AxelarEVM.s.sol";
+import {AxelarScript} from "script/Axelar.s.sol";
 import {PermissionlessScript} from "script/Permissionless.s.sol";
-import "src/util/Math.sol";
+import "src/util/MathLib.sol";
 import "forge-std/Test.sol";
 
 interface ApproveLike {
@@ -27,7 +26,7 @@ interface ApproveLike {
 }
 
 contract DeployTest is Test {
-    using Math for uint128;
+    using MathLib for uint128;
 
     InvestmentManager investmentManager;
     Gateway gateway;
@@ -37,7 +36,7 @@ contract DeployTest is Test {
     Escrow escrow;
     PauseAdmin pauseAdmin;
     DelayedAdmin delayedAdmin;
-    TokenManager tokenManager;
+    PoolManager poolManager;
 
     address self;
     ERC20 erc20;
@@ -52,7 +51,7 @@ contract DeployTest is Test {
         escrow = script.escrow();
         pauseAdmin = script.pauseAdmin();
         delayedAdmin = script.delayedAdmin();
-        tokenManager = script.tokenManager();
+        poolManager = script.poolManager();
 
         erc20 = newErc20("Test", "TEST", 6); // TODO: fuzz decimals
         self = address(this);
@@ -69,13 +68,13 @@ contract DeployTest is Test {
         uint128 currencyId = 1;
         uint256 amount = 1000 * 10 ** erc20.decimals();
         uint64 validUntil = uint64(block.timestamp + 1000 days);
-        address lPool_ = deployPoolAndTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price);
+        address lPool_ = deployPoolAndTranche(poolId, trancheId, tokenName, tokenSymbol, decimals);
         LiquidityPool lPool = LiquidityPool(lPool_);
 
         deal(address(erc20), self, amount);
 
         vm.prank(address(gateway));
-        tokenManager.updateMember(poolId, trancheId, self, validUntil);
+        poolManager.updateMember(poolId, trancheId, self, validUntil);
 
         depositMint(poolId, decimals, tokenName, tokenSymbol, trancheId, price, currencyId, amount, validUntil, lPool);
         amount = lPool.balanceOf(self);
@@ -105,13 +104,13 @@ contract DeployTest is Test {
         assertEq(erc20.balanceOf(self), 0);
 
         // trigger executed collectInvest
-        uint128 _currencyId = tokenManager.currencyAddressToId(address(erc20)); // retrieve currencyId
+        uint128 _currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
 
         uint128 trancheTokensPayout = _toUint128(
             uint128(amount).mulDiv(
                 10 ** (investmentManager.PRICE_DECIMALS() - erc20.decimals() + lPool.decimals()),
                 price,
-                Math.Rounding.Down
+                MathLib.Rounding.Down
             )
         );
 
@@ -162,9 +161,9 @@ contract DeployTest is Test {
         lPool.requestRedeem(amount, self);
 
         // redeem
-        uint128 _currencyId = tokenManager.currencyAddressToId(address(erc20)); // retrieve currencyId
+        uint128 _currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
         uint128 currencyPayout = _toUint128(
-            uint128(amount).mulDiv(price, 10 ** (18 - erc20.decimals() + lPool.decimals()), Math.Rounding.Down)
+            uint128(amount).mulDiv(price, 10 ** (18 - erc20.decimals() + lPool.decimals()), MathLib.Rounding.Down)
         );
         // Assume an epoch execution happens on cent chain
         // Assume a bot calls collectRedeem for this user on cent chain
@@ -200,20 +199,19 @@ contract DeployTest is Test {
         bytes16 trancheId,
         string memory tokenName,
         string memory tokenSymbol,
-        uint8 decimals,
-        uint128 price
+        uint8 decimals
     ) public returns (address) {
         uint64 validUntil = uint64(block.timestamp + 1000 days);
 
         vm.startPrank(address(gateway));
-        investmentManager.addPool(poolId);
-        investmentManager.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, price);
-        tokenManager.addCurrency(1, address(erc20));
-        investmentManager.allowPoolCurrency(poolId, 1);
+        poolManager.addPool(poolId);
+        poolManager.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals);
+        poolManager.addCurrency(1, address(erc20));
+        poolManager.allowPoolCurrency(poolId, 1);
         vm.stopPrank();
 
-        investmentManager.deployTranche(poolId, trancheId);
-        address lPool = investmentManager.deployLiquidityPool(poolId, trancheId, address(erc20));
+        poolManager.deployTranche(poolId, trancheId);
+        address lPool = poolManager.deployLiquidityPool(poolId, trancheId, address(erc20));
         return lPool;
     }
 

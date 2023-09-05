@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity ^0.8.18;
+pragma solidity 0.8.21;
 
 import {LiquidityPool} from "../LiquidityPool.sol";
 import {TrancheToken} from "../token/Tranche.sol";
@@ -14,9 +14,10 @@ interface LiquidityPoolFactoryLike {
     function newLiquidityPool(
         uint64 poolId,
         bytes16 trancheId,
-        address asset,
+        address currency,
         address trancheToken,
-        address investmentManager
+        address investmentManager,
+        address[] calldata wards
     ) external returns (address);
 }
 
@@ -33,14 +34,17 @@ contract LiquidityPoolFactory is Auth {
     function newLiquidityPool(
         uint64 poolId,
         bytes16 trancheId,
-        address asset,
+        address currency,
         address trancheToken,
-        address investmentManager
+        address investmentManager,
+        address[] calldata wards
     ) public auth returns (address) {
-        LiquidityPool liquidityPool = new LiquidityPool(poolId, trancheId, asset, trancheToken, investmentManager);
+        LiquidityPool liquidityPool = new LiquidityPool(poolId, trancheId, currency, trancheToken, investmentManager);
 
         liquidityPool.rely(root);
-        liquidityPool.rely(investmentManager); // to be able to update tokenPrices
+        for (uint256 i = 0; i < wards.length; i++) {
+            liquidityPool.rely(wards[i]);
+        }
         liquidityPool.deny(address(this));
         return address(liquidityPool);
     }
@@ -50,13 +54,11 @@ interface TrancheTokenFactoryLike {
     function newTrancheToken(
         uint64 poolId,
         bytes16 trancheId,
-        address investmentManager,
-        address tokenManager,
         string memory name,
         string memory symbol,
         uint8 decimals,
-        uint128 latestPrice,
-        uint256 priceAge
+        address[] calldata trancheTokenWards,
+        address[] calldata memberlistWards
     ) external returns (address);
 }
 
@@ -73,15 +75,13 @@ contract TrancheTokenFactory is Auth {
     function newTrancheToken(
         uint64 poolId,
         bytes16 trancheId,
-        address investmentManager,
-        address tokenManager,
         string memory name,
         string memory symbol,
         uint8 decimals,
-        uint128 latestPrice,
-        uint256 priceAge
+        address[] calldata trancheTokenWards,
+        address[] calldata memberlistWards
     ) public auth returns (address) {
-        address memberlist = _newMemberlist(tokenManager);
+        address memberlist = _newMemberlist(memberlistWards);
 
         // Salt is hash(poolId + trancheId)
         // same tranche token address on every evm chain
@@ -93,23 +93,24 @@ contract TrancheTokenFactory is Auth {
         token.file("symbol", symbol);
         token.file("memberlist", memberlist);
 
-        token.setPrice(latestPrice, priceAge);
-
         token.rely(root);
-        token.rely(investmentManager); // to be able to add LPs as wards
-        token.rely(tokenManager); // to be able to update token prices
+        for (uint256 i = 0; i < trancheTokenWards.length; i++) {
+            token.rely(trancheTokenWards[i]);
+        }
         token.deny(address(this));
 
         return address(token);
     }
 
-    function _newMemberlist(address tokenManager) internal returns (address memberList) {
+    function _newMemberlist(address[] calldata memberlistWards) internal returns (address memberList) {
         Memberlist memberlist = new Memberlist();
 
         memberlist.updateMember(RootLike(root).escrow(), type(uint256).max);
 
         memberlist.rely(root);
-        memberlist.rely(tokenManager); // to be able to add members
+        for (uint256 i = 0; i < memberlistWards.length; i++) {
+            memberlist.rely(memberlistWards[i]);
+        }
         memberlist.deny(address(this));
 
         return (address(memberlist));

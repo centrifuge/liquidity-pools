@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity ^0.8.18;
+pragma solidity 0.8.21;
 
 import {Root} from "src/Root.sol";
-import {AxelarEVMRouter} from "src/gateway/routers/axelar/EVMRouter.sol";
+import {AxelarRouter} from "src/gateway/routers/axelar/Router.sol";
 import {Gateway, InvestmentManagerLike} from "src/gateway/Gateway.sol";
 import {InvestmentManager} from "src/InvestmentManager.sol";
-import {TokenManager} from "src/TokenManager.sol";
+import {PoolManager} from "src/PoolManager.sol";
 import {Escrow} from "src/Escrow.sol";
+import {UserEscrow} from "src/UserEscrow.sol";
 import {PauseAdmin} from "src/admins/PauseAdmin.sol";
 import {DelayedAdmin} from "src/admins/DelayedAdmin.sol";
 import {LiquidityPoolFactory, TrancheTokenFactory} from "src/util/Factory.sol";
@@ -25,48 +26,53 @@ contract Deployer is Script {
 
     Root public root;
     InvestmentManager public investmentManager;
-    TokenManager public tokenManager;
+    PoolManager public poolManager;
     Escrow public escrow;
+    UserEscrow public userEscrow;
     PauseAdmin public pauseAdmin;
     DelayedAdmin public delayedAdmin;
     Gateway public gateway;
 
     function deployInvestmentManager() public {
         escrow = new Escrow();
+        userEscrow = new UserEscrow();
         root = new Root(address(escrow), delay);
+
+        investmentManager = new InvestmentManager(address(escrow), address(userEscrow));
+
         address liquidityPoolFactory = address(new LiquidityPoolFactory(address(root)));
         address trancheTokenFactory = address(new TrancheTokenFactory(address(root)));
-        investmentManager = new InvestmentManager(address(escrow), liquidityPoolFactory, trancheTokenFactory);
+        investmentManager = new InvestmentManager(address(escrow), address(userEscrow));
+        poolManager = new PoolManager(address(escrow), liquidityPoolFactory, trancheTokenFactory);
 
-        LiquidityPoolFactory(liquidityPoolFactory).rely(address(investmentManager));
-        TrancheTokenFactory(trancheTokenFactory).rely(address(investmentManager));
+        LiquidityPoolFactory(liquidityPoolFactory).rely(address(poolManager));
+        TrancheTokenFactory(trancheTokenFactory).rely(address(poolManager));
     }
 
     function wire(address router) public {
-        // Deploy token manager
-        tokenManager = new TokenManager(address(escrow));
-
         // Deploy gateway and admins
         pauseAdmin = new PauseAdmin(address(root));
         delayedAdmin = new DelayedAdmin(address(root));
         pauseAdmin.rely(address(delayedAdmin));
         root.rely(address(pauseAdmin));
         root.rely(address(delayedAdmin));
-        gateway = new Gateway(address(root), address(investmentManager), address(tokenManager), address(router));
+        gateway = new Gateway(address(root), address(investmentManager), address(poolManager), address(router));
 
         // Wire gateway
-        investmentManager.file("tokenManager", address(tokenManager));
-        tokenManager.file("investmentManager", address(investmentManager));
+        investmentManager.file("poolManager", address(poolManager));
+        poolManager.file("investmentManager", address(investmentManager));
         investmentManager.file("gateway", address(gateway));
-        tokenManager.file("gateway", address(gateway));
-        gateway.rely(address(pauseAdmin));
-        gateway.rely(address(delayedAdmin));
+        poolManager.file("gateway", address(gateway));
         investmentManager.rely(address(root));
-        tokenManager.rely(address(root));
+        investmentManager.rely(address(poolManager));
+        poolManager.rely(address(root));
+        gateway.rely(address(root));
         RouterLike(router).rely(address(root));
         Escrow(address(escrow)).rely(address(root));
         Escrow(address(escrow)).rely(address(investmentManager));
-        Escrow(address(escrow)).rely(address(tokenManager));
+        UserEscrow(address(userEscrow)).rely(address(root));
+        UserEscrow(address(userEscrow)).rely(address(investmentManager));
+        Escrow(address(escrow)).rely(address(poolManager));
     }
 
     function giveAdminAccess() public {
@@ -78,7 +84,7 @@ contract Deployer is Script {
         RouterLike(router).deny(address(this));
         root.deny(address(this));
         investmentManager.deny(address(this));
-        tokenManager.deny(address(this));
+        poolManager.deny(address(this));
         escrow.deny(address(this));
         gateway.deny(address(this));
         pauseAdmin.deny(address(this));

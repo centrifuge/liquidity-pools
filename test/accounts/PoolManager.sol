@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity ^0.8.18;
-pragma abicoder v2;
+pragma solidity 0.8.21;
 
 import {MockHomeLiquidityPools} from "../mock/MockHomeLiquidityPools.sol";
 import "forge-std/Test.sol";
@@ -22,9 +21,9 @@ contract InvariantPoolManager is Test {
         allPools.push(poolId);
     }
 
-    function addPoolAndTranche(uint64 poolId, bytes16 trancheId, uint8 decimals, uint128 price) public {
+    function addPoolAndTranche(uint64 poolId, bytes16 trancheId, uint8 decimals) public {
         addPool(poolId);
-        homePools.addTranche(poolId, trancheId, "-", "-", decimals, price);
+        homePools.addTranche(poolId, trancheId, "-", "-", decimals);
 
         allTranches.push(trancheId);
         trancheIdToPoolId[trancheId] = poolId;

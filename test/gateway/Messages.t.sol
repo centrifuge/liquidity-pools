@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity ^0.8.18;
-pragma abicoder v2;
+pragma solidity 0.8.21;
 
 import {Messages} from "src/gateway/Messages.sol";
 import "forge-std/Test.sol";
@@ -123,25 +122,30 @@ contract MessagesTest is Test {
     function testUpdateTrancheTokenPrice() public {
         uint64 poolId = 1;
         bytes16 trancheId = bytes16(hex"811acd5b3f17c06841c7e41e9e04cb1b");
+        uint128 currencyId = 2;
         uint128 price = 1_000_000_000_000_000_000_000_000_000;
         bytes memory expectedHex =
-            hex"050000000000000001811acd5b3f17c06841c7e41e9e04cb1b00000000033b2e3c9fd0803ce8000000";
+            hex"050000000000000001811acd5b3f17c06841c7e41e9e04cb1b0000000000000000000000000000000200000000033b2e3c9fd0803ce8000000";
 
-        assertEq(Messages.formatUpdateTrancheTokenPrice(poolId, trancheId, price), expectedHex);
+        assertEq(Messages.formatUpdateTrancheTokenPrice(poolId, trancheId, currencyId, price), expectedHex);
 
-        (uint64 decodedPoolId, bytes16 decodedTrancheId, uint128 decodedPrice) =
+        (uint64 decodedPoolId, bytes16 decodedTrancheId, uint128 decodedCurrencyId, uint128 decodedPrice) =
             Messages.parseUpdateTrancheTokenPrice(expectedHex);
         assertEq(uint256(decodedPoolId), poolId);
         assertEq(decodedTrancheId, trancheId);
+        assertEq(decodedCurrencyId, currencyId);
         assertEq(decodedPrice, price);
     }
 
-    function testUpdateTrancheTokenPriceEquivalence(uint64 poolId, bytes16 trancheId, uint128 price) public {
-        bytes memory _message = Messages.formatUpdateTrancheTokenPrice(poolId, trancheId, price);
-        (uint64 decodedPoolId, bytes16 decodedTrancheId, uint128 decodedPrice) =
+    function testUpdateTrancheTokenPriceEquivalence(uint64 poolId, bytes16 trancheId, uint128 currencyId, uint128 price)
+        public
+    {
+        bytes memory _message = Messages.formatUpdateTrancheTokenPrice(poolId, trancheId, currencyId, price);
+        (uint64 decodedPoolId, bytes16 decodedTrancheId, uint128 decodedCurrencyId, uint128 decodedPrice) =
             Messages.parseUpdateTrancheTokenPrice(_message);
         assertEq(uint256(decodedPoolId), uint256(poolId));
         assertEq(decodedTrancheId, trancheId);
+        assertEq(decodedCurrencyId, currencyId);
         assertEq(uint256(decodedPrice), uint256(price));
     }
 
@@ -861,6 +865,33 @@ contract MessagesTest is Test {
         assertEq(decodedCurrency, currency);
     }
 
+    function testUpdateTrancheInvestmentLimit() public {
+        uint64 poolId = 1;
+        bytes16 trancheId = bytes16(hex"811acd5b3f17c06841c7e41e9e04cb1b");
+        uint128 investmentLimit = 1000;
+        bytes memory expectedHex =
+            hex"180000000000000001811acd5b3f17c06841c7e41e9e04cb1b000000000000000000000000000003e8";
+
+        assertEq(Messages.formatUpdateTrancheInvestmentLimit(poolId, trancheId, investmentLimit), expectedHex);
+
+        (uint64 decodedPoolId, bytes16 decodedTrancheId, uint128 decodedInvestmentLimit) =
+            Messages.parseUpdateTrancheInvestmentLimit(expectedHex);
+        assertEq(uint256(decodedPoolId), poolId);
+        assertEq(decodedTrancheId, trancheId);
+        assertEq(decodedInvestmentLimit, investmentLimit);
+    }
+
+    function testUpdateTrancheInvestmentLimitEquivalence(uint64 poolId, bytes16 trancheId, uint128 investmentLimit)
+        public
+    {
+        bytes memory _message = Messages.formatUpdateTrancheInvestmentLimit(poolId, trancheId, investmentLimit);
+        (uint64 decodedPoolId, bytes16 decodedTrancheId, uint128 decodedInvestmentLimit) =
+            Messages.parseUpdateTrancheInvestmentLimit(_message);
+        assertEq(uint256(decodedPoolId), uint256(poolId));
+        assertEq(decodedTrancheId, trancheId);
+        assertEq(decodedInvestmentLimit, investmentLimit);
+    }
+
     function testFormatDomainCentrifuge() public {
         assertEq(Messages.formatDomain(Messages.Domain.Centrifuge), hex"000000000000000000");
     }
@@ -875,32 +906,6 @@ contract MessagesTest is Test {
 
     function testFormatDomainAvalanche() public {
         assertEq(Messages.formatDomain(Messages.Domain.EVM, 43114), hex"01000000000000a86a");
-    }
-
-    // Convert an hexadecimal character to their value
-    function fromHexChar(uint8 c) internal pure returns (uint8) {
-        if (bytes1(c) >= bytes1("0") && bytes1(c) <= bytes1("9")) {
-            return c - uint8(bytes1("0"));
-        }
-        if (bytes1(c) >= bytes1("a") && bytes1(c) <= bytes1("f")) {
-            return 10 + c - uint8(bytes1("a"));
-        }
-        if (bytes1(c) >= bytes1("A") && bytes1(c) <= bytes1("F")) {
-            return 10 + c - uint8(bytes1("A"));
-        }
-        revert("Failed to encode hex char");
-    }
-
-    // Convert an hexadecimal string to raw bytes
-    function fromHex(string memory s) internal pure returns (bytes memory) {
-        bytes memory ss = bytes(s);
-        require(ss.length % 2 == 0); // length must be even
-        bytes memory r = new bytes(ss.length / 2);
-
-        for (uint256 i = 0; i < ss.length / 2; ++i) {
-            r[i] = bytes1(fromHexChar(uint8(ss[2 * i])) * 16 + fromHexChar(uint8(ss[2 * i + 1])));
-        }
-        return r;
     }
 
     function stringToBytes32(string memory source) internal pure returns (bytes32 result) {
