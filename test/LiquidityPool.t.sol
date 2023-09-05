@@ -2,7 +2,6 @@
 pragma solidity 0.8.21;
 
 import "./TestSetup.t.sol";
-import {MathLib} from "../src/util/MathLib.sol";
 
 contract LiquidityPoolTest is TestSetup {
     // Deployment
