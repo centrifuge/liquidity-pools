@@ -34,7 +34,6 @@ contract PoolManagerTest is TestSetup {
 
         vm.expectRevert(bytes("PoolManager/tranche-not-added"));
         poolManager.deployTranche(poolId, trancheId);
-        tokenName = "hello there!";
         homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals); // add tranche
         address trancheToken_ = poolManager.deployTranche(poolId, trancheId);
         TrancheToken trancheToken = TrancheToken(trancheToken_);
