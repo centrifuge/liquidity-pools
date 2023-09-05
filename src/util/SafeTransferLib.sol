@@ -6,7 +6,7 @@ import {IERC20} from "../interfaces/IERC20.sol";
 // Adapted from https://github.com/Uniswap/v3-periphery/blob/main/contracts/libraries/TransferHelper.sol
 library SafeTransferLib {
     /// @notice Transfers tokens from the targeted address to the given destination
-    /// @notice Errors with 'STF' if transfer fails
+    /// @notice Errors if transfer fails
     /// @param token The contract address of the token to be transferred
     /// @param from The originating address from which the tokens will be transferred
     /// @param to The destination address of the transfer
@@ -18,7 +18,7 @@ library SafeTransferLib {
     }
 
     /// @notice Transfers tokens from msg.sender to a recipient
-    /// @dev Errors with ST if transfer fails
+    /// @dev Errors if transfer fails
     /// @param token The contract address of the token which will be transferred
     /// @param to The recipient of the transfer
     /// @param value The value of the transfer
@@ -28,7 +28,7 @@ library SafeTransferLib {
     }
 
     /// @notice Approves the stipulated contract to spend the given allowance in the given token
-    /// @dev Errors with 'SA' if transfer fails
+    /// @dev Errors if transfer fails
     /// @param token The contract address of the token to be approved
     /// @param to The target of the approval
     /// @param value The amount of the given token the target will be allowed to spend

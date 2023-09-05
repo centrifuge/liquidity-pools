@@ -400,7 +400,7 @@ contract LiquidityPoolTest is TestSetup {
         uint8 TRANCHE_TOKEN_DECIMALS = 18; // Like DAI
         uint8 INVESTMENT_CURRENCY_DECIMALS = 6; // 6, like USDC
 
-        ERC20 currency = newErc20("Currency", "CR", INVESTMENT_CURRENCY_DECIMALS);
+        ERC20 currency = _newErc20("Currency", "CR", INVESTMENT_CURRENCY_DECIMALS);
         address lPool_ =
             deployLiquidityPool(poolId, TRANCHE_TOKEN_DECIMALS, "", "", trancheId, currencyId, address(currency));
         LiquidityPool lPool = LiquidityPool(lPool_);
@@ -479,7 +479,7 @@ contract LiquidityPoolTest is TestSetup {
         uint8 TRANCHE_TOKEN_DECIMALS = 6; // Like DAI
         uint8 INVESTMENT_CURRENCY_DECIMALS = 18; // 18, like USDC
 
-        ERC20 currency = newErc20("Currency", "CR", INVESTMENT_CURRENCY_DECIMALS);
+        ERC20 currency = _newErc20("Currency", "CR", INVESTMENT_CURRENCY_DECIMALS);
         address lPool_ =
             deployLiquidityPool(poolId, TRANCHE_TOKEN_DECIMALS, "", "", trancheId, currencyId, address(currency));
         LiquidityPool lPool = LiquidityPool(lPool_);
@@ -557,7 +557,7 @@ contract LiquidityPoolTest is TestSetup {
         uint8 INVESTMENT_CURRENCY_DECIMALS = 6; // 6, like USDC
         uint8 TRANCHE_TOKEN_DECIMALS = 18; // Like DAI
 
-        ERC20 currency = newErc20("Currency", "CR", INVESTMENT_CURRENCY_DECIMALS);
+        ERC20 currency = _newErc20("Currency", "CR", INVESTMENT_CURRENCY_DECIMALS);
         address lPool_ =
             deployLiquidityPool(poolId, TRANCHE_TOKEN_DECIMALS, "", "", trancheId, currencyId, address(currency));
         LiquidityPool lPool = LiquidityPool(lPool_);
@@ -606,7 +606,7 @@ contract LiquidityPoolTest is TestSetup {
         uint8 INVESTMENT_CURRENCY_DECIMALS = 18; // 18, like DAI
         uint8 TRANCHE_TOKEN_DECIMALS = 6; // Like USDC
 
-        ERC20 currency = newErc20("Currency", "CR", INVESTMENT_CURRENCY_DECIMALS);
+        ERC20 currency = _newErc20("Currency", "CR", INVESTMENT_CURRENCY_DECIMALS);
         address lPool_ =
             deployLiquidityPool(poolId, TRANCHE_TOKEN_DECIMALS, "", "", trancheId, currencyId, address(currency));
         LiquidityPool lPool = LiquidityPool(lPool_);
@@ -650,7 +650,7 @@ contract LiquidityPoolTest is TestSetup {
         uint8 INVESTMENT_CURRENCY_DECIMALS = 6; // 6, like USDC
         uint8 TRANCHE_TOKEN_DECIMALS = 18; // Like DAI
 
-        ERC20 currency = newErc20("Currency", "CR", INVESTMENT_CURRENCY_DECIMALS);
+        ERC20 currency = _newErc20("Currency", "CR", INVESTMENT_CURRENCY_DECIMALS);
         address lPool_ =
             deployLiquidityPool(poolId, TRANCHE_TOKEN_DECIMALS, "", "", trancheId, currencyId, address(currency));
         LiquidityPool lPool = LiquidityPool(lPool_);
@@ -693,7 +693,7 @@ contract LiquidityPoolTest is TestSetup {
         uint8 INVESTMENT_CURRENCY_DECIMALS = 18; // 18, like DAI
         uint8 TRANCHE_TOKEN_DECIMALS = 6; // Like USDC
 
-        ERC20 currency = newErc20("Currency", "CR", INVESTMENT_CURRENCY_DECIMALS);
+        ERC20 currency = _newErc20("Currency", "CR", INVESTMENT_CURRENCY_DECIMALS);
         address lPool_ =
             deployLiquidityPool(poolId, TRANCHE_TOKEN_DECIMALS, "", "", trancheId, currencyId, address(currency));
         LiquidityPool lPool = LiquidityPool(lPool_);
