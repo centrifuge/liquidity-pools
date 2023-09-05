@@ -116,7 +116,7 @@ contract GatewayTest is TestSetup {
     ) public {
         assert(address(gateway.poolManager()) != self);
 
-        // fail -> self not incoming router
+        // fail -> self not pool manager
         vm.expectRevert(bytes("Gateway/only-pool-manager-allowed-to-call"));
         gateway.transferTrancheTokensToCentrifuge(poolId, trancheId, sender, destinationAddressBytes, amount);
 
@@ -132,7 +132,7 @@ contract GatewayTest is TestSetup {
         gateway.transfer(token, sender, receiver, amount);
     }
 
-    //onlyPoolManager can call
+    //onlyInvestmentManager can call
     function testOnlyInvestmentManagerCanCall(
         uint64 poolId,
         bytes16 trancheId,
@@ -143,7 +143,7 @@ contract GatewayTest is TestSetup {
     ) public {
         assert(address(gateway.investmentManager()) != self);
 
-        // fail -> self not incoming router
+        // fail -> self investment manager
         vm.expectRevert(bytes("Gateway/only-investment-manager-allowed-to-call"));
         gateway.increaseInvestOrder(poolId, trancheId, investor, currency, currencyAmount);
 
