@@ -51,7 +51,7 @@ interface EscrowLike {
 
 interface UserEscrowLike {
     function transferIn(address token, address source, address destination, uint256 amount) external;
-    function transferOut(address token, address destination, uint256 amount) external;
+    function transferOut(address token, address owner, address destination, uint256 amount) external;
 }
 
 /// @dev liquidity pool orders and deposit/redemption limits per user
@@ -535,7 +535,7 @@ contract InvestmentManager is Auth {
         LiquidityPoolLike lPool = LiquidityPoolLike(liquidityPool);
 
         _decreaseRedemptionLimits(user, liquidityPool, currencyAmount, trancheTokenAmount); // decrease the possible deposit limits
-        userEscrow.transferOut(lPool.asset(), receiver, currencyAmount);
+        userEscrow.transferOut(lPool.asset(), user, receiver, currencyAmount);
 
         emit RedemptionProcessed(liquidityPool, user, trancheTokenAmount);
     }
