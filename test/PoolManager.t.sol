@@ -39,8 +39,8 @@ contract PoolManagerTest is TestSetup {
         TrancheToken trancheToken = TrancheToken(trancheToken_);
         assertEq(trancheToken.wards(address(root)), 1);
         assertEq(trancheToken.wards(address(investmentManager)), 1);
-        assertEq(bytes128ToString(stringToBytes128(tokenName)), bytes128ToString(stringToBytes128(trancheToken.name())));
-        assertEq(bytes32ToString(stringToBytes32(tokenSymbol)), bytes32ToString(stringToBytes32(trancheToken.symbol())));
+        assertEq(_bytes128ToString(_stringToBytes128(tokenName)), _bytes128ToString(_stringToBytes128(trancheToken.name())));
+        assertEq(_bytes32ToString(_stringToBytes32(tokenSymbol)), _bytes32ToString(_stringToBytes32(trancheToken.symbol())));
     }
 
     function testAddCurrencyWorks(uint128 currency, uint128 badCurrency) public {
@@ -53,7 +53,7 @@ contract PoolManagerTest is TestSetup {
         assertEq(address_, address(erc20));
 
         // Verify we can't override the same currency id another address
-        ERC20 badErc20 = newErc20("BadActor's Dollar", "BADUSD", 18);
+        ERC20 badErc20 = _newErc20("BadActor's Dollar", "BADUSD", 18);
         vm.expectRevert(bytes("PoolManager/currency-id-in-use"));
         homePools.addCurrency(currency, address(badErc20));
         assertEq(poolManager.currencyIdToAddress(currency), address(erc20));
@@ -65,14 +65,14 @@ contract PoolManagerTest is TestSetup {
     }
 
     function testAddCurrencyHasMaxDecimals() public {
-        ERC20 erc20_invalid = newErc20("X's Dollar", "USDX", 42);
+        ERC20 erc20_invalid = _newErc20("X's Dollar", "USDX", 42);
         vm.expectRevert(bytes("PoolManager/too-many-currency-decimals"));
         homePools.addCurrency(1, address(erc20_invalid));
 
-        ERC20 erc20_valid = newErc20("X's Dollar", "USDX", 18);
+        ERC20 erc20_valid = _newErc20("X's Dollar", "USDX", 18);
         homePools.addCurrency(2, address(erc20_valid));
 
-        ERC20 erc20_valid2 = newErc20("X's Dollar", "USDX", 6);
+        ERC20 erc20_valid2 = _newErc20("X's Dollar", "USDX", 6);
         homePools.addCurrency(3, address(erc20_valid2));
     }
 
@@ -91,7 +91,7 @@ contract PoolManagerTest is TestSetup {
         vm.assume(amount > 0);
         vm.assume(recipient != address(0));
 
-        ERC20 erc20 = newErc20(tokenName, tokenSymbol, decimals);
+        ERC20 erc20 = _newErc20(tokenName, tokenSymbol, decimals);
         vm.assume(recipient != address(erc20));
         homePools.addCurrency(currency, address(erc20));
 
@@ -117,7 +117,7 @@ contract PoolManagerTest is TestSetup {
         vm.assume(currency != 0);
         vm.assume(recipient != address(0));
 
-        ERC20 erc20 = newErc20(tokenName, tokenSymbol, decimals);
+        ERC20 erc20 = _newErc20(tokenName, tokenSymbol, decimals);
         homePools.addCurrency(currency, address(erc20));
 
         // First, an outgoing transfer must take place which has funds currency of the currency moved to
@@ -149,7 +149,7 @@ contract PoolManagerTest is TestSetup {
         vm.assume(currency != 0);
         vm.assume(initialBalance >= amount);
 
-        ERC20 erc20 = newErc20(tokenName, tokenSymbol, decimals);
+        ERC20 erc20 = _newErc20(tokenName, tokenSymbol, decimals);
 
         vm.expectRevert(bytes("PoolManager/unknown-currency"));
         poolManager.transfer(address(erc20), recipient, amount);
@@ -400,7 +400,7 @@ contract PoolManagerTest is TestSetup {
 
     function testAllowPoolCurrencyWorks(uint128 currency, uint64 poolId) public {
         vm.assume(currency > 0);
-        ERC20 token = newErc20("X's Dollar", "USDX", 18);
+        ERC20 token = _newErc20("X's Dollar", "USDX", 18);
         homePools.addCurrency(currency, address(token));
         homePools.addPool(poolId);
 
@@ -441,8 +441,8 @@ contract PoolManagerTest is TestSetup {
 
         TrancheToken trancheToken = TrancheToken(poolManager.getTrancheToken(poolId, trancheId));
 
-        assertEq(bytes128ToString(stringToBytes128(tokenName)), bytes128ToString(stringToBytes128(trancheToken.name())));
-        assertEq(bytes32ToString(stringToBytes32(tokenSymbol)), bytes32ToString(stringToBytes32(trancheToken.symbol())));
+        assertEq(_bytes128ToString(_stringToBytes128(tokenName)), _bytes128ToString(_stringToBytes128(trancheToken.name())));
+        assertEq(_bytes32ToString(_stringToBytes32(tokenSymbol)), _bytes32ToString(_stringToBytes32(trancheToken.symbol())));
         assertEq(decimals, trancheToken.decimals());
     }
 
@@ -537,8 +537,8 @@ contract PoolManagerTest is TestSetup {
         assertTrue(lPool.wards(address(this)) == 0);
         assertTrue(investmentManager.wards(lPoolAddress) == 1);
 
-        assertEq(trancheToken.name(), bytes128ToString(stringToBytes128(tokenName)));
-        assertEq(trancheToken.symbol(), bytes32ToString(stringToBytes32(tokenSymbol)));
+        assertEq(trancheToken.name(), _bytes128ToString(_stringToBytes128(tokenName)));
+        assertEq(trancheToken.symbol(), _bytes32ToString(_stringToBytes32(tokenSymbol)));
         assertEq(trancheToken.decimals(), decimals);
         assertTrue(trancheToken.hasMember(address(investmentManager.escrow())));
 

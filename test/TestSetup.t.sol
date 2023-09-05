@@ -53,18 +53,11 @@ contract TestSetup is Deployer, Test {
         // removeDeployerAccess(address(mockXcmRouter)); // need auth permissions in tests
 
         homePools = new MockHomeLiquidityPools(address(mockXcmRouter));
-        erc20 = newErc20("X's Dollar", "USDX", 6);
+        erc20 = _newErc20("X's Dollar", "USDX", 6);
         mockXcmRouter.file("gateway", address(gateway));
     }
 
     // helpers
-    function newErc20(string memory name, string memory symbol, uint8 decimals) internal returns (ERC20) {
-        ERC20 currency = new ERC20(decimals);
-        currency.file("name", name);
-        currency.file("symbol", symbol);
-        return currency;
-    }
-
     function deployLiquidityPool(
         uint64 poolId,
         uint8 decimals,
@@ -83,7 +76,14 @@ contract TestSetup is Deployer, Test {
         return lPoolAddress;
     }
 
-    function stringToBytes32(string memory source) internal pure returns (bytes32 result) {
+    function _newErc20(string memory name, string memory symbol, uint8 decimals) internal returns (ERC20) {
+        ERC20 currency = new ERC20(decimals);
+        currency.file("name", name);
+        currency.file("symbol", symbol);
+        return currency;
+    }
+
+    function _stringToBytes32(string memory source) internal pure returns (bytes32 result) {
         bytes memory tempEmptyStringTest = bytes(source);
         if (tempEmptyStringTest.length == 0) {
             return 0x0;
@@ -94,7 +94,7 @@ contract TestSetup is Deployer, Test {
         }
     }
 
-    function bytes32ToString(bytes32 _bytes32) internal pure returns (string memory) {
+    function _bytes32ToString(bytes32 _bytes32) internal pure returns (string memory) {
         uint8 i = 0;
         while (i < 32 && _bytes32[i] != 0) {
             i++;
@@ -107,14 +107,7 @@ contract TestSetup is Deployer, Test {
         return string(bytesArray);
     }
 
-    function toBytes32(bytes memory f) internal pure returns (bytes16 fc) {
-        assembly {
-            fc := mload(add(f, 32))
-        }
-        return fc;
-    }
-
-    function stringToBytes128(string memory source) internal pure returns (bytes memory) {
+    function _stringToBytes128(string memory source) internal pure returns (bytes memory) {
         bytes memory temp = bytes(source);
         bytes memory result = new bytes(128);
 
@@ -129,7 +122,7 @@ contract TestSetup is Deployer, Test {
         return result;
     }
 
-    function bytes128ToString(bytes memory _bytes128) internal pure returns (string memory) {
+    function _bytes128ToString(bytes memory _bytes128) internal pure returns (string memory) {
         require(_bytes128.length == 128, "Input should be 128 bytes");
 
         uint8 i = 0;

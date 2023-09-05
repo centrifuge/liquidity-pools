@@ -114,7 +114,7 @@ contract MessagesTest is Test {
         // of treated as strings themselves. This conversion from string to bytes32 to string is used to simulate
         // this intended behaviour.
         assertEq(decodedTokenName, Messages._bytes128ToString(Messages._stringToBytes128(tokenName)));
-        assertEq(decodedTokenSymbol, bytes32ToString(stringToBytes32(tokenSymbol)));
+        assertEq(decodedTokenSymbol, Messages._bytes32ToString(Messages._stringToBytes32(tokenSymbol)));
         assertEq(decodedDecimals, decimals);
         assertEq(uint256(decodedPrice), uint256(price));
     }
@@ -800,7 +800,7 @@ contract MessagesTest is Test {
         // of treated as strings themselves. This conversion from string to bytes32 to string is used to simulate
         // this intended behaviour.
         assertEq(decodedTokenName, Messages._bytes128ToString(Messages._stringToBytes128(tokenName)));
-        assertEq(decodedTokenSymbol, bytes32ToString(stringToBytes32(tokenSymbol)));
+        assertEq(decodedTokenSymbol, Messages._bytes32ToString(Messages._stringToBytes32(tokenSymbol)));
     }
 
     function testCancelInvestOrder() public {
@@ -906,29 +906,5 @@ contract MessagesTest is Test {
 
     function testFormatDomainAvalanche() public {
         assertEq(Messages.formatDomain(Messages.Domain.EVM, 43114), hex"01000000000000a86a");
-    }
-
-    function stringToBytes32(string memory source) internal pure returns (bytes32 result) {
-        bytes memory tempEmptyStringTest = bytes(source);
-        if (tempEmptyStringTest.length == 0) {
-            return 0x0;
-        }
-
-        assembly {
-            result := mload(add(source, 32))
-        }
-    }
-
-    function bytes32ToString(bytes32 _bytes32) internal pure returns (string memory) {
-        uint8 i = 0;
-        while (i < 32 && _bytes32[i] != 0) {
-            i++;
-        }
-
-        bytes memory bytesArray = new bytes(i);
-        for (i = 0; i < 32 && _bytes32[i] != 0; i++) {
-            bytesArray[i] = _bytes32[i];
-        }
-        return string(bytesArray);
     }
 }

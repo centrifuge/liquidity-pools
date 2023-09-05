@@ -24,8 +24,8 @@ contract LiquidityPoolTest is TestSetup {
         assertEq(lPool.trancheId(), trancheId);
         address token = poolManager.getTrancheToken(poolId, trancheId);
         assertEq(address(lPool.share()), token);
-        assertEq(bytes128ToString(stringToBytes128(tokenName)), bytes128ToString(stringToBytes128(lPool.name())));
-        assertEq(bytes32ToString(stringToBytes32(tokenSymbol)), bytes32ToString(stringToBytes32(lPool.symbol())));
+        assertEq(_bytes128ToString(_stringToBytes128(tokenName)), _bytes128ToString(_stringToBytes128(lPool.name())));
+        assertEq(_bytes32ToString(_stringToBytes32(tokenSymbol)), _bytes32ToString(_stringToBytes32(lPool.symbol())));
 
         // permissions set correctly
         assertEq(lPool.wards(address(root)), 1);
