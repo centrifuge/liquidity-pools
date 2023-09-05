@@ -113,7 +113,7 @@ contract MessagesTest is Test {
         // Intended behaviour is that byte strings will be treated as bytes and converted to strings instead
         // of treated as strings themselves. This conversion from string to bytes32 to string is used to simulate
         // this intended behaviour.
-        assertEq(decodedTokenName, bytes128ToString(stringToBytes128(tokenName)));
+        assertEq(decodedTokenName, Messages.bytes128ToString(Messages.stringToBytes128(tokenName)));
         assertEq(decodedTokenSymbol, bytes32ToString(stringToBytes32(tokenSymbol)));
         assertEq(decodedDecimals, decimals);
         assertEq(uint256(decodedPrice), uint256(price));
@@ -799,7 +799,7 @@ contract MessagesTest is Test {
         // Intended behaviour is that byte strings will be treated as bytes and converted to strings instead
         // of treated as strings themselves. This conversion from string to bytes32 to string is used to simulate
         // this intended behaviour.
-        assertEq(decodedTokenName, bytes128ToString(stringToBytes128(tokenName)));
+        assertEq(decodedTokenName, Messages.bytes128ToString(Messages.stringToBytes128(tokenName)));
         assertEq(decodedTokenSymbol, bytes32ToString(stringToBytes32(tokenSymbol)));
     }
 
@@ -929,38 +929,6 @@ contract MessagesTest is Test {
         for (i = 0; i < 32 && _bytes32[i] != 0; i++) {
             bytesArray[i] = _bytes32[i];
         }
-        return string(bytesArray);
-    }
-
-    function stringToBytes128(string memory source) public pure returns (bytes memory) {
-        bytes memory temp = bytes(source);
-        bytes memory result = new bytes(128);
-
-        for (uint256 i = 0; i < 128; i++) {
-            if (i < temp.length) {
-                result[i] = temp[i];
-            } else {
-                result[i] = 0x00;
-            }
-        }
-
-        return result;
-    }
-
-    function bytes128ToString(bytes memory _bytes128) public pure returns (string memory) {
-        require(_bytes128.length == 128, "Input should be 128 bytes");
-
-        uint8 i = 0;
-        while (i < 128 && _bytes128[i] != 0) {
-            i++;
-        }
-
-        bytes memory bytesArray = new bytes(i);
-
-        for (uint8 j = 0; j < i; j++) {
-            bytesArray[j] = _bytes128[j];
-        }
-
         return string(bytesArray);
     }
 }
