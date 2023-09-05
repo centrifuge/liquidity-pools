@@ -77,8 +77,8 @@ interface RootLike {
 
 contract Gateway is Auth {
     RootLike public immutable root;
-    InvestmentManagerLike public immutable investmentManager;
-    PoolManagerLike public immutable poolManager;
+    InvestmentManagerLike public investmentManager;
+    PoolManagerLike public poolManager;
 
     mapping(address => bool) public incomingRouters;
     RouterLike public outgoingRouter;
@@ -87,6 +87,7 @@ contract Gateway is Auth {
     event AddIncomingRouter(address indexed router);
     event RemoveIncomingRouter(address indexed router);
     event UpdateOutgoingRouter(address indexed router);
+    event File(bytes32 indexed what, address data);
 
     constructor(address root_, address investmentManager_, address poolManager_, address router_) {
         root = RootLike(root_);
@@ -105,7 +106,7 @@ contract Gateway is Auth {
     }
 
     modifier onlyPoolManager() {
-        require(msg.sender == address(poolManager), "Gateway/only-token-manager-allowed-to-call");
+        require(msg.sender == address(poolManager), "Gateway/only-pool-manager-allowed-to-call");
         _;
     }
 
@@ -120,6 +121,13 @@ contract Gateway is Auth {
     }
 
     // --- Administration ---
+    function file(bytes32 what, address data) public auth {
+        if (what == "poolManager") poolManager = PoolManagerLike(data);
+        else if (what == "investmentManager") investmentManager = InvestmentManagerLike(data);
+        else revert("Gateway/file-unrecognized-param");
+        emit File(what, data);
+    }
+
     function addIncomingRouter(address router) public auth {
         incomingRouters[router] = true;
         emit AddIncomingRouter(router);
