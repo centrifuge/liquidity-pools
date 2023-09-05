@@ -42,7 +42,7 @@ contract GatewayTest is TestSetup {
         vm.expectRevert(bytes("Auth/not-authorized"));
         gateway.file("poolManager", self);
     }
-    
+
     function testAddRouter(address router) public {
         assert(!gateway.incomingRouters(router)); // router not added
 
@@ -85,25 +85,25 @@ contract GatewayTest is TestSetup {
         gateway.updateOutgoingRouter(router);
     }
 
-  // --- Permissions ---
-  // onlyIncomingRouter can call 
+    // --- Permissions ---
+    // onlyIncomingRouter can call
     function testOnlyIncomingRouterCanCall() public {
-            bytes memory message = hex"020000000000bce1a4";
-            assert(!gateway.incomingRouters(self));
+        bytes memory message = hex"020000000000bce1a4";
+        assert(!gateway.incomingRouters(self));
 
-            // fail -> self not incoming router
-            vm.expectRevert(bytes("Gateway/only-router-allowed-to-call"));
-            gateway.handle(message);
+        // fail -> self not incoming router
+        vm.expectRevert(bytes("Gateway/only-router-allowed-to-call"));
+        gateway.handle(message);
 
-            //success
-            gateway.addIncomingRouter(self);
-            assert(gateway.incomingRouters(self));
+        //success
+        gateway.addIncomingRouter(self);
+        assert(gateway.incomingRouters(self));
 
-            gateway.handle(message);
+        gateway.handle(message);
     }
 
     //onlyPoolManager can call
-    function testOnlyPoolManagerCanCall( 
+    function testOnlyPoolManagerCanCall(
         uint64 poolId,
         bytes16 trancheId,
         address sender,
@@ -111,9 +111,9 @@ contract GatewayTest is TestSetup {
         address destinationAddress,
         bytes32 destinationAddressBytes,
         uint128 amount,
-        uint128 token, 
+        uint128 token,
         bytes32 receiver
-        ) public {
+    ) public {
         assert(address(gateway.poolManager()) != self);
 
         // fail -> self not incoming router
@@ -132,39 +132,39 @@ contract GatewayTest is TestSetup {
         gateway.transfer(token, sender, receiver, amount);
     }
 
-     //onlyPoolManager can call
-    function testOnlyInvestmentManagerCanCall( 
+    //onlyPoolManager can call
+    function testOnlyInvestmentManagerCanCall(
         uint64 poolId,
         bytes16 trancheId,
         address investor,
         uint128 currency,
         uint128 currencyAmount,
         uint128 trancheTokenAmount
-        ) public {
+    ) public {
         assert(address(gateway.investmentManager()) != self);
 
         // fail -> self not incoming router
         vm.expectRevert(bytes("Gateway/only-investment-manager-allowed-to-call"));
         gateway.increaseInvestOrder(poolId, trancheId, investor, currency, currencyAmount);
-       
+
         vm.expectRevert(bytes("Gateway/only-investment-manager-allowed-to-call"));
         gateway.decreaseInvestOrder(poolId, trancheId, investor, currency, currencyAmount);
-       
+
         vm.expectRevert(bytes("Gateway/only-investment-manager-allowed-to-call"));
         gateway.increaseRedeemOrder(poolId, trancheId, investor, currency, trancheTokenAmount);
-       
+
         vm.expectRevert(bytes("Gateway/only-investment-manager-allowed-to-call"));
         gateway.decreaseRedeemOrder(poolId, trancheId, investor, currency, trancheTokenAmount);
 
         vm.expectRevert(bytes("Gateway/only-investment-manager-allowed-to-call"));
         gateway.collectInvest(poolId, trancheId, investor, currency);
-       
+
         vm.expectRevert(bytes("Gateway/only-investment-manager-allowed-to-call"));
         gateway.collectRedeem(poolId, trancheId, investor, currency);
 
         vm.expectRevert(bytes("Gateway/only-investment-manager-allowed-to-call"));
         gateway.cancelInvestOrder(poolId, trancheId, investor, currency);
-       
+
         vm.expectRevert(bytes("Gateway/only-investment-manager-allowed-to-call"));
         gateway.cancelRedeemOrder(poolId, trancheId, investor, currency);
 
@@ -179,5 +179,4 @@ contract GatewayTest is TestSetup {
         gateway.cancelInvestOrder(poolId, trancheId, investor, currency);
         gateway.cancelRedeemOrder(poolId, trancheId, investor, currency);
     }
-
-    }
+}
