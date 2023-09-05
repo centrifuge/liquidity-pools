@@ -804,7 +804,7 @@ contract LiquidityPoolTest is TestSetup {
         lPool.redeem(amount / 2, self, self); // redeem half the amount to own wallet
 
         // fail -> random does has no approval to receive funds
-        vm.expectRevert(bytes("UserEscrow/recepient-has-no-allowance"));
+        vm.expectRevert(bytes("UserEscrow/receiver-has-no-allowance"));
         lPool.redeem(amount / 2, random, self); // redeem half the amount to oanother wallet
 
         // success
@@ -870,7 +870,7 @@ contract LiquidityPoolTest is TestSetup {
         lPool.withdraw(amount / 2, self, self); // mint hald the amount
 
         // fail -> random does has no approval to receive funds
-        vm.expectRevert(bytes("UserEscrow/recepient-has-no-allowance"));
+        vm.expectRevert(bytes("UserEscrow/receiver-has-no-allowance"));
         lPool.withdraw(amount / 2, random, self); // redeem half the amount to oanother wallet
 
         // success
