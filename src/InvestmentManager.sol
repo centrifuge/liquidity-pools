@@ -111,7 +111,7 @@ contract InvestmentManager is Auth {
     /// @notice Request deposit. Liquidity pools have to request investments from Centrifuge before actual tranche tokens can be minted.
     ///         The deposit requests are added to the order book on Centrifuge. Once the next epoch is executed on Centrifuge,
     ///         liquidity pools can proceed with tranche token payouts in case their orders got fullfilled.
-    ///         If an amount of 0 is passed, this triggers cancelling the order.
+    ///         If an amount of 0 is passed, this triggers cancelling outstanding deposit orders.
     /// @dev    The user currency amount required to fullfill the deposit request have to be locked,
     ///         even though the tranche token payout can only happen after epoch execution.
     function requestDeposit(uint256 currencyAmount, address user) public auth {
