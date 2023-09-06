@@ -45,7 +45,7 @@ interface InvestmentManagerLike {
 /// @notice Liquidity Pool implementation for Centrifuge pools
 ///         following the EIP4626 standard, with asynchronous extension methods.
 ///
-/// @dev    Each Liquidity Pool is a tokenized vault issuing shares as restricted ERC20 tokens against currency deposits based on the current share price.
+/// @dev    Each Liquidity Pool is a tokenized vault issuing shares of Centrifuge tranches as restricted ERC20 tokens against currency deposits based on the current share price.
 ///         This is extending the EIP4626 standard by 'requestRedeem' & 'requestDeposit' functions, where redeem and deposit orders are submitted to the pools
 ///         to be included in the execution of the following epoch. After execution users can use the deposit, mint, redeem and withdraw functions to
 ///         get their shares and/or assets from the pools.
