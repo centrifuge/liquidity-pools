@@ -339,7 +339,7 @@ contract InvestmentManager is Auth {
         totalAssets = convertToAssets(totalSupply, liquidityPool);
     }
 
-    /// @dev Calculates the amount of shares / tranche tokens that any user would get for the amount of assets provided. The calcultion is based on the token price from the most recent epoch retrieved from Centrifuge chain.
+    /// @dev Calculates the amount of shares / tranche tokens that any user would get for the amount of assets provided. The calculation is based on the token price from the most recent epoch retrieved from Centrifuge chain.
     function convertToShares(uint256 assets, address liquidityPool) public view auth returns (uint256 shares) {
         (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getPoolDecimals(liquidityPool);
 
@@ -350,7 +350,7 @@ contract InvestmentManager is Auth {
         );
     }
 
-    /// @dev Calculates the asset value for an amount of shares / tranche tokens provided. The calcultion is based on the token price from the most recent epoch retrieved from Centrifuge chain.
+    /// @dev Calculates the asset value for an amount of shares / tranche tokens provided. The calculation is based on the token price from the most recent epoch retrieved from Centrifuge chain.
     function convertToAssets(uint256 shares, address liquidityPool) public view auth returns (uint256 assets) {
         (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getPoolDecimals(liquidityPool);
 
@@ -425,7 +425,6 @@ contract InvestmentManager is Auth {
         view
         returns (uint256 currencyAmount)
     {
-        require(trancheTokenAmount < type(uint128).max, "InvestmentManager/amount-too-large");
         uint256 redeemPrice = calculateRedeemPrice(user, liquidityPool);
         if (redeemPrice == 0) return 0;
 
