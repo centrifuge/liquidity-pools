@@ -309,7 +309,10 @@ contract InvestmentManager is Auth {
         address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, _currency);
         require(address(liquidityPool) != address(0), "InvestmentManager/tranche-does-not-exist");
 
-        require(LiquidityPoolLike(liquidityPool).checkTransferRestriction(address(0), user, 0), "InvestmentManager/not-a-member");
+        require(
+            LiquidityPoolLike(liquidityPool).checkTransferRestriction(address(0), user, 0),
+            "InvestmentManager/not-a-member"
+        );
 
         require(
             LiquidityPoolLike(liquidityPool).transferFrom(address(escrow), user, trancheTokenPayout),
@@ -622,7 +625,10 @@ contract InvestmentManager is Auth {
     {
         address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, currency);
         require(liquidityPool != address(0), "InvestmentManager/unknown-liquidity-pool");
-        require(LiquidityPoolLike(liquidityPool).checkTransferRestriction(address(0), user, 0), "InvestmentManager/not-a-member");
+        require(
+            LiquidityPoolLike(liquidityPool).checkTransferRestriction(address(0), user, 0),
+            "InvestmentManager/not-a-member"
+        );
         return true;
     }
 

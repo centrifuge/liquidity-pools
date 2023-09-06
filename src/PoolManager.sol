@@ -266,7 +266,10 @@ contract PoolManager is Auth {
         TrancheTokenLike trancheToken = TrancheTokenLike(getTrancheToken(poolId, trancheId));
         require(address(trancheToken) != address(0), "PoolManager/unknown-token");
 
-        require(MemberlistLike(address(trancheToken.restrictionManager())).hasMember(destinationAddress), "PoolManager/not-a-member");
+        require(
+            MemberlistLike(address(trancheToken.restrictionManager())).hasMember(destinationAddress),
+            "PoolManager/not-a-member"
+        );
         trancheToken.mint(destinationAddress, amount);
     }
 
