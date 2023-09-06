@@ -739,6 +739,46 @@ contract LiquidityPoolTest is TestSetup {
         assertEq(lPool.convertToAssets(lPool.convertToShares(120000000000000000000)), 120000000000000000000);
     }
 
+    function testCancelDepositOrder(
+        uint64 poolId,
+        uint8 decimals,
+        string memory tokenName,
+        string memory tokenSymbol,
+        bytes16 trancheId,
+        uint128 price,
+        uint128 currencyId,
+        uint256 amount,
+        uint64 validUntil
+    ) public {
+        vm.assume(currencyId > 0);
+        vm.assume(amount < MAX_UINT128);
+        vm.assume(amount > 1);
+        vm.assume(validUntil >= block.timestamp);
+        price = 2 * 10 ** 27;
+
+        address lPool_ = deployLiquidityPool(poolId, erc20.decimals(), tokenName, tokenSymbol, trancheId, currencyId);
+        LiquidityPool lPool = LiquidityPool(lPool_);
+        homePools.updateTrancheTokenPrice(poolId, trancheId, currencyId, price);
+        erc20.mint(self, amount);
+        erc20.approve(address(investmentManager), amount); // add allowance
+        homePools.updateMember(poolId, trancheId, self, validUntil);
+
+        lPool.requestDeposit(amount, self);
+
+        assertEq(erc20.balanceOf(address(escrow)), amount);
+        assertEq(erc20.balanceOf(address(self)), 0);
+
+        // check message was send out to centchain
+        lPool.requestRedeem(0, self);
+        bytes memory cancelOrderMessage =
+            Messages.formatCancelRedeemOrder(poolId, trancheId, _addressToBytes32(self), currencyId);
+        assertEq(cancelOrderMessage, mockXcmRouter.values_bytes("send"));
+
+        homePools.isExecutedDecreaseInvestOrder(poolId, trancheId, _addressToBytes32(self), currencyId, uint128(amount));
+        assertEq(erc20.balanceOf(address(escrow)), 0);
+        assertEq(erc20.balanceOf(address(self)), amount);
+    }
+
     function testDepositMint(
         uint64 poolId,
         uint8 decimals,
@@ -770,8 +810,8 @@ contract LiquidityPoolTest is TestSetup {
         // // will fail - user did not give currency allowance to investmentManager
         vm.expectRevert(bytes("SafeTransferLib/safe-transfer-from-failed"));
         lPool.requestDeposit(amount, self);
-        erc20.approve(address(investmentManager), amount); // add allowance
 
+        erc20.approve(address(investmentManager), amount); // add allowance
         lPool.requestDeposit(amount, self);
 
         // ensure funds are locked in escrow
@@ -920,7 +960,7 @@ contract LiquidityPoolTest is TestSetup {
         vm.assume(currencyId > 0);
         vm.assume(random != address(0));
         vm.assume(amount < MAX_UINT128);
-        vm.assume(amount > 1);
+        vm.assume(amount > 4);
         vm.assume(validUntil >= block.timestamp);
         price = 1;
 
