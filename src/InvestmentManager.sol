@@ -158,12 +158,7 @@ contract InvestmentManager is Auth {
             return;
         }
 
-        // transfer the differene between required and locked tranche tokens from user to escrow
-        require(
-            lPool.transferFrom(user, address(escrow), _trancheTokenAmount),
-            "InvestmentManager/tranche-token-transfer-failed"
-        );
-
+        lPool.transferFrom(user, address(escrow), _trancheTokenAmount);
         gateway.increaseRedeemOrder(
             lPool.poolId(), lPool.trancheId(), user, poolManager.currencyAddressToId(lPool.asset()), _trancheTokenAmount
         );

@@ -811,7 +811,12 @@ contract LiquidityPoolTest is TestSetup {
         vm.expectRevert(bytes("SafeTransferLib/safe-transfer-from-failed"));
         lPool.requestDeposit(amount, self);
 
+        // success
         erc20.approve(address(investmentManager), amount); // add allowance
+        lPool.requestDeposit(amount, self);
+
+        // fail: no currency left
+        vm.expectRevert(bytes("SafeTransferLib/safe-transfer-from-failed"));
         lPool.requestDeposit(amount, self);
 
         // ensure funds are locked in escrow
@@ -974,8 +979,14 @@ contract LiquidityPoolTest is TestSetup {
         lPool.requestRedeem(amount, self);
         lPool.approve(address(investmentManager), amount); // add allowance
 
+        // success
         lPool.requestRedeem(amount, self);
         assertEq(lPool.balanceOf(address(escrow)), amount);
+
+        // fail: no tokens left
+        lPool.approve(address(investmentManager), amount); // add allowance
+        vm.expectRevert(bytes("ERC20/insufficient-balance"));
+        lPool.requestRedeem(amount, self);
 
         // trigger executed collectRedeem
         uint128 _currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
