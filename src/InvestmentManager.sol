@@ -150,7 +150,7 @@ contract InvestmentManager is Auth {
         LiquidityPoolLike lPool = LiquidityPoolLike(liquidityPool);
         uint128 _trancheTokenAmount = _toUint128(trancheTokenAmount);
 
-        // Check if liquidity pool currency is supported by the centrifuge pool
+        // Check if liquidity pool currency is supported by the Centrifuge pool
         poolManager.isAllowedAsPoolCurrency(lPool.poolId(), lPool.asset());
         // Check if user is allowed to hold the restricted tranche tokens
 
