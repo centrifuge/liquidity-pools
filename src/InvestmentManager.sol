@@ -418,7 +418,7 @@ contract InvestmentManager is Auth {
 
     // --- Liquidity Pool processing functions ---
     /// @notice Processes user's currency deposit / investment after the epoch has been executed on Centrifuge.
-    ///         In case user's invest order was fullfilled on Centrifuge during epoch execution MaxDeposit and MaxMint are increased and trancheTokens can be transferred to user's wallet on calling processDeposit.
+    ///         In case user's invest order was fullfilled (partially or in full) on Centrifuge during epoch execution MaxDeposit and MaxMint are increased and tranche tokens can be transferred to user's wallet on calling processDeposit.
     ///         Note: The currency required to fullfill the invest order is already locked in escrow upon calling requestDeposit.
     /// @dev    trancheTokenAmount return value is type of uint256 to be compliant with EIP4626 LiquidityPool interface
     /// @return trancheTokenAmount the amount of trancheTokens transferred to the user's wallet after successful depoit
