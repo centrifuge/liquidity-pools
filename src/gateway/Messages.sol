@@ -558,10 +558,17 @@ library Messages {
         bytes16 trancheId,
         bytes32 investor,
         uint128 currency,
-        uint128 currencyPayout
+        uint128 currencyPayout,
+        uint128 remainingInvestOrder
     ) internal pure returns (bytes memory) {
         return abi.encodePacked(
-            uint8(Call.ExecutedDecreaseInvestOrder), poolId, trancheId, investor, currency, currencyPayout
+            uint8(Call.ExecutedDecreaseInvestOrder),
+            poolId,
+            trancheId,
+            investor,
+            currency,
+            currencyPayout,
+            remainingInvestOrder
         );
     }
 
@@ -572,13 +579,21 @@ library Messages {
     function parseExecutedDecreaseInvestOrder(bytes memory _msg)
         internal
         pure
-        returns (uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 trancheTokenPayout)
+        returns (
+            uint64 poolId,
+            bytes16 trancheId,
+            address investor,
+            uint128 currency,
+            uint128 trancheTokenPayout,
+            uint128 remainingInvestOrder
+        )
     {
         poolId = BytesLib.toUint64(_msg, 1);
         trancheId = BytesLib.toBytes16(_msg, 9);
         investor = BytesLib.toAddress(_msg, 25);
         currency = BytesLib.toUint128(_msg, 57);
         trancheTokenPayout = BytesLib.toUint128(_msg, 73);
+        remainingInvestOrder = BytesLib.toUint128(_msg, 89);
     }
 
     function formatExecutedDecreaseRedeemOrder(
@@ -586,10 +601,17 @@ library Messages {
         bytes16 trancheId,
         bytes32 investor,
         uint128 currency,
-        uint128 trancheTokenPayout
+        uint128 trancheTokenPayout,
+        uint128 remainingRedeemOrder
     ) internal pure returns (bytes memory) {
         return abi.encodePacked(
-            uint8(Call.ExecutedDecreaseRedeemOrder), poolId, trancheId, investor, currency, trancheTokenPayout
+            uint8(Call.ExecutedDecreaseRedeemOrder),
+            poolId,
+            trancheId,
+            investor,
+            currency,
+            trancheTokenPayout,
+            remainingRedeemOrder
         );
     }
 
@@ -600,13 +622,21 @@ library Messages {
     function parseExecutedDecreaseRedeemOrder(bytes memory _msg)
         internal
         pure
-        returns (uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 trancheTokensPayout)
+        returns (
+            uint64 poolId,
+            bytes16 trancheId,
+            address investor,
+            uint128 currency,
+            uint128 trancheTokensPayout,
+            uint128 remainingRedeemOrder
+        )
     {
         poolId = BytesLib.toUint64(_msg, 1);
         trancheId = BytesLib.toBytes16(_msg, 9);
         investor = BytesLib.toAddress(_msg, 25);
         currency = BytesLib.toUint128(_msg, 57);
         trancheTokensPayout = BytesLib.toUint128(_msg, 73);
+        remainingRedeemOrder = BytesLib.toUint128(_msg, 89);
     }
 
     function formatExecutedCollectInvest(
@@ -615,7 +645,8 @@ library Messages {
         bytes32 investor,
         uint128 currency,
         uint128 currencyPayout,
-        uint128 trancheTokensPayout
+        uint128 trancheTokensPayout,
+        uint128 remainingInvestOrder
     ) internal pure returns (bytes memory) {
         return abi.encodePacked(
             uint8(Call.ExecutedCollectInvest),
@@ -624,7 +655,8 @@ library Messages {
             investor,
             currency,
             currencyPayout,
-            trancheTokensPayout
+            trancheTokensPayout,
+            remainingInvestOrder
         );
     }
 
@@ -641,7 +673,8 @@ library Messages {
             address investor,
             uint128 currency,
             uint128 currencyPayout,
-            uint128 trancheTokensPayout
+            uint128 trancheTokensPayout,
+            uint128 remainingInvestOrder
         )
     {
         poolId = BytesLib.toUint64(_msg, 1);
@@ -650,6 +683,7 @@ library Messages {
         currency = BytesLib.toUint128(_msg, 57);
         currencyPayout = BytesLib.toUint128(_msg, 73);
         trancheTokensPayout = BytesLib.toUint128(_msg, 89);
+        remainingInvestOrder = BytesLib.toUint128(_msg, 105);
     }
 
     function formatExecutedCollectRedeem(
@@ -658,7 +692,8 @@ library Messages {
         bytes32 investor,
         uint128 currency,
         uint128 currencyPayout,
-        uint128 trancheTokensPayout
+        uint128 trancheTokensPayout,
+        uint128 remainingRedeemOrder
     ) internal pure returns (bytes memory) {
         return abi.encodePacked(
             uint8(Call.ExecutedCollectRedeem),
@@ -667,7 +702,8 @@ library Messages {
             investor,
             currency,
             currencyPayout,
-            trancheTokensPayout
+            trancheTokensPayout,
+            remainingRedeemOrder
         );
     }
 
@@ -684,7 +720,8 @@ library Messages {
             address investor,
             uint128 currency,
             uint128 currencyPayout,
-            uint128 trancheTokensPayout
+            uint128 trancheTokensPayout,
+            uint128 remainingRedeemOrder
         )
     {
         poolId = BytesLib.toUint64(_msg, 1);
@@ -693,6 +730,7 @@ library Messages {
         currency = BytesLib.toUint128(_msg, 57);
         currencyPayout = BytesLib.toUint128(_msg, 73);
         trancheTokensPayout = BytesLib.toUint128(_msg, 89);
+        remainingRedeemOrder = BytesLib.toUint128(_msg, 105);
     }
 
     function formatScheduleUpgrade(address _contract) internal pure returns (bytes memory) {
