@@ -23,7 +23,7 @@ interface XcmTransactorV2 {
 
 struct XcmWeightInfo {
     // The weight limit in Weight units we accept amount to pay for the
-    // execution of the whole XCM on the Centrifuge chain. This should be
+    // execution of the whole XCM on the Centrifuge. This should be
     // transactWeightAtMost + an extra amount to cover for the other
     // instructions in the XCM message.
     uint64 buyExecutionWeightLimit;
@@ -40,6 +40,8 @@ interface GatewayLike {
     function handle(bytes memory message) external;
 }
 
+/// @title  XCM Router
+/// @notice Routing contract that integrates with the XCM transact precompile.
 contract XCMRouter is Auth {
     address constant XCM_TRANSACTOR_V2_ADDRESS = 0x000000000000000000000000000000000000080D;
     uint32 private constant CENTRIFUGE_PARACHAIN_ID = 2031;
@@ -138,7 +140,7 @@ contract XCMRouter is Auth {
     // --- Utilities ---
     function _centrifugeHandleCall(bytes memory message) internal view returns (bytes memory) {
         return abi.encodePacked(
-            // The centrifuge chain liquidity-pools pallet index
+            // The Centrifuge liquidity-pools pallet index
             centrifugeChainLiquidityPoolsPalletIndex,
             // The `handle` call index within the liquidity-pools pallet
             centrifugeChainLiquidityPoolsPalletHandleIndex,

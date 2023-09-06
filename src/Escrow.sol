@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
 import {Auth} from "./util/Auth.sol";
@@ -8,6 +8,9 @@ interface ApproveLike {
     function approve(address, uint256) external returns (bool);
 }
 
+/// @title  Escrow
+/// @notice Escrow contract that holds tokens.
+///         Only wards can approve funds to be taken out.
 contract Escrow is Auth {
     event Approve(address indexed token, address indexed spender, uint256 value);
 

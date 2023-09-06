@@ -41,29 +41,38 @@ interface InvestmentManagerLike {
     function decreaseRedeemRequest(uint256 shares, address receiver) external;
 }
 
-/// @title LiquidityPool
-/// @author ilinzweilin
-/// @dev Liquidity Pool implementation for Centrifuge Pools following the EIP4626 standard.
+/// @title  Liquidity Pool
+/// @notice Liquidity Pool implementation for Centrifuge pools
+///         following the EIP4626 standard, with asynchronous extension methods.
 ///
-/// @notice Each Liquidity Pool is a tokenized vault issuing shares as restricted ERC20 tokens against currency deposits based on the current share price.
-/// This is extending the EIP4626 standard by 'requestRedeem' & 'requestDeposit' functions, where redeem and deposit orders are submitted to the pools
-/// to be included in the execution of the following epoch. After execution users can use the redeem and withdraw functions to get their shares and/or assets from the pools.
+/// @dev    Each Liquidity Pool is a tokenized vault issuing shares of Centrifuge tranches as restricted ERC20 tokens against currency deposits based on the current share price.
+///         This is extending the EIP4626 standard by 'requestRedeem' & 'requestDeposit' functions, where redeem and deposit orders are submitted to the pools
+///         to be included in the execution of the following epoch. After execution users can use the deposit, mint, redeem and withdraw functions to
+///         get their shares and/or assets from the pools.
 contract LiquidityPool is Auth, IERC4626 {
     using MathLib for uint256;
 
     uint64 public immutable poolId;
     bytes16 public immutable trancheId;
 
-    /// @notice asset: The underlying stable currency of the Liquidity Pool. Note: 1 Centrifuge Pool can have multiple Liquidity Pools for the same Tranche token with different underlying currencies (assets).
+    /// @notice The investment currency for this Liquidity Pool.
+    ///         Each tranche of a Centrifuge pool can have multiple Liquidity Pools. A Liquidity Pool for each supported asset.
+    ///         Thus tranche shares can be linked to multiple LiquidityPools with different assets.
+    /// @dev    Also known as the investment currency.
     address public immutable asset;
 
-    /// @notice share: The restricted ERC-20 Liquidity pool token. Has a ratio (token price) of underlying assets exchanged on deposit/withdraw/redeem. Liquidity pool tokens on evm represent tranche tokens on centrifuge chain (even though in the current implementation one tranche token on centrifuge chain can be split across multiple liquidity pool tokens on EVM).
+    /// @notice The restricted ERC-20 Liquidity Pool token. Has a ratio (token price) of underlying assets
+    ///         exchanged on deposit/withdraw/redeem.
+    /// @dev    Also known as tranche tokens.
     TrancheTokenLike public immutable share;
 
     InvestmentManagerLike public investmentManager;
 
-    uint128 public latestPrice; // tranche token price, denominated in the asset
-    uint256 public lastPriceUpdate; // timestamp of the last price update
+    /// @notice Tranche token price, denominated in the asset
+    uint128 public latestPrice;
+
+    /// @notice Timestamp of the last price update
+    uint256 public lastPriceUpdate;
 
     // --- Events ---
     event File(bytes32 indexed what, address data);
@@ -84,7 +93,7 @@ contract LiquidityPool is Auth, IERC4626 {
         emit Rely(msg.sender);
     }
 
-    /// @dev function either called by a ward or message.sender is the owner
+    /// @dev Either msg.sender is the owner or a ward on the contract
     modifier withApproval(address owner) {
         require((wards[msg.sender] == 1 || msg.sender == owner), "LiquidityPool/no-approval");
         _;
@@ -98,47 +107,51 @@ contract LiquidityPool is Auth, IERC4626 {
     }
 
     // --- ERC4626 functions ---
-    /// @return Total amount of the underlying vault assets including accrued interest
+    /// @return Total value of the shares, denominated in the asset of this Liquidity Pools
     function totalAssets() public view returns (uint256) {
         return investmentManager.totalAssets(totalSupply(), address(this));
     }
 
-    /// @dev Calculates the amount of shares / tranche tokens that any user would get for the amount of assets provided. The calcultion is based on the token price from the most recent epoch retrieved from Centrifuge chain.
+    /// @notice Calculates the amount of shares that any user would approximately get for the amount of assets provided.
+    ///         The calcultion is based on the token price from the most recent epoch retrieved from Centrifuge.
+    ///         The actual conversion will likely differ as the price changes between order submission and execution.
     function convertToShares(uint256 assets) public view returns (uint256 shares) {
         shares = investmentManager.convertToShares(assets, address(this));
     }
 
-    /// @dev Calculates the asset value for an amount of shares / tranche tokens provided. The calcultion is based on the token price from the most recent epoch retrieved from Centrifuge chain.
+    /// @notice Calculates the asset value for an amount of shares provided.
+    ///         The calculation is based on the token price from the most recent epoch retrieved from Centrifuge.
+    ///         The actual conversion will likely differ as the price changes between order submission and execution.
     function convertToAssets(uint256 shares) public view returns (uint256 assets) {
         assets = investmentManager.convertToAssets(shares, address(this));
     }
 
-    /// @return Maximum amount of stable currency that can be deposited into the Tranche by the receiver after the epoch had been executed on Centrifuge chain.
+    /// @return Maximum amount of assets that can be deposited into the Tranche by the receiver after the epoch had been executed on Centrifuge.
     function maxDeposit(address receiver) public view returns (uint256) {
         return investmentManager.maxDeposit(receiver, address(this));
     }
 
-    /// @return shares that any user would get for an amount of assets provided -> convertToShares
+    /// @return shares that any user would get for an amount of assets provided
     function previewDeposit(uint256 assets) public view returns (uint256 shares) {
         shares = investmentManager.previewDeposit(msg.sender, address(this), assets);
     }
 
-    /// @dev collect shares for deposited funds after pool epoch execution. maxMint is the max amount of shares that can be collected. Required assets must already be locked
-    /// maxDeposit is the amount of funds that was successfully invested into the pool on Centrifuge chain
+    /// @notice Collect shares for deposited assets after Centrifuge epoch execution.
+    ///         maxDeposit is the max amount of shares that can be collected.
     function deposit(uint256 assets, address receiver) public returns (uint256 shares) {
         shares = investmentManager.processDeposit(receiver, assets);
         emit Deposit(address(this), receiver, assets, shares);
     }
 
-    /// @dev collect shares for deposited funds after pool epoch execution. maxMint is the max amount of shares that can be collected. Required assets must already be locked
-    /// maxDeposit is the amount of funds that was successfully invested into the pool on Centrifuge chain
+    /// @notice Collect shares for deposited assets after Centrifuge epoch execution.
+    ///         maxMint is the max amount of shares that can be collected.
     function mint(uint256 shares, address receiver) public returns (uint256 assets) {
         // require(receiver == msg.sender, "LiquidityPool/not-authorized-to-mint");
         assets = investmentManager.processMint(receiver, shares);
         emit Deposit(address(this), receiver, assets, shares);
     }
 
-    /// @dev Maximum amount of shares that can be claimed by the receiver after the epoch has been executed on the Centrifuge chain side.
+    /// @notice Maximum amount of shares that can be claimed by the receiver after the epoch has been executed on the Centrifuge side.
     function maxMint(address receiver) external view returns (uint256 maxShares) {
         maxShares = investmentManager.maxMint(receiver, address(this));
     }
@@ -158,31 +171,32 @@ contract LiquidityPool is Auth, IERC4626 {
         shares = investmentManager.previewWithdraw(msg.sender, address(this), assets);
     }
 
-    /// @dev Withdraw assets after successful epoch execution. Receiver will receive an exact amount of assets for a certain amount of shares that has been redeemed from Owner during epoch execution.
-    /// @return shares that have been redeemed for the excat assets amount
+    /// @notice Withdraw assets after successful epoch execution. Receiver will receive an exact amount of assets for a certain amount of shares that has been redeemed from Owner during epoch execution.
+    /// @return shares that have been redeemed for the exact assets amount
     function withdraw(uint256 assets, address receiver, address owner)
         public
         withApproval(owner)
         returns (uint256 shares)
     {
-        // check if messgae sender can spend owners funds
         uint256 sharesRedeemed = investmentManager.processWithdraw(assets, receiver, owner);
         emit Withdraw(address(this), receiver, owner, assets, sharesRedeemed);
         return sharesRedeemed;
     }
 
-    /// @dev Max amount of shares that can be redeemed by the owner after redemption was requested
+    /// @notice Max amount of shares that can be redeemed by the owner after redemption was requested
     function maxRedeem(address owner) public view returns (uint256 maxShares) {
         return investmentManager.maxRedeem(owner, address(this));
     }
 
-    /// @return assets that any user could redeem for an given amount of shares -> convertToAssets
+    /// @return assets that any user could redeem for a given amount of shares
     function previewRedeem(uint256 shares) public view returns (uint256 assets) {
         assets = investmentManager.previewRedeem(msg.sender, address(this), shares);
     }
 
-    /// @dev Redeem shares after successful epoch execution. Receiver will receive assets for the exact amount of redeemed shares from Owner after epoch execution.
-    /// @return assets currency payout for the exact amount of redeemed shares
+    /// @notice Redeem shares after successful epoch execution. Receiver will receive assets for
+    /// @notice Redeem shares can only be called by the Owner or an authorized admin.
+    ///         the exact amount of redeemed shares from Owner after epoch execution.
+    /// @return assets payout for the exact amount of redeemed shares
     function redeem(uint256 shares, address receiver, address owner)
         public
         withApproval(owner)
@@ -194,12 +208,15 @@ contract LiquidityPool is Auth, IERC4626 {
     }
 
     // --- Asynchronous 4626 functions ---
-    /// @dev request asset deposit for a receiver to be included in the next epoch execution. Asset is locked in the escrow on request submission
+    /// @notice Request asset deposit for a receiver to be included in the next epoch execution.
+    /// @notice Request can only be called by the Owner of the assets or an authorized admin.
+    ///         Asset is locked in the escrow on request submission
     function requestDeposit(uint256 assets, address owner) public withApproval(owner) {
         investmentManager.requestDeposit(assets, owner);
         emit DepositRequested(owner, assets);
     }
 
+    /// @notice Similar to requestDeposit, but with a permit option.
     function requestDepositWithPermit(uint256 assets, address owner, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
         public
     {
@@ -208,12 +225,15 @@ contract LiquidityPool is Auth, IERC4626 {
         emit DepositRequested(owner, assets);
     }
 
-    /// @dev request share redemption for a receiver to be included in the next epoch execution. Shares are locked in the escrow on request submission
+    /// @notice Request share redemption for a receiver to be included in the next epoch execution.
+    /// @notice Request can only be called by the Owner of the shares or an authorized admin.
+    ///         Shares are locked in the escrow on request submission
     function requestRedeem(uint256 shares, address owner) public withApproval(owner) {
         investmentManager.requestRedeem(shares, owner);
         emit RedeemRequested(owner, shares);
     }
 
+    /// @notice Similar to requestRedeem, but with a permit option.
     function requestRedeemWithPermit(uint256 shares, address owner, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
         public
     {
@@ -222,20 +242,26 @@ contract LiquidityPool is Auth, IERC4626 {
         emit RedeemRequested(owner, shares);
     }
 
-    // --- Miscellaneous investment functions ---
+    /// @notice Request decreasing the outstanding deposit orders. Will return the assets once the order
+    ///         on Centrifuge is successfully decreased.
     function decreaseDepositRequest(uint256 assets, address owner) public withApproval(owner) {
         investmentManager.decreaseDepositRequest(assets, owner);
     }
 
+    /// @notice Request decreasing the outstanding redemption orders. Will return the shares once the order
+    ///         on Centrifuge is successfully decreased.
     function decreaseRedeemRequest(uint256 shares, address owner) public withApproval(owner) {
         investmentManager.decreaseRedeemRequest(shares, owner);
     }
 
+    // --- Miscellaneous investment functions ---
+    /// @notice Trigger collecting the deposited funds.
     function collectDeposit(address receiver) public {
         investmentManager.collectDeposit(receiver);
         emit DepositCollected(receiver);
     }
 
+    /// @notice Trigger collecting the deposited tokens.
     function collectRedeem(address receiver) public {
         investmentManager.collectRedeem(receiver);
         emit RedeemCollected(receiver);
@@ -302,6 +328,7 @@ contract LiquidityPool is Auth, IERC4626 {
     }
 
     // --- Restriction overrides ---
+    /// @notice Check if the shares are allowed to be transferred.
     function checkTransferRestriction(address from, address to, uint256 value) public view returns (bool) {
         return share.checkTransferRestriction(from, to, value);
     }
