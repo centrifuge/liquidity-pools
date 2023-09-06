@@ -20,37 +20,92 @@ contract FactoryTest is Test {
         root = address(new Root(address(new Escrow()), 48 hours));
     }
 
-    // TODO: re-enable this
-    // function testTrancheTokenFactoryIsDeterministicAcrossChains(
-    //     bytes32 salt,
-    //     address sender,
-    //     uint64 poolId,
-    //     bytes16 trancheId,
-    //     address investmentManager1,
-    //     address investmentManager2,
-    //     address poolManager1,
-    //     address poolManager2,
-    //     string memory name,
-    //     string memory symbol,
-    //     uint8 decimals
-    // ) public {
-    //     vm.assume(sender != address(0));
+    function testTrancheTokenFactoryIsDeterministicAcrossChains(
+        uint64 poolId,
+        bytes16 trancheId,
+        address investmentManager1,
+        address investmentManager2,
+        address poolManager1,
+        address poolManager2
+    ) public {
+        vm.selectFork(mainnetFork);
+        bytes32 salt = keccak256(abi.encodePacked(poolId, trancheId));
+        Escrow escrow1 = new Escrow{salt: salt}();
+        address hashed1 = getAddress(salt, address(escrow1));
+        Root root1 = new Root{salt: salt}(address(escrow1), 48 hours);
 
-    //     vm.selectFork(mainnetFork);
-    //     TrancheTokenFactory trancheTokenFactory1 = new TrancheTokenFactory{ salt: salt }(root);
-    //     address trancheToken1 = trancheTokenFactory1.newTrancheToken(
-    //         poolId, trancheId, investmentManager1, poolManager1, name, symbol, decimals
-    //     );
+        TrancheTokenFactory trancheTokenFactory1 = new TrancheTokenFactory{salt: salt}(address(root1));
 
-    //     vm.selectFork(polygonFork);
-    //     vm.prank(sender);
-    //     TrancheTokenFactory trancheTokenFactory2 = new TrancheTokenFactory{ salt: salt }(root);
-    //     assertEq(address(trancheTokenFactory1), address(trancheTokenFactory2));
-    //     address trancheToken2 = trancheTokenFactory2.newTrancheToken(
-    //         poolId, trancheId, investmentManager2, poolManager2, name, symbol, decimals
-    //     );
-    //     assertEq(address(trancheToken1), address(trancheToken2));
-    // }
+        address trancheToken1 = deployTrancheToken(
+            trancheTokenFactory1, poolId, trancheId, investmentManager2, poolManager2, "", "", 18
+        );
+
+        vm.selectFork(polygonFork);
+        Escrow escrow2 = new Escrow{salt: salt}();
+        assertEq(address(escrow1), address(escrow2));
+        Root root2 = new Root{salt: salt}(address(escrow2), 48 hours);
+        
+        address hashed2 = getAddress(salt, address(escrow2));
+        assertEq(hashed1, hashed2);
+        assertEq(address(root1), address(root2));
+        TrancheTokenFactory trancheTokenFactory2 = new TrancheTokenFactory{salt: salt}(address(root2));
+        assertEq(address(trancheTokenFactory1), address(trancheTokenFactory2));
+        address trancheToken2 = deployTrancheToken(
+            trancheTokenFactory2, poolId, trancheId, investmentManager2, poolManager2, "", "", 18
+        );
+
+        assertEq(trancheToken1, trancheToken2);
+    }
+
+    function getBytecode(address escrow)
+        public
+        view
+        returns (bytes memory)
+    {
+        bytes memory bytecode = type(Root).creationCode;
+        return abi.encodePacked(bytecode, abi.encode(escrow, 48 hours));
+    }
+
+    function getAddress(bytes32 _salt, address escrow)
+        public
+        view
+        returns (address)
+    {
+        // Get a hash concatenating args passed to encodePacked
+        bytes32 hash = keccak256(
+            abi.encodePacked(
+                bytes1(0xff), // 0
+                address(this), // address of factory contract
+                _salt, // a random salt
+                keccak256(getBytecode(escrow)) // the wallet contract bytecode
+            )
+        );
+        // Cast last 20 bytes of hash to address
+        return address(uint160(uint256(hash)));
+    }
+
+    function deployTrancheToken(
+        TrancheTokenFactory trancheTokenFactory,
+        uint64 poolId,
+        bytes16 trancheId,
+        address investmentManager,
+        address poolManager,
+        string memory name,
+        string memory symbol,
+        uint8 decimals
+    ) public returns (address) {
+        address[] memory trancheTokenWards = new address[](2);
+        trancheTokenWards[0] = address(investmentManager);
+        trancheTokenWards[1] = address(poolManager);
+        address[] memory memberlistWards = new address[](1);
+        memberlistWards[0] = address(poolManager);
+
+        address trancheToken = trancheTokenFactory.newTrancheToken(
+            poolId, trancheId, name, symbol, decimals, trancheTokenWards, memberlistWards
+        );
+
+        return trancheToken;
+    }
 
     function testTrancheTokenFactoryShouldBeDeterministic(bytes32 salt) public {
         address predictedAddress = address(
