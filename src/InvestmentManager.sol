@@ -504,7 +504,7 @@ contract InvestmentManager is Auth {
         currencyAmount = uint256(_currencyAmount);
     }
 
-    /// @dev    Processes user's trancheToken redemption after the epoch has been executed on Centrifuge.
+    /// @dev    Processes user's tranche token redemption after the epoch has been executed on Centrifuge.
     ///         In case user's redempion order was fullfilled on Centrifuge during epoch execution MaxRedeem and MaxWithdraw
     ///         are increased and LiquidityPool currency can be transferred to user's wallet on calling processRedeem or processWithdraw.
     ///         Note: The trancheToken amount required to fullfill the redemption order was already locked in escrow upon calling requestRedeem and burned upon collectRedeem.
