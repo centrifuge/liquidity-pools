@@ -6,6 +6,7 @@ import {SafeTransferLib} from "./util/SafeTransferLib.sol";
 
 interface ERC20Like {
     function allowance(address owner, address spender) external view returns (uint256);
+    function balanceOf(address account) external view returns (uint256);
 }
 
 /**
@@ -26,7 +27,7 @@ contract UserEscrow is Auth {
 
     // --- Token approvals ---
     function transferIn(address token, address source, address destination, uint256 amount) external auth {
-        destinations[token][destination] = amount;
+        destinations[token][destination] += amount;
 
         SafeTransferLib.safeTransferFrom(token, source, address(this), amount);
         emit TransferIn(token, source, destination, amount);
