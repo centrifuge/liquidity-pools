@@ -119,7 +119,7 @@ contract DeployTest is Test {
 
         vm.prank(address(gateway));
         investmentManager.handleExecutedCollectInvest(
-            poolId, trancheId, self, _currencyId, uint128(amount), trancheTokensPayout
+            poolId, trancheId, self, _currencyId, uint128(amount), trancheTokensPayout, 0
         );
 
         assertEq(lPool.maxMint(self), trancheTokensPayout);
@@ -169,7 +169,7 @@ contract DeployTest is Test {
         // Assume a bot calls collectRedeem for this user on cent chain
         vm.prank(address(gateway));
         investmentManager.handleExecutedCollectRedeem(
-            poolId, trancheId, self, _currencyId, currencyPayout, uint128(amount)
+            poolId, trancheId, self, _currencyId, currencyPayout, uint128(amount), 0
         );
 
         assertEq(lPool.maxWithdraw(self), currencyPayout);
