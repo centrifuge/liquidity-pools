@@ -409,7 +409,6 @@ contract InvestmentManager is Auth {
         view
         returns (uint256 currencyAmount)
     {
-        require(trancheTokenAmount < type(uint128).max, "InvestmentManager/amount-too-large");
         uint256 redeemPrice = calculateRedeemPrice(user, liquidityPool);
         if (redeemPrice == 0) return 0;
 
