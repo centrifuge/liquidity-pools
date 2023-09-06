@@ -55,7 +55,7 @@ contract LiquidityPoolTest is TestSetup {
     }
 
     // --- Permissioned functions ---
-    function testWithCurrencyApproval(
+    function testDepositWithApproval(
         uint64 poolId,
         uint8 decimals,
         string memory tokenName,
@@ -77,23 +77,26 @@ contract LiquidityPoolTest is TestSetup {
         investor.approve(address(erc20), address(investmentManager), type(uint256).max); // add allowance
         homePools.updateMember(poolId, trancheId, address(investor), validUntil); // add user as member
 
-        // fail: no allowance
-        vm.expectRevert(bytes("LiquidityPool/no-currency-allowance"));
+        // fail: no approval
+        vm.expectRevert(bytes("LiquidityPool/no-approval"));
         lPool.requestDeposit(amount, address(investor));
 
+        // investor gives approval to self 
         investor.approve(address(erc20), self, amount);
-        // fail: amount too big
-        vm.expectRevert(bytes("LiquidityPool/no-currency-allowance"));
-        lPool.requestDeposit(amount + 1, address(investor));
-
-        // success - someone with approval can requestDeposit on behalf of investor
+        // fail: even if investor grants approval to self
+        vm.expectRevert(bytes("LiquidityPool/no-approval"));
         lPool.requestDeposit(amount, address(investor));
+
+        root.relyContract(lPool_, self);
+        // success - ward can requestDeposit on behalf of investor
+        lPool.requestDeposit(amount/2, address(investor));
+        lPool.deny(self); // revoke auth
 
         // success - investor can requestDeposit
-        investor.requestDeposit(lPool_, amount, address(investor));
+        investor.requestDeposit(lPool_, amount/2, address(investor));
     }
 
-    function testWithTokenApproval(
+    function testRedeemWithApproval(
         uint64 poolId,
         uint8 decimals,
         string memory tokenName,
@@ -105,7 +108,7 @@ contract LiquidityPoolTest is TestSetup {
     ) public {
         vm.assume(currencyId > 0);
         vm.assume(amount < MAX_UINT128);
-        vm.assume(amount > 1);
+        vm.assume(amount > 4);
         vm.assume(validUntil >= block.timestamp);
         address lPool_ = deployLiquidityPool(poolId, erc20.decimals(), tokenName, tokenSymbol, trancheId, currencyId);
         LiquidityPool lPool = LiquidityPool(lPool_);
@@ -114,25 +117,28 @@ contract LiquidityPoolTest is TestSetup {
         investorDeposit(address(investor), lPool_, poolId, trancheId, amount, validUntil); // deposit funds first
         investor.approve(lPool_, address(investmentManager), type(uint256).max);
 
-        // fail: no allowance
-        vm.expectRevert(bytes("LiquidityPool/no-token-allowance"));
+        // fail: self can not claim for investor
+        vm.expectRevert(bytes("LiquidityPool/no-approval"));
         lPool.requestRedeem(amount, address(investor));
 
-        // investor gives currency approval to self
+        // investor gives approval to self 
         investor.approve(lPool_, self, amount);
 
-        // // fail: amount too big
-        vm.expectRevert(bytes("LiquidityPool/no-token-allowance"));
-        lPool.requestRedeem(amount + 1, address(investor));
-
-        // success - someone with approval can requestRedeem on behalf of investor
-        lPool.requestRedeem(amount / 2, address(investor));
+         // fail: even if investor grants approval to self
+        vm.expectRevert(bytes("LiquidityPool/no-approval"));
+        lPool.requestRedeem(amount, address(investor));
 
         // success - investor can requestRedeem
-        investor.requestRedeem(lPool_, amount / 2, address(investor));
+        investor.requestRedeem(lPool_, amount/2, address(investor));
 
-        uint256 tokenAmount = uint128(lPool.balanceOf(address(escrow)));
-        // redeem on behalf of investor
+
+        root.relyContract(lPool_, self);
+        // ward can requestRedeem on behalf of investor
+        lPool.requestRedeem(amount/2, address(investor));
+        lPool.deny(self); // revoke auth
+
+
+        uint128 tokenAmount = uint128(lPool.balanceOf(address(escrow)));
         homePools.isExecutedCollectRedeem(
             poolId, trancheId, bytes32(bytes20(address(investor))), currencyId, uint128(amount), uint128(tokenAmount)
         );
@@ -140,17 +146,22 @@ contract LiquidityPoolTest is TestSetup {
         assertEq(lPool.maxRedeem(address(investor)), tokenAmount);
         assertEq(lPool.maxWithdraw(address(investor)), uint128(amount));
 
-        // fail: self does not have currency approval from investor
-        vm.expectRevert(bytes("LiquidityPool/no-currency-allowance"));
-        lPool.redeem(amount / 2, address(investor), address(investor));
+        // test for both scenarios redeem & withdraw
 
-        // investor gives currency approval to self
-        investor.approve(address(erc20), self, amount / 2);
-        // redeem on behalf of investor with currency approval
-        lPool.redeem(amount / 2, address(investor), address(investor));
+        // fail: self cannot redeem for investor
+        vm.expectRevert(bytes("LiquidityPool/no-approval"));
+        lPool.redeem(amount / 4, address(investor), address(investor));
+        vm.expectRevert(bytes("LiquidityPool/no-approval"));
+        lPool.withdraw(amount / 4, address(investor), address(investor));
+
+        // success redeem on behalf of investor with auth permissions
+        root.relyContract(lPool_, self);
+        lPool.redeem(amount/4, address(investor), address(investor));
+        lPool.withdraw(amount / 4, address(investor), address(investor));
 
         // investor redeems rest for himself
-        investor.redeem(lPool_, lPool.maxRedeem(address(investor)), address(investor), address(investor));
+        investor.redeem(lPool_, amount/4, address(investor), address(investor));
+        investor.withdraw(lPool_, lPool.maxWithdraw(address(investor)), address(investor), address(investor));
     }
 
     function testMint(
@@ -762,6 +773,8 @@ contract LiquidityPoolTest is TestSetup {
         vm.expectRevert(bytes("SafeTransferLib/safe-transfer-from-failed"));
         lPool.requestDeposit(amount, self);
         erc20.approve(address(investmentManager), amount); // add allowance
+
+
 
         lPool.requestDeposit(amount, self);
 

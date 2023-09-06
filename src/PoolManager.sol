@@ -51,7 +51,6 @@ interface AuthLike {
 
 /// @dev Centrifuge pools
 struct Pool {
-    bool isActive;
     uint64 poolId;
     uint256 createdAt;
     mapping(bytes16 => Tranche) tranches;
@@ -166,7 +165,6 @@ contract PoolManager is Auth {
         require(pool.createdAt == 0, "PoolManager/pool-already-added");
         pool.poolId = poolId;
         pool.createdAt = block.timestamp;
-        pool.isActive = true;
         emit PoolAdded(poolId);
     }
 

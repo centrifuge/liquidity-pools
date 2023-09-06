@@ -398,7 +398,7 @@ contract PoolManagerTest is TestSetup {
 
     function testAddPoolWorks(uint64 poolId) public {
         homePools.addPool(poolId);
-        (, uint64 actualPoolId,) = poolManager.pools(poolId);
+        (uint64 actualPoolId,) = poolManager.pools(poolId);
         assertEq(uint256(actualPoolId), uint256(poolId));
     }
 
@@ -438,7 +438,7 @@ contract PoolManagerTest is TestSetup {
         uint8 decimals
     ) public {
         homePools.addPool(poolId);
-        (, uint64 actualPoolId,) = poolManager.pools(poolId);
+        (uint64 actualPoolId,) = poolManager.pools(poolId);
         assertEq(uint256(actualPoolId), uint256(poolId));
         homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals);
         poolManager.deployTranche(poolId, trancheId);
