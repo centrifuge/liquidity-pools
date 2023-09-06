@@ -56,7 +56,7 @@ contract LiquidityPool is Auth, IERC4626 {
     bytes16 public immutable trancheId;
 
     /// @notice The investment currency for this Liquidity Pool.
-    ///         Each tranche of a Centrifuge pool can have multiple Liquidity Pools,
+    ///         Each tranche of a Centrifuge pool can have multiple Liquidity Pools. A Liquidity Pool for each supported asset.
     ///         thus 1 share can be linked to multiple LiquidityPools with different assets.
     /// @dev    Also known as the investment currency.
     address public immutable asset;
