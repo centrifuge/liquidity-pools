@@ -178,7 +178,6 @@ contract LiquidityPool is Auth, IERC4626 {
         withApproval(owner)
         returns (uint256 shares)
     {
-        
         uint256 sharesRedeemed = investmentManager.processWithdraw(assets, receiver, owner);
         emit Withdraw(address(this), receiver, owner, assets, sharesRedeemed);
         return sharesRedeemed;
@@ -195,7 +194,7 @@ contract LiquidityPool is Auth, IERC4626 {
     }
 
     /// @notice Redeem shares after successful epoch execution. Receiver will receive assets for
-     /// @notice Redeem shares can only be called by the Owner or an authorized admin.
+    /// @notice Redeem shares can only be called by the Owner or an authorized admin.
     ///         the exact amount of redeemed shares from Owner after epoch execution.
     /// @return assets payout for the exact amount of redeemed shares
     function redeem(uint256 shares, address receiver, address owner)
@@ -210,7 +209,7 @@ contract LiquidityPool is Auth, IERC4626 {
 
     // --- Asynchronous 4626 functions ---
     /// @notice Request asset deposit for a receiver to be included in the next epoch execution.
-   /// @notice Request can only be called by the Owner of the assets or an authorized admin.
+    /// @notice Request can only be called by the Owner of the assets or an authorized admin.
     ///         Asset is locked in the escrow on request submission
     function requestDeposit(uint256 assets, address owner) public withApproval(owner) {
         investmentManager.requestDeposit(assets, owner);
@@ -227,7 +226,7 @@ contract LiquidityPool is Auth, IERC4626 {
     }
 
     /// @notice Request share redemption for a receiver to be included in the next epoch execution.
-   /// @notice Request can only be called by the Owner of the shares or an authorized admin.
+    /// @notice Request can only be called by the Owner of the shares or an authorized admin.
     ///         Shares are locked in the escrow on request submission
     function requestRedeem(uint256 shares, address owner) public withApproval(owner) {
         investmentManager.requestRedeem(shares, owner);
