@@ -12,7 +12,6 @@ interface ERC20Like {
 }
 
 contract InvestorManager is TestSetup {
-
     // This handler only uses a single pool, tranche and user combination
     uint64 public fixedPoolId = 1;
     bytes16 public fixedTrancheId = "1";
