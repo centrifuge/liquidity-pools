@@ -26,6 +26,9 @@ interface InvestmentManagerLike {
     function maxMint(address user, address _tranche) external view returns (uint256);
     function maxWithdraw(address user, address _tranche) external view returns (uint256);
     function maxRedeem(address user, address _tranche) external view returns (uint256);
+    function totalAssets(uint256 totalSupply, address liquidityPool) external view returns (uint256);
+    function convertToShares(uint256 assets, address liquidityPool) external view returns (uint256);
+    function convertToAssets(uint256 shares, address liquidityPool) external view returns (uint256);
     function previewDeposit(address user, address liquidityPool, uint256 assets) external view returns (uint256);
     function previewMint(address user, address liquidityPool, uint256 shares) external view returns (uint256);
     function previewWithdraw(address user, address liquidityPool, uint256 assets) external view returns (uint256);
@@ -36,7 +39,6 @@ interface InvestmentManagerLike {
     function collectRedeem(address receiver) external;
     function decreaseDepositRequest(uint256 assets, address receiver) external;
     function decreaseRedeemRequest(uint256 shares, address receiver) external;
-    function PRICE_DECIMALS() external view returns (uint8);
 }
 
 /// @title LiquidityPool
@@ -60,8 +62,8 @@ contract LiquidityPool is Auth, IERC4626 {
 
     InvestmentManagerLike public investmentManager;
 
-    uint128 public latestPrice; // tranche token price
-    uint256 public lastPriceUpdate; // timestamp of the price update
+    uint128 public latestPrice; // tranche token price, denominated in the asset
+    uint256 public lastPriceUpdate; // timestamp of the last price update
 
     // --- Events ---
     event File(bytes32 indexed what, address data);
@@ -108,28 +110,19 @@ contract LiquidityPool is Auth, IERC4626 {
     }
 
     // --- ERC4626 functions ---
-    /// @dev The total amount of vault shares
     /// @return Total amount of the underlying vault assets including accrued interest
     function totalAssets() public view returns (uint256) {
-        return totalSupply().mulDiv(latestPrice, 10 ** investmentManager.PRICE_DECIMALS(), MathLib.Rounding.Down);
+        return investmentManager.totalAssets(totalSupply(), address(this));
     }
 
     /// @dev Calculates the amount of shares / tranche tokens that any user would get for the amount of assets provided. The calcultion is based on the token price from the most recent epoch retrieved from Centrifuge chain.
     function convertToShares(uint256 assets) public view returns (uint256 shares) {
-        shares = assets.mulDiv(
-            10 ** (investmentManager.PRICE_DECIMALS() + share.decimals() - IERC20(asset).decimals()),
-            latestPrice,
-            MathLib.Rounding.Down
-        );
+        shares = investmentManager.convertToShares(assets, address(this));
     }
 
     /// @dev Calculates the asset value for an amount of shares / tranche tokens provided. The calcultion is based on the token price from the most recent epoch retrieved from Centrifuge chain.
     function convertToAssets(uint256 shares) public view returns (uint256 assets) {
-        assets = shares.mulDiv(
-            latestPrice,
-            10 ** (investmentManager.PRICE_DECIMALS() + share.decimals() - IERC20(asset).decimals()),
-            MathLib.Rounding.Down
-        );
+        assets = investmentManager.convertToAssets(shares, address(this));
     }
 
     /// @return Maximum amount of stable currency that can be deposited into the Tranche by the receiver after the epoch had been executed on Centrifuge chain.
