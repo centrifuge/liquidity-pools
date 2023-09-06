@@ -28,6 +28,27 @@ contract InvestmentManagerTest is TestSetup {
         // assertEq(investmentManager.wards(self), 0); // deployer has no permissions
     }
 
+    // --- Administration ---
+    function testFile(address random) public {
+        // fail: unrecognized param
+        vm.expectRevert(bytes("InvestmentManager/file-unrecognized-param"));
+        investmentManager.file("random", self);
+
+        assertEq(address(investmentManager.gateway()), address(gateway));
+        assertEq(address(investmentManager.poolManager()), address(poolManager));
+        // success
+        investmentManager.file("poolManager", random);
+        assertEq(address(investmentManager.poolManager()), random);
+        investmentManager.file("gateway", random);
+        assertEq(address(investmentManager.gateway()), random);
+
+        // remove self from wards
+        investmentManager.deny(self);
+        // auth fail
+        vm.expectRevert(bytes("Auth/not-authorized"));
+        investmentManager.file("poolManager", random);
+    }
+
     function testUpdatingTokenPriceWorks(
         uint64 poolId,
         uint8 decimals,

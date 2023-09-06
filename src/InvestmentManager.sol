@@ -116,15 +116,9 @@ contract InvestmentManager is Auth {
         uint128 _currencyAmount = _toUint128(currencyAmount);
 
         // check if liquidity pool currency is supported by the centrifuge pool
-        require(
-            poolManager.isAllowedAsPoolCurrency(lPool.poolId(), currency), "InvestmentManager/currency-not-supported"
-        );
+        poolManager.isAllowedAsPoolCurrency(lPool.poolId(), currency);
         // check if user is allowed to hold the restriced liquidity pool tokens
-        require(
-            _isAllowedToInvest(lPool.poolId(), lPool.trancheId(), currency, user),
-            "InvestmentManager/tranche-tokens-not-supported"
-        );
-
+        _isAllowedToInvest(lPool.poolId(), lPool.trancheId(), currency, user);
         if (_currencyAmount == 0) {
             // case: outstanding redemption orders only needed to be cancelled
             gateway.cancelInvestOrder(
@@ -151,15 +145,10 @@ contract InvestmentManager is Auth {
         uint128 _trancheTokenAmount = _toUint128(trancheTokenAmount);
 
         // check if liquidity pool currency is supported by the centrifuge pool
-        require(
-            poolManager.isAllowedAsPoolCurrency(lPool.poolId(), lPool.asset()),
-            "InvestmentManager/currency-not-supported"
-        );
+        poolManager.isAllowedAsPoolCurrency(lPool.poolId(), lPool.asset());
         // check if user is allowed to hold the restriced liquidity pool tokens
-        require(
-            _isAllowedToInvest(lPool.poolId(), lPool.trancheId(), lPool.asset(), user),
-            "InvestmentManager/tranche-tokens-not-supported"
-        );
+
+        _isAllowedToInvest(lPool.poolId(), lPool.trancheId(), lPool.asset(), user);
 
         if (_trancheTokenAmount == 0) {
             // case: outstanding redeem orders will be cancelled

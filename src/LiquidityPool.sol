@@ -84,21 +84,9 @@ contract LiquidityPool is Auth, IERC4626 {
         emit Rely(msg.sender);
     }
 
-    /// @dev function either called by a ward or message.sender has approval to spent sender´s tokens
-    modifier withTokenApproval(address sender, uint256 amount) {
-        require(
-            wards[msg.sender] == 1 || msg.sender == sender || share.allowance(sender, msg.sender) >= amount,
-            "LiquidityPool/no-token-allowance"
-        );
-        _;
-    }
-
-    /// @dev function either called by a ward or message.sender has approval to spent sender´s currency
-    modifier withCurrencyApproval(address sender, uint256 amount) {
-        require(
-            wards[msg.sender] == 1 || msg.sender == sender || IERC20(asset).allowance(sender, msg.sender) >= amount,
-            "LiquidityPool/no-currency-allowance"
-        );
+    /// @dev function either called by a ward or message.sender is the owner
+    modifier withApproval(address owner) {
+        require((wards[msg.sender] == 1 || msg.sender == owner), "LiquidityPool/no-approval");
         _;
     }
 
@@ -174,7 +162,7 @@ contract LiquidityPool is Auth, IERC4626 {
     /// @return shares that have been redeemed for the excat assets amount
     function withdraw(uint256 assets, address receiver, address owner)
         public
-        withCurrencyApproval(owner, assets)
+        withApproval(owner)
         returns (uint256 shares)
     {
         // check if messgae sender can spend owners funds
@@ -195,21 +183,19 @@ contract LiquidityPool is Auth, IERC4626 {
 
     /// @dev Redeem shares after successful epoch execution. Receiver will receive assets for the exact amount of redeemed shares from Owner after epoch execution.
     /// @return assets currency payout for the exact amount of redeemed shares
-    function redeem(uint256 shares, address receiver, address owner) public returns (uint256 assets) {
+    function redeem(uint256 shares, address receiver, address owner)
+        public
+        withApproval(owner)
+        returns (uint256 assets)
+    {
         uint256 currencyPayout = investmentManager.processRedeem(shares, receiver, owner);
-        // make sure msg.sender has the allowance to delegate owner's funds
-        require(
-            wards[msg.sender] == 1 || msg.sender == owner
-                || IERC20(asset).allowance(owner, msg.sender) >= currencyPayout,
-            "LiquidityPool/no-currency-allowance"
-        );
         emit Withdraw(address(this), receiver, owner, currencyPayout, shares);
         return currencyPayout;
     }
 
     // --- Asynchronous 4626 functions ---
     /// @dev request asset deposit for a receiver to be included in the next epoch execution. Asset is locked in the escrow on request submission
-    function requestDeposit(uint256 assets, address owner) public withCurrencyApproval(owner, assets) {
+    function requestDeposit(uint256 assets, address owner) public withApproval(owner) {
         investmentManager.requestDeposit(assets, owner);
         emit DepositRequested(owner, assets);
     }
@@ -223,7 +209,7 @@ contract LiquidityPool is Auth, IERC4626 {
     }
 
     /// @dev request share redemption for a receiver to be included in the next epoch execution. Shares are locked in the escrow on request submission
-    function requestRedeem(uint256 shares, address owner) public withTokenApproval(owner, shares) {
+    function requestRedeem(uint256 shares, address owner) public withApproval(owner) {
         investmentManager.requestRedeem(shares, owner);
         emit RedeemRequested(owner, shares);
     }
@@ -237,11 +223,11 @@ contract LiquidityPool is Auth, IERC4626 {
     }
 
     // --- Miscellaneous investment functions ---
-    function decreaseDepositRequest(uint256 assets, address owner) public withCurrencyApproval(owner, assets) {
+    function decreaseDepositRequest(uint256 assets, address owner) public withApproval(owner) {
         investmentManager.decreaseDepositRequest(assets, owner);
     }
 
-    function decreaseRedeemRequest(uint256 shares, address owner) public withTokenApproval(owner, shares) {
+    function decreaseRedeemRequest(uint256 shares, address owner) public withApproval(owner) {
         investmentManager.decreaseRedeemRequest(shares, owner);
     }
 
