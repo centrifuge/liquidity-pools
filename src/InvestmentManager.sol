@@ -334,7 +334,7 @@ contract InvestmentManager is Auth {
         );
     }
 
-    /// @dev Calculates the asset value for an amount of shares / tranche tokens provided. The calcultion is based on the token price from the most recent epoch retrieved from Centrifuge chain.
+    /// @dev Calculates the asset value for an amount of shares / tranche tokens provided. The calculation is based on the token price from the most recent epoch retrieved from Centrifuge chain.
     function convertToAssets(uint256 shares, address liquidityPool) public view auth returns (uint256 assets) {
         (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getPoolDecimals(liquidityPool);
 
