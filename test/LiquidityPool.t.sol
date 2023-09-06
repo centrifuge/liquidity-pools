@@ -959,6 +959,7 @@ contract LiquidityPoolTest is TestSetup {
     ) public {
         vm.assume(currencyId > 0);
         vm.assume(random != address(0));
+        vm.assume(random != address(erc20));
         vm.assume(amount < MAX_UINT128);
         vm.assume(amount > 4);
         vm.assume(validUntil >= block.timestamp);
@@ -1068,6 +1069,7 @@ contract LiquidityPoolTest is TestSetup {
         vm.assume(currencyId > 0);
         vm.assume(amount < MAX_UINT128);
         vm.assume(random != address(0));
+        vm.assume(random != address(erc20));
         vm.assume(amount > 1);
         vm.assume(validUntil >= block.timestamp);
         price = 1;
