@@ -775,8 +775,8 @@ contract LiquidityPoolTest is TestSetup {
         assertEq(cancelOrderMessage, mockXcmRouter.values_bytes("send"));
 
         homePools.isExecutedDecreaseInvestOrder(poolId, trancheId, _addressToBytes32(self), currencyId, uint128(amount));
-        // assertEq(erc20.balanceOf(address(escrow)), 0);
-        // assertEq(erc20.balanceOf(address(self)), amount);
+        assertEq(erc20.balanceOf(address(escrow)), 0);
+        assertEq(erc20.balanceOf(address(self)), amount);
     }
 
     function testDepositMint(
