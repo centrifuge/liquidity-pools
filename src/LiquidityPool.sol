@@ -241,7 +241,7 @@ contract LiquidityPool is Auth, IERC4626 {
         emit RedeemRequested(owner, shares);
     }
 
-    /// @notice Request decreasing the deposit request. Will return the assets once the order
+    /// @notice Request decreasing the outstanding deposit orders. Will return the assets once the order
     ///         on Centrifuge is successfully decreased.
     function decreaseDepositRequest(uint256 assets, address owner) public withApproval(owner) {
         investmentManager.decreaseDepositRequest(assets, owner);
