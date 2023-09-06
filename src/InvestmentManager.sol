@@ -690,7 +690,7 @@ contract InvestmentManager is Auth {
         value = _toUint128(_value / 10 ** (PRICE_DECIMALS - decimals));
     }
 
-    /// @dev    Return the currency decimals and the tranche token decimals
+    /// @dev    Return the currency decimals and the tranche token decimals for a given liquidityPool
     function _getPoolDecimals(address liquidityPool)
         internal
         view
