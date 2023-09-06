@@ -209,6 +209,7 @@ contract LiquidityPool is Auth, IERC4626 {
 
     // --- Asynchronous 4626 functions ---
     /// @notice Request asset deposit for a receiver to be included in the next epoch execution.
+   /// @notice Request can only be called by the Owner of the assets or an authorized admin.
     ///         Asset is locked in the escrow on request submission
     function requestDeposit(uint256 assets, address owner) public withApproval(owner) {
         investmentManager.requestDeposit(assets, owner);
