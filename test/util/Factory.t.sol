@@ -14,9 +14,6 @@ contract FactoryTest is Test {
     address root;
 
     function setUp() public {
-        mainnetFork = vm.createFork(vm.envString("MAINNET_RPC_URL"));
-        polygonFork = vm.createFork(vm.envString("POLYGON_RPC_URL"));
-
         root = address(new Root(address(new Escrow()), 48 hours));
     }
 
@@ -35,6 +32,8 @@ contract FactoryTest is Test {
     //     uint8 decimals
     // ) public {
     //     vm.assume(sender != address(0));
+    //     mainnetFork = vm.createFork(vm.envString("MAINNET_RPC_URL"));
+    //     polygonFork = vm.createFork(vm.envString("POLYGON_RPC_URL"));
 
     //     vm.selectFork(mainnetFork);
     //     TrancheTokenFactory trancheTokenFactory1 = new TrancheTokenFactory{ salt: salt }(root);
