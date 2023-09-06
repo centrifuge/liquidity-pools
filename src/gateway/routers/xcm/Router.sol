@@ -40,6 +40,8 @@ interface GatewayLike {
     function handle(bytes memory message) external;
 }
 
+/// @title  XCM Router
+/// @notice Routing contract that integrates with the XCM transact precompile.
 contract XCMRouter is Auth {
     address constant XCM_TRANSACTOR_V2_ADDRESS = 0x000000000000000000000000000000000000080D;
     uint32 private constant CENTRIFUGE_PARACHAIN_ID = 2031;

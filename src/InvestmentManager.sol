@@ -55,14 +55,17 @@ interface UserEscrowLike {
     function transferOut(address token, address owner, address destination, uint256 amount) external;
 }
 
-/// @dev liquidity pool orders and deposit/redemption limits per user
+/// @dev Liquidity Pool orders and investment/redemption limits per user
 struct LPValues {
-    uint128 maxDeposit; // denominated in assets
+    uint128 maxDeposit; // denominated in currency
     uint128 maxMint; // denominated in tranche tokens
-    uint128 maxWithdraw; // denominated in assets
+    uint128 maxWithdraw; // denominated in currency
     uint128 maxRedeem; // denominated in tranche tokens
 }
 
+/// @title  Investment Manager
+/// @notice This is the main contract LiquidityPools interact with for
+///         both incoming and outgoing investment transactions.
 contract InvestmentManager is Auth {
     using MathLib for uint256;
     using MathLib for uint128;

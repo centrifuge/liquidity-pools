@@ -4,6 +4,11 @@ pragma solidity 0.8.21;
 import {Root} from "../Root.sol";
 import {Auth} from "./../util/Auth.sol";
 
+/// @title  Delayed Admin
+/// @dev    Any ward on this contract can trigger
+///         instantaneous pausing and unpausing
+///         on the Root, as well as schedule and cancel
+///         new relys through the timelock.
 contract DelayedAdmin is Auth {
     Root public immutable root;
 

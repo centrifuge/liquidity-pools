@@ -3,6 +3,8 @@ pragma solidity 0.8.21;
 
 import {BytesLib} from "src/util/BytesLib.sol";
 
+/// @title  Messages
+/// @dev    Library for encoding and decoding messages.
 library Messages {
     enum Call
     /// 0 - An invalid message

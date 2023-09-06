@@ -72,6 +72,9 @@ struct Tranche {
     mapping(address => address) liquidityPools; // currency -> liquidity pool address
 }
 
+/// @title  Pool Manager
+/// @notice This contract manages which pools & tranches exist,
+///         as well as managing allowed pool currencies, and incoming and outgoing transfers.
 contract PoolManager is Auth {
     uint8 internal constant MAX_CURRENCY_DECIMALS = 18;
 

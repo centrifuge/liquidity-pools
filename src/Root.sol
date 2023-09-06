@@ -8,6 +8,10 @@ interface AuthLike {
     function deny(address) external;
 }
 
+/// @title  Root
+/// @notice Core contract that is a ward on all other deployed contracts.
+/// @dev    Pausing can happen instantaneously, but relying on other contracts
+///         is restricted to the timelock set by the delay.
 contract Root is Auth {
     /// @dev To prevent filing a delay that would block any updates indefinitely
     uint256 private MAX_DELAY = 4 weeks;

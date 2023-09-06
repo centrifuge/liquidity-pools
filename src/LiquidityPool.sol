@@ -41,29 +41,36 @@ interface InvestmentManagerLike {
     function decreaseRedeemRequest(uint256 shares, address receiver) external;
 }
 
-/// @title LiquidityPool
-/// @author ilinzweilin
-/// @dev Liquidity Pool implementation for Centrifuge Pools following the EIP4626 standard.
+/// @title  Liquidity Pool
+/// @notice Liquidity Pool implementation for Centrifuge pools
+///         following the EIP4626 standard, with asynchronous extension methods.
 ///
-/// @notice Each Liquidity Pool is a tokenized vault issuing shares as restricted ERC20 tokens against currency deposits based on the current share price.
-/// This is extending the EIP4626 standard by 'requestRedeem' & 'requestDeposit' functions, where redeem and deposit orders are submitted to the pools
-/// to be included in the execution of the following epoch. After execution users can use the redeem and withdraw functions to get their shares and/or assets from the pools.
+/// @dev    Each Liquidity Pool is a tokenized vault issuing shares as restricted ERC20 tokens against currency deposits based on the current share price.
+///         This is extending the EIP4626 standard by 'requestRedeem' & 'requestDeposit' functions, where redeem and deposit orders are submitted to the pools
+///         to be included in the execution of the following epoch. After execution users can use the deposit, mint, redeem and withdraw functions t
+///         get their shares and/or assets from the pools.
 contract LiquidityPool is Auth, IERC4626 {
     using MathLib for uint256;
 
     uint64 public immutable poolId;
     bytes16 public immutable trancheId;
 
-    /// @notice asset: The underlying stable currency of the Liquidity Pool. Note: 1 Centrifuge Pool can have multiple Liquidity Pools for the same Tranche token with different underlying currencies (assets).
+    /// @notice The investment currency for this Liquidity Pool.
+    ///         Each tranche of a Centrifuge pool can have multiple Liquidity Pools,
+    ///         thus 1 share can be linked to multiple LiquidityPools with different assets.
     address public immutable asset;
 
-    /// @notice share: The restricted ERC-20 Liquidity pool token. Has a ratio (token price) of underlying assets exchanged on deposit/withdraw/redeem. Liquidity pool tokens on evm represent tranche tokens on centrifuge chain (even though in the current implementation one tranche token on centrifuge chain can be split across multiple liquidity pool tokens on EVM).
+    /// @notice The restricted ERC-20 Liquidity Pool token. Has a ratio (token price) of underlying assets
+    ///         exchanged on deposit/withdraw/redeem.
     TrancheTokenLike public immutable share;
 
     InvestmentManagerLike public investmentManager;
 
-    uint128 public latestPrice; // tranche token price, denominated in the asset
-    uint256 public lastPriceUpdate; // timestamp of the last price update
+    /// @notice Tranche token price, denominated in the asset
+    uint128 public latestPrice;
+
+    /// @notice Timestamp of the last price update
+    uint256 public lastPriceUpdate;
 
     // --- Events ---
     event File(bytes32 indexed what, address data);

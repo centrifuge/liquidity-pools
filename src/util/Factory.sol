@@ -21,6 +21,8 @@ interface LiquidityPoolFactoryLike {
     ) external returns (address);
 }
 
+/// @title  Liquidity Pool Factory
+/// @dev    Utility for deploying new liquidity pool contracts
 contract LiquidityPoolFactory is Auth {
     address immutable root;
 
@@ -62,6 +64,10 @@ interface TrancheTokenFactoryLike {
     ) external returns (address);
 }
 
+/// @title  Tranche Token Factory
+/// @dev    Utility for deploying new tranche token contracts
+///         Ensures the addresses are deployed at a deterministic address
+///         based on the pool id and tranche id.
 contract TrancheTokenFactory is Auth {
     address immutable root;
 

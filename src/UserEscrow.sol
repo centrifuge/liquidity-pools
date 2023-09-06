@@ -8,11 +8,10 @@ interface ERC20Like {
     function allowance(address owner, address spender) external view returns (uint256);
 }
 
-/**
- * @dev Escrow contract that holds tokens for specific destinations.
- * Ensures that once tokens are transferred in, they can only be
- * transferred out to the pre-chosen destinations, by wards.
- */
+/// @title  User Escrow
+/// @notice Escrow contract that holds tokens for specific destinations.
+///         Ensures that once tokens are transferred in, they can only be
+///         transferred out to the pre-chosen destinations, by wards.
 contract UserEscrow is Auth {
     event TransferIn(address indexed token, address indexed source, address indexed destination, uint256 amount);
     event TransferOut(address indexed token, address indexed destination, uint256 amount);
