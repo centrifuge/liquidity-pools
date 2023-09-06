@@ -24,9 +24,9 @@ contract UserEscrow is Auth {
         emit Rely(msg.sender);
     }
 
-    // --- Token approvals ---
+    // --- Token transfers ---
     function transferIn(address token, address source, address destination, uint256 amount) external auth {
-        destinations[token][destination] = amount;
+        destinations[token][destination] += amount;
 
         SafeTransferLib.safeTransferFrom(token, source, address(this), amount);
         emit TransferIn(token, source, destination, amount);
