@@ -6,8 +6,9 @@ import {InvestmentManager} from "src/InvestmentManager.sol";
 import {Messages} from "src/gateway/Messages.sol";
 import {Gateway} from "src/gateway/Gateway.sol";
 import {Auth} from "src/util/Auth.sol";
+import "./Mock.sol";
 
-contract MockXcmRouter is Auth, Test {
+contract MockXcmRouter is Auth, Mock {
     address public immutable centrifugeChainOrigin;
     address public gateway;
 
@@ -41,6 +42,7 @@ contract MockXcmRouter is Auth, Test {
     }
 
     function send(bytes memory message) public onlyGateway {
+        values_bytes["send"] = message;
         sentMessages[message] = true;
     }
 
