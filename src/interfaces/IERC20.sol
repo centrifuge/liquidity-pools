@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Contracts (last updated v4.9.0) (token/ERC20/IERC20.sol)
+//
 pragma solidity 0.8.21;
 
-/**
- * @dev Interface of the ERC20 standard as defined in the EIP.
- */
+/// @title  IERC20
+/// @dev    Interface of the ERC20 standard as defined in the EIP.
+/// @dev    Adapted from OpenZeppelin Contracts (last updated v4.9.0) (token/ERC20/IERC20.sol)
 interface IERC20 {
     /**
      * @dev Emitted when `value` tokens are moved from one account (`from`) to

@@ -40,6 +40,8 @@ interface GatewayLike {
     function handle(bytes memory message) external;
 }
 
+/// @title  Axelar Router
+/// @notice Routing contract that integrates with an Axelar Gateway
 contract AxelarRouter is Auth {
     string private constant axelarCentrifugeChainId = "centrifuge";
     string private constant axelarCentrifugeChainAddress = "0x7369626cef070000000000000000000000000000";

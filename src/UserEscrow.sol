@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
 import {Auth} from "./util/Auth.sol";
@@ -8,16 +8,16 @@ interface ERC20Like {
     function allowance(address owner, address spender) external view returns (uint256);
 }
 
-/**
- * @dev Escrow contract that holds tokens for specific destinations.
- * Ensures that once tokens are transferred in, they can only be
- * transferred out to the pre-chosen destinations, by wards.
- */
+/// @title  User Escrow
+/// @notice Escrow contract that holds tokens for specific destinations.
+///         Ensures that once tokens are transferred in, they can only be
+///         transferred out to the pre-chosen destinations, by wards.
 contract UserEscrow is Auth {
     event TransferIn(address indexed token, address indexed source, address indexed destination, uint256 amount);
     event TransferOut(address indexed token, address indexed destination, uint256 amount);
 
-    mapping(address => mapping(address => uint256)) destinations; // map by token and destination
+    /// @dev Map by token and destination
+    mapping(address => mapping(address => uint256)) destinations;
 
     constructor() {
         wards[msg.sender] = 1;
