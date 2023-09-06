@@ -131,7 +131,7 @@ contract LiquidityPool is Auth, IERC4626 {
         return investmentManager.maxDeposit(receiver, address(this));
     }
 
-    /// @return Shares that any user would get for an amount of assets provided
+    /// @return shares that any user would get for an amount of assets provided
     function previewDeposit(uint256 assets) public view returns (uint256 shares) {
         shares = investmentManager.previewDeposit(msg.sender, address(this), assets);
     }
