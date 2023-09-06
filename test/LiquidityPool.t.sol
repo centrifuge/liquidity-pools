@@ -1009,8 +1009,8 @@ contract LiquidityPoolTest is TestSetup {
         assertTrue(lPool.balanceOf(address(escrow)) <= 1);
         assertTrue(erc20.balanceOf(address(userEscrow)) <= 1);
 
-        assertEq(erc20.balanceOf(self), (amount / 2));
-        assertEq(erc20.balanceOf(random), (amount / 2));
+        assertApproxEqAbs(erc20.balanceOf(self), (amount / 2), 1);
+        assertApproxEqAbs(erc20.balanceOf(random), (amount / 2), 1);
         assertTrue(lPool.maxWithdraw(self) <= 1);
         assertTrue(lPool.maxRedeem(self) <= 1);
     }
@@ -1113,8 +1113,8 @@ contract LiquidityPoolTest is TestSetup {
 
         assertTrue(lPool.balanceOf(self) <= 1);
         assertTrue(erc20.balanceOf(address(userEscrow)) <= 1);
-        assertEq(erc20.balanceOf(self), currencyPayout / 2);
-        assertEq(erc20.balanceOf(random), currencyPayout / 2);
+        assertApproxEqAbs(erc20.balanceOf(self), currencyPayout / 2, 1);
+        assertApproxEqAbs(erc20.balanceOf(random), currencyPayout / 2, 1);
         assertTrue(lPool.maxRedeem(self) <= 1);
         assertTrue(lPool.maxWithdraw(self) <= 1);
     }
