@@ -3,7 +3,7 @@ pragma solidity 0.8.21;
 
 import {TrancheTokenFactoryLike, LiquidityPoolFactoryLike} from "./util/Factory.sol";
 import {TrancheTokenLike} from "./token/Tranche.sol";
-import {MemberlistLike} from "./token/Memberlist.sol";
+import {MemberlistLike} from "./token/RestrictionManager.sol";
 import {IERC20} from "./interfaces/IERC20.sol";
 import {Auth} from "./util/Auth.sol";
 import {SafeTransferLib} from "./util/SafeTransferLib.sol";
@@ -225,7 +225,7 @@ contract PoolManager is Auth {
         TrancheTokenLike trancheToken = TrancheTokenLike(getTrancheToken(poolId, trancheId));
         require(address(trancheToken) != address(0), "PoolManager/unknown-token");
 
-        MemberlistLike memberlist = MemberlistLike(trancheToken.memberlist());
+        MemberlistLike memberlist = MemberlistLike(address(trancheToken.restrictionManager()));
         memberlist.updateMember(user, validUntil);
     }
 
@@ -266,7 +266,7 @@ contract PoolManager is Auth {
         TrancheTokenLike trancheToken = TrancheTokenLike(getTrancheToken(poolId, trancheId));
         require(address(trancheToken) != address(0), "PoolManager/unknown-token");
 
-        require(trancheToken.hasMember(destinationAddress), "PoolManager/not-a-member");
+        require(MemberlistLike(address(trancheToken.restrictionManager())).hasMember(destinationAddress), "PoolManager/not-a-member");
         trancheToken.mint(destinationAddress, amount);
     }
 

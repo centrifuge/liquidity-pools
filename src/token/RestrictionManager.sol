@@ -3,6 +3,12 @@ pragma solidity 0.8.21;
 
 import {Auth} from "./../util/Auth.sol";
 
+interface MemberlistLike {
+    function updateMember(address user, uint256 validUntil) external;
+    function members(address user) external view returns (uint256);
+    function hasMember(address user) external view returns (bool);
+}
+
 contract RestrictionManager is Auth {
     uint8 public constant SUCCESS_CODE = 0;
     uint8 public constant DESTINATION_NOT_A_MEMBER_RESTRICTION_CODE = 1;
@@ -25,7 +31,7 @@ contract RestrictionManager is Auth {
         return SUCCESS_CODE;
     }
 
-    function messageForTransferRestriction(uint8 restrictionCode) public view returns (string) {
+    function messageForTransferRestriction(uint8 restrictionCode) public view returns (string memory) {
         if (restrictionCode == DESTINATION_NOT_A_MEMBER_RESTRICTION_CODE) {
             return DESTINATION_NOT_A_MEMBER_RESTRICTION_MESSAGE;
         }
@@ -34,6 +40,10 @@ contract RestrictionManager is Auth {
     }
 
     // --- Checking members ---
+    function member(address user) public view {
+        require((members[user] >= block.timestamp), "RestrictionManager/destination-not-a-member");
+    }
+
     function hasMember(address user) public view returns (bool) {
         if (members[user] >= block.timestamp) {
             return true;

@@ -13,7 +13,7 @@ import {LiquidityPool} from "../src/LiquidityPool.sol";
 import {TrancheToken} from "../src/token/Tranche.sol";
 import {ERC20} from "../src/token/ERC20.sol";
 import {Gateway} from "../src/gateway/Gateway.sol";
-import {MemberlistLike, Memberlist} from "../src/token/Memberlist.sol";
+import {MemberlistLike, RestrictionManager} from "../src/token/RestrictionManager.sol";
 import {Messages} from "../src/gateway/Messages.sol";
 import {Deployer} from "../script/Deployer.sol";
 import "../src/interfaces/IERC20.sol";

@@ -34,6 +34,7 @@ interface LiquidityPoolLike is ERC20Like {
     function asset() external view returns (address);
     function hasMember(address) external returns (bool);
     function updatePrice(uint128 price) external;
+    function checkTransferRestriction(address from, address to, uint256 value) external view returns (bool);
 }
 
 interface PoolManagerLike {
@@ -179,7 +180,7 @@ contract InvestmentManager is Auth {
 
     function decreaseDepositRequest(uint256 currencyAmount, address user) public auth {
         LiquidityPoolLike liquidityPool = LiquidityPoolLike(msg.sender);
-        require(liquidityPool.hasMember(user), "InvestmentManager/not-a-member");
+        require(liquidityPool.checkTransferRestriction(address(0), user, 0), "InvestmentManager/not-a-member");
         gateway.decreaseInvestOrder(
             liquidityPool.poolId(),
             liquidityPool.trancheId(),
@@ -191,7 +192,7 @@ contract InvestmentManager is Auth {
 
     function decreaseRedeemRequest(uint256 trancheTokenAmount, address user) public auth {
         LiquidityPoolLike liquidityPool = LiquidityPoolLike(msg.sender);
-        require(liquidityPool.hasMember(user), "InvestmentManager/not-a-member");
+        require(liquidityPool.checkTransferRestriction(address(0), user, 0), "InvestmentManager/not-a-member");
         gateway.decreaseRedeemOrder(
             liquidityPool.poolId(),
             liquidityPool.trancheId(),
@@ -203,7 +204,7 @@ contract InvestmentManager is Auth {
 
     function collectDeposit(address user) public auth {
         LiquidityPoolLike liquidityPool = LiquidityPoolLike(msg.sender);
-        require(liquidityPool.hasMember(user), "InvestmentManager/not-a-member");
+        require(liquidityPool.checkTransferRestriction(address(0), user, 0), "InvestmentManager/not-a-member");
         gateway.collectInvest(
             liquidityPool.poolId(),
             liquidityPool.trancheId(),
@@ -214,7 +215,7 @@ contract InvestmentManager is Auth {
 
     function collectRedeem(address user) public auth {
         LiquidityPoolLike liquidityPool = LiquidityPoolLike(msg.sender);
-        require(liquidityPool.hasMember(user), "InvestmentManager/not-a-member");
+        require(liquidityPool.checkTransferRestriction(address(0), user, 0), "InvestmentManager/not-a-member");
         gateway.collectRedeem(
             liquidityPool.poolId(),
             liquidityPool.trancheId(),
@@ -308,7 +309,7 @@ contract InvestmentManager is Auth {
         address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, _currency);
         require(address(liquidityPool) != address(0), "InvestmentManager/tranche-does-not-exist");
 
-        require(LiquidityPoolLike(liquidityPool).hasMember(user), "InvestmentManager/not-a-member");
+        require(LiquidityPoolLike(liquidityPool).checkTransferRestriction(address(0), user, 0), "InvestmentManager/not-a-member");
 
         require(
             LiquidityPoolLike(liquidityPool).transferFrom(address(escrow), user, trancheTokenPayout),
@@ -437,7 +438,7 @@ contract InvestmentManager is Auth {
         LiquidityPoolLike lPool = LiquidityPoolLike(liquidityPool);
 
         _decreaseDepositLimits(user, liquidityPool, currencyAmount, trancheTokenAmount); // decrease the possible deposit limits
-        require(lPool.hasMember(user), "InvestmentManager/trancheTokens-not-a-member");
+        require(lPool.checkTransferRestriction(msg.sender, user, 0), "InvestmentManager/trancheTokens-not-a-member");
         require(
             lPool.transferFrom(address(escrow), user, trancheTokenAmount),
             "InvestmentManager/trancheTokens-transfer-failed"
@@ -621,7 +622,7 @@ contract InvestmentManager is Auth {
     {
         address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, currency);
         require(liquidityPool != address(0), "InvestmentManager/unknown-liquidity-pool");
-        require(LiquidityPoolLike(liquidityPool).hasMember(user), "InvestmentManager/not-a-member");
+        require(LiquidityPoolLike(liquidityPool).checkTransferRestriction(address(0), user, 0), "InvestmentManager/not-a-member");
         return true;
     }
 

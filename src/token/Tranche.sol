@@ -5,16 +5,14 @@ import {ERC20} from "./ERC20.sol";
 import {IERC20} from "../interfaces/IERC20.sol";
 
 interface TrancheTokenLike is IERC20 {
-    function hasMember(address user) external view returns (bool);
-    function updatePrice(uint128 price) external;
-    function memberlist() external returns (address);
     function file(bytes32 what, string memory data) external;
+    function restrictionManager() external view returns (address);
 }
 
-interface ERC1404Like is ERC20 {
-    function detectTransferRestriction(address from, address to, uint256 value) public view returns (uint8);
-    function messageForTransferRestriction(uint8 restrictionCode) public view returns (string);
-    function SUCCESS_CODE() public view returns (uint8);
+interface ERC1404Like {
+    function detectTransferRestriction(address from, address to, uint256 value) external view returns (uint8);
+    function messageForTransferRestriction(uint8 restrictionCode) external view returns (string memory);
+    function SUCCESS_CODE() external view returns (uint8);
 }
 
 contract TrancheToken is ERC20, ERC1404Like {
@@ -29,7 +27,7 @@ contract TrancheToken is ERC20, ERC1404Like {
 
     constructor(uint8 decimals_) ERC20(decimals_) {}
 
-    modifier notRestricted(address from, address to, address value) {
+    modifier notRestricted(address from, address to, uint256 value) {
         uint8 restrictionCode = detectTransferRestriction(from, to, value);
         require(restrictionCode == restrictionManager.SUCCESS_CODE(), messageForTransferRestriction(restrictionCode));
         _;
@@ -74,8 +72,16 @@ contract TrancheToken is ERC20, ERC1404Like {
         return restrictionManager.detectTransferRestriction(from, to, value);
     }
 
-    function messageForTransferRestriction(uint8 restrictionCode) public view returns (string) {
+    function checkTransferRestriction(address from, address to, uint256 value) public view returns (bool) {
+        return restrictionManager.detectTransferRestriction(from, to, value) == SUCCESS_CODE();
+    }
+
+    function messageForTransferRestriction(uint8 restrictionCode) public view returns (string memory) {
         return restrictionManager.messageForTransferRestriction(restrictionCode);
+    }
+
+    function SUCCESS_CODE() public view returns (uint8) {
+        return restrictionManager.SUCCESS_CODE();
     }
 
     // --- ERC2771Context ---
