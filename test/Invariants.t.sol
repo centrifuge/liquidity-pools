@@ -40,7 +40,7 @@ contract ConnectorInvariants is TestSetup {
             address liquidityPool = invariantPoolManager.allLiquidityPools(i);
             uint64 poolId = LiquidityPoolLike(liquidityPool).poolId();
             bytes16 trancheId = LiquidityPoolLike(liquidityPool).trancheId();
-            (,, uint256 createdAt) = poolManager.pools(poolId);
+            (, uint256 createdAt) = poolManager.pools(poolId);
             assertTrue(createdAt > 0);
             address token = poolManager.getTrancheToken(poolId, trancheId);
             assertTrue(token != address(0));
