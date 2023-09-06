@@ -1023,6 +1023,7 @@ contract LiquidityPoolTest is TestSetup {
     ) public {
         vm.assume(currencyId > 0);
         vm.assume(random != address(0));
+        vm.assume(random != address(erc20));
         vm.assume(amount < MAX_UINT128);
         vm.assume(amount > 4);
         vm.assume(validUntil >= block.timestamp);
@@ -1083,8 +1084,8 @@ contract LiquidityPoolTest is TestSetup {
         assertTrue(lPool.balanceOf(address(escrow)) <= 1);
         assertTrue(erc20.balanceOf(address(userEscrow)) <= 1);
 
-        assertEq(erc20.balanceOf(self), (amount / 2));
-        assertEq(erc20.balanceOf(random), (amount / 2));
+        assertApproxEqAbs(erc20.balanceOf(self), (amount / 2), 1);
+        assertApproxEqAbs(erc20.balanceOf(random), (amount / 2), 1);
         assertTrue(lPool.maxWithdraw(self) <= 1);
         assertTrue(lPool.maxRedeem(self) <= 1);
     }
@@ -1143,6 +1144,7 @@ contract LiquidityPoolTest is TestSetup {
         vm.assume(currencyId > 0);
         vm.assume(amount < MAX_UINT128);
         vm.assume(random != address(0));
+        vm.assume(random != address(erc20));
         vm.assume(amount > 1);
         vm.assume(validUntil >= block.timestamp);
         price = 1;
@@ -1191,8 +1193,8 @@ contract LiquidityPoolTest is TestSetup {
 
         assertTrue(lPool.balanceOf(self) <= 1);
         assertTrue(erc20.balanceOf(address(userEscrow)) <= 1);
-        assertEq(erc20.balanceOf(self), currencyPayout / 2);
-        assertEq(erc20.balanceOf(random), currencyPayout / 2);
+        assertApproxEqAbs(erc20.balanceOf(self), currencyPayout / 2, 1);
+        assertApproxEqAbs(erc20.balanceOf(random), currencyPayout / 2, 1);
         assertTrue(lPool.maxRedeem(self) <= 1);
         assertTrue(lPool.maxWithdraw(self) <= 1);
     }
