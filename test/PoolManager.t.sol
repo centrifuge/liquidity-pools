@@ -229,7 +229,7 @@ contract PoolManagerTest is TestSetup {
         address lPool_ = deployLiquidityPool(poolId, decimals, tokenName, tokenSymbol, trancheId, currency);
 
         homePools.updateMember(poolId, trancheId, destinationAddress, validUntil);
-        assertTrue(LiquidityPool(lPool_).hasMember(destinationAddress));
+        assertTrue(LiquidityPool(lPool_).checkTransferRestriction(address(0), destinationAddress, 0));
         homePools.incomingTransferTrancheTokens(poolId, trancheId, uint64(block.chainid), destinationAddress, amount);
         assertEq(LiquidityPool(lPool_).balanceOf(destinationAddress), amount);
     }
@@ -273,8 +273,8 @@ contract PoolManagerTest is TestSetup {
         address lPool_ = deployLiquidityPool(poolId, decimals, tokenName, tokenSymbol, trancheId, currency);
         homePools.updateMember(poolId, trancheId, destinationAddress, validUntil);
         homePools.updateMember(poolId, trancheId, address(this), validUntil);
-        assertTrue(LiquidityPool(lPool_).hasMember(address(this)));
-        assertTrue(LiquidityPool(lPool_).hasMember(destinationAddress));
+        assertTrue(LiquidityPool(lPool_).checkTransferRestriction(address(0), address(this), 0));
+        assertTrue(LiquidityPool(lPool_).checkTransferRestriction(address(0), destinationAddress, 0));
 
         // Fund this address with amount
         homePools.incomingTransferTrancheTokens(poolId, trancheId, uint64(block.chainid), address(this), amount);
@@ -310,7 +310,7 @@ contract PoolManagerTest is TestSetup {
         address lPool_ = poolManager.deployLiquidityPool(poolId, trancheId, address(erc20));
 
         homePools.updateMember(poolId, trancheId, user, validUntil);
-        assertTrue(LiquidityPool(lPool_).hasMember(user));
+        assertTrue(LiquidityPool(lPool_).checkTransferRestriction(address(0), user, 0));
     }
 
     function testUpdatingMemberAsNonRouterFails(
@@ -548,13 +548,15 @@ contract PoolManagerTest is TestSetup {
         assertEq(trancheToken.name(), _bytes128ToString(_stringToBytes128(tokenName)));
         assertEq(trancheToken.symbol(), _bytes32ToString(_stringToBytes32(tokenSymbol)));
         assertEq(trancheToken.decimals(), decimals);
-        assertTrue(trancheToken.hasMember(address(investmentManager.escrow())));
+        assertTrue(
+            MemberlistLike(address(trancheToken.restrictionManager())).hasMember(address(investmentManager.escrow()))
+        );
 
         assertTrue(trancheToken.wards(address(poolManager)) == 1);
         assertTrue(trancheToken.wards(lPool_) == 1);
         assertTrue(trancheToken.wards(address(this)) == 0);
 
-        assert(trancheToken.isTrustedForwarder(lPool_) == true); // Lpool is not trusted forwarder on token
+        assertTrue(trancheToken.isTrustedForwarder(lPool_)); // Lpool is not trusted forwarder on token
     }
 
     function testDeployingLiquidityPoolNonExistingTrancheFails(

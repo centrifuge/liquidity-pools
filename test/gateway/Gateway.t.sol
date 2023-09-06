@@ -15,7 +15,7 @@ contract GatewayTest is TestSetup {
 
         // router setup
         assertEq(address(gateway.outgoingRouter()), address(mockXcmRouter));
-        assert(gateway.incomingRouters(address(mockXcmRouter)));
+        assertTrue(gateway.incomingRouters(address(mockXcmRouter)));
 
         // permissions set correctly
         assertEq(gateway.wards(address(root)), 1);
@@ -44,11 +44,11 @@ contract GatewayTest is TestSetup {
     }
 
     function testAddRouter(address router) public {
-        assert(!gateway.incomingRouters(router)); // router not added
+        assertTrue(!gateway.incomingRouters(router)); // router not added
 
         //success
         gateway.addIncomingRouter(router);
-        assert(gateway.incomingRouters(router));
+        assertTrue(gateway.incomingRouters(router));
 
         // remove self from wards
         gateway.deny(self);
@@ -59,11 +59,11 @@ contract GatewayTest is TestSetup {
 
     function testRemoveRouter(address router) public {
         gateway.addIncomingRouter(router);
-        assert(gateway.incomingRouters(router));
+        assertTrue(gateway.incomingRouters(router));
 
         //success
         gateway.removeIncomingRouter(router);
-        assert(!gateway.incomingRouters(router));
+        assertTrue(!gateway.incomingRouters(router));
 
         // remove self from wards
         gateway.deny(self);
@@ -73,10 +73,10 @@ contract GatewayTest is TestSetup {
     }
 
     function testUpdateOutgoingRouter(address router) public {
-        assert(address(gateway.outgoingRouter()) != router);
+        assertTrue(address(gateway.outgoingRouter()) != router);
 
         gateway.updateOutgoingRouter(router);
-        assert(address(gateway.outgoingRouter()) == router);
+        assertTrue(address(gateway.outgoingRouter()) == router);
 
         // remove self from wards
         gateway.deny(self);
@@ -89,7 +89,7 @@ contract GatewayTest is TestSetup {
     // onlyIncomingRouter can call
     function testOnlyIncomingRouterCanCall() public {
         bytes memory message = hex"020000000000bce1a4";
-        assert(!gateway.incomingRouters(self));
+        assertTrue(!gateway.incomingRouters(self));
 
         // fail -> self not incoming router
         vm.expectRevert(bytes("Gateway/only-router-allowed-to-call"));
@@ -97,7 +97,7 @@ contract GatewayTest is TestSetup {
 
         //success
         gateway.addIncomingRouter(self);
-        assert(gateway.incomingRouters(self));
+        assertTrue(gateway.incomingRouters(self));
 
         gateway.handle(message);
     }
@@ -114,7 +114,7 @@ contract GatewayTest is TestSetup {
         uint128 token,
         bytes32 receiver
     ) public {
-        assert(address(gateway.poolManager()) != self);
+        assertTrue(address(gateway.poolManager()) != self);
 
         // fail -> self not pool manager
         vm.expectRevert(bytes("Gateway/only-pool-manager-allowed-to-call"));
@@ -141,7 +141,7 @@ contract GatewayTest is TestSetup {
         uint128 currencyAmount,
         uint128 trancheTokenAmount
     ) public {
-        assert(address(gateway.investmentManager()) != self);
+        assertTrue(address(gateway.investmentManager()) != self);
 
         // fail -> self investment manager
         vm.expectRevert(bytes("Gateway/only-investment-manager-allowed-to-call"));

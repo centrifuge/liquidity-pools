@@ -3,7 +3,7 @@ pragma solidity 0.8.21;
 
 import {LiquidityPool} from "../LiquidityPool.sol";
 import {TrancheToken} from "../token/Tranche.sol";
-import {Memberlist} from "../token/Memberlist.sol";
+import {RestrictionManager} from "../token/RestrictionManager.sol";
 import {Auth} from "./Auth.sol";
 
 interface RootLike {
@@ -58,7 +58,7 @@ interface TrancheTokenFactoryLike {
         string memory symbol,
         uint8 decimals,
         address[] calldata trancheTokenWards,
-        address[] calldata memberlistWards
+        address[] calldata restrictionManagerWards
     ) external returns (address);
 }
 
@@ -79,9 +79,9 @@ contract TrancheTokenFactory is Auth {
         string memory symbol,
         uint8 decimals,
         address[] calldata trancheTokenWards,
-        address[] calldata memberlistWards
+        address[] calldata restrictionManagerWards
     ) public auth returns (address) {
-        address memberlist = _newMemberlist(memberlistWards);
+        address restrictionManager = _newRestrictionManager(restrictionManagerWards);
 
         // Salt is hash(poolId + trancheId)
         // same tranche token address on every evm chain
@@ -91,7 +91,7 @@ contract TrancheTokenFactory is Auth {
 
         token.file("name", name);
         token.file("symbol", symbol);
-        token.file("memberlist", memberlist);
+        token.file("restrictionManager", restrictionManager);
 
         token.rely(root);
         for (uint256 i = 0; i < trancheTokenWards.length; i++) {
@@ -102,17 +102,17 @@ contract TrancheTokenFactory is Auth {
         return address(token);
     }
 
-    function _newMemberlist(address[] calldata memberlistWards) internal returns (address memberList) {
-        Memberlist memberlist = new Memberlist();
+    function _newRestrictionManager(address[] calldata restrictionManagerWards) internal returns (address memberList) {
+        RestrictionManager restrictionManager = new RestrictionManager();
 
-        memberlist.updateMember(RootLike(root).escrow(), type(uint256).max);
+        restrictionManager.updateMember(RootLike(root).escrow(), type(uint256).max);
 
-        memberlist.rely(root);
-        for (uint256 i = 0; i < memberlistWards.length; i++) {
-            memberlist.rely(memberlistWards[i]);
+        restrictionManager.rely(root);
+        for (uint256 i = 0; i < restrictionManagerWards.length; i++) {
+            restrictionManager.rely(restrictionManagerWards[i]);
         }
-        memberlist.deny(address(this));
+        restrictionManager.deny(address(this));
 
-        return (address(memberlist));
+        return (address(restrictionManager));
     }
 }

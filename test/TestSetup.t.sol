@@ -13,7 +13,7 @@ import {LiquidityPool} from "../src/LiquidityPool.sol";
 import {TrancheToken} from "../src/token/Tranche.sol";
 import {ERC20} from "../src/token/ERC20.sol";
 import {Gateway} from "../src/gateway/Gateway.sol";
-import {MemberlistLike, Memberlist} from "../src/token/Memberlist.sol";
+import {MemberlistLike, RestrictionManager} from "../src/token/RestrictionManager.sol";
 import {Messages} from "../src/gateway/Messages.sol";
 import {Deployer} from "../script/Deployer.sol";
 import "../src/interfaces/IERC20.sol";
@@ -60,20 +60,33 @@ contract TestSetup is Deployer, Test {
     // helpers
     function deployLiquidityPool(
         uint64 poolId,
+        uint8 trancheTokenDecimals,
+        string memory tokenName,
+        string memory tokenSymbol,
+        bytes16 trancheId,
+        uint128 currencyId,
+        address currency
+    ) public returns (address) {
+        homePools.addPool(poolId); // add pool
+        homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, trancheTokenDecimals); // add tranche
+
+        homePools.addCurrency(currencyId, currency);
+        homePools.allowPoolCurrency(poolId, currencyId);
+        poolManager.deployTranche(poolId, trancheId);
+
+        address lPoolAddress = poolManager.deployLiquidityPool(poolId, trancheId, currency);
+        return lPoolAddress;
+    }
+
+    function deployLiquidityPool(
+        uint64 poolId,
         uint8 decimals,
         string memory tokenName,
         string memory tokenSymbol,
         bytes16 trancheId,
         uint128 currency
     ) public returns (address) {
-        homePools.addPool(poolId); // add pool
-        homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals); // add tranche
-        homePools.addCurrency(currency, address(erc20));
-        homePools.allowPoolCurrency(poolId, currency);
-        poolManager.deployTranche(poolId, trancheId);
-
-        address lPoolAddress = poolManager.deployLiquidityPool(poolId, trancheId, address(erc20));
-        return lPoolAddress;
+        return deployLiquidityPool(poolId, decimals, tokenName, tokenSymbol, trancheId, currency, address(erc20));
     }
 
     function _newErc20(string memory name, string memory symbol, uint8 decimals) internal returns (ERC20) {

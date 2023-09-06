@@ -14,9 +14,6 @@ contract FactoryTest is Test {
     address root;
 
     function setUp() public {
-        mainnetFork = vm.createFork(vm.envString("MAINNET_RPC_URL"));
-        polygonFork = vm.createFork(vm.envString("POLYGON_RPC_URL"));
-
         root = address(new Root(address(new Escrow()), 48 hours));
     }
 
