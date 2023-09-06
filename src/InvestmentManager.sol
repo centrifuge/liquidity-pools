@@ -140,7 +140,7 @@ contract InvestmentManager is Auth {
         );
     }
 
-    /// @notice Request tranche token redemption. Liquidity pools have to request redemptions from the Centrifuge before actual currency payouts can be done.
+    /// @notice Request tranche token redemption. Liquidity pools have to request redemptions from Centrifuge before actual currency payouts can be done.
     ///         The redemption requests are added to the order book on Centrifuge. Once the next epoch is executed on Centrifuge,
     ///         liquidity pools can proceed with currency payouts in case their orders got fullfilled.
     ///         If an amount of 0 is passed, this triggers cancelling the order.
