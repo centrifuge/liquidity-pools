@@ -21,7 +21,7 @@ contract PermissionlessScript is Deployer {
         RouterLike(address(router)).file("gateway", address(gateway));
 
         // Set up test data
-        if (vm.envBool("SETUP_TEST_DATA")) {
+        if (vm.envOr("SETUP_TEST_DATA", false)) {
             root.relyContract(address(poolManager), address(this));
             poolManager.file("gateway", admin);
             root.relyContract(address(investmentManager), address(this));

@@ -343,8 +343,8 @@ contract InvestmentManager is Auth {
     }
 
     // --- View functions ---
-    function totalAssets(uint256 totalSupply, address liquidityPool) public view returns (uint256 totalAssets) {
-        totalAssets = convertToAssets(totalSupply, liquidityPool);
+    function totalAssets(uint256 totalSupply, address liquidityPool) public view returns (uint256 _totalAssets) {
+        _totalAssets = convertToAssets(totalSupply, liquidityPool);
     }
 
     /// @dev Calculates the amount of shares / tranche tokens that any user would get for the amount of assets provided. The calculation is based on the token price from the most recent epoch retrieved from Centrifuge chain.
