@@ -132,7 +132,7 @@ contract InvestmentManager is Auth {
             return;
         }
 
-        // Transfer the currency amount from user to escrow. (lock currency in escrow). 
+        // Transfer the currency amount from user to escrow. (lock currency in escrow).
         SafeTransferLib.safeTransferFrom(currency, user, address(escrow), _currencyAmount);
 
         gateway.increaseInvestOrder(
@@ -164,7 +164,7 @@ contract InvestmentManager is Auth {
             return;
         }
 
-        // Transfer the required tranche tokens from user to escrow (lock tranche tokens in escrow). 
+        // Transfer the required tranche tokens from user to escrow (lock tranche tokens in escrow).
         require(
             lPool.transferFrom(user, address(escrow), _trancheTokenAmount),
             "InvestmentManager/tranche-token-transfer-failed"
