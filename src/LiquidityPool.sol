@@ -126,7 +126,7 @@ contract LiquidityPool is Auth, IERC4626 {
         assets = investmentManager.convertToAssets(shares, address(this));
     }
 
-    /// @return Maximum amount of stable currency that can be deposited into the Tranche by the receiver after the epoch had been executed on Centrifuge.
+    /// @return Maximum amount of assets that can be deposited into the Tranche by the receiver after the epoch had been executed on Centrifuge.
     function maxDeposit(address receiver) public view returns (uint256) {
         return investmentManager.maxDeposit(receiver, address(this));
     }
@@ -136,14 +136,14 @@ contract LiquidityPool is Auth, IERC4626 {
         shares = investmentManager.previewDeposit(msg.sender, address(this), assets);
     }
 
-    /// @notice Collect shares for deposited funds after pool epoch execution.
+    /// @notice Collect shares for deposited assets after Centrifuge epoch execution.
     ///         maxDeposit is the max amount of shares that can be collected.
     function deposit(uint256 assets, address receiver) public returns (uint256 shares) {
         shares = investmentManager.processDeposit(receiver, assets);
         emit Deposit(address(this), receiver, assets, shares);
     }
 
-    /// @notice Collect shares for deposited funds after pool epoch execution.
+    /// @notice Collect shares for deposited assets after Centrifuge epoch execution.
     ///         maxMint is the max amount of shares that can be collected.
     function mint(uint256 shares, address receiver) public returns (uint256 assets) {
         // require(receiver == msg.sender, "LiquidityPool/not-authorized-to-mint");
@@ -178,7 +178,7 @@ contract LiquidityPool is Auth, IERC4626 {
         withApproval(owner)
         returns (uint256 shares)
     {
-        // Check if messgae sender can spend owners funds
+        
         uint256 sharesRedeemed = investmentManager.processWithdraw(assets, receiver, owner);
         emit Withdraw(address(this), receiver, owner, assets, sharesRedeemed);
         return sharesRedeemed;
@@ -189,12 +189,13 @@ contract LiquidityPool is Auth, IERC4626 {
         return investmentManager.maxRedeem(owner, address(this));
     }
 
-    /// @return assets that any user could redeem for an given amount of shares
+    /// @return assets that any user could redeem for a given amount of shares
     function previewRedeem(uint256 shares) public view returns (uint256 assets) {
         assets = investmentManager.previewRedeem(msg.sender, address(this), shares);
     }
 
     /// @notice Redeem shares after successful epoch execution. Receiver will receive assets for
+     /// @notice Redeem shares can only be called by the Owner or an authorized admin.
     ///         the exact amount of redeemed shares from Owner after epoch execution.
     /// @return assets payout for the exact amount of redeemed shares
     function redeem(uint256 shares, address receiver, address owner)
@@ -226,6 +227,7 @@ contract LiquidityPool is Auth, IERC4626 {
     }
 
     /// @notice Request share redemption for a receiver to be included in the next epoch execution.
+   /// @notice Request can only be called by the Owner of the shares or an authorized admin.
     ///         Shares are locked in the escrow on request submission
     function requestRedeem(uint256 shares, address owner) public withApproval(owner) {
         investmentManager.requestRedeem(shares, owner);
