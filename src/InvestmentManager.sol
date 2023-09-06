@@ -145,7 +145,6 @@ contract InvestmentManager is Auth {
     ///         liquidity pools can proceed with currency payouts in case their orders got fullfilled.
     ///         If an amount of 0 is passed, this triggers cancelling outstanding redemption orders.
     /// @dev    The user tranche tokens required to fullfill the redemption request have to be locked, even though the currency payout can only happen after epoch execution.
-    ///         This function automatically closed all the outstading investment orders for the user.
     function requestRedeem(uint256 trancheTokenAmount, address user) public auth {
         address liquidityPool = msg.sender;
         LiquidityPoolLike lPool = LiquidityPoolLike(liquidityPool);
