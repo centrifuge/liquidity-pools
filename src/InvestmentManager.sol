@@ -152,7 +152,7 @@ contract InvestmentManager is Auth {
 
         // Check if liquidity pool currency is supported by the centrifuge pool
         poolManager.isAllowedAsPoolCurrency(lPool.poolId(), lPool.asset());
-        // Check if user is allowed to hold the restriced liquidity pool tokens
+        // Check if user is allowed to hold the restricted tranche tokens
 
         _isAllowedToInvest(lPool.poolId(), lPool.trancheId(), lPool.asset(), user);
 
