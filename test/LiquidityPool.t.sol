@@ -250,13 +250,13 @@ contract LiquidityPoolTest is TestSetup {
         homePools.updateTrancheTokenPrice(poolId, trancheId, currencyId, price);
 
         TrancheToken trancheToken = TrancheToken(address(lPool.share()));
-        assert(trancheToken.isTrustedForwarder(lPool_) == true); // Lpool is trusted forwarder on token
+        assertEq(trancheToken.isTrustedForwarder(lPool_), true); // Lpool is trusted forwarder on token
 
         uint256 initBalance = lPool.balanceOf(address(investor));
         uint256 transferAmount = amount / 4;
 
         // replacing msg sender only possible for trusted forwarder
-        assert(trancheToken.isTrustedForwarder(self) == false); // self is not trusted forwarder on token
+        assertEq(trancheToken.isTrustedForwarder(self), false); // self is not trusted forwarder on token
         (bool success, bytes memory data) = address(trancheToken).call(
             abi.encodeWithSelector(
                 bytes4(keccak256(bytes("transferFrom(address,address,uint256)"))),
@@ -271,7 +271,7 @@ contract LiquidityPoolTest is TestSetup {
         // remove LiquidityPool as trusted forwarder
         root.relyContract(address(trancheToken), self);
         trancheToken.removeLiquidityPool(lPool_);
-        assert(trancheToken.isTrustedForwarder(lPool_) == false); // adding trusted forwarder works
+        assertEq(trancheToken.isTrustedForwarder(lPool_), false); // adding trusted forwarder works
 
         vm.expectRevert(bytes("ERC20/insufficient-allowance"));
         investor.transferFrom(lPool_, address(investor), self, transferAmount);
@@ -280,8 +280,8 @@ contract LiquidityPoolTest is TestSetup {
         trancheToken.addLiquidityPool(lPool_);
 
         investor.transferFrom(lPool_, address(investor), self, transferAmount);
-        assert(lPool.balanceOf(address(investor)) == (initBalance - transferAmount));
-        assert(lPool.balanceOf(self) == transferAmount);
+        assertEq(lPool.balanceOf(address(investor)), (initBalance - transferAmount));
+        assertEq(lPool.balanceOf(self), transferAmount);
     }
 
     function testApprove(
@@ -307,7 +307,7 @@ contract LiquidityPoolTest is TestSetup {
         homePools.updateTrancheTokenPrice(poolId, trancheId, currencyId, price);
 
         TrancheToken trancheToken = TrancheToken(address(lPool.share()));
-        assert(trancheToken.isTrustedForwarder(lPool_) == true); // Lpool is not trusted forwarder on token
+        assertTrue(trancheToken.isTrustedForwarder(lPool_)); // Lpool is not trusted forwarder on token
 
         uint256 initBalance = lPool.balanceOf(address(investor));
         uint256 approvalAmount = amount / 4;
@@ -315,7 +315,7 @@ contract LiquidityPoolTest is TestSetup {
         Investor random = new Investor();
 
         // replacing msg sender only possible for trusted forwarder
-        assert(trancheToken.isTrustedForwarder(self) == false); // Lpool is not trusted forwarder on token
+        assertEq(trancheToken.isTrustedForwarder(self), false); // Lpool is not trusted forwarder on token
         (bool success, bytes memory data) = address(trancheToken).call(
             abi.encodeWithSelector(
                 bytes4(keccak256(bytes("approve(address,uint256)"))), address(random), approvalAmount, address(investor)
@@ -327,7 +327,7 @@ contract LiquidityPoolTest is TestSetup {
         // remove LiquidityPool as trusted forwarder
         root.relyContract(address(trancheToken), self);
         trancheToken.removeLiquidityPool(lPool_);
-        assert(trancheToken.isTrustedForwarder(lPool_) == false); // adding trusted forwarder works
+        assertEq(trancheToken.isTrustedForwarder(lPool_), false); // adding trusted forwarder works
 
         investor.approve(lPool_, address(random), approvalAmount);
         assertEq(lPool.allowance(lPool_, address(random)), approvalAmount);
@@ -363,13 +363,13 @@ contract LiquidityPoolTest is TestSetup {
         homePools.updateMember(poolId, trancheId, self, validUntil); // put self on memberlist to be able to receive tranche tokens
 
         TrancheToken trancheToken = TrancheToken(address(lPool.share()));
-        assert(trancheToken.isTrustedForwarder(lPool_) == true); // Lpool is not trusted forwarder on token
+        assertTrue(trancheToken.isTrustedForwarder(lPool_)); // Lpool is not trusted forwarder on token
 
         uint256 initBalance = lPool.balanceOf(address(investor));
         uint256 transferAmount = amount / 4;
 
         // replacing msg sender only possible for trusted forwarder
-        assert(trancheToken.isTrustedForwarder(self) == false); // Lpool is not trusted forwarder on token
+        assertEq(trancheToken.isTrustedForwarder(self), false); // Lpool is not trusted forwarder on token
         (bool success, bytes memory data) = address(trancheToken).call(
             abi.encodeWithSelector(
                 bytes4(keccak256(bytes("transfer(address,uint256)"))), self, transferAmount, address(investor)
@@ -380,7 +380,7 @@ contract LiquidityPoolTest is TestSetup {
         // remove LiquidityPool as trusted forwarder
         root.relyContract(address(trancheToken), self);
         trancheToken.removeLiquidityPool(lPool_);
-        assert(trancheToken.isTrustedForwarder(lPool_) == false); // adding trusted forwarder works
+        assertEq(trancheToken.isTrustedForwarder(lPool_), false); // adding trusted forwarder works
 
         vm.expectRevert(bytes("ERC20/insufficient-balance"));
         investor.transfer(lPool_, self, transferAmount);
@@ -390,8 +390,8 @@ contract LiquidityPoolTest is TestSetup {
         investor.transfer(lPool_, self, transferAmount);
 
         // investor.transfer(lPool_, self, transferAmount);
-        assert(lPool.balanceOf(address(investor)) == (initBalance - transferAmount));
-        assert(lPool.balanceOf(self) == transferAmount);
+        assertEq(lPool.balanceOf(address(investor)), (initBalance - transferAmount));
+        assertEq(lPool.balanceOf(self), transferAmount);
     }
 
     function testDepositAndRedeemPrecision(uint64 poolId, bytes16 trancheId, uint128 currencyId) public {
@@ -956,13 +956,13 @@ contract LiquidityPoolTest is TestSetup {
         lPool.redeem(amount / 2, random, self); // redeem half the amount to random wallet
 
         assertEq(lPool.balanceOf(self), 0);
-        assert(lPool.balanceOf(address(escrow)) <= 1);
-        assert(erc20.balanceOf(address(userEscrow)) <= 1);
+        assertTrue(lPool.balanceOf(address(escrow)) <= 1);
+        assertTrue(erc20.balanceOf(address(userEscrow)) <= 1);
 
         assertEq(erc20.balanceOf(self), (amount / 2));
         assertEq(erc20.balanceOf(random), (amount / 2));
-        assert(lPool.maxWithdraw(self) <= 1);
-        assert(lPool.maxRedeem(self) <= 1);
+        assertTrue(lPool.maxWithdraw(self) <= 1);
+        assertTrue(lPool.maxRedeem(self) <= 1);
     }
 
     function testWithdraw(
@@ -1021,12 +1021,12 @@ contract LiquidityPoolTest is TestSetup {
         erc20.approve(random, lPool.maxWithdraw(self)); // random receives approval to receive funds
         lPool.withdraw(amount / 2, random, self); // redeem half the amount to random wallet
 
-        assert(lPool.balanceOf(self) <= 1);
-        assert(erc20.balanceOf(address(userEscrow)) <= 1);
+        assertTrue(lPool.balanceOf(self) <= 1);
+        assertTrue(erc20.balanceOf(address(userEscrow)) <= 1);
         assertEq(erc20.balanceOf(self), currencyPayout / 2);
         assertEq(erc20.balanceOf(random), currencyPayout / 2);
-        assert(lPool.maxRedeem(self) <= 1);
-        assert(lPool.maxWithdraw(self) <= 1);
+        assertTrue(lPool.maxRedeem(self) <= 1);
+        assertTrue(lPool.maxWithdraw(self) <= 1);
     }
 
     function testDecreaseDepositRequest(
