@@ -96,6 +96,66 @@ contract LiquidityPoolTest is TestSetup {
         investor.requestDeposit(lPool_, amount / 2, address(investor));
     }
 
+    // --- uint128 type checks ---
+    // Make sure all function calls would fail when overflow uint128
+    function testAssertUint128(
+        uint64 poolId,
+        uint8 decimals,
+        string memory tokenName,
+        string memory tokenSymbol,
+        bytes16 trancheId,
+        uint128 currencyId,
+        uint256 amount,
+        address random
+    ) public {
+        vm.assume(currencyId > 0);
+        vm.assume(amount > MAX_UINT128); // amount has to overfloe UINT128
+        address lPool_ = deployLiquidityPool(poolId, erc20.decimals(), tokenName, tokenSymbol, trancheId, currencyId);
+        LiquidityPool lPool = LiquidityPool(lPool_);
+
+        vm.expectRevert(bytes("InvestmentManager/uint128-overflow"));
+        lPool.convertToShares(amount);
+
+        vm.expectRevert(bytes("InvestmentManager/uint128-overflow"));
+        lPool.convertToAssets(amount);
+
+        vm.expectRevert(bytes("InvestmentManager/uint128-overflow"));
+        lPool.previewDeposit(amount);
+
+        vm.expectRevert(bytes("InvestmentManager/uint128-overflow"));
+        lPool.previewRedeem(amount);
+
+        vm.expectRevert(bytes("InvestmentManager/uint128-overflow"));
+        lPool.previewMint(amount);
+
+        vm.expectRevert(bytes("InvestmentManager/uint128-overflow"));
+        lPool.previewWithdraw(amount);
+
+        vm.expectRevert(bytes("InvestmentManager/uint128-overflow"));
+        lPool.deposit(amount, random);
+
+        vm.expectRevert(bytes("InvestmentManager/uint128-overflow"));
+        lPool.mint(amount, random);
+
+        vm.expectRevert(bytes("InvestmentManager/uint128-overflow"));
+        lPool.withdraw(amount, random, self);
+
+        vm.expectRevert(bytes("InvestmentManager/uint128-overflow"));
+        lPool.redeem(amount, random, self);
+
+        vm.expectRevert(bytes("InvestmentManager/uint128-overflow"));
+        lPool.requestDeposit(amount, self);
+
+        vm.expectRevert(bytes("InvestmentManager/uint128-overflow"));
+        lPool.requestRedeem(amount, self);
+
+        vm.expectRevert(bytes("InvestmentManager/uint128-overflow"));
+        lPool.decreaseDepositRequest(amount, self);
+
+        vm.expectRevert(bytes("InvestmentManager/uint128-overflow"));
+        lPool.decreaseRedeemRequest(amount, self);
+    }
+
     function testRedeemWithApproval(
         uint64 poolId,
         uint8 decimals,

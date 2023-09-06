@@ -164,7 +164,8 @@ contract InvestmentManager is Auth {
         );
     }
 
-    function decreaseDepositRequest(uint256 currencyAmount, address user) public auth {
+    function decreaseDepositRequest(uint256 _currencyAmount, address user) public auth {
+        uint128 currencyAmount = _toUint128(_currencyAmount);
         LiquidityPoolLike liquidityPool = LiquidityPoolLike(msg.sender);
         require(liquidityPool.checkTransferRestriction(address(0), user, 0), "InvestmentManager/not-a-member");
         gateway.decreaseInvestOrder(
@@ -172,11 +173,12 @@ contract InvestmentManager is Auth {
             liquidityPool.trancheId(),
             user,
             poolManager.currencyAddressToId(liquidityPool.asset()),
-            _toUint128(currencyAmount)
+            currencyAmount
         );
     }
 
-    function decreaseRedeemRequest(uint256 trancheTokenAmount, address user) public auth {
+    function decreaseRedeemRequest(uint256 _trancheTokenAmount, address user) public auth {
+        uint128 trancheTokenAmount = _toUint128(_trancheTokenAmount);
         LiquidityPoolLike liquidityPool = LiquidityPoolLike(msg.sender);
         require(liquidityPool.checkTransferRestriction(address(0), user, 0), "InvestmentManager/not-a-member");
         gateway.decreaseRedeemOrder(
@@ -184,7 +186,7 @@ contract InvestmentManager is Auth {
             liquidityPool.trancheId(),
             user,
             poolManager.currencyAddressToId(liquidityPool.asset()),
-            _toUint128(trancheTokenAmount)
+            trancheTokenAmount
         );
     }
 
@@ -312,8 +314,9 @@ contract InvestmentManager is Auth {
     }
 
     /// @dev Calculates the amount of shares / tranche tokens that any user would get for the amount of assets provided. The calculation is based on the token price from the most recent epoch retrieved from Centrifuge chain.
-    function convertToShares(uint256 assets, address liquidityPool) public view auth returns (uint256 shares) {
+    function convertToShares(uint256 _assets, address liquidityPool) public view auth returns (uint256 shares) {
         (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getPoolDecimals(liquidityPool);
+        uint128 assets = _toUint128(_assets);
 
         shares = assets.mulDiv(
             10 ** (PRICE_DECIMALS + trancheTokenDecimals - currencyDecimals),
@@ -323,8 +326,9 @@ contract InvestmentManager is Auth {
     }
 
     /// @dev Calculates the asset value for an amount of shares / tranche tokens provided. The calculation is based on the token price from the most recent epoch retrieved from Centrifuge chain.
-    function convertToAssets(uint256 shares, address liquidityPool) public view auth returns (uint256 assets) {
+    function convertToAssets(uint256 _shares, address liquidityPool) public view auth returns (uint256 assets) {
         (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getPoolDecimals(liquidityPool);
+        uint128 shares = _toUint128(_shares);
 
         assets = shares.mulDiv(
             LiquidityPoolLike(liquidityPool).latestPrice(),
@@ -354,53 +358,55 @@ contract InvestmentManager is Auth {
     }
 
     /// @return trancheTokenAmount is type of uin256 to support the EIP4626 Liquidity Pool interface
-    function previewDeposit(address user, address liquidityPool, uint256 currencyAmount)
+    function previewDeposit(address user, address liquidityPool, uint256 _currencyAmount)
         public
         view
         returns (uint256 trancheTokenAmount)
     {
+        uint128 currencyAmount = _toUint128(_currencyAmount);
         uint256 depositPrice = calculateDepositPrice(user, liquidityPool);
         if (depositPrice == 0) return 0;
 
-        trancheTokenAmount =
-            uint256(_calculateTrancheTokenAmount(_toUint128(currencyAmount), liquidityPool, depositPrice));
+        trancheTokenAmount = uint256(_calculateTrancheTokenAmount(currencyAmount, liquidityPool, depositPrice));
     }
 
     /// @return currencyAmount is type of uin256 to support the EIP4626 Liquidity Pool interface
-    function previewMint(address user, address liquidityPool, uint256 trancheTokenAmount)
+    function previewMint(address user, address liquidityPool, uint256 _trancheTokenAmount)
         public
         view
         returns (uint256 currencyAmount)
     {
+        uint128 trancheTokenAmount = _toUint128(_trancheTokenAmount);
         uint256 depositPrice = calculateDepositPrice(user, liquidityPool);
         if (depositPrice == 0) return 0;
 
-        currencyAmount = uint256(_calculateCurrencyAmount(_toUint128(trancheTokenAmount), liquidityPool, depositPrice));
+        currencyAmount = uint256(_calculateCurrencyAmount(trancheTokenAmount, liquidityPool, depositPrice));
     }
 
     /// @return trancheTokenAmount is type of uin256 to support the EIP4626 Liquidity Pool interface
-    function previewWithdraw(address user, address liquidityPool, uint256 currencyAmount)
+    function previewWithdraw(address user, address liquidityPool, uint256 _currencyAmount)
         public
         view
         returns (uint256 trancheTokenAmount)
     {
+        uint128 currencyAmount = _toUint128(_currencyAmount);
         uint256 redeemPrice = calculateRedeemPrice(user, liquidityPool);
         if (redeemPrice == 0) return 0;
 
-        trancheTokenAmount =
-            uint256(_calculateTrancheTokenAmount(_toUint128(currencyAmount), liquidityPool, redeemPrice));
+        trancheTokenAmount = uint256(_calculateTrancheTokenAmount(currencyAmount, liquidityPool, redeemPrice));
     }
 
     /// @return currencyAmount is type of uin256 to support the EIP4626 Liquidity Pool interface
-    function previewRedeem(address user, address liquidityPool, uint256 trancheTokenAmount)
+    function previewRedeem(address user, address liquidityPool, uint256 _trancheTokenAmount)
         public
         view
         returns (uint256 currencyAmount)
     {
+        uint128 trancheTokenAmount = _toUint128(_trancheTokenAmount);
         uint256 redeemPrice = calculateRedeemPrice(user, liquidityPool);
         if (redeemPrice == 0) return 0;
 
-        currencyAmount = uint256(_calculateCurrencyAmount(_toUint128(trancheTokenAmount), liquidityPool, redeemPrice));
+        currencyAmount = uint256(_calculateCurrencyAmount(trancheTokenAmount, liquidityPool, redeemPrice));
     }
 
     // --- Liquidity Pool processing functions ---
@@ -645,7 +651,7 @@ contract InvestmentManager is Auth {
     /// @return value - safely converted without data loss
     function _toUint128(uint256 _value) internal pure returns (uint128 value) {
         if (_value > type(uint128).max) {
-            revert();
+            revert("InvestmentManager/uint128-overflow");
         } else {
             value = uint128(_value);
         }
