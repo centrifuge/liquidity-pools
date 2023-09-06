@@ -323,7 +323,7 @@ contract PoolManager is Auth {
         AuthLike(address(investmentManager)).rely(liquidityPool);
 
         // Enable LP to take the liquidity pool tokens out of escrow in case if investments
-        AuthLike(tranche.token).rely(liquidityPool); // Add liquidityPool as ward on tranche Token
+        AuthLike(tranche.token).rely(liquidityPool); // Add liquidityPool as ward on tranche token
         ERC2771Like(tranche.token).addLiquidityPool(liquidityPool);
         EscrowLike(escrow).approve(liquidityPool, address(investmentManager), type(uint256).max); // Approve investment manager on tranche token for coordinating transfers
         EscrowLike(escrow).approve(liquidityPool, liquidityPool, type(uint256).max); // Approve liquidityPool on tranche token to be able to burn
