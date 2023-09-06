@@ -143,7 +143,7 @@ contract InvestmentManager is Auth {
     /// @notice Request tranche token redemption. Liquidity pools have to request redemptions from Centrifuge before actual currency payouts can be done.
     ///         The redemption requests are added to the order book on Centrifuge. Once the next epoch is executed on Centrifuge,
     ///         liquidity pools can proceed with currency payouts in case their orders got fullfilled.
-    ///         If an amount of 0 is passed, this triggers cancelling the order.
+    ///         If an amount of 0 is passed, this triggers cancelling outstanding redemption orders.
     /// @dev    The user tranche tokens required to fullfill the redemption request have to be locked, even though the currency payout can only happen after epoch execution.
     ///         This function automatically closed all the outstading investment orders for the user.
     function requestRedeem(uint256 trancheTokenAmount, address user) public auth {
