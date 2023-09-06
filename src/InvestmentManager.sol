@@ -132,7 +132,7 @@ contract InvestmentManager is Auth {
             return;
         }
 
-        // Transfer the differene between required and locked currency from user to escrwo
+        // Transfer the currency amount from user to escrow. (lock currency in escrow). 
         SafeTransferLib.safeTransferFrom(currency, user, address(escrow), _currencyAmount);
 
         gateway.increaseInvestOrder(
