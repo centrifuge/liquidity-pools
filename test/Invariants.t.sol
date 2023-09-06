@@ -3,24 +3,31 @@ pragma solidity 0.8.21;
 
 import {TestSetup} from "test/TestSetup.t.sol";
 import {InvariantPoolManager} from "test/accounts/PoolManager.sol";
+import {Investor} from "test/accounts/Investor.sol";
 import "forge-std/Test.sol";
 
 interface LiquidityPoolLike {
     function poolId() external returns (uint64);
     function trancheId() external returns (bytes16);
+    function totalSupply() external returns (uint256);
 }
 
 contract ConnectorInvariants is TestSetup {
     InvariantPoolManager invariantPoolManager;
+    Investor investor;
 
     address[] private targetContracts_;
 
     function setUp() public override {
         super.setUp();
 
-        // Performs random pool and tranches creations
+        // Performs random pool, tranche, and liquidityPool creations
         invariantPoolManager = new InvariantPoolManager(homePools);
         targetContracts_.push(address(poolManager));
+
+        // Performs random transfers in and out
+        investor = new Investor();
+        targetContracts_.push(address(investor));
     }
 
     function targetContracts() public returns (address[] memory) {
@@ -28,7 +35,7 @@ contract ConnectorInvariants is TestSetup {
     }
 
     // Invariant 1: For every liquidity pool that exists, the equivalent tranche and pool exists
-    function invariantLiquidityPoolRequiresTrancheAndPool() external {
+    function invariant_LiquidityPoolRequiresTrancheAndPool() external {
         for (uint256 i = 0; i < invariantPoolManager.allLiquidityPoolsLength(); i++) {
             address liquidityPool = invariantPoolManager.allLiquidityPools(i);
             uint64 poolId = LiquidityPoolLike(liquidityPool).poolId();
