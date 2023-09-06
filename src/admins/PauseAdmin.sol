@@ -4,6 +4,9 @@ pragma solidity 0.8.21;
 import {Root} from "../Root.sol";
 import {Auth} from "./../util/Auth.sol";
 
+/// @title  Delayed Admin
+/// @dev    Any ward can manage accounts who can pause.
+///         Any pauser can instantaneously pause the Root.
 contract PauseAdmin is Auth {
     Root public immutable root;
 

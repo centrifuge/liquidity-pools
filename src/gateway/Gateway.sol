@@ -75,6 +75,12 @@ interface RootLike {
     function cancelRely(address target) external;
 }
 
+/// @title  Gateway
+/// @dev    It parses incoming messages and forwards these to Managers
+///         and it encoded outgoing messages and sends these to Routers.
+///
+///         If the Root is paused, any messages in and out of this contract
+///         will not be forwarded
 contract Gateway is Auth {
     RootLike public immutable root;
     InvestmentManagerLike public investmentManager;

@@ -9,6 +9,8 @@ interface MemberlistLike {
     function hasMember(address user) external view returns (bool);
 }
 
+/// @title  Restriction Manager
+/// @notice ERC1404 based contract that checks transfer restrictions.
 contract RestrictionManager is Auth {
     uint8 public constant SUCCESS_CODE = 0;
     uint8 public constant DESTINATION_NOT_A_MEMBER_RESTRICTION_CODE = 1;
