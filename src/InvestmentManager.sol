@@ -445,7 +445,7 @@ contract InvestmentManager is Auth {
     ///         Note: The tranche tokens are already minted on collectInvest and are deposited to the escrow account until the users calls mint, or deposit.
     /// @dev    currencyAmount return value is type of uint256 to be compliant with EIP4626 LiquidityPool interface
     /// @return currencyAmount the amount of liquidityPool assets invested and locked in escrow in order
-    ///         for the amount of tranche received after successful investment into the pool.
+    ///         for the amount of tranche tokens received after successful investment into the pool.
     function processMint(address user, uint256 trancheTokenAmount) public auth returns (uint256 currencyAmount) {
         address liquidityPool = msg.sender;
         uint128 _trancheTokenAmount = _toUint128(trancheTokenAmount);
