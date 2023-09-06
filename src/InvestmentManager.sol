@@ -122,7 +122,7 @@ contract InvestmentManager is Auth {
 
         // Check if liquidity pool currency is supported by the centrifuge pool
         poolManager.isAllowedAsPoolCurrency(lPool.poolId(), currency);
-        // Check if user is allowed to hold the restriced liquidity pool tokens
+        // Check if user is allowed to hold the restricted tranche tokens
         _isAllowedToInvest(lPool.poolId(), lPool.trancheId(), currency, user);
         if (_currencyAmount == 0) {
             // Case: outstanding redemption orders only needed to be cancelled
