@@ -322,7 +322,7 @@ contract InvestmentManager is Auth {
         _totalAssets = convertToAssets(totalSupply, liquidityPool);
     }
 
-    /// @dev Calculates the amount of shares / tranche tokens that any user would get for the amount of assets provided.
+    /// @dev Calculates the amount of shares / tranche tokens that any user would get for the amount of currency / assets provided.
     ///      The calculation is based on the tranche token price from the most recent epoch retrieved from Centrifuge.
     function convertToShares(uint256 assets, address liquidityPool) public view auth returns (uint256 shares) {
         (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getPoolDecimals(liquidityPool);
