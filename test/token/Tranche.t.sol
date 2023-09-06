@@ -78,6 +78,7 @@ contract TrancheTokenTest is Test {
     function testCheckTrustedForwarderWorks(uint256 validUntil, uint256 amount, address random) public {
         vm.assume(validUntil > block.timestamp);
         vm.assume(amount > 0);
+        vm.assume(random != address(token));
 
         assert(!token.isTrustedForwarder(self));
         // make self trusted forwarder
