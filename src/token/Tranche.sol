@@ -4,11 +4,6 @@ pragma solidity 0.8.21;
 import {ERC20} from "./ERC20.sol";
 import {IERC20} from "../interfaces/IERC20.sol";
 
-interface MemberlistLike {
-    function hasMember(address) external view returns (bool);
-    function member(address) external;
-}
-
 interface TrancheTokenLike is IERC20 {
     function hasMember(address user) external view returns (bool);
     function updatePrice(uint128 price) external;
@@ -16,8 +11,14 @@ interface TrancheTokenLike is IERC20 {
     function file(bytes32 what, string memory data) external;
 }
 
-contract TrancheToken is ERC20 {
-    MemberlistLike public memberlist;
+interface ERC1404Like is ERC20 {
+    function detectTransferRestriction(address from, address to, uint256 value) public view returns (uint8);
+    function messageForTransferRestriction(uint8 restrictionCode) public view returns (string);
+    function SUCCESS_CODE() public view returns (uint8);
+}
+
+contract TrancheToken is ERC20, ERC1404Like {
+    ERC1404Like public restrictionManager;
 
     mapping(address => bool) public liquidityPools;
 
@@ -28,14 +29,15 @@ contract TrancheToken is ERC20 {
 
     constructor(uint8 decimals_) ERC20(decimals_) {}
 
-    modifier checkMember(address user) {
-        memberlist.member(user);
+    modifier notRestricted(address from, address to, address value) {
+        uint8 restrictionCode = detectTransferRestriction(from, to, value);
+        require(restrictionCode == restrictionManager.SUCCESS_CODE(), messageForTransferRestriction(restrictionCode));
         _;
     }
 
     // --- Administration ---
     function file(bytes32 what, address data) public auth {
-        if (what == "memberlist") memberlist = MemberlistLike(data);
+        if (what == "restrictionManager") restrictionManager = ERC1404Like(data);
         else revert("TrancheToken/file-unrecognized-param");
         emit File(what, data);
     }
@@ -51,20 +53,29 @@ contract TrancheToken is ERC20 {
     }
 
     // --- Restrictions ---
-    function hasMember(address user) public view returns (bool) {
-        return memberlist.hasMember(user);
-    }
-
-    function transfer(address to, uint256 value) public override checkMember(to) returns (bool) {
+    function transfer(address to, uint256 value) public override notRestricted(msg.sender, to, value) returns (bool) {
         return super.transfer(to, value);
     }
 
-    function transferFrom(address from, address to, uint256 value) public override checkMember(to) returns (bool) {
+    function transferFrom(address from, address to, uint256 value)
+        public
+        override
+        notRestricted(from, to, value)
+        returns (bool)
+    {
         return super.transferFrom(from, to, value);
     }
 
-    function mint(address to, uint256 value) public override checkMember(to) {
+    function mint(address to, uint256 value) public override notRestricted(msg.sender, to, value) {
         return super.mint(to, value);
+    }
+
+    function detectTransferRestriction(address from, address to, uint256 value) public view returns (uint8) {
+        return restrictionManager.detectTransferRestriction(from, to, value);
+    }
+
+    function messageForTransferRestriction(uint8 restrictionCode) public view returns (string) {
+        return restrictionManager.messageForTransferRestriction(restrictionCode);
     }
 
     // --- ERC2771Context ---
