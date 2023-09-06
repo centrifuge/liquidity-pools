@@ -157,7 +157,7 @@ contract InvestmentManager is Auth {
         _isAllowedToInvest(lPool.poolId(), lPool.trancheId(), lPool.asset(), user);
 
         if (_trancheTokenAmount == 0) {
-            // Case: outstanding redeem orders will be cancelled
+            // Case: outstanding redemption orders will be cancelled
             gateway.cancelRedeemOrder(
                 lPool.poolId(), lPool.trancheId(), user, poolManager.currencyAddressToId(lPool.asset())
             );
