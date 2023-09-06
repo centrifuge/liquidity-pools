@@ -30,58 +30,25 @@ contract FactoryTest is Test {
     ) public {
         vm.selectFork(mainnetFork);
         bytes32 salt = keccak256(abi.encodePacked(poolId, trancheId));
-        Escrow escrow1 = new Escrow{salt: salt}();
-        address hashed1 = getAddress(salt, address(escrow1));
-        Root root1 = new Root{salt: salt}(address(escrow1), 48 hours);
+
+        Root root1 = new Root{salt: salt}(address(new Escrow{salt: salt}()), 48 hours);
 
         TrancheTokenFactory trancheTokenFactory1 = new TrancheTokenFactory{salt: salt}(address(root1));
 
-        address trancheToken1 = deployTrancheToken(
-            trancheTokenFactory1, poolId, trancheId, investmentManager2, poolManager2, "", "", 18
-        );
+        address trancheToken1 =
+            deployTrancheToken(trancheTokenFactory1, poolId, trancheId, investmentManager2, poolManager2, "", "", 18);
 
         vm.selectFork(polygonFork);
-        Escrow escrow2 = new Escrow{salt: salt}();
-        assertEq(address(escrow1), address(escrow2));
-        Root root2 = new Root{salt: salt}(address(escrow2), 48 hours);
-        
-        address hashed2 = getAddress(salt, address(escrow2));
-        assertEq(hashed1, hashed2);
+
+        Root root2 = new Root{salt: salt}(address(new Escrow{salt: salt}()), 48 hours);
+
         assertEq(address(root1), address(root2));
         TrancheTokenFactory trancheTokenFactory2 = new TrancheTokenFactory{salt: salt}(address(root2));
         assertEq(address(trancheTokenFactory1), address(trancheTokenFactory2));
-        address trancheToken2 = deployTrancheToken(
-            trancheTokenFactory2, poolId, trancheId, investmentManager2, poolManager2, "", "", 18
-        );
+        address trancheToken2 =
+            deployTrancheToken(trancheTokenFactory2, poolId, trancheId, investmentManager2, poolManager2, "", "", 18);
 
         assertEq(trancheToken1, trancheToken2);
-    }
-
-    function getBytecode(address escrow)
-        public
-        view
-        returns (bytes memory)
-    {
-        bytes memory bytecode = type(Root).creationCode;
-        return abi.encodePacked(bytecode, abi.encode(escrow, 48 hours));
-    }
-
-    function getAddress(bytes32 _salt, address escrow)
-        public
-        view
-        returns (address)
-    {
-        // Get a hash concatenating args passed to encodePacked
-        bytes32 hash = keccak256(
-            abi.encodePacked(
-                bytes1(0xff), // 0
-                address(this), // address of factory contract
-                _salt, // a random salt
-                keccak256(getBytecode(escrow)) // the wallet contract bytecode
-            )
-        );
-        // Cast last 20 bytes of hash to address
-        return address(uint160(uint256(hash)));
     }
 
     function deployTrancheToken(
