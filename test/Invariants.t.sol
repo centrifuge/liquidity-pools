@@ -9,7 +9,11 @@ import "forge-std/Test.sol";
 interface LiquidityPoolLike {
     function poolId() external returns (uint64);
     function trancheId() external returns (bytes16);
+}
+
+interface ERC20Like {
     function totalSupply() external returns (uint256);
+    function balanceOf(address account) external view returns (uint256);
 }
 
 contract PoolInvariants is TestSetup {
@@ -48,10 +52,32 @@ contract PoolInvariants is TestSetup {
         }
     }
 
+    // Invariant 2: The tranche token supply should equal the sum of all transfers in minus the sum of all the transfers out
     function invariant_tokenSolvency() external {
-        for (uint256 i = 0; i < invariantPoolManager.allLiquidityPoolsLength(); i++) {
-            address liquidityPool = invariantPoolManager.allLiquidityPools(i);
-            assertEq(LiquidityPoolLike(liquidityPool).totalSupply(), investor.totalTransferredIn() - investor.totalTransferredOut());
+        assertEq(
+            ERC20Like(investor.fixedToken()).totalSupply(),
+            investor.totalTransferredIn() - investor.totalTransferredOut()
+        );
+    }
+
+    // Invariant 3: An investor should not be able to transfer out more tranche tokens than were transferred in
+    function invariant_investorSolvency() external {
+        assertTrue(investor.totalTransferredIn() >= investor.totalTransferredOut());
+        for (uint256 i = 0; i < investor.allInvestorsLength(); i++) {
+            address investorAddress = investor.allInvestors(i);
+            assertTrue(
+                investor.investorTransferredIn(investorAddress) >= investor.investorTransferredOut(investorAddress)
+            );
         }
+    }
+
+    // Invariant 4: The total supply of tranche tokens should equal the sum of all the investors balances
+    function invariant_totalSupply() external {
+        uint256 totalSupply = ERC20Like(investor.fixedToken()).totalSupply();
+        uint256 totalBalance = 0;
+        for (uint256 i = 0; i < investor.allInvestorsLength(); i++) {
+            totalBalance += ERC20Like(investor.fixedToken()).balanceOf(investor.allInvestors(i));
+        }
+        assertEq(totalSupply, totalBalance);
     }
 }
