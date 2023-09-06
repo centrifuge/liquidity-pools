@@ -86,10 +86,7 @@ contract LiquidityPool is Auth, IERC4626 {
 
     /// @dev function either called by a ward or message.sender is the owner
     modifier withApproval(address owner) {
-        require(
-            (wards[msg.sender] == 1 || msg.sender == owner),
-            "LiquidityPool/no-approval"
-        );
+        require((wards[msg.sender] == 1 || msg.sender == owner), "LiquidityPool/no-approval");
         _;
     }
 
@@ -186,7 +183,11 @@ contract LiquidityPool is Auth, IERC4626 {
 
     /// @dev Redeem shares after successful epoch execution. Receiver will receive assets for the exact amount of redeemed shares from Owner after epoch execution.
     /// @return assets currency payout for the exact amount of redeemed shares
-    function redeem(uint256 shares, address receiver, address owner) public withApproval(owner) returns (uint256 assets) {
+    function redeem(uint256 shares, address receiver, address owner)
+        public
+        withApproval(owner)
+        returns (uint256 assets)
+    {
         uint256 currencyPayout = investmentManager.processRedeem(shares, receiver, owner);
         emit Withdraw(address(this), receiver, owner, currencyPayout, shares);
         return currencyPayout;

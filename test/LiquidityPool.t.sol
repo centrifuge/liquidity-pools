@@ -81,7 +81,7 @@ contract LiquidityPoolTest is TestSetup {
         vm.expectRevert(bytes("LiquidityPool/no-approval"));
         lPool.requestDeposit(amount, address(investor));
 
-        // investor gives approval to self 
+        // investor gives approval to self
         investor.approve(address(erc20), self, amount);
         // fail: even if investor grants approval to self
         vm.expectRevert(bytes("LiquidityPool/no-approval"));
@@ -89,11 +89,11 @@ contract LiquidityPoolTest is TestSetup {
 
         root.relyContract(lPool_, self);
         // success - ward can requestDeposit on behalf of investor
-        lPool.requestDeposit(amount/2, address(investor));
+        lPool.requestDeposit(amount / 2, address(investor));
         lPool.deny(self); // revoke auth
 
         // success - investor can requestDeposit
-        investor.requestDeposit(lPool_, amount/2, address(investor));
+        investor.requestDeposit(lPool_, amount / 2, address(investor));
     }
 
     function testRedeemWithApproval(
@@ -121,22 +121,20 @@ contract LiquidityPoolTest is TestSetup {
         vm.expectRevert(bytes("LiquidityPool/no-approval"));
         lPool.requestRedeem(amount, address(investor));
 
-        // investor gives approval to self 
+        // investor gives approval to self
         investor.approve(lPool_, self, amount);
 
-         // fail: even if investor grants approval to self
+        // fail: even if investor grants approval to self
         vm.expectRevert(bytes("LiquidityPool/no-approval"));
         lPool.requestRedeem(amount, address(investor));
 
         // success - investor can requestRedeem
-        investor.requestRedeem(lPool_, amount/2, address(investor));
-
+        investor.requestRedeem(lPool_, amount / 2, address(investor));
 
         root.relyContract(lPool_, self);
         // ward can requestRedeem on behalf of investor
-        lPool.requestRedeem(amount/2, address(investor));
+        lPool.requestRedeem(amount / 2, address(investor));
         lPool.deny(self); // revoke auth
-
 
         uint128 tokenAmount = uint128(lPool.balanceOf(address(escrow)));
         homePools.isExecutedCollectRedeem(
@@ -156,11 +154,11 @@ contract LiquidityPoolTest is TestSetup {
 
         // success redeem on behalf of investor with auth permissions
         root.relyContract(lPool_, self);
-        lPool.redeem(amount/4, address(investor), address(investor));
+        lPool.redeem(amount / 4, address(investor), address(investor));
         lPool.withdraw(amount / 4, address(investor), address(investor));
 
         // investor redeems rest for himself
-        investor.redeem(lPool_, amount/4, address(investor), address(investor));
+        investor.redeem(lPool_, amount / 4, address(investor), address(investor));
         investor.withdraw(lPool_, lPool.maxWithdraw(address(investor)), address(investor), address(investor));
     }
 
@@ -773,8 +771,6 @@ contract LiquidityPoolTest is TestSetup {
         vm.expectRevert(bytes("SafeTransferLib/safe-transfer-from-failed"));
         lPool.requestDeposit(amount, self);
         erc20.approve(address(investmentManager), amount); // add allowance
-
-
 
         lPool.requestDeposit(amount, self);
 

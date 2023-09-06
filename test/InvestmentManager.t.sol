@@ -28,9 +28,8 @@ contract InvestmentManagerTest is TestSetup {
         // assertEq(investmentManager.wards(self), 0); // deployer has no permissions
     }
 
-     // --- Administration ---
-    function testFile(address random
-    ) public {
+    // --- Administration ---
+    function testFile(address random) public {
         // fail: unrecognized param
         vm.expectRevert(bytes("InvestmentManager/file-unrecognized-param"));
         investmentManager.file("random", self);
