@@ -9,7 +9,6 @@ interface ERC20Like {
 }
 
 contract userEscrowTest is TestSetup {
-
     function testTransferIn(uint256 mintAmount, uint256 amount) public {
         vm.assume(mintAmount >= amount);
         vm.assume(amount > 0);
@@ -135,6 +134,4 @@ contract userEscrowTest is TestSetup {
 
         assertEq(erc20.balanceOf(destination), 30);
     }
-
-
 }
