@@ -226,6 +226,24 @@ contract TrancheTokenTest is Test {
         assertEq(token.balanceOf(targetUser), 0);
     }
 
+    // Auth transfer
+    function testAuthTransfer(uint256 amount, address sourceUser, uint256 validUntil) public {
+        vm.assume(baseAssumptions(validUntil, sourceUser));
+
+        restrictionManager.updateMember(sourceUser, validUntil);
+        token.mint(sourceUser, amount);
+
+        vm.prank(address(2));
+        vm.expectRevert(bytes("Auth/not-authorized"));
+        token.authTransfer(sourceUser, sourceUser, amount);
+        assertEq(token.balanceOf(sourceUser), amount);
+        assertEq(token.balanceOf(address(this)), 0);
+
+        token.authTransfer(sourceUser, address(this), amount);
+        assertEq(token.balanceOf(sourceUser), 0);
+        assertEq(token.balanceOf(address(this)), amount);
+    }
+
     function baseAssumptions(uint256 validUntil, address targetUser) internal view returns (bool) {
         return validUntil > block.timestamp && targetUser != address(0) && targetUser != address(this)
             && targetUser != address(token);
