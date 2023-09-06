@@ -37,6 +37,6 @@ contract MemberlistTest is Test {
 
         memberlist.updateMember(address(this), validUntil);
         memberlist.member(address(this));
-        assert(memberlist.hasMember(address(this)));
+        assertTrue(memberlist.hasMember(address(this)));
     }
 }

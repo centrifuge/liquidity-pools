@@ -47,11 +47,11 @@ contract TrancheTokenTest is Test {
 
     // --- TrustedForwarder ---
     function testAddLiquidityPool() public {
-        assert(!token.isTrustedForwarder(self));
+        assertTrue(!token.isTrustedForwarder(self));
 
         //success
         token.addLiquidityPool(self);
-        assert(token.isTrustedForwarder(self));
+        assertTrue(token.isTrustedForwarder(self));
 
         // remove self from wards
         token.deny(self);
@@ -62,11 +62,11 @@ contract TrancheTokenTest is Test {
 
     function testRemoveLiquidityPool() public {
         token.addLiquidityPool(self);
-        assert(token.isTrustedForwarder(self));
+        assertTrue(token.isTrustedForwarder(self));
 
         // success
         token.removeLiquidityPool(self);
-        assert(!token.isTrustedForwarder(self));
+        assertTrue(!token.isTrustedForwarder(self));
 
         // remove self from wards
         token.deny(self);
@@ -78,11 +78,13 @@ contract TrancheTokenTest is Test {
     function testCheckTrustedForwarderWorks(uint256 validUntil, uint256 amount, address random) public {
         vm.assume(validUntil > block.timestamp);
         vm.assume(amount > 0);
+        vm.assume(random != address(0));
+        vm.assume(random != address(token));
 
-        assert(!token.isTrustedForwarder(self));
+        assertTrue(!token.isTrustedForwarder(self));
         // make self trusted forwarder
         token.addLiquidityPool(self);
-        assert(token.isTrustedForwarder(self));
+        assertTrue(token.isTrustedForwarder(self));
         // add self to memberlist
         memberlist.updateMember(self, validUntil);
         memberlist.updateMember(random, validUntil);
@@ -93,14 +95,14 @@ contract TrancheTokenTest is Test {
         (success,) = address(token).call(
             abi.encodeWithSelector(bytes4(keccak256(bytes("mint(address,uint256)"))), self, amount, random)
         );
-        assert(!success);
+        assertTrue(!success);
         assertEq(token.balanceOf(self), 0);
 
         // success -> self is ward
         (success,) = address(token).call(
             abi.encodeWithSelector(bytes4(keccak256(bytes("mint(address,uint256)"))), self, amount, self)
         );
-        assert(success);
+        assertTrue(success);
         assertEq(token.balanceOf(self), amount);
 
         // test non auth function works with trusted forwarder
@@ -109,7 +111,7 @@ contract TrancheTokenTest is Test {
             abi.encodeWithSelector(bytes4(keccak256(bytes("transfer(address,uint256)"))), self, amount, random)
         );
 
-        assert(!success);
+        assertTrue(!success);
         assertEq(token.balanceOf(self), amount);
 
         // success -> self has enough balance to transfer
@@ -117,7 +119,7 @@ contract TrancheTokenTest is Test {
             abi.encodeWithSelector(bytes4(keccak256(bytes("transfer(address,uint256)"))), random, amount, self)
         );
 
-        assert(success);
+        assertTrue(success);
         assertEq(token.balanceOf(self), 0);
         assertEq(token.balanceOf(random), amount);
     }

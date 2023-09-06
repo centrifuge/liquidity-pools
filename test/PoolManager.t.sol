@@ -554,7 +554,7 @@ contract PoolManagerTest is TestSetup {
         assertTrue(trancheToken.wards(lPool_) == 1);
         assertTrue(trancheToken.wards(address(this)) == 0);
 
-        assert(trancheToken.isTrustedForwarder(lPool_) == true); // Lpool is not trusted forwarder on token
+        assertTrue(trancheToken.isTrustedForwarder(lPool_)); // Lpool is not trusted forwarder on token
     }
 
     function testDeployingLiquidityPoolNonExistingTrancheFails(
