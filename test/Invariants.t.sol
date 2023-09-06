@@ -3,7 +3,7 @@ pragma solidity 0.8.21;
 
 import {TestSetup} from "test/TestSetup.t.sol";
 import {InvariantPoolManager} from "test/accounts/PoolManager.sol";
-import {Investor} from "test/accounts/Investor.sol";
+import {InvestorManager} from "test/accounts/InvestorManager.sol";
 import "forge-std/Test.sol";
 
 interface LiquidityPoolLike {
@@ -12,9 +12,9 @@ interface LiquidityPoolLike {
     function totalSupply() external returns (uint256);
 }
 
-contract ConnectorInvariants is TestSetup {
+contract PoolInvariants is TestSetup {
     InvariantPoolManager invariantPoolManager;
-    Investor investor;
+    InvestorManager investor;
 
     address[] private targetContracts_;
 
@@ -26,7 +26,7 @@ contract ConnectorInvariants is TestSetup {
         targetContracts_.push(address(poolManager));
 
         // Performs random transfers in and out
-        investor = new Investor();
+        investor = new InvestorManager();
         targetContracts_.push(address(investor));
     }
 
@@ -45,6 +45,13 @@ contract ConnectorInvariants is TestSetup {
             address token = poolManager.getTrancheToken(poolId, trancheId);
             assertTrue(token != address(0));
             assertTrue(invariantPoolManager.trancheIdToPoolId(trancheId) == poolId);
+        }
+    }
+
+    function invariant_tokenSolvency() external {
+        for (uint256 i = 0; i < invariantPoolManager.allLiquidityPoolsLength(); i++) {
+            address liquidityPool = invariantPoolManager.allLiquidityPools(i);
+            assertEq(LiquidityPoolLike(liquidityPool).totalSupply(), investor.totalTransferredIn() - investor.totalTransferredOut());
         }
     }
 }
