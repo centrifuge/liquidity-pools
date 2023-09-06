@@ -483,7 +483,7 @@ contract InvestmentManager is Auth {
     ///         Note: The trancheTokenAmount required to fullfill the redemption order was already locked in escrow
     ///         upon calling requestRedeem and burned upon collectRedeem.
     /// @notice currencyAmount return value is type of uint256 to be compliant with EIP4626 LiquidityPool interface
-    /// @return currencyAmount the amount of liquidityPool assets received for the amount of redeemed/burned trancheTokens.
+    /// @return currencyAmount the amount of liquidityPool assets received for the amount of redeemed/burned tranche tokens.
     function processRedeem(uint256 trancheTokenAmount, address receiver, address user)
         public
         auth
