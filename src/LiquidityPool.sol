@@ -14,9 +14,7 @@ interface ERC20PermitLike {
 }
 
 interface TrancheTokenLike is IERC20, ERC20PermitLike {
-    function latestPrice() external view returns (uint256);
-    function memberlist() external returns (address);
-    function hasMember(address) external returns (bool);
+    function checkTransferRestriction(address from, address to, uint256 value) external view returns (bool);
 }
 
 interface InvestmentManagerLike {
@@ -318,8 +316,8 @@ contract LiquidityPool is Auth, IERC4626 {
     }
 
     // --- Restriction overrides ---
-    function hasMember(address user) public returns (bool) {
-        return share.hasMember(user);
+    function checkTransferRestriction(address from, address to, uint256 value) public view returns (bool) {
+        return share.checkTransferRestriction(from, to, value);
     }
 
     // --- Helpers ---

@@ -176,7 +176,7 @@ contract LiquidityPoolTest is TestSetup {
 
         root.relyContract(lPool_, self); // give self auth permissions
 
-        vm.expectRevert(bytes("Memberlist/not-allowed-to-hold-token"));
+        vm.expectRevert(bytes("RestrictionManager/destination-not-a-member"));
         lPool.mint(address(investor), amount);
 
         homePools.updateMember(poolId, trancheId, address(investor), validUntil); // add investor as member
