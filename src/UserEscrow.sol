@@ -16,7 +16,8 @@ contract UserEscrow is Auth {
     event TransferIn(address indexed token, address indexed source, address indexed destination, uint256 amount);
     event TransferOut(address indexed token, address indexed destination, uint256 amount);
 
-    mapping(address => mapping(address => uint256)) destinations; // map by token and destination
+    /// @dev Map by token and destination
+    mapping(address => mapping(address => uint256)) destinations;
 
     constructor() {
         wards[msg.sender] = 1;

@@ -85,9 +85,11 @@ contract PoolManager is Auth {
     GatewayLike public gateway;
     InvestmentManagerLike public investmentManager;
 
-    mapping(uint64 => Pool) public pools; // Mapping of all deployed Centrifuge pools
-    mapping(uint128 => address) public currencyIdToAddress; // chain agnostic currency id -> evm currency address
-    mapping(address => uint128) public currencyAddressToId; // The reverse mapping of `currencyIdToAddress`
+    mapping(uint64 => Pool) public pools;
+
+    /// @dev Chain agnostic currency id -> evm currency address and reverse mapping
+    mapping(uint128 => address) public currencyIdToAddress;
+    mapping(address => uint128) public currencyAddressToId;
 
     // --- Events ---
     event File(bytes32 indexed what, address data);
@@ -108,7 +110,7 @@ contract PoolManager is Auth {
         emit Rely(msg.sender);
     }
 
-    /// @dev gateway must be message.sender. permissions check for incoming message handling.
+    /// @dev Gateway must be msg.sender for incoming message handling.
     modifier onlyGateway() {
         require(msg.sender == address(gateway), "PoolManager/not-the-gateway");
         _;
@@ -161,8 +163,8 @@ contract PoolManager is Auth {
     }
 
     // --- Incoming message handling ---
-    /// @dev new pool details from an existing centrifuge chain pool are added.
-    /// @notice the function can only be executed by the gateway contract.
+    /// @notice    New pool details from an existing Centrifuge pool are added.
+    /// @dev       The function can only be executed by the gateway contract.
     function addPool(uint64 poolId) public onlyGateway {
         Pool storage pool = pools[poolId];
         require(pool.createdAt == 0, "PoolManager/pool-already-added");
@@ -171,9 +173,9 @@ contract PoolManager is Auth {
         emit PoolAdded(poolId);
     }
 
-    /// @dev centrifuge pools can support multiple currencies for investing. this function adds a new supported currency to the pool details.
-    /// Adding new currencies allow the creation of new liquidity pools for the underlying centrifuge chain pool.
-    /// @notice the function can only be executed by the gateway contract.
+    /// @notice     Centrifuge pools can support multiple currencies for investing. this function adds a new supported currency to the pool details.
+    ///             Adding new currencies allow the creation of new liquidity pools for the underlying Centrifuge pool.
+    /// @dev        The function can only be executed by the gateway contract.
     function allowPoolCurrency(uint64 poolId, uint128 currency) public onlyGateway {
         Pool storage pool = pools[poolId];
         require(pool.createdAt != 0, "PoolManager/invalid-pool");
@@ -185,8 +187,8 @@ contract PoolManager is Auth {
         emit PoolCurrencyAllowed(currency, poolId);
     }
 
-    /// @dev new tranche details from an existng centrifuge chain pool are added.
-    /// @notice the function can only be executed by the gateway contract.
+    /// @notice     New tranche details from an existng Centrifuge pool are added.
+    /// @dev        The function can only be executed by the gateway contract.
     function addTranche(
         uint64 poolId,
         bytes16 trancheId,
@@ -230,11 +232,11 @@ contract PoolManager is Auth {
         memberlist.updateMember(user, validUntil);
     }
 
-    /// @dev a global chain agnostic currency index is maintained on centrifuge chain. This function maps a currency from the centrifuge chain index to its corresponding address on the evm chain.
-    /// The chain agnostic currency id has to be used to pass currency information to the centrifuge chain.
-    /// @notice this function can only be executed by the gateway contract.
+    /// @notice A global chain agnostic currency index is maintained on Centrifuge. This function maps a currency from the Centrifuge index to its corresponding address on the evm chain.
+    ///         The chain agnostic currency id has to be used to pass currency information to the Centrifuge.
+    /// @dev    This function can only be executed by the gateway contract.
     function addCurrency(uint128 currency, address currencyAddress) public onlyGateway {
-        // currency index on the centrifuge chain side should start at 1
+        // Currency index on the Centrifuge side should start at 1
         require(currency != 0, "PoolManager/currency-id-has-to-be-greater-than-0");
         require(currencyIdToAddress[currency] == address(0), "PoolManager/currency-id-in-use");
         require(currencyAddressToId[currencyAddress] == 0, "PoolManager/currency-address-in-use");
@@ -243,10 +245,10 @@ contract PoolManager is Auth {
         currencyIdToAddress[currency] = currencyAddress;
         currencyAddressToId[currencyAddress] = currency;
 
-        // enable taking the currency out of escrow in case of redemptions
+        // Enable taking the currency out of escrow in case of redemptions
         EscrowLike(escrow).approve(currencyAddress, investmentManager.userEscrow(), type(uint256).max);
 
-        // enable taking the currency out of escrow in case of decrease invest orders
+        // Enable taking the currency out of escrow in case of decrease invest orders
         EscrowLike(escrow).approve(currencyAddress, address(investmentManager), type(uint256).max);
 
         emit CurrencyAdded(currency, currencyAddress);
@@ -304,8 +306,8 @@ contract PoolManager is Auth {
 
     function deployLiquidityPool(uint64 poolId, bytes16 trancheId, address currency) public returns (address) {
         Tranche storage tranche = pools[poolId].tranches[trancheId];
-        require(tranche.token != address(0), "PoolManager/tranche-does-not-exist"); // tranche must have been added
-        require(isAllowedAsPoolCurrency(poolId, currency), "PoolManager/currency-not-supported"); // currency must be supported by pool
+        require(tranche.token != address(0), "PoolManager/tranche-does-not-exist"); // Tranche must have been added
+        require(isAllowedAsPoolCurrency(poolId, currency), "PoolManager/currency-not-supported"); // Currency must be supported by pool
 
         address liquidityPool = tranche.liquidityPools[currency];
         require(liquidityPool == address(0), "PoolManager/liquidityPool-already-deployed");
@@ -320,11 +322,11 @@ contract PoolManager is Auth {
         tranche.liquidityPools[currency] = liquidityPool;
         AuthLike(address(investmentManager)).rely(liquidityPool);
 
-        // enable LP to take the liquidity pool tokens out of escrow in case if investments
-        AuthLike(tranche.token).rely(liquidityPool); // add liquidityPool as ward on tranche Token
+        // Enable LP to take the liquidity pool tokens out of escrow in case if investments
+        AuthLike(tranche.token).rely(liquidityPool); // Add liquidityPool as ward on tranche Token
         ERC2771Like(tranche.token).addLiquidityPool(liquidityPool);
-        EscrowLike(escrow).approve(liquidityPool, address(investmentManager), type(uint256).max); // approve investment manager on tranche token for coordinating transfers
-        EscrowLike(escrow).approve(liquidityPool, liquidityPool, type(uint256).max); // approve liquidityPool on tranche token to be able to burn
+        EscrowLike(escrow).approve(liquidityPool, address(investmentManager), type(uint256).max); // Approve investment manager on tranche token for coordinating transfers
+        EscrowLike(escrow).approve(liquidityPool, liquidityPool, type(uint256).max); // Approve liquidityPool on tranche token to be able to burn
 
         emit LiquidityPoolDeployed(poolId, trancheId, liquidityPool);
         return liquidityPool;
@@ -342,7 +344,7 @@ contract PoolManager is Auth {
 
     function isAllowedAsPoolCurrency(uint64 poolId, address currencyAddress) public view returns (bool) {
         uint128 currency = currencyAddressToId[currencyAddress];
-        require(currency != 0, "PoolManager/unknown-currency"); // currency index on the centrifuge chain side should start at 1
+        require(currency != 0, "PoolManager/unknown-currency"); // Currency index on the Centrifuge side should start at 1
         require(pools[poolId].allowedCurrencies[currencyAddress], "PoolManager/pool-currency-not-allowed");
         return true;
     }

@@ -309,7 +309,7 @@ library Messages {
      * 9-24: trancheId (16 bytes)
      * 25-56: sender (bytes32)
      * 57-65: destinationDomain ((Domain: u8, ChainId: u64) =  9 bytes total)
-     * 66-97: destinationAddress (32 bytes - Either a Centrifuge chain address or an EVM address followed by 12 zeros)
+     * 66-97: destinationAddress (32 bytes - Either a Centrifuge address or an EVM address followed by 12 zeros)
      * 98-113: amount (uint128 = 16 bytes)
      */
     function formatTransferTrancheTokens(

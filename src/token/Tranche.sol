@@ -97,11 +97,9 @@ contract TrancheToken is ERC20, ERC1404Like {
         return liquidityPools[forwarder];
     }
 
-    /**
-     * @dev Override for `msg.sender`. Defaults to the original `msg.sender` whenever
-     * a call is not performed by the trusted forwarder or the calldata length is less than
-     * 20 bytes (an address length).
-     */
+    /// @dev    Override for `msg.sender`. Defaults to the original `msg.sender` whenever
+    ///         a call is not performed by the trusted forwarder or the calldata length is less than
+    ///         20 bytes (an address length).
     function _msgSender() internal view virtual override returns (address sender) {
         if (isTrustedForwarder(msg.sender) && msg.data.length >= 20) {
             // The assembly code is more direct than the Solidity version using `abi.decode`.
