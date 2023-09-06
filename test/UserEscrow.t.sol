@@ -88,6 +88,11 @@ contract userEscrowTest is TestSetup {
 
         vm.prank(destination);
         erc20.approve(address(otherDestination), amountOut);
+        vm.expectRevert("UserEscrow/receiver-has-no-allowance");
+        userEscrow.transferOut(erc20_, destination, otherDestination, amountOut);
+
+        vm.prank(destination);
+        erc20.approve(address(otherDestination), type(uint256).max);
         userEscrow.transferOut(erc20_, destination, otherDestination, amountOut);
 
         assertEq(erc20.balanceOf(source), mintAmount - amountIn);

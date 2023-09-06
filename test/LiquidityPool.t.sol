@@ -645,7 +645,6 @@ contract LiquidityPoolTest is TestSetup {
         // assert deposit & mint values adjusted
         assertEq(lPool.maxDeposit(self), currencyPayout);
         assertEq(lPool.maxMint(self), trancheTokenPayout);
-
         // lp price is value of 1 tranche token in usdc
         assertEq(lPool.latestPrice(), 1200000000000000000);
 
@@ -1011,8 +1010,13 @@ contract LiquidityPoolTest is TestSetup {
         vm.expectRevert(bytes("UserEscrow/receiver-has-no-allowance"));
         lPool.redeem(amount / 2, random, self); // redeem half the amount to another wallet
 
+        // fail -> receiver needs to have max approval
+        erc20.approve(random, lPool.maxRedeem(self));
+        vm.expectRevert(bytes("UserEscrow/receiver-has-no-allowance"));
+        lPool.redeem(amount / 2, random, self); // redeem half the amount to random wallet
+
         // success
-        erc20.approve(random, lPool.maxWithdraw(self)); // random receives approval to receive funds
+        erc20.approve(random, type(uint256).max);
         lPool.redeem(amount / 2, random, self); // redeem half the amount to random wallet
 
         assertEq(lPool.balanceOf(self), 0);
@@ -1116,8 +1120,13 @@ contract LiquidityPoolTest is TestSetup {
         vm.expectRevert(bytes("UserEscrow/receiver-has-no-allowance"));
         lPool.withdraw(amount / 2, random, self); // redeem half the amount to another wallet
 
+        // fail -> receiver needs to have max approval
+        erc20.approve(random, lPool.maxWithdraw(self));
+        vm.expectRevert(bytes("UserEscrow/receiver-has-no-allowance"));
+        lPool.withdraw(amount / 2, random, self); // redeem half the amount to random wallet
+
         // success
-        erc20.approve(random, lPool.maxWithdraw(self)); // random receives approval to receive funds
+        erc20.approve(random, type(uint256).max);
         lPool.withdraw(amount / 2, random, self); // redeem half the amount to random wallet
 
         assertTrue(lPool.balanceOf(self) <= 1);
