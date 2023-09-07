@@ -1,1 +1,2 @@
 forge-std/=lib/forge-std/src/
+properties/=lib/properties/contracts/ERC4626/
