@@ -125,7 +125,7 @@ contract InvestmentManager is Auth {
         // Check if user is allowed to hold the restricted tranche tokens
         _isAllowedToInvest(lPool.poolId(), lPool.trancheId(), currency, user);
         if (_currencyAmount == 0) {
-            // Case: outstanding redemption orders only needed to be cancelled
+            // Case: outstanding investment orders only needed to be cancelled
             gateway.cancelInvestOrder(
                 lPool.poolId(), lPool.trancheId(), user, poolManager.currencyAddressToId(lPool.asset())
             );

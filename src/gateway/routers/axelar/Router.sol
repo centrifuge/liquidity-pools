@@ -3,27 +3,6 @@ pragma solidity 0.8.21;
 
 import {Auth} from "./../../../util/Auth.sol";
 
-interface InvestmentManagerLike {
-    function addPool(uint64 poolId, uint128 currency, uint8 decimals) external;
-    function addTranche(
-        uint64 poolId,
-        bytes16 trancheId,
-        string memory tokenName,
-        string memory tokenSymbol,
-        uint8 decimals,
-        uint128 price
-    ) external;
-    function updateMember(uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) external;
-    function updateTokenPrice(uint64 poolId, bytes16 trancheId, uint128 price) external;
-    function handleTransferTrancheTokens(
-        uint64 poolId,
-        bytes16 trancheId,
-        uint128 currencyId,
-        address destinationAddress,
-        uint128 amount
-    ) external;
-}
-
 interface AxelarGatewayLike {
     function callContract(string calldata destinationChain, string calldata contractAddress, bytes calldata payload)
         external;
