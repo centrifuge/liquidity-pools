@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {TrancheTokenFactoryLike, LiquidityPoolFactoryLike} from "./util/Factory.sol";
+import {TrancheTokenFactoryLike, RestrictionManagerFactoryLike, LiquidityPoolFactoryLike} from "./util/Factory.sol";
 import {TrancheTokenLike} from "./token/Tranche.sol";
 import {MemberlistLike} from "./token/RestrictionManager.sol";
 import {IERC20} from "./interfaces/IERC20.sol";
@@ -80,6 +80,7 @@ contract PoolManager is Auth {
 
     EscrowLike public immutable escrow;
     LiquidityPoolFactoryLike public immutable liquidityPoolFactory;
+    RestrictionManagerFactoryLike public immutable restrictionManagerFactory;
     TrancheTokenFactoryLike public immutable trancheTokenFactory;
 
     GatewayLike public gateway;
@@ -101,9 +102,15 @@ contract PoolManager is Auth {
     event LiquidityPoolDeployed(uint64 indexed poolId, bytes16 indexed trancheId, address indexed liquidityPoool);
     event TrancheTokenDeployed(uint64 indexed poolId, bytes16 indexed trancheId);
 
-    constructor(address escrow_, address liquidityPoolFactory_, address trancheTokenFactory_) {
+    constructor(
+        address escrow_,
+        address liquidityPoolFactory_,
+        address restrictionManagerFactory_,
+        address trancheTokenFactory_
+    ) {
         escrow = EscrowLike(escrow_);
         liquidityPoolFactory = LiquidityPoolFactoryLike(liquidityPoolFactory_);
+        restrictionManagerFactory = RestrictionManagerFactoryLike(restrictionManagerFactory_);
         trancheTokenFactory = TrancheTokenFactoryLike(trancheTokenFactory_);
 
         wards[msg.sender] = 1;
@@ -286,8 +293,10 @@ contract PoolManager is Auth {
         trancheTokenWards[0] = address(investmentManager);
         trancheTokenWards[1] = address(this);
 
-        address[] memory memberlistWards = new address[](1);
-        memberlistWards[0] = address(this);
+        address[] memory restrictionManagerWards = new address[](1);
+        restrictionManagerWards[0] = address(this);
+
+        address restrictionManager = restrictionManagerFactory.newRestrictionManager(restrictionManagerWards);
 
         address token = trancheTokenFactory.newTrancheToken(
             poolId,
@@ -295,8 +304,8 @@ contract PoolManager is Auth {
             tranche.tokenName,
             tranche.tokenSymbol,
             tranche.decimals,
-            trancheTokenWards,
-            memberlistWards
+            restrictionManager,
+            trancheTokenWards
         );
 
         tranche.token = token;
