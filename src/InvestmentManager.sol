@@ -120,18 +120,10 @@ contract InvestmentManager is Auth {
         LiquidityPoolLike lPool = LiquidityPoolLike(liquidityPool);
         address currency = lPool.asset();
         uint128 _currencyAmount = _toUint128(currencyAmount);
+        require(_currencyAmount != 0, "InvestmentManager/zero-amount-not-allowed");
 
-        // Check if liquidity pool currency is supported by the Centrifuge pool
         poolManager.isAllowedAsPoolCurrency(lPool.poolId(), currency);
-        // Check if user is allowed to hold the restricted tranche tokens
         _isAllowedToInvest(lPool.poolId(), lPool.trancheId(), currency, user);
-        if (_currencyAmount == 0) {
-            // Case: outstanding investment orders only needed to be cancelled
-            gateway.cancelInvestOrder(
-                lPool.poolId(), lPool.trancheId(), user, poolManager.currencyAddressToId(lPool.asset())
-            );
-            return;
-        }
 
         // Transfer the currency amount from user to escrow. (lock currency in escrow).
         SafeTransferLib.safeTransferFrom(currency, user, address(escrow), _currencyAmount);
@@ -150,21 +142,12 @@ contract InvestmentManager is Auth {
         address liquidityPool = msg.sender;
         LiquidityPoolLike lPool = LiquidityPoolLike(liquidityPool);
         uint128 _trancheTokenAmount = _toUint128(trancheTokenAmount);
+        require(_trancheTokenAmount != 0, "InvestmentManager/zero-amount-not-allowed");
 
-        // Check if liquidity pool currency is supported by the Centrifuge pool
         poolManager.isAllowedAsPoolCurrency(lPool.poolId(), lPool.asset());
-        // Check if user is allowed to hold the restricted tranche tokens
-
         _isAllowedToInvest(lPool.poolId(), lPool.trancheId(), lPool.asset(), user);
 
-        if (_trancheTokenAmount == 0) {
-            // Case: outstanding redemption orders will be cancelled
-            gateway.cancelRedeemOrder(
-                lPool.poolId(), lPool.trancheId(), user, poolManager.currencyAddressToId(lPool.asset())
-            );
-            return;
-        }
-
+        // Transfer the tranche token amount from user to escrow. (lock tranche tokens in escrow).
         lPool.transferFrom(user, address(escrow), _trancheTokenAmount);
 
         gateway.increaseRedeemOrder(
@@ -195,6 +178,30 @@ contract InvestmentManager is Auth {
             user,
             poolManager.currencyAddressToId(liquidityPool.asset()),
             trancheTokenAmount
+        );
+    }
+
+    function cancelDepositRequest(uint256 _currencyAmount, address user) public auth {
+        uint128 currencyAmount = _toUint128(_currencyAmount);
+        LiquidityPoolLike liquidityPool = LiquidityPoolLike(msg.sender);
+        require(liquidityPool.checkTransferRestriction(address(0), user, 0), "InvestmentManager/not-a-member");
+        gateway.cancelInvestOrder(
+            liquidityPool.poolId(),
+            liquidityPool.trancheId(),
+            user,
+            poolManager.currencyAddressToId(liquidityPool.asset())
+        );
+    }
+
+    function cancelRedeemRequest(uint256 _trancheTokenAmount, address user) public auth {
+        uint128 trancheTokenAmount = _toUint128(_trancheTokenAmount);
+        LiquidityPoolLike liquidityPool = LiquidityPoolLike(msg.sender);
+        require(liquidityPool.checkTransferRestriction(address(0), user, 0), "InvestmentManager/not-a-member");
+        gateway.cancelRedeemOrder(
+            liquidityPool.poolId(),
+            liquidityPool.trancheId(),
+            user,
+            poolManager.currencyAddressToId(liquidityPool.asset())
         );
     }
 

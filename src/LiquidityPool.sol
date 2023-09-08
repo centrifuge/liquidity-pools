@@ -39,6 +39,8 @@ interface InvestmentManagerLike {
     function collectRedeem(address receiver) external;
     function decreaseDepositRequest(uint256 assets, address receiver) external;
     function decreaseRedeemRequest(uint256 shares, address receiver) external;
+    function cancelDepositRequest(uint256 assets, address receiver) external;
+    function cancelRedeemRequest(uint256 shares, address receiver) external;
 }
 
 /// @title  Liquidity Pool
@@ -252,6 +254,18 @@ contract LiquidityPool is Auth, IERC4626 {
     ///         on Centrifuge is successfully decreased.
     function decreaseRedeemRequest(uint256 shares, address owner) public withApproval(owner) {
         investmentManager.decreaseRedeemRequest(shares, owner);
+    }
+
+    /// @notice Request cancelling the outstanding deposit orders. Will return the assets once the order
+    ///         on Centrifuge is successfully cancelled.
+    function cancelDepositRequest(uint256 assets, address owner) public withApproval(owner) {
+        investmentManager.cancelDepositRequest(assets, owner);
+    }
+
+    /// @notice Request cancelling the outstanding redemption orders. Will return the shares once the order
+    ///         on Centrifuge is successfully cancelled.
+    function cancelRedeemRequest(uint256 shares, address owner) public withApproval(owner) {
+        investmentManager.cancelRedeemRequest(shares, owner);
     }
 
     // --- Miscellaneous investment functions ---
