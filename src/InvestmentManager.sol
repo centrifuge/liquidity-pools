@@ -181,8 +181,7 @@ contract InvestmentManager is Auth {
         );
     }
 
-    function cancelDepositRequest(uint256 _currencyAmount, address user) public auth {
-        uint128 currencyAmount = _toUint128(_currencyAmount);
+    function cancelDepositRequest(address user) public auth {
         LiquidityPoolLike liquidityPool = LiquidityPoolLike(msg.sender);
         require(liquidityPool.checkTransferRestriction(address(0), user, 0), "InvestmentManager/not-a-member");
         gateway.cancelInvestOrder(
@@ -193,8 +192,7 @@ contract InvestmentManager is Auth {
         );
     }
 
-    function cancelRedeemRequest(uint256 _trancheTokenAmount, address user) public auth {
-        uint128 trancheTokenAmount = _toUint128(_trancheTokenAmount);
+    function cancelRedeemRequest(address user) public auth {
         LiquidityPoolLike liquidityPool = LiquidityPoolLike(msg.sender);
         require(liquidityPool.checkTransferRestriction(address(0), user, 0), "InvestmentManager/not-a-member");
         gateway.cancelRedeemOrder(

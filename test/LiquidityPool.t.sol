@@ -828,7 +828,7 @@ contract LiquidityPoolTest is TestSetup {
         assertEq(erc20.balanceOf(address(self)), 0);
 
         // check message was send out to centchain
-        lPool.requestDeposit(0, self);
+        lPool.cancelDepositRequest(self);
         bytes memory cancelOrderMessage =
             Messages.formatCancelInvestOrder(poolId, trancheId, _addressToBytes32(self), currencyId);
         assertEq(cancelOrderMessage, mockXcmRouter.values_bytes("send"));
@@ -1119,7 +1119,7 @@ contract LiquidityPoolTest is TestSetup {
         assertEq(lPool.balanceOf(self), 0);
 
         // check message was send out to centchain
-        lPool.requestRedeem(0, self);
+        lPool.cancelRedeemRequest(self);
         bytes memory cancelOrderMessage =
             Messages.formatCancelRedeemOrder(poolId, trancheId, _addressToBytes32(self), currencyId);
         assertEq(cancelOrderMessage, mockXcmRouter.values_bytes("send"));
