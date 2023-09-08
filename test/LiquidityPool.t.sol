@@ -173,8 +173,6 @@ contract LiquidityPoolTest is TestSetup {
         address lPool_ = deployLiquidityPool(poolId, erc20.decimals(), tokenName, tokenSymbol, trancheId, currencyId);
         LiquidityPool lPool = LiquidityPool(lPool_);
         Investor investor = new Investor();
-        vm.assume(self != address(investor));
-        vm.assume(address(investor) != address(0));
 
         investorDeposit(address(investor), lPool_, poolId, trancheId, amount, validUntil); // deposit funds first
         investor.approve(lPool_, address(investmentManager), type(uint256).max);
