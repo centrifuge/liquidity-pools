@@ -191,7 +191,7 @@ contract LiquidityPoolTest is TestSetup {
         // success - investor can requestRedeem
         investor.requestRedeem(lPool_, amount / 2, address(investor));
 
-        // ward can requestRedeem on behalf of investor
+        // failf: ward can not requestRedeem on behalf of investor
         vm.expectRevert(bytes("LiquidityPool/no-approval"));
         lPool.requestRedeem(amount / 2, address(investor));
 
