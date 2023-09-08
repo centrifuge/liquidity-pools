@@ -71,7 +71,8 @@ contract InvestmentManager is Auth {
     using MathLib for uint128;
 
     /// @dev Prices are fixed-point integers with 18 decimals
-    uint8 public constant PRICE_DECIMALS = 18; //
+    uint8 public constant PRICE_DECIMALS = 18;
+    
     EscrowLike public immutable escrow;
     UserEscrowLike public immutable userEscrow;
 
