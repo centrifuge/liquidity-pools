@@ -64,6 +64,7 @@ contract userEscrowTest is TestSetup {
         vm.assume(mintAmount >= amountIn);
         vm.assume(amountIn >= amountOut);
         vm.assume(amountOut > 0);
+        vm.assume(amountOut < type(uint256).max);
         address erc20_ = address(erc20);
         address source = address(0xCAFE);
         address destination = address(0xBEEF);
