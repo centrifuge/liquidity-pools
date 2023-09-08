@@ -32,7 +32,7 @@ contract TrancheToken is ERC20, ERC1404Like {
 
     constructor(uint8 decimals_) ERC20(decimals_) {}
 
-    modifier notRestricted(address from, address to, uint256 value) {
+    modifier restricted(address from, address to, uint256 value) {
         uint8 restrictionCode = detectTransferRestriction(from, to, value);
         require(restrictionCode == restrictionManager.SUCCESS_CODE(), messageForTransferRestriction(restrictionCode));
         _;
@@ -59,7 +59,7 @@ contract TrancheToken is ERC20, ERC1404Like {
     function transfer(address to, uint256 value)
         public
         override
-        notRestricted(_msgSender(), to, value)
+        restricted(_msgSender(), to, value)
         returns (bool)
     {
         return super.transfer(to, value);
@@ -68,13 +68,13 @@ contract TrancheToken is ERC20, ERC1404Like {
     function transferFrom(address from, address to, uint256 value)
         public
         override
-        notRestricted(from, to, value)
+        restricted(from, to, value)
         returns (bool)
     {
         return super.transferFrom(from, to, value);
     }
 
-    function mint(address to, uint256 value) public override notRestricted(_msgSender(), to, value) {
+    function mint(address to, uint256 value) public override restricted(_msgSender(), to, value) {
         return super.mint(to, value);
     }
 
