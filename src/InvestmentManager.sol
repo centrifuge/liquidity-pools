@@ -71,7 +71,8 @@ contract InvestmentManager is Auth {
     using MathLib for uint128;
 
     /// @dev Prices are fixed-point integers with 18 decimals
-    uint8 public constant PRICE_DECIMALS = 18; //
+    uint8 public constant PRICE_DECIMALS = 18;
+
     EscrowLike public immutable escrow;
     UserEscrowLike public immutable userEscrow;
 
@@ -125,7 +126,7 @@ contract InvestmentManager is Auth {
         // Check if user is allowed to hold the restricted tranche tokens
         _isAllowedToInvest(lPool.poolId(), lPool.trancheId(), currency, user);
         if (_currencyAmount == 0) {
-            // Case: outstanding redemption orders only needed to be cancelled
+            // Case: outstanding investment orders only needed to be cancelled
             gateway.cancelInvestOrder(
                 lPool.poolId(), lPool.trancheId(), user, poolManager.currencyAddressToId(lPool.asset())
             );
