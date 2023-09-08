@@ -56,7 +56,12 @@ contract TrancheToken is ERC20, ERC1404Like {
     }
 
     // --- Restrictions ---
-    function transfer(address to, uint256 value) public override notRestricted(msg.sender, to, value) returns (bool) {
+    function transfer(address to, uint256 value)
+        public
+        override
+        notRestricted(_msgSender(), to, value)
+        returns (bool)
+    {
         return super.transfer(to, value);
     }
 
@@ -69,7 +74,7 @@ contract TrancheToken is ERC20, ERC1404Like {
         return super.transferFrom(from, to, value);
     }
 
-    function mint(address to, uint256 value) public override notRestricted(msg.sender, to, value) {
+    function mint(address to, uint256 value) public override notRestricted(_msgSender(), to, value) {
         return super.mint(to, value);
     }
 
