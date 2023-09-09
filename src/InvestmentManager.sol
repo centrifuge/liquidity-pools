@@ -574,8 +574,7 @@ contract InvestmentManager is Auth {
     {
         (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getPoolDecimals(liquidityPool);
         uint256 currencyAmountInPriceDecimals = _toPriceDecimals(currencyAmount, currencyDecimals);
-        uint256 trancheTokenAmountInPriceDecimals =
-            _toPriceDecimals(trancheTokenAmount, trancheTokenDecimals);
+        uint256 trancheTokenAmountInPriceDecimals = _toPriceDecimals(trancheTokenAmount, trancheTokenDecimals);
 
         depositPrice = currencyAmountInPriceDecimals.mulDiv(
             10 ** PRICE_DECIMALS, trancheTokenAmountInPriceDecimals, MathLib.Rounding.Down
@@ -610,9 +609,9 @@ contract InvestmentManager is Auth {
     {
         (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getPoolDecimals(liquidityPool);
 
-        uint256 currencyAmountInPriceDecimals = _toPriceDecimals(
-            trancheTokenAmount, trancheTokenDecimals
-        ).mulDiv(price, 10 ** PRICE_DECIMALS, MathLib.Rounding.Down);
+        uint256 currencyAmountInPriceDecimals = _toPriceDecimals(trancheTokenAmount, trancheTokenDecimals).mulDiv(
+            price, 10 ** PRICE_DECIMALS, MathLib.Rounding.Down
+        );
 
         currencyAmount = _fromPriceDecimals(currencyAmountInPriceDecimals, currencyDecimals);
     }
@@ -675,21 +674,13 @@ contract InvestmentManager is Auth {
 
     /// @dev    When converting currency to tranche token amounts using the price,
     ///         all values are normalized to PRICE_DECIMALS
-    function _toPriceDecimals(uint128 _value, uint8 decimals)
-        internal
-        pure
-        returns (uint256 value)
-    {
+    function _toPriceDecimals(uint128 _value, uint8 decimals) internal pure returns (uint256 value) {
         if (PRICE_DECIMALS == decimals) return uint256(_value);
         value = uint256(_value) * 10 ** (PRICE_DECIMALS - decimals);
     }
 
     /// @dev    Convert decimals of the value from the price decimals back to the intended decimals
-    function _fromPriceDecimals(uint256 _value, uint8 decimals)
-        internal
-        pure
-        returns (uint128 value)
-    {
+    function _fromPriceDecimals(uint256 _value, uint8 decimals) internal pure returns (uint128 value) {
         if (PRICE_DECIMALS == decimals) return _toUint128(_value);
         value = _toUint128(_value / 10 ** (PRICE_DECIMALS - decimals));
     }
