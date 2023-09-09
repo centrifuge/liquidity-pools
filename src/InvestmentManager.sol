@@ -620,32 +620,16 @@ contract InvestmentManager is Auth {
         internal
     {
         LPValues storage lpValues = orderbook[user][liquidityPool];
-        if (lpValues.maxDeposit < _currency) {
-            lpValues.maxDeposit = 0;
-        } else {
-            lpValues.maxDeposit = lpValues.maxDeposit - _currency;
-        }
-        if (lpValues.maxMint < trancheTokens) {
-            lpValues.maxMint = 0;
-        } else {
-            lpValues.maxMint = lpValues.maxMint - trancheTokens;
-        }
+        lpValues.maxDeposit = lpValues.maxDeposit < _currency ? 0 : lpValues.maxDeposit - _currency;
+        lpValues.maxMint = lpValues.maxMint < trancheTokens ? 0 : lpValues.maxMint - trancheTokens;
     }
 
     function _decreaseRedemptionLimits(address user, address liquidityPool, uint128 _currency, uint128 trancheTokens)
         internal
     {
         LPValues storage lpValues = orderbook[user][liquidityPool];
-        if (lpValues.maxWithdraw < _currency) {
-            lpValues.maxWithdraw = 0;
-        } else {
-            lpValues.maxWithdraw = lpValues.maxWithdraw - _currency;
-        }
-        if (lpValues.maxRedeem < trancheTokens) {
-            lpValues.maxRedeem = 0;
-        } else {
-            lpValues.maxRedeem = lpValues.maxRedeem - trancheTokens;
-        }
+        lpValues.maxWithdraw = lpValues.maxWithdraw < _currency ? 0 : lpValues.maxWithdraw - _currency;
+        lpValues.maxRedeem = lpValues.maxRedeem < trancheTokens ? 0 : lpValues.maxRedeem - trancheTokens;
     }
 
     function _isAllowedToInvest(uint64 poolId, bytes16 trancheId, address currency, address user)
