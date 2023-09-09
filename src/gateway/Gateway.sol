@@ -299,7 +299,7 @@ contract Gateway is Auth {
                 string memory tokenName,
                 string memory tokenSymbol,
                 uint8 decimals,
-                uint128 _price
+                /* uint128 price */
             ) = Messages.parseAddTranche(message);
             poolManager.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals);
         } else if (Messages.isUpdateMember(message)) {

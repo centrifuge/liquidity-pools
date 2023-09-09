@@ -573,9 +573,9 @@ contract InvestmentManager is Auth {
         returns (uint256 depositPrice)
     {
         (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getPoolDecimals(liquidityPool);
-        uint256 currencyAmountInPriceDecimals = _toPriceDecimals(currencyAmount, currencyDecimals, liquidityPool);
+        uint256 currencyAmountInPriceDecimals = _toPriceDecimals(currencyAmount, currencyDecimals);
         uint256 trancheTokenAmountInPriceDecimals =
-            _toPriceDecimals(trancheTokenAmount, trancheTokenDecimals, liquidityPool);
+            _toPriceDecimals(trancheTokenAmount, trancheTokenDecimals);
 
         depositPrice = currencyAmountInPriceDecimals.mulDiv(
             10 ** PRICE_DECIMALS, trancheTokenAmountInPriceDecimals, MathLib.Rounding.Down
@@ -596,11 +596,11 @@ contract InvestmentManager is Auth {
     {
         (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getPoolDecimals(liquidityPool);
 
-        uint256 currencyAmountInPriceDecimals = _toPriceDecimals(currencyAmount, currencyDecimals, liquidityPool).mulDiv(
+        uint256 currencyAmountInPriceDecimals = _toPriceDecimals(currencyAmount, currencyDecimals).mulDiv(
             10 ** PRICE_DECIMALS, price, MathLib.Rounding.Down
         );
 
-        trancheTokenAmount = _fromPriceDecimals(currencyAmountInPriceDecimals, trancheTokenDecimals, liquidityPool);
+        trancheTokenAmount = _fromPriceDecimals(currencyAmountInPriceDecimals, trancheTokenDecimals);
     }
 
     function _calculateCurrencyAmount(uint128 trancheTokenAmount, address liquidityPool, uint256 price)
@@ -611,10 +611,10 @@ contract InvestmentManager is Auth {
         (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getPoolDecimals(liquidityPool);
 
         uint256 currencyAmountInPriceDecimals = _toPriceDecimals(
-            trancheTokenAmount, trancheTokenDecimals, liquidityPool
+            trancheTokenAmount, trancheTokenDecimals
         ).mulDiv(price, 10 ** PRICE_DECIMALS, MathLib.Rounding.Down);
 
-        currencyAmount = _fromPriceDecimals(currencyAmountInPriceDecimals, currencyDecimals, liquidityPool);
+        currencyAmount = _fromPriceDecimals(currencyAmountInPriceDecimals, currencyDecimals);
     }
 
     function _decreaseDepositLimits(address user, address liquidityPool, uint128 _currency, uint128 trancheTokens)
@@ -675,7 +675,7 @@ contract InvestmentManager is Auth {
 
     /// @dev    When converting currency to tranche token amounts using the price,
     ///         all values are normalized to PRICE_DECIMALS
-    function _toPriceDecimals(uint128 _value, uint8 decimals, address liquidityPool)
+    function _toPriceDecimals(uint128 _value, uint8 decimals)
         internal
         pure
         returns (uint256 value)
@@ -685,7 +685,7 @@ contract InvestmentManager is Auth {
     }
 
     /// @dev    Convert decimals of the value from the price decimals back to the intended decimals
-    function _fromPriceDecimals(uint256 _value, uint8 decimals, address liquidityPool)
+    function _fromPriceDecimals(uint256 _value, uint8 decimals)
         internal
         pure
         returns (uint128 value)
