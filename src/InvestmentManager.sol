@@ -79,7 +79,7 @@ contract InvestmentManager is Auth {
     GatewayLike public gateway;
     PoolManagerLike public poolManager;
 
-    mapping(address => mapping(address => LPValues)) public orderbook;
+    mapping(address investor => mapping(address liquidityPool => LPValues)) public orderbook;
 
     // --- Events ---
     event File(bytes32 indexed what, address data);

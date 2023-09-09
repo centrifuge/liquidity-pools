@@ -13,8 +13,7 @@ interface ERC20Like {
 ///         Ensures that once tokens are transferred in, they can only be
 ///         transferred out to the pre-chosen destinations, by wards.
 contract UserEscrow is Auth {
-    /// @dev Map by token and destination
-    mapping(address => mapping(address => uint256)) public destinations;
+    mapping(address token => mapping(address destination => uint256 amount)) public destinations;
 
     // --- Events ---
     event TransferIn(address indexed token, address indexed source, address indexed destination, uint256 amount);

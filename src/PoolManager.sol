@@ -53,8 +53,8 @@ interface AuthLike {
 struct Pool {
     uint64 poolId;
     uint256 createdAt;
-    mapping(bytes16 => Tranche) tranches;
-    mapping(address => bool) allowedCurrencies;
+    mapping(bytes16 trancheId => Tranche) tranches;
+    mapping(address currencyAddress => bool) allowedCurrencies;
 }
 
 /// @dev Each Centrifuge pool is associated to 1 or more tranches
@@ -69,7 +69,7 @@ struct Tranche {
     string tokenSymbol;
     /// @dev Each tranche can have multiple liquidity pools deployed,
     /// each linked to a unique investment currency (asset)
-    mapping(address => address) liquidityPools; // currency -> liquidity pool address
+    mapping(address currencyAddress => address liquidityPool) liquidityPools;
 }
 
 /// @title  Pool Manager
@@ -85,11 +85,11 @@ contract PoolManager is Auth {
     GatewayLike public gateway;
     InvestmentManagerLike public investmentManager;
 
-    mapping(uint64 => Pool) public pools;
+    mapping(uint64 poolId => Pool) public pools;
 
     /// @dev Chain agnostic currency id -> evm currency address and reverse mapping
-    mapping(uint128 => address) public currencyIdToAddress;
-    mapping(address => uint128) public currencyAddressToId;
+    mapping(uint128 currencyId => address) public currencyIdToAddress;
+    mapping(address => uint128 currencyId) public currencyAddressToId;
 
     // --- Events ---
     event File(bytes32 indexed what, address data);

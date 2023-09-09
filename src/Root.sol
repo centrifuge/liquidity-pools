@@ -18,7 +18,7 @@ contract Root is Auth {
 
     address public immutable escrow;
 
-    mapping(address => uint256) public schedule;
+    mapping(address relyTarget => uint256 timestamp) public schedule;
     uint256 public delay;
     bool public paused = false;
 
