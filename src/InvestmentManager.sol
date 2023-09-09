@@ -677,7 +677,7 @@ contract InvestmentManager is Auth {
     ///         all values are normalized to PRICE_DECIMALS
     function _toPriceDecimals(uint128 _value, uint8 decimals, address liquidityPool)
         internal
-        view
+        pure
         returns (uint256 value)
     {
         if (PRICE_DECIMALS == decimals) return uint256(_value);
@@ -687,7 +687,7 @@ contract InvestmentManager is Auth {
     /// @dev    Convert decimals of the value from the price decimals back to the intended decimals
     function _fromPriceDecimals(uint256 _value, uint8 decimals, address liquidityPool)
         internal
-        view
+        pure
         returns (uint128 value)
     {
         if (PRICE_DECIMALS == decimals) return _toUint128(_value);

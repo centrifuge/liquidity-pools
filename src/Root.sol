@@ -20,7 +20,7 @@ contract Root is Auth {
 
     mapping(address relyTarget => uint256 timestamp) public schedule;
     uint256 public delay;
-    bool public paused = false;
+    bool public paused;
 
     // --- Events ---
     event File(bytes32 indexed what, uint256 data);

@@ -33,7 +33,7 @@ contract RestrictionManager is Auth {
         return SUCCESS_CODE;
     }
 
-    function messageForTransferRestriction(uint8 restrictionCode) public view returns (string memory) {
+    function messageForTransferRestriction(uint8 restrictionCode) public pure returns (string memory) {
         if (restrictionCode == DESTINATION_NOT_A_MEMBER_RESTRICTION_CODE) {
             return DESTINATION_NOT_A_MEMBER_RESTRICTION_MESSAGE;
         }
