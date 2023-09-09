@@ -87,10 +87,10 @@ contract LiquidityPoolTest is TestSetup {
         vm.expectRevert(bytes("LiquidityPool/no-approval"));
         lPool.requestDeposit(amount, address(investor));
 
+        // fail: ward can not make requests on behalf of investor
         root.relyContract(lPool_, self);
-        // success - ward can requestDeposit on behalf of investor
+        vm.expectRevert(bytes("LiquidityPool/no-approval"));
         lPool.requestDeposit(amount / 2, address(investor));
-        lPool.deny(self); // revoke auth
 
         // success - investor can requestDeposit
         investor.requestDeposit(lPool_, amount / 2, address(investor));
@@ -191,10 +191,9 @@ contract LiquidityPoolTest is TestSetup {
         // success - investor can requestRedeem
         investor.requestRedeem(lPool_, amount / 2, address(investor));
 
-        root.relyContract(lPool_, self);
-        // ward can requestRedeem on behalf of investor
+        // failf: ward can not requestRedeem on behalf of investor
+        vm.expectRevert(bytes("LiquidityPool/no-approval"));
         lPool.requestRedeem(amount / 2, address(investor));
-        lPool.deny(self); // revoke auth
 
         uint128 tokenAmount = uint128(lPool.balanceOf(address(escrow)));
         homePools.isExecutedCollectRedeem(
@@ -212,13 +211,15 @@ contract LiquidityPoolTest is TestSetup {
         vm.expectRevert(bytes("LiquidityPool/no-approval"));
         lPool.withdraw(amount / 4, address(investor), address(investor));
 
-        // success redeem on behalf of investor with auth permissions
+        // fail: ward can not make requests on behalf of investor
         root.relyContract(lPool_, self);
+        vm.expectRevert(bytes("LiquidityPool/no-approval"));
         lPool.redeem(amount / 4, address(investor), address(investor));
+        vm.expectRevert(bytes("LiquidityPool/no-approval"));
         lPool.withdraw(amount / 4, address(investor), address(investor));
 
         // investor redeems rest for himself
-        investor.redeem(lPool_, amount / 4, address(investor), address(investor));
+        investor.redeem(lPool_, amount / 2, address(investor), address(investor));
         investor.withdraw(lPool_, lPool.maxWithdraw(address(investor)), address(investor), address(investor));
     }
 
