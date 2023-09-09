@@ -310,7 +310,6 @@ contract PoolManager is Auth {
 
         address liquidityPool = tranche.liquidityPools[currency];
         require(liquidityPool == address(0), "PoolManager/liquidityPool-already-deployed");
-        require(pools[poolId].createdAt != 0, "PoolManager/pool-does-not-exist");
 
         address[] memory liquidityPoolWards = new address[](1);
         liquidityPoolWards[0] = address(investmentManager);
