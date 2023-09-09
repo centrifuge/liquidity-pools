@@ -95,7 +95,7 @@ contract LiquidityPool is Auth, IERC4626 {
 
     /// @dev Either msg.sender is the owner or a ward on the contract
     modifier withApproval(address owner) {
-        require((wards[msg.sender] == 1 || msg.sender == owner), "LiquidityPool/no-approval");
+        require((msg.sender == owner), "LiquidityPool/no-approval");
         _;
     }
 
