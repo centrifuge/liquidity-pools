@@ -37,7 +37,7 @@ contract UserEscrow is Auth {
         require(destinations[token][destination] >= amount, "UserEscrow/transfer-failed");
         require(
             /// @dev transferOut can only be initiated by the destination address or an authorized admin.
-            ///      The check is just an additional protection to secure destination funds in case of compromized auth.
+            ///      The check is just an additional protection to secure destination funds in case of compromised auth.
             ///      Since userEscrow is not able to decrease the allowance for the receiver,
             ///      a transfer is only possible in case receiver has received the full allowance from destination address.
             receiver == destination || (ERC20Like(token).allowance(destination, receiver) == type(uint256).max),

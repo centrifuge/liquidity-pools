@@ -62,7 +62,7 @@ struct Tranche {
     address token;
     uint64 poolId;
     bytes16 trancheId;
-    // important: the decimals of the leading pool currency. Liquidity Pool shares have to be denomatimated with the same precision.
+    // important: the decimals of the leading pool currency. Liquidity Pool shares have to be denominated with the same precision.
     uint8 decimals;
     uint256 createdAt;
     string tokenName;
@@ -187,7 +187,7 @@ contract PoolManager is Auth {
         emit PoolCurrencyAllowed(currency, poolId);
     }
 
-    /// @notice     New tranche details from an existng Centrifuge pool are added.
+    /// @notice     New tranche details from an existing Centrifuge pool are added.
     /// @dev        The function can only be executed by the gateway contract.
     function addTranche(
         uint64 poolId,

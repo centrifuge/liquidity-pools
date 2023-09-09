@@ -94,7 +94,7 @@ contract Root is Auth {
 
     /// @notice removes the ward permissions from an address on a contract
     /// @param target the address of the contract
-    /// @param user the address which persmissions should be removed
+    /// @param user the address which permissions should be removed
     function denyContract(address target, address user) public auth {
         AuthLike(target).deny(user);
         emit DenyContract(target, user);

@@ -113,7 +113,7 @@ contract LiquidityPool is Auth, IERC4626 {
     }
 
     /// @notice Calculates the amount of shares that any user would approximately get for the amount of assets provided.
-    ///         The calcultion is based on the token price from the most recent epoch retrieved from Centrifuge.
+    ///         The calculation is based on the token price from the most recent epoch retrieved from Centrifuge.
     ///         The actual conversion will likely differ as the price changes between order submission and execution.
     function convertToShares(uint256 assets) public view returns (uint256 shares) {
         shares = investmentManager.convertToShares(assets, address(this));
