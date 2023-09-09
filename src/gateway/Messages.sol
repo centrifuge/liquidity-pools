@@ -146,9 +146,6 @@ library Messages {
         uint8 decimals,
         uint128 price
     ) internal pure returns (bytes memory) {
-        // TODO(nuno): Now, we encode `tokenName` as a 128-bytearray by first encoding `tokenName`
-        // to bytes32 and then we encode three empty bytes32's, which sum up to a total of 128 bytes.
-        // Add support to actually encode `tokenName` fully as a 128 bytes string.
         return abi.encodePacked(
             uint8(Call.AddTranche),
             poolId,
@@ -736,9 +733,6 @@ library Messages {
         string memory tokenName,
         string memory tokenSymbol
     ) internal pure returns (bytes memory) {
-        // TODO(nuno): Now, we encode `tokenName` as a 128-bytearray by first encoding `tokenName`
-        // to bytes32 and then we encode three empty bytes32's, which sum up to a total of 128 bytes.
-        // Add support to actually encode `tokenName` fully as a 128 bytes string.
         return abi.encodePacked(
             uint8(Call.UpdateTrancheTokenMetadata),
             poolId,
