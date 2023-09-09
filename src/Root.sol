@@ -14,7 +14,7 @@ interface AuthLike {
 ///         is restricted to the timelock set by the delay.
 contract Root is Auth {
     /// @dev To prevent filing a delay that would block any updates indefinitely
-    uint256 private MAX_DELAY = 4 weeks;
+    uint256 private constant MAX_DELAY = 4 weeks;
 
     address public immutable escrow;
 
