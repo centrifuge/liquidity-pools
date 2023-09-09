@@ -471,7 +471,12 @@ contract InvestmentManager is Auth {
     {
         LiquidityPoolLike lPool = LiquidityPoolLike(liquidityPool);
 
-        _decreaseDepositLimits(user, liquidityPool, currencyAmount, trancheTokenAmount); // decrease the possible deposit limits
+        // Decrease the deposit limits
+        LPValues storage lpValues = orderbook[user][liquidityPool];
+        lpValues.maxDeposit = lpValues.maxDeposit < currencyAmount ? 0 : lpValues.maxDeposit - currencyAmount;
+        lpValues.maxMint = lpValues.maxMint < trancheTokenAmount ? 0 : lpValues.maxMint - trancheTokenAmount;
+
+        // Transfer the tranche tokens to the user
         require(lPool.checkTransferRestriction(msg.sender, user, 0), "InvestmentManager/trancheTokens-not-a-member");
         require(
             lPool.transferFrom(address(escrow), user, trancheTokenAmount),
@@ -543,7 +548,12 @@ contract InvestmentManager is Auth {
     ) internal {
         LiquidityPoolLike lPool = LiquidityPoolLike(liquidityPool);
 
-        _decreaseRedemptionLimits(user, liquidityPool, currencyAmount, trancheTokenAmount); // decrease the possible deposit limits
+        // Decrease the redemption limits
+        LPValues storage lpValues = orderbook[user][liquidityPool];
+        lpValues.maxWithdraw = lpValues.maxWithdraw < currencyAmount ? 0 : lpValues.maxWithdraw - currencyAmount;
+        lpValues.maxRedeem = lpValues.maxRedeem < trancheTokenAmount ? 0 : lpValues.maxRedeem - trancheTokenAmount;
+
+        // Transfer the currency to the user
         userEscrow.transferOut(lPool.asset(), user, receiver, currencyAmount);
 
         emit RedemptionProcessed(liquidityPool, user, trancheTokenAmount);
@@ -615,22 +625,6 @@ contract InvestmentManager is Auth {
         );
 
         currencyAmount = _fromPriceDecimals(currencyAmountInPriceDecimals, currencyDecimals);
-    }
-
-    function _decreaseDepositLimits(address user, address liquidityPool, uint128 _currency, uint128 trancheTokens)
-        internal
-    {
-        LPValues storage lpValues = orderbook[user][liquidityPool];
-        lpValues.maxDeposit = lpValues.maxDeposit < _currency ? 0 : lpValues.maxDeposit - _currency;
-        lpValues.maxMint = lpValues.maxMint < trancheTokens ? 0 : lpValues.maxMint - trancheTokens;
-    }
-
-    function _decreaseRedemptionLimits(address user, address liquidityPool, uint128 _currency, uint128 trancheTokens)
-        internal
-    {
-        LPValues storage lpValues = orderbook[user][liquidityPool];
-        lpValues.maxWithdraw = lpValues.maxWithdraw < _currency ? 0 : lpValues.maxWithdraw - _currency;
-        lpValues.maxRedeem = lpValues.maxRedeem < trancheTokens ? 0 : lpValues.maxRedeem - trancheTokens;
     }
 
     function _isAllowedToInvest(uint64 poolId, bytes16 trancheId, address currency, address user)
