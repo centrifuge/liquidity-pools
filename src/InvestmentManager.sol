@@ -651,6 +651,7 @@ contract InvestmentManager is Auth {
 
     function _isAllowedToInvest(uint64 poolId, bytes16 trancheId, address currency, address user)
         internal
+        view
         returns (bool)
     {
         address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, currency);

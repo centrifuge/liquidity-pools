@@ -826,7 +826,6 @@ library Messages {
     }
 
     // Utils
-
     function formatDomain(Domain domain) public pure returns (bytes9) {
         return bytes9(bytes1(uint8(domain)));
     }
