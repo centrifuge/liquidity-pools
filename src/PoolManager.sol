@@ -99,7 +99,6 @@ contract PoolManager is Auth {
     event TrancheDeployed(uint64 indexed poolId, bytes16 indexed trancheId, address indexed token);
     event CurrencyAdded(uint128 indexed currency, address indexed currencyAddress);
     event LiquidityPoolDeployed(uint64 indexed poolId, bytes16 indexed trancheId, address indexed liquidityPoool);
-    event TrancheTokenDeployed(uint64 indexed poolId, bytes16 indexed trancheId);
 
     constructor(address escrow_, address liquidityPoolFactory_, address trancheTokenFactory_) {
         escrow = EscrowLike(escrow_);
@@ -300,7 +299,7 @@ contract PoolManager is Auth {
         );
 
         tranche.token = token;
-        emit TrancheTokenDeployed(poolId, trancheId);
+        emit TrancheDeployed(poolId, trancheId, token);
         return token;
     }
 
