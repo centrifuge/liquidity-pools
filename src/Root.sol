@@ -28,8 +28,8 @@ contract Root is Auth {
     event Unpause();
     event RelyScheduled(address indexed target, uint256 indexed scheduledTime);
     event RelyCancelled(address indexed target);
-    event RelyContract(address target, address indexed user);
-    event DenyContract(address target, address indexed user);
+    event RelyContract(address indexed target, address indexed user);
+    event DenyContract(address indexed target, address indexed user);
 
     constructor(address _escrow, uint256 _delay) {
         escrow = _escrow;
