@@ -34,7 +34,7 @@ contract TrancheToken is ERC20, ERC1404Like {
 
     modifier restricted(address from, address to, uint256 value) {
         uint8 restrictionCode = detectTransferRestriction(from, to, value);
-        require(restrictionCode == restrictionManager.SUCCESS_CODE(), messageForTransferRestriction(restrictionCode));
+        require(restrictionCode == SUCCESS_CODE(), messageForTransferRestriction(restrictionCode));
         _;
     }
 

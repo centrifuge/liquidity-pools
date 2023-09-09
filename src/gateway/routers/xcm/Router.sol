@@ -43,15 +43,15 @@ interface GatewayLike {
 /// @title  XCM Router
 /// @notice Routing contract that integrates with the XCM transact precompile.
 contract XCMRouter is Auth {
-    address constant XCM_TRANSACTOR_V2_ADDRESS = 0x000000000000000000000000000000000000080D;
-    uint32 private constant CENTRIFUGE_PARACHAIN_ID = 2031;
+    address internal constant XCM_TRANSACTOR_V2_ADDRESS = 0x000000000000000000000000000000000000080D;
+    uint32 internal constant CENTRIFUGE_PARACHAIN_ID = 2031;
 
     XcmWeightInfo internal xcmWeightInfo;
-
-    GatewayLike public gateway;
     address public immutable centrifugeChainOrigin;
     uint8 public immutable centrifugeChainLiquidityPoolsPalletIndex;
     uint8 public immutable centrifugeChainLiquidityPoolsPalletHandleIndex;
+
+    GatewayLike public gateway;
 
     // --- Events ---
     event File(bytes32 indexed what, XcmWeightInfo xcmWeightInfo);

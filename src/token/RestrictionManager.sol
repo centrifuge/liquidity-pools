@@ -12,10 +12,12 @@ interface MemberlistLike {
 /// @title  Restriction Manager
 /// @notice ERC1404 based contract that checks transfer restrictions.
 contract RestrictionManager is Auth {
+    string internal constant SUCCESS_MESSAGE = "RestrictionManager/transfer-allowed";
+    string internal constant DESTINATION_NOT_A_MEMBER_RESTRICTION_MESSAGE =
+        "RestrictionManager/destination-not-a-member";
+
     uint8 public constant SUCCESS_CODE = 0;
     uint8 public constant DESTINATION_NOT_A_MEMBER_RESTRICTION_CODE = 1;
-    string public constant SUCCESS_MESSAGE = "RestrictionManager/transfer-allowed";
-    string public constant DESTINATION_NOT_A_MEMBER_RESTRICTION_MESSAGE = "RestrictionManager/destination-not-a-member";
 
     mapping(address => uint256) public members;
 
