@@ -76,11 +76,13 @@ contract LiquidityPool is Auth, IERC4626 {
 
     // --- Events ---
     event File(bytes32 indexed what, address data);
-    event DepositRequested(address indexed owner, uint256 assets);
-    event RedeemRequested(address indexed owner, uint256 shares);
-    event DepositCollected(address indexed owner);
-    event RedeemCollected(address indexed owner);
-    event UpdatePrice(uint128 price);
+    event DepositRequest(address indexed owner, uint256 assets);
+    event RedeemRequest(address indexed owner, uint256 shares);
+    event DecreaseDepositRequest(address indexed owner, uint256 assets);
+    event DecreaseRedeemRequest(address indexed owner, uint256 shares);
+    event DepositCollect(address indexed owner);
+    event RedeemCollect(address indexed owner);
+    event PriceUpdate(uint128 price);
 
     constructor(uint64 poolId_, bytes16 trancheId_, address asset_, address share_, address investmentManager_) {
         poolId = poolId_;
@@ -93,7 +95,7 @@ contract LiquidityPool is Auth, IERC4626 {
         emit Rely(msg.sender);
     }
 
-    /// @dev Either msg.sender is the owner or a ward on the contract
+    /// @dev Owner needs to be the msg.sender
     modifier withApproval(address owner) {
         require((msg.sender == owner), "LiquidityPool/no-approval");
         _;
@@ -207,11 +209,11 @@ contract LiquidityPool is Auth, IERC4626 {
 
     // --- Asynchronous 4626 functions ---
     /// @notice Request asset deposit for a receiver to be included in the next epoch execution.
-    /// @notice Request can only be called by the Owner of the assets or an authorized admin.
+    /// @notice Request can only be called by the owner of the assets
     ///         Asset is locked in the escrow on request submission
     function requestDeposit(uint256 assets, address owner) public withApproval(owner) {
         investmentManager.requestDeposit(assets, owner);
-        emit DepositRequested(owner, assets);
+        emit DepositRequest(owner, assets);
     }
 
     /// @notice Similar to requestDeposit, but with a permit option.
@@ -220,15 +222,15 @@ contract LiquidityPool is Auth, IERC4626 {
     {
         ERC20PermitLike(asset).permit(owner, address(investmentManager), assets, deadline, v, r, s);
         investmentManager.requestDeposit(assets, owner);
-        emit DepositRequested(owner, assets);
+        emit DepositRequest(owner, assets);
     }
 
     /// @notice Request share redemption for a receiver to be included in the next epoch execution.
-    /// @notice Request can only be called by the Owner of the shares or an authorized admin.
+    /// @notice Request can only be called by the owner of the shares
     ///         Shares are locked in the escrow on request submission
     function requestRedeem(uint256 shares, address owner) public withApproval(owner) {
         investmentManager.requestRedeem(shares, owner);
-        emit RedeemRequested(owner, shares);
+        emit RedeemRequest(owner, shares);
     }
 
     /// @notice Similar to requestRedeem, but with a permit option.
@@ -237,32 +239,38 @@ contract LiquidityPool is Auth, IERC4626 {
     {
         share.permit(owner, address(investmentManager), shares, deadline, v, r, s);
         investmentManager.requestRedeem(shares, owner);
-        emit RedeemRequested(owner, shares);
+        emit RedeemRequest(owner, shares);
     }
 
     /// @notice Request decreasing the outstanding deposit orders. Will return the assets once the order
     ///         on Centrifuge is successfully decreased.
     function decreaseDepositRequest(uint256 assets, address owner) public withApproval(owner) {
         investmentManager.decreaseDepositRequest(assets, owner);
+        emit DecreaseDepositRequest(owner, assets);
     }
 
     /// @notice Request decreasing the outstanding redemption orders. Will return the shares once the order
     ///         on Centrifuge is successfully decreased.
     function decreaseRedeemRequest(uint256 shares, address owner) public withApproval(owner) {
         investmentManager.decreaseRedeemRequest(shares, owner);
+        emit DecreaseRedeemRequest(owner, shares);
     }
 
     // --- Miscellaneous investment functions ---
     /// @notice Trigger collecting the deposited funds.
+    /// @dev    In normal circumstances, this should happen automatically on Centrifuge Chain.
+    ///         This function is only included as a fallback.
     function collectDeposit(address receiver) public {
         investmentManager.collectDeposit(receiver);
-        emit DepositCollected(receiver);
+        emit DepositCollect(receiver);
     }
 
     /// @notice Trigger collecting the deposited tokens.
+    /// @dev    In normal circumstances, this should happen automatically on Centrifuge Chain.
+    ///         This function is only included as a fallback.
     function collectRedeem(address receiver) public {
         investmentManager.collectRedeem(receiver);
-        emit RedeemCollected(receiver);
+        emit RedeemCollect(receiver);
     }
 
     // --- ERC20 overrides ---
@@ -322,7 +330,7 @@ contract LiquidityPool is Auth, IERC4626 {
     function updatePrice(uint128 price) public auth {
         latestPrice = price;
         lastPriceUpdate = block.timestamp;
-        emit UpdatePrice(price);
+        emit PriceUpdate(price);
     }
 
     // --- Restriction overrides ---
