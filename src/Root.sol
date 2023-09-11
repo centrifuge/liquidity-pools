@@ -26,8 +26,8 @@ contract Root is Auth {
     event File(bytes32 indexed what, uint256 data);
     event Pause();
     event Unpause();
-    event RelyScheduled(address indexed target, uint256 indexed scheduledTime);
-    event RelyCancelled(address indexed target);
+    event ScheduleRely(address indexed target, uint256 indexed scheduledTime);
+    event CancelRely(address indexed target);
     event RelyContract(address indexed target, address indexed user);
     event DenyContract(address indexed target, address indexed user);
 
@@ -64,12 +64,12 @@ contract Root is Auth {
     /// --- Timelocked ward management ---
     function scheduleRely(address target) external auth {
         schedule[target] = block.timestamp + delay;
-        emit RelyScheduled(target, schedule[target]);
+        emit ScheduleRely(target, schedule[target]);
     }
 
     function cancelRely(address target) external auth {
         schedule[target] = 0;
-        emit RelyCancelled(target);
+        emit CancelRely(target);
     }
 
     function executeScheduledRely(address target) public {

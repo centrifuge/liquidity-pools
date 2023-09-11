@@ -21,6 +21,9 @@ contract RestrictionManager is Auth {
 
     mapping(address => uint256) public members;
 
+    // --- Events ---
+    event UpdateMember(address indexed user, uint256 validUntil);
+
     constructor() {
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
@@ -59,6 +62,8 @@ contract RestrictionManager is Auth {
     function updateMember(address user, uint256 validUntil) public auth {
         require(block.timestamp <= validUntil, "RestrictionManager/invalid-valid-until");
         members[user] = validUntil;
+
+        emit UpdateMember(user, validUntil);
     }
 
     function updateMembers(address[] memory users, uint256 validUntil) public auth {
