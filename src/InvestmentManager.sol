@@ -212,7 +212,6 @@ contract InvestmentManager is Auth {
 
     function cancelDepositRequest(address liquidityPool, address user) public auth {
         LiquidityPoolLike _liquidityPool = LiquidityPoolLike(msg.sender);
-        require(_liquidityPool.checkTransferRestriction(address(0), user, 0), "InvestmentManager/not-a-member");
         gateway.cancelInvestOrder(
             _liquidityPool.poolId(),
             _liquidityPool.trancheId(),
@@ -223,7 +222,6 @@ contract InvestmentManager is Auth {
 
     function cancelRedeemRequest(address liquidityPool, address user) public auth {
         LiquidityPoolLike _liquidityPool = LiquidityPoolLike(msg.sender);
-        require(_liquidityPool.checkTransferRestriction(address(0), user, 0), "InvestmentManager/not-a-member");
         gateway.cancelRedeemOrder(
             _liquidityPool.poolId(),
             _liquidityPool.trancheId(),
