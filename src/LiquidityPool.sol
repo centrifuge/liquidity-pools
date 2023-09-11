@@ -93,7 +93,7 @@ contract LiquidityPool is Auth, IERC4626 {
         emit Rely(msg.sender);
     }
 
-    /// @dev Either msg.sender is the owner or a ward on the contract
+    /// @dev Owner needs to be the msg.sender
     modifier withApproval(address owner) {
         require((msg.sender == owner), "LiquidityPool/no-approval");
         _;
@@ -207,7 +207,7 @@ contract LiquidityPool is Auth, IERC4626 {
 
     // --- Asynchronous 4626 functions ---
     /// @notice Request asset deposit for a receiver to be included in the next epoch execution.
-    /// @notice Request can only be called by the Owner of the assets or an authorized admin.
+    /// @notice Request can only be called by the owner of the assets
     ///         Asset is locked in the escrow on request submission
     function requestDeposit(uint256 assets, address owner) public withApproval(owner) {
         investmentManager.requestDeposit(assets, owner);
@@ -224,7 +224,7 @@ contract LiquidityPool is Auth, IERC4626 {
     }
 
     /// @notice Request share redemption for a receiver to be included in the next epoch execution.
-    /// @notice Request can only be called by the Owner of the shares or an authorized admin.
+    /// @notice Request can only be called by the owner of the shares
     ///         Shares are locked in the escrow on request submission
     function requestRedeem(uint256 shares, address owner) public withApproval(owner) {
         investmentManager.requestRedeem(shares, owner);
@@ -254,12 +254,16 @@ contract LiquidityPool is Auth, IERC4626 {
 
     // --- Miscellaneous investment functions ---
     /// @notice Trigger collecting the deposited funds.
+    /// @dev    In normal circumstances, this should happen automatically on Centrifuge Chain.
+    ///         This function is only included as a fallback.
     function collectDeposit(address receiver) public {
         investmentManager.collectDeposit(receiver);
         emit DepositCollected(receiver);
     }
 
     /// @notice Trigger collecting the deposited tokens.
+    /// @dev    In normal circumstances, this should happen automatically on Centrifuge Chain.
+    ///         This function is only included as a fallback.
     function collectRedeem(address receiver) public {
         investmentManager.collectRedeem(receiver);
         emit RedeemCollected(receiver);
