@@ -60,9 +60,7 @@ struct Pool {
 /// @dev Each Centrifuge pool is associated to 1 or more tranches
 struct Tranche {
     address token;
-    uint64 poolId;
-    bytes16 trancheId;
-    // important: the decimals of the leading pool currency. Liquidity Pool shares have to be denominated with the same precision.
+    // important: the decimals of the leading pool currency. Liquidity Pool shares have to be denomatimated with the same precision.
     uint8 decimals;
     uint256 createdAt;
     string tokenName;
@@ -224,8 +222,6 @@ contract PoolManager is Auth {
         Tranche storage tranche = pool.tranches[trancheId];
         require(tranche.createdAt == 0, "PoolManager/tranche-already-exists");
 
-        tranche.poolId = poolId;
-        tranche.trancheId = trancheId;
         tranche.decimals = decimals;
         tranche.tokenName = tokenName;
         tranche.tokenSymbol = tokenSymbol;
