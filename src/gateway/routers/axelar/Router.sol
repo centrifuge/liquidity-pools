@@ -22,9 +22,9 @@ interface GatewayLike {
 /// @title  Axelar Router
 /// @notice Routing contract that integrates with an Axelar Gateway
 contract AxelarRouter is Auth {
-    string internal constant CENTRIFUGE_CHAIN_ID = "centrifuge";
-    string internal constant CENTRIFUGE_CHAIN_ADDRESS = "0x7369626cef070000000000000000000000000000";
-    string internal constant LP_PRECOMPILE_ADDRESS = "0x0000000000000000000000000000000000002048";
+    string internal constant CENTRIFUGE_CHAIN_ID = "Moonbeam";
+    string internal constant CENTRIFUGE_CHAIN_ADDRESS = "0x7369626CEF070000000000000000000000000000";
+    string internal constant LP_PRECOMPILE_ADDRESS = "0xA31216fA20Bc93F9c5461aD695BDA6b9BE22BFA6";
 
     AxelarGatewayLike public immutable axelarGateway;
 
@@ -41,7 +41,6 @@ contract AxelarRouter is Auth {
     }
 
     modifier onlyCentrifugeChainOrigin(string calldata sourceChain, string calldata sourceAddress) {
-        require(msg.sender == address(axelarGateway), "AxelarRouter/invalid-origin");
         require(
             keccak256(bytes(CENTRIFUGE_CHAIN_ID)) == keccak256(bytes(sourceChain)), "AxelarRouter/invalid-source-chain"
         );
