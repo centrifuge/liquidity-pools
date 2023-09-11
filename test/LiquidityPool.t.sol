@@ -110,6 +110,7 @@ contract LiquidityPoolTest is TestSetup {
     ) public {
         vm.assume(currencyId > 0);
         vm.assume(amount > MAX_UINT128); // amount has to overfloe UINT128
+        vm.assume(random.code.length == 0);
         address lPool_ = deployLiquidityPool(poolId, erc20.decimals(), tokenName, tokenSymbol, trancheId, currencyId);
         LiquidityPool lPool = LiquidityPool(lPool_);
 
@@ -1028,6 +1029,7 @@ contract LiquidityPoolTest is TestSetup {
         vm.assume(amount < MAX_UINT128);
         vm.assume(amount > 4);
         vm.assume(validUntil >= block.timestamp);
+        vm.assume(random.code.length == 0);
         price = 1;
 
         address lPool_ = deployLiquidityPool(poolId, erc20.decimals(), tokenName, tokenSymbol, trancheId, currencyId);
@@ -1108,6 +1110,7 @@ contract LiquidityPoolTest is TestSetup {
         vm.assume(amount < MAX_UINT128);
         vm.assume(amount > 1);
         vm.assume(validUntil >= block.timestamp);
+        vm.assume(random.code.length == 0);
         price = 1;
 
         address lPool_ = deployLiquidityPool(poolId, erc20.decimals(), tokenName, tokenSymbol, trancheId, currencyId);
@@ -1148,6 +1151,7 @@ contract LiquidityPoolTest is TestSetup {
         vm.assume(random != address(erc20));
         vm.assume(amount > 1);
         vm.assume(validUntil >= block.timestamp);
+        vm.assume(random.code.length == 0);
         price = 1;
 
         address lPool_ = deployLiquidityPool(poolId, erc20.decimals(), tokenName, tokenSymbol, trancheId, currencyId);
@@ -1363,5 +1367,117 @@ contract LiquidityPoolTest is TestSetup {
             poolId, trancheId, bytes32(bytes20(_investor)), currencyId, uint128(amount), uint128(amount)
         );
         investor.deposit(_lPool, amount, _investor); // deposit the amount
+    }
+
+    function testWithdrawingHalfOfOddAmount(
+        uint64 poolId,
+        uint8 decimals,
+        string memory tokenName,
+        string memory tokenSymbol,
+        bytes16 trancheId,
+        uint128 price,
+        uint128 currencyId,
+        uint256 amount,
+        uint64 validUntil,
+        address random
+    ) public {
+        vm.assume(currencyId > 0);
+        vm.assume(amount < MAX_UINT128);
+        vm.assume(random != address(0));
+        vm.assume(random != address(erc20));
+        vm.assume(amount > 1);
+        vm.assume(validUntil >= block.timestamp);
+        vm.assume(amount % 2 == 1);
+        vm.assume(random.code.length == 0);
+        price = 1;
+
+        address lPool_ = deployLiquidityPool(poolId, erc20.decimals(), tokenName, tokenSymbol, trancheId, currencyId);
+        deposit(lPool_, poolId, trancheId, amount, validUntil); // deposit funds first
+        LiquidityPool lPool = LiquidityPool(lPool_);
+        homePools.updateTrancheTokenPrice(poolId, trancheId, currencyId, price);
+        lPool.approve(address(investmentManager), amount); // add allowance
+        lPool.requestRedeem(amount, self);
+
+        uint128 _currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
+        uint128 currencyPayout = uint128(amount) / price;
+        homePools.isExecutedCollectRedeem(
+            poolId, trancheId, bytes32(bytes20(self)), _currencyId, currencyPayout, uint128(amount)
+        );
+
+        lPool.withdraw(amount / 2, self, self); // withdraw half the amount rounded down
+
+        erc20.approve(random, type(uint256).max);
+        lPool.withdraw(amount / 2, random, self); // withdraw half the amount rounded down to random wallet
+
+        assertEq(lPool.balanceOf(self), 0);
+        assertEq(erc20.balanceOf(self), currencyPayout / 2);
+        assertEq(erc20.balanceOf(random), currencyPayout / 2);
+        // 1 wei remains in escrow
+        assertEq(erc20.balanceOf(address(userEscrow)), 1);
+        assertEq(lPool.maxRedeem(self), 1);
+        assertEq(lPool.maxWithdraw(self), 1);
+
+        // withdraw the remaining 1 wei use maxWithdraw
+        lPool.withdraw(lPool.maxWithdraw(self), self, self);
+        assertEq(erc20.balanceOf(self), currencyPayout / 2 + 1);
+        assertEq(erc20.balanceOf(address(userEscrow)), 0);
+        assertEq(lPool.maxRedeem(self), 0);
+        assertEq(lPool.maxWithdraw(self), 0);
+    }
+
+    function testRedeemingHalfOfOddAmount(
+        uint64 poolId,
+        uint8 decimals,
+        string memory tokenName,
+        string memory tokenSymbol,
+        bytes16 trancheId,
+        uint128 price,
+        uint128 currencyId,
+        uint256 amount,
+        uint64 validUntil,
+        address random
+    ) public {
+        vm.assume(currencyId > 0);
+        vm.assume(amount < MAX_UINT128);
+        vm.assume(random != address(0));
+        vm.assume(random != address(erc20));
+        vm.assume(amount > 1);
+        vm.assume(validUntil >= block.timestamp);
+        vm.assume(amount % 2 == 1);
+        vm.assume(random.code.length == 0);
+        price = 1;
+
+        address lPool_ = deployLiquidityPool(poolId, erc20.decimals(), tokenName, tokenSymbol, trancheId, currencyId);
+        deposit(lPool_, poolId, trancheId, amount, validUntil); // deposit funds first
+        LiquidityPool lPool = LiquidityPool(lPool_);
+        homePools.updateTrancheTokenPrice(poolId, trancheId, currencyId, price);
+        lPool.approve(address(investmentManager), amount); // add allowance
+        lPool.requestRedeem(amount, self);
+
+        uint128 _currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
+        uint128 currencyPayout = uint128(amount) / price;
+        homePools.isExecutedCollectRedeem(
+            poolId, trancheId, bytes32(bytes20(self)), _currencyId, currencyPayout, uint128(amount)
+        );
+
+        lPool.redeem(amount / 2, self, self); // withdraw half the amount rounded down
+
+        erc20.approve(random, type(uint256).max);
+        lPool.redeem(amount / 2, random, self); // withdraw half the amount rounded down to random wallet
+
+        assertEq(lPool.balanceOf(self), 0);
+        assertEq(erc20.balanceOf(self), currencyPayout / 2);
+        assertEq(erc20.balanceOf(random), currencyPayout / 2);
+        // 1 wei remains in escrow
+        assertEq(erc20.balanceOf(address(userEscrow)), 1);
+        assertEq(lPool.maxRedeem(self), 1);
+        assertEq(lPool.maxWithdraw(self), 1);
+
+        // withdraw the remaining 1 wei use maxWithdraw
+        lPool.redeem(lPool.maxWithdraw(self), self, self);
+        assertEq(erc20.balanceOf(self), currencyPayout / 2 + 1);
+        assertEq(erc20.balanceOf(address(userEscrow)), 0);
+        assertEq(lPool.maxRedeem(self), 0);
+        assertEq(lPool.maxWithdraw(self), 0);
     }
 }
