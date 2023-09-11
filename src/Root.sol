@@ -14,13 +14,13 @@ interface AuthLike {
 ///         is restricted to the timelock set by the delay.
 contract Root is Auth {
     /// @dev To prevent filing a delay that would block any updates indefinitely
-    uint256 private MAX_DELAY = 4 weeks;
+    uint256 internal constant MAX_DELAY = 4 weeks;
 
     address public immutable escrow;
 
-    mapping(address => uint256) public schedule;
+    mapping(address relyTarget => uint256 timestamp) public schedule;
     uint256 public delay;
-    bool public paused = false;
+    bool public paused;
 
     // --- Events ---
     event File(bytes32 indexed what, uint256 data);
@@ -28,8 +28,8 @@ contract Root is Auth {
     event Unpause();
     event RelyScheduled(address indexed target, uint256 indexed scheduledTime);
     event RelyCancelled(address indexed target);
-    event RelyContract(address target, address indexed user);
-    event DenyContract(address target, address indexed user);
+    event RelyContract(address indexed target, address indexed user);
+    event DenyContract(address indexed target, address indexed user);
 
     constructor(address _escrow, uint256 _delay) {
         escrow = _escrow;
@@ -94,7 +94,7 @@ contract Root is Auth {
 
     /// @notice removes the ward permissions from an address on a contract
     /// @param target the address of the contract
-    /// @param user the address which persmissions should be removed
+    /// @param user the address which permissions should be removed
     function denyContract(address target, address user) public auth {
         AuthLike(target).deny(user);
         emit DenyContract(target, user);

@@ -15,9 +15,6 @@ contract PauseAdmin is Auth {
     event AddPauser(address indexed user);
     event RemovePauser(address indexed user);
 
-    // --- Events ---
-    event File(bytes32 indexed what, address indexed data);
-
     constructor(address root_) {
         root = Root(root_);
 

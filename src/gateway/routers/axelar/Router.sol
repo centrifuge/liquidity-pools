@@ -22,9 +22,9 @@ interface GatewayLike {
 /// @title  Axelar Router
 /// @notice Routing contract that integrates with an Axelar Gateway
 contract AxelarRouter is Auth {
-    string private constant axelarCentrifugeChainId = "centrifuge";
-    string private constant axelarCentrifugeChainAddress = "0x7369626cef070000000000000000000000000000";
-    string private constant centrifugeGatewayPrecompileAddress = "0x0000000000000000000000000000000000002048";
+    string internal constant CENTRIFUGE_CHAIN_ID = "centrifuge";
+    string internal constant CENTRIFUGE_CHAIN_ADDRESS = "0x7369626cef070000000000000000000000000000";
+    string internal constant LP_PRECOMPILE_ADDRESS = "0x0000000000000000000000000000000000002048";
 
     AxelarGatewayLike public immutable axelarGateway;
 
@@ -43,11 +43,10 @@ contract AxelarRouter is Auth {
     modifier onlyCentrifugeChainOrigin(string calldata sourceChain, string calldata sourceAddress) {
         require(msg.sender == address(axelarGateway), "AxelarRouter/invalid-origin");
         require(
-            keccak256(bytes(axelarCentrifugeChainId)) == keccak256(bytes(sourceChain)),
-            "AxelarRouter/invalid-source-chain"
+            keccak256(bytes(CENTRIFUGE_CHAIN_ID)) == keccak256(bytes(sourceChain)), "AxelarRouter/invalid-source-chain"
         );
         require(
-            keccak256(bytes(axelarCentrifugeChainAddress)) == keccak256(bytes(sourceAddress)),
+            keccak256(bytes(CENTRIFUGE_CHAIN_ADDRESS)) == keccak256(bytes(sourceAddress)),
             "AxelarRouter/invalid-source-address"
         );
         _;
@@ -87,6 +86,6 @@ contract AxelarRouter is Auth {
 
     // --- Outgoing ---
     function send(bytes calldata message) public onlyGateway {
-        axelarGateway.callContract(axelarCentrifugeChainId, centrifugeGatewayPrecompileAddress, message);
+        axelarGateway.callContract(CENTRIFUGE_CHAIN_ID, LP_PRECOMPILE_ADDRESS, message);
     }
 }
