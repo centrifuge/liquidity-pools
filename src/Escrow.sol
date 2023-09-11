@@ -12,6 +12,7 @@ interface ApproveLike {
 /// @notice Escrow contract that holds tokens.
 ///         Only wards can approve funds to be taken out.
 contract Escrow is Auth {
+    // --- Events ---
     event Approve(address indexed token, address indexed spender, uint256 value);
 
     constructor() {
