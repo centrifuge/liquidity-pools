@@ -83,8 +83,12 @@ contract InvestmentManager is Auth {
 
     // --- Events ---
     event File(bytes32 indexed what, address data);
-    event ProcessDeposit(address indexed liquidityPool, address indexed user, uint128 currencyAmount, uint128 trancheTokenAmount);
-    event ProcessRedeem(address indexed liquidityPool, address indexed user, uint128 currencyAmount, uint128 trancheTokenAmount);
+    event ProcessDeposit(
+        address indexed liquidityPool, address indexed user, uint128 currencyAmount, uint128 trancheTokenAmount
+    );
+    event ProcessRedeem(
+        address indexed liquidityPool, address indexed user, uint128 currencyAmount, uint128 trancheTokenAmount
+    );
     event ExecutedCollectInvest(
         uint64 indexed poolId,
         bytes16 indexed trancheId,
