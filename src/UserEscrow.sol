@@ -13,8 +13,7 @@ interface ERC20Like {
 ///         Ensures that once tokens are transferred in, they can only be
 ///         transferred out to the pre-chosen destinations, by wards.
 contract UserEscrow is Auth {
-    /// @dev Map by token and destination
-    mapping(address => mapping(address => uint256)) destinations;
+    mapping(address token => mapping(address destination => uint256 amount)) public destinations;
 
     // --- Events ---
     event TransferIn(address indexed token, address indexed source, address indexed destination, uint256 amount);
@@ -37,7 +36,7 @@ contract UserEscrow is Auth {
         require(destinations[token][destination] >= amount, "UserEscrow/transfer-failed");
         require(
             /// @dev transferOut can only be initiated by the destination address or an authorized admin.
-            ///      The check is just an additional protection to secure destination funds in case of compromized auth.
+            ///      The check is just an additional protection to secure destination funds in case of compromised auth.
             ///      Since userEscrow is not able to decrease the allowance for the receiver,
             ///      a transfer is only possible in case receiver has received the full allowance from destination address.
             receiver == destination || (ERC20Like(token).allowance(destination, receiver) == type(uint256).max),

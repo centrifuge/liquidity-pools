@@ -53,8 +53,8 @@ interface AuthLike {
 struct Pool {
     uint64 poolId;
     uint256 createdAt;
-    mapping(bytes16 => Tranche) tranches;
-    mapping(address => bool) allowedCurrencies;
+    mapping(bytes16 trancheId => Tranche) tranches;
+    mapping(address currencyAddress => bool) allowedCurrencies;
 }
 
 /// @dev Each Centrifuge pool is associated to 1 or more tranches
@@ -62,14 +62,14 @@ struct Tranche {
     address token;
     uint64 poolId;
     bytes16 trancheId;
-    // important: the decimals of the leading pool currency. Liquidity Pool shares have to be denomatimated with the same precision.
+    // important: the decimals of the leading pool currency. Liquidity Pool shares have to be denominated with the same precision.
     uint8 decimals;
     uint256 createdAt;
     string tokenName;
     string tokenSymbol;
     /// @dev Each tranche can have multiple liquidity pools deployed,
     /// each linked to a unique investment currency (asset)
-    mapping(address => address) liquidityPools; // currency -> liquidity pool address
+    mapping(address currencyAddress => address liquidityPool) liquidityPools;
 }
 
 /// @title  Pool Manager
@@ -86,11 +86,11 @@ contract PoolManager is Auth {
     GatewayLike public gateway;
     InvestmentManagerLike public investmentManager;
 
-    mapping(uint64 => Pool) public pools;
+    mapping(uint64 poolId => Pool) public pools;
 
     /// @dev Chain agnostic currency id -> evm currency address and reverse mapping
-    mapping(uint128 => address) public currencyIdToAddress;
-    mapping(address => uint128) public currencyAddressToId;
+    mapping(uint128 currencyId => address) public currencyIdToAddress;
+    mapping(address => uint128 currencyId) public currencyAddressToId;
 
     // --- Events ---
     event File(bytes32 indexed what, address data);
@@ -100,7 +100,6 @@ contract PoolManager is Auth {
     event TrancheDeployed(uint64 indexed poolId, bytes16 indexed trancheId, address indexed token);
     event CurrencyAdded(uint128 indexed currency, address indexed currencyAddress);
     event LiquidityPoolDeployed(uint64 indexed poolId, bytes16 indexed trancheId, address indexed liquidityPoool);
-    event TrancheTokenDeployed(uint64 indexed poolId, bytes16 indexed trancheId);
 
     constructor(
         address escrow_,
@@ -194,7 +193,7 @@ contract PoolManager is Auth {
         emit PoolCurrencyAllowed(currency, poolId);
     }
 
-    /// @notice     New tranche details from an existng Centrifuge pool are added.
+    /// @notice     New tranche details from an existing Centrifuge pool are added.
     /// @dev        The function can only be executed by the gateway contract.
     function addTranche(
         uint64 poolId,
@@ -309,7 +308,7 @@ contract PoolManager is Auth {
         );
 
         tranche.token = token;
-        emit TrancheTokenDeployed(poolId, trancheId);
+        emit TrancheDeployed(poolId, trancheId, token);
         return token;
     }
 
@@ -320,7 +319,6 @@ contract PoolManager is Auth {
 
         address liquidityPool = tranche.liquidityPools[currency];
         require(liquidityPool == address(0), "PoolManager/liquidityPool-already-deployed");
-        require(pools[poolId].createdAt != 0, "PoolManager/pool-does-not-exist");
 
         address[] memory liquidityPoolWards = new address[](1);
         liquidityPoolWards[0] = address(investmentManager);
