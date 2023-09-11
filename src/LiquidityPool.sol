@@ -86,6 +86,8 @@ contract LiquidityPool is Auth, IERC4626 {
     event RedeemRequest(address indexed owner, uint256 shares);
     event DecreaseDepositRequest(address indexed owner, uint256 assets);
     event DecreaseRedeemRequest(address indexed owner, uint256 shares);
+    event CancelDepositRequest(address indexed owner);
+    event CancelRedeemRequest(address indexed owner);
     event DepositCollect(address indexed owner);
     event RedeemCollect(address indexed owner);
     event PriceUpdate(uint128 price);
@@ -266,12 +268,14 @@ contract LiquidityPool is Auth, IERC4626 {
     ///         on Centrifuge is successfully cancelled.
     function cancelDepositRequest(address owner) public withApproval(owner) {
         investmentManager.cancelDepositRequest(address(this), owner);
+        emit CancelDepositRequest(owner);
     }
 
     /// @notice Request cancelling the outstanding redemption orders. Will return the shares once the order
     ///         on Centrifuge is successfully cancelled.
     function cancelRedeemRequest(address owner) public withApproval(owner) {
         investmentManager.cancelRedeemRequest(address(this), owner);
+        emit CancelRedeemRequest(owner);
     }
 
     // --- Miscellaneous investment functions ---
