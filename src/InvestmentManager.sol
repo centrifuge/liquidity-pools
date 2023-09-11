@@ -154,7 +154,7 @@ contract InvestmentManager is Auth {
         poolManager.isAllowedAsPoolCurrency(poolId, currency);
         require(
             lPool.checkTransferRestriction(address(0), user, convertToShares(liquidityPool, currencyAmount)),
-            "InvestmentManager/invalid-transfer"
+            "InvestmentManager/transfer-not-allowed"
         );
 
         // Transfer the currency amount from user to escrow (lock currency in escrow)
@@ -203,7 +203,7 @@ contract InvestmentManager is Auth {
         LiquidityPoolLike _liquidityPool = LiquidityPoolLike(msg.sender);
         require(
             _liquidityPool.checkTransferRestriction(address(0), user, _trancheTokenAmount),
-            "InvestmentManager/invalid-transfer"
+            "InvestmentManager/transfer-not-allowed"
         );
         gateway.decreaseRedeemOrder(
             _liquidityPool.poolId(),
@@ -229,7 +229,7 @@ contract InvestmentManager is Auth {
         // TODO: last argument should be replaced by remaining redeem order
         require(
             _liquidityPool.checkTransferRestriction(address(0), user, type(uint128).max),
-            "InvestmentManager/invalid-transfer"
+            "InvestmentManager/transfer-not-allowed"
         );
         gateway.cancelRedeemOrder(
             _liquidityPool.poolId(),
@@ -244,7 +244,7 @@ contract InvestmentManager is Auth {
         // TODO: last argument should be replaced by remaining invest order
         require(
             _liquidityPool.checkTransferRestriction(address(escrow), user, type(uint128).max),
-            "InvestmentManager/invalid-transfer"
+            "InvestmentManager/transfer-not-allowed"
         );
         gateway.collectInvest(
             _liquidityPool.poolId(),
@@ -371,26 +371,34 @@ contract InvestmentManager is Auth {
     /// @dev Calculates the amount of shares / tranche tokens that any user would get for the amount of currency / assets provided.
     ///      The calculation is based on the tranche token price from the most recent epoch retrieved from Centrifuge.
     function convertToShares(address liquidityPool, uint256 _assets) public view auth returns (uint256 shares) {
+        uint128 latestPrice = LiquidityPoolLike(liquidityPool).latestPrice();
+        if (latestPrice == 0) {
+            // If the price is not set, we assume it is 1.00
+            latestPrice = uint128(1 * 10 ** PRICE_DECIMALS);
+        }
+
         (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getPoolDecimals(liquidityPool);
         uint128 assets = _toUint128(_assets);
 
         shares = assets.mulDiv(
-            10 ** (PRICE_DECIMALS + trancheTokenDecimals - currencyDecimals),
-            LiquidityPoolLike(liquidityPool).latestPrice(),
-            MathLib.Rounding.Down
+            10 ** (PRICE_DECIMALS + trancheTokenDecimals - currencyDecimals), latestPrice, MathLib.Rounding.Down
         );
     }
 
     /// @dev Calculates the asset value for an amount of shares / tranche tokens provided.
     ///      The calculation is based on the tranche token price from the most recent epoch retrieved from Centrifuge.
     function convertToAssets(address liquidityPool, uint256 _shares) public view auth returns (uint256 assets) {
+        uint128 latestPrice = LiquidityPoolLike(liquidityPool).latestPrice();
+        if (latestPrice == 0) {
+            // If the price is not set, we assume it is 1.00
+            latestPrice = uint128(1 * 10 ** PRICE_DECIMALS);
+        }
+
         (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getPoolDecimals(liquidityPool);
         uint128 shares = _toUint128(_shares);
 
         assets = shares.mulDiv(
-            LiquidityPoolLike(liquidityPool).latestPrice(),
-            10 ** (PRICE_DECIMALS + trancheTokenDecimals - currencyDecimals),
-            MathLib.Rounding.Down
+            latestPrice, 10 ** (PRICE_DECIMALS + trancheTokenDecimals - currencyDecimals), MathLib.Rounding.Down
         );
     }
 
