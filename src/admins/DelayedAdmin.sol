@@ -12,9 +12,6 @@ import {Auth} from "./../util/Auth.sol";
 contract DelayedAdmin is Auth {
     Root public immutable root;
 
-    // --- Events ---
-    event File(bytes32 indexed what, address indexed data);
-
     constructor(address root_) {
         root = Root(root_);
 

@@ -95,7 +95,7 @@ contract LiquidityPool is Auth, IERC4626 {
 
     /// @dev Either msg.sender is the owner or a ward on the contract
     modifier withApproval(address owner) {
-        require((wards[msg.sender] == 1 || msg.sender == owner), "LiquidityPool/no-approval");
+        require((msg.sender == owner), "LiquidityPool/no-approval");
         _;
     }
 
@@ -113,7 +113,7 @@ contract LiquidityPool is Auth, IERC4626 {
     }
 
     /// @notice Calculates the amount of shares that any user would approximately get for the amount of assets provided.
-    ///         The calcultion is based on the token price from the most recent epoch retrieved from Centrifuge.
+    ///         The calculation is based on the token price from the most recent epoch retrieved from Centrifuge.
     ///         The actual conversion will likely differ as the price changes between order submission and execution.
     function convertToShares(uint256 assets) public view returns (uint256 shares) {
         shares = investmentManager.convertToShares(assets, address(this));
@@ -126,9 +126,9 @@ contract LiquidityPool is Auth, IERC4626 {
         assets = investmentManager.convertToAssets(shares, address(this));
     }
 
-    /// @return Maximum amount of assets that can be deposited into the Tranche by the receiver after the epoch had been executed on Centrifuge.
-    function maxDeposit(address receiver) public view returns (uint256) {
-        return investmentManager.maxDeposit(receiver, address(this));
+    /// @return maxAssets that can be deposited into the Tranche by the receiver after the epoch had been executed on Centrifuge.
+    function maxDeposit(address receiver) public view returns (uint256 maxAssets) {
+        maxAssets = investmentManager.maxDeposit(receiver, address(this));
     }
 
     /// @return shares that any user would get for an amount of assets provided
@@ -151,7 +151,7 @@ contract LiquidityPool is Auth, IERC4626 {
         emit Deposit(address(this), receiver, assets, shares);
     }
 
-    /// @notice Maximum amount of shares that can be claimed by the receiver after the epoch has been executed on the Centrifuge side.
+    /// @notice maxShares that can be claimed by the receiver after the epoch has been executed on the Centrifuge side.
     function maxMint(address receiver) external view returns (uint256 maxShares) {
         maxShares = investmentManager.maxMint(receiver, address(this));
     }
@@ -163,7 +163,7 @@ contract LiquidityPool is Auth, IERC4626 {
 
     /// @return maxAssets that the receiver can withdraw
     function maxWithdraw(address receiver) public view returns (uint256 maxAssets) {
-        return investmentManager.maxWithdraw(receiver, address(this));
+        maxAssets = investmentManager.maxWithdraw(receiver, address(this));
     }
 
     /// @return shares that a user would need to redeem in order to receive the given amount of assets -> convertToAssets
@@ -178,14 +178,13 @@ contract LiquidityPool is Auth, IERC4626 {
         withApproval(owner)
         returns (uint256 shares)
     {
-        uint256 sharesRedeemed = investmentManager.processWithdraw(assets, receiver, owner);
-        emit Withdraw(address(this), receiver, owner, assets, sharesRedeemed);
-        return sharesRedeemed;
+        uint256 shares = investmentManager.processWithdraw(assets, receiver, owner);
+        emit Withdraw(address(this), receiver, owner, assets, shares);
     }
 
-    /// @notice Max amount of shares that can be redeemed by the owner after redemption was requested
+    /// @notice maxShares that can be redeemed by the owner after redemption was requested
     function maxRedeem(address owner) public view returns (uint256 maxShares) {
-        return investmentManager.maxRedeem(owner, address(this));
+        maxShares = investmentManager.maxRedeem(owner, address(this));
     }
 
     /// @return assets that any user could redeem for a given amount of shares
@@ -202,9 +201,8 @@ contract LiquidityPool is Auth, IERC4626 {
         withApproval(owner)
         returns (uint256 assets)
     {
-        uint256 currencyPayout = investmentManager.processRedeem(shares, receiver, owner);
-        emit Withdraw(address(this), receiver, owner, currencyPayout, shares);
-        return currencyPayout;
+        uint256 assets = investmentManager.processRedeem(shares, receiver, owner);
+        emit Withdraw(address(this), receiver, owner, assets, shares);
     }
 
     // --- Asynchronous 4626 functions ---

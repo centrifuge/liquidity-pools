@@ -71,14 +71,15 @@ contract InvestmentManager is Auth {
     using MathLib for uint128;
 
     /// @dev Prices are fixed-point integers with 18 decimals
-    uint8 public constant PRICE_DECIMALS = 18; //
+    uint8 internal constant PRICE_DECIMALS = 18;
+
     EscrowLike public immutable escrow;
     UserEscrowLike public immutable userEscrow;
 
     GatewayLike public gateway;
     PoolManagerLike public poolManager;
 
-    mapping(address => mapping(address => LPValues)) public orderbook;
+    mapping(address investor => mapping(address liquidityPool => LPValues)) public orderbook;
 
     // --- Events ---
     event File(bytes32 indexed what, address data);
@@ -110,72 +111,70 @@ contract InvestmentManager is Auth {
     // --- Outgoing message handling ---
     /// @notice Request deposit. Liquidity pools have to request investments from Centrifuge before actual tranche tokens can be minted.
     ///         The deposit requests are added to the order book on Centrifuge. Once the next epoch is executed on Centrifuge,
-    ///         liquidity pools can proceed with tranche token payouts in case their orders got fullfilled.
+    ///         liquidity pools can proceed with tranche token payouts in case their orders got fulfilled.
     ///         If an amount of 0 is passed, this triggers cancelling outstanding deposit orders.
-    /// @dev    The user currency amount required to fullfill the deposit request have to be locked,
+    /// @dev    The user currency amount required to fulfill the deposit request have to be locked,
     ///         even though the tranche token payout can only happen after epoch execution.
     function requestDeposit(uint256 currencyAmount, address user) public auth {
         address liquidityPool = msg.sender;
         LiquidityPoolLike lPool = LiquidityPoolLike(liquidityPool);
-        address currency = lPool.asset();
         uint128 _currencyAmount = _toUint128(currencyAmount);
 
+        uint64 poolId = lPool.poolId();
+        bytes16 trancheId = lPool.trancheId();
+        address currency = lPool.asset();
+        uint128 currencyId = poolManager.currencyAddressToId(currency);
+
         // Check if liquidity pool currency is supported by the Centrifuge pool
-        poolManager.isAllowedAsPoolCurrency(lPool.poolId(), currency);
+        poolManager.isAllowedAsPoolCurrency(poolId, currency);
         // Check if user is allowed to hold the restricted tranche tokens
-        _isAllowedToInvest(lPool.poolId(), lPool.trancheId(), currency, user);
+        _isAllowedToInvest(poolId, trancheId, currency, user);
         if (_currencyAmount == 0) {
-            // Case: outstanding redemption orders only needed to be cancelled
-            gateway.cancelInvestOrder(
-                lPool.poolId(), lPool.trancheId(), user, poolManager.currencyAddressToId(lPool.asset())
-            );
+            // Case: outstanding investment orders only needed to be cancelled
+            gateway.cancelInvestOrder(poolId, trancheId, user, currencyId);
             return;
         }
 
         // Transfer the currency amount from user to escrow. (lock currency in escrow).
         SafeTransferLib.safeTransferFrom(currency, user, address(escrow), _currencyAmount);
 
-        gateway.increaseInvestOrder(
-            lPool.poolId(), lPool.trancheId(), user, poolManager.currencyAddressToId(lPool.asset()), _currencyAmount
-        );
+        gateway.increaseInvestOrder(poolId, trancheId, user, currencyId, _currencyAmount);
     }
 
     /// @notice Request tranche token redemption. Liquidity pools have to request redemptions from Centrifuge before actual currency payouts can be done.
     ///         The redemption requests are added to the order book on Centrifuge. Once the next epoch is executed on Centrifuge,
-    ///         liquidity pools can proceed with currency payouts in case their orders got fullfilled.
+    ///         liquidity pools can proceed with currency payouts in case their orders got fulfilled.
     ///         If an amount of 0 is passed, this triggers cancelling outstanding redemption orders.
-    /// @dev    The user tranche tokens required to fullfill the redemption request have to be locked, even though the currency payout can only happen after epoch execution.
+    /// @dev    The user tranche tokens required to fulfill the redemption request have to be locked, even though the currency payout can only happen after epoch execution.
     function requestRedeem(uint256 trancheTokenAmount, address user) public auth {
         address liquidityPool = msg.sender;
         LiquidityPoolLike lPool = LiquidityPoolLike(liquidityPool);
         uint128 _trancheTokenAmount = _toUint128(trancheTokenAmount);
 
+        uint64 poolId = lPool.poolId();
+        bytes16 trancheId = lPool.trancheId();
+        address currency = lPool.asset();
+        uint128 currencyId = poolManager.currencyAddressToId(currency);
+
         // Check if liquidity pool currency is supported by the Centrifuge pool
-        poolManager.isAllowedAsPoolCurrency(lPool.poolId(), lPool.asset());
+        poolManager.isAllowedAsPoolCurrency(poolId, currency);
         // Check if user is allowed to hold the restricted tranche tokens
 
-        _isAllowedToInvest(lPool.poolId(), lPool.trancheId(), lPool.asset(), user);
+        _isAllowedToInvest(poolId, trancheId, currency, user);
 
         if (_trancheTokenAmount == 0) {
             // Case: outstanding redemption orders will be cancelled
-            gateway.cancelRedeemOrder(
-                lPool.poolId(), lPool.trancheId(), user, poolManager.currencyAddressToId(lPool.asset())
-            );
+            gateway.cancelRedeemOrder(poolId, trancheId, user, currencyId);
             return;
         }
 
-        // Transfer the required tranche tokens from user to escrow (lock tranche tokens in escrow).
-        require(
-            lPool.transferFrom(user, address(escrow), _trancheTokenAmount),
-            "InvestmentManager/tranche-token-transfer-failed"
-        );
+        lPool.transferFrom(user, address(escrow), _trancheTokenAmount);
 
-        gateway.increaseRedeemOrder(
-            lPool.poolId(), lPool.trancheId(), user, poolManager.currencyAddressToId(lPool.asset()), _trancheTokenAmount
-        );
+        gateway.increaseRedeemOrder(poolId, trancheId, user, currencyId, _trancheTokenAmount);
     }
 
-    function decreaseDepositRequest(uint256 currencyAmount, address user) public auth {
+    function decreaseDepositRequest(uint256 _currencyAmount, address user) public auth {
+        uint128 currencyAmount = _toUint128(_currencyAmount);
         LiquidityPoolLike liquidityPool = LiquidityPoolLike(msg.sender);
         require(liquidityPool.checkTransferRestriction(address(0), user, 0), "InvestmentManager/not-a-member");
         gateway.decreaseInvestOrder(
@@ -183,11 +182,12 @@ contract InvestmentManager is Auth {
             liquidityPool.trancheId(),
             user,
             poolManager.currencyAddressToId(liquidityPool.asset()),
-            _toUint128(currencyAmount)
+            currencyAmount
         );
     }
 
-    function decreaseRedeemRequest(uint256 trancheTokenAmount, address user) public auth {
+    function decreaseRedeemRequest(uint256 _trancheTokenAmount, address user) public auth {
+        uint128 trancheTokenAmount = _toUint128(_trancheTokenAmount);
         LiquidityPoolLike liquidityPool = LiquidityPoolLike(msg.sender);
         require(liquidityPool.checkTransferRestriction(address(0), user, 0), "InvestmentManager/not-a-member");
         gateway.decreaseRedeemOrder(
@@ -195,7 +195,7 @@ contract InvestmentManager is Auth {
             liquidityPool.trancheId(),
             user,
             poolManager.currencyAddressToId(liquidityPool.asset()),
-            _toUint128(trancheTokenAmount)
+            trancheTokenAmount
         );
     }
 
@@ -250,7 +250,7 @@ contract InvestmentManager is Auth {
         lpValues.maxDeposit = lpValues.maxDeposit + currencyPayout;
         lpValues.maxMint = lpValues.maxMint + trancheTokensPayout;
 
-        LiquidityPoolLike(liquidityPool).mint(address(escrow), trancheTokensPayout); // mint to escrow. Recepeint can claim by calling withdraw / redeem
+        LiquidityPoolLike(liquidityPool).mint(address(escrow), trancheTokensPayout); // mint to escrow. Recipient can claim by calling withdraw / redeem
         _updateLiquidityPoolPrice(liquidityPool, currencyPayout, trancheTokensPayout);
     }
 
@@ -324,8 +324,9 @@ contract InvestmentManager is Auth {
 
     /// @dev Calculates the amount of shares / tranche tokens that any user would get for the amount of currency / assets provided.
     ///      The calculation is based on the tranche token price from the most recent epoch retrieved from Centrifuge.
-    function convertToShares(uint256 assets, address liquidityPool) public view auth returns (uint256 shares) {
+    function convertToShares(uint256 _assets, address liquidityPool) public view auth returns (uint256 shares) {
         (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getPoolDecimals(liquidityPool);
+        uint128 assets = _toUint128(_assets);
 
         shares = assets.mulDiv(
             10 ** (PRICE_DECIMALS + trancheTokenDecimals - currencyDecimals),
@@ -336,8 +337,9 @@ contract InvestmentManager is Auth {
 
     /// @dev Calculates the asset value for an amount of shares / tranche tokens provided.
     ///      The calculation is based on the tranche token price from the most recent epoch retrieved from Centrifuge.
-    function convertToAssets(uint256 shares, address liquidityPool) public view auth returns (uint256 assets) {
+    function convertToAssets(uint256 _shares, address liquidityPool) public view auth returns (uint256 assets) {
         (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getPoolDecimals(liquidityPool);
+        uint128 shares = _toUint128(_shares);
 
         assets = shares.mulDiv(
             LiquidityPoolLike(liquidityPool).latestPrice(),
@@ -346,80 +348,82 @@ contract InvestmentManager is Auth {
         );
     }
 
-    /// @return currencyAmount is type of uin256 to support the EIP4626 Liquidity Pool interface
+    /// @return currencyAmount is type of uint256 to support the EIP4626 Liquidity Pool interface
     function maxDeposit(address user, address liquidityPool) public view returns (uint256 currencyAmount) {
         currencyAmount = uint256(orderbook[user][liquidityPool].maxDeposit);
     }
 
-    /// @return trancheTokenAmount type of uin256 to support the EIP4626 Liquidity Pool interface
+    /// @return trancheTokenAmount type of uint256 to support the EIP4626 Liquidity Pool interface
     function maxMint(address user, address liquidityPool) public view returns (uint256 trancheTokenAmount) {
         trancheTokenAmount = uint256(orderbook[user][liquidityPool].maxMint);
     }
 
-    /// @return currencyAmount type of uin256 to support the EIP4626 Liquidity Pool interface
+    /// @return currencyAmount type of uint256 to support the EIP4626 Liquidity Pool interface
     function maxWithdraw(address user, address liquidityPool) public view returns (uint256 currencyAmount) {
         currencyAmount = uint256(orderbook[user][liquidityPool].maxWithdraw);
     }
 
-    /// @return trancheTokenAmount type of uin256 to support the EIP4626 Liquidity Pool interface
+    /// @return trancheTokenAmount type of uint256 to support the EIP4626 Liquidity Pool interface
     function maxRedeem(address user, address liquidityPool) public view returns (uint256 trancheTokenAmount) {
         trancheTokenAmount = uint256(orderbook[user][liquidityPool].maxRedeem);
     }
 
-    /// @return trancheTokenAmount is type of uin256 to support the EIP4626 Liquidity Pool interface
-    function previewDeposit(address user, address liquidityPool, uint256 currencyAmount)
+    /// @return trancheTokenAmount is type of uint256 to support the EIP4626 Liquidity Pool interface
+    function previewDeposit(address user, address liquidityPool, uint256 _currencyAmount)
         public
         view
         returns (uint256 trancheTokenAmount)
     {
+        uint128 currencyAmount = _toUint128(_currencyAmount);
         uint256 depositPrice = calculateDepositPrice(user, liquidityPool);
         if (depositPrice == 0) return 0;
 
-        trancheTokenAmount =
-            uint256(_calculateTrancheTokenAmount(_toUint128(currencyAmount), liquidityPool, depositPrice));
+        trancheTokenAmount = uint256(_calculateTrancheTokenAmount(currencyAmount, liquidityPool, depositPrice));
     }
 
-    /// @return currencyAmount is type of uin256 to support the EIP4626 Liquidity Pool interface
-    function previewMint(address user, address liquidityPool, uint256 trancheTokenAmount)
+    /// @return currencyAmount is type of uint256 to support the EIP4626 Liquidity Pool interface
+    function previewMint(address user, address liquidityPool, uint256 _trancheTokenAmount)
         public
         view
         returns (uint256 currencyAmount)
     {
+        uint128 trancheTokenAmount = _toUint128(_trancheTokenAmount);
         uint256 depositPrice = calculateDepositPrice(user, liquidityPool);
         if (depositPrice == 0) return 0;
 
-        currencyAmount = uint256(_calculateCurrencyAmount(_toUint128(trancheTokenAmount), liquidityPool, depositPrice));
+        currencyAmount = uint256(_calculateCurrencyAmount(trancheTokenAmount, liquidityPool, depositPrice));
     }
 
-    /// @return trancheTokenAmount is type of uin256 to support the EIP4626 Liquidity Pool interface
-    function previewWithdraw(address user, address liquidityPool, uint256 currencyAmount)
+    /// @return trancheTokenAmount is type of uint256 to support the EIP4626 Liquidity Pool interface
+    function previewWithdraw(address user, address liquidityPool, uint256 _currencyAmount)
         public
         view
         returns (uint256 trancheTokenAmount)
     {
+        uint128 currencyAmount = _toUint128(_currencyAmount);
         uint256 redeemPrice = calculateRedeemPrice(user, liquidityPool);
         if (redeemPrice == 0) return 0;
 
-        trancheTokenAmount =
-            uint256(_calculateTrancheTokenAmount(_toUint128(currencyAmount), liquidityPool, redeemPrice));
+        trancheTokenAmount = uint256(_calculateTrancheTokenAmount(currencyAmount, liquidityPool, redeemPrice));
     }
 
-    /// @return currencyAmount is type of uin256 to support the EIP4626 Liquidity Pool interface
-    function previewRedeem(address user, address liquidityPool, uint256 trancheTokenAmount)
+    /// @return currencyAmount is type of uint256 to support the EIP4626 Liquidity Pool interface
+    function previewRedeem(address user, address liquidityPool, uint256 _trancheTokenAmount)
         public
         view
         returns (uint256 currencyAmount)
     {
+        uint128 trancheTokenAmount = _toUint128(_trancheTokenAmount);
         uint256 redeemPrice = calculateRedeemPrice(user, liquidityPool);
         if (redeemPrice == 0) return 0;
 
-        currencyAmount = uint256(_calculateCurrencyAmount(_toUint128(trancheTokenAmount), liquidityPool, redeemPrice));
+        currencyAmount = uint256(_calculateCurrencyAmount(trancheTokenAmount, liquidityPool, redeemPrice));
     }
 
     // --- Liquidity Pool processing functions ---
     /// @notice Processes user's currency deposit / investment after the epoch has been executed on Centrifuge.
-    ///         In case user's invest order was fullfilled (partially or in full) on Centrifuge during epoch execution MaxDeposit and MaxMint are increased and tranche tokens can be transferred to user's wallet on calling processDeposit.
-    ///         Note: The currency required to fullfill the invest order is already locked in escrow upon calling requestDeposit.
+    ///         In case user's invest order was fulfilled (partially or in full) on Centrifuge during epoch execution MaxDeposit and MaxMint are increased and tranche tokens can be transferred to user's wallet on calling processDeposit.
+    ///         Note: The currency required to fulfill the invest order is already locked in escrow upon calling requestDeposit.
     /// @dev    trancheTokenAmount return value is type of uint256 to be compliant with EIP4626 LiquidityPool interface
     /// @return trancheTokenAmount the amount of tranche tokens transferred to the user's wallet after successful deposit.
     function processDeposit(address user, uint256 currencyAmount) public auth returns (uint256 trancheTokenAmount) {
@@ -439,9 +443,9 @@ contract InvestmentManager is Auth {
     }
 
     /// @notice Processes user's currency deposit / investment after the epoch has been executed on Centrifuge.
-    ///         In case user's invest order was fullfilled on Centrifuge during epoch execution MaxDeposit and MaxMint are increased
+    ///         In case user's invest order was fulfilled on Centrifuge during epoch execution MaxDeposit and MaxMint are increased
     ///         and trancheTokens can be transferred to user's wallet on calling processDeposit or processMint.
-    ///         Note: The currency amount required to fullfill the invest order is already locked in escrow upon calling requestDeposit.
+    ///         Note: The currency amount required to fulfill the invest order is already locked in escrow upon calling requestDeposit.
     ///         Note: The tranche tokens are already minted on collectInvest and are deposited to the escrow account until the users calls mint, or deposit.
     /// @dev    currencyAmount return value is type of uint256 to be compliant with EIP4626 LiquidityPool interface
     /// @return currencyAmount the amount of liquidityPool assets invested and locked in escrow in order
@@ -467,7 +471,12 @@ contract InvestmentManager is Auth {
     {
         LiquidityPoolLike lPool = LiquidityPoolLike(liquidityPool);
 
-        _decreaseDepositLimits(user, liquidityPool, currencyAmount, trancheTokenAmount); // decrease the possible deposit limits
+        // Decrease the deposit limits
+        LPValues storage lpValues = orderbook[user][liquidityPool];
+        lpValues.maxDeposit = lpValues.maxDeposit < currencyAmount ? 0 : lpValues.maxDeposit - currencyAmount;
+        lpValues.maxMint = lpValues.maxMint < trancheTokenAmount ? 0 : lpValues.maxMint - trancheTokenAmount;
+
+        // Transfer the tranche tokens to the user
         require(lPool.checkTransferRestriction(msg.sender, user, 0), "InvestmentManager/trancheTokens-not-a-member");
         require(
             lPool.transferFrom(address(escrow), user, trancheTokenAmount),
@@ -478,9 +487,9 @@ contract InvestmentManager is Auth {
     }
 
     /// @dev    Processes user's tranche Token redemption after the epoch has been executed on Centrifuge.
-    ///         In case user's redempion order was fullfilled on Centrifuge during epoch execution MaxRedeem and MaxWithdraw
+    ///         In case user's redemption order was fulfilled on Centrifuge during epoch execution MaxRedeem and MaxWithdraw
     ///         are increased and LiquidityPool currency can be transferred to user's wallet on calling processRedeem or processWithdraw.
-    ///         Note: The trancheTokenAmount required to fullfill the redemption order was already locked in escrow
+    ///         Note: The trancheTokenAmount required to fulfill the redemption order was already locked in escrow
     ///         upon calling requestRedeem and burned upon collectRedeem.
     /// @notice currencyAmount return value is type of uint256 to be compliant with EIP4626 LiquidityPool interface
     /// @return currencyAmount the amount of liquidityPool assets received for the amount of redeemed/burned tranche tokens.
@@ -505,11 +514,11 @@ contract InvestmentManager is Auth {
     }
 
     /// @dev    Processes user's tranche token redemption after the epoch has been executed on Centrifuge.
-    ///         In case user's redempion order was fullfilled on Centrifuge during epoch execution MaxRedeem and MaxWithdraw
+    ///         In case user's redemption order was fulfilled on Centrifuge during epoch execution MaxRedeem and MaxWithdraw
     ///         are increased and LiquidityPool currency can be transferred to user's wallet on calling processRedeem or processWithdraw.
-    ///         Note: The trancheTokenAmount required to fullfill the redemption order was already locked in escrow upon calling requestRedeem and burned upon collectRedeem.
+    ///         Note: The trancheTokenAmount required to fulfill the redemption order was already locked in escrow upon calling requestRedeem and burned upon collectRedeem.
     /// @notice trancheTokenAmount return value is type of uint256 to be compliant with EIP4626 LiquidityPool interface
-    /// @return trancheTokenAmount the amount of trancheTokens redeemed/burned required to receive the currencyAmount payout/withdrawel.
+    /// @return trancheTokenAmount the amount of trancheTokens redeemed/burned required to receive the currencyAmount payout/withdrawal.
     function processWithdraw(uint256 currencyAmount, address receiver, address user)
         public
         auth
@@ -539,7 +548,12 @@ contract InvestmentManager is Auth {
     ) internal {
         LiquidityPoolLike lPool = LiquidityPoolLike(liquidityPool);
 
-        _decreaseRedemptionLimits(user, liquidityPool, currencyAmount, trancheTokenAmount); // decrease the possible deposit limits
+        // Decrease the redemption limits
+        LPValues storage lpValues = orderbook[user][liquidityPool];
+        lpValues.maxWithdraw = lpValues.maxWithdraw < currencyAmount ? 0 : lpValues.maxWithdraw - currencyAmount;
+        lpValues.maxRedeem = lpValues.maxRedeem < trancheTokenAmount ? 0 : lpValues.maxRedeem - trancheTokenAmount;
+
+        // Transfer the currency to the user
         userEscrow.transferOut(lPool.asset(), user, receiver, currencyAmount);
 
         emit RedemptionProcessed(liquidityPool, user, trancheTokenAmount);
@@ -570,9 +584,8 @@ contract InvestmentManager is Auth {
         returns (uint256 depositPrice)
     {
         (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getPoolDecimals(liquidityPool);
-        uint256 currencyAmountInPriceDecimals = _toPriceDecimals(currencyAmount, currencyDecimals, liquidityPool);
-        uint256 trancheTokenAmountInPriceDecimals =
-            _toPriceDecimals(trancheTokenAmount, trancheTokenDecimals, liquidityPool);
+        uint256 currencyAmountInPriceDecimals = _toPriceDecimals(currencyAmount, currencyDecimals);
+        uint256 trancheTokenAmountInPriceDecimals = _toPriceDecimals(trancheTokenAmount, trancheTokenDecimals);
 
         depositPrice = currencyAmountInPriceDecimals.mulDiv(
             10 ** PRICE_DECIMALS, trancheTokenAmountInPriceDecimals, MathLib.Rounding.Down
@@ -593,11 +606,11 @@ contract InvestmentManager is Auth {
     {
         (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getPoolDecimals(liquidityPool);
 
-        uint256 currencyAmountInPriceDecimals = _toPriceDecimals(currencyAmount, currencyDecimals, liquidityPool).mulDiv(
+        uint256 currencyAmountInPriceDecimals = _toPriceDecimals(currencyAmount, currencyDecimals).mulDiv(
             10 ** PRICE_DECIMALS, price, MathLib.Rounding.Down
         );
 
-        trancheTokenAmount = _fromPriceDecimals(currencyAmountInPriceDecimals, trancheTokenDecimals, liquidityPool);
+        trancheTokenAmount = _fromPriceDecimals(currencyAmountInPriceDecimals, trancheTokenDecimals);
     }
 
     function _calculateCurrencyAmount(uint128 trancheTokenAmount, address liquidityPool, uint256 price)
@@ -607,47 +620,16 @@ contract InvestmentManager is Auth {
     {
         (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getPoolDecimals(liquidityPool);
 
-        uint256 currencyAmountInPriceDecimals = _toPriceDecimals(
-            trancheTokenAmount, trancheTokenDecimals, liquidityPool
-        ).mulDiv(price, 10 ** PRICE_DECIMALS, MathLib.Rounding.Down);
+        uint256 currencyAmountInPriceDecimals = _toPriceDecimals(trancheTokenAmount, trancheTokenDecimals).mulDiv(
+            price, 10 ** PRICE_DECIMALS, MathLib.Rounding.Down
+        );
 
-        currencyAmount = _fromPriceDecimals(currencyAmountInPriceDecimals, currencyDecimals, liquidityPool);
-    }
-
-    function _decreaseDepositLimits(address user, address liquidityPool, uint128 _currency, uint128 trancheTokens)
-        internal
-    {
-        LPValues storage lpValues = orderbook[user][liquidityPool];
-        if (lpValues.maxDeposit < _currency) {
-            lpValues.maxDeposit = 0;
-        } else {
-            lpValues.maxDeposit = lpValues.maxDeposit - _currency;
-        }
-        if (lpValues.maxMint < trancheTokens) {
-            lpValues.maxMint = 0;
-        } else {
-            lpValues.maxMint = lpValues.maxMint - trancheTokens;
-        }
-    }
-
-    function _decreaseRedemptionLimits(address user, address liquidityPool, uint128 _currency, uint128 trancheTokens)
-        internal
-    {
-        LPValues storage lpValues = orderbook[user][liquidityPool];
-        if (lpValues.maxWithdraw < _currency) {
-            lpValues.maxWithdraw = 0;
-        } else {
-            lpValues.maxWithdraw = lpValues.maxWithdraw - _currency;
-        }
-        if (lpValues.maxRedeem < trancheTokens) {
-            lpValues.maxRedeem = 0;
-        } else {
-            lpValues.maxRedeem = lpValues.maxRedeem - trancheTokens;
-        }
+        currencyAmount = _fromPriceDecimals(currencyAmountInPriceDecimals, currencyDecimals);
     }
 
     function _isAllowedToInvest(uint64 poolId, bytes16 trancheId, address currency, address user)
         internal
+        view
         returns (bool)
     {
         address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, currency);
@@ -663,7 +645,7 @@ contract InvestmentManager is Auth {
     /// @return value - safely converted without data loss
     function _toUint128(uint256 _value) internal pure returns (uint128 value) {
         if (_value > type(uint128).max) {
-            revert();
+            revert("InvestmentManager/uint128-overflow");
         } else {
             value = uint128(_value);
         }
@@ -671,21 +653,13 @@ contract InvestmentManager is Auth {
 
     /// @dev    When converting currency to tranche token amounts using the price,
     ///         all values are normalized to PRICE_DECIMALS
-    function _toPriceDecimals(uint128 _value, uint8 decimals, address liquidityPool)
-        internal
-        view
-        returns (uint256 value)
-    {
+    function _toPriceDecimals(uint128 _value, uint8 decimals) internal pure returns (uint256 value) {
         if (PRICE_DECIMALS == decimals) return uint256(_value);
         value = uint256(_value) * 10 ** (PRICE_DECIMALS - decimals);
     }
 
     /// @dev    Convert decimals of the value from the price decimals back to the intended decimals
-    function _fromPriceDecimals(uint256 _value, uint8 decimals, address liquidityPool)
-        internal
-        view
-        returns (uint128 value)
-    {
+    function _fromPriceDecimals(uint256 _value, uint8 decimals) internal pure returns (uint128 value) {
         if (PRICE_DECIMALS == decimals) return _toUint128(_value);
         value = _toUint128(_value / 10 ** (PRICE_DECIMALS - decimals));
     }
