@@ -1293,9 +1293,6 @@ contract LiquidityPoolTest is TestSetup {
         LiquidityPool lPool = LiquidityPool(lPool_);
         homePools.updateTrancheTokenPrice(poolId, trancheId, currencyId, price);
 
-        vm.expectRevert(bytes("InvestmentManager/not-a-member"));
-        lPool.collectDeposit(self);
-
         homePools.updateMember(poolId, trancheId, self, validUntil);
         lPool.collectDeposit(self);
     }
@@ -1322,10 +1319,7 @@ contract LiquidityPoolTest is TestSetup {
         homePools.allowPoolCurrency(poolId, currencyId);
         homePools.updateTrancheTokenPrice(poolId, trancheId, currencyId, price);
 
-        vm.expectRevert(bytes("InvestmentManager/not-a-member"));
-        lPool.collectRedeem(self);
         homePools.updateMember(poolId, trancheId, self, validUntil);
-
         lPool.collectRedeem(self);
     }
 

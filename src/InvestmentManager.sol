@@ -152,9 +152,12 @@ contract InvestmentManager is Auth {
         uint128 currencyId = poolManager.currencyAddressToId(currency);
 
         poolManager.isAllowedAsPoolCurrency(poolId, currency);
-        _isAllowedToInvest(poolId, trancheId, currency, user);
+        require(
+            lPool.checkTransferRestriction(address(0), user, convertToShares(liquidityPool, currencyAmount)),
+            "InvestmentManager/invalid-transfer"
+        );
 
-        // Transfer the currency amount from user to escrow. (lock currency in escrow).
+        // Transfer the currency amount from user to escrow (lock currency in escrow)
         SafeTransferLib.safeTransferFrom(currency, user, address(escrow), _currencyAmount);
 
         gateway.increaseInvestOrder(poolId, trancheId, user, currencyId, _currencyAmount);
@@ -176,9 +179,8 @@ contract InvestmentManager is Auth {
         uint128 currencyId = poolManager.currencyAddressToId(currency);
 
         poolManager.isAllowedAsPoolCurrency(poolId, currency);
-        _isAllowedToInvest(poolId, trancheId, currency, user);
 
-        // Transfer the tranche token amount from user to escrow. (lock tranche tokens in escrow).
+        // Transfer the tranche token amount from user to escrow (lock tranche tokens in escrow)
         lPool.transferFrom(user, address(escrow), _trancheTokenAmount);
 
         gateway.increaseRedeemOrder(poolId, trancheId, user, currencyId, _trancheTokenAmount);
@@ -187,7 +189,6 @@ contract InvestmentManager is Auth {
     function decreaseDepositRequest(address liquidityPool, uint256 _currencyAmount, address user) public auth {
         uint128 currencyAmount = _toUint128(_currencyAmount);
         LiquidityPoolLike _liquidityPool = LiquidityPoolLike(msg.sender);
-        require(_liquidityPool.checkTransferRestriction(address(0), user, 0), "InvestmentManager/not-a-member");
         gateway.decreaseInvestOrder(
             _liquidityPool.poolId(),
             _liquidityPool.trancheId(),
@@ -200,7 +201,10 @@ contract InvestmentManager is Auth {
     function decreaseRedeemRequest(address liquidityPool, uint256 _trancheTokenAmount, address user) public auth {
         uint128 trancheTokenAmount = _toUint128(_trancheTokenAmount);
         LiquidityPoolLike _liquidityPool = LiquidityPoolLike(msg.sender);
-        require(_liquidityPool.checkTransferRestriction(address(0), user, 0), "InvestmentManager/not-a-member");
+        require(
+            _liquidityPool.checkTransferRestriction(address(0), user, _trancheTokenAmount),
+            "InvestmentManager/invalid-transfer"
+        );
         gateway.decreaseRedeemOrder(
             _liquidityPool.poolId(),
             _liquidityPool.trancheId(),
@@ -222,6 +226,11 @@ contract InvestmentManager is Auth {
 
     function cancelRedeemRequest(address liquidityPool, address user) public auth {
         LiquidityPoolLike _liquidityPool = LiquidityPoolLike(msg.sender);
+        // TODO: last argument should be replaced by remaining redeem order
+        require(
+            _liquidityPool.checkTransferRestriction(address(0), user, type(uint128).max),
+            "InvestmentManager/invalid-transfer"
+        );
         gateway.cancelRedeemOrder(
             _liquidityPool.poolId(),
             _liquidityPool.trancheId(),
@@ -232,7 +241,11 @@ contract InvestmentManager is Auth {
 
     function collectDeposit(address liquidityPool, address user) public auth {
         LiquidityPoolLike _liquidityPool = LiquidityPoolLike(msg.sender);
-        require(_liquidityPool.checkTransferRestriction(address(0), user, 0), "InvestmentManager/not-a-member");
+        // TODO: last argument should be replaced by remaining invest order
+        require(
+            _liquidityPool.checkTransferRestriction(address(escrow), user, type(uint128).max),
+            "InvestmentManager/invalid-transfer"
+        );
         gateway.collectInvest(
             _liquidityPool.poolId(),
             _liquidityPool.trancheId(),
@@ -243,7 +256,6 @@ contract InvestmentManager is Auth {
 
     function collectRedeem(address liquidityPool, address user) public auth {
         LiquidityPoolLike _liquidityPool = LiquidityPoolLike(msg.sender);
-        require(_liquidityPool.checkTransferRestriction(address(0), user, 0), "InvestmentManager/not-a-member");
         gateway.collectRedeem(
             _liquidityPool.poolId(),
             _liquidityPool.trancheId(),
@@ -342,11 +354,6 @@ contract InvestmentManager is Auth {
         address _currency = poolManager.currencyIdToAddress(currency);
         address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, _currency);
         require(address(liquidityPool) != address(0), "InvestmentManager/tranche-does-not-exist");
-
-        require(
-            LiquidityPoolLike(liquidityPool).checkTransferRestriction(address(0), user, 0),
-            "InvestmentManager/not-a-member"
-        );
 
         require(
             LiquidityPoolLike(liquidityPool).transferFrom(address(escrow), user, trancheTokenPayout),
@@ -522,7 +529,6 @@ contract InvestmentManager is Auth {
         lpValues.maxMint = lpValues.maxMint < trancheTokenAmount ? 0 : lpValues.maxMint - trancheTokenAmount;
 
         // Transfer the tranche tokens to the user
-        require(lPool.checkTransferRestriction(msg.sender, user, 0), "InvestmentManager/trancheTokens-not-a-member");
         require(
             lPool.transferFrom(address(escrow), user, trancheTokenAmount),
             "InvestmentManager/tranche-tokens-transfer-failed"
@@ -668,20 +674,6 @@ contract InvestmentManager is Auth {
         );
 
         currencyAmount = _fromPriceDecimals(currencyAmountInPriceDecimals, currencyDecimals);
-    }
-
-    function _isAllowedToInvest(uint64 poolId, bytes16 trancheId, address currency, address user)
-        internal
-        view
-        returns (bool)
-    {
-        address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, currency);
-        require(liquidityPool != address(0), "InvestmentManager/unknown-liquidity-pool");
-        require(
-            LiquidityPoolLike(liquidityPool).checkTransferRestriction(address(0), user, 0),
-            "InvestmentManager/not-a-member"
-        );
-        return true;
     }
 
     /// @dev    Safe type conversion from uint256 to uint128. Revert if value is too big to be stored with uint128. Avoid data loss.
