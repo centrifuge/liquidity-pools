@@ -83,8 +83,30 @@ contract InvestmentManager is Auth {
 
     // --- Events ---
     event File(bytes32 indexed what, address data);
-    event DepositProcessed(address indexed liquidityPool, address indexed user, uint128 indexed currencyAmount);
-    event RedemptionProcessed(address indexed liquidityPool, address indexed user, uint128 indexed trancheTokenAmount);
+    event ProcessDeposit(address indexed liquidityPool, address indexed user, uint128 indexed currencyAmount);
+    event ProcessRedeem(address indexed liquidityPool, address indexed user, uint128 indexed trancheTokenAmount);
+    event ExecutedCollectInvest(
+        uint64 indexed poolId,
+        bytes16 indexed trancheId,
+        address recipient,
+        uint128 currency,
+        uint128 currencyPayout,
+        uint128 trancheTokensPayout
+    );
+    event ExecutedCollectRedeem(
+        uint64 indexed poolId,
+        bytes16 indexed trancheId,
+        address recipient,
+        uint128 currency,
+        uint128 currencyPayout,
+        uint128 trancheTokensPayout
+    );
+    event ExecutedDecreaseInvestOrder(
+        uint64 indexed poolId, bytes16 indexed trancheId, address user, uint128 currency, uint128 currencyPayout
+    );
+    event ExecutedDecreaseRedeemOrder(
+        uint64 indexed poolId, bytes16 indexed trancheId, address user, uint128 currency, uint128 trancheTokensPayout
+    );
 
     constructor(address escrow_, address userEscrow_) {
         escrow = EscrowLike(escrow_);
@@ -252,6 +274,8 @@ contract InvestmentManager is Auth {
 
         LiquidityPoolLike(liquidityPool).mint(address(escrow), trancheTokensPayout); // mint to escrow. Recipient can claim by calling withdraw / redeem
         _updateLiquidityPoolPrice(liquidityPool, currencyPayout, trancheTokensPayout);
+
+        emit ExecutedCollectInvest(poolId, trancheId, recipient, currency, currencyPayout, trancheTokensPayout);
     }
 
     function handleExecutedCollectRedeem(
@@ -274,6 +298,8 @@ contract InvestmentManager is Auth {
         userEscrow.transferIn(_currency, address(escrow), recipient, currencyPayout);
         LiquidityPoolLike(liquidityPool).burn(address(escrow), trancheTokensPayout); // burned redeemed tokens from escrow
         _updateLiquidityPoolPrice(liquidityPool, currencyPayout, trancheTokensPayout);
+
+        emit ExecutedCollectRedeem(poolId, trancheId, recipient, currency, currencyPayout, trancheTokensPayout);
     }
 
     function handleExecutedDecreaseInvestOrder(
@@ -291,6 +317,8 @@ contract InvestmentManager is Auth {
         require(_currency == LiquidityPoolLike(liquidityPool).asset(), "InvestmentManager/not-tranche-currency");
 
         SafeTransferLib.safeTransferFrom(_currency, address(escrow), user, currencyPayout);
+
+        emit ExecutedDecreaseInvestOrder(poolId, trancheId, user, currency, currencyPayout);
     }
 
     function handleExecutedDecreaseRedeemOrder(
@@ -315,6 +343,8 @@ contract InvestmentManager is Auth {
             LiquidityPoolLike(liquidityPool).transferFrom(address(escrow), user, trancheTokenPayout),
             "InvestmentManager/trancheTokens-transfer-failed"
         );
+
+        emit ExecutedDecreaseRedeemOrder(poolId, trancheId, user, currency, trancheTokenPayout);
     }
 
     // --- View functions ---
@@ -483,7 +513,7 @@ contract InvestmentManager is Auth {
             "InvestmentManager/trancheTokens-transfer-failed"
         );
 
-        emit DepositProcessed(liquidityPool, user, currencyAmount);
+        emit ProcessDeposit(liquidityPool, user, currencyAmount);
     }
 
     /// @dev    Processes user's tranche Token redemption after the epoch has been executed on Centrifuge.
@@ -556,7 +586,7 @@ contract InvestmentManager is Auth {
         // Transfer the currency to the user
         userEscrow.transferOut(lPool.asset(), user, receiver, currencyAmount);
 
-        emit RedemptionProcessed(liquidityPool, user, trancheTokenAmount);
+        emit ProcessRedeem(liquidityPool, user, trancheTokenAmount);
     }
 
     // --- Helpers ---
