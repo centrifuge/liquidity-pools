@@ -18,8 +18,12 @@ interface TrancheTokenLike is IERC20, ERC20PermitLike {
 }
 
 interface InvestmentManagerLike {
-    function processDeposit(address liquidityPool, address receiver, uint256 assets) external returns (uint256);
-    function processMint(address liquidityPool, address receiver, uint256 shares) external returns (uint256);
+    function processDeposit(address liquidityPool, uint256 assets, address receiver, address owner)
+        external
+        returns (uint256);
+    function processMint(address liquidityPool, uint256 shares, address receiver, address owner)
+        external
+        returns (uint256);
     function processWithdraw(address liquidityPool, uint256 assets, address receiver, address owner)
         external
         returns (uint256);
@@ -149,15 +153,14 @@ contract LiquidityPool is Auth, IERC4626 {
     /// @notice Collect shares for deposited assets after Centrifuge epoch execution.
     ///         maxDeposit is the max amount of shares that can be collected.
     function deposit(uint256 assets, address receiver) public returns (uint256 shares) {
-        shares = investmentManager.processDeposit(address(this), receiver, assets);
+        shares = investmentManager.processDeposit(address(this), assets, receiver, msg.sender);
         emit Deposit(address(this), receiver, assets, shares);
     }
 
     /// @notice Collect shares for deposited assets after Centrifuge epoch execution.
     ///         maxMint is the max amount of shares that can be collected.
     function mint(uint256 shares, address receiver) public returns (uint256 assets) {
-        // require(receiver == msg.sender, "LiquidityPool/not-authorized-to-mint");
-        assets = investmentManager.processMint(address(this), receiver, shares);
+        assets = investmentManager.processMint(address(this), shares, receiver, msg.sender);
         emit Deposit(address(this), receiver, assets, shares);
     }
 
