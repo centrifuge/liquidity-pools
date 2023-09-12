@@ -90,10 +90,10 @@ contract Gateway is Auth {
     RouterLike public outgoingRouter;
 
     // --- Events ---
+    event File(bytes32 indexed what, address data);
     event AddIncomingRouter(address indexed router);
     event RemoveIncomingRouter(address indexed router);
     event UpdateOutgoingRouter(address indexed router);
-    event File(bytes32 indexed what, address data);
 
     constructor(address root_, address investmentManager_, address poolManager_, address router_) {
         root = RootLike(root_);

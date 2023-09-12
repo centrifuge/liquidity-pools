@@ -830,7 +830,7 @@ contract LiquidityPoolTest is TestSetup {
         assertEq(erc20.balanceOf(address(self)), 0);
 
         // check message was send out to centchain
-        lPool.requestDeposit(0, self);
+        lPool.cancelDepositRequest(self);
         bytes memory cancelOrderMessage =
             Messages.formatCancelInvestOrder(poolId, trancheId, _addressToBytes32(self), currencyId);
         assertEq(cancelOrderMessage, mockXcmRouter.values_bytes("send"));
@@ -864,7 +864,7 @@ contract LiquidityPoolTest is TestSetup {
         erc20.mint(self, amount);
 
         // will fail - user not member: can not receive trancheToken
-        vm.expectRevert(bytes("InvestmentManager/not-a-member"));
+        vm.expectRevert(bytes("InvestmentManager/transfer-not-allowed"));
         lPool.requestDeposit(amount, self);
         homePools.updateMember(poolId, trancheId, self, validUntil); // add user as member
 
@@ -1123,7 +1123,7 @@ contract LiquidityPoolTest is TestSetup {
         assertEq(lPool.balanceOf(self), 0);
 
         // check message was send out to centchain
-        lPool.requestRedeem(0, self);
+        lPool.cancelRedeemRequest(self);
         bytes memory cancelOrderMessage =
             Messages.formatCancelRedeemOrder(poolId, trancheId, _addressToBytes32(self), currencyId);
         assertEq(cancelOrderMessage, mockXcmRouter.values_bytes("send"));
@@ -1297,9 +1297,6 @@ contract LiquidityPoolTest is TestSetup {
         LiquidityPool lPool = LiquidityPool(lPool_);
         homePools.updateTrancheTokenPrice(poolId, trancheId, currencyId, price);
 
-        vm.expectRevert(bytes("InvestmentManager/not-a-member"));
-        lPool.collectDeposit(self);
-
         homePools.updateMember(poolId, trancheId, self, validUntil);
         lPool.collectDeposit(self);
     }
@@ -1326,10 +1323,7 @@ contract LiquidityPoolTest is TestSetup {
         homePools.allowPoolCurrency(poolId, currencyId);
         homePools.updateTrancheTokenPrice(poolId, trancheId, currencyId, price);
 
-        vm.expectRevert(bytes("InvestmentManager/not-a-member"));
-        lPool.collectRedeem(self);
         homePools.updateMember(poolId, trancheId, self, validUntil);
-
         lPool.collectRedeem(self);
     }
 

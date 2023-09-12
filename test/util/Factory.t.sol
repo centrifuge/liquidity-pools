@@ -42,6 +42,7 @@ contract FactoryTest is Test {
         bytes16 trancheId,
         address investmentManager,
         address poolManager,
+        address restrictionManager,
         string memory name,
         string memory symbol,
         uint8 decimals
@@ -68,11 +69,8 @@ contract FactoryTest is Test {
         trancheTokenWards[0] = address(investmentManager);
         trancheTokenWards[1] = address(poolManager);
 
-        address[] memory memberlistWards = new address[](1);
-        memberlistWards[0] = address(poolManager);
-
         address token = trancheTokenFactory.newTrancheToken(
-            poolId, trancheId, name, symbol, decimals, trancheTokenWards, memberlistWards
+            poolId, trancheId, name, symbol, decimals, restrictionManager, trancheTokenWards
         );
 
         assertEq(address(token), predictedAddress);
@@ -84,6 +82,7 @@ contract FactoryTest is Test {
         bytes16 trancheId,
         address investmentManager,
         address poolManager,
+        address restrictionManager,
         string memory name,
         string memory symbol,
         uint8 decimals
@@ -107,17 +106,14 @@ contract FactoryTest is Test {
         trancheTokenWards[0] = address(investmentManager);
         trancheTokenWards[1] = address(poolManager);
 
-        address[] memory memberlistWards = new address[](1);
-        memberlistWards[0] = address(poolManager);
-
         TrancheTokenFactory trancheTokenFactory = new TrancheTokenFactory{ salt: salt }(root);
         assertEq(address(trancheTokenFactory), predictedAddress);
         trancheTokenFactory.newTrancheToken(
-            poolId, trancheId, name, symbol, decimals, trancheTokenWards, memberlistWards
+            poolId, trancheId, name, symbol, decimals, restrictionManager, trancheTokenWards
         );
         vm.expectRevert();
         trancheTokenFactory.newTrancheToken(
-            poolId, trancheId, name, symbol, decimals, trancheTokenWards, memberlistWards
+            poolId, trancheId, name, symbol, decimals, restrictionManager, trancheTokenWards
         );
     }
 }
