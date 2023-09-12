@@ -24,7 +24,7 @@ interface GatewayLike {
 contract AxelarRouter is Auth {
     string internal constant CENTRIFUGE_CHAIN_ID = "Moonbeam";
     string internal constant CENTRIFUGE_CHAIN_ADDRESS = "0x7369626CEF070000000000000000000000000000";
-    string internal constant LP_PRECOMPILE_ADDRESS = "0xA31216fA20Bc93F9c5461aD695BDA6b9BE22BFA6";
+    string internal constant LP_PRECOMPILE_ADDRESS = "0xeDE18bCAf8620cb333Bb01b955f669e743c73138";
 
     AxelarGatewayLike public immutable axelarGateway;
 
