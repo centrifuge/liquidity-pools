@@ -3,6 +3,8 @@ pragma solidity 0.8.21;
 
 import {BytesLib} from "src/util/BytesLib.sol";
 
+/// @title  Messages
+/// @dev    Library for encoding and decoding messages.
 library Messages {
     enum Call
     /// 0 - An invalid message
@@ -144,9 +146,6 @@ library Messages {
         uint8 decimals,
         uint128 price
     ) internal pure returns (bytes memory) {
-        // TODO(nuno): Now, we encode `tokenName` as a 128-bytearray by first encoding `tokenName`
-        // to bytes32 and then we encode three empty bytes32's, which sum up to a total of 128 bytes.
-        // Add support to actually encode `tokenName` fully as a 128 bytes string.
         return abi.encodePacked(
             uint8(Call.AddTranche),
             poolId,
@@ -307,7 +306,7 @@ library Messages {
      * 9-24: trancheId (16 bytes)
      * 25-56: sender (bytes32)
      * 57-65: destinationDomain ((Domain: u8, ChainId: u64) =  9 bytes total)
-     * 66-97: destinationAddress (32 bytes - Either a Centrifuge chain address or an EVM address followed by 12 zeros)
+     * 66-97: destinationAddress (32 bytes - Either a Centrifuge address or an EVM address followed by 12 zeros)
      * 98-113: amount (uint128 = 16 bytes)
      */
     function formatTransferTrancheTokens(
@@ -772,9 +771,6 @@ library Messages {
         string memory tokenName,
         string memory tokenSymbol
     ) internal pure returns (bytes memory) {
-        // TODO(nuno): Now, we encode `tokenName` as a 128-bytearray by first encoding `tokenName`
-        // to bytes32 and then we encode three empty bytes32's, which sum up to a total of 128 bytes.
-        // Add support to actually encode `tokenName` fully as a 128 bytes string.
         return abi.encodePacked(
             uint8(Call.UpdateTrancheTokenMetadata),
             poolId,
@@ -868,7 +864,6 @@ library Messages {
     }
 
     // Utils
-
     function formatDomain(Domain domain) public pure returns (bytes9) {
         return bytes9(bytes1(uint8(domain)));
     }

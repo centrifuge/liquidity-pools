@@ -79,6 +79,12 @@ interface RootLike {
     function cancelRely(address target) external;
 }
 
+/// @title  Gateway
+/// @dev    It parses incoming messages and forwards these to Managers
+///         and it encoded outgoing messages and sends these to Routers.
+///
+///         If the Root is paused, any messages in and out of this contract
+///         will not be forwarded
 contract Gateway is Auth {
     RootLike public immutable root;
     InvestmentManagerLike public investmentManager;
@@ -88,10 +94,10 @@ contract Gateway is Auth {
     RouterLike public outgoingRouter;
 
     // --- Events ---
+    event File(bytes32 indexed what, address data);
     event AddIncomingRouter(address indexed router);
     event RemoveIncomingRouter(address indexed router);
     event UpdateOutgoingRouter(address indexed router);
-    event File(bytes32 indexed what, address data);
 
     constructor(address root_, address investmentManager_, address poolManager_, address router_) {
         root = RootLike(root_);
@@ -297,7 +303,7 @@ contract Gateway is Auth {
                 string memory tokenName,
                 string memory tokenSymbol,
                 uint8 decimals,
-                uint128 _price
+                /* uint128 price */
             ) = Messages.parseAddTranche(message);
             poolManager.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals);
         } else if (Messages.isUpdateMember(message)) {

@@ -89,6 +89,11 @@ contract TestSetup is Deployer, Test {
         return deployLiquidityPool(poolId, decimals, tokenName, tokenSymbol, trancheId, currency, address(erc20));
     }
 
+    // Helpers
+    function _addressToBytes32(address x) internal pure returns (bytes32) {
+        return bytes32(bytes20(x));
+    }
+
     function _newErc20(string memory name, string memory symbol, uint8 decimals) internal returns (ERC20) {
         ERC20 currency = new ERC20(decimals);
         currency.file("name", name);

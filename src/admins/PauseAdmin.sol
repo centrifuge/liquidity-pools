@@ -4,6 +4,9 @@ pragma solidity 0.8.21;
 import {Root} from "../Root.sol";
 import {Auth} from "./../util/Auth.sol";
 
+/// @title  Delayed Admin
+/// @dev    Any ward can manage accounts who can pause.
+///         Any pauser can instantaneously pause the Root.
 contract PauseAdmin is Auth {
     Root public immutable root;
 
@@ -11,9 +14,6 @@ contract PauseAdmin is Auth {
 
     event AddPauser(address indexed user);
     event RemovePauser(address indexed user);
-
-    // --- Events ---
-    event File(bytes32 indexed what, address indexed data);
 
     constructor(address root_) {
         root = Root(root_);
