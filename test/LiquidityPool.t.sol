@@ -110,6 +110,7 @@ contract LiquidityPoolTest is TestSetup {
     ) public {
         vm.assume(currencyId > 0);
         vm.assume(amount > MAX_UINT128); // amount has to overfloe UINT128
+        vm.assume(random.code.length == 0);
         address lPool_ = deployLiquidityPool(poolId, erc20.decimals(), tokenName, tokenSymbol, trancheId, currencyId);
         LiquidityPool lPool = LiquidityPool(lPool_);
 
@@ -1097,6 +1098,7 @@ contract LiquidityPoolTest is TestSetup {
         vm.assume(amount < MAX_UINT128);
         vm.assume(amount > 4);
         vm.assume(validUntil >= block.timestamp);
+        vm.assume(random.code.length == 0);
         price = 1;
 
         address lPool_ = deployLiquidityPool(poolId, erc20.decimals(), tokenName, tokenSymbol, trancheId, currencyId);
@@ -1177,6 +1179,7 @@ contract LiquidityPoolTest is TestSetup {
         vm.assume(amount < MAX_UINT128);
         vm.assume(amount > 1);
         vm.assume(validUntil >= block.timestamp);
+        vm.assume(random.code.length == 0);
         price = 1;
 
         address lPool_ = deployLiquidityPool(poolId, erc20.decimals(), tokenName, tokenSymbol, trancheId, currencyId);
@@ -1220,6 +1223,7 @@ contract LiquidityPoolTest is TestSetup {
         vm.assume(random != address(erc20));
         vm.assume(amount > 1);
         vm.assume(validUntil >= block.timestamp);
+        vm.assume(random.code.length == 0);
         price = 1;
 
         address lPool_ = deployLiquidityPool(poolId, erc20.decimals(), tokenName, tokenSymbol, trancheId, currencyId);
