@@ -8,8 +8,6 @@ interface LiquidityPoolLike {
     function approve(address spender, uint256 value) external returns (bool);
     function requestRedeem(uint256 shares, address owner) external;
     function requestDeposit(uint256 assets, address owner) external;
-    function requestDepositWithPermit(uint256 assets, address owner, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
-        external;
     function deposit(uint256 assets, address receiver) external returns (uint256 shares);
     function mint(uint256 shares, address receiver) external returns (uint256 assets);
     function withdraw(uint256 assets, address receiver, address owner) external returns (uint256 shares);
