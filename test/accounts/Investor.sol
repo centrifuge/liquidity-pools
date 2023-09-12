@@ -2,11 +2,13 @@
 pragma solidity 0.8.21;
 
 import "forge-std/Test.sol";
+import {ERC20} from "../../src/token/ERC20.sol";
 
 interface LiquidityPoolLike {
     function approve(address spender, uint256 value) external returns (bool);
     function requestRedeem(uint256 shares, address owner) external;
     function requestDeposit(uint256 assets, address owner) external;
+    function requestDepositWithPermit(uint256 assets, address owner, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external;
     function deposit(uint256 assets, address receiver) external returns (uint256 shares);
     function mint(uint256 shares, address receiver) external returns (uint256 assets);
     function withdraw(uint256 assets, address receiver, address owner) external returns (uint256 shares);
@@ -47,7 +49,7 @@ contract Investor is Test {
     }
 
     function redeem(address lPool, uint256 shares, address receiver, address owner) public {
-        LiquidityPoolLike(lPool).withdraw(shares, receiver, owner);
+        LiquidityPoolLike(lPool).redeem(shares, receiver, owner);
     }
 
     function transferFrom(address erc20, address sender, address recipient, uint256 amount) public returns (bool) {

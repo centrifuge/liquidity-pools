@@ -219,7 +219,7 @@ contract LiquidityPoolTest is TestSetup {
         lPool.withdraw(amount / 4, address(investor), address(investor));
 
         // investor redeems rest for himself
-        investor.redeem(lPool_, amount / 2, address(investor), address(investor));
+        investor.redeem(lPool_, amount / 4, address(investor), address(investor));
         investor.withdraw(lPool_, lPool.maxWithdraw(address(investor)), address(investor), address(investor));
     }
 
@@ -978,6 +978,7 @@ contract LiquidityPoolTest is TestSetup {
         );
 
         uint256 maxMint = lPool.maxMint(investor);
+        vm.prank(vm.addr(0xABCD));
         lPool.mint(maxMint, investor);
 
         TrancheToken trancheToken = TrancheToken(address(lPool.share()));

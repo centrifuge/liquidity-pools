@@ -421,69 +421,70 @@ contract InvestmentManager is Auth {
     }
 
     // --- Liquidity Pool processing functions ---
-    /// @notice Processes user's currency deposit / investment after the epoch has been executed on Centrifuge.
-    ///         In case user's invest order was fulfilled (partially or in full) on Centrifuge during epoch execution MaxDeposit and MaxMint are increased and tranche tokens can be transferred to user's wallet on calling processDeposit.
+    /// @notice Processes owner's currency deposit / investment after the epoch has been executed on Centrifuge.
+    ///         In case owner's invest order was fulfilled (partially or in full) on Centrifuge during epoch execution MaxDeposit and MaxMint are increased and tranche tokens can be transferred to user's wallet on calling processDeposit.
     ///         Note: The currency required to fulfill the invest order is already locked in escrow upon calling requestDeposit.
     /// @dev    trancheTokenAmount return value is type of uint256 to be compliant with EIP4626 LiquidityPool interface
-    /// @return trancheTokenAmount the amount of tranche tokens transferred to the user's wallet after successful deposit.
-    function processDeposit(address user, uint256 currencyAmount) public auth returns (uint256 trancheTokenAmount) {
+    /// @return trancheTokenAmount the amount of tranche tokens transferred to the receiver's wallet after successful deposit.
+    function processDeposit(uint256 currencyAmount, address receiver, address owner) public auth returns (uint256 trancheTokenAmount) {
         address liquidityPool = msg.sender;
         uint128 _currencyAmount = _toUint128(currencyAmount);
         require(
-            (_currencyAmount <= orderbook[user][liquidityPool].maxDeposit && _currencyAmount != 0),
+            (_currencyAmount <= orderbook[owner][liquidityPool].maxDeposit && _currencyAmount != 0),
             "InvestmentManager/amount-exceeds-deposit-limits"
         );
 
-        uint256 depositPrice = calculateDepositPrice(user, liquidityPool);
+        uint256 depositPrice = calculateDepositPrice(owner, liquidityPool);
         require(depositPrice != 0, "LiquidityPool/deposit-token-price-0");
 
         uint128 _trancheTokenAmount = _calculateTrancheTokenAmount(_currencyAmount, liquidityPool, depositPrice);
-        _deposit(_trancheTokenAmount, _currencyAmount, liquidityPool, user);
+        _deposit(_trancheTokenAmount, _currencyAmount, liquidityPool, owner, receiver);
         trancheTokenAmount = uint256(_trancheTokenAmount);
     }
 
-    /// @notice Processes user's currency deposit / investment after the epoch has been executed on Centrifuge.
-    ///         In case user's invest order was fulfilled on Centrifuge during epoch execution MaxDeposit and MaxMint are increased
-    ///         and trancheTokens can be transferred to user's wallet on calling processDeposit or processMint.
+    /// @notice Processes owner's currency deposit / investment after the epoch has been executed on Centrifuge.
+    ///         In case owner's invest order was fulfilled on Centrifuge during epoch execution MaxDeposit and MaxMint are increased
+    ///         and trancheTokens can be transferred to owner's wallet on calling processDeposit or processMint.
     ///         Note: The currency amount required to fulfill the invest order is already locked in escrow upon calling requestDeposit.
-    ///         Note: The tranche tokens are already minted on collectInvest and are deposited to the escrow account until the users calls mint, or deposit.
+    ///         Note: The tranche tokens are already minted on collectInvest and are deposited to the escrow account until the owner calls mint, or deposit.
+    ///         Note: The tranche tokens are transferred to the receivers wallet.             
     /// @dev    currencyAmount return value is type of uint256 to be compliant with EIP4626 LiquidityPool interface
     /// @return currencyAmount the amount of liquidityPool assets invested and locked in escrow in order
     ///         for the amount of tranche tokens received after successful investment into the pool.
-    function processMint(address user, uint256 trancheTokenAmount) public auth returns (uint256 currencyAmount) {
+    function processMint(uint256 trancheTokenAmount, address receiver, address owner) public auth returns (uint256 currencyAmount) {
         address liquidityPool = msg.sender;
         uint128 _trancheTokenAmount = _toUint128(trancheTokenAmount);
         require(
-            (_trancheTokenAmount <= orderbook[user][liquidityPool].maxMint && _trancheTokenAmount != 0),
+            (_trancheTokenAmount <= orderbook[owner][liquidityPool].maxMint && _trancheTokenAmount != 0),
             "InvestmentManager/amount-exceeds-mint-limits"
         );
 
-        uint256 depositPrice = calculateDepositPrice(user, liquidityPool);
+        uint256 depositPrice = calculateDepositPrice(owner, liquidityPool);
         require(depositPrice != 0, "LiquidityPool/deposit-token-price-0");
 
         uint128 _currencyAmount = _calculateCurrencyAmount(_trancheTokenAmount, liquidityPool, depositPrice);
-        _deposit(_trancheTokenAmount, _currencyAmount, liquidityPool, user);
+        _deposit(_trancheTokenAmount, _currencyAmount, liquidityPool, owner, receiver);
         currencyAmount = uint256(_currencyAmount);
     }
 
-    function _deposit(uint128 trancheTokenAmount, uint128 currencyAmount, address liquidityPool, address user)
+    function _deposit(uint128 trancheTokenAmount, uint128 currencyAmount, address liquidityPool, address owner, address receiver)
         internal
     {
         LiquidityPoolLike lPool = LiquidityPoolLike(liquidityPool);
 
         // Decrease the deposit limits
-        LPValues storage lpValues = orderbook[user][liquidityPool];
+        LPValues storage lpValues = orderbook[owner][liquidityPool];
         lpValues.maxDeposit = lpValues.maxDeposit < currencyAmount ? 0 : lpValues.maxDeposit - currencyAmount;
         lpValues.maxMint = lpValues.maxMint < trancheTokenAmount ? 0 : lpValues.maxMint - trancheTokenAmount;
 
-        // Transfer the tranche tokens to the user
-        require(lPool.checkTransferRestriction(msg.sender, user, 0), "InvestmentManager/trancheTokens-not-a-member");
+        // Transfer the tranche tokens to the owner
+        require(lPool.checkTransferRestriction(msg.sender, receiver, 0), "InvestmentManager/trancheTokens-not-a-member");
         require(
-            lPool.transferFrom(address(escrow), user, trancheTokenAmount),
+            lPool.transferFrom(address(escrow), receiver, trancheTokenAmount),
             "InvestmentManager/trancheTokens-transfer-failed"
         );
 
-        emit DepositProcessed(liquidityPool, user, currencyAmount);
+        emit DepositProcessed(liquidityPool, owner, currencyAmount);
     }
 
     /// @dev    Processes user's tranche Token redemption after the epoch has been executed on Centrifuge.
