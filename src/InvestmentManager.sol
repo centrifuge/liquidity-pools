@@ -61,7 +61,7 @@ struct LPValues {
     uint128 maxMint; // denominated in tranche tokens
     uint128 maxWithdraw; // denominated in currency
     uint128 maxRedeem; // denominated in tranche tokens
- }
+}
 
 /// @title  Investment Manager
 /// @notice This is the main contract LiquidityPools interact with for
@@ -361,9 +361,9 @@ contract InvestmentManager is Auth {
 
         // transfer to user escrow
         LPValues storage lpValues = orderbook[user][liquidityPool];
-        lpValues.maxDeposit= lpValues.maxDeposit + trancheTokenPayout;
+        lpValues.maxDeposit = lpValues.maxDeposit + trancheTokenPayout;
         lpValues.maxMint = lpValues.maxMint + trancheTokenPayout;
-    
+
         emit ExecutedDecreaseRedeemOrder(poolId, trancheId, user, currency, trancheTokenPayout);
     }
 
@@ -508,7 +508,7 @@ contract InvestmentManager is Auth {
     ///         and trancheTokens can be transferred to owner's wallet on calling processDeposit or processMint.
     ///         Note: The currency amount required to fulfill the invest order is already locked in escrow upon calling requestDeposit.
     ///         Note: The tranche tokens are already minted on collectInvest and are deposited to the escrow account until the owner calls mint, or deposit.
-    ///         Note: The tranche tokens are transferred to the receivers wallet.             
+    ///         Note: The tranche tokens are transferred to the receivers wallet.
     /// @dev    currencyAmount return value is type of uint256 to be compliant with EIP4626 LiquidityPool interface
     /// @return currencyAmount the amount of liquidityPool assets invested and locked in escrow in order
     ///         for the amount of tranche tokens received after successful investment into the pool.
@@ -531,9 +531,13 @@ contract InvestmentManager is Auth {
         currencyAmount = uint256(_currencyAmount);
     }
 
-    function _deposit(uint128 trancheTokenAmount, uint128 currencyAmount, address liquidityPool, address owner, address receiver)
-        internal
-    {
+    function _deposit(
+        uint128 trancheTokenAmount,
+        uint128 currencyAmount,
+        address liquidityPool,
+        address owner,
+        address receiver
+    ) internal {
         LiquidityPoolLike lPool = LiquidityPoolLike(liquidityPool);
 
         // Decrease the deposit limits
@@ -563,7 +567,9 @@ contract InvestmentManager is Auth {
         returns (uint256 currencyAmount)
     {
         uint128 _trancheTokenAmount = _toUint128(trancheTokenAmount);
-        require( _trancheTokenAmount <= orderbook[user][liquidityPool].maxRedeem && _trancheTokenAmount != 0, "InvestmentManager/amount-exceeds-redeem-limits"
+        require(
+            _trancheTokenAmount <= orderbook[user][liquidityPool].maxRedeem && _trancheTokenAmount != 0,
+            "InvestmentManager/amount-exceeds-redeem-limits"
         );
 
         uint256 redeemPrice = calculateRedeemPrice(user, liquidityPool);

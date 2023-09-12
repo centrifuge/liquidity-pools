@@ -932,8 +932,8 @@ contract LiquidityPoolTest is TestSetup {
         uint128 price,
         uint128 currencyId,
         uint256 amount,
-        uint64 validUntil, 
-        address receiver 
+        uint64 validUntil,
+        address receiver
     ) public {
         vm.assume(currencyId > 0);
         vm.assume(amount < MAX_UINT128);
@@ -1195,7 +1195,7 @@ contract LiquidityPoolTest is TestSetup {
         assertEq(cancelOrderMessage, mockXcmRouter.values_bytes("send"));
 
         homePools.isExecutedDecreaseRedeemOrder(poolId, trancheId, _addressToBytes32(self), currencyId, uint128(amount));
-       
+
         assertEq(lPool.balanceOf(address(escrow)), amount);
         assertEq(lPool.balanceOf(self), 0);
         assertEq(lPool.maxDeposit(self), amount);
@@ -1306,7 +1306,9 @@ contract LiquidityPoolTest is TestSetup {
 
         // decrease deposit request
         lPool.decreaseDepositRequest(decreaseAmount, self);
-        homePools.isExecutedDecreaseInvestOrder(poolId, trancheId, bytes32(bytes20(self)), currencyId, uint128(decreaseAmount));
+        homePools.isExecutedDecreaseInvestOrder(
+            poolId, trancheId, bytes32(bytes20(self)), currencyId, uint128(decreaseAmount)
+        );
 
         assertEq(erc20.balanceOf(address(escrow)), amount - decreaseAmount);
         assertEq(erc20.balanceOf(address(userEscrow)), decreaseAmount);
@@ -1348,7 +1350,9 @@ contract LiquidityPoolTest is TestSetup {
 
         // decrease redeem request
         lPool.decreaseRedeemRequest(decreaseAmount, self);
-        homePools.isExecutedDecreaseRedeemOrder(poolId, trancheId, bytes32(bytes20(self)), currencyId, uint128(decreaseAmount));
+        homePools.isExecutedDecreaseRedeemOrder(
+            poolId, trancheId, bytes32(bytes20(self)), currencyId, uint128(decreaseAmount)
+        );
 
         assertEq(lPool.balanceOf(address(escrow)), amount);
         assertEq(lPool.balanceOf(self), 0);

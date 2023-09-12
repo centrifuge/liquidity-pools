@@ -18,9 +18,12 @@ interface TrancheTokenLike is IERC20, ERC20PermitLike {
 }
 
 interface InvestmentManagerLike {
-   
-    function processDeposit(address liquidityPool, uint256 assets, address receiver, address owner) external returns (uint256);
-    function processMint(address liquidityPool, uint256 shares, address receiver, address owner) external returns (uint256);
+    function processDeposit(address liquidityPool, uint256 assets, address receiver, address owner)
+        external
+        returns (uint256);
+    function processMint(address liquidityPool, uint256 shares, address receiver, address owner)
+        external
+        returns (uint256);
     function processWithdraw(address liquidityPool, uint256 assets, address receiver, address owner)
         external
         returns (uint256);
@@ -45,7 +48,7 @@ interface InvestmentManagerLike {
     function decreaseDepositRequest(address liquidityPool, uint256 assets, address receiver) external;
     function decreaseRedeemRequest(address liquidityPool, uint256 shares, address receiver) external;
     function cancelDepositRequest(address liquidityPool, address receiver) external;
-    function cancelRedeemRequest(address liquidityPool, address receiver) external; 
+    function cancelRedeemRequest(address liquidityPool, address receiver) external;
 }
 
 /// @title  Liquidity Pool
