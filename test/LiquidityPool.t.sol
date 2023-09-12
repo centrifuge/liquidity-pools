@@ -860,7 +860,9 @@ contract LiquidityPoolTest is TestSetup {
             Messages.formatCancelInvestOrder(poolId, trancheId, _addressToBytes32(self), currencyId);
         assertEq(cancelOrderMessage, mockXcmRouter.values_bytes("send"));
 
-        homePools.isExecutedDecreaseInvestOrder(poolId, trancheId, _addressToBytes32(self), currencyId, uint128(amount), 0);
+        homePools.isExecutedDecreaseInvestOrder(
+            poolId, trancheId, _addressToBytes32(self), currencyId, uint128(amount), 0
+        );
         assertEq(erc20.balanceOf(address(escrow)), 0);
         assertEq(erc20.balanceOf(address(self)), amount);
     }
@@ -1156,7 +1158,9 @@ contract LiquidityPoolTest is TestSetup {
             Messages.formatCancelRedeemOrder(poolId, trancheId, _addressToBytes32(self), currencyId);
         assertEq(cancelOrderMessage, mockXcmRouter.values_bytes("send"));
 
-        homePools.isExecutedDecreaseRedeemOrder(poolId, trancheId, _addressToBytes32(self), currencyId, uint128(amount), 0);
+        homePools.isExecutedDecreaseRedeemOrder(
+            poolId, trancheId, _addressToBytes32(self), currencyId, uint128(amount), 0
+        );
         assertEq(lPool.balanceOf(address(escrow)), 0);
         assertEq(lPool.balanceOf(address(self)), amount);
     }

@@ -494,11 +494,11 @@ contract InvestmentManager is Auth {
         currencyAmount = uint256(_calculateCurrencyAmount(trancheTokenAmount, liquidityPool, redeemPrice));
     }
 
-    function userDepositRequest(address user, address liquidityPool) public view returns (uint256 currencyAmount) {
+    function userDepositRequest(address liquidityPool, address user) public view returns (uint256 currencyAmount) {
         currencyAmount = uint256(orderbook[user][liquidityPool].remainingInvestOrder);
     }
 
-    function userRedeemRequest(address user, address liquidityPool) public view returns (uint256 trancheTokenAmount) {
+    function userRedeemRequest(address liquidityPool, address user) public view returns (uint256 trancheTokenAmount) {
         trancheTokenAmount = uint256(orderbook[user][liquidityPool].remainingRedeemOrder);
     }
 
