@@ -15,6 +15,11 @@ interface ERC1404Like {
     function SUCCESS_CODE() external view returns (uint8);
 }
 
+/// @title  Tranche Token
+/// @notice Extension of ERC20 + ERC1404 for tranche tokens,
+///         which manages the liquidity pools that are considered
+///         trusted forwarded for the ERC20 token, and ensures
+///         the transfer restrictions as defined in the RestrictionManager.
 contract TrancheToken is ERC20, ERC1404Like {
     ERC1404Like public restrictionManager;
 
@@ -27,9 +32,9 @@ contract TrancheToken is ERC20, ERC1404Like {
 
     constructor(uint8 decimals_) ERC20(decimals_) {}
 
-    modifier notRestricted(address from, address to, uint256 value) {
+    modifier restricted(address from, address to, uint256 value) {
         uint8 restrictionCode = detectTransferRestriction(from, to, value);
-        require(restrictionCode == restrictionManager.SUCCESS_CODE(), messageForTransferRestriction(restrictionCode));
+        require(restrictionCode == SUCCESS_CODE(), messageForTransferRestriction(restrictionCode));
         _;
     }
 
@@ -51,20 +56,20 @@ contract TrancheToken is ERC20, ERC1404Like {
     }
 
     // --- Restrictions ---
-    function transfer(address to, uint256 value) public override notRestricted(msg.sender, to, value) returns (bool) {
+    function transfer(address to, uint256 value) public override restricted(_msgSender(), to, value) returns (bool) {
         return super.transfer(to, value);
     }
 
     function transferFrom(address from, address to, uint256 value)
         public
         override
-        notRestricted(from, to, value)
+        restricted(from, to, value)
         returns (bool)
     {
         return super.transferFrom(from, to, value);
     }
 
-    function mint(address to, uint256 value) public override notRestricted(msg.sender, to, value) {
+    function mint(address to, uint256 value) public override restricted(_msgSender(), to, value) {
         return super.mint(to, value);
     }
 
@@ -92,11 +97,9 @@ contract TrancheToken is ERC20, ERC1404Like {
         return liquidityPools[forwarder];
     }
 
-    /**
-     * @dev Override for `msg.sender`. Defaults to the original `msg.sender` whenever
-     * a call is not performed by the trusted forwarder or the calldata length is less than
-     * 20 bytes (an address length).
-     */
+    /// @dev    Override for `msg.sender`. Defaults to the original `msg.sender` whenever
+    ///         a call is not performed by the trusted forwarder or the calldata length is less than
+    ///         20 bytes (an address length).
     function _msgSender() internal view virtual override returns (address sender) {
         if (isTrustedForwarder(msg.sender) && msg.data.length >= 20) {
             // The assembly code is more direct than the Solidity version using `abi.decode`.

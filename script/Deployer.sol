@@ -10,7 +10,7 @@ import {Escrow} from "src/Escrow.sol";
 import {UserEscrow} from "src/UserEscrow.sol";
 import {PauseAdmin} from "src/admins/PauseAdmin.sol";
 import {DelayedAdmin} from "src/admins/DelayedAdmin.sol";
-import {LiquidityPoolFactory, TrancheTokenFactory} from "src/util/Factory.sol";
+import {LiquidityPoolFactory, RestrictionManagerFactory, TrancheTokenFactory} from "src/util/Factory.sol";
 import "forge-std/Script.sol";
 
 interface RouterLike {
@@ -20,7 +20,7 @@ interface RouterLike {
 }
 
 contract Deployer is Script {
-    uint256 constant delay = 48 hours;
+    uint256 internal constant delay = 48 hours;
 
     address admin;
 
@@ -41,9 +41,11 @@ contract Deployer is Script {
         investmentManager = new InvestmentManager(address(escrow), address(userEscrow));
 
         address liquidityPoolFactory = address(new LiquidityPoolFactory(address(root)));
+        address restrictionManagerFactory = address(new RestrictionManagerFactory(address(root)));
         address trancheTokenFactory = address(new TrancheTokenFactory(address(root)));
         investmentManager = new InvestmentManager(address(escrow), address(userEscrow));
-        poolManager = new PoolManager(address(escrow), liquidityPoolFactory, trancheTokenFactory);
+        poolManager =
+            new PoolManager(address(escrow), liquidityPoolFactory, restrictionManagerFactory, trancheTokenFactory);
 
         LiquidityPoolFactory(liquidityPoolFactory).rely(address(poolManager));
         TrancheTokenFactory(trancheTokenFactory).rely(address(poolManager));
