@@ -17,7 +17,7 @@ import {Root} from "src/Root.sol";
 import {LiquidityPool} from "src/LiquidityPool.sol";
 
 import {AxelarScript} from "script/Axelar.s.sol";
-import {PermissionlessScript} from "script/Permissionless.s.sol";
+import {PermissionlessSetup} from "script/PermissionlessSetup.sol";
 import "src/util/MathLib.sol";
 import "forge-std/Test.sol";
 
@@ -44,8 +44,8 @@ contract DeployTest is Test {
     ERC20 erc20;
 
     function setUp() public {
-        PermissionlessScript script = new PermissionlessScript();
-        script.run();
+        PermissionlessSetup script = new PermissionlessSetup();
+        script.run(address(this));
 
         investmentManager = script.investmentManager();
         gateway = script.gateway();
