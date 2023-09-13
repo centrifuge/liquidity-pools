@@ -308,17 +308,16 @@ contract PoolManager is Auth {
         address[] memory restrictionManagerWards = new address[](1);
         restrictionManagerWards[0] = address(this);
 
-        address restrictionManager = restrictionManagerFactory.newRestrictionManager(restrictionManagerWards);
-
         address token = trancheTokenFactory.newTrancheToken(
             poolId,
             trancheId,
             tranche.tokenName,
             tranche.tokenSymbol,
             tranche.decimals,
-            restrictionManager,
             trancheTokenWards
         );
+        address restrictionManager = restrictionManagerFactory.newRestrictionManager(token, restrictionManagerWards);
+        TrancheTokenLike(token).file("restrictionManager", restrictionManager);
 
         tranche.token = token;
         emit DeployTranche(poolId, trancheId, token);

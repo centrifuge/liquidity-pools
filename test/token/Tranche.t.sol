@@ -21,7 +21,7 @@ contract TrancheTokenTest is Test {
         token.file("name", "Some Token");
         token.file("symbol", "ST");
 
-        restrictionManager = new RestrictionManager();
+        restrictionManager = new RestrictionManager(address(token));
         token.file("restrictionManager", address(restrictionManager));
     }
 

@@ -42,7 +42,6 @@ contract FactoryTest is Test {
         bytes16 trancheId,
         address investmentManager,
         address poolManager,
-        address restrictionManager,
         string memory name,
         string memory symbol,
         uint8 decimals
@@ -70,7 +69,7 @@ contract FactoryTest is Test {
         trancheTokenWards[1] = address(poolManager);
 
         address token = trancheTokenFactory.newTrancheToken(
-            poolId, trancheId, name, symbol, decimals, restrictionManager, trancheTokenWards
+            poolId, trancheId, name, symbol, decimals, trancheTokenWards
         );
 
         assertEq(address(token), predictedAddress);
@@ -82,7 +81,6 @@ contract FactoryTest is Test {
         bytes16 trancheId,
         address investmentManager,
         address poolManager,
-        address restrictionManager,
         string memory name,
         string memory symbol,
         uint8 decimals
@@ -109,11 +107,11 @@ contract FactoryTest is Test {
         TrancheTokenFactory trancheTokenFactory = new TrancheTokenFactory{ salt: salt }(root);
         assertEq(address(trancheTokenFactory), predictedAddress);
         trancheTokenFactory.newTrancheToken(
-            poolId, trancheId, name, symbol, decimals, restrictionManager, trancheTokenWards
+            poolId, trancheId, name, symbol, decimals, trancheTokenWards
         );
         vm.expectRevert();
         trancheTokenFactory.newTrancheToken(
-            poolId, trancheId, name, symbol, decimals, restrictionManager, trancheTokenWards
+            poolId, trancheId, name, symbol, decimals, trancheTokenWards
         );
     }
 }

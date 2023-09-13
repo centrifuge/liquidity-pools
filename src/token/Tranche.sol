@@ -6,6 +6,7 @@ import {IERC20} from "../interfaces/IERC20.sol";
 
 interface TrancheTokenLike is IERC20 {
     function file(bytes32 what, string memory data) external;
+    function file(bytes32 what, address data) external;
     function restrictionManager() external view returns (address);
 }
 
