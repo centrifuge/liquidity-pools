@@ -43,10 +43,10 @@ contract DelayedAdmin is Auth {
 
     // --- PauseAdmin management ---
     function addPauser(address pauseContract, address user) public auth {
-        PauseAdminLike(pauseContract).addPauser(usr);
+        PauseAdminLike(pauseContract).addPauser(user);
     }
 
     function removePauser(address pauseContract, address user) public auth {
-        PauseAdminLike(pauseContract).removePauser(usr);
+        PauseAdminLike(pauseContract).removePauser(user);
     }
 }
