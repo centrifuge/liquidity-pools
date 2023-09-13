@@ -65,6 +65,8 @@ struct LPValues {
     uint128 maxMint; // denominated in tranche tokens
     uint128 maxWithdraw; // denominated in currency
     uint128 maxRedeem; // denominated in tranche tokens
+    uint128 remainingInvestOrder; // denominated in currency
+    uint128 remainingRedeemOrder; // denominated in tranche tokens
 }
 
 /// @title  Investment Manager
@@ -167,6 +169,9 @@ contract InvestmentManager is Auth {
         // Transfer the currency amount from user to escrow (lock currency in escrow)
         SafeTransferLib.safeTransferFrom(currency, user, address(escrow), _currencyAmount);
 
+        LPValues storage lpValues = orderbook[user][liquidityPool];
+        lpValues.remainingInvestOrder = lpValues.remainingInvestOrder + _currencyAmount;
+
         gateway.increaseInvestOrder(poolId, trancheId, user, currencyId, _currencyAmount);
     }
 
@@ -189,6 +194,9 @@ contract InvestmentManager is Auth {
 
         // Transfer the tranche token amount from user to escrow (lock tranche tokens in escrow)
         lPool.transferFrom(user, address(escrow), _trancheTokenAmount);
+
+        LPValues storage lpValues = orderbook[user][liquidityPool];
+        lpValues.remainingRedeemOrder = lpValues.remainingRedeemOrder + _trancheTokenAmount;
 
         gateway.increaseRedeemOrder(poolId, trancheId, user, currencyId, _trancheTokenAmount);
     }
@@ -233,9 +241,9 @@ contract InvestmentManager is Auth {
 
     function cancelRedeemRequest(address liquidityPool, address user) public auth {
         LiquidityPoolLike _liquidityPool = LiquidityPoolLike(msg.sender);
-        // TODO: last argument should be replaced by remaining redeem order
+        uint256 approximateTrancheTokenPayout = userRedeemRequest(liquidityPool, user);
         require(
-            _liquidityPool.checkTransferRestriction(address(0), user, type(uint128).max),
+            _liquidityPool.checkTransferRestriction(address(0), user, approximateTrancheTokenPayout),
             "InvestmentManager/transfer-not-allowed"
         );
         gateway.cancelRedeemOrder(
@@ -248,9 +256,10 @@ contract InvestmentManager is Auth {
 
     function collectDeposit(address liquidityPool, address user) public auth {
         LiquidityPoolLike _liquidityPool = LiquidityPoolLike(msg.sender);
-        // TODO: last argument should be replaced by remaining invest order
+        uint256 approximateMaxTrancheTokenPayout =
+            convertToShares(liquidityPool, userDepositRequest(liquidityPool, user));
         require(
-            _liquidityPool.checkTransferRestriction(address(escrow), user, type(uint128).max),
+            _liquidityPool.checkTransferRestriction(address(escrow), user, approximateMaxTrancheTokenPayout),
             "InvestmentManager/transfer-not-allowed"
         );
         gateway.collectInvest(
@@ -289,7 +298,8 @@ contract InvestmentManager is Auth {
         address recipient,
         uint128 currency,
         uint128 currencyPayout,
-        uint128 trancheTokensPayout
+        uint128 trancheTokensPayout,
+        uint128 remainingInvestOrder
     ) public onlyGateway {
         require(currencyPayout != 0, "InvestmentManager/zero-invest");
         address _currency = poolManager.currencyIdToAddress(currency);
@@ -299,6 +309,7 @@ contract InvestmentManager is Auth {
         LPValues storage lpValues = orderbook[recipient][liquidityPool];
         lpValues.maxDeposit = lpValues.maxDeposit + currencyPayout;
         lpValues.maxMint = lpValues.maxMint + trancheTokensPayout;
+        lpValues.remainingInvestOrder = remainingInvestOrder;
 
         LiquidityPoolLike(liquidityPool).mint(address(escrow), trancheTokensPayout); // mint to escrow. Recipient can claim by calling withdraw / redeem
         _updateLiquidityPoolPrice(liquidityPool, currencyPayout, trancheTokensPayout);
@@ -312,7 +323,8 @@ contract InvestmentManager is Auth {
         address recipient,
         uint128 currency,
         uint128 currencyPayout,
-        uint128 trancheTokensPayout
+        uint128 trancheTokensPayout,
+        uint128 remainingRedeemOrder
     ) public onlyGateway {
         require(trancheTokensPayout != 0, "InvestmentManager/zero-redeem");
         address _currency = poolManager.currencyIdToAddress(currency);
@@ -322,6 +334,7 @@ contract InvestmentManager is Auth {
         LPValues storage lpValues = orderbook[recipient][liquidityPool];
         lpValues.maxWithdraw = lpValues.maxWithdraw + currencyPayout;
         lpValues.maxRedeem = lpValues.maxRedeem + trancheTokensPayout;
+        lpValues.remainingRedeemOrder = remainingRedeemOrder;
 
         userEscrow.transferIn(_currency, address(escrow), recipient, currencyPayout);
         LiquidityPoolLike(liquidityPool).burn(address(escrow), trancheTokensPayout); // burned redeemed tokens from escrow
@@ -335,7 +348,8 @@ contract InvestmentManager is Auth {
         bytes16 trancheId,
         address user,
         uint128 currency,
-        uint128 currencyPayout
+        uint128 currencyPayout,
+        uint128 remainingInvestOrder
     ) public onlyGateway {
         require(currencyPayout != 0, "InvestmentManager/zero-payout");
 
@@ -346,7 +360,9 @@ contract InvestmentManager is Auth {
 
         // Transfer currency amount to userEscrow
         userEscrow.transferIn(_currency, address(escrow), user, currencyPayout);
+
         LPValues storage lpValues = orderbook[user][liquidityPool];
+        lpValues.remainingInvestOrder = remainingInvestOrder;
 
         // Increasing maxRedeem and maxWithdraw with the currencyPayout,
         // leads to an effective redeem price of 1.0 and thus the user actually receiving
@@ -357,12 +373,16 @@ contract InvestmentManager is Auth {
         emit ExecutedDecreaseInvestOrder(poolId, trancheId, user, currency, currencyPayout);
     }
 
+    /// @dev Compared to handleExecutedDecreaseInvestOrder, there is no
+    ///      transfer of currency in this function because they
+    ///      can stay in the Escrow, ready to be claimed on deposit/mint.
     function handleExecutedDecreaseRedeemOrder(
         uint64 poolId,
         bytes16 trancheId,
         address user,
         uint128 currency,
-        uint128 trancheTokenPayout
+        uint128 trancheTokenPayout,
+        uint128 remainingRedeemOrder
     ) public onlyGateway {
         require(trancheTokenPayout != 0, "InvestmentManager/zero-payout");
 
@@ -370,10 +390,12 @@ contract InvestmentManager is Auth {
         address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, _currency);
         require(address(liquidityPool) != address(0), "InvestmentManager/tranche-does-not-exist");
 
+        LPValues storage lpValues = orderbook[user][liquidityPool];
+        lpValues.remainingRedeemOrder = remainingRedeemOrder;
+
         // Increasing maxMint and maxDeposit with the trancheTokensPayout
         // leads to an effective redeem price of 1.0 and thus the user actually receiving
         // exactly trancheTokensPayout on both deposit() and mint()
-        LPValues storage lpValues = orderbook[user][liquidityPool];
         lpValues.maxDeposit = lpValues.maxDeposit + trancheTokenPayout;
         lpValues.maxMint = lpValues.maxMint + trancheTokenPayout;
 
@@ -505,6 +527,14 @@ contract InvestmentManager is Auth {
         if (redeemPrice == 0) return 0;
 
         currencyAmount = uint256(_calculateCurrencyAmount(trancheTokenAmount, liquidityPool, redeemPrice));
+    }
+
+    function userDepositRequest(address liquidityPool, address user) public view returns (uint256 currencyAmount) {
+        currencyAmount = uint256(orderbook[user][liquidityPool].remainingInvestOrder);
+    }
+
+    function userRedeemRequest(address liquidityPool, address user) public view returns (uint256 trancheTokenAmount) {
+        trancheTokenAmount = uint256(orderbook[user][liquidityPool].remainingRedeemOrder);
     }
 
     // --- Liquidity Pool processing functions ---

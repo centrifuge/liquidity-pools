@@ -20,8 +20,6 @@ contract PoolInvariants is TestSetup {
     InvariantPoolManager invariantPoolManager;
     InvestorManager investor;
 
-    address[] private targetContracts_;
-
     function setUp() public override {
         super.setUp();
 

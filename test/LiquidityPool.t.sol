@@ -198,7 +198,7 @@ contract LiquidityPoolTest is TestSetup {
 
         uint128 tokenAmount = uint128(lPool.balanceOf(address(escrow)));
         homePools.isExecutedCollectRedeem(
-            poolId, trancheId, bytes32(bytes20(address(investor))), currencyId, uint128(amount), uint128(tokenAmount)
+            poolId, trancheId, bytes32(bytes20(address(investor))), currencyId, uint128(amount), uint128(tokenAmount), 0
         );
 
         assertEq(lPool.maxRedeem(address(investor)), tokenAmount);
@@ -489,7 +489,13 @@ contract LiquidityPoolTest is TestSetup {
         uint128 currencyPayout = 50000000; // 50 * 10**6
         uint128 firstTrancheTokenPayout = 41666666666666666666; // 50 * 10**18 / 1.2, rounded down
         homePools.isExecutedCollectInvest(
-            poolId, trancheId, bytes32(bytes20(self)), _currencyId, currencyPayout, firstTrancheTokenPayout
+            poolId,
+            trancheId,
+            bytes32(bytes20(self)),
+            _currencyId,
+            currencyPayout,
+            firstTrancheTokenPayout,
+            currencyPayout / 2
         );
 
         // assert deposit & mint values adjusted
@@ -503,11 +509,12 @@ contract LiquidityPoolTest is TestSetup {
         currencyPayout = 50000000; // 50 * 10**6
         uint128 secondTrancheTokenPayout = 35714285714285714285; // 50 * 10**18 / 1.4, rounded down
         homePools.isExecutedCollectInvest(
-            poolId, trancheId, bytes32(bytes20(self)), _currencyId, currencyPayout, secondTrancheTokenPayout
+            poolId, trancheId, bytes32(bytes20(self)), _currencyId, currencyPayout, secondTrancheTokenPayout, 0
         );
 
         // deposit price should now be 50% * 1.2 + 50% * 1.4 = ~1.3*10**18.
         assertEq(investmentManager.calculateDepositPrice(self, address(lPool)), 1292307692307692307);
+        assertEq(lPool.userDepositRequest(self), 0);
 
         // collect the tranche tokens
         lPool.mint(firstTrancheTokenPayout + secondTrancheTokenPayout, self);
@@ -531,7 +538,8 @@ contract LiquidityPoolTest is TestSetup {
             bytes32(bytes20(self)),
             _currencyId,
             currencyPayout,
-            firstTrancheTokenPayout + secondTrancheTokenPayout
+            firstTrancheTokenPayout + secondTrancheTokenPayout,
+            0
         );
 
         // redeem price should now be ~1.5*10**18.
@@ -568,7 +576,13 @@ contract LiquidityPoolTest is TestSetup {
         uint128 currencyPayout = 50000000000000000000; // 50 * 10**18
         uint128 firstTrancheTokenPayout = 41666666; // 50 * 10**6 / 1.2, rounded down
         homePools.isExecutedCollectInvest(
-            poolId, trancheId, bytes32(bytes20(self)), _currencyId, currencyPayout, firstTrancheTokenPayout
+            poolId,
+            trancheId,
+            bytes32(bytes20(self)),
+            _currencyId,
+            currencyPayout,
+            firstTrancheTokenPayout,
+            currencyPayout / 2
         );
 
         // assert deposit & mint values adjusted
@@ -582,11 +596,12 @@ contract LiquidityPoolTest is TestSetup {
         currencyPayout = 50000000000000000000; // 50 * 10**18
         uint128 secondTrancheTokenPayout = 35714285; // 50 * 10**6 / 1.4, rounded down
         homePools.isExecutedCollectInvest(
-            poolId, trancheId, bytes32(bytes20(self)), _currencyId, currencyPayout, secondTrancheTokenPayout
+            poolId, trancheId, bytes32(bytes20(self)), _currencyId, currencyPayout, secondTrancheTokenPayout, 0
         );
 
         // deposit price should now be 50% * 1.2 + 50% * 1.4 = ~1.3*10**18.
         assertEq(investmentManager.calculateDepositPrice(self, address(lPool)), 1292307715370414612);
+        assertEq(lPool.userDepositRequest(self), 0);
 
         // collect the tranche tokens
         lPool.mint(firstTrancheTokenPayout + secondTrancheTokenPayout, self);
@@ -610,7 +625,8 @@ contract LiquidityPoolTest is TestSetup {
             bytes32(bytes20(self)),
             _currencyId,
             currencyPayout,
-            firstTrancheTokenPayout + secondTrancheTokenPayout
+            firstTrancheTokenPayout + secondTrancheTokenPayout,
+            0
         );
 
         // redeem price should now be ~1.5*10**18.
@@ -652,7 +668,7 @@ contract LiquidityPoolTest is TestSetup {
         // 99 * 10**18 / 1.2 = 82500000000000000000
         uint128 trancheTokenPayout = 82500000000000000000;
         homePools.isExecutedCollectInvest(
-            poolId, trancheId, bytes32(bytes20(self)), _currencyId, currencyPayout, trancheTokenPayout
+            poolId, trancheId, bytes32(bytes20(self)), _currencyId, currencyPayout, trancheTokenPayout, 0
         );
 
         // assert deposit & mint values adjusted
@@ -686,7 +702,7 @@ contract LiquidityPoolTest is TestSetup {
         homePools.updateTrancheTokenPrice(poolId, trancheId, currencyId, 1010101010101010101);
 
         // invest
-        uint256 investmentAmount = 100000000; // 100 * 10**6
+        uint256 investmentAmount = 100000000000000000000; // 100 * 10**18
         homePools.updateMember(poolId, trancheId, self, type(uint64).max);
         currency.approve(address(investmentManager), investmentAmount);
         currency.mint(self, investmentAmount);
@@ -701,7 +717,7 @@ contract LiquidityPoolTest is TestSetup {
         // 99 * 10**6 / 1.2 = 82500000
         uint128 trancheTokenPayout = 82500000;
         homePools.isExecutedCollectInvest(
-            poolId, trancheId, bytes32(bytes20(self)), _currencyId, currencyPayout, trancheTokenPayout
+            poolId, trancheId, bytes32(bytes20(self)), _currencyId, currencyPayout, trancheTokenPayout, 0
         );
 
         // assert deposit & mint values adjusted
@@ -737,7 +753,7 @@ contract LiquidityPoolTest is TestSetup {
         uint128 _currencyId = poolManager.currencyAddressToId(address(currency)); // retrieve currencyId
         uint128 trancheTokenPayout = 100000000000000000000; // 100 * 10**18
         homePools.isExecutedCollectInvest(
-            poolId, trancheId, bytes32(bytes20(self)), _currencyId, uint128(investmentAmount), trancheTokenPayout
+            poolId, trancheId, bytes32(bytes20(self)), _currencyId, uint128(investmentAmount), trancheTokenPayout, 0
         );
         lPool.mint(trancheTokenPayout, self);
 
@@ -780,7 +796,7 @@ contract LiquidityPoolTest is TestSetup {
         uint128 _currencyId = poolManager.currencyAddressToId(address(currency)); // retrieve currencyId
         uint128 trancheTokenPayout = 100000000; // 100 * 10**6
         homePools.isExecutedCollectInvest(
-            poolId, trancheId, bytes32(bytes20(self)), _currencyId, uint128(investmentAmount), trancheTokenPayout
+            poolId, trancheId, bytes32(bytes20(self)), _currencyId, uint128(investmentAmount), trancheTokenPayout, 0
         );
         lPool.mint(trancheTokenPayout, self);
 
@@ -835,7 +851,9 @@ contract LiquidityPoolTest is TestSetup {
             Messages.formatCancelInvestOrder(poolId, trancheId, _addressToBytes32(self), currencyId);
         assertEq(cancelOrderMessage, mockXcmRouter.values_bytes("send"));
 
-        homePools.isExecutedDecreaseInvestOrder(poolId, trancheId, _addressToBytes32(self), currencyId, uint128(amount));
+        homePools.isExecutedDecreaseInvestOrder(
+            poolId, trancheId, _addressToBytes32(self), currencyId, uint128(amount), 0
+        );
         assertEq(erc20.balanceOf(address(escrow)), 0);
         assertEq(erc20.balanceOf(address(userEscrow)), amount);
         assertEq(erc20.balanceOf(self), 0);
@@ -886,18 +904,20 @@ contract LiquidityPoolTest is TestSetup {
         // ensure funds are locked in escrow
         assertEq(erc20.balanceOf(address(escrow)), amount);
         assertEq(erc20.balanceOf(self), 0);
+        assertEq(lPool.userDepositRequest(self), amount);
 
         // trigger executed collectInvest
         uint128 _currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
         uint128 trancheTokensPayout = uint128(amount * 10 ** 27 / price); // trancheTokenPrice = 2$
         assertApproxEqAbs(trancheTokensPayout, amount / 2, 2);
         homePools.isExecutedCollectInvest(
-            poolId, trancheId, bytes32(bytes20(self)), _currencyId, uint128(amount), trancheTokensPayout
+            poolId, trancheId, bytes32(bytes20(self)), _currencyId, uint128(amount), trancheTokensPayout, 0
         );
 
         // assert deposit & mint values adjusted
         assertEq(lPool.maxMint(self), trancheTokensPayout); // max deposit
         assertEq(lPool.maxDeposit(self), amount); // max deposit
+        assertEq(lPool.userDepositRequest(self), 0);
         // assert tranche tokens minted
         assertEq(lPool.balanceOf(address(escrow)), trancheTokensPayout);
         // assert conversions
@@ -958,7 +978,7 @@ contract LiquidityPoolTest is TestSetup {
         uint128 trancheTokensPayout = uint128(amount * 10 ** 27 / price); // trancheTokenPrice = 2$
         assertApproxEqAbs(trancheTokensPayout, amount / 2, 2);
         homePools.isExecutedCollectInvest(
-            poolId, trancheId, bytes32(bytes20(self)), _currencyId, uint128(amount), trancheTokensPayout
+            poolId, trancheId, bytes32(bytes20(self)), _currencyId, uint128(amount), trancheTokensPayout, 0
         );
 
         // assert deposit & mint values adjusted
@@ -1043,7 +1063,8 @@ contract LiquidityPoolTest is TestSetup {
             bytes32(bytes20(investor)),
             poolManager.currencyAddressToId(address(erc20)),
             uint128(amount),
-            uint128(amount)
+            uint128(amount),
+            0
         );
 
         uint256 maxMint = lPool.maxMint(investor);
@@ -1114,6 +1135,7 @@ contract LiquidityPoolTest is TestSetup {
         // success
         lPool.requestRedeem(amount, self);
         assertEq(lPool.balanceOf(address(escrow)), amount);
+        assertEq(lPool.userRedeemRequest(self), amount);
 
         // fail: no tokens left
         lPool.approve(address(investmentManager), amount); // add allowance
@@ -1124,12 +1146,13 @@ contract LiquidityPoolTest is TestSetup {
         uint128 _currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
         uint128 currencyPayout = uint128(amount) / uint128(price);
         homePools.isExecutedCollectRedeem(
-            poolId, trancheId, bytes32(bytes20(self)), _currencyId, currencyPayout, uint128(amount)
+            poolId, trancheId, bytes32(bytes20(self)), _currencyId, currencyPayout, uint128(amount), 0
         );
 
         // assert withdraw & redeem values adjusted
         assertEq(lPool.maxWithdraw(self), currencyPayout); // max deposit
         assertEq(lPool.maxRedeem(self), amount); // max deposit
+        assertEq(lPool.userRedeemRequest(self), 0);
         assertEq(lPool.balanceOf(address(escrow)), 0);
         assertEq(erc20.balanceOf(address(userEscrow)), currencyPayout);
         // assert conversions
@@ -1197,7 +1220,9 @@ contract LiquidityPoolTest is TestSetup {
             Messages.formatCancelRedeemOrder(poolId, trancheId, _addressToBytes32(self), currencyId);
         assertEq(cancelOrderMessage, mockXcmRouter.values_bytes("send"));
 
-        homePools.isExecutedDecreaseRedeemOrder(poolId, trancheId, _addressToBytes32(self), currencyId, uint128(amount));
+        homePools.isExecutedDecreaseRedeemOrder(
+            poolId, trancheId, _addressToBytes32(self), currencyId, uint128(amount), 0
+        );
 
         assertEq(lPool.balanceOf(address(escrow)), amount);
         assertEq(lPool.balanceOf(self), 0);
@@ -1244,7 +1269,7 @@ contract LiquidityPoolTest is TestSetup {
         uint128 _currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
         uint128 currencyPayout = uint128(amount) / price;
         homePools.isExecutedCollectRedeem(
-            poolId, trancheId, bytes32(bytes20(self)), _currencyId, currencyPayout, uint128(amount)
+            poolId, trancheId, bytes32(bytes20(self)), _currencyId, currencyPayout, uint128(amount), 0
         );
 
         // assert withdraw & redeem values adjusted
@@ -1311,7 +1336,7 @@ contract LiquidityPoolTest is TestSetup {
         // decrease deposit request
         lPool.decreaseDepositRequest(decreaseAmount, self);
         homePools.isExecutedDecreaseInvestOrder(
-            poolId, trancheId, bytes32(bytes20(self)), currencyId, uint128(decreaseAmount)
+            poolId, trancheId, bytes32(bytes20(self)), currencyId, uint128(decreaseAmount), 0
         );
 
         assertEq(erc20.balanceOf(address(escrow)), amount - decreaseAmount);
@@ -1355,7 +1380,7 @@ contract LiquidityPoolTest is TestSetup {
         // decrease redeem request
         lPool.decreaseRedeemRequest(decreaseAmount, self);
         homePools.isExecutedDecreaseRedeemOrder(
-            poolId, trancheId, bytes32(bytes20(self)), currencyId, uint128(decreaseAmount)
+            poolId, trancheId, bytes32(bytes20(self)), currencyId, uint128(decreaseAmount), 0
         );
 
         assertEq(lPool.balanceOf(address(escrow)), amount);
@@ -1378,6 +1403,7 @@ contract LiquidityPoolTest is TestSetup {
         vm.assume(amount > 0);
         vm.assume(currencyId > 0);
         vm.assume(decimals > 0);
+        vm.assume(decimals <= 18);
         vm.assume(validUntil > block.timestamp + 7 days);
 
         address lPool_ = deployLiquidityPool(poolId, decimals, tokenName, tokenSymbol, trancheId, currencyId);
@@ -1403,6 +1429,7 @@ contract LiquidityPoolTest is TestSetup {
         vm.assume(amount > 0);
         vm.assume(currencyId > 0);
         vm.assume(trancheDecimals > 0);
+        vm.assume(trancheDecimals <= 18);
         vm.assume(validUntil > block.timestamp + 7 days);
 
         address lPool_ = deployLiquidityPool(poolId, decimals, tokenName, tokenSymbol, trancheId, currencyId);
@@ -1424,7 +1451,7 @@ contract LiquidityPoolTest is TestSetup {
         // trigger executed collectInvest
         uint128 currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
         homePools.isExecutedCollectInvest(
-            poolId, trancheId, bytes32(bytes20(self)), currencyId, uint128(amount), uint128(amount)
+            poolId, trancheId, bytes32(bytes20(self)), currencyId, uint128(amount), uint128(amount), 0
         );
         lPool.deposit(amount, self); // withdraw the amount
     }
@@ -1445,7 +1472,7 @@ contract LiquidityPoolTest is TestSetup {
         investor.requestDeposit(_lPool, amount, _investor);
         uint128 currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
         homePools.isExecutedCollectInvest(
-            poolId, trancheId, bytes32(bytes20(_investor)), currencyId, uint128(amount), uint128(amount)
+            poolId, trancheId, bytes32(bytes20(_investor)), currencyId, uint128(amount), uint128(amount), 0
         );
         investor.deposit(_lPool, amount, _investor); // deposit the amount
     }
