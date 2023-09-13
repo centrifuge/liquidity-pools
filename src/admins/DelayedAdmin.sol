@@ -5,8 +5,8 @@ import {Root} from "../Root.sol";
 import {Auth} from "./../util/Auth.sol";
 
 interface PauseAdminLike {
-    function addPauser(address usr) external;
-    function removePauser(address usr) external;
+    function addPauser(address user) external;
+    function removePauser(address user) external;
 }
 
 /// @title  Delayed Admin
@@ -41,11 +41,12 @@ contract DelayedAdmin is Auth {
         root.cancelRely(target);
     }
 
-    function addPauser(address pauseContract, address usr) public auth {
+    // --- PauseAdmin management ---
+    function addPauser(address pauseContract, address user) public auth {
         PauseAdminLike(pauseContract).addPauser(usr);
     }
 
-    function removePauser(address pauseContract, address usr) public auth {
+    function removePauser(address pauseContract, address user) public auth {
         PauseAdminLike(pauseContract).removePauser(usr);
     }
 }
