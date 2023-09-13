@@ -5,7 +5,12 @@ import {TrancheTokenFactory} from "src/util/Factory.sol";
 import {TrancheToken} from "src/token/Tranche.sol";
 import {Root} from "src/Root.sol";
 import {Escrow} from "src/Escrow.sol";
+import {TestSetup} from "test/TestSetup.t.sol";
 import "forge-std/Test.sol";
+
+interface PoolManagerLike {
+    function getTrancheToken(uint64 poolId, bytes16 trancheId) external view returns (address);
+}
 
 contract FactoryTest is Test {
     uint256 mainnetFork;
@@ -28,26 +33,23 @@ contract FactoryTest is Test {
         address poolManager1,
         address poolManager2
     ) public {
+        bytes32 salt = keccak256(abi.encodePacked("test"));
+
         vm.selectFork(mainnetFork);
-        bytes32 salt = keccak256(abi.encodePacked(poolId, trancheId));
-
-        Root root1 = new Root{salt: salt}(address(new Escrow{salt: salt}()), 48 hours);
-
-        TrancheTokenFactory trancheTokenFactory1 = new TrancheTokenFactory{salt: salt}(address(root1));
-
-        address trancheToken1 =
-            deployTrancheToken(trancheTokenFactory1, poolId, trancheId, investmentManager2, poolManager2, "", "", 18);
+        TestSetup testSetup1 = new TestSetup{salt: salt}();
+        testSetup1.setUp();
+        testSetup1.deployLiquidityPool(poolId, 18, "", "", trancheId, 1, address(testSetup1.erc20()));
+        address trancheToken1 = PoolManagerLike(address(testSetup1.poolManager())).getTrancheToken(poolId, trancheId);
+        address root1 = address(testSetup1.root());
 
         vm.selectFork(polygonFork);
-
-        Root root2 = new Root{salt: salt}(address(new Escrow{salt: salt}()), 48 hours);
+        TestSetup testSetup2 = new TestSetup{salt: salt}();
+        testSetup2.setUp();
+        testSetup2.deployLiquidityPool(poolId, 18, "", "", trancheId, 1, address(testSetup2.erc20()));
+        address trancheToken2 = PoolManagerLike(address(testSetup2.poolManager())).getTrancheToken(poolId, trancheId);
+        address root2 = address(testSetup2.root());
 
         assertEq(address(root1), address(root2));
-        TrancheTokenFactory trancheTokenFactory2 = new TrancheTokenFactory{salt: salt}(address(root2));
-        assertEq(address(trancheTokenFactory1), address(trancheTokenFactory2));
-        address trancheToken2 =
-            deployTrancheToken(trancheTokenFactory2, poolId, trancheId, investmentManager2, poolManager2, "", "", 18);
-
         assertEq(trancheToken1, trancheToken2);
     }
 

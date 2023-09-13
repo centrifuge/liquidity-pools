@@ -29,7 +29,7 @@ import {Investor} from "./accounts/Investor.sol";
 contract TestSetup is Deployer, Test {
     MockHomeLiquidityPools homePools;
     MockXcmRouter mockXcmRouter;
-    ERC20 erc20;
+    ERC20 public erc20;
 
     address self;
 
