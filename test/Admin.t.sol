@@ -176,7 +176,7 @@ contract AdminTest is TestSetup {
 
         address badActor = vm.addr(0xBAD);
         vm.prank(badActor);
-        vm.expectRevert('Auth/not-authorized');
+        vm.expectRevert("Auth/not-authorized");
         delayedAdmin.addPauser(address(pauseAdmin), badActor);
 
         delayedAdmin.addPauser(address(pauseAdmin), newPauser);
@@ -185,10 +185,10 @@ contract AdminTest is TestSetup {
 
     function testRemovePauser() public {
         address oldPauser = vm.addr(0xABCDE);
-        
+
         address badActor = vm.addr(0xBAD);
         vm.prank(badActor);
-        vm.expectRevert('Auth/not-authorized');
+        vm.expectRevert("Auth/not-authorized");
         delayedAdmin.removePauser(address(pauseAdmin), badActor);
 
         delayedAdmin.removePauser(address(pauseAdmin), oldPauser);
