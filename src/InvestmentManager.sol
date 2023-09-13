@@ -234,9 +234,9 @@ contract InvestmentManager is Auth {
 
     function cancelRedeemRequest(address liquidityPool, address user) public auth {
         LiquidityPoolLike _liquidityPool = LiquidityPoolLike(msg.sender);
-        // TODO: last argument should be replaced by remaining redeem order
+        uint256 approximateTrancheTokenPayout = userRedeemRequest(liquidityPool, user);
         require(
-            _liquidityPool.checkTransferRestriction(address(0), user, type(uint128).max),
+            _liquidityPool.checkTransferRestriction(address(0), user, approximateTrancheTokenPayout),
             "InvestmentManager/transfer-not-allowed"
         );
         gateway.cancelRedeemOrder(
@@ -249,9 +249,10 @@ contract InvestmentManager is Auth {
 
     function collectDeposit(address liquidityPool, address user) public auth {
         LiquidityPoolLike _liquidityPool = LiquidityPoolLike(msg.sender);
-        // TODO: last argument should be replaced by remaining invest order
+        uint256 approximateMaxTrancheTokenPayout =
+            convertToShares(liquidityPool, userDepositRequest(liquidityPool, user));
         require(
-            _liquidityPool.checkTransferRestriction(address(escrow), user, type(uint128).max),
+            _liquidityPool.checkTransferRestriction(address(escrow), user, approximateMaxTrancheTokenPayout),
             "InvestmentManager/transfer-not-allowed"
         );
         gateway.collectInvest(
