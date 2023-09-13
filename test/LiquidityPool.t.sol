@@ -509,17 +509,12 @@ contract LiquidityPoolTest is TestSetup {
         currencyPayout = 50000000; // 50 * 10**6
         uint128 secondTrancheTokenPayout = 35714285714285714285; // 50 * 10**18 / 1.4, rounded down
         homePools.isExecutedCollectInvest(
-            poolId,
-            trancheId,
-            bytes32(bytes20(self)),
-            _currencyId,
-            currencyPayout,
-            secondTrancheTokenPayout,
-            currencyPayout / 2
+            poolId, trancheId, bytes32(bytes20(self)), _currencyId, currencyPayout, secondTrancheTokenPayout, 0
         );
 
         // deposit price should now be 50% * 1.2 + 50% * 1.4 = ~1.3*10**18.
         assertEq(investmentManager.calculateDepositPrice(self, address(lPool)), 1292307692307692307);
+        assertEq(lPool.userDepositRequest(self), 0);
 
         // collect the tranche tokens
         lPool.mint(firstTrancheTokenPayout + secondTrancheTokenPayout, self);
@@ -601,17 +596,12 @@ contract LiquidityPoolTest is TestSetup {
         currencyPayout = 50000000000000000000; // 50 * 10**18
         uint128 secondTrancheTokenPayout = 35714285; // 50 * 10**6 / 1.4, rounded down
         homePools.isExecutedCollectInvest(
-            poolId,
-            trancheId,
-            bytes32(bytes20(self)),
-            _currencyId,
-            currencyPayout,
-            secondTrancheTokenPayout,
-            currencyPayout / 2
+            poolId, trancheId, bytes32(bytes20(self)), _currencyId, currencyPayout, secondTrancheTokenPayout, 0
         );
 
         // deposit price should now be 50% * 1.2 + 50% * 1.4 = ~1.3*10**18.
         assertEq(investmentManager.calculateDepositPrice(self, address(lPool)), 1292307715370414612);
+        assertEq(lPool.userDepositRequest(self), 0);
 
         // collect the tranche tokens
         lPool.mint(firstTrancheTokenPayout + secondTrancheTokenPayout, self);
@@ -1413,6 +1403,7 @@ contract LiquidityPoolTest is TestSetup {
         vm.assume(amount > 0);
         vm.assume(currencyId > 0);
         vm.assume(decimals > 0);
+        vm.assume(decimals <= 18);
         vm.assume(validUntil > block.timestamp + 7 days);
 
         address lPool_ = deployLiquidityPool(poolId, decimals, tokenName, tokenSymbol, trancheId, currencyId);
@@ -1438,6 +1429,7 @@ contract LiquidityPoolTest is TestSetup {
         vm.assume(amount > 0);
         vm.assume(currencyId > 0);
         vm.assume(trancheDecimals > 0);
+        vm.assume(trancheDecimals <= 18);
         vm.assume(validUntil > block.timestamp + 7 days);
 
         address lPool_ = deployLiquidityPool(poolId, decimals, tokenName, tokenSymbol, trancheId, currencyId);
