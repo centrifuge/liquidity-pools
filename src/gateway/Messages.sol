@@ -810,10 +810,15 @@ library Messages {
         bytes16 trancheId,
         bytes32 investor,
         uint128 currency,
-        uint128 amount
+        uint128 trancheTokenAmount
     ) internal pure returns (bytes memory) {
         return abi.encodePacked(
-            uint8(Call.TriggerRequestRedeem), poolId, trancheId, bytes32(bytes20(investor)), currency, amount
+            uint8(Call.TriggerRequestRedeem),
+            poolId,
+            trancheId,
+            bytes32(bytes20(investor)),
+            currency,
+            trancheTokenAmount
         );
     }
 
@@ -824,13 +829,13 @@ library Messages {
     function parseTriggerRequestRedeem(bytes memory _msg)
         internal
         pure
-        returns (uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount)
+        returns (uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 trancheTokenAmount)
     {
         poolId = BytesLib.toUint64(_msg, 1);
         trancheId = BytesLib.toBytes16(_msg, 9);
         investor = BytesLib.toAddress(_msg, 25);
         currency = BytesLib.toUint128(_msg, 57);
-        amount = BytesLib.toUint128(_msg, 73);
+        trancheTokenAmount = BytesLib.toUint128(_msg, 73);
     }
 
     // Utils

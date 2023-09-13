@@ -38,6 +38,10 @@ interface LiquidityPoolLike is ERC20Like {
     function latestPrice() external view returns (uint128);
 }
 
+interface AuthTransferLike {
+    function authTransferFrom(address from, address to, uint256 amount) external returns (bool);
+}
+
 interface PoolManagerLike {
     function currencyIdToAddress(uint128 currencyId) external view returns (address);
     function currencyAddressToId(address addr) external view returns (uint128);
@@ -110,6 +114,9 @@ contract InvestmentManager is Auth {
     );
     event ExecutedDecreaseRedeemOrder(
         uint64 indexed poolId, bytes16 indexed trancheId, address user, uint128 currency, uint128 trancheTokensPayout
+    );
+    event TriggerRequestRedeem(
+        uint64 indexed poolId, bytes16 indexed trancheId, address user, uint128 currency, uint128 trancheTokenAmount
     );
 
     constructor(address escrow_, address userEscrow_) {
@@ -371,6 +378,22 @@ contract InvestmentManager is Auth {
         lpValues.maxMint = lpValues.maxMint + trancheTokenPayout;
 
         emit ExecutedDecreaseRedeemOrder(poolId, trancheId, user, currency, trancheTokenPayout);
+    }
+
+    function handleTriggerRequestRedeem(
+        uint64 poolId,
+        bytes16 trancheId,
+        address user,
+        uint128 currency,
+        uint128 trancheTokenAmount
+    ) public onlyGateway {
+        address token = poolManager.getTrancheToken(poolId, trancheId);
+
+        // Transfer the tranche token amount from user to escrow (lock tranche tokens in escrow)
+        AuthTransferLike(token).authTransferFrom(user, address(escrow), trancheTokenAmount);
+
+        gateway.increaseRedeemOrder(poolId, trancheId, user, currency, trancheTokenAmount);
+        emit TriggerRequestRedeem(poolId, trancheId, user, currency, trancheTokenAmount);
     }
 
     // --- View functions ---

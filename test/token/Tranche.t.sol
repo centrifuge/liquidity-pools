@@ -221,7 +221,7 @@ contract TrancheTokenTest is Test {
     }
 
     // Auth transfer
-    function testAuthTransfer(uint256 amount, address sourceUser, uint256 validUntil) public {
+    function testAuthTransferFrom(uint256 amount, address sourceUser, uint256 validUntil) public {
         vm.assume(baseAssumptions(validUntil, sourceUser));
 
         restrictionManager.updateMember(sourceUser, validUntil);
@@ -229,11 +229,11 @@ contract TrancheTokenTest is Test {
 
         vm.prank(address(2));
         vm.expectRevert(bytes("Auth/not-authorized"));
-        token.authTransfer(sourceUser, sourceUser, amount);
+        token.authTransferFrom(sourceUser, sourceUser, amount);
         assertEq(token.balanceOf(sourceUser), amount);
         assertEq(token.balanceOf(address(this)), 0);
 
-        token.authTransfer(sourceUser, address(this), amount);
+        token.authTransferFrom(sourceUser, address(this), amount);
         assertEq(token.balanceOf(sourceUser), 0);
         assertEq(token.balanceOf(address(this)), amount);
     }

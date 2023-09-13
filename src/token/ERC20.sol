@@ -243,7 +243,7 @@ contract ERC20 is Context {
     }
 
     // --- Fail-safe ---
-    function authTransfer(address from, address to, uint256 value) public auth returns (bool) {
+    function authTransferFrom(address from, address to, uint256 value) public auth returns (bool) {
         require(to != address(0) && to != address(this), "ERC20/invalid-address");
         uint256 balance = balanceOf[from];
         require(balance >= value, "ERC20/insufficient-balance");
