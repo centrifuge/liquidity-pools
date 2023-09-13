@@ -4,7 +4,7 @@ pragma solidity 0.8.21;
 
 /// @title  Auth
 /// @notice Simple authentication pattern
-contract Auth{
+contract Auth {
     mapping(address => uint256) public wards;
 
     event Rely(address indexed user);

@@ -8,7 +8,6 @@ import {Deployer, RouterLike} from "./Deployer.sol";
 // Script to deploy Liquidity Pools with a permissionless router for testing.
 contract PermissionlessSetup is Deployer {
     function run(address admin) public {
-
         // Deploy contracts
         deployInvestmentManager();
         PermissionlessRouter router = new PermissionlessRouter();

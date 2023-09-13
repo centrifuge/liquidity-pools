@@ -62,7 +62,11 @@ contract FactoryTest is Test {
                             bytes1(0xff),
                             address(this),
                             salt,
-                            keccak256(abi.encodePacked(type(TrancheTokenFactory).creationCode, abi.encode(root), abi.encode(address(this))))
+                            keccak256(
+                                abi.encodePacked(
+                                    type(TrancheTokenFactory).creationCode, abi.encode(root), abi.encode(address(this))
+                                )
+                            )
                         )
                     )
                 )
@@ -131,7 +135,11 @@ contract FactoryTest is Test {
                             bytes1(0xff),
                             address(this),
                             salt,
-                            keccak256(abi.encodePacked(type(TrancheTokenFactory).creationCode, abi.encode(root), abi.encode(address(this))))
+                            keccak256(
+                                abi.encodePacked(
+                                    type(TrancheTokenFactory).creationCode, abi.encode(root), abi.encode(address(this))
+                                )
+                            )
                         )
                     )
                 )
