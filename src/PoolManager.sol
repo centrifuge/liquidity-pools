@@ -309,12 +309,7 @@ contract PoolManager is Auth {
         restrictionManagerWards[0] = address(this);
 
         address token = trancheTokenFactory.newTrancheToken(
-            poolId,
-            trancheId,
-            tranche.tokenName,
-            tranche.tokenSymbol,
-            tranche.decimals,
-            trancheTokenWards
+            poolId, trancheId, tranche.tokenName, tranche.tokenSymbol, tranche.decimals, trancheTokenWards
         );
         address restrictionManager = restrictionManagerFactory.newRestrictionManager(token, restrictionManagerWards);
         TrancheTokenLike(token).file("restrictionManager", restrictionManager);
