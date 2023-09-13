@@ -171,6 +171,30 @@ contract AdminTest is TestSetup {
         delayedAdmin.cancelRely(spell);
     }
 
+    function testAddPauser() public {
+        address newPauser = vm.addr(0xABCDE);
+
+        address badActor = vm.addr(0xBAD);
+        vm.prank(badActor);
+        vm.expectRevert('Auth/not-authorized');
+        delayedAdmin.addPauser(address(pauseAdmin), badActor);
+
+        delayedAdmin.addPauser(address(pauseAdmin), newPauser);
+        assertEq(pauseAdmin.pausers(newPauser), 1);
+    }
+
+    function testRemovePauser() public {
+        address oldPauser = vm.addr(0xABCDE);
+        
+        address badActor = vm.addr(0xBAD);
+        vm.prank(badActor);
+        vm.expectRevert('Auth/not-authorized');
+        delayedAdmin.removePauser(address(pauseAdmin), badActor);
+
+        delayedAdmin.removePauser(address(pauseAdmin), oldPauser);
+        assertEq(pauseAdmin.pausers(oldPauser), 0);
+    }
+
     //------ Updating delay tests ------///
     function testUpdatingDelay() public {
         delayedAdmin.scheduleRely(address(this));
