@@ -49,6 +49,8 @@ interface InvestmentManagerLike {
     function decreaseRedeemRequest(address liquidityPool, uint256 shares, address receiver) external;
     function cancelDepositRequest(address liquidityPool, address receiver) external;
     function cancelRedeemRequest(address liquidityPool, address receiver) external;
+    function userDepositRequest(address liquidityPool, address user) external view returns (uint256);
+    function userRedeemRequest(address liquidityPool, address user) external view returns (uint256);
 }
 
 /// @title  Liquidity Pool
@@ -236,6 +238,25 @@ contract LiquidityPool is Auth, IERC4626 {
         emit DepositRequest(owner, assets);
     }
 
+    /// @notice View the total amount the user has requested to deposit but isn't able to deposit or mint yet
+    function userDepositRequest(address owner) external view returns (uint256 assets) {
+        assets = investmentManager.userDepositRequest(address(this), owner);
+    }
+
+    /// @notice Request decreasing the outstanding deposit orders. Will return the assets once the order
+    ///         on Centrifuge is successfully decreased.
+    function decreaseDepositRequest(uint256 assets, address owner) public withApproval(owner) {
+        investmentManager.decreaseDepositRequest(address(this), assets, owner);
+        emit DecreaseDepositRequest(owner, assets);
+    }
+
+    /// @notice Request cancelling the outstanding deposit orders. Will return the assets once the order
+    ///         on Centrifuge is successfully cancelled.
+    function cancelDepositRequest(address owner) public withApproval(owner) {
+        investmentManager.cancelDepositRequest(address(this), owner);
+        emit CancelDepositRequest(owner);
+    }
+
     /// @notice Request share redemption for a receiver to be included in the next epoch execution.
     /// @notice Request can only be called by the owner of the shares
     ///         Shares are locked in the escrow on request submission
@@ -253,13 +274,6 @@ contract LiquidityPool is Auth, IERC4626 {
         emit RedeemRequest(owner, shares);
     }
 
-    /// @notice Request decreasing the outstanding deposit orders. Will return the assets once the order
-    ///         on Centrifuge is successfully decreased.
-    function decreaseDepositRequest(uint256 assets, address owner) public withApproval(owner) {
-        investmentManager.decreaseDepositRequest(address(this), assets, owner);
-        emit DecreaseDepositRequest(owner, assets);
-    }
-
     /// @notice Request decreasing the outstanding redemption orders. Will return the shares once the order
     ///         on Centrifuge is successfully decreased.
     function decreaseRedeemRequest(uint256 shares, address owner) public withApproval(owner) {
@@ -267,18 +281,16 @@ contract LiquidityPool is Auth, IERC4626 {
         emit DecreaseRedeemRequest(owner, shares);
     }
 
-    /// @notice Request cancelling the outstanding deposit orders. Will return the assets once the order
-    ///         on Centrifuge is successfully cancelled.
-    function cancelDepositRequest(address owner) public withApproval(owner) {
-        investmentManager.cancelDepositRequest(address(this), owner);
-        emit CancelDepositRequest(owner);
-    }
-
     /// @notice Request cancelling the outstanding redemption orders. Will return the shares once the order
     ///         on Centrifuge is successfully cancelled.
     function cancelRedeemRequest(address owner) public withApproval(owner) {
         investmentManager.cancelRedeemRequest(address(this), owner);
         emit CancelRedeemRequest(owner);
+    }
+
+    /// @notice View the total amount the user has requested to redeem but isn't able to withdraw or redeem yet
+    function userRedeemRequest(address owner) external view returns (uint256 shares) {
+        shares = investmentManager.userRedeemRequest(address(this), owner);
     }
 
     // --- Miscellaneous investment functions ---

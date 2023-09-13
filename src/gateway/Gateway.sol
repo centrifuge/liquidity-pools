@@ -11,14 +11,16 @@ interface InvestmentManagerLike {
         bytes16 trancheId,
         address investor,
         uint128 currency,
-        uint128 currencyPayout
+        uint128 currencyPayout,
+        uint128 remainingInvestOrder
     ) external;
     function handleExecutedDecreaseRedeemOrder(
         uint64 poolId,
         bytes16 trancheId,
         address investor,
         uint128 currency,
-        uint128 trancheTokensPayout
+        uint128 trancheTokensPayout,
+        uint128 remainingRedeemOrder
     ) external;
     function handleExecutedCollectInvest(
         uint64 poolId,
@@ -26,7 +28,8 @@ interface InvestmentManagerLike {
         address investor,
         uint128 currency,
         uint128 currencyPayout,
-        uint128 trancheTokensPayout
+        uint128 trancheTokensPayout,
+        uint128 remainingInvestOrder
     ) external;
     function handleExecutedCollectRedeem(
         uint64 poolId,
@@ -34,7 +37,8 @@ interface InvestmentManagerLike {
         address investor,
         uint128 currency,
         uint128 currencyPayout,
-        uint128 trancheTokensPayout
+        uint128 trancheTokensPayout,
+        uint128 remainingRedeemOrder
     ) external;
 }
 
@@ -317,14 +321,28 @@ contract Gateway is Auth {
                 Messages.parseTransferTrancheTokens20(message);
             poolManager.handleTransferTrancheTokens(poolId, trancheId, destinationAddress, amount);
         } else if (Messages.isExecutedDecreaseInvestOrder(message)) {
-            (uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 currencyPayout) =
-                Messages.parseExecutedDecreaseInvestOrder(message);
-            investmentManager.handleExecutedDecreaseInvestOrder(poolId, trancheId, investor, currency, currencyPayout);
+            (
+                uint64 poolId,
+                bytes16 trancheId,
+                address investor,
+                uint128 currency,
+                uint128 currencyPayout,
+                uint128 remainingInvestOrder
+            ) = Messages.parseExecutedDecreaseInvestOrder(message);
+            investmentManager.handleExecutedDecreaseInvestOrder(
+                poolId, trancheId, investor, currency, currencyPayout, remainingInvestOrder
+            );
         } else if (Messages.isExecutedDecreaseRedeemOrder(message)) {
-            (uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 trancheTokensPayout) =
-                Messages.parseExecutedDecreaseRedeemOrder(message);
+            (
+                uint64 poolId,
+                bytes16 trancheId,
+                address investor,
+                uint128 currency,
+                uint128 trancheTokensPayout,
+                uint128 remainingRedeemOrder
+            ) = Messages.parseExecutedDecreaseRedeemOrder(message);
             investmentManager.handleExecutedDecreaseRedeemOrder(
-                poolId, trancheId, investor, currency, trancheTokensPayout
+                poolId, trancheId, investor, currency, trancheTokensPayout, remainingRedeemOrder
             );
         } else if (Messages.isExecutedCollectInvest(message)) {
             (
@@ -333,10 +351,11 @@ contract Gateway is Auth {
                 address investor,
                 uint128 currency,
                 uint128 currencyPayout,
-                uint128 trancheTokensPayout
+                uint128 trancheTokensPayout,
+                uint128 remainingInvestOrder
             ) = Messages.parseExecutedCollectInvest(message);
             investmentManager.handleExecutedCollectInvest(
-                poolId, trancheId, investor, currency, currencyPayout, trancheTokensPayout
+                poolId, trancheId, investor, currency, currencyPayout, trancheTokensPayout, remainingInvestOrder
             );
         } else if (Messages.isExecutedCollectRedeem(message)) {
             (
@@ -345,10 +364,11 @@ contract Gateway is Auth {
                 address investor,
                 uint128 currency,
                 uint128 currencyPayout,
-                uint128 trancheTokensPayout
+                uint128 trancheTokensPayout,
+                uint128 remainingRedeemOrder
             ) = Messages.parseExecutedCollectRedeem(message);
             investmentManager.handleExecutedCollectRedeem(
-                poolId, trancheId, investor, currency, currencyPayout, trancheTokensPayout
+                poolId, trancheId, investor, currency, currencyPayout, trancheTokensPayout, remainingRedeemOrder
             );
         } else if (Messages.isScheduleUpgrade(message)) {
             address target = Messages.parseScheduleUpgrade(message);
