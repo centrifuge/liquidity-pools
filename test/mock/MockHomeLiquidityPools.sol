@@ -117,10 +117,12 @@ contract MockHomeLiquidityPools is Test {
         bytes16 trancheId,
         bytes32 investor,
         uint128 currency,
-        uint128 currencyPayout
+        uint128 currencyPayout,
+        uint128 remainingInvestOrder
     ) public {
-        bytes memory _message =
-            Messages.formatExecutedDecreaseInvestOrder(poolId, trancheId, investor, currency, currencyPayout);
+        bytes memory _message = Messages.formatExecutedDecreaseInvestOrder(
+            poolId, trancheId, investor, currency, currencyPayout, remainingInvestOrder
+        );
         router.execute(_message);
     }
 
@@ -129,10 +131,12 @@ contract MockHomeLiquidityPools is Test {
         bytes16 trancheId,
         bytes32 investor,
         uint128 currency,
-        uint128 trancheTokensPayout
+        uint128 trancheTokensPayout,
+        uint128 remainingRedeemOrder
     ) public {
-        bytes memory _message =
-            Messages.formatExecutedDecreaseRedeemOrder(poolId, trancheId, investor, currency, trancheTokensPayout);
+        bytes memory _message = Messages.formatExecutedDecreaseRedeemOrder(
+            poolId, trancheId, investor, currency, trancheTokensPayout, remainingRedeemOrder
+        );
         router.execute(_message);
     }
 
@@ -142,10 +146,11 @@ contract MockHomeLiquidityPools is Test {
         bytes32 investor,
         uint128 currency,
         uint128 currencyPayout,
-        uint128 trancheTokensPayout
+        uint128 trancheTokensPayout,
+        uint128 remainingInvestOrder
     ) public {
         bytes memory _message = Messages.formatExecutedCollectInvest(
-            poolId, trancheId, investor, currency, currencyPayout, trancheTokensPayout
+            poolId, trancheId, investor, currency, currencyPayout, trancheTokensPayout, remainingInvestOrder
         );
         router.execute(_message);
     }
@@ -156,10 +161,11 @@ contract MockHomeLiquidityPools is Test {
         bytes32 investor,
         uint128 currency,
         uint128 currencyPayout,
-        uint128 trancheTokensPayout
+        uint128 trancheTokensPayout,
+        uint128 remainingRedeemOrder
     ) public {
         bytes memory _message = Messages.formatExecutedCollectRedeem(
-            poolId, trancheId, investor, currency, currencyPayout, trancheTokensPayout
+            poolId, trancheId, investor, currency, currencyPayout, trancheTokensPayout, remainingRedeemOrder
         );
         router.execute(_message);
     }
