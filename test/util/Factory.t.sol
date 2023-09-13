@@ -22,7 +22,7 @@ contract FactoryTest is Test {
         mainnetFork = vm.createFork(vm.envString("MAINNET_RPC_URL"));
         polygonFork = vm.createFork(vm.envString("POLYGON_RPC_URL"));
 
-        root = address(new Root(address(new Escrow()), 48 hours));
+        root = address(new Root(address(new Escrow(address(this))), 48 hours, address(this)));
     }
 
     function testTrancheTokenFactoryIsDeterministicAcrossChains(
@@ -62,13 +62,13 @@ contract FactoryTest is Test {
                             bytes1(0xff),
                             address(this),
                             salt,
-                            keccak256(abi.encodePacked(type(TrancheTokenFactory).creationCode, abi.encode(root)))
+                            keccak256(abi.encodePacked(type(TrancheTokenFactory).creationCode, abi.encode(root), abi.encode(address(this))))
                         )
                     )
                 )
             )
         );
-        TrancheTokenFactory trancheTokenFactory = new TrancheTokenFactory{ salt: salt }(root);
+        TrancheTokenFactory trancheTokenFactory = new TrancheTokenFactory{ salt: salt }(root, address(this));
         assertEq(address(trancheTokenFactory), predictedAddress);
     }
 
@@ -83,7 +83,7 @@ contract FactoryTest is Test {
         string memory symbol,
         uint8 decimals
     ) public {
-        TrancheTokenFactory trancheTokenFactory = new TrancheTokenFactory{ salt: salt }(root);
+        TrancheTokenFactory trancheTokenFactory = new TrancheTokenFactory{ salt: salt }(root, address(this));
 
         bytes32 salt = keccak256(abi.encodePacked(poolId, trancheId));
         address predictedAddress = address(
@@ -131,7 +131,7 @@ contract FactoryTest is Test {
                             bytes1(0xff),
                             address(this),
                             salt,
-                            keccak256(abi.encodePacked(type(TrancheTokenFactory).creationCode, abi.encode(root)))
+                            keccak256(abi.encodePacked(type(TrancheTokenFactory).creationCode, abi.encode(root), abi.encode(address(this))))
                         )
                     )
                 )
@@ -142,14 +142,15 @@ contract FactoryTest is Test {
         trancheTokenWards[0] = address(investmentManager);
         trancheTokenWards[1] = address(poolManager);
 
-        TrancheTokenFactory trancheTokenFactory = new TrancheTokenFactory{ salt: salt }(root);
+        TrancheTokenFactory trancheTokenFactory = new TrancheTokenFactory{ salt: salt }(root, address(this));
         assertEq(address(trancheTokenFactory), predictedAddress);
-        trancheTokenFactory.newTrancheToken(
+        address token1 = trancheTokenFactory.newTrancheToken(
             poolId, trancheId, name, symbol, decimals, restrictionManager, trancheTokenWards
         );
         vm.expectRevert();
-        trancheTokenFactory.newTrancheToken(
+        address token2 = trancheTokenFactory.newTrancheToken(
             poolId, trancheId, name, symbol, decimals, restrictionManager, trancheTokenWards
         );
+        // assertEq(token1, token2);
     }
 }

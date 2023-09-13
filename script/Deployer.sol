@@ -35,19 +35,19 @@ contract Deployer is Script {
 
     function deployInvestmentManager() public {
         bytes32 salt = keccak256(abi.encodePacked(vm.envString("BASE_SALT")));
-        escrow = new Escrow{salt: salt}();
+        escrow = new Escrow{salt: salt}(address(this));
         userEscrow = new UserEscrow();
-        root = new Root{salt: salt}(address(escrow), delay);
+        root = new Root{salt: salt}(address(escrow), delay, address(this));
 
         investmentManager = new InvestmentManager(address(escrow), address(userEscrow));
 
         address liquidityPoolFactory = address(new LiquidityPoolFactory(address(root)));
         address restrictionManagerFactory = address(new RestrictionManagerFactory(address(root)));
-        address trancheTokenFactory = address(new TrancheTokenFactory{salt: salt}(address(root)));
+        address trancheTokenFactory = address(new TrancheTokenFactory{salt: salt}(address(root), address(this)));
         investmentManager = new InvestmentManager(address(escrow), address(userEscrow));
         poolManager =
             new PoolManager(address(escrow), liquidityPoolFactory, restrictionManagerFactory, trancheTokenFactory);
-
+            
         LiquidityPoolFactory(liquidityPoolFactory).rely(address(poolManager));
         TrancheTokenFactory(trancheTokenFactory).rely(address(poolManager));
     }

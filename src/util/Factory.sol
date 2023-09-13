@@ -71,11 +71,10 @@ interface TrancheTokenFactoryLike {
 contract TrancheTokenFactory is Auth {
     address public immutable root;
 
-    constructor(address _root) {
+    constructor(address _root, address _deployer) {
         root = _root;
-
-        wards[msg.sender] = 1;
-        emit Rely(msg.sender);
+        wards[_deployer] = 1;
+        emit Rely(_deployer);
     }
 
     function newTrancheToken(
