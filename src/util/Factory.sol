@@ -21,8 +21,10 @@ interface LiquidityPoolFactoryLike {
     ) external returns (address);
 }
 
+/// @title  Liquidity Pool Factory
+/// @dev    Utility for deploying new liquidity pool contracts
 contract LiquidityPoolFactory is Auth {
-    address immutable root;
+    address public immutable root;
 
     constructor(address _root) {
         root = _root;
@@ -57,13 +59,17 @@ interface TrancheTokenFactoryLike {
         string memory name,
         string memory symbol,
         uint8 decimals,
-        address[] calldata trancheTokenWards,
+        address restrictionManager,
         address[] calldata restrictionManagerWards
     ) external returns (address);
 }
 
+/// @title  Tranche Token Factory
+/// @dev    Utility for deploying new tranche token contracts
+///         Ensures the addresses are deployed at a deterministic address
+///         based on the pool id and tranche id.
 contract TrancheTokenFactory is Auth {
-    address immutable root;
+    address public immutable root;
 
     constructor(address _root) {
         root = _root;
@@ -78,11 +84,9 @@ contract TrancheTokenFactory is Auth {
         string memory name,
         string memory symbol,
         uint8 decimals,
-        address[] calldata trancheTokenWards,
-        address[] calldata restrictionManagerWards
+        address restrictionManager,
+        address[] calldata trancheTokenWards
     ) public auth returns (address) {
-        address restrictionManager = _newRestrictionManager(restrictionManagerWards);
-
         // Salt is hash(poolId + trancheId)
         // same tranche token address on every evm chain
         bytes32 salt = keccak256(abi.encodePacked(poolId, trancheId));
@@ -101,8 +105,28 @@ contract TrancheTokenFactory is Auth {
 
         return address(token);
     }
+}
 
-    function _newRestrictionManager(address[] calldata restrictionManagerWards) internal returns (address memberList) {
+interface RestrictionManagerFactoryLike {
+    function newRestrictionManager(address[] calldata restrictionManagerWards) external returns (address);
+}
+
+/// @title  Restriction Manager Factory
+/// @dev    Utility for deploying new restriction manager contracts
+contract RestrictionManagerFactory is Auth {
+    address immutable root;
+
+    constructor(address _root) {
+        root = _root;
+
+        wards[msg.sender] = 1;
+        emit Rely(msg.sender);
+    }
+
+    function newRestrictionManager(address[] calldata restrictionManagerWards)
+        public
+        returns (address restrictionManager)
+    {
         RestrictionManager restrictionManager = new RestrictionManager();
 
         restrictionManager.updateMember(RootLike(root).escrow(), type(uint256).max);

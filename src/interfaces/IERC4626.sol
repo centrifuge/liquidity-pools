@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Contracts (last updated v4.9.0) (interfaces/IERC4626.sol)
+//
 pragma solidity ^0.8.20;
 
 import {IERC20} from "./IERC20.sol";
 
-/**
- * @dev Interface of the ERC4626 "Tokenized Vault Standard", as defined in
- * https://eips.ethereum.org/EIPS/eip-4626[ERC-4626].
- */
+/// @title  IERC20
+/// @dev    Interface of the ERC4626 "Tokenized Vault Standard", as defined in
+///         https://eips.ethereum.org/EIPS/eip-4626[ERC-4626].
+/// @dev    Adapted from OpenZeppelin Contracts (last updated v4.9.0) (interfaces/IERC4626.sol)
 interface IERC4626 is IERC20 {
     event Deposit(address indexed sender, address indexed owner, uint256 assets, uint256 shares);
 

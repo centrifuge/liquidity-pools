@@ -28,6 +28,8 @@ interface ApproveLike {
 contract DeployTest is Test {
     using MathLib for uint128;
 
+    uint8 constant PRICE_DECIMALS = 18;
+
     InvestmentManager investmentManager;
     Gateway gateway;
     Root root;
@@ -64,7 +66,7 @@ contract DeployTest is Test {
         bytes16 trancheId
     ) public {
         uint8 decimals = 6; // TODO: use fuzzed decimals
-        uint128 price = uint128(2 * 10 ** investmentManager.PRICE_DECIMALS()); //TODO: fuzz price
+        uint128 price = uint128(2 * 10 ** PRICE_DECIMALS); //TODO: fuzz price
         uint128 currencyId = 1;
         uint256 amount = 1000 * 10 ** erc20.decimals();
         uint64 validUntil = uint64(block.timestamp + 1000 days);
@@ -108,9 +110,7 @@ contract DeployTest is Test {
 
         uint128 trancheTokensPayout = _toUint128(
             uint128(amount).mulDiv(
-                10 ** (investmentManager.PRICE_DECIMALS() - erc20.decimals() + lPool.decimals()),
-                price,
-                MathLib.Rounding.Down
+                10 ** (PRICE_DECIMALS - erc20.decimals() + lPool.decimals()), price, MathLib.Rounding.Down
             )
         );
 
@@ -119,7 +119,7 @@ contract DeployTest is Test {
 
         vm.prank(address(gateway));
         investmentManager.handleExecutedCollectInvest(
-            poolId, trancheId, self, _currencyId, uint128(amount), trancheTokensPayout
+            poolId, trancheId, self, _currencyId, uint128(amount), trancheTokensPayout, 0
         );
 
         assertEq(lPool.maxMint(self), trancheTokensPayout);
@@ -169,7 +169,7 @@ contract DeployTest is Test {
         // Assume a bot calls collectRedeem for this user on cent chain
         vm.prank(address(gateway));
         investmentManager.handleExecutedCollectRedeem(
-            poolId, trancheId, self, _currencyId, currencyPayout, uint128(amount)
+            poolId, trancheId, self, _currencyId, currencyPayout, uint128(amount), 0
         );
 
         assertEq(lPool.maxWithdraw(self), currencyPayout);

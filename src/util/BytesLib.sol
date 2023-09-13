@@ -1,13 +1,10 @@
-// SPDX-License-Identifier: Unlicense
+// SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-/*
- * @title Solidity Bytes Arrays Utils
- * @author Gonçalo Sá <goncalo.sa@consensys.net>
- *
- * @dev Bytes tightly packed arrays utility library for ethereum contracts written in Solidity.
- *      The library lets you concatenate, slice and type cast bytes arrays both in memory and storage.
- */
+/// @title  Bytes Lib
+/// @author çalo Sá <goncalo.sa@consensys.net>
+/// @dev    Bytes tightly packed arrays utility library for ethereum contracts written in Solidity.
+///         The library lets you concatenate, slice and type cast bytes arrays both in memory and storage.
 library BytesLib {
     function slice(bytes memory _bytes, uint256 _start, uint256 _length) internal pure returns (bytes memory) {
         require(_length + 31 >= _length, "slice_overflow");
