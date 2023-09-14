@@ -40,6 +40,13 @@ interface InvestmentManagerLike {
         uint128 trancheTokensPayout,
         uint128 remainingRedeemOrder
     ) external;
+    function handleTriggerIncreaseRedeemOrder(
+        uint64 poolId,
+        bytes16 trancheId,
+        address investor,
+        uint128 currency,
+        uint128 trancheTokenAmount
+    ) external;
 }
 
 interface PoolManagerLike {
@@ -53,6 +60,8 @@ interface PoolManagerLike {
         uint8 decimals
     ) external;
     function updateMember(uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) external;
+    function freeze(uint64 poolId, bytes16 trancheId, address user) external;
+    function unfreeze(uint64 poolId, bytes16 trancheId, address user) external;
     function updateTrancheTokenMetadata(
         uint64 poolId,
         bytes16 trancheId,
@@ -380,6 +389,18 @@ contract Gateway is Auth {
             (uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol) =
                 Messages.parseUpdateTrancheTokenMetadata(message);
             poolManager.updateTrancheTokenMetadata(poolId, trancheId, tokenName, tokenSymbol);
+        } else if (Messages.isTriggerIncreaseRedeemOrder(message)) {
+            (uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 trancheTokenAmount) =
+                Messages.parseTriggerIncreaseRedeemOrder(message);
+            investmentManager.handleTriggerIncreaseRedeemOrder(
+                poolId, trancheId, investor, currency, trancheTokenAmount
+            );
+        } else if (Messages.isFreeze(message)) {
+            (uint64 poolId, bytes16 trancheId, address user) = Messages.parseFreeze(message);
+            poolManager.freeze(poolId, trancheId, user);
+        } else if (Messages.isUnfreeze(message)) {
+            (uint64 poolId, bytes16 trancheId, address user) = Messages.parseUnfreeze(message);
+            poolManager.unfreeze(poolId, trancheId, user);
         } else {
             revert("Gateway/invalid-message");
         }

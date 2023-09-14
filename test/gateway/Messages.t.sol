@@ -891,31 +891,75 @@ contract MessagesTest is Test {
         assertEq(decodedCurrency, currency);
     }
 
-    function testUpdateTrancheInvestmentLimit() public {
+    function testTriggerIncreaseRedeemOrder() public {
         uint64 poolId = 1;
         bytes16 trancheId = bytes16(hex"811acd5b3f17c06841c7e41e9e04cb1b");
-        uint128 investmentLimit = 1000;
+        bytes32 investor = bytes32(0x1231231231231231231231231231231231231231000000000000000000000000);
+        uint128 currency = 246803579;
+        uint128 amount = 100000000000000000000000000;
         bytes memory expectedHex =
-            hex"180000000000000001811acd5b3f17c06841c7e41e9e04cb1b000000000000000000000000000003e8";
+            hex"180000000000000001811acd5b3f17c06841c7e41e9e04cb1b12312312312312312312312312312312312312310000000000000000000000000000000000000000000000000eb5ec7b000000000052b7d2dcc80cd2e4000000";
 
-        assertEq(Messages.formatUpdateTrancheInvestmentLimit(poolId, trancheId, investmentLimit), expectedHex);
+        assertEq(Messages.formatTriggerIncreaseRedeemOrder(poolId, trancheId, investor, currency, amount), expectedHex);
 
-        (uint64 decodedPoolId, bytes16 decodedTrancheId, uint128 decodedInvestmentLimit) =
-            Messages.parseUpdateTrancheInvestmentLimit(expectedHex);
+        (
+            uint64 decodedPoolId,
+            bytes16 decodedTrancheId,
+            address decodedInvestor,
+            uint128 decodedCurrency,
+            uint128 decodedAmount
+        ) = Messages.parseTriggerIncreaseRedeemOrder(expectedHex);
         assertEq(uint256(decodedPoolId), poolId);
         assertEq(decodedTrancheId, trancheId);
-        assertEq(decodedInvestmentLimit, investmentLimit);
+        assertEq(decodedInvestor, address(bytes20(investor)));
+        assertEq(decodedCurrency, currency);
+        assertEq(decodedAmount, amount);
     }
 
-    function testUpdateTrancheInvestmentLimitEquivalence(uint64 poolId, bytes16 trancheId, uint128 investmentLimit)
-        public
-    {
-        bytes memory _message = Messages.formatUpdateTrancheInvestmentLimit(poolId, trancheId, investmentLimit);
-        (uint64 decodedPoolId, bytes16 decodedTrancheId, uint128 decodedInvestmentLimit) =
-            Messages.parseUpdateTrancheInvestmentLimit(_message);
+    function testTriggerIncreaseRedeemOrderEquivalence(
+        uint64 poolId,
+        bytes16 trancheId,
+        bytes32 investor,
+        uint128 token,
+        uint128 amount
+    ) public {
+        bytes memory _message = Messages.formatTriggerIncreaseRedeemOrder(poolId, trancheId, investor, token, amount);
+        (
+            uint64 decodedPoolId,
+            bytes16 decodedTrancheId,
+            address decodedInvestor,
+            uint128 decodedToken,
+            uint128 decodedAmount
+        ) = Messages.parseTriggerIncreaseRedeemOrder(_message);
+
         assertEq(uint256(decodedPoolId), uint256(poolId));
         assertEq(decodedTrancheId, trancheId);
-        assertEq(decodedInvestmentLimit, investmentLimit);
+        assertEq(decodedInvestor, address(bytes20(investor)));
+        assertEq(decodedToken, token);
+        assertEq(decodedAmount, amount);
+    }
+
+    function testFreeze() public {
+        uint64 poolId = 2;
+        bytes16 trancheId = bytes16(hex"811acd5b3f17c06841c7e41e9e04cb1b");
+        address investor = 0x1231231231231231231231231231231231231231;
+        bytes memory expectedHex =
+            hex"190000000000000002811acd5b3f17c06841c7e41e9e04cb1b1231231231231231231231231231231231231231000000000000000000000000";
+
+        assertEq(Messages.formatFreeze(poolId, trancheId, investor), expectedHex);
+
+        (uint64 decodedPoolId, bytes16 decodedTrancheId, address decodedInvestor) = Messages.parseFreeze(expectedHex);
+        assertEq(uint256(decodedPoolId), poolId);
+        assertEq(decodedTrancheId, trancheId);
+        assertEq(decodedInvestor, investor);
+    }
+
+    function testFreezeEquivalence(uint64 poolId, bytes16 trancheId, address user) public {
+        bytes memory _message = Messages.formatFreeze(poolId, trancheId, user);
+        (uint64 decodedPoolId, bytes16 decodedTrancheId, address decodedUser) = Messages.parseFreeze(_message);
+        assertEq(uint256(decodedPoolId), uint256(poolId));
+        assertEq(decodedTrancheId, trancheId);
+        assertEq(decodedUser, user);
     }
 
     function testFormatDomainCentrifuge() public {

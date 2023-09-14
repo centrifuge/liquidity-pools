@@ -3,7 +3,7 @@ pragma solidity 0.8.21;
 
 import {TrancheTokenFactoryLike, RestrictionManagerFactoryLike, LiquidityPoolFactoryLike} from "./util/Factory.sol";
 import {TrancheTokenLike} from "./token/Tranche.sol";
-import {MemberlistLike} from "./token/RestrictionManager.sol";
+import {RestrictionManagerLike} from "./token/RestrictionManager.sol";
 import {IERC20} from "./interfaces/IERC20.sol";
 import {Auth} from "./util/Auth.sol";
 import {SafeTransferLib} from "./util/SafeTransferLib.sol";
@@ -74,7 +74,7 @@ struct Tranche {
 /// @notice This contract manages which pools & tranches exist,
 ///         as well as managing allowed pool currencies, and incoming and outgoing transfers.
 contract PoolManager is Auth {
-    uint8 internal constant MAX_CURRENCY_DECIMALS = 18;
+    uint8 internal constant MAX_DECIMALS = 18;
 
     EscrowLike public immutable escrow;
     LiquidityPoolFactoryLike public immutable liquidityPoolFactory;
@@ -217,6 +217,8 @@ contract PoolManager is Auth {
         string memory tokenSymbol,
         uint8 decimals
     ) public onlyGateway {
+        require(decimals <= MAX_DECIMALS, "PoolManager/too-many-tranche-token-decimals");
+
         Pool storage pool = pools[poolId];
         require(pool.createdAt != 0, "PoolManager/invalid-pool");
         Tranche storage tranche = pool.tranches[trancheId];
@@ -247,8 +249,24 @@ contract PoolManager is Auth {
         TrancheTokenLike trancheToken = TrancheTokenLike(getTrancheToken(poolId, trancheId));
         require(address(trancheToken) != address(0), "PoolManager/unknown-token");
 
-        MemberlistLike memberlist = MemberlistLike(address(trancheToken.restrictionManager()));
-        memberlist.updateMember(user, validUntil);
+        RestrictionManagerLike restrictionManager = RestrictionManagerLike(address(trancheToken.restrictionManager()));
+        restrictionManager.updateMember(user, validUntil);
+    }
+
+    function freeze(uint64 poolId, bytes16 trancheId, address user) public onlyGateway {
+        TrancheTokenLike trancheToken = TrancheTokenLike(getTrancheToken(poolId, trancheId));
+        require(address(trancheToken) != address(0), "PoolManager/unknown-token");
+
+        RestrictionManagerLike restrictionManager = RestrictionManagerLike(address(trancheToken.restrictionManager()));
+        restrictionManager.freeze(user);
+    }
+
+    function unfreeze(uint64 poolId, bytes16 trancheId, address user) public onlyGateway {
+        TrancheTokenLike trancheToken = TrancheTokenLike(getTrancheToken(poolId, trancheId));
+        require(address(trancheToken) != address(0), "PoolManager/unknown-token");
+
+        RestrictionManagerLike restrictionManager = RestrictionManagerLike(address(trancheToken.restrictionManager()));
+        restrictionManager.unfreeze(user);
     }
 
     /// @notice A global chain agnostic currency index is maintained on Centrifuge. This function maps a currency from the Centrifuge index to its corresponding address on the evm chain.
@@ -259,7 +277,7 @@ contract PoolManager is Auth {
         require(currency != 0, "PoolManager/currency-id-has-to-be-greater-than-0");
         require(currencyIdToAddress[currency] == address(0), "PoolManager/currency-id-in-use");
         require(currencyAddressToId[currencyAddress] == 0, "PoolManager/currency-address-in-use");
-        require(IERC20(currencyAddress).decimals() <= MAX_CURRENCY_DECIMALS, "PoolManager/too-many-currency-decimals");
+        require(IERC20(currencyAddress).decimals() <= MAX_DECIMALS, "PoolManager/too-many-currency-decimals");
 
         currencyIdToAddress[currency] = currencyAddress;
         currencyAddressToId[currencyAddress] = currency;
@@ -289,7 +307,7 @@ contract PoolManager is Auth {
         require(address(trancheToken) != address(0), "PoolManager/unknown-token");
 
         require(
-            MemberlistLike(address(trancheToken.restrictionManager())).hasMember(destinationAddress),
+            RestrictionManagerLike(address(trancheToken.restrictionManager())).hasMember(destinationAddress),
             "PoolManager/not-a-member"
         );
         trancheToken.mint(destinationAddress, amount);
@@ -308,17 +326,11 @@ contract PoolManager is Auth {
         address[] memory restrictionManagerWards = new address[](1);
         restrictionManagerWards[0] = address(this);
 
-        address restrictionManager = restrictionManagerFactory.newRestrictionManager(restrictionManagerWards);
-
         address token = trancheTokenFactory.newTrancheToken(
-            poolId,
-            trancheId,
-            tranche.tokenName,
-            tranche.tokenSymbol,
-            tranche.decimals,
-            restrictionManager,
-            trancheTokenWards
+            poolId, trancheId, tranche.tokenName, tranche.tokenSymbol, tranche.decimals, trancheTokenWards
         );
+        address restrictionManager = restrictionManagerFactory.newRestrictionManager(token, restrictionManagerWards);
+        TrancheTokenLike(token).file("restrictionManager", restrictionManager);
 
         tranche.token = token;
         emit DeployTranche(poolId, trancheId, token);

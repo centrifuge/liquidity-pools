@@ -56,10 +56,11 @@ contract Deployer is Script {
         // Deploy gateway and admins
         pauseAdmin = new PauseAdmin(address(root));
         delayedAdmin = new DelayedAdmin(address(root));
+        gateway = new Gateway(address(root), address(investmentManager), address(poolManager), address(router));
         pauseAdmin.rely(address(delayedAdmin));
         root.rely(address(pauseAdmin));
         root.rely(address(delayedAdmin));
-        gateway = new Gateway(address(root), address(investmentManager), address(poolManager), address(router));
+        root.rely(address(gateway));
 
         // Wire gateway
         investmentManager.file("poolManager", address(poolManager));
