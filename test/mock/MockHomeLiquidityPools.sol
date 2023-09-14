@@ -119,6 +119,16 @@ contract MockHomeLiquidityPools is Test {
         router.execute(_message);
     }
 
+    function freeze(uint64 poolId, bytes16 trancheId, address user) public {
+        bytes memory _message = Messages.formatFreeze(poolId, trancheId, user);
+        router.execute(_message);
+    }
+
+    function unfreeze(uint64 poolId, bytes16 trancheId, address user) public {
+        bytes memory _message = Messages.formatUnfreeze(poolId, trancheId, user);
+        router.execute(_message);
+    }
+
     function isExecutedDecreaseInvestOrder(
         uint64 poolId,
         bytes16 trancheId,

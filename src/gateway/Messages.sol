@@ -57,7 +57,11 @@ library Messages {
         /// 23 - Update tranche token metadata
         UpdateTrancheTokenMetadata,
         /// 24 - Request redeem investor
-        TriggerIncreaseRedeemOrder
+        TriggerIncreaseRedeemOrder,
+        /// 25 - Freeze tranche tokens
+        Freeze,
+        /// 26 - Unfreeze tranche tokens
+        Unfreeze
     }
 
     enum Domain {
@@ -869,6 +873,52 @@ library Messages {
         investor = BytesLib.toAddress(_msg, 25);
         currency = BytesLib.toUint128(_msg, 57);
         trancheTokenAmount = BytesLib.toUint128(_msg, 73);
+    }
+
+    /**
+     * Freeze
+     *
+     * 0: call type (uint8 = 1 byte)
+     * 1-8: poolId (uint64 = 8 bytes)
+     * 9-24: trancheId (16 bytes)
+     * 25-45: user (Ethereum address, 20 bytes - Skip 12 bytes from 32-byte addresses)
+     *
+     */
+    function formatFreeze(uint64 poolId, bytes16 trancheId, address member) internal pure returns (bytes memory) {
+        return abi.encodePacked(uint8(Call.Freeze), poolId, trancheId, bytes32(bytes20(member)));
+    }
+
+    function isFreeze(bytes memory _msg) internal pure returns (bool) {
+        return messageType(_msg) == Call.Freeze;
+    }
+
+    function parseFreeze(bytes memory _msg) internal pure returns (uint64 poolId, bytes16 trancheId, address user) {
+        poolId = BytesLib.toUint64(_msg, 1);
+        trancheId = BytesLib.toBytes16(_msg, 9);
+        user = BytesLib.toAddress(_msg, 25);
+    }
+
+    /**
+     * Unfreeze
+     *
+     * 0: call type (uint8 = 1 byte)
+     * 1-8: poolId (uint64 = 8 bytes)
+     * 9-24: trancheId (16 bytes)
+     * 25-45: user (Ethereum address, 20 bytes - Skip 12 bytes from 32-byte addresses)
+     *
+     */
+    function formatUnfreeze(uint64 poolId, bytes16 trancheId, address user) internal pure returns (bytes memory) {
+        return abi.encodePacked(uint8(Call.Unfreeze), poolId, trancheId, bytes32(bytes20(user)));
+    }
+
+    function isUnfreeze(bytes memory _msg) internal pure returns (bool) {
+        return messageType(_msg) == Call.Unfreeze;
+    }
+
+    function parseUnfreeze(bytes memory _msg) internal pure returns (uint64 poolId, bytes16 trancheId, address user) {
+        poolId = BytesLib.toUint64(_msg, 1);
+        trancheId = BytesLib.toBytes16(_msg, 9);
+        user = BytesLib.toAddress(_msg, 25);
     }
 
     // Utils

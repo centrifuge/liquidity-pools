@@ -939,6 +939,29 @@ contract MessagesTest is Test {
         assertEq(decodedAmount, amount);
     }
 
+    function testFreeze() public {
+        uint64 poolId = 2;
+        bytes16 trancheId = bytes16(hex"811acd5b3f17c06841c7e41e9e04cb1b");
+        address investor = 0x1231231231231231231231231231231231231231;
+        bytes memory expectedHex =
+            hex"190000000000000002811acd5b3f17c06841c7e41e9e04cb1b1231231231231231231231231231231231231231000000000000000000000000";
+
+        assertEq(Messages.formatFreeze(poolId, trancheId, investor), expectedHex);
+
+        (uint64 decodedPoolId, bytes16 decodedTrancheId, address decodedInvestor) = Messages.parseFreeze(expectedHex);
+        assertEq(uint256(decodedPoolId), poolId);
+        assertEq(decodedTrancheId, trancheId);
+        assertEq(decodedInvestor, investor);
+    }
+
+    function testFreezeEquivalence(uint64 poolId, bytes16 trancheId, address user) public {
+        bytes memory _message = Messages.formatFreeze(poolId, trancheId, user);
+        (uint64 decodedPoolId, bytes16 decodedTrancheId, address decodedUser) = Messages.parseFreeze(_message);
+        assertEq(uint256(decodedPoolId), uint256(poolId));
+        assertEq(decodedTrancheId, trancheId);
+        assertEq(decodedUser, user);
+    }
+
     function testFormatDomainCentrifuge() public {
         assertEq(Messages.formatDomain(Messages.Domain.Centrifuge), hex"000000000000000000");
     }
