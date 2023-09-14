@@ -42,7 +42,7 @@ contract TestSetup is Deployer, Test {
         admin = self;
 
         // deploy core contracts
-        deployInvestmentManager(address(this));
+        deployInvestmentManager();
         // deploy mockRouter
         mockXcmRouter = new MockXcmRouter(address(investmentManager));
         // wire contracts

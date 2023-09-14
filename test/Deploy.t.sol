@@ -34,7 +34,7 @@ contract DeployTest is Test, Deployer {
     ERC20 erc20;
 
     function setUp() public {
-        deployInvestmentManager(address(this));
+        deployInvestmentManager();
         PermissionlessRouter router = new PermissionlessRouter();
         wire(address(router));
         RouterLike(address(router)).file("gateway", address(gateway));
@@ -143,7 +143,6 @@ contract DeployTest is Test, Deployer {
         vm.expectRevert(bytes("ERC20/insufficient-allowance"));
         lPool.requestRedeem(amount, self);
         lPool.approve(address(investmentManager), amount);
-        console.log(lPool.allowance(self, address(lPool)));
         lPool.requestRedeem(amount, self);
 
         // redeem
