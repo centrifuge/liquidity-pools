@@ -18,7 +18,6 @@ contract ERC20 is Context {
 
     string public name;
     string public symbol;
-    string public constant version = "3";
     uint8 public immutable decimals;
     uint256 public totalSupply;
 
@@ -26,7 +25,9 @@ contract ERC20 is Context {
     mapping(address => mapping(address => uint256)) public allowance;
     mapping(address => uint256) public nonces;
 
-    // --- EIP712 niceties ---
+    // --- EIP712 ---
+    bytes32 private immutable nameHash;
+    bytes32 private immutable versionHash;
     uint256 public immutable deploymentChainId;
     bytes32 private immutable _DOMAIN_SEPARATOR;
     bytes32 public constant PERMIT_TYPEHASH =
@@ -44,6 +45,8 @@ contract ERC20 is Context {
         wards[_msgSender()] = 1;
         emit Rely(_msgSender());
 
+        nameHash = keccak256(bytes("Centrifuge"));
+        versionHash = keccak256(bytes("1"));
         deploymentChainId = block.chainid;
         _DOMAIN_SEPARATOR = _calculateDomainSeparator(block.chainid);
     }
@@ -67,9 +70,10 @@ contract ERC20 is Context {
     function _calculateDomainSeparator(uint256 chainId) private view returns (bytes32) {
         return keccak256(
             abi.encode(
-                keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
-                keccak256(bytes(name)),
-                keccak256(bytes(version)),
+                // keccak256('EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)')
+                0x8b73c3c69bb8fe3d512ecc4cf759cc79239f7b179b0ffacaa9a75d522b39400f,
+                nameHash,
+                versionHash,
                 chainId,
                 address(this)
             )

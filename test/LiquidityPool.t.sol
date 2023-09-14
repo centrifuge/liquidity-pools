@@ -369,6 +369,7 @@ contract LiquidityPoolTest is TestSetup {
         vm.assume(currencyId > 0);
         vm.assume(amount < MAX_UINT128);
         vm.assume(amount > 100);
+        vm.assume(decimals <= 18);
         vm.assume(validUntil >= block.timestamp);
         price = 1;
         Investor investor = new Investor();
@@ -1460,7 +1461,6 @@ contract LiquidityPoolTest is TestSetup {
         bytes16 trancheId,
         string memory tokenName,
         string memory tokenSymbol,
-        uint8 decimals,
         uint128 price,
         uint128 currencyId,
         uint8 trancheDecimals,
@@ -1473,7 +1473,7 @@ contract LiquidityPoolTest is TestSetup {
         vm.assume(trancheDecimals <= 18);
         vm.assume(validUntil > block.timestamp + 7 days);
 
-        address lPool_ = deployLiquidityPool(poolId, decimals, tokenName, tokenSymbol, trancheId, currencyId);
+        address lPool_ = deployLiquidityPool(poolId, trancheDecimals, tokenName, tokenSymbol, trancheId, currencyId);
         LiquidityPool lPool = LiquidityPool(lPool_);
         homePools.allowPoolCurrency(poolId, currencyId);
         homePools.updateTrancheTokenPrice(poolId, trancheId, currencyId, price);
