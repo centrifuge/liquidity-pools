@@ -17,12 +17,10 @@ contract RestrictionManager is Auth {
     string internal constant SOURCE_IS_FROZEN_MESSAGE = "RestrictionManager/source-is-frozen";
     string internal constant DESTINATION_NOT_A_MEMBER_RESTRICTION_MESSAGE =
         "RestrictionManager/destination-not-a-member";
-    string internal constant MINIMUM_BALANCE_NOT_REACHED_MESSAGE = "RestrictionManager/minimum-balance-not-reached";
 
     uint8 public constant SUCCESS_CODE = 0;
     uint8 public constant SOURCE_IS_FROZEN_CODE = 1;
     uint8 public constant DESTINATION_NOT_A_MEMBER_RESTRICTION_CODE = 2;
-    uint8 public constant MINIMUM_BALANCE_NOT_REACHED_CODE = 3;
 
     IERC20 public immutable token;
 
@@ -32,14 +30,10 @@ contract RestrictionManager is Auth {
     /// @dev Member accounts that tokens can be transferred to
     mapping(address => uint256) public members;
 
-    /// @dev Minimum balance that a destination needs to hold
-    uint256 public minimumBalance;
-
     // --- Events ---
     event UpdateMember(address indexed user, uint256 validUntil);
     event Freeze(address indexed user);
     event Unfreeze(address indexed user);
-    event UpdateMinimumBalance(uint256 indexed minimumBalance);
 
     constructor(address token_) {
         token = IERC20(token_);
@@ -58,10 +52,6 @@ contract RestrictionManager is Auth {
             return DESTINATION_NOT_A_MEMBER_RESTRICTION_CODE;
         }
 
-        if (token.balanceOf(to) + value < minimumBalance) {
-            return MINIMUM_BALANCE_NOT_REACHED_CODE;
-        }
-
         return SUCCESS_CODE;
     }
 
@@ -72,10 +62,6 @@ contract RestrictionManager is Auth {
 
         if (restrictionCode == DESTINATION_NOT_A_MEMBER_RESTRICTION_CODE) {
             return DESTINATION_NOT_A_MEMBER_RESTRICTION_MESSAGE;
-        }
-
-        if (restrictionCode == MINIMUM_BALANCE_NOT_REACHED_CODE) {
-            return MINIMUM_BALANCE_NOT_REACHED_MESSAGE;
         }
 
         return SUCCESS_MESSAGE;
@@ -117,13 +103,5 @@ contract RestrictionManager is Auth {
         for (uint256 i = 0; i < userLength; i++) {
             updateMember(users[i], validUntil);
         }
-    }
-
-    // --- Managing min balance ---
-    /// @dev If the minimum balance is increased, this will not impact existing
-    ///      token balances, only future transfers.
-    function updateMinimumBalance(uint256 newMinimumBalance) public auth {
-        minimumBalance = newMinimumBalance;
-        emit UpdateMinimumBalance(newMinimumBalance);
     }
 }
