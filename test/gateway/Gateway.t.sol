@@ -179,4 +179,10 @@ contract GatewayTest is TestSetup {
         gateway.cancelInvestOrder(poolId, trancheId, investor, currency);
         gateway.cancelRedeemOrder(poolId, trancheId, investor, currency);
     }
+
+    function tesCaseNoMatch() public {
+        bytes memory message = hex"020000000000bce1a4";
+        vm.expectRevert("Gateway/no-matching-message");
+        gateway.handle(message);
+    }
 }
