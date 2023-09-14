@@ -180,9 +180,10 @@ contract GatewayTest is TestSetup {
         gateway.cancelRedeemOrder(poolId, trancheId, investor, currency);
     }
 
-    function tesCaseNoMatch() public {
-        bytes memory message = hex"020000000000bce1a4";
-        vm.expectRevert("Gateway/no-matching-message");
+    function testCaseNoMatch() public {
+        bytes memory message = hex"180000000000bce1a4";
+        vm.expectRevert("Gateway/invalid-message");
+        vm.prank(address(mockXcmRouter));
         gateway.handle(message);
     }
 }
