@@ -1334,7 +1334,9 @@ contract LiquidityPoolTest is TestSetup {
         assertEq(erc20.balanceOf(address(escrow)), amount);
         assertEq(erc20.balanceOf(self), 0);
 
-        // decrease deposit request
+        vm.expectRevert(bytes("InvestmentManager/cannot-decrease-more-than-request"));
+        lPool.decreaseDepositRequest(amount + 1, self);
+
         lPool.decreaseDepositRequest(decreaseAmount, self);
         homePools.isExecutedDecreaseInvestOrder(
             poolId, trancheId, bytes32(bytes20(self)), currencyId, uint128(decreaseAmount), 0
@@ -1378,7 +1380,9 @@ contract LiquidityPoolTest is TestSetup {
         assertEq(lPool.balanceOf(address(escrow)), amount);
         assertEq(lPool.balanceOf(self), 0);
 
-        // decrease redeem request
+        vm.expectRevert(bytes("InvestmentManager/cannot-decrease-more-than-request"));
+        lPool.decreaseRedeemRequest(amount + 1, self);
+
         lPool.decreaseRedeemRequest(decreaseAmount, self);
         homePools.isExecutedDecreaseRedeemOrder(
             poolId, trancheId, bytes32(bytes20(self)), currencyId, uint128(decreaseAmount), 0

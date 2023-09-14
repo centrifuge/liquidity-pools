@@ -202,6 +202,8 @@ contract InvestmentManager is Auth {
     }
 
     function decreaseDepositRequest(address liquidityPool, uint256 _currencyAmount, address user) public auth {
+        require(_currencyAmount <= userDepositRequest(liquidityPool, user), "InvestmentManager/cannot-decrease-more-than-request");
+
         uint128 currencyAmount = _toUint128(_currencyAmount);
         LiquidityPoolLike _liquidityPool = LiquidityPoolLike(msg.sender);
         gateway.decreaseInvestOrder(
@@ -214,6 +216,8 @@ contract InvestmentManager is Auth {
     }
 
     function decreaseRedeemRequest(address liquidityPool, uint256 _trancheTokenAmount, address user) public auth {
+        require(_trancheTokenAmount <= userRedeemRequest(liquidityPool, user), "InvestmentManager/cannot-decrease-more-than-request");
+
         uint128 trancheTokenAmount = _toUint128(_trancheTokenAmount);
         LiquidityPoolLike _liquidityPool = LiquidityPoolLike(msg.sender);
         require(
