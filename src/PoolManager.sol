@@ -74,7 +74,7 @@ struct Tranche {
 /// @notice This contract manages which pools & tranches exist,
 ///         as well as managing allowed pool currencies, and incoming and outgoing transfers.
 contract PoolManager is Auth {
-    uint8 internal constant MAX_CURRENCY_DECIMALS = 18;
+    uint8 internal constant MAX_DECIMALS = 18;
 
     EscrowLike public immutable escrow;
     LiquidityPoolFactoryLike public immutable liquidityPoolFactory;
@@ -217,6 +217,8 @@ contract PoolManager is Auth {
         string memory tokenSymbol,
         uint8 decimals
     ) public onlyGateway {
+        require(decimals <= MAX_DECIMALS, "PoolManager/too-many-tranche-token-decimals");
+
         Pool storage pool = pools[poolId];
         require(pool.createdAt != 0, "PoolManager/invalid-pool");
         Tranche storage tranche = pool.tranches[trancheId];
@@ -275,7 +277,7 @@ contract PoolManager is Auth {
         require(currency != 0, "PoolManager/currency-id-has-to-be-greater-than-0");
         require(currencyIdToAddress[currency] == address(0), "PoolManager/currency-id-in-use");
         require(currencyAddressToId[currencyAddress] == 0, "PoolManager/currency-address-in-use");
-        require(IERC20(currencyAddress).decimals() <= MAX_CURRENCY_DECIMALS, "PoolManager/too-many-currency-decimals");
+        require(IERC20(currencyAddress).decimals() <= MAX_DECIMALS, "PoolManager/too-many-currency-decimals");
 
         currencyIdToAddress[currency] = currencyAddress;
         currencyAddressToId[currencyAddress] = currency;
