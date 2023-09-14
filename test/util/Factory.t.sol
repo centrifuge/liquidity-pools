@@ -159,6 +159,5 @@ contract FactoryTest is Test {
         address token2 = trancheTokenFactory.newTrancheToken(
             poolId, trancheId, name, symbol, decimals, restrictionManager, trancheTokenWards
         );
-        // assertEq(token1, token2);
     }
 }
