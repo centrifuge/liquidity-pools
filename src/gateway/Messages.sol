@@ -57,7 +57,7 @@ library Messages {
         /// 23 - Update tranche token metadata
         UpdateTrancheTokenMetadata,
         /// 24 - Request redeem investor
-        TriggerRequestRedeem
+        TriggerIncreaseRedeemOrder
     }
 
     enum Domain {
@@ -834,7 +834,7 @@ library Messages {
     }
 
     /*
-     * TriggerRequestRedeem Message
+     * TriggerIncreaseRedeemOrder Message
      *
      * 0: call type (uint8 = 1 byte)
      * 1-8: poolId (uint64 = 8 bytes)
@@ -843,7 +843,7 @@ library Messages {
      * 57-72: currency (uint128 = 16 bytes)
      * 73-89: amount (uint128 = 16 bytes)
      */
-    function formatTriggerRequestRedeem(
+    function formatTriggerIncreaseRedeemOrder(
         uint64 poolId,
         bytes16 trancheId,
         bytes32 investor,
@@ -851,15 +851,15 @@ library Messages {
         uint128 trancheTokenAmount
     ) internal pure returns (bytes memory) {
         return abi.encodePacked(
-            uint8(Call.TriggerRequestRedeem), poolId, trancheId, investor, currency, trancheTokenAmount
+            uint8(Call.TriggerIncreaseRedeemOrder), poolId, trancheId, investor, currency, trancheTokenAmount
         );
     }
 
-    function isTriggerRequestRedeem(bytes memory _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.TriggerRequestRedeem;
+    function isTriggerIncreaseRedeemOrder(bytes memory _msg) internal pure returns (bool) {
+        return messageType(_msg) == Call.TriggerIncreaseRedeemOrder;
     }
 
-    function parseTriggerRequestRedeem(bytes memory _msg)
+    function parseTriggerIncreaseRedeemOrder(bytes memory _msg)
         internal
         pure
         returns (uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 trancheTokenAmount)

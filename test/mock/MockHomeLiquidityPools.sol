@@ -72,7 +72,7 @@ contract MockHomeLiquidityPools is Test {
         router.execute(_message);
     }
 
-    function triggerRequestRedeem(
+    function triggerIncreaseRedeemOrder(
         uint64 poolId,
         bytes16 trancheId,
         address investor,
@@ -80,7 +80,7 @@ contract MockHomeLiquidityPools is Test {
         uint128 amount
     ) public {
         bytes memory _message =
-            Messages.formatTriggerRequestRedeem(poolId, trancheId, bytes32(bytes20(investor)), currencyId, amount);
+            Messages.formatTriggerIncreaseRedeemOrder(poolId, trancheId, bytes32(bytes20(investor)), currencyId, amount);
         router.execute(_message);
     }
 

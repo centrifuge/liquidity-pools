@@ -117,7 +117,7 @@ contract InvestmentManager is Auth {
     event ExecutedDecreaseRedeemOrder(
         uint64 indexed poolId, bytes16 indexed trancheId, address user, uint128 currency, uint128 trancheTokensPayout
     );
-    event TriggerRequestRedeem(
+    event TriggerIncreaseRedeemOrder(
         uint64 indexed poolId, bytes16 indexed trancheId, address user, uint128 currency, uint128 trancheTokenAmount
     );
 
@@ -402,7 +402,7 @@ contract InvestmentManager is Auth {
         emit ExecutedDecreaseRedeemOrder(poolId, trancheId, user, currency, trancheTokenPayout);
     }
 
-    function handleTriggerRequestRedeem(
+    function handleTriggerIncreaseRedeemOrder(
         uint64 poolId,
         bytes16 trancheId,
         address user,
@@ -415,7 +415,7 @@ contract InvestmentManager is Auth {
         AuthTransferLike(token).authTransferFrom(user, address(escrow), trancheTokenAmount);
 
         gateway.increaseRedeemOrder(poolId, trancheId, user, currency, trancheTokenAmount);
-        emit TriggerRequestRedeem(poolId, trancheId, user, currency, trancheTokenAmount);
+        emit TriggerIncreaseRedeemOrder(poolId, trancheId, user, currency, trancheTokenAmount);
     }
 
     // --- View functions ---

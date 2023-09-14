@@ -1390,7 +1390,7 @@ contract LiquidityPoolTest is TestSetup {
         assertEq(lPool.maxMint(self), decreaseAmount);
     }
 
-    function testTriggerRequestRedeem(
+    function testTriggerIncreaseRedeemOrder(
         uint64 poolId,
         uint8 decimals,
         string memory tokenName,
@@ -1411,7 +1411,7 @@ contract LiquidityPoolTest is TestSetup {
         investorDeposit(address(investor), lPool_, poolId, trancheId, amount, validUntil); // deposit funds first
 
         // Trigger request redeem of half the amount
-        homePools.triggerRequestRedeem(poolId, trancheId, address(investor), currencyId, uint128(amount / 2));
+        homePools.triggerIncreaseRedeemOrder(poolId, trancheId, address(investor), currencyId, uint128(amount / 2));
 
         assertApproxEqAbs(lPool.balanceOf(address(escrow)), amount / 2, 1);
         assertApproxEqAbs(lPool.balanceOf(address(investor)), amount / 2, 1);

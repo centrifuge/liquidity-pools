@@ -891,7 +891,7 @@ contract MessagesTest is Test {
         assertEq(decodedCurrency, currency);
     }
 
-    function testTriggerRequestRedeem() public {
+    function testTriggerIncreaseRedeemOrder() public {
         uint64 poolId = 1;
         bytes16 trancheId = bytes16(hex"811acd5b3f17c06841c7e41e9e04cb1b");
         bytes32 investor = bytes32(0x1231231231231231231231231231231231231231000000000000000000000000);
@@ -900,7 +900,7 @@ contract MessagesTest is Test {
         bytes memory expectedHex =
             hex"180000000000000001811acd5b3f17c06841c7e41e9e04cb1b12312312312312312312312312312312312312310000000000000000000000000000000000000000000000000eb5ec7b000000000052b7d2dcc80cd2e4000000";
 
-        assertEq(Messages.formatTriggerRequestRedeem(poolId, trancheId, investor, currency, amount), expectedHex);
+        assertEq(Messages.formatTriggerIncreaseRedeemOrder(poolId, trancheId, investor, currency, amount), expectedHex);
 
         (
             uint64 decodedPoolId,
@@ -908,7 +908,7 @@ contract MessagesTest is Test {
             address decodedInvestor,
             uint128 decodedCurrency,
             uint128 decodedAmount
-        ) = Messages.parseTriggerRequestRedeem(expectedHex);
+        ) = Messages.parseTriggerIncreaseRedeemOrder(expectedHex);
         assertEq(uint256(decodedPoolId), poolId);
         assertEq(decodedTrancheId, trancheId);
         assertEq(decodedInvestor, address(bytes20(investor)));
@@ -916,21 +916,21 @@ contract MessagesTest is Test {
         assertEq(decodedAmount, amount);
     }
 
-    function testTriggerRequestRedeemEquivalence(
+    function testTriggerIncreaseRedeemOrderEquivalence(
         uint64 poolId,
         bytes16 trancheId,
         bytes32 investor,
         uint128 token,
         uint128 amount
     ) public {
-        bytes memory _message = Messages.formatTriggerRequestRedeem(poolId, trancheId, investor, token, amount);
+        bytes memory _message = Messages.formatTriggerIncreaseRedeemOrder(poolId, trancheId, investor, token, amount);
         (
             uint64 decodedPoolId,
             bytes16 decodedTrancheId,
             address decodedInvestor,
             uint128 decodedToken,
             uint128 decodedAmount
-        ) = Messages.parseTriggerRequestRedeem(_message);
+        ) = Messages.parseTriggerIncreaseRedeemOrder(_message);
 
         assertEq(uint256(decodedPoolId), uint256(poolId));
         assertEq(decodedTrancheId, trancheId);
