@@ -135,6 +135,12 @@ contract TrancheTokenTest is Test {
         restrictionManager.updateMember(targetUser, validUntil);
         assertEq(restrictionManager.members(targetUser), validUntil);
 
+        restrictionManager.freeze(self);
+        vm.expectRevert(bytes("RestrictionManager/source-is-frozen"));
+        token.transferFrom(self, targetUser, amount);
+        assertEq(token.balanceOf(targetUser), 0);
+
+        restrictionManager.unfreeze(self);
         token.transferFrom(self, targetUser, amount);
         assertEq(token.balanceOf(targetUser), amount);
     }
@@ -165,6 +171,13 @@ contract TrancheTokenTest is Test {
 
         restrictionManager.updateMember(targetUser, validUntil);
         assertEq(restrictionManager.members(targetUser), validUntil);
+
+        restrictionManager.freeze(self);
+        vm.expectRevert(bytes("RestrictionManager/source-is-frozen"));
+        token.transfer(targetUser, amount);
+        assertEq(token.balanceOf(targetUser), 0);
+
+        restrictionManager.unfreeze(self);
         token.transfer(targetUser, amount);
         assertEq(token.balanceOf(targetUser), amount);
     }
@@ -193,8 +206,14 @@ contract TrancheTokenTest is Test {
 
         restrictionManager.updateMember(targetUser, validUntil);
         assertEq(restrictionManager.members(targetUser), validUntil);
-        token.mint(targetUser, amount);
 
+        restrictionManager.freeze(self);
+        vm.expectRevert(bytes("RestrictionManager/source-is-frozen"));
+        token.mint(targetUser, amount);
+        assertEq(token.balanceOf(targetUser), 0);
+
+        restrictionManager.unfreeze(self);
+        token.mint(targetUser, amount);
         assertEq(token.balanceOf(targetUser), amount);
     }
 
