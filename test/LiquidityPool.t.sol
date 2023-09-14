@@ -150,10 +150,10 @@ contract LiquidityPoolTest is TestSetup {
         vm.expectRevert(bytes("InvestmentManager/uint128-overflow"));
         lPool.requestRedeem(amount, self);
 
-        vm.expectRevert(bytes("InvestmentManager/uint128-overflow"));
+        vm.expectRevert(bytes("InvestmentManager/cannot-decrease-more-than-request"));
         lPool.decreaseDepositRequest(amount, self);
 
-        vm.expectRevert(bytes("InvestmentManager/uint128-overflow"));
+        vm.expectRevert(bytes("InvestmentManager/cannot-decrease-more-than-request"));
         lPool.decreaseRedeemRequest(amount, self);
     }
 
