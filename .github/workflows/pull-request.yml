@@ -36,6 +36,7 @@ jobs:
           MAINNET_RPC_URL: ${{ secrets.MAINNET_RPC_URL }}
           POLYGON_RPC_URL: ${{ secrets.POLYGON_RPC_URL }}
           SETUP_TEST_DATA: false
+          BASE_SALT: "test"
 
   lint:
     name: fmt
