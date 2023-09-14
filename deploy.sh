@@ -19,7 +19,7 @@ echo "Account = 0x$ETH_FROM"
 
 case "$1" in
   Permissionless|Axelar)
-    forge script script/$1.s.sol:$1Script --optimize --rpc-url $RPC_URL --private-key $PRIVATE_KEY --verify --broadcast --chain-id $CHAIN_ID --etherscan-api-key $ETHERSCAN_KEY $2
+    forge script script/$1.s.sol:$1Script --optimize --rpc-url $RPC_URL --private-key $PRIVATE_KEY --verify --broadcast --chain-id $CHAIN_ID --etherscan-api-key $ETHERSCAN_KEY $2 -vvvv
     ;;
   *)
     echo "Router should be one of Permissionless, Axelar"

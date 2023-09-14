@@ -2,7 +2,7 @@
 pragma solidity 0.8.21;
 
 import {InvestmentManager} from "src/InvestmentManager.sol";
-import {Gateway, RouterLike} from "src/gateway/Gateway.sol";
+import {Gateway} from "src/gateway/Gateway.sol";
 import {MockHomeLiquidityPools} from "test/mock/MockHomeLiquidityPools.sol";
 import {Escrow} from "src/Escrow.sol";
 import {PauseAdmin} from "src/admins/PauseAdmin.sol";
@@ -17,7 +17,7 @@ import {Root} from "src/Root.sol";
 import {LiquidityPool} from "src/LiquidityPool.sol";
 
 import {AxelarScript} from "script/Axelar.s.sol";
-import {PermissionlessSetup} from "script/PermissionlessSetup.sol";
+import "script/Deployer.sol";
 import "src/util/MathLib.sol";
 import "forge-std/Test.sol";
 
@@ -25,35 +25,21 @@ interface ApproveLike {
     function approve(address, uint256) external;
 }
 
-contract DeployTest is Test {
+contract DeployTest is Test, Deployer {
     using MathLib for uint128;
 
     uint8 constant PRICE_DECIMALS = 18;
-
-    InvestmentManager investmentManager;
-    Gateway gateway;
-    Root root;
-    MockHomeLiquidityPools mockLiquidityPools;
-    RouterLike router;
-    Escrow escrow;
-    PauseAdmin pauseAdmin;
-    DelayedAdmin delayedAdmin;
-    PoolManager poolManager;
 
     address self;
     ERC20 erc20;
 
     function setUp() public {
-        PermissionlessSetup script = new PermissionlessSetup();
-        script.run(address(this));
+        deployInvestmentManager(address(this));
+        PermissionlessRouter router = new PermissionlessRouter();
+        wire(address(router));
+        RouterLike(address(router)).file("gateway", address(gateway));
 
-        investmentManager = script.investmentManager();
-        gateway = script.gateway();
-        root = script.root();
-        escrow = script.escrow();
-        pauseAdmin = script.pauseAdmin();
-        delayedAdmin = script.delayedAdmin();
-        poolManager = script.poolManager();
+        giveAdminAccess();
 
         erc20 = newErc20("Test", "TEST", 6); // TODO: fuzz decimals
         self = address(this);
