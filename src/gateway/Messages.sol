@@ -851,12 +851,7 @@ library Messages {
         uint128 trancheTokenAmount
     ) internal pure returns (bytes memory) {
         return abi.encodePacked(
-            uint8(Call.TriggerRequestRedeem),
-            poolId,
-            trancheId,
-            bytes32(bytes20(investor)),
-            currency,
-            trancheTokenAmount
+            uint8(Call.TriggerRequestRedeem), poolId, trancheId, investor, currency, trancheTokenAmount
         );
     }
 

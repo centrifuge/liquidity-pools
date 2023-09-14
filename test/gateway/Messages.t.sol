@@ -898,7 +898,7 @@ contract MessagesTest is Test {
         uint128 currency = 246803579;
         uint128 amount = 100000000000000000000000000;
         bytes memory expectedHex =
-            hex"180000000000000001811acd5b3f17c06841c7e41e9e04cb1b00000000000000000000000000000000000000010000000000000000000000000000000000000000000000000eb5ec7b000000000052b7d2dcc80cd2e4000000";
+            hex"180000000000000001811acd5b3f17c06841c7e41e9e04cb1b12312312312312312312312312312312312312310000000000000000000000000000000000000000000000000eb5ec7b000000000052b7d2dcc80cd2e4000000";
 
         assertEq(Messages.formatTriggerRequestRedeem(poolId, trancheId, investor, currency, amount), expectedHex);
 
@@ -911,7 +911,7 @@ contract MessagesTest is Test {
         ) = Messages.parseTriggerRequestRedeem(expectedHex);
         assertEq(uint256(decodedPoolId), poolId);
         assertEq(decodedTrancheId, trancheId);
-        assertEq(bytes32(bytes20(decodedInvestor)), investor);
+        assertEq(decodedInvestor, address(bytes20(investor)));
         assertEq(decodedCurrency, currency);
         assertEq(decodedAmount, amount);
     }
@@ -934,7 +934,7 @@ contract MessagesTest is Test {
 
         assertEq(uint256(decodedPoolId), uint256(poolId));
         assertEq(decodedTrancheId, trancheId);
-        assertEq(bytes32(bytes20(decodedInvestor)), investor);
+        assertEq(decodedInvestor, address(bytes20(investor)));
         assertEq(decodedToken, token);
         assertEq(decodedAmount, amount);
     }
