@@ -171,6 +171,49 @@ contract AdminTest is TestSetup {
         delayedAdmin.cancelRely(spell);
     }
 
+    function testAddPauser() public {
+        address newPauser = vm.addr(0xABCDE);
+
+        address badActor = vm.addr(0xBAD);
+        vm.prank(badActor);
+        vm.expectRevert("Auth/not-authorized");
+        delayedAdmin.addPauser(address(pauseAdmin), badActor);
+
+        delayedAdmin.addPauser(address(pauseAdmin), newPauser);
+        assertEq(pauseAdmin.pausers(newPauser), 1);
+    }
+
+    function testRemovePauser() public {
+        address oldPauser = vm.addr(0xABCDE);
+
+        address badActor = vm.addr(0xBAD);
+        vm.prank(badActor);
+        vm.expectRevert("Auth/not-authorized");
+        delayedAdmin.removePauser(address(pauseAdmin), badActor);
+
+        delayedAdmin.removePauser(address(pauseAdmin), oldPauser);
+        assertEq(pauseAdmin.pausers(oldPauser), 0);
+    }
+
+    function testIncomingScheduleUpgradeMessage() public {
+        address spell = vm.addr(1);
+        homePools.incomingScheduleUpgrade(spell);
+        vm.warp(block.timestamp + delay + 1 hours);
+        root.executeScheduledRely(spell);
+        assertEq(root.wards(spell), 1);
+    }
+
+    function testIncomingCancelUpgradeMessage() public {
+        address spell = vm.addr(1);
+        homePools.incomingScheduleUpgrade(spell);
+        assertEq(root.schedule(spell), block.timestamp + delay);
+        homePools.incomingCancelUpgrade(spell);
+        assertEq(root.schedule(spell), 0);
+        vm.warp(block.timestamp + delay + 1 hours);
+        vm.expectRevert("Root/target-not-scheduled");
+        root.executeScheduledRely(spell);
+    }
+
     //------ Updating delay tests ------///
     function testUpdatingDelay() public {
         delayedAdmin.scheduleRely(address(this));
