@@ -40,6 +40,13 @@ interface InvestmentManagerLike {
         uint128 trancheTokensPayout,
         uint128 remainingRedeemOrder
     ) external;
+    function handleTriggerIncreaseRedeemOrder(
+        uint64 poolId,
+        bytes16 trancheId,
+        address investor,
+        uint128 currency,
+        uint128 trancheTokenAmount
+    ) external;
 }
 
 interface PoolManagerLike {
@@ -382,6 +389,12 @@ contract Gateway is Auth {
             (uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol) =
                 Messages.parseUpdateTrancheTokenMetadata(message);
             poolManager.updateTrancheTokenMetadata(poolId, trancheId, tokenName, tokenSymbol);
+        } else if (Messages.isTriggerIncreaseRedeemOrder(message)) {
+            (uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 trancheTokenAmount) =
+                Messages.parseTriggerIncreaseRedeemOrder(message);
+            investmentManager.handleTriggerIncreaseRedeemOrder(
+                poolId, trancheId, investor, currency, trancheTokenAmount
+            );
         } else if (Messages.isFreeze(message)) {
             (uint64 poolId, bytes16 trancheId, address user) = Messages.parseFreeze(message);
             poolManager.freeze(poolId, trancheId, user);

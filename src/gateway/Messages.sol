@@ -56,8 +56,8 @@ library Messages {
         CancelUpgrade,
         /// 23 - Update tranche token metadata
         UpdateTrancheTokenMetadata,
-        /// 24 - Update tranche investment limit
-        UpdateTrancheInvestmentLimit,
+        /// 24 - Request redeem investor
+        TriggerIncreaseRedeemOrder,
         /// 25 - Freeze tranche tokens
         Freeze,
         /// 26 - Unfreeze tranche tokens
@@ -837,34 +837,42 @@ library Messages {
         currency = BytesLib.toUint128(_msg, 57);
     }
 
-    /**
-     * Update a Tranche investment limit
+    /*
+     * TriggerIncreaseRedeemOrder Message
      *
      * 0: call type (uint8 = 1 byte)
      * 1-8: poolId (uint64 = 8 bytes)
      * 9-24: trancheId (16 bytes)
-     * 25-40: investmentLimit (uint128 = 16 bytes)
+     * 25-56: investor address (32 bytes)
+     * 57-72: currency (uint128 = 16 bytes)
+     * 73-89: amount (uint128 = 16 bytes)
      */
-    function formatUpdateTrancheInvestmentLimit(uint64 poolId, bytes16 trancheId, uint128 investmentLimit)
-        internal
-        pure
-        returns (bytes memory)
-    {
-        return abi.encodePacked(uint8(Call.UpdateTrancheInvestmentLimit), poolId, trancheId, investmentLimit);
+    function formatTriggerIncreaseRedeemOrder(
+        uint64 poolId,
+        bytes16 trancheId,
+        bytes32 investor,
+        uint128 currency,
+        uint128 trancheTokenAmount
+    ) internal pure returns (bytes memory) {
+        return abi.encodePacked(
+            uint8(Call.TriggerIncreaseRedeemOrder), poolId, trancheId, investor, currency, trancheTokenAmount
+        );
     }
 
-    function isUpdateTrancheInvestmentLimit(bytes memory _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.UpdateTrancheInvestmentLimit;
+    function isTriggerIncreaseRedeemOrder(bytes memory _msg) internal pure returns (bool) {
+        return messageType(_msg) == Call.TriggerIncreaseRedeemOrder;
     }
 
-    function parseUpdateTrancheInvestmentLimit(bytes memory _msg)
+    function parseTriggerIncreaseRedeemOrder(bytes memory _msg)
         internal
         pure
-        returns (uint64 poolId, bytes16 trancheId, uint128 investmentLimit)
+        returns (uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 trancheTokenAmount)
     {
         poolId = BytesLib.toUint64(_msg, 1);
         trancheId = BytesLib.toBytes16(_msg, 9);
-        investmentLimit = BytesLib.toUint128(_msg, 25);
+        investor = BytesLib.toAddress(_msg, 25);
+        currency = BytesLib.toUint128(_msg, 57);
+        trancheTokenAmount = BytesLib.toUint128(_msg, 73);
     }
 
     /**
