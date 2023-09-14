@@ -13,7 +13,7 @@ contract PermissionlessScript is Deployer {
         vm.startBroadcast();
 
         admin = msg.sender;
-        
+
         // Deploy contracts
         deployInvestmentManager();
         PermissionlessRouter router = new PermissionlessRouter();
