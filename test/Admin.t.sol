@@ -195,6 +195,25 @@ contract AdminTest is TestSetup {
         assertEq(pauseAdmin.pausers(oldPauser), 0);
     }
 
+    function testIncomingScheduleUpgradeMessage() public {
+        address spell = vm.addr(1);
+        homePools.incomingScheduleUpgrade(spell);
+        vm.warp(block.timestamp + delay + 1 hours);
+        root.executeScheduledRely(spell);
+        assertEq(root.wards(spell), 1);
+    }
+
+    function testIncomingCancelUpgradeMessage() public {
+        address spell = vm.addr(1);
+        homePools.incomingScheduleUpgrade(spell);
+        assertEq(root.schedule(spell), block.timestamp + delay);
+        homePools.incomingCancelUpgrade(spell);
+        assertEq(root.schedule(spell), 0);
+        vm.warp(block.timestamp + delay + 1 hours);
+        vm.expectRevert("Root/target-not-scheduled");
+        root.executeScheduledRely(spell);
+    }
+
     //------ Updating delay tests ------///
     function testUpdatingDelay() public {
         delayedAdmin.scheduleRely(address(this));
