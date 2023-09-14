@@ -193,7 +193,7 @@ contract LiquidityPool is Auth, IERC4626 {
         withApproval(owner)
         returns (uint256 shares)
     {
-        uint256 shares = investmentManager.processWithdraw(address(this), assets, receiver, owner);
+        shares = investmentManager.processWithdraw(address(this), assets, receiver, owner);
         emit Withdraw(address(this), receiver, owner, assets, shares);
     }
 
@@ -216,7 +216,7 @@ contract LiquidityPool is Auth, IERC4626 {
         withApproval(owner)
         returns (uint256 assets)
     {
-        uint256 assets = investmentManager.processRedeem(address(this), shares, receiver, owner);
+        assets = investmentManager.processRedeem(address(this), shares, receiver, owner);
         emit Withdraw(address(this), receiver, owner, assets, shares);
     }
 

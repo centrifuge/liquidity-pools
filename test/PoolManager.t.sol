@@ -30,6 +30,7 @@ contract PoolManagerTest is TestSetup {
         uint128 currency
     ) public {
         vm.assume(currency > 0);
+        vm.assume(decimals <= 18);
         homePools.addPool(poolId); // add pool
 
         vm.expectRevert(bytes("PoolManager/tranche-not-added"));
@@ -313,6 +314,39 @@ contract PoolManagerTest is TestSetup {
         assertTrue(LiquidityPool(lPool_).checkTransferRestriction(address(0), user, 0));
     }
 
+    function testFreezingAndUnfreezingWorks(
+        uint64 poolId,
+        uint8 decimals,
+        uint128 currency,
+        string memory tokenName,
+        string memory tokenSymbol,
+        bytes16 trancheId,
+        address user,
+        address secondUser,
+        uint64 validUntil
+    ) public {
+        vm.assume(decimals <= 18);
+        vm.assume(validUntil >= block.timestamp);
+        vm.assume(user != address(0));
+        vm.assume(currency > 0);
+        homePools.addPool(poolId); // add pool
+        homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals); // add tranche
+        homePools.addCurrency(currency, address(erc20));
+        homePools.allowPoolCurrency(poolId, currency);
+        poolManager.deployTranche(poolId, trancheId);
+        address lPool_ = poolManager.deployLiquidityPool(poolId, trancheId, address(erc20));
+
+        homePools.updateMember(poolId, trancheId, user, validUntil);
+        homePools.updateMember(poolId, trancheId, secondUser, validUntil);
+        assertTrue(LiquidityPool(lPool_).checkTransferRestriction(user, secondUser, 0));
+
+        homePools.freeze(poolId, trancheId, user);
+        assertFalse(LiquidityPool(lPool_).checkTransferRestriction(user, secondUser, 0));
+
+        homePools.unfreeze(poolId, trancheId, user);
+        assertTrue(LiquidityPool(lPool_).checkTransferRestriction(user, secondUser, 0));
+    }
+
     function testUpdatingMemberAsNonRouterFails(
         uint64 poolId,
         uint128 currency,
@@ -353,6 +387,7 @@ contract PoolManagerTest is TestSetup {
     ) public {
         vm.assume(decimals <= 18);
         vm.assume(currency > 0);
+
         homePools.addPool(poolId); // add pool
         homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals); // add tranche
 
@@ -373,6 +408,7 @@ contract PoolManagerTest is TestSetup {
     ) public {
         vm.assume(decimals <= 18);
         vm.assume(currency > 0);
+
         homePools.addPool(poolId); // add pool
         homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals); // add tranche
         homePools.addCurrency(currency, address(erc20));
@@ -437,9 +473,15 @@ contract PoolManagerTest is TestSetup {
         string memory tokenSymbol,
         uint8 decimals
     ) public {
+        vm.assume(decimals <= 18);
+
         homePools.addPool(poolId);
         (uint64 actualPoolId,) = poolManager.pools(poolId);
         assertEq(uint256(actualPoolId), uint256(poolId));
+
+        vm.expectRevert(bytes("PoolManager/too-many-tranche-token-decimals"));
+        homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, 19);
+
         homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals);
         poolManager.deployTranche(poolId, trancheId);
 
@@ -461,6 +503,8 @@ contract PoolManagerTest is TestSetup {
         string memory tokenSymbol,
         bytes16 trancheId
     ) public {
+        vm.assume(decimals <= 18);
+
         homePools.addPool(poolId);
         homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals);
 
@@ -477,6 +521,7 @@ contract PoolManagerTest is TestSetup {
     ) public {
         vm.assume(trancheIds.length > 0 && trancheIds.length < 5);
         vm.assume(!hasDuplicates(trancheIds));
+        vm.assume(decimals <= 18);
         homePools.addPool(poolId);
 
         for (uint256 i = 0; i < trancheIds.length; i++) {
@@ -494,6 +539,8 @@ contract PoolManagerTest is TestSetup {
         string memory tokenSymbol,
         uint8 decimals
     ) public {
+        vm.assume(decimals <= 18);
+
         homePools.addPool(poolId);
         vm.expectRevert(bytes("PoolManager/not-the-gateway"));
         poolManager.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals);
@@ -506,6 +553,8 @@ contract PoolManagerTest is TestSetup {
         string memory tokenSymbol,
         uint8 decimals
     ) public {
+        vm.assume(decimals <= 18);
+
         vm.expectRevert(bytes("PoolManager/invalid-pool"));
         homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals);
     }
@@ -519,6 +568,8 @@ contract PoolManagerTest is TestSetup {
         uint128 currency
     ) public {
         vm.assume(currency > 0);
+        vm.assume(decimals <= 18);
+
         homePools.addPool(poolId); // add pool
         homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals); // add tranche
 
@@ -549,7 +600,9 @@ contract PoolManagerTest is TestSetup {
         assertEq(trancheToken.symbol(), _bytes32ToString(_stringToBytes32(tokenSymbol)));
         assertEq(trancheToken.decimals(), decimals);
         assertTrue(
-            MemberlistLike(address(trancheToken.restrictionManager())).hasMember(address(investmentManager.escrow()))
+            RestrictionManagerLike(address(trancheToken.restrictionManager())).hasMember(
+                address(investmentManager.escrow())
+            )
         );
 
         assertTrue(trancheToken.wards(address(poolManager)) == 1);
@@ -570,6 +623,7 @@ contract PoolManagerTest is TestSetup {
     ) public {
         vm.assume(currency > 0);
         vm.assume(trancheId != wrongTrancheId);
+        vm.assume(decimals <= 18);
 
         homePools.addPool(poolId); // add pool
         homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals); // add tranche
@@ -591,6 +645,7 @@ contract PoolManagerTest is TestSetup {
     ) public {
         vm.assume(currency > 0);
         vm.assume(poolId != wrongPoolId);
+        vm.assume(decimals <= 18);
 
         homePools.addPool(poolId); // add pool
         homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals); // add tranche
@@ -610,6 +665,7 @@ contract PoolManagerTest is TestSetup {
         uint128 currency
     ) public {
         vm.assume(currency > 0);
+        vm.assume(decimals <= 18);
 
         homePools.addPool(poolId); // add pool
         homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals); // add tranche
@@ -630,6 +686,7 @@ contract PoolManagerTest is TestSetup {
         uint128 currency
     ) public {
         vm.assume(currency > 0);
+        vm.assume(decimals <= 18);
 
         homePools.addPool(poolId); // add pool
         homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals); // add tranche

@@ -2,7 +2,7 @@
 pragma solidity 0.8.21;
 
 import {TrancheToken} from "src/token/Tranche.sol";
-import {MemberlistLike, RestrictionManager} from "src/token/RestrictionManager.sol";
+import {RestrictionManagerLike, RestrictionManager} from "src/token/RestrictionManager.sol";
 import "forge-std/Test.sol";
 
 interface ERC20Like {
@@ -21,7 +21,7 @@ contract TrancheTokenTest is Test {
         token.file("name", "Some Token");
         token.file("symbol", "ST");
 
-        restrictionManager = new RestrictionManager();
+        restrictionManager = new RestrictionManager(address(token));
         token.file("restrictionManager", address(restrictionManager));
     }
 
@@ -135,6 +135,12 @@ contract TrancheTokenTest is Test {
         restrictionManager.updateMember(targetUser, validUntil);
         assertEq(restrictionManager.members(targetUser), validUntil);
 
+        restrictionManager.freeze(self);
+        vm.expectRevert(bytes("RestrictionManager/source-is-frozen"));
+        token.transferFrom(self, targetUser, amount);
+        assertEq(token.balanceOf(targetUser), 0);
+
+        restrictionManager.unfreeze(self);
         token.transferFrom(self, targetUser, amount);
         assertEq(token.balanceOf(targetUser), amount);
     }
@@ -165,6 +171,13 @@ contract TrancheTokenTest is Test {
 
         restrictionManager.updateMember(targetUser, validUntil);
         assertEq(restrictionManager.members(targetUser), validUntil);
+
+        restrictionManager.freeze(self);
+        vm.expectRevert(bytes("RestrictionManager/source-is-frozen"));
+        token.transfer(targetUser, amount);
+        assertEq(token.balanceOf(targetUser), 0);
+
+        restrictionManager.unfreeze(self);
         token.transfer(targetUser, amount);
         assertEq(token.balanceOf(targetUser), amount);
     }
@@ -193,8 +206,14 @@ contract TrancheTokenTest is Test {
 
         restrictionManager.updateMember(targetUser, validUntil);
         assertEq(restrictionManager.members(targetUser), validUntil);
-        token.mint(targetUser, amount);
 
+        restrictionManager.freeze(self);
+        vm.expectRevert(bytes("RestrictionManager/source-is-frozen"));
+        token.mint(targetUser, amount);
+        assertEq(token.balanceOf(targetUser), 0);
+
+        restrictionManager.unfreeze(self);
+        token.mint(targetUser, amount);
         assertEq(token.balanceOf(targetUser), amount);
     }
 
