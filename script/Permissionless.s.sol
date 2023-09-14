@@ -13,14 +13,12 @@ contract PermissionlessScript is Deployer {
         vm.startBroadcast();
 
         admin = msg.sender;
+        
         // Deploy contracts
-
         deployInvestmentManager();
         PermissionlessRouter router = new PermissionlessRouter();
         wire(address(router));
         RouterLike(address(router)).file("gateway", address(gateway));
-
-        giveAdminAccess();
 
         // Set up test data
         if (vm.envOr("SETUP_TEST_DATA", false)) {
@@ -38,6 +36,8 @@ contract PermissionlessScript is Deployer {
             );
             poolManager.updateMember(1171854325, 0x102f4ef817340a8839a515d2c73a7c1d, admin, type(uint64).max);
         }
+
+        giveAdminAccess();
 
         vm.stopBroadcast();
     }

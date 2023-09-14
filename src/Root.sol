@@ -31,12 +31,12 @@ contract Root is Auth {
     event RelyContract(address indexed target, address indexed user);
     event DenyContract(address indexed target, address indexed user);
 
-    constructor(address _escrow, uint256 _delay, address _deployer) {
+    constructor(address _escrow, uint256 _delay, address deployer) {
         escrow = _escrow;
         delay = _delay;
 
-        wards[_deployer] = 1;
-        emit Rely(_deployer);
+        wards[deployer] = 1;
+        emit Rely(deployer);
     }
 
     // --- Administration ---
