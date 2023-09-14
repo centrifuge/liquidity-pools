@@ -313,6 +313,39 @@ contract PoolManagerTest is TestSetup {
         assertTrue(LiquidityPool(lPool_).checkTransferRestriction(address(0), user, 0));
     }
 
+    function testFreezingAndUnfreezingWorks(
+        uint64 poolId,
+        uint8 decimals,
+        uint128 currency,
+        string memory tokenName,
+        string memory tokenSymbol,
+        bytes16 trancheId,
+        address user,
+        address secondUser,
+        uint64 validUntil
+    ) public {
+        vm.assume(decimals <= 18);
+        vm.assume(validUntil >= block.timestamp);
+        vm.assume(user != address(0));
+        vm.assume(currency > 0);
+        homePools.addPool(poolId); // add pool
+        homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals); // add tranche
+        homePools.addCurrency(currency, address(erc20));
+        homePools.allowPoolCurrency(poolId, currency);
+        poolManager.deployTranche(poolId, trancheId);
+        address lPool_ = poolManager.deployLiquidityPool(poolId, trancheId, address(erc20));
+
+        homePools.updateMember(poolId, trancheId, user, validUntil);
+        homePools.updateMember(poolId, trancheId, secondUser, validUntil);
+        assertTrue(LiquidityPool(lPool_).checkTransferRestriction(user, secondUser, 0));
+
+        homePools.freeze(poolId, trancheId, user);
+        assertFalse(LiquidityPool(lPool_).checkTransferRestriction(user, secondUser, 0));
+
+        homePools.unfreeze(poolId, trancheId, user);
+        assertTrue(LiquidityPool(lPool_).checkTransferRestriction(user, secondUser, 0));
+    }
+
     function testUpdatingMemberAsNonRouterFails(
         uint64 poolId,
         uint128 currency,
@@ -549,7 +582,9 @@ contract PoolManagerTest is TestSetup {
         assertEq(trancheToken.symbol(), _bytes32ToString(_stringToBytes32(tokenSymbol)));
         assertEq(trancheToken.decimals(), decimals);
         assertTrue(
-            MemberlistLike(address(trancheToken.restrictionManager())).hasMember(address(investmentManager.escrow()))
+            RestrictionManagerLike(address(trancheToken.restrictionManager())).hasMember(
+                address(investmentManager.escrow())
+            )
         );
 
         assertTrue(trancheToken.wards(address(poolManager)) == 1);

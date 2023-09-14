@@ -4,10 +4,12 @@ pragma solidity 0.8.21;
 import {Auth} from "./../util/Auth.sol";
 import {IERC20} from "../interfaces/IERC20.sol";
 
-interface MemberlistLike {
+interface RestrictionManagerLike {
     function updateMember(address user, uint256 validUntil) external;
     function members(address user) external view returns (uint256);
     function hasMember(address user) external view returns (bool);
+    function freeze(address user) external;
+    function unfreeze(address user) external;
 }
 
 /// @title  Restriction Manager

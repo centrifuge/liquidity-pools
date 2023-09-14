@@ -3,7 +3,7 @@ pragma solidity 0.8.21;
 
 import {TrancheTokenFactoryLike, RestrictionManagerFactoryLike, LiquidityPoolFactoryLike} from "./util/Factory.sol";
 import {TrancheTokenLike} from "./token/Tranche.sol";
-import {MemberlistLike} from "./token/RestrictionManager.sol";
+import {RestrictionManagerLike} from "./token/RestrictionManager.sol";
 import {IERC20} from "./interfaces/IERC20.sol";
 import {Auth} from "./util/Auth.sol";
 import {SafeTransferLib} from "./util/SafeTransferLib.sol";
@@ -247,8 +247,24 @@ contract PoolManager is Auth {
         TrancheTokenLike trancheToken = TrancheTokenLike(getTrancheToken(poolId, trancheId));
         require(address(trancheToken) != address(0), "PoolManager/unknown-token");
 
-        MemberlistLike memberlist = MemberlistLike(address(trancheToken.restrictionManager()));
-        memberlist.updateMember(user, validUntil);
+        RestrictionManagerLike restrictionManager = RestrictionManagerLike(address(trancheToken.restrictionManager()));
+        restrictionManager.updateMember(user, validUntil);
+    }
+
+    function freeze(uint64 poolId, bytes16 trancheId, address user) public onlyGateway {
+        TrancheTokenLike trancheToken = TrancheTokenLike(getTrancheToken(poolId, trancheId));
+        require(address(trancheToken) != address(0), "PoolManager/unknown-token");
+
+        RestrictionManagerLike restrictionManager = RestrictionManagerLike(address(trancheToken.restrictionManager()));
+        restrictionManager.freeze(user);
+    }
+
+    function unfreeze(uint64 poolId, bytes16 trancheId, address user) public onlyGateway {
+        TrancheTokenLike trancheToken = TrancheTokenLike(getTrancheToken(poolId, trancheId));
+        require(address(trancheToken) != address(0), "PoolManager/unknown-token");
+
+        RestrictionManagerLike restrictionManager = RestrictionManagerLike(address(trancheToken.restrictionManager()));
+        restrictionManager.unfreeze(user);
     }
 
     /// @notice A global chain agnostic currency index is maintained on Centrifuge. This function maps a currency from the Centrifuge index to its corresponding address on the evm chain.
@@ -289,7 +305,7 @@ contract PoolManager is Auth {
         require(address(trancheToken) != address(0), "PoolManager/unknown-token");
 
         require(
-            MemberlistLike(address(trancheToken.restrictionManager())).hasMember(destinationAddress),
+            RestrictionManagerLike(address(trancheToken.restrictionManager())).hasMember(destinationAddress),
             "PoolManager/not-a-member"
         );
         trancheToken.mint(destinationAddress, amount);

@@ -2,7 +2,7 @@
 pragma solidity 0.8.21;
 
 import {TrancheToken} from "src/token/Tranche.sol";
-import {MemberlistLike, RestrictionManager} from "src/token/RestrictionManager.sol";
+import {RestrictionManagerLike, RestrictionManager} from "src/token/RestrictionManager.sol";
 import "forge-std/Test.sol";
 
 contract RestrictionManagerTest is Test {
