@@ -109,7 +109,7 @@ contract LiquidityPoolTest is TestSetup {
         erc20.mint(investor, type(uint256).max);
         vm.prank(investor);
         erc20.approve(address(investmentManager), type(uint256).max);
-        homePools.updateMember(lPool.poolId(), lPool.trancheId(),investor, type(uint64).max); // add user as member
+        homePools.updateMember(lPool.poolId(), lPool.trancheId(), investor, type(uint64).max); // add user as member
 
         // fail: no approval
         vm.expectRevert(bytes("LiquidityPool/no-approval"));
@@ -261,7 +261,7 @@ contract LiquidityPoolTest is TestSetup {
 
         address lPool_ = deploySimplePool();
 
-         deposit(lPool_, investor, amount); // deposit funds first // deposit funds first
+        deposit(lPool_, investor, amount); // deposit funds first // deposit funds first
         LiquidityPool lPool = LiquidityPool(lPool_);
         homePools.updateMember(lPool.poolId(), lPool.trancheId(), self, type(uint64).max); // put self on memberlist to be able to receive tranche tokens
         homePools.updateTrancheTokenPrice(lPool.poolId(), lPool.trancheId(), defaultCurrencyId, defaultPrice);
@@ -907,6 +907,90 @@ contract LiquidityPoolTest is TestSetup {
         assertApproxEqAbs(erc20.balanceOf(address(escrow)), amount, 1);
     }
 
+    function testDepositWithPermitFR(uint256 amount, address random) public {
+        vm.assume(amountAssumption(amount));
+        vm.assume(addressAssumption(random));
+
+        // Use a wallet with a known private key so we can sign the permit message
+        address investor = vm.addr(0xABCD);
+        vm.prank(vm.addr(0xABCD));
+
+        address lPool_ = deploySimplePool();
+        LiquidityPool lPool = LiquidityPool(lPool_);
+        erc20.mint(investor, amount);
+        homePools.updateMember(lPool.poolId(), lPool.trancheId(), investor, type(uint64).max);
+
+        // Sign permit for depositing investment currency
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
+            0xABCD,
+            keccak256(
+                abi.encodePacked(
+                    "\x19\x01",
+                    erc20.DOMAIN_SEPARATOR(),
+                    keccak256(
+                        abi.encode(
+                            erc20.PERMIT_TYPEHASH(), investor, address(investmentManager), amount, 0, block.timestamp
+                        )
+                    )
+                )
+            )
+        );
+
+        vm.prank(random); // random frontrunns permit
+        erc20.permit(investor, address(investmentManager), amount, block.timestamp, v, r, s);
+
+        // investor still able to requestDepositWithPermit
+        lPool.requestDepositWithPermit(amount, investor, block.timestamp, v, r, s);
+
+        // ensure funds are locked in escrow
+        assertEq(erc20.balanceOf(address(escrow)), amount);
+        assertEq(erc20.balanceOf(investor), 0);
+    }
+
+    function testRedeemWithPermitFR(uint256 amount, address random) public {
+        vm.assume(amountAssumption(amount));
+        vm.assume(addressAssumption(random));
+
+        // Use a wallet with a known private key so we can sign the permit message
+        address investor = vm.addr(0xABCD);
+
+        address lPool_ = deploySimplePool();
+        LiquidityPool lPool = LiquidityPool(lPool_);
+        deposit(lPool_, investor, amount); // deposit funds first
+
+        TrancheToken trancheToken = TrancheToken(address(lPool.share()));
+
+        // Sign permit for redeeming tranche tokens
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
+            0xABCD,
+            keccak256(
+                abi.encodePacked(
+                    "\x19\x01",
+                    trancheToken.DOMAIN_SEPARATOR(),
+                    keccak256(
+                        abi.encode(
+                            trancheToken.PERMIT_TYPEHASH(),
+                            investor,
+                            address(investmentManager),
+                            amount,
+                            0,
+                            block.timestamp
+                        )
+                    )
+                )
+            )
+        );
+
+        vm.prank(random); // random frontrunns permit
+        trancheToken.permit(investor, address(investmentManager), amount, block.timestamp, v, r, s);
+
+        // investor still able to requestDepositWithPermit
+        lPool.requestRedeemWithPermit(amount, investor, block.timestamp, v, r, s);
+        // ensure tokens are locked in escrow
+        assertEq(trancheToken.balanceOf(address(escrow)), amount);
+        assertEq(trancheToken.balanceOf(investor), 0);
+    }
+
     function testDepositAndRedeemWithPermit(uint256 amount) public {
         vm.assume(amountAssumption(amount));
 
@@ -1207,14 +1291,14 @@ contract LiquidityPoolTest is TestSetup {
         address lPool_ = deploySimplePool();
         LiquidityPool lPool = LiquidityPool(lPool_);
         deposit(lPool_, investor, amount); // deposit funds first
-        uint investorBalanceBefore = erc20.balanceOf(investor);
+        uint256 investorBalanceBefore = erc20.balanceOf(investor);
         // Trigger request redeem of half the amount
         homePools.triggerIncreaseRedeemOrder(
             lPool.poolId(), lPool.trancheId(), investor, defaultCurrencyId, uint128(amount / 2)
         );
 
         assertApproxEqAbs(lPool.balanceOf(address(escrow)), amount / 2, 1);
-        assertApproxEqAbs(lPool.balanceOf(investor),  amount / 2, 1);
+        assertApproxEqAbs(lPool.balanceOf(investor), amount / 2, 1);
 
         homePools.isExecutedCollectRedeem(
             lPool.poolId(),
@@ -1271,7 +1355,13 @@ contract LiquidityPoolTest is TestSetup {
         // trigger executed collectInvest
         uint128 currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
         homePools.isExecutedCollectInvest(
-            lPool.poolId(), lPool.trancheId(), bytes32(bytes20(investor)), currencyId, uint128(amount), uint128(amount), 0
+            lPool.poolId(),
+            lPool.trancheId(),
+            bytes32(bytes20(investor)),
+            currencyId,
+            uint128(amount),
+            uint128(amount),
+            0
         );
 
         vm.prank(investor);
@@ -1284,7 +1374,7 @@ contract LiquidityPoolTest is TestSetup {
 
     //     erc20.mint(_investor, type(uint256).max);
     //     homePools.updateMember(lPool.poolId(), lPool.trancheId(), _investor, type(uint64).max); // add user as member
-    // vm.prank(address(investor));//     
+    // vm.prank(address(investor));//
     // approve(address(erc20), address(investmentManager), amount); // add allowance
     //     investor.requestDeposit(_lPool, amount, _investor);
     //     uint128 currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId

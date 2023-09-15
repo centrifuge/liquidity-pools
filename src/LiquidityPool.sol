@@ -115,7 +115,7 @@ contract LiquidityPool is Auth, IERC4626 {
         _;
     }
 
-function _withPermit(
+    function _withPermit(
         address token,
         address owner,
         address spender,
@@ -249,13 +249,11 @@ function _withPermit(
         emit DepositRequest(owner, assets);
     }
 
-    
-
     /// @notice Similar to requestDeposit, but with a permit option.
     function requestDepositWithPermit(uint256 assets, address owner, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
         public
     {
-        _withPermit(asset, owner, address(investmentManager), assets, deadline, v, r, s );
+        _withPermit(asset, owner, address(investmentManager), assets, deadline, v, r, s);
         investmentManager.requestDeposit(address(this), assets, owner);
         emit DepositRequest(owner, assets);
     }
@@ -291,7 +289,7 @@ function _withPermit(
     function requestRedeemWithPermit(uint256 shares, address owner, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
         public
     {
-         _withPermit(address(share), owner, address(investmentManager), shares, deadline, v, r, s );
+        _withPermit(address(share), owner, address(investmentManager), shares, deadline, v, r, s);
         investmentManager.requestRedeem(address(this), shares, owner);
         emit RedeemRequest(owner, shares);
     }
