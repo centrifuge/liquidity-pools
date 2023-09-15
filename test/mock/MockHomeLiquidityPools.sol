@@ -35,8 +35,8 @@ contract MockHomeLiquidityPools is Test {
         router.execute(_message);
     }
 
-    function allowPoolCurrency(uint64 poolId, uint128 currency) public {
-        bytes memory _message = Messages.formatAllowPoolCurrency(poolId, currency);
+    function allowInvestmentCurrency(uint64 poolId, uint128 currency) public {
+        bytes memory _message = Messages.formatAllowInvestmentCurrency(poolId, currency);
         router.execute(_message);
     }
 

@@ -37,7 +37,7 @@ contract InvariantPoolManager is TestSetup {
     function deployLiquidityPool(uint64 poolId, bytes16 trancheId, address currency) public {
         uint128 currencyId = 1;
         homePools.addCurrency(currencyId, currency);
-        homePools.allowPoolCurrency(poolId, currencyId);
+        homePools.allowInvestmentCurrency(poolId, currencyId);
         address pool = poolManager.deployLiquidityPool(poolId, trancheId, currency);
 
         allLiquidityPools.push(pool);

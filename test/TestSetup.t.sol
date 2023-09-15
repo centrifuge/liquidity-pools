@@ -71,7 +71,7 @@ contract TestSetup is Deployer, Test {
         homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, trancheTokenDecimals); // add tranche
 
         homePools.addCurrency(currencyId, currency);
-        homePools.allowPoolCurrency(poolId, currencyId);
+        homePools.allowInvestmentCurrency(poolId, currencyId);
         poolManager.deployTranche(poolId, trancheId);
 
         address lPoolAddress = poolManager.deployLiquidityPool(poolId, trancheId, currency);

@@ -1475,7 +1475,7 @@ contract LiquidityPoolTest is TestSetup {
 
         address lPool_ = deployLiquidityPool(poolId, trancheDecimals, tokenName, tokenSymbol, trancheId, currencyId);
         LiquidityPool lPool = LiquidityPool(lPool_);
-        homePools.allowPoolCurrency(poolId, currencyId);
+        homePools.allowInvestmentCurrency(poolId, currencyId);
         homePools.updateTrancheTokenPrice(poolId, trancheId, currencyId, price);
 
         homePools.updateMember(poolId, trancheId, self, validUntil);

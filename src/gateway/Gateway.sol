@@ -51,7 +51,7 @@ interface InvestmentManagerLike {
 
 interface PoolManagerLike {
     function addPool(uint64 poolId) external;
-    function allowPoolCurrency(uint64 poolId, uint128 currency) external;
+    function allowInvestmentCurrency(uint64 poolId, uint128 currency) external;
     function addTranche(
         uint64 poolId,
         bytes16 trancheId,
@@ -302,9 +302,9 @@ contract Gateway is Auth {
         } else if (Messages.isAddPool(message)) {
             (uint64 poolId) = Messages.parseAddPool(message);
             poolManager.addPool(poolId);
-        } else if (Messages.isAllowPoolCurrency(message)) {
-            (uint64 poolId, uint128 currency) = Messages.parseAllowPoolCurrency(message);
-            poolManager.allowPoolCurrency(poolId, currency);
+        } else if (Messages.isAllowInvestmentCurrency(message)) {
+            (uint64 poolId, uint128 currency) = Messages.parseAllowInvestmentCurrency(message);
+            poolManager.allowInvestmentCurrency(poolId, currency);
         } else if (Messages.isAddTranche(message)) {
             (
                 uint64 poolId,

@@ -42,21 +42,21 @@ contract MessagesTest is Test {
         assertEq(decodedPoolId, uint256(poolId));
     }
 
-    function testAllowPoolCurrency() public {
+    function testAllowInvestmentCurrency() public {
         uint64 poolId = 12378532;
         uint128 currency = 246803579;
         bytes memory expectedHex = hex"030000000000bce1a40000000000000000000000000eb5ec7b";
 
-        assertEq(Messages.formatAllowPoolCurrency(poolId, currency), expectedHex);
+        assertEq(Messages.formatAllowInvestmentCurrency(poolId, currency), expectedHex);
 
-        (uint64 decodedPoolId, uint128 decodedCurrency) = Messages.parseAllowPoolCurrency(expectedHex);
+        (uint64 decodedPoolId, uint128 decodedCurrency) = Messages.parseAllowInvestmentCurrency(expectedHex);
         assertEq(decodedPoolId, poolId);
         assertEq(uint256(decodedCurrency), currency);
     }
 
-    function testAllowPoolCurrencyEquivalence(uint128 currency, uint64 poolId) public {
-        bytes memory _message = Messages.formatAllowPoolCurrency(poolId, currency);
-        (uint64 decodedPoolId, uint128 decodedCurrency) = Messages.parseAllowPoolCurrency(_message);
+    function testAllowInvestmentCurrencyEquivalence(uint128 currency, uint64 poolId) public {
+        bytes memory _message = Messages.formatAllowInvestmentCurrency(poolId, currency);
+        (uint64 decodedPoolId, uint128 decodedCurrency) = Messages.parseAllowInvestmentCurrency(_message);
         assertEq(uint256(decodedPoolId), uint256(poolId));
         assertEq(decodedCurrency, uint256(currency));
     }

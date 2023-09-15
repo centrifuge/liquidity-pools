@@ -66,7 +66,7 @@ contract InvestmentManagerTest is TestSetup {
         homePools.addPool(poolId); // add pool
         homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals); // add tranche
         homePools.addCurrency(currencyId, address(erc20)); // add currency
-        homePools.allowPoolCurrency(poolId, currencyId);
+        homePools.allowInvestmentCurrency(poolId, currencyId);
 
         address tranche_ = poolManager.deployTranche(poolId, trancheId);
         LiquidityPoolLike lPool = LiquidityPoolLike(poolManager.deployLiquidityPool(poolId, trancheId, address(erc20)));
@@ -91,7 +91,7 @@ contract InvestmentManagerTest is TestSetup {
         homePools.addPool(poolId); // add pool
         homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals); // add tranche
         homePools.addCurrency(currency, address(erc20));
-        homePools.allowPoolCurrency(poolId, currency);
+        homePools.allowInvestmentCurrency(poolId, currency);
         poolManager.deployTranche(poolId, trancheId);
         poolManager.deployLiquidityPool(poolId, trancheId, address(erc20));
 

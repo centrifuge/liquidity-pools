@@ -93,7 +93,7 @@ contract PoolManager is Auth {
     // --- Events ---
     event File(bytes32 indexed what, address data);
     event AddPool(uint64 indexed poolId);
-    event AllowPoolCurrency(uint128 indexed currency, uint64 indexed poolId);
+    event AllowInvestmentCurrency(uint128 indexed currency, uint64 indexed poolId);
     event AddTranche(uint64 indexed poolId, bytes16 indexed trancheId);
     event DeployTranche(uint64 indexed poolId, bytes16 indexed trancheId, address indexed token);
     event AddCurrency(uint128 indexed currency, address indexed currencyAddress);
@@ -200,7 +200,7 @@ contract PoolManager is Auth {
     /// @notice     Centrifuge pools can support multiple currencies for investing. this function adds a new supported currency to the pool details.
     ///             Adding new currencies allow the creation of new liquidity pools for the underlying Centrifuge pool.
     /// @dev        The function can only be executed by the gateway contract.
-    function allowPoolCurrency(uint64 poolId, uint128 currency) public onlyGateway {
+    function allowInvestmentCurrency(uint64 poolId, uint128 currency) public onlyGateway {
         Pool storage pool = pools[poolId];
         require(pool.createdAt != 0, "PoolManager/invalid-pool");
 
@@ -208,7 +208,7 @@ contract PoolManager is Auth {
         require(currencyAddress != address(0), "PoolManager/unknown-currency");
 
         pools[poolId].allowedCurrencies[currencyAddress] = true;
-        emit AllowPoolCurrency(currency, poolId);
+        emit AllowInvestmentCurrency(currency, poolId);
     }
 
     /// @notice     New tranche details from an existing Centrifuge pool are added.
