@@ -36,7 +36,6 @@ jobs:
           MAINNET_RPC_URL: ${{ secrets.MAINNET_RPC_URL }}
           POLYGON_RPC_URL: ${{ secrets.POLYGON_RPC_URL }}
           SETUP_TEST_DATA: false
-          BASE_SALT: "test"
 
   lint:
     name: fmt
@@ -72,7 +71,6 @@ jobs:
         run: forge coverage --report summary --report lcov
         env:
           SETUP_TEST_DATA: false
-          BASE_SALT: "test"
 
       # To ignore coverage for certain directories modify the paths in this step as needed. The
       # below default ignores coverage results for the test and script directories. Alternatively,

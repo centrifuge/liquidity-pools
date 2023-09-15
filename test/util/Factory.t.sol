@@ -33,17 +33,17 @@ contract FactoryTest is Test {
         address poolManager1,
         address poolManager2
     ) public {
-        bytes32 salt = keccak256(abi.encodePacked("test"));
+        vm.setEnv("DEPLOYMENT_SALT", "testSalt");
 
         vm.selectFork(mainnetFork);
-        TestSetup testSetup1 = new TestSetup{salt: salt}();
+        TestSetup testSetup1 = new TestSetup{salt: keccak256(abi.encode(vm.envString("DEPLOYMENT_SALT")))}();
         testSetup1.setUp();
         testSetup1.deployLiquidityPool(poolId, 18, "", "", trancheId, 1, address(testSetup1.erc20()));
         address trancheToken1 = PoolManagerLike(address(testSetup1.poolManager())).getTrancheToken(poolId, trancheId);
         address root1 = address(testSetup1.root());
 
         vm.selectFork(polygonFork);
-        TestSetup testSetup2 = new TestSetup{salt: salt}();
+        TestSetup testSetup2 = new TestSetup{salt: keccak256(abi.encode(vm.envString("DEPLOYMENT_SALT")))}();
         testSetup2.setUp();
         testSetup2.deployLiquidityPool(poolId, 18, "", "", trancheId, 1, address(testSetup2.erc20()));
         address trancheToken2 = PoolManagerLike(address(testSetup2.poolManager())).getTrancheToken(poolId, trancheId);
@@ -153,5 +153,16 @@ contract FactoryTest is Test {
         trancheTokenFactory.newTrancheToken(poolId, trancheId, name, symbol, decimals, trancheTokenWards);
         vm.expectRevert();
         trancheTokenFactory.newTrancheToken(poolId, trancheId, name, symbol, decimals, trancheTokenWards);
+    }
+
+    function _stringToBytes32(string memory source) internal pure returns (bytes32 result) {
+        bytes memory tempEmptyStringTest = bytes(source);
+        if (tempEmptyStringTest.length == 0) {
+            return 0x0;
+        }
+
+        assembly {
+            result := mload(add(source, 32))
+        }
     }
 }
