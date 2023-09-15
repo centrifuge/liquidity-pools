@@ -936,7 +936,7 @@ contract LiquidityPoolTest is TestSetup {
             )
         );
 
-        vm.prank(random); // random frontrunns permit
+        vm.prank(random); // random fr permit
         erc20.permit(investor, address(investmentManager), amount, block.timestamp, v, r, s);
 
         // investor still able to requestDepositWithPermit
@@ -981,7 +981,7 @@ contract LiquidityPoolTest is TestSetup {
             )
         );
 
-        vm.prank(random); // random frontrunns permit
+        vm.prank(random); // random fr permit
         trancheToken.permit(investor, address(investmentManager), amount, block.timestamp, v, r, s);
 
         // investor still able to requestDepositWithPermit
@@ -1366,35 +1366,6 @@ contract LiquidityPoolTest is TestSetup {
 
         vm.prank(investor);
         lPool.deposit(amount, investor); // withdraw the amount
-    }
-
-    // function investorDeposit(address _investor, address _lPool, uint256 amount) public {
-    //     Investor investor = Investor(_investor);
-    //     LiquidityPool lPool = LiquidityPool(_lPool);
-
-    //     erc20.mint(_investor, type(uint256).max);
-    //     homePools.updateMember(lPool.poolId(), lPool.trancheId(), _investor, type(uint64).max); // add user as member
-    // vm.prank(address(investor));//
-    // approve(address(erc20), address(investmentManager), amount); // add allowance
-    //     investor.requestDeposit(_lPool, amount, _investor);
-    //     uint128 currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
-    //     homePools.isExecutedCollectInvest(
-    //         lPool.poolId(),
-    //         lPool.trancheId(),
-    //         bytes32(bytes20(_investor)),
-    //         defaultCurrencyId,
-    //         uint128(amount),
-    //         uint128(amount),
-    //         0
-    //     );
-    //     investor.deposit(_lPool, amount, _investor); // deposit the amount
-    // }
-
-    function baseAssumptions(uint256 validUntil, address targetUser) internal view returns (bool) {
-        // return validUntil > block.timestamp
-        // && targetUser != address(0)
-        // && targetUser != self
-        // && targetUser != address(token);
     }
 
     function amountAssumption(uint256 amount) public returns (bool) {
