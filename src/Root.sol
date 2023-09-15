@@ -32,6 +32,8 @@ contract Root is Auth {
     event DenyContract(address indexed target, address indexed user);
 
     constructor(address _escrow, uint256 _delay) {
+        require(_delay <= MAX_DELAY, "Root/delay-too-long");
+
         escrow = _escrow;
         delay = _delay;
 

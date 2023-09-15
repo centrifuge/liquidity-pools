@@ -9,6 +9,16 @@ contract AdminTest is TestSetup {
         pauseAdmin.addPauser(address(this));
     }
 
+    function testDeployment() public {
+        // values set correctly
+        assertEq(address(root.escrow()), address(escrow));
+        assertEq(root.paused(), false);
+
+        // permissions set correctly
+        assertEq(root.wards(address(delayedAdmin)), 1);
+        assertEq(root.wards(address(pauseAdmin)), 1);
+    }
+
     //------ PauseAdmin tests ------//
     function testPause() public {
         pauseAdmin.removePauser(address(this));
