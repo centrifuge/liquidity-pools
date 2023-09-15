@@ -115,6 +115,26 @@ contract LiquidityPool is Auth, IERC4626 {
         _;
     }
 
+function _withPermit(
+        address token,
+        address owner,
+        address spender,
+        uint256 value,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) internal {
+        try ERC20PermitLike(token).permit(owner, spender, value, deadline, v, r, s) {
+            return;
+        } catch {
+            if (IERC20(token).allowance(owner, spender) >= value) {
+                return;
+            }
+        }
+        revert("LiquidityPool/Permit-failure");
+    }
+
     // --- Administration ---
     function file(bytes32 what, address data) public auth {
         if (what == "investmentManager") investmentManager = InvestmentManagerLike(data);
@@ -229,11 +249,13 @@ contract LiquidityPool is Auth, IERC4626 {
         emit DepositRequest(owner, assets);
     }
 
+    
+
     /// @notice Similar to requestDeposit, but with a permit option.
     function requestDepositWithPermit(uint256 assets, address owner, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
         public
     {
-        ERC20PermitLike(asset).permit(owner, address(investmentManager), assets, deadline, v, r, s);
+        _withPermit(asset, owner, address(investmentManager), assets, deadline, v, r, s );
         investmentManager.requestDeposit(address(this), assets, owner);
         emit DepositRequest(owner, assets);
     }
@@ -269,7 +291,7 @@ contract LiquidityPool is Auth, IERC4626 {
     function requestRedeemWithPermit(uint256 shares, address owner, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
         public
     {
-        share.permit(owner, address(investmentManager), shares, deadline, v, r, s);
+         _withPermit(address(share), owner, address(investmentManager), shares, deadline, v, r, s );
         investmentManager.requestRedeem(address(this), shares, owner);
         emit RedeemRequest(owner, shares);
     }
