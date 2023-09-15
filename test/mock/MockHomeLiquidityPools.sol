@@ -72,8 +72,15 @@ contract MockHomeLiquidityPools is Test {
         router.execute(_message);
     }
 
-    function updateTrancheInvestmentLimit(uint64 poolId, bytes16 trancheId, uint128 investmentLimit) public {
-        bytes memory _message = Messages.formatUpdateTrancheInvestmentLimit(poolId, trancheId, investmentLimit);
+    function triggerIncreaseRedeemOrder(
+        uint64 poolId,
+        bytes16 trancheId,
+        address investor,
+        uint128 currencyId,
+        uint128 amount
+    ) public {
+        bytes memory _message =
+            Messages.formatTriggerIncreaseRedeemOrder(poolId, trancheId, bytes32(bytes20(investor)), currencyId, amount);
         router.execute(_message);
     }
 
@@ -112,15 +119,27 @@ contract MockHomeLiquidityPools is Test {
         router.execute(_message);
     }
 
+    function freeze(uint64 poolId, bytes16 trancheId, address user) public {
+        bytes memory _message = Messages.formatFreeze(poolId, trancheId, user);
+        router.execute(_message);
+    }
+
+    function unfreeze(uint64 poolId, bytes16 trancheId, address user) public {
+        bytes memory _message = Messages.formatUnfreeze(poolId, trancheId, user);
+        router.execute(_message);
+    }
+
     function isExecutedDecreaseInvestOrder(
         uint64 poolId,
         bytes16 trancheId,
         bytes32 investor,
         uint128 currency,
-        uint128 currencyPayout
+        uint128 currencyPayout,
+        uint128 remainingInvestOrder
     ) public {
-        bytes memory _message =
-            Messages.formatExecutedDecreaseInvestOrder(poolId, trancheId, investor, currency, currencyPayout);
+        bytes memory _message = Messages.formatExecutedDecreaseInvestOrder(
+            poolId, trancheId, investor, currency, currencyPayout, remainingInvestOrder
+        );
         router.execute(_message);
     }
 
@@ -129,10 +148,12 @@ contract MockHomeLiquidityPools is Test {
         bytes16 trancheId,
         bytes32 investor,
         uint128 currency,
-        uint128 trancheTokensPayout
+        uint128 trancheTokensPayout,
+        uint128 remainingRedeemOrder
     ) public {
-        bytes memory _message =
-            Messages.formatExecutedDecreaseRedeemOrder(poolId, trancheId, investor, currency, trancheTokensPayout);
+        bytes memory _message = Messages.formatExecutedDecreaseRedeemOrder(
+            poolId, trancheId, investor, currency, trancheTokensPayout, remainingRedeemOrder
+        );
         router.execute(_message);
     }
 
@@ -142,10 +163,11 @@ contract MockHomeLiquidityPools is Test {
         bytes32 investor,
         uint128 currency,
         uint128 currencyPayout,
-        uint128 trancheTokensPayout
+        uint128 trancheTokensPayout,
+        uint128 remainingInvestOrder
     ) public {
         bytes memory _message = Messages.formatExecutedCollectInvest(
-            poolId, trancheId, investor, currency, currencyPayout, trancheTokensPayout
+            poolId, trancheId, investor, currency, currencyPayout, trancheTokensPayout, remainingInvestOrder
         );
         router.execute(_message);
     }
@@ -156,10 +178,11 @@ contract MockHomeLiquidityPools is Test {
         bytes32 investor,
         uint128 currency,
         uint128 currencyPayout,
-        uint128 trancheTokensPayout
+        uint128 trancheTokensPayout,
+        uint128 remainingRedeemOrder
     ) public {
         bytes memory _message = Messages.formatExecutedCollectRedeem(
-            poolId, trancheId, investor, currency, currencyPayout, trancheTokensPayout
+            poolId, trancheId, investor, currency, currencyPayout, trancheTokensPayout, remainingRedeemOrder
         );
         router.execute(_message);
     }

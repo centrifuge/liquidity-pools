@@ -44,6 +44,8 @@ contract GatewayTest is TestSetup {
     }
 
     function testAddRouter(address router) public {
+        vm.assume(router.code.length == 0);
+
         assertTrue(!gateway.incomingRouters(router)); // router not added
 
         //success
@@ -58,6 +60,8 @@ contract GatewayTest is TestSetup {
     }
 
     function testRemoveRouter(address router) public {
+        vm.assume(router.code.length == 0);
+
         gateway.addIncomingRouter(router);
         assertTrue(gateway.incomingRouters(router));
 
@@ -73,6 +77,8 @@ contract GatewayTest is TestSetup {
     }
 
     function testUpdateOutgoingRouter(address router) public {
+        vm.assume(router.code.length == 0);
+
         assertTrue(address(gateway.outgoingRouter()) != router);
 
         gateway.updateOutgoingRouter(router);

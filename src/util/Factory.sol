@@ -59,7 +59,6 @@ interface TrancheTokenFactoryLike {
         string memory name,
         string memory symbol,
         uint8 decimals,
-        address[] calldata trancheTokenWards,
         address[] calldata restrictionManagerWards
     ) external returns (address);
 }
@@ -84,11 +83,8 @@ contract TrancheTokenFactory is Auth {
         string memory name,
         string memory symbol,
         uint8 decimals,
-        address[] calldata trancheTokenWards,
-        address[] calldata restrictionManagerWards
+        address[] calldata trancheTokenWards
     ) public auth returns (address) {
-        address restrictionManager = _newRestrictionManager(restrictionManagerWards);
-
         // Salt is hash(poolId + trancheId)
         // same tranche token address on every evm chain
         bytes32 salt = keccak256(abi.encodePacked(poolId, trancheId));
@@ -97,7 +93,6 @@ contract TrancheTokenFactory is Auth {
 
         token.file("name", name);
         token.file("symbol", symbol);
-        token.file("restrictionManager", restrictionManager);
 
         token.rely(root);
         for (uint256 i = 0; i < trancheTokenWards.length; i++) {
@@ -107,9 +102,31 @@ contract TrancheTokenFactory is Auth {
 
         return address(token);
     }
+}
 
-    function _newRestrictionManager(address[] calldata restrictionManagerWards) internal returns (address memberList) {
-        RestrictionManager restrictionManager = new RestrictionManager();
+interface RestrictionManagerFactoryLike {
+    function newRestrictionManager(address token, address[] calldata restrictionManagerWards)
+        external
+        returns (address);
+}
+
+/// @title  Restriction Manager Factory
+/// @dev    Utility for deploying new restriction manager contracts
+contract RestrictionManagerFactory is Auth {
+    address immutable root;
+
+    constructor(address _root) {
+        root = _root;
+
+        wards[msg.sender] = 1;
+        emit Rely(msg.sender);
+    }
+
+    function newRestrictionManager(address token, address[] calldata restrictionManagerWards)
+        public
+        returns (address restrictionManager)
+    {
+        RestrictionManager restrictionManager = new RestrictionManager(token);
 
         restrictionManager.updateMember(RootLike(root).escrow(), type(uint256).max);
 

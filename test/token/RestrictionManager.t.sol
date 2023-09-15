@@ -1,14 +1,17 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {MemberlistLike, RestrictionManager} from "src/token/RestrictionManager.sol";
+import {TrancheToken} from "src/token/Tranche.sol";
+import {RestrictionManagerLike, RestrictionManager} from "src/token/RestrictionManager.sol";
 import "forge-std/Test.sol";
 
 contract RestrictionManagerTest is Test {
+    TrancheToken token;
     RestrictionManager restrictionManager;
 
     function setUp() public {
-        restrictionManager = new RestrictionManager();
+        token = new TrancheToken(18);
+        restrictionManager = new RestrictionManager(address(token));
     }
 
     function testAddMember(uint64 validUntil) public {

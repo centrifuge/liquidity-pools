@@ -20,22 +20,16 @@ contract PoolInvariants is TestSetup {
     InvariantPoolManager invariantPoolManager;
     InvestorManager investor;
 
-    address[] private targetContracts_;
-
     function setUp() public override {
         super.setUp();
 
         // Performs random pool, tranche, and liquidityPool creations
         invariantPoolManager = new InvariantPoolManager(homePools);
-        targetContracts_.push(address(poolManager));
+        targetContract(address(poolManager));
 
         // Performs random transfers in and out
         investor = new InvestorManager();
-        targetContracts_.push(address(investor));
-    }
-
-    function targetContracts() public returns (address[] memory) {
-        return targetContracts_;
+        targetContract(address(investor));
     }
 
     // Invariant 1: For every liquidity pool that exists, the equivalent tranche and pool exists

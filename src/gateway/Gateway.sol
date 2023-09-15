@@ -11,14 +11,16 @@ interface InvestmentManagerLike {
         bytes16 trancheId,
         address investor,
         uint128 currency,
-        uint128 currencyPayout
+        uint128 currencyPayout,
+        uint128 remainingInvestOrder
     ) external;
     function handleExecutedDecreaseRedeemOrder(
         uint64 poolId,
         bytes16 trancheId,
         address investor,
         uint128 currency,
-        uint128 trancheTokensPayout
+        uint128 trancheTokensPayout,
+        uint128 remainingRedeemOrder
     ) external;
     function handleExecutedCollectInvest(
         uint64 poolId,
@@ -26,7 +28,8 @@ interface InvestmentManagerLike {
         address investor,
         uint128 currency,
         uint128 currencyPayout,
-        uint128 trancheTokensPayout
+        uint128 trancheTokensPayout,
+        uint128 remainingInvestOrder
     ) external;
     function handleExecutedCollectRedeem(
         uint64 poolId,
@@ -34,7 +37,15 @@ interface InvestmentManagerLike {
         address investor,
         uint128 currency,
         uint128 currencyPayout,
-        uint128 trancheTokensPayout
+        uint128 trancheTokensPayout,
+        uint128 remainingRedeemOrder
+    ) external;
+    function handleTriggerIncreaseRedeemOrder(
+        uint64 poolId,
+        bytes16 trancheId,
+        address investor,
+        uint128 currency,
+        uint128 trancheTokenAmount
     ) external;
 }
 
@@ -49,6 +60,8 @@ interface PoolManagerLike {
         uint8 decimals
     ) external;
     function updateMember(uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) external;
+    function freeze(uint64 poolId, bytes16 trancheId, address user) external;
+    function unfreeze(uint64 poolId, bytes16 trancheId, address user) external;
     function updateTrancheTokenMetadata(
         uint64 poolId,
         bytes16 trancheId,
@@ -90,10 +103,10 @@ contract Gateway is Auth {
     RouterLike public outgoingRouter;
 
     // --- Events ---
+    event File(bytes32 indexed what, address data);
     event AddIncomingRouter(address indexed router);
     event RemoveIncomingRouter(address indexed router);
     event UpdateOutgoingRouter(address indexed router);
-    event File(bytes32 indexed what, address data);
 
     constructor(address root_, address investmentManager_, address poolManager_, address router_) {
         root = RootLike(root_);
@@ -317,14 +330,28 @@ contract Gateway is Auth {
                 Messages.parseTransferTrancheTokens20(message);
             poolManager.handleTransferTrancheTokens(poolId, trancheId, destinationAddress, amount);
         } else if (Messages.isExecutedDecreaseInvestOrder(message)) {
-            (uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 currencyPayout) =
-                Messages.parseExecutedDecreaseInvestOrder(message);
-            investmentManager.handleExecutedDecreaseInvestOrder(poolId, trancheId, investor, currency, currencyPayout);
+            (
+                uint64 poolId,
+                bytes16 trancheId,
+                address investor,
+                uint128 currency,
+                uint128 currencyPayout,
+                uint128 remainingInvestOrder
+            ) = Messages.parseExecutedDecreaseInvestOrder(message);
+            investmentManager.handleExecutedDecreaseInvestOrder(
+                poolId, trancheId, investor, currency, currencyPayout, remainingInvestOrder
+            );
         } else if (Messages.isExecutedDecreaseRedeemOrder(message)) {
-            (uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 trancheTokensPayout) =
-                Messages.parseExecutedDecreaseRedeemOrder(message);
+            (
+                uint64 poolId,
+                bytes16 trancheId,
+                address investor,
+                uint128 currency,
+                uint128 trancheTokensPayout,
+                uint128 remainingRedeemOrder
+            ) = Messages.parseExecutedDecreaseRedeemOrder(message);
             investmentManager.handleExecutedDecreaseRedeemOrder(
-                poolId, trancheId, investor, currency, trancheTokensPayout
+                poolId, trancheId, investor, currency, trancheTokensPayout, remainingRedeemOrder
             );
         } else if (Messages.isExecutedCollectInvest(message)) {
             (
@@ -333,10 +360,11 @@ contract Gateway is Auth {
                 address investor,
                 uint128 currency,
                 uint128 currencyPayout,
-                uint128 trancheTokensPayout
+                uint128 trancheTokensPayout,
+                uint128 remainingInvestOrder
             ) = Messages.parseExecutedCollectInvest(message);
             investmentManager.handleExecutedCollectInvest(
-                poolId, trancheId, investor, currency, currencyPayout, trancheTokensPayout
+                poolId, trancheId, investor, currency, currencyPayout, trancheTokensPayout, remainingInvestOrder
             );
         } else if (Messages.isExecutedCollectRedeem(message)) {
             (
@@ -345,10 +373,11 @@ contract Gateway is Auth {
                 address investor,
                 uint128 currency,
                 uint128 currencyPayout,
-                uint128 trancheTokensPayout
+                uint128 trancheTokensPayout,
+                uint128 remainingRedeemOrder
             ) = Messages.parseExecutedCollectRedeem(message);
             investmentManager.handleExecutedCollectRedeem(
-                poolId, trancheId, investor, currency, currencyPayout, trancheTokensPayout
+                poolId, trancheId, investor, currency, currencyPayout, trancheTokensPayout, remainingRedeemOrder
             );
         } else if (Messages.isScheduleUpgrade(message)) {
             address target = Messages.parseScheduleUpgrade(message);
@@ -360,6 +389,18 @@ contract Gateway is Auth {
             (uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol) =
                 Messages.parseUpdateTrancheTokenMetadata(message);
             poolManager.updateTrancheTokenMetadata(poolId, trancheId, tokenName, tokenSymbol);
+        } else if (Messages.isTriggerIncreaseRedeemOrder(message)) {
+            (uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 trancheTokenAmount) =
+                Messages.parseTriggerIncreaseRedeemOrder(message);
+            investmentManager.handleTriggerIncreaseRedeemOrder(
+                poolId, trancheId, investor, currency, trancheTokenAmount
+            );
+        } else if (Messages.isFreeze(message)) {
+            (uint64 poolId, bytes16 trancheId, address user) = Messages.parseFreeze(message);
+            poolManager.freeze(poolId, trancheId, user);
+        } else if (Messages.isUnfreeze(message)) {
+            (uint64 poolId, bytes16 trancheId, address user) = Messages.parseUnfreeze(message);
+            poolManager.unfreeze(poolId, trancheId, user);
         } else {
             revert("Gateway/invalid-message");
         }

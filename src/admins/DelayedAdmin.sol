@@ -4,6 +4,11 @@ pragma solidity 0.8.21;
 import {Root} from "../Root.sol";
 import {Auth} from "./../util/Auth.sol";
 
+interface PauseAdminLike {
+    function addPauser(address user) external;
+    function removePauser(address user) external;
+}
+
 /// @title  Delayed Admin
 /// @dev    Any ward on this contract can trigger
 ///         instantaneous pausing and unpausing
@@ -34,5 +39,14 @@ contract DelayedAdmin is Auth {
 
     function cancelRely(address target) public auth {
         root.cancelRely(target);
+    }
+
+    // --- PauseAdmin management ---
+    function addPauser(address pauseContract, address user) public auth {
+        PauseAdminLike(pauseContract).addPauser(user);
+    }
+
+    function removePauser(address pauseContract, address user) public auth {
+        PauseAdminLike(pauseContract).removePauser(user);
     }
 }
