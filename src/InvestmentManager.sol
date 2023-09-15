@@ -23,6 +23,7 @@ interface GatewayLike {
 interface ERC20Like {
     function approve(address token, address spender, uint256 value) external;
     function transferFrom(address from, address to, uint256 amount) external returns (bool);
+    function balanceOf(address user) external view returns (uint256);
     function decimals() external view returns (uint8);
     function mint(address, uint256) external;
     function burn(address, uint256) external;
@@ -167,12 +168,15 @@ contract InvestmentManager is Auth {
         );
 
         // Transfer the currency amount from user to escrow (lock currency in escrow)
+        uint256 preBalance = ERC20Like(currency).balanceOf(address(escrow));
         SafeTransferLib.safeTransferFrom(currency, user, address(escrow), _currencyAmount);
+        uint256 postBalance = ERC20Like(currency).balanceOf(address(escrow));
+        uint128 transferredAmount = _toUint128(postBalance - preBalance);
 
         LPValues storage lpValues = orderbook[user][liquidityPool];
-        lpValues.remainingInvestOrder = lpValues.remainingInvestOrder + _currencyAmount;
+        lpValues.remainingInvestOrder = lpValues.remainingInvestOrder + transferredAmount;
 
-        gateway.increaseInvestOrder(poolId, trancheId, user, currencyId, _currencyAmount);
+        gateway.increaseInvestOrder(poolId, trancheId, user, currencyId, transferredAmount);
     }
 
     /// @notice Request tranche token redemption. Liquidity pools have to request redemptions from Centrifuge before actual currency payouts can be done.

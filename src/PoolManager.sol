@@ -144,10 +144,13 @@ contract PoolManager is Auth {
         uint128 currency = currencyAddressToId[currencyAddress];
         require(currency != 0, "PoolManager/unknown-currency");
 
+        uint256 preBalance = IERC20(currencyAddress).balanceOf(address(escrow));
         SafeTransferLib.safeTransferFrom(currencyAddress, msg.sender, address(escrow), amount);
-        gateway.transfer(currency, msg.sender, recipient, amount);
+        uint256 postBalance = IERC20(currencyAddress).balanceOf(address(escrow));
+        uint128 transferredAmount = _toUint128(postBalance - preBalance);
 
-        emit TransferCurrency(currencyAddress, recipient, amount);
+        gateway.transfer(currency, msg.sender, recipient, transferredAmount);
+        emit TransferCurrency(currencyAddress, recipient, transferredAmount);
     }
 
     function transferTrancheTokensToCentrifuge(
@@ -379,5 +382,15 @@ contract PoolManager is Auth {
         require(currency != 0, "PoolManager/unknown-currency"); // Currency index on the Centrifuge side should start at 1
         require(pools[poolId].allowedCurrencies[currencyAddress], "PoolManager/pool-currency-not-allowed");
         return true;
+    }
+
+    /// @dev    Safe type conversion from uint256 to uint128. Revert if value is too big to be stored with uint128. Avoid data loss.
+    /// @return value - safely converted without data loss
+    function _toUint128(uint256 _value) internal pure returns (uint128 value) {
+        if (_value > type(uint128).max) {
+            revert("InvestmentManager/uint128-overflow");
+        } else {
+            value = uint128(_value);
+        }
     }
 }
