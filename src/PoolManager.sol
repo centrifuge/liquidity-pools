@@ -27,10 +27,6 @@ interface GatewayLike {
     function transfer(uint128 currency, address sender, bytes32 recipient, uint128 amount) external;
 }
 
-interface LiquidityPoolLike {
-    function hasMember(address) external returns (bool);
-}
-
 interface InvestmentManagerLike {
     function liquidityPools(uint64 poolId, bytes16 trancheId, address currency) external returns (address);
     function getTrancheToken(uint64 _poolId, bytes16 _trancheId) external view returns (address);

@@ -78,10 +78,6 @@ interface RouterLike {
     function send(bytes memory message) external;
 }
 
-interface AuthLike {
-    function rely(address usr) external;
-}
-
 interface RootLike {
     function paused() external returns (bool);
     function scheduleRely(address target) external;

@@ -696,7 +696,7 @@ contract InvestmentManager is Auth {
 
     // --- Helpers ---
     function calculateDepositPrice(address user, address liquidityPool) public view returns (uint256 depositPrice) {
-        LPValues storage lpValues = orderbook[user][liquidityPool];
+        LPValues memory lpValues = orderbook[user][liquidityPool];
         if (lpValues.maxMint == 0) {
             return 0;
         }
@@ -705,7 +705,7 @@ contract InvestmentManager is Auth {
     }
 
     function calculateRedeemPrice(address user, address liquidityPool) public view returns (uint256 redeemPrice) {
-        LPValues storage lpValues = orderbook[user][liquidityPool];
+        LPValues memory lpValues = orderbook[user][liquidityPool];
         if (lpValues.maxRedeem == 0) {
             return 0;
         }
