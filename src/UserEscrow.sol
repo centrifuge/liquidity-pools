@@ -35,7 +35,7 @@ contract UserEscrow is Auth {
     function transferOut(address token, address destination, address receiver, uint256 amount) external auth {
         require(destinations[token][destination] >= amount, "UserEscrow/transfer-failed");
         require(
-            /// @dev transferOut can only be initiated by the destination address or an authorized admin.
+            /// @dev transferOut can only be initiated by an authorized admin, to a destination set on transferIn.
             ///      The check is just an additional protection to secure destination funds in case of compromised auth.
             ///      Since userEscrow is not able to decrease the allowance for the receiver,
             ///      a transfer is only possible in case receiver has received the full allowance from destination address.

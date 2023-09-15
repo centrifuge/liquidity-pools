@@ -57,6 +57,11 @@ contract AxelarScript is Deployer {
             liquidityPool.requestDeposit(200 * 10 ** 18, msg.sender);
             liquidityPool.requestDeposit(200 * 10 ** 18, msg.sender);
             liquidityPool.requestDeposit(200 * 10 ** 18, msg.sender);
+            liquidityPool.requestDeposit(200 * 10 ** 18, msg.sender);
+            liquidityPool.requestDeposit(200 * 10 ** 18, msg.sender);
+            liquidityPool.requestDeposit(200 * 10 ** 18, msg.sender);
+            liquidityPool.requestDeposit(200 * 10 ** 18, msg.sender);
+            liquidityPool.requestDeposit(200 * 10 ** 18, msg.sender);
         }
 
         giveAdminAccess();
