@@ -306,14 +306,8 @@ contract Gateway is Auth {
             (uint64 poolId, uint128 currency) = Messages.parseAllowInvestmentCurrency(message);
             poolManager.allowInvestmentCurrency(poolId, currency);
         } else if (Messages.isAddTranche(message)) {
-            (
-                uint64 poolId,
-                bytes16 trancheId,
-                string memory tokenName,
-                string memory tokenSymbol,
-                uint8 decimals,
-                /* uint128 price */
-            ) = Messages.parseAddTranche(message);
+            (uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol, uint8 decimals) =
+                Messages.parseAddTranche(message);
             poolManager.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals);
         } else if (Messages.isUpdateMember(message)) {
             (uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) = Messages.parseUpdateMember(message);
