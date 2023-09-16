@@ -18,7 +18,9 @@ contract Escrow is Auth {
 
     // --- Token approvals ---
     function approve(address token, address spender, uint256 value) external auth {
+        // Approve 0 first for tokens that require this
         SafeTransferLib.safeApprove(token, spender, 0);
+
         SafeTransferLib.safeApprove(token, spender, value);
         emit Approve(token, spender, value);
     }

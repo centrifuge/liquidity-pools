@@ -168,6 +168,7 @@ contract InvestmentManager is Auth {
         );
 
         // Transfer the currency amount from user to escrow (lock currency in escrow)
+        // Checks actual balance difference to support fee-on-transfer tokens
         uint256 preBalance = ERC20Like(currency).balanceOf(address(escrow));
         SafeTransferLib.safeTransferFrom(currency, user, address(escrow), _currencyAmount);
         uint256 postBalance = ERC20Like(currency).balanceOf(address(escrow));
