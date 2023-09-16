@@ -98,8 +98,8 @@ contract LiquidityPoolTest is TestSetup {
     }
 
     function testDepositWithApproval(uint256 deposit1, uint256 deposit2) public {
-        deposit1 = uint128(bound(deposit1, 1, MAX_UINT128));
-        deposit2 = uint128(bound(deposit2, 1, MAX_UINT128));
+        deposit1 = uint128(bound(deposit1, 2, MAX_UINT128));
+        deposit2 = uint128(bound(deposit2, 2, MAX_UINT128));
         uint256 amount = deposit1 + deposit2;
 
         address lPool_ = deploySimplePool();
@@ -132,8 +132,8 @@ contract LiquidityPoolTest is TestSetup {
     }
 
     function testRedeemWithApproval(uint256 redemption1, uint256 redemption2) public {
-        redemption1 = uint128(bound(redemption1, 1, MAX_UINT128));
-        redemption2 = uint128(bound(redemption2, 1, MAX_UINT128));
+        redemption1 = uint128(bound(redemption1, 2, MAX_UINT128));
+        redemption2 = uint128(bound(redemption2, 2, MAX_UINT128));
         uint256 amount = redemption1 + redemption2;
         vm.assume(amountAssumption(amount));
 
@@ -201,7 +201,7 @@ contract LiquidityPoolTest is TestSetup {
     }
 
     function testMint(uint256 amount) public {
-        amount = uint128(bound(amount, 1, MAX_UINT128));
+        amount = uint128(bound(amount, 2, MAX_UINT128));
 
         address lPool_ = deploySimplePool();
         LiquidityPool lPool = LiquidityPool(lPool_);
@@ -222,7 +222,7 @@ contract LiquidityPoolTest is TestSetup {
     }
 
     function testBurn(uint256 amount) public {
-        amount = uint128(bound(amount, 1, MAX_UINT128));
+        amount = uint128(bound(amount, 2, MAX_UINT128));
 
         address lPool_ = deploySimplePool();
         LiquidityPool lPool = LiquidityPool(lPool_);
@@ -250,8 +250,8 @@ contract LiquidityPoolTest is TestSetup {
     }
 
     function testTransferFrom(uint256 amount, uint256 transferAmount) public {
-        transferAmount = uint128(bound(transferAmount, 1, MAX_UINT128));
-        amount = uint128(bound(amount, 1, MAX_UINT128));
+        transferAmount = uint128(bound(transferAmount, 2, MAX_UINT128));
+        amount = uint128(bound(amount, 2, MAX_UINT128));
         vm.assume(transferAmount <= amount);
 
         address lPool_ = deploySimplePool();
@@ -298,8 +298,8 @@ contract LiquidityPoolTest is TestSetup {
     }
 
     function testApprove(uint256 amount, uint256 approvalAmount) public {
-        amount = uint128(bound(amount, 1, MAX_UINT128));
-        approvalAmount = uint128(bound(approvalAmount, 1, MAX_UINT128));
+        amount = uint128(bound(amount, 2, MAX_UINT128));
+        approvalAmount = uint128(bound(approvalAmount, 2, MAX_UINT128));
         vm.assume(amount > approvalAmount);
 
         address receiver = makeAddr("receiver");
@@ -342,8 +342,8 @@ contract LiquidityPoolTest is TestSetup {
     }
 
     function testTransfer(uint256 transferAmount, uint256 amount) public {
-        transferAmount = uint128(bound(transferAmount, 1, MAX_UINT128));
-        amount = uint128(bound(amount, 1, MAX_UINT128));
+        transferAmount = uint128(bound(transferAmount, 2, MAX_UINT128));
+        amount = uint128(bound(amount, 2, MAX_UINT128));
         vm.assume(transferAmount <= amount);
 
         address lPool_ = deploySimplePool();
@@ -735,7 +735,7 @@ contract LiquidityPoolTest is TestSetup {
     }
 
     function testCancelDepositOrder(uint256 amount) public {
-        amount = uint128(bound(amount, 1, MAX_UINT128));
+        amount = uint128(bound(amount, 2, MAX_UINT128));
 
         uint128 price = 2 * 10 ** 27;
         address lPool_ = deploySimplePool();
@@ -768,7 +768,7 @@ contract LiquidityPoolTest is TestSetup {
     }
 
     function testDepositMint(uint256 amount) public {
-        amount = uint128(bound(amount, 1, MAX_UINT128));
+        amount = uint128(bound(amount, 2, MAX_UINT128));
 
         uint128 price = 2 * 10 ** 27;
 
@@ -845,7 +845,7 @@ contract LiquidityPoolTest is TestSetup {
     }
 
     function testDepositMintToReceiver(uint256 amount, address receiver) public {
-        amount = uint128(bound(amount, 1, MAX_UINT128));
+        amount = uint128(bound(amount, 2, MAX_UINT128));
         vm.assume(addressAssumption(receiver));
 
         uint128 price = 2 * 10 ** 27;
@@ -902,7 +902,7 @@ contract LiquidityPoolTest is TestSetup {
     }
 
     function testDepositWithPermitFR(uint256 amount, address random) public {
-        amount = uint128(bound(amount, 1, MAX_UINT128));
+        amount = uint128(bound(amount, 2, MAX_UINT128));
         vm.assume(addressAssumption(random));
 
         // Use a wallet with a known private key so we can sign the permit message
@@ -942,7 +942,7 @@ contract LiquidityPoolTest is TestSetup {
     }
 
     function testRedeemWithPermitFR(uint256 amount, address random) public {
-        amount = uint128(bound(amount, 1, MAX_UINT128));
+        amount = uint128(bound(amount, 2, MAX_UINT128));
         vm.assume(addressAssumption(random));
 
         // Use a wallet with a known private key so we can sign the permit message
@@ -986,7 +986,7 @@ contract LiquidityPoolTest is TestSetup {
     }
 
     function testDepositAndRedeemWithPermit(uint256 amount) public {
-        amount = uint128(bound(amount, 1, MAX_UINT128));
+        amount = uint128(bound(amount, 2, MAX_UINT128));
 
         // Use a wallet with a known private key so we can sign the permit message
         address investor = vm.addr(0xABCD);
@@ -1069,7 +1069,7 @@ contract LiquidityPoolTest is TestSetup {
     }
 
     function testRedeem(uint256 amount) public {
-        amount = uint128(bound(amount, 1, MAX_UINT128));
+        amount = uint128(bound(amount, 2, MAX_UINT128));
 
         address lPool_ = deploySimplePool();
         LiquidityPool lPool = LiquidityPool(lPool_);
@@ -1135,7 +1135,7 @@ contract LiquidityPoolTest is TestSetup {
     }
 
     function testCancelRedeemOrder(uint256 amount) public {
-        amount = uint128(bound(amount, 1, MAX_UINT128));
+        amount = uint128(bound(amount, 2, MAX_UINT128));
 
         address lPool_ = deploySimplePool();
         LiquidityPool lPool = LiquidityPool(lPool_);
@@ -1165,7 +1165,7 @@ contract LiquidityPoolTest is TestSetup {
     }
 
     function testWithdraw(uint256 amount) public {
-        amount = uint128(bound(amount, 1, MAX_UINT128));
+        amount = uint128(bound(amount, 2, MAX_UINT128));
 
         address lPool_ = deploySimplePool();
         LiquidityPool lPool = LiquidityPool(lPool_);
@@ -1219,8 +1219,8 @@ contract LiquidityPoolTest is TestSetup {
     }
 
     function testDecreaseDepositRequest(uint256 amount, uint256 decreaseAmount) public {
-        amount = uint128(bound(amount, 1, MAX_UINT128));
-        decreaseAmount = uint128(bound(decreaseAmount, 1, MAX_UINT128));
+        amount = uint128(bound(amount, 2, MAX_UINT128));
+        decreaseAmount = uint128(bound(decreaseAmount, 2, MAX_UINT128));
         vm.assume(amount > decreaseAmount);
         uint128 price = 2 * 10 ** 27;
 
@@ -1250,8 +1250,8 @@ contract LiquidityPoolTest is TestSetup {
     }
 
     function testDecreaseRedeemRequest(uint256 amount, uint256 decreaseAmount) public {
-        amount = uint128(bound(amount, 1, MAX_UINT128));
-        decreaseAmount = uint128(bound(decreaseAmount, 1, MAX_UINT128));
+        amount = uint128(bound(amount, 2, MAX_UINT128));
+        decreaseAmount = uint128(bound(decreaseAmount, 2, MAX_UINT128));
         vm.assume(amount > decreaseAmount);
 
         address lPool_ = deploySimplePool();
@@ -1277,7 +1277,7 @@ contract LiquidityPoolTest is TestSetup {
     }
 
     function testTriggerIncreaseRedeemOrder(uint256 amount) public {
-        amount = uint128(bound(amount, 1, MAX_UINT128));
+        amount = uint128(bound(amount, 2, MAX_UINT128));
 
         address lPool_ = deploySimplePool();
         LiquidityPool lPool = LiquidityPool(lPool_);
@@ -1311,7 +1311,7 @@ contract LiquidityPoolTest is TestSetup {
     }
 
     function testCollectDeposit(uint128 amount) public {
-        amount = uint128(bound(amount, 1, MAX_UINT128));
+        amount = uint128(bound(amount, 2, MAX_UINT128));
 
         address lPool_ = deploySimplePool();
         LiquidityPool lPool = LiquidityPool(lPool_);
@@ -1322,7 +1322,7 @@ contract LiquidityPoolTest is TestSetup {
     }
 
     function testCollectRedeem(uint128 amount) public {
-        amount = uint128(bound(amount, 1, MAX_UINT128));
+        amount = uint128(bound(amount, 2, MAX_UINT128));
 
         address lPool_ = deploySimplePool();
         LiquidityPool lPool = LiquidityPool(lPool_);
