@@ -24,20 +24,24 @@ import {MockXcmRouter} from "./mock/MockXcmRouter.sol";
 
 // test env
 import "forge-std/Test.sol";
-import {Investor} from "./accounts/Investor.sol";
 
 contract TestSetup is Deployer, Test {
     MockHomeLiquidityPools homePools;
     MockXcmRouter mockXcmRouter;
     ERC20 erc20;
 
-    address self;
+    address self = address(this);
+    address investor = makeAddr("investor");
 
     uint128 constant MAX_UINT128 = type(uint128).max;
 
+    // default values
+    uint128 defaultCurrencyId = 1;
+    uint128 defaultPrice = 1;
+
     function setUp() public virtual {
-        self = address(this);
         vm.chainId(1);
+
         // make yourself admin
         admin = self;
 
@@ -89,6 +93,10 @@ contract TestSetup is Deployer, Test {
         return deployLiquidityPool(poolId, decimals, tokenName, tokenSymbol, trancheId, currency, address(erc20));
     }
 
+    function deploySimplePool() public returns (address) {
+        return deployLiquidityPool(1, 18, "name", "symbol", _stringToBytes16("1"), defaultCurrencyId, address(erc20));
+    }
+
     // Helpers
     function _addressToBytes32(address x) internal pure returns (bytes32) {
         return bytes32(bytes20(x));
@@ -109,6 +117,17 @@ contract TestSetup is Deployer, Test {
 
         assembly {
             result := mload(add(source, 32))
+        }
+    }
+
+    function _stringToBytes16(string memory source) internal pure returns (bytes16 result) {
+        bytes memory tempEmptyStringTest = bytes(source);
+        if (tempEmptyStringTest.length == 0) {
+            return 0x0;
+        }
+
+        assembly {
+            result := mload(add(source, 16))
         }
     }
 
