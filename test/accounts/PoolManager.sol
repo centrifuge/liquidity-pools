@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {MockHomeLiquidityPools} from "../mock/MockHomeLiquidityPools.sol";
+import {MockCentrifugeChain} from "../mock/MockCentrifugeChain.sol";
 import {TestSetup} from "test/TestSetup.t.sol";
 import "forge-std/Test.sol";
 
@@ -11,12 +11,12 @@ contract InvariantPoolManager is TestSetup {
     address[] public allLiquidityPools;
     mapping(bytes16 => uint64) public trancheIdToPoolId;
 
-    constructor(MockHomeLiquidityPools homePools_) {
-        homePools = homePools_;
+    constructor(MockCentrifugeChain centrifugeChain_) {
+        centrifugeChain = centrifugeChain_;
     }
 
     function addPool(uint64 poolId) public {
-        homePools.addPool(poolId);
+        centrifugeChain.addPool(poolId);
 
         allPools.push(poolId);
     }
@@ -28,7 +28,7 @@ contract InvariantPoolManager is TestSetup {
         string memory tokenSymbol,
         uint8 decimals
     ) public {
-        homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals);
+        centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals);
 
         allTranches.push(trancheId);
         trancheIdToPoolId[trancheId] = poolId;
@@ -36,8 +36,8 @@ contract InvariantPoolManager is TestSetup {
 
     function deployLiquidityPool(uint64 poolId, bytes16 trancheId, address currency) public {
         uint128 currencyId = 1;
-        homePools.addCurrency(currencyId, currency);
-        homePools.allowInvestmentCurrency(poolId, currencyId);
+        centrifugeChain.addCurrency(currencyId, currency);
+        centrifugeChain.allowInvestmentCurrency(poolId, currencyId);
         address pool = poolManager.deployLiquidityPool(poolId, trancheId, currency);
 
         allLiquidityPools.push(pool);
