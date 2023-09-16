@@ -115,26 +115,6 @@ contract LiquidityPool is Auth, IERC4626 {
         _;
     }
 
-    function _withPermit(
-        address token,
-        address owner,
-        address spender,
-        uint256 value,
-        uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) internal {
-        try ERC20PermitLike(token).permit(owner, spender, value, deadline, v, r, s) {
-            return;
-        } catch {
-            if (IERC20(token).allowance(owner, spender) >= value) {
-                return;
-            }
-        }
-        revert("LiquidityPool/Permit-failure");
-    }
-
     // --- Administration ---
     function file(bytes32 what, address data) public auth {
         if (what == "investmentManager") investmentManager = InvestmentManagerLike(data);
@@ -397,6 +377,26 @@ contract LiquidityPool is Auth, IERC4626 {
     }
 
     // --- Helpers ---
+    function _withPermit(
+        address token,
+        address owner,
+        address spender,
+        uint256 value,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) internal {
+        try ERC20PermitLike(token).permit(owner, spender, value, deadline, v, r, s) {
+            return;
+        } catch {
+            if (IERC20(token).allowance(owner, spender) >= value) {
+                return;
+            }
+        }
+        revert("LiquidityPool/permit-failure");
+    }
+
     /// @dev In case of unsuccessful tx, parse the revert message
     function _successCheck(bool success) internal pure {
         if (!success) {
