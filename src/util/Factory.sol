@@ -124,7 +124,7 @@ contract RestrictionManagerFactory is Auth {
 
     function newRestrictionManager(address token, address[] calldata restrictionManagerWards)
         public
-        returns (address restrictionManager)
+        returns (address)
     {
         RestrictionManager restrictionManager = new RestrictionManager(token);
 

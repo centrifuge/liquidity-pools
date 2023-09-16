@@ -80,7 +80,14 @@ contract RestrictionManager is Auth {
         emit Unfreeze(user);
     }
 
-    // --- Checking members ---
+    // --- Managing members ---
+    function updateMember(address user, uint256 validUntil) public auth {
+        require(block.timestamp <= validUntil, "RestrictionManager/invalid-valid-until");
+        members[user] = validUntil;
+
+        emit UpdateMember(user, validUntil);
+    }
+
     function member(address user) public view {
         require((members[user] >= block.timestamp), "RestrictionManager/destination-not-a-member");
     }
@@ -90,20 +97,5 @@ contract RestrictionManager is Auth {
             return true;
         }
         return false;
-    }
-
-    // --- Updating members ---
-    function updateMember(address user, uint256 validUntil) public auth {
-        require(block.timestamp <= validUntil, "RestrictionManager/invalid-valid-until");
-        members[user] = validUntil;
-
-        emit UpdateMember(user, validUntil);
-    }
-
-    function updateMembers(address[] memory users, uint256 validUntil) public auth {
-        uint256 userLength = users.length;
-        for (uint256 i = 0; i < userLength; i++) {
-            updateMember(users[i], validUntil);
-        }
     }
 }

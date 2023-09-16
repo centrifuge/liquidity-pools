@@ -23,6 +23,7 @@ interface GatewayLike {
 interface ERC20Like {
     function approve(address token, address spender, uint256 value) external;
     function transferFrom(address from, address to, uint256 amount) external returns (bool);
+    function balanceOf(address user) external view returns (uint256);
     function decimals() external view returns (uint8);
     function mint(address, uint256) external;
     function burn(address, uint256) external;
@@ -167,12 +168,16 @@ contract InvestmentManager is Auth {
         );
 
         // Transfer the currency amount from user to escrow (lock currency in escrow)
+        // Checks actual balance difference to support fee-on-transfer tokens
+        uint256 preBalance = ERC20Like(currency).balanceOf(address(escrow));
         SafeTransferLib.safeTransferFrom(currency, user, address(escrow), _currencyAmount);
+        uint256 postBalance = ERC20Like(currency).balanceOf(address(escrow));
+        uint128 transferredAmount = _toUint128(postBalance - preBalance);
 
         LPValues storage lpValues = orderbook[user][liquidityPool];
-        lpValues.remainingInvestOrder = lpValues.remainingInvestOrder + _currencyAmount;
+        lpValues.remainingInvestOrder = lpValues.remainingInvestOrder + transferredAmount;
 
-        gateway.increaseInvestOrder(poolId, trancheId, user, currencyId, _currencyAmount);
+        gateway.increaseInvestOrder(poolId, trancheId, user, currencyId, transferredAmount);
     }
 
     /// @notice Request tranche token redemption. Liquidity pools have to request redemptions from Centrifuge before actual currency payouts can be done.
@@ -425,7 +430,7 @@ contract InvestmentManager is Auth {
 
     /// @dev Calculates the amount of shares / tranche tokens that any user would get for the amount of currency / assets provided.
     ///      The calculation is based on the tranche token price from the most recent epoch retrieved from Centrifuge.
-    function convertToShares(address liquidityPool, uint256 _assets) public view auth returns (uint256 shares) {
+    function convertToShares(address liquidityPool, uint256 _assets) public view returns (uint256 shares) {
         uint128 latestPrice = LiquidityPoolLike(liquidityPool).latestPrice();
         if (latestPrice == 0) {
             // If the price is not set, we assume it is 1.00
@@ -442,7 +447,7 @@ contract InvestmentManager is Auth {
 
     /// @dev Calculates the asset value for an amount of shares / tranche tokens provided.
     ///      The calculation is based on the tranche token price from the most recent epoch retrieved from Centrifuge.
-    function convertToAssets(address liquidityPool, uint256 _shares) public view auth returns (uint256 assets) {
+    function convertToAssets(address liquidityPool, uint256 _shares) public view returns (uint256 assets) {
         uint128 latestPrice = LiquidityPoolLike(liquidityPool).latestPrice();
         if (latestPrice == 0) {
             // If the price is not set, we assume it is 1.00
@@ -458,23 +463,29 @@ contract InvestmentManager is Auth {
     }
 
     /// @return currencyAmount is type of uint256 to support the EIP4626 Liquidity Pool interface
-    function maxDeposit(address liquidityPool, address user) public view returns (uint256 currencyAmount) {
-        currencyAmount = uint256(orderbook[user][liquidityPool].maxDeposit);
+    function maxDeposit(address liquidityPool, address user) public view returns (uint256) {
+        if (!LiquidityPoolLike(liquidityPool).checkTransferRestriction(address(escrow), user, 0)) return 0;
+        if (calculateDepositPrice(user, liquidityPool) == 0) return 0;
+        return uint256(orderbook[user][liquidityPool].maxDeposit);
     }
 
     /// @return trancheTokenAmount type of uint256 to support the EIP4626 Liquidity Pool interface
     function maxMint(address liquidityPool, address user) public view returns (uint256 trancheTokenAmount) {
-        trancheTokenAmount = uint256(orderbook[user][liquidityPool].maxMint);
+        if (!LiquidityPoolLike(liquidityPool).checkTransferRestriction(address(escrow), user, 0)) return 0;
+        if (calculateDepositPrice(user, liquidityPool) == 0) return 0;
+        return uint256(orderbook[user][liquidityPool].maxMint);
     }
 
     /// @return currencyAmount type of uint256 to support the EIP4626 Liquidity Pool interface
     function maxWithdraw(address liquidityPool, address user) public view returns (uint256 currencyAmount) {
-        currencyAmount = uint256(orderbook[user][liquidityPool].maxWithdraw);
+        if (calculateRedeemPrice(user, liquidityPool) == 0) return 0;
+        return uint256(orderbook[user][liquidityPool].maxWithdraw);
     }
 
     /// @return trancheTokenAmount type of uint256 to support the EIP4626 Liquidity Pool interface
     function maxRedeem(address liquidityPool, address user) public view returns (uint256 trancheTokenAmount) {
-        trancheTokenAmount = uint256(orderbook[user][liquidityPool].maxRedeem);
+        if (calculateRedeemPrice(user, liquidityPool) == 0) return 0;
+        return uint256(orderbook[user][liquidityPool].maxRedeem);
     }
 
     /// @return trancheTokenAmount is type of uint256 to support the EIP4626 Liquidity Pool interface
@@ -686,7 +697,7 @@ contract InvestmentManager is Auth {
 
     // --- Helpers ---
     function calculateDepositPrice(address user, address liquidityPool) public view returns (uint256 depositPrice) {
-        LPValues storage lpValues = orderbook[user][liquidityPool];
+        LPValues memory lpValues = orderbook[user][liquidityPool];
         if (lpValues.maxMint == 0) {
             return 0;
         }
@@ -695,7 +706,7 @@ contract InvestmentManager is Auth {
     }
 
     function calculateRedeemPrice(address user, address liquidityPool) public view returns (uint256 redeemPrice) {
-        LPValues storage lpValues = orderbook[user][liquidityPool];
+        LPValues memory lpValues = orderbook[user][liquidityPool];
         if (lpValues.maxRedeem == 0) {
             return 0;
         }

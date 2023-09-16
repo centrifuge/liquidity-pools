@@ -63,15 +63,15 @@ contract InvestmentManagerTest is TestSetup {
         vm.assume(poolId > 0);
         vm.assume(trancheId > 0);
         vm.assume(currencyId > 0);
-        homePools.addPool(poolId); // add pool
-        homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals); // add tranche
-        homePools.addCurrency(currencyId, address(erc20)); // add currency
-        homePools.allowPoolCurrency(poolId, currencyId);
+        centrifugeChain.addPool(poolId); // add pool
+        centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals); // add tranche
+        centrifugeChain.addCurrency(currencyId, address(erc20)); // add currency
+        centrifugeChain.allowInvestmentCurrency(poolId, currencyId);
 
         address tranche_ = poolManager.deployTranche(poolId, trancheId);
         LiquidityPoolLike lPool = LiquidityPoolLike(poolManager.deployLiquidityPool(poolId, trancheId, address(erc20)));
 
-        homePools.updateTrancheTokenPrice(poolId, trancheId, currencyId, price);
+        centrifugeChain.updateTrancheTokenPrice(poolId, trancheId, currencyId, price);
         assertEq(lPool.latestPrice(), price);
         assertEq(lPool.lastPriceUpdate(), block.timestamp);
     }
@@ -88,10 +88,10 @@ contract InvestmentManagerTest is TestSetup {
         vm.assume(decimals <= 18);
         vm.assume(currency > 0);
         ERC20 erc20 = _newErc20("X's Dollar", "USDX", 18);
-        homePools.addPool(poolId); // add pool
-        homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals); // add tranche
-        homePools.addCurrency(currency, address(erc20));
-        homePools.allowPoolCurrency(poolId, currency);
+        centrifugeChain.addPool(poolId); // add pool
+        centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals); // add tranche
+        centrifugeChain.addCurrency(currency, address(erc20));
+        centrifugeChain.allowInvestmentCurrency(poolId, currency);
         poolManager.deployTranche(poolId, trancheId);
         poolManager.deployLiquidityPool(poolId, trancheId, address(erc20));
 
@@ -105,9 +105,9 @@ contract InvestmentManagerTest is TestSetup {
         uint128 currencyId,
         uint128 price
     ) public {
-        homePools.addPool(poolId);
+        centrifugeChain.addPool(poolId);
 
         vm.expectRevert(bytes("InvestmentManager/tranche-does-not-exist"));
-        homePools.updateTrancheTokenPrice(poolId, trancheId, currencyId, price);
+        centrifugeChain.updateTrancheTokenPrice(poolId, trancheId, currencyId, price);
     }
 }

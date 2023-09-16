@@ -51,7 +51,7 @@ interface InvestmentManagerLike {
 
 interface PoolManagerLike {
     function addPool(uint64 poolId) external;
-    function allowPoolCurrency(uint64 poolId, uint128 currency) external;
+    function allowInvestmentCurrency(uint64 poolId, uint128 currency) external;
     function addTranche(
         uint64 poolId,
         bytes16 trancheId,
@@ -76,10 +76,6 @@ interface PoolManagerLike {
 
 interface RouterLike {
     function send(bytes memory message) external;
-}
-
-interface AuthLike {
-    function rely(address usr) external;
 }
 
 interface RootLike {
@@ -302,18 +298,12 @@ contract Gateway is Auth {
         } else if (Messages.isAddPool(message)) {
             (uint64 poolId) = Messages.parseAddPool(message);
             poolManager.addPool(poolId);
-        } else if (Messages.isAllowPoolCurrency(message)) {
-            (uint64 poolId, uint128 currency) = Messages.parseAllowPoolCurrency(message);
-            poolManager.allowPoolCurrency(poolId, currency);
+        } else if (Messages.isAllowInvestmentCurrency(message)) {
+            (uint64 poolId, uint128 currency) = Messages.parseAllowInvestmentCurrency(message);
+            poolManager.allowInvestmentCurrency(poolId, currency);
         } else if (Messages.isAddTranche(message)) {
-            (
-                uint64 poolId,
-                bytes16 trancheId,
-                string memory tokenName,
-                string memory tokenSymbol,
-                uint8 decimals,
-                /* uint128 price */
-            ) = Messages.parseAddTranche(message);
+            (uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol, uint8 decimals) =
+                Messages.parseAddTranche(message);
             poolManager.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals);
         } else if (Messages.isUpdateMember(message)) {
             (uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) = Messages.parseUpdateMember(message);

@@ -140,28 +140,6 @@ contract ERC20 is Context {
         return true;
     }
 
-    function increaseAllowance(address spender, uint256 addedValue) external returns (bool) {
-        uint256 newValue = allowance[_msgSender()][spender] + addedValue;
-        allowance[_msgSender()][spender] = newValue;
-
-        emit Approval(_msgSender(), spender, newValue);
-
-        return true;
-    }
-
-    function decreaseAllowance(address spender, uint256 subtractedValue) external returns (bool) {
-        uint256 allowed = allowance[_msgSender()][spender];
-        require(allowed >= subtractedValue, "ERC20/insufficient-allowance");
-        unchecked {
-            allowed = allowed - subtractedValue;
-        }
-        allowance[_msgSender()][spender] = allowed;
-
-        emit Approval(_msgSender(), spender, allowed);
-
-        return true;
-    }
-
     // --- Mint/Burn ---
     function mint(address to, uint256 value) public virtual auth {
         require(to != address(0) && to != address(this), "ERC20/invalid-address");
