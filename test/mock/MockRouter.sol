@@ -8,7 +8,7 @@ import {Gateway} from "src/gateway/Gateway.sol";
 import {Auth} from "src/util/Auth.sol";
 import "./Mock.sol";
 
-contract MockXcmRouter is Auth, Mock {
+contract MockRouter is Auth, Mock {
     address public immutable centrifugeChainOrigin;
     address public gateway;
 
@@ -20,12 +20,12 @@ contract MockXcmRouter is Auth, Mock {
     }
 
     modifier onlyCentrifugeChainOrigin() {
-        require(msg.sender == address(centrifugeChainOrigin), "ConnectorXCMRouter/invalid-origin");
+        require(msg.sender == address(centrifugeChainOrigin), "MockRouter/invalid-origin");
         _;
     }
 
     modifier onlyGateway() {
-        require(msg.sender == address(gateway), "ConnectorXCMRouter/only-gateway-allowed-to-call");
+        require(msg.sender == address(gateway), "MockRouter/only-gateway-allowed-to-call");
         _;
     }
 
@@ -33,7 +33,7 @@ contract MockXcmRouter is Auth, Mock {
         if (what == "gateway") {
             gateway = addr;
         } else {
-            revert("ConnectorXCMRouter/file-unrecognized-param");
+            revert("MockRouter/file-unrecognized-param");
         }
     }
 

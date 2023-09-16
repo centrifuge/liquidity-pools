@@ -10,7 +10,7 @@ interface XcmRouterLike {
     function send(bytes memory message) external;
 }
 
-contract MockHomeLiquidityPools is Test {
+contract MockCentrifugeChain is Test {
     XcmRouterLike public immutable router;
 
     uint32 public dispatchDomain;
