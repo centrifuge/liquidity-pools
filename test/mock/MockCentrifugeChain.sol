@@ -10,7 +10,7 @@ interface XcmRouterLike {
     function send(bytes memory message) external;
 }
 
-contract MockHomeLiquidityPools is Test {
+contract MockCentrifugeChain is Test {
     XcmRouterLike public immutable router;
 
     uint32 public dispatchDomain;
@@ -35,8 +35,8 @@ contract MockHomeLiquidityPools is Test {
         router.execute(_message);
     }
 
-    function allowPoolCurrency(uint64 poolId, uint128 currency) public {
-        bytes memory _message = Messages.formatAllowPoolCurrency(poolId, currency);
+    function allowInvestmentCurrency(uint64 poolId, uint128 currency) public {
+        bytes memory _message = Messages.formatAllowInvestmentCurrency(poolId, currency);
         router.execute(_message);
     }
 
@@ -47,8 +47,7 @@ contract MockHomeLiquidityPools is Test {
         string memory tokenSymbol,
         uint8 decimals
     ) public {
-        // TODO: remove price arg from the AddTranche message
-        bytes memory _message = Messages.formatAddTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, 0);
+        bytes memory _message = Messages.formatAddTranche(poolId, trancheId, tokenName, tokenSymbol, decimals);
         router.execute(_message);
     }
 

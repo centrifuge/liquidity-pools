@@ -30,13 +30,13 @@ contract InvestorManager is TestSetup {
     constructor() {
         setUp();
         deployLiquidityPool(fixedPoolId, 18, "", "", fixedTrancheId, fixedCurrencyId, address(erc20));
-        homePools.updateMember(fixedPoolId, fixedTrancheId, address(this), type(uint64).max);
+        centrifugeChain.updateMember(fixedPoolId, fixedTrancheId, address(this), type(uint64).max);
         fixedToken = poolManager.getTrancheToken(fixedPoolId, fixedTrancheId);
         allInvestors.push(address(this));
     }
 
     function addInvestor(uint64 poolId, bytes16 trancheId, address investor, uint128 amount) public {
-        homePools.updateMember(poolId, trancheId, investor, type(uint64).max);
+        centrifugeChain.updateMember(poolId, trancheId, investor, type(uint64).max);
         allInvestors.push(investor);
     }
 
@@ -44,7 +44,7 @@ contract InvestorManager is TestSetup {
         investorIndex = bound(investorIndex, 0, allInvestors.length - 1);
         address investor = allInvestors[investorIndex];
         amount = bound(amount, 0, uint256(investorBalanceOnCentrifugeChain));
-        homePools.incomingTransferTrancheTokens(fixedPoolId, fixedTrancheId, 1, investor, uint128(amount));
+        centrifugeChain.incomingTransferTrancheTokens(fixedPoolId, fixedTrancheId, 1, investor, uint128(amount));
 
         investorBalanceOnCentrifugeChain -= uint128(amount);
         totalTransferredIn += amount;

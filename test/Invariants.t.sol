@@ -24,7 +24,7 @@ contract PoolInvariants is TestSetup {
         super.setUp();
 
         // Performs random pool, tranche, and liquidityPool creations
-        invariantPoolManager = new InvariantPoolManager(homePools);
+        invariantPoolManager = new InvariantPoolManager(centrifugeChain);
         targetContract(address(poolManager));
 
         // Performs random transfers in and out

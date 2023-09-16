@@ -19,15 +19,15 @@ import {Deployer} from "../script/Deployer.sol";
 import "../src/interfaces/IERC20.sol";
 
 // mocks
-import {MockHomeLiquidityPools} from "./mock/MockHomeLiquidityPools.sol";
-import {MockXcmRouter} from "./mock/MockXcmRouter.sol";
+import {MockCentrifugeChain} from "./mock/MockCentrifugeChain.sol";
+import {MockRouter} from "./mock/MockRouter.sol";
 
 // test env
 import "forge-std/Test.sol";
 
 contract TestSetup is Deployer, Test {
-    MockHomeLiquidityPools homePools;
-    MockXcmRouter mockXcmRouter;
+    MockCentrifugeChain centrifugeChain;
+    MockRouter router;
     ERC20 erc20;
 
     address self = address(this);
@@ -48,17 +48,17 @@ contract TestSetup is Deployer, Test {
         // deploy core contracts
         deployInvestmentManager();
         // deploy mockRouter
-        mockXcmRouter = new MockXcmRouter(address(investmentManager));
+        router = new MockRouter(address(investmentManager));
         // wire contracts
-        wire(address(mockXcmRouter));
+        wire(address(router));
         // give admin access
         giveAdminAccess();
         // remove deployer access
-        // removeDeployerAccess(address(mockXcmRouter)); // need auth permissions in tests
+        // removeDeployerAccess(address(router)); // need auth permissions in tests
 
-        homePools = new MockHomeLiquidityPools(address(mockXcmRouter));
+        centrifugeChain = new MockCentrifugeChain(address(router));
         erc20 = _newErc20("X's Dollar", "USDX", 6);
-        mockXcmRouter.file("gateway", address(gateway));
+        router.file("gateway", address(gateway));
     }
 
     // helpers
@@ -71,11 +71,11 @@ contract TestSetup is Deployer, Test {
         uint128 currencyId,
         address currency
     ) public returns (address) {
-        homePools.addPool(poolId); // add pool
-        homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, trancheTokenDecimals); // add tranche
+        centrifugeChain.addPool(poolId); // add pool
+        centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, trancheTokenDecimals); // add tranche
 
-        homePools.addCurrency(currencyId, currency);
-        homePools.allowPoolCurrency(poolId, currencyId);
+        centrifugeChain.addCurrency(currencyId, currency);
+        centrifugeChain.allowInvestmentCurrency(poolId, currencyId);
         poolManager.deployTranche(poolId, trancheId);
 
         address lPoolAddress = poolManager.deployLiquidityPool(poolId, trancheId, currency);

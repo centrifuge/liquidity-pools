@@ -14,8 +14,8 @@ contract GatewayTest is TestSetup {
         assertEq(address(poolManager.gateway()), address(gateway));
 
         // router setup
-        assertEq(address(gateway.outgoingRouter()), address(mockXcmRouter));
-        assertTrue(gateway.incomingRouters(address(mockXcmRouter)));
+        assertEq(address(gateway.outgoingRouter()), address(router));
+        assertTrue(gateway.incomingRouters(address(router)));
 
         // permissions set correctly
         assertEq(gateway.wards(address(root)), 1);

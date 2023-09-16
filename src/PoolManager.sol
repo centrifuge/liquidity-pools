@@ -27,10 +27,6 @@ interface GatewayLike {
     function transfer(uint128 currency, address sender, bytes32 recipient, uint128 amount) external;
 }
 
-interface LiquidityPoolLike {
-    function hasMember(address) external returns (bool);
-}
-
 interface InvestmentManagerLike {
     function liquidityPools(uint64 poolId, bytes16 trancheId, address currency) external returns (address);
     function getTrancheToken(uint64 _poolId, bytes16 _trancheId) external view returns (address);
@@ -93,7 +89,7 @@ contract PoolManager is Auth {
     // --- Events ---
     event File(bytes32 indexed what, address data);
     event AddPool(uint64 indexed poolId);
-    event AllowPoolCurrency(uint128 indexed currency, uint64 indexed poolId);
+    event AllowInvestmentCurrency(uint128 indexed currency, uint64 indexed poolId);
     event AddTranche(uint64 indexed poolId, bytes16 indexed trancheId);
     event DeployTranche(uint64 indexed poolId, bytes16 indexed trancheId, address indexed token);
     event AddCurrency(uint128 indexed currency, address indexed currencyAddress);
@@ -144,10 +140,15 @@ contract PoolManager is Auth {
         uint128 currency = currencyAddressToId[currencyAddress];
         require(currency != 0, "PoolManager/unknown-currency");
 
+        // Transfer the currency amount from user to escrow (lock currency in escrow)
+        // Checks actual balance difference to support fee-on-transfer tokens
+        uint256 preBalance = IERC20(currencyAddress).balanceOf(address(escrow));
         SafeTransferLib.safeTransferFrom(currencyAddress, msg.sender, address(escrow), amount);
-        gateway.transfer(currency, msg.sender, recipient, amount);
+        uint256 postBalance = IERC20(currencyAddress).balanceOf(address(escrow));
+        uint128 transferredAmount = _toUint128(postBalance - preBalance);
 
-        emit TransferCurrency(currencyAddress, recipient, amount);
+        gateway.transfer(currency, msg.sender, recipient, transferredAmount);
+        emit TransferCurrency(currencyAddress, recipient, transferredAmount);
     }
 
     function transferTrancheTokensToCentrifuge(
@@ -197,7 +198,7 @@ contract PoolManager is Auth {
     /// @notice     Centrifuge pools can support multiple currencies for investing. this function adds a new supported currency to the pool details.
     ///             Adding new currencies allow the creation of new liquidity pools for the underlying Centrifuge pool.
     /// @dev        The function can only be executed by the gateway contract.
-    function allowPoolCurrency(uint64 poolId, uint128 currency) public onlyGateway {
+    function allowInvestmentCurrency(uint64 poolId, uint128 currency) public onlyGateway {
         Pool storage pool = pools[poolId];
         require(pool.createdAt != 0, "PoolManager/invalid-pool");
 
@@ -205,7 +206,7 @@ contract PoolManager is Auth {
         require(currencyAddress != address(0), "PoolManager/unknown-currency");
 
         pools[poolId].allowedCurrencies[currencyAddress] = true;
-        emit AllowPoolCurrency(currency, poolId);
+        emit AllowInvestmentCurrency(currency, poolId);
     }
 
     /// @notice     New tranche details from an existing Centrifuge pool are added.
@@ -379,5 +380,15 @@ contract PoolManager is Auth {
         require(currency != 0, "PoolManager/unknown-currency"); // Currency index on the Centrifuge side should start at 1
         require(pools[poolId].allowedCurrencies[currencyAddress], "PoolManager/pool-currency-not-allowed");
         return true;
+    }
+
+    /// @dev    Safe type conversion from uint256 to uint128. Revert if value is too big to be stored with uint128. Avoid data loss.
+    /// @return value - safely converted without data loss
+    function _toUint128(uint256 _value) internal pure returns (uint128 value) {
+        if (_value > type(uint128).max) {
+            revert("InvestmentManager/uint128-overflow");
+        } else {
+            value = uint128(_value);
+        }
     }
 }

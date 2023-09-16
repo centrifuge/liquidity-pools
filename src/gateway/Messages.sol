@@ -14,17 +14,17 @@ library Messages {
         AddCurrency,
         /// 2 - Add Pool
         AddPool,
-        /// 3 - Allow a registered currency to be used as a pool currency or as an investment currency
-        AllowPoolCurrency,
+        /// 3 - Allow a currency to be used as a currency for investing in pools
+        AllowInvestmentCurrency,
         /// 4 - Add a Pool's Tranche Token
         AddTranche,
         /// 5 - Update the price of a Tranche Token
         UpdateTrancheTokenPrice,
         /// 6 - Update the member list of a tranche token with a new member
         UpdateMember,
-        /// 7 - A transfer of Stable CoinsformatTransferTrancheTokens
+        /// 7 - A transfer of currency
         Transfer,
-        /// 8 - A transfer of Tranche tokens
+        /// 8 - A transfer of tranche tokens
         TransferTrancheTokens,
         /// 9 - Increase an investment order by a given amount
         IncreaseInvestOrder,
@@ -118,15 +118,15 @@ library Messages {
      * 1-8: poolId (uint64 = 8 bytes)
      * 9-24: currency (uint128 = 16 bytes)
      */
-    function formatAllowPoolCurrency(uint64 poolId, uint128 currency) internal pure returns (bytes memory) {
-        return abi.encodePacked(uint8(Call.AllowPoolCurrency), poolId, currency);
+    function formatAllowInvestmentCurrency(uint64 poolId, uint128 currency) internal pure returns (bytes memory) {
+        return abi.encodePacked(uint8(Call.AllowInvestmentCurrency), poolId, currency);
     }
 
-    function isAllowPoolCurrency(bytes memory _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.AllowPoolCurrency;
+    function isAllowInvestmentCurrency(bytes memory _msg) internal pure returns (bool) {
+        return messageType(_msg) == Call.AllowInvestmentCurrency;
     }
 
-    function parseAllowPoolCurrency(bytes memory _msg) internal pure returns (uint64 poolId, uint128 currency) {
+    function parseAllowInvestmentCurrency(bytes memory _msg) internal pure returns (uint64 poolId, uint128 currency) {
         poolId = BytesLib.toUint64(_msg, 1);
         currency = BytesLib.toUint128(_msg, 9);
     }
@@ -140,15 +140,13 @@ library Messages {
      * 25-152: tokenName (string = 128 bytes)
      * 153-184: tokenSymbol (string = 32 bytes)
      * 185: decimals (uint8 = 1 byte)
-     * 186-202: price (uint128 = 16 bytes)
      */
     function formatAddTranche(
         uint64 poolId,
         bytes16 trancheId,
         string memory tokenName,
         string memory tokenSymbol,
-        uint8 decimals,
-        uint128 price
+        uint8 decimals
     ) internal pure returns (bytes memory) {
         return abi.encodePacked(
             uint8(Call.AddTranche),
@@ -156,8 +154,7 @@ library Messages {
             trancheId,
             _stringToBytes128(tokenName),
             _stringToBytes32(tokenSymbol),
-            decimals,
-            price
+            decimals
         );
     }
 
@@ -168,21 +165,13 @@ library Messages {
     function parseAddTranche(bytes memory _msg)
         internal
         pure
-        returns (
-            uint64 poolId,
-            bytes16 trancheId,
-            string memory tokenName,
-            string memory tokenSymbol,
-            uint8 decimals,
-            uint128 price
-        )
+        returns (uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol, uint8 decimals)
     {
         poolId = BytesLib.toUint64(_msg, 1);
         trancheId = BytesLib.toBytes16(_msg, 9);
         tokenName = _bytes128ToString(BytesLib.slice(_msg, 25, 128));
         tokenSymbol = _bytes32ToString(BytesLib.toBytes32(_msg, 153));
         decimals = BytesLib.toUint8(_msg, 185);
-        price = BytesLib.toUint128(_msg, 186);
     }
 
     /**

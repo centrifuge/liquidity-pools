@@ -39,7 +39,7 @@ contract AxelarScript is Deployer {
             poolManager.addPool(1171854325);
             poolManager.addTranche(1171854325, 0x102f4ef817340a8839a515d2c73a7c1d, "Some Token", "ST", 6);
             poolManager.deployTranche(1171854325, 0x102f4ef817340a8839a515d2c73a7c1d);
-            poolManager.allowPoolCurrency(1171854325, 1);
+            poolManager.allowInvestmentCurrency(1171854325, 1);
             poolManager.deployLiquidityPool(1171854325, 0x102f4ef817340a8839a515d2c73a7c1d, address(currency));
             poolManager.updateMember(1171854325, 0x102f4ef817340a8839a515d2c73a7c1d, msg.sender, type(uint64).max);
 
