@@ -57,10 +57,13 @@ interface InvestmentManagerLike {
 /// @notice Liquidity Pool implementation for Centrifuge pools
 ///         following the EIP4626 standard, with asynchronous extension methods.
 ///
-/// @dev    Each Liquidity Pool is a tokenized vault issuing shares of Centrifuge tranches as restricted ERC20 tokens against currency deposits based on the current share price.
-///         This is extending the EIP4626 standard by 'requestRedeem' & 'requestDeposit' functions, where redeem and deposit orders are submitted to the pools
-///         to be included in the execution of the following epoch. After execution users can use the deposit, mint, redeem and withdraw functions to
-///         get their shares and/or assets from the pools.
+/// @dev    Each Liquidity Pool is a tokenized vault issuing shares of Centrifuge tranches as restricted ERC20 tokens
+///         against currency deposits based on the current share price.
+///
+///         This is extending the EIP4626 standard by 'requestDeposit' & 'requestRedeem' functions, where deposit and
+///         redeem orders are submitted to the pools to be included in the execution of the following epoch. After
+///         execution users can use the deposit, mint, redeem and withdraw functions to get their shares
+///         and/or assets from the pools.
 contract LiquidityPool is Auth, IERC4626 {
     using MathLib for uint256;
 
@@ -186,7 +189,8 @@ contract LiquidityPool is Auth, IERC4626 {
         shares = investmentManager.previewWithdraw(address(this), msg.sender, assets);
     }
 
-    /// @notice Withdraw assets after successful epoch execution. Receiver will receive an exact amount of assets for a certain amount of shares that has been redeemed from Owner during epoch execution.
+    /// @notice Withdraw assets after successful epoch execution. Receiver will receive an exact amount of assets for
+    ///         a certain amount of shares that has been redeemed from Owner during epoch execution.
     /// @return shares that have been redeemed for the exact assets amount
     function withdraw(uint256 assets, address receiver, address owner)
         public

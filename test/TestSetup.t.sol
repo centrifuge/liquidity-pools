@@ -30,7 +30,8 @@ contract TestSetup is Deployer, Test {
     MockXcmRouter mockXcmRouter;
     ERC20 erc20;
 
-    address self;
+    address self = address(this);
+    address investor = makeAddr("investor");
 
     uint128 constant MAX_UINT128 = type(uint128).max;
 
@@ -39,8 +40,8 @@ contract TestSetup is Deployer, Test {
     uint128 defaultPrice = 1;
 
     function setUp() public virtual {
-        self = address(this);
         vm.chainId(1);
+
         // make yourself admin
         admin = self;
 

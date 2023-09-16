@@ -97,10 +97,9 @@ contract LiquidityPoolTest is TestSetup {
         lPool.decreaseRedeemRequest(amount, self);
     }
 
-    function testDepositWithApproval(uint256 deposit1, uint256 deposit2, address investor) public {
-        vm.assume(amountAssumption(deposit1));
-        vm.assume(amountAssumption(deposit2));
-        vm.assume(addressAssumption(investor));
+    function testDepositWithApproval(uint256 deposit1, uint256 deposit2) public {
+        deposit1 = uint128(bound(deposit1, 2, MAX_UINT128));
+        deposit2 = uint128(bound(deposit2, 2, MAX_UINT128));
         uint256 amount = deposit1 + deposit2;
 
         address lPool_ = deploySimplePool();
@@ -132,10 +131,9 @@ contract LiquidityPoolTest is TestSetup {
         lPool.requestDeposit(deposit2, investor);
     }
 
-    function testRedeemWithApproval(uint256 redemption1, uint256 redemption2, address investor) public {
-        vm.assume(amountAssumption(redemption1));
-        vm.assume(amountAssumption(redemption2));
-        vm.assume(addressAssumption(investor));
+    function testRedeemWithApproval(uint256 redemption1, uint256 redemption2) public {
+        redemption1 = uint128(bound(redemption1, 2, MAX_UINT128));
+        redemption2 = uint128(bound(redemption2, 2, MAX_UINT128));
         uint256 amount = redemption1 + redemption2;
         vm.assume(amountAssumption(amount));
 
@@ -202,9 +200,8 @@ contract LiquidityPoolTest is TestSetup {
         lPool.withdraw(redemption2, investor, investor);
     }
 
-    function testMint(uint256 amount, address investor) public {
-        vm.assume(amountAssumption(amount));
-        vm.assume(addressAssumption(investor));
+    function testMint(uint256 amount) public {
+        amount = uint128(bound(amount, 2, MAX_UINT128));
 
         address lPool_ = deploySimplePool();
         LiquidityPool lPool = LiquidityPool(lPool_);
@@ -224,9 +221,8 @@ contract LiquidityPoolTest is TestSetup {
         assertEq(lPool.balanceOf(investor), lPool.share().balanceOf(investor));
     }
 
-    function testBurn(uint256 amount, address investor) public {
-        vm.assume(amountAssumption(amount));
-        vm.assume(addressAssumption(investor));
+    function testBurn(uint256 amount) public {
+        amount = uint128(bound(amount, 2, MAX_UINT128));
 
         address lPool_ = deploySimplePool();
         LiquidityPool lPool = LiquidityPool(lPool_);
@@ -253,10 +249,9 @@ contract LiquidityPoolTest is TestSetup {
         assertEq(lPool.balanceOf(investor), lPool.share().balanceOf(investor));
     }
 
-    function testTransferFrom(uint256 amount, uint256 transferAmount, address investor) public {
-        vm.assume(addressAssumption(investor));
-        vm.assume(amountAssumption(transferAmount));
-        vm.assume(amountAssumption(amount));
+    function testTransferFrom(uint256 amount, uint256 transferAmount) public {
+        transferAmount = uint128(bound(transferAmount, 2, MAX_UINT128));
+        amount = uint128(bound(amount, 2, MAX_UINT128));
         vm.assume(transferAmount <= amount);
 
         address lPool_ = deploySimplePool();
@@ -302,13 +297,12 @@ contract LiquidityPoolTest is TestSetup {
         assertEq(lPool.balanceOf(self), transferAmount);
     }
 
-    function testApprove(uint256 amount, uint256 approvalAmount, address investor, address random) public {
-        vm.assume(amountAssumption(amount));
-        vm.assume(amountAssumption(approvalAmount));
+    function testApprove(uint256 amount, uint256 approvalAmount) public {
+        amount = uint128(bound(amount, 2, MAX_UINT128));
+        approvalAmount = uint128(bound(approvalAmount, 2, MAX_UINT128));
         vm.assume(amount > approvalAmount);
-        vm.assume(addressAssumption(investor));
-        vm.assume(addressAssumption(random));
 
+        address receiver = makeAddr("receiver");
         address lPool_ = deploySimplePool();
         LiquidityPool lPool = LiquidityPool(lPool_);
         homePools.updateTrancheTokenPrice(lPool.poolId(), lPool.trancheId(), defaultCurrencyId, defaultPrice);
@@ -322,12 +316,12 @@ contract LiquidityPoolTest is TestSetup {
         assertEq(trancheToken.isTrustedForwarder(self), false); // Lpool is not trusted forwarder on token
         (bool success, bytes memory data) = address(trancheToken).call(
             abi.encodeWithSelector(
-                bytes4(keccak256(bytes("approve(address,uint256)"))), random, approvalAmount, investor
+                bytes4(keccak256(bytes("approve(address,uint256)"))), receiver, approvalAmount, investor
             )
         );
 
-        assertEq(lPool.allowance(self, random), approvalAmount);
-        assertEq(lPool.allowance(investor, random), 0);
+        assertEq(lPool.allowance(self, receiver), approvalAmount);
+        assertEq(lPool.allowance(investor, receiver), 0);
 
         // remove LiquidityPool as trusted forwarder
         root.relyContract(address(trancheToken), self);
@@ -335,23 +329,22 @@ contract LiquidityPoolTest is TestSetup {
         assertEq(trancheToken.isTrustedForwarder(lPool_), false); // adding trusted forwarder works
 
         vm.prank(investor);
-        lPool.approve(random, approvalAmount);
-        assertEq(lPool.allowance(lPool_, random), approvalAmount);
-        assertEq(lPool.allowance(investor, random), 0);
+        lPool.approve(receiver, approvalAmount);
+        assertEq(lPool.allowance(lPool_, receiver), approvalAmount);
+        assertEq(lPool.allowance(investor, receiver), 0);
 
         // add liquidityPool back as trusted forwarder
         trancheToken.addLiquidityPool(lPool_);
 
         vm.prank(investor);
-        lPool.approve(random, approvalAmount);
-        assertEq(lPool.allowance(investor, random), approvalAmount);
+        lPool.approve(receiver, approvalAmount);
+        assertEq(lPool.allowance(investor, receiver), approvalAmount);
     }
 
-    function testTransfer(uint256 transferAmount, uint256 amount, address investor) public {
-        vm.assume(amountAssumption(transferAmount));
-        vm.assume(amountAssumption(amount));
+    function testTransfer(uint256 transferAmount, uint256 amount) public {
+        transferAmount = uint128(bound(transferAmount, 2, MAX_UINT128));
+        amount = uint128(bound(amount, 2, MAX_UINT128));
         vm.assume(transferAmount <= amount);
-        vm.assume(addressAssumption(investor));
 
         address lPool_ = deploySimplePool();
 
@@ -742,9 +735,9 @@ contract LiquidityPoolTest is TestSetup {
     }
 
     function testCancelDepositOrder(uint256 amount) public {
-        vm.assume(amountAssumption(amount));
-        uint128 price = 2 * 10 ** 27;
+        amount = uint128(bound(amount, 2, MAX_UINT128));
 
+        uint128 price = 2 * 10 ** 27;
         address lPool_ = deploySimplePool();
         LiquidityPool lPool = LiquidityPool(lPool_);
         homePools.updateTrancheTokenPrice(lPool.poolId(), lPool.trancheId(), defaultCurrencyId, price);
@@ -775,7 +768,8 @@ contract LiquidityPoolTest is TestSetup {
     }
 
     function testDepositMint(uint256 amount) public {
-        vm.assume(amountAssumption(amount));
+        amount = uint128(bound(amount, 2, MAX_UINT128));
+
         uint128 price = 2 * 10 ** 27;
 
         address lPool_ = deploySimplePool();
@@ -851,10 +845,10 @@ contract LiquidityPoolTest is TestSetup {
     }
 
     function testDepositMintToReceiver(uint256 amount, address receiver) public {
-        vm.assume(amountAssumption(amount));
+        amount = uint128(bound(amount, 2, MAX_UINT128));
         vm.assume(addressAssumption(receiver));
-        uint128 price = 2 * 10 ** 27;
 
+        uint128 price = 2 * 10 ** 27;
         address lPool_ = deploySimplePool();
         LiquidityPool lPool = LiquidityPool(lPool_);
         homePools.updateTrancheTokenPrice(lPool.poolId(), lPool.trancheId(), defaultCurrencyId, price);
@@ -908,7 +902,7 @@ contract LiquidityPoolTest is TestSetup {
     }
 
     function testDepositWithPermitFR(uint256 amount, address random) public {
-        vm.assume(amountAssumption(amount));
+        amount = uint128(bound(amount, 2, MAX_UINT128));
         vm.assume(addressAssumption(random));
 
         // Use a wallet with a known private key so we can sign the permit message
@@ -948,7 +942,7 @@ contract LiquidityPoolTest is TestSetup {
     }
 
     function testRedeemWithPermitFR(uint256 amount, address random) public {
-        vm.assume(amountAssumption(amount));
+        amount = uint128(bound(amount, 2, MAX_UINT128));
         vm.assume(addressAssumption(random));
 
         // Use a wallet with a known private key so we can sign the permit message
@@ -992,7 +986,7 @@ contract LiquidityPoolTest is TestSetup {
     }
 
     function testDepositAndRedeemWithPermit(uint256 amount) public {
-        vm.assume(amountAssumption(amount));
+        amount = uint128(bound(amount, 2, MAX_UINT128));
 
         // Use a wallet with a known private key so we can sign the permit message
         address investor = vm.addr(0xABCD);
@@ -1074,9 +1068,8 @@ contract LiquidityPoolTest is TestSetup {
         assertEq(trancheToken.balanceOf(investor), 0);
     }
 
-    function testRedeem(uint256 amount, address random) public {
-        vm.assume(amountAssumption(amount));
-        vm.assume(addressAssumption(random));
+    function testRedeem(uint256 amount) public {
+        amount = uint128(bound(amount, 2, MAX_UINT128));
 
         address lPool_ = deploySimplePool();
         LiquidityPool lPool = LiquidityPool(lPool_);
@@ -1118,31 +1111,31 @@ contract LiquidityPoolTest is TestSetup {
         // success
         lPool.redeem(amount / 2, self, self); // redeem half the amount to own wallet
 
-        // fail -> random has no approval to receive funds
+        // fail -> investor has no approval to receive funds
         vm.expectRevert(bytes("UserEscrow/receiver-has-no-allowance"));
-        lPool.redeem(amount / 2, random, self); // redeem half the amount to another wallet
+        lPool.redeem(amount / 2, investor, self); // redeem half the amount to another wallet
 
         // fail -> receiver needs to have max approval
-        erc20.approve(random, lPool.maxRedeem(self));
+        erc20.approve(investor, lPool.maxRedeem(self));
         vm.expectRevert(bytes("UserEscrow/receiver-has-no-allowance"));
-        lPool.redeem(amount / 2, random, self); // redeem half the amount to random wallet
+        lPool.redeem(amount / 2, investor, self); // redeem half the amount to investor wallet
 
         // success
-        erc20.approve(random, type(uint256).max);
-        lPool.redeem(amount / 2, random, self); // redeem half the amount to random wallet
+        erc20.approve(investor, type(uint256).max);
+        lPool.redeem(amount / 2, investor, self); // redeem half the amount to investor wallet
 
         assertEq(lPool.balanceOf(self), 0);
         assertTrue(lPool.balanceOf(address(escrow)) <= 1);
         assertTrue(erc20.balanceOf(address(userEscrow)) <= 1);
 
         assertApproxEqAbs(erc20.balanceOf(self), (amount / 2), 1);
-        assertApproxEqAbs(erc20.balanceOf(random), (amount / 2), 1);
+        assertApproxEqAbs(erc20.balanceOf(investor), (amount / 2), 1);
         assertTrue(lPool.maxWithdraw(self) <= 1);
         assertTrue(lPool.maxRedeem(self) <= 1);
     }
 
     function testCancelRedeemOrder(uint256 amount) public {
-        vm.assume(amountAssumption(amount));
+        amount = uint128(bound(amount, 2, MAX_UINT128));
 
         address lPool_ = deploySimplePool();
         LiquidityPool lPool = LiquidityPool(lPool_);
@@ -1171,9 +1164,8 @@ contract LiquidityPoolTest is TestSetup {
         assertEq(lPool.maxMint(self), amount);
     }
 
-    function testWithdraw(uint256 amount, address random) public {
-        vm.assume(amountAssumption(amount));
-        vm.assume(addressAssumption(random));
+    function testWithdraw(uint256 amount) public {
+        amount = uint128(bound(amount, 2, MAX_UINT128));
 
         address lPool_ = deploySimplePool();
         LiquidityPool lPool = LiquidityPool(lPool_);
@@ -1205,30 +1197,30 @@ contract LiquidityPoolTest is TestSetup {
 
         lPool.withdraw(amount / 2, self, self); // withdraw half teh amount
 
-        // fail -> random has no approval to receive funds
+        // fail -> investor has no approval to receive funds
         vm.expectRevert(bytes("UserEscrow/receiver-has-no-allowance"));
-        lPool.withdraw(amount / 2, random, self); // redeem half the amount to another wallet
+        lPool.withdraw(amount / 2, investor, self); // redeem half the amount to another wallet
 
         // fail -> receiver needs to have max approval
-        erc20.approve(random, lPool.maxWithdraw(self));
+        erc20.approve(investor, lPool.maxWithdraw(self));
         vm.expectRevert(bytes("UserEscrow/receiver-has-no-allowance"));
-        lPool.withdraw(amount / 2, random, self); // redeem half the amount to random wallet
+        lPool.withdraw(amount / 2, investor, self); // redeem half the amount to investor wallet
 
         // success
-        erc20.approve(random, type(uint256).max);
-        lPool.withdraw(amount / 2, random, self); // redeem half the amount to random wallet
+        erc20.approve(investor, type(uint256).max);
+        lPool.withdraw(amount / 2, investor, self); // redeem half the amount to investor wallet
 
         assertTrue(lPool.balanceOf(self) <= 1);
         assertTrue(erc20.balanceOf(address(userEscrow)) <= 1);
         assertApproxEqAbs(erc20.balanceOf(self), currencyPayout / 2, 1);
-        assertApproxEqAbs(erc20.balanceOf(random), currencyPayout / 2, 1);
+        assertApproxEqAbs(erc20.balanceOf(investor), currencyPayout / 2, 1);
         assertTrue(lPool.maxRedeem(self) <= 1);
         assertTrue(lPool.maxWithdraw(self) <= 1);
     }
 
     function testDecreaseDepositRequest(uint256 amount, uint256 decreaseAmount) public {
-        vm.assume(amountAssumption(amount));
-        vm.assume(amountAssumption(decreaseAmount));
+        amount = uint128(bound(amount, 2, MAX_UINT128));
+        decreaseAmount = uint128(bound(decreaseAmount, 2, MAX_UINT128));
         vm.assume(amount > decreaseAmount);
         uint128 price = 2 * 10 ** 27;
 
@@ -1258,8 +1250,8 @@ contract LiquidityPoolTest is TestSetup {
     }
 
     function testDecreaseRedeemRequest(uint256 amount, uint256 decreaseAmount) public {
-        vm.assume(amountAssumption(amount));
-        vm.assume(amountAssumption(decreaseAmount));
+        amount = uint128(bound(amount, 2, MAX_UINT128));
+        decreaseAmount = uint128(bound(decreaseAmount, 2, MAX_UINT128));
         vm.assume(amount > decreaseAmount);
 
         address lPool_ = deploySimplePool();
@@ -1284,9 +1276,8 @@ contract LiquidityPoolTest is TestSetup {
         assertEq(lPool.maxMint(self), decreaseAmount);
     }
 
-    function testTriggerIncreaseRedeemOrder(uint256 amount, address investor) public {
-        vm.assume(amountAssumption(amount));
-        vm.assume(addressAssumption(investor));
+    function testTriggerIncreaseRedeemOrder(uint256 amount) public {
+        amount = uint128(bound(amount, 2, MAX_UINT128));
 
         address lPool_ = deploySimplePool();
         LiquidityPool lPool = LiquidityPool(lPool_);
@@ -1320,7 +1311,7 @@ contract LiquidityPoolTest is TestSetup {
     }
 
     function testCollectDeposit(uint128 amount) public {
-        vm.assume(amountAssumption(amount));
+        amount = uint128(bound(amount, 2, MAX_UINT128));
 
         address lPool_ = deploySimplePool();
         LiquidityPool lPool = LiquidityPool(lPool_);
@@ -1331,7 +1322,7 @@ contract LiquidityPoolTest is TestSetup {
     }
 
     function testCollectRedeem(uint128 amount) public {
-        vm.assume(amountAssumption(amount));
+        amount = uint128(bound(amount, 2, MAX_UINT128));
 
         address lPool_ = deploySimplePool();
         LiquidityPool lPool = LiquidityPool(lPool_);
