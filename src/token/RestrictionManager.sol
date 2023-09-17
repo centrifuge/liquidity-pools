@@ -45,7 +45,7 @@ contract RestrictionManager is Auth {
     }
 
     // --- ERC1404 implementation ---
-    function detectTransferRestriction(address from, address to, uint256 value) public view returns (uint8) {
+    function detectTransferRestriction(address from, address to, uint256 /* value */ ) public view returns (uint8) {
         if (frozen[from] == 1) {
             return SOURCE_IS_FROZEN_CODE;
         }

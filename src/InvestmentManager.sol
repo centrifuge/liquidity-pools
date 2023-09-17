@@ -208,7 +208,7 @@ contract InvestmentManager is Auth {
 
     function decreaseDepositRequest(address liquidityPool, uint256 _currencyAmount, address user) public auth {
         uint128 currencyAmount = _toUint128(_currencyAmount);
-        LiquidityPoolLike _liquidityPool = LiquidityPoolLike(msg.sender);
+        LiquidityPoolLike _liquidityPool = LiquidityPoolLike(liquidityPool);
         gateway.decreaseInvestOrder(
             _liquidityPool.poolId(),
             _liquidityPool.trancheId(),
@@ -220,7 +220,7 @@ contract InvestmentManager is Auth {
 
     function decreaseRedeemRequest(address liquidityPool, uint256 _trancheTokenAmount, address user) public auth {
         uint128 trancheTokenAmount = _toUint128(_trancheTokenAmount);
-        LiquidityPoolLike _liquidityPool = LiquidityPoolLike(msg.sender);
+        LiquidityPoolLike _liquidityPool = LiquidityPoolLike(liquidityPool);
         require(
             _liquidityPool.checkTransferRestriction(address(0), user, _trancheTokenAmount),
             "InvestmentManager/transfer-not-allowed"
@@ -235,7 +235,7 @@ contract InvestmentManager is Auth {
     }
 
     function cancelDepositRequest(address liquidityPool, address user) public auth {
-        LiquidityPoolLike _liquidityPool = LiquidityPoolLike(msg.sender);
+        LiquidityPoolLike _liquidityPool = LiquidityPoolLike(liquidityPool);
         gateway.cancelInvestOrder(
             _liquidityPool.poolId(),
             _liquidityPool.trancheId(),
@@ -245,7 +245,7 @@ contract InvestmentManager is Auth {
     }
 
     function cancelRedeemRequest(address liquidityPool, address user) public auth {
-        LiquidityPoolLike _liquidityPool = LiquidityPoolLike(msg.sender);
+        LiquidityPoolLike _liquidityPool = LiquidityPoolLike(liquidityPool);
         uint256 approximateTrancheTokenPayout = userRedeemRequest(liquidityPool, user);
         require(
             _liquidityPool.checkTransferRestriction(address(0), user, approximateTrancheTokenPayout),
@@ -260,7 +260,7 @@ contract InvestmentManager is Auth {
     }
 
     function collectDeposit(address liquidityPool, address user) public auth {
-        LiquidityPoolLike _liquidityPool = LiquidityPoolLike(msg.sender);
+        LiquidityPoolLike _liquidityPool = LiquidityPoolLike(liquidityPool);
         uint256 approximateMaxTrancheTokenPayout =
             convertToShares(liquidityPool, userDepositRequest(liquidityPool, user));
         require(
@@ -276,7 +276,7 @@ contract InvestmentManager is Auth {
     }
 
     function collectRedeem(address liquidityPool, address user) public auth {
-        LiquidityPoolLike _liquidityPool = LiquidityPoolLike(msg.sender);
+        LiquidityPoolLike _liquidityPool = LiquidityPoolLike(liquidityPool);
         gateway.collectRedeem(
             _liquidityPool.poolId(),
             _liquidityPool.trancheId(),
@@ -715,7 +715,7 @@ contract InvestmentManager is Auth {
     }
 
     function _calculatePrice(uint128 currencyAmount, uint128 trancheTokenAmount, address liquidityPool)
-        public
+        internal
         view
         returns (uint256 depositPrice)
     {

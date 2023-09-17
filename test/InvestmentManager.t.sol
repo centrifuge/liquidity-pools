@@ -53,7 +53,6 @@ contract InvestmentManagerTest is TestSetup {
         uint64 poolId,
         uint8 decimals,
         uint128 currencyId,
-        address currency,
         string memory tokenName,
         string memory tokenSymbol,
         bytes16 trancheId,
@@ -68,7 +67,7 @@ contract InvestmentManagerTest is TestSetup {
         centrifugeChain.addCurrency(currencyId, address(erc20)); // add currency
         centrifugeChain.allowInvestmentCurrency(poolId, currencyId);
 
-        address tranche_ = poolManager.deployTranche(poolId, trancheId);
+        poolManager.deployTranche(poolId, trancheId);
         LiquidityPoolLike lPool = LiquidityPoolLike(poolManager.deployLiquidityPool(poolId, trancheId, address(erc20)));
 
         centrifugeChain.updateTrancheTokenPrice(poolId, trancheId, currencyId, price);
