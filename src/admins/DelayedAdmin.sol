@@ -16,9 +16,11 @@ interface PauseAdminLike {
 ///         new relys through the timelock.
 contract DelayedAdmin is Auth {
     Root public immutable root;
+    PauseAdminLike public immutable pauseAdmin;
 
-    constructor(address root_) {
+    constructor(address root_, address pauseAdmin_) {
         root = Root(root_);
+        pauseAdmin = PauseAdminLike(pauseAdmin_);
 
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
@@ -42,11 +44,11 @@ contract DelayedAdmin is Auth {
     }
 
     // --- PauseAdmin management ---
-    function addPauser(address pauseContract, address user) public auth {
-        PauseAdminLike(pauseContract).addPauser(user);
+    function addPauser(address user) public auth {
+        pauseAdmin.addPauser(user);
     }
 
-    function removePauser(address pauseContract, address user) public auth {
-        PauseAdminLike(pauseContract).removePauser(user);
+    function removePauser(address user) public auth {
+        pauseAdmin.removePauser(user);
     }
 }
