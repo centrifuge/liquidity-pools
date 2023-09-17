@@ -247,6 +247,8 @@ contract PoolManager is Auth {
     }
 
     function updateMember(uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) public onlyGateway {
+        require(user != address(escrow), "PoolManager/escrow-member-cannot-be-updated");
+
         TrancheTokenLike trancheToken = TrancheTokenLike(getTrancheToken(poolId, trancheId));
         require(address(trancheToken) != address(0), "PoolManager/unknown-token");
 

@@ -318,6 +318,32 @@ contract PoolManagerTest is TestSetup {
         assertTrue(LiquidityPool(lPool_).checkTransferRestriction(address(0), user, 0));
     }
 
+    function testUpdatingEscrowMemberFails(
+        uint64 poolId,
+        uint8 decimals,
+        uint128 currency,
+        string memory tokenName,
+        string memory tokenSymbol,
+        bytes16 trancheId,
+        uint64 validUntil
+    ) public {
+        vm.assume(decimals <= 18);
+        vm.assume(validUntil >= block.timestamp);
+        vm.assume(currency > 0);
+        centrifugeChain.addPool(poolId); // add pool
+        centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals); // add tranche
+        centrifugeChain.addCurrency(currency, address(erc20));
+        centrifugeChain.allowInvestmentCurrency(poolId, currency);
+        poolManager.deployTranche(poolId, trancheId);
+        address lPool_ = poolManager.deployLiquidityPool(poolId, trancheId, address(erc20));
+        assertTrue(LiquidityPool(lPool_).checkTransferRestriction(address(0), address(escrow), 0));
+
+        vm.expectRevert(bytes("PoolManager/escrow-member-cannot-be-updated"));
+        centrifugeChain.updateMember(poolId, trancheId, address(escrow), validUntil);
+
+        assertTrue(LiquidityPool(lPool_).checkTransferRestriction(address(0), address(escrow), 0));
+    }
+
     function testFreezingAndUnfreezingWorks(
         uint64 poolId,
         uint8 decimals,
