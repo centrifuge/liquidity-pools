@@ -90,12 +90,6 @@ contract InvestmentManager is Auth {
 
     // --- Events ---
     event File(bytes32 indexed what, address data);
-    event ProcessDeposit(
-        address indexed liquidityPool, address indexed user, uint128 currencyAmount, uint128 trancheTokenAmount
-    );
-    event ProcessRedeem(
-        address indexed liquidityPool, address indexed user, uint128 currencyAmount, uint128 trancheTokenAmount
-    );
     event ExecutedCollectInvest(
         uint64 indexed poolId,
         bytes16 indexed trancheId,
@@ -620,8 +614,6 @@ contract InvestmentManager is Auth {
             lPool.transferFrom(address(escrow), receiver, trancheTokenAmount),
             "InvestmentManager/tranche-tokens-transfer-failed"
         );
-
-        emit ProcessDeposit(liquidityPool, owner, currencyAmount, trancheTokenAmount);
     }
 
     /// @dev    Processes owner's tranche Token redemption after the epoch has been executed on Centrifuge.
@@ -691,8 +683,6 @@ contract InvestmentManager is Auth {
 
         // Transfer the currency to the user
         userEscrow.transferOut(lPool.asset(), owner, receiver, currencyAmount);
-
-        emit ProcessRedeem(liquidityPool, owner, currencyAmount, trancheTokenAmount);
     }
 
     // --- Helpers ---
