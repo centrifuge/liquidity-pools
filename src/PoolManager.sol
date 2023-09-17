@@ -257,6 +257,8 @@ contract PoolManager is Auth {
     }
 
     function freeze(uint64 poolId, bytes16 trancheId, address user) public onlyGateway {
+        require(user != address(escrow), "PoolManager/escrow-cannot-be-frozen");
+
         TrancheTokenLike trancheToken = TrancheTokenLike(getTrancheToken(poolId, trancheId));
         require(address(trancheToken) != address(0), "PoolManager/unknown-token");
 
