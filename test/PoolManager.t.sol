@@ -362,12 +362,15 @@ contract PoolManagerTest is TestSetup {
         centrifugeChain.allowInvestmentCurrency(poolId, currency);
         poolManager.deployTranche(poolId, trancheId);
         address lPool_ = poolManager.deployLiquidityPool(poolId, trancheId, address(erc20));
-        assertTrue(LiquidityPool(lPool_).checkTransferRestriction(address(escrow), address(0), 0));
+
+        address user = makeAddr("user");
+        centrifugeChain.updateMember(poolId, trancheId, user, type(uint64).max);
+        assertTrue(LiquidityPool(lPool_).checkTransferRestriction(address(escrow), user, 0));
 
         vm.expectRevert(bytes("PoolManager/escrow-cannot-be-frozen"));
         centrifugeChain.freeze(poolId, trancheId, address(escrow));
 
-        assertTrue(LiquidityPool(lPool_).checkTransferRestriction(address(escrow), address(0), 0));
+        assertTrue(LiquidityPool(lPool_).checkTransferRestriction(address(escrow), user, 0));
     }
 
     function testFreezingAndUnfreezingWorks(
