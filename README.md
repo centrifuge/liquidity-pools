@@ -2,7 +2,7 @@
 Liquidity Pools enable seamless deployment of Centrifuge RWA pools on any EVM-compatible blockchain.
 
 ## How it works
-![Architecture](./assets/**architecture**.png)
+![Architecture](./assets/architecture.png)
 
 Investors can invest in multiple tranches for each RWA pool. Each of these tranches is a separate deployment of a Liquidity Pool and a Tranche Token.
 - [**Liquidity Pool**](https://github.com/centrifuge/liquidity-pools/blob/main/src/LiquidityPool.sol): A [ERC-4626](https://ethereum.org/en/developers/docs/standards/tokens/erc-4626/) compatible contract that enables investors to deposit and withdraw stablecoins to invest in tranches of pools.
