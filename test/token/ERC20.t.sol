@@ -89,29 +89,6 @@ contract ERC20Test is Test {
         assertEq(token.allowance(address(this), address(0xBEEF)), 1e18);
     }
 
-    function testIncreaseAllowance() public {
-        vm.expectEmit(true, true, true, true);
-        emit Approval(address(this), address(0xBEEF), 1e18);
-        assertTrue(token.increaseAllowance(address(0xBEEF), 1e18));
-
-        assertEq(token.allowance(address(this), address(0xBEEF)), 1e18);
-    }
-
-    function testDecreaseAllowance() public {
-        assertTrue(token.increaseAllowance(address(0xBEEF), 3e18));
-        vm.expectEmit(true, true, true, true);
-        emit Approval(address(this), address(0xBEEF), 2e18);
-        assertTrue(token.decreaseAllowance(address(0xBEEF), 1e18));
-
-        assertEq(token.allowance(address(this), address(0xBEEF)), 2e18);
-    }
-
-    function testDecreaseAllowanceInsufficientBalance() public {
-        assertTrue(token.increaseAllowance(address(0xBEEF), 1e18));
-        vm.expectRevert("ERC20/insufficient-allowance");
-        token.decreaseAllowance(address(0xBEEF), 2e18);
-    }
-
     function testTransfer() public {
         token.mint(address(this), 1e18);
 

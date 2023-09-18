@@ -57,10 +57,13 @@ interface InvestmentManagerLike {
 /// @notice Liquidity Pool implementation for Centrifuge pools
 ///         following the EIP4626 standard, with asynchronous extension methods.
 ///
-/// @dev    Each Liquidity Pool is a tokenized vault issuing shares of Centrifuge tranches as restricted ERC20 tokens against currency deposits based on the current share price.
-///         This is extending the EIP4626 standard by 'requestRedeem' & 'requestDeposit' functions, where redeem and deposit orders are submitted to the pools
-///         to be included in the execution of the following epoch. After execution users can use the deposit, mint, redeem and withdraw functions to
-///         get their shares and/or assets from the pools.
+/// @dev    Each Liquidity Pool is a tokenized vault issuing shares of Centrifuge tranches as restricted ERC20 tokens
+///         against currency deposits based on the current share price.
+///
+///         This is extending the EIP4626 standard by 'requestDeposit' & 'requestRedeem' functions, where deposit and
+///         redeem orders are submitted to the pools to be included in the execution of the following epoch. After
+///         execution users can use the deposit, mint, redeem and withdraw functions to get their shares
+///         and/or assets from the pools.
 contract LiquidityPool is Auth, IERC4626 {
     using MathLib for uint256;
 
@@ -186,7 +189,8 @@ contract LiquidityPool is Auth, IERC4626 {
         shares = investmentManager.previewWithdraw(address(this), msg.sender, assets);
     }
 
-    /// @notice Withdraw assets after successful epoch execution. Receiver will receive an exact amount of assets for a certain amount of shares that has been redeemed from Owner during epoch execution.
+    /// @notice Withdraw assets after successful epoch execution. Receiver will receive an exact amount of assets for
+    ///         a certain amount of shares that has been redeemed from Owner during epoch execution.
     /// @return shares that have been redeemed for the exact assets amount
     function withdraw(uint256 assets, address receiver, address owner)
         public
@@ -233,7 +237,7 @@ contract LiquidityPool is Auth, IERC4626 {
     function requestDepositWithPermit(uint256 assets, address owner, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
         public
     {
-        ERC20PermitLike(asset).permit(owner, address(investmentManager), assets, deadline, v, r, s);
+        _withPermit(asset, owner, address(investmentManager), assets, deadline, v, r, s);
         investmentManager.requestDeposit(address(this), assets, owner);
         emit DepositRequest(owner, assets);
     }
@@ -269,7 +273,7 @@ contract LiquidityPool is Auth, IERC4626 {
     function requestRedeemWithPermit(uint256 shares, address owner, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
         public
     {
-        share.permit(owner, address(investmentManager), shares, deadline, v, r, s);
+        _withPermit(address(share), owner, address(investmentManager), shares, deadline, v, r, s);
         investmentManager.requestRedeem(address(this), shares, owner);
         emit RedeemRequest(owner, shares);
     }
@@ -377,6 +381,26 @@ contract LiquidityPool is Auth, IERC4626 {
     }
 
     // --- Helpers ---
+    function _withPermit(
+        address token,
+        address owner,
+        address spender,
+        uint256 value,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) internal {
+        try ERC20PermitLike(token).permit(owner, spender, value, deadline, v, r, s) {
+            return;
+        } catch {
+            if (IERC20(token).allowance(owner, spender) >= value) {
+                return;
+            }
+        }
+        revert("LiquidityPool/permit-failure");
+    }
+
     /// @dev In case of unsuccessful tx, parse the revert message
     function _successCheck(bool success) internal pure {
         if (!success) {

@@ -9,6 +9,16 @@ contract AdminTest is TestSetup {
         pauseAdmin.addPauser(address(this));
     }
 
+    function testDeployment() public {
+        // values set correctly
+        assertEq(address(root.escrow()), address(escrow));
+        assertEq(root.paused(), false);
+
+        // permissions set correctly
+        assertEq(root.wards(address(delayedAdmin)), 1);
+        assertEq(root.wards(address(pauseAdmin)), 1);
+    }
+
     //------ PauseAdmin tests ------//
     function testPause() public {
         pauseAdmin.removePauser(address(this));
@@ -45,7 +55,7 @@ contract AdminTest is TestSetup {
         vm.assume(recipient != address(0));
 
         ERC20 erc20 = _newErc20(tokenName, tokenSymbol, decimals);
-        homePools.addCurrency(currency, address(erc20));
+        centrifugeChain.addCurrency(currency, address(erc20));
 
         // First, an outgoing transfer must take place which has funds currency of the currency moved to
         // the escrow account, from which funds are moved from into the recipient on an incoming transfer.
@@ -72,7 +82,7 @@ contract AdminTest is TestSetup {
         vm.assume(recipient != address(0));
 
         ERC20 erc20 = _newErc20(tokenName, tokenSymbol, decimals);
-        homePools.addCurrency(currency, address(erc20));
+        centrifugeChain.addCurrency(currency, address(erc20));
 
         // First, an outgoing transfer must take place which has funds currency of the currency moved to
         // the escrow account, from which funds are moved from into the recipient on an incoming transfer.
@@ -83,7 +93,7 @@ contract AdminTest is TestSetup {
 
         pauseAdmin.pause();
         vm.expectRevert("Gateway/paused");
-        homePools.incomingTransfer(currency, sender, bytes32(bytes20(recipient)), amount);
+        centrifugeChain.incomingTransfer(currency, sender, bytes32(bytes20(recipient)), amount);
     }
 
     function testUnpausingResumesFunctionality(
@@ -104,7 +114,7 @@ contract AdminTest is TestSetup {
 
         ERC20 erc20 = _newErc20(tokenName, tokenSymbol, decimals);
         vm.assume(recipient != address(erc20));
-        homePools.addCurrency(currency, address(erc20));
+        centrifugeChain.addCurrency(currency, address(erc20));
 
         // First, an outgoing transfer must take place which has funds currency of the currency moved to
         // the escrow account, from which funds are moved from into the recipient on an incoming transfer.
@@ -115,7 +125,7 @@ contract AdminTest is TestSetup {
         poolManager.transfer(address(erc20), bytes32(bytes20(recipient)), amount);
         assertEq(erc20.balanceOf(address(poolManager.escrow())), amount);
 
-        homePools.incomingTransfer(currency, sender, bytes32(bytes20(recipient)), amount);
+        centrifugeChain.incomingTransfer(currency, sender, bytes32(bytes20(recipient)), amount);
         assertEq(erc20.balanceOf(address(poolManager.escrow())), 0);
         assertEq(erc20.balanceOf(recipient), amount);
     }
@@ -197,7 +207,7 @@ contract AdminTest is TestSetup {
 
     function testIncomingScheduleUpgradeMessage() public {
         address spell = vm.addr(1);
-        homePools.incomingScheduleUpgrade(spell);
+        centrifugeChain.incomingScheduleUpgrade(spell);
         vm.warp(block.timestamp + delay + 1 hours);
         root.executeScheduledRely(spell);
         assertEq(root.wards(spell), 1);
@@ -205,9 +215,9 @@ contract AdminTest is TestSetup {
 
     function testIncomingCancelUpgradeMessage() public {
         address spell = vm.addr(1);
-        homePools.incomingScheduleUpgrade(spell);
+        centrifugeChain.incomingScheduleUpgrade(spell);
         assertEq(root.schedule(spell), block.timestamp + delay);
-        homePools.incomingCancelUpgrade(spell);
+        centrifugeChain.incomingCancelUpgrade(spell);
         assertEq(root.schedule(spell), 0);
         vm.warp(block.timestamp + delay + 1 hours);
         vm.expectRevert("Root/target-not-scheduled");

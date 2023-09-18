@@ -3,11 +3,11 @@ pragma solidity 0.8.21;
 
 import {InvestmentManager} from "src/InvestmentManager.sol";
 import {Gateway} from "src/gateway/Gateway.sol";
-import {MockHomeLiquidityPools} from "test/mock/MockHomeLiquidityPools.sol";
+import {MockCentrifugeChain} from "test/mock/MockCentrifugeChain.sol";
 import {Escrow} from "src/Escrow.sol";
 import {PauseAdmin} from "src/admins/PauseAdmin.sol";
 import {DelayedAdmin} from "src/admins/DelayedAdmin.sol";
-import {MockXcmRouter} from "test/mock/MockXcmRouter.sol";
+import {MockRouter} from "test/mock/MockRouter.sol";
 import {PoolManager, Pool, Tranche} from "src/PoolManager.sol";
 import {ERC20} from "src/token/ERC20.sol";
 import {TrancheToken} from "src/token/Tranche.sol";
@@ -192,7 +192,7 @@ contract DeployTest is Test, Deployer {
         poolManager.addPool(poolId);
         poolManager.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals);
         poolManager.addCurrency(1, address(erc20));
-        poolManager.allowPoolCurrency(poolId, 1);
+        poolManager.allowInvestmentCurrency(poolId, 1);
         vm.stopPrank();
 
         poolManager.deployTranche(poolId, trancheId);

@@ -19,42 +19,46 @@ import {Deployer} from "../script/Deployer.sol";
 import "../src/interfaces/IERC20.sol";
 
 // mocks
-import {MockHomeLiquidityPools} from "./mock/MockHomeLiquidityPools.sol";
-import {MockXcmRouter} from "./mock/MockXcmRouter.sol";
+import {MockCentrifugeChain} from "./mock/MockCentrifugeChain.sol";
+import {MockRouter} from "./mock/MockRouter.sol";
 
 // test env
 import "forge-std/Test.sol";
-import {Investor} from "./accounts/Investor.sol";
 
 contract TestSetup is Deployer, Test {
-    MockHomeLiquidityPools homePools;
-    MockXcmRouter mockXcmRouter;
+    MockCentrifugeChain centrifugeChain;
+    MockRouter router;
     ERC20 public erc20;
 
-    address self;
+    address self = address(this);
+    address investor = makeAddr("investor");
 
     uint128 constant MAX_UINT128 = type(uint128).max;
 
+    // default values
+    uint128 defaultCurrencyId = 1;
+    uint128 defaultPrice = 1;
+
     function setUp() public virtual {
-        self = address(this);
         vm.chainId(1);
+
         // make yourself admin
         admin = self;
 
         // deploy core contracts
         deployInvestmentManager(address(this));
         // deploy mockRouter
-        mockXcmRouter = new MockXcmRouter(address(investmentManager));
+        router = new MockRouter(address(investmentManager));
         // wire contracts
-        wire(address(mockXcmRouter));
+        wire(address(router));
         // give admin access
         giveAdminAccess();
         // remove deployer access
-        // removeDeployerAccess(address(mockXcmRouter)); // need auth permissions in tests
+        // removeDeployerAccess(address(router)); // need auth permissions in tests
 
-        homePools = new MockHomeLiquidityPools(address(mockXcmRouter));
+        centrifugeChain = new MockCentrifugeChain(address(router));
         erc20 = _newErc20("X's Dollar", "USDX", 6);
-        mockXcmRouter.file("gateway", address(gateway));
+        router.file("gateway", address(gateway));
     }
 
     // helpers
@@ -67,11 +71,11 @@ contract TestSetup is Deployer, Test {
         uint128 currencyId,
         address currency
     ) public returns (address) {
-        homePools.addPool(poolId); // add pool
-        homePools.addTranche(poolId, trancheId, tokenName, tokenSymbol, trancheTokenDecimals); // add tranche
+        centrifugeChain.addPool(poolId); // add pool
+        centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, trancheTokenDecimals); // add tranche
 
-        homePools.addCurrency(currencyId, currency);
-        homePools.allowPoolCurrency(poolId, currencyId);
+        centrifugeChain.addCurrency(currencyId, currency);
+        centrifugeChain.allowInvestmentCurrency(poolId, currencyId);
         poolManager.deployTranche(poolId, trancheId);
 
         address lPoolAddress = poolManager.deployLiquidityPool(poolId, trancheId, currency);
@@ -87,6 +91,10 @@ contract TestSetup is Deployer, Test {
         uint128 currency
     ) public returns (address) {
         return deployLiquidityPool(poolId, decimals, tokenName, tokenSymbol, trancheId, currency, address(erc20));
+    }
+
+    function deploySimplePool() public returns (address) {
+        return deployLiquidityPool(1, 18, "name", "symbol", _stringToBytes16("1"), defaultCurrencyId, address(erc20));
     }
 
     // Helpers
@@ -109,6 +117,17 @@ contract TestSetup is Deployer, Test {
 
         assembly {
             result := mload(add(source, 32))
+        }
+    }
+
+    function _stringToBytes16(string memory source) internal pure returns (bytes16 result) {
+        bytes memory tempEmptyStringTest = bytes(source);
+        if (tempEmptyStringTest.length == 0) {
+            return 0x0;
+        }
+
+        assembly {
+            result := mload(add(source, 16))
         }
     }
 
