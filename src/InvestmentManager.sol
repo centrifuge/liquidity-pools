@@ -5,6 +5,8 @@ import {Auth} from "./util/Auth.sol";
 import {MathLib} from "./util/MathLib.sol";
 import {SafeTransferLib} from "./util/SafeTransferLib.sol";
 
+import "forge-std/Test.sol";
+
 interface GatewayLike {
     function increaseInvestOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount)
         external;
@@ -27,6 +29,7 @@ interface ERC20Like {
     function decimals() external view returns (uint8);
     function mint(address, uint256) external;
     function burn(address, uint256) external;
+    function allowance(address, address) external view returns (uint256);
 }
 
 interface LiquidityPoolLike is ERC20Like {
@@ -73,7 +76,7 @@ struct LPValues {
 /// @title  Investment Manager
 /// @notice This is the main contract LiquidityPools interact with for
 ///         both incoming and outgoing investment transactions.
-contract InvestmentManager is Auth {
+contract InvestmentManager is Auth, Test {
     using MathLib for uint256;
     using MathLib for uint128;
 
@@ -170,6 +173,9 @@ contract InvestmentManager is Auth {
         // Transfer the currency amount from user to escrow (lock currency in escrow)
         // Checks actual balance difference to support fee-on-transfer tokens
         uint256 preBalance = ERC20Like(currency).balanceOf(address(escrow));
+        console.log("INVESTMENTMANAGER user", user);
+        console.log("INVESTMENTMANAGER address(this)", address(this));
+        console.log("INVESTMENTMANAGER allowance", ERC20Like(currency).allowance(user, address(this)));
         SafeTransferLib.safeTransferFrom(currency, user, address(escrow), _currencyAmount);
         uint256 postBalance = ERC20Like(currency).balanceOf(address(escrow));
         uint128 transferredAmount = _toUint128(postBalance - preBalance);
@@ -588,6 +594,10 @@ contract InvestmentManager is Auth {
         returns (uint256 currencyAmount)
     {
         uint128 _trancheTokenAmount = _toUint128(trancheTokenAmount);
+        // console.log("trancheTokenAmount", _trancheTokenAmount);
+        // console.log("orderbook[owner][liquidityPool].maxMint", orderbook[owner][liquidityPool].maxMint);
+        // console.log("owner", owner);
+        // console.log("liquidityPool", liquidityPool);
         require(
             (_trancheTokenAmount <= orderbook[owner][liquidityPool].maxMint && _trancheTokenAmount != 0),
             "InvestmentManager/amount-exceeds-mint-limits"
