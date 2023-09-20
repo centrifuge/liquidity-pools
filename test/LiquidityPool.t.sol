@@ -843,41 +843,45 @@ contract LiquidityPoolTest is TestSetup {
         // remainder is rounding difference
         assertTrue(lPool.maxDeposit(self) <= amount * 0.01e18);
     }
-function testDepositFairRounding(        
-       uint256 totalAmount,
-       uint256 tokenAmount
-   ) public {
-       vm.assume(totalAmount > 1*10**6 && totalAmount < type(uint128).max / 10**12);
-       vm.assume(tokenAmount > 1*10**6 && tokenAmount < type(uint128).max / 10**12);
-       console.log("totalAmount", totalAmount);
-       console.log("tokenAmount", tokenAmount);
 
-       //Deploy a pool
-       LiquidityPool lPool = LiquidityPool(deploySimplePool());
+    function testDepositFairRounding(uint256 totalAmount, uint256 tokenAmount) public {
+        vm.assume(totalAmount > 1 * 10 ** 6 && totalAmount < type(uint128).max / 10 ** 12);
+        vm.assume(tokenAmount > 1 * 10 ** 6 && tokenAmount < type(uint128).max / 10 ** 12);
+        console.log("totalAmount", totalAmount);
+        console.log("tokenAmount", tokenAmount);
 
-       root.relyContract(address(lPool), self); 
-       lPool.mint(address(escrow), type(uint128).max); // mint buffer to the escrow. Mock funds from other users
+        //Deploy a pool
+        LiquidityPool lPool = LiquidityPool(deploySimplePool());
 
-       // fund user & request deposit
-       centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), self, uint64(block.timestamp)); 
-       erc20.mint(self, totalAmount); 
-       erc20.approve(address(investmentManager), totalAmount); 
-       lPool.requestDeposit(totalAmount, self);
-              
-       // Ensure funds were locked in escrow
-       assertEq(erc20.balanceOf(address(escrow)), totalAmount);
-       assertEq(erc20.balanceOf(self), 0);
+        root.relyContract(address(lPool), self);
+        lPool.mint(address(escrow), type(uint128).max); // mint buffer to the escrow. Mock funds from other users
+
+        // fund user & request deposit
+        centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), self, uint64(block.timestamp));
+        erc20.mint(self, totalAmount);
+        erc20.approve(address(investmentManager), totalAmount);
+        lPool.requestDeposit(totalAmount, self);
+
+        // Ensure funds were locked in escrow
+        assertEq(erc20.balanceOf(address(escrow)), totalAmount);
+        assertEq(erc20.balanceOf(self), 0);
 
         // Gateway returns randomly generated values for amount of tranche tokens and currency
         centrifugeChain.isExecutedCollectInvest(
-            lPool.poolId(), lPool.trancheId(), bytes32(bytes20(self)), defaultCurrencyId, uint128(totalAmount), uint128(tokenAmount),0
+            lPool.poolId(),
+            lPool.trancheId(),
+            bytes32(bytes20(self)),
+            defaultCurrencyId,
+            uint128(totalAmount),
+            uint128(tokenAmount),
+            0
         );
 
         // user claims multiple partial deposits
-        uint max = lPool.maxDeposit(self);
-        uint i = 0;
-        while(lPool.maxDeposit(self) > 0) {
-            uint randomDeposit = random(lPool.maxDeposit(self), i);
+        uint256 max = lPool.maxDeposit(self);
+        uint256 i = 0;
+        while (lPool.maxDeposit(self) > 0) {
+            uint256 randomDeposit = random(lPool.maxDeposit(self), i);
             lPool.deposit(randomDeposit, self);
             i++;
         }
@@ -885,7 +889,7 @@ function testDepositFairRounding(
         assertEq(lPool.maxDeposit(self), 0);
         assertEq(lPool.maxMint(self), 0);
         assertApproxEqAbs(lPool.balanceOf(self), tokenAmount, 10); // acceptable rounding error
-     }
+    }
 
     function testDepositMintToReceiver(uint256 amount, address receiver) public {
         amount = uint128(bound(amount, 2, MAX_UINT128));
@@ -1410,11 +1414,11 @@ function testDepositFairRounding(
         return (user != address(0) && user != address(erc20) && user.code.length == 0);
     }
 
-    function random(uint maxValue, uint nonce) internal returns (uint) {
-        if(maxValue == 1) {
+    function random(uint256 maxValue, uint256 nonce) internal returns (uint256) {
+        if (maxValue == 1) {
             return maxValue;
         }
-        uint randomnumber = uint(keccak256(abi.encodePacked(block.timestamp, self, nonce))) % (maxValue - 1);
+        uint256 randomnumber = uint256(keccak256(abi.encodePacked(block.timestamp, self, nonce))) % (maxValue - 1);
         return randomnumber + 1;
     }
 }

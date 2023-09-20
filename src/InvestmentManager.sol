@@ -306,10 +306,6 @@ contract InvestmentManager is Auth {
         uint128 trancheTokensPayout,
         uint128 remainingInvestOrder
     ) public onlyGateway {
-       
-
-        
-
         require(currencyPayout != 0, "InvestmentManager/zero-invest");
         address _currency = poolManager.currencyIdToAddress(currency);
         address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, _currency);
@@ -322,7 +318,6 @@ contract InvestmentManager is Auth {
 
         LiquidityPoolLike(liquidityPool).mint(address(escrow), trancheTokensPayout); // mint to escrow. Recipient can claim by calling withdraw / redeem
         _updateLiquidityPoolPrice(liquidityPool, currencyPayout, trancheTokensPayout);
-    
 
         emit ExecutedCollectInvest(poolId, trancheId, recipient, currency, currencyPayout, trancheTokensPayout);
     }
@@ -724,11 +719,9 @@ contract InvestmentManager is Auth {
         view
         returns (uint256 depositPrice)
     {
- 
         (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getPoolDecimals(liquidityPool);
         uint256 currencyAmountInPriceDecimals = _toPriceDecimals(currencyAmount, currencyDecimals);
         uint256 trancheTokenAmountInPriceDecimals = _toPriceDecimals(trancheTokenAmount, trancheTokenDecimals);
-      
 
         depositPrice = currencyAmountInPriceDecimals.mulDiv(
             10 ** PRICE_DECIMALS, trancheTokenAmountInPriceDecimals, MathLib.Rounding.Down
