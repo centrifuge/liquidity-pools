@@ -47,7 +47,6 @@ interface AuthLike {
 
 /// @dev Centrifuge pools
 struct Pool {
-    uint64 poolId;
     uint256 createdAt;
     mapping(bytes16 trancheId => Tranche) tranches;
     mapping(address currencyAddress => bool) allowedCurrencies;
@@ -56,20 +55,25 @@ struct Pool {
 /// @dev Each Centrifuge pool is associated to 1 or more tranches
 struct Tranche {
     address token;
-    // important: the decimals of the leading pool currency. Liquidity Pool shares have to be denomatimated with the same precision.
-    uint8 decimals;
-    uint256 createdAt;
-    string tokenName;
-    string tokenSymbol;
     /// @dev Each tranche can have multiple liquidity pools deployed,
     /// each linked to a unique investment currency (asset)
     mapping(address currencyAddress => address liquidityPool) liquidityPools;
+}
+
+/// @dev Temporary storage that is only present between addTranche and deployTranche
+struct UndeployedTranche {
+    /// @dev the decimals of the leading pool currency. Liquidity Pool shares have to be denomatimated with the same precision.
+    uint8 decimals;
+    /// @dev metadata of the to be deployed erc20 token
+    string tokenName;
+    string tokenSymbol;
 }
 
 /// @title  Pool Manager
 /// @notice This contract manages which pools & tranches exist,
 ///         as well as managing allowed pool currencies, and incoming and outgoing transfers.
 contract PoolManager is Auth {
+    uint8 internal constant MIN_DECIMALS = 1;
     uint8 internal constant MAX_DECIMALS = 18;
 
     EscrowLike public immutable escrow;
@@ -81,6 +85,7 @@ contract PoolManager is Auth {
     InvestmentManagerLike public investmentManager;
 
     mapping(uint64 poolId => Pool) public pools;
+    mapping(uint64 poolId => mapping(bytes16 => UndeployedTranche)) public undeployedTranches;
 
     /// @dev Chain agnostic currency id -> evm currency address and reverse mapping
     mapping(uint128 currencyId => address) public currencyIdToAddress;
@@ -190,7 +195,6 @@ contract PoolManager is Auth {
     function addPool(uint64 poolId) public onlyGateway {
         Pool storage pool = pools[poolId];
         require(pool.createdAt == 0, "PoolManager/pool-already-added");
-        pool.poolId = poolId;
         pool.createdAt = block.timestamp;
         emit AddPool(poolId);
     }
@@ -218,17 +222,17 @@ contract PoolManager is Auth {
         string memory tokenSymbol,
         uint8 decimals
     ) public onlyGateway {
+        require(decimals >= MIN_DECIMALS, "PoolManager/too-few-tranche-token-decimals");
         require(decimals <= MAX_DECIMALS, "PoolManager/too-many-tranche-token-decimals");
 
         Pool storage pool = pools[poolId];
         require(pool.createdAt != 0, "PoolManager/invalid-pool");
-        Tranche storage tranche = pool.tranches[trancheId];
-        require(tranche.createdAt == 0, "PoolManager/tranche-already-exists");
+        require(pool.tranches[trancheId].token == address(0), "PoolManager/tranche-already-exists");
 
+        UndeployedTranche storage tranche = undeployedTranches[poolId][trancheId];
         tranche.decimals = decimals;
         tranche.tokenName = tokenName;
         tranche.tokenSymbol = tokenSymbol;
-        tranche.createdAt = block.timestamp;
 
         emit AddTranche(poolId, trancheId);
     }
@@ -282,7 +286,10 @@ contract PoolManager is Auth {
         require(currency != 0, "PoolManager/currency-id-has-to-be-greater-than-0");
         require(currencyIdToAddress[currency] == address(0), "PoolManager/currency-id-in-use");
         require(currencyAddressToId[currencyAddress] == 0, "PoolManager/currency-address-in-use");
-        require(IERC20(currencyAddress).decimals() <= MAX_DECIMALS, "PoolManager/too-many-currency-decimals");
+
+        uint8 currencyDecimals = IERC20(currencyAddress).decimals();
+        require(currencyDecimals >= MIN_DECIMALS, "PoolManager/too-few-currency-decimals");
+        require(currencyDecimals <= MAX_DECIMALS, "PoolManager/too-many-currency-decimals");
 
         currencyIdToAddress[currency] = currencyAddress;
         currencyAddressToId[currencyAddress] = currency;
@@ -320,9 +327,8 @@ contract PoolManager is Auth {
 
     // --- Public functions ---
     function deployTranche(uint64 poolId, bytes16 trancheId) public returns (address) {
-        Tranche storage tranche = pools[poolId].tranches[trancheId];
-        require(tranche.token == address(0), "PoolManager/tranche-already-deployed");
-        require(tranche.createdAt != 0, "PoolManager/tranche-not-added");
+        UndeployedTranche storage tranche = undeployedTranches[poolId][trancheId];
+        require(tranche.decimals != 0, "PoolManager/tranche-not-added");
 
         address[] memory trancheTokenWards = new address[](2);
         trancheTokenWards[0] = address(investmentManager);
@@ -337,7 +343,10 @@ contract PoolManager is Auth {
         address restrictionManager = restrictionManagerFactory.newRestrictionManager(token, restrictionManagerWards);
         TrancheTokenLike(token).file("restrictionManager", restrictionManager);
 
-        tranche.token = token;
+        pools[poolId].tranches[trancheId].token = token;
+        // @todo
+        // delete tranche;
+
         emit DeployTranche(poolId, trancheId, token);
         return token;
     }

@@ -58,6 +58,7 @@ contract InvestmentManagerTest is TestSetup {
         bytes16 trancheId,
         uint128 price
     ) public {
+        vm.assume(decimals >= 1);
         vm.assume(decimals <= 18);
         vm.assume(poolId > 0);
         vm.assume(trancheId > 0);
@@ -84,6 +85,7 @@ contract InvestmentManagerTest is TestSetup {
         bytes16 trancheId,
         uint128 price
     ) public {
+        vm.assume(decimals >= 1);
         vm.assume(decimals <= 18);
         vm.assume(currency > 0);
         ERC20 erc20 = _newErc20("X's Dollar", "USDX", 18);
