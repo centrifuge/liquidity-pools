@@ -89,9 +89,6 @@ contract RestrictionManager is Auth {
     }
 
     function hasMember(address user) public view returns (bool) {
-        if (members[user] >= block.timestamp) {
-            return true;
-        }
-        return false;
+        return members[user] >= block.timestamp;
     }
 }
