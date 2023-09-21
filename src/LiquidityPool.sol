@@ -6,8 +6,6 @@ import {MathLib} from "./util/MathLib.sol";
 import {IERC20} from "./interfaces/IERC20.sol";
 import {IERC4626} from "./interfaces/IERC4626.sol";
 
-import "forge-std/Test.sol";
-
 interface ERC20PermitLike {
     function permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
         external;
@@ -66,7 +64,7 @@ interface InvestmentManagerLike {
 ///         redeem orders are submitted to the pools to be included in the execution of the following epoch. After
 ///         execution users can use the deposit, mint, redeem and withdraw functions to get their shares
 ///         and/or assets from the pools.
-contract LiquidityPool is Auth, IERC4626, Test {
+contract LiquidityPool is Auth, IERC4626 {
     using MathLib for uint256;
 
     uint64 public immutable poolId;
@@ -167,8 +165,6 @@ contract LiquidityPool is Auth, IERC4626, Test {
     /// @notice Collect shares for deposited assets after Centrifuge epoch execution.
     ///         maxMint is the max amount of shares that can be collected.
     function mint(uint256 shares, address receiver) public returns (uint256 assets) {
-        // console.log("LIQUIDITY POOL msg.sender", msg.sender);
-        // console.log("LIQUIDITY POOL address(this)", address(this));
         assets = investmentManager.processMint(address(this), shares, receiver, msg.sender);
         emit Deposit(address(this), receiver, assets, shares);
     }

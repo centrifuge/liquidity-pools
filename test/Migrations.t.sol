@@ -6,8 +6,6 @@ import "src/LiquidityPool.sol";
 import {MigratedInvestmentManager} from "test/migrationContracts/MigratedInvestmentManager.sol";
 import {MathLib} from "src/util/MathLib.sol";
 
-// import "forge-std/Test.sol";
-
 contract MigrationsTest is TestSetup {
     using MathLib for uint128;
 
@@ -29,7 +27,7 @@ contract MigrationsTest is TestSetup {
         _lPool = deployLiquidityPool(poolId, trancheTokenDecimals, erc20.name(), erc20.symbol(), trancheId, currencyId, address(erc20));
 
         investorCurrencyAmount = 1000 * 10 ** erc20.decimals();
-        deal(address(erc20), investor, investorCurrencyAmount * 100);
+        deal(address(erc20), investor, investorCurrencyAmount);
         centrifugeChain.updateMember(poolId, trancheId, investor, uint64(block.timestamp + 1000 days));
     }
 
@@ -37,59 +35,59 @@ contract MigrationsTest is TestSetup {
         InvestAndRedeem(poolId, trancheId, _lPool);
 
         // Assume executeScheduledRely() is called on this spell
-
-        // address[] memory investors = new address[](1);
-        // investors[0] = investor;
-        // address[] memory liquidityPools = new address[](1);
-        // liquidityPools[0] = _lPool;
-        // // Deploy new investmentManager
-        // MigratedInvestmentManager newInvestmentManager = new MigratedInvestmentManager(address(escrow), address(userEscrow), address(investmentManager), investors, liquidityPools);
+        address[] memory investors = new address[](1);
+        investors[0] = investor;
+        address[] memory liquidityPools = new address[](1);
+        liquidityPools[0] = _lPool;
+        // Deploy new investmentManager
+        MigratedInvestmentManager newInvestmentManager = new MigratedInvestmentManager(address(escrow), address(userEscrow), address(investmentManager), investors, liquidityPools);
         
-        // // Deploy new contracts that take InvestmentManager as constructor argument
-        // Gateway newGateway = new Gateway(address(root), address(newInvestmentManager), address(poolManager), address(router));
+        // Deploy new contracts that take InvestmentManager as constructor argument
+        Gateway newGateway = new Gateway(address(root), address(newInvestmentManager), address(poolManager), address(router));
         
-        // // file investmentManager on all LiquidityPools
-        // for (uint256 i = 0; i < liquidityPools.length; i++) {
-        //     root.relyContract(address(liquidityPools[i]), address(this));
-        //     LiquidityPool lPool = LiquidityPool(liquidityPools[i]);
+        // file investmentManager on all LiquidityPools
+        for (uint256 i = 0; i < liquidityPools.length; i++) {
+            root.relyContract(address(liquidityPools[i]), address(this));
+            LiquidityPool lPool = LiquidityPool(liquidityPools[i]);
 
-        //     lPool.file("investmentManager", address(newInvestmentManager));
-        //     lPool.rely(address(newInvestmentManager));
-        //     newInvestmentManager.rely(address(lPool));
-        // }
+            lPool.file("investmentManager", address(newInvestmentManager));
+            lPool.rely(address(newInvestmentManager));
+            newInvestmentManager.rely(address(lPool));
+            escrow.approve(address(lPool), address(newInvestmentManager), type(uint256).max);
+        }
 
-        // // Rewire everything
-        // newInvestmentManager.file("poolManager", address(poolManager));
-        // root.relyContract(address(poolManager), address(this));
-        // poolManager.file("investmentManager", address(newInvestmentManager));
-        // newInvestmentManager.file("gateway", address(newGateway));
-        // poolManager.file("gateway", address(newGateway));
-        // newInvestmentManager.rely(address(root));
-        // newInvestmentManager.rely(address(poolManager));
-        // newGateway.rely(address(root));
-        // root.relyContract(address(escrow), address(this));
-        // Escrow(address(escrow)).rely(address(newInvestmentManager));
-        // root.relyContract(address(userEscrow), address(this));
-        // UserEscrow(address(userEscrow)).rely(address(newInvestmentManager));
+        // Rewire everything
+        newInvestmentManager.file("poolManager", address(poolManager));
+        root.relyContract(address(poolManager), address(this));
+        poolManager.file("investmentManager", address(newInvestmentManager));
+        newInvestmentManager.file("gateway", address(newGateway));
+        poolManager.file("gateway", address(newGateway));
+        newInvestmentManager.rely(address(root));
+        newInvestmentManager.rely(address(poolManager));
+        newGateway.rely(address(root));
+        root.relyContract(address(escrow), address(this));
+        Escrow(address(escrow)).rely(address(newInvestmentManager));
+        root.relyContract(address(userEscrow), address(this));
+        UserEscrow(address(userEscrow)).rely(address(newInvestmentManager));
 
-        // root.relyContract(address(router), address(this));
-        // router.file("gateway", address(newGateway));
+        root.relyContract(address(router), address(this));
+        router.file("gateway", address(newGateway));
 
-        // // clean up
-        // root.denyContract(address(newInvestmentManager), address(this));
-        // root.denyContract(address(newGateway), address(this));
-        // root.denyContract(address(poolManager), address(this));
-        // root.denyContract(address(escrow), address(this));
-        // root.denyContract(address(userEscrow), address(this));
-        // root.deny(address(this));
+        // clean up
+        root.denyContract(address(newInvestmentManager), address(this));
+        root.denyContract(address(newGateway), address(this));
+        root.denyContract(address(poolManager), address(this));
+        root.denyContract(address(escrow), address(this));
+        root.denyContract(address(userEscrow), address(this));
+        root.deny(address(this));
 
         
-        // // For the sake of these helper functions, set global variables to new contracts
-        // gateway = newGateway;
-        // investmentManager = newInvestmentManager;
+        // For the sake of these helper functions, set global variables to new contracts
+        gateway = newGateway;
+        investmentManager = newInvestmentManager;
 
-        // // test that everything is working
-        // InvestAndRedeem(poolId, trancheId, _lPool);
+        // test that everything is working
+        InvestAndRedeem(poolId, trancheId, _lPool);
     }
     
     function testLiquidityPoolMigration() public {}
@@ -124,16 +122,9 @@ contract MigrationsTest is TestSetup {
         uint256 amount,
         LiquidityPool lPool
     ) public {
-        console.log("APPROVAL", erc20.allowance(investor, address(investmentManager)));
         vm.prank(investor);
         erc20.approve(address(investmentManager), amount); // add allowance
-        console.log("address(investor)", address(investor));
-        console.log("address(investmentManager)", address(investmentManager));
-        console.log("APPROVAL", erc20.allowance(investor, address(investmentManager)));
-        console.log("requestDeposit amount", amount);
 
-        vm.prank(address(investmentManager));
-        erc20.approve(address(poolManager), amount); // add allowance
         vm.prank(investor);
         lPool.requestDeposit(amount, investor);
 
@@ -142,53 +133,42 @@ contract MigrationsTest is TestSetup {
         assertEq(erc20.balanceOf(investor), investorCurrencyAmount - amount);
 
         // trigger executed collectInvest
-        // uint128 _currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
+        uint128 _currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
 
-        // uint128 trancheTokensPayout = _toUint128(
-        //     uint128(amount).mulDiv(
-        //         10 ** (PRICE_DECIMALS - erc20.decimals() + lPool.decimals()), price, MathLib.Rounding.Down
-        //     )
-        // );
+        uint128 trancheTokensPayout = _toUint128(
+            uint128(amount).mulDiv(
+                10 ** (PRICE_DECIMALS - erc20.decimals() + lPool.decimals()), price, MathLib.Rounding.Down
+            )
+        );
 
-        // // Assume an epoch execution happens on cent chain
-        // // Assume a bot calls collectInvest for this user on cent chain
-        // // console.log("APPROVAL right before collectInvest", erc20.allowance(investor, address(investmentManager)));
-        // // console.log("amount right before collectInvest", amount);
-        // vm.prank(address(gateway));
-        // investmentManager.handleExecutedCollectInvest(
-        //     poolId, trancheId, investor, _currencyId, uint128(amount), trancheTokensPayout, 0
-        // );
+        // Assume an epoch execution happens on cent chain
+        // Assume a bot calls collectInvest for this user on cent chain
+        vm.prank(address(gateway));
+        investmentManager.handleExecutedCollectInvest(
+            poolId, trancheId, investor, _currencyId, uint128(amount), trancheTokensPayout, 0
+        );
 
-        // assertEq(lPool.maxMint(investor), trancheTokensPayout);
-        // assertEq(lPool.maxDeposit(investor), amount);
-        // assertEq(lPool.balanceOf(address(escrow)), trancheTokensPayout);
-        // assertEq(erc20.balanceOf(investor), investorCurrencyAmount - amount);
+        assertEq(lPool.maxMint(investor), trancheTokensPayout);
+        assertEq(lPool.maxDeposit(investor), amount);
+        assertEq(lPool.balanceOf(address(escrow)), trancheTokensPayout);
+        assertEq(erc20.balanceOf(investor), investorCurrencyAmount - amount);
 
-        // uint256 div = 2;
-        // vm.prank(investor);
-        // lPool.deposit(amount / div, investor);
+        uint256 div = 2;
+        vm.prank(investor);
+        lPool.deposit(amount / div, investor);
 
-        // assertEq(lPool.balanceOf(investor), trancheTokensPayout / div);
-        // assertEq(lPool.balanceOf(address(escrow)), trancheTokensPayout - trancheTokensPayout / div);
-        // assertEq(lPool.maxMint(investor), trancheTokensPayout - trancheTokensPayout / div);
-        // assertEq(lPool.maxDeposit(investor), amount - amount / div); // max deposit
+        assertEq(lPool.balanceOf(investor), trancheTokensPayout / div);
+        assertEq(lPool.balanceOf(address(escrow)), trancheTokensPayout - trancheTokensPayout / div);
+        assertEq(lPool.maxMint(investor), trancheTokensPayout - trancheTokensPayout / div);
+        assertEq(lPool.maxDeposit(investor), amount - amount / div); // max deposit
 
-        // // console.log("trancheTokensPayout", trancheTokensPayout);
-        // // console.log("lPool.maxDeposit", lPool.maxDeposit(investor));
-        // // console.log("lPool.maxMint", lPool.maxMint(investor));
-        // // console.log("investor", investor);
-        // // console.log("address(this)", address(this));
-        // // console.log("lPool.balanceOf(address(escrow))", lPool.balanceOf(address(escrow)));
-        // // console.log("erc20.balanceOf(investor)", erc20.balanceOf(investor));
-        // // console.log("deposit amount", amount / div);
-        // uint256 maxMint = lPool.maxMint(investor);
-        // vm.prank(investor);
-        // lPool.mint(maxMint, investor);
+        uint256 maxMint = lPool.maxMint(investor);
+        vm.prank(investor);
+        lPool.mint(maxMint, investor);
 
-        // assertEq(lPool.balanceOf(investor), trancheTokensPayout);
-        // assertTrue(lPool.balanceOf(address(escrow)) <= 1);
-        // assertTrue(lPool.maxMint(investor) <= 1);
-        // console.log("APPROVAL", erc20.allowance(investor, address(investmentManager)));
+        assertEq(lPool.balanceOf(investor), trancheTokensPayout);
+        assertTrue(lPool.balanceOf(address(escrow)) <= 1);
+        assertTrue(lPool.maxMint(investor) <= 1);
     }
 
     function redeemWithdraw(

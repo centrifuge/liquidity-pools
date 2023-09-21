@@ -287,8 +287,6 @@ contract PoolManagerTest is TestSetup {
 
         // Approve and transfer amount from this address to destinationAddress
         LiquidityPool(lPool_).approve(address(poolManager), amount);
-        console.logAddress(lPool_);
-        console.logAddress(LiquidityPool(lPool_).asset());
         poolManager.transferTrancheTokensToEVM(poolId, trancheId, uint64(block.chainid), destinationAddress, amount);
         assertEq(LiquidityPool(lPool_).balanceOf(address(this)), 0);
     }
