@@ -425,6 +425,7 @@ contract PoolManagerTest is TestSetup {
         uint64 validUntil
     ) public {
         vm.assume(validUntil > block.timestamp);
+        vm.assume(user.code.length == 0);
         centrifugeChain.addPool(poolId);
 
         vm.expectRevert(bytes("PoolManager/unknown-token"));
