@@ -56,7 +56,7 @@ contract TrancheToken is ERC20, ERC1404Like {
         emit RemoveLiquidityPool(liquidityPool);
     }
 
-    // --- Restrictions ---
+    // --- ERC20 overrides with restrictions ---
     function transfer(address to, uint256 value) public override restricted(_msgSender(), to, value) returns (bool) {
         return super.transfer(to, value);
     }
@@ -74,6 +74,7 @@ contract TrancheToken is ERC20, ERC1404Like {
         return super.mint(to, value);
     }
 
+    // --- ERC1404 implementation ---
     function detectTransferRestriction(address from, address to, uint256 value) public view returns (uint8) {
         return restrictionManager.detectTransferRestriction(from, to, value);
     }

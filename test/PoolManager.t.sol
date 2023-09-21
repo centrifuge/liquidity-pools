@@ -30,7 +30,7 @@ contract PoolManagerTest is TestSetup {
         uint128 currency
     ) public {
         vm.assume(currency > 0);
-        bound(decimals, 1, 17);
+        vm.assume(decimals > 1 && decimals <= 18);
         centrifugeChain.addPool(poolId); // add pool
 
         vm.expectRevert(bytes("PoolManager/tranche-not-added"));
@@ -90,7 +90,7 @@ contract PoolManagerTest is TestSetup {
         address recipient,
         uint128 amount
     ) public {
-        bound(decimals, 1, 17);
+        vm.assume(decimals > 1 && decimals <= 18);
         vm.assume(currency > 0);
         vm.assume(amount > 0);
         vm.assume(recipient != address(0));
@@ -115,7 +115,7 @@ contract PoolManagerTest is TestSetup {
         address recipient,
         uint128 amount
     ) public {
-        bound(decimals, 1, 17);
+        vm.assume(decimals > 1 && decimals <= 18);
         vm.assume(amount > 0);
         vm.assume(currency != 0);
         vm.assume(recipient != address(0));
@@ -146,7 +146,7 @@ contract PoolManagerTest is TestSetup {
         bytes32 recipient,
         uint128 amount
     ) public {
-        bound(decimals, 1, 17);
+        vm.assume(decimals > 1 && decimals <= 18);
         vm.assume(amount > 0);
         vm.assume(currency != 0);
         vm.assume(initialBalance >= amount);
@@ -178,7 +178,7 @@ contract PoolManagerTest is TestSetup {
         bytes16 trancheId,
         uint128 currency
     ) public {
-        bound(decimals, 1, 17);
+        vm.assume(decimals > 1 && decimals <= 18);
         vm.assume(currency > 0);
         vm.assume(validUntil > block.timestamp + 7 days);
 
@@ -219,7 +219,7 @@ contract PoolManagerTest is TestSetup {
         address destinationAddress,
         uint128 amount
     ) public {
-        bound(decimals, 1, 17);
+        vm.assume(decimals > 1 && decimals <= 18);
         vm.assume(validUntil >= block.timestamp);
         vm.assume(destinationAddress != address(0));
         vm.assume(currency > 0);
@@ -244,7 +244,7 @@ contract PoolManagerTest is TestSetup {
         address destinationAddress,
         uint128 amount
     ) public {
-        bound(decimals, 1, 17);
+        vm.assume(decimals > 1 && decimals <= 18);
         vm.assume(destinationAddress != address(0));
         vm.assume(currency > 0);
 
@@ -267,7 +267,7 @@ contract PoolManagerTest is TestSetup {
         uint128 amount,
         uint128 currency
     ) public {
-        bound(decimals, 1, 17);
+        vm.assume(decimals > 1 && decimals <= 18);
         vm.assume(validUntil > block.timestamp + 7 days);
         vm.assume(destinationAddress != address(0));
         vm.assume(currency > 0);
@@ -300,7 +300,7 @@ contract PoolManagerTest is TestSetup {
         address user,
         uint64 validUntil
     ) public {
-        bound(decimals, 1, 17);
+        vm.assume(decimals > 1 && decimals <= 18);
         vm.assume(validUntil >= block.timestamp);
         vm.assume(user != address(0));
         vm.assume(currency > 0);
@@ -324,7 +324,7 @@ contract PoolManagerTest is TestSetup {
         bytes16 trancheId,
         uint64 validUntil
     ) public {
-        bound(decimals, 1, 17);
+        vm.assume(decimals > 1 && decimals <= 18);
         vm.assume(validUntil >= block.timestamp);
         vm.assume(currency > 0);
         centrifugeChain.addPool(poolId); // add pool
@@ -350,7 +350,7 @@ contract PoolManagerTest is TestSetup {
         bytes16 trancheId,
         uint64 validUntil
     ) public {
-        bound(decimals, 1, 17);
+        vm.assume(decimals > 1 && decimals <= 18);
         vm.assume(validUntil >= block.timestamp);
         vm.assume(currency > 0);
         centrifugeChain.addPool(poolId); // add pool
@@ -381,7 +381,7 @@ contract PoolManagerTest is TestSetup {
         address secondUser,
         uint64 validUntil
     ) public {
-        bound(decimals, 1, 17);
+        vm.assume(decimals > 1 && decimals <= 18);
         vm.assume(validUntil >= block.timestamp);
         vm.assume(user != address(0));
         vm.assume(currency > 0);
@@ -441,7 +441,7 @@ contract PoolManagerTest is TestSetup {
         string memory updatedTokenName,
         string memory updatedTokenSymbol
     ) public {
-        bound(decimals, 1, 17);
+        vm.assume(decimals > 1 && decimals <= 18);
         vm.assume(currency > 0);
 
         centrifugeChain.addPool(poolId); // add pool
@@ -462,7 +462,7 @@ contract PoolManagerTest is TestSetup {
         string memory updatedTokenName,
         string memory updatedTokenSymbol
     ) public {
-        bound(decimals, 1, 17);
+        vm.assume(decimals > 1 && decimals <= 18);
         vm.assume(currency > 0);
 
         centrifugeChain.addPool(poolId); // add pool
@@ -529,7 +529,7 @@ contract PoolManagerTest is TestSetup {
         string memory tokenSymbol,
         uint8 decimals
     ) public {
-        bound(decimals, 1, 17);
+        vm.assume(decimals > 1 && decimals <= 18);
 
         centrifugeChain.addPool(poolId);
 
@@ -557,7 +557,7 @@ contract PoolManagerTest is TestSetup {
         string memory tokenSymbol,
         bytes16 trancheId
     ) public {
-        bound(decimals, 1, 17);
+        vm.assume(decimals > 1 && decimals <= 18);
 
         centrifugeChain.addPool(poolId);
         centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals);
@@ -573,7 +573,7 @@ contract PoolManagerTest is TestSetup {
         string memory tokenSymbol,
         uint8 decimals
     ) public {
-        bound(decimals, 1, 17);
+        vm.assume(decimals > 1 && decimals <= 18);
         vm.assume(trancheIds.length > 0 && trancheIds.length < 5);
         vm.assume(!hasDuplicates(trancheIds));
         centrifugeChain.addPool(poolId);
@@ -593,7 +593,7 @@ contract PoolManagerTest is TestSetup {
         string memory tokenSymbol,
         uint8 decimals
     ) public {
-        bound(decimals, 1, 17);
+        vm.assume(decimals > 1 && decimals <= 18);
 
         centrifugeChain.addPool(poolId);
         vm.expectRevert(bytes("PoolManager/not-the-gateway"));
@@ -607,7 +607,7 @@ contract PoolManagerTest is TestSetup {
         string memory tokenSymbol,
         uint8 decimals
     ) public {
-        bound(decimals, 1, 17);
+        vm.assume(decimals > 1 && decimals <= 18);
 
         vm.expectRevert(bytes("PoolManager/invalid-pool"));
         centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals);
@@ -621,7 +621,7 @@ contract PoolManagerTest is TestSetup {
         bytes16 trancheId,
         uint128 currency
     ) public {
-        bound(decimals, 1, 17);
+        vm.assume(decimals > 1 && decimals <= 18);
         vm.assume(currency > 0);
 
         centrifugeChain.addPool(poolId); // add pool
@@ -675,7 +675,7 @@ contract PoolManagerTest is TestSetup {
         bytes16 wrongTrancheId,
         uint128 currency
     ) public {
-        bound(decimals, 1, 17);
+        vm.assume(decimals > 1 && decimals <= 18);
         vm.assume(currency > 0);
         vm.assume(trancheId != wrongTrancheId);
 
@@ -697,7 +697,7 @@ contract PoolManagerTest is TestSetup {
         uint64 wrongPoolId,
         uint128 currency
     ) public {
-        bound(decimals, 1, 17);
+        vm.assume(decimals > 1 && decimals <= 18);
         vm.assume(currency > 0);
         vm.assume(poolId != wrongPoolId);
 
@@ -718,7 +718,7 @@ contract PoolManagerTest is TestSetup {
         bytes16 trancheId,
         uint128 currency
     ) public {
-        bound(decimals, 1, 17);
+        vm.assume(decimals > 1 && decimals <= 18);
         vm.assume(currency > 0);
 
         centrifugeChain.addPool(poolId); // add pool
@@ -739,7 +739,7 @@ contract PoolManagerTest is TestSetup {
         bytes16 trancheId,
         uint128 currency
     ) public {
-        bound(decimals, 1, 17);
+        vm.assume(decimals > 1 && decimals <= 18);
         vm.assume(currency > 0);
 
         centrifugeChain.addPool(poolId); // add pool
