@@ -390,9 +390,12 @@ contract PoolManager is Auth {
 
     function isAllowedAsInvestmentCurrency(uint64 poolId, address currencyAddress) public view returns (bool) {
         uint128 currency = currencyAddressToId[currencyAddress];
-        require(currency != 0, "PoolManager/unknown-currency"); // Currency index on the Centrifuge side should start at 1
-        require(pools[poolId].allowedCurrencies[currencyAddress], "PoolManager/pool-currency-not-allowed");
-        return true;
+        if (currency != 0) {
+            // Currency index on the Centrifuge side should start at 1
+            return false;
+        }
+
+        return pools[poolId].allowedCurrencies[currencyAddress];
     }
 
     /// @dev    Safe type conversion from uint256 to uint128. Revert if value is too big to be stored with uint128. Avoid data loss.
