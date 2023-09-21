@@ -61,7 +61,9 @@ library Messages {
         /// 25 - Freeze tranche tokens
         Freeze,
         /// 26 - Unfreeze tranche tokens
-        Unfreeze
+        Unfreeze,
+        /// 27 - Disallow a currency to be used as a currency for investing in pools
+        DisallowInvestmentCurrency
     }
 
     enum Domain {
@@ -112,7 +114,7 @@ library Messages {
     }
 
     /**
-     * Allow Pool Currency
+     * Allow Investment Currency
      *
      * 0: call type (uint8 = 1 byte)
      * 1-8: poolId (uint64 = 8 bytes)
@@ -908,6 +910,30 @@ library Messages {
         poolId = BytesLib.toUint64(_msg, 1);
         trancheId = BytesLib.toBytes16(_msg, 9);
         user = BytesLib.toAddress(_msg, 25);
+    }
+
+    /**
+     * Disallow Investment Currency
+     *
+     * 0: call type (uint8 = 1 byte)
+     * 1-8: poolId (uint64 = 8 bytes)
+     * 9-24: currency (uint128 = 16 bytes)
+     */
+    function formatDisallowInvestmentCurrency(uint64 poolId, uint128 currency) internal pure returns (bytes memory) {
+        return abi.encodePacked(uint8(Call.DisallowInvestmentCurrency), poolId, currency);
+    }
+
+    function isDisallowInvestmentCurrency(bytes memory _msg) internal pure returns (bool) {
+        return messageType(_msg) == Call.DisallowInvestmentCurrency;
+    }
+
+    function parseDisallowInvestmentCurrency(bytes memory _msg)
+        internal
+        pure
+        returns (uint64 poolId, uint128 currency)
+    {
+        poolId = BytesLib.toUint64(_msg, 1);
+        currency = BytesLib.toUint128(_msg, 9);
     }
 
     // Utils

@@ -956,6 +956,25 @@ contract MessagesTest is Test {
         assertEq(decodedUser, user);
     }
 
+    function testDisallowInvestmentCurrency() public {
+        uint64 poolId = 12378532;
+        uint128 currency = 246803579;
+        bytes memory expectedHex = hex"030000000000bce1a40000000000000000000000000eb5ec7b";
+
+        assertEq(Messages.formatDisallowInvestmentCurrency(poolId, currency), expectedHex);
+
+        (uint64 decodedPoolId, uint128 decodedCurrency) = Messages.parseDisallowInvestmentCurrency(expectedHex);
+        assertEq(decodedPoolId, poolId);
+        assertEq(uint256(decodedCurrency), currency);
+    }
+
+    function testDisallowInvestmentCurrencyEquivalence(uint128 currency, uint64 poolId) public {
+        bytes memory _message = Messages.formatDisallowInvestmentCurrency(poolId, currency);
+        (uint64 decodedPoolId, uint128 decodedCurrency) = Messages.parseDisallowInvestmentCurrency(_message);
+        assertEq(uint256(decodedPoolId), uint256(poolId));
+        assertEq(decodedCurrency, uint256(currency));
+    }
+
     function testFormatDomainCentrifuge() public {
         assertEq(Messages.formatDomain(Messages.Domain.Centrifuge), hex"000000000000000000");
     }

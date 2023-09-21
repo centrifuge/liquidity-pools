@@ -189,6 +189,7 @@ contract InvestmentManager is Auth {
         address currency = lPool.asset();
         uint128 currencyId = poolManager.currencyAddressToId(currency);
 
+        // You cannot redeem using a disallowed investment currency, instead another LP will have to be used
         require(poolManager.isAllowedAsInvestmentCurrency(poolId, currency), "InvestmentManager/currency-not-allowed");
 
         // Transfer the tranche token amount from user to escrow (lock tranche tokens in escrow)

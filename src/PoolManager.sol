@@ -95,6 +95,7 @@ contract PoolManager is Auth {
     event File(bytes32 indexed what, address data);
     event AddPool(uint64 indexed poolId);
     event AllowInvestmentCurrency(uint128 indexed currency, uint64 indexed poolId);
+    event DisallowInvestmentCurrency(uint128 indexed currency, uint64 indexed poolId);
     event AddTranche(uint64 indexed poolId, bytes16 indexed trancheId);
     event DeployTranche(uint64 indexed poolId, bytes16 indexed trancheId, address indexed token);
     event AddCurrency(uint128 indexed currency, address indexed currencyAddress);
@@ -211,6 +212,17 @@ contract PoolManager is Auth {
 
         pools[poolId].allowedCurrencies[currencyAddress] = true;
         emit AllowInvestmentCurrency(currency, poolId);
+    }
+
+    function disallowInvestmentCurrency(uint64 poolId, uint128 currency) public onlyGateway {
+        Pool storage pool = pools[poolId];
+        require(pool.createdAt != 0, "PoolManager/invalid-pool");
+
+        address currencyAddress = currencyIdToAddress[currency];
+        require(currencyAddress != address(0), "PoolManager/unknown-currency");
+
+        pools[poolId].allowedCurrencies[currencyAddress] = false;
+        emit DisallowInvestmentCurrency(currency, poolId);
     }
 
     /// @notice     New tranche details from an existing Centrifuge pool are added.
@@ -390,7 +402,7 @@ contract PoolManager is Auth {
 
     function isAllowedAsInvestmentCurrency(uint64 poolId, address currencyAddress) public view returns (bool) {
         uint128 currency = currencyAddressToId[currencyAddress];
-        if (currency != 0) {
+        if (currency == 0) {
             // Currency index on the Centrifuge side should start at 1
             return false;
         }
