@@ -727,7 +727,7 @@ contract PoolManagerTest is TestSetup {
 
         centrifugeChain.addCurrency(currency, address(erc20));
 
-        vm.expectRevert(bytes("PoolManager/pool-currency-not-allowed"));
+        vm.expectRevert(bytes("PoolManager/currency-not-supported"));
         poolManager.deployLiquidityPool(poolId, trancheId, address(erc20));
     }
 
