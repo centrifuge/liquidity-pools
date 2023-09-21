@@ -359,8 +359,10 @@ contract PoolManager is Auth {
         TrancheTokenLike(token).file("restrictionManager", restrictionManager);
 
         pools[poolId].tranches[trancheId].token = token;
-        // @todo
-        // delete tranche;
+
+        delete tranche.decimals;
+        delete tranche.tokenName;
+        delete tranche.tokenSymbol;
 
         emit DeployTranche(poolId, trancheId, token);
         return token;
