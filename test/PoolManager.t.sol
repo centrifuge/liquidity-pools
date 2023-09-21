@@ -250,7 +250,7 @@ contract PoolManagerTest is TestSetup {
 
         deployLiquidityPool(poolId, decimals, tokenName, tokenSymbol, trancheId, currency);
 
-        vm.expectRevert(bytes("PoolManager/not-a-member"));
+        vm.expectRevert(bytes("RestrictionManager/destination-not-a-member"));
         centrifugeChain.incomingTransferTrancheTokens(
             poolId, trancheId, uint64(block.chainid), destinationAddress, amount
         );
