@@ -152,14 +152,14 @@ contract LiquidityPool is Auth, IERC4626 {
     }
 
     /// @notice Collect shares for deposited assets after Centrifuge epoch execution.
-    ///         maxDeposit is the max amount of shares that can be collected.
+    ///         maxDeposit is the max amount of shares that can be deposited.
     function deposit(uint256 assets, address receiver) public returns (uint256 shares) {
         shares = investmentManager.processDeposit(address(this), assets, receiver, msg.sender);
         emit Deposit(address(this), receiver, assets, shares);
     }
 
     /// @notice Collect shares for deposited assets after Centrifuge epoch execution.
-    ///         maxMint is the max amount of shares that can be collected.
+    ///         maxMint is the max amount of shares that can be minted.
     function mint(uint256 shares, address receiver) public returns (uint256 assets) {
         assets = investmentManager.processMint(address(this), shares, receiver, msg.sender);
         emit Deposit(address(this), receiver, assets, shares);
