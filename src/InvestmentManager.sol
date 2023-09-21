@@ -48,7 +48,7 @@ interface PoolManagerLike {
     function currencyAddressToId(address addr) external view returns (uint128);
     function getTrancheToken(uint64 poolId, bytes16 trancheId) external view returns (address);
     function getLiquidityPool(uint64 poolId, bytes16 trancheId, address currency) external view returns (address);
-    function isAllowedAsPoolCurrency(uint64 poolId, address currencyAddress) external view returns (bool);
+    function isAllowedAsInvestmentCurrency(uint64 poolId, address currencyAddress) external view returns (bool);
 }
 
 interface EscrowLike {
@@ -155,7 +155,7 @@ contract InvestmentManager is Auth {
         address currency = lPool.asset();
         uint128 currencyId = poolManager.currencyAddressToId(currency);
 
-        poolManager.isAllowedAsPoolCurrency(poolId, currency);
+        require(poolManager.isAllowedAsInvestmentCurrency(poolId, currency), "InvestmentManager/currency-not-allowed");
         require(
             lPool.checkTransferRestriction(address(0), user, convertToShares(liquidityPool, currencyAmount)),
             "InvestmentManager/transfer-not-allowed"
@@ -189,7 +189,7 @@ contract InvestmentManager is Auth {
         address currency = lPool.asset();
         uint128 currencyId = poolManager.currencyAddressToId(currency);
 
-        poolManager.isAllowedAsPoolCurrency(poolId, currency);
+        require(poolManager.isAllowedAsInvestmentCurrency(poolId, currency), "InvestmentManager/currency-not-allowed");
 
         // Transfer the tranche token amount from user to escrow (lock tranche tokens in escrow)
         lPool.transferFrom(user, address(escrow), _trancheTokenAmount);

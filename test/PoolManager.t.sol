@@ -504,7 +504,7 @@ contract PoolManagerTest is TestSetup {
         centrifugeChain.addPool(poolId);
 
         centrifugeChain.allowInvestmentCurrency(poolId, currency);
-        assertTrue(poolManager.isAllowedAsPoolCurrency(poolId, address(token)));
+        assertTrue(poolManager.isAllowedAsInvestmentCurrency(poolId, address(token)));
     }
 
     function testAllowInvestmentCurrencyWithUnknownCurrencyFails(uint128 currency, uint64 poolId) public {
@@ -715,7 +715,7 @@ contract PoolManagerTest is TestSetup {
         poolManager.deployLiquidityPool(wrongPoolId, trancheId, address(erc20));
     }
 
-    function testDeployingLiquidityPoolCurrencyNotSupportedFails(
+    function testDeployingLiquidityInvestmentCurrencyNotSupportedFails(
         uint64 poolId,
         uint8 decimals,
         string memory tokenName,

@@ -345,7 +345,7 @@ contract PoolManager is Auth {
     function deployLiquidityPool(uint64 poolId, bytes16 trancheId, address currency) public returns (address) {
         Tranche storage tranche = pools[poolId].tranches[trancheId];
         require(tranche.token != address(0), "PoolManager/tranche-does-not-exist"); // Tranche must have been added
-        require(isAllowedAsPoolCurrency(poolId, currency), "PoolManager/currency-not-supported"); // Currency must be supported by pool
+        require(isAllowedAsInvestmentCurrency(poolId, currency), "PoolManager/currency-not-supported"); // Currency must be supported by pool
 
         address liquidityPool = tranche.liquidityPools[currency];
         require(liquidityPool == address(0), "PoolManager/liquidityPool-already-deployed");
@@ -379,7 +379,7 @@ contract PoolManager is Auth {
         return pools[poolId].tranches[trancheId].liquidityPools[currency];
     }
 
-    function isAllowedAsPoolCurrency(uint64 poolId, address currencyAddress) public view returns (bool) {
+    function isAllowedAsInvestmentCurrency(uint64 poolId, address currencyAddress) public view returns (bool) {
         uint128 currency = currencyAddressToId[currencyAddress];
         require(currency != 0, "PoolManager/unknown-currency"); // Currency index on the Centrifuge side should start at 1
         require(pools[poolId].allowedCurrencies[currencyAddress], "PoolManager/pool-currency-not-allowed");
