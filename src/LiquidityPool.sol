@@ -122,7 +122,7 @@ contract LiquidityPool is Auth, IERC4626 {
     }
 
     // --- ERC4626 functions ---
-    /// @return Total value of the shares, denominated in the asset of this Liquidity Pools
+    /// @return Total value of the shares, denominated in the asset of this Liquidity Pool
     function totalAssets() public view returns (uint256) {
         return investmentManager.totalAssets(address(this), totalSupply());
     }

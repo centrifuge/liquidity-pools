@@ -19,7 +19,7 @@ interface ERC1404Like {
 /// @title  Tranche Token
 /// @notice Extension of ERC20 + ERC1404 for tranche tokens,
 ///         which manages the liquidity pools that are considered
-///         trusted forwarded for the ERC20 token, and ensures
+///         trusted forwarders for the ERC20 token, and ensures
 ///         the transfer restrictions as defined in the RestrictionManager.
 contract TrancheToken is ERC20, ERC1404Like {
     ERC1404Like public restrictionManager;
