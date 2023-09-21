@@ -115,6 +115,8 @@ contract InvestmentManager is Auth {
     event TriggerIncreaseRedeemOrder(
         uint64 indexed poolId, bytes16 indexed trancheId, address user, uint128 currency, uint128 trancheTokenAmount
     );
+    event DepositCollect(address indexed owner);
+    event RedeemCollect(address indexed owner);
 
     constructor(address escrow_, address userEscrow_) {
         escrow = EscrowLike(escrow_);
@@ -254,28 +256,34 @@ contract InvestmentManager is Auth {
         );
     }
 
-    function collectDeposit(address liquidityPool, address user) public auth {
+    /// @notice Trigger collecting the deposited funds.
+    /// @dev    In normal circumstances, this should happen automatically on Centrifuge Chain.
+    ///         This function is only included as a fallback.
+    function collectDeposit(address liquidityPool, address receiver) public {
         LiquidityPoolLike _liquidityPool = LiquidityPoolLike(liquidityPool);
         uint256 approximateMaxTrancheTokenPayout =
-            convertToShares(liquidityPool, userDepositRequest(liquidityPool, user));
+            convertToShares(liquidityPool, userDepositRequest(liquidityPool, receiver));
         require(
-            _liquidityPool.checkTransferRestriction(address(escrow), user, approximateMaxTrancheTokenPayout),
+            _liquidityPool.checkTransferRestriction(address(escrow), receiver, approximateMaxTrancheTokenPayout),
             "InvestmentManager/transfer-not-allowed"
         );
         gateway.collectInvest(
             _liquidityPool.poolId(),
             _liquidityPool.trancheId(),
-            user,
+            receiver,
             poolManager.currencyAddressToId(_liquidityPool.asset())
         );
     }
 
-    function collectRedeem(address liquidityPool, address user) public auth {
+    /// @notice Trigger collecting the deposited tokens.
+    /// @dev    In normal circumstances, this should happen automatically on Centrifuge Chain.
+    ///         This function is only included as a fallback.
+    function collectRedeem(address liquidityPool, address receiver) public {
         LiquidityPoolLike _liquidityPool = LiquidityPoolLike(liquidityPool);
         gateway.collectRedeem(
             _liquidityPool.poolId(),
             _liquidityPool.trancheId(),
-            user,
+            receiver,
             poolManager.currencyAddressToId(_liquidityPool.asset())
         );
     }

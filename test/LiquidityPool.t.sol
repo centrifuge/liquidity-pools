@@ -1316,7 +1316,7 @@ contract LiquidityPoolTest is TestSetup {
         centrifugeChain.updateTrancheTokenPrice(lPool.poolId(), lPool.trancheId(), defaultCurrencyId, defaultPrice);
         centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), self, type(uint64).max);
 
-        lPool.collectDeposit(self);
+        investmentManager.collectDeposit(lPool_, self);
     }
 
     function testCollectRedeem(uint128 amount) public {
@@ -1328,7 +1328,7 @@ contract LiquidityPoolTest is TestSetup {
         centrifugeChain.updateTrancheTokenPrice(lPool.poolId(), lPool.trancheId(), defaultCurrencyId, defaultPrice);
 
         centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), self, type(uint64).max);
-        lPool.collectRedeem(self);
+        investmentManager.collectRedeem(lPool_, self);
     }
 
     // helpers

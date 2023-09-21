@@ -43,8 +43,6 @@ interface InvestmentManagerLike {
     function previewRedeem(address liquidityPool, address user, uint256 shares) external view returns (uint256);
     function requestRedeem(address liquidityPool, uint256 shares, address receiver) external;
     function requestDeposit(address liquidityPool, uint256 assets, address receiver) external;
-    function collectDeposit(address liquidityPool, address receiver) external;
-    function collectRedeem(address liquidityPool, address receiver) external;
     function decreaseDepositRequest(address liquidityPool, uint256 assets, address receiver) external;
     function decreaseRedeemRequest(address liquidityPool, uint256 shares, address receiver) external;
     function cancelDepositRequest(address liquidityPool, address receiver) external;
@@ -97,8 +95,6 @@ contract LiquidityPool is Auth, IERC4626 {
     event DecreaseRedeemRequest(address indexed owner, uint256 shares);
     event CancelDepositRequest(address indexed owner);
     event CancelRedeemRequest(address indexed owner);
-    event DepositCollect(address indexed owner);
-    event RedeemCollect(address indexed owner);
     event PriceUpdate(uint128 price);
 
     constructor(uint64 poolId_, bytes16 trancheId_, address asset_, address share_, address investmentManager_) {
@@ -295,23 +291,6 @@ contract LiquidityPool is Auth, IERC4626 {
     /// @notice View the total amount the user has requested to redeem but isn't able to withdraw or redeem yet
     function userRedeemRequest(address owner) external view returns (uint256 shares) {
         shares = investmentManager.userRedeemRequest(address(this), owner);
-    }
-
-    // --- Miscellaneous investment functions ---
-    /// @notice Trigger collecting the deposited funds.
-    /// @dev    In normal circumstances, this should happen automatically on Centrifuge Chain.
-    ///         This function is only included as a fallback.
-    function collectDeposit(address receiver) public {
-        investmentManager.collectDeposit(address(this), receiver);
-        emit DepositCollect(receiver);
-    }
-
-    /// @notice Trigger collecting the deposited tokens.
-    /// @dev    In normal circumstances, this should happen automatically on Centrifuge Chain.
-    ///         This function is only included as a fallback.
-    function collectRedeem(address receiver) public {
-        investmentManager.collectRedeem(address(this), receiver);
-        emit RedeemCollect(receiver);
     }
 
     // --- ERC20 overrides ---
