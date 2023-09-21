@@ -268,7 +268,7 @@ contract PoolManagerTest is TestSetup {
         uint128 currency
     ) public {
         decimals = uint8(bound(decimals, 1, 18));
-        vm.assume(validUntil > block.timestamp + 7 days);
+        validUntil = uint64(bound(validUntil, block.timestamp + 7 days + 1, type(uint64).max));
         vm.assume(destinationAddress != address(0));
         vm.assume(currency > 0);
         vm.assume(amount > 0);

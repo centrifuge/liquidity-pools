@@ -49,7 +49,7 @@ contract LiquidityPoolTest is TestSetup {
     // --- uint128 type checks ---
     // Make sure all function calls would fail when overflow uint128
     function testAssertUint128(uint256 amount, address random) public {
-        amount = bound(amount, MAX_UINT128 + 1, type(uint256).max); // amount has to overflow UINT128
+        vm.assume(amount > MAX_UINT128); // amount has to overflow UINT128
         vm.assume(random.code.length == 0);
         address lPool_ = deploySimplePool();
         LiquidityPool lPool = LiquidityPool(lPool_);
