@@ -2,6 +2,7 @@
 pragma solidity 0.8.21;
 
 import {Auth} from "./../../../util/Auth.sol";
+import {BytesLib} from "../../../util/BytesLib.sol";
 
 interface AxelarGatewayLike {
     function callContract(string calldata destinationChain, string calldata contractAddress, bytes calldata payload)
@@ -24,17 +25,18 @@ interface GatewayLike {
 contract AxelarRouter is Auth {
     string internal constant CENTRIFUGE_CHAIN_ID = "centrifuge";
     string internal constant CENTRIFUGE_CHAIN_ADDRESS = "0x7369626cef070000000000000000000000000000";
-    string internal constant LP_PRECOMPILE_ADDRESS = "0x0000000000000000000000000000000000002048";
 
     AxelarGatewayLike public immutable axelarGateway;
+    address public immutable centrifugeAxelarExecutable;
 
     GatewayLike public gateway;
 
     // --- Events ---
     event File(bytes32 indexed what, address addr);
 
-    constructor(address axelarGateway_) {
+    constructor(address axelarGateway_, address centrifugeAxelarExecutable_) {
         axelarGateway = AxelarGatewayLike(axelarGateway_);
+        centrifugeAxelarExecutable = centrifugeAxelarExecutable_;
 
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
@@ -86,6 +88,6 @@ contract AxelarRouter is Auth {
 
     // --- Outgoing ---
     function send(bytes calldata message) public onlyGateway {
-        axelarGateway.callContract(CENTRIFUGE_CHAIN_ID, LP_PRECOMPILE_ADDRESS, message);
+        axelarGateway.callContract(CENTRIFUGE_CHAIN_ID, BytesLib.toHex(abi.encodePacked(centrifugeAxelarExecutable)), message);
     }
 }

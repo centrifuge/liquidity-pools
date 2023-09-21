@@ -5,11 +5,14 @@ import {AxelarRouter} from "src/gateway/routers/axelar/Router.sol";
 import {AxelarGatewayMock} from "../../../mock/AxelarGatewayMock.sol";
 import {GatewayMock} from "../../../mock/GatewayMock.sol";
 import "forge-std/Test.sol";
+import {AxelarForwarder} from "../../../../src/gateway/routers/axelar/Forwarder.sol";
+import {BytesLib} from "../../../../src/util/BytesLib.sol";
 
 contract AxelarRouterTest is Test {
     AxelarGatewayMock axelarGateway;
     GatewayMock gateway;
     AxelarRouter router;
+    AxelarForwarder forwarder;
 
     string private constant axelarCentrifugeChainId = "centrifuge";
     string private constant axelarCentrifugeChainAddress = "0x7369626cef070000000000000000000000000000";
@@ -19,7 +22,8 @@ contract AxelarRouterTest is Test {
         axelarGateway = new AxelarGatewayMock();
         gateway = new GatewayMock();
 
-        router = new AxelarRouter(address(axelarGateway));
+        forwarder = new AxelarForwarder(address(axelarGateway));
+        router = new AxelarRouter(address(axelarGateway), address(forwarder));
         router.file("gateway", address(gateway));
     }
 
@@ -84,7 +88,8 @@ contract AxelarRouterTest is Test {
         router.send(message);
 
         assertEq(axelarGateway.values_string("destinationChain"), axelarCentrifugeChainId);
-        assertEq(axelarGateway.values_string("contractAddress"), centrifugeGatewayPrecompileAddress);
+        // TODO: Would be great to have a test on the toHex library
+        assertEq(axelarGateway.values_string("contractAddress"), BytesLib.toHex(abi.encodePacked(forwarder)));
         assertEq(axelarGateway.values_bytes("payload"), message);
     }
 }
