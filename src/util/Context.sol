@@ -8,7 +8,7 @@ pragma solidity 0.8.21;
 ///         manner, since when dealing with meta-transactions the account sending and
 ///         paying for execution may not be the actual sender (as far as an application
 ///         is concerned).
-/// @dev    Adapted from OpenZeppelin Contracts v4.4.1 (utils/Context.sol)
+/// @author Modified from OpenZeppelin Contracts v4.4.1 (utils/Context.sol)
 abstract contract Context {
     function _msgSender() internal view virtual returns (address) {
         return msg.sender;
