@@ -24,7 +24,9 @@ contract MigrationsTest is TestSetup {
         trancheId = bytes16(hex"811acd5b3f17c06841c7e41e9e04cb1b");
         currencyId = 1;
         trancheTokenDecimals = 18;
-        _lPool = deployLiquidityPool(poolId, trancheTokenDecimals, erc20.name(), erc20.symbol(), trancheId, currencyId, address(erc20));
+        _lPool = deployLiquidityPool(
+            poolId, trancheTokenDecimals, erc20.name(), erc20.symbol(), trancheId, currencyId, address(erc20)
+        );
 
         investorCurrencyAmount = 1000 * 10 ** erc20.decimals();
         deal(address(erc20), investor, investorCurrencyAmount);
@@ -40,11 +42,13 @@ contract MigrationsTest is TestSetup {
         address[] memory liquidityPools = new address[](1);
         liquidityPools[0] = _lPool;
         // Deploy new investmentManager
-        MigratedInvestmentManager newInvestmentManager = new MigratedInvestmentManager(address(escrow), address(userEscrow), address(investmentManager), investors, liquidityPools);
-        
+        MigratedInvestmentManager newInvestmentManager =
+        new MigratedInvestmentManager(address(escrow), address(userEscrow), address(investmentManager), investors, liquidityPools);
+
         // Deploy new contracts that take InvestmentManager as constructor argument
-        Gateway newGateway = new Gateway(address(root), address(newInvestmentManager), address(poolManager), address(router));
-        
+        Gateway newGateway =
+            new Gateway(address(root), address(newInvestmentManager), address(poolManager), address(router));
+
         // file investmentManager on all LiquidityPools
         for (uint256 i = 0; i < liquidityPools.length; i++) {
             root.relyContract(address(liquidityPools[i]), address(this));
@@ -81,7 +85,6 @@ contract MigrationsTest is TestSetup {
         root.denyContract(address(userEscrow), address(this));
         root.deny(address(this));
 
-        
         // For the sake of these helper functions, set global variables to new contracts
         gateway = newGateway;
         investmentManager = newInvestmentManager;
@@ -89,39 +92,26 @@ contract MigrationsTest is TestSetup {
         // test that everything is working
         InvestAndRedeem(poolId, trancheId, _lPool);
     }
-    
+
     function testLiquidityPoolMigration() public {}
 
     function testRootMigration() public {}
 
     function testPoolManagerMigration() public {}
 
-
     // --- Investment and Redeem Flow ---
 
-    function InvestAndRedeem(
-        uint64 poolId,
-        bytes16 trancheId,
-        address _lPool
-    ) public {
+    function InvestAndRedeem(uint64 poolId, bytes16 trancheId, address _lPool) public {
         uint128 price = uint128(2 * 10 ** PRICE_DECIMALS); //TODO: fuzz price
         LiquidityPool lPool = LiquidityPool(_lPool);
 
         depositMint(poolId, trancheId, price, investorCurrencyAmount, lPool);
         uint256 redeemAmount = lPool.balanceOf(investor);
 
-        redeemWithdraw(
-            poolId, trancheId, price, redeemAmount, lPool
-        );
+        redeemWithdraw(poolId, trancheId, price, redeemAmount, lPool);
     }
 
-    function depositMint(
-        uint64 poolId,
-        bytes16 trancheId,
-        uint128 price,
-        uint256 amount,
-        LiquidityPool lPool
-    ) public {
+    function depositMint(uint64 poolId, bytes16 trancheId, uint128 price, uint256 amount, LiquidityPool lPool) public {
         vm.prank(investor);
         erc20.approve(address(investmentManager), amount); // add allowance
 
@@ -171,13 +161,9 @@ contract MigrationsTest is TestSetup {
         assertTrue(lPool.maxMint(investor) <= 1);
     }
 
-    function redeemWithdraw(
-        uint64 poolId,
-        bytes16 trancheId,
-        uint128 price,
-        uint256 amount,
-        LiquidityPool lPool
-    ) public {
+    function redeemWithdraw(uint64 poolId, bytes16 trancheId, uint128 price, uint256 amount, LiquidityPool lPool)
+        public
+    {
         vm.expectRevert(bytes("ERC20/insufficient-allowance"));
         vm.prank(investor);
         lPool.requestRedeem(amount, investor);

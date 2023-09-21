@@ -1012,7 +1012,7 @@ contract LiquidityPoolTest is TestSetup {
                 )
             )
         );
-        v += 1;
+
         lPool.requestDepositWithPermit(amount, investor, block.timestamp, v, r, s);
         // To avoid stack too deep errors
         delete v;
@@ -1365,24 +1365,5 @@ contract LiquidityPoolTest is TestSetup {
 
     function addressAssumption(address user) public returns (bool) {
         return (user != address(0) && user != address(erc20) && user.code.length == 0);
-    }
-
-    function testThing() public {
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
-            uint256(0x8e3ec2b1affade3231c6a81c299988176e0343dd8ce9f0986d66ed13e0f178d9),
-            keccak256(
-                abi.encodePacked(
-                    "\x19\x01",
-                    erc20.DOMAIN_SEPARATOR(),
-                    keccak256(
-                        abi.encode(
-                            erc20.PERMIT_TYPEHASH(), address(0x423420Ae467df6e90291fd0252c0A8a637C1e03f), address(0x0ca994e97156ABAc43e606C2aEd5Af4b417C104d), 0, 0, block.timestamp
-                        )
-                    )
-                )
-            )
-        );
-        assertEq(r, 0);
-        assertEq(s, 0);
     }
 }

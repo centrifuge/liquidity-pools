@@ -27,7 +27,6 @@ interface ERC20Like {
     function decimals() external view returns (uint8);
     function mint(address, uint256) external;
     function burn(address, uint256) external;
-    function allowance(address, address) external view returns (uint256);
 }
 
 interface LiquidityPoolLike is ERC20Like {
