@@ -498,7 +498,8 @@ contract InvestmentManager is Auth {
         uint256 depositPrice = calculateDepositPrice(user, liquidityPool);
         if (depositPrice == 0) return 0;
 
-        trancheTokenAmount = uint256(_calculateTrancheTokenAmount(currencyAmount, liquidityPool, depositPrice));
+        trancheTokenAmount =
+            uint256(_calculateTrancheTokenAmount(currencyAmount, liquidityPool, depositPrice, MathLib.Rounding.Up));
     }
 
     /// @return currencyAmount is type of uint256 to support the EIP4626 Liquidity Pool interface
@@ -524,7 +525,8 @@ contract InvestmentManager is Auth {
         uint256 redeemPrice = calculateRedeemPrice(user, liquidityPool);
         if (redeemPrice == 0) return 0;
 
-        trancheTokenAmount = uint256(_calculateTrancheTokenAmount(currencyAmount, liquidityPool, redeemPrice));
+        trancheTokenAmount =
+            uint256(_calculateTrancheTokenAmount(currencyAmount, liquidityPool, redeemPrice, MathLib.Rounding.Down));
     }
 
     /// @return currencyAmount is type of uint256 to support the EIP4626 Liquidity Pool interface
@@ -565,12 +567,16 @@ contract InvestmentManager is Auth {
             "InvestmentManager/amount-exceeds-deposit-limits"
         );
 
-        uint256 depositPrice = calculateDepositPrice(owner, liquidityPool);
+        uint256 depositPrice = calculateDepositPrice(owner, liquidityPool, MathLib.Rounding.Down);
+        uint256 depositPriceTransfer = calculateDepositPrice(owner, liquidityPool, MathLib.Rounding.Up);
         require(depositPrice != 0, "LiquidityPool/deposit-token-price-0");
 
-        uint128 _trancheTokenAmount = _calculateTrancheTokenAmount(_currencyAmount, liquidityPool, depositPrice);
-        _deposit(_trancheTokenAmount, _currencyAmount, liquidityPool, receiver, owner);
-        trancheTokenAmount = uint256(_trancheTokenAmount);
+        uint128 _trancheTokenAmount =
+            _calculateTrancheTokenAmount(_currencyAmount, liquidityPool, depositPrice, MathLib.Rounding.Up);
+        uint128 _trancheTokenAmountTransferred =
+            _calculateTrancheTokenAmount(_currencyAmount, liquidityPool, depositPriceTransfer, MathLib.Rounding.Down);
+        _deposit(_trancheTokenAmount, _trancheTokenAmountTransferred, _currencyAmount, liquidityPool, receiver, owner);
+        trancheTokenAmount = uint256(_trancheTokenAmountTransferred);
     }
 
     /// @notice Processes owner's currency deposit / investment after the epoch has been executed on Centrifuge.
@@ -593,16 +599,17 @@ contract InvestmentManager is Auth {
             "InvestmentManager/amount-exceeds-mint-limits"
         );
 
-        uint256 depositPrice = calculateDepositPrice(owner, liquidityPool);
+        uint256 depositPrice = calculateDepositPrice(owner, liquidityPool, MathLib.Rounding.Down);
         require(depositPrice != 0, "LiquidityPool/deposit-token-price-0");
 
         uint128 _currencyAmount = _calculateCurrencyAmount(_trancheTokenAmount, liquidityPool, depositPrice);
-        _deposit(_trancheTokenAmount, _currencyAmount, liquidityPool, receiver, owner);
+        _deposit(_trancheTokenAmount, _trancheTokenAmount, _currencyAmount, liquidityPool, receiver, owner);
         currencyAmount = uint256(_currencyAmount);
     }
 
     function _deposit(
         uint128 trancheTokenAmount,
+        uint128 trancheTokenAmountTransferred,
         uint128 currencyAmount,
         address liquidityPool,
         address receiver,
@@ -617,11 +624,11 @@ contract InvestmentManager is Auth {
 
         // Transfer the tranche tokens to the user
         require(
-            lPool.transferFrom(address(escrow), receiver, trancheTokenAmount),
+            lPool.transferFrom(address(escrow), receiver, trancheTokenAmountTransferred),
             "InvestmentManager/tranche-tokens-transfer-failed"
         );
 
-        emit ProcessDeposit(liquidityPool, owner, currencyAmount, trancheTokenAmount);
+        emit ProcessDeposit(liquidityPool, owner, currencyAmount, trancheTokenAmountTransferred);
     }
 
     /// @dev    Processes owner's tranche Token redemption after the epoch has been executed on Centrifuge.
@@ -642,7 +649,7 @@ contract InvestmentManager is Auth {
             "InvestmentManager/amount-exceeds-redeem-limits"
         );
 
-        uint256 redeemPrice = calculateRedeemPrice(owner, liquidityPool);
+        uint256 redeemPrice = calculateRedeemPrice(owner, liquidityPool, MathLib.Rounding.Down);
         require(redeemPrice != 0, "LiquidityPool/redeem-token-price-0");
 
         uint128 _currencyAmount = _calculateCurrencyAmount(_trancheTokenAmount, liquidityPool, redeemPrice);
@@ -667,10 +674,11 @@ contract InvestmentManager is Auth {
             "InvestmentManager/amount-exceeds-withdraw-limits"
         );
 
-        uint256 redeemPrice = calculateRedeemPrice(owner, liquidityPool);
+        uint256 redeemPrice = calculateRedeemPrice(owner, liquidityPool, MathLib.Rounding.Up);
         require(redeemPrice != 0, "LiquidityPool/redeem-token-price-0");
 
-        uint128 _trancheTokenAmount = _calculateTrancheTokenAmount(_currencyAmount, liquidityPool, redeemPrice);
+        uint128 _trancheTokenAmount =
+            _calculateTrancheTokenAmount(_currencyAmount, liquidityPool, redeemPrice, MathLib.Rounding.Down);
         _redeem(_trancheTokenAmount, _currencyAmount, liquidityPool, receiver, owner);
         trancheTokenAmount = uint256(_trancheTokenAmount);
     }
@@ -696,57 +704,87 @@ contract InvestmentManager is Auth {
     }
 
     // --- Helpers ---
+    function calculateDepositPrice(address user, address liquidityPool, MathLib.Rounding roundingDirection)
+        public
+        view
+        returns (uint256 depositPrice)
+    {
+        LPValues memory lpValues = orderbook[user][liquidityPool];
+        if (lpValues.maxMint == 0) {
+            return 0;
+        }
+
+        depositPrice = _calculatePrice(lpValues.maxDeposit, lpValues.maxMint, liquidityPool, roundingDirection);
+    }
+
+    function calculateRedeemPrice(address user, address liquidityPool, MathLib.Rounding roundingDirection)
+        public
+        view
+        returns (uint256 redeemPrice)
+    {
+        LPValues memory lpValues = orderbook[user][liquidityPool];
+        if (lpValues.maxRedeem == 0) {
+            return 0;
+        }
+
+        redeemPrice = _calculatePrice(lpValues.maxWithdraw, lpValues.maxRedeem, liquidityPool, roundingDirection);
+    }
+
+    // TODO: should be removed, just for ease of adapting
     function calculateDepositPrice(address user, address liquidityPool) public view returns (uint256 depositPrice) {
         LPValues memory lpValues = orderbook[user][liquidityPool];
         if (lpValues.maxMint == 0) {
             return 0;
         }
 
-        depositPrice = _calculatePrice(lpValues.maxDeposit, lpValues.maxMint, liquidityPool);
+        depositPrice = _calculatePrice(lpValues.maxDeposit, lpValues.maxMint, liquidityPool, MathLib.Rounding.Down);
     }
 
+    // TODO: should be removed, just for ease of adapting
     function calculateRedeemPrice(address user, address liquidityPool) public view returns (uint256 redeemPrice) {
         LPValues memory lpValues = orderbook[user][liquidityPool];
         if (lpValues.maxRedeem == 0) {
             return 0;
         }
 
-        redeemPrice = _calculatePrice(lpValues.maxWithdraw, lpValues.maxRedeem, liquidityPool);
+        redeemPrice = _calculatePrice(lpValues.maxWithdraw, lpValues.maxRedeem, liquidityPool, MathLib.Rounding.Down);
     }
 
-    function _calculatePrice(uint128 currencyAmount, uint128 trancheTokenAmount, address liquidityPool)
-        public
-        view
-        returns (uint256 depositPrice)
-    {
+    function _calculatePrice(
+        uint128 currencyAmount,
+        uint128 trancheTokenAmount,
+        address liquidityPool,
+        MathLib.Rounding roundingDirection
+    ) public view returns (uint256 price) {
         (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getPoolDecimals(liquidityPool);
         uint256 currencyAmountInPriceDecimals = _toPriceDecimals(currencyAmount, currencyDecimals);
         uint256 trancheTokenAmountInPriceDecimals = _toPriceDecimals(trancheTokenAmount, trancheTokenDecimals);
 
-        depositPrice = currencyAmountInPriceDecimals.mulDiv(
-            10 ** PRICE_DECIMALS, trancheTokenAmountInPriceDecimals, MathLib.Rounding.Down
+        price = currencyAmountInPriceDecimals.mulDiv(
+            10 ** PRICE_DECIMALS, trancheTokenAmountInPriceDecimals, roundingDirection
         );
     }
 
     function _updateLiquidityPoolPrice(address liquidityPool, uint128 currencyPayout, uint128 trancheTokensPayout)
         internal
     {
-        uint128 price = _toUint128(_calculatePrice(currencyPayout, trancheTokensPayout, liquidityPool));
+        uint128 price =
+            _toUint128(_calculatePrice(currencyPayout, trancheTokensPayout, liquidityPool, MathLib.Rounding.Down));
         LiquidityPoolLike(liquidityPool).updatePrice(price);
     }
 
-    function _calculateTrancheTokenAmount(uint128 currencyAmount, address liquidityPool, uint256 price)
-        internal
-        view
-        returns (uint128 trancheTokenAmount)
-    {
+    function _calculateTrancheTokenAmount(
+        uint128 currencyAmount,
+        address liquidityPool,
+        uint256 price,
+        MathLib.Rounding roundingDirection
+    ) internal view returns (uint128 trancheTokenAmount) {
         (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getPoolDecimals(liquidityPool);
 
-        uint256 currencyAmountInPriceDecimals = _toPriceDecimals(currencyAmount, currencyDecimals).mulDiv(
-            10 ** PRICE_DECIMALS, price, MathLib.Rounding.Down
-        );
+        uint256 trancheTokenAmountInPriceDecimals =
+            _toPriceDecimals(currencyAmount, currencyDecimals).mulDiv(10 ** PRICE_DECIMALS, price, roundingDirection);
 
-        trancheTokenAmount = _fromPriceDecimals(currencyAmountInPriceDecimals, trancheTokenDecimals);
+        trancheTokenAmount = _fromPriceDecimals(trancheTokenAmountInPriceDecimals, trancheTokenDecimals);
     }
 
     function _calculateCurrencyAmount(uint128 trancheTokenAmount, address liquidityPool, uint256 price)
