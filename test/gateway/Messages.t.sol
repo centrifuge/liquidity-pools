@@ -959,7 +959,7 @@ contract MessagesTest is Test {
     function testDisallowInvestmentCurrency() public {
         uint64 poolId = 12378532;
         uint128 currency = 246803579;
-        bytes memory expectedHex = hex"030000000000bce1a40000000000000000000000000eb5ec7b";
+        bytes memory expectedHex = hex"1b0000000000bce1a40000000000000000000000000eb5ec7b";
 
         assertEq(Messages.formatDisallowInvestmentCurrency(poolId, currency), expectedHex);
 

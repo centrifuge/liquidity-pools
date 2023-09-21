@@ -239,9 +239,12 @@ contract PoolManager is Auth {
 
         Pool storage pool = pools[poolId];
         require(pool.createdAt != 0, "PoolManager/invalid-pool");
-        require(pool.tranches[trancheId].token == address(0), "PoolManager/tranche-already-exists");
 
         UndeployedTranche storage tranche = undeployedTranches[poolId][trancheId];
+        require(
+            pool.tranches[trancheId].token == address(0) && tranche.decimals == 0, "PoolManager/tranche-already-exists"
+        );
+
         tranche.decimals = decimals;
         tranche.tokenName = tokenName;
         tranche.tokenSymbol = tokenSymbol;
