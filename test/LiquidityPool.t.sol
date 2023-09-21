@@ -845,8 +845,8 @@ contract LiquidityPoolTest is TestSetup {
     }
 
     function testDepositFairRounding(uint256 totalAmount, uint256 tokenAmount) public {
-        vm.assume(totalAmount > 1 * 10 ** 6 && totalAmount < type(uint128).max / 10 ** 12);
-        vm.assume(tokenAmount > 1 * 10 ** 6 && tokenAmount < type(uint128).max / 10 ** 12);
+        totalAmount = bound(totalAmount, 1 * 10 ** 6, type(uint128).max / 10 ** 12);
+        tokenAmount = bound(tokenAmount, 1 * 10 ** 6, type(uint128).max / 10 ** 12);
         console.log("totalAmount", totalAmount);
         console.log("tokenAmount", tokenAmount);
 
@@ -893,8 +893,8 @@ contract LiquidityPoolTest is TestSetup {
     }
 
     function testMintFairRounding(uint256 totalAmount, uint256 tokenAmount) public {
-        vm.assume(totalAmount > 1 * 10 ** 6 && totalAmount < type(uint128).max / 10 ** 12);
-        vm.assume(tokenAmount > 1 * 10 ** 6 && tokenAmount < type(uint128).max / 10 ** 12);
+        totalAmount = bound(totalAmount, 1 * 10 ** 6, type(uint128).max / 10 ** 12);
+        tokenAmount = bound(tokenAmount, 1 * 10 ** 6, type(uint128).max / 10 ** 12);
         console.log("totalAmount", totalAmount);
         console.log("tokenAmount", tokenAmount);
 
