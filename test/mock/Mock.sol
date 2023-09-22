@@ -23,6 +23,10 @@ contract Mock is Test {
 
     mapping(bytes32 => bool) method_fail;
 
+    function call(bytes32 name) internal {
+        calls[name]++;
+    }
+
     function setReturn(bytes32 name, uint128 returnValue) public {
         values_uint128_return[name] = returnValue;
     }

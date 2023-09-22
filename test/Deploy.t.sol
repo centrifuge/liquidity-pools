@@ -88,14 +88,14 @@ contract DeployTest is Test {
 
     function depositMint(
         uint64 poolId,
-        uint8 decimals,
-        string memory tokenName,
-        string memory tokenSymbol,
+        uint8 /*decimals*/,
+        string memory /*tokenName*/,
+        string memory /*tokenSymbol*/,
         bytes16 trancheId,
         uint128 price,
-        uint128 currencyId,
+        uint128 /*currencyId*/,
         uint256 amount,
-        uint64 validUntil,
+        uint64 /*validUntil*/,
         LiquidityPool lPool
     ) public {
         erc20.approve(address(investmentManager), amount); // add allowance

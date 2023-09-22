@@ -310,11 +310,11 @@ contract LiquidityPoolTest is TestSetup {
         TrancheToken trancheToken = TrancheToken(address(lPool.share()));
         assertTrue(trancheToken.isTrustedForwarder(lPool_)); // Lpool is not trusted forwarder on token
 
-        uint256 initBalance = lPool.balanceOf(investor);
+        uint256 _initBalance = lPool.balanceOf(investor);
 
         // replacing msg sender only possible for trusted forwarder
         assertEq(trancheToken.isTrustedForwarder(self), false); // Lpool is not trusted forwarder on token
-        (bool success, bytes memory data) = address(trancheToken).call(
+        (bool _s, bytes memory _b) = address(trancheToken).call(
             abi.encodeWithSelector(
                 bytes4(keccak256(bytes("approve(address,uint256)"))), receiver, approvalAmount, investor
             )
@@ -358,7 +358,7 @@ contract LiquidityPoolTest is TestSetup {
         uint256 initBalance = lPool.balanceOf(investor);
         // replacing msg sender only possible for trusted forwarder
         assertEq(trancheToken.isTrustedForwarder(self), false); // Lpool is not trusted forwarder on token
-        (bool success, bytes memory data) = address(trancheToken).call(
+        (bool success, bytes memory _b) = address(trancheToken).call(
             abi.encodeWithSelector(
                 bytes4(keccak256(bytes("transfer(address,uint256)"))), self, transferAmount, investor
             )
@@ -826,13 +826,13 @@ contract LiquidityPoolTest is TestSetup {
 
         // deposit 50% of the amount
         uint256 share = 2;
-        lPool.deposit(amount / 2, self); // mint half the amount
+        lPool.deposit(amount / share, self); // mint half the amount
 
         // Allow 2 difference because of rounding
-        assertApproxEqAbs(lPool.balanceOf(self), trancheTokensPayout / 2, 2);
-        assertApproxEqAbs(lPool.balanceOf(address(escrow)), trancheTokensPayout - trancheTokensPayout / 2, 2);
-        assertApproxEqAbs(lPool.maxMint(self), trancheTokensPayout - trancheTokensPayout / 2, 2);
-        assertApproxEqAbs(lPool.maxDeposit(self), amount - amount / 2, 2);
+        assertApproxEqAbs(lPool.balanceOf(self), trancheTokensPayout / share, 2);
+        assertApproxEqAbs(lPool.balanceOf(address(escrow)), trancheTokensPayout - trancheTokensPayout / share, 2);
+        assertApproxEqAbs(lPool.maxMint(self), trancheTokensPayout - trancheTokensPayout / share, 2);
+        assertApproxEqAbs(lPool.maxDeposit(self), amount - amount / share, 2);
 
         // mint the rest
         lPool.mint(lPool.maxMint(self), self);
