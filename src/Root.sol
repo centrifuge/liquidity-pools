@@ -82,7 +82,7 @@ contract Root is Auth {
     /// @dev    Can be triggered by anyone since the scheduling is protected
     function executeScheduledRely(address target) public {
         require(schedule[target] != 0, "Root/target-not-scheduled");
-        require(schedule[target] < block.timestamp, "Root/target-not-ready");
+        require(schedule[target] <= block.timestamp, "Root/target-not-ready");
 
         wards[target] = 1;
         emit Rely(target);

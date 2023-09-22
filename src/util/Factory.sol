@@ -123,6 +123,7 @@ contract RestrictionManagerFactory is Auth {
 
     function newRestrictionManager(address token, address[] calldata restrictionManagerWards)
         public
+        auth
         returns (address)
     {
         RestrictionManager restrictionManager = new RestrictionManager(token);

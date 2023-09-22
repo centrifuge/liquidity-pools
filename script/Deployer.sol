@@ -52,6 +52,11 @@ contract Deployer is Script {
 
         LiquidityPoolFactory(liquidityPoolFactory).rely(address(poolManager));
         TrancheTokenFactory(trancheTokenFactory).rely(address(poolManager));
+        RestrictionManagerFactory(restrictionManagerFactory).rely(address(poolManager));
+
+        LiquidityPoolFactory(liquidityPoolFactory).rely(address(root));
+        TrancheTokenFactory(trancheTokenFactory).rely(address(root));
+        RestrictionManagerFactory(restrictionManagerFactory).rely(address(root));
     }
 
     function wire(address router) public {
