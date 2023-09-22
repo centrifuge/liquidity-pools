@@ -24,9 +24,9 @@ interface PrecompileLike {
 // A contract to be deployed on Centrifuge-EVM in order to forward axelar tx to
 // the precompile.
 contract AxelarForwarder is Auth {
-    // Represents the precompile address on Centrifuge. Precompile sits on `address(2048)` which is
+    // Represents the precompile address on Centrifuge. Precompile is located at `address(2048)` which is
     // 0x0000000000000000000000000000000000000800 in hex.
-    PrecompileLike public constant precompile = PrecompileLike(0x0000000000000000000000000000000000000800);
+    PrecompileLike public constant PRECOMPILE = PrecompileLike(0x0000000000000000000000000000000000000800);
 
     AxelarGatewayLike public axelarGateway;
 
@@ -64,7 +64,7 @@ contract AxelarForwarder is Auth {
             "AxelarForwarder/not-approved-by-gateway"
         );
 
-        precompile.execute(commandId, sourceChain, sourceAddress, payload);
+        PRECOMPILE.execute(commandId, sourceChain, sourceAddress, payload);
 
         emit Forwarded(commandId, sourceChain, sourceAddress, payload);
     }
