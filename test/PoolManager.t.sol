@@ -97,7 +97,7 @@ contract PoolManagerTest is TestSetup {
 
         ERC20 erc20 = _newErc20(tokenName, tokenSymbol, decimals);
         vm.assume(recipient.code.length == 0);
-;
+
         centrifugeChain.addCurrency(currency, address(erc20));
 
         assertEq(erc20.balanceOf(address(poolManager.escrow())), 0);
