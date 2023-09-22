@@ -93,7 +93,7 @@ contract PoolManagerTest is TestSetup {
         decimals = uint8(bound(decimals, 1, 18));
         vm.assume(currency > 0);
         vm.assume(amount > 0);
-        vm.assume(recipient != address(0));
+        vm.assume(recipient.code.length == 0);
 
         ERC20 erc20 = _newErc20(tokenName, tokenSymbol, decimals);
         vm.assume(recipient != address(erc20));
@@ -118,7 +118,7 @@ contract PoolManagerTest is TestSetup {
         decimals = uint8(bound(decimals, 1, 18));
         vm.assume(amount > 0);
         vm.assume(currency != 0);
-        vm.assume(recipient != address(0));
+        vm.assume(recipient.code.length == 0);
 
         ERC20 erc20 = _newErc20(tokenName, tokenSymbol, decimals);
         centrifugeChain.addCurrency(currency, address(erc20));
