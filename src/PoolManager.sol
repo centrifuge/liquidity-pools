@@ -240,12 +240,12 @@ contract PoolManager is Auth {
         Pool storage pool = pools[poolId];
         require(pool.createdAt != 0, "PoolManager/invalid-pool");
 
-        UndeployedTranche storage tranche = undeployedTranches[poolId][trancheId];
-        require(tranche.decimals == 0, "PoolManager/tranche-already-exists");
+        UndeployedTranche storage undeployedTranche = undeployedTranches[poolId][trancheId];
+        require(undeployedTranche.decimals == 0, "PoolManager/tranche-already-exists");
 
-        tranche.decimals = decimals;
-        tranche.tokenName = tokenName;
-        tranche.tokenSymbol = tokenSymbol;
+        undeployedTranche.decimals = decimals;
+        undeployedTranche.tokenName = tokenName;
+        undeployedTranche.tokenSymbol = tokenSymbol;
 
         emit AddTranche(poolId, trancheId);
     }
@@ -336,8 +336,8 @@ contract PoolManager is Auth {
 
     // --- Public functions ---
     function deployTranche(uint64 poolId, bytes16 trancheId) public returns (address) {
-        UndeployedTranche storage tranche = undeployedTranches[poolId][trancheId];
-        require(tranche.decimals != 0, "PoolManager/tranche-not-added");
+        UndeployedTranche storage undeployedTranche = undeployedTranches[poolId][trancheId];
+        require(undeployedTranche.decimals != 0, "PoolManager/tranche-not-added");
 
         address[] memory trancheTokenWards = new address[](2);
         trancheTokenWards[0] = address(investmentManager);
@@ -347,16 +347,19 @@ contract PoolManager is Auth {
         restrictionManagerWards[0] = address(this);
 
         address token = trancheTokenFactory.newTrancheToken(
-            poolId, trancheId, tranche.tokenName, tranche.tokenSymbol, tranche.decimals, trancheTokenWards
+            poolId,
+            trancheId,
+            undeployedTranche.tokenName,
+            undeployedTranche.tokenSymbol,
+            undeployedTranche.decimals,
+            trancheTokenWards
         );
         address restrictionManager = restrictionManagerFactory.newRestrictionManager(token, restrictionManagerWards);
         TrancheTokenLike(token).file("restrictionManager", restrictionManager);
 
         pools[poolId].tranches[trancheId].token = token;
 
-        delete tranche.decimals;
-        delete tranche.tokenName;
-        delete tranche.tokenSymbol;
+        delete undeployedTranches[poolId][trancheId];
 
         emit DeployTranche(poolId, trancheId, token);
         return token;
