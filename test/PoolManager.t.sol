@@ -93,11 +93,11 @@ contract PoolManagerTest is TestSetup {
         decimals = uint8(bound(decimals, 1, 18));
         vm.assume(currency > 0);
         vm.assume(amount > 0);
-        vm.assume(recipient.code.length == 0);
         vm.assume(recipient != address(0));
 
         ERC20 erc20 = _newErc20(tokenName, tokenSymbol, decimals);
-        vm.assume(recipient != address(erc20));
+        vm.assume(recipient.code.length == 0);
+;
         centrifugeChain.addCurrency(currency, address(erc20));
 
         assertEq(erc20.balanceOf(address(poolManager.escrow())), 0);
@@ -119,10 +119,10 @@ contract PoolManagerTest is TestSetup {
         decimals = uint8(bound(decimals, 1, 18));
         vm.assume(amount > 0);
         vm.assume(currency != 0);
-        vm.assume(recipient.code.length == 0);
         vm.assume(recipient != address(0));
 
         ERC20 erc20 = _newErc20(tokenName, tokenSymbol, decimals);
+        vm.assume(recipient.code.length == 0);
         centrifugeChain.addCurrency(currency, address(erc20));
 
         // First, an outgoing transfer must take place which has funds currency of the currency moved to
