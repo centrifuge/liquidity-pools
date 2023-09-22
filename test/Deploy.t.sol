@@ -53,7 +53,6 @@ contract DeployTest is Test, Deployer {
     ) public {
         uint8 decimals = 6; // TODO: use fuzzed decimals
         uint128 price = uint128(2 * 10 ** PRICE_DECIMALS); //TODO: fuzz price
-        uint128 currencyId = 1;
         uint256 amount = 1000 * 10 ** erc20.decimals();
         uint64 validUntil = uint64(block.timestamp + 1000 days);
         address lPool_ = deployPoolAndTranche(poolId, trancheId, tokenName, tokenSymbol, decimals);
@@ -64,26 +63,13 @@ contract DeployTest is Test, Deployer {
         vm.prank(address(gateway));
         poolManager.updateMember(poolId, trancheId, self, validUntil);
 
-        depositMint(poolId, decimals, tokenName, tokenSymbol, trancheId, price, currencyId, amount, validUntil, lPool);
+        depositMint(poolId, trancheId, price, amount, lPool);
         amount = lPool.balanceOf(self);
 
-        redeemWithdraw(
-            poolId, decimals, tokenName, tokenSymbol, trancheId, price, currencyId, amount, validUntil, lPool
-        );
+        redeemWithdraw(poolId, trancheId, price, amount, lPool);
     }
 
-    function depositMint(
-        uint64 poolId,
-        uint8 decimals,
-        string memory tokenName,
-        string memory tokenSymbol,
-        bytes16 trancheId,
-        uint128 price,
-        uint128 currencyId,
-        uint256 amount,
-        uint64 validUntil,
-        LiquidityPool lPool
-    ) public {
+    function depositMint(uint64 poolId, bytes16 trancheId, uint128 price, uint256 amount, LiquidityPool lPool) public {
         erc20.approve(address(investmentManager), amount); // add allowance
         lPool.requestDeposit(amount, self);
 
@@ -128,18 +114,9 @@ contract DeployTest is Test, Deployer {
         assertTrue(lPool.maxMint(self) <= 1);
     }
 
-    function redeemWithdraw(
-        uint64 poolId,
-        uint8 decimals,
-        string memory tokenName,
-        string memory tokenSymbol,
-        bytes16 trancheId,
-        uint128 price,
-        uint128 currencyId,
-        uint256 amount,
-        uint64 validUntil,
-        LiquidityPool lPool
-    ) public {
+    function redeemWithdraw(uint64 poolId, bytes16 trancheId, uint128 price, uint256 amount, LiquidityPool lPool)
+        public
+    {
         vm.expectRevert(bytes("ERC20/insufficient-allowance"));
         lPool.requestRedeem(amount, self);
         lPool.approve(address(investmentManager), amount);
@@ -186,8 +163,6 @@ contract DeployTest is Test, Deployer {
         string memory tokenSymbol,
         uint8 decimals
     ) public returns (address) {
-        uint64 validUntil = uint64(block.timestamp + 1000 days);
-
         vm.startPrank(address(gateway));
         poolManager.addPool(poolId);
         poolManager.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals);

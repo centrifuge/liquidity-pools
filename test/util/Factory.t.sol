@@ -88,7 +88,7 @@ contract FactoryTest is Test {
     ) public {
         TrancheTokenFactory trancheTokenFactory = new TrancheTokenFactory{ salt: salt }(root, address(this));
 
-        bytes32 salt = keccak256(abi.encodePacked(poolId, trancheId));
+        bytes32 hashedSalt = keccak256(abi.encodePacked(poolId, trancheId));
         address predictedAddress = address(
             uint160(
                 uint256(
@@ -96,7 +96,7 @@ contract FactoryTest is Test {
                         abi.encodePacked(
                             bytes1(0xff),
                             address(trancheTokenFactory),
-                            salt,
+                            hashedSalt,
                             keccak256(abi.encodePacked(type(TrancheToken).creationCode, abi.encode(decimals)))
                         )
                     )

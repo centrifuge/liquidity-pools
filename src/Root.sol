@@ -53,27 +53,33 @@ contract Root is Auth {
     }
 
     // --- Pause management ---
+    /// @notice Pause any contracts that depend on `Root.paused()`
     function pause() external auth {
         paused = true;
         emit Pause();
     }
 
+    /// @notice Unpause any contracts that depend on `Root.paused()`
     function unpause() external auth {
         paused = false;
         emit Unpause();
     }
 
     /// --- Timelocked ward management ---
+    /// @notice Schedule relying a new ward after the delay has passed
     function scheduleRely(address target) external auth {
         schedule[target] = block.timestamp + delay;
         emit ScheduleRely(target, schedule[target]);
     }
 
+    /// @notice Cancel a pending scheduled rely
     function cancelRely(address target) external auth {
         schedule[target] = 0;
         emit CancelRely(target);
     }
 
+    /// @notice Execute a scheduled rely
+    /// @dev    Can be triggered by anyone since the scheduling is protected
     function executeScheduledRely(address target) public {
         require(schedule[target] != 0, "Root/target-not-scheduled");
         require(schedule[target] < block.timestamp, "Root/target-not-ready");
@@ -85,18 +91,13 @@ contract Root is Auth {
     }
 
     /// --- External contract ward management ---
-    /// @notice  can be called by any ward on the Root contract
-    /// to make an arbitrary address a ward on any contract(requires the root contract to be a ward)
-    /// @param target the address of the contract
-    /// @param user the address which should get ward permissions
+    /// @notice Make an address a ward on any contract that Root is a ward on
     function relyContract(address target, address user) public auth {
         AuthLike(target).rely(user);
         emit RelyContract(target, user);
     }
 
-    /// @notice removes the ward permissions from an address on a contract
-    /// @param target the address of the contract
-    /// @param user the address which permissions should be removed
+    /// @notice Removes an address as a ward on any contract that Root is a ward on
     function denyContract(address target, address user) public auth {
         AuthLike(target).deny(user);
         emit DenyContract(target, user);
