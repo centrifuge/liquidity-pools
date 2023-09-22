@@ -48,14 +48,10 @@ contract AxelarRouterTest is Test {
         string calldata sourceAddress,
         bytes calldata payload
     ) public {
-        vm.assume(
-            keccak256(abi.encodePacked(sourceChain))
-                != keccak256(abi.encodePacked(axelarCentrifugeChainId))
-        );
+        vm.assume(keccak256(abi.encodePacked(sourceChain)) != keccak256(abi.encodePacked(axelarCentrifugeChainId)));
 
         vm.assume(
-            keccak256(abi.encodePacked(sourceAddress))
-            != keccak256(abi.encodePacked(axelarCentrifugeChainAddress))
+            keccak256(abi.encodePacked(sourceAddress)) != keccak256(abi.encodePacked(axelarCentrifugeChainAddress))
         );
 
         vm.expectRevert(bytes("AxelarRouter/invalid-source-chain"));
