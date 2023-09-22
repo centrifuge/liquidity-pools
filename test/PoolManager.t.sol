@@ -503,12 +503,18 @@ contract PoolManagerTest is TestSetup {
 
         centrifugeChain.allowInvestmentCurrency(poolId, currency);
         assertTrue(poolManager.isAllowedAsInvestmentCurrency(poolId, address(token)));
+
+        centrifugeChain.disallowInvestmentCurrency(poolId, currency);
+        assertEq(poolManager.isAllowedAsInvestmentCurrency(poolId, address(token)), false);
     }
 
     function testAllowInvestmentCurrencyWithUnknownCurrencyFails(uint128 currency, uint64 poolId) public {
         centrifugeChain.addPool(poolId);
         vm.expectRevert(bytes("PoolManager/unknown-currency"));
         centrifugeChain.allowInvestmentCurrency(poolId, currency);
+
+        vm.expectRevert(bytes("PoolManager/unknown-currency"));
+        centrifugeChain.disallowInvestmentCurrency(poolId, currency);
     }
 
     function testAddingPoolMultipleTimesFails(uint64 poolId) public {
