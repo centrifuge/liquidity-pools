@@ -206,7 +206,7 @@ contract InvestmentManager is Auth {
         gateway.increaseRedeemOrder(poolId, trancheId, user, currencyId, _trancheTokenAmount);
     }
 
-    function decreaseDepositRequest(address liquidityPool, uint256 _currencyAmount, address user) public auth {
+    function decreaseDepositRequest(address /*liquidityPool*/, uint256 _currencyAmount, address user) public auth {
         uint128 currencyAmount = _toUint128(_currencyAmount);
         LiquidityPoolLike _liquidityPool = LiquidityPoolLike(msg.sender);
         gateway.decreaseInvestOrder(
@@ -218,7 +218,7 @@ contract InvestmentManager is Auth {
         );
     }
 
-    function decreaseRedeemRequest(address liquidityPool, uint256 _trancheTokenAmount, address user) public auth {
+    function decreaseRedeemRequest(address /*liquidityPool*/, uint256 _trancheTokenAmount, address user) public auth {
         uint128 trancheTokenAmount = _toUint128(_trancheTokenAmount);
         LiquidityPoolLike _liquidityPool = LiquidityPoolLike(msg.sender);
         require(
@@ -234,7 +234,7 @@ contract InvestmentManager is Auth {
         );
     }
 
-    function cancelDepositRequest(address liquidityPool, address user) public auth {
+    function cancelDepositRequest(address /*liquidityPool*/, address user) public auth {
         LiquidityPoolLike _liquidityPool = LiquidityPoolLike(msg.sender);
         gateway.cancelInvestOrder(
             _liquidityPool.poolId(),
@@ -275,7 +275,7 @@ contract InvestmentManager is Auth {
         );
     }
 
-    function collectRedeem(address liquidityPool, address user) public auth {
+    function collectRedeem(address /*liquidityPool*/, address user) public auth {
         LiquidityPoolLike _liquidityPool = LiquidityPoolLike(msg.sender);
         gateway.collectRedeem(
             _liquidityPool.poolId(),

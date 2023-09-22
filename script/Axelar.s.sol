@@ -20,10 +20,9 @@ contract AxelarScript is Deployer {
         admin = vm.envAddress("ADMIN");
 
         deployInvestmentManager();
-        address forwarder = address(new AxelarForwarder(vm.envAddress("AXELAR_GATEWAY")));
         AxelarRouter router = new AxelarRouter(
                 address(vm.envAddress("AXELAR_GATEWAY")),
-                forwarder
+                address(vm.envAddress("CENTRIFUGE_FORWARDER"))
         );
         wire(address(router));
         router.file("gateway", address(gateway));

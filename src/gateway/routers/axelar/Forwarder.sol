@@ -21,6 +21,8 @@ interface PrecompileLike {
     ) external;
 }
 
+// A contract to be deployed on Centrifuge-EVM in order to forward axelar tx to
+// the precompile.
 contract AxelarForwarder is Auth {
     // Represents the precompile address on Centrifuge. Precompile sits on `address(2048)` which is
     // 0x0000000000000000000000000000000000000800 in hex.
