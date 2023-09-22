@@ -892,7 +892,7 @@ contract MessagesTest is Test {
         uint128 currency = 246803579;
         uint128 amount = 100000000000000000000000000;
         bytes memory expectedHex =
-            hex"180000000000000001811acd5b3f17c06841c7e41e9e04cb1b12312312312312312312312312312312312312310000000000000000000000000000000000000000000000000eb5ec7b000000000052b7d2dcc80cd2e4000000";
+            hex"1b0000000000000001811acd5b3f17c06841c7e41e9e04cb1b12312312312312312312312312312312312312310000000000000000000000000000000000000000000000000eb5ec7b000000000052b7d2dcc80cd2e4000000";
 
         assertEq(Messages.formatTriggerIncreaseRedeemOrder(poolId, trancheId, investor, currency, amount), expectedHex);
 
@@ -954,6 +954,25 @@ contract MessagesTest is Test {
         assertEq(uint256(decodedPoolId), uint256(poolId));
         assertEq(decodedTrancheId, trancheId);
         assertEq(decodedUser, user);
+    }
+
+    function testDisallowInvestmentCurrency() public {
+        uint64 poolId = 12378532;
+        uint128 currency = 246803579;
+        bytes memory expectedHex = hex"180000000000bce1a40000000000000000000000000eb5ec7b";
+
+        assertEq(Messages.formatDisallowInvestmentCurrency(poolId, currency), expectedHex);
+
+        (uint64 decodedPoolId, uint128 decodedCurrency) = Messages.parseDisallowInvestmentCurrency(expectedHex);
+        assertEq(decodedPoolId, poolId);
+        assertEq(uint256(decodedCurrency), currency);
+    }
+
+    function testDisallowInvestmentCurrencyEquivalence(uint128 currency, uint64 poolId) public {
+        bytes memory _message = Messages.formatDisallowInvestmentCurrency(poolId, currency);
+        (uint64 decodedPoolId, uint128 decodedCurrency) = Messages.parseDisallowInvestmentCurrency(_message);
+        assertEq(uint256(decodedPoolId), uint256(poolId));
+        assertEq(decodedCurrency, uint256(currency));
     }
 
     function testFormatDomainCentrifuge() public {

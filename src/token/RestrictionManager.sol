@@ -88,14 +88,7 @@ contract RestrictionManager is Auth {
         emit UpdateMember(user, validUntil);
     }
 
-    function member(address user) public view {
-        require((members[user] >= block.timestamp), "RestrictionManager/destination-not-a-member");
-    }
-
     function hasMember(address user) public view returns (bool) {
-        if (members[user] >= block.timestamp) {
-            return true;
-        }
-        return false;
+        return members[user] >= block.timestamp;
     }
 }
