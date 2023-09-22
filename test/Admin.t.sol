@@ -17,6 +17,7 @@ contract AdminTest is TestSetup {
         // permissions set correctly
         assertEq(root.wards(address(delayedAdmin)), 1);
         assertEq(root.wards(address(pauseAdmin)), 1);
+        assertEq(pauseAdmin.wards(address(delayedAdmin)), 1);
     }
 
     //------ PauseAdmin tests ------//
@@ -187,9 +188,9 @@ contract AdminTest is TestSetup {
         address badActor = vm.addr(0xBAD);
         vm.prank(badActor);
         vm.expectRevert("Auth/not-authorized");
-        delayedAdmin.addPauser(address(pauseAdmin), badActor);
+        delayedAdmin.addPauser(badActor);
 
-        delayedAdmin.addPauser(address(pauseAdmin), newPauser);
+        delayedAdmin.addPauser(newPauser);
         assertEq(pauseAdmin.pausers(newPauser), 1);
     }
 
@@ -199,9 +200,9 @@ contract AdminTest is TestSetup {
         address badActor = vm.addr(0xBAD);
         vm.prank(badActor);
         vm.expectRevert("Auth/not-authorized");
-        delayedAdmin.removePauser(address(pauseAdmin), badActor);
+        delayedAdmin.removePauser(badActor);
 
-        delayedAdmin.removePauser(address(pauseAdmin), oldPauser);
+        delayedAdmin.removePauser(oldPauser);
         assertEq(pauseAdmin.pausers(oldPauser), 0);
     }
 

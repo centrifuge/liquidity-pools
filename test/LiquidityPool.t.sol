@@ -268,7 +268,7 @@ contract LiquidityPoolTest is TestSetup {
 
         // replacing msg sender only possible for trusted forwarder
         assertEq(trancheToken.isTrustedForwarder(self), false); // self is not trusted forwarder on token
-        (bool success, bytes memory data) = address(trancheToken).call(
+        (bool success,) = address(trancheToken).call(
             abi.encodeWithSelector(
                 bytes4(keccak256(bytes("transferFrom(address,address,uint256)"))),
                 investor,
@@ -310,16 +310,15 @@ contract LiquidityPoolTest is TestSetup {
         TrancheToken trancheToken = TrancheToken(address(lPool.share()));
         assertTrue(trancheToken.isTrustedForwarder(lPool_)); // Lpool is not trusted forwarder on token
 
-        uint256 _initBalance = lPool.balanceOf(investor);
-
         // replacing msg sender only possible for trusted forwarder
         assertEq(trancheToken.isTrustedForwarder(self), false); // Lpool is not trusted forwarder on token
-        (bool _s, bytes memory _b) = address(trancheToken).call(
+        (bool success,) = address(trancheToken).call(
             abi.encodeWithSelector(
                 bytes4(keccak256(bytes("approve(address,uint256)"))), receiver, approvalAmount, investor
             )
         );
 
+        assertEq(success, true);
         assertEq(lPool.allowance(self, receiver), approvalAmount);
         assertEq(lPool.allowance(investor, receiver), 0);
 
@@ -358,7 +357,7 @@ contract LiquidityPoolTest is TestSetup {
         uint256 initBalance = lPool.balanceOf(investor);
         // replacing msg sender only possible for trusted forwarder
         assertEq(trancheToken.isTrustedForwarder(self), false); // Lpool is not trusted forwarder on token
-        (bool success, bytes memory _b) = address(trancheToken).call(
+        (bool success,) = address(trancheToken).call(
             abi.encodeWithSelector(
                 bytes4(keccak256(bytes("transfer(address,uint256)"))), self, transferAmount, investor
             )
@@ -1359,11 +1358,11 @@ contract LiquidityPoolTest is TestSetup {
         lPool.deposit(amount, investor); // withdraw the amount
     }
 
-    function amountAssumption(uint256 amount) public returns (bool) {
+    function amountAssumption(uint256 amount) public pure returns (bool) {
         return (amount > 1 && amount < MAX_UINT128);
     }
 
-    function addressAssumption(address user) public returns (bool) {
+    function addressAssumption(address user) public view returns (bool) {
         return (user != address(0) && user != address(erc20) && user.code.length == 0);
     }
 }

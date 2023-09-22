@@ -90,12 +90,6 @@ contract InvestmentManager is Auth {
 
     // --- Events ---
     event File(bytes32 indexed what, address data);
-    event ProcessDeposit(
-        address indexed liquidityPool, address indexed user, uint128 currencyAmount, uint128 trancheTokenAmount
-    );
-    event ProcessRedeem(
-        address indexed liquidityPool, address indexed user, uint128 currencyAmount, uint128 trancheTokenAmount
-    );
     event ExecutedCollectInvest(
         uint64 indexed poolId,
         bytes16 indexed trancheId,
@@ -206,9 +200,9 @@ contract InvestmentManager is Auth {
         gateway.increaseRedeemOrder(poolId, trancheId, user, currencyId, _trancheTokenAmount);
     }
 
-    function decreaseDepositRequest(address /*liquidityPool*/, uint256 _currencyAmount, address user) public auth {
+    function decreaseDepositRequest(address liquidityPool, uint256 _currencyAmount, address user) public auth {
         uint128 currencyAmount = _toUint128(_currencyAmount);
-        LiquidityPoolLike _liquidityPool = LiquidityPoolLike(msg.sender);
+        LiquidityPoolLike _liquidityPool = LiquidityPoolLike(liquidityPool);
         gateway.decreaseInvestOrder(
             _liquidityPool.poolId(),
             _liquidityPool.trancheId(),
@@ -218,9 +212,9 @@ contract InvestmentManager is Auth {
         );
     }
 
-    function decreaseRedeemRequest(address /*liquidityPool*/, uint256 _trancheTokenAmount, address user) public auth {
+    function decreaseRedeemRequest(address liquidityPool, uint256 _trancheTokenAmount, address user) public auth {
         uint128 trancheTokenAmount = _toUint128(_trancheTokenAmount);
-        LiquidityPoolLike _liquidityPool = LiquidityPoolLike(msg.sender);
+        LiquidityPoolLike _liquidityPool = LiquidityPoolLike(liquidityPool);
         require(
             _liquidityPool.checkTransferRestriction(address(0), user, _trancheTokenAmount),
             "InvestmentManager/transfer-not-allowed"
@@ -234,8 +228,8 @@ contract InvestmentManager is Auth {
         );
     }
 
-    function cancelDepositRequest(address /*liquidityPool*/, address user) public auth {
-        LiquidityPoolLike _liquidityPool = LiquidityPoolLike(msg.sender);
+    function cancelDepositRequest(address liquidityPool, address user) public auth {
+        LiquidityPoolLike _liquidityPool = LiquidityPoolLike(liquidityPool);
         gateway.cancelInvestOrder(
             _liquidityPool.poolId(),
             _liquidityPool.trancheId(),
@@ -245,7 +239,7 @@ contract InvestmentManager is Auth {
     }
 
     function cancelRedeemRequest(address liquidityPool, address user) public auth {
-        LiquidityPoolLike _liquidityPool = LiquidityPoolLike(msg.sender);
+        LiquidityPoolLike _liquidityPool = LiquidityPoolLike(liquidityPool);
         uint256 approximateTrancheTokenPayout = userRedeemRequest(liquidityPool, user);
         require(
             _liquidityPool.checkTransferRestriction(address(0), user, approximateTrancheTokenPayout),
@@ -260,7 +254,7 @@ contract InvestmentManager is Auth {
     }
 
     function collectDeposit(address liquidityPool, address user) public auth {
-        LiquidityPoolLike _liquidityPool = LiquidityPoolLike(msg.sender);
+        LiquidityPoolLike _liquidityPool = LiquidityPoolLike(liquidityPool);
         uint256 approximateMaxTrancheTokenPayout =
             convertToShares(liquidityPool, userDepositRequest(liquidityPool, user));
         require(
@@ -275,8 +269,8 @@ contract InvestmentManager is Auth {
         );
     }
 
-    function collectRedeem(address /*liquidityPool*/, address user) public auth {
-        LiquidityPoolLike _liquidityPool = LiquidityPoolLike(msg.sender);
+    function collectRedeem(address liquidityPool, address user) public auth {
+        LiquidityPoolLike _liquidityPool = LiquidityPoolLike(liquidityPool);
         gateway.collectRedeem(
             _liquidityPool.poolId(),
             _liquidityPool.trancheId(),
@@ -620,8 +614,6 @@ contract InvestmentManager is Auth {
             lPool.transferFrom(address(escrow), receiver, trancheTokenAmount),
             "InvestmentManager/tranche-tokens-transfer-failed"
         );
-
-        emit ProcessDeposit(liquidityPool, owner, currencyAmount, trancheTokenAmount);
     }
 
     /// @dev    Processes owner's tranche Token redemption after the epoch has been executed on Centrifuge.
@@ -691,8 +683,6 @@ contract InvestmentManager is Auth {
 
         // Transfer the currency to the user
         userEscrow.transferOut(lPool.asset(), owner, receiver, currencyAmount);
-
-        emit ProcessRedeem(liquidityPool, owner, currencyAmount, trancheTokenAmount);
     }
 
     // --- Helpers ---
@@ -715,7 +705,7 @@ contract InvestmentManager is Auth {
     }
 
     function _calculatePrice(uint128 currencyAmount, uint128 trancheTokenAmount, address liquidityPool)
-        public
+        internal
         view
         returns (uint256 depositPrice)
     {
