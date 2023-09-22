@@ -5,7 +5,7 @@ import {AxelarForwarder} from "../src/gateway/routers/axelar/Forwarder.sol";
 import "forge-std/Script.sol";
 
 // Script to deploy Axelar over XCM relayer.
-contract AxelarForwarderScript is Script {
+contract ForwarderScript is Script {
     function setUp() public {}
 
     function run() public {
