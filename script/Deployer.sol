@@ -54,7 +54,7 @@ contract Deployer is Script {
     function wire(address router) public {
         // Deploy gateway and admins
         pauseAdmin = new PauseAdmin(address(root));
-        delayedAdmin = new DelayedAdmin(address(root));
+        delayedAdmin = new DelayedAdmin(address(root), address(pauseAdmin));
         gateway = new Gateway(address(root), address(investmentManager), address(poolManager), address(router));
         pauseAdmin.rely(address(delayedAdmin));
         root.rely(address(pauseAdmin));
