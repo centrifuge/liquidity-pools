@@ -22,6 +22,8 @@ interface PrecompileLike {
 }
 
 contract AxelarForwarder is Auth {
+    // Represents the precompile address on Centrifuge. Precompile sits on `address(2048)` which is
+    // 0x0000000000000000000000000000000000000800 in hex.
     PrecompileLike public constant precompile = PrecompileLike(0x0000000000000000000000000000000000000800);
 
     AxelarGatewayLike public axelarGateway;

@@ -29,7 +29,9 @@ contract AxelarScript is Deployer {
         // Set up test data
         if (vm.envBool("SETUP_TEST_DATA")) {
             ERC20 currency = new ERC20(18);
-            currency.mint(msg.sender, 1000 * 10 ** 18);
+            currency.file("name", "Mock Currency");
+            currency.file("symbol", "MC");
+            currency.mint(msg.sender, 10000 * 10 ** 18);
 
             root.relyContract(address(poolManager), msg.sender);
             poolManager.file("gateway", msg.sender);
@@ -50,7 +52,7 @@ contract AxelarScript is Deployer {
             LiquidityPoolLike liquidityPool = LiquidityPoolLike(
                 poolManager.getLiquidityPool(1171854325, 0x102f4ef817340a8839a515d2c73a7c1d, address(currency))
             );
-            currency.approve(address(investmentManager), 1000 * 10 ** 18);
+            currency.approve(address(investmentManager), 10000 * 10 ** 18);
             liquidityPool.requestDeposit(200 * 10 ** 18, msg.sender);
             liquidityPool.requestDeposit(200 * 10 ** 18, msg.sender);
             liquidityPool.requestDeposit(200 * 10 ** 18, msg.sender);
