@@ -132,7 +132,6 @@ library BytesLib {
     }
 
     function toHex(bytes memory _bytes) public pure returns (string memory) {
-
         // Fixed buffer size for hexadecimal convertion
         bytes memory converted = new bytes(_bytes.length * 2);
 

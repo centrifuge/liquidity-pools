@@ -88,6 +88,8 @@ contract AxelarRouter is Auth {
 
     // --- Outgoing ---
     function send(bytes calldata message) public onlyGateway {
-        axelarGateway.callContract(CENTRIFUGE_CHAIN_ID, BytesLib.toHex(abi.encodePacked(centrifugeAxelarExecutable)), message);
+        axelarGateway.callContract(
+            CENTRIFUGE_CHAIN_ID, BytesLib.toHex(abi.encodePacked(centrifugeAxelarExecutable)), message
+        );
     }
 }
