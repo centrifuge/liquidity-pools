@@ -68,13 +68,13 @@ contract AxelarForwarder is Auth {
     }
 
     function executeWithToken(
-        bytes32 commandId,
-        string calldata sourceChain,
-        string calldata sourceAddress,
-        bytes calldata payload,
-        string calldata tokenSymbol,
-        uint256 amount
-    ) internal {
+        bytes32, //commandId,
+        string calldata, //sourceChain,
+        string calldata, //sourceAddress,
+        bytes calldata, //payload,
+        string calldata, //tokenSymbol,
+        uint256 //amount
+    ) public pure {
         revert("AxelarForwarder/execute-with-token-not-supported");
     }
 }

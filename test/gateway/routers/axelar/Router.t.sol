@@ -15,8 +15,7 @@ contract AxelarRouterTest is Test {
     AxelarForwarder forwarder;
 
     string private constant axelarCentrifugeChainId = "centrifuge";
-    string private constant axelarCentrifugeChainAddress = "0x7369626cef070000000000000000000000000000";
-    string private constant centrifugeGatewayPrecompileAddress = "0x0000000000000000000000000000000000002048";
+    string private constant axelarCentrifugeChainAddress = "0x7369626CEF070000000000000000000000000000";
 
     function setUp() public {
         axelarGateway = new AxelarGatewayMock();
@@ -47,34 +46,30 @@ contract AxelarRouterTest is Test {
         bytes32 commandId,
         string calldata sourceChain,
         string calldata sourceAddress,
-        bytes calldata payload,
-        address invalidOrigin,
-        string memory invalidAxelarCentrifugeChainId
+        bytes calldata payload
     ) public {
-        vm.assume(invalidOrigin != address(axelarGateway));
         vm.assume(
-            keccak256(abi.encodePacked(invalidAxelarCentrifugeChainId))
+            keccak256(abi.encodePacked(sourceChain))
                 != keccak256(abi.encodePacked(axelarCentrifugeChainId))
         );
 
-        vm.expectRevert(bytes("AxelarRouter/invalid-origin"));
-        router.execute(commandId, sourceChain, sourceAddress, payload);
+        vm.assume(
+            keccak256(abi.encodePacked(sourceAddress))
+            != keccak256(abi.encodePacked(axelarCentrifugeChainAddress))
+        );
 
-        vm.prank(address(axelarGateway));
         vm.expectRevert(bytes("AxelarRouter/invalid-source-chain"));
-        router.execute(commandId, sourceChain, sourceAddress, payload);
+        router.execute(commandId, sourceChain, axelarCentrifugeChainAddress, payload);
 
-        vm.prank(address(axelarGateway));
         vm.expectRevert(bytes("AxelarRouter/invalid-source-address"));
         router.execute(commandId, axelarCentrifugeChainId, sourceAddress, payload);
 
         axelarGateway.setReturn("validateContractCall", false);
-        vm.prank(address(axelarGateway));
+
         vm.expectRevert(bytes("Router/not-approved-by-gateway"));
         router.execute(commandId, axelarCentrifugeChainId, axelarCentrifugeChainAddress, payload);
 
         axelarGateway.setReturn("validateContractCall", true);
-        vm.prank(address(axelarGateway));
         router.execute(commandId, axelarCentrifugeChainId, axelarCentrifugeChainAddress, payload);
     }
 
