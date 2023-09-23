@@ -307,7 +307,7 @@ contract PoolManager is Auth {
         currencyIdToAddress[currency] = currencyAddress;
         currencyAddressToId[currencyAddress] = currency;
 
-        // Enable taking the currency out of escrow in case of redemptions
+        // Enable moving currency from escrow to user escrow in case of redemptions
         escrow.approve(currencyAddress, investmentManager.userEscrow(), type(uint256).max);
 
         emit AddCurrency(currency, currencyAddress);
@@ -364,8 +364,8 @@ contract PoolManager is Auth {
 
     function deployLiquidityPool(uint64 poolId, bytes16 trancheId, address currency) public returns (address) {
         Tranche storage tranche = pools[poolId].tranches[trancheId];
-        require(tranche.token != address(0), "PoolManager/tranche-does-not-exist"); // Tranche must have been added
-        require(isAllowedAsInvestmentCurrency(poolId, currency), "PoolManager/currency-not-supported"); // Currency must be supported by pool
+        require(tranche.token != address(0), "PoolManager/tranche-does-not-exist");
+        require(isAllowedAsInvestmentCurrency(poolId, currency), "PoolManager/currency-not-supported");
 
         address liquidityPool = tranche.liquidityPools[currency];
         require(liquidityPool == address(0), "PoolManager/liquidityPool-already-deployed");
@@ -377,13 +377,19 @@ contract PoolManager is Auth {
         );
 
         tranche.liquidityPools[currency] = liquidityPool;
+
+        // Rely liquidity pool on investment manager so it can send outgoing calls
         AuthLike(address(investmentManager)).rely(liquidityPool);
 
-        // Enable LP to take the tranche tokens out of escrow in case of investments
-        AuthLike(tranche.token).rely(liquidityPool); // Add liquidityPool as ward on tranche token
+        // Link liquidity pool to tranche token
+        AuthLike(tranche.token).rely(liquidityPool);
         ERC2771Like(tranche.token).addLiquidityPool(liquidityPool);
-        escrow.approve(liquidityPool, address(investmentManager), type(uint256).max); // Approve investment manager on tranche token for coordinating transfers
-        escrow.approve(liquidityPool, liquidityPool, type(uint256).max); // Approve liquidityPool on tranche token to be able to burn
+
+        // Approve investment manager on tranche token for coordinating transfers
+        escrow.approve(tranche.token, address(investmentManager), type(uint256).max);
+
+        // Approve liquidityPool on tranche token to be able to burn
+        escrow.approve(tranche.token, liquidityPool, type(uint256).max);
 
         emit DeployLiquidityPool(poolId, trancheId, liquidityPool);
         return liquidityPool;
