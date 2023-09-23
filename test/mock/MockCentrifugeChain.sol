@@ -5,13 +5,12 @@ import {Messages} from "src/gateway/Messages.sol";
 import "forge-std/Test.sol";
 import {XCMRouter} from "src/gateway/routers/xcm/Router.sol";
 
-interface XcmRouterLike {
+interface RouterLike {
     function execute(bytes memory _message) external;
-    function send(bytes memory message) external;
 }
 
 contract MockCentrifugeChain is Test {
-    XcmRouterLike public immutable router;
+    RouterLike public immutable router;
 
     uint32 public dispatchDomain;
     uint256 public dispatchChainId;
@@ -22,7 +21,7 @@ contract MockCentrifugeChain is Test {
     enum Types {AddPool}
 
     constructor(address xcmRouter) {
-        router = XcmRouterLike(xcmRouter);
+        router = RouterLike(xcmRouter);
     }
 
     function addCurrency(uint128 currency, address currencyAddress) public {
@@ -37,6 +36,11 @@ contract MockCentrifugeChain is Test {
 
     function allowInvestmentCurrency(uint64 poolId, uint128 currency) public {
         bytes memory _message = Messages.formatAllowInvestmentCurrency(poolId, currency);
+        router.execute(_message);
+    }
+
+    function disallowInvestmentCurrency(uint64 poolId, uint128 currency) public {
+        bytes memory _message = Messages.formatDisallowInvestmentCurrency(poolId, currency);
         router.execute(_message);
     }
 
