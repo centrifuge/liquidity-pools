@@ -290,9 +290,6 @@ contract PoolManager is Auth {
         // Enable taking the currency out of escrow in case of redemptions
         EscrowLike(escrow).approve(currencyAddress, investmentManager.userEscrow(), type(uint256).max);
 
-        // Enable taking the currency out of escrow in case of decrease invest orders
-        EscrowLike(escrow).approve(currencyAddress, address(investmentManager), type(uint256).max);
-
         emit AddCurrency(currency, currencyAddress);
     }
 
@@ -390,7 +387,7 @@ contract PoolManager is Auth {
     /// @return value - safely converted without data loss
     function _toUint128(uint256 _value) internal pure returns (uint128 value) {
         if (_value > type(uint128).max) {
-            revert("InvestmentManager/uint128-overflow");
+            revert("PoolManager/uint128-overflow");
         } else {
             value = uint128(_value);
         }
