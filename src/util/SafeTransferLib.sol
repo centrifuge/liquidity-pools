@@ -4,7 +4,7 @@ pragma solidity 0.8.21;
 import {IERC20} from "../interfaces/IERC20.sol";
 
 /// @title  Safe Transfer Lib
-/// @author Modified from https://github.com/Uniswap/v3-periphery/blob/main/contracts/libraries/TransferHelper.sol
+/// @author Modified from Uniswap v3 Periphery (libraries/TransferHelper.sol)
 library SafeTransferLib {
     /// @notice Transfers tokens from the targeted address to the given destination
     /// @notice Errors if transfer fails
