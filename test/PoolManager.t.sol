@@ -760,7 +760,7 @@ contract PoolManagerTest is TestSetup {
         poolManager.deployTranche(poolId, trancheId);
 
         poolManager.deployLiquidityPool(poolId, trancheId, address(erc20));
-        vm.expectRevert(bytes("PoolManager/liquidityPool-already-deployed"));
+        vm.expectRevert(bytes("PoolManager/liquidity-pool-already-deployed"));
         poolManager.deployLiquidityPool(poolId, trancheId, address(erc20));
     }
 

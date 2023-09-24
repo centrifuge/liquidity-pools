@@ -307,7 +307,8 @@ contract PoolManager is Auth {
         currencyIdToAddress[currency] = currencyAddress;
         currencyAddressToId[currencyAddress] = currency;
 
-        // Enable moving currency from escrow to user escrow in case of redemptions
+        // Give investment manager infinite approval for currency in the escrow
+        // to transfer to the user escrow on redeem, withdraw or transfer
         escrow.approve(currencyAddress, investmentManager.userEscrow(), type(uint256).max);
 
         emit AddCurrency(currency, currencyAddress);
@@ -368,14 +369,16 @@ contract PoolManager is Auth {
         require(isAllowedAsInvestmentCurrency(poolId, currency), "PoolManager/currency-not-supported");
 
         address liquidityPool = tranche.liquidityPools[currency];
-        require(liquidityPool == address(0), "PoolManager/liquidityPool-already-deployed");
+        require(liquidityPool == address(0), "PoolManager/liquidity-pool-already-deployed");
 
+        // Rely investment manager on liquidity pool so it can mint tokens
         address[] memory liquidityPoolWards = new address[](1);
         liquidityPoolWards[0] = address(investmentManager);
+
+        // Deploy liquidity pool
         liquidityPool = liquidityPoolFactory.newLiquidityPool(
             poolId, trancheId, currency, tranche.token, address(investmentManager), liquidityPoolWards
         );
-
         tranche.liquidityPools[currency] = liquidityPool;
 
         // Rely liquidity pool on investment manager so it can send outgoing calls
@@ -385,10 +388,12 @@ contract PoolManager is Auth {
         AuthLike(tranche.token).rely(liquidityPool);
         ERC2771Like(tranche.token).addLiquidityPool(liquidityPool);
 
-        // Approve investment manager on tranche token for coordinating transfers
+        // Give investment manager infinite approval for tranche tokens
+        // in the escrow to transfer to the user on deposit or mint
         escrow.approve(tranche.token, address(investmentManager), type(uint256).max);
 
-        // Approve liquidityPool on tranche token to be able to burn
+        // Give investment manager infinite approval for tranche tokens
+        // in the escrow to burn on executed redemptions
         escrow.approve(tranche.token, liquidityPool, type(uint256).max);
 
         emit DeployLiquidityPool(poolId, trancheId, liquidityPool);
