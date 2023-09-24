@@ -37,10 +37,6 @@ interface EscrowLike {
     function approve(address token, address spender, uint256 value) external;
 }
 
-interface ERC2771Like {
-    function addLiquidityPool(address forwarder) external;
-}
-
 interface AuthLike {
     function rely(address usr) external;
 }
@@ -386,7 +382,7 @@ contract PoolManager is Auth {
 
         // Link liquidity pool to tranche token
         AuthLike(tranche.token).rely(liquidityPool);
-        ERC2771Like(tranche.token).addLiquidityPool(liquidityPool);
+        TrancheTokenLike(tranche.token).addLiquidityPool(liquidityPool);
 
         // Give investment manager infinite approval for tranche tokens
         // in the escrow to transfer to the user on deposit or mint
