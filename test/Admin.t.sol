@@ -34,10 +34,10 @@ contract AdminTest is TestSetup {
         assertEq(root.paused(), false);
     }
 
-    function testPauseAuth(address usr) public {
-        vm.assume(usr != address(this));
+    function testPauseAuth(address user) public {
+        vm.assume(user != address(this));
         vm.expectRevert("PauseAdmin/not-authorized-to-pause");
-        vm.prank(usr);
+        vm.prank(user);
         pauseAdmin.pause();
     }
 
@@ -140,10 +140,10 @@ contract AdminTest is TestSetup {
         assertEq(root.paused(), false);
     }
 
-    function testDelayedAdminPauseAuth(address usr) public {
-        vm.assume(usr != address(this));
+    function testDelayedAdminPauseAuth(address user) public {
+        vm.assume(user != address(this));
         vm.expectRevert("Auth/not-authorized");
-        vm.prank(usr);
+        vm.prank(user);
         delayedAdmin.pause();
     }
 

@@ -38,7 +38,7 @@ interface EscrowLike {
 }
 
 interface AuthLike {
-    function rely(address usr) external;
+    function rely(address user) external;
 }
 
 /// @dev Centrifuge pools
