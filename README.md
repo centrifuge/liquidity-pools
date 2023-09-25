@@ -1,4 +1,7 @@
-# Liquidity Pools
+# Liquidity Pools [![Github Actions][gha-badge]][gha] 
+[gha]: https://github.com/centrifuge/liquidity-pools/actions
+[gha-badge]: https://github.com/centrifuge/liquidity-pools/actions/workflows/main.yml/badge.svg
+
 Liquidity Pools enable seamless deployment of Centrifuge RWA pools on any EVM-compatible blockchain.
 
 ## How it works
