@@ -34,6 +34,8 @@ contract Deployer is Script {
     Gateway public gateway;
 
     function deployInvestmentManager(address deployer) public {
+        // If no salt is provided, a pseudo-random salt is generated,
+        // thus effectively making the deployment non-deterministic
         bytes32 salt = vm.envOr(
             "DEPLOYMENT_SALT", keccak256(abi.encodePacked(string(abi.encodePacked(blockhash(block.number - 1)))))
         );
