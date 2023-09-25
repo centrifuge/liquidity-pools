@@ -1,6 +1,8 @@
-# Liquidity Pools [![Github Actions][gha-badge]][gha] 
+# Liquidity Pools [![Github Actions][gha-badge]][gha] [![Foundry][foundry-badge]][foundry] [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://github.com/makerdao/dss-conduits/blob/master/LICENSE)
 [gha]: https://github.com/centrifuge/liquidity-pools/actions
 [gha-badge]: https://github.com/centrifuge/liquidity-pools/actions/workflows/main.yml/badge.svg
+[foundry]: https://getfoundry.sh
+[foundry-badge]: https://img.shields.io/badge/Built%20with-Foundry-FFDB1C.svg
 
 Liquidity Pools enable seamless deployment of Centrifuge RWA pools on any EVM-compatible blockchain.
 
