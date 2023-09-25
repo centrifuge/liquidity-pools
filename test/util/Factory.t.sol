@@ -19,8 +19,10 @@ contract FactoryTest is Test {
     address root;
 
     function setUp() public {
-        mainnetFork = vm.createFork(vm.envString("MAINNET_RPC_URL"));
-        polygonFork = vm.createFork(vm.envString("POLYGON_RPC_URL"));
+        if (vm.envOr("FORK_TESTS", false)) {
+            mainnetFork = vm.createFork(vm.envString("MAINNET_RPC_URL"));
+            polygonFork = vm.createFork(vm.envString("POLYGON_RPC_URL"));
+        }
 
         root = address(new Root(address(new Escrow(address(this))), 48 hours, address(this)));
     }
@@ -33,24 +35,27 @@ contract FactoryTest is Test {
         address poolManager1,
         address poolManager2
     ) public {
-        vm.setEnv("DEPLOYMENT_SALT", "0x290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563");
+        if (vm.envOr("FORK_TESTS", false)) {
+            vm.setEnv("DEPLOYMENT_SALT", "0x290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563");
+            vm.selectFork(mainnetFork);
+            TestSetup testSetup1 = new TestSetup{salt: keccak256(abi.encode(vm.envString("DEPLOYMENT_SALT")))}();
+            testSetup1.setUp();
+            testSetup1.deployLiquidityPool(poolId, 18, "", "", trancheId, 1, address(testSetup1.erc20()));
+            address trancheToken1 =
+                PoolManagerLike(address(testSetup1.poolManager())).getTrancheToken(poolId, trancheId);
+            address root1 = address(testSetup1.root());
 
-        vm.selectFork(mainnetFork);
-        TestSetup testSetup1 = new TestSetup{salt: keccak256(abi.encode(vm.envString("DEPLOYMENT_SALT")))}();
-        testSetup1.setUp();
-        testSetup1.deployLiquidityPool(poolId, 18, "", "", trancheId, 1, address(testSetup1.erc20()));
-        address trancheToken1 = PoolManagerLike(address(testSetup1.poolManager())).getTrancheToken(poolId, trancheId);
-        address root1 = address(testSetup1.root());
+            vm.selectFork(polygonFork);
+            TestSetup testSetup2 = new TestSetup{salt: keccak256(abi.encode(vm.envString("DEPLOYMENT_SALT")))}();
+            testSetup2.setUp();
+            testSetup2.deployLiquidityPool(poolId, 18, "", "", trancheId, 1, address(testSetup2.erc20()));
+            address trancheToken2 =
+                PoolManagerLike(address(testSetup2.poolManager())).getTrancheToken(poolId, trancheId);
+            address root2 = address(testSetup2.root());
 
-        vm.selectFork(polygonFork);
-        TestSetup testSetup2 = new TestSetup{salt: keccak256(abi.encode(vm.envString("DEPLOYMENT_SALT")))}();
-        testSetup2.setUp();
-        testSetup2.deployLiquidityPool(poolId, 18, "", "", trancheId, 1, address(testSetup2.erc20()));
-        address trancheToken2 = PoolManagerLike(address(testSetup2.poolManager())).getTrancheToken(poolId, trancheId);
-        address root2 = address(testSetup2.root());
-
-        assertEq(address(root1), address(root2));
-        assertEq(trancheToken1, trancheToken2);
+            assertEq(address(root1), address(root2));
+            assertEq(trancheToken1, trancheToken2);
+        }
     }
 
     function testTrancheTokenFactoryShouldBeDeterministic(bytes32 salt) public {
