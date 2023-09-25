@@ -23,6 +23,8 @@ env:
 
 jobs:
   test:
+    runs-on: ubuntu-latest-64-cores
+
     env:
       FOUNDRY_FUZZ_RUNS: ${{ inputs.unitFuzzRuns || '100000' }}
       FOUNDRY_INVARIANT_DEPTH: ${{ inputs.invariantDepth || '100' }}

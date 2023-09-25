@@ -149,9 +149,9 @@ contract PoolManagerTest is TestSetup {
         uint128 amount
     ) public {
         decimals = uint8(bound(decimals, 1, 18));
+        initialBalance = uint128(bound(initialBalance, amount, type(uint128).max)); // initialBalance >= amount
         vm.assume(amount > 0);
         vm.assume(currency != 0);
-        vm.assume(initialBalance >= amount);
 
         ERC20 erc20 = _newErc20(tokenName, tokenSymbol, decimals);
 
