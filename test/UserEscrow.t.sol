@@ -34,7 +34,8 @@ contract userEscrowTest is TestSetup {
     function testTransferOutToDestination(uint256 mintAmount, uint256 amountIn, uint256 amountOut) public {
         amountOut = bound(amountOut, 1, type(uint256).max); // amountOut > 0
         amountIn = bound(amountIn, amountOut, type(uint256).max); // amountIn >= amountOut
-        mintAmount = bound(mintAmount, amountOut, type(uint256).max); // mintAmount >= amountOut
+        mintAmount = bound(mintAmount, amountIn, type(uint256).max); // mintAmount >= amountIn
+
         address erc20_ = address(erc20);
         address source = address(0xCAFE);
         address destination = address(0xBEEF);

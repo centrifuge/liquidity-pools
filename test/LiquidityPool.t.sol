@@ -230,10 +230,10 @@ contract LiquidityPoolTest is TestSetup {
         address lPool_ = deploySimplePool();
         LiquidityPool lPool = LiquidityPool(lPool_);
 
-        root.relyContract(address(lPool.share()), self); // give self auth permissions
+        TrancheTokenLike trancheToken = TrancheTokenLike(address(lPool.share()));
+        root.relyContract(address(trancheToken), self); // give self auth permissions
         centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), investor, type(uint64).max); // add investor as member
 
-        TrancheTokenLike trancheToken = TrancheTokenLike(address(lPool.share()));
         trancheToken.mint(investor, amount);
         root.denyContract(address(trancheToken), self); // remove auth permissions from self
 
