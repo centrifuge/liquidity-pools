@@ -5,9 +5,12 @@ import {ERC20} from "./ERC20.sol";
 import {IERC20} from "../interfaces/IERC20.sol";
 
 interface TrancheTokenLike is IERC20 {
+    function mint(address user, uint256 value) external;
+    function burn(address user, uint256 value) external;
     function file(bytes32 what, string memory data) external;
     function file(bytes32 what, address data) external;
     function restrictionManager() external view returns (address);
+    function addLiquidityPool(address forwarder) external;
 }
 
 interface ERC1404Like {
@@ -92,16 +95,16 @@ contract TrancheToken is ERC20, ERC1404Like {
     }
 
     // --- ERC2771Context ---
+    /// @dev Liquidity Pools are considered trusted forwarders
+    ///      for the ERC2771Context implementation of the underlying
+    ///      ERC20 token
     function isTrustedForwarder(address forwarder) public view returns (bool) {
-        // Liquidity Pools are considered trusted forwarders
-        // for the ERC2771Context implementation of the underlying
-        // ERC20 token
         return liquidityPools[forwarder];
     }
 
-    /// @dev    Override for `msg.sender`. Defaults to the original `msg.sender` whenever
-    ///         a call is not performed by the trusted forwarder or the calldata length is less than
-    ///         20 bytes (an address length).
+    /// @dev Override for `msg.sender`. Defaults to the original `msg.sender` whenever
+    ///      a call is not performed by the trusted forwarder or the calldata length is less than
+    ///      20 bytes (an address length).
     function _msgSender() internal view virtual override returns (address sender) {
         if (isTrustedForwarder(msg.sender) && msg.data.length >= 20) {
             // The assembly code is more direct than the Solidity version using `abi.decode`.

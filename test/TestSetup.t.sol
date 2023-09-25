@@ -10,7 +10,7 @@ import {Escrow} from "../src/Escrow.sol";
 import {UserEscrow} from "../src/UserEscrow.sol";
 import {LiquidityPoolFactory, TrancheTokenFactory} from "../src/util/Factory.sol";
 import {LiquidityPool} from "../src/LiquidityPool.sol";
-import {TrancheToken} from "../src/token/Tranche.sol";
+import {TrancheToken, TrancheTokenLike} from "../src/token/Tranche.sol";
 import {ERC20} from "../src/token/ERC20.sol";
 import {Gateway} from "../src/gateway/Gateway.sol";
 import {RestrictionManagerLike, RestrictionManager} from "../src/token/RestrictionManager.sol";

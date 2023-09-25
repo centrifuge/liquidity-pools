@@ -13,9 +13,6 @@ interface PoolManagerLike {
 }
 
 contract FactoryTest is Test {
-    uint256 mainnetFork;
-    uint256 polygonFork;
-
     address root;
 
     function setUp() public {

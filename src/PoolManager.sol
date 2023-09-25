@@ -37,12 +37,8 @@ interface EscrowLike {
     function approve(address token, address spender, uint256 value) external;
 }
 
-interface ERC2771Like {
-    function addLiquidityPool(address forwarder) external;
-}
-
 interface AuthLike {
-    function rely(address usr) external;
+    function rely(address user) external;
 }
 
 /// @dev Centrifuge pools
@@ -307,11 +303,9 @@ contract PoolManager is Auth {
         currencyIdToAddress[currency] = currencyAddress;
         currencyAddressToId[currencyAddress] = currency;
 
-        // Enable taking the currency out of escrow in case of redemptions
+        // Give investment manager infinite approval for currency in the escrow
+        // to transfer to the user escrow on redeem, withdraw or transfer
         escrow.approve(currencyAddress, investmentManager.userEscrow(), type(uint256).max);
-
-        // Enable taking the currency out of escrow in case of decrease invest orders
-        escrow.approve(currencyAddress, address(investmentManager), type(uint256).max);
 
         emit AddCurrency(currency, currencyAddress);
     }
@@ -367,26 +361,36 @@ contract PoolManager is Auth {
 
     function deployLiquidityPool(uint64 poolId, bytes16 trancheId, address currency) public returns (address) {
         Tranche storage tranche = pools[poolId].tranches[trancheId];
-        require(tranche.token != address(0), "PoolManager/tranche-does-not-exist"); // Tranche must have been added
-        require(isAllowedAsInvestmentCurrency(poolId, currency), "PoolManager/currency-not-supported"); // Currency must be supported by pool
+        require(tranche.token != address(0), "PoolManager/tranche-does-not-exist");
+        require(isAllowedAsInvestmentCurrency(poolId, currency), "PoolManager/currency-not-supported");
 
         address liquidityPool = tranche.liquidityPools[currency];
-        require(liquidityPool == address(0), "PoolManager/liquidityPool-already-deployed");
+        require(liquidityPool == address(0), "PoolManager/liquidity-pool-already-deployed");
 
+        // Rely investment manager on liquidity pool so it can mint tokens
         address[] memory liquidityPoolWards = new address[](1);
         liquidityPoolWards[0] = address(investmentManager);
+
+        // Deploy liquidity pool
         liquidityPool = liquidityPoolFactory.newLiquidityPool(
             poolId, trancheId, currency, tranche.token, address(investmentManager), liquidityPoolWards
         );
-
         tranche.liquidityPools[currency] = liquidityPool;
+
+        // Rely liquidity pool on investment manager so it can send outgoing calls
         AuthLike(address(investmentManager)).rely(liquidityPool);
 
-        // Enable LP to take the tranche tokens out of escrow in case of investments
-        AuthLike(tranche.token).rely(liquidityPool); // Add liquidityPool as ward on tranche token
-        ERC2771Like(tranche.token).addLiquidityPool(liquidityPool);
-        escrow.approve(liquidityPool, address(investmentManager), type(uint256).max); // Approve investment manager on tranche token for coordinating transfers
-        escrow.approve(liquidityPool, liquidityPool, type(uint256).max); // Approve liquidityPool on tranche token to be able to burn
+        // Link liquidity pool to tranche token
+        AuthLike(tranche.token).rely(liquidityPool);
+        TrancheTokenLike(tranche.token).addLiquidityPool(liquidityPool);
+
+        // Give investment manager infinite approval for tranche tokens
+        // in the escrow to transfer to the user on deposit or mint
+        escrow.approve(tranche.token, address(investmentManager), type(uint256).max);
+
+        // Give investment manager infinite approval for tranche tokens
+        // in the escrow to burn on executed redemptions
+        escrow.approve(tranche.token, liquidityPool, type(uint256).max);
 
         emit DeployLiquidityPool(poolId, trancheId, liquidityPool);
         return liquidityPool;
@@ -416,7 +420,7 @@ contract PoolManager is Auth {
     /// @return value - safely converted without data loss
     function _toUint128(uint256 _value) internal pure returns (uint128 value) {
         if (_value > type(uint128).max) {
-            revert("InvestmentManager/uint128-overflow");
+            revert("PoolManager/uint128-overflow");
         } else {
             value = uint128(_value);
         }

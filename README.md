@@ -1,8 +1,13 @@
-# Liquidity Pools
+# Liquidity Pools [![Github Actions][gha-badge]][gha] [![Foundry][foundry-badge]][foundry] [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://github.com/centrifuge/liquidity-pools/blob/main/LICENSE)
+[gha]: https://github.com/centrifuge/liquidity-pools/actions
+[gha-badge]: https://github.com/centrifuge/liquidity-pools/actions/workflows/ci.yml/badge.svg
+[foundry]: https://getfoundry.sh
+[foundry-badge]: https://img.shields.io/badge/Built%20with-Foundry-FFDB1C.svg
+
 Liquidity Pools enable seamless deployment of Centrifuge RWA pools on any EVM-compatible blockchain.
 
 ## How it works
-![Architecture](./assets/architecture.png)
+![Architecture](./assets/architecture.svg)
 
 Investors can invest in multiple tranches for each RWA pool. Each of these tranches is a separate deployment of a Liquidity Pool and a Tranche Token.
 - [**Liquidity Pool**](https://github.com/centrifuge/liquidity-pools/blob/main/src/LiquidityPool.sol): A [ERC-4626](https://ethereum.org/en/developers/docs/standards/tokens/erc-4626/) compatible contract that enables investors to deposit and withdraw stablecoins to invest in tranches of pools.

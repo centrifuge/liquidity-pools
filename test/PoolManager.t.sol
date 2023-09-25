@@ -578,13 +578,12 @@ contract PoolManagerTest is TestSetup {
 
     function testAddingMultipleTranchesWorks(
         uint64 poolId,
-        bytes16[] calldata trancheIds,
+        bytes16[4] calldata trancheIds,
         string memory tokenName,
         string memory tokenSymbol,
         uint8 decimals
     ) public {
         decimals = uint8(bound(decimals, 1, 18));
-        vm.assume(trancheIds.length > 0 && trancheIds.length < 5);
         vm.assume(!hasDuplicates(trancheIds));
         centrifugeChain.addPool(poolId);
 
@@ -760,12 +759,12 @@ contract PoolManagerTest is TestSetup {
         poolManager.deployTranche(poolId, trancheId);
 
         poolManager.deployLiquidityPool(poolId, trancheId, address(erc20));
-        vm.expectRevert(bytes("PoolManager/liquidityPool-already-deployed"));
+        vm.expectRevert(bytes("PoolManager/liquidity-pool-already-deployed"));
         poolManager.deployLiquidityPool(poolId, trancheId, address(erc20));
     }
 
     // helpers
-    function hasDuplicates(bytes16[] calldata array) internal pure returns (bool) {
+    function hasDuplicates(bytes16[4] calldata array) internal pure returns (bool) {
         uint256 length = array.length;
         for (uint256 i = 0; i < length; i++) {
             for (uint256 j = i + 1; j < length; j++) {
