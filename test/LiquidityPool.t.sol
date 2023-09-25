@@ -1309,29 +1309,6 @@ contract LiquidityPoolTest is TestSetup {
         assertApproxEqAbs(erc20.balanceOf(investor), investorBalanceBefore + amount / 2, 1);
     }
 
-    function testCollectDeposit(uint128 amount) public {
-        amount = uint128(bound(amount, 2, MAX_UINT128));
-
-        address lPool_ = deploySimplePool();
-        LiquidityPool lPool = LiquidityPool(lPool_);
-        centrifugeChain.updateTrancheTokenPrice(lPool.poolId(), lPool.trancheId(), defaultCurrencyId, defaultPrice);
-        centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), self, type(uint64).max);
-
-        lPool.collectDeposit(self);
-    }
-
-    function testCollectRedeem(uint128 amount) public {
-        amount = uint128(bound(amount, 2, MAX_UINT128));
-
-        address lPool_ = deploySimplePool();
-        LiquidityPool lPool = LiquidityPool(lPool_);
-        centrifugeChain.allowInvestmentCurrency(lPool.poolId(), defaultCurrencyId);
-        centrifugeChain.updateTrancheTokenPrice(lPool.poolId(), lPool.trancheId(), defaultCurrencyId, defaultPrice);
-
-        centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), self, type(uint64).max);
-        lPool.collectRedeem(self);
-    }
-
     // helpers
     function deposit(address _lPool, address investor, uint256 amount) public {
         LiquidityPool lPool = LiquidityPool(_lPool);
