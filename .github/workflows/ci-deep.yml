@@ -1,4 +1,4 @@
-name: ci-deep
+name: "CI Deep"
 
 on:
   schedule:
