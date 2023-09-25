@@ -1,9 +1,5 @@
 name: "CI"
 
-concurrency:
-  cancel-in-progress: true
-  group: ${{github.workflow}}-${{github.ref}}
-
 on:
   pull_request:
   push:
@@ -24,50 +20,16 @@ jobs:
         with:
           version: nightly
 
-      - name: "Show the Foundry config"
-        run: "forge config"
-
       - name: Run Forge build
         run: |
           forge --version
           forge build --sizes
         id: build
 
-      - name: "Cache the build so that it can be re-used by the other jobs"
-        uses: "actions/cache/save@v3"
-        with:
-          path: "out"
-          key: "foundry-build-${{ github.sha }}"
-
-      - name: "Store the contract artifacts in CI"
-        uses: "actions/upload-artifact@v3"
-        with:
-          name: "contract-artifacts"
-          path: "artifacts"
-
-      - name: "Add build summary"
+      - name: Run Forge tests
         run: |
-          echo "## Build result" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
-
-  test:
-    needs: ["build"]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: "Install Foundry"
-        uses: "foundry-rs/foundry-toolchain@v1"
-
-      - name: "Restore the cached build"
-        uses: "actions/cache/restore@v3"
-        with:
-          fail-on-cache-miss: true
-          key: "foundry-build-${{ github.sha }}"
-          path: "out"
-
-      - name: "Run the tests against the build"
-        run: "forge test"
+          forge test -vvv
+        id: test
         env:
           FOUNDRY_PROFILE: ci
           CENTRIFUGE_CHAIN_ORIGIN: ${{ secrets.CENTRIFUGE_CHAIN_ORIGIN }}
@@ -75,26 +37,48 @@ jobs:
           POLYGON_RPC_URL: ${{ secrets.POLYGON_RPC_URL }}
           SETUP_TEST_DATA: false
 
-      - name: "Add test summary"
-        run: |
-          echo "## Unit tests result" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
-
-  lint:
-    needs: ["build"]
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
 
-      - name: "Install Foundry"
-        uses: "foundry-rs/foundry-toolchain@v1"
-
-      - name: "Restore the cached build"
-        uses: "actions/cache/restore@v3"
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
         with:
-          fail-on-cache-miss: true
-          key: "foundry-build-${{ github.sha }}"
-          path: "out"
+          version: nightly
+
+      - name: Run Forge build
+        run: |
+          forge --version
+          forge build --sizes
+        id: build
+
+      - name: Run Forge tests
+        run: |
+          forge test -vvv
+        id: test
+        env:
+          FOUNDRY_PROFILE: ci
+          CENTRIFUGE_CHAIN_ORIGIN: ${{ secrets.CENTRIFUGE_CHAIN_ORIGIN }}
+          MAINNET_RPC_URL: ${{ secrets.MAINNET_RPC_URL }}
+          POLYGON_RPC_URL: ${{ secrets.POLYGON_RPC_URL }}
+          SETUP_TEST_DATA: false
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Run Forge build
+        run: |
+          forge --version
+          forge build --sizes
+        id: build
 
       - name: Check formatting
         run: forge fmt --check
@@ -102,7 +86,6 @@ jobs:
           FOUNDRY_PROFILE: ci
 
   coverage:
-    needs: ["build"]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -145,7 +128,6 @@ jobs:
           minimum-coverage: 60 # Set coverage threshold.
     
   slither-analyze:
-    needs: ["build"]
     runs-on: "ubuntu-latest"
     permissions:
       actions: "read"
@@ -163,13 +145,8 @@ jobs:
         with:
           fail-on: "none"
           sarif: "results.sarif"
-          solc-version: "0.8.21"
+          solc-version: "0.8.19"
           target: "src/"
-
-      - name: "Upload SARIF file to GitHub code scanning"
-        uses: "github/codeql-action/upload-sarif@v2"
-        with:
-          sarif_file: ${{ steps.slither.outputs.sarif }}
 
       - name: "Add Slither summary"
         run: |
