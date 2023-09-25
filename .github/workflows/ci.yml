@@ -102,6 +102,7 @@ jobs:
           FOUNDRY_PROFILE: ci
 
   coverage:
+    needs: ["build"]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
