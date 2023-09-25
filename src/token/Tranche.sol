@@ -5,6 +5,8 @@ import {ERC20} from "./ERC20.sol";
 import {IERC20} from "../interfaces/IERC20.sol";
 
 interface TrancheTokenLike is IERC20 {
+    function mint(address user, uint256 value) external;
+    function burn(address user, uint256 value) external;
     function file(bytes32 what, string memory data) external;
     function file(bytes32 what, address data) external;
     function restrictionManager() external view returns (address);

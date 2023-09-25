@@ -33,6 +33,7 @@ interface LiquidityPoolLike is ERC20Like {
     function poolId() external returns (uint64);
     function trancheId() external returns (bytes16);
     function asset() external view returns (address);
+    function share() external view returns (address);
     function hasMember(address) external returns (bool);
     function updatePrice(uint128 price) external;
     function checkTransferRestriction(address from, address to, uint256 value) external view returns (bool);
@@ -319,7 +320,8 @@ contract InvestmentManager is Auth {
         lpValues.maxMint = lpValues.maxMint + trancheTokensPayout;
         lpValues.remainingInvestOrder = remainingInvestOrder;
 
-        LiquidityPoolLike(liquidityPool).mint(address(escrow), trancheTokensPayout); // mint to escrow. Recipient can claim by calling withdraw / redeem
+        ERC20Like trancheToken = ERC20Like(LiquidityPoolLike(liquidityPool).share());
+        trancheToken.mint(address(escrow), trancheTokensPayout); // mint to escrow. Recipient can claim by calling withdraw / redeem
         _updateLiquidityPoolPrice(liquidityPool, currencyPayout, trancheTokensPayout);
 
         emit ExecutedCollectInvest(poolId, trancheId, recipient, currency, currencyPayout, trancheTokensPayout);
@@ -345,7 +347,10 @@ contract InvestmentManager is Auth {
         lpValues.remainingRedeemOrder = remainingRedeemOrder;
 
         userEscrow.transferIn(_currency, address(escrow), recipient, currencyPayout);
-        LiquidityPoolLike(liquidityPool).burn(address(escrow), trancheTokensPayout); // burned redeemed tokens from escrow
+
+        ERC20Like trancheToken = ERC20Like(LiquidityPoolLike(liquidityPool).share());
+        trancheToken.burn(address(escrow), trancheTokensPayout); // burned redeemed tokens from escrow
+
         _updateLiquidityPoolPrice(liquidityPool, currencyPayout, trancheTokensPayout);
 
         emit ExecutedCollectRedeem(poolId, trancheId, recipient, currency, currencyPayout, trancheTokensPayout);
