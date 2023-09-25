@@ -12,31 +12,10 @@ verbosity = 3
 
 [profile.default.fuzz]
 runs = 100
+max_test_rejects = 1_000_000 # Number of times `vm.assume` can fail
 
 [profile.default.invariant]
 runs           = 10
 depth          = 100
 call_override  = false
 fail_on_revert = false
-
-[profile.ci]
-optimizer = true
-optimizer_runs = 200
-
-[profile.ci.fuzz]
-runs = 1000
-max_test_rejects = 262144
-
-[profile.ci.invariant]
-depth = 1000
-
-[profile.deep]
-optimizer = true
-optimizer_runs = 200
-
-[profile.deep.fuzz]
-runs = 1000 # TODO: increase
-max_test_rejects = 262144
-
-[profile.deep.invariant]
-depth = 1000

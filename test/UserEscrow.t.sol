@@ -10,7 +10,7 @@ interface ERC20Like {
 
 contract userEscrowTest is TestSetup {
     function testTransferIn(uint256 mintAmount, uint256 amount) public {
-        vm.assume(mintAmount >= amount);
+        mintAmount = bound(mintAmount, amount, type(uint256).max); // mintAmount >= amount
         vm.assume(amount > 0);
         address erc20_ = address(erc20);
         address source = address(0xCAFE);
@@ -32,8 +32,8 @@ contract userEscrowTest is TestSetup {
     }
 
     function testTransferOutToDestination(uint256 mintAmount, uint256 amountIn, uint256 amountOut) public {
-        vm.assume(mintAmount >= amountIn);
-        vm.assume(amountIn >= amountOut);
+        mintAmount = bound(mintAmount, amountOut, type(uint256).max); // mintAmount >= amountOut
+        amountIn = bound(amountIn, amountOut, type(uint256).max); // amountIn >= amountOut
         vm.assume(amountOut > 0);
         address erc20_ = address(erc20);
         address source = address(0xCAFE);
@@ -61,8 +61,8 @@ contract userEscrowTest is TestSetup {
     }
 
     function testTransferOutToNotDestination(uint256 mintAmount, uint256 amountIn, uint256 amountOut) public {
-        vm.assume(mintAmount >= amountIn);
-        vm.assume(amountIn >= amountOut);
+        mintAmount = bound(mintAmount, amountIn, type(uint256).max); // mintAmount >= amountIn
+        amountIn = bound(amountIn, amountOut, type(uint256).max); // amountIn >= amountOut
         vm.assume(amountOut > 0);
         vm.assume(amountOut < type(uint256).max);
         address erc20_ = address(erc20);
