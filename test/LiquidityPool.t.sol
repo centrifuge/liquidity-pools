@@ -206,19 +206,22 @@ contract LiquidityPoolTest is TestSetup {
         address lPool_ = deploySimplePool();
         LiquidityPool lPool = LiquidityPool(lPool_);
 
-        vm.expectRevert(bytes("Auth/not-authorized"));
-        lPool.mint(investor, amount);
-
-        root.relyContract(lPool_, self); // give self auth permissions
+        TrancheTokenLike trancheToken = TrancheTokenLike(address(lPool.share()));
+        root.denyContract(address(trancheToken), self);
 
         vm.expectRevert(bytes("RestrictionManager/destination-not-a-member"));
-        lPool.mint(investor, amount);
-        centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), investor, type(uint64).max); // add investor as member
+        trancheToken.mint(investor, amount);
+        centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), investor, type(uint64).max);
+
+        vm.expectRevert(bytes("Auth/not-authorized"));
+        trancheToken.mint(investor, amount);
+
+        root.relyContract(address(trancheToken), self); // give self auth permissions
 
         // success
-        lPool.mint(investor, amount);
+        trancheToken.mint(investor, amount);
         assertEq(lPool.balanceOf(investor), amount);
-        assertEq(lPool.balanceOf(investor), lPool.share().balanceOf(investor));
+        assertEq(lPool.balanceOf(investor), trancheToken.balanceOf(investor));
     }
 
     function testBurn(uint256 amount) public {
@@ -227,26 +230,27 @@ contract LiquidityPoolTest is TestSetup {
         address lPool_ = deploySimplePool();
         LiquidityPool lPool = LiquidityPool(lPool_);
 
-        root.relyContract(lPool_, self); // give self auth permissions
+        TrancheTokenLike trancheToken = TrancheTokenLike(address(lPool.share()));
+        root.relyContract(address(trancheToken), self); // give self auth permissions
         centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), investor, type(uint64).max); // add investor as member
 
-        lPool.mint(investor, amount);
-        root.denyContract(lPool_, self); // remove auth permissions from self
+        trancheToken.mint(investor, amount);
+        root.denyContract(address(trancheToken), self); // remove auth permissions from self
 
         vm.expectRevert(bytes("Auth/not-authorized"));
-        lPool.burn(investor, amount);
+        trancheToken.burn(investor, amount);
 
-        root.relyContract(lPool_, self); // give self auth permissions
+        root.relyContract(address(trancheToken), self); // give self auth permissions
         vm.expectRevert(bytes("ERC20/insufficient-allowance"));
-        lPool.burn(investor, amount);
+        trancheToken.burn(investor, amount);
 
         // success
         vm.prank(investor);
-        lPool.approve(lPool_, amount); // approve LP to burn tokens
-        lPool.burn(investor, amount);
+        lPool.approve(self, amount); // approve to burn tokens
+        trancheToken.burn(investor, amount);
 
         assertEq(lPool.balanceOf(investor), 0);
-        assertEq(lPool.balanceOf(investor), lPool.share().balanceOf(investor));
+        assertEq(lPool.balanceOf(investor), trancheToken.balanceOf(investor));
     }
 
     function testTransferFrom(uint256 amount, uint256 transferAmount) public {

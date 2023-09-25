@@ -79,6 +79,4 @@ interface IERC20 {
     function name() external view returns (string memory);
     function symbol() external view returns (string memory);
     function decimals() external view returns (uint8);
-    function mint(address user, uint256 value) external;
-    function burn(address user, uint256 value) external;
 }

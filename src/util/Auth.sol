@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Copyright (C) Centrifuge 2020, based on MakerDAO dss https://github.com/makerdao/dss
 pragma solidity 0.8.21;
 
 /// @title  Auth
 /// @notice Simple authentication pattern
+/// @author Based on code from https://github.com/makerdao/dss
 contract Auth {
     mapping(address => uint256) public wards;
 

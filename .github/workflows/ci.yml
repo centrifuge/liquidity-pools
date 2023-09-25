@@ -1,9 +1,9 @@
-name: pull-request
+name: "CI"
 
 on: [pull_request]
 
 env:
-  FOUNDRY_PROFILE: pull_request
+  FOUNDRY_PROFILE: ci
 
 jobs:
   test:
@@ -31,7 +31,7 @@ jobs:
           forge test -vvv
         id: test
         env:
-          FOUNDRY_PROFILE: pull_request
+          FOUNDRY_PROFILE: ci
           CENTRIFUGE_CHAIN_ORIGIN: ${{ secrets.CENTRIFUGE_CHAIN_ORIGIN }}
           MAINNET_RPC_URL: ${{ secrets.MAINNET_RPC_URL }}
           POLYGON_RPC_URL: ${{ secrets.POLYGON_RPC_URL }}
@@ -57,7 +57,7 @@ jobs:
       - name: Check formatting
         run: forge fmt --check
         env:
-          FOUNDRY_PROFILE: pull_request
+          FOUNDRY_PROFILE: ci
 
   coverage:
     runs-on: ubuntu-latest
@@ -88,7 +88,7 @@ jobs:
       # not as useful, and this action cannot fail CI based on a minimum coverage threshold, which
       # is why we use both in this way.
       - name: Post coverage report
-        if: github.event_name == 'pull_request' # This action fails when ran outside of a pull request.
+        if: github.event_name == 'ci' # This action fails when ran outside of a pull request.
         uses: romeovs/lcov-reporter-action@v0.3.1
         with:
           delete-old-comments: true

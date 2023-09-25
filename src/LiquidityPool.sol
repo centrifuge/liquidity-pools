@@ -15,6 +15,8 @@ interface ERC20PermitLike {
 
 interface TrancheTokenLike is IERC20, ERC20PermitLike {
     function checkTransferRestriction(address from, address to, uint256 value) external view returns (bool);
+    function mint(address user, uint256 value) external;
+    function burn(address user, uint256 value) external;
 }
 
 interface InvestmentManagerLike {
@@ -334,16 +336,6 @@ contract LiquidityPool is Auth, IERC4626 {
         (bool success, bytes memory data) = address(share).call(bytes.concat(msg.data, bytes20(msg.sender)));
         _successCheck(success);
         return abi.decode(data, (bool));
-    }
-
-    function mint(address, uint256) public auth {
-        (bool success,) = address(share).call(bytes.concat(msg.data, bytes20(address(this))));
-        _successCheck(success);
-    }
-
-    function burn(address, uint256) public auth {
-        (bool success,) = address(share).call(bytes.concat(msg.data, bytes20(address(this))));
-        _successCheck(success);
     }
 
     // --- Pricing ---
