@@ -34,8 +34,8 @@ contract Deployer is Script {
     Gateway public gateway;
 
     function deployInvestmentManager(address deployer) public {
-        bytes32 salt = keccak256(
-            abi.encodePacked(vm.envOr("DEPLOYMENT_SALT", string(abi.encodePacked(blockhash(block.number - 1)))))
+        bytes32 salt = vm.envOr(
+            "DEPLOYMENT_SALT", keccak256(abi.encodePacked(string(abi.encodePacked(blockhash(block.number - 1)))))
         );
         escrow = new Escrow{salt: salt}(deployer);
         userEscrow = new UserEscrow();

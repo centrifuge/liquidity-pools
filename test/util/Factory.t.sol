@@ -33,7 +33,7 @@ contract FactoryTest is Test {
         address poolManager1,
         address poolManager2
     ) public {
-        vm.setEnv("DEPLOYMENT_SALT", "testSalt");
+        vm.setEnv("DEPLOYMENT_SALT", "0x290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563");
 
         vm.selectFork(mainnetFork);
         TestSetup testSetup1 = new TestSetup{salt: keccak256(abi.encode(vm.envString("DEPLOYMENT_SALT")))}();
