@@ -10,8 +10,8 @@ interface ERC20Like {
 
 contract userEscrowTest is TestSetup {
     function testTransferIn(uint256 mintAmount, uint256 amount) public {
+        amount = bound(amount, 1, type(uint256).max); // amount > 0
         mintAmount = bound(mintAmount, amount, type(uint256).max); // mintAmount >= amount
-        vm.assume(amount > 0);
         address erc20_ = address(erc20);
         address source = address(0xCAFE);
         address destination = address(0xBEEF);
@@ -32,9 +32,9 @@ contract userEscrowTest is TestSetup {
     }
 
     function testTransferOutToDestination(uint256 mintAmount, uint256 amountIn, uint256 amountOut) public {
+        amountOut = bound(amountOut, 1, type(uint256).max); // amountOut > 0
         amountIn = bound(amountIn, amountOut, type(uint256).max); // amountIn >= amountOut
         mintAmount = bound(mintAmount, amountOut, type(uint256).max); // mintAmount >= amountOut
-        vm.assume(amountOut > 0);
         address erc20_ = address(erc20);
         address source = address(0xCAFE);
         address destination = address(0xBEEF);
@@ -61,10 +61,9 @@ contract userEscrowTest is TestSetup {
     }
 
     function testTransferOutToNotDestination(uint256 mintAmount, uint256 amountIn, uint256 amountOut) public {
+        amountOut = bound(amountOut, 1, type(uint256).max - 1); // 0 < amountOut < type(uint256).max
         amountIn = bound(amountIn, amountOut, type(uint256).max); // amountIn >= amountOut
         mintAmount = bound(mintAmount, amountIn, type(uint256).max); // mintAmount >= amountIn
-        vm.assume(amountOut > 0);
-        vm.assume(amountOut < type(uint256).max);
         address erc20_ = address(erc20);
         address source = address(0xCAFE);
         address destination = address(0xBEEF);
