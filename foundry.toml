@@ -19,24 +19,24 @@ depth          = 100
 call_override  = false
 fail_on_revert = false
 
-[profile.pull_request]
+[profile.ci]
 optimizer = true
 optimizer_runs = 200
 
-[profile.pull_request.fuzz]
+[profile.ci.fuzz]
 runs = 1000
 max_test_rejects = 262144
 
-[profile.pull_request.invariant]
+[profile.ci.invariant]
 depth = 1000
 
-[profile.push_to_main]
+[profile.deep]
 optimizer = true
 optimizer_runs = 200
 
-[profile.push_to_main.fuzz]
+[profile.deep.fuzz]
 runs = 1000 # TODO: increase
 max_test_rejects = 262144
 
-[profile.push_to_main.invariant]
+[profile.deep.invariant]
 depth = 1000
