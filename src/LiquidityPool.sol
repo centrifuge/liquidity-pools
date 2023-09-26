@@ -15,6 +15,8 @@ interface ERC20PermitLike {
 
 interface TrancheTokenLike is IERC20, ERC20PermitLike {
     function checkTransferRestriction(address from, address to, uint256 value) external view returns (bool);
+    function mint(address user, uint256 value) external;
+    function burn(address user, uint256 value) external;
 }
 
 interface InvestmentManagerLike {
@@ -43,8 +45,6 @@ interface InvestmentManagerLike {
     function previewRedeem(address liquidityPool, address user, uint256 shares) external view returns (uint256);
     function requestRedeem(address liquidityPool, uint256 shares, address receiver) external;
     function requestDeposit(address liquidityPool, uint256 assets, address receiver) external;
-    function collectDeposit(address liquidityPool, address receiver) external;
-    function collectRedeem(address liquidityPool, address receiver) external;
     function decreaseDepositRequest(address liquidityPool, uint256 assets, address receiver) external;
     function decreaseRedeemRequest(address liquidityPool, uint256 shares, address receiver) external;
     function cancelDepositRequest(address liquidityPool, address receiver) external;
@@ -97,8 +97,6 @@ contract LiquidityPool is Auth, IERC4626 {
     event DecreaseRedeemRequest(address indexed owner, uint256 shares);
     event CancelDepositRequest(address indexed owner);
     event CancelRedeemRequest(address indexed owner);
-    event DepositCollect(address indexed owner);
-    event RedeemCollect(address indexed owner);
     event PriceUpdate(uint128 price);
 
     constructor(uint64 poolId_, bytes16 trancheId_, address asset_, address share_, address investmentManager_) {
@@ -126,7 +124,7 @@ contract LiquidityPool is Auth, IERC4626 {
     }
 
     // --- ERC4626 functions ---
-    /// @return Total value of the shares, denominated in the asset of this Liquidity Pools
+    /// @return Total value of the shares, denominated in the asset of this Liquidity Pool
     function totalAssets() public view returns (uint256) {
         return investmentManager.totalAssets(address(this), totalSupply());
     }
@@ -156,14 +154,14 @@ contract LiquidityPool is Auth, IERC4626 {
     }
 
     /// @notice Collect shares for deposited assets after Centrifuge epoch execution.
-    ///         maxDeposit is the max amount of shares that can be collected.
+    ///         maxDeposit is the max amount of assets that can be deposited.
     function deposit(uint256 assets, address receiver) public returns (uint256 shares) {
         shares = investmentManager.processDeposit(address(this), assets, receiver, msg.sender);
         emit Deposit(address(this), receiver, assets, shares);
     }
 
     /// @notice Collect shares for deposited assets after Centrifuge epoch execution.
-    ///         maxMint is the max amount of shares that can be collected.
+    ///         maxMint is the max amount of shares that can be minted.
     function mint(uint256 shares, address receiver) public returns (uint256 assets) {
         assets = investmentManager.processMint(address(this), shares, receiver, msg.sender);
         emit Deposit(address(this), receiver, assets, shares);
@@ -297,23 +295,6 @@ contract LiquidityPool is Auth, IERC4626 {
         shares = investmentManager.userRedeemRequest(address(this), owner);
     }
 
-    // --- Miscellaneous investment functions ---
-    /// @notice Trigger collecting the deposited funds.
-    /// @dev    In normal circumstances, this should happen automatically on Centrifuge Chain.
-    ///         This function is only included as a fallback.
-    function collectDeposit(address receiver) public {
-        investmentManager.collectDeposit(address(this), receiver);
-        emit DepositCollect(receiver);
-    }
-
-    /// @notice Trigger collecting the deposited tokens.
-    /// @dev    In normal circumstances, this should happen automatically on Centrifuge Chain.
-    ///         This function is only included as a fallback.
-    function collectRedeem(address receiver) public {
-        investmentManager.collectRedeem(address(this), receiver);
-        emit RedeemCollect(receiver);
-    }
-
     // --- ERC20 overrides ---
     function name() public view returns (string memory) {
         return share.name();
@@ -355,16 +336,6 @@ contract LiquidityPool is Auth, IERC4626 {
         (bool success, bytes memory data) = address(share).call(bytes.concat(msg.data, bytes20(msg.sender)));
         _successCheck(success);
         return abi.decode(data, (bool));
-    }
-
-    function mint(address, uint256) public auth {
-        (bool success,) = address(share).call(bytes.concat(msg.data, bytes20(address(this))));
-        _successCheck(success);
-    }
-
-    function burn(address, uint256) public auth {
-        (bool success,) = address(share).call(bytes.concat(msg.data, bytes20(address(this))));
-        _successCheck(success);
     }
 
     // --- Pricing ---
