@@ -3,7 +3,6 @@ pragma solidity 0.8.21;
 
 import {Auth} from "./util/Auth.sol";
 import {MathLib} from "./util/MathLib.sol";
-import {SafeTransferLib} from "./util/SafeTransferLib.sol";
 
 interface GatewayLike {
     function increaseInvestOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount)
@@ -148,7 +147,8 @@ contract InvestmentManager is Auth {
     ///         If an amount of 0 is passed, this triggers cancelling outstanding deposit orders.
     /// @dev    The user currency amount required to fulfill the deposit request have to be locked,
     ///         even though the tranche token payout can only happen after epoch execution.
-    function requestDeposit(address liquidityPool, uint256 currencyAmount, address user) public auth {
+    /// @return `true` if the deposit request was successful and the currency should be transferred to the escrow
+    function requestDeposit(address liquidityPool, uint256 currencyAmount, address user) public auth returns (bool) {
         LiquidityPoolLike lPool = LiquidityPoolLike(liquidityPool);
         uint128 _currencyAmount = _toUint128(currencyAmount);
         require(_currencyAmount != 0, "InvestmentManager/zero-amount-not-allowed");
@@ -164,17 +164,12 @@ contract InvestmentManager is Auth {
             "InvestmentManager/transfer-not-allowed"
         );
 
-        // Transfer the currency amount from user to escrow (lock currency in escrow)
-        // Checks actual balance difference to support fee-on-transfer tokens
-        uint256 preBalance = ERC20Like(currency).balanceOf(address(escrow));
-        SafeTransferLib.safeTransferFrom(currency, user, address(escrow), _currencyAmount);
-        uint256 postBalance = ERC20Like(currency).balanceOf(address(escrow));
-        uint128 transferredAmount = _toUint128(postBalance - preBalance);
-
         LPValues storage lpValues = orderbook[liquidityPool][user];
-        lpValues.remainingInvestOrder = lpValues.remainingInvestOrder + transferredAmount;
+        lpValues.remainingInvestOrder = lpValues.remainingInvestOrder + _currencyAmount;
 
-        gateway.increaseInvestOrder(poolId, trancheId, user, currencyId, transferredAmount);
+        gateway.increaseInvestOrder(poolId, trancheId, user, currencyId, _currencyAmount);
+
+        return true;
     }
 
     /// @notice Request tranche token redemption. Liquidity pools have to request redemptions from Centrifuge before actual currency payouts can be done.
@@ -182,7 +177,11 @@ contract InvestmentManager is Auth {
     ///         liquidity pools can proceed with currency payouts in case their orders got fulfilled.
     ///         If an amount of 0 is passed, this triggers cancelling outstanding redemption orders.
     /// @dev    The user tranche tokens required to fulfill the redemption request have to be locked, even though the currency payout can only happen after epoch execution.
-    function requestRedeem(address liquidityPool, uint256 trancheTokenAmount, address user) public auth {
+    function requestRedeem(address liquidityPool, uint256 trancheTokenAmount, address user)
+        public
+        auth
+        returns (bool)
+    {
         LiquidityPoolLike lPool = LiquidityPoolLike(liquidityPool);
         uint128 _trancheTokenAmount = _toUint128(trancheTokenAmount);
         require(_trancheTokenAmount != 0, "InvestmentManager/zero-amount-not-allowed");
@@ -195,13 +194,12 @@ contract InvestmentManager is Auth {
         // You cannot redeem using a disallowed investment currency, instead another LP will have to be used
         require(poolManager.isAllowedAsInvestmentCurrency(poolId, currency), "InvestmentManager/currency-not-allowed");
 
-        // Transfer the tranche token amount from user to escrow (lock tranche tokens in escrow)
-        lPool.transferFrom(user, address(escrow), _trancheTokenAmount);
-
         LPValues storage lpValues = orderbook[liquidityPool][user];
         lpValues.remainingRedeemOrder = lpValues.remainingRedeemOrder + _trancheTokenAmount;
 
         gateway.increaseRedeemOrder(poolId, trancheId, user, currencyId, _trancheTokenAmount);
+
+        return true;
     }
 
     function decreaseDepositRequest(address liquidityPool, uint256 _currencyAmount, address user) public auth {

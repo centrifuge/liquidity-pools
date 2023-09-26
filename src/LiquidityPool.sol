@@ -5,6 +5,7 @@ import {Auth} from "./util/Auth.sol";
 import {MathLib} from "./util/MathLib.sol";
 import {IERC20} from "./interfaces/IERC20.sol";
 import {IERC4626} from "./interfaces/IERC4626.sol";
+import {SafeTransferLib} from "./util/SafeTransferLib.sol";
 
 interface ERC20PermitLike {
     function permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
@@ -20,6 +21,7 @@ interface TrancheTokenLike is IERC20, ERC20PermitLike {
 }
 
 interface InvestmentManagerLike {
+    function escrow() external view returns (address);
     function processDeposit(address liquidityPool, uint256 assets, address receiver, address owner)
         external
         returns (uint256);
@@ -43,8 +45,8 @@ interface InvestmentManagerLike {
     function previewMint(address liquidityPool, address user, uint256 shares) external view returns (uint256);
     function previewWithdraw(address liquidityPool, address user, uint256 assets) external view returns (uint256);
     function previewRedeem(address liquidityPool, address user, uint256 shares) external view returns (uint256);
-    function requestRedeem(address liquidityPool, uint256 shares, address receiver) external;
-    function requestDeposit(address liquidityPool, uint256 assets, address receiver) external;
+    function requestRedeem(address liquidityPool, uint256 shares, address receiver) external returns (bool);
+    function requestDeposit(address liquidityPool, uint256 assets, address receiver) external returns (bool);
     function decreaseDepositRequest(address liquidityPool, uint256 assets, address receiver) external;
     function decreaseRedeemRequest(address liquidityPool, uint256 shares, address receiver) external;
     function cancelDepositRequest(address liquidityPool, address receiver) external;
@@ -227,7 +229,8 @@ contract LiquidityPool is Auth, IERC4626 {
     /// @notice Request can only be called by the owner of the assets
     ///         Asset is locked in the escrow on request submission
     function requestDeposit(uint256 assets, address owner) public withApproval(owner) {
-        investmentManager.requestDeposit(address(this), assets, owner);
+        require(investmentManager.requestDeposit(address(this), assets, owner), "LiquidityPool/request-deposit-failed");
+        SafeTransferLib.safeTransferFrom(asset, owner, investmentManager.escrow(), assets);
         emit DepositRequest(owner, assets);
     }
 
@@ -236,7 +239,8 @@ contract LiquidityPool is Auth, IERC4626 {
         public
     {
         _withPermit(asset, owner, address(investmentManager), assets, deadline, v, r, s);
-        investmentManager.requestDeposit(address(this), assets, owner);
+        require(investmentManager.requestDeposit(address(this), assets, owner), "LiquidityPool/request-deposit-failed");
+        SafeTransferLib.safeTransferFrom(asset, owner, investmentManager.escrow(), assets);
         emit DepositRequest(owner, assets);
     }
 
@@ -263,7 +267,8 @@ contract LiquidityPool is Auth, IERC4626 {
     /// @notice Request can only be called by the owner of the shares
     ///         Shares are locked in the escrow on request submission
     function requestRedeem(uint256 shares, address owner) public withApproval(owner) {
-        investmentManager.requestRedeem(address(this), shares, owner);
+        require(investmentManager.requestRedeem(address(this), shares, owner), "LiquidityPool/request-redeem-failed");
+        transferFrom(owner, investmentManager.escrow(), shares);
         emit RedeemRequest(owner, shares);
     }
 
@@ -272,7 +277,8 @@ contract LiquidityPool is Auth, IERC4626 {
         public
     {
         _withPermit(address(share), owner, address(investmentManager), shares, deadline, v, r, s);
-        investmentManager.requestRedeem(address(this), shares, owner);
+        require(investmentManager.requestRedeem(address(this), shares, owner), "LiquidityPool/request-redeem-failed");
+        transferFrom(owner, investmentManager.escrow(), shares);
         emit RedeemRequest(owner, shares);
     }
 
