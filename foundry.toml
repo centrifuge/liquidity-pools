@@ -19,3 +19,31 @@ runs           = 10
 depth          = 100
 call_override  = false
 fail_on_revert = false
+
+
+[profile.smt.model_checker]
+  engine = "chc" # constrained Horn clauses
+  invariants = ["contract", "reentrancy"]
+  show_unproved = true
+  timeout = 100_000 # in milliseconds, per solving query
+  targets = [
+    "assert",
+    "constantCondition",
+    "divByZero",
+    "outOfBounds",
+    "overflow",
+    "underflow",
+  ]
+
+[profile.smt.model_checker.contracts]
+  "src/LiquidityPool.sol" = ["LiquidityPool"]
+  "src/InvestmentManager.sol" = ["InvestmentManager"]
+  "src/PoolManager.sol" = ["PoolManager"]
+  "src/Escrow.sol" = ["Escrow"]
+  "src/UserEscrow.sol" = ["UserEscrow"]
+  "src/Root.sol" = ["Root"]
+  "src/token/ERC20.sol" = ["ERC20"]
+  "src/token/Tranche.sol" = ["Tranche"]
+  "src/token/RestrictionManager.sol" = ["RestrictionManager"]
+  "src/admins/DelayedAdmin.sol" = ["DelayedAdmin"]
+  "src/admins/PauseAdmin.sol" = ["PauseAdmin"]
