@@ -26,8 +26,6 @@ contract ERC20 is Context {
     // --- EIP712 ---
     bytes32 private immutable nameHash;
     bytes32 private immutable versionHash;
-    uint256 public immutable deploymentChainId;
-    bytes32 private immutable _DOMAIN_SEPARATOR;
     bytes32 public constant PERMIT_TYPEHASH =
         keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
 
@@ -45,8 +43,6 @@ contract ERC20 is Context {
 
         nameHash = keccak256(bytes("Centrifuge"));
         versionHash = keccak256(bytes("1"));
-        deploymentChainId = block.chainid;
-        _DOMAIN_SEPARATOR = _calculateDomainSeparator(block.chainid);
     }
 
     modifier auth() {
@@ -65,7 +61,10 @@ contract ERC20 is Context {
         emit Deny(user);
     }
 
-    function _calculateDomainSeparator(uint256 chainId) private view returns (bytes32) {
+    /// @dev There can be multiple trusted forwarders which should be encoded in the domain separator,
+    ///      to ensure that a permit intended to be used by one trusted forwarded does not end up 
+    ///      used by another (which can be used for frontrunning attacks)
+    function _calculateDomainSeparator(uint256 chainId, address trustedForwarder) private view returns (bytes32) {
         return keccak256(
             abi.encode(
                 // keccak256('EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)')
@@ -73,7 +72,7 @@ contract ERC20 is Context {
                 nameHash,
                 versionHash,
                 chainId,
-                address(this)
+                trustedForwarder
             )
         );
     }
