@@ -58,7 +58,7 @@ contract AxelarScript is Deployer {
         }
 
         giveAdminAccess();
-        removeDeployerAccess(address(router));
+        removeDeployerAccess(address(router), msg.sender);
 
         vm.stopBroadcast();
     }

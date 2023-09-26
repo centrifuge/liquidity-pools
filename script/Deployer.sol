@@ -93,14 +93,14 @@ contract Deployer is Script {
         delayedAdmin.rely(address(admin));
     }
 
-    function removeDeployerAccess(address router) public {
-        RouterLike(router).deny(address(this));
-        root.deny(address(this));
-        investmentManager.deny(address(this));
-        poolManager.deny(address(this));
-        escrow.deny(address(this));
-        gateway.deny(address(this));
-        pauseAdmin.deny(address(this));
-        delayedAdmin.deny(address(this));
+    function removeDeployerAccess(address router, address deployer) public {
+        RouterLike(router).deny(deployer);
+        root.deny(deployer);
+        investmentManager.deny(deployer);
+        poolManager.deny(deployer);
+        escrow.deny(deployer);
+        gateway.deny(deployer);
+        pauseAdmin.deny(deployer);
+        delayedAdmin.deny(deployer);
     }
 }

@@ -43,6 +43,20 @@ contract DeployTest is Test, Deployer {
 
         erc20 = newErc20("Test", "TEST", 6); // TODO: fuzz decimals
         self = address(this);
+
+        removeDeployerAccess(address(router), address(this));
+    }
+
+    function testDeployerHasNoAccess() public {
+        vm.expectRevert("Auth/not-authorized");
+        root.relyContract(address(investmentManager), address(1));
+        assertEq(root.wards(address(this)), 0);
+        assertEq(investmentManager.wards(address(this)), 0);
+        assertEq(poolManager.wards(address(this)), 0);
+        assertEq(escrow.wards(address(this)), 0);
+        assertEq(gateway.wards(address(this)), 0);
+        assertEq(pauseAdmin.wards(address(this)), 0);
+        assertEq(delayedAdmin.wards(address(this)), 0);
     }
 
     function testDeployAndInvestRedeem(
