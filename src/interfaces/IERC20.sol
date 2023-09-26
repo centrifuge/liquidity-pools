@@ -4,7 +4,7 @@ pragma solidity 0.8.21;
 
 /// @title  IERC20
 /// @dev    Interface of the ERC20 standard as defined in the EIP.
-/// @dev    Adapted from OpenZeppelin Contracts (last updated v4.9.0) (token/ERC20/IERC20.sol)
+/// @author Modified from OpenZeppelin Contracts (last updated v4.9.0) (token/ERC20/IERC20.sol)
 interface IERC20 {
     /**
      * @dev Emitted when `value` tokens are moved from one account (`from`) to
@@ -79,6 +79,4 @@ interface IERC20 {
     function name() external view returns (string memory);
     function symbol() external view returns (string memory);
     function decimals() external view returns (uint8);
-    function mint(address user, uint256 value) external;
-    function burn(address user, uint256 value) external;
 }

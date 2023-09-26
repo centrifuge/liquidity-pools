@@ -1,16 +1,16 @@
-name: pull-request
+name: "CI"
 
-on: [pull_request]
+on:
+  pull_request:
+  push:
+    branches:
+      - main
 
 env:
-  FOUNDRY_PROFILE: pull_request
+  FOUNDRY_PROFILE: ci
 
 jobs:
   test:
-    strategy:
-      fail-fast: true
-
-    name: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -31,14 +31,13 @@ jobs:
           forge test -vvv
         id: test
         env:
-          FOUNDRY_PROFILE: pull_request
+          FOUNDRY_PROFILE: ci
           CENTRIFUGE_CHAIN_ORIGIN: ${{ secrets.CENTRIFUGE_CHAIN_ORIGIN }}
           MAINNET_RPC_URL: ${{ secrets.MAINNET_RPC_URL }}
           POLYGON_RPC_URL: ${{ secrets.POLYGON_RPC_URL }}
           SETUP_TEST_DATA: false
 
   lint:
-    name: fmt
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -57,7 +56,7 @@ jobs:
       - name: Check formatting
         run: forge fmt --check
         env:
-          FOUNDRY_PROFILE: pull_request
+          FOUNDRY_PROFILE: ci
 
   coverage:
     runs-on: ubuntu-latest
@@ -88,7 +87,7 @@ jobs:
       # not as useful, and this action cannot fail CI based on a minimum coverage threshold, which
       # is why we use both in this way.
       - name: Post coverage report
-        if: github.event_name == 'pull_request' # This action fails when ran outside of a pull request.
+        if: github.event_name == 'ci' # This action fails when ran outside of a pull request.
         uses: romeovs/lcov-reporter-action@v0.3.1
         with:
           delete-old-comments: true
@@ -100,3 +99,29 @@ jobs:
         with:
           coverage-files: ./lcov.info
           minimum-coverage: 60 # Set coverage threshold.
+    
+  slither-analyze:
+    runs-on: "ubuntu-latest"
+    permissions:
+      actions: "read"
+      contents: "read"
+      security-events: "write"
+    steps:
+      - name: "Check out the repo"
+        uses: "actions/checkout@v3"
+        with:
+          submodules: "recursive"
+
+      - name: "Run Slither analysis"
+        uses: "crytic/slither-action@v0.3.0"
+        id: "slither"
+        with:
+          fail-on: "none"
+          sarif: "results.sarif"
+          solc-version: "0.8.21"
+          target: "src/"
+
+      - name: "Add Slither summary"
+        run: |
+          echo "## Slither result" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Uploaded to GitHub code scanning" >> $GITHUB_STEP_SUMMARY

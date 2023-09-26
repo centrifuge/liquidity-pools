@@ -3,7 +3,7 @@ pragma solidity 0.8.21;
 
 /// @title  Math Lib
 /// @dev    Standard math utilities missing in the Solidity language.
-/// @dev    Adapted from https://github.com/OpenZeppelin/openzeppelin-contracts/blob/c1d6e39aab042a38a90f618c614a298522851f7b/contracts/utils/math/Math.sol
+/// @author Modified from OpenZeppelin Contracts v4.9.3 (utils/math/Math.sol)
 library MathLib {
     enum Rounding {
         Down, // Toward negative infinity
@@ -31,11 +31,14 @@ library MathLib {
 
             // Handle non-overflow cases, 256 by 256 division.
             if (prod1 == 0) {
+                // Solidity will revert if denominator == 0, unlike the div opcode on its own.
+                // The surrounding unchecked block does not change this fact.
+                // See https://docs.soliditylang.org/en/latest/control-structures.html#checked-or-unchecked-arithmetic.
                 return prod0 / denominator;
             }
 
             // Make sure the result is less than 2^256. Also prevents denominator == 0.
-            require(denominator > prod1);
+            require(denominator > prod1, "Math: mulDiv overflow");
 
             ///////////////////////////////////////////////
             // 512 by 256 division.

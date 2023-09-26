@@ -35,7 +35,7 @@ contract InvestorManager is TestSetup {
         allInvestors.push(address(this));
     }
 
-    function addInvestor(uint64 poolId, bytes16 trancheId, address investor, uint128 amount) public {
+    function addInvestor(uint64 poolId, bytes16 trancheId, address investor) public {
         centrifugeChain.updateMember(poolId, trancheId, investor, type(uint64).max);
         allInvestors.push(investor);
     }

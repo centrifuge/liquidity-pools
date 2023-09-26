@@ -8,9 +8,6 @@ import {Escrow} from "src/Escrow.sol";
 import "forge-std/Test.sol";
 
 contract FactoryTest is Test {
-    uint256 mainnetFork;
-    uint256 polygonFork;
-
     address root;
 
     function setUp() public {
@@ -48,7 +45,7 @@ contract FactoryTest is Test {
     ) public {
         TrancheTokenFactory trancheTokenFactory = new TrancheTokenFactory{ salt: salt }(root);
 
-        bytes32 salt = keccak256(abi.encodePacked(poolId, trancheId));
+        bytes32 hashedSalt = keccak256(abi.encodePacked(poolId, trancheId));
         address predictedAddress = address(
             uint160(
                 uint256(
@@ -56,7 +53,7 @@ contract FactoryTest is Test {
                         abi.encodePacked(
                             bytes1(0xff),
                             address(trancheTokenFactory),
-                            salt,
+                            hashedSalt,
                             keccak256(abi.encodePacked(type(TrancheToken).creationCode, abi.encode(decimals)))
                         )
                     )

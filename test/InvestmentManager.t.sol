@@ -53,13 +53,12 @@ contract InvestmentManagerTest is TestSetup {
         uint64 poolId,
         uint8 decimals,
         uint128 currencyId,
-        address currency,
         string memory tokenName,
         string memory tokenSymbol,
         bytes16 trancheId,
         uint128 price
     ) public {
-        vm.assume(decimals <= 18);
+        decimals = uint8(bound(decimals, 1, 18));
         vm.assume(poolId > 0);
         vm.assume(trancheId > 0);
         vm.assume(currencyId > 0);
@@ -68,7 +67,7 @@ contract InvestmentManagerTest is TestSetup {
         centrifugeChain.addCurrency(currencyId, address(erc20)); // add currency
         centrifugeChain.allowInvestmentCurrency(poolId, currencyId);
 
-        address tranche_ = poolManager.deployTranche(poolId, trancheId);
+        poolManager.deployTranche(poolId, trancheId);
         LiquidityPoolLike lPool = LiquidityPoolLike(poolManager.deployLiquidityPool(poolId, trancheId, address(erc20)));
 
         centrifugeChain.updateTrancheTokenPrice(poolId, trancheId, currencyId, price);
@@ -85,7 +84,7 @@ contract InvestmentManagerTest is TestSetup {
         bytes16 trancheId,
         uint128 price
     ) public {
-        vm.assume(decimals <= 18);
+        decimals = uint8(bound(decimals, 1, 18));
         vm.assume(currency > 0);
         ERC20 erc20 = _newErc20("X's Dollar", "USDX", 18);
         centrifugeChain.addPool(poolId); // add pool
@@ -109,5 +108,28 @@ contract InvestmentManagerTest is TestSetup {
 
         vm.expectRevert(bytes("InvestmentManager/tranche-does-not-exist"));
         centrifugeChain.updateTrancheTokenPrice(poolId, trancheId, currencyId, price);
+    }
+
+    function testCollectDeposit(uint128 amount) public {
+        amount = uint128(bound(amount, 2, MAX_UINT128));
+
+        address lPool_ = deploySimplePool();
+        LiquidityPool lPool = LiquidityPool(lPool_);
+        centrifugeChain.updateTrancheTokenPrice(lPool.poolId(), lPool.trancheId(), defaultCurrencyId, defaultPrice);
+        centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), self, type(uint64).max);
+
+        investmentManager.collectDeposit(lPool_, self);
+    }
+
+    function testCollectRedeem(uint128 amount) public {
+        amount = uint128(bound(amount, 2, MAX_UINT128));
+
+        address lPool_ = deploySimplePool();
+        LiquidityPool lPool = LiquidityPool(lPool_);
+        centrifugeChain.allowInvestmentCurrency(lPool.poolId(), defaultCurrencyId);
+        centrifugeChain.updateTrancheTokenPrice(lPool.poolId(), lPool.trancheId(), defaultCurrencyId, defaultPrice);
+
+        centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), self, type(uint64).max);
+        investmentManager.collectRedeem(lPool_, self);
     }
 }

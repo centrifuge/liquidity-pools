@@ -17,6 +17,7 @@ contract AdminTest is TestSetup {
         // permissions set correctly
         assertEq(root.wards(address(delayedAdmin)), 1);
         assertEq(root.wards(address(pauseAdmin)), 1);
+        assertEq(pauseAdmin.wards(address(delayedAdmin)), 1);
     }
 
     //------ PauseAdmin tests ------//
@@ -33,10 +34,10 @@ contract AdminTest is TestSetup {
         assertEq(root.paused(), false);
     }
 
-    function testPauseAuth(address usr) public {
-        vm.assume(usr != address(this));
+    function testPauseAuth(address user) public {
+        vm.assume(user != address(this));
         vm.expectRevert("PauseAdmin/not-authorized-to-pause");
-        vm.prank(usr);
+        vm.prank(user);
         pauseAdmin.pause();
     }
 
@@ -48,8 +49,7 @@ contract AdminTest is TestSetup {
         address recipient,
         uint128 amount
     ) public {
-        vm.assume(decimals > 0);
-        vm.assume(decimals <= 18);
+        decimals = uint8(bound(decimals, 1, 18));
         vm.assume(amount > 0);
         vm.assume(currency != 0);
         vm.assume(recipient != address(0));
@@ -75,8 +75,7 @@ contract AdminTest is TestSetup {
         address recipient,
         uint128 amount
     ) public {
-        vm.assume(decimals > 0);
-        vm.assume(decimals <= 18);
+        decimals = uint8(bound(decimals, 1, 18));
         vm.assume(amount > 0);
         vm.assume(currency != 0);
         vm.assume(recipient != address(0));
@@ -105,8 +104,7 @@ contract AdminTest is TestSetup {
         address recipient,
         uint128 amount
     ) public {
-        vm.assume(decimals > 0);
-        vm.assume(decimals <= 18);
+        decimals = uint8(bound(decimals, 1, 18));
         vm.assume(amount > 0);
         vm.assume(currency != 0);
         vm.assume(recipient != address(investmentManager.escrow()));
@@ -139,10 +137,10 @@ contract AdminTest is TestSetup {
         assertEq(root.paused(), false);
     }
 
-    function testDelayedAdminPauseAuth(address usr) public {
-        vm.assume(usr != address(this));
+    function testDelayedAdminPauseAuth(address user) public {
+        vm.assume(user != address(this));
         vm.expectRevert("Auth/not-authorized");
-        vm.prank(usr);
+        vm.prank(user);
         delayedAdmin.pause();
     }
 
@@ -187,9 +185,9 @@ contract AdminTest is TestSetup {
         address badActor = vm.addr(0xBAD);
         vm.prank(badActor);
         vm.expectRevert("Auth/not-authorized");
-        delayedAdmin.addPauser(address(pauseAdmin), badActor);
+        delayedAdmin.addPauser(badActor);
 
-        delayedAdmin.addPauser(address(pauseAdmin), newPauser);
+        delayedAdmin.addPauser(newPauser);
         assertEq(pauseAdmin.pausers(newPauser), 1);
     }
 
@@ -199,9 +197,9 @@ contract AdminTest is TestSetup {
         address badActor = vm.addr(0xBAD);
         vm.prank(badActor);
         vm.expectRevert("Auth/not-authorized");
-        delayedAdmin.removePauser(address(pauseAdmin), badActor);
+        delayedAdmin.removePauser(badActor);
 
-        delayedAdmin.removePauser(address(pauseAdmin), oldPauser);
+        delayedAdmin.removePauser(oldPauser);
         assertEq(pauseAdmin.pausers(oldPauser), 0);
     }
 

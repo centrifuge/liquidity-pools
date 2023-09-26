@@ -25,7 +25,6 @@ contract RestrictionManagerTest is Test {
         vm.assume(validUntil >= block.timestamp);
 
         restrictionManager.updateMember(address(this), validUntil);
-        restrictionManager.member(address(this));
         assert(restrictionManager.hasMember(address(this)));
     }
 }

@@ -47,6 +47,7 @@ contract AxelarRouterTest is Test {
         address invalidOrigin,
         string memory invalidAxelarCentrifugeChainId
     ) public {
+        vm.assume(keccak256(abi.encodePacked(sourceChain)) != keccak256(abi.encodePacked("centrifuge")));
         vm.assume(invalidOrigin != address(axelarGateway));
         vm.assume(
             keccak256(abi.encodePacked(invalidAxelarCentrifugeChainId))

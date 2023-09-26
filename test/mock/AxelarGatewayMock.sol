@@ -6,7 +6,7 @@ import "./Mock.sol";
 contract AxelarGatewayMock is Mock {
     constructor() {}
 
-    function validateContractCall(bytes32, string calldata, string calldata, bytes32) public returns (bool) {
+    function validateContractCall(bytes32, string calldata, string calldata, bytes32) public view returns (bool) {
         return values_bool_return["validateContractCall"];
     }
 

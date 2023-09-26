@@ -23,7 +23,7 @@ contract Mock is Test {
 
     mapping(bytes32 => bool) method_fail;
 
-    function call(bytes32 name) internal returns (uint256) {
+    function call(bytes32 name) internal {
         calls[name]++;
     }
 

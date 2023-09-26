@@ -1,0 +1,57 @@
+name: "CI Deep"
+
+on:
+  workflow_dispatch:
+    inputs:
+      unitFuzzRuns:
+        default: "100000"
+        description: "Unit: number of fuzz runs."
+        required: false
+      invariantRuns:
+        default: "100"
+        description: "Invariant runs: number of sequences of function calls generated and run."
+        required: false
+      invariantDepth:
+        default: "100"
+        description: "Invariant depth: number of function calls made in a given run."
+        required: false
+
+env:
+  FOUNDRY_PROFILE: ci
+
+jobs:
+  test:
+    env:
+      FOUNDRY_FUZZ_RUNS: ${{ inputs.unitFuzzRuns || '100000' }}
+      FOUNDRY_INVARIANT_DEPTH: ${{ inputs.invariantDepth || '100' }}
+      FOUNDRY_INVARIANT_RUNS: ${{ inputs.invariantRuns || '100' }}
+
+    strategy:
+      fail-fast: true
+
+    name: test
+    runs-on: ubuntu-latest-64-cores
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Run Forge build
+        run: |
+          forge --version
+          forge build --sizes
+        id: build
+
+      - name: Run Forge tests
+        run: |
+          forge test -vvv
+        id: test
+        env:
+          FOUNDRY_PROFILE: ci
+          CENTRIFUGE_CHAIN_ORIGIN: ${{ secrets.CENTRIFUGE_CHAIN_ORIGIN }}
+          MAINNET_RPC_URL: ${{ secrets.MAINNET_RPC_URL }}
+          POLYGON_RPC_URL: ${{ secrets.POLYGON_RPC_URL }}
+          SETUP_TEST_DATA: false

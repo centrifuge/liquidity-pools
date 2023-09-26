@@ -45,7 +45,7 @@ contract RestrictionManager is Auth {
     }
 
     // --- ERC1404 implementation ---
-    function detectTransferRestriction(address from, address to, uint256 value) public view returns (uint8) {
+    function detectTransferRestriction(address from, address to, uint256 /* value */ ) public view returns (uint8) {
         if (frozen[from] == 1) {
             return SOURCE_IS_FROZEN_CODE;
         }
@@ -88,14 +88,7 @@ contract RestrictionManager is Auth {
         emit UpdateMember(user, validUntil);
     }
 
-    function member(address user) public view {
-        require((members[user] >= block.timestamp), "RestrictionManager/destination-not-a-member");
-    }
-
     function hasMember(address user) public view returns (bool) {
-        if (members[user] >= block.timestamp) {
-            return true;
-        }
-        return false;
+        return members[user] >= block.timestamp;
     }
 }

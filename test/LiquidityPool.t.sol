@@ -206,19 +206,22 @@ contract LiquidityPoolTest is TestSetup {
         address lPool_ = deploySimplePool();
         LiquidityPool lPool = LiquidityPool(lPool_);
 
-        vm.expectRevert(bytes("Auth/not-authorized"));
-        lPool.mint(investor, amount);
-
-        root.relyContract(lPool_, self); // give self auth permissions
+        TrancheTokenLike trancheToken = TrancheTokenLike(address(lPool.share()));
+        root.denyContract(address(trancheToken), self);
 
         vm.expectRevert(bytes("RestrictionManager/destination-not-a-member"));
-        lPool.mint(investor, amount);
-        centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), investor, type(uint64).max); // add investor as member
+        trancheToken.mint(investor, amount);
+        centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), investor, type(uint64).max);
+
+        vm.expectRevert(bytes("Auth/not-authorized"));
+        trancheToken.mint(investor, amount);
+
+        root.relyContract(address(trancheToken), self); // give self auth permissions
 
         // success
-        lPool.mint(investor, amount);
+        trancheToken.mint(investor, amount);
         assertEq(lPool.balanceOf(investor), amount);
-        assertEq(lPool.balanceOf(investor), lPool.share().balanceOf(investor));
+        assertEq(lPool.balanceOf(investor), trancheToken.balanceOf(investor));
     }
 
     function testBurn(uint256 amount) public {
@@ -227,26 +230,27 @@ contract LiquidityPoolTest is TestSetup {
         address lPool_ = deploySimplePool();
         LiquidityPool lPool = LiquidityPool(lPool_);
 
-        root.relyContract(lPool_, self); // give self auth permissions
+        TrancheTokenLike trancheToken = TrancheTokenLike(address(lPool.share()));
+        root.relyContract(address(trancheToken), self); // give self auth permissions
         centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), investor, type(uint64).max); // add investor as member
 
-        lPool.mint(investor, amount);
-        root.denyContract(lPool_, self); // remove auth permissions from self
+        trancheToken.mint(investor, amount);
+        root.denyContract(address(trancheToken), self); // remove auth permissions from self
 
         vm.expectRevert(bytes("Auth/not-authorized"));
-        lPool.burn(investor, amount);
+        trancheToken.burn(investor, amount);
 
-        root.relyContract(lPool_, self); // give self auth permissions
+        root.relyContract(address(trancheToken), self); // give self auth permissions
         vm.expectRevert(bytes("ERC20/insufficient-allowance"));
-        lPool.burn(investor, amount);
+        trancheToken.burn(investor, amount);
 
         // success
         vm.prank(investor);
-        lPool.approve(lPool_, amount); // approve LP to burn tokens
-        lPool.burn(investor, amount);
+        lPool.approve(self, amount); // approve to burn tokens
+        trancheToken.burn(investor, amount);
 
         assertEq(lPool.balanceOf(investor), 0);
-        assertEq(lPool.balanceOf(investor), lPool.share().balanceOf(investor));
+        assertEq(lPool.balanceOf(investor), trancheToken.balanceOf(investor));
     }
 
     function testTransferFrom(uint256 amount, uint256 transferAmount) public {
@@ -268,7 +272,7 @@ contract LiquidityPoolTest is TestSetup {
 
         // replacing msg sender only possible for trusted forwarder
         assertEq(trancheToken.isTrustedForwarder(self), false); // self is not trusted forwarder on token
-        (bool success, bytes memory data) = address(trancheToken).call(
+        (bool success,) = address(trancheToken).call(
             abi.encodeWithSelector(
                 bytes4(keccak256(bytes("transferFrom(address,address,uint256)"))),
                 investor,
@@ -298,9 +302,8 @@ contract LiquidityPoolTest is TestSetup {
     }
 
     function testApprove(uint256 amount, uint256 approvalAmount) public {
-        amount = uint128(bound(amount, 2, MAX_UINT128));
-        approvalAmount = uint128(bound(approvalAmount, 2, MAX_UINT128));
-        vm.assume(amount > approvalAmount);
+        approvalAmount = uint128(bound(approvalAmount, 2, MAX_UINT128 - 1));
+        amount = uint128(bound(amount, approvalAmount + 1, MAX_UINT128)); // amount > approvalAmount
 
         address receiver = makeAddr("receiver");
         address lPool_ = deploySimplePool();
@@ -310,16 +313,15 @@ contract LiquidityPoolTest is TestSetup {
         TrancheToken trancheToken = TrancheToken(address(lPool.share()));
         assertTrue(trancheToken.isTrustedForwarder(lPool_)); // Lpool is not trusted forwarder on token
 
-        uint256 initBalance = lPool.balanceOf(investor);
-
         // replacing msg sender only possible for trusted forwarder
         assertEq(trancheToken.isTrustedForwarder(self), false); // Lpool is not trusted forwarder on token
-        (bool success, bytes memory data) = address(trancheToken).call(
+        (bool success,) = address(trancheToken).call(
             abi.encodeWithSelector(
                 bytes4(keccak256(bytes("approve(address,uint256)"))), receiver, approvalAmount, investor
             )
         );
 
+        assertEq(success, true);
         assertEq(lPool.allowance(self, receiver), approvalAmount);
         assertEq(lPool.allowance(investor, receiver), 0);
 
@@ -358,7 +360,7 @@ contract LiquidityPoolTest is TestSetup {
         uint256 initBalance = lPool.balanceOf(investor);
         // replacing msg sender only possible for trusted forwarder
         assertEq(trancheToken.isTrustedForwarder(self), false); // Lpool is not trusted forwarder on token
-        (bool success, bytes memory data) = address(trancheToken).call(
+        (bool success,) = address(trancheToken).call(
             abi.encodeWithSelector(
                 bytes4(keccak256(bytes("transfer(address,uint256)"))), self, transferAmount, investor
             )
@@ -825,7 +827,6 @@ contract LiquidityPoolTest is TestSetup {
         assertApproxEqAbs(lPool.previewMint(trancheTokensPayout), amount, 1);
 
         // deposit 50% of the amount
-        uint256 share = 2;
         lPool.deposit(amount / 2, self); // mint half the amount
 
         // Allow 2 difference because of rounding
@@ -1219,9 +1220,8 @@ contract LiquidityPoolTest is TestSetup {
     }
 
     function testDecreaseDepositRequest(uint256 amount, uint256 decreaseAmount) public {
-        amount = uint128(bound(amount, 2, MAX_UINT128));
-        decreaseAmount = uint128(bound(decreaseAmount, 2, MAX_UINT128));
-        vm.assume(amount > decreaseAmount);
+        decreaseAmount = uint128(bound(decreaseAmount, 2, MAX_UINT128 - 1));
+        amount = uint128(bound(amount, decreaseAmount + 1, MAX_UINT128)); // amount > decreaseAmount
         uint128 price = 2 * 10 ** 27;
 
         address lPool_ = deploySimplePool();
@@ -1250,9 +1250,8 @@ contract LiquidityPoolTest is TestSetup {
     }
 
     function testDecreaseRedeemRequest(uint256 amount, uint256 decreaseAmount) public {
-        amount = uint128(bound(amount, 2, MAX_UINT128));
-        decreaseAmount = uint128(bound(decreaseAmount, 2, MAX_UINT128));
-        vm.assume(amount > decreaseAmount);
+        decreaseAmount = uint128(bound(decreaseAmount, 2, MAX_UINT128 - 1));
+        amount = uint128(bound(amount, decreaseAmount + 1, MAX_UINT128)); // amount > decreaseAmount
 
         address lPool_ = deploySimplePool();
         LiquidityPool lPool = LiquidityPool(lPool_);
@@ -1310,29 +1309,6 @@ contract LiquidityPoolTest is TestSetup {
         assertApproxEqAbs(erc20.balanceOf(investor), investorBalanceBefore + amount / 2, 1);
     }
 
-    function testCollectDeposit(uint128 amount) public {
-        amount = uint128(bound(amount, 2, MAX_UINT128));
-
-        address lPool_ = deploySimplePool();
-        LiquidityPool lPool = LiquidityPool(lPool_);
-        centrifugeChain.updateTrancheTokenPrice(lPool.poolId(), lPool.trancheId(), defaultCurrencyId, defaultPrice);
-        centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), self, type(uint64).max);
-
-        lPool.collectDeposit(self);
-    }
-
-    function testCollectRedeem(uint128 amount) public {
-        amount = uint128(bound(amount, 2, MAX_UINT128));
-
-        address lPool_ = deploySimplePool();
-        LiquidityPool lPool = LiquidityPool(lPool_);
-        centrifugeChain.allowInvestmentCurrency(lPool.poolId(), defaultCurrencyId);
-        centrifugeChain.updateTrancheTokenPrice(lPool.poolId(), lPool.trancheId(), defaultCurrencyId, defaultPrice);
-
-        centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), self, type(uint64).max);
-        lPool.collectRedeem(self);
-    }
-
     // helpers
     function deposit(address _lPool, address investor, uint256 amount) public {
         LiquidityPool lPool = LiquidityPool(_lPool);
@@ -1359,11 +1335,11 @@ contract LiquidityPoolTest is TestSetup {
         lPool.deposit(amount, investor); // withdraw the amount
     }
 
-    function amountAssumption(uint256 amount) public returns (bool) {
+    function amountAssumption(uint256 amount) public pure returns (bool) {
         return (amount > 1 && amount < MAX_UINT128);
     }
 
-    function addressAssumption(address user) public returns (bool) {
+    function addressAssumption(address user) public view returns (bool) {
         return (user != address(0) && user != address(erc20) && user.code.length == 0);
     }
 }
