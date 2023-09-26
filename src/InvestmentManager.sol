@@ -63,10 +63,15 @@ interface UserEscrowLike {
 
 /// @dev Liquidity Pool orders and investment/redemption limits per user
 struct LPValues {
-    uint128 maxDeposit; // denominated in currency
-    uint128 maxMint; // denominated in tranche tokens
-    uint128 maxWithdraw; // denominated in currency
-    uint128 maxRedeem; // denominated in tranche tokens
+    /// @dev Tranche tokens that can be claimed using `mint()`
+    uint128 maxMint;
+    /// @dev Weighted average price of deposits, used to convert maxMint to maxDeposit
+    uint128 depositPrice;
+    /// @dev Currency that can be claimed using `mint()`
+    uint128 maxWithdraw;
+    /// @dev Weighted average price of redeptions, used to convert maxWithdraw to maxRedeem
+    uint128 redeemPrice;
+    // TODO: rename
     uint128 remainingInvestOrder; // denominated in currency
     uint128 remainingRedeemOrder; // denominated in tranche tokens
 }
@@ -307,7 +312,7 @@ contract InvestmentManager is Auth {
         address recipient,
         uint128 currency,
         uint128 currencyPayout,
-        uint128 trancheTokensPayout,
+        uint128 trancheTokenPayout,
         uint128 remainingInvestOrder
     ) public onlyGateway {
         require(currencyPayout != 0, "InvestmentManager/zero-invest");
@@ -315,16 +320,36 @@ contract InvestmentManager is Auth {
         address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, _currency);
         require(liquidityPool != address(0), "InvestmentManager/tranche-does-not-exist");
 
+        // Convert inputs into price decimals
+        (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getPoolDecimals(liquidityPool);
+        uint256 currencyPayoutInPriceDecimals = _toPriceDecimals(currencyPayout, currencyDecimals);
+        uint256 trancheTokenPayoutInPriceDecimals = _toPriceDecimals(trancheTokenPayout, trancheTokenDecimals);
+
+        // Calculate execution price based on currency payout / tranche token payout
+        uint256 executionPrice = currencyPayoutInPriceDecimals.mulDiv(
+            10 ** PRICE_DECIMALS, trancheTokenPayoutInPriceDecimals, MathLib.Rounding.Down
+        );
+
+        // Calculate new max mint in price decimals
         LPValues storage lpValues = orderbook[liquidityPool][recipient];
-        lpValues.maxDeposit = lpValues.maxDeposit + currencyPayout;
-        lpValues.maxMint = lpValues.maxMint + trancheTokensPayout;
+        uint256 maxMintInPriceDecimals = _toPriceDecimals(lpValues.maxMint, trancheTokenDecimals);
+        uint128 newMaxMint = lpValues.maxMint + trancheTokenPayout;
+        uint256 newMaxMintInPriceDecimals = _toPriceDecimals(newMaxMint, trancheTokenDecimals);
+
+        // New weighted average deposit price = (oldPrice * maxMint) / newMaxMint + (executionPrice * trancheTokenPayout / newMaxMint
+        lpValues.depositPrice = lpValues.depositPrice.mulDiv(
+            maxMintInPriceDecimals, newMaxMintInPriceDecimals, MathLib.Rounding.Down
+        ) + executionPrice.mulDiv(trancheTokenPayoutInPriceDecimals, newMaxMintInPriceDecimals, MathLib.Rounding.Down);
+
+        lpValues.maxMint = newMaxMint;
         lpValues.remainingInvestOrder = remainingInvestOrder;
 
+        // Mint tranche tokens
         ERC20Like trancheToken = ERC20Like(LiquidityPoolLike(liquidityPool).share());
-        trancheToken.mint(address(escrow), trancheTokensPayout); // mint to escrow. Recipient can claim by calling withdraw / redeem
-        _updateLiquidityPoolPrice(liquidityPool, currencyPayout, trancheTokensPayout);
+        trancheToken.mint(address(escrow), trancheTokenPayout); // mint to escrow. Recipient can claim by calling withdraw / redeem
+        _updateLiquidityPoolPrice(liquidityPool, currencyPayout, trancheTokenPayout);
 
-        emit ExecutedCollectInvest(poolId, trancheId, recipient, currency, currencyPayout, trancheTokensPayout);
+        emit ExecutedCollectInvest(poolId, trancheId, recipient, currency, currencyPayout, trancheTokenPayout);
     }
 
     function handleExecutedCollectRedeem(
@@ -341,13 +366,34 @@ contract InvestmentManager is Auth {
         address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, _currency);
         require(liquidityPool != address(0), "InvestmentManager/tranche-does-not-exist");
 
-        LPValues storage lpValues = orderbook[liquidityPool][recipient];
-        lpValues.maxWithdraw = lpValues.maxWithdraw + currencyPayout;
-        lpValues.maxRedeem = lpValues.maxRedeem + trancheTokensPayout;
-        lpValues.remainingRedeemOrder = remainingRedeemOrder;
+        // Convert inputs into price decimals
+        (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getPoolDecimals(liquidityPool);
+        uint256 currencyPayoutInPriceDecimals = _toPriceDecimals(currencyPayout, currencyDecimals);
+        uint256 trancheTokenPayoutInPriceDecimals = _toPriceDecimals(trancheTokenPayout, trancheTokenDecimals);
 
+        // Calculate execution price based on currency payout / tranche token payout
+        uint256 executionPrice = currencyPayoutInPriceDecimals.mulDiv(
+            10 ** PRICE_DECIMALS, trancheTokenPayoutInPriceDecimals, MathLib.Rounding.Down
+        );
+
+        // Calculate new max mint in price decimals
+        LPValues storage lpValues = orderbook[liquidityPool][recipient];
+        uint256 maxMintInPriceDecimals = _toPriceDecimals(lpValues.maxMint, trancheTokenDecimals);
+        uint128 newMaxMint = lpValues.maxMint + trancheTokenPayout;
+        uint256 newMaxMintInPriceDecimals = _toPriceDecimals(newMaxMint, trancheTokenDecimals);
+
+        // New weighted average deposit price = (oldPrice * maxMint) / newMaxMint + (executionPrice * trancheTokenPayout / newMaxMint
+        lpValues.depositPrice = lpValues.depositPrice.mulDiv(
+            maxMintInPriceDecimals, newMaxMintInPriceDecimals, MathLib.Rounding.Down
+        ) + executionPrice.mulDiv(trancheTokenPayoutInPriceDecimals, newMaxMintInPriceDecimals, MathLib.Rounding.Down);
+
+        lpValues.maxMint = newMaxMint;
+        lpValues.remainingInvestOrder = remainingInvestOrder;
+
+        // Transfer currency to user escrow
         userEscrow.transferIn(_currency, address(escrow), recipient, currencyPayout);
 
+        // Burn tranche tokens
         ERC20Like trancheToken = ERC20Like(LiquidityPoolLike(liquidityPool).share());
         trancheToken.burn(address(escrow), trancheTokensPayout); // burned redeemed tokens from escrow
 
@@ -570,21 +616,17 @@ contract InvestmentManager is Auth {
         returns (uint256 trancheTokenAmount)
     {
         uint128 _currencyAmount = _toUint128(currencyAmount);
+        LPValues storage lpValues = orderbook[liquidityPool][owner];
+        uint128 _trancheTokenAmount =
+            currencyAmount.mulDiv(10 ** PRICE_DECIMALS, lpValues.depositPrice, MathLib.Rounding.Down);
+
         require(
-            (_currencyAmount <= orderbook[liquidityPool][owner].maxDeposit && _currencyAmount != 0),
+            (_trancheTokenAmount <= lpValues.maxMint && _currencyAmount != 0),
             "InvestmentManager/amount-exceeds-deposit-limits"
         );
 
-        uint256 depositPrice = calculateDepositPrice(owner, liquidityPool, MathLib.Rounding.Down);
-        uint256 depositPriceTransfer = calculateDepositPrice(owner, liquidityPool, MathLib.Rounding.Up);
-        require(depositPrice != 0, "LiquidityPool/deposit-token-price-0");
-
-        uint128 _trancheTokenAmount =
-            _calculateTrancheTokenAmount(_currencyAmount, liquidityPool, depositPrice, MathLib.Rounding.Up);
-        uint128 _trancheTokenAmountTransferred =
-            _calculateTrancheTokenAmount(_currencyAmount, liquidityPool, depositPriceTransfer, MathLib.Rounding.Down);
-        _deposit(_trancheTokenAmount, _trancheTokenAmountTransferred, _currencyAmount, liquidityPool, receiver, owner);
-        trancheTokenAmount = uint256(_trancheTokenAmountTransferred);
+        _deposit(_trancheTokenAmount, liquidityPool, receiver, owner);
+        trancheTokenAmount = uint256(_trancheTokenAmount);
     }
 
     /// @notice Processes owner's currency deposit / investment after the epoch has been executed on Centrifuge.
@@ -602,37 +644,31 @@ contract InvestmentManager is Auth {
         returns (uint256 currencyAmount)
     {
         uint128 _trancheTokenAmount = _toUint128(trancheTokenAmount);
+        LPValues storage lpValues = orderbook[liquidityPool][owner];
+
         require(
-            (_trancheTokenAmount <= orderbook[liquidityPool][owner].maxMint && _trancheTokenAmount != 0),
+            (_trancheTokenAmount <= lpValues.maxMint && _trancheTokenAmount != 0),
             "InvestmentManager/amount-exceeds-mint-limits"
         );
 
-        uint256 depositPrice = calculateDepositPrice(owner, liquidityPool, MathLib.Rounding.Down);
-        require(depositPrice != 0, "LiquidityPool/deposit-token-price-0");
+        _deposit(_trancheTokenAmount, liquidityPool, receiver, owner);
 
-        uint128 _currencyAmount = _calculateCurrencyAmount(_trancheTokenAmount, liquidityPool, depositPrice);
-        _deposit(_trancheTokenAmount, _trancheTokenAmount, _currencyAmount, liquidityPool, receiver, owner);
+        uint128 _currencyAmount =
+            _trancheTokenAmount.mulDiv(lpValues.depositPrice, 10 ** PRICE_DECIMALS, MathLib.Rounding.Down);
+
         currencyAmount = uint256(_currencyAmount);
     }
 
-    function _deposit(
-        uint128 trancheTokenAmount,
-        uint128 trancheTokenAmountTransferred,
-        uint128 currencyAmount,
-        address liquidityPool,
-        address receiver,
-        address owner
-    ) internal {
+    function _deposit(uint128 trancheTokenAmount, address liquidityPool, address receiver, address owner) internal {
         LiquidityPoolLike lPool = LiquidityPoolLike(liquidityPool);
 
         // Decrease the deposit limits
         LPValues storage lpValues = orderbook[liquidityPool][owner];
-        lpValues.maxDeposit = lpValues.maxDeposit < currencyAmount ? 0 : lpValues.maxDeposit - currencyAmount;
         lpValues.maxMint = lpValues.maxMint < trancheTokenAmount ? 0 : lpValues.maxMint - trancheTokenAmount;
 
         // Transfer the tranche tokens to the user
         require(
-            lPool.transferFrom(address(escrow), receiver, trancheTokenAmountTransferred),
+            lPool.transferFrom(address(escrow), receiver, trancheTokenAmount),
             "InvestmentManager/tranche-tokens-transfer-failed"
         );
     }
