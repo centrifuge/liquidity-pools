@@ -11,8 +11,6 @@ interface TrancheTokenLike is IERC20 {
     function file(bytes32 what, address data) external;
     function restrictionManager() external view returns (address);
     function addLiquidityPool(address forwarder) external;
-    function rely(address user) external;
-    function deny(address user) external;
 }
 
 interface ERC1404Like {
