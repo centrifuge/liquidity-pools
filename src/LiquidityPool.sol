@@ -230,6 +230,7 @@ contract LiquidityPool is Auth, IERC4626 {
     ///         Asset is locked in the escrow on request submission
     function requestDeposit(uint256 assets, address owner) public withApproval(owner) {
         require(investmentManager.requestDeposit(address(this), assets, owner), "LiquidityPool/request-deposit-failed");
+        // TODO: escrow should be an immutable variable on this contract
         SafeTransferLib.safeTransferFrom(asset, owner, investmentManager.escrow(), assets);
         emit DepositRequest(owner, assets);
     }
@@ -238,7 +239,7 @@ contract LiquidityPool is Auth, IERC4626 {
     function requestDepositWithPermit(uint256 assets, address owner, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
         public
     {
-        _withPermit(asset, owner, address(investmentManager), assets, deadline, v, r, s);
+        _withPermit(asset, owner, assets, deadline, v, r, s);
         require(investmentManager.requestDeposit(address(this), assets, owner), "LiquidityPool/request-deposit-failed");
         SafeTransferLib.safeTransferFrom(asset, owner, investmentManager.escrow(), assets);
         emit DepositRequest(owner, assets);
@@ -268,7 +269,7 @@ contract LiquidityPool is Auth, IERC4626 {
     ///         Shares are locked in the escrow on request submission
     function requestRedeem(uint256 shares, address owner) public withApproval(owner) {
         require(investmentManager.requestRedeem(address(this), shares, owner), "LiquidityPool/request-redeem-failed");
-        transferFrom(owner, investmentManager.escrow(), shares);
+        transferFromThis(owner, investmentManager.escrow(), shares);
         emit RedeemRequest(owner, shares);
     }
 
@@ -276,9 +277,9 @@ contract LiquidityPool is Auth, IERC4626 {
     function requestRedeemWithPermit(uint256 shares, address owner, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
         public
     {
-        _withPermit(address(share), owner, address(investmentManager), shares, deadline, v, r, s);
+        _withPermit(address(share), owner, shares, deadline, v, r, s);
         require(investmentManager.requestRedeem(address(this), shares, owner), "LiquidityPool/request-redeem-failed");
-        transferFrom(owner, investmentManager.escrow(), shares);
+        transferFromThis(owner, investmentManager.escrow(), shares);
         emit RedeemRequest(owner, shares);
     }
 
@@ -332,6 +333,12 @@ contract LiquidityPool is Auth, IERC4626 {
         return abi.decode(data, (bool));
     }
 
+    function transferFromThis(address, address, uint256) public returns (bool) {
+        (bool success, bytes memory data) = address(share).call(bytes.concat(msg.data, bytes20(address(this))));
+        _successCheck(success);
+        return abi.decode(data, (bool));
+    }
+
     function transfer(address, uint256) public returns (bool) {
         (bool success, bytes memory data) = address(share).call(bytes.concat(msg.data, bytes20(msg.sender)));
         _successCheck(success);
@@ -358,20 +365,13 @@ contract LiquidityPool is Auth, IERC4626 {
     }
 
     // --- Helpers ---
-    function _withPermit(
-        address token,
-        address owner,
-        address spender,
-        uint256 value,
-        uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) internal {
-        try ERC20PermitLike(token).permit(owner, spender, value, deadline, v, r, s) {
+    function _withPermit(address token, address owner, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
+        internal
+    {
+        try ERC20PermitLike(token).permit(owner, address(this), value, deadline, v, r, s) {
             return;
         } catch {
-            if (IERC20(token).allowance(owner, spender) >= value) {
+            if (IERC20(token).allowance(owner, address(this)) >= value) {
                 return;
             }
         }

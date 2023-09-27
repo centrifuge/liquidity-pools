@@ -107,7 +107,7 @@ contract LiquidityPoolTest is TestSetup {
 
         erc20.mint(investor, type(uint256).max);
         vm.prank(investor);
-        erc20.approve(address(investmentManager), type(uint256).max);
+        erc20.approve(lPool_, type(uint256).max);
         centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), investor, type(uint64).max); // add user as member
 
         // fail: no approval
@@ -142,7 +142,7 @@ contract LiquidityPoolTest is TestSetup {
 
         deposit(lPool_, investor, amount); // deposit funds first // deposit funds first
         vm.prank(investor);
-        lPool.approve(address(investmentManager), type(uint256).max);
+        lPool.approve(address(lPool_), type(uint256).max);
 
         // fail: self can not claim for investor
         vm.expectRevert(bytes("LiquidityPool/no-approval"));
@@ -441,7 +441,7 @@ contract LiquidityPoolTest is TestSetup {
         assertEq(lPool.balanceOf(self), firstTrancheTokenPayout + secondTrancheTokenPayout);
 
         // redeem
-        lPool.approve(address(investmentManager), firstTrancheTokenPayout + secondTrancheTokenPayout);
+        lPool.approve(address(lPool_), firstTrancheTokenPayout + secondTrancheTokenPayout);
         lPool.requestRedeem(firstTrancheTokenPayout + secondTrancheTokenPayout, self);
 
         // trigger executed collectRedeem at a price of 1.5
@@ -528,7 +528,7 @@ contract LiquidityPoolTest is TestSetup {
         assertEq(lPool.balanceOf(self), firstTrancheTokenPayout + secondTrancheTokenPayout);
 
         // redeem
-        lPool.approve(address(investmentManager), firstTrancheTokenPayout + secondTrancheTokenPayout);
+        lPool.approve(address(lPool_), firstTrancheTokenPayout + secondTrancheTokenPayout);
         lPool.requestRedeem(firstTrancheTokenPayout + secondTrancheTokenPayout, self);
 
         // trigger executed collectRedeem at a price of 1.5
@@ -744,7 +744,7 @@ contract LiquidityPoolTest is TestSetup {
         LiquidityPool lPool = LiquidityPool(lPool_);
         centrifugeChain.updateTrancheTokenPrice(lPool.poolId(), lPool.trancheId(), defaultCurrencyId, price);
         erc20.mint(self, amount);
-        erc20.approve(address(investmentManager), amount); // add allowance
+        erc20.approve(lPool_, amount); // add allowance
         centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), self, type(uint64).max);
 
         lPool.requestDeposit(amount, self);
@@ -785,12 +785,12 @@ contract LiquidityPoolTest is TestSetup {
         lPool.requestDeposit(amount, self);
         centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), self, type(uint64).max); // add user as member
 
-        // // will fail - user did not give currency allowance to investmentManager
+        // // will fail - user did not give currency allowance to liquidity pool
         vm.expectRevert(bytes("SafeTransferLib/safe-transfer-from-failed"));
         lPool.requestDeposit(amount, self);
 
         // success
-        erc20.approve(address(investmentManager), amount); // add allowance
+        erc20.approve(lPool_, amount); // add allowance
         lPool.requestDeposit(amount, self);
 
         // fail: no currency left
@@ -857,7 +857,7 @@ contract LiquidityPoolTest is TestSetup {
         erc20.mint(self, amount);
 
         centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), self, type(uint64).max); // add user as member
-        erc20.approve(address(investmentManager), amount); // add allowance
+        erc20.approve(lPool_, amount); // add allowance
         lPool.requestDeposit(amount, self);
 
         // trigger executed collectInvest
@@ -922,17 +922,13 @@ contract LiquidityPoolTest is TestSetup {
                 abi.encodePacked(
                     "\x19\x01",
                     erc20.DOMAIN_SEPARATOR(),
-                    keccak256(
-                        abi.encode(
-                            erc20.PERMIT_TYPEHASH(), investor, address(investmentManager), amount, 0, block.timestamp
-                        )
-                    )
+                    keccak256(abi.encode(erc20.PERMIT_TYPEHASH(), investor, lPool_, amount, 0, block.timestamp))
                 )
             )
         );
 
         vm.prank(random); // random fr permit
-        erc20.permit(investor, address(investmentManager), amount, block.timestamp, v, r, s);
+        erc20.permit(investor, lPool_, amount, block.timestamp, v, r, s);
 
         // investor still able to requestDepositWithPermit
         lPool.requestDepositWithPermit(amount, investor, block.timestamp, v, r, s);
@@ -962,22 +958,13 @@ contract LiquidityPoolTest is TestSetup {
                 abi.encodePacked(
                     "\x19\x01",
                     trancheToken.DOMAIN_SEPARATOR(),
-                    keccak256(
-                        abi.encode(
-                            trancheToken.PERMIT_TYPEHASH(),
-                            investor,
-                            address(investmentManager),
-                            amount,
-                            0,
-                            block.timestamp
-                        )
-                    )
+                    keccak256(abi.encode(trancheToken.PERMIT_TYPEHASH(), investor, lPool_, amount, 0, block.timestamp))
                 )
             )
         );
 
         vm.prank(random); // random fr permit
-        trancheToken.permit(investor, address(investmentManager), amount, block.timestamp, v, r, s);
+        trancheToken.permit(investor, lPool_, amount, block.timestamp, v, r, s);
 
         // investor still able to requestDepositWithPermit
         lPool.requestRedeemWithPermit(amount, investor, block.timestamp, v, r, s);
@@ -1005,11 +992,7 @@ contract LiquidityPoolTest is TestSetup {
                 abi.encodePacked(
                     "\x19\x01",
                     erc20.DOMAIN_SEPARATOR(),
-                    keccak256(
-                        abi.encode(
-                            erc20.PERMIT_TYPEHASH(), investor, address(investmentManager), amount, 0, block.timestamp
-                        )
-                    )
+                    keccak256(abi.encode(erc20.PERMIT_TYPEHASH(), investor, lPool_, amount, 0, block.timestamp))
                 )
             )
         );
@@ -1049,16 +1032,7 @@ contract LiquidityPoolTest is TestSetup {
                 abi.encodePacked(
                     "\x19\x01",
                     trancheToken.DOMAIN_SEPARATOR(),
-                    keccak256(
-                        abi.encode(
-                            trancheToken.PERMIT_TYPEHASH(),
-                            investor,
-                            address(investmentManager),
-                            maxMint,
-                            0,
-                            block.timestamp
-                        )
-                    )
+                    keccak256(abi.encode(trancheToken.PERMIT_TYPEHASH(), investor, lPool_, maxMint, 0, block.timestamp))
                 )
             )
         );
@@ -1077,10 +1051,10 @@ contract LiquidityPoolTest is TestSetup {
         deposit(lPool_, self, amount); // deposit funds first
         centrifugeChain.updateTrancheTokenPrice(lPool.poolId(), lPool.trancheId(), defaultCurrencyId, defaultPrice);
 
-        // will fail - user did not give tranche token allowance to investmentManager
+        // will fail - user did not give tranche token allowance to liquidity pool
         vm.expectRevert(bytes("ERC20/insufficient-allowance"));
         lPool.requestRedeem(amount, self);
-        lPool.approve(address(investmentManager), amount); // add allowance
+        lPool.approve(address(lPool_), amount); // add allowance
 
         // success
         lPool.requestRedeem(amount, self);
@@ -1088,7 +1062,7 @@ contract LiquidityPoolTest is TestSetup {
         assertEq(lPool.userRedeemRequest(self), amount);
 
         // fail: no tokens left
-        lPool.approve(address(investmentManager), amount); // add allowance
+        lPool.approve(address(lPool_), amount); // add allowance
         vm.expectRevert(bytes("ERC20/insufficient-balance"));
         lPool.requestRedeem(amount, self);
 
@@ -1142,7 +1116,7 @@ contract LiquidityPoolTest is TestSetup {
         LiquidityPool lPool = LiquidityPool(lPool_);
         deposit(lPool_, self, amount); // deposit funds first
 
-        lPool.approve(address(investmentManager), amount); // add allowance
+        lPool.approve(address(lPool_), amount); // add allowance
         lPool.requestRedeem(amount, self);
 
         assertEq(lPool.balanceOf(address(escrow)), amount);
@@ -1174,10 +1148,10 @@ contract LiquidityPoolTest is TestSetup {
         deposit(lPool_, self, amount); // deposit funds first
         centrifugeChain.updateTrancheTokenPrice(lPool.poolId(), lPool.trancheId(), defaultCurrencyId, defaultPrice);
 
-        // will fail - user did not give tranche token allowance to investmentManager
+        // will fail - user did not give tranche token allowance to liquidity pool
         vm.expectRevert(bytes("SafeTransferLib/safe-transfer-from-failed"));
         lPool.requestDeposit(amount, self);
-        lPool.approve(address(investmentManager), amount); // add allowance
+        lPool.approve(address(lPool_), amount); // add allowance
 
         lPool.requestRedeem(amount, self);
         assertEq(lPool.balanceOf(address(escrow)), amount);
@@ -1230,7 +1204,7 @@ contract LiquidityPoolTest is TestSetup {
 
         erc20.mint(self, amount);
         centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), self, type(uint64).max); // add user as member
-        erc20.approve(address(investmentManager), amount); // add allowance
+        erc20.approve(lPool_, amount); // add allowance
         lPool.requestDeposit(amount, self);
 
         assertEq(erc20.balanceOf(address(escrow)), amount);
@@ -1257,7 +1231,7 @@ contract LiquidityPoolTest is TestSetup {
         LiquidityPool lPool = LiquidityPool(lPool_);
         centrifugeChain.updateTrancheTokenPrice(lPool.poolId(), lPool.trancheId(), defaultCurrencyId, defaultPrice);
         deposit(lPool_, self, amount);
-        lPool.approve(address(investmentManager), amount);
+        lPool.approve(address(lPool_), amount);
         lPool.requestRedeem(amount, self);
 
         assertEq(lPool.balanceOf(address(escrow)), amount);
@@ -1315,7 +1289,7 @@ contract LiquidityPoolTest is TestSetup {
         erc20.mint(investor, amount);
         centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), investor, type(uint64).max); // add user as member
         vm.prank(investor);
-        erc20.approve(address(investmentManager), amount); // add allowance
+        erc20.approve(_lPool, amount); // add allowance
 
         vm.prank(investor);
         lPool.requestDeposit(amount, investor);

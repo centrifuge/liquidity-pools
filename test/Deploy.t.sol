@@ -84,7 +84,7 @@ contract DeployTest is Test {
     }
 
     function depositMint(uint64 poolId, bytes16 trancheId, uint128 price, uint256 amount, LiquidityPool lPool) public {
-        erc20.approve(address(investmentManager), amount); // add allowance
+        erc20.approve(address(lPool), amount); // add allowance
         lPool.requestDeposit(amount, self);
 
         // ensure funds are locked in escrow
@@ -133,7 +133,7 @@ contract DeployTest is Test {
     {
         vm.expectRevert(bytes("ERC20/insufficient-allowance"));
         lPool.requestRedeem(amount, self);
-        lPool.approve(address(investmentManager), amount);
+        lPool.approve(address(lPool), amount);
         console.log(lPool.allowance(self, address(lPool)));
         lPool.requestRedeem(amount, self);
 
