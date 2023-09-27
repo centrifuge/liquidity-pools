@@ -366,6 +366,20 @@ contract PoolManager is Auth {
     }
 
     // --- Helpers ---
+    function getTranche(uint64 poolId, bytes16 trancheId)
+        public
+        view
+        returns (address token, uint8 decimals, uint256 createdAt, string memory tokenName, string memory tokenSymbol)
+    {
+        Tranche storage tranche = pools[poolId].tranches[trancheId];
+        address token = tranche.token;
+        uint8 decimals = tranche.decimals;
+        uint256 createdAt = tranche.createdAt;
+        string memory tokenName = tranche.tokenName;
+        string memory tokenSymbol = tranche.tokenSymbol;
+        return (token, decimals, createdAt, tokenName, tokenSymbol);
+    }
+
     function getTrancheToken(uint64 poolId, bytes16 trancheId) public view returns (address) {
         Tranche storage tranche = pools[poolId].tranches[trancheId];
         return tranche.token;

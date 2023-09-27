@@ -37,10 +37,13 @@ contract MigrationsTest is TestSetup {
         InvestAndRedeem(poolId, trancheId, _lPool);
 
         // Assume executeScheduledRely() is called on this spell
+
+        // Assume these records are available off-chain
         address[] memory investors = new address[](1);
         investors[0] = investor;
         address[] memory liquidityPools = new address[](1);
         liquidityPools[0] = _lPool;
+
         // Deploy new investmentManager
         MigratedInvestmentManager newInvestmentManager =
         new MigratedInvestmentManager(address(escrow), address(userEscrow), address(investmentManager), investors, liquidityPools);
@@ -85,12 +88,59 @@ contract MigrationsTest is TestSetup {
         root.denyContract(address(userEscrow), address(this));
         root.deny(address(this));
 
+        // very state was migrated successfully
+        verifyMigratedInvestmentManagerState(investors, liquidityPools, investmentManager, newInvestmentManager);
+
         // For the sake of these helper functions, set global variables to new contracts
         gateway = newGateway;
         investmentManager = newInvestmentManager;
 
         // test that everything is working
         InvestAndRedeem(poolId, trancheId, _lPool);
+    }
+
+    function verifyMigratedInvestmentManagerState(
+        address[] memory investors,
+        address[] memory liquidityPools,
+        InvestmentManager investmentManager,
+        InvestmentManager newInvestmentManager
+    ) public {
+        for (uint256 i = 0; i < investors.length; i++) {
+            for (uint256 j = 0; j < liquidityPools.length; j++) {
+                verifyMintDepositWithdraw(investors[i], liquidityPools[j], investmentManager, newInvestmentManager);
+                verifyRedeemAndRemainingOrders(investors[i], liquidityPools[j], investmentManager, newInvestmentManager);
+            }
+        }
+    }
+
+    function verifyMintDepositWithdraw(
+        address investor,
+        address liquidityPool,
+        InvestmentManager investmentManager,
+        InvestmentManager newInvestmentManager
+    ) public {
+        (uint128 newMaxDeposit, uint128 newMaxMint, uint128 newMaxWithdraw,,,) =
+            newInvestmentManager.orderbook(investor, liquidityPool);
+        (uint128 oldMaxDeposit, uint128 oldMaxMint, uint128 oldMaxWithdraw,,,) =
+            investmentManager.orderbook(investor, liquidityPool);
+        assertEq(newMaxDeposit, oldMaxDeposit);
+        assertEq(newMaxMint, oldMaxMint);
+        assertEq(newMaxWithdraw, oldMaxWithdraw);
+    }
+
+    function verifyRedeemAndRemainingOrders(
+        address investor,
+        address liquidityPool,
+        InvestmentManager investmentManager,
+        InvestmentManager newInvestmentManager
+    ) public {
+        (,,, uint128 newMaxRedeem, uint128 newRemainingInvestOrder, uint128 newRemainingRedeemOrder) =
+            newInvestmentManager.orderbook(investor, liquidityPool);
+        (,,, uint128 oldMaxRedeem, uint128 oldRemainingInvestOrder, uint128 oldRemainingRedeemOrder) =
+            investmentManager.orderbook(investor, liquidityPool);
+        assertEq(newMaxRedeem, oldMaxRedeem);
+        assertEq(newRemainingInvestOrder, oldRemainingInvestOrder);
+        assertEq(newRemainingRedeemOrder, oldRemainingRedeemOrder);
     }
 
     function testLiquidityPoolMigration() public {}
