@@ -28,18 +28,26 @@ contract MigratedPoolManager is PoolManager {
         address[][][] memory liquidityPoolCurrencies
     ) PoolManager(escrow_, liquidityPoolFactory_, restrictionManagerFactory_, trancheTokenFactory_) {
         // migrate pools
-        migratePools(oldPoolManager, poolIds, trancheIds, allowedCurrencies, liquidityPoolCurrencies);
+        PoolManager oldPoolManager_ = PoolManager(oldPoolManager);
+        migratePools(oldPoolManager_, poolIds, trancheIds, allowedCurrencies, liquidityPoolCurrencies);
+        for (uint256 i = 0; i < allowedCurrencies.length; i++) {
+            for (uint256 j = 0; j < allowedCurrencies[i].length; j++) {
+                address currencyAddress = allowedCurrencies[i][j];
+                uint128 currencyId = oldPoolManager_.currencyAddressToId(currencyAddress);
+                currencyAddressToId[currencyAddress] = currencyId;
+                currencyIdToAddress[currencyId] = currencyAddress;
+            }
+        }
     }
 
     function migratePools(
-        address oldPoolManager,
+        PoolManager oldPoolManager_,
         uint64[] memory poolIds,
         bytes16[][] memory trancheIds,
         address[][] memory allowedCurrencies,
         address[][][] memory liquidityPoolCurrencies
     ) internal {
         for (uint256 i = 0; i < poolIds.length; i++) {
-            PoolManager oldPoolManager_ = PoolManager(oldPoolManager);
             (, uint256 createdAt) = oldPoolManager_.pools(poolIds[i]);
 
             Pool storage pool = pools[poolIds[i]];
@@ -57,9 +65,12 @@ contract MigratedPoolManager is PoolManager {
         }
     }
 
-    function migrateTranches(Pool storage pool, bytes16[] memory trancheIds, address[][] memory liquidityPoolCurrencies, PoolManager oldPoolManager_)
-        internal
-    {
+    function migrateTranches(
+        Pool storage pool,
+        bytes16[] memory trancheIds,
+        address[][] memory liquidityPoolCurrencies,
+        PoolManager oldPoolManager_
+    ) internal {
         for (uint256 j = 0; j < trancheIds.length; j++) {
             bytes16 trancheId = trancheIds[j];
 

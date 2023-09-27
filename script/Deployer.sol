@@ -32,6 +32,10 @@ contract Deployer is Script {
     PauseAdmin public pauseAdmin;
     DelayedAdmin public delayedAdmin;
     Gateway public gateway;
+    address public liquidityPoolFactory;
+    address public restrictionManagerFactory;
+    address public trancheTokenFactory;
+
 
     function deployInvestmentManager() public {
         escrow = new Escrow();
@@ -40,9 +44,9 @@ contract Deployer is Script {
 
         investmentManager = new InvestmentManager(address(escrow), address(userEscrow));
 
-        address liquidityPoolFactory = address(new LiquidityPoolFactory(address(root)));
-        address restrictionManagerFactory = address(new RestrictionManagerFactory(address(root)));
-        address trancheTokenFactory = address(new TrancheTokenFactory(address(root)));
+        liquidityPoolFactory = address(new LiquidityPoolFactory(address(root)));
+        restrictionManagerFactory = address(new RestrictionManagerFactory(address(root)));
+        trancheTokenFactory = address(new TrancheTokenFactory(address(root)));
         investmentManager = new InvestmentManager(address(escrow), address(userEscrow));
         poolManager =
             new PoolManager(address(escrow), liquidityPoolFactory, restrictionManagerFactory, trancheTokenFactory);

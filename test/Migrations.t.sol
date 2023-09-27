@@ -4,6 +4,7 @@ pragma solidity 0.8.21;
 import "./TestSetup.t.sol";
 import "src/LiquidityPool.sol";
 import {MigratedInvestmentManager} from "test/migrationContracts/MigratedInvestmentManager.sol";
+import {MigratedPoolManager} from "test/migrationContracts/MigratedPoolManager.sol";
 import {MathLib} from "src/util/MathLib.sol";
 
 contract MigrationsTest is TestSetup {
@@ -143,7 +144,79 @@ contract MigrationsTest is TestSetup {
         assertEq(newRemainingRedeemOrder, oldRemainingRedeemOrder);
     }
 
-    function testLiquidityPoolMigration() public {}
+    function testLiquidityPoolMigration() public {
+        InvestAndRedeem(poolId, trancheId, _lPool);
+
+        uint64[] memory poolIds = new uint64[](1);
+        poolIds[0] = poolId;
+        bytes16[][] memory trancheIds = new bytes16[][](1);
+        trancheIds[0] = new bytes16[](1);
+        trancheIds[0][0] = trancheId;
+        address[][] memory allowedCurrencies = new address[][](1);
+        allowedCurrencies[0] = new address[](1);
+        allowedCurrencies[0][0] = address(erc20);
+        address[][][] memory liquidityPoolCurrencies = new address[][][](1);
+        liquidityPoolCurrencies[0] = new address[][](1);
+        liquidityPoolCurrencies[0][0] = new address[](1);
+        liquidityPoolCurrencies[0][0][0] = address(erc20);
+
+
+        MigratedPoolManager newPoolManager = new MigratedPoolManager(
+            address(escrow),
+            liquidityPoolFactory,
+            restrictionManagerFactory,
+            trancheTokenFactory,
+            address(poolManager),
+            poolIds,
+            trancheIds,
+            allowedCurrencies,
+            liquidityPoolCurrencies
+        );
+    }
+
+    function verifyMigratedPoolManagerState(uint64[] memory poolIds, bytes16[][] memory trancheIds, address[][] memory allowedCurrencies, address[][][] memory liquidityPoolCurrencies, PoolManager poolManager, PoolManager newPoolManager) public {
+        for (uint256 i = 0; i < poolIds.length; i++) {
+            (, uint256 newCreatedAt) = newPoolManager.pools(poolIds[i]);
+            (, uint256 oldCreatedAt) = poolManager.pools(poolIds[i]);
+            assertEq(newCreatedAt, oldCreatedAt);
+
+            for (uint256 j = 0; j < trancheIds[i].length; j++) {
+                verifyTranche(poolIds[i], trancheIds[i][j], poolManager, newPoolManager);
+                for (uint256 k = 0; k < liquidityPoolCurrencies[i][j].length; k++) {
+                    verifyLiquidityPoolCurrency(poolIds[i], trancheIds[i][j], liquidityPoolCurrencies[i][j][k], poolManager, newPoolManager);
+                }
+            }
+
+            for (uint256 j = 0; j < allowedCurrencies[i].length; j++) {
+                verifyAllowedCurrency(poolIds[i], allowedCurrencies[i][j], poolManager, newPoolManager);
+            }
+
+        }
+    }
+
+    function verifyTranche(uint64 poolId, bytes16 trancheId, PoolManager poolManager, PoolManager newPoolManager) public {
+        (address newToken, uint8 newDecimals, uint256 newCreatedAt, string memory newTokenName, string memory newTokenSymbol) =
+            newPoolManager.getTranche(poolId, trancheId);
+        (address oldToken, uint8 oldDecimals, uint256 oldCreatedAt, string memory oldTokenName, string memory oldTokenSymbol) =
+            poolManager.getTranche(poolId, trancheId);
+        assertEq(newToken, oldToken);
+        assertEq(newDecimals, oldDecimals);
+        assertEq(newCreatedAt, oldCreatedAt);
+        assertEq(newTokenName, oldTokenName);
+        assertEq(newTokenSymbol, oldTokenSymbol);
+    }
+
+    function verifyAllowedCurrency(uint64 poolId, address currencyAddress, PoolManager poolManager, PoolManager newPoolManager) public {
+        bool newAllowed = newPoolManager.isAllowedAsPoolCurrency(poolId, currencyAddress);
+        bool oldAllowed = poolManager.isAllowedAsPoolCurrency(poolId, currencyAddress);
+        assertEq(newAllowed, oldAllowed);
+    }
+
+    function verifyLiquidityPoolCurrency(uint64 poolId, bytes16 trancheId, address currencyAddresses, PoolManager poolManager, PoolManager newPoolManager) public {
+        address newLiquidityPool = newPoolManager.getLiquidityPool(poolId, trancheId, currencyAddresses);
+        address oldLiquidityPool = poolManager.getLiquidityPool(poolId, trancheId, currencyAddresses);
+        assertEq(newLiquidityPool, oldLiquidityPool);
+    }
 
     function testRootMigration() public {}
 
