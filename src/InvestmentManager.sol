@@ -322,34 +322,31 @@ contract InvestmentManager is Auth {
 
         // Convert inputs into price decimals
         (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getPoolDecimals(liquidityPool);
-        uint256 currencyPayoutInPriceDecimals = _toPriceDecimals(currencyPayout, currencyDecimals);
         uint256 trancheTokenPayoutInPriceDecimals = _toPriceDecimals(trancheTokenPayout, trancheTokenDecimals);
 
         // Calculate execution price based on currency payout / tranche token payout
-        uint256 executionPrice = currencyPayoutInPriceDecimals.mulDiv(
+        uint256 executionPrice = _toPriceDecimals(currencyPayout, currencyDecimals).mulDiv(
             10 ** PRICE_DECIMALS, trancheTokenPayoutInPriceDecimals, MathLib.Rounding.Down
         );
 
         // Calculate new max mint in price decimals
         LPValues storage lpValues = orderbook[liquidityPool][recipient];
-        uint256 maxMintInPriceDecimals = _toPriceDecimals(lpValues.maxMint, trancheTokenDecimals);
         uint128 newMaxMint = lpValues.maxMint + trancheTokenPayout;
         uint256 newMaxMintInPriceDecimals = _toPriceDecimals(newMaxMint, trancheTokenDecimals);
 
         // New weighted average deposit price = (oldPrice * maxMint) / newMaxMint + (executionPrice * trancheTokenPayout / newMaxMint
         lpValues.depositPrice = lpValues.depositPrice.mulDiv(
-            maxMintInPriceDecimals, newMaxMintInPriceDecimals, MathLib.Rounding.Down
+            _toPriceDecimals(lpValues.maxMint, trancheTokenDecimals), newMaxMintInPriceDecimals, MathLib.Rounding.Down
         ) + executionPrice.mulDiv(trancheTokenPayoutInPriceDecimals, newMaxMintInPriceDecimals, MathLib.Rounding.Down);
 
         lpValues.maxMint = newMaxMint;
         lpValues.remainingInvestOrder = remainingInvestOrder;
 
         // Mint tranche tokens
-        ERC20Like trancheToken = ERC20Like(LiquidityPoolLike(liquidityPool).share());
-        trancheToken.mint(address(escrow), trancheTokenPayout); // mint to escrow. Recipient can claim by calling withdraw / redeem
+        ERC20Like(LiquidityPoolLike(liquidityPool).share()).mint(address(escrow), trancheTokenPayout); // mint to escrow. Recipient can claim by calling withdraw / redeem
         _updateLiquidityPoolPrice(liquidityPool, currencyPayout, trancheTokenPayout);
 
-        emit ExecutedCollectInvest(poolId, trancheId, recipient, currency, currencyPayout, trancheTokenPayout);
+        // emit ExecutedCollectInvest(poolId, trancheId, recipient, currency, currencyPayout, trancheTokenPayout);
     }
 
     function handleExecutedCollectRedeem(
