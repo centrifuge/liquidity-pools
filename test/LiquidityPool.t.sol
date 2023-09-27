@@ -164,6 +164,13 @@ contract LiquidityPoolTest is TestSetup {
         vm.expectRevert(bytes("LiquidityPool/no-approval"));
         lPool.requestRedeem(amount, investor);
 
+        // fail: ward can not requestRedeem if investment manager has no auth on the tranche token
+        root.denyContract(address(lPool.share()), address(investmentManager));
+        vm.prank(investor);
+        vm.expectRevert(bytes("Auth/not-authorized"));
+        lPool.requestRedeem(amount, investor);
+        root.relyContract(address(lPool.share()), address(investmentManager));
+
         uint128 tokenAmount = uint128(lPool.balanceOf(address(escrow)));
         centrifugeChain.isExecutedCollectRedeem(
             lPool.poolId(),
