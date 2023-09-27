@@ -4,7 +4,7 @@ on: "workflow_dispatch"
 
 jobs:
   run-smtchecker:
-    runs-on: "macos-latest"
+    runs-on: "ubuntu-latest"
     steps:
       - name: "Check out the repo"
         uses: "actions/checkout@v3"
