@@ -24,9 +24,20 @@ contract MigratedPoolManager is PoolManager {
         address oldPoolManager,
         uint64[] memory poolIds,
         bytes16[][] memory trancheIds,
-        address[][] memory allowedCurrencies
+        address[][] memory allowedCurrencies,
+        address[][][] memory liquidityPoolCurrencies
     ) PoolManager(escrow_, liquidityPoolFactory_, restrictionManagerFactory_, trancheTokenFactory_) {
         // migrate pools
+        migratePools(oldPoolManager, poolIds, trancheIds, allowedCurrencies, liquidityPoolCurrencies);
+    }
+
+    function migratePools(
+        address oldPoolManager,
+        uint64[] memory poolIds,
+        bytes16[][] memory trancheIds,
+        address[][] memory allowedCurrencies,
+        address[][][] memory liquidityPoolCurrencies
+    ) internal {
         for (uint256 i = 0; i < poolIds.length; i++) {
             PoolManager oldPoolManager_ = PoolManager(oldPoolManager);
             (, uint256 createdAt) = oldPoolManager_.pools(poolIds[i]);
@@ -36,34 +47,36 @@ contract MigratedPoolManager is PoolManager {
             pool.createdAt = createdAt;
 
             // migrate tranches
-            for (uint256 j = 0; j < trancheIds[i].length; j++) {
-                bytes16 trancheId = trancheIds[i][j];
-
-                (address token, uint8 decimals, uint256 createdAt, string memory tokenName, string memory tokenSymbol) =
-                    oldPoolManager_.getTranche(poolIds[i], trancheId);
-
-                pool.tranches[trancheId].token = token;
-                pool.tranches[trancheId].decimals = decimals;
-                pool.tranches[trancheId].createdAt = createdAt;
-                pool.tranches[trancheId].tokenName = tokenName;
-                pool.tranches[trancheId].tokenSymbol = tokenSymbol;
-
-                // (, uint256 maturityDate, uint256 totalSupply, uint256 totalRedeemable) = oldPoolManager.tranches(poolIds[i], trancheId);
-                // tranche.trancheId = trancheId;
-                // tranche.maturityDate = maturityDate;
-                // tranche.totalSupply = totalSupply;
-                // tranche.totalRedeemable = totalRedeemable;
-            }
+            migrateTranches(pool, trancheIds[i], liquidityPoolCurrencies[i], oldPoolManager_);
 
             // migrate allowed currencies
             for (uint256 j = 0; j < allowedCurrencies[i].length; j++) {
                 address currencyAddress = allowedCurrencies[i][j];
                 pool.allowedCurrencies[currencyAddress] = true;
             }
+        }
+    }
 
-            // address currencyAddress = oldPoolManager_.currencyIdToAddress(pool.currencyId);
-            // currencyIdToAddress[pool.currencyId] = currencyAddress;
-            // currencyAddressToId[currencyAddress] = pool.currencyId;
+    function migrateTranches(Pool storage pool, bytes16[] memory trancheIds, address[][] memory liquidityPoolCurrencies, PoolManager oldPoolManager_)
+        internal
+    {
+        for (uint256 j = 0; j < trancheIds.length; j++) {
+            bytes16 trancheId = trancheIds[j];
+
+            (address token, uint8 decimals, uint256 createdAt, string memory tokenName, string memory tokenSymbol) =
+                oldPoolManager_.getTranche(pool.poolId, trancheId);
+
+            pool.tranches[trancheId].token = token;
+            pool.tranches[trancheId].decimals = decimals;
+            pool.tranches[trancheId].createdAt = createdAt;
+            pool.tranches[trancheId].tokenName = tokenName;
+            pool.tranches[trancheId].tokenSymbol = tokenSymbol;
+
+            for (uint256 k = 0; k < liquidityPoolCurrencies[j].length; k++) {
+                address currencyAddress = liquidityPoolCurrencies[j][k];
+                pool.tranches[trancheId].liquidityPools[currencyAddress] =
+                    oldPoolManager_.getLiquidityPool(pool.poolId, trancheId, currencyAddress);
+            }
         }
     }
 }
