@@ -302,9 +302,8 @@ contract LiquidityPoolTest is TestSetup {
     }
 
     function testApprove(uint256 amount, uint256 approvalAmount) public {
-        amount = uint128(bound(amount, 2, MAX_UINT128));
-        approvalAmount = uint128(bound(approvalAmount, 2, MAX_UINT128));
-        vm.assume(amount > approvalAmount);
+        approvalAmount = uint128(bound(approvalAmount, 2, MAX_UINT128 - 1));
+        amount = uint128(bound(amount, approvalAmount + 1, MAX_UINT128)); // amount > approvalAmount
 
         address receiver = makeAddr("receiver");
         address lPool_ = deploySimplePool();
@@ -1221,9 +1220,8 @@ contract LiquidityPoolTest is TestSetup {
     }
 
     function testDecreaseDepositRequest(uint256 amount, uint256 decreaseAmount) public {
-        amount = uint128(bound(amount, 2, MAX_UINT128));
-        decreaseAmount = uint128(bound(decreaseAmount, 2, MAX_UINT128));
-        vm.assume(amount > decreaseAmount);
+        decreaseAmount = uint128(bound(decreaseAmount, 2, MAX_UINT128 - 1));
+        amount = uint128(bound(amount, decreaseAmount + 1, MAX_UINT128)); // amount > decreaseAmount
         uint128 price = 2 * 10 ** 27;
 
         address lPool_ = deploySimplePool();
@@ -1252,9 +1250,8 @@ contract LiquidityPoolTest is TestSetup {
     }
 
     function testDecreaseRedeemRequest(uint256 amount, uint256 decreaseAmount) public {
-        amount = uint128(bound(amount, 2, MAX_UINT128));
-        decreaseAmount = uint128(bound(decreaseAmount, 2, MAX_UINT128));
-        vm.assume(amount > decreaseAmount);
+        decreaseAmount = uint128(bound(decreaseAmount, 2, MAX_UINT128 - 1));
+        amount = uint128(bound(amount, decreaseAmount + 1, MAX_UINT128)); // amount > decreaseAmount
 
         address lPool_ = deploySimplePool();
         LiquidityPool lPool = LiquidityPool(lPool_);
