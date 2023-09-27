@@ -441,7 +441,6 @@ contract LiquidityPoolTest is TestSetup {
         assertEq(lPool.balanceOf(self), firstTrancheTokenPayout + secondTrancheTokenPayout);
 
         // redeem
-        lPool.approve(address(investmentManager), firstTrancheTokenPayout + secondTrancheTokenPayout);
         lPool.requestRedeem(firstTrancheTokenPayout + secondTrancheTokenPayout, self);
 
         // trigger executed collectRedeem at a price of 1.5
@@ -528,7 +527,6 @@ contract LiquidityPoolTest is TestSetup {
         assertEq(lPool.balanceOf(self), firstTrancheTokenPayout + secondTrancheTokenPayout);
 
         // redeem
-        lPool.approve(address(investmentManager), firstTrancheTokenPayout + secondTrancheTokenPayout);
         lPool.requestRedeem(firstTrancheTokenPayout + secondTrancheTokenPayout, self);
 
         // trigger executed collectRedeem at a price of 1.5
@@ -942,51 +940,7 @@ contract LiquidityPoolTest is TestSetup {
         assertEq(erc20.balanceOf(investor), 0);
     }
 
-    function testRedeemWithPermitFR(uint256 amount, address random) public {
-        amount = uint128(bound(amount, 2, MAX_UINT128));
-        vm.assume(addressAssumption(random));
-
-        // Use a wallet with a known private key so we can sign the permit message
-        address investor = vm.addr(0xABCD);
-
-        address lPool_ = deploySimplePool();
-        LiquidityPool lPool = LiquidityPool(lPool_);
-        deposit(lPool_, investor, amount); // deposit funds first
-
-        TrancheToken trancheToken = TrancheToken(address(lPool.share()));
-
-        // Sign permit for redeeming tranche tokens
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
-            0xABCD,
-            keccak256(
-                abi.encodePacked(
-                    "\x19\x01",
-                    trancheToken.DOMAIN_SEPARATOR(),
-                    keccak256(
-                        abi.encode(
-                            trancheToken.PERMIT_TYPEHASH(),
-                            investor,
-                            address(investmentManager),
-                            amount,
-                            0,
-                            block.timestamp
-                        )
-                    )
-                )
-            )
-        );
-
-        vm.prank(random); // random fr permit
-        trancheToken.permit(investor, address(investmentManager), amount, block.timestamp, v, r, s);
-
-        // investor still able to requestDepositWithPermit
-        lPool.requestRedeemWithPermit(amount, investor, block.timestamp, v, r, s);
-        // ensure tokens are locked in escrow
-        assertEq(trancheToken.balanceOf(address(escrow)), amount);
-        assertEq(trancheToken.balanceOf(investor), 0);
-    }
-
-    function testDepositAndRedeemWithPermit(uint256 amount) public {
+    function testDepositWithPermit(uint256 amount) public {
         amount = uint128(bound(amount, 2, MAX_UINT128));
 
         // Use a wallet with a known private key so we can sign the permit message
@@ -1041,32 +995,6 @@ contract LiquidityPoolTest is TestSetup {
 
         TrancheToken trancheToken = TrancheToken(address(lPool.share()));
         assertEq(trancheToken.balanceOf(address(investor)), maxMint);
-
-        // Sign permit for redeeming tranche tokens
-        (v, r, s) = vm.sign(
-            0xABCD,
-            keccak256(
-                abi.encodePacked(
-                    "\x19\x01",
-                    trancheToken.DOMAIN_SEPARATOR(),
-                    keccak256(
-                        abi.encode(
-                            trancheToken.PERMIT_TYPEHASH(),
-                            investor,
-                            address(investmentManager),
-                            maxMint,
-                            0,
-                            block.timestamp
-                        )
-                    )
-                )
-            )
-        );
-
-        lPool.requestRedeemWithPermit(maxMint, investor, block.timestamp, v, r, s);
-        // ensure tokens are locked in escrow
-        assertEq(trancheToken.balanceOf(address(escrow)), maxMint);
-        assertEq(trancheToken.balanceOf(investor), 0);
     }
 
     function testRedeem(uint256 amount) public {
@@ -1077,18 +1005,12 @@ contract LiquidityPoolTest is TestSetup {
         deposit(lPool_, self, amount); // deposit funds first
         centrifugeChain.updateTrancheTokenPrice(lPool.poolId(), lPool.trancheId(), defaultCurrencyId, defaultPrice);
 
-        // will fail - user did not give tranche token allowance to investmentManager
-        vm.expectRevert(bytes("ERC20/insufficient-allowance"));
-        lPool.requestRedeem(amount, self);
-        lPool.approve(address(investmentManager), amount); // add allowance
-
         // success
         lPool.requestRedeem(amount, self);
         assertEq(lPool.balanceOf(address(escrow)), amount);
         assertEq(lPool.userRedeemRequest(self), amount);
 
         // fail: no tokens left
-        lPool.approve(address(investmentManager), amount); // add allowance
         vm.expectRevert(bytes("ERC20/insufficient-balance"));
         lPool.requestRedeem(amount, self);
 
@@ -1142,9 +1064,7 @@ contract LiquidityPoolTest is TestSetup {
         LiquidityPool lPool = LiquidityPool(lPool_);
         deposit(lPool_, self, amount); // deposit funds first
 
-        lPool.approve(address(investmentManager), amount); // add allowance
         lPool.requestRedeem(amount, self);
-
         assertEq(lPool.balanceOf(address(escrow)), amount);
         assertEq(lPool.balanceOf(self), 0);
 
@@ -1177,7 +1097,6 @@ contract LiquidityPoolTest is TestSetup {
         // will fail - user did not give tranche token allowance to investmentManager
         vm.expectRevert(bytes("SafeTransferLib/safe-transfer-from-failed"));
         lPool.requestDeposit(amount, self);
-        lPool.approve(address(investmentManager), amount); // add allowance
 
         lPool.requestRedeem(amount, self);
         assertEq(lPool.balanceOf(address(escrow)), amount);
@@ -1257,7 +1176,6 @@ contract LiquidityPoolTest is TestSetup {
         LiquidityPool lPool = LiquidityPool(lPool_);
         centrifugeChain.updateTrancheTokenPrice(lPool.poolId(), lPool.trancheId(), defaultCurrencyId, defaultPrice);
         deposit(lPool_, self, amount);
-        lPool.approve(address(investmentManager), amount);
         lPool.requestRedeem(amount, self);
 
         assertEq(lPool.balanceOf(address(escrow)), amount);

@@ -267,15 +267,6 @@ contract LiquidityPool is Auth, IERC4626 {
         emit RedeemRequest(owner, shares);
     }
 
-    /// @notice Similar to requestRedeem, but with a permit option.
-    function requestRedeemWithPermit(uint256 shares, address owner, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
-        public
-    {
-        _withPermit(address(share), owner, address(investmentManager), shares, deadline, v, r, s);
-        investmentManager.requestRedeem(address(this), shares, owner);
-        emit RedeemRequest(owner, shares);
-    }
-
     /// @notice Request decreasing the outstanding redemption orders. Will return the shares once the order
     ///         on Centrifuge is successfully decreased.
     function decreaseRedeemRequest(uint256 shares, address owner) public withApproval(owner) {
