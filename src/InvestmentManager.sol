@@ -546,12 +546,8 @@ contract InvestmentManager is Auth {
         view
         returns (uint256 trancheTokenAmount)
     {
-        uint128 currencyAmount = _toUint128(_currencyAmount);
-        uint256 depositPrice = calculateDepositPrice(user, liquidityPool);
-        if (depositPrice == 0) return 0;
-
-        trancheTokenAmount =
-            uint256(_calculateTrancheTokenAmount(currencyAmount, liquidityPool, depositPrice, MathLib.Rounding.Up));
+        // TODO
+        return 0;
     }
 
     /// @return currencyAmount is type of uint256 to support the EIP4626 Liquidity Pool interface
@@ -560,11 +556,8 @@ contract InvestmentManager is Auth {
         view
         returns (uint256 currencyAmount)
     {
-        uint128 trancheTokenAmount = _toUint128(_trancheTokenAmount);
-        uint256 depositPrice = calculateDepositPrice(user, liquidityPool);
-        if (depositPrice == 0) return 0;
-
-        currencyAmount = uint256(_calculateCurrencyAmount(trancheTokenAmount, liquidityPool, depositPrice));
+        // TODO
+        return 0;
     }
 
     /// @return trancheTokenAmount is type of uint256 to support the EIP4626 Liquidity Pool interface
@@ -573,12 +566,8 @@ contract InvestmentManager is Auth {
         view
         returns (uint256 trancheTokenAmount)
     {
-        uint128 currencyAmount = _toUint128(_currencyAmount);
-        uint256 redeemPrice = calculateRedeemPrice(user, liquidityPool);
-        if (redeemPrice == 0) return 0;
-
-        trancheTokenAmount =
-            uint256(_calculateTrancheTokenAmount(currencyAmount, liquidityPool, redeemPrice, MathLib.Rounding.Down));
+        // TODO
+        return 0;
     }
 
     /// @return currencyAmount is type of uint256 to support the EIP4626 Liquidity Pool interface
@@ -587,11 +576,8 @@ contract InvestmentManager is Auth {
         view
         returns (uint256 currencyAmount)
     {
-        uint128 trancheTokenAmount = _toUint128(_trancheTokenAmount);
-        uint256 redeemPrice = calculateRedeemPrice(user, liquidityPool);
-        if (redeemPrice == 0) return 0;
-
-        currencyAmount = uint256(_calculateCurrencyAmount(trancheTokenAmount, liquidityPool, redeemPrice));
+        // TODO
+        return 0;
     }
 
     function userDepositRequest(address liquidityPool, address user) public view returns (uint256 currencyAmount) {
@@ -600,6 +586,14 @@ contract InvestmentManager is Auth {
 
     function userRedeemRequest(address liquidityPool, address user) public view returns (uint256 trancheTokenAmount) {
         trancheTokenAmount = uint256(orderbook[liquidityPool][user].remainingRedeemOrder);
+    }
+
+    function depositPrice(address liquidityPool, address user) public view returns (uint256) {
+        return uint256(orderbook[liquidityPool][user].depositPrice);
+    }
+
+    function redeemPrice(address liquidityPool, address user) public view returns (uint256) {
+        return uint256(orderbook[liquidityPool][user].redeemPrice);
     }
 
     // --- Liquidity Pool processing functions ---
@@ -734,7 +728,7 @@ contract InvestmentManager is Auth {
         // uint128 price =
         //     _toUint128(_calculatePrice(currencyPayout, trancheTokensPayout, liquidityPool, MathLib.Rounding.Down));
         // TODO: fix
-        uint128 price = 1 * 10 ** PRICE_DECIMALS;
+        uint128 price = _toUint128(1 * 10 ** PRICE_DECIMALS);
         LiquidityPoolLike(liquidityPool).updatePrice(price);
     }
 
