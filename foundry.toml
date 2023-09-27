@@ -7,7 +7,7 @@ solc_version = "0.8.21"
 evm_version = "paris" # to prevent usage of PUSH0, which is not supported on all chains
 
 optimizer = true
-optimizer_runs = 10_000
+optimizer_runs = 1_000
 verbosity = 3
 
 [profile.default.fuzz]
@@ -43,7 +43,7 @@ fail_on_revert = false
   "src/UserEscrow.sol" = ["UserEscrow"]
   "src/Root.sol" = ["Root"]
   "src/token/ERC20.sol" = ["ERC20"]
-  "src/token/Tranche.sol" = ["Tranche"]
+  "src/token/Tranche.sol" = ["TrancheToken"]
   "src/token/RestrictionManager.sol" = ["RestrictionManager"]
   "src/admins/DelayedAdmin.sol" = ["DelayedAdmin"]
   "src/admins/PauseAdmin.sol" = ["PauseAdmin"]
