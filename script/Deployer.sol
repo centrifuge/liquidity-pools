@@ -36,7 +36,6 @@ contract Deployer is Script {
     address public restrictionManagerFactory;
     address public trancheTokenFactory;
 
-
     function deployInvestmentManager() public {
         escrow = new Escrow();
         userEscrow = new UserEscrow();

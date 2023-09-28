@@ -32,12 +32,15 @@ contract MigrationsTest is TestSetup {
         investorCurrencyAmount = 1000 * 10 ** erc20.decimals();
         deal(address(erc20), investor, investorCurrencyAmount);
         centrifugeChain.updateMember(poolId, trancheId, investor, uint64(block.timestamp + 1000 days));
+        removeDeployerAccess(address(router));
     }
 
     function testInvestmentManagerMigration() public {
         InvestAndRedeem(poolId, trancheId, _lPool);
 
-        // Assume executeScheduledRely() is called on this spell
+        centrifugeChain.incomingScheduleUpgrade(address(this));
+        vm.warp(block.timestamp + 3 days);
+        root.executeScheduledRely(address(this));
 
         // Assume these records are available off-chain
         address[] memory investors = new address[](1);
@@ -49,9 +52,20 @@ contract MigrationsTest is TestSetup {
         MigratedInvestmentManager newInvestmentManager =
         new MigratedInvestmentManager(address(escrow), address(userEscrow), address(investmentManager), investors, liquidityPools);
 
-        // Deploy new contracts that take InvestmentManager as constructor argument
-        Gateway newGateway =
-            new Gateway(address(root), address(newInvestmentManager), address(poolManager), address(router));
+        // Rewire everything
+        root.relyContract(address(gateway), address(this));
+        gateway.file("investmentManager", address(newInvestmentManager));
+        newInvestmentManager.file("poolManager", address(poolManager));
+        root.relyContract(address(poolManager), address(this));
+        poolManager.file("investmentManager", address(newInvestmentManager));
+        newInvestmentManager.file("gateway", address(gateway));
+        newInvestmentManager.rely(address(root));
+        newInvestmentManager.rely(address(poolManager));
+        root.relyContract(address(escrow), address(this));
+        escrow.rely(address(newInvestmentManager));
+        root.relyContract(address(userEscrow), address(this));
+        userEscrow.rely(address(newInvestmentManager));
+        root.relyContract(address(router), address(this));
 
         // file investmentManager on all LiquidityPools
         for (uint256 i = 0; i < liquidityPools.length; i++) {
@@ -64,26 +78,9 @@ contract MigrationsTest is TestSetup {
             escrow.approve(address(lPool), address(newInvestmentManager), type(uint256).max);
         }
 
-        // Rewire everything
-        newInvestmentManager.file("poolManager", address(poolManager));
-        root.relyContract(address(poolManager), address(this));
-        poolManager.file("investmentManager", address(newInvestmentManager));
-        newInvestmentManager.file("gateway", address(newGateway));
-        poolManager.file("gateway", address(newGateway));
-        newInvestmentManager.rely(address(root));
-        newInvestmentManager.rely(address(poolManager));
-        newGateway.rely(address(root));
-        root.relyContract(address(escrow), address(this));
-        Escrow(address(escrow)).rely(address(newInvestmentManager));
-        root.relyContract(address(userEscrow), address(this));
-        UserEscrow(address(userEscrow)).rely(address(newInvestmentManager));
-
-        root.relyContract(address(router), address(this));
-        router.file("gateway", address(newGateway));
-
         // clean up
         root.denyContract(address(newInvestmentManager), address(this));
-        root.denyContract(address(newGateway), address(this));
+        root.denyContract(address(gateway), address(this));
         root.denyContract(address(poolManager), address(this));
         root.denyContract(address(escrow), address(this));
         root.denyContract(address(userEscrow), address(this));
@@ -93,7 +90,6 @@ contract MigrationsTest is TestSetup {
         verifyMigratedInvestmentManagerState(investors, liquidityPools, investmentManager, newInvestmentManager);
 
         // For the sake of these helper functions, set global variables to new contracts
-        gateway = newGateway;
         investmentManager = newInvestmentManager;
 
         // test that everything is working
@@ -144,9 +140,14 @@ contract MigrationsTest is TestSetup {
         assertEq(newRemainingRedeemOrder, oldRemainingRedeemOrder);
     }
 
-    function testLiquidityPoolMigration() public {
+    function testPoolManagerMigration() public {
         InvestAndRedeem(poolId, trancheId, _lPool);
 
+        centrifugeChain.incomingScheduleUpgrade(address(this));
+        vm.warp(block.timestamp + 3 days);
+        root.executeScheduledRely(address(this));
+
+        // assume these records are available off-chain
         uint64[] memory poolIds = new uint64[](1);
         poolIds[0] = poolId;
         bytes16[][] memory trancheIds = new bytes16[][](1);
@@ -160,7 +161,6 @@ contract MigrationsTest is TestSetup {
         liquidityPoolCurrencies[0][0] = new address[](1);
         liquidityPoolCurrencies[0][0][0] = address(erc20);
 
-
         MigratedPoolManager newPoolManager = new MigratedPoolManager(
             address(escrow),
             liquidityPoolFactory,
@@ -172,9 +172,50 @@ contract MigrationsTest is TestSetup {
             allowedCurrencies,
             liquidityPoolCurrencies
         );
+
+        verifyMigratedPoolManagerState(
+            poolIds, trancheIds, allowedCurrencies, liquidityPoolCurrencies, poolManager, newPoolManager
+        );
+
+        LiquidityPoolFactory(liquidityPoolFactory).rely(address(newPoolManager));
+        TrancheTokenFactory(trancheTokenFactory).rely(address(newPoolManager));
+        root.relyContract(address(gateway), address(this));
+        gateway.file("poolManager", address(newPoolManager));
+        root.relyContract(address(investmentManager), address(this));
+        investmentManager.file("poolManager", address(newPoolManager));
+        newPoolManager.file("investmentManager", address(investmentManager));
+        newPoolManager.file("gateway", address(gateway));
+        investmentManager.rely(address(newPoolManager));
+        newPoolManager.rely(address(root));
+        root.relyContract(address(escrow), address(this));
+        escrow.rely(address(newPoolManager));
+
+        root.denyContract(address(investmentManager), address(this));
+        root.denyContract(address(gateway), address(this));
+        root.denyContract(address(newPoolManager), address(this));
+        root.denyContract(address(escrow), address(this));
+        root.deny(address(this));
+
+        poolManager = newPoolManager;
+
+        centrifugeChain.addPool(poolId + 1); // add pool
+        centrifugeChain.addTranche(poolId + 1, trancheId, "Test Token 2", "TT2", trancheTokenDecimals); // add tranche
+        centrifugeChain.allowInvestmentCurrency(poolId + 1, currencyId);
+        poolManager.deployTranche(poolId + 1, trancheId);
+        address _lPool2 = poolManager.deployLiquidityPool(poolId + 1, trancheId, address(erc20));
+        centrifugeChain.updateMember(poolId + 1, trancheId, investor, uint64(block.timestamp + 1000 days));
+
+        InvestAndRedeem(poolId + 1, trancheId, _lPool2);
     }
 
-    function verifyMigratedPoolManagerState(uint64[] memory poolIds, bytes16[][] memory trancheIds, address[][] memory allowedCurrencies, address[][][] memory liquidityPoolCurrencies, PoolManager poolManager, PoolManager newPoolManager) public {
+    function verifyMigratedPoolManagerState(
+        uint64[] memory poolIds,
+        bytes16[][] memory trancheIds,
+        address[][] memory allowedCurrencies,
+        address[][][] memory liquidityPoolCurrencies,
+        PoolManager poolManager,
+        PoolManager newPoolManager
+    ) public {
         for (uint256 i = 0; i < poolIds.length; i++) {
             (, uint256 newCreatedAt) = newPoolManager.pools(poolIds[i]);
             (, uint256 oldCreatedAt) = poolManager.pools(poolIds[i]);
@@ -183,22 +224,35 @@ contract MigrationsTest is TestSetup {
             for (uint256 j = 0; j < trancheIds[i].length; j++) {
                 verifyTranche(poolIds[i], trancheIds[i][j], poolManager, newPoolManager);
                 for (uint256 k = 0; k < liquidityPoolCurrencies[i][j].length; k++) {
-                    verifyLiquidityPoolCurrency(poolIds[i], trancheIds[i][j], liquidityPoolCurrencies[i][j][k], poolManager, newPoolManager);
+                    verifyLiquidityPoolCurrency(
+                        poolIds[i], trancheIds[i][j], liquidityPoolCurrencies[i][j][k], poolManager, newPoolManager
+                    );
                 }
             }
 
             for (uint256 j = 0; j < allowedCurrencies[i].length; j++) {
                 verifyAllowedCurrency(poolIds[i], allowedCurrencies[i][j], poolManager, newPoolManager);
             }
-
         }
     }
 
-    function verifyTranche(uint64 poolId, bytes16 trancheId, PoolManager poolManager, PoolManager newPoolManager) public {
-        (address newToken, uint8 newDecimals, uint256 newCreatedAt, string memory newTokenName, string memory newTokenSymbol) =
-            newPoolManager.getTranche(poolId, trancheId);
-        (address oldToken, uint8 oldDecimals, uint256 oldCreatedAt, string memory oldTokenName, string memory oldTokenSymbol) =
-            poolManager.getTranche(poolId, trancheId);
+    function verifyTranche(uint64 poolId, bytes16 trancheId, PoolManager poolManager, PoolManager newPoolManager)
+        public
+    {
+        (
+            address newToken,
+            uint8 newDecimals,
+            uint256 newCreatedAt,
+            string memory newTokenName,
+            string memory newTokenSymbol
+        ) = newPoolManager.getTranche(poolId, trancheId);
+        (
+            address oldToken,
+            uint8 oldDecimals,
+            uint256 oldCreatedAt,
+            string memory oldTokenName,
+            string memory oldTokenSymbol
+        ) = poolManager.getTranche(poolId, trancheId);
         assertEq(newToken, oldToken);
         assertEq(newDecimals, oldDecimals);
         assertEq(newCreatedAt, oldCreatedAt);
@@ -206,21 +260,28 @@ contract MigrationsTest is TestSetup {
         assertEq(newTokenSymbol, oldTokenSymbol);
     }
 
-    function verifyAllowedCurrency(uint64 poolId, address currencyAddress, PoolManager poolManager, PoolManager newPoolManager) public {
+    function verifyAllowedCurrency(
+        uint64 poolId,
+        address currencyAddress,
+        PoolManager poolManager,
+        PoolManager newPoolManager
+    ) public {
         bool newAllowed = newPoolManager.isAllowedAsPoolCurrency(poolId, currencyAddress);
         bool oldAllowed = poolManager.isAllowedAsPoolCurrency(poolId, currencyAddress);
         assertEq(newAllowed, oldAllowed);
     }
 
-    function verifyLiquidityPoolCurrency(uint64 poolId, bytes16 trancheId, address currencyAddresses, PoolManager poolManager, PoolManager newPoolManager) public {
+    function verifyLiquidityPoolCurrency(
+        uint64 poolId,
+        bytes16 trancheId,
+        address currencyAddresses,
+        PoolManager poolManager,
+        PoolManager newPoolManager
+    ) public {
         address newLiquidityPool = newPoolManager.getLiquidityPool(poolId, trancheId, currencyAddresses);
         address oldLiquidityPool = poolManager.getLiquidityPool(poolId, trancheId, currencyAddresses);
         assertEq(newLiquidityPool, oldLiquidityPool);
     }
-
-    function testRootMigration() public {}
-
-    function testPoolManagerMigration() public {}
 
     // --- Investment and Redeem Flow ---
 
