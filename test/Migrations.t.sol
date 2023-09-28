@@ -2,7 +2,7 @@
 pragma solidity 0.8.21;
 
 import "./TestSetup.t.sol";
-import "src/LiquidityPool.sol";
+import {LiquidityPool} from "src/LiquidityPool.sol";
 import {MigratedInvestmentManager} from "test/migrationContracts/MigratedInvestmentManager.sol";
 import {MigratedPoolManager} from "test/migrationContracts/MigratedPoolManager.sol";
 import {MathLib} from "src/util/MathLib.sol";
@@ -217,8 +217,8 @@ contract MigrationsTest is TestSetup {
         PoolManager newPoolManager
     ) public {
         for (uint256 i = 0; i < poolIds.length; i++) {
-            (, uint256 newCreatedAt) = newPoolManager.pools(poolIds[i]);
-            (, uint256 oldCreatedAt) = poolManager.pools(poolIds[i]);
+            (uint256 newCreatedAt) = newPoolManager.pools(poolIds[i]);
+            (uint256 oldCreatedAt) = poolManager.pools(poolIds[i]);
             assertEq(newCreatedAt, oldCreatedAt);
 
             for (uint256 j = 0; j < trancheIds[i].length; j++) {
@@ -239,25 +239,26 @@ contract MigrationsTest is TestSetup {
     function verifyTranche(uint64 poolId, bytes16 trancheId, PoolManager poolManager, PoolManager newPoolManager)
         public
     {
-        (
-            address newToken,
-            uint8 newDecimals,
-            uint256 newCreatedAt,
-            string memory newTokenName,
-            string memory newTokenSymbol
-        ) = newPoolManager.getTranche(poolId, trancheId);
-        (
-            address oldToken,
-            uint8 oldDecimals,
-            uint256 oldCreatedAt,
-            string memory oldTokenName,
-            string memory oldTokenSymbol
-        ) = poolManager.getTranche(poolId, trancheId);
+        (address newToken) = newPoolManager.getTrancheToken(poolId, trancheId);
+        (address oldToken) = poolManager.getTrancheToken(poolId, trancheId);
         assertEq(newToken, oldToken);
-        assertEq(newDecimals, oldDecimals);
-        assertEq(newCreatedAt, oldCreatedAt);
-        assertEq(newTokenName, oldTokenName);
-        assertEq(newTokenSymbol, oldTokenSymbol);
+    }
+
+    function verifyUndeployedTranches(
+        uint64 poolId,
+        bytes16[] memory trancheIds,
+        PoolManager poolManager,
+        PoolManager newPoolManager
+    ) public {
+        for (uint256 i = 0; i < trancheIds.length; i++) {
+            (uint8 oldDecimals, string memory oldTokenName, string memory oldTokenSymbol) =
+                poolManager.getUndeployedTranche(poolId, trancheIds[i]);
+            (uint8 newDecimals, string memory newTokenName, string memory newTokenSymbol) =
+                newPoolManager.getUndeployedTranche(poolId, trancheIds[i]);
+            assertEq(newDecimals, oldDecimals);
+            assertEq(newTokenName, oldTokenName);
+            assertEq(newTokenSymbol, oldTokenSymbol);
+        }
     }
 
     function verifyAllowedCurrency(

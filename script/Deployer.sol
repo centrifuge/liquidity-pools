@@ -52,12 +52,17 @@ contract Deployer is Script {
 
         LiquidityPoolFactory(liquidityPoolFactory).rely(address(poolManager));
         TrancheTokenFactory(trancheTokenFactory).rely(address(poolManager));
+        RestrictionManagerFactory(restrictionManagerFactory).rely(address(poolManager));
+
+        LiquidityPoolFactory(liquidityPoolFactory).rely(address(root));
+        TrancheTokenFactory(trancheTokenFactory).rely(address(root));
+        RestrictionManagerFactory(restrictionManagerFactory).rely(address(root));
     }
 
     function wire(address router) public {
         // Deploy gateway and admins
         pauseAdmin = new PauseAdmin(address(root));
-        delayedAdmin = new DelayedAdmin(address(root));
+        delayedAdmin = new DelayedAdmin(address(root), address(pauseAdmin));
         gateway = new Gateway(address(root), address(investmentManager), address(poolManager), address(router));
         pauseAdmin.rely(address(delayedAdmin));
         root.rely(address(pauseAdmin));
