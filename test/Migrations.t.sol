@@ -7,6 +7,12 @@ import {MigratedInvestmentManager} from "test/migrationContracts/MigratedInvestm
 import {MigratedPoolManager} from "test/migrationContracts/MigratedPoolManager.sol";
 import {MathLib} from "src/util/MathLib.sol";
 
+interface AuthLike {
+    function rely(address) external;
+
+    function deny(address) external;
+}
+
 contract MigrationsTest is TestSetup {
     using MathLib for uint128;
 
@@ -74,6 +80,8 @@ contract MigrationsTest is TestSetup {
 
             lPool.file("investmentManager", address(newInvestmentManager));
             lPool.rely(address(newInvestmentManager));
+            root.relyContract(address(lPool.share()), address(this));
+            AuthLike(address(lPool.share())).rely(address(newInvestmentManager));
             newInvestmentManager.rely(address(lPool));
             escrow.approve(address(lPool), address(newInvestmentManager), type(uint256).max);
         }
@@ -189,11 +197,14 @@ contract MigrationsTest is TestSetup {
         newPoolManager.rely(address(root));
         root.relyContract(address(escrow), address(this));
         escrow.rely(address(newPoolManager));
+        root.relyContract(restrictionManagerFactory, address(this));
+        AuthLike(restrictionManagerFactory).rely(address(newPoolManager));
 
         root.denyContract(address(investmentManager), address(this));
         root.denyContract(address(gateway), address(this));
         root.denyContract(address(newPoolManager), address(this));
         root.denyContract(address(escrow), address(this));
+        root.denyContract(restrictionManagerFactory, address(this));
         root.deny(address(this));
 
         poolManager = newPoolManager;
@@ -267,8 +278,8 @@ contract MigrationsTest is TestSetup {
         PoolManager poolManager,
         PoolManager newPoolManager
     ) public {
-        bool newAllowed = newPoolManager.isAllowedAsPoolCurrency(poolId, currencyAddress);
-        bool oldAllowed = poolManager.isAllowedAsPoolCurrency(poolId, currencyAddress);
+        bool newAllowed = newPoolManager.isAllowedAsInvestmentCurrency(poolId, currencyAddress);
+        bool oldAllowed = poolManager.isAllowedAsInvestmentCurrency(poolId, currencyAddress);
         assertEq(newAllowed, oldAllowed);
     }
 
@@ -349,11 +360,6 @@ contract MigrationsTest is TestSetup {
     function redeemWithdraw(uint64 poolId, bytes16 trancheId, uint128 price, uint256 amount, LiquidityPool lPool)
         public
     {
-        vm.expectRevert(bytes("ERC20/insufficient-allowance"));
-        vm.prank(investor);
-        lPool.requestRedeem(amount, investor);
-        vm.prank(investor);
-        lPool.approve(address(investmentManager), amount);
         vm.prank(investor);
         lPool.requestRedeem(amount, investor);
 
