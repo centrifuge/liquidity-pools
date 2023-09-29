@@ -2,7 +2,7 @@
 pragma solidity 0.8.21;
 
 import {InvestmentManager} from "src/InvestmentManager.sol";
-import {Gateway, RouterLike} from "src/gateway/Gateway.sol";
+import {Gateway} from "src/gateway/Gateway.sol";
 import {MockCentrifugeChain} from "test/mock/MockCentrifugeChain.sol";
 import {Escrow} from "src/Escrow.sol";
 import {PauseAdmin} from "src/admins/PauseAdmin.sol";
@@ -17,7 +17,7 @@ import {Root} from "src/Root.sol";
 import {LiquidityPool} from "src/LiquidityPool.sol";
 
 import {AxelarScript} from "script/Axelar.s.sol";
-import {PermissionlessScript} from "script/Permissionless.s.sol";
+import "script/Deployer.sol";
 import "src/util/MathLib.sol";
 import "forge-std/Test.sol";
 
@@ -25,38 +25,38 @@ interface ApproveLike {
     function approve(address, uint256) external;
 }
 
-contract DeployTest is Test {
+contract DeployTest is Test, Deployer {
     using MathLib for uint128;
 
     uint8 constant PRICE_DECIMALS = 18;
-
-    InvestmentManager investmentManager;
-    Gateway gateway;
-    Root root;
-    MockCentrifugeChain mockLiquidityPools;
-    RouterLike router;
-    Escrow escrow;
-    PauseAdmin pauseAdmin;
-    DelayedAdmin delayedAdmin;
-    PoolManager poolManager;
 
     address self;
     ERC20 erc20;
 
     function setUp() public {
-        PermissionlessScript script = new PermissionlessScript();
-        script.run();
+        deployInvestmentManager(address(this));
+        PermissionlessRouter router = new PermissionlessRouter();
+        wire(address(router));
+        RouterLike(address(router)).file("gateway", address(gateway));
 
-        investmentManager = script.investmentManager();
-        gateway = script.gateway();
-        root = script.root();
-        escrow = script.escrow();
-        pauseAdmin = script.pauseAdmin();
-        delayedAdmin = script.delayedAdmin();
-        poolManager = script.poolManager();
+        giveAdminAccess();
 
         erc20 = newErc20("Test", "TEST", 6); // TODO: fuzz decimals
         self = address(this);
+
+        removeDeployerAccess(address(router), address(this));
+    }
+
+    function testDeployerHasNoAccess() public {
+        vm.expectRevert("Auth/not-authorized");
+        root.relyContract(address(investmentManager), address(1));
+        assertEq(root.wards(address(this)), 0);
+        assertEq(investmentManager.wards(address(this)), 0);
+        assertEq(poolManager.wards(address(this)), 0);
+        assertEq(escrow.wards(address(this)), 0);
+        assertEq(gateway.wards(address(this)), 0);
+        assertEq(pauseAdmin.wards(address(this)), 0);
+        assertEq(delayedAdmin.wards(address(this)), 0);
     }
 
     function testDeployAndInvestRedeem(
