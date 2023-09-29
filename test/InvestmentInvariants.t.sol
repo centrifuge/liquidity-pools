@@ -21,7 +21,7 @@ contract InvestmentInvariants is TestSetup {
         address liquidityPool = poolManager.getLiquidityPool(1, "1", address(erc20));
 
         excludeContract(address(liquidityPool));
-        
+
         investorAccount = new InvestorAccount(1, "1", 1, liquidityPool, address(centrifugeChain));
         centrifugeChain.updateMember(1, "1", address(investorAccount), type(uint64).max);
 

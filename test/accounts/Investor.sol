@@ -28,7 +28,13 @@ contract InvestorAccount is Test {
     uint256 public totalCurrencyPaidOut;
     uint256 public totalTrancheTokensPaidOut;
 
-    constructor(uint64 poolId_, bytes16 trancheId_, uint128 currencyId_, address _liquidityPool, address mockCentrifugeChain_) {
+    constructor(
+        uint64 poolId_,
+        bytes16 trancheId_,
+        uint128 currencyId_,
+        address _liquidityPool,
+        address mockCentrifugeChain_
+    ) {
         poolId = poolId_;
         trancheId = trancheId_;
         currencyId = currencyId_;
