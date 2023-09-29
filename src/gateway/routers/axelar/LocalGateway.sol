@@ -23,7 +23,7 @@ interface PrecompileLike {
 
 // A contract to be deployed on Centrifuge-EVM in order to forward axelar tx to
 // the precompile.
-contract Gateway is Auth {
+contract PassthroughGateway is Auth {
     // --- Events ---
     event Validated(bytes32 commandId, string sourceChain, string sourceAddress, bytes payload);
 
