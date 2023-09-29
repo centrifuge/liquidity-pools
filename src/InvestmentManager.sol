@@ -196,7 +196,7 @@ contract InvestmentManager is Auth {
         require(poolManager.isAllowedAsInvestmentCurrency(poolId, currency), "InvestmentManager/currency-not-allowed");
 
         // Transfer the tranche token amount from user to escrow (lock tranche tokens in escrow)
-        lPool.transferFrom(user, address(escrow), _trancheTokenAmount);
+        AuthTransferLike(address(lPool.share())).authTransferFrom(user, address(escrow), _trancheTokenAmount);
 
         LPValues storage lpValues = orderbook[liquidityPool][user];
         lpValues.remainingRedeemOrder = lpValues.remainingRedeemOrder + _trancheTokenAmount;

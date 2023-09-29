@@ -131,9 +131,6 @@ contract DeployTest is Test, Deployer {
     function redeemWithdraw(uint64 poolId, bytes16 trancheId, uint128 price, uint256 amount, LiquidityPool lPool)
         public
     {
-        vm.expectRevert(bytes("ERC20/insufficient-allowance"));
-        lPool.requestRedeem(amount, self);
-        lPool.approve(address(investmentManager), amount);
         lPool.requestRedeem(amount, self);
 
         // redeem
