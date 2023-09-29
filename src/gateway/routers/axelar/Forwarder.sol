@@ -59,10 +59,12 @@ contract AxelarForwarder is Auth {
         string calldata sourceAddress,
         bytes calldata payload
     ) public {
+        /*
         require(
             axelarGateway.validateContractCall(commandId, sourceChain, sourceAddress, keccak256(payload)),
             "AxelarForwarder/not-approved-by-gateway"
         );
+        */
 
         PRECOMPILE.execute(commandId, sourceChain, sourceAddress, payload);
 
