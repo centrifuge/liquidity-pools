@@ -8,6 +8,7 @@ import "forge-std/console.sol";
 
 interface ERC20Like {
     function balanceOf(address account) external view returns (uint256);
+    function rely(address user) external;
 }
 
 contract InvestmentInvariants is TestSetup {
@@ -22,15 +23,21 @@ contract InvestmentInvariants is TestSetup {
 
         excludeContract(address(liquidityPool));
 
-        investorAccount = new InvestorAccount(1, "1", 1, liquidityPool, address(centrifugeChain));
+        investorAccount =
+            new InvestorAccount(1, "1", 1, liquidityPool, address(centrifugeChain), address(erc20), address(escrow));
         centrifugeChain.updateMember(1, "1", address(investorAccount), type(uint64).max);
+
+        erc20.rely(address(investorAccount)); // rely to mint currency
+        address share = poolManager.getTrancheToken(1, "1");
+        root.relyContract(share, address(this));
+        ERC20Like(share).rely(address(investorAccount)); // rely to mint tokens
 
         targetContract(address(investorAccount));
     }
 
     // invariant: tranche token balance <= trancheTokenPayoutSum
     function invariant_cannotReceiveMoreTrancheTokensThanPayout() external {
-        assertEq(
+        assertLe(
             ERC20Like(poolManager.getTrancheToken(1, "1")).balanceOf(address(investorAccount)),
             investorAccount.totalTrancheTokensPaidOut()
         );

@@ -9,8 +9,15 @@ import {IERC4626} from "src/interfaces/IERC4626.sol";
 
 import "forge-std/Test.sol";
 
+interface ERC20Like {
+    function mint(address user, uint256 amount) external;
+    function approve(address spender, uint256 value) external returns (bool);
+}
+
 interface LiquidityPoolLike is IERC4626 {
     function requestDeposit(uint256 assets, address owner) external;
+    function share() external view returns (address);
+    function investmentManager() external view returns (address);
 }
 
 contract InvestorAccount is Test {
@@ -21,8 +28,12 @@ contract InvestorAccount is Test {
     bytes16 trancheId;
     uint128 currencyId;
 
-    LiquidityPoolLike liquidityPool;
-    MockCentrifugeChain centrifugeChain;
+    ERC20Like immutable erc20;
+    ERC20Like immutable trancheToken;
+    LiquidityPoolLike immutable liquidityPool;
+    MockCentrifugeChain immutable centrifugeChain;
+    address immutable escrow;
+    address immutable investmentManager;
 
     uint256 public totalDepositRequested;
     uint256 public totalCurrencyPaidOut;
@@ -33,20 +44,34 @@ contract InvestorAccount is Test {
         bytes16 trancheId_,
         uint128 currencyId_,
         address _liquidityPool,
-        address mockCentrifugeChain_
+        address mockCentrifugeChain_,
+        address erc20_,
+        address escrow_
     ) {
         poolId = poolId_;
         trancheId = trancheId_;
         currencyId = currencyId_;
         liquidityPool = LiquidityPoolLike(_liquidityPool);
         centrifugeChain = MockCentrifugeChain(mockCentrifugeChain_);
+        erc20 = ERC20Like(erc20_);
+        trancheToken = ERC20Like(liquidityPool.share());
+        escrow = escrow_;
+        investmentManager = liquidityPool.investmentManager();
+    }
+
+    // Simulate deposit from another user into the escrow
+    function randomDeposit(uint128 amount) public {
+        trancheToken.mint(escrow, amount);
     }
 
     function requestDeposit(uint128 amount) public {
         // Don't allow total outstanding deposit requests > type(uint128).max
         amount = uint128(bound(amount, 0, uint128(type(uint128).max - totalDepositRequested + totalCurrencyPaidOut)));
 
+        erc20.mint(address(this), amount);
+        erc20.approve(investmentManager, amount);
         liquidityPool.requestDeposit(uint256(amount), address(this));
+
         totalDepositRequested += uint256(amount);
     }
 
@@ -68,6 +93,10 @@ contract InvestorAccount is Test {
         fulfillmentPrice = bound(fulfillmentPrice, 0, 2 * 10 ** 18); // 0.00 to 2.00
 
         uint256 outstandingDepositRequest = totalDepositRequested - totalCurrencyPaidOut;
+        console.log(totalDepositRequested);
+        console.log(totalCurrencyPaidOut);
+        console.log(outstandingDepositRequest);
+
         if (outstandingDepositRequest == 0) {
             return;
         }
@@ -76,6 +105,9 @@ contract InvestorAccount is Test {
             uint128(outstandingDepositRequest.mulDiv(fulfillmentRatio, 1 * 10 ** 18, MathLib.Rounding.Down));
         uint128 trancheTokenPayout =
             uint128(currencyPayout.mulDiv(1 * 10 ** 18, fulfillmentPrice, MathLib.Rounding.Down));
+
+        console.log("currencyPayout", currencyPayout);
+        console.log("trancheTokenPayout", trancheTokenPayout);
 
         centrifugeChain.isExecutedCollectInvest(
             poolId,
