@@ -32,9 +32,9 @@ jobs:
         id: test
         env:
           FOUNDRY_PROFILE: ci
-          CENTRIFUGE_CHAIN_ORIGIN: ${{ secrets.CENTRIFUGE_CHAIN_ORIGIN }}
-          MAINNET_RPC_URL: ${{ secrets.MAINNET_RPC_URL }}
-          POLYGON_RPC_URL: ${{ secrets.POLYGON_RPC_URL }}
+          CENTRIFUGE_CHAIN_ORIGIN: ${{ vars.CENTRIFUGE_CHAIN_ORIGIN }}
+          MAINNET_RPC_URL: ${{ vars.MAINNET_RPC_URL }}
+          POLYGON_RPC_URL: ${{ vars.POLYGON_RPC_URL }}
           SETUP_TEST_DATA: false
 
   lint:
@@ -60,6 +60,9 @@ jobs:
 
   coverage:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - uses: actions/checkout@v3
 
@@ -68,6 +71,9 @@ jobs:
 
       - name: Run coverage
         run: forge coverage --report summary --report lcov
+        env:
+          SETUP_TEST_DATA: false
+          FORK_TESTS: true
 
       # To ignore coverage for certain directories modify the paths in this step as needed. The
       # below default ignores coverage results for the test and script directories. Alternatively,
@@ -87,7 +93,7 @@ jobs:
       # not as useful, and this action cannot fail CI based on a minimum coverage threshold, which
       # is why we use both in this way.
       - name: Post coverage report
-        if: github.event_name == 'ci' # This action fails when ran outside of a pull request.
+        if: github.event_name == 'pull_request' # This action fails when ran outside of a pull request.
         uses: romeovs/lcov-reporter-action@v0.3.1
         with:
           delete-old-comments: true
@@ -95,6 +101,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }} # Adds a coverage summary comment to the PR.
 
       - name: Verify minimum coverage
+        if: github.event_name == 'pull_request' 
         uses: zgosalvez/github-actions-report-lcov@v2
         with:
           coverage-files: ./lcov.info

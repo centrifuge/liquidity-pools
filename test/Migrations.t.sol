@@ -38,7 +38,7 @@ contract MigrationsTest is TestSetup {
         investorCurrencyAmount = 1000 * 10 ** erc20.decimals();
         deal(address(erc20), investor, investorCurrencyAmount);
         centrifugeChain.updateMember(poolId, trancheId, investor, uint64(block.timestamp + 1000 days));
-        removeDeployerAccess(address(router));
+        removeDeployerAccess(address(router), address(this));
     }
 
     function testInvestmentManagerMigration() public {

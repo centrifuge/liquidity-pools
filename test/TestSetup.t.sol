@@ -28,7 +28,7 @@ import "forge-std/Test.sol";
 contract TestSetup is Deployer, Test {
     MockCentrifugeChain centrifugeChain;
     MockRouter router;
-    ERC20 erc20;
+    ERC20 public erc20;
 
     address self = address(this);
     address investor = makeAddr("investor");
@@ -46,7 +46,7 @@ contract TestSetup is Deployer, Test {
         admin = self;
 
         // deploy core contracts
-        deployInvestmentManager();
+        deployInvestmentManager(address(this));
         // deploy mockRouter
         router = new MockRouter(address(investmentManager));
         // wire contracts
