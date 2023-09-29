@@ -25,7 +25,7 @@ interface PrecompileLike {
 // the precompile.
 contract PassthroughGateway is Auth {
     // --- Events ---
-    event Validated(bytes32 commandId, string sourceChain, string sourceAddress, bytes payload);
+    event Validated(bytes32 commandId, string sourceChain, string sourceAddress, bytes32 payload);
 
     constructor() {
         wards[msg.sender] = 1;
