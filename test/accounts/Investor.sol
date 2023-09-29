@@ -93,9 +93,6 @@ contract InvestorAccount is Test {
         fulfillmentPrice = bound(fulfillmentPrice, 0, 2 * 10 ** 18); // 0.00 to 2.00
 
         uint256 outstandingDepositRequest = totalDepositRequested - totalCurrencyPaidOut;
-        console.log(totalDepositRequested);
-        console.log(totalCurrencyPaidOut);
-        console.log(outstandingDepositRequest);
 
         if (outstandingDepositRequest == 0) {
             return;
@@ -105,9 +102,6 @@ contract InvestorAccount is Test {
             uint128(outstandingDepositRequest.mulDiv(fulfillmentRatio, 1 * 10 ** 18, MathLib.Rounding.Down));
         uint128 trancheTokenPayout =
             uint128(currencyPayout.mulDiv(1 * 10 ** 18, fulfillmentPrice, MathLib.Rounding.Down));
-
-        console.log("currencyPayout", currencyPayout);
-        console.log("trancheTokenPayout", trancheTokenPayout);
 
         centrifugeChain.isExecutedCollectInvest(
             poolId,
