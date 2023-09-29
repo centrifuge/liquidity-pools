@@ -11,7 +11,7 @@ interface ERC20Like {
     function balanceOf(address account) external view returns (uint256);
 }
 
-contract InvestorManager is TestSetup {
+contract TrancheTokenHolder is TestSetup {
     // This handler only uses a single pool, tranche and user combination
     uint64 public fixedPoolId = 1;
     bytes16 public fixedTrancheId = "1";

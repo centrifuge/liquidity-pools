@@ -3,7 +3,7 @@ pragma solidity 0.8.21;
 
 import {TestSetup} from "test/TestSetup.t.sol";
 import {InvariantPoolManager} from "test/accounts/PoolManager.sol";
-import {InvestorManager} from "test/accounts/InvestorManager.sol";
+import {TrancheTokenHolder} from "test/accounts/TrancheTokenHolder.sol";
 import "forge-std/Test.sol";
 
 interface LiquidityPoolLike {
@@ -18,7 +18,7 @@ interface ERC20Like {
 
 contract PoolInvariants is TestSetup {
     InvariantPoolManager invariantPoolManager;
-    InvestorManager investorManager;
+    TrancheTokenHolder trancheTokenHolder;
 
     function setUp() public override {
         super.setUp();
@@ -28,8 +28,8 @@ contract PoolInvariants is TestSetup {
         targetContract(address(poolManager));
 
         // Performs random transfers in and out
-        investorManager = new InvestorManager();
-        targetContract(address(investorManager));
+        trancheTokenHolder = new TrancheTokenHolder();
+        targetContract(address(trancheTokenHolder));
     }
 
     // Invariant 1: For every liquidity pool that exists, the equivalent tranche and pool exists
@@ -49,29 +49,29 @@ contract PoolInvariants is TestSetup {
     // Invariant 2: The tranche token supply should equal the sum of all transfers in minus the sum of all the transfers out
     function invariant_tokenSolvency() external {
         assertEq(
-            ERC20Like(investorManager.fixedToken()).totalSupply(),
-            investorManager.totalTransferredIn() - investorManager.totalTransferredOut()
+            ERC20Like(trancheTokenHolder.fixedToken()).totalSupply(),
+            trancheTokenHolder.totalTransferredIn() - trancheTokenHolder.totalTransferredOut()
         );
     }
 
     // Invariant 3: An investor should not be able to transfer out more tranche tokens than were transferred in
     function invariant_investorSolvency() external {
-        assertTrue(investorManager.totalTransferredIn() >= investorManager.totalTransferredOut());
-        for (uint256 i = 0; i < investorManager.allInvestorsLength(); i++) {
-            address investorAddress = investorManager.allInvestors(i);
+        assertTrue(trancheTokenHolder.totalTransferredIn() >= trancheTokenHolder.totalTransferredOut());
+        for (uint256 i = 0; i < trancheTokenHolder.allInvestorsLength(); i++) {
+            address investorAddress = trancheTokenHolder.allInvestors(i);
             assertTrue(
-                investorManager.investorTransferredIn(investorAddress)
-                    >= investorManager.investorTransferredOut(investorAddress)
+                trancheTokenHolder.investorTransferredIn(investorAddress)
+                    >= trancheTokenHolder.investorTransferredOut(investorAddress)
             );
         }
     }
 
     // Invariant 4: The total supply of tranche tokens should equal the sum of all the investors balances
     function invariant_totalSupply() external {
-        uint256 totalSupply = ERC20Like(investorManager.fixedToken()).totalSupply();
+        uint256 totalSupply = ERC20Like(trancheTokenHolder.fixedToken()).totalSupply();
         uint256 totalBalance = 0;
-        for (uint256 i = 0; i < investorManager.allInvestorsLength(); i++) {
-            totalBalance += ERC20Like(investorManager.fixedToken()).balanceOf(investorManager.allInvestors(i));
+        for (uint256 i = 0; i < trancheTokenHolder.allInvestorsLength(); i++) {
+            totalBalance += ERC20Like(trancheTokenHolder.fixedToken()).balanceOf(trancheTokenHolder.allInvestors(i));
         }
         assertEq(totalSupply, totalBalance);
     }
