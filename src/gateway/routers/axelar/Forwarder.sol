@@ -63,10 +63,8 @@ contract AxelarForwarder is Auth {
             axelarGateway.validateContractCall(commandId, sourceChain, sourceAddress, keccak256(payload)),
             "AxelarForwarder/not-approved-by-gateway"
         );
-        /*
-        PRECOMPILE.execute(commandId, sourceChain, sourceAddress, payload);
-        */
 
+        PRECOMPILE.execute(commandId, sourceChain, sourceAddress, payload);
 
         emit Forwarded(commandId, sourceChain, sourceAddress, payload);
     }
