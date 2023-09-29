@@ -35,7 +35,7 @@ contract InvestmentInvariants is TestSetup {
         targetContract(address(investorAccount));
     }
 
-    // invariant: tranche token balance <= trancheTokenPayoutSum
+    // Invariant 1: tranche token balance <= trancheTokenPayoutSum
     function invariant_cannotReceiveMoreTrancheTokensThanPayout() external {
         assertLe(
             ERC20Like(poolManager.getTrancheToken(1, "1")).balanceOf(address(investorAccount)),
