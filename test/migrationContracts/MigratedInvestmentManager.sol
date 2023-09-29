@@ -4,6 +4,8 @@ pragma solidity 0.8.21;
 import "src/InvestmentManager.sol";
 
 contract MigratedInvestmentManager is InvestmentManager {
+    /// @param investors The investors to migrate.
+    /// @param liquidityPools The liquidity pools to migrate.
     constructor(
         address _escrow,
         address _userEscrow,
@@ -15,7 +17,6 @@ contract MigratedInvestmentManager is InvestmentManager {
         gateway = oldInvestmentManager.gateway();
         poolManager = oldInvestmentManager.poolManager();
 
-        // populate orderBook
         for (uint128 i = 0; i < investors.length; i++) {
             address investor = investors[i];
             for (uint128 j = 0; j < liquidityPools.length; j++) {

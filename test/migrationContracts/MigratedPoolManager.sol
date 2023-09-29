@@ -1,23 +1,13 @@
+// SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.21;
 
 import "src/PoolManager.sol";
 
-// mapping(uint64 poolId => Pool) public pools;
-
-// mapping(uint128 currencyId => address) public currencyIdToAddress;
-// mapping(address => uint128 currencyId) public currencyAddressToId;
-
 contract MigratedPoolManager is PoolManager {
-    /// @dev Migrating the full state of the PoolManager requires migrated deeply nested mappings, which cannot be passed as an argument.
-    /// instead we pass 3 arrays. The poolIds, the trancheIds and a uint256 array where the index is the poolId and the value is the number of tranches in that pool.
-    /// This is used to reconstruct the mapping poolId => trancheId[].
-    /// @param escrow_ The address of the escrow contract.
-    /// @param liquidityPoolFactory_ The address of the liquidityPoolFactory contract.
-    /// @param restrictionManagerFactory_ The address of the restrictionManagerFactory contract.
-    /// @param trancheTokenFactory_ The address of the trancheTokenFactory contract.
-    /// @param oldPoolManager The address of the old poolManager contract.
     /// @param poolIds The poolIds of the pools to migrate.
-    /// @param trancheIds A sequential array of all trancheIds of all pools to migrate. Use the poolIdToTrancheIdMapping array to determine which trancheIds belongs to which poolId.
+    /// @param trancheIds The trancheIds of the tranches to migrate, arranged as arrays of trancheIds for each pool.
+    /// @param allowedCurrencies The allowed currencies of the pools to migrate, arranged as arrays of allowed currencies for each pool.
+    /// @param liquidityPoolCurrencies The liquidity pool currencies of the tranches to migrate, arranged as arrays of liquidity pool currencies for each tranche of each pool.
     constructor(
         address escrow_,
         address liquidityPoolFactory_,
