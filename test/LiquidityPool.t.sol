@@ -97,63 +97,63 @@ contract LiquidityPoolTest is TestSetup {
         lPool.decreaseRedeemRequest(amount);
     }
 
-    // function testRedeemWithApproval(uint256 redemption1, uint256 redemption2) public {
-    //     redemption1 = uint128(bound(redemption1, 2, MAX_UINT128));
-    //     redemption2 = uint128(bound(redemption2, 2, MAX_UINT128));
-    //     uint256 amount = redemption1 + redemption2;
-    //     vm.assume(amountAssumption(amount));
+    function testRedeemWithApproval(uint256 redemption1, uint256 redemption2) public {
+        redemption1 = uint128(bound(redemption1, 2, MAX_UINT128));
+        redemption2 = uint128(bound(redemption2, 2, MAX_UINT128));
+        uint256 amount = redemption1 + redemption2;
+        vm.assume(amountAssumption(amount));
 
-    //     address lPool_ = deploySimplePool();
-    //     LiquidityPool lPool = LiquidityPool(lPool_);
+        address lPool_ = deploySimplePool();
+        LiquidityPool lPool = LiquidityPool(lPool_);
 
-    //     deposit(lPool_, investor, amount); // deposit funds first // deposit funds first
+        deposit(lPool_, investor, amount); // deposit funds first // deposit funds first
 
-    //     // investor can requestRedeem
-    //     vm.prank(investor);
-    //     lPool.requestRedeem(amount);
+        // investor can requestRedeem
+        vm.prank(investor);
+        lPool.requestRedeem(amount);
 
-    //     // fail: ward can not requestRedeem if investment manager has no auth on the tranche token
-    //     root.denyContract(address(lPool.share()), address(investmentManager));
-    //     vm.prank(investor);
-    //     vm.expectRevert(bytes("Auth/not-authorized"));
-    //     lPool.requestRedeem(amount);
-    //     root.relyContract(address(lPool.share()), address(investmentManager));
+        // fail: ward can not requestRedeem if investment manager has no auth on the tranche token
+        root.denyContract(address(lPool.share()), address(investmentManager));
+        vm.prank(investor);
+        vm.expectRevert(bytes("Auth/not-authorized"));
+        lPool.requestRedeem(amount);
+        root.relyContract(address(lPool.share()), address(investmentManager));
 
-    //     uint128 tokenAmount = uint128(lPool.balanceOf(address(escrow)));
-    //     centrifugeChain.isExecutedCollectRedeem(
-    //         lPool.poolId(),
-    //         lPool.trancheId(),
-    //         bytes32(bytes20(investor)),
-    //         defaultCurrencyId,
-    //         uint128(amount),
-    //         uint128(tokenAmount),
-    //         0
-    //     );
+        uint128 tokenAmount = uint128(lPool.balanceOf(address(escrow)));
+        centrifugeChain.isExecutedCollectRedeem(
+            lPool.poolId(),
+            lPool.trancheId(),
+            bytes32(bytes20(investor)),
+            defaultCurrencyId,
+            uint128(amount),
+            uint128(tokenAmount),
+            0
+        );
 
-    //     assertEq(lPool.maxRedeem(investor), tokenAmount);
-    //     assertEq(lPool.maxWithdraw(investor), uint128(amount));
+        assertEq(lPool.maxRedeem(investor), tokenAmount);
+        assertEq(lPool.maxWithdraw(investor), uint128(amount));
 
-    //     // test for both scenarios redeem & withdraw
+        // test for both scenarios redeem & withdraw
 
-    //     // fail: self cannot redeem for investor
-    //     vm.expectRevert(bytes("LiquidityPool/no-approval"));
-    //     lPool.redeem(redemption1, investor, investor);
-    //     vm.expectRevert(bytes("LiquidityPool/no-approval"));
-    //     lPool.withdraw(redemption1, investor, investor);
+        // fail: self cannot redeem for investor
+        vm.expectRevert(bytes("LiquidityPool/no-approval"));
+        lPool.redeem(redemption1, investor, investor);
+        vm.expectRevert(bytes("LiquidityPool/no-approval"));
+        lPool.withdraw(redemption1, investor, investor);
 
-    //     // fail: ward can not make requests on behalf of investor
-    //     root.relyContract(lPool_, self);
-    //     vm.expectRevert(bytes("LiquidityPool/no-approval"));
-    //     lPool.redeem(redemption1, investor, investor);
-    //     vm.expectRevert(bytes("LiquidityPool/no-approval"));
-    //     lPool.withdraw(redemption1, investor, investor);
+        // fail: ward can not make requests on behalf of investor
+        root.relyContract(lPool_, self);
+        vm.expectRevert(bytes("LiquidityPool/no-approval"));
+        lPool.redeem(redemption1, investor, investor);
+        vm.expectRevert(bytes("LiquidityPool/no-approval"));
+        lPool.withdraw(redemption1, investor, investor);
 
-    //     // investor redeems rest for himself
-    //     vm.prank(investor);
-    //     lPool.redeem(redemption1, investor, investor);
-    //     vm.prank(investor);
-    //     lPool.withdraw(redemption2, investor, investor);
-    // }
+        // investor redeems rest for himself
+        vm.prank(investor);
+        lPool.redeem(redemption1, investor, investor);
+        vm.prank(investor);
+        lPool.withdraw(redemption2, investor, investor);
+    }
 
     function testMint(uint256 amount) public {
         amount = uint128(bound(amount, 2, MAX_UINT128));
