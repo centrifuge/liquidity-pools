@@ -342,6 +342,7 @@ contract InvestmentManager is Auth {
         require(liquidityPool != address(0), "InvestmentManager/tranche-does-not-exist");
 
         LPValues storage lpValues = orderbook[liquidityPool][recipient];
+        require(remainingRedeemOrder != 0, "InvestmentManager/no-outstanding-order");
         lpValues.maxWithdraw = lpValues.maxWithdraw + currencyPayout;
         lpValues.maxRedeem = lpValues.maxRedeem + trancheTokensPayout;
         lpValues.remainingRedeemOrder = remainingRedeemOrder;
@@ -371,10 +372,12 @@ contract InvestmentManager is Auth {
         require(liquidityPool != address(0), "InvestmentManager/tranche-does-not-exist");
         require(_currency == LiquidityPoolLike(liquidityPool).asset(), "InvestmentManager/not-tranche-currency");
 
+        LPValues storage lpValues = orderbook[liquidityPool][user];
+        require(remainingInvestOrder != 0, "InvestmentManager/no-outstanding-order");
+
         // Transfer currency amount to userEscrow
         userEscrow.transferIn(_currency, address(escrow), user, currencyPayout);
 
-        LPValues storage lpValues = orderbook[liquidityPool][user];
         lpValues.remainingInvestOrder = remainingInvestOrder;
 
         // Increasing maxRedeem and maxWithdraw with the currencyPayout,

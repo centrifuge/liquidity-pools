@@ -1108,6 +1108,7 @@ contract LiquidityPoolTest is TestSetup {
         lPool.requestRedeem(amount, self);
         assertEq(lPool.balanceOf(address(escrow)), amount);
         assertEq(erc20.balanceOf(address(userEscrow)), 0);
+        assertGt(lPool.userRedeemRequest(self), 0);
 
         // trigger executed collectRedeem
         uint128 _currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
