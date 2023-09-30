@@ -14,7 +14,6 @@ interface ERC20PermitLike {
 }
 
 interface TrancheTokenLike is IERC20, ERC20PermitLike {
-    function checkTransferRestriction(address from, address to, uint256 value) external view returns (bool);
     function mint(address user, uint256 value) external;
     function burn(address user, uint256 value) external;
 }
@@ -334,12 +333,6 @@ contract LiquidityPool is Auth, IERC4626 {
         latestPrice = price;
         lastPriceUpdate = block.timestamp;
         emit PriceUpdate(price);
-    }
-
-    // --- Restriction overrides ---
-    /// @notice Check if the shares are allowed to be transferred.
-    function checkTransferRestriction(address from, address to, uint256 value) public view returns (bool) {
-        return share.checkTransferRestriction(from, to, value);
     }
 
     // --- Helpers ---
