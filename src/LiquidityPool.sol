@@ -226,12 +226,12 @@ contract LiquidityPool is Auth, IERC4626 {
     /// @notice Request asset deposit for a receiver to be included in the next epoch execution.
     /// @notice Request can only be called by the owner of the assets
     ///         Asset is locked in the escrow on request submission
-    function requestDeposit(uint256 assets, address owner) public withApproval(owner) {
-        investmentManager.requestDeposit(address(this), assets, owner);
-        emit DepositRequest(owner, assets);
+    function requestDeposit(uint256 assets) public {
+        investmentManager.requestDeposit(address(this), assets, msg.sender);
+        emit DepositRequest(msg.sender, assets);
     }
 
-    /// @notice Similar to requestDeposit, but with a permit option.
+    /// @notice Similar to requestDeposit, but with a permit option
     function requestDepositWithPermit(uint256 assets, address owner, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
         public
     {
@@ -241,49 +241,49 @@ contract LiquidityPool is Auth, IERC4626 {
     }
 
     /// @notice View the total amount the user has requested to deposit but isn't able to deposit or mint yet
-    function userDepositRequest(address owner) external view returns (uint256 assets) {
-        assets = investmentManager.userDepositRequest(address(this), owner);
+    function userDepositRequest(address user) external view returns (uint256 assets) {
+        assets = investmentManager.userDepositRequest(address(this), user);
     }
 
     /// @notice Request decreasing the outstanding deposit orders. Will return the assets once the order
     ///         on Centrifuge is successfully decreased.
-    function decreaseDepositRequest(uint256 assets, address owner) public withApproval(owner) {
-        investmentManager.decreaseDepositRequest(address(this), assets, owner);
-        emit DecreaseDepositRequest(owner, assets);
+    function decreaseDepositRequest(uint256 assets) public {
+        investmentManager.decreaseDepositRequest(address(this), assets, msg.sender);
+        emit DecreaseDepositRequest(msg.sender, assets);
     }
 
     /// @notice Request cancelling the outstanding deposit orders. Will return the assets once the order
     ///         on Centrifuge is successfully cancelled.
-    function cancelDepositRequest(address owner) public withApproval(owner) {
-        investmentManager.cancelDepositRequest(address(this), owner);
-        emit CancelDepositRequest(owner);
+    function cancelDepositRequest() public {
+        investmentManager.cancelDepositRequest(address(this), msg.sender);
+        emit CancelDepositRequest(msg.sender);
     }
 
     /// @notice Request share redemption for a receiver to be included in the next epoch execution.
     /// @notice Request can only be called by the owner of the shares
     ///         Shares are locked in the escrow on request submission
-    function requestRedeem(uint256 shares, address owner) public withApproval(owner) {
-        investmentManager.requestRedeem(address(this), shares, owner);
-        emit RedeemRequest(owner, shares);
+    function requestRedeem(uint256 shares) public {
+        investmentManager.requestRedeem(address(this), shares, msg.sender);
+        emit RedeemRequest(msg.sender, shares);
     }
 
     /// @notice Request decreasing the outstanding redemption orders. Will return the shares once the order
     ///         on Centrifuge is successfully decreased.
-    function decreaseRedeemRequest(uint256 shares, address owner) public withApproval(owner) {
-        investmentManager.decreaseRedeemRequest(address(this), shares, owner);
-        emit DecreaseRedeemRequest(owner, shares);
+    function decreaseRedeemRequest(uint256 shares) public {
+        investmentManager.decreaseRedeemRequest(address(this), shares, msg.sender);
+        emit DecreaseRedeemRequest(msg.sender, shares);
     }
 
     /// @notice Request cancelling the outstanding redemption orders. Will return the shares once the order
     ///         on Centrifuge is successfully cancelled.
-    function cancelRedeemRequest(address owner) public withApproval(owner) {
-        investmentManager.cancelRedeemRequest(address(this), owner);
-        emit CancelRedeemRequest(owner);
+    function cancelRedeemRequest() public {
+        investmentManager.cancelRedeemRequest(address(this), msg.sender);
+        emit CancelRedeemRequest(msg.sender);
     }
 
     /// @notice View the total amount the user has requested to redeem but isn't able to withdraw or redeem yet
-    function userRedeemRequest(address owner) external view returns (uint256 shares) {
-        shares = investmentManager.userRedeemRequest(address(this), owner);
+    function userRedeemRequest(address user) external view returns (uint256 shares) {
+        shares = investmentManager.userRedeemRequest(address(this), user);
     }
 
     // --- ERC20 overrides ---
