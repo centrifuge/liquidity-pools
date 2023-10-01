@@ -56,3 +56,8 @@ fail_on_revert = false
   "src/token/RestrictionManager.sol" = ["RestrictionManager"]
   "src/admins/DelayedAdmin.sol" = ["DelayedAdmin"]
   "src/admins/PauseAdmin.sol" = ["PauseAdmin"]
+
+[doc]
+  ignore = ["**/*.t.sol", "**/*.s.sol"]
+  out = "docs"
+  repository = "https://github.com/centrifuge/liquidity-pools"
