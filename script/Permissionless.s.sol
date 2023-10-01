@@ -15,7 +15,7 @@ contract PermissionlessScript is Deployer {
         admin = msg.sender;
 
         // Deploy contracts
-        deployInvestmentManager();
+        deployInvestmentManager(msg.sender);
         PermissionlessRouter router = new PermissionlessRouter();
         wire(address(router));
         RouterLike(address(router)).file("gateway", address(gateway));

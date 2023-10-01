@@ -11,9 +11,9 @@ contract Escrow is Auth {
     // --- Events ---
     event Approve(address indexed token, address indexed spender, uint256 value);
 
-    constructor() {
-        wards[msg.sender] = 1;
-        emit Rely(msg.sender);
+    constructor(address deployer) {
+        wards[deployer] = 1;
+        emit Rely(deployer);
     }
 
     // --- Token approvals ---
