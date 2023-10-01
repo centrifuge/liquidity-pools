@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.18;
-pragma abicoder v2;
 
 import {TestSetup} from "test/TestSetup.t.sol";
 import {MockCentrifugeChain} from "test/mock/MockCentrifugeChain.sol";
@@ -22,7 +21,7 @@ interface LiquidityPoolLike is IERC4626 {
     function investmentManager() external view returns (address);
 }
 
-contract InvestorAccount is Test {
+contract InvestorHandler is Test {
     using MathLib for uint256;
     using MathLib for uint128;
 

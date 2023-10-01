@@ -2,7 +2,7 @@
 pragma solidity 0.8.21;
 
 import {TestSetup} from "test/TestSetup.t.sol";
-import {InvestorAccount} from "test/invariants/handlers/Investor.sol";
+import {InvestorHandler} from "test/invariants/handlers/Investor.sol";
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
@@ -12,7 +12,7 @@ interface ERC20Like {
 }
 
 contract InvestmentInvariants is TestSetup {
-    InvestorAccount investorAccount;
+    InvestorHandler investorHandler;
 
     function setUp() public override {
         super.setUp();
@@ -23,28 +23,28 @@ contract InvestmentInvariants is TestSetup {
 
         excludeContract(address(liquidityPool));
 
-        investorAccount =
-            new InvestorAccount(1, "1", 1, liquidityPool, address(centrifugeChain), address(erc20), address(escrow));
-        centrifugeChain.updateMember(1, "1", address(investorAccount), type(uint64).max);
+        investorHandler =
+            new InvestorHandler(1, "1", 1, liquidityPool, address(centrifugeChain), address(erc20), address(escrow));
+        centrifugeChain.updateMember(1, "1", address(investorHandler), type(uint64).max);
 
-        erc20.rely(address(investorAccount)); // rely to mint currency
+        erc20.rely(address(investorHandler)); // rely to mint currency
         address share = poolManager.getTrancheToken(1, "1");
         root.relyContract(share, address(this));
-        ERC20Like(share).rely(address(investorAccount)); // rely to mint tokens
+        ERC20Like(share).rely(address(investorHandler)); // rely to mint tokens
 
-        targetContract(address(investorAccount));
+        targetContract(address(investorHandler));
     }
 
     // Invariant 1: tranche tokens received <= sum of tranche tokens paid out by centrifuge
     function invariant_cannotReceiveMoreTrancheTokensThanPayout() external {
         assertLe(
-            ERC20Like(poolManager.getTrancheToken(1, "1")).balanceOf(address(investorAccount)),
-            investorAccount.totalTrancheTokensPaidOutOnInvest()
+            ERC20Like(poolManager.getTrancheToken(1, "1")).balanceOf(address(investorHandler)),
+            investorHandler.totalTrancheTokensPaidOutOnInvest()
         );
     }
 
     // Invariant 1: currency received <= sum of currency paid out by centrifuge
     function invariant_cannotReceiveMoreCurrencyThanPayout() external {
-        assertLe(investorAccount.totalCurrencyReceived(), investorAccount.totalCurrencyPaidOutOnRedeem());
+        assertLe(investorHandler.totalCurrencyReceived(), investorHandler.totalCurrencyPaidOutOnRedeem());
     }
 }

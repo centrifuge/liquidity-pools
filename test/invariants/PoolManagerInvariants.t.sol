@@ -2,8 +2,8 @@
 pragma solidity 0.8.21;
 
 import {TestSetup} from "test/TestSetup.t.sol";
-import {InvariantPoolManager} from "test/invariants/handlers/PoolManager.sol";
-import {TrancheTokenHolder} from "test/invariants/handlers/TrancheTokenHolder.sol";
+import {PoolManagerHandler} from "test/invariants/handlers/PoolManager.sol";
+import {TrancheTokenHolderHandler} from "test/invariants/handlers/TrancheTokenHolder.sol";
 import "forge-std/Test.sol";
 
 interface LiquidityPoolLike {
@@ -17,39 +17,42 @@ interface ERC20Like {
 }
 
 contract PoolManagerInvariants is TestSetup {
-    InvariantPoolManager invariantPoolManager;
-    TrancheTokenHolder trancheTokenHolder;
+    PoolManagerHandler poolManagerHandler;
+    TrancheTokenHolderHandler trancheTokenHolder;
 
     function setUp() public override {
         super.setUp();
 
+        deployLiquidityPool(1, erc20.decimals(), "", "", "1", 1, address(erc20));
+
         // Performs random pool, tranche, and liquidityPool creations
-        invariantPoolManager = new InvariantPoolManager(centrifugeChain);
-        targetContract(address(poolManager));
+        poolManagerHandler = new PoolManagerHandler(address(centrifugeChain), address(poolManager));
+        targetContract(address(poolManagerHandler));
 
         // Performs random transfers in and out
-        trancheTokenHolder = new TrancheTokenHolder();
+        trancheTokenHolder = new TrancheTokenHolderHandler(1, "1", 1, address(centrifugeChain), address(poolManager));
+        centrifugeChain.updateMember(1, "1", address(trancheTokenHolder), type(uint64).max);
         targetContract(address(trancheTokenHolder));
     }
 
     // Invariant 1: For every liquidity pool that exists, the equivalent tranche and pool exists
     function invariant_LiquidityPoolRequiresTrancheAndPool() external {
-        for (uint256 i = 0; i < invariantPoolManager.allLiquidityPoolsLength(); i++) {
-            address liquidityPool = invariantPoolManager.allLiquidityPools(i);
+        for (uint256 i = 0; i < poolManagerHandler.allLiquidityPoolsLength(); i++) {
+            address liquidityPool = poolManagerHandler.allLiquidityPools(i);
             uint64 poolId = LiquidityPoolLike(liquidityPool).poolId();
             bytes16 trancheId = LiquidityPoolLike(liquidityPool).trancheId();
             (uint256 createdAt) = poolManager.pools(poolId);
             assertTrue(createdAt > 0);
             address token = poolManager.getTrancheToken(poolId, trancheId);
             assertTrue(token != address(0));
-            assertTrue(invariantPoolManager.trancheIdToPoolId(trancheId) == poolId);
+            assertTrue(poolManagerHandler.trancheIdToPoolId(trancheId) == poolId);
         }
     }
 
     // Invariant 2: The tranche token supply should equal the sum of all transfers in minus the sum of all the transfers out
     function invariant_tokenSolvency() external {
         assertEq(
-            ERC20Like(trancheTokenHolder.fixedToken()).totalSupply(),
+            trancheTokenHolder.trancheToken().totalSupply(),
             trancheTokenHolder.totalTransferredIn() - trancheTokenHolder.totalTransferredOut()
         );
     }
@@ -68,10 +71,10 @@ contract PoolManagerInvariants is TestSetup {
 
     // Invariant 4: The total supply of tranche tokens should equal the sum of all the investors balances
     function invariant_totalSupply() external {
-        uint256 totalSupply = ERC20Like(trancheTokenHolder.fixedToken()).totalSupply();
+        uint256 totalSupply = trancheTokenHolder.trancheToken().totalSupply();
         uint256 totalBalance = 0;
         for (uint256 i = 0; i < trancheTokenHolder.allInvestorsLength(); i++) {
-            totalBalance += ERC20Like(trancheTokenHolder.fixedToken()).balanceOf(trancheTokenHolder.allInvestors(i));
+            totalBalance += trancheTokenHolder.trancheToken().balanceOf(trancheTokenHolder.allInvestors(i));
         }
         assertEq(totalSupply, totalBalance);
     }
