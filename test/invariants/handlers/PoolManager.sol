@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {MockCentrifugeChain} from "../mock/MockCentrifugeChain.sol";
+import {MockCentrifugeChain} from "test/mock/MockCentrifugeChain.sol";
 import {TestSetup} from "test/TestSetup.t.sol";
 import "forge-std/Test.sol";
 

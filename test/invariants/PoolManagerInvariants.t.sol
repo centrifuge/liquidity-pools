@@ -2,8 +2,8 @@
 pragma solidity 0.8.21;
 
 import {TestSetup} from "test/TestSetup.t.sol";
-import {InvariantPoolManager} from "test/accounts/PoolManager.sol";
-import {TrancheTokenHolder} from "test/accounts/TrancheTokenHolder.sol";
+import {InvariantPoolManager} from "test/invariants/handlers/PoolManager.sol";
+import {TrancheTokenHolder} from "test/invariants/handlers/TrancheTokenHolder.sol";
 import "forge-std/Test.sol";
 
 interface LiquidityPoolLike {
@@ -16,7 +16,7 @@ interface ERC20Like {
     function balanceOf(address account) external view returns (uint256);
 }
 
-contract PoolInvariants is TestSetup {
+contract PoolManagerInvariants is TestSetup {
     InvariantPoolManager invariantPoolManager;
     TrancheTokenHolder trancheTokenHolder;
 
