@@ -12,10 +12,12 @@ import "forge-std/Test.sol";
 interface ERC20Like {
     function mint(address user, uint256 amount) external;
     function approve(address spender, uint256 value) external returns (bool);
+    function balanceOf(address user) external view returns (uint256);
 }
 
 interface LiquidityPoolLike is IERC4626 {
     function requestDeposit(uint256 assets, address owner) external;
+    function requestRedeem(uint256 shares, address owner) external;
     function share() external view returns (address);
     function investmentManager() external view returns (address);
 }
@@ -36,8 +38,18 @@ contract InvestorAccount is Test {
     address immutable investmentManager;
 
     uint256 public totalDepositRequested;
-    uint256 public totalCurrencyPaidOut;
-    uint256 public totalTrancheTokensPaidOut;
+    uint256 public totalRedeemRequested;
+
+    // For deposits we can just look at TT balance,
+    // but for redemptions we need to bookkeep this
+    // as we are also minting currency
+    uint256 public totalCurrencyReceived;
+
+    uint256 public totalTrancheTokensPaidOutOnInvest;
+    uint256 public totalCurrencyPaidOutOnInvest;
+
+    uint256 public totalCurrencyPaidOutOnRedeem;
+    uint256 public totalTrancheTokensPaidOutOnRedeem;
 
     constructor(
         uint64 poolId_,
@@ -59,14 +71,11 @@ contract InvestorAccount is Test {
         investmentManager = liquidityPool.investmentManager();
     }
 
-    // Simulate deposit from another user into the escrow
-    function randomDeposit(uint128 amount) public {
-        trancheToken.mint(escrow, amount);
-    }
-
+    // --- Investments ---
     function requestDeposit(uint128 amount) public {
         // Don't allow total outstanding deposit requests > type(uint128).max
-        amount = uint128(bound(amount, 0, uint128(type(uint128).max - totalDepositRequested + totalCurrencyPaidOut)));
+        amount =
+            uint128(bound(amount, 0, uint128(type(uint128).max - totalDepositRequested + totalCurrencyPaidOutOnInvest)));
 
         erc20.mint(address(this), amount);
         erc20.approve(investmentManager, amount);
@@ -87,12 +96,56 @@ contract InvestorAccount is Test {
         liquidityPool.mint(amount_, address(this));
     }
 
+    // --- Redemptions ---
+    function requestRedeem(uint128 amount) public {
+        amount = uint128(
+            bound(
+                amount,
+                0,
+                MathLib.min(
+                    // Don't allow total outstanding redeem requests > type(uint128).max
+                    uint128(type(uint128).max - totalRedeemRequested + totalTrancheTokensPaidOutOnRedeem),
+                    // Cannot redeem more than current balance of TT
+                    trancheToken.balanceOf(address(this))
+                )
+            )
+        );
+
+        liquidityPool.requestRedeem(uint256(amount), address(this));
+
+        totalRedeemRequested += uint256(amount);
+    }
+
+    function redeem(uint128 amount) public {
+        uint256 amount_ = bound(amount, 0, liquidityPool.maxRedeem(address(this)));
+
+        uint256 preBalance = erc20.balanceOf(address(this));
+        liquidityPool.redeem(amount_, address(this), address(this));
+        uint256 postBalance = erc20.balanceOf(address(this));
+        totalCurrencyReceived += postBalance - preBalance;
+    }
+
+    function withdraw(uint128 amount) public {
+        uint256 amount_ = bound(amount, 0, liquidityPool.maxWithdraw(address(this)));
+
+        uint256 preBalance = erc20.balanceOf(address(this));
+        liquidityPool.withdraw(amount_, address(this), address(this));
+        uint256 postBalance = erc20.balanceOf(address(this));
+        totalCurrencyReceived += postBalance - preBalance;
+    }
+
+    // --- Misc ---
+    /// @dev Simulate deposit from another user into the escrow
+    function randomDeposit(uint128 amount) public {
+        trancheToken.mint(escrow, amount);
+    }
+
     // TODO: should be moved to a separate contract
     function executedCollectInvest(uint256 fulfillmentRatio, uint256 fulfillmentPrice) public {
         fulfillmentRatio = bound(fulfillmentRatio, 0, 1 * 10 ** 18); // 0% to 100%
         fulfillmentPrice = bound(fulfillmentPrice, 0, 2 * 10 ** 18); // 0.00 to 2.00
 
-        uint256 outstandingDepositRequest = totalDepositRequested - totalCurrencyPaidOut;
+        uint256 outstandingDepositRequest = totalDepositRequested - totalCurrencyPaidOutOnInvest;
 
         if (outstandingDepositRequest == 0) {
             return;
@@ -113,7 +166,36 @@ contract InvestorAccount is Test {
             uint128(outstandingDepositRequest - currencyPayout)
         );
 
-        totalCurrencyPaidOut += currencyPayout;
-        totalTrancheTokensPaidOut += trancheTokenPayout;
+        totalCurrencyPaidOutOnInvest += currencyPayout;
+        totalTrancheTokensPaidOutOnInvest += trancheTokenPayout;
+    }
+
+    function executedCollectRedeem(uint256 fulfillmentRatio, uint256 fulfillmentPrice) public {
+        fulfillmentRatio = bound(fulfillmentRatio, 0, 1 * 10 ** 18); // 0% to 100%
+        fulfillmentPrice = bound(fulfillmentPrice, 0, 2 * 10 ** 18); // 0.00 to 2.00
+
+        uint256 outstandingRedeemRequest = totalRedeemRequested - totalTrancheTokensPaidOutOnRedeem;
+
+        if (outstandingRedeemRequest == 0) {
+            return;
+        }
+
+        uint128 trancheTokenPayout =
+            uint128(outstandingRedeemRequest.mulDiv(fulfillmentRatio, 1 * 10 ** 18, MathLib.Rounding.Down));
+        uint128 currencyPayout =
+            uint128(trancheTokenPayout.mulDiv(fulfillmentPrice, 1 * 10 ** 18, MathLib.Rounding.Down));
+
+        centrifugeChain.isExecutedCollectRedeem(
+            poolId,
+            trancheId,
+            bytes32(bytes20(address(this))),
+            currencyId,
+            currencyPayout,
+            trancheTokenPayout,
+            uint128(outstandingRedeemRequest - currencyPayout)
+        );
+
+        totalTrancheTokensPaidOutOnRedeem += trancheTokenPayout;
+        totalCurrencyPaidOutOnRedeem += currencyPayout;
     }
 }

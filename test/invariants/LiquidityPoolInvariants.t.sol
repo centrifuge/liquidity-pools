@@ -35,11 +35,16 @@ contract InvestmentInvariants is TestSetup {
         targetContract(address(investorAccount));
     }
 
-    // Invariant 1: tranche token balance <= trancheTokenPayoutSum
+    // Invariant 1: tranche tokens received <= sum of tranche tokens paid out by centrifuge
     function invariant_cannotReceiveMoreTrancheTokensThanPayout() external {
         assertLe(
             ERC20Like(poolManager.getTrancheToken(1, "1")).balanceOf(address(investorAccount)),
-            investorAccount.totalTrancheTokensPaidOut()
+            investorAccount.totalTrancheTokensPaidOutOnInvest()
         );
+    }
+
+    // Invariant 1: currency received <= sum of currency paid out by centrifuge
+    function invariant_cannotReceiveMoreCurrencyThanPayout() external {
+        assertLe(investorAccount.totalCurrencyReceived(), investorAccount.totalCurrencyPaidOutOnRedeem());
     }
 }
