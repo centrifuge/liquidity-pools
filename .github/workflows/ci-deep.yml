@@ -43,7 +43,7 @@ jobs:
           cache: false # Requires a seed: https://github.com/foundry-rs/foundry-toolchain#fuzzing
 
       - name: Run Forge tests
-        run: forge test --no-match-path "test/invariants/**/*.sol" -vvv
+        run: forge test --no-match-path "test/invariants/**/*.sol"
         env:
           FOUNDRY_PROFILE: ci
           CENTRIFUGE_CHAIN_ORIGIN: ${{ vars.CENTRIFUGE_CHAIN_ORIGIN }}
@@ -77,7 +77,7 @@ jobs:
           cache: false # Requires a seed: https://github.com/foundry-rs/foundry-toolchain#fuzzing
 
       - name: Run Forge tests
-        run: forge test --match-path "test/invariants/**/*.sol" -vvv
+        run: forge test --match-path "test/invariants/**/*.sol"
         id: test
         env:
           FOUNDRY_PROFILE: ci

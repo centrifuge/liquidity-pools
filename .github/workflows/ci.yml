@@ -19,7 +19,7 @@ jobs:
         uses: foundry-rs/foundry-toolchain@v1
 
       - name: Run tests
-        run: forge test --no-match-path "test/invariants/**/*.sol" -vvv
+        run: forge test --no-match-path "test/invariants/**/*.sol"
         env:
           FOUNDRY_PROFILE: ci
           CENTRIFUGE_CHAIN_ORIGIN: ${{ vars.CENTRIFUGE_CHAIN_ORIGIN }}
@@ -37,7 +37,7 @@ jobs:
         uses: foundry-rs/foundry-toolchain@v1
 
       - name: Run tests
-        run: forge test --match-path "test/invariants/**/*.sol" -vvv
+        run: forge test --match-path "test/invariants/**/*.sol"
         env:
           FOUNDRY_PROFILE: ci
           CENTRIFUGE_CHAIN_ORIGIN: ${{ vars.CENTRIFUGE_CHAIN_ORIGIN }}
