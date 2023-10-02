@@ -2,7 +2,7 @@
 pragma solidity 0.8.21;
 
 import {InvestmentManager} from "src/InvestmentManager.sol";
-import {Gateway, RouterLike} from "src/gateway/Gateway.sol";
+import {Gateway} from "src/gateway/Gateway.sol";
 import {MockCentrifugeChain} from "test/mock/MockCentrifugeChain.sol";
 import {Escrow} from "src/Escrow.sol";
 import {PauseAdmin} from "src/admins/PauseAdmin.sol";
@@ -17,7 +17,7 @@ import {Root} from "src/Root.sol";
 import {LiquidityPool} from "src/LiquidityPool.sol";
 
 import {AxelarScript} from "script/Axelar.s.sol";
-import {PermissionlessScript} from "script/Permissionless.s.sol";
+import "script/Deployer.sol";
 import "src/util/MathLib.sol";
 import "forge-std/Test.sol";
 
@@ -25,38 +25,38 @@ interface ApproveLike {
     function approve(address, uint256) external;
 }
 
-contract DeployTest is Test {
+contract DeployTest is Test, Deployer {
     using MathLib for uint128;
 
     uint8 constant PRICE_DECIMALS = 18;
-
-    InvestmentManager investmentManager;
-    Gateway gateway;
-    Root root;
-    MockCentrifugeChain mockLiquidityPools;
-    RouterLike router;
-    Escrow escrow;
-    PauseAdmin pauseAdmin;
-    DelayedAdmin delayedAdmin;
-    PoolManager poolManager;
 
     address self;
     ERC20 erc20;
 
     function setUp() public {
-        PermissionlessScript script = new PermissionlessScript();
-        script.run();
+        deployInvestmentManager(address(this));
+        PermissionlessRouter router = new PermissionlessRouter();
+        wire(address(router));
+        RouterLike(address(router)).file("gateway", address(gateway));
 
-        investmentManager = script.investmentManager();
-        gateway = script.gateway();
-        root = script.root();
-        escrow = script.escrow();
-        pauseAdmin = script.pauseAdmin();
-        delayedAdmin = script.delayedAdmin();
-        poolManager = script.poolManager();
+        giveAdminAccess();
 
         erc20 = newErc20("Test", "TEST", 6); // TODO: fuzz decimals
         self = address(this);
+
+        removeDeployerAccess(address(router), address(this));
+    }
+
+    function testDeployerHasNoAccess() public {
+        vm.expectRevert("Auth/not-authorized");
+        root.relyContract(address(investmentManager), address(1));
+        assertEq(root.wards(address(this)), 0);
+        assertEq(investmentManager.wards(address(this)), 0);
+        assertEq(poolManager.wards(address(this)), 0);
+        assertEq(escrow.wards(address(this)), 0);
+        assertEq(gateway.wards(address(this)), 0);
+        assertEq(pauseAdmin.wards(address(this)), 0);
+        assertEq(delayedAdmin.wards(address(this)), 0);
     }
 
     function testDeployAndInvestRedeem(
@@ -67,7 +67,6 @@ contract DeployTest is Test {
     ) public {
         uint8 decimals = 6; // TODO: use fuzzed decimals
         uint128 price = uint128(2 * 10 ** PRICE_DECIMALS); //TODO: fuzz price
-        uint128 currencyId = 1;
         uint256 amount = 1000 * 10 ** erc20.decimals();
         uint64 validUntil = uint64(block.timestamp + 1000 days);
         address lPool_ = deployPoolAndTranche(poolId, trancheId, tokenName, tokenSymbol, decimals);
@@ -78,26 +77,13 @@ contract DeployTest is Test {
         vm.prank(address(gateway));
         poolManager.updateMember(poolId, trancheId, self, validUntil);
 
-        depositMint(poolId, decimals, tokenName, tokenSymbol, trancheId, price, currencyId, amount, validUntil, lPool);
+        depositMint(poolId, trancheId, price, amount, lPool);
         amount = lPool.balanceOf(self);
 
-        redeemWithdraw(
-            poolId, decimals, tokenName, tokenSymbol, trancheId, price, currencyId, amount, validUntil, lPool
-        );
+        redeemWithdraw(poolId, trancheId, price, amount, lPool);
     }
 
-    function depositMint(
-        uint64 poolId,
-        uint8 decimals,
-        string memory tokenName,
-        string memory tokenSymbol,
-        bytes16 trancheId,
-        uint128 price,
-        uint128 currencyId,
-        uint256 amount,
-        uint64 validUntil,
-        LiquidityPool lPool
-    ) public {
+    function depositMint(uint64 poolId, bytes16 trancheId, uint128 price, uint256 amount, LiquidityPool lPool) public {
         erc20.approve(address(investmentManager), amount); // add allowance
         lPool.requestDeposit(amount, self);
 
@@ -142,22 +128,9 @@ contract DeployTest is Test {
         assertTrue(lPool.maxMint(self) <= 1);
     }
 
-    function redeemWithdraw(
-        uint64 poolId,
-        uint8 decimals,
-        string memory tokenName,
-        string memory tokenSymbol,
-        bytes16 trancheId,
-        uint128 price,
-        uint128 currencyId,
-        uint256 amount,
-        uint64 validUntil,
-        LiquidityPool lPool
-    ) public {
-        vm.expectRevert(bytes("ERC20/insufficient-allowance"));
-        lPool.requestRedeem(amount, self);
-        lPool.approve(address(investmentManager), amount);
-        console.log(lPool.allowance(self, address(lPool)));
+    function redeemWithdraw(uint64 poolId, bytes16 trancheId, uint128 price, uint256 amount, LiquidityPool lPool)
+        public
+    {
         lPool.requestRedeem(amount, self);
 
         // redeem
@@ -201,8 +174,6 @@ contract DeployTest is Test {
         string memory tokenSymbol,
         uint8 decimals
     ) public returns (address) {
-        uint64 validUntil = uint64(block.timestamp + 1000 days);
-
         vm.startPrank(address(gateway));
         poolManager.addPool(poolId);
         poolManager.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals);

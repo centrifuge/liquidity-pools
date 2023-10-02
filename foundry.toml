@@ -7,11 +7,12 @@ solc_version = "0.8.21"
 evm_version = "paris" # to prevent usage of PUSH0, which is not supported on all chains
 
 optimizer = true
-optimizer_runs = 1000
+optimizer_runs = 1_000
 verbosity = 3
 
 [profile.default.fuzz]
 runs = 100
+max_test_rejects = 1_000_000 # Number of times `vm.assume` can fail
 
 [profile.default.invariant]
 runs           = 10
@@ -19,24 +20,30 @@ depth          = 100
 call_override  = false
 fail_on_revert = false
 
-[profile.pull_request]
-optimizer = true
-optimizer_runs = 200
 
-[profile.pull_request.fuzz]
-runs = 1000
-max_test_rejects = 262144
+[profile.smt.model_checker]
+  engine = "chc" # constrained Horn clauses
+  invariants = ["contract", "reentrancy"]
+  show_unproved = true
+  timeout = 100_000 # in milliseconds, per solving query
+  targets = [
+    "assert",
+    "constantCondition",
+    "divByZero",
+    "outOfBounds",
+    "overflow",
+    "underflow",
+  ]
 
-[profile.pull_request.invariant]
-depth = 1000
-
-[profile.push_to_main]
-optimizer = true
-optimizer_runs = 200
-
-[profile.push_to_main.fuzz]
-runs = 1000 # TODO: increase
-max_test_rejects = 262144
-
-[profile.push_to_main.invariant]
-depth = 1000
+[profile.smt.model_checker.contracts]
+  "src/LiquidityPool.sol" = ["LiquidityPool"]
+  "src/InvestmentManager.sol" = ["InvestmentManager"]
+  "src/PoolManager.sol" = ["PoolManager"]
+  "src/Escrow.sol" = ["Escrow"]
+  "src/UserEscrow.sol" = ["UserEscrow"]
+  "src/Root.sol" = ["Root"]
+  "src/token/ERC20.sol" = ["ERC20"]
+  "src/token/Tranche.sol" = ["TrancheToken"]
+  "src/token/RestrictionManager.sol" = ["RestrictionManager"]
+  "src/admins/DelayedAdmin.sol" = ["DelayedAdmin"]
+  "src/admins/PauseAdmin.sol" = ["PauseAdmin"]

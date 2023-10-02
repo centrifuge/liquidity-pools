@@ -33,28 +33,38 @@ contract Deployer is Script {
     DelayedAdmin public delayedAdmin;
     Gateway public gateway;
 
-    function deployInvestmentManager() public {
-        escrow = new Escrow();
+    function deployInvestmentManager(address deployer) public {
+        // If no salt is provided, a pseudo-random salt is generated,
+        // thus effectively making the deployment non-deterministic
+        bytes32 salt = vm.envOr(
+            "DEPLOYMENT_SALT", keccak256(abi.encodePacked(string(abi.encodePacked(blockhash(block.number - 1)))))
+        );
+        escrow = new Escrow{salt: salt}(deployer);
         userEscrow = new UserEscrow();
-        root = new Root(address(escrow), delay);
+        root = new Root{salt: salt}(address(escrow), delay, deployer);
 
         investmentManager = new InvestmentManager(address(escrow), address(userEscrow));
 
         address liquidityPoolFactory = address(new LiquidityPoolFactory(address(root)));
         address restrictionManagerFactory = address(new RestrictionManagerFactory(address(root)));
-        address trancheTokenFactory = address(new TrancheTokenFactory(address(root)));
+        address trancheTokenFactory = address(new TrancheTokenFactory{salt: salt}(address(root), deployer));
         investmentManager = new InvestmentManager(address(escrow), address(userEscrow));
         poolManager =
             new PoolManager(address(escrow), liquidityPoolFactory, restrictionManagerFactory, trancheTokenFactory);
 
         LiquidityPoolFactory(liquidityPoolFactory).rely(address(poolManager));
         TrancheTokenFactory(trancheTokenFactory).rely(address(poolManager));
+        RestrictionManagerFactory(restrictionManagerFactory).rely(address(poolManager));
+
+        LiquidityPoolFactory(liquidityPoolFactory).rely(address(root));
+        TrancheTokenFactory(trancheTokenFactory).rely(address(root));
+        RestrictionManagerFactory(restrictionManagerFactory).rely(address(root));
     }
 
     function wire(address router) public {
         // Deploy gateway and admins
         pauseAdmin = new PauseAdmin(address(root));
-        delayedAdmin = new DelayedAdmin(address(root));
+        delayedAdmin = new DelayedAdmin(address(root), address(pauseAdmin));
         gateway = new Gateway(address(root), address(investmentManager), address(poolManager), address(router));
         pauseAdmin.rely(address(delayedAdmin));
         root.rely(address(pauseAdmin));
@@ -83,14 +93,14 @@ contract Deployer is Script {
         delayedAdmin.rely(address(admin));
     }
 
-    function removeDeployerAccess(address router) public {
-        RouterLike(router).deny(address(this));
-        root.deny(address(this));
-        investmentManager.deny(address(this));
-        poolManager.deny(address(this));
-        escrow.deny(address(this));
-        gateway.deny(address(this));
-        pauseAdmin.deny(address(this));
-        delayedAdmin.deny(address(this));
+    function removeDeployerAccess(address router, address deployer) public {
+        RouterLike(router).deny(deployer);
+        root.deny(deployer);
+        investmentManager.deny(deployer);
+        poolManager.deny(deployer);
+        escrow.deny(deployer);
+        gateway.deny(deployer);
+        pauseAdmin.deny(deployer);
+        delayedAdmin.deny(deployer);
     }
 }

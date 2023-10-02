@@ -70,11 +70,10 @@ interface TrancheTokenFactoryLike {
 contract TrancheTokenFactory is Auth {
     address public immutable root;
 
-    constructor(address _root) {
+    constructor(address _root, address deployer) {
         root = _root;
-
-        wards[msg.sender] = 1;
-        emit Rely(msg.sender);
+        wards[deployer] = 1;
+        emit Rely(deployer);
     }
 
     function newTrancheToken(
@@ -124,6 +123,7 @@ contract RestrictionManagerFactory is Auth {
 
     function newRestrictionManager(address token, address[] calldata restrictionManagerWards)
         public
+        auth
         returns (address)
     {
         RestrictionManager restrictionManager = new RestrictionManager(token);

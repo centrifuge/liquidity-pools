@@ -5,16 +5,56 @@ import {TrancheTokenFactory} from "src/util/Factory.sol";
 import {TrancheToken} from "src/token/Tranche.sol";
 import {Root} from "src/Root.sol";
 import {Escrow} from "src/Escrow.sol";
+import {TestSetup} from "test/TestSetup.t.sol";
 import "forge-std/Test.sol";
+
+interface PoolManagerLike {
+    function getTrancheToken(uint64 poolId, bytes16 trancheId) external view returns (address);
+}
 
 contract FactoryTest is Test {
     uint256 mainnetFork;
     uint256 polygonFork;
-
     address root;
 
     function setUp() public {
-        root = address(new Root(address(new Escrow()), 48 hours));
+        if (vm.envOr("FORK_TESTS", false)) {
+            mainnetFork = vm.createFork(vm.envString("MAINNET_RPC_URL"));
+            polygonFork = vm.createFork(vm.envString("POLYGON_RPC_URL"));
+        }
+
+        root = address(new Root(address(new Escrow(address(this))), 48 hours, address(this)));
+    }
+
+    function testTrancheTokenFactoryIsDeterministicAcrossChains(
+        uint64 poolId,
+        bytes16 trancheId,
+        address investmentManager1,
+        address investmentManager2,
+        address poolManager1,
+        address poolManager2
+    ) public {
+        if (vm.envOr("FORK_TESTS", false)) {
+            vm.setEnv("DEPLOYMENT_SALT", "0x290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563");
+            vm.selectFork(mainnetFork);
+            TestSetup testSetup1 = new TestSetup{salt: keccak256(abi.encode(vm.envString("DEPLOYMENT_SALT")))}();
+            testSetup1.setUp();
+            testSetup1.deployLiquidityPool(poolId, 18, "", "", trancheId, 1, address(testSetup1.erc20()));
+            address trancheToken1 =
+                PoolManagerLike(address(testSetup1.poolManager())).getTrancheToken(poolId, trancheId);
+            address root1 = address(testSetup1.root());
+
+            vm.selectFork(polygonFork);
+            TestSetup testSetup2 = new TestSetup{salt: keccak256(abi.encode(vm.envString("DEPLOYMENT_SALT")))}();
+            testSetup2.setUp();
+            testSetup2.deployLiquidityPool(poolId, 18, "", "", trancheId, 1, address(testSetup2.erc20()));
+            address trancheToken2 =
+                PoolManagerLike(address(testSetup2.poolManager())).getTrancheToken(poolId, trancheId);
+            address root2 = address(testSetup2.root());
+
+            assertEq(address(root1), address(root2));
+            assertEq(trancheToken1, trancheToken2);
+        }
     }
 
     function testTrancheTokenFactoryShouldBeDeterministic(bytes32 salt) public {
@@ -26,13 +66,17 @@ contract FactoryTest is Test {
                             bytes1(0xff),
                             address(this),
                             salt,
-                            keccak256(abi.encodePacked(type(TrancheTokenFactory).creationCode, abi.encode(root)))
+                            keccak256(
+                                abi.encodePacked(
+                                    type(TrancheTokenFactory).creationCode, abi.encode(root), abi.encode(address(this))
+                                )
+                            )
                         )
                     )
                 )
             )
         );
-        TrancheTokenFactory trancheTokenFactory = new TrancheTokenFactory{ salt: salt }(root);
+        TrancheTokenFactory trancheTokenFactory = new TrancheTokenFactory{ salt: salt }(root, address(this));
         assertEq(address(trancheTokenFactory), predictedAddress);
     }
 
@@ -46,9 +90,9 @@ contract FactoryTest is Test {
         string memory symbol,
         uint8 decimals
     ) public {
-        TrancheTokenFactory trancheTokenFactory = new TrancheTokenFactory{ salt: salt }(root);
+        TrancheTokenFactory trancheTokenFactory = new TrancheTokenFactory{ salt: salt }(root, address(this));
 
-        bytes32 salt = keccak256(abi.encodePacked(poolId, trancheId));
+        bytes32 hashedSalt = keccak256(abi.encodePacked(poolId, trancheId));
         address predictedAddress = address(
             uint160(
                 uint256(
@@ -56,7 +100,7 @@ contract FactoryTest is Test {
                         abi.encodePacked(
                             bytes1(0xff),
                             address(trancheTokenFactory),
-                            salt,
+                            hashedSalt,
                             keccak256(abi.encodePacked(type(TrancheToken).creationCode, abi.encode(decimals)))
                         )
                     )
@@ -92,7 +136,11 @@ contract FactoryTest is Test {
                             bytes1(0xff),
                             address(this),
                             salt,
-                            keccak256(abi.encodePacked(type(TrancheTokenFactory).creationCode, abi.encode(root)))
+                            keccak256(
+                                abi.encodePacked(
+                                    type(TrancheTokenFactory).creationCode, abi.encode(root), abi.encode(address(this))
+                                )
+                            )
                         )
                     )
                 )
@@ -103,10 +151,22 @@ contract FactoryTest is Test {
         trancheTokenWards[0] = address(investmentManager);
         trancheTokenWards[1] = address(poolManager);
 
-        TrancheTokenFactory trancheTokenFactory = new TrancheTokenFactory{ salt: salt }(root);
+        TrancheTokenFactory trancheTokenFactory = new TrancheTokenFactory{ salt: salt }(root, address(this));
         assertEq(address(trancheTokenFactory), predictedAddress);
+
         trancheTokenFactory.newTrancheToken(poolId, trancheId, name, symbol, decimals, trancheTokenWards);
         vm.expectRevert();
         trancheTokenFactory.newTrancheToken(poolId, trancheId, name, symbol, decimals, trancheTokenWards);
+    }
+
+    function _stringToBytes32(string memory source) internal pure returns (bytes32 result) {
+        bytes memory tempEmptyStringTest = bytes(source);
+        if (tempEmptyStringTest.length == 0) {
+            return 0x0;
+        }
+
+        assembly {
+            result := mload(add(source, 32))
+        }
     }
 }
