@@ -871,6 +871,7 @@ contract LiquidityPoolTest is TestSetup {
         assertEq(erc20.balanceOf(address(escrow)), totalAmount);
         assertEq(erc20.balanceOf(self), 0);
 
+           console.log("currencyamount", totalAmount);
         // Gateway returns randomly generated values for amount of tranche tokens and currency
         centrifugeChain.isExecutedCollectInvest(
             lPool.poolId(),
@@ -883,18 +884,26 @@ contract LiquidityPoolTest is TestSetup {
         );
 
         // user claims multiple partial deposits
-        uint256 i = 0;
+        vm.assume(lPool.maxDeposit(self) > 0);
+        assertEq(erc20.balanceOf(self), 0);
         while (lPool.maxDeposit(self) > 0) {
-            uint256 randomDeposit = random(lPool.maxDeposit(self), i);
+
+            uint256 randomDeposit = random(lPool.maxDeposit(self), 1);
+        
             try lPool.deposit(randomDeposit, self) {
-                i++;
+                if(lPool.maxDeposit(self) == 0 && lPool.maxMint(self) > 0) {
+                    lPool.mint(lPool.maxMint(self), self);
+                    break;
+                }
             } catch {
-                break;
+               lPool.mint(lPool.maxMint(self), self);
+               break;
             }
         }
-
-        assertEq(lPool.maxDeposit(self), 0);
-        assertLe(lPool.balanceOf(self), tokenAmount);
+       
+       assertLe(lPool.maxDeposit(self), 0);
+       assertLe(lPool.balanceOf(self), tokenAmount);
+       assertGe(lPool.balanceOf(self), tokenAmount-1);
     }
 
     function testMintFairRounding(uint256 totalAmount, uint256 tokenAmount) public {

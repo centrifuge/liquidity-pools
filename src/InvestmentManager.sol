@@ -327,6 +327,7 @@ contract InvestmentManager is Auth {
             currencyPayout,
             trancheTokensPayout
         );
+
         lpValues.maxMint = lpValues.maxMint + trancheTokensPayout;
         lpValues.remainingInvestOrder = remainingInvestOrder;
 
@@ -502,7 +503,7 @@ contract InvestmentManager is Auth {
     function _maxDeposit(address liquidityPool, address user) internal view returns (uint256) {
         LPValues memory lpValues = orderbook[liquidityPool][user];
         if (lpValues.maxMint == 0 || lpValues.depositPrice == 0) return 0;
-        return lpValues.maxMint.mulDiv(10 ** PRICE_DECIMALS, lpValues.depositPrice, MathLib.Rounding.Down);
+        return uint256(_calculateCurrencyAmount(lpValues.maxMint, liquidityPool, lpValues.depositPrice));
     }
 
     /// @return trancheTokenAmount type of uint256 to support the EIP4626 Liquidity Pool interface
@@ -520,7 +521,7 @@ contract InvestmentManager is Auth {
     function maxRedeem(address liquidityPool, address user) public view returns (uint256 trancheTokenAmount) {
         LPValues memory lpValues = orderbook[liquidityPool][user];
         if (lpValues.maxWithdraw == 0 || lpValues.redeemPrice == 0) return 0;
-        return lpValues.maxWithdraw.mulDiv(lpValues.redeemPrice, 10 ** PRICE_DECIMALS, MathLib.Rounding.Down);
+        return uint256(_calculateTrancheTokenAmount(lpValues.maxWithdraw, liquidityPool, lpValues.redeemPrice));
     }
 
     /// @return trancheTokenAmount is type of uint256 to support the EIP4626 Liquidity Pool interface
