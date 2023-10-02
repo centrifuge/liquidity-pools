@@ -1,18 +1,22 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {MockCentrifugeChain} from "../mock/MockCentrifugeChain.sol";
-import {TestSetup} from "test/TestSetup.t.sol";
+import {MockCentrifugeChain} from "test/mock/MockCentrifugeChain.sol";
+import {PoolManager} from "src/PoolManager.sol";
+import {ERC20} from "src/token/ERC20.sol";
 import "forge-std/Test.sol";
 
-contract InvariantPoolManager is TestSetup {
+contract PoolManagerHandler is Test {
     uint64[] public allPools;
     bytes16[] public allTranches;
     address[] public allLiquidityPools;
     mapping(bytes16 => uint64) public trancheIdToPoolId;
+    MockCentrifugeChain centrifugeChain;
+    PoolManager poolManager;
 
-    constructor(MockCentrifugeChain centrifugeChain_) {
-        centrifugeChain = centrifugeChain_;
+    constructor(address centrifugeChain_, address poolManager_) {
+        centrifugeChain = MockCentrifugeChain(centrifugeChain_);
+        poolManager = PoolManager(poolManager_);
     }
 
     function addPool(uint64 poolId) public {
@@ -58,6 +62,13 @@ contract InvariantPoolManager is TestSetup {
 
     function allLiquidityPoolsLength() public view returns (uint256) {
         return allLiquidityPools.length;
+    }
+
+    function _newErc20(string memory name, string memory symbol, uint8 decimals) internal returns (ERC20) {
+        ERC20 currency = new ERC20(decimals);
+        currency.file("name", name);
+        currency.file("symbol", symbol);
+        return currency;
     }
 
     // Added to be ignored in coverage report
