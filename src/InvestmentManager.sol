@@ -29,6 +29,10 @@ interface ERC20Like {
     function burn(address, uint256) external;
 }
 
+interface TrancheTokenLike is ERC20Like {
+    function checkTransferRestriction(address from, address to, uint256 value) external view returns (bool);
+}
+
 interface LiquidityPoolLike is ERC20Like {
     function poolId() external returns (uint64);
     function trancheId() external returns (bytes16);
@@ -36,7 +40,6 @@ interface LiquidityPoolLike is ERC20Like {
     function share() external view returns (address);
     function hasMember(address) external returns (bool);
     function updatePrice(uint128 price) external;
-    function checkTransferRestriction(address from, address to, uint256 value) external view returns (bool);
     function latestPrice() external view returns (uint128);
 }
 
@@ -160,7 +163,7 @@ contract InvestmentManager is Auth {
 
         require(poolManager.isAllowedAsInvestmentCurrency(poolId, currency), "InvestmentManager/currency-not-allowed");
         require(
-            lPool.checkTransferRestriction(address(0), user, convertToShares(liquidityPool, currencyAmount)),
+            _checkTransferRestriction(liquidityPool, address(0), user, convertToShares(liquidityPool, currencyAmount)),
             "InvestmentManager/transfer-not-allowed"
         );
 
@@ -220,7 +223,7 @@ contract InvestmentManager is Auth {
         uint128 trancheTokenAmount = _toUint128(_trancheTokenAmount);
         LiquidityPoolLike _liquidityPool = LiquidityPoolLike(liquidityPool);
         require(
-            _liquidityPool.checkTransferRestriction(address(0), user, _trancheTokenAmount),
+            _checkTransferRestriction(liquidityPool, address(0), user, _trancheTokenAmount),
             "InvestmentManager/transfer-not-allowed"
         );
         gateway.decreaseRedeemOrder(
@@ -246,7 +249,7 @@ contract InvestmentManager is Auth {
         LiquidityPoolLike _liquidityPool = LiquidityPoolLike(liquidityPool);
         uint256 approximateTrancheTokenPayout = userRedeemRequest(liquidityPool, user);
         require(
-            _liquidityPool.checkTransferRestriction(address(0), user, approximateTrancheTokenPayout),
+            _checkTransferRestriction(liquidityPool, address(0), user, approximateTrancheTokenPayout),
             "InvestmentManager/transfer-not-allowed"
         );
         gateway.cancelRedeemOrder(
@@ -265,7 +268,7 @@ contract InvestmentManager is Auth {
         uint256 approximateMaxTrancheTokenPayout =
             convertToShares(liquidityPool, userDepositRequest(liquidityPool, receiver));
         require(
-            _liquidityPool.checkTransferRestriction(address(escrow), receiver, approximateMaxTrancheTokenPayout),
+            _checkTransferRestriction(liquidityPool, address(escrow), receiver, approximateMaxTrancheTokenPayout),
             "InvestmentManager/transfer-not-allowed"
         );
         gateway.collectInvest(
@@ -472,14 +475,14 @@ contract InvestmentManager is Auth {
 
     /// @return currencyAmount is type of uint256 to support the EIP4626 Liquidity Pool interface
     function maxDeposit(address liquidityPool, address user) public view returns (uint256) {
-        if (!LiquidityPoolLike(liquidityPool).checkTransferRestriction(address(escrow), user, 0)) return 0;
+        if (!_checkTransferRestriction(liquidityPool, address(escrow), user, 0)) return 0;
         if (calculateDepositPrice(user, liquidityPool) == 0) return 0;
         return uint256(orderbook[liquidityPool][user].maxDeposit);
     }
 
     /// @return trancheTokenAmount type of uint256 to support the EIP4626 Liquidity Pool interface
     function maxMint(address liquidityPool, address user) public view returns (uint256 trancheTokenAmount) {
-        if (!LiquidityPoolLike(liquidityPool).checkTransferRestriction(address(escrow), user, 0)) return 0;
+        if (!_checkTransferRestriction(liquidityPool, address(escrow), user, 0)) return 0;
         if (calculateDepositPrice(user, liquidityPool) == 0) return 0;
         return uint256(orderbook[liquidityPool][user].maxMint);
     }
@@ -798,5 +801,14 @@ contract InvestmentManager is Auth {
     {
         currencyDecimals = ERC20Like(LiquidityPoolLike(liquidityPool).asset()).decimals();
         trancheTokenDecimals = LiquidityPoolLike(liquidityPool).decimals();
+    }
+
+    function _checkTransferRestriction(address liquidityPool, address from, address to, uint256 value)
+        internal
+        view
+        returns (bool)
+    {
+        TrancheTokenLike trancheToken = TrancheTokenLike(LiquidityPoolLike(liquidityPool).share());
+        return trancheToken.checkTransferRestriction(from, to, value);
     }
 }
