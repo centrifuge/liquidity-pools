@@ -110,7 +110,7 @@ contract TestSetup is Deployer, Test {
     }
 
     function deploySimplePool() public returns (address) {
-        return deployLiquidityPool(1, 18, "name", "symbol", _stringToBytes16("1"), defaultCurrencyId, address(erc20));
+        return deployLiquidityPool(1, 6, "name", "symbol", _stringToBytes16("1"), defaultCurrencyId, address(erc20));
     }
 
     // Helpers
