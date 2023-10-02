@@ -10,32 +10,41 @@ env:
   FOUNDRY_PROFILE: ci
 
 jobs:
-  test:
+  test-unit:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: nightly
 
-      - name: Run Forge build
-        run: |
-          forge --version
-          forge build --sizes
-        id: build
-
-      - name: Run Forge tests
-        run: |
-          forge test -vvv
-        id: test
+      - name: Run tests
+        run: forge test --no-match-path "test/invariants/**/*.sol"
         env:
           FOUNDRY_PROFILE: ci
           CENTRIFUGE_CHAIN_ORIGIN: ${{ vars.CENTRIFUGE_CHAIN_ORIGIN }}
           MAINNET_RPC_URL: ${{ vars.MAINNET_RPC_URL }}
           POLYGON_RPC_URL: ${{ vars.POLYGON_RPC_URL }}
           SETUP_TEST_DATA: false
+          FORK_TESTS: false
+
+  test-invariant:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Run tests
+        run: forge test --match-path "test/invariants/**/*.sol"
+        env:
+          FOUNDRY_PROFILE: ci
+          CENTRIFUGE_CHAIN_ORIGIN: ${{ vars.CENTRIFUGE_CHAIN_ORIGIN }}
+          MAINNET_RPC_URL: ${{ vars.MAINNET_RPC_URL }}
+          POLYGON_RPC_URL: ${{ vars.POLYGON_RPC_URL }}
+          SETUP_TEST_DATA: false
+          FORK_TESTS: false
 
   lint:
     runs-on: ubuntu-latest
@@ -44,14 +53,11 @@ jobs:
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: nightly
 
-      - name: Run Forge build
+      - name: Build contracts
         run: |
           forge --version
           forge build --sizes
-        id: build
 
       - name: Check formatting
         run: forge fmt --check
@@ -128,6 +134,11 @@ jobs:
           solc-version: "0.8.21"
           target: "src/"
 
+      # - name: Upload SARIF file
+      #   uses: github/codeql-action/upload-sarif@v2
+      #   with:
+      #     sarif_file: ${{ steps.slither.outputs.sarif }}
+      
       - name: "Add Slither summary"
         run: |
           echo "## Slither result" >> $GITHUB_STEP_SUMMARY
