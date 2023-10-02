@@ -440,7 +440,7 @@ contract LiquidityPoolTest is TestSetup {
         );
 
         // deposit price should now be 50% * 1.2 + 50% * 1.4 = ~1.3*10**18.
-       //  assertEq(investmentManager.calculateDepositPrice(self, address(lPool)), 1292307692307692307); TODO
+        //  assertEq(investmentManager.calculateDepositPrice(self, address(lPool)), 1292307692307692307); TODO
         assertEq(lPool.userDepositRequest(self), 0);
 
         // collect the tranche tokens
@@ -516,7 +516,7 @@ contract LiquidityPoolTest is TestSetup {
         assertEq(lPool.maxMint(self), firstTrancheTokenPayout);
 
         // deposit price should be ~1.2*10**18
-       // assertEq(investmentManager.calculateDepositPrice(self, address(lPool)), 1200000019200000307); TODO
+        // assertEq(investmentManager.calculateDepositPrice(self, address(lPool)), 1200000019200000307); TODO
 
         // trigger executed collectInvest of the second 50% at a price of 1.4
         currencyPayout = 50000000000000000000; // 50 * 10**18
@@ -853,14 +853,12 @@ contract LiquidityPoolTest is TestSetup {
     function testDepositFairRounding(uint256 totalAmount, uint256 tokenAmount) public {
         totalAmount = bound(totalAmount, 1 * 10 ** 6, type(uint128).max / 10 ** 12);
         tokenAmount = bound(tokenAmount, 1 * 10 ** 6, type(uint128).max / 10 ** 12);
-        console.log("totalAmount", totalAmount);
-        console.log("tokenAmount", tokenAmount);
 
         //Deploy a pool
         LiquidityPool lPool = LiquidityPool(deploySimplePool());
         TrancheTokenLike trancheToken = TrancheTokenLike(address(lPool.share()));
 
-        root.relyContract(address(lPool), self);
+        root.relyContract(address(trancheToken), self);
         trancheToken.mint(address(escrow), type(uint128).max); // mint buffer to the escrow. Mock funds from other users
 
         // fund user & request deposit
