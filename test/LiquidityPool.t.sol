@@ -850,6 +850,104 @@ contract LiquidityPoolTest is TestSetup {
         assertTrue(lPool.maxDeposit(self) <= amount * 0.01e18);
     }
 
+    function testDepositFairRounding(uint256 totalAmount, uint256 tokenAmount) public {
+        totalAmount = bound(totalAmount, 1 * 10 ** 6, type(uint128).max / 10 ** 12);
+        tokenAmount = bound(tokenAmount, 1 * 10 ** 6, type(uint128).max / 10 ** 12);
+        console.log("totalAmount", totalAmount);
+        console.log("tokenAmount", tokenAmount);
+
+        //Deploy a pool
+        LiquidityPool lPool = LiquidityPool(deploySimplePool());
+        TrancheTokenLike trancheToken = TrancheTokenLike(address(lPool.share()));
+
+        root.relyContract(address(lPool), self);
+        trancheToken.mint(address(escrow), type(uint128).max); // mint buffer to the escrow. Mock funds from other users
+
+        // fund user & request deposit
+        centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), self, uint64(block.timestamp));
+        erc20.mint(self, totalAmount);
+        erc20.approve(address(investmentManager), totalAmount);
+        lPool.requestDeposit(totalAmount, self);
+
+        // Ensure funds were locked in escrow
+        assertEq(erc20.balanceOf(address(escrow)), totalAmount);
+        assertEq(erc20.balanceOf(self), 0);
+
+        // Gateway returns randomly generated values for amount of tranche tokens and currency
+        centrifugeChain.isExecutedCollectInvest(
+            lPool.poolId(),
+            lPool.trancheId(),
+            bytes32(bytes20(self)),
+            defaultCurrencyId,
+            uint128(totalAmount),
+            uint128(tokenAmount),
+            0
+        );
+
+        // user claims multiple partial deposits
+        uint256 i = 0;
+        while (lPool.maxDeposit(self) > 0) {
+            uint256 randomDeposit = random(lPool.maxDeposit(self), i);
+            try lPool.deposit(randomDeposit, self) {
+                i++;
+            } catch {
+                break;
+            }
+        }
+
+        assertEq(lPool.maxDeposit(self), 0);
+        assertLe(lPool.balanceOf(self), tokenAmount);
+    }
+
+    function testMintFairRounding(uint256 totalAmount, uint256 tokenAmount) public {
+        totalAmount = bound(totalAmount, 1 * 10 ** 6, type(uint128).max / 10 ** 12);
+        tokenAmount = bound(tokenAmount, 1 * 10 ** 6, type(uint128).max / 10 ** 12);
+        console.log("totalAmount", totalAmount);
+        console.log("tokenAmount", tokenAmount);
+
+        //Deploy a pool
+        LiquidityPool lPool = LiquidityPool(deploySimplePool());
+        TrancheTokenLike trancheToken = TrancheTokenLike(address(lPool.share()));
+
+        root.relyContract(address(lPool), self);
+        trancheToken.mint(address(escrow), type(uint128).max); // mint buffer to the escrow. Mock funds from other users
+
+        // fund user & request deposit
+        centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), self, uint64(block.timestamp));
+        erc20.mint(self, totalAmount);
+        erc20.approve(address(investmentManager), totalAmount);
+        lPool.requestDeposit(totalAmount, self);
+
+        // Ensure funds were locked in escrow
+        assertEq(erc20.balanceOf(address(escrow)), totalAmount);
+        assertEq(erc20.balanceOf(self), 0);
+
+        // Gateway returns randomly generated values for amount of tranche tokens and currency
+        centrifugeChain.isExecutedCollectInvest(
+            lPool.poolId(),
+            lPool.trancheId(),
+            bytes32(bytes20(self)),
+            defaultCurrencyId,
+            uint128(totalAmount),
+            uint128(tokenAmount),
+            0
+        );
+
+        // user claims multiple partial mints
+        uint256 i = 0;
+        while (lPool.maxMint(self) > 0) {
+            uint256 randomMint = random(lPool.maxMint(self), i);
+            try lPool.mint(randomMint, self) {
+                i++;
+            } catch {
+                break;
+            }
+        }
+
+        assertEq(lPool.maxMint(self), 0);
+        assertLe(lPool.balanceOf(self), tokenAmount);
+    }
+
     function testDepositMintToReceiver(uint256 amount, address receiver) public {
         amount = uint128(bound(amount, 2, MAX_UINT128));
         vm.assume(addressAssumption(receiver));
@@ -1266,5 +1364,13 @@ contract LiquidityPoolTest is TestSetup {
 
     function addressAssumption(address user) public view returns (bool) {
         return (user != address(0) && user != address(erc20) && user.code.length == 0);
+    }
+
+    function random(uint256 maxValue, uint256 nonce) internal returns (uint256) {
+        if (maxValue == 1) {
+            return maxValue;
+        }
+        uint256 randomnumber = uint256(keccak256(abi.encodePacked(block.timestamp, self, nonce))) % (maxValue - 1);
+        return randomnumber + 1;
     }
 }
