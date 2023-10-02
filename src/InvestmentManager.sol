@@ -596,8 +596,8 @@ contract InvestmentManager is Auth {
         uint128 _trancheTokenAmount =
             _calculateTrancheTokenAmount(_toUint128(currencyAmount), liquidityPool, lpValues.depositPrice);
 
-            _deposit(_trancheTokenAmount, liquidityPool, receiver, owner);
-            trancheTokenAmount = uint256(_trancheTokenAmount);
+        _deposit(_trancheTokenAmount, liquidityPool, receiver, owner);
+        trancheTokenAmount = uint256(_trancheTokenAmount);
     }
 
     /// @notice Processes owner's currency deposit / investment after the epoch has been executed on Centrifuge.
