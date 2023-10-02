@@ -24,7 +24,7 @@ interface ERC1404Like {
 ///         which manages the liquidity pools that are considered
 ///         trusted forwarders for the ERC20 token, and ensures
 ///         the transfer restrictions as defined in the RestrictionManager.
-contract TrancheToken is ERC20, ERC1404Like {
+contract TrancheToken is ERC20 {
     ERC1404Like public restrictionManager;
 
     mapping(address => bool) public liquidityPools;
