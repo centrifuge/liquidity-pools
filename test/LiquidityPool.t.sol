@@ -815,7 +815,7 @@ contract LiquidityPoolTest is TestSetup {
         centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), self, uint64(block.timestamp));
         erc20.mint(self, totalAmount);
         erc20.approve(address(investmentManager), totalAmount);
-        lPool.requestDeposit(totalAmount, self);
+        lPool.requestDeposit(totalAmount);
 
         // Ensure funds were locked in escrow
         assertEq(erc20.balanceOf(address(escrow)), totalAmount);
@@ -864,7 +864,7 @@ contract LiquidityPoolTest is TestSetup {
         centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), self, uint64(block.timestamp));
         erc20.mint(self, totalAmount);
         erc20.approve(address(investmentManager), totalAmount);
-        lPool.requestDeposit(totalAmount, self);
+        lPool.requestDeposit(totalAmount);
 
         // Ensure funds were locked in escrow
         assertEq(erc20.balanceOf(address(escrow)), totalAmount);
