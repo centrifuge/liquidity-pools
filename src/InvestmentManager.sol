@@ -569,7 +569,7 @@ contract InvestmentManager is Auth {
     ///         calling processDeposit. The currency required to fulfill the invest order is already
     ///         locked in escrow upon calling requestDeposit.
     /// @dev    trancheTokenAmount return value is type of uint256 to be compliant with EIP4626 LiquidityPool interface
-    /// @return trancheTokenAmount the amount of tranche tokens transferred to the user's wallet after 
+    /// @return trancheTokenAmount the amount of tranche tokens transferred to the user's wallet after
     ///         successful deposit.
     function processDeposit(address liquidityPool, uint256 currencyAmount, address receiver, address owner)
         public
@@ -672,8 +672,8 @@ contract InvestmentManager is Auth {
     ///         on calling processRedeem or processWithdraw. The trancheTokenAmount required to fulfill the
     ///         redemption order was already locked in escrow upon calling requestRedeem and burned upon collectRedeem.
     /// @notice trancheTokenAmount return value is type of uint256 to be compliant with EIP4626 LiquidityPool interface
-    /// @return trancheTokenAmount the amount of trancheTokens redeemed/burned required to receive the currencyAmount
-    /// payout/withdrawal.
+    /// @return trancheTokenAmount the amount of trancheTokens redeemed/burned required to receive
+    ///         the currencyAmount payout/withdrawal.
     function processWithdraw(address liquidityPool, uint256 currencyAmount, address receiver, address owner)
         public
         auth
@@ -779,8 +779,8 @@ contract InvestmentManager is Auth {
         currencyAmount = _fromPriceDecimals(currencyAmountInPriceDecimals, currencyDecimals);
     }
 
-    /// @dev    Safe type conversion from uint256 to uint128. Revert if value is too big to be stored with uint128. Avoid
-    /// data loss.
+    /// @dev    Safe type conversion from uint256 to uint128. Revert if value is too big to be stored
+    ///         with uint128. Avoid data loss.
     /// @return value - safely converted without data loss
     function _toUint128(uint256 _value) internal pure returns (uint128 value) {
         if (_value > type(uint128).max) {
