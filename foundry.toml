@@ -20,6 +20,15 @@ depth          = 100
 call_override  = false
 fail_on_revert = false
 
+[profile.ci.fuzz]
+runs = 1000
+max_test_rejects = 1_000_000 # Number of times `vm.assume` can fail
+
+[profile.ci.invariant]
+runs           = 100
+depth          = 1000
+call_override  = false
+fail_on_revert = false
 
 [profile.smt.model_checker]
   engine = "chc" # constrained Horn clauses
@@ -47,6 +56,11 @@ fail_on_revert = false
   "src/token/RestrictionManager.sol" = ["RestrictionManager"]
   "src/admins/DelayedAdmin.sol" = ["DelayedAdmin"]
   "src/admins/PauseAdmin.sol" = ["PauseAdmin"]
+
+[doc]
+  ignore = ["**/*.t.sol", "**/*.s.sol"]
+  out = "docs"
+  repository = "https://github.com/centrifuge/liquidity-pools"
 
 [fmt]
   line_length = 120
