@@ -47,3 +47,14 @@ fail_on_revert = false
   "src/token/RestrictionManager.sol" = ["RestrictionManager"]
   "src/admins/DelayedAdmin.sol" = ["DelayedAdmin"]
   "src/admins/PauseAdmin.sol" = ["PauseAdmin"]
+
+[fmt]
+  line_length = 120
+  tab_width = 4
+  bracket_spacing = false
+  int_types = "long"
+  multiline_func_header = "attributes_first"
+  quote_style = "double"
+  number_underscore = "preserve"
+  wrap_comments = true
+  ignore = ["test/*.sol"]

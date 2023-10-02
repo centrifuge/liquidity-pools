@@ -52,15 +52,16 @@ struct Pool {
 struct Tranche {
     address token;
     /// @dev Each tranche can have multiple liquidity pools deployed,
-    /// each linked to a unique investment currency (asset)
+    ///      each linked to a unique investment currency (asset)
     mapping(address currencyAddress => address liquidityPool) liquidityPools;
 }
 
 /// @dev Temporary storage that is only present between addTranche and deployTranche
 struct UndeployedTranche {
-    /// @dev the decimals of the leading pool currency. Liquidity Pool shares have to be denomatimated with the same precision.
+    /// @dev The decimals of the leading pool currency. Liquidity Pool shareshave
+    ///      to be denomatimated with the same precision.
     uint8 decimals;
-    /// @dev metadata of the to be deployed erc20 token
+    /// @dev Metadata of the to be deployed erc20 token
     string tokenName;
     string tokenSymbol;
 }
@@ -196,7 +197,8 @@ contract PoolManager is Auth {
         emit AddPool(poolId);
     }
 
-    /// @notice     Centrifuge pools can support multiple currencies for investing. this function adds a new supported currency to the pool details.
+    /// @notice     Centrifuge pools can support multiple currencies for investing. this function adds
+    ///             a new supported currency to the pool details.
     ///             Adding new currencies allow the creation of new liquidity pools for the underlying Centrifuge pool.
     /// @dev        The function can only be executed by the gateway contract.
     function allowInvestmentCurrency(uint64 poolId, uint128 currency) public onlyGateway {
@@ -287,7 +289,8 @@ contract PoolManager is Auth {
         restrictionManager.unfreeze(user);
     }
 
-    /// @notice A global chain agnostic currency index is maintained on Centrifuge. This function maps a currency from the Centrifuge index to its corresponding address on the evm chain.
+    /// @notice A global chain agnostic currency index is maintained on Centrifuge. This function maps
+    ///         a currency from the Centrifuge index to its corresponding address on the evm chain.
     ///         The chain agnostic currency id has to be used to pass currency information to the Centrifuge.
     /// @dev    This function can only be executed by the gateway contract.
     function addCurrency(uint128 currency, address currencyAddress) public onlyGateway {
@@ -416,7 +419,8 @@ contract PoolManager is Auth {
         return pools[poolId].allowedCurrencies[currencyAddress];
     }
 
-    /// @dev    Safe type conversion from uint256 to uint128. Revert if value is too big to be stored with uint128. Avoid data loss.
+    /// @dev    Safe type conversion from uint256 to uint128. Revert if value is too big to
+    ///         be stored with uint128. Avoid data loss.
     /// @return value - safely converted without data loss
     function _toUint128(uint256 _value) internal pure returns (uint128 value) {
         if (_value > type(uint128).max) {

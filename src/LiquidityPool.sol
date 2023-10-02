@@ -71,7 +71,8 @@ contract LiquidityPool is Auth, IERC4626 {
     bytes16 public immutable trancheId;
 
     /// @notice The investment currency for this Liquidity Pool.
-    ///         Each tranche of a Centrifuge pool can have multiple Liquidity Pools. A Liquidity Pool for each supported asset.
+    ///         Each tranche of a Centrifuge pool can have multiple Liquidity Pools.
+    ///         One Liquidity Pool for each supported asset.
     ///         Thus tranche shares can be linked to multiple LiquidityPools with different assets.
     /// @dev    Also known as the investment currency.
     address public immutable asset;
@@ -143,7 +144,8 @@ contract LiquidityPool is Auth, IERC4626 {
         assets = investmentManager.convertToAssets(address(this), shares);
     }
 
-    /// @return maxAssets that can be deposited into the Tranche by the receiver after the epoch had been executed on Centrifuge.
+    /// @return maxAssets that can be deposited into the Tranche by the receiver
+    ///         after the epoch had been executed on Centrifuge.
     function maxDeposit(address receiver) public view returns (uint256 maxAssets) {
         maxAssets = investmentManager.maxDeposit(address(this), receiver);
     }
@@ -182,7 +184,8 @@ contract LiquidityPool is Auth, IERC4626 {
         maxAssets = investmentManager.maxWithdraw(address(this), receiver);
     }
 
-    /// @return shares that a user would need to redeem in order to receive the given amount of assets -> convertToAssets
+    /// @return shares that a user would need to redeem in order to receive
+    ///         the given amount of assets -> convertToAssets
     function previewWithdraw(uint256 assets) public view returns (uint256 shares) {
         shares = investmentManager.previewWithdraw(address(this), msg.sender, assets);
     }

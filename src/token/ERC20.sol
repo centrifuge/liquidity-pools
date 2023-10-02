@@ -140,7 +140,9 @@ contract ERC20 {
     function mint(address to, uint256 value) public virtual auth {
         require(to != address(0) && to != address(this), "ERC20/invalid-address");
         unchecked {
-            balanceOf[to] = balanceOf[to] + value; // note: we don't need an overflow check here b/c balanceOf[to] <= totalSupply and there is an overflow check below
+            // We don't need an overflow check here b/c balanceOf[to] <= totalSupply
+            // and there is an overflow check below
+            balanceOf[to] = balanceOf[to] + value;
         }
         totalSupply = totalSupply + value;
 
@@ -163,7 +165,8 @@ contract ERC20 {
         }
 
         unchecked {
-            balanceOf[from] = balance - value; // note: we don't need overflow checks b/c require(balance >= value) and balance <= totalSupply
+            // We don't need overflow checks b/c require(balance >= value) and balance <= totalSupply
+            balanceOf[from] = balance - value;
             totalSupply = totalSupply - value;
         }
 
