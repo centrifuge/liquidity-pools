@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {Context} from "../util/Context.sol";
-
 interface IERC1271 {
     function isValidSignature(bytes32, bytes memory) external view returns (bytes4);
 }
@@ -11,7 +9,7 @@ interface IERC1271 {
 /// @notice Standard ERC20 implementation, with mint/burn functionality and permit logic.
 ///         Includes ERC1271 context support to allow multiple liquidity pools
 /// @author Modified from https://github.com/makerdao/xdomain-dss/blob/master/src/Dai.sol
-contract ERC20 is Context {
+contract ERC20 {
     mapping(address => uint256) public wards;
 
     string public name;
@@ -236,5 +234,10 @@ contract ERC20 is Context {
         emit Transfer(from, to, value);
 
         return true;
+    }
+
+    // --- ERC1271 context ---
+    function _msgSender() internal view virtual returns (address) {
+        return msg.sender;
     }
 }
