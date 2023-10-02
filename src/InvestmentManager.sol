@@ -776,7 +776,6 @@ contract InvestmentManager is Auth {
         uint128 currencyPayout,
         uint128 trancheTokensPayout
     ) internal returns (uint256 redeemPrice) {
-    
         (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getPoolDecimals(liquidityPool);
 
         uint256 newMaxRedeem =
