@@ -27,7 +27,6 @@ jobs:
     strategy:
       fail-fast: true
 
-    name: test
     runs-on: ubuntu-latest-64-cores
     steps:
       # Profile CPU and RAM usage to adjust machine size:
@@ -42,7 +41,7 @@ jobs:
         with:
           cache: false # Requires a seed: https://github.com/foundry-rs/foundry-toolchain#fuzzing
 
-      - name: Run Forge tests
+      - name: Run tests
         run: forge test --no-match-path "test/invariants/**/*.sol"
         env:
           FOUNDRY_PROFILE: ci
@@ -60,7 +59,6 @@ jobs:
     strategy:
       fail-fast: true
 
-    name: test
     runs-on: ubuntu-latest-64-cores
     steps:
       # Profile CPU and RAM usage to adjust machine size:
@@ -76,9 +74,8 @@ jobs:
           version: nightly
           cache: false # Requires a seed: https://github.com/foundry-rs/foundry-toolchain#fuzzing
 
-      - name: Run Forge tests
+      - name: Run tests
         run: forge test --match-path "test/invariants/**/*.sol"
-        id: test
         env:
           FOUNDRY_PROFILE: ci
           CENTRIFUGE_CHAIN_ORIGIN: ${{ vars.CENTRIFUGE_CHAIN_ORIGIN }}
