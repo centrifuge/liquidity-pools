@@ -332,6 +332,7 @@ contract PoolManager is Auth {
     }
 
     // --- Public functions ---
+    // slither-disable-start reentrancy-eth
     function deployTranche(uint64 poolId, bytes16 trancheId) public returns (address) {
         UndeployedTranche storage undeployedTranche = undeployedTranches[poolId][trancheId];
         require(undeployedTranche.decimals != 0, "PoolManager/tranche-not-added");
@@ -361,6 +362,7 @@ contract PoolManager is Auth {
         emit DeployTranche(poolId, trancheId, token);
         return token;
     }
+    // slither-disable-end reentrancy-eth
 
     function deployLiquidityPool(uint64 poolId, bytes16 trancheId, address currency) public returns (address) {
         Tranche storage tranche = pools[poolId].tranches[trancheId];
@@ -385,7 +387,7 @@ contract PoolManager is Auth {
 
         // Link liquidity pool to tranche token
         AuthLike(tranche.token).rely(liquidityPool);
-        TrancheTokenLike(tranche.token).addLiquidityPool(liquidityPool);
+        TrancheTokenLike(tranche.token).addTrustedForwarder(liquidityPool);
 
         // Give investment manager infinite approval for tranche tokens
         // in the escrow to transfer to the user on deposit or mint

@@ -7,7 +7,7 @@ interface IERC1271 {
 
 /// @title  ERC20
 /// @notice Standard ERC20 implementation, with mint/burn functionality and permit logic.
-///         Includes ERC1271 context support to allow multiple liquidity pools
+///         Includes ERC1271 context support to allow multiple trusted forwarders
 /// @author Modified from https://github.com/makerdao/xdomain-dss/blob/master/src/Dai.sol
 contract ERC20 {
     mapping(address => uint256) public wards;
