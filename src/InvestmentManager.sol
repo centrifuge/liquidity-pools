@@ -398,7 +398,7 @@ contract InvestmentManager is Auth {
         // Transfer currency amount to userEscrow
         userEscrow.transferIn(_currency, address(escrow), user, currencyPayout);
 
-        // Increasing maxRedeem and maxWithdraw with the currencyPayout
+        // Calculating the price with both payouts as currencyPayout
         // leads to an effective redeem price of 1.0 and thus the user actually receiving
         // exactly currencyPayout on both deposit() and mint()
         LPValues storage lpValues = orderbook[liquidityPool][user];
@@ -428,7 +428,7 @@ contract InvestmentManager is Auth {
         address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, _currency);
         require(address(liquidityPool) != address(0), "InvestmentManager/tranche-does-not-exist");
 
-        // Increasing maxMint and maxDeposit with the trancheTokensPayout
+        // Calculating the price with both payouts as trancheTokensPayout
         // leads to an effective redeem price of 1.0 and thus the user actually receiving
         // exactly trancheTokensPayout on both deposit() and mint()
         LPValues storage lpValues = orderbook[liquidityPool][user];
