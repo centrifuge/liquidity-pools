@@ -5,6 +5,7 @@ import "./TestSetup.t.sol";
 import {LiquidityPool} from "src/LiquidityPool.sol";
 import {MigratedInvestmentManager} from "test/migrationContracts/MigratedInvestmentManager.sol";
 import {MigratedPoolManager} from "test/migrationContracts/MigratedPoolManager.sol";
+import {MigratedGateway} from "test/migrationContracts/MigratedGateway.sol";
 import {MathLib} from "src/util/MathLib.sol";
 
 interface AuthLike {
@@ -104,8 +105,6 @@ contract MigrationsTest is TestSetup {
     }
 
     function testPoolManagerMigrationInvestRedeem() public {
-        VerifyInvestAndRedeemFlow(poolId, trancheId, _lPool);
-
         // Simulate intended upgrade flow
         centrifugeChain.incomingScheduleUpgrade(address(this));
         vm.warp(block.timestamp + 3 days);
@@ -181,6 +180,37 @@ contract MigrationsTest is TestSetup {
         VerifyInvestAndRedeemFlow(poolId + 1, trancheId, _lPool2);
     }
 
+    function testGatewayMigration() public {
+        // Simulate intended upgrade flow
+        centrifugeChain.incomingScheduleUpgrade(address(this));
+        vm.warp(block.timestamp + 3 days);
+        root.executeScheduledRely(address(this));
+
+        // Deploy new Gateway
+        MigratedGateway newGateway = new MigratedGateway(address(root), address(investmentManager), address(poolManager), address(router));
+
+        // Rewire contracts
+        newGateway.rely(address(root));
+        root.relyContract(address(investmentManager), address(this));
+        investmentManager.file("gateway", address(newGateway));
+        root.relyContract(address(poolManager), address(this));
+        poolManager.file("gateway", address(newGateway));
+        root.relyContract(address(router), address(this));
+        router.file("gateway", address(newGateway));
+
+        // clean up
+        root.denyContract(address(investmentManager), address(this));
+        root.denyContract(address(poolManager), address(this));
+        root.denyContract(address(router), address(this));
+
+        // verify permissions
+        verifyMigratedGatewayPermissions(gateway, newGateway);
+
+        // test that everything is working
+        gateway = newGateway;
+        VerifyInvestAndRedeemFlow(poolId, trancheId, _lPool);
+    }
+
     // --- Permissions & Dependencies Checks ---
 
     function verifyMigratedInvestmentManagerPermissions(InvestmentManager oldInvestmentManager, InvestmentManager newInvestmentManager) public {
@@ -211,6 +241,17 @@ contract MigrationsTest is TestSetup {
         assertEq(poolManager.wards(address(root)), 1);
         assertEq(escrow.wards(address(poolManager)), 1);
         assertEq(investmentManager.wards(address(poolManager)), 1);
+    }
+
+    function verifyMigratedGatewayPermissions(Gateway oldGateway, Gateway newGateway) public {
+        assertTrue(address(oldGateway) != address(newGateway));
+        assertEq(address(oldGateway.investmentManager()), address(newGateway.investmentManager()));
+        assertEq(address(oldGateway.poolManager()), address(newGateway.poolManager()));
+        assertEq(address(oldGateway.root()), address(newGateway.root()));
+        assertEq(address(investmentManager.gateway()), address(newGateway));
+        assertEq(address(poolManager.gateway()), address(newGateway));
+        assertEq(address(router.gateway()), address(newGateway));
+        assertEq(newGateway.wards(address(root)), 1);
     }
 
     // --- State Verification Helpers ---
