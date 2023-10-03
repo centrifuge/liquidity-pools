@@ -134,10 +134,10 @@ jobs:
           solc-version: "0.8.21"
           target: "src/"
 
-      # - name: Upload SARIF file
-      #   uses: github/codeql-action/upload-sarif@v2
-      #   with:
-      #     sarif_file: ${{ steps.slither.outputs.sarif }}
+      - name: Upload SARIF file
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: ${{ steps.slither.outputs.sarif }}
       
       - name: "Add Slither summary"
         run: |
