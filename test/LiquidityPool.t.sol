@@ -240,7 +240,7 @@ contract LiquidityPoolTest is TestSetup {
 
         // remove LiquidityPool as trusted forwarder
         root.relyContract(address(trancheToken), self);
-        trancheToken.removeLiquidityPool(lPool_);
+        trancheToken.removeTrustedForwarder(lPool_);
         assertEq(trancheToken.isTrustedForwarder(lPool_), false); // adding trusted forwarder works
 
         vm.expectRevert(bytes("ERC20/insufficient-allowance"));
@@ -248,7 +248,7 @@ contract LiquidityPoolTest is TestSetup {
         lPool.transferFrom(investor, self, transferAmount);
 
         // add liquidityPool back as trusted forwarder
-        trancheToken.addLiquidityPool(lPool_);
+        trancheToken.addTrustedForwarder(lPool_);
 
         vm.prank(investor);
         lPool.transferFrom(investor, self, transferAmount);
@@ -282,7 +282,7 @@ contract LiquidityPoolTest is TestSetup {
 
         // remove LiquidityPool as trusted forwarder
         root.relyContract(address(trancheToken), self);
-        trancheToken.removeLiquidityPool(lPool_);
+        trancheToken.removeTrustedForwarder(lPool_);
         assertEq(trancheToken.isTrustedForwarder(lPool_), false); // adding trusted forwarder works
 
         vm.prank(investor);
@@ -291,7 +291,7 @@ contract LiquidityPoolTest is TestSetup {
         assertEq(lPool.allowance(investor, receiver), 0);
 
         // add liquidityPool back as trusted forwarder
-        trancheToken.addLiquidityPool(lPool_);
+        trancheToken.addTrustedForwarder(lPool_);
 
         vm.prank(investor);
         lPool.approve(receiver, approvalAmount);
@@ -324,7 +324,7 @@ contract LiquidityPoolTest is TestSetup {
 
         // remove LiquidityPool as trusted forwarder
         root.relyContract(address(trancheToken), self);
-        trancheToken.removeLiquidityPool(lPool_);
+        trancheToken.removeTrustedForwarder(lPool_);
         assertEq(trancheToken.isTrustedForwarder(lPool_), false); // adding trusted forwarder works
 
         vm.expectRevert(bytes("ERC20/insufficient-balance"));
@@ -332,7 +332,7 @@ contract LiquidityPoolTest is TestSetup {
         lPool.transfer(self, transferAmount);
 
         // add liquidityPool back as trusted forwarder
-        trancheToken.addLiquidityPool(lPool_);
+        trancheToken.addTrustedForwarder(lPool_);
         vm.prank(investor);
         lPool.transfer(self, transferAmount);
 

@@ -385,7 +385,7 @@ contract PoolManager is Auth {
 
         // Link liquidity pool to tranche token
         AuthLike(tranche.token).rely(liquidityPool);
-        TrancheTokenLike(tranche.token).addLiquidityPool(liquidityPool);
+        TrancheTokenLike(tranche.token).addTrustedForwarder(liquidityPool);
 
         // Give investment manager infinite approval for tranche tokens
         // in the escrow to transfer to the user on deposit or mint
