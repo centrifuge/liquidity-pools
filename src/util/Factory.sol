@@ -17,7 +17,7 @@ interface LiquidityPoolFactoryLike {
         address currency,
         address trancheToken,
         address investmentManager,
-        address[] calldata wards
+        address[] calldata wards_
     ) external returns (address);
 }
 
@@ -39,7 +39,7 @@ contract LiquidityPoolFactory is Auth {
         address currency,
         address trancheToken,
         address investmentManager,
-        address[] calldata wards
+        address[] calldata wards_
     ) public auth returns (address) {
         LiquidityPool liquidityPool = new LiquidityPool(poolId, trancheId, currency, trancheToken, investmentManager);
 
