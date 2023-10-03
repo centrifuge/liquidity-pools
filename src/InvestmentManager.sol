@@ -299,6 +299,10 @@ contract InvestmentManager is Auth {
     }
 
     // --- Incoming message handling ---
+    /// @notice Update the price of a tranche token
+    /// @dev    This also happens automatically on incoming order executions,
+    ///         but this incoming call from Centrifuge can be used to update the price
+    ///         whenever the price is outdated but no orders are outstanding.
     function updateTrancheTokenPrice(uint64 poolId, bytes16 trancheId, uint128 currencyId, uint128 price)
         public
         onlyGateway
@@ -608,7 +612,7 @@ contract InvestmentManager is Auth {
 
         require(_trancheTokenAmount != 0, "InvestmentManager/tranche-token-amount-is-zero");
 
-        _deposit(_trancheTokenAmount, liquidityPool, receiver, owner);
+        _deposit(lpValues, _trancheTokenAmount, liquidityPool, receiver, owner);
         trancheTokenAmount = uint256(_trancheTokenAmount);
     }
 
@@ -629,14 +633,19 @@ contract InvestmentManager is Auth {
         uint128 _trancheTokenAmount = _toUint128(trancheTokenAmount);
         LPValues storage lpValues = orderbook[liquidityPool][owner];
 
-        _deposit(_trancheTokenAmount, liquidityPool, receiver, owner);
+        _deposit(lpValues, _trancheTokenAmount, liquidityPool, receiver, owner);
         uint128 _currencyAmount = _calculateCurrencyAmount(_trancheTokenAmount, liquidityPool, lpValues.depositPrice);
         currencyAmount = uint256(_currencyAmount);
     }
 
-    function _deposit(uint128 trancheTokenAmount, address liquidityPool, address receiver, address owner) internal {
+    function _deposit(
+        LPValues storage lpValues,
+        uint128 trancheTokenAmount,
+        address liquidityPool,
+        address receiver,
+        address owner
+    ) internal {
         LiquidityPoolLike lPool = LiquidityPoolLike(liquidityPool);
-        LPValues storage lpValues = orderbook[liquidityPool][owner];
         require(trancheTokenAmount <= lpValues.maxMint, "InvestmentManager/exceeds-deposit-limits");
 
         // Decrease the deposit limits
@@ -665,7 +674,7 @@ contract InvestmentManager is Auth {
         uint128 _currencyAmount =
             _calculateCurrencyAmount(_toUint128(trancheTokenAmount), liquidityPool, lpValues.redeemPrice);
 
-        _redeem(_currencyAmount, liquidityPool, receiver, owner);
+        _redeem(lpValues, _currencyAmount, liquidityPool, receiver, owner);
         currencyAmount = uint256(_currencyAmount);
     }
 
@@ -684,14 +693,19 @@ contract InvestmentManager is Auth {
         LPValues storage lpValues = orderbook[liquidityPool][owner];
         require(currencyAmount != 0, "InvestmentManager/currency-amount-is-zero");
 
-        _redeem(_currencyAmount, liquidityPool, receiver, owner);
+        _redeem(lpValues, _currencyAmount, liquidityPool, receiver, owner);
         uint128 _trancheTokenAmount = _calculateTrancheTokenAmount(_currencyAmount, liquidityPool, lpValues.redeemPrice);
         trancheTokenAmount = uint256(_trancheTokenAmount);
     }
 
-    function _redeem(uint128 currencyAmount, address liquidityPool, address receiver, address owner) internal {
+    function _redeem(
+        LPValues storage lpValues,
+        uint128 currencyAmount,
+        address liquidityPool,
+        address receiver,
+        address owner
+    ) internal {
         LiquidityPoolLike lPool = LiquidityPoolLike(liquidityPool);
-        LPValues storage lpValues = orderbook[liquidityPool][owner];
         require(currencyAmount <= lpValues.maxWithdraw, "InvestmentManager/exceeds-redeem-limits");
 
         // Decrease maxWithdraw
@@ -700,20 +714,6 @@ contract InvestmentManager is Auth {
     }
 
     // --- Helpers ---
-    function _calculatePrice(uint128 currencyAmount, uint128 trancheTokenAmount, address liquidityPool)
-        internal
-        view
-        returns (uint256 depositPrice)
-    {
-        (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getPoolDecimals(liquidityPool);
-        uint256 currencyAmountInPriceDecimals = _toPriceDecimals(currencyAmount, currencyDecimals);
-        uint256 trancheTokenAmountInPriceDecimals = _toPriceDecimals(trancheTokenAmount, trancheTokenDecimals);
-
-        depositPrice = currencyAmountInPriceDecimals.mulDiv(
-            10 ** PRICE_DECIMALS, trancheTokenAmountInPriceDecimals, MathLib.Rounding.Down
-        );
-    }
-
     function _calculateTrancheTokenAmount(uint128 currencyAmount, address liquidityPool, uint256 price)
         internal
         view
