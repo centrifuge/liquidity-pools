@@ -335,7 +335,8 @@ contract InvestmentManager is Auth {
 
         ERC20Like trancheToken = ERC20Like(LiquidityPoolLike(liquidityPool).share());
         trancheToken.mint(address(escrow), trancheTokensPayout); // mint to escrow. Recipient can claim by calling withdraw / redeem
-        _updateLiquidityPoolPrice(liquidityPool, lpValues.depositPrice);
+
+        LiquidityPoolLike(liquidityPool).updatePrice(_toUint128(lpValues.depositPrice));
 
         emit ExecutedCollectInvest(poolId, trancheId, recipient, currency, currencyPayout, trancheTokensPayout);
     }
@@ -370,7 +371,7 @@ contract InvestmentManager is Auth {
         ERC20Like trancheToken = ERC20Like(LiquidityPoolLike(liquidityPool).share());
         trancheToken.burn(address(escrow), trancheTokensPayout); // burned redeemed tokens from escrow
 
-        _updateLiquidityPoolPrice(liquidityPool, lpValues.redeemPrice);
+        LiquidityPoolLike(liquidityPool).updatePrice(_toUint128(lpValues.redeemPrice));
 
         emit ExecutedCollectRedeem(poolId, trancheId, recipient, currency, currencyPayout, trancheTokensPayout);
     }
@@ -712,10 +713,6 @@ contract InvestmentManager is Auth {
         depositPrice = currencyAmountInPriceDecimals.mulDiv(
             10 ** PRICE_DECIMALS, trancheTokenAmountInPriceDecimals, MathLib.Rounding.Down
         );
-    }
-
-    function _updateLiquidityPoolPrice(address liquidityPool, uint256 price) internal {
-        LiquidityPoolLike(liquidityPool).updatePrice(_toUint128(price));
     }
 
     function _calculateTrancheTokenAmount(uint128 currencyAmount, address liquidityPool, uint256 price)

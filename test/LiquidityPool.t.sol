@@ -889,20 +889,17 @@ contract LiquidityPoolTest is TestSetup {
         while (lPool.maxDeposit(self) > 0) {
             uint256 randomDeposit = random(lPool.maxDeposit(self), 1);
 
-            try lPool.deposit(randomDeposit, self) {
-                if (lPool.maxDeposit(self) == 0 && lPool.maxMint(self) > 0) {
-                    lPool.mint(lPool.maxMint(self), self);
-                    break;
-                }
-            } catch {
+            lPool.deposit(randomDeposit, self);
+            if (lPool.maxDeposit(self) == 0 && lPool.maxMint(self) > 0) {
+                // If you cannot deposit anymore because the 1 wei remaining is rounded down,
+                // you should mint the remainder instead.
                 lPool.mint(lPool.maxMint(self), self);
                 break;
             }
         }
 
-        assertLe(lPool.maxDeposit(self), 0);
-        assertLe(lPool.balanceOf(self), tokenAmount);
-        assertGe(lPool.balanceOf(self), tokenAmount - 1);
+        assertEq(lPool.maxDeposit(self), 0);
+        assertApproxEqAbs(lPool.balanceOf(self), tokenAmount, 1);
     }
 
     function testMintFairRounding(uint256 totalAmount, uint256 tokenAmount) public {
