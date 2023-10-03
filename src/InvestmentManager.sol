@@ -5,6 +5,8 @@ import {Auth} from "./util/Auth.sol";
 import {MathLib} from "./util/MathLib.sol";
 import {SafeTransferLib} from "./util/SafeTransferLib.sol";
 
+import "forge-std/console.sol";
+
 interface GatewayLike {
     function increaseInvestOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount)
         external;
@@ -333,7 +335,7 @@ contract InvestmentManager is Auth {
 
         ERC20Like trancheToken = ERC20Like(LiquidityPoolLike(liquidityPool).share());
         trancheToken.mint(address(escrow), trancheTokensPayout); // mint to escrow. Recipient can claim by calling withdraw / redeem
-        _updateLiquidityPoolPrice(liquidityPool, currencyPayout, trancheTokensPayout);
+        _updateLiquidityPoolPrice(liquidityPool, lpValues.depositPrice);
 
         emit ExecutedCollectInvest(poolId, trancheId, recipient, currency, currencyPayout, trancheTokensPayout);
     }
@@ -368,7 +370,7 @@ contract InvestmentManager is Auth {
         ERC20Like trancheToken = ERC20Like(LiquidityPoolLike(liquidityPool).share());
         trancheToken.burn(address(escrow), trancheTokensPayout); // burned redeemed tokens from escrow
 
-        _updateLiquidityPoolPrice(liquidityPool, currencyPayout, trancheTokensPayout);
+        _updateLiquidityPoolPrice(liquidityPool, lpValues.redeemPrice);
 
         emit ExecutedCollectRedeem(poolId, trancheId, recipient, currency, currencyPayout, trancheTokensPayout);
     }
@@ -534,8 +536,7 @@ contract InvestmentManager is Auth {
         LPValues memory lpValues = orderbook[liquidityPool][user];
         if (lpValues.depositPrice == 0) return 0;
 
-        uint256 trancheTokenAmount =
-            uint256(_calculateTrancheTokenAmount(currencyAmount, liquidityPool, lpValues.depositPrice));
+        trancheTokenAmount = uint256(_calculateTrancheTokenAmount(currencyAmount, liquidityPool, lpValues.depositPrice));
     }
 
     /// @return currencyAmount is type of uint256 to support the EIP4626 Liquidity Pool interface
@@ -713,11 +714,8 @@ contract InvestmentManager is Auth {
         );
     }
 
-    function _updateLiquidityPoolPrice(address liquidityPool, uint128 currencyPayout, uint128 trancheTokensPayout)
-        internal
-    {
-        uint128 price = _toUint128(_calculatePrice(currencyPayout, trancheTokensPayout, liquidityPool));
-        LiquidityPoolLike(liquidityPool).updatePrice(price);
+    function _updateLiquidityPoolPrice(address liquidityPool, uint256 price) internal {
+        LiquidityPoolLike(liquidityPool).updatePrice(_toUint128(price));
     }
 
     function _calculateTrancheTokenAmount(uint128 currencyAmount, address liquidityPool, uint256 price)
@@ -733,7 +731,7 @@ contract InvestmentManager is Auth {
             uint256 trancheTokenAmountInPriceDecimals = _toPriceDecimals(currencyAmount, currencyDecimals).mulDiv(
                 10 ** PRICE_DECIMALS, price, MathLib.Rounding.Down
             );
-
+            
             trancheTokenAmount = _fromPriceDecimals(trancheTokenAmountInPriceDecimals, trancheTokenDecimals);
         }
     }
