@@ -211,7 +211,7 @@ contract InvestmentManager is Auth {
         // Transfer the tranche token amount from user to escrow (lock tranche tokens in escrow)
         require(
             AuthTransferLike(address(lPool.share())).authTransferFrom(user, address(escrow), _trancheTokenAmount),
-            "InvestmentManager/=transfer-failed"
+            "InvestmentManager/transfer-failed"
         );
 
         LPValues storage lpValues = orderbook[liquidityPool][user];
