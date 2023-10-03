@@ -66,12 +66,18 @@ interface UserEscrowLike {
 
 /// @dev Liquidity Pool orders and investment/redemption limits per user
 struct LPValues {
-    uint128 maxMint; // denominated in tranche tokens
-    uint128 maxWithdraw; // denominated in currency
-    uint128 remainingInvestOrder; // denominated in currency
-    uint128 remainingRedeemOrder; // denominated in tranche tokens
-    uint256 depositPrice; // weighted average price of deposits, used to convert maxMint to maxDeposit
-    uint256 redeemPrice; // weighted average price of redeptions, used to convert maxWithdraw to maxRedeem
+    /// @dev Tranche tokens that can be claimed using `mint()`
+    uint128 maxMint;
+    /// @dev Weighted average price of deposits, used to convert maxMint to maxDeposit
+    uint256 depositPrice;
+    /// @dev Currency that can be claimed using `withdraw()`
+    uint128 maxWithdraw;
+    /// @dev Weighted average price of redemptions, used to convert maxWithdraw to maxRedeem
+    uint256 redeemPrice;
+    /// @dev Remaining invest (deposit) order in currency
+    uint128 remainingInvestOrder;
+    /// @dev Remaining redeem order in currency
+    uint128 remainingRedeemOrder;
 }
 
 /// @title  Investment Manager

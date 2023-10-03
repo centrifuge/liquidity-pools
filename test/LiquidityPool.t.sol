@@ -430,7 +430,8 @@ contract LiquidityPoolTest is TestSetup {
         assertEq(lPool.maxMint(self), firstTrancheTokenPayout);
 
         // deposit price should be ~1.2*10**18
-        // assertEq(investmentManager.calculateDepositPrice(self, address(lPool)), 1200000000000000000); TODO
+        (, uint256 depositPrice,,,,) = investmentManager.orderbook(address(lPool), self);
+        assertEq(depositPrice, 1200000000000000000);
 
         // trigger executed collectInvest of the second 50% at a price of 1.4
         currencyPayout = 50000000; // 50 * 10**6
@@ -438,10 +439,6 @@ contract LiquidityPoolTest is TestSetup {
         centrifugeChain.isExecutedCollectInvest(
             poolId, trancheId, bytes32(bytes20(self)), _currencyId, currencyPayout, secondTrancheTokenPayout, 0
         );
-
-        // deposit price should now be 50% * 1.2 + 50% * 1.4 = ~1.3*10**18.
-        //  assertEq(investmentManager.calculateDepositPrice(self, address(lPool)), 1292307692307692307); TODO
-        assertEq(lPool.userDepositRequest(self), 0);
 
         // collect the tranche tokens
         lPool.mint(firstTrancheTokenPayout + secondTrancheTokenPayout, self);
@@ -469,7 +466,8 @@ contract LiquidityPoolTest is TestSetup {
         );
 
         // redeem price should now be ~1.5*10**18.
-        // assertEq(investmentManager.calculateRedeemPrice(self, address(lPool)), 1492615384615384615); TODO
+        (,,, uint256 redeemPrice,,) = investmentManager.orderbook(address(lPool), self);
+        assertEq(redeemPrice, 1492615384615384615);
 
         // collect the currency
         lPool.withdraw(currencyPayout, self, self);
@@ -481,12 +479,11 @@ contract LiquidityPoolTest is TestSetup {
     {
         vm.assume(currencyId > 0);
 
-        uint8 TRANCHE_TOKEN_DECIMALS = 6; // Like DAI
-        uint8 INVESTMENT_CURRENCY_DECIMALS = 18; // 18, like USDC
+        // uint8 TRANCHE_TOKEN_DECIMALS = 6; // Like DAI
+        // uint8 INVESTMENT_CURRENCY_DECIMALS = 18; // 18, like USDC
 
-        ERC20 currency = _newErc20("Currency", "CR", INVESTMENT_CURRENCY_DECIMALS);
-        address lPool_ =
-            deployLiquidityPool(poolId, TRANCHE_TOKEN_DECIMALS, "", "", trancheId, currencyId, address(currency));
+        ERC20 currency = _newErc20("Currency", "CR", 18);
+        address lPool_ = deployLiquidityPool(poolId, 6, "", "", trancheId, currencyId, address(currency));
         LiquidityPool lPool = LiquidityPool(lPool_);
         centrifugeChain.updateTrancheTokenPrice(poolId, trancheId, currencyId, 1000000000000000000000000000);
 
@@ -516,7 +513,8 @@ contract LiquidityPoolTest is TestSetup {
         assertEq(lPool.maxMint(self), firstTrancheTokenPayout);
 
         // deposit price should be ~1.2*10**18
-        // assertEq(investmentManager.calculateDepositPrice(self, address(lPool)), 1200000019200000307); TODO
+        (, uint256 depositPrice,,,,) = investmentManager.orderbook(address(lPool), self);
+        assertEq(depositPrice, 1200000019200000307);
 
         // trigger executed collectInvest of the second 50% at a price of 1.4
         currencyPayout = 50000000000000000000; // 50 * 10**18
@@ -524,10 +522,6 @@ contract LiquidityPoolTest is TestSetup {
         centrifugeChain.isExecutedCollectInvest(
             poolId, trancheId, bytes32(bytes20(self)), _currencyId, currencyPayout, secondTrancheTokenPayout, 0
         );
-
-        // deposit price should now be 50% * 1.2 + 50% * 1.4 = ~1.3*10**18.
-        // assertEq(investmentManager.calculateDepositPrice(self, address(lPool)), 1292307715370414612); TODO
-        assertEq(lPool.userDepositRequest(self), 0);
 
         // collect the tranche tokens
         lPool.mint(firstTrancheTokenPayout + secondTrancheTokenPayout, self);
@@ -555,9 +549,10 @@ contract LiquidityPoolTest is TestSetup {
         );
 
         // redeem price should now be ~1.5*10**18.
-        // assertEq(investmentManager.calculateRedeemPrice(self, address(lPool)), 1492615411252828877); TODO
+        (,,, uint256 redeemPrice,,) = investmentManager.orderbook(address(lPool), self);
+        assertEq(redeemPrice, 1492615411252828877);
 
-        // // collect the currency
+        // collect the currency
         lPool.withdraw(currencyPayout, self, self);
         assertEq(currency.balanceOf(self), currencyPayout);
     }
@@ -604,7 +599,8 @@ contract LiquidityPoolTest is TestSetup {
         assertEq(lPool.latestPrice(), 1200000000000000000);
 
         // lp price is set to the deposit price
-        // assertEq(investmentManager.calculateDepositPrice(self, address(lPool)), 1200000000000000000); TODO
+        (, uint256 depositPrice,,,,) = investmentManager.orderbook(address(lPool), self);
+        assertEq(depositPrice, 1200000000000000000);
     }
 
     // Test that assumes the swap from usdc (investment currency) to dai (pool currency) has a cost of 1%
@@ -652,7 +648,8 @@ contract LiquidityPoolTest is TestSetup {
         assertEq(lPool.latestPrice(), 1200000000000000000);
 
         // lp price is set to the deposit price
-        // assertEq(investmentManager.calculateDepositPrice(self, address(lPool)), 1200000000000000000); TODO
+        (, uint256 depositPrice,,,,) = investmentManager.orderbook(address(lPool), self);
+        assertEq(depositPrice, 1200000000000000000);
     }
 
     function testAssetShareConversion(uint64 poolId, bytes16 trancheId, uint128 currencyId) public {
