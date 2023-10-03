@@ -28,7 +28,9 @@ contract AxelarScript is Deployer {
         // Set up test data
         if (vm.envBool("SETUP_TEST_DATA")) {
             ERC20 currency = new ERC20(18);
-            currency.mint(msg.sender, 1000 * 10 ** 18);
+            currency.file("name", "Mock Currency");
+            currency.file("symbol", "MC");
+            currency.mint(msg.sender, 10000 * 10 ** 18);
 
             root.relyContract(address(poolManager), msg.sender);
             poolManager.file("gateway", msg.sender);
