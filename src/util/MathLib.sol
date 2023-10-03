@@ -11,11 +11,10 @@ library MathLib {
         Zero // Toward zero
     }
 
-    /**
-     * @notice Calculates floor(x * y / denominator) with full precision. Throws if result overflows a uint256 or denominator == 0
-     * @dev Original credit to Remco Bloemen under MIT license (https://xn--2-umb.com/21/muldiv)
-     * with further edits by Uniswap Labs also under MIT license.
-     */
+    /// @notice Calculates floor(x * y / denominator) with full precision. Throws if result overflows a uint256 or
+    ///         denominator == 0
+    /// @dev    Original credit to Remco Bloemen under MIT license (https://xn--2-umb.com/21/muldiv)
+    ///         with further edits by Uniswap Labs also under MIT license.
     function mulDiv(uint256 x, uint256 y, uint256 denominator) internal pure returns (uint256 result) {
         unchecked {
             // 512-bit multiply [prod1 prod0] = x * y. Compute the product mod 2^256 and mod 2^256 - 1, then use
@@ -55,7 +54,8 @@ library MathLib {
                 prod0 := sub(prod0, remainder)
             }
 
-            // Factor powers of two out of denominator and compute largest power of two divisor of denominator. Always >= 1.
+            // Factor powers of two out of denominator and compute largest power of two divisor of denominator.
+            // Always >= 1.
             // See https://cs.stackexchange.com/q/138556/92363.
 
             // Does not overflow because the denominator cannot be zero at this stage in the function.
@@ -79,7 +79,8 @@ library MathLib {
             // four bits. That is, denominator * inv = 1 mod 2^4.
             uint256 inverse = (3 * denominator) ^ 2;
 
-            // Use the Newton-Raphson iteration to improve the precision. Thanks to Hensel's lifting lemma, this also works
+            // Use the Newton-Raphson iteration to improve the precision. Thanks to Hensel's lifting lemma, this also
+            // works
             // in modular arithmetic, doubling the correct bits in each step.
             inverse *= 2 - denominator * inverse; // inverse mod 2^8
             inverse *= 2 - denominator * inverse; // inverse mod 2^16
@@ -97,9 +98,7 @@ library MathLib {
         }
     }
 
-    /**
-     * @notice Calculates x * y / denominator with full precision, following the selected rounding direction.
-     */
+    /// @notice Calculates x * y / denominator with full precision, following the selected rounding direction.
     function mulDiv(uint256 x, uint256 y, uint256 denominator, Rounding rounding) internal pure returns (uint256) {
         uint256 result = mulDiv(x, y, denominator);
         if (rounding == Rounding.Up && mulmod(x, y, denominator) > 0) {
@@ -108,9 +107,7 @@ library MathLib {
         return result;
     }
 
-    /**
-     * @dev Returns the largest of two numbers.
-     */
+    /// @notice Returns the largest of two numbers.
     function max(uint256 a, uint256 b) internal pure returns (uint256) {
         return a > b ? a : b;
     }
