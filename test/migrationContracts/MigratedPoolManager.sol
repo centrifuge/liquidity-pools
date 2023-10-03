@@ -86,7 +86,7 @@ contract MigratedPoolManager is PoolManager {
             bytes16 trancheId = trancheIds[j];
 
             (uint8 decimals, string memory tokenName, string memory tokenSymbol) =
-                oldPoolManager_.getUndeployedTranche(poolId, trancheId);
+                oldPoolManager_.undeployedTranches(poolId, trancheId);
 
             undeployedTranches[poolId][trancheId].decimals = decimals;
             undeployedTranches[poolId][trancheId].tokenName = tokenName;

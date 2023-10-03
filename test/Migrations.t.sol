@@ -275,9 +275,9 @@ contract MigrationsTest is TestSetup {
     ) public {
         for (uint256 i = 0; i < trancheIds.length; i++) {
             (uint8 oldDecimals, string memory oldTokenName, string memory oldTokenSymbol) =
-                poolManager.getUndeployedTranche(poolId, trancheIds[i]);
+                poolManager.undeployedTranches(poolId, trancheIds[i]);
             (uint8 newDecimals, string memory newTokenName, string memory newTokenSymbol) =
-                newPoolManager.getUndeployedTranche(poolId, trancheIds[i]);
+                newPoolManager.undeployedTranches(poolId, trancheIds[i]);
             assertEq(newDecimals, oldDecimals);
             assertEq(newTokenName, oldTokenName);
             assertEq(newTokenSymbol, oldTokenSymbol);

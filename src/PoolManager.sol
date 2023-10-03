@@ -397,18 +397,6 @@ contract PoolManager is Auth {
     }
 
     // --- Helpers ---
-    function getUndeployedTranche(uint64 poolId, bytes16 trancheId)
-        public
-        view
-        returns (uint8 decimals, string memory tokenName, string memory tokenSymbol)
-    {
-        UndeployedTranche storage tranche = undeployedTranches[poolId][trancheId];
-        uint8 decimals = tranche.decimals;
-        string memory tokenName = tranche.tokenName;
-        string memory tokenSymbol = tranche.tokenSymbol;
-        return (decimals, tokenName, tokenSymbol);
-    }
-
     function getTrancheToken(uint64 poolId, bytes16 trancheId) public view returns (address) {
         Tranche storage tranche = pools[poolId].tranches[trancheId];
         return tranche.token;
