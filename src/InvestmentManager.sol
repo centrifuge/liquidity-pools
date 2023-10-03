@@ -365,7 +365,11 @@ contract InvestmentManager is Auth {
 
         LPValues storage lpValues = orderbook[liquidityPool][recipient];
         lpValues.redeemPrice = _calculateNewRedeemPrice(
-            liquidityPool, recipient, lpValues.maxWithdraw, currencyPayout, trancheTokensPayout
+            liquidityPool,
+            maxRedeem(liquidityPool, recipient),
+            lpValues.maxWithdraw,
+            currencyPayout,
+            trancheTokensPayout
         );
         lpValues.maxWithdraw = lpValues.maxWithdraw + currencyPayout;
         lpValues.remainingRedeemOrder = remainingRedeemOrder;
@@ -403,8 +407,9 @@ contract InvestmentManager is Auth {
         // leads to an effective redeem price of 1.0 and thus the user actually receiving
         // exactly currencyPayout on both deposit() and mint()
         LPValues storage lpValues = orderbook[liquidityPool][user];
-        lpValues.redeemPrice =
-            _calculateNewRedeemPrice(liquidityPool, user, lpValues.maxWithdraw, currencyPayout, currencyPayout);
+        lpValues.redeemPrice = _calculateNewRedeemPrice(
+            liquidityPool, maxRedeem(liquidityPool, user), lpValues.maxWithdraw, currencyPayout, currencyPayout
+        );
         lpValues.maxWithdraw = lpValues.maxWithdraw + currencyPayout;
         lpValues.remainingInvestOrder = remainingInvestOrder;
 
@@ -761,15 +766,14 @@ contract InvestmentManager is Auth {
 
     function _calculateNewRedeemPrice(
         address liquidityPool,
-        address user,
+        uint256 currentMaxRedeem,
         uint128 currentMaxWithdraw,
         uint128 currencyPayout,
         uint128 trancheTokensPayout
     ) internal view returns (uint256 redeemPrice) {
         (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getPoolDecimals(liquidityPool);
 
-        uint256 newMaxRedeem =
-            maxRedeem(liquidityPool, user) + _toPriceDecimals(trancheTokensPayout, trancheTokenDecimals);
+        uint256 newMaxRedeem = currentMaxRedeem + _toPriceDecimals(trancheTokensPayout, trancheTokenDecimals);
         uint256 newMaxWithdraw = _toPriceDecimals(currentMaxWithdraw + currencyPayout, currencyDecimals);
         if (newMaxWithdraw == 0) redeemPrice = 0;
         else redeemPrice = newMaxWithdraw.mulDiv(10 ** PRICE_DECIMALS, newMaxRedeem, MathLib.Rounding.Down);
