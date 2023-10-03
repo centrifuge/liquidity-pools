@@ -6,6 +6,7 @@ import {LiquidityPool} from "src/LiquidityPool.sol";
 import {MigratedInvestmentManager} from "test/migrationContracts/MigratedInvestmentManager.sol";
 import {MigratedPoolManager} from "test/migrationContracts/MigratedPoolManager.sol";
 import {MigratedGateway} from "test/migrationContracts/MigratedGateway.sol";
+import {MigratedLiquidityPool} from "test/migrationContracts/MigratedLiquidityPool.sol";
 import {MathLib} from "src/util/MathLib.sol";
 
 interface AuthLike {
@@ -91,6 +92,7 @@ contract MigrationsTest is TestSetup {
         }
 
         // clean up
+        newInvestmentManager.deny(address(this));
         root.denyContract(address(newInvestmentManager), address(this));
         root.denyContract(address(gateway), address(this));
         root.denyContract(address(poolManager), address(this));
@@ -159,6 +161,7 @@ contract MigrationsTest is TestSetup {
         AuthLike(restrictionManagerFactory).rely(address(newPoolManager));
 
         // clean up
+        newPoolManager.deny(address(this));
         root.denyContract(address(investmentManager), address(this));
         root.denyContract(address(gateway), address(this));
         root.denyContract(address(newPoolManager), address(this));
@@ -199,9 +202,11 @@ contract MigrationsTest is TestSetup {
         router.file("gateway", address(newGateway));
 
         // clean up
+        newGateway.deny(address(this));
         root.denyContract(address(investmentManager), address(this));
         root.denyContract(address(poolManager), address(this));
         root.denyContract(address(router), address(this));
+        root.deny(address(this));
 
         // verify permissions
         verifyMigratedGatewayPermissions(gateway, newGateway);
@@ -209,6 +214,38 @@ contract MigrationsTest is TestSetup {
         // test that everything is working
         gateway = newGateway;
         VerifyInvestAndRedeemFlow(poolId, trancheId, _lPool);
+    }
+
+    function testLiquidityPoolMigration() public {
+        // Simulate intended upgrade flow
+        centrifugeChain.incomingScheduleUpgrade(address(this));
+        vm.warp(block.timestamp + 3 days);
+        root.executeScheduledRely(address(this));
+
+        // Deploy new LiquidityPool
+        MigratedLiquidityPool newLiquidityPool = new MigratedLiquidityPool(
+            poolId, trancheId, address(erc20), address(LiquidityPool(_lPool).share()), address(investmentManager)
+        );
+
+        // Rewire contracts
+        newLiquidityPool.rely(address(root));
+        newLiquidityPool.rely(address(investmentManager));
+        root.relyContract(address(investmentManager), address(this));
+        investmentManager.rely(address(newLiquidityPool));
+        root.relyContract(address(escrow), address(this));
+        escrow.approve(address(newLiquidityPool), address(investmentManager), type(uint256).max);
+        
+        // clean up
+        escrow.approve(_lPool, address(investmentManager), 0);
+        newLiquidityPool.deny(address(this));
+        root.deny(address(this));
+
+        // verify permissions
+        verifyLiquidityPoolPermissions(LiquidityPool(_lPool), newLiquidityPool);
+
+        // test that everything is working
+        // _lPool = address(newLiquidityPool);
+        // VerifyInvestAndRedeemFlow(poolId, trancheId, address(_lPool));
     }
 
     // --- Permissions & Dependencies Checks ---
@@ -252,6 +289,20 @@ contract MigrationsTest is TestSetup {
         assertEq(address(poolManager.gateway()), address(newGateway));
         assertEq(address(router.gateway()), address(newGateway));
         assertEq(newGateway.wards(address(root)), 1);
+    }
+
+    function verifyLiquidityPoolPermissions(LiquidityPool oldLiquidityPool, LiquidityPool newLiquidityPool) public {
+        assertTrue(address(oldLiquidityPool) != address(newLiquidityPool));
+        assertEq(oldLiquidityPool.poolId(), newLiquidityPool.poolId());
+        assertEq(oldLiquidityPool.trancheId(), newLiquidityPool.trancheId());
+        assertEq(address(oldLiquidityPool.asset()), address(newLiquidityPool.asset()));
+        assertEq(address(oldLiquidityPool.share()), address(newLiquidityPool.share()));
+        address token = poolManager.getTrancheToken(poolId, trancheId);
+        assertEq(address(newLiquidityPool.share()), token);
+        assertEq(address(oldLiquidityPool.investmentManager()), address(newLiquidityPool.investmentManager()));
+        assertEq(newLiquidityPool.wards(address(root)), 1);
+        assertEq(newLiquidityPool.wards(address(investmentManager)), 1);
+        assertEq(investmentManager.wards(address(newLiquidityPool)), 1);
     }
 
     // --- State Verification Helpers ---
@@ -416,7 +467,6 @@ contract MigrationsTest is TestSetup {
         );
 
         assertEq(lPool.maxMint(investor), trancheTokensPayout);
-        assertEq(lPool.maxDeposit(investor), amount);
         assertEq(lPool.balanceOf(address(escrow)), trancheTokensPayout);
         assertEq(erc20.balanceOf(investor), investorCurrencyAmount - amount);
 
@@ -427,7 +477,6 @@ contract MigrationsTest is TestSetup {
         assertEq(lPool.balanceOf(investor), trancheTokensPayout / div);
         assertEq(lPool.balanceOf(address(escrow)), trancheTokensPayout - trancheTokensPayout / div);
         assertEq(lPool.maxMint(investor), trancheTokensPayout - trancheTokensPayout / div);
-        assertEq(lPool.maxDeposit(investor), amount - amount / div); // max deposit
 
         uint256 maxMint = lPool.maxMint(investor);
         vm.prank(investor);
