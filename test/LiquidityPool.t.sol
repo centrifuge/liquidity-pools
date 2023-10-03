@@ -48,9 +48,9 @@ contract LiquidityPoolTest is TestSetup {
 
     // --- uint128 type checks ---
     // Make sure all function calls would fail when overflow uint128
-    function testAssertUint128(uint256 amount, address random) public {
+    function testAssertUint128(uint256 amount, address random_) public {
         vm.assume(amount > MAX_UINT128); // amount has to overflow UINT128
-        vm.assume(random.code.length == 0);
+        vm.assume(random_.code.length == 0);
         address lPool_ = deploySimplePool();
         LiquidityPool lPool = LiquidityPool(lPool_);
 
@@ -73,16 +73,16 @@ contract LiquidityPoolTest is TestSetup {
         lPool.previewWithdraw(amount);
 
         vm.expectRevert(bytes("InvestmentManager/uint128-overflow"));
-        lPool.deposit(amount, random);
+        lPool.deposit(amount, random_);
 
         vm.expectRevert(bytes("InvestmentManager/uint128-overflow"));
-        lPool.mint(amount, random);
+        lPool.mint(amount, random_);
 
         vm.expectRevert(bytes("InvestmentManager/uint128-overflow"));
-        lPool.withdraw(amount, random, self);
+        lPool.withdraw(amount, random_, self);
 
         vm.expectRevert(bytes("InvestmentManager/uint128-overflow"));
-        lPool.redeem(amount, random, self);
+        lPool.redeem(amount, random_, self);
 
         vm.expectRevert(bytes("InvestmentManager/uint128-overflow"));
         lPool.requestDeposit(amount, self);
@@ -1012,9 +1012,9 @@ contract LiquidityPoolTest is TestSetup {
         assertApproxEqAbs(erc20.balanceOf(address(escrow)), amount, 1);
     }
 
-    function testDepositWithPermitFR(uint256 amount, address random) public {
+    function testDepositWithPermitFR(uint256 amount, address random_) public {
         amount = uint128(bound(amount, 2, MAX_UINT128));
-        vm.assume(addressAssumption(random));
+        vm.assume(addressAssumption(random_));
 
         // Use a wallet with a known private key so we can sign the permit message
         address investor = vm.addr(0xABCD);
@@ -1041,7 +1041,7 @@ contract LiquidityPoolTest is TestSetup {
             )
         );
 
-        vm.prank(random); // random fr permit
+        vm.prank(random_); // random fr permit
         erc20.permit(investor, address(investmentManager), amount, block.timestamp, v, r, s);
 
         // investor still able to requestDepositWithPermit
@@ -1373,7 +1373,7 @@ contract LiquidityPoolTest is TestSetup {
         return (user != address(0) && user != address(erc20) && user.code.length == 0);
     }
 
-    function random(uint256 maxValue, uint256 nonce) internal returns (uint256) {
+    function random(uint256 maxValue, uint256 nonce) internal view returns (uint256) {
         if (maxValue == 1) {
             return maxValue;
         }

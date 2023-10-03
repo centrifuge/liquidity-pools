@@ -330,12 +330,7 @@ contract InvestmentManager is Auth {
 
         LPValues storage lpValues = orderbook[liquidityPool][recipient];
         lpValues.depositPrice = _calculateNewDepositPrice(
-            liquidityPool,
-            recipient,
-            _maxDeposit(liquidityPool, recipient),
-            lpValues.maxMint,
-            currencyPayout,
-            trancheTokensPayout
+            liquidityPool, _maxDeposit(liquidityPool, recipient), lpValues.maxMint, currencyPayout, trancheTokensPayout
         );
 
         lpValues.maxMint = lpValues.maxMint + trancheTokensPayout;
@@ -365,12 +360,7 @@ contract InvestmentManager is Auth {
 
         LPValues storage lpValues = orderbook[liquidityPool][recipient];
         lpValues.redeemPrice = _calculateNewRedeemPrice(
-            liquidityPool,
-            recipient,
-            maxRedeem(liquidityPool, recipient),
-            lpValues.maxWithdraw,
-            currencyPayout,
-            trancheTokensPayout
+            liquidityPool, recipient, lpValues.maxWithdraw, currencyPayout, trancheTokensPayout
         );
         lpValues.maxWithdraw = lpValues.maxWithdraw + currencyPayout;
         lpValues.remainingRedeemOrder = remainingRedeemOrder;
@@ -406,9 +396,8 @@ contract InvestmentManager is Auth {
         // leads to an effective redeem price of 1.0 and thus the user actually receiving
         // exactly currencyPayout on both deposit() and mint()
         LPValues storage lpValues = orderbook[liquidityPool][user];
-        lpValues.redeemPrice = _calculateNewRedeemPrice(
-            liquidityPool, user, maxRedeem(liquidityPool, user), lpValues.maxWithdraw, currencyPayout, currencyPayout
-        );
+        lpValues.redeemPrice =
+            _calculateNewRedeemPrice(liquidityPool, user, lpValues.maxWithdraw, currencyPayout, currencyPayout);
         lpValues.maxWithdraw = lpValues.maxWithdraw + currencyPayout;
         lpValues.remainingInvestOrder = remainingInvestOrder;
 
@@ -437,12 +426,7 @@ contract InvestmentManager is Auth {
         // exactly trancheTokensPayout on both deposit() and mint()
         LPValues storage lpValues = orderbook[liquidityPool][user];
         lpValues.depositPrice = _calculateNewDepositPrice(
-            liquidityPool,
-            user,
-            _maxDeposit(liquidityPool, user),
-            lpValues.maxMint,
-            trancheTokensPayout,
-            trancheTokensPayout
+            liquidityPool, _maxDeposit(liquidityPool, user), lpValues.maxMint, trancheTokensPayout, trancheTokensPayout
         );
         lpValues.maxMint = lpValues.maxMint + trancheTokensPayout;
         lpValues.remainingRedeemOrder = remainingRedeemOrder;
@@ -612,7 +596,7 @@ contract InvestmentManager is Auth {
 
         require(_trancheTokenAmount != 0, "InvestmentManager/tranche-token-amount-is-zero");
 
-        _deposit(lpValues, _trancheTokenAmount, liquidityPool, receiver, owner);
+        _deposit(lpValues, _trancheTokenAmount, liquidityPool, receiver);
         trancheTokenAmount = uint256(_trancheTokenAmount);
     }
 
@@ -633,18 +617,14 @@ contract InvestmentManager is Auth {
         uint128 _trancheTokenAmount = _toUint128(trancheTokenAmount);
         LPValues storage lpValues = orderbook[liquidityPool][owner];
 
-        _deposit(lpValues, _trancheTokenAmount, liquidityPool, receiver, owner);
+        _deposit(lpValues, _trancheTokenAmount, liquidityPool, receiver);
         uint128 _currencyAmount = _calculateCurrencyAmount(_trancheTokenAmount, liquidityPool, lpValues.depositPrice);
         currencyAmount = uint256(_currencyAmount);
     }
 
-    function _deposit(
-        LPValues storage lpValues,
-        uint128 trancheTokenAmount,
-        address liquidityPool,
-        address receiver,
-        address owner
-    ) internal {
+    function _deposit(LPValues storage lpValues, uint128 trancheTokenAmount, address liquidityPool, address receiver)
+        internal
+    {
         LiquidityPoolLike lPool = LiquidityPoolLike(liquidityPool);
         require(trancheTokenAmount <= lpValues.maxMint, "InvestmentManager/exceeds-deposit-limits");
 
@@ -752,12 +732,11 @@ contract InvestmentManager is Auth {
 
     function _calculateNewDepositPrice(
         address liquidityPool,
-        address user,
         uint256 currentMaxDeposit,
         uint128 currentMaxMint,
         uint128 currencyPayout,
         uint128 trancheTokensPayout
-    ) internal returns (uint256 depositPrice) {
+    ) internal view returns (uint256 depositPrice) {
         (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getPoolDecimals(liquidityPool);
 
         uint256 newMaxDeposit = currentMaxDeposit + _toPriceDecimals(currencyPayout, currencyDecimals);
@@ -769,11 +748,10 @@ contract InvestmentManager is Auth {
     function _calculateNewRedeemPrice(
         address liquidityPool,
         address user,
-        uint256 currentMaxRedeem,
         uint128 currentMaxWithdraw,
         uint128 currencyPayout,
         uint128 trancheTokensPayout
-    ) internal returns (uint256 redeemPrice) {
+    ) internal view returns (uint256 redeemPrice) {
         (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getPoolDecimals(liquidityPool);
 
         uint256 newMaxRedeem =
