@@ -905,11 +905,12 @@ contract LiquidityPoolTest is TestSetup {
         // If lower than 4 or odd, rounding down can lead to not receiving any tokens
         amount = uint128(bound(amount, 4, MAX_UINT128));
         vm.assume(amount % 2 == 0);
-        vm.assume(addressAssumption(receiver));
 
         uint128 price = 2 * 10 ** 18;
         address lPool_ = deploySimplePool();
         LiquidityPool lPool = LiquidityPool(lPool_);
+        vm.assume(addressAssumption(receiver));
+        
         centrifugeChain.updateTrancheTokenPrice(lPool.poolId(), lPool.trancheId(), defaultCurrencyId, price);
 
         erc20.mint(self, amount);
