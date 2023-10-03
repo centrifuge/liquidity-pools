@@ -461,7 +461,7 @@ contract InvestmentManager is Auth {
         // Transfer the tranche token amount from user to escrow (lock tranche tokens in escrow)
         require(
             AuthTransferLike(token).authTransferFrom(user, address(escrow), trancheTokenAmount),
-            "InvestmentManager/=transfer-failed"
+            "InvestmentManager/transfer-failed"
         );
 
         gateway.increaseRedeemOrder(poolId, trancheId, user, currency, trancheTokenAmount);
