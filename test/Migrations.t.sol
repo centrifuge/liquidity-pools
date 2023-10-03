@@ -207,12 +207,12 @@ contract MigrationsTest is TestSetup {
         InvestmentManager investmentManager,
         InvestmentManager newInvestmentManager
     ) public {
-        (uint128 newMaxDeposit, uint128 newMaxMint, uint128 newMaxWithdraw,,,) =
+        (uint128 newMaxMint, uint256 newDepositPrice, uint128 newMaxWithdraw,,,) =
             newInvestmentManager.orderbook(investor, liquidityPool);
-        (uint128 oldMaxDeposit, uint128 oldMaxMint, uint128 oldMaxWithdraw,,,) =
+        (uint128 oldMaxMint, uint256 oldDepositPrice, uint128 oldMaxWithdraw,,,) =
             investmentManager.orderbook(investor, liquidityPool);
-        assertEq(newMaxDeposit, oldMaxDeposit);
         assertEq(newMaxMint, oldMaxMint);
+        assertEq(newDepositPrice, oldDepositPrice);
         assertEq(newMaxWithdraw, oldMaxWithdraw);
     }
 
@@ -222,11 +222,11 @@ contract MigrationsTest is TestSetup {
         InvestmentManager investmentManager,
         InvestmentManager newInvestmentManager
     ) public {
-        (,,, uint128 newMaxRedeem, uint128 newRemainingInvestOrder, uint128 newRemainingRedeemOrder) =
+        (,,, uint256 newRedeemPrice, uint128 newRemainingInvestOrder, uint128 newRemainingRedeemOrder) =
             newInvestmentManager.orderbook(investor, liquidityPool);
-        (,,, uint128 oldMaxRedeem, uint128 oldRemainingInvestOrder, uint128 oldRemainingRedeemOrder) =
+        (,,, uint256 oldRedeemPrice, uint128 oldRemainingInvestOrder, uint128 oldRemainingRedeemOrder) =
             investmentManager.orderbook(investor, liquidityPool);
-        assertEq(newMaxRedeem, oldMaxRedeem);
+        assertEq(newRedeemPrice, oldRedeemPrice);
         assertEq(newRemainingInvestOrder, oldRemainingInvestOrder);
         assertEq(newRemainingRedeemOrder, oldRemainingRedeemOrder);
     }
@@ -324,7 +324,7 @@ contract MigrationsTest is TestSetup {
         erc20.approve(address(investmentManager), amount); // add allowance
 
         vm.prank(investor);
-        lPool.requestDeposit(amount, investor);
+        lPool.requestDeposit(amount);
 
         // ensure funds are locked in escrow
         assertEq(erc20.balanceOf(address(escrow)), amount);
@@ -373,7 +373,7 @@ contract MigrationsTest is TestSetup {
         public
     {
         vm.prank(investor);
-        lPool.requestRedeem(amount, investor);
+        lPool.requestRedeem(amount);
 
         // redeem
         uint128 _currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId

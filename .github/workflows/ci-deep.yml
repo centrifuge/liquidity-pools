@@ -20,22 +20,51 @@ env:
   FOUNDRY_PROFILE: ci
 
 jobs:
-  test:
+  test-unit:
     env:
       FOUNDRY_FUZZ_RUNS: ${{ inputs.unitFuzzRuns }}
+
+    strategy:
+      fail-fast: true
+
+    runs-on: ubuntu-latest-64-cores
+    steps:
+      # Profile CPU and RAM usage to adjust machine size:
+      # - uses: datadog/agent-github-action@v1.3
+      #   with:
+      #     api_key: ${{ secrets.DD_API_KEY }}
+
+      - uses: actions/checkout@v3
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          cache: false # Requires a seed: https://github.com/foundry-rs/foundry-toolchain#fuzzing
+
+      - name: Run tests
+        run: forge test --no-match-path "test/invariants/**/*.sol"
+        env:
+          FOUNDRY_PROFILE: ci
+          CENTRIFUGE_CHAIN_ORIGIN: ${{ vars.CENTRIFUGE_CHAIN_ORIGIN }}
+          MAINNET_RPC_URL: ${{ vars.MAINNET_RPC_URL }}
+          POLYGON_RPC_URL: ${{ vars.POLYGON_RPC_URL }}
+          SETUP_TEST_DATA: false
+          FORK_TESTS: false
+
+  test-invariant:
+    env:
       FOUNDRY_INVARIANT_DEPTH: ${{ inputs.invariantDepth }}
       FOUNDRY_INVARIANT_RUNS: ${{ inputs.invariantRuns }}
 
     strategy:
       fail-fast: true
 
-    name: test
     runs-on: ubuntu-latest-64-cores
     steps:
       # Profile CPU and RAM usage to adjust machine size:
-      - uses: datadog/agent-github-action@v1.3
-        with:
-          api_key: ${{ secrets.DD_API_KEY }}
+      # - uses: datadog/agent-github-action@v1.3
+      #   with:
+      #     api_key: ${{ secrets.DD_API_KEY }}
 
       - uses: actions/checkout@v3
 
@@ -45,16 +74,8 @@ jobs:
           version: nightly
           cache: false # Requires a seed: https://github.com/foundry-rs/foundry-toolchain#fuzzing
 
-      - name: Run Forge build
-        run: |
-          forge --version
-          forge build --sizes
-        id: build
-
-      - name: Run Forge tests
-        run: |
-          forge test -vvv
-        id: test
+      - name: Run tests
+        run: forge test --match-path "test/invariants/**/*.sol"
         env:
           FOUNDRY_PROFILE: ci
           CENTRIFUGE_CHAIN_ORIGIN: ${{ vars.CENTRIFUGE_CHAIN_ORIGIN }}

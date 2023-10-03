@@ -22,18 +22,18 @@ contract MigratedInvestmentManager is InvestmentManager {
             for (uint128 j = 0; j < liquidityPools.length; j++) {
                 address liquidityPool = liquidityPools[j];
                 (
-                    uint128 maxDeposit,
                     uint128 maxMint,
+                    uint256 depositPrice,
                     uint128 maxWithdraw,
-                    uint128 maxRedeem,
+                    uint256 redeemPrice,
                     uint128 remainingInvestOrder,
                     uint128 remainingRedeemOrder
                 ) = oldInvestmentManager.orderbook(investor, liquidityPool);
                 orderbook[investor][liquidityPool] = LPValues({
-                    maxDeposit: maxDeposit,
                     maxMint: maxMint,
+                    depositPrice: depositPrice,
                     maxWithdraw: maxWithdraw,
-                    maxRedeem: maxRedeem,
+                    redeemPrice: redeemPrice,
                     remainingInvestOrder: remainingInvestOrder,
                     remainingRedeemOrder: remainingRedeemOrder
                 });

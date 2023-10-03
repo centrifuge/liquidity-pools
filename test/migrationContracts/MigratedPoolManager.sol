@@ -6,8 +6,10 @@ import "src/PoolManager.sol";
 contract MigratedPoolManager is PoolManager {
     /// @param poolIds The poolIds of the pools to migrate.
     /// @param trancheIds The trancheIds of the tranches to migrate, arranged as arrays of trancheIds for each pool.
-    /// @param allowedCurrencies The allowed currencies of the pools to migrate, arranged as arrays of allowed currencies for each pool.
-    /// @param liquidityPoolCurrencies The liquidity pool currencies of the tranches to migrate, arranged as arrays of liquidity pool currencies for each tranche of each pool.
+    /// @param allowedCurrencies The allowed currencies of the pools to migrate, arranged as arrays of allowed
+    /// currencies for each pool.
+    /// @param liquidityPoolCurrencies The liquidity pool currencies of the tranches to migrate, arranged as arrays of
+    /// liquidity pool currencies for each tranche of each pool.
     constructor(
         address escrow_,
         address liquidityPoolFactory_,

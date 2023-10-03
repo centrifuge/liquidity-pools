@@ -227,13 +227,14 @@ contract PoolManagerTest is TestSetup {
         vm.assume(currency > 0);
 
         address lPool_ = deployLiquidityPool(poolId, decimals, tokenName, tokenSymbol, trancheId, currency);
+        TrancheTokenLike trancheToken = TrancheTokenLike(address(LiquidityPool(lPool_).share()));
 
         centrifugeChain.updateMember(poolId, trancheId, destinationAddress, validUntil);
-        assertTrue(LiquidityPool(lPool_).checkTransferRestriction(address(0), destinationAddress, 0));
+        assertTrue(trancheToken.checkTransferRestriction(address(0), destinationAddress, 0));
         centrifugeChain.incomingTransferTrancheTokens(
             poolId, trancheId, uint64(block.chainid), destinationAddress, amount
         );
-        assertEq(LiquidityPool(lPool_).balanceOf(destinationAddress), amount);
+        assertEq(trancheToken.balanceOf(destinationAddress), amount);
     }
 
     function testTransferTrancheTokensFromCentrifugeWithoutMemberFails(
@@ -274,20 +275,23 @@ contract PoolManagerTest is TestSetup {
         vm.assume(destinationAddress != address(0));
         vm.assume(currency > 0);
         vm.assume(amount > 0);
+
         address lPool_ = deployLiquidityPool(poolId, decimals, tokenName, tokenSymbol, trancheId, currency);
+        TrancheTokenLike trancheToken = TrancheTokenLike(address(LiquidityPool(lPool_).share()));
+
         centrifugeChain.updateMember(poolId, trancheId, destinationAddress, validUntil);
         centrifugeChain.updateMember(poolId, trancheId, address(this), validUntil);
-        assertTrue(LiquidityPool(lPool_).checkTransferRestriction(address(0), address(this), 0));
-        assertTrue(LiquidityPool(lPool_).checkTransferRestriction(address(0), destinationAddress, 0));
+        assertTrue(trancheToken.checkTransferRestriction(address(0), address(this), 0));
+        assertTrue(trancheToken.checkTransferRestriction(address(0), destinationAddress, 0));
 
         // Fund this address with amount
         centrifugeChain.incomingTransferTrancheTokens(poolId, trancheId, uint64(block.chainid), address(this), amount);
-        assertEq(LiquidityPool(lPool_).balanceOf(address(this)), amount);
+        assertEq(trancheToken.balanceOf(address(this)), amount);
 
         // Approve and transfer amount from this address to destinationAddress
-        LiquidityPool(lPool_).approve(address(poolManager), amount);
+        trancheToken.approve(address(poolManager), amount);
         poolManager.transferTrancheTokensToEVM(poolId, trancheId, uint64(block.chainid), destinationAddress, amount);
-        assertEq(LiquidityPool(lPool_).balanceOf(address(this)), 0);
+        assertEq(trancheToken.balanceOf(address(this)), 0);
     }
 
     function testUpdatingMemberWorks(
@@ -311,9 +315,10 @@ contract PoolManagerTest is TestSetup {
         centrifugeChain.allowInvestmentCurrency(poolId, currency);
         poolManager.deployTranche(poolId, trancheId);
         address lPool_ = poolManager.deployLiquidityPool(poolId, trancheId, address(erc20));
+        TrancheTokenLike trancheToken = TrancheTokenLike(address(LiquidityPool(lPool_).share()));
 
         centrifugeChain.updateMember(poolId, trancheId, user, validUntil);
-        assertTrue(LiquidityPool(lPool_).checkTransferRestriction(address(0), user, 0));
+        assertTrue(trancheToken.checkTransferRestriction(address(0), user, 0));
     }
 
     function testUpdatingEscrowMemberFails(
@@ -334,12 +339,14 @@ contract PoolManagerTest is TestSetup {
         centrifugeChain.allowInvestmentCurrency(poolId, currency);
         poolManager.deployTranche(poolId, trancheId);
         address lPool_ = poolManager.deployLiquidityPool(poolId, trancheId, address(erc20));
-        assertTrue(LiquidityPool(lPool_).checkTransferRestriction(address(0), address(escrow), 0));
+        TrancheTokenLike trancheToken = TrancheTokenLike(address(LiquidityPool(lPool_).share()));
+
+        assertTrue(trancheToken.checkTransferRestriction(address(0), address(escrow), 0));
 
         vm.expectRevert(bytes("PoolManager/escrow-member-cannot-be-updated"));
         centrifugeChain.updateMember(poolId, trancheId, address(escrow), validUntil);
 
-        assertTrue(LiquidityPool(lPool_).checkTransferRestriction(address(0), address(escrow), 0));
+        assertTrue(trancheToken.checkTransferRestriction(address(0), address(escrow), 0));
     }
 
     function testFreezingMemberFails(
@@ -360,15 +367,16 @@ contract PoolManagerTest is TestSetup {
         centrifugeChain.allowInvestmentCurrency(poolId, currency);
         poolManager.deployTranche(poolId, trancheId);
         address lPool_ = poolManager.deployLiquidityPool(poolId, trancheId, address(erc20));
+        TrancheTokenLike trancheToken = TrancheTokenLike(address(LiquidityPool(lPool_).share()));
 
         address user = makeAddr("user");
         centrifugeChain.updateMember(poolId, trancheId, user, type(uint64).max);
-        assertTrue(LiquidityPool(lPool_).checkTransferRestriction(address(escrow), user, 0));
+        assertTrue(trancheToken.checkTransferRestriction(address(escrow), user, 0));
 
         vm.expectRevert(bytes("PoolManager/escrow-cannot-be-frozen"));
         centrifugeChain.freeze(poolId, trancheId, address(escrow));
 
-        assertTrue(LiquidityPool(lPool_).checkTransferRestriction(address(escrow), user, 0));
+        assertTrue(trancheToken.checkTransferRestriction(address(escrow), user, 0));
     }
 
     function testFreezingAndUnfreezingWorks(
@@ -386,22 +394,25 @@ contract PoolManagerTest is TestSetup {
         validUntil = uint64(bound(validUntil, block.timestamp, type(uint64).max));
         vm.assume(user != address(0));
         vm.assume(currency > 0);
+        vm.assume(user.code.length == 0);
+        vm.assume(secondUser.code.length == 0);
         centrifugeChain.addPool(poolId); // add pool
         centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals); // add tranche
         centrifugeChain.addCurrency(currency, address(erc20));
         centrifugeChain.allowInvestmentCurrency(poolId, currency);
         poolManager.deployTranche(poolId, trancheId);
         address lPool_ = poolManager.deployLiquidityPool(poolId, trancheId, address(erc20));
+        TrancheTokenLike trancheToken = TrancheTokenLike(address(LiquidityPool(lPool_).share()));
 
         centrifugeChain.updateMember(poolId, trancheId, user, validUntil);
         centrifugeChain.updateMember(poolId, trancheId, secondUser, validUntil);
-        assertTrue(LiquidityPool(lPool_).checkTransferRestriction(user, secondUser, 0));
+        assertTrue(trancheToken.checkTransferRestriction(user, secondUser, 0));
 
         centrifugeChain.freeze(poolId, trancheId, user);
-        assertFalse(LiquidityPool(lPool_).checkTransferRestriction(user, secondUser, 0));
+        assertFalse(trancheToken.checkTransferRestriction(user, secondUser, 0));
 
         centrifugeChain.unfreeze(poolId, trancheId, user);
-        assertTrue(LiquidityPool(lPool_).checkTransferRestriction(user, secondUser, 0));
+        assertTrue(trancheToken.checkTransferRestriction(user, secondUser, 0));
     }
 
     function testUpdatingMemberAsNonRouterFails(
