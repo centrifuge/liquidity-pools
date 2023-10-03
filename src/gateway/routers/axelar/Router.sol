@@ -41,7 +41,6 @@ contract AxelarRouter is Auth {
     }
 
     modifier onlyCentrifugeChainOrigin(string calldata sourceChain, string calldata sourceAddress) {
-        require(msg.sender == address(axelarGateway), "AxelarRouter/invalid-origin");
         require(
             keccak256(bytes(CENTRIFUGE_CHAIN_ID)) == keccak256(bytes(sourceChain)), "AxelarRouter/invalid-source-chain"
         );
