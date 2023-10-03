@@ -775,7 +775,9 @@ contract LiquidityPoolTest is TestSetup {
     }
 
     function testDepositMint(uint256 amount) public {
-        amount = uint128(bound(amount, 2, MAX_UINT128));
+        // If lower than 4 or odd, rounding down can lead to not receiving any tokens
+        amount = uint128(bound(amount, 4, MAX_UINT128));
+        vm.assume(amount % 2 == 0);
 
         uint128 price = 2 * 10 ** 18;
 
@@ -809,7 +811,7 @@ contract LiquidityPoolTest is TestSetup {
 
         // trigger executed collectInvest
         uint128 _currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
-        uint128 trancheTokensPayout = uint128(amount * 10 ** 18 / price); // trancheTokenPrice = 2$
+        uint128 trancheTokensPayout = uint128((amount * 10 ** 18) / price); // trancheTokenPrice = 2$
         assertApproxEqAbs(trancheTokensPayout, amount / 2, 2);
         centrifugeChain.isExecutedCollectInvest(
             lPool.poolId(),
@@ -871,7 +873,6 @@ contract LiquidityPoolTest is TestSetup {
         assertEq(erc20.balanceOf(address(escrow)), totalAmount);
         assertEq(erc20.balanceOf(self), 0);
 
-        console.log("currencyamount", totalAmount);
         // Gateway returns randomly generated values for amount of tranche tokens and currency
         centrifugeChain.isExecutedCollectInvest(
             lPool.poolId(),
@@ -911,14 +912,12 @@ contract LiquidityPoolTest is TestSetup {
     function testMintFairRounding(uint256 totalAmount, uint256 tokenAmount) public {
         totalAmount = bound(totalAmount, 1 * 10 ** 6, type(uint128).max / 10 ** 12);
         tokenAmount = bound(tokenAmount, 1 * 10 ** 6, type(uint128).max / 10 ** 12);
-        console.log("totalAmount", totalAmount);
-        console.log("tokenAmount", tokenAmount);
 
         //Deploy a pool
         LiquidityPool lPool = LiquidityPool(deploySimplePool());
         TrancheTokenLike trancheToken = TrancheTokenLike(address(lPool.share()));
 
-        root.relyContract(address(lPool), self);
+        root.relyContract(address(trancheToken), self);
         trancheToken.mint(address(escrow), type(uint128).max); // mint buffer to the escrow. Mock funds from other users
 
         // fund user & request deposit
@@ -958,7 +957,9 @@ contract LiquidityPoolTest is TestSetup {
     }
 
     function testDepositMintToReceiver(uint256 amount, address receiver) public {
-        amount = uint128(bound(amount, 2, MAX_UINT128));
+        // If lower than 4 or odd, rounding down can lead to not receiving any tokens
+        amount = uint128(bound(amount, 4, MAX_UINT128));
+        vm.assume(amount % 2 == 0);
         vm.assume(addressAssumption(receiver));
 
         uint128 price = 2 * 10 ** 18;
