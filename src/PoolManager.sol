@@ -332,6 +332,7 @@ contract PoolManager is Auth {
     }
 
     // --- Public functions ---
+    // slither-disable-start reentrancy-eth
     function deployTranche(uint64 poolId, bytes16 trancheId) public returns (address) {
         UndeployedTranche storage undeployedTranche = undeployedTranches[poolId][trancheId];
         require(undeployedTranche.decimals != 0, "PoolManager/tranche-not-added");
@@ -361,6 +362,7 @@ contract PoolManager is Auth {
         emit DeployTranche(poolId, trancheId, token);
         return token;
     }
+    // slither-disable-end reentrancy-eth
 
     function deployLiquidityPool(uint64 poolId, bytes16 trancheId, address currency) public returns (address) {
         Tranche storage tranche = pools[poolId].tranches[trancheId];

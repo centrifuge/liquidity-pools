@@ -15,7 +15,7 @@ library MathLib {
     ///         denominator == 0
     /// @dev    Original credit to Remco Bloemen under MIT license (https://xn--2-umb.com/21/muldiv)
     ///         with further edits by Uniswap Labs also under MIT license.
-    // slither-disable-start [divide-before-multiply]
+    // slither-disable-start divide-before-multiply
     function mulDiv(uint256 x, uint256 y, uint256 denominator) internal pure returns (uint256 result) {
         unchecked {
             // 512-bit multiply [prod1 prod0] = x * y. Compute the product mod 2^256 and mod 2^256 - 1, then use
@@ -98,7 +98,7 @@ library MathLib {
             return result;
         }
     }
-    // slither-disable-end [divide-before-multiply]
+    // slither-disable-end divide-before-multiply
 
     /// @notice Calculates x * y / denominator with full precision, following the selected rounding direction.
     function mulDiv(uint256 x, uint256 y, uint256 denominator, Rounding rounding) internal pure returns (uint256) {
