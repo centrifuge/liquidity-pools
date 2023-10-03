@@ -394,6 +394,8 @@ contract PoolManagerTest is TestSetup {
         validUntil = uint64(bound(validUntil, block.timestamp, type(uint64).max));
         vm.assume(user != address(0));
         vm.assume(currency > 0);
+        vm.assume(user.code.length == 0);
+        vm.assume(secondUser.code.length == 0);
         centrifugeChain.addPool(poolId); // add pool
         centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals); // add tranche
         centrifugeChain.addCurrency(currency, address(erc20));

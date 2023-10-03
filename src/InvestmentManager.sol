@@ -151,9 +151,10 @@ contract InvestmentManager is Auth {
     }
 
     // --- Outgoing message handling ---
-    /// @notice Request deposit. Liquidity pools have to request investments from Centrifuge before actual tranche tokens can be minted.
-    ///         The deposit requests are added to the order book on Centrifuge. Once the next epoch is executed on Centrifuge,
-    ///         liquidity pools can proceed with tranche token payouts in case their orders got fulfilled.
+    /// @notice Request deposit. Liquidity pools have to request investments from Centrifuge before
+    ///         tranche tokens can be minted. The deposit requests are added to the order book
+    ///         on Centrifuge. Once the next epoch is executed on Centrifuge, liquidity pools can
+    ///         proceed with tranche token payouts in case their orders got fulfilled.
     ///         If an amount of 0 is passed, this triggers cancelling outstanding deposit orders.
     /// @dev    The user currency amount required to fulfill the deposit request have to be locked,
     ///         even though the tranche token payout can only happen after epoch execution.
@@ -186,11 +187,14 @@ contract InvestmentManager is Auth {
         gateway.increaseInvestOrder(poolId, trancheId, user, currencyId, transferredAmount);
     }
 
-    /// @notice Request tranche token redemption. Liquidity pools have to request redemptions from Centrifuge before actual currency payouts can be done.
-    ///         The redemption requests are added to the order book on Centrifuge. Once the next epoch is executed on Centrifuge,
-    ///         liquidity pools can proceed with currency payouts in case their orders got fulfilled.
+    /// @notice Request tranche token redemption. Liquidity pools have to request redemptions
+    ///         from Centrifuge before actual currency payouts can be done. The redemption
+    ///         requests are added to the order book on Centrifuge. Once the next epoch is
+    ///         executed on Centrifuge, liquidity pools can proceed with currency payouts
+    ///         in case their orders got fulfilled.
     ///         If an amount of 0 is passed, this triggers cancelling outstanding redemption orders.
-    /// @dev    The user tranche tokens required to fulfill the redemption request have to be locked, even though the currency payout can only happen after epoch execution.
+    /// @dev    The user tranche tokens required to fulfill the redemption request have to be locked,
+    ///         even though the currency payout can only happen after epoch execution.
     function requestRedeem(address liquidityPool, uint256 trancheTokenAmount, address user) public auth {
         LiquidityPoolLike lPool = LiquidityPoolLike(liquidityPool);
         uint128 _trancheTokenAmount = _toUint128(trancheTokenAmount);
@@ -336,8 +340,9 @@ contract InvestmentManager is Auth {
         lpValues.maxMint = lpValues.maxMint + trancheTokensPayout;
         lpValues.remainingInvestOrder = remainingInvestOrder;
 
+        // Mint to escrow. Recipient can claim by calling withdraw / redeem
         ERC20Like trancheToken = ERC20Like(LiquidityPoolLike(liquidityPool).share());
-        trancheToken.mint(address(escrow), trancheTokensPayout); // mint to escrow. Recipient can claim by calling withdraw / redeem
+        trancheToken.mint(address(escrow), trancheTokensPayout);
 
         LiquidityPoolLike(liquidityPool).updatePrice(_toUint128(lpValues.depositPrice));
 
@@ -365,9 +370,11 @@ contract InvestmentManager is Auth {
         lpValues.maxWithdraw = lpValues.maxWithdraw + currencyPayout;
         lpValues.remainingRedeemOrder = remainingRedeemOrder;
 
+        // Transfer currency to user escrow to claim on withdraw/redeem,
+        // and burn redeemed tranche tokens from escrow
         userEscrow.transferIn(_currency, address(escrow), recipient, currencyPayout);
         ERC20Like trancheToken = ERC20Like(LiquidityPoolLike(liquidityPool).share());
-        trancheToken.burn(address(escrow), trancheTokensPayout); // burned redeemed tokens from escrow
+        trancheToken.burn(address(escrow), trancheTokensPayout);
 
         LiquidityPoolLike(liquidityPool).updatePrice(_toUint128(lpValues.redeemPrice));
 
@@ -455,7 +462,8 @@ contract InvestmentManager is Auth {
         _totalAssets = convertToAssets(liquidityPool, totalSupply);
     }
 
-    /// @dev Calculates the amount of shares / tranche tokens that any user would get for the amount of currency / assets provided.
+    /// @dev Calculates the amount of shares / tranche tokens that any user would get
+    ///      for the amount of currency / assets provided.
     ///      The calculation is based on the tranche token price from the most recent epoch retrieved from Centrifuge.
     function convertToShares(address liquidityPool, uint256 _assets) public view returns (uint256 shares) {
         uint128 latestPrice = LiquidityPoolLike(liquidityPool).latestPrice();
@@ -581,10 +589,13 @@ contract InvestmentManager is Auth {
 
     // --- Liquidity Pool processing functions ---
     /// @notice Processes owner's currency deposit / investment after the epoch has been executed on Centrifuge.
-    ///         In case owner's invest order was fulfilled (partially or in full) on Centrifuge during epoch execution MaxDeposit and MaxMint are increased and tranche tokens can be transferred to user's wallet on calling processDeposit.
-    ///         Note: The currency required to fulfill the invest order is already locked in escrow upon calling requestDeposit.
+    ///         In case owner's invest order was fulfilled (partially or in full) on Centrifuge during epoch execution
+    ///         MaxDeposit and MaxMint are increased and tranche tokens can be transferred to user's wallet on
+    ///         calling processDeposit. The currency required to fulfill the invest order is already
+    ///         locked in escrow upon calling requestDeposit.
     /// @dev    trancheTokenAmount return value is type of uint256 to be compliant with EIP4626 LiquidityPool interface
-    /// @return trancheTokenAmount the amount of tranche tokens transferred to the user's wallet after successful deposit.
+    /// @return trancheTokenAmount the amount of tranche tokens transferred to the user's wallet after
+    ///         successful deposit.
     function processDeposit(address liquidityPool, uint256 currencyAmount, address receiver, address owner)
         public
         auth
@@ -601,11 +612,12 @@ contract InvestmentManager is Auth {
     }
 
     /// @notice Processes owner's currency deposit / investment after the epoch has been executed on Centrifuge.
-    ///         In case owner's invest order was fulfilled on Centrifuge during epoch execution MaxDeposit and MaxMint are increased
-    ///         and trancheTokens can be transferred to owner's wallet on calling processDeposit or processMint.
-    ///         Note: The currency amount required to fulfill the invest order is already locked in escrow upon calling requestDeposit.
-    ///         Note: The tranche tokens are already minted on collectInvest and are deposited to the escrow account until the owner calls mint, or deposit.
-    ///         Note: The tranche tokens are transferred to the receivers wallet.
+    ///         In case owner's invest order was fulfilled on Centrifuge during epoch execution maxDeposit
+    ///         and maxMint are increased and trancheTokens can be transferred to owner's wallet on calling
+    ///         processDeposit or processMint. The currency amount required to fulfill the invest order is
+    ///         already locked in escrow upon calling requestDeposit. The tranche tokens are already minted
+    ///         on collectInvest and are deposited to the escrow account until the owner calls mint, or deposit.
+    ///         The tranche tokens are transferred to the receivers wallet.
     /// @dev    currencyAmount return value is type of uint256 to be compliant with EIP4626 LiquidityPool interface
     /// @return currencyAmount the amount of liquidityPool assets invested and locked in escrow in order
     ///         for the amount of tranche tokens received after successful investment into the pool.
@@ -639,12 +651,12 @@ contract InvestmentManager is Auth {
     }
 
     /// @dev    Processes owner's tranche Token redemption after the epoch has been executed on Centrifuge.
-    ///         In case owner's redemption order was fulfilled on Centrifuge during epoch execution MaxRedeem and MaxWithdraw
-    ///         are increased and LiquidityPool currency can be transferred to owner's wallet on calling processRedeem or processWithdraw.
-    ///         Note: The trancheTokenAmount required to fulfill the redemption order was already locked in escrow
-    ///         upon calling requestRedeem and burned upon collectRedeem.
+    ///         In case owner's redemption order was fulfilled on Centrifuge during epoch execution maxRedeem
+    ///         and maxWithdraw are increased and LiquidityPool currency can be transferred to owner's wallet
+    ///         on calling processRedeem or processWithdraw. The trancheTokenAmount required to fulfill the
+    ///         redemption order was already locked in escrow upon calling requestRedeem and burned upon collectRedeem.
     /// @notice currencyAmount return value is type of uint256 to be compliant with EIP4626 LiquidityPool interface
-    /// @return currencyAmount the amount of liquidityPool assets received for the amount of redeemed/burned tranche tokens.
+    /// @return currencyAmount the amount of liquidityPool assets received for the amount of redeemed/burned tokens.
     function processRedeem(address liquidityPool, uint256 trancheTokenAmount, address receiver, address owner)
         public
         auth
@@ -659,11 +671,13 @@ contract InvestmentManager is Auth {
     }
 
     /// @dev    Processes owner's tranche token redemption after the epoch has been executed on Centrifuge.
-    ///         In case owner's redemption order was fulfilled on Centrifuge during epoch execution MaxRedeem and MaxWithdraw
-    ///         are increased and LiquidityPool currency can be transferred to owner's wallet on calling processRedeem or processWithdraw.
-    ///         Note: The trancheTokenAmount required to fulfill the redemption order was already locked in escrow upon calling requestRedeem and burned upon collectRedeem.
+    ///         In case owner's redemption order was fulfilled on Centrifuge during epoch execution maxRedeem
+    ///         and maxWithdraw are increased and LiquidityPool currency can be transferred to owner's wallet
+    ///         on calling processRedeem or processWithdraw. The trancheTokenAmount required to fulfill the
+    ///         redemption order was already locked in escrow upon calling requestRedeem and burned upon collectRedeem.
     /// @notice trancheTokenAmount return value is type of uint256 to be compliant with EIP4626 LiquidityPool interface
-    /// @return trancheTokenAmount the amount of trancheTokens redeemed/burned required to receive the currencyAmount payout/withdrawal.
+    /// @return trancheTokenAmount the amount of trancheTokens redeemed/burned required to receive
+    ///         the currencyAmount payout/withdrawal.
     function processWithdraw(address liquidityPool, uint256 currencyAmount, address receiver, address owner)
         public
         auth
@@ -761,7 +775,8 @@ contract InvestmentManager is Auth {
         else redeemPrice = newMaxWithdraw.mulDiv(10 ** PRICE_DECIMALS, newMaxRedeem, MathLib.Rounding.Down);
     }
 
-    /// @dev    Safe type conversion from uint256 to uint128. Revert if value is too big to be stored with uint128. Avoid data loss.
+    /// @dev    Safe type conversion from uint256 to uint128. Revert if value is too big to be stored
+    ///         with uint128. Avoid data loss.
     /// @return value - safely converted without data loss
     function _toUint128(uint256 _value) internal pure returns (uint128 value) {
         if (_value > type(uint128).max) {
