@@ -731,7 +731,7 @@ contract InvestmentManager is Auth {
             uint256 trancheTokenAmountInPriceDecimals = _toPriceDecimals(currencyAmount, currencyDecimals).mulDiv(
                 10 ** PRICE_DECIMALS, price, MathLib.Rounding.Down
             );
-            
+
             trancheTokenAmount = _fromPriceDecimals(trancheTokenAmountInPriceDecimals, trancheTokenDecimals);
         }
     }

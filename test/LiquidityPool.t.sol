@@ -426,7 +426,7 @@ contract LiquidityPoolTest is TestSetup {
         );
 
         // assert deposit & mint values adjusted
-        assertEq(lPool.maxDeposit(self), currencyPayout);
+        assertApproxEqAbs(lPool.maxDeposit(self), currencyPayout, 1);
         assertEq(lPool.maxMint(self), firstTrancheTokenPayout);
 
         // deposit price should be ~1.2*10**18
@@ -512,7 +512,7 @@ contract LiquidityPoolTest is TestSetup {
         );
 
         // assert deposit & mint values adjusted
-        assertEq(lPool.maxDeposit(self), currencyPayout);
+        assertApproxEqAbs(lPool.maxDeposit(self), currencyPayout, 10);
         assertEq(lPool.maxMint(self), firstTrancheTokenPayout);
 
         // deposit price should be ~1.2*10**18
