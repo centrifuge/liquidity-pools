@@ -28,7 +28,7 @@ import "forge-std/Test.sol";
 contract TestSetup is Deployer, Test {
     MockCentrifugeChain centrifugeChain;
     MockRouter router;
-    ERC20 erc20;
+    ERC20 public erc20;
 
     address self = address(this);
     address investor = makeAddr("investor");
@@ -46,7 +46,7 @@ contract TestSetup is Deployer, Test {
         admin = self;
 
         // deploy core contracts
-        deployInvestmentManager();
+        deployInvestmentManager(address(this));
         // deploy mockRouter
         router = new MockRouter(address(investmentManager));
         // wire contracts
@@ -59,6 +59,22 @@ contract TestSetup is Deployer, Test {
         centrifugeChain = new MockCentrifugeChain(address(router));
         erc20 = _newErc20("X's Dollar", "USDX", 6);
         router.file("gateway", address(gateway));
+
+        // Exclude predeployed contracts from invariant tests by default
+        excludeContract(address(root));
+        excludeContract(address(investmentManager));
+        excludeContract(address(poolManager));
+        excludeContract(address(gateway));
+        excludeContract(address(erc20));
+        excludeContract(address(centrifugeChain));
+        excludeContract(address(router));
+        excludeContract(address(escrow));
+        excludeContract(address(userEscrow));
+        excludeContract(address(pauseAdmin));
+        excludeContract(address(delayedAdmin));
+        excludeContract(address(poolManager.restrictionManagerFactory()));
+        excludeContract(address(poolManager.trancheTokenFactory()));
+        excludeContract(address(poolManager.liquidityPoolFactory()));
     }
 
     // helpers
@@ -94,7 +110,7 @@ contract TestSetup is Deployer, Test {
     }
 
     function deploySimplePool() public returns (address) {
-        return deployLiquidityPool(1, 18, "name", "symbol", _stringToBytes16("1"), defaultCurrencyId, address(erc20));
+        return deployLiquidityPool(1, 6, "name", "symbol", _stringToBytes16("1"), defaultCurrencyId, address(erc20));
     }
 
     // Helpers

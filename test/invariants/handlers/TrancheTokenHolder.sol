@@ -1,22 +1,25 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.18;
-pragma abicoder v2;
 
-import {TestSetup} from "test/TestSetup.t.sol";
-
+import {PoolManager} from "src/PoolManager.sol";
+import {MockCentrifugeChain} from "test/mock/MockCentrifugeChain.sol";
 import "forge-std/Test.sol";
 
 interface ERC20Like {
     function approve(address spender, uint256 amount) external returns (bool);
     function balanceOf(address account) external view returns (uint256);
+    function totalSupply() external view returns (uint256);
 }
 
-contract InvestorManager is TestSetup {
+contract TrancheTokenHolderHandler is Test {
     // This handler only uses a single pool, tranche and user combination
-    uint64 public fixedPoolId = 1;
-    bytes16 public fixedTrancheId = "1";
-    uint128 public fixedCurrencyId = 1;
-    address public fixedToken;
+    uint64 poolId;
+    bytes16 trancheId;
+    uint128 currencyId;
+
+    ERC20Like public immutable trancheToken;
+    MockCentrifugeChain immutable centrifugeChain;
+    PoolManager immutable poolManager;
 
     // Investor initially holds 10M tranche tokens on Centrifuge Chain
     uint128 public investorBalanceOnCentrifugeChain = 10_000_000 * 10 ** 18;
@@ -27,16 +30,26 @@ contract InvestorManager is TestSetup {
     mapping(address => uint256) public investorTransferredIn;
     mapping(address => uint256) public investorTransferredOut;
 
-    constructor() {
-        setUp();
-        deployLiquidityPool(fixedPoolId, 18, "", "", fixedTrancheId, fixedCurrencyId, address(erc20));
-        centrifugeChain.updateMember(fixedPoolId, fixedTrancheId, address(this), type(uint64).max);
-        fixedToken = poolManager.getTrancheToken(fixedPoolId, fixedTrancheId);
+    constructor(
+        uint64 poolId_,
+        bytes16 trancheId_,
+        uint128 currencyId_,
+        address mockCentrifugeChain_,
+        address poolManager_
+    ) {
+        poolId = poolId_;
+        trancheId = trancheId_;
+        currencyId = currencyId_;
+
+        centrifugeChain = MockCentrifugeChain(mockCentrifugeChain_);
+        poolManager = PoolManager(poolManager_);
+        trancheToken = ERC20Like(poolManager.getTrancheToken(poolId_, trancheId_));
+
         allInvestors.push(address(this));
     }
 
-    function addInvestor(uint64 poolId, bytes16 trancheId, address investor) public {
-        centrifugeChain.updateMember(poolId, trancheId, investor, type(uint64).max);
+    function addInvestor(uint64 poolId_, bytes16 trancheId_, address investor) public {
+        centrifugeChain.updateMember(poolId_, trancheId_, investor, type(uint64).max);
         allInvestors.push(investor);
     }
 
@@ -44,7 +57,9 @@ contract InvestorManager is TestSetup {
         investorIndex = bound(investorIndex, 0, allInvestors.length - 1);
         address investor = allInvestors[investorIndex];
         amount = bound(amount, 0, uint256(investorBalanceOnCentrifugeChain));
-        centrifugeChain.incomingTransferTrancheTokens(fixedPoolId, fixedTrancheId, 1, investor, uint128(amount));
+        centrifugeChain.incomingTransferTrancheTokens(
+            poolId, trancheId, uint64(block.chainid), investor, uint128(amount)
+        );
 
         investorBalanceOnCentrifugeChain -= uint128(amount);
         totalTransferredIn += amount;
@@ -54,10 +69,12 @@ contract InvestorManager is TestSetup {
     function transferOut(uint256 investorIndex, uint256 amount) public {
         investorIndex = bound(investorIndex, 0, allInvestors.length - 1);
         address investor = allInvestors[investorIndex];
-        amount = bound(amount, 0, ERC20Like(fixedToken).balanceOf(investor));
+        amount = bound(amount, 0, trancheToken.balanceOf(investor));
         vm.startPrank(investor);
-        ERC20Like(fixedToken).approve(address(poolManager), amount);
-        poolManager.transferTrancheTokensToCentrifuge(fixedPoolId, fixedTrancheId, "1", uint128(amount));
+        trancheToken.approve(address(poolManager), amount);
+
+        bytes32 centrifugeChainAddress = "1";
+        poolManager.transferTrancheTokensToCentrifuge(poolId, trancheId, centrifugeChainAddress, uint128(amount));
         vm.stopPrank();
 
         investorBalanceOnCentrifugeChain += uint128(amount);

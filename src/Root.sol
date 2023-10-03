@@ -31,14 +31,14 @@ contract Root is Auth {
     event RelyContract(address indexed target, address indexed user);
     event DenyContract(address indexed target, address indexed user);
 
-    constructor(address _escrow, uint256 _delay) {
+    constructor(address _escrow, uint256 _delay, address deployer) {
         require(_delay <= MAX_DELAY, "Root/delay-too-long");
 
         escrow = _escrow;
         delay = _delay;
 
-        wards[msg.sender] = 1;
-        emit Rely(msg.sender);
+        wards[deployer] = 1;
+        emit Rely(deployer);
     }
 
     // --- Administration ---

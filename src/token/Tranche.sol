@@ -11,6 +11,7 @@ interface TrancheTokenLike is IERC20 {
     function file(bytes32 what, address data) external;
     function restrictionManager() external view returns (address);
     function addLiquidityPool(address forwarder) external;
+    function checkTransferRestriction(address from, address to, uint256 value) external view returns (bool);
 }
 
 interface ERC1404Like {
@@ -24,7 +25,7 @@ interface ERC1404Like {
 ///         which manages the liquidity pools that are considered
 ///         trusted forwarders for the ERC20 token, and ensures
 ///         the transfer restrictions as defined in the RestrictionManager.
-contract TrancheToken is ERC20, ERC1404Like {
+contract TrancheToken is ERC20 {
     ERC1404Like public restrictionManager;
 
     mapping(address => bool) public liquidityPools;
