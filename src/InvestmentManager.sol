@@ -209,7 +209,10 @@ contract InvestmentManager is Auth {
         require(poolManager.isAllowedAsInvestmentCurrency(poolId, currency), "InvestmentManager/currency-not-allowed");
 
         // Transfer the tranche token amount from user to escrow (lock tranche tokens in escrow)
-        AuthTransferLike(address(lPool.share())).authTransferFrom(user, address(escrow), _trancheTokenAmount);
+        require(
+            AuthTransferLike(address(lPool.share())).authTransferFrom(user, address(escrow), _trancheTokenAmount),
+            "InvestmentManager/=transfer-failed"
+        );
 
         LPValues storage lpValues = orderbook[liquidityPool][user];
         lpValues.remainingRedeemOrder = lpValues.remainingRedeemOrder + _trancheTokenAmount;
@@ -456,7 +459,10 @@ contract InvestmentManager is Auth {
         address token = poolManager.getTrancheToken(poolId, trancheId);
 
         // Transfer the tranche token amount from user to escrow (lock tranche tokens in escrow)
-        AuthTransferLike(token).authTransferFrom(user, address(escrow), trancheTokenAmount);
+        require(
+            AuthTransferLike(token).authTransferFrom(user, address(escrow), trancheTokenAmount),
+            "InvestmentManager/=transfer-failed"
+        );
 
         gateway.increaseRedeemOrder(poolId, trancheId, user, currency, trancheTokenAmount);
         emit TriggerIncreaseRedeemOrder(poolId, trancheId, user, currency, trancheTokenAmount);
