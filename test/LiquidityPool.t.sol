@@ -889,8 +889,14 @@ contract LiquidityPoolTest is TestSetup {
         while (lPool.maxDeposit(self) > 0) {
             uint256 randomDeposit = random(lPool.maxDeposit(self), 1);
 
-            lPool.deposit(randomDeposit, self);
-            if (lPool.maxDeposit(self) == 0 && lPool.maxMint(self) > 0) {
+            try lPool.deposit(randomDeposit, self) {
+                if (lPool.maxDeposit(self) == 0 && lPool.maxMint(self) > 0) {
+                    // If you cannot deposit anymore because the 1 wei remaining is rounded down,
+                    // you should mint the remainder instead.
+                    lPool.mint(lPool.maxMint(self), self);
+                    break;
+                }
+            } catch {
                 // If you cannot deposit anymore because the 1 wei remaining is rounded down,
                 // you should mint the remainder instead.
                 lPool.mint(lPool.maxMint(self), self);

@@ -602,6 +602,8 @@ contract InvestmentManager is Auth {
         uint128 _trancheTokenAmount =
             _calculateTrancheTokenAmount(_toUint128(currencyAmount), liquidityPool, lpValues.depositPrice);
 
+        require(_trancheTokenAmount != 0, "InvestmentManager/tranche-token-amount-is-zero");
+
         _deposit(_trancheTokenAmount, liquidityPool, receiver, owner);
         trancheTokenAmount = uint256(_trancheTokenAmount);
     }
@@ -631,11 +633,7 @@ contract InvestmentManager is Auth {
     function _deposit(uint128 trancheTokenAmount, address liquidityPool, address receiver, address owner) internal {
         LiquidityPoolLike lPool = LiquidityPoolLike(liquidityPool);
         LPValues storage lpValues = orderbook[liquidityPool][owner];
-
-        require(
-            (trancheTokenAmount <= lpValues.maxMint && trancheTokenAmount != 0),
-            "InvestmentManager/amount-exceeds-deposit-limits"
-        );
+        require(trancheTokenAmount <= lpValues.maxMint, "InvestmentManager/exceeds-deposit-limits");
 
         // Decrease the deposit limits
         lpValues.maxMint = lpValues.maxMint - trancheTokenAmount;
@@ -680,6 +678,7 @@ contract InvestmentManager is Auth {
     {
         uint128 _currencyAmount = _toUint128(currencyAmount);
         LPValues storage lpValues = orderbook[liquidityPool][owner];
+        require(currencyAmount != 0, "InvestmentManager/currency-amount-is-zero");
 
         _redeem(_currencyAmount, liquidityPool, receiver, owner);
         uint128 _trancheTokenAmount = _calculateTrancheTokenAmount(_currencyAmount, liquidityPool, lpValues.redeemPrice);
@@ -689,11 +688,7 @@ contract InvestmentManager is Auth {
     function _redeem(uint128 currencyAmount, address liquidityPool, address receiver, address owner) internal {
         LiquidityPoolLike lPool = LiquidityPoolLike(liquidityPool);
         LPValues storage lpValues = orderbook[liquidityPool][owner];
-
-        require(
-            currencyAmount <= lpValues.maxWithdraw && currencyAmount != 0,
-            "InvestmentManager/amount-exceeds-redeem-limits"
-        );
+        require(currencyAmount <= lpValues.maxWithdraw, "InvestmentManager/exceeds-redeem-limits");
 
         // Decrease maxWithdraw
         lpValues.maxWithdraw = lpValues.maxWithdraw - currencyAmount;
