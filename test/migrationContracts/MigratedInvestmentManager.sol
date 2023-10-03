@@ -3,6 +3,13 @@ pragma solidity 0.8.21;
 
 import "src/InvestmentManager.sol";
 
+interface RootLike {
+    function relyContract(address, address) external;
+    function denyContract(address, address) external;
+    function rely(address) external;
+    function deny(address) external;
+}
+
 contract MigratedInvestmentManager is InvestmentManager {
     /// @param investors The investors to migrate.
     /// @param liquidityPools The liquidity pools to migrate.

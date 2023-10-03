@@ -44,8 +44,6 @@ contract MigrationsTest is TestSetup {
     // --- Migration Tests ---
 
     function testInvestmentManagerMigration() public {
-        InvestAndRedeem(poolId, trancheId, _lPool);
-
         // Simulate intended upgrade flow
         centrifugeChain.incomingScheduleUpgrade(address(this));
         vm.warp(block.timestamp + 3 days);
@@ -77,7 +75,6 @@ contract MigrationsTest is TestSetup {
         escrow.rely(address(newInvestmentManager));
         root.relyContract(address(userEscrow), address(this));
         userEscrow.rely(address(newInvestmentManager));
-        root.relyContract(address(router), address(this));
 
         // file investmentManager on all LiquidityPools
         for (uint256 i = 0; i < liquidityPools.length; i++) {
@@ -100,15 +97,14 @@ contract MigrationsTest is TestSetup {
         root.denyContract(address(userEscrow), address(this));
         root.deny(address(this));
 
-        // For the sake of these helper functions, set global variables to new contracts
-        investmentManager = newInvestmentManager;
+        verifyMigratedInvestmentManagerPermissions(investmentManager, newInvestmentManager);
 
-        // test that everything is working
-        InvestAndRedeem(poolId, trancheId, _lPool);
+        investmentManager = newInvestmentManager;
+        VerifyInvestAndRedeemFlow(poolId, trancheId, _lPool);
     }
 
-    function testPoolManagerMigration() public {
-        InvestAndRedeem(poolId, trancheId, _lPool);
+    function testPoolManagerMigrationInvestRedeem() public {
+        VerifyInvestAndRedeemFlow(poolId, trancheId, _lPool);
 
         // Simulate intended upgrade flow
         centrifugeChain.incomingScheduleUpgrade(address(this));
@@ -171,10 +167,10 @@ contract MigrationsTest is TestSetup {
         root.denyContract(restrictionManagerFactory, address(this));
         root.deny(address(this));
 
-        // For the sake of these helper functions, set global variables to new contracts
-        poolManager = newPoolManager;
+        verifyMigratedPoolManagerPermissions(poolManager, newPoolManager);
 
         // test that everything is working
+        poolManager = newPoolManager;
         centrifugeChain.addPool(poolId + 1); // add pool
         centrifugeChain.addTranche(poolId + 1, trancheId, "Test Token 2", "TT2", trancheTokenDecimals); // add tranche
         centrifugeChain.allowInvestmentCurrency(poolId + 1, currencyId);
@@ -182,7 +178,39 @@ contract MigrationsTest is TestSetup {
         address _lPool2 = poolManager.deployLiquidityPool(poolId + 1, trancheId, address(erc20));
         centrifugeChain.updateMember(poolId + 1, trancheId, investor, uint64(block.timestamp + 1000 days));
 
-        InvestAndRedeem(poolId + 1, trancheId, _lPool2);
+        VerifyInvestAndRedeemFlow(poolId + 1, trancheId, _lPool2);
+    }
+
+    // --- Permissions & Dependencies Checks ---
+
+    function verifyMigratedInvestmentManagerPermissions(InvestmentManager oldInvestmentManager, InvestmentManager newInvestmentManager) public {
+        assertTrue(address(oldInvestmentManager) != address(newInvestmentManager));
+        assertEq(address(oldInvestmentManager.gateway()), address(newInvestmentManager.gateway()));
+        assertEq(address(oldInvestmentManager.poolManager()), address(newInvestmentManager.poolManager()));
+        assertEq(address(oldInvestmentManager.escrow()), address(newInvestmentManager.escrow()));
+        assertEq(address(oldInvestmentManager.userEscrow()), address(newInvestmentManager.userEscrow()));
+        assertEq(address(gateway.investmentManager()), address(newInvestmentManager));
+        assertEq(address(poolManager.investmentManager()), address(newInvestmentManager));
+        assertEq(newInvestmentManager.wards(address(root)), 1);
+        assertEq(newInvestmentManager.wards(address(poolManager)), 1);
+        assertEq(escrow.wards(address(investmentManager)), 1);
+        assertEq(userEscrow.wards(address(investmentManager)), 1);
+    }
+
+    function verifyMigratedPoolManagerPermissions(PoolManager oldPoolManager, PoolManager newPoolManager) public {
+        assertTrue(address(oldPoolManager) != address(newPoolManager));
+        assertEq(address(oldPoolManager.escrow()), address(newPoolManager.escrow()));
+        assertEq(address(oldPoolManager.liquidityPoolFactory()), address(newPoolManager.liquidityPoolFactory()));
+        assertEq(address(oldPoolManager.restrictionManagerFactory()), address(newPoolManager.restrictionManagerFactory()));
+        assertEq(address(oldPoolManager.trancheTokenFactory()), address(newPoolManager.trancheTokenFactory()));
+        assertEq(address(oldPoolManager.investmentManager()), address(newPoolManager.investmentManager()));
+        assertEq(address(oldPoolManager.gateway()), address(newPoolManager.gateway()));
+        assertEq(address(gateway.poolManager()), address(newPoolManager));
+        assertEq(address(investmentManager.poolManager()), address(newPoolManager));
+        assertEq(investmentManager.wards(address(poolManager)), 1);
+        assertEq(poolManager.wards(address(root)), 1);
+        assertEq(escrow.wards(address(poolManager)), 1);
+        assertEq(investmentManager.wards(address(poolManager)), 1);
     }
 
     // --- State Verification Helpers ---
@@ -309,7 +337,7 @@ contract MigrationsTest is TestSetup {
 
     // --- Investment and Redeem Flow ---
 
-    function InvestAndRedeem(uint64 poolId, bytes16 trancheId, address _lPool) public {
+    function VerifyInvestAndRedeemFlow(uint64 poolId, bytes16 trancheId, address _lPool) public {
         uint128 price = uint128(2 * 10 ** PRICE_DECIMALS); //TODO: fuzz price
         LiquidityPool lPool = LiquidityPool(_lPool);
 
