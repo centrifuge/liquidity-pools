@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {Context} from "../util/Context.sol";
-
 interface IERC1271 {
     function isValidSignature(bytes32, bytes memory) external view returns (bytes4);
 }
@@ -11,7 +9,7 @@ interface IERC1271 {
 /// @notice Standard ERC20 implementation, with mint/burn functionality and permit logic.
 ///         Includes ERC1271 context support to allow multiple liquidity pools
 /// @author Modified from https://github.com/makerdao/xdomain-dss/blob/master/src/Dai.sol
-contract ERC20 is Context {
+contract ERC20 {
     mapping(address => uint256) public wards;
 
     string public name;
@@ -142,7 +140,9 @@ contract ERC20 is Context {
     function mint(address to, uint256 value) public virtual auth {
         require(to != address(0) && to != address(this), "ERC20/invalid-address");
         unchecked {
-            balanceOf[to] = balanceOf[to] + value; // note: we don't need an overflow check here b/c balanceOf[to] <= totalSupply and there is an overflow check below
+            // We don't need an overflow check here b/c balanceOf[to] <= totalSupply
+            // and there is an overflow check below
+            balanceOf[to] = balanceOf[to] + value;
         }
         totalSupply = totalSupply + value;
 
@@ -165,7 +165,8 @@ contract ERC20 is Context {
         }
 
         unchecked {
-            balanceOf[from] = balance - value; // note: we don't need overflow checks b/c require(balance >= value) and balance <= totalSupply
+            // We don't need overflow checks b/c require(balance >= value) and balance <= totalSupply
+            balanceOf[from] = balance - value;
             totalSupply = totalSupply - value;
         }
 
@@ -236,5 +237,10 @@ contract ERC20 is Context {
         emit Transfer(from, to, value);
 
         return true;
+    }
+
+    // --- ERC1271 context ---
+    function _msgSender() internal view virtual returns (address) {
+        return msg.sender;
     }
 }
