@@ -48,29 +48,29 @@ contract TrancheTokenTest is Test {
         assertTrue(!token.isTrustedForwarder(self));
 
         //success
-        token.addLiquidityPool(self);
+        token.addTrustedForwarder(self);
         assertTrue(token.isTrustedForwarder(self));
 
         // remove self from wards
         token.deny(self);
         // auth fail
         vm.expectRevert(bytes("Auth/not-authorized"));
-        token.addLiquidityPool(self);
+        token.addTrustedForwarder(self);
     }
 
     function testRemoveLiquidityPool() public {
-        token.addLiquidityPool(self);
+        token.addTrustedForwarder(self);
         assertTrue(token.isTrustedForwarder(self));
 
         // success
-        token.removeLiquidityPool(self);
+        token.removeTrustedForwarder(self);
         assertTrue(!token.isTrustedForwarder(self));
 
         // remove self from wards
         token.deny(self);
         // auth fail
         vm.expectRevert(bytes("Auth/not-authorized"));
-        token.removeLiquidityPool(self);
+        token.removeTrustedForwarder(self);
     }
 
     function testCheckTrustedForwarderWorks(uint256 validUntil, uint256 amount, address random) public {
@@ -81,7 +81,7 @@ contract TrancheTokenTest is Test {
 
         assertTrue(!token.isTrustedForwarder(self));
         // make self trusted forwarder
-        token.addLiquidityPool(self);
+        token.addTrustedForwarder(self);
         assertTrue(token.isTrustedForwarder(self));
         // add self to restrictionManager
         restrictionManager.updateMember(self, validUntil);
