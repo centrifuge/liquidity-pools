@@ -10,7 +10,7 @@ interface TrancheTokenLike is IERC20 {
     function file(bytes32 what, string memory data) external;
     function file(bytes32 what, address data) external;
     function restrictionManager() external view returns (address);
-    function addLiquidityPool(address forwarder) external;
+    function addTrustedForwarder(address forwarder) external;
     function checkTransferRestriction(address from, address to, uint256 value) external view returns (bool);
 }
 
@@ -22,18 +22,17 @@ interface ERC1404Like {
 
 /// @title  Tranche Token
 /// @notice Extension of ERC20 + ERC1404 for tranche tokens,
-///         which manages the liquidity pools that are considered
-///         trusted forwarders for the ERC20 token, and ensures
+///         which manages the trusted forwarders for the ERC20 token, and ensures
 ///         the transfer restrictions as defined in the RestrictionManager.
 contract TrancheToken is ERC20 {
     ERC1404Like public restrictionManager;
 
-    mapping(address => bool) public liquidityPools;
+    mapping(address => bool) public trustedForwarders;
 
     // --- Events ---
     event File(bytes32 indexed what, address data);
-    event AddLiquidityPool(address indexed liquidityPool);
-    event RemoveLiquidityPool(address indexed liquidityPool);
+    event AddTrustedForwarder(address indexed trustedForwarder);
+    event RemoveTrustedForwarder(address indexed trustedForwarder);
 
     constructor(uint8 decimals_) ERC20(decimals_) {}
 
@@ -50,14 +49,14 @@ contract TrancheToken is ERC20 {
         emit File(what, data);
     }
 
-    function addLiquidityPool(address liquidityPool) public auth {
-        liquidityPools[liquidityPool] = true;
-        emit AddLiquidityPool(liquidityPool);
+    function addTrustedForwarder(address trustedForwarder) public auth {
+        trustedForwarders[trustedForwarder] = true;
+        emit AddTrustedForwarder(trustedForwarder);
     }
 
-    function removeLiquidityPool(address liquidityPool) public auth {
-        liquidityPools[liquidityPool] = false;
-        emit RemoveLiquidityPool(liquidityPool);
+    function removeTrustedForwarder(address trustedForwarder) public auth {
+        trustedForwarders[trustedForwarder] = false;
+        emit RemoveTrustedForwarder(trustedForwarder);
     }
 
     // --- ERC20 overrides with restrictions ---
@@ -96,11 +95,10 @@ contract TrancheToken is ERC20 {
     }
 
     // --- ERC2771Context ---
-    /// @dev Liquidity Pools are considered trusted forwarders
-    ///      for the ERC2771Context implementation of the underlying
-    ///      ERC20 token
+    /// @dev Trusted forwarders can forward custom msg.sender and
+    ///      msg.data to the underlying ERC20 contract
     function isTrustedForwarder(address forwarder) public view returns (bool) {
-        return liquidityPools[forwarder];
+        return trustedForwarders[forwarder];
     }
 
     /// @dev Override for `msg.sender`. Defaults to the original `msg.sender` whenever
