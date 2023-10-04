@@ -378,7 +378,7 @@ contract LiquidityPoolTest is TestSetup {
         assertEq(lPool.maxMint(self), firstTrancheTokenPayout);
 
         // deposit price should be ~1.2*10**18
-        (, uint256 depositPrice,,,,) = investmentManager.orderbook(address(lPool), self);
+        (, uint256 depositPrice,,,,,) = investmentManager.orderbook(address(lPool), self);
         assertEq(depositPrice, 1200000000000000000);
 
         // trigger executed collectInvest of the second 50% at a price of 1.4
@@ -414,7 +414,7 @@ contract LiquidityPoolTest is TestSetup {
         );
 
         // redeem price should now be ~1.5*10**18.
-        (,,, uint256 redeemPrice,,) = investmentManager.orderbook(address(lPool), self);
+        (,,, uint256 redeemPrice,,,) = investmentManager.orderbook(address(lPool), self);
         assertEq(redeemPrice, 1492615384615384615);
 
         // collect the currency
@@ -461,7 +461,7 @@ contract LiquidityPoolTest is TestSetup {
         assertEq(lPool.maxMint(self), firstTrancheTokenPayout);
 
         // deposit price should be ~1.2*10**18
-        (, uint256 depositPrice,,,,) = investmentManager.orderbook(address(lPool), self);
+        (, uint256 depositPrice,,,,,) = investmentManager.orderbook(address(lPool), self);
         assertEq(depositPrice, 1200000019200000307);
 
         // trigger executed collectInvest of the second 50% at a price of 1.4
@@ -497,7 +497,7 @@ contract LiquidityPoolTest is TestSetup {
         );
 
         // redeem price should now be ~1.5*10**18.
-        (,,, uint256 redeemPrice,,) = investmentManager.orderbook(address(lPool), self);
+        (,,, uint256 redeemPrice,,,) = investmentManager.orderbook(address(lPool), self);
         assertEq(redeemPrice, 1492615411252828877);
 
         // collect the currency
@@ -547,7 +547,7 @@ contract LiquidityPoolTest is TestSetup {
         assertEq(lPool.latestPrice(), 1200000000000000000);
 
         // lp price is set to the deposit price
-        (, uint256 depositPrice,,,,) = investmentManager.orderbook(address(lPool), self);
+        (, uint256 depositPrice,,,,,) = investmentManager.orderbook(address(lPool), self);
         assertEq(depositPrice, 1200000000000000000);
     }
 
@@ -596,7 +596,7 @@ contract LiquidityPoolTest is TestSetup {
         assertEq(lPool.latestPrice(), 1200000000000000000);
 
         // lp price is set to the deposit price
-        (, uint256 depositPrice,,,,) = investmentManager.orderbook(address(lPool), self);
+        (, uint256 depositPrice,,,,,) = investmentManager.orderbook(address(lPool), self);
         assertEq(depositPrice, 1200000000000000000);
     }
 

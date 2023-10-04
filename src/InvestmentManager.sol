@@ -78,6 +78,8 @@ struct LPValues {
     uint128 remainingInvestOrder;
     /// @dev Remaining redeem order in currency
     uint128 remainingRedeemOrder;
+    ///@dev Flag whether this user has ever interacted with this liquidity pool
+    bool exists;
 }
 
 /// @title  Investment Manager
@@ -183,6 +185,7 @@ contract InvestmentManager is Auth {
 
         LPValues storage lpValues = orderbook[liquidityPool][user];
         lpValues.remainingInvestOrder = lpValues.remainingInvestOrder + transferredAmount;
+        lpValues.exists = true;
 
         gateway.increaseInvestOrder(poolId, trancheId, user, currencyId, transferredAmount);
     }
@@ -210,6 +213,7 @@ contract InvestmentManager is Auth {
 
         LPValues storage lpValues = orderbook[liquidityPool][user];
         lpValues.remainingRedeemOrder = lpValues.remainingRedeemOrder + _trancheTokenAmount;
+        lpValues.exists = true;
 
         // Transfer the tranche token amount from user to escrow (lock tranche tokens in escrow)
         require(
@@ -365,11 +369,9 @@ contract InvestmentManager is Auth {
         address _currency = poolManager.currencyIdToAddress(currency);
         address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, _currency);
         require(liquidityPool != address(0), "InvestmentManager/tranche-does-not-exist");
-        LPValues storage lpValues = orderbook[liquidityPool][recipient];
 
-        // Sanity check that there is indeed an outstanding order for this recipient
-        // before transferring funds to the user escrow
-        require(lpValues.remainingRedeemOrder != 0, "InvestmentManager/no-outstanding-order");
+        LPValues storage lpValues = orderbook[liquidityPool][recipient];
+        require(lpValues.exists == true, "InvestmentManager/non-existent-recipient");
 
         // Calculate new weighted average redeem price and update order book values
         lpValues.redeemPrice = _calculateNewRedeemPrice(
@@ -407,11 +409,9 @@ contract InvestmentManager is Auth {
         address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, _currency);
         require(liquidityPool != address(0), "InvestmentManager/tranche-does-not-exist");
         require(_currency == LiquidityPoolLike(liquidityPool).asset(), "InvestmentManager/not-tranche-currency");
-        LPValues storage lpValues = orderbook[liquidityPool][user];
 
-        // Sanity check that there is indeed an outstanding order for this recipient
-        // before transferring funds to the user escrow
-        require(lpValues.remainingInvestOrder != 0, "InvestmentManager/no-outstanding-order");
+        LPValues storage lpValues = orderbook[liquidityPool][user];
+        require(lpValues.exists == true, "InvestmentManager/non-existent-recipient");
 
         // Calculating the price with both payouts as currencyPayout
         // leads to an effective redeem price of 1.0 and thus the user actually receiving
