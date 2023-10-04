@@ -809,10 +809,9 @@ contract InvestmentManager is Auth {
         returns (uint128 price)
     {
         (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getPoolDecimals(liquidityPool);
-        
+
         uint256 currencyAmountInPriceDecimals = _toPriceDecimals(currencyAmount, currencyDecimals);
-        uint256 trancheTokenAmountInPriceDecimals =
-            _toPriceDecimals(trancheTokenAmount, trancheTokenDecimals);
+        uint256 trancheTokenAmountInPriceDecimals = _toPriceDecimals(trancheTokenAmount, trancheTokenDecimals);
 
         price = _toUint128(
             currencyAmountInPriceDecimals.mulDiv(
