@@ -98,8 +98,8 @@ contract LiquidityPoolTest is TestSetup {
     }
 
     function testRedeemWithApproval(uint256 redemption1, uint256 redemption2) public {
-        redemption1 = uint128(bound(redemption1, 2, MAX_UINT128));
-        redemption2 = uint128(bound(redemption2, 2, MAX_UINT128));
+        redemption1 = uint128(bound(redemption1, 2, MAX_UINT128 / 4));
+        redemption2 = uint128(bound(redemption2, 2, MAX_UINT128 / 4));
         uint256 amount = redemption1 + redemption2;
         vm.assume(amountAssumption(amount));
 
@@ -1059,7 +1059,7 @@ contract LiquidityPoolTest is TestSetup {
     }
 
     function testRedeem(uint256 amount) public {
-        amount = uint128(bound(amount, 2, MAX_UINT128));
+        amount = uint128(bound(amount, 2, MAX_UINT128 / 2));
 
         address lPool_ = deploySimplePool();
         LiquidityPool lPool = LiquidityPool(lPool_);

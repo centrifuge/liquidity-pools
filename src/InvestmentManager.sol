@@ -208,14 +208,14 @@ contract InvestmentManager is Auth {
         // You cannot redeem using a disallowed investment currency, instead another LP will have to be used
         require(poolManager.isAllowedAsInvestmentCurrency(poolId, currency), "InvestmentManager/currency-not-allowed");
 
+        LPValues storage lpValues = orderbook[liquidityPool][user];
+        lpValues.remainingRedeemOrder = lpValues.remainingRedeemOrder + _trancheTokenAmount;
+
         // Transfer the tranche token amount from user to escrow (lock tranche tokens in escrow)
         require(
             AuthTransferLike(address(lPool.share())).authTransferFrom(user, address(escrow), _trancheTokenAmount),
             "InvestmentManager/transfer-failed"
         );
-
-        LPValues storage lpValues = orderbook[liquidityPool][user];
-        lpValues.remainingRedeemOrder = lpValues.remainingRedeemOrder + _trancheTokenAmount;
 
         gateway.increaseRedeemOrder(poolId, trancheId, user, currencyId, _trancheTokenAmount);
     }
@@ -343,11 +343,11 @@ contract InvestmentManager is Auth {
         lpValues.maxMint = lpValues.maxMint + trancheTokensPayout;
         lpValues.remainingInvestOrder = remainingInvestOrder;
 
+        LiquidityPoolLike(liquidityPool).updatePrice(_toUint128(lpValues.depositPrice));
+
         // Mint to escrow. Recipient can claim by calling withdraw / redeem
         ERC20Like trancheToken = ERC20Like(LiquidityPoolLike(liquidityPool).share());
         trancheToken.mint(address(escrow), trancheTokensPayout);
-
-        LiquidityPoolLike(liquidityPool).updatePrice(_toUint128(lpValues.depositPrice));
 
         emit ExecutedCollectInvest(poolId, trancheId, recipient, currency, currencyPayout, trancheTokensPayout);
     }
@@ -365,9 +365,13 @@ contract InvestmentManager is Auth {
         address _currency = poolManager.currencyIdToAddress(currency);
         address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, _currency);
         require(liquidityPool != address(0), "InvestmentManager/tranche-does-not-exist");
-
         LPValues storage lpValues = orderbook[liquidityPool][recipient];
+
+        // Sanity check that there is indeed an outstanding order for this recipient
+        // before transferring funds to the user escrow
         require(lpValues.remainingRedeemOrder != 0, "InvestmentManager/no-outstanding-order");
+
+        // Calculate new weighted average redeem price and update order book values
         lpValues.redeemPrice = _calculateNewRedeemPrice(
             liquidityPool,
             maxRedeem(liquidityPool, recipient),
@@ -378,13 +382,13 @@ contract InvestmentManager is Auth {
         lpValues.maxWithdraw = lpValues.maxWithdraw + currencyPayout;
         lpValues.remainingRedeemOrder = remainingRedeemOrder;
 
+        LiquidityPoolLike(liquidityPool).updatePrice(_toUint128(lpValues.redeemPrice));
+
         // Transfer currency to user escrow to claim on withdraw/redeem,
         // and burn redeemed tranche tokens from escrow
         userEscrow.transferIn(_currency, address(escrow), recipient, currencyPayout);
         ERC20Like trancheToken = ERC20Like(LiquidityPoolLike(liquidityPool).share());
         trancheToken.burn(address(escrow), trancheTokensPayout);
-
-        LiquidityPoolLike(liquidityPool).updatePrice(_toUint128(lpValues.redeemPrice));
 
         emit ExecutedCollectRedeem(poolId, trancheId, recipient, currency, currencyPayout, trancheTokensPayout);
     }
@@ -403,12 +407,11 @@ contract InvestmentManager is Auth {
         address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, _currency);
         require(liquidityPool != address(0), "InvestmentManager/tranche-does-not-exist");
         require(_currency == LiquidityPoolLike(liquidityPool).asset(), "InvestmentManager/not-tranche-currency");
-
         LPValues storage lpValues = orderbook[liquidityPool][user];
-        require(lpValues.remainingInvestOrder != 0, "InvestmentManager/no-outstanding-order");
 
-        // Transfer currency amount to userEscrow
-        userEscrow.transferIn(_currency, address(escrow), user, currencyPayout);
+        // Sanity check that there is indeed an outstanding order for this recipient
+        // before transferring funds to the user escrow
+        require(lpValues.remainingInvestOrder != 0, "InvestmentManager/no-outstanding-order");
 
         // Calculating the price with both payouts as currencyPayout
         // leads to an effective redeem price of 1.0 and thus the user actually receiving
@@ -418,6 +421,9 @@ contract InvestmentManager is Auth {
         );
         lpValues.maxWithdraw = lpValues.maxWithdraw + currencyPayout;
         lpValues.remainingInvestOrder = remainingInvestOrder;
+
+        // Transfer currency amount to userEscrow
+        userEscrow.transferIn(_currency, address(escrow), user, currencyPayout);
 
         emit ExecutedDecreaseInvestOrder(poolId, trancheId, user, currency, currencyPayout);
     }
@@ -463,14 +469,14 @@ contract InvestmentManager is Auth {
         address _currency = poolManager.currencyIdToAddress(currency);
         address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, _currency);
 
+        LPValues storage lpValues = orderbook[liquidityPool][user];
+        lpValues.remainingRedeemOrder = lpValues.remainingRedeemOrder + trancheTokenAmount;
+
         // Transfer the tranche token amount from user to escrow (lock tranche tokens in escrow)
         require(
             AuthTransferLike(token).authTransferFrom(user, address(escrow), trancheTokenAmount),
             "InvestmentManager/transfer-failed"
         );
-
-        LPValues storage lpValues = orderbook[liquidityPool][user];
-        lpValues.remainingRedeemOrder = lpValues.remainingRedeemOrder + trancheTokenAmount;
 
         gateway.increaseRedeemOrder(poolId, trancheId, user, currency, trancheTokenAmount);
         emit TriggerIncreaseRedeemOrder(poolId, trancheId, user, currency, trancheTokenAmount);
