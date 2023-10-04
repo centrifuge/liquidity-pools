@@ -1289,7 +1289,7 @@ contract LiquidityPoolTest is TestSetup {
         assertApproxEqAbs(erc20.balanceOf(investor), investorBalanceBefore + amount / 2, 1);
     }
 
-    function testPartialExecutionsOutOfOrder(uint64 poolId, bytes16 trancheId, uint128 currencyId) public {
+    function testPartialExecutions(uint64 poolId, bytes16 trancheId, uint128 currencyId) public {
         vm.assume(currencyId > 0);
 
         uint8 TRANCHE_TOKEN_DECIMALS = 18; // Like DAI
@@ -1309,7 +1309,7 @@ contract LiquidityPoolTest is TestSetup {
         lPool.requestDeposit(investmentAmount);
         uint128 _currencyId = poolManager.currencyAddressToId(address(currency)); // retrieve currencyId
 
-        // first trigger executed collectInvest of the second 50% at a price of 1.4
+        // first trigger executed collectInvest of the first 50% at a price of 1.4
         uint128 currencyPayout = 50000000; // 50 * 10**6
         uint128 firstTrancheTokenPayout = 35714285714285714285; // 50 * 10**18 / 1.4, rounded down
         centrifugeChain.isExecutedCollectInvest(
@@ -1319,7 +1319,7 @@ contract LiquidityPoolTest is TestSetup {
         (, uint256 depositPrice,,,,,) = investmentManager.orderbook(address(lPool), self);
         assertEq(depositPrice, 1400000000000000000);
 
-        // second trigger executed collectInvest of the first 50% at a price of 1.2
+        // second trigger executed collectInvest of the second 50% at a price of 1.2
         uint128 secondTrancheTokenPayout = 41666666666666666666; // 50 * 10**18 / 1.2, rounded down
         centrifugeChain.isExecutedCollectInvest(
             poolId,
@@ -1332,7 +1332,7 @@ contract LiquidityPoolTest is TestSetup {
         );
 
         (, depositPrice,,,,,) = investmentManager.orderbook(address(lPool), self);
-        assertEq(depositPrice, 1300000000000000000);
+        assertEq(depositPrice, 1292307679384615384);
 
         // assert deposit & mint values adjusted
         assertApproxEqAbs(lPool.maxDeposit(self), currencyPayout * 2, 2);
