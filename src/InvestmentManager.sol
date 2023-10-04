@@ -782,7 +782,7 @@ contract InvestmentManager is Auth {
     ) internal view returns (uint256 depositPrice) {
         (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getPoolDecimals(liquidityPool);
 
-        uint256 newMaxDeposit = currentMaxDeposit + _toPriceDecimals(currencyPayout, currencyDecimals);
+        uint256 newMaxDeposit = _toPriceDecimals(_toUint128(currentMaxDeposit) + currencyPayout, currencyDecimals);
         uint256 newMaxMint = _toPriceDecimals(currentMaxMint + trancheTokensPayout, trancheTokenDecimals);
         if (newMaxMint == 0) depositPrice = 0;
         else depositPrice = newMaxDeposit.mulDiv(10 ** PRICE_DECIMALS, newMaxMint, MathLib.Rounding.Down);
@@ -797,7 +797,8 @@ contract InvestmentManager is Auth {
     ) internal view returns (uint256 redeemPrice) {
         (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getPoolDecimals(liquidityPool);
 
-        uint256 newMaxRedeem = currentMaxRedeem + _toPriceDecimals(trancheTokensPayout, trancheTokenDecimals);
+        uint256 newMaxRedeem =
+            _toPriceDecimals(_toUint128(currentMaxRedeem) + trancheTokensPayout, trancheTokenDecimals);
         uint256 newMaxWithdraw = _toPriceDecimals(currentMaxWithdraw + currencyPayout, currencyDecimals);
         if (newMaxWithdraw == 0) redeemPrice = 0;
         else redeemPrice = newMaxWithdraw.mulDiv(10 ** PRICE_DECIMALS, newMaxRedeem, MathLib.Rounding.Down);
