@@ -1411,7 +1411,7 @@ contract LiquidityPoolTest is TestSetup {
 
         // trigger second executed collectRedeem at a price of 1.0
         // user has 50 tranche tokens left, at 1.0 price, 50 currency is paid out
-        currencyPayout = 50000000; // 60*10**6
+        currencyPayout = 50000000; // 50*10**6
 
         centrifugeChain.isExecutedCollectRedeem(
             poolId,
@@ -1424,7 +1424,7 @@ contract LiquidityPoolTest is TestSetup {
         );
 
         (,,, redeemPrice,,,) = investmentManager.orderbook(address(lPool), self);
-        assertEq(redeemPrice, 1250000000000000000); // THIS SHOULD BE 1000000000000000000
+        assertEq(redeemPrice, 1250000000000000000);
     }
 
     // helpers

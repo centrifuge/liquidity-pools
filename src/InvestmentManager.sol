@@ -5,6 +5,8 @@ import {Auth} from "./util/Auth.sol";
 import {MathLib} from "./util/MathLib.sol";
 import {SafeTransferLib} from "./util/SafeTransferLib.sol";
 
+import "forge-std/Test.sol";
+
 interface GatewayLike {
     function increaseInvestOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount)
         external;
@@ -85,7 +87,7 @@ struct LPValues {
 /// @title  Investment Manager
 /// @notice This is the main contract LiquidityPools interact with for
 ///         both incoming and outgoing investment transactions.
-contract InvestmentManager is Auth {
+contract InvestmentManager is Auth, Test {
     using MathLib for uint256;
     using MathLib for uint128;
 
@@ -367,6 +369,7 @@ contract InvestmentManager is Auth {
         uint128 trancheTokensPayout,
         uint128 remainingRedeemOrder
     ) public onlyGateway {
+        console.log("handleExecutedCollectRedeem");
         require(trancheTokensPayout != 0, "InvestmentManager/zero-redeem");
         address _currency = poolManager.currencyIdToAddress(currency);
         address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, _currency);
@@ -795,6 +798,10 @@ contract InvestmentManager is Auth {
         uint128 currencyPayout,
         uint128 trancheTokensPayout
     ) internal view returns (uint256 redeemPrice) {
+        console.log("currentMaxRedeem", currentMaxRedeem);
+        console.log("currentMaxWithdraw", currentMaxWithdraw);
+        console.log("currencyPayout", currencyPayout);
+        console.log("trancheTokensPayout", trancheTokensPayout);
         (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getPoolDecimals(liquidityPool);
 
         uint256 newMaxRedeem =
@@ -802,6 +809,9 @@ contract InvestmentManager is Auth {
         uint256 newMaxWithdraw = _toPriceDecimals(currentMaxWithdraw + currencyPayout, currencyDecimals);
         if (newMaxWithdraw == 0) redeemPrice = 0;
         else redeemPrice = newMaxWithdraw.mulDiv(10 ** PRICE_DECIMALS, newMaxRedeem, MathLib.Rounding.Down);
+        console.log("redeemPrice", redeemPrice);
+        console.log("newMaxWithdraw", newMaxWithdraw);
+        console.log("newMaxRedeem", newMaxRedeem);
     }
 
     function _calculatePrice(address liquidityPool, uint128 currencyAmount, uint128 trancheTokenAmount)
