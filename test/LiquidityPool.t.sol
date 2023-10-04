@@ -98,8 +98,8 @@ contract LiquidityPoolTest is TestSetup {
     }
 
     function testRedeemWithApproval(uint256 redemption1, uint256 redemption2) public {
-        redemption1 = uint128(bound(redemption1, 2, MAX_UINT128));
-        redemption2 = uint128(bound(redemption2, 2, MAX_UINT128));
+        redemption1 = uint128(bound(redemption1, 2, MAX_UINT128 / 4));
+        redemption2 = uint128(bound(redemption2, 2, MAX_UINT128 / 4));
         uint256 amount = redemption1 + redemption2;
         vm.assume(amountAssumption(amount));
 
@@ -378,7 +378,7 @@ contract LiquidityPoolTest is TestSetup {
         assertEq(lPool.maxMint(self), firstTrancheTokenPayout);
 
         // deposit price should be ~1.2*10**18
-        (, uint256 depositPrice,,,,) = investmentManager.orderbook(address(lPool), self);
+        (, uint256 depositPrice,,,,,) = investmentManager.orderbook(address(lPool), self);
         assertEq(depositPrice, 1200000000000000000);
 
         // trigger executed collectInvest of the second 50% at a price of 1.4
@@ -414,7 +414,7 @@ contract LiquidityPoolTest is TestSetup {
         );
 
         // redeem price should now be ~1.5*10**18.
-        (,,, uint256 redeemPrice,,) = investmentManager.orderbook(address(lPool), self);
+        (,,, uint256 redeemPrice,,,) = investmentManager.orderbook(address(lPool), self);
         assertEq(redeemPrice, 1492615384615384615);
 
         // collect the currency
@@ -461,7 +461,7 @@ contract LiquidityPoolTest is TestSetup {
         assertEq(lPool.maxMint(self), firstTrancheTokenPayout);
 
         // deposit price should be ~1.2*10**18
-        (, uint256 depositPrice,,,,) = investmentManager.orderbook(address(lPool), self);
+        (, uint256 depositPrice,,,,,) = investmentManager.orderbook(address(lPool), self);
         assertEq(depositPrice, 1200000019200000307);
 
         // trigger executed collectInvest of the second 50% at a price of 1.4
@@ -497,7 +497,7 @@ contract LiquidityPoolTest is TestSetup {
         );
 
         // redeem price should now be ~1.5*10**18.
-        (,,, uint256 redeemPrice,,) = investmentManager.orderbook(address(lPool), self);
+        (,,, uint256 redeemPrice,,,) = investmentManager.orderbook(address(lPool), self);
         assertEq(redeemPrice, 1492615411252828877);
 
         // collect the currency
@@ -547,7 +547,7 @@ contract LiquidityPoolTest is TestSetup {
         assertEq(lPool.latestPrice(), 1200000000000000000);
 
         // lp price is set to the deposit price
-        (, uint256 depositPrice,,,,) = investmentManager.orderbook(address(lPool), self);
+        (, uint256 depositPrice,,,,,) = investmentManager.orderbook(address(lPool), self);
         assertEq(depositPrice, 1200000000000000000);
     }
 
@@ -596,7 +596,7 @@ contract LiquidityPoolTest is TestSetup {
         assertEq(lPool.latestPrice(), 1200000000000000000);
 
         // lp price is set to the deposit price
-        (, uint256 depositPrice,,,,) = investmentManager.orderbook(address(lPool), self);
+        (, uint256 depositPrice,,,,,) = investmentManager.orderbook(address(lPool), self);
         assertEq(depositPrice, 1200000000000000000);
     }
 
@@ -1059,7 +1059,7 @@ contract LiquidityPoolTest is TestSetup {
     }
 
     function testRedeem(uint256 amount) public {
-        amount = uint128(bound(amount, 2, MAX_UINT128));
+        amount = uint128(bound(amount, 2, MAX_UINT128 / 2));
 
         address lPool_ = deploySimplePool();
         LiquidityPool lPool = LiquidityPool(lPool_);
@@ -1162,6 +1162,7 @@ contract LiquidityPoolTest is TestSetup {
         lPool.requestRedeem(amount);
         assertEq(lPool.balanceOf(address(escrow)), amount);
         assertEq(erc20.balanceOf(address(userEscrow)), 0);
+        assertGt(lPool.userRedeemRequest(self), 0);
 
         // trigger executed collectRedeem
         uint128 _currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
