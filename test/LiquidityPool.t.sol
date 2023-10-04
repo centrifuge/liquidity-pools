@@ -1311,7 +1311,7 @@ contract LiquidityPoolTest is TestSetup {
         // trigger executed collectInvest of the first 50% at a price of 1.2
         uint128 _currencyId = poolManager.currencyAddressToId(address(currency)); // retrieve currencyId
 
-        // trigger executed collectInvest of the second 50% at a price of 1.4
+        // first trigger executed collectInvest of the second 50% at a price of 1.4
         uint128 currencyPayout = 50000000; // 50 * 10**6
         uint128 secondTrancheTokenPayout = 35714285714285714285; // 50 * 10**18 / 1.4, rounded down
         centrifugeChain.isExecutedCollectInvest(
@@ -1321,6 +1321,7 @@ contract LiquidityPoolTest is TestSetup {
         (, uint256 depositPrice,,,,,) = investmentManager.orderbook(address(lPool), self);
         assertEq(depositPrice, 1400000000000000000);
 
+        // second trigger executed collectInvest of the first 50% at a price of 1.2
         uint128 firstTrancheTokenPayout = 41666666666666666666; // 50 * 10**18 / 1.2, rounded down
         centrifugeChain.isExecutedCollectInvest(
             poolId,
@@ -1331,6 +1332,9 @@ contract LiquidityPoolTest is TestSetup {
             firstTrancheTokenPayout,
             currencyPayout / 2
         );
+
+        (, depositPrice,,,,,) = investmentManager.orderbook(address(lPool), self);
+        assertEq(depositPrice, 1300000000000000000);
 
         // assert deposit & mint values adjusted
         assertApproxEqAbs(lPool.maxDeposit(self), currencyPayout, 1);
