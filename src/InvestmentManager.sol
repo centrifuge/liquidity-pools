@@ -347,7 +347,9 @@ contract InvestmentManager is Auth {
         lpValues.maxMint = lpValues.maxMint + trancheTokensPayout;
         lpValues.remainingInvestOrder = remainingInvestOrder;
 
-        LiquidityPoolLike(liquidityPool).updatePrice(_toUint128(lpValues.depositPrice));
+        LiquidityPoolLike(liquidityPool).updatePrice(
+            _calculatePrice(liquidityPool, currencyPayout, trancheTokensPayout)
+        );
 
         // Mint to escrow. Recipient can claim by calling withdraw / redeem
         ERC20Like trancheToken = ERC20Like(LiquidityPoolLike(liquidityPool).share());
@@ -384,7 +386,9 @@ contract InvestmentManager is Auth {
         lpValues.maxWithdraw = lpValues.maxWithdraw + currencyPayout;
         lpValues.remainingRedeemOrder = remainingRedeemOrder;
 
-        LiquidityPoolLike(liquidityPool).updatePrice(_toUint128(lpValues.redeemPrice));
+        LiquidityPoolLike(liquidityPool).updatePrice(
+            _calculatePrice(liquidityPool, currencyPayout, trancheTokensPayout)
+        );
 
         // Transfer currency to user escrow to claim on withdraw/redeem,
         // and burn redeemed tranche tokens from escrow
@@ -797,6 +801,24 @@ contract InvestmentManager is Auth {
         uint256 newMaxWithdraw = _toPriceDecimals(currentMaxWithdraw + currencyPayout, currencyDecimals);
         if (newMaxWithdraw == 0) redeemPrice = 0;
         else redeemPrice = newMaxWithdraw.mulDiv(10 ** PRICE_DECIMALS, newMaxRedeem, MathLib.Rounding.Down);
+    }
+
+    function _calculatePrice(address liquidityPool, uint128 currencyAmount, uint128 trancheTokenAmount)
+        public
+        view
+        returns (uint128 price)
+    {
+        (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getPoolDecimals(liquidityPool);
+        
+        uint256 currencyAmountInPriceDecimals = _toPriceDecimals(currencyAmount, currencyDecimals);
+        uint256 trancheTokenAmountInPriceDecimals =
+            _toPriceDecimals(trancheTokenAmount, trancheTokenDecimals);
+
+        price = _toUint128(
+            currencyAmountInPriceDecimals.mulDiv(
+                10 ** PRICE_DECIMALS, trancheTokenAmountInPriceDecimals, MathLib.Rounding.Down
+            )
+        );
     }
 
     /// @dev    Safe type conversion from uint256 to uint128. Revert if value is too big to be stored
