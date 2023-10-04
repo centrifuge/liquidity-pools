@@ -1307,8 +1307,6 @@ contract LiquidityPoolTest is TestSetup {
         currency.approve(address(investmentManager), investmentAmount);
         currency.mint(self, investmentAmount);
         lPool.requestDeposit(investmentAmount);
-
-        // trigger executed collectInvest of the first 50% at a price of 1.2
         uint128 _currencyId = poolManager.currencyAddressToId(address(currency)); // retrieve currencyId
 
         // first trigger executed collectInvest of the second 50% at a price of 1.4
