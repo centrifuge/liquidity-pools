@@ -367,7 +367,7 @@ contract InvestmentManager is Auth {
         require(liquidityPool != address(0), "InvestmentManager/tranche-does-not-exist");
 
         LPValues storage lpValues = orderbook[liquidityPool][recipient];
-        require(remainingRedeemOrder != 0, "InvestmentManager/no-outstanding-order");
+        require(lpValues.remainingRedeemOrder != 0, "InvestmentManager/no-outstanding-order");
         lpValues.redeemPrice = _calculateNewRedeemPrice(
             liquidityPool,
             maxRedeem(liquidityPool, recipient),
@@ -405,7 +405,7 @@ contract InvestmentManager is Auth {
         require(_currency == LiquidityPoolLike(liquidityPool).asset(), "InvestmentManager/not-tranche-currency");
 
         LPValues storage lpValues = orderbook[liquidityPool][user];
-        require(remainingInvestOrder != 0, "InvestmentManager/no-outstanding-order");
+        require(lpValues.remainingInvestOrder != 0, "InvestmentManager/no-outstanding-order");
 
         // Transfer currency amount to userEscrow
         userEscrow.transferIn(_currency, address(escrow), user, currencyPayout);
@@ -460,12 +460,17 @@ contract InvestmentManager is Auth {
         uint128 trancheTokenAmount
     ) public onlyGateway {
         address token = poolManager.getTrancheToken(poolId, trancheId);
+        address _currency = poolManager.currencyIdToAddress(currency);
+        address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, _currency);
 
         // Transfer the tranche token amount from user to escrow (lock tranche tokens in escrow)
         require(
             AuthTransferLike(token).authTransferFrom(user, address(escrow), trancheTokenAmount),
             "InvestmentManager/transfer-failed"
         );
+
+        LPValues storage lpValues = orderbook[liquidityPool][user];
+        lpValues.remainingRedeemOrder = lpValues.remainingRedeemOrder + trancheTokenAmount;
 
         gateway.increaseRedeemOrder(poolId, trancheId, user, currency, trancheTokenAmount);
         emit TriggerIncreaseRedeemOrder(poolId, trancheId, user, currency, trancheTokenAmount);
