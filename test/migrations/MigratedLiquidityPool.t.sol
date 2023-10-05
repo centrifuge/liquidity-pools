@@ -34,18 +34,21 @@ contract MigrationsTest is InvestRedeemFlow {
         newLiquidityPool.rely(address(investmentManager));
         root.relyContract(address(investmentManager), address(this));
         investmentManager.rely(address(newLiquidityPool));
+        investmentManager.deny(_lPool);
         root.relyContract(address(escrow), address(this));
         escrow.approve(address(newLiquidityPool), address(investmentManager), type(uint256).max);
+        escrow.approve(_lPool, address(investmentManager), 0);
 
         // clean up
-        escrow.approve(_lPool, address(investmentManager), 0);
         newLiquidityPool.deny(address(this));
+        root.denyContract(address(investmentManager), address(this));
+        root.denyContract(address(escrow), address(this));
         root.deny(address(this));
 
         // verify permissions
         verifyLiquidityPoolPermissions(LiquidityPool(_lPool), newLiquidityPool);
 
-        // test that everything is working
+        // TODO: test that everything is working
         // _lPool = address(newLiquidityPool);
         // VerifyInvestAndRedeemFlow(poolId, trancheId, address(_lPool));
     }
@@ -64,5 +67,6 @@ contract MigrationsTest is InvestRedeemFlow {
         assertEq(newLiquidityPool.wards(address(root)), 1);
         assertEq(newLiquidityPool.wards(address(investmentManager)), 1);
         assertEq(investmentManager.wards(address(newLiquidityPool)), 1);
+        assertEq(investmentManager.wards(address(oldLiquidityPool)), 0);
     }
 }

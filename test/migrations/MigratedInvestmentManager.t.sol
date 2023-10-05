@@ -45,8 +45,10 @@ contract MigratedInvestmentManagerTest is InvestRedeemFlow {
         newInvestmentManager.rely(address(poolManager));
         root.relyContract(address(escrow), address(this));
         escrow.rely(address(newInvestmentManager));
+        escrow.deny(address(investmentManager));
         root.relyContract(address(userEscrow), address(this));
         userEscrow.rely(address(newInvestmentManager));
+        userEscrow.deny(address(investmentManager));
 
         // file investmentManager on all LiquidityPools
         for (uint256 i = 0; i < liquidityPools.length; i++) {
@@ -55,10 +57,13 @@ contract MigratedInvestmentManagerTest is InvestRedeemFlow {
 
             lPool.file("investmentManager", address(newInvestmentManager));
             lPool.rely(address(newInvestmentManager));
+            lPool.deny(address(investmentManager));
             root.relyContract(address(lPool.share()), address(this));
             AuthLike(address(lPool.share())).rely(address(newInvestmentManager));
+            AuthLike(address(lPool.share())).deny(address(investmentManager));
             newInvestmentManager.rely(address(lPool));
             escrow.approve(address(lPool), address(newInvestmentManager), type(uint256).max);
+            escrow.approve(address(lPool), address(investmentManager), 0);
         }
 
         // clean up
@@ -89,8 +94,10 @@ contract MigratedInvestmentManagerTest is InvestRedeemFlow {
         assertEq(address(poolManager.investmentManager()), address(newInvestmentManager));
         assertEq(newInvestmentManager.wards(address(root)), 1);
         assertEq(newInvestmentManager.wards(address(poolManager)), 1);
-        assertEq(escrow.wards(address(investmentManager)), 1);
-        assertEq(userEscrow.wards(address(investmentManager)), 1);
+        assertEq(escrow.wards(address(newInvestmentManager)), 1);
+        assertEq(escrow.wards(address(oldInvestmentManager)), 0);
+        assertEq(userEscrow.wards(address(newInvestmentManager)), 1);
+        assertEq(userEscrow.wards(address(oldInvestmentManager)), 0);
     }
 
     // --- State Verification Helpers ---

@@ -63,11 +63,14 @@ contract MigrationsTest is InvestRedeemFlow {
         newPoolManager.file("investmentManager", address(investmentManager));
         newPoolManager.file("gateway", address(gateway));
         investmentManager.rely(address(newPoolManager));
+        investmentManager.deny(address(poolManager));
         newPoolManager.rely(address(root));
         root.relyContract(address(escrow), address(this));
         escrow.rely(address(newPoolManager));
+        escrow.deny(address(poolManager));
         root.relyContract(restrictionManagerFactory, address(this));
         AuthLike(restrictionManagerFactory).rely(address(newPoolManager));
+        AuthLike(restrictionManagerFactory).deny(address(poolManager));
 
         // clean up
         newPoolManager.deny(address(this));
@@ -104,10 +107,13 @@ contract MigrationsTest is InvestRedeemFlow {
         assertEq(address(oldPoolManager.gateway()), address(newPoolManager.gateway()));
         assertEq(address(gateway.poolManager()), address(newPoolManager));
         assertEq(address(investmentManager.poolManager()), address(newPoolManager));
-        assertEq(investmentManager.wards(address(poolManager)), 1);
-        assertEq(poolManager.wards(address(root)), 1);
-        assertEq(escrow.wards(address(poolManager)), 1);
-        assertEq(investmentManager.wards(address(poolManager)), 1);
+        assertEq(newPoolManager.wards(address(root)), 1);
+        assertEq(investmentManager.wards(address(newPoolManager)), 1);
+        assertEq(investmentManager.wards(address(oldPoolManager)), 0);
+        assertEq(escrow.wards(address(newPoolManager)), 1);
+        assertEq(escrow.wards(address(oldPoolManager)), 0);
+        assertEq(investmentManager.wards(address(newPoolManager)), 1);
+        assertEq(investmentManager.wards(address(oldPoolManager)), 0);
     }
 
     // --- State Verification Helpers ---
