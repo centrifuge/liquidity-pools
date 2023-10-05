@@ -83,7 +83,6 @@ contract MigratedPoolManager is PoolManager {
     function migrateUndeployedTranches(uint64 poolId, bytes16[] memory trancheIds, PoolManager oldPoolManager_)
         internal
     {
-        Pool storage pool = pools[poolId];
         for (uint256 j = 0; j < trancheIds.length; j++) {
             bytes16 trancheId = trancheIds[j];
 
