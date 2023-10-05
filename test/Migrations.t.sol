@@ -327,9 +327,9 @@ contract MigrationsTest is TestSetup {
         InvestmentManager investmentManager,
         InvestmentManager newInvestmentManager
     ) public {
-        (uint128 newMaxMint, uint256 newDepositPrice, uint128 newMaxWithdraw,,,) =
+        (uint128 newMaxMint, uint256 newDepositPrice, uint128 newMaxWithdraw,,,,) =
             newInvestmentManager.orderbook(investor, liquidityPool);
-        (uint128 oldMaxMint, uint256 oldDepositPrice, uint128 oldMaxWithdraw,,,) =
+        (uint128 oldMaxMint, uint256 oldDepositPrice, uint128 oldMaxWithdraw,,,,) =
             investmentManager.orderbook(investor, liquidityPool);
         assertEq(newMaxMint, oldMaxMint);
         assertEq(newDepositPrice, oldDepositPrice);
@@ -342,9 +342,9 @@ contract MigrationsTest is TestSetup {
         InvestmentManager investmentManager,
         InvestmentManager newInvestmentManager
     ) public {
-        (,,, uint256 newRedeemPrice, uint128 newRemainingInvestOrder, uint128 newRemainingRedeemOrder) =
+        (,,, uint256 newRedeemPrice, uint128 newRemainingInvestOrder, uint128 newRemainingRedeemOrder, bool newExists) =
             newInvestmentManager.orderbook(investor, liquidityPool);
-        (,,, uint256 oldRedeemPrice, uint128 oldRemainingInvestOrder, uint128 oldRemainingRedeemOrder) =
+        (,,, uint256 oldRedeemPrice, uint128 oldRemainingInvestOrder, uint128 oldRemainingRedeemOrder, bool oldExists) =
             investmentManager.orderbook(investor, liquidityPool);
         assertEq(newRedeemPrice, oldRedeemPrice);
         assertEq(newRemainingInvestOrder, oldRemainingInvestOrder);

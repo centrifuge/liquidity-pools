@@ -34,7 +34,8 @@ contract MigratedInvestmentManager is InvestmentManager {
                     uint128 maxWithdraw,
                     uint256 redeemPrice,
                     uint128 remainingInvestOrder,
-                    uint128 remainingRedeemOrder
+                    uint128 remainingRedeemOrder,
+                    bool exists
                 ) = oldInvestmentManager.orderbook(investor, liquidityPool);
                 orderbook[investor][liquidityPool] = LPValues({
                     maxMint: maxMint,
@@ -42,7 +43,8 @@ contract MigratedInvestmentManager is InvestmentManager {
                     maxWithdraw: maxWithdraw,
                     redeemPrice: redeemPrice,
                     remainingInvestOrder: remainingInvestOrder,
-                    remainingRedeemOrder: remainingRedeemOrder
+                    remainingRedeemOrder: remainingRedeemOrder,
+                    exists: exists
                 });
             }
         }
