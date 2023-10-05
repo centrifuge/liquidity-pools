@@ -78,6 +78,8 @@ struct LPValues {
     uint128 remainingInvestOrder;
     /// @dev Remaining redeem order in currency
     uint128 remainingRedeemOrder;
+    ///@dev Flag whether this user has ever interacted with this liquidity pool
+    bool exists;
 }
 
 /// @title  Investment Manager
@@ -183,6 +185,7 @@ contract InvestmentManager is Auth {
 
         LPValues storage lpValues = orderbook[liquidityPool][user];
         lpValues.remainingInvestOrder = lpValues.remainingInvestOrder + transferredAmount;
+        lpValues.exists = true;
 
         gateway.increaseInvestOrder(poolId, trancheId, user, currencyId, transferredAmount);
     }
@@ -208,14 +211,15 @@ contract InvestmentManager is Auth {
         // You cannot redeem using a disallowed investment currency, instead another LP will have to be used
         require(poolManager.isAllowedAsInvestmentCurrency(poolId, currency), "InvestmentManager/currency-not-allowed");
 
+        LPValues storage lpValues = orderbook[liquidityPool][user];
+        lpValues.remainingRedeemOrder = lpValues.remainingRedeemOrder + _trancheTokenAmount;
+        lpValues.exists = true;
+
         // Transfer the tranche token amount from user to escrow (lock tranche tokens in escrow)
         require(
             AuthTransferLike(address(lPool.share())).authTransferFrom(user, address(escrow), _trancheTokenAmount),
             "InvestmentManager/transfer-failed"
         );
-
-        LPValues storage lpValues = orderbook[liquidityPool][user];
-        lpValues.remainingRedeemOrder = lpValues.remainingRedeemOrder + _trancheTokenAmount;
 
         gateway.increaseRedeemOrder(poolId, trancheId, user, currencyId, _trancheTokenAmount);
     }
@@ -343,11 +347,13 @@ contract InvestmentManager is Auth {
         lpValues.maxMint = lpValues.maxMint + trancheTokensPayout;
         lpValues.remainingInvestOrder = remainingInvestOrder;
 
+        LiquidityPoolLike(liquidityPool).updatePrice(
+            _calculatePrice(liquidityPool, currencyPayout, trancheTokensPayout)
+        );
+
         // Mint to escrow. Recipient can claim by calling withdraw / redeem
         ERC20Like trancheToken = ERC20Like(LiquidityPoolLike(liquidityPool).share());
         trancheToken.mint(address(escrow), trancheTokensPayout);
-
-        LiquidityPoolLike(liquidityPool).updatePrice(_toUint128(lpValues.depositPrice));
 
         emit ExecutedCollectInvest(poolId, trancheId, recipient, currency, currencyPayout, trancheTokensPayout);
     }
@@ -367,6 +373,9 @@ contract InvestmentManager is Auth {
         require(liquidityPool != address(0), "InvestmentManager/tranche-does-not-exist");
 
         LPValues storage lpValues = orderbook[liquidityPool][recipient];
+        require(lpValues.exists == true, "InvestmentManager/non-existent-recipient");
+
+        // Calculate new weighted average redeem price and update order book values
         lpValues.redeemPrice = _calculateNewRedeemPrice(
             liquidityPool,
             maxRedeem(liquidityPool, recipient),
@@ -377,13 +386,15 @@ contract InvestmentManager is Auth {
         lpValues.maxWithdraw = lpValues.maxWithdraw + currencyPayout;
         lpValues.remainingRedeemOrder = remainingRedeemOrder;
 
+        LiquidityPoolLike(liquidityPool).updatePrice(
+            _calculatePrice(liquidityPool, currencyPayout, trancheTokensPayout)
+        );
+
         // Transfer currency to user escrow to claim on withdraw/redeem,
         // and burn redeemed tranche tokens from escrow
         userEscrow.transferIn(_currency, address(escrow), recipient, currencyPayout);
         ERC20Like trancheToken = ERC20Like(LiquidityPoolLike(liquidityPool).share());
         trancheToken.burn(address(escrow), trancheTokensPayout);
-
-        LiquidityPoolLike(liquidityPool).updatePrice(_toUint128(lpValues.redeemPrice));
 
         emit ExecutedCollectRedeem(poolId, trancheId, recipient, currency, currencyPayout, trancheTokensPayout);
     }
@@ -403,18 +414,20 @@ contract InvestmentManager is Auth {
         require(liquidityPool != address(0), "InvestmentManager/tranche-does-not-exist");
         require(_currency == LiquidityPoolLike(liquidityPool).asset(), "InvestmentManager/not-tranche-currency");
 
-        // Transfer currency amount to userEscrow
-        userEscrow.transferIn(_currency, address(escrow), user, currencyPayout);
+        LPValues storage lpValues = orderbook[liquidityPool][user];
+        require(lpValues.exists == true, "InvestmentManager/non-existent-recipient");
 
         // Calculating the price with both payouts as currencyPayout
         // leads to an effective redeem price of 1.0 and thus the user actually receiving
         // exactly currencyPayout on both deposit() and mint()
-        LPValues storage lpValues = orderbook[liquidityPool][user];
         lpValues.redeemPrice = _calculateNewRedeemPrice(
             liquidityPool, maxRedeem(liquidityPool, user), lpValues.maxWithdraw, currencyPayout, currencyPayout
         );
         lpValues.maxWithdraw = lpValues.maxWithdraw + currencyPayout;
         lpValues.remainingInvestOrder = remainingInvestOrder;
+
+        // Transfer currency amount to userEscrow
+        userEscrow.transferIn(_currency, address(escrow), user, currencyPayout);
 
         emit ExecutedDecreaseInvestOrder(poolId, trancheId, user, currency, currencyPayout);
     }
@@ -457,6 +470,11 @@ contract InvestmentManager is Auth {
         uint128 trancheTokenAmount
     ) public onlyGateway {
         address token = poolManager.getTrancheToken(poolId, trancheId);
+        address _currency = poolManager.currencyIdToAddress(currency);
+        address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, _currency);
+
+        LPValues storage lpValues = orderbook[liquidityPool][user];
+        lpValues.remainingRedeemOrder = lpValues.remainingRedeemOrder + trancheTokenAmount;
 
         // Transfer the tranche token amount from user to escrow (lock tranche tokens in escrow)
         require(
@@ -764,7 +782,7 @@ contract InvestmentManager is Auth {
     ) internal view returns (uint256 depositPrice) {
         (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getPoolDecimals(liquidityPool);
 
-        uint256 newMaxDeposit = currentMaxDeposit + _toPriceDecimals(currencyPayout, currencyDecimals);
+        uint256 newMaxDeposit = _toPriceDecimals(_toUint128(currentMaxDeposit) + currencyPayout, currencyDecimals);
         uint256 newMaxMint = _toPriceDecimals(currentMaxMint + trancheTokensPayout, trancheTokenDecimals);
         if (newMaxMint == 0) depositPrice = 0;
         else depositPrice = newMaxDeposit.mulDiv(10 ** PRICE_DECIMALS, newMaxMint, MathLib.Rounding.Down);
@@ -779,10 +797,28 @@ contract InvestmentManager is Auth {
     ) internal view returns (uint256 redeemPrice) {
         (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getPoolDecimals(liquidityPool);
 
-        uint256 newMaxRedeem = currentMaxRedeem + _toPriceDecimals(trancheTokensPayout, trancheTokenDecimals);
+        uint256 newMaxRedeem =
+            _toPriceDecimals(_toUint128(currentMaxRedeem) + trancheTokensPayout, trancheTokenDecimals);
         uint256 newMaxWithdraw = _toPriceDecimals(currentMaxWithdraw + currencyPayout, currencyDecimals);
         if (newMaxWithdraw == 0) redeemPrice = 0;
         else redeemPrice = newMaxWithdraw.mulDiv(10 ** PRICE_DECIMALS, newMaxRedeem, MathLib.Rounding.Down);
+    }
+
+    function _calculatePrice(address liquidityPool, uint128 currencyAmount, uint128 trancheTokenAmount)
+        public
+        view
+        returns (uint128 price)
+    {
+        (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getPoolDecimals(liquidityPool);
+
+        uint256 currencyAmountInPriceDecimals = _toPriceDecimals(currencyAmount, currencyDecimals);
+        uint256 trancheTokenAmountInPriceDecimals = _toPriceDecimals(trancheTokenAmount, trancheTokenDecimals);
+
+        price = _toUint128(
+            currencyAmountInPriceDecimals.mulDiv(
+                10 ** PRICE_DECIMALS, trancheTokenAmountInPriceDecimals, MathLib.Rounding.Down
+            )
+        );
     }
 
     /// @dev    Safe type conversion from uint256 to uint128. Revert if value is too big to be stored

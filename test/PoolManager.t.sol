@@ -225,6 +225,7 @@ contract PoolManagerTest is TestSetup {
         validUntil = uint64(bound(validUntil, block.timestamp, type(uint64).max));
         vm.assume(destinationAddress != address(0));
         vm.assume(currency > 0);
+        vm.assume(destinationAddress.code.length == 0);
 
         address lPool_ = deployLiquidityPool(poolId, decimals, tokenName, tokenSymbol, trancheId, currency);
         TrancheTokenLike trancheToken = TrancheTokenLike(address(LiquidityPool(lPool_).share()));

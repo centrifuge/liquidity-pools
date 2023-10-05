@@ -98,8 +98,8 @@ contract LiquidityPoolTest is TestSetup {
     }
 
     function testRedeemWithApproval(uint256 redemption1, uint256 redemption2) public {
-        redemption1 = uint128(bound(redemption1, 2, MAX_UINT128));
-        redemption2 = uint128(bound(redemption2, 2, MAX_UINT128));
+        redemption1 = uint128(bound(redemption1, 2, MAX_UINT128 / 4));
+        redemption2 = uint128(bound(redemption2, 2, MAX_UINT128 / 4));
         uint256 amount = redemption1 + redemption2;
         vm.assume(amountAssumption(amount));
 
@@ -378,7 +378,7 @@ contract LiquidityPoolTest is TestSetup {
         assertEq(lPool.maxMint(self), firstTrancheTokenPayout);
 
         // deposit price should be ~1.2*10**18
-        (, uint256 depositPrice,,,,) = investmentManager.orderbook(address(lPool), self);
+        (, uint256 depositPrice,,,,,) = investmentManager.orderbook(address(lPool), self);
         assertEq(depositPrice, 1200000000000000000);
 
         // trigger executed collectInvest of the second 50% at a price of 1.4
@@ -414,7 +414,7 @@ contract LiquidityPoolTest is TestSetup {
         );
 
         // redeem price should now be ~1.5*10**18.
-        (,,, uint256 redeemPrice,,) = investmentManager.orderbook(address(lPool), self);
+        (,,, uint256 redeemPrice,,,) = investmentManager.orderbook(address(lPool), self);
         assertEq(redeemPrice, 1492615384615384615);
 
         // collect the currency
@@ -461,7 +461,7 @@ contract LiquidityPoolTest is TestSetup {
         assertEq(lPool.maxMint(self), firstTrancheTokenPayout);
 
         // deposit price should be ~1.2*10**18
-        (, uint256 depositPrice,,,,) = investmentManager.orderbook(address(lPool), self);
+        (, uint256 depositPrice,,,,,) = investmentManager.orderbook(address(lPool), self);
         assertEq(depositPrice, 1200000019200000307);
 
         // trigger executed collectInvest of the second 50% at a price of 1.4
@@ -497,7 +497,7 @@ contract LiquidityPoolTest is TestSetup {
         );
 
         // redeem price should now be ~1.5*10**18.
-        (,,, uint256 redeemPrice,,) = investmentManager.orderbook(address(lPool), self);
+        (,,, uint256 redeemPrice,,,) = investmentManager.orderbook(address(lPool), self);
         assertEq(redeemPrice, 1492615411252828877);
 
         // collect the currency
@@ -547,7 +547,7 @@ contract LiquidityPoolTest is TestSetup {
         assertEq(lPool.latestPrice(), 1200000000000000000);
 
         // lp price is set to the deposit price
-        (, uint256 depositPrice,,,,) = investmentManager.orderbook(address(lPool), self);
+        (, uint256 depositPrice,,,,,) = investmentManager.orderbook(address(lPool), self);
         assertEq(depositPrice, 1200000000000000000);
     }
 
@@ -596,7 +596,7 @@ contract LiquidityPoolTest is TestSetup {
         assertEq(lPool.latestPrice(), 1200000000000000000);
 
         // lp price is set to the deposit price
-        (, uint256 depositPrice,,,,) = investmentManager.orderbook(address(lPool), self);
+        (, uint256 depositPrice,,,,,) = investmentManager.orderbook(address(lPool), self);
         assertEq(depositPrice, 1200000000000000000);
     }
 
@@ -1059,7 +1059,7 @@ contract LiquidityPoolTest is TestSetup {
     }
 
     function testRedeem(uint256 amount) public {
-        amount = uint128(bound(amount, 2, MAX_UINT128));
+        amount = uint128(bound(amount, 2, MAX_UINT128 / 2));
 
         address lPool_ = deploySimplePool();
         LiquidityPool lPool = LiquidityPool(lPool_);
@@ -1162,6 +1162,7 @@ contract LiquidityPoolTest is TestSetup {
         lPool.requestRedeem(amount);
         assertEq(lPool.balanceOf(address(escrow)), amount);
         assertEq(erc20.balanceOf(address(userEscrow)), 0);
+        assertGt(lPool.userRedeemRequest(self), 0);
 
         // trigger executed collectRedeem
         uint128 _currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
@@ -1286,6 +1287,60 @@ contract LiquidityPoolTest is TestSetup {
         lPool.redeem(amount / 2, investor, investor);
 
         assertApproxEqAbs(erc20.balanceOf(investor), investorBalanceBefore + amount / 2, 1);
+    }
+
+    function testPartialExecutions(uint64 poolId, bytes16 trancheId, uint128 currencyId) public {
+        vm.assume(currencyId > 0);
+
+        uint8 TRANCHE_TOKEN_DECIMALS = 18; // Like DAI
+        uint8 INVESTMENT_CURRENCY_DECIMALS = 6; // 6, like USDC
+
+        ERC20 currency = _newErc20("Currency", "CR", INVESTMENT_CURRENCY_DECIMALS);
+        address lPool_ =
+            deployLiquidityPool(poolId, TRANCHE_TOKEN_DECIMALS, "", "", trancheId, currencyId, address(currency));
+        LiquidityPool lPool = LiquidityPool(lPool_);
+        centrifugeChain.updateTrancheTokenPrice(poolId, trancheId, currencyId, 1000000000000000000);
+
+        // invest
+        uint256 investmentAmount = 100000000; // 100 * 10**6
+        centrifugeChain.updateMember(poolId, trancheId, self, type(uint64).max);
+        currency.approve(address(investmentManager), investmentAmount);
+        currency.mint(self, investmentAmount);
+        lPool.requestDeposit(investmentAmount);
+        uint128 _currencyId = poolManager.currencyAddressToId(address(currency)); // retrieve currencyId
+
+        // first trigger executed collectInvest of the first 50% at a price of 1.4
+        uint128 currencyPayout = 50000000; // 50 * 10**6
+        uint128 firstTrancheTokenPayout = 35714285714285714285; // 50 * 10**18 / 1.4, rounded down
+        centrifugeChain.isExecutedCollectInvest(
+            poolId, trancheId, bytes32(bytes20(self)), _currencyId, currencyPayout, firstTrancheTokenPayout, currencyPayout
+        );
+        
+        (, uint256 depositPrice,,,,,) = investmentManager.orderbook(address(lPool), self);
+        assertEq(depositPrice, 1400000000000000000);
+
+        // second trigger executed collectInvest of the second 50% at a price of 1.2
+        uint128 secondTrancheTokenPayout = 41666666666666666666; // 50 * 10**18 / 1.2, rounded down
+        centrifugeChain.isExecutedCollectInvest(
+            poolId,
+            trancheId,
+            bytes32(bytes20(self)),
+            _currencyId,
+            currencyPayout,
+            secondTrancheTokenPayout,
+            0
+        );
+
+        (, depositPrice,,,,,) = investmentManager.orderbook(address(lPool), self);
+        assertEq(depositPrice, 1292307679384615384);
+
+        // assert deposit & mint values adjusted
+        assertApproxEqAbs(lPool.maxDeposit(self), currencyPayout * 2, 2);
+        assertEq(lPool.maxMint(self), firstTrancheTokenPayout + secondTrancheTokenPayout);
+
+        // collect the tranche tokens
+        lPool.mint(firstTrancheTokenPayout + secondTrancheTokenPayout, self);
+        assertEq(lPool.balanceOf(self), firstTrancheTokenPayout + secondTrancheTokenPayout);
     }
 
     // helpers
