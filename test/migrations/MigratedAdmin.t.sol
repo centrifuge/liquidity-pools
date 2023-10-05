@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {MigratedDelayedAdmin, DelayedAdmin, PauseAdmin} from "./migrationContracts/MigratedAdmin.sol";
+import {MigratedDelayedAdmin, MigratedPauseAdmin, DelayedAdmin, PauseAdmin} from "./migrationContracts/MigratedAdmin.sol";
 import {InvestRedeemFlow} from "./InvestRedeemFlow.t.sol";
 
 contract MigratedAdmin is InvestRedeemFlow {
@@ -16,7 +16,7 @@ contract MigratedAdmin is InvestRedeemFlow {
         root.executeScheduledRely(address(this));
 
         // Deploy new PauseAdmin
-        PauseAdmin newPauseAdmin = new PauseAdmin(address(root));
+        MigratedPauseAdmin newPauseAdmin = new MigratedPauseAdmin(address(root));
 
         // Deploy new DelayedAdmin
         MigratedDelayedAdmin newDelayedAdmin = new MigratedDelayedAdmin(address(root), address(newPauseAdmin));
