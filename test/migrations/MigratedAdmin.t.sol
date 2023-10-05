@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {MigratedDelayedAdmin, MigratedPauseAdmin, DelayedAdmin, PauseAdmin} from "./migrationContracts/MigratedAdmin.sol";
+import {
+    MigratedDelayedAdmin, MigratedPauseAdmin, DelayedAdmin, PauseAdmin
+} from "./migrationContracts/MigratedAdmin.sol";
 import {InvestRedeemFlow} from "./InvestRedeemFlow.t.sol";
 
 contract MigratedAdmin is InvestRedeemFlow {
@@ -39,7 +41,12 @@ contract MigratedAdmin is InvestRedeemFlow {
         // TODO: test admin functionality still works
     }
 
-    function verifyMigratedDelayedAdminPermissions(DelayedAdmin oldDelayedAdmin, DelayedAdmin newDelayedAdmin, PauseAdmin oldPauseAdmin, PauseAdmin newPauseAdmin) public {
+    function verifyMigratedDelayedAdminPermissions(
+        DelayedAdmin oldDelayedAdmin,
+        DelayedAdmin newDelayedAdmin,
+        PauseAdmin oldPauseAdmin,
+        PauseAdmin newPauseAdmin
+    ) public {
         assertTrue(address(oldDelayedAdmin) != address(newDelayedAdmin));
         assertTrue(address(oldPauseAdmin) != address(newPauseAdmin));
         assertEq(address(newDelayedAdmin.pauseAdmin()), address(newPauseAdmin));
