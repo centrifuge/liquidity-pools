@@ -277,38 +277,6 @@ contract InvestmentManager is Auth {
         );
     }
 
-    /// @notice Trigger collecting the deposited funds.
-    /// @dev    In normal circumstances, this should happen automatically on Centrifuge Chain.
-    ///         This function is only included as a fallback.
-    function collectDeposit(address liquidityPool, address receiver) public {
-        LiquidityPoolLike _liquidityPool = LiquidityPoolLike(liquidityPool);
-        uint256 approximateMaxTrancheTokensPayout =
-            convertToShares(liquidityPool, userDepositRequest(liquidityPool, receiver));
-        require(
-            _checkTransferRestriction(liquidityPool, address(escrow), receiver, approximateMaxTrancheTokensPayout),
-            "InvestmentManager/transfer-not-allowed"
-        );
-        gateway.collectInvest(
-            _liquidityPool.poolId(),
-            _liquidityPool.trancheId(),
-            receiver,
-            poolManager.currencyAddressToId(_liquidityPool.asset())
-        );
-    }
-
-    /// @notice Trigger collecting the deposited tokens.
-    /// @dev    In normal circumstances, this should happen automatically on Centrifuge Chain.
-    ///         This function is only included as a fallback.
-    function collectRedeem(address liquidityPool, address receiver) public {
-        LiquidityPoolLike _liquidityPool = LiquidityPoolLike(liquidityPool);
-        gateway.collectRedeem(
-            _liquidityPool.poolId(),
-            _liquidityPool.trancheId(),
-            receiver,
-            poolManager.currencyAddressToId(_liquidityPool.asset())
-        );
-    }
-
     // --- Incoming message handling ---
     /// @notice Update the price of a tranche token
     /// @dev    This also happens automatically on incoming order executions,
@@ -320,8 +288,6 @@ contract InvestmentManager is Auth {
     {
         address currency = poolManager.currencyIdToAddress(currencyId);
         address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, currency);
-        require(liquidityPool != address(0), "InvestmentManager/tranche-does-not-exist");
-
         LiquidityPoolLike(liquidityPool).updatePrice(price);
     }
 
@@ -334,10 +300,8 @@ contract InvestmentManager is Auth {
         uint128 trancheTokensPayout,
         uint128 remainingInvestOrder
     ) public onlyGateway {
-        require(currencyPayout != 0, "InvestmentManager/zero-invest");
-        address _currency = poolManager.currencyIdToAddress(currency);
-        address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, _currency);
-        require(liquidityPool != address(0), "InvestmentManager/tranche-does-not-exist");
+        address liquidityPool =
+            poolManager.getLiquidityPool(poolId, trancheId, poolManager.currencyIdToAddress(currency));
 
         LPValues storage lpValues = orderbook[liquidityPool][recipient];
         lpValues.depositPrice = _calculateNewDepositPrice(
@@ -367,10 +331,9 @@ contract InvestmentManager is Auth {
         uint128 trancheTokensPayout,
         uint128 remainingRedeemOrder
     ) public onlyGateway {
-        require(trancheTokensPayout != 0, "InvestmentManager/zero-redeem");
         address _currency = poolManager.currencyIdToAddress(currency);
-        address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, _currency);
-        require(liquidityPool != address(0), "InvestmentManager/tranche-does-not-exist");
+        address liquidityPool =
+            poolManager.getLiquidityPool(poolId, trancheId, _currency);
 
         LPValues storage lpValues = orderbook[liquidityPool][recipient];
         require(lpValues.exists == true, "InvestmentManager/non-existent-recipient");
@@ -407,12 +370,9 @@ contract InvestmentManager is Auth {
         uint128 currencyPayout,
         uint128 remainingInvestOrder
     ) public onlyGateway {
-        require(currencyPayout != 0, "InvestmentManager/zero-payout");
-
         address _currency = poolManager.currencyIdToAddress(currency);
-        address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, _currency);
-        require(liquidityPool != address(0), "InvestmentManager/tranche-does-not-exist");
-        require(_currency == LiquidityPoolLike(liquidityPool).asset(), "InvestmentManager/not-tranche-currency");
+        address liquidityPool =
+            poolManager.getLiquidityPool(poolId, trancheId, _currency);
 
         LPValues storage lpValues = orderbook[liquidityPool][user];
         require(lpValues.exists == true, "InvestmentManager/non-existent-recipient");
@@ -443,11 +403,8 @@ contract InvestmentManager is Auth {
         uint128 trancheTokensPayout,
         uint128 remainingRedeemOrder
     ) public onlyGateway {
-        require(trancheTokensPayout != 0, "InvestmentManager/zero-payout");
-
-        address _currency = poolManager.currencyIdToAddress(currency);
-        address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, _currency);
-        require(address(liquidityPool) != address(0), "InvestmentManager/tranche-does-not-exist");
+        address liquidityPool =
+            poolManager.getLiquidityPool(poolId, trancheId, poolManager.currencyIdToAddress(currency));
 
         // Calculating the price with both payouts as trancheTokensPayout
         // leads to an effective redeem price of 1.0 and thus the user actually receiving
@@ -496,14 +453,12 @@ contract InvestmentManager is Auth {
     ///      The calculation is based on the tranche token price from the most recent epoch retrieved from Centrifuge.
     function convertToShares(address liquidityPool, uint256 _assets) public view returns (uint256 shares) {
         uint128 latestPrice = LiquidityPoolLike(liquidityPool).latestPrice();
+        uint128 assets = _toUint128(_assets);
         if (latestPrice == 0) {
-            // If the price is not set, we assume it is 1.00
-            latestPrice = uint128(1 * 10 ** PRICE_DECIMALS);
+            return 0;
         }
 
         (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getPoolDecimals(liquidityPool);
-        uint128 assets = _toUint128(_assets);
-
         shares = assets.mulDiv(
             10 ** (PRICE_DECIMALS + trancheTokenDecimals - currencyDecimals), latestPrice, MathLib.Rounding.Down
         );
@@ -513,14 +468,12 @@ contract InvestmentManager is Auth {
     ///      The calculation is based on the tranche token price from the most recent epoch retrieved from Centrifuge.
     function convertToAssets(address liquidityPool, uint256 _shares) public view returns (uint256 assets) {
         uint128 latestPrice = LiquidityPoolLike(liquidityPool).latestPrice();
+        uint128 shares = _toUint128(_shares);
         if (latestPrice == 0) {
-            // If the price is not set, we assume it is 1.00
-            latestPrice = uint128(1 * 10 ** PRICE_DECIMALS);
+            return 0;
         }
 
         (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getPoolDecimals(liquidityPool);
-        uint128 shares = _toUint128(_shares);
-
         assets = shares.mulDiv(
             latestPrice, 10 ** (PRICE_DECIMALS + trancheTokenDecimals - currencyDecimals), MathLib.Rounding.Down
         );
