@@ -14,6 +14,8 @@ interface ERC20PermitLike {
 }
 
 interface TrancheTokenLike is IERC20, ERC20PermitLike {
+    function restrictionManager() external view returns (address);
+    function file(bytes32 what, address data) external;
     function mint(address user, uint256 value) external;
     function burn(address user, uint256 value) external;
 }

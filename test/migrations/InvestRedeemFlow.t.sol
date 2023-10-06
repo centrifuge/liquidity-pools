@@ -5,11 +5,6 @@ import "../TestSetup.t.sol";
 import {LiquidityPool} from "src/LiquidityPool.sol";
 import {MathLib} from "src/util/MathLib.sol";
 
-interface AuthLike {
-    function rely(address) external;
-    function deny(address) external;
-}
-
 contract InvestRedeemFlow is TestSetup {
     using MathLib for uint128;
 

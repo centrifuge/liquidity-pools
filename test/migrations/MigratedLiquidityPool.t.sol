@@ -1,17 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {MigratedInvestmentManager, InvestmentManager} from "./migrationContracts/MigratedInvestmentManager.sol";
-import {MigratedPoolManager, PoolManager} from "./migrationContracts/MigratedPoolManager.sol";
-import {MigratedGateway, Gateway} from "./migrationContracts/MigratedGateway.sol";
 import {MigratedLiquidityPool, LiquidityPool} from "./migrationContracts/MigratedLiquidityPool.sol";
-import {LiquidityPoolFactory, TrancheTokenFactory} from "src/util/Factory.sol";
 import {InvestRedeemFlow} from "./InvestRedeemFlow.t.sol";
-
-interface AuthLike {
-    function rely(address) external;
-    function deny(address) external;
-}
 
 contract MigrationsTest is InvestRedeemFlow {
     function setUp() public override {

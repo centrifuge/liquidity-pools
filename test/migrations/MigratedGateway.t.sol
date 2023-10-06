@@ -4,11 +4,6 @@ pragma solidity 0.8.21;
 import {MigratedGateway, Gateway} from "./migrationContracts/MigratedGateway.sol";
 import {InvestRedeemFlow} from "./InvestRedeemFlow.t.sol";
 
-interface AuthLike {
-    function rely(address) external;
-    function deny(address) external;
-}
-
 contract MigratedGatewayTest is InvestRedeemFlow {
     function setUp() public override {
         super.setUp();
