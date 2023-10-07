@@ -84,7 +84,7 @@ contract LiquidityPool is Auth, IERC4626 {
     InvestmentManagerLike public investmentManager;
 
     /// @notice Tranche token price, denominated in the asset
-    uint128 public latestPrice;
+    uint256 public latestPrice;
 
     /// @notice Timestamp of the last price update
     uint256 public lastPriceUpdate;
@@ -97,7 +97,7 @@ contract LiquidityPool is Auth, IERC4626 {
     event DecreaseRedeemRequest(address indexed owner, uint256 shares);
     event CancelDepositRequest(address indexed owner);
     event CancelRedeemRequest(address indexed owner);
-    event PriceUpdate(uint128 price);
+    event PriceUpdate(uint256 price);
 
     constructor(uint64 poolId_, bytes16 trancheId_, address asset_, address share_, address investmentManager_) {
         poolId = poolId_;
@@ -332,7 +332,7 @@ contract LiquidityPool is Auth, IERC4626 {
     }
 
     // --- Pricing ---
-    function updatePrice(uint128 price) public auth {
+    function updatePrice(uint256 price) public auth {
         latestPrice = price;
         lastPriceUpdate = block.timestamp;
         emit PriceUpdate(price);
