@@ -436,26 +436,16 @@ contract InvestmentManager is Auth {
     }
 
     // --- View functions ---
-    function totalAssets(address liquidityPool, uint256 totalSupply) public view returns (uint256 _totalAssets) {
-        _totalAssets = convertToAssets(liquidityPool, totalSupply);
-    }
-
-    /// @dev Calculates the amount of shares / tranche tokens that any user would get
-    ///      for the amount of currency / assets provided.
-    ///      The calculation is based on the tranche token price from the most recent epoch retrieved from Centrifuge.
     function convertToShares(address liquidityPool, uint256 _assets) public view returns (uint256 shares) {
         uint128 latestPrice = LiquidityPoolLike(liquidityPool).latestPrice();
         shares = uint256(_calculateTrancheTokenAmount(_toUint128(_assets), liquidityPool, latestPrice));
     }
 
-    /// @dev Calculates the asset value for an amount of shares / tranche tokens provided.
-    ///      The calculation is based on the tranche token price from the most recent epoch retrieved from Centrifuge.
     function convertToAssets(address liquidityPool, uint256 _shares) public view returns (uint256 assets) {
         uint128 latestPrice = LiquidityPoolLike(liquidityPool).latestPrice();
         assets = uint256(_calculateCurrencyAmount(_toUint128(_shares), liquidityPool, latestPrice));
     }
 
-    /// @return currencyAmount is type of uint256 to support the EIP4626 Liquidity Pool interface
     function maxDeposit(address liquidityPool, address user) public view returns (uint256) {
         if (!_checkTransferRestriction(liquidityPool, address(escrow), user, 0)) return 0;
         return uint256(_maxDeposit(liquidityPool, user));
@@ -467,25 +457,21 @@ contract InvestmentManager is Auth {
         return _calculateCurrencyAmount(lpValues.maxMint, liquidityPool, lpValues.depositPrice);
     }
 
-    /// @return trancheTokenAmount type of uint256 to support the EIP4626 Liquidity Pool interface
     function maxMint(address liquidityPool, address user) public view returns (uint256 trancheTokenAmount) {
         if (!_checkTransferRestriction(liquidityPool, address(escrow), user, 0)) return 0;
         return uint256(orderbook[liquidityPool][user].maxMint);
     }
 
-    /// @return currencyAmount type of uint256 to support the EIP4626 Liquidity Pool interface
     function maxWithdraw(address liquidityPool, address user) public view returns (uint256 currencyAmount) {
         return uint256(orderbook[liquidityPool][user].maxWithdraw);
     }
 
-    /// @return trancheTokenAmount type of uint256 to support the EIP4626 Liquidity Pool interface
     function maxRedeem(address liquidityPool, address user) public view returns (uint256 trancheTokenAmount) {
         LPValues memory lpValues = orderbook[liquidityPool][user];
         if (lpValues.maxWithdraw == 0 || lpValues.redeemPrice == 0) return 0;
         return uint256(_calculateTrancheTokenAmount(lpValues.maxWithdraw, liquidityPool, lpValues.redeemPrice));
     }
 
-    /// @return trancheTokenAmount is type of uint256 to support the EIP4626 Liquidity Pool interface
     function previewDeposit(address liquidityPool, address user, uint256 _currencyAmount)
         public
         view
@@ -498,7 +484,6 @@ contract InvestmentManager is Auth {
         trancheTokenAmount = uint256(_calculateTrancheTokenAmount(currencyAmount, liquidityPool, lpValues.depositPrice));
     }
 
-    /// @return currencyAmount is type of uint256 to support the EIP4626 Liquidity Pool interface
     function previewMint(address liquidityPool, address user, uint256 _trancheTokenAmount)
         public
         view
@@ -511,7 +496,6 @@ contract InvestmentManager is Auth {
         currencyAmount = uint256(_calculateCurrencyAmount(trancheTokenAmount, liquidityPool, lpValues.depositPrice));
     }
 
-    /// @return trancheTokenAmount is type of uint256 to support the EIP4626 Liquidity Pool interface
     function previewWithdraw(address liquidityPool, address user, uint256 _currencyAmount)
         public
         view
@@ -524,7 +508,6 @@ contract InvestmentManager is Auth {
         trancheTokenAmount = uint256(_calculateTrancheTokenAmount(currencyAmount, liquidityPool, lpValues.redeemPrice));
     }
 
-    /// @return currencyAmount is type of uint256 to support the EIP4626 Liquidity Pool interface
     function previewRedeem(address liquidityPool, address user, uint256 _trancheTokenAmount)
         public
         view

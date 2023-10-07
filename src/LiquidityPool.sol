@@ -35,7 +35,6 @@ interface InvestmentManagerLike {
     function maxMint(address liquidityPool, address user) external view returns (uint256);
     function maxWithdraw(address liquidityPool, address user) external view returns (uint256);
     function maxRedeem(address liquidityPool, address user) external view returns (uint256);
-    function totalAssets(address liquidityPool, uint256 totalSupply) external view returns (uint256);
     function convertToShares(address liquidityPool, uint256 assets) external view returns (uint256);
     function convertToAssets(address liquidityPool, uint256 shares) external view returns (uint256);
     function previewDeposit(address liquidityPool, address user, uint256 assets) external view returns (uint256);
@@ -126,7 +125,7 @@ contract LiquidityPool is Auth, IERC4626 {
     // --- ERC4626 functions ---
     /// @return Total value of the shares, denominated in the asset of this Liquidity Pool
     function totalAssets() public view returns (uint256) {
-        return investmentManager.totalAssets(address(this), totalSupply());
+        return convertToAssets(totalSupply());
     }
 
     /// @notice Calculates the amount of shares that any user would approximately get for the amount of assets provided.
