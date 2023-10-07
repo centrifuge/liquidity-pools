@@ -1077,7 +1077,7 @@ contract LiquidityPoolTest is TestSetup {
 
         // trigger executed collectRedeem
         uint128 _currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
-        uint128 currencyPayout = uint128(amount) / uint128(defaultPrice);
+        uint128 currencyPayout = uint128((amount * 10**18) / defaultPrice);
         centrifugeChain.isExecutedCollectRedeem(
             lPool.poolId(), lPool.trancheId(), bytes32(bytes20(self)), _currencyId, currencyPayout, uint128(amount), 0
         );
@@ -1147,7 +1147,7 @@ contract LiquidityPoolTest is TestSetup {
     }
 
     function testWithdraw(uint256 amount) public {
-        amount = uint128(bound(amount, 2, MAX_UINT128));
+        amount = uint128(bound(amount, 2, MAX_UINT128 / 2));
 
         address lPool_ = deploySimplePool();
         LiquidityPool lPool = LiquidityPool(lPool_);
@@ -1166,7 +1166,7 @@ contract LiquidityPoolTest is TestSetup {
 
         // trigger executed collectRedeem
         uint128 _currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
-        uint128 currencyPayout = uint128(amount) / defaultPrice;
+        uint128 currencyPayout = uint128((amount * 10**18) / defaultPrice);
         centrifugeChain.isExecutedCollectRedeem(
             lPool.poolId(), lPool.trancheId(), bytes32(bytes20(self)), _currencyId, currencyPayout, uint128(amount), 0
         );
@@ -1177,7 +1177,7 @@ contract LiquidityPoolTest is TestSetup {
         assertEq(lPool.balanceOf(address(escrow)), 0);
         assertEq(erc20.balanceOf(address(userEscrow)), currencyPayout);
 
-        lPool.withdraw(amount / 2, self, self); // withdraw half teh amount
+        lPool.withdraw(amount / 2, self, self); // withdraw half the amount
 
         // fail -> investor has no approval to receive funds
         vm.expectRevert(bytes("UserEscrow/receiver-has-no-allowance"));

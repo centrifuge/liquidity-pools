@@ -428,7 +428,6 @@ contract InvestmentManager is Auth {
         uint128 currency,
         uint128 trancheTokenAmount
     ) public onlyGateway {
-        address token = poolManager.getTrancheToken(poolId, trancheId);
         address _currency = poolManager.currencyIdToAddress(currency);
         address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, _currency);
         _increaseRedeemRequest(liquidityPool, trancheTokenAmount, user);
@@ -453,7 +452,6 @@ contract InvestmentManager is Auth {
 
     function _maxDeposit(address liquidityPool, address user) internal view returns (uint128) {
         LPValues memory lpValues = orderbook[liquidityPool][user];
-        if (lpValues.maxMint == 0 || lpValues.depositPrice == 0) return 0;
         return _calculateCurrencyAmount(lpValues.maxMint, liquidityPool, lpValues.depositPrice);
     }
 
@@ -468,7 +466,6 @@ contract InvestmentManager is Auth {
 
     function maxRedeem(address liquidityPool, address user) public view returns (uint256 trancheTokenAmount) {
         LPValues memory lpValues = orderbook[liquidityPool][user];
-        if (lpValues.maxWithdraw == 0 || lpValues.redeemPrice == 0) return 0;
         return uint256(_calculateTrancheTokenAmount(lpValues.maxWithdraw, liquidityPool, lpValues.redeemPrice));
     }
 
@@ -479,8 +476,6 @@ contract InvestmentManager is Auth {
     {
         uint128 currencyAmount = _toUint128(_currencyAmount);
         LPValues memory lpValues = orderbook[liquidityPool][user];
-        if (lpValues.depositPrice == 0) return 0;
-
         trancheTokenAmount = uint256(_calculateTrancheTokenAmount(currencyAmount, liquidityPool, lpValues.depositPrice));
     }
 
@@ -491,8 +486,6 @@ contract InvestmentManager is Auth {
     {
         uint128 trancheTokenAmount = _toUint128(_trancheTokenAmount);
         LPValues memory lpValues = orderbook[liquidityPool][user];
-        if (lpValues.depositPrice == 0) return 0;
-
         currencyAmount = uint256(_calculateCurrencyAmount(trancheTokenAmount, liquidityPool, lpValues.depositPrice));
     }
 
@@ -503,8 +496,6 @@ contract InvestmentManager is Auth {
     {
         uint128 currencyAmount = _toUint128(_currencyAmount);
         LPValues memory lpValues = orderbook[liquidityPool][user];
-        if (lpValues.redeemPrice == 0) return 0;
-
         trancheTokenAmount = uint256(_calculateTrancheTokenAmount(currencyAmount, liquidityPool, lpValues.redeemPrice));
     }
 
@@ -515,8 +506,6 @@ contract InvestmentManager is Auth {
     {
         uint128 trancheTokenAmount = _toUint128(_trancheTokenAmount);
         LPValues memory lpValues = orderbook[liquidityPool][user];
-        if (lpValues.redeemPrice == 0) return 0;
-
         currencyAmount = uint256(_calculateCurrencyAmount(trancheTokenAmount, liquidityPool, lpValues.redeemPrice));
     }
 
