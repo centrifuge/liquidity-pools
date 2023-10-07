@@ -165,10 +165,7 @@ contract InvestmentManager is Auth {
         require(_currencyAmount != 0, "InvestmentManager/zero-amount-not-allowed");
 
         uint64 poolId = lPool.poolId();
-        bytes16 trancheId = lPool.trancheId();
         address currency = lPool.asset();
-        uint128 currencyId = poolManager.currencyAddressToId(currency);
-
         require(poolManager.isAllowedAsInvestmentCurrency(poolId, currency), "InvestmentManager/currency-not-allowed");
         require(
             _checkTransferRestriction(liquidityPool, address(0), user, convertToShares(liquidityPool, currencyAmount)),
@@ -186,7 +183,9 @@ contract InvestmentManager is Auth {
         lpValues.remainingInvestOrder = lpValues.remainingInvestOrder + transferredAmount;
         lpValues.exists = true;
 
-        gateway.increaseInvestOrder(poolId, trancheId, user, currencyId, transferredAmount);
+        gateway.increaseInvestOrder(
+            poolId, lPool.trancheId(), user, poolManager.currencyAddressToId(currency), transferredAmount
+        );
     }
 
     /// @notice Request tranche token redemption. Liquidity pools have to request redemptions
@@ -197,29 +196,33 @@ contract InvestmentManager is Auth {
     /// @dev    The user tranche tokens required to fulfill the redemption request have to be locked,
     ///         even though the currency payout can only happen after epoch execution.
     function requestRedeem(address liquidityPool, uint256 trancheTokenAmount, address user) public auth {
-        LiquidityPoolLike lPool = LiquidityPoolLike(liquidityPool);
         uint128 _trancheTokenAmount = _toUint128(trancheTokenAmount);
         require(_trancheTokenAmount != 0, "InvestmentManager/zero-amount-not-allowed");
-
-        uint64 poolId = lPool.poolId();
-        bytes16 trancheId = lPool.trancheId();
-        address currency = lPool.asset();
-        uint128 currencyId = poolManager.currencyAddressToId(currency);
+        LiquidityPoolLike lPool = LiquidityPoolLike(liquidityPool);
 
         // You cannot redeem using a disallowed investment currency, instead another LP will have to be used
-        require(poolManager.isAllowedAsInvestmentCurrency(poolId, currency), "InvestmentManager/currency-not-allowed");
+        require(
+            poolManager.isAllowedAsInvestmentCurrency(lPool.poolId(), lPool.asset()),
+            "InvestmentManager/currency-not-allowed"
+        );
 
+        _increaseRedeemRequest(liquidityPool, _trancheTokenAmount, user);
+    }
+
+    function _increaseRedeemRequest(address liquidityPool, uint128 trancheTokenAmount, address user) internal {
+        LiquidityPoolLike lPool = LiquidityPoolLike(liquidityPool);
         LPValues storage lpValues = orderbook[liquidityPool][user];
-        lpValues.remainingRedeemOrder = lpValues.remainingRedeemOrder + _trancheTokenAmount;
-        lpValues.exists = true;
+        lpValues.remainingRedeemOrder = lpValues.remainingRedeemOrder + trancheTokenAmount;
 
         // Transfer the tranche token amount from user to escrow (lock tranche tokens in escrow)
         require(
-            AuthTransferLike(address(lPool.share())).authTransferFrom(user, address(escrow), _trancheTokenAmount),
+            AuthTransferLike(address(lPool.share())).authTransferFrom(user, address(escrow), trancheTokenAmount),
             "InvestmentManager/transfer-failed"
         );
 
-        gateway.increaseRedeemOrder(poolId, trancheId, user, currencyId, _trancheTokenAmount);
+        gateway.increaseRedeemOrder(
+            lPool.poolId(), lPool.trancheId(), user, poolManager.currencyAddressToId(lPool.asset()), trancheTokenAmount
+        );
     }
 
     function decreaseDepositRequest(address liquidityPool, uint256 _currencyAmount, address user) public auth {
@@ -428,17 +431,7 @@ contract InvestmentManager is Auth {
         address token = poolManager.getTrancheToken(poolId, trancheId);
         address _currency = poolManager.currencyIdToAddress(currency);
         address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, _currency);
-
-        LPValues storage lpValues = orderbook[liquidityPool][user];
-        lpValues.remainingRedeemOrder = lpValues.remainingRedeemOrder + trancheTokenAmount;
-
-        // Transfer the tranche token amount from user to escrow (lock tranche tokens in escrow)
-        require(
-            AuthTransferLike(token).authTransferFrom(user, address(escrow), trancheTokenAmount),
-            "InvestmentManager/transfer-failed"
-        );
-
-        gateway.increaseRedeemOrder(poolId, trancheId, user, currency, trancheTokenAmount);
+        _increaseRedeemRequest(liquidityPool, trancheTokenAmount, user);
         emit TriggerIncreaseRedeemOrder(poolId, trancheId, user, currency, trancheTokenAmount);
     }
 
@@ -730,18 +723,18 @@ contract InvestmentManager is Auth {
         view
         returns (uint256 price)
     {
+        if (trancheTokenAmount == 0) {
+            return 0;
+        }
+
         (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getPoolDecimals(liquidityPool);
 
         uint256 currencyAmountInPriceDecimals = _toPriceDecimals(currencyAmount, currencyDecimals);
         uint256 trancheTokenAmountInPriceDecimals = _toPriceDecimals(trancheTokenAmount, trancheTokenDecimals);
 
-        if (trancheTokenAmountInPriceDecimals == 0) {
-            price = 0;
-        } else {
-            price = currencyAmountInPriceDecimals.mulDiv(
-                10 ** PRICE_DECIMALS, trancheTokenAmountInPriceDecimals, MathLib.Rounding.Down
-            );
-        }
+        price = currencyAmountInPriceDecimals.mulDiv(
+            10 ** PRICE_DECIMALS, trancheTokenAmountInPriceDecimals, MathLib.Rounding.Down
+        );
     }
 
     /// @dev    Safe type conversion from uint256 to uint128. Revert if value is too big to be stored
