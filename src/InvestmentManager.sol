@@ -445,30 +445,14 @@ contract InvestmentManager is Auth {
     ///      The calculation is based on the tranche token price from the most recent epoch retrieved from Centrifuge.
     function convertToShares(address liquidityPool, uint256 _assets) public view returns (uint256 shares) {
         uint128 latestPrice = LiquidityPoolLike(liquidityPool).latestPrice();
-        uint128 assets = _toUint128(_assets);
-        if (latestPrice == 0) {
-            return 0;
-        }
-
-        (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getPoolDecimals(liquidityPool);
-        shares = assets.mulDiv(
-            10 ** (PRICE_DECIMALS + trancheTokenDecimals - currencyDecimals), latestPrice, MathLib.Rounding.Down
-        );
+        shares = uint256(_calculateTrancheTokenAmount(_toUint128(_assets), liquidityPool, latestPrice));
     }
 
     /// @dev Calculates the asset value for an amount of shares / tranche tokens provided.
     ///      The calculation is based on the tranche token price from the most recent epoch retrieved from Centrifuge.
     function convertToAssets(address liquidityPool, uint256 _shares) public view returns (uint256 assets) {
         uint128 latestPrice = LiquidityPoolLike(liquidityPool).latestPrice();
-        uint128 shares = _toUint128(_shares);
-        if (latestPrice == 0) {
-            return 0;
-        }
-
-        (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getPoolDecimals(liquidityPool);
-        assets = shares.mulDiv(
-            latestPrice, 10 ** (PRICE_DECIMALS + trancheTokenDecimals - currencyDecimals), MathLib.Rounding.Down
-        );
+        assets = uint256(_calculateCurrencyAmount(_toUint128(_shares), liquidityPool, latestPrice));
     }
 
     /// @return currencyAmount is type of uint256 to support the EIP4626 Liquidity Pool interface
@@ -613,11 +597,7 @@ contract InvestmentManager is Auth {
     {
         LiquidityPoolLike lPool = LiquidityPoolLike(liquidityPool);
         require(trancheTokenAmount <= lpValues.maxMint, "InvestmentManager/exceeds-deposit-limits");
-
-        // Decrease the deposit limits
         lpValues.maxMint = lpValues.maxMint - trancheTokenAmount;
-
-        // Transfer the tranche tokens to the user
         require(
             lPool.transferFrom(address(escrow), receiver, trancheTokenAmount),
             "InvestmentManager/tranche-tokens-transfer-failed"
@@ -675,8 +655,6 @@ contract InvestmentManager is Auth {
     ) internal {
         LiquidityPoolLike lPool = LiquidityPoolLike(liquidityPool);
         require(currencyAmount <= lpValues.maxWithdraw, "InvestmentManager/exceeds-redeem-limits");
-
-        // Decrease maxWithdraw
         lpValues.maxWithdraw = lpValues.maxWithdraw - currencyAmount;
         userEscrow.transferOut(lPool.asset(), owner, receiver, currencyAmount);
     }
