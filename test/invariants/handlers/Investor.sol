@@ -101,7 +101,7 @@ contract InvestorHandler is Test {
             bound(
                 amount,
                 0,
-                MathLib.min(
+                _min(
                     // Don't allow total outstanding redeem requests > type(uint128).max
                     uint128(type(uint128).max - totalRedeemRequested + totalTrancheTokensPaidOutOnRedeem),
                     // Cannot redeem more than current balance of TT
@@ -196,5 +196,10 @@ contract InvestorHandler is Test {
 
         totalTrancheTokensPaidOutOnRedeem += trancheTokenPayout;
         totalCurrencyPaidOutOnRedeem += currencyPayout;
+    }
+
+    /// @notice Returns the smallest of two numbers.
+    function _min(uint256 a, uint256 b) internal pure returns (uint256) {
+        return a > b ? b : a;
     }
 }

@@ -54,46 +54,46 @@ contract LiquidityPoolTest is TestSetup {
         address lPool_ = deploySimplePool();
         LiquidityPool lPool = LiquidityPool(lPool_);
 
-        vm.expectRevert(bytes("InvestmentManager/uint128-overflow"));
+        vm.expectRevert(bytes("MathLib/uint128-overflow"));
         lPool.convertToShares(amount);
 
-        vm.expectRevert(bytes("InvestmentManager/uint128-overflow"));
+        vm.expectRevert(bytes("MathLib/uint128-overflow"));
         lPool.convertToAssets(amount);
 
-        vm.expectRevert(bytes("InvestmentManager/uint128-overflow"));
+        vm.expectRevert(bytes("MathLib/uint128-overflow"));
         lPool.previewDeposit(amount);
 
-        vm.expectRevert(bytes("InvestmentManager/uint128-overflow"));
+        vm.expectRevert(bytes("MathLib/uint128-overflow"));
         lPool.previewRedeem(amount);
 
-        vm.expectRevert(bytes("InvestmentManager/uint128-overflow"));
+        vm.expectRevert(bytes("MathLib/uint128-overflow"));
         lPool.previewMint(amount);
 
-        vm.expectRevert(bytes("InvestmentManager/uint128-overflow"));
+        vm.expectRevert(bytes("MathLib/uint128-overflow"));
         lPool.previewWithdraw(amount);
 
-        vm.expectRevert(bytes("InvestmentManager/uint128-overflow"));
+        vm.expectRevert(bytes("MathLib/uint128-overflow"));
         lPool.deposit(amount, random_);
 
-        vm.expectRevert(bytes("InvestmentManager/uint128-overflow"));
+        vm.expectRevert(bytes("MathLib/uint128-overflow"));
         lPool.mint(amount, random_);
 
-        vm.expectRevert(bytes("InvestmentManager/uint128-overflow"));
+        vm.expectRevert(bytes("MathLib/uint128-overflow"));
         lPool.withdraw(amount, random_, self);
 
-        vm.expectRevert(bytes("InvestmentManager/uint128-overflow"));
+        vm.expectRevert(bytes("MathLib/uint128-overflow"));
         lPool.redeem(amount, random_, self);
 
-        vm.expectRevert(bytes("InvestmentManager/uint128-overflow"));
+        vm.expectRevert(bytes("MathLib/uint128-overflow"));
         lPool.requestDeposit(amount);
 
-        vm.expectRevert(bytes("InvestmentManager/uint128-overflow"));
+        vm.expectRevert(bytes("MathLib/uint128-overflow"));
         lPool.requestRedeem(amount);
 
-        vm.expectRevert(bytes("InvestmentManager/uint128-overflow"));
+        vm.expectRevert(bytes("MathLib/uint128-overflow"));
         lPool.decreaseDepositRequest(amount);
 
-        vm.expectRevert(bytes("InvestmentManager/uint128-overflow"));
+        vm.expectRevert(bytes("MathLib/uint128-overflow"));
         lPool.decreaseRedeemRequest(amount);
     }
 

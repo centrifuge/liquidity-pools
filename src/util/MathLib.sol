@@ -109,15 +109,12 @@ library MathLib {
         return result;
     }
 
-    /// @notice Returns the largest of two numbers.
-    function max(uint256 a, uint256 b) internal pure returns (uint256) {
-        return a > b ? a : b;
-    }
-
-    /**
-     * @dev Returns the smallest of two numbers.
-     */
-    function min(uint256 a, uint256 b) internal pure returns (uint256) {
-        return a > b ? b : a;
+    /// @notice Safe type conversion from uint256 to uint128.
+    function toUint128(uint256 _value) internal pure returns (uint128 value) {
+        if (_value > type(uint128).max) {
+            revert("MathLib/uint128-overflow");
+        } else {
+            value = uint128(_value);
+        }
     }
 }
