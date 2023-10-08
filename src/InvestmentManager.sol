@@ -521,7 +521,7 @@ contract InvestmentManager is Auth {
     /// @notice Processes owner's currency deposit / investment after the epoch has been executed on Centrifuge.
     ///         The currency required to fulfill the invest order is already locked in escrow upon calling
     /// requestDeposit.
-    function depost(address liquidityPool, uint256 currencyAmount, address receiver, address owner)
+    function deposit(address liquidityPool, uint256 currencyAmount, address receiver, address owner)
         public
         auth
         returns (uint256 trancheTokenAmount)
