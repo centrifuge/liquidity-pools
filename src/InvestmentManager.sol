@@ -6,18 +6,16 @@ import {MathLib} from "./util/MathLib.sol";
 import {SafeTransferLib} from "./util/SafeTransferLib.sol";
 
 interface GatewayLike {
-    function increaseInvestOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount)
+    function increaseInvestOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currencyId, uint128 amount)
         external;
-    function decreaseInvestOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount)
+    function decreaseInvestOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currencyId, uint128 amount)
         external;
-    function increaseRedeemOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount)
+    function increaseRedeemOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currencyId, uint128 amount)
         external;
-    function decreaseRedeemOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount)
+    function decreaseRedeemOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currencyId, uint128 amount)
         external;
-    function collectInvest(uint64 poolId, bytes16 trancheId, address investor, uint128 currency) external;
-    function collectRedeem(uint64 poolId, bytes16 trancheId, address investor, uint128 currency) external;
-    function cancelInvestOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency) external;
-    function cancelRedeemOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency) external;
+    function cancelInvestOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currencyId) external;
+    function cancelRedeemOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currencyId) external;
 }
 
 interface ERC20Like {
@@ -104,26 +102,26 @@ contract InvestmentManager is Auth {
         uint64 indexed poolId,
         bytes16 indexed trancheId,
         address user,
-        uint128 currency,
+        uint128 currencyId,
         uint128 currencyPayout,
-        uint128 trancheTokensPayout
+        uint128 trancheTokenPayout
     );
     event ExecutedCollectRedeem(
         uint64 indexed poolId,
         bytes16 indexed trancheId,
         address user,
-        uint128 currency,
+        uint128 currencyId,
         uint128 currencyPayout,
-        uint128 trancheTokensPayout
+        uint128 trancheTokenPayout
     );
     event ExecutedDecreaseInvestOrder(
-        uint64 indexed poolId, bytes16 indexed trancheId, address user, uint128 currency, uint128 currencyPayout
+        uint64 indexed poolId, bytes16 indexed trancheId, address user, uint128 currencyId, uint128 currencyPayout
     );
     event ExecutedDecreaseRedeemOrder(
-        uint64 indexed poolId, bytes16 indexed trancheId, address user, uint128 currency, uint128 trancheTokensPayout
+        uint64 indexed poolId, bytes16 indexed trancheId, address user, uint128 currencyId, uint128 trancheTokenPayout
     );
     event TriggerIncreaseRedeemOrder(
-        uint64 indexed poolId, bytes16 indexed trancheId, address user, uint128 currency, uint128 trancheTokenAmount
+        uint64 indexed poolId, bytes16 indexed trancheId, address user, uint128 currencyId, uint128 trancheTokenAmount
     );
 
     constructor(address escrow_, address userEscrow_) {
@@ -290,41 +288,39 @@ contract InvestmentManager is Auth {
         uint64 poolId,
         bytes16 trancheId,
         address user,
-        uint128 currency,
+        uint128 currencyId,
         uint128 currencyPayout,
-        uint128 trancheTokensPayout,
+        uint128 trancheTokenPayout,
         uint128 remainingInvestOrder
     ) public onlyGateway {
-        address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, currency);
+        address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, currencyId);
 
         LPValues storage lpValues = orderbook[liquidityPool][user];
         lpValues.depositPrice = _calculatePrice(
-            liquidityPool, _maxDeposit(liquidityPool, user) + currencyPayout, lpValues.maxMint + trancheTokensPayout
+            liquidityPool, _maxDeposit(liquidityPool, user) + currencyPayout, lpValues.maxMint + trancheTokenPayout
         );
-        lpValues.maxMint = lpValues.maxMint + trancheTokensPayout;
+        lpValues.maxMint = lpValues.maxMint + trancheTokenPayout;
         lpValues.remainingInvestOrder = remainingInvestOrder;
 
-        LiquidityPoolLike(liquidityPool).updatePrice(
-            _calculatePrice(liquidityPool, currencyPayout, trancheTokensPayout)
-        );
+        LiquidityPoolLike(liquidityPool).updatePrice(_calculatePrice(liquidityPool, currencyPayout, trancheTokenPayout));
 
         // Mint to escrow. Recipient can claim by calling withdraw / redeem
         ERC20Like trancheToken = ERC20Like(LiquidityPoolLike(liquidityPool).share());
-        trancheToken.mint(address(escrow), trancheTokensPayout);
+        trancheToken.mint(address(escrow), trancheTokenPayout);
 
-        emit ExecutedCollectInvest(poolId, trancheId, user, currency, currencyPayout, trancheTokensPayout);
+        emit ExecutedCollectInvest(poolId, trancheId, user, currencyId, currencyPayout, trancheTokenPayout);
     }
 
     function handleExecutedCollectRedeem(
         uint64 poolId,
         bytes16 trancheId,
         address user,
-        uint128 currency,
+        uint128 currencyId,
         uint128 currencyPayout,
-        uint128 trancheTokensPayout,
+        uint128 trancheTokenPayout,
         uint128 remainingRedeemOrder
     ) public onlyGateway {
-        address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, currency);
+        address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, currencyId);
 
         LPValues storage lpValues = orderbook[liquidityPool][user];
         require(lpValues.exists == true, "InvestmentManager/non-existent-user");
@@ -333,33 +329,31 @@ contract InvestmentManager is Auth {
         lpValues.redeemPrice = _calculatePrice(
             liquidityPool,
             lpValues.maxWithdraw + currencyPayout,
-            ((maxRedeem(liquidityPool, user)) + trancheTokensPayout).toUint128()
+            ((maxRedeem(liquidityPool, user)) + trancheTokenPayout).toUint128()
         );
         lpValues.maxWithdraw = lpValues.maxWithdraw + currencyPayout;
         lpValues.remainingRedeemOrder = remainingRedeemOrder;
 
-        LiquidityPoolLike(liquidityPool).updatePrice(
-            _calculatePrice(liquidityPool, currencyPayout, trancheTokensPayout)
-        );
+        LiquidityPoolLike(liquidityPool).updatePrice(_calculatePrice(liquidityPool, currencyPayout, trancheTokenPayout));
 
         // Transfer currency to user escrow to claim on withdraw/redeem,
         // and burn redeemed tranche tokens from escrow
-        userEscrow.transferIn(poolManager.currencyIdToAddress(currency), address(escrow), user, currencyPayout);
+        userEscrow.transferIn(poolManager.currencyIdToAddress(currencyId), address(escrow), user, currencyPayout);
         ERC20Like trancheToken = ERC20Like(LiquidityPoolLike(liquidityPool).share());
-        trancheToken.burn(address(escrow), trancheTokensPayout);
+        trancheToken.burn(address(escrow), trancheTokenPayout);
 
-        emit ExecutedCollectRedeem(poolId, trancheId, user, currency, currencyPayout, trancheTokensPayout);
+        emit ExecutedCollectRedeem(poolId, trancheId, user, currencyId, currencyPayout, trancheTokenPayout);
     }
 
     function handleExecutedDecreaseInvestOrder(
         uint64 poolId,
         bytes16 trancheId,
         address user,
-        uint128 currency,
+        uint128 currencyId,
         uint128 currencyPayout,
         uint128 remainingInvestOrder
     ) public onlyGateway {
-        address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, currency);
+        address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, currencyId);
 
         LPValues storage lpValues = orderbook[liquidityPool][user];
         require(lpValues.exists == true, "InvestmentManager/non-existent-user");
@@ -376,9 +370,9 @@ contract InvestmentManager is Auth {
         lpValues.remainingInvestOrder = remainingInvestOrder;
 
         // Transfer currency amount to userEscrow
-        userEscrow.transferIn(poolManager.currencyIdToAddress(currency), address(escrow), user, currencyPayout);
+        userEscrow.transferIn(poolManager.currencyIdToAddress(currencyId), address(escrow), user, currencyPayout);
 
-        emit ExecutedDecreaseInvestOrder(poolId, trancheId, user, currency, currencyPayout);
+        emit ExecutedDecreaseInvestOrder(poolId, trancheId, user, currencyId, currencyPayout);
     }
 
     /// @dev Compared to handleExecutedDecreaseInvestOrder, there is no
@@ -388,37 +382,35 @@ contract InvestmentManager is Auth {
         uint64 poolId,
         bytes16 trancheId,
         address user,
-        uint128 currency,
-        uint128 trancheTokensPayout,
+        uint128 currencyId,
+        uint128 trancheTokenPayout,
         uint128 remainingRedeemOrder
     ) public onlyGateway {
-        address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, currency);
+        address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, currencyId);
 
-        // Calculating the price with both payouts as trancheTokensPayout
+        // Calculating the price with both payouts as trancheTokenPayout
         // leads to an effective redeem price of 1.0 and thus the user actually receiving
-        // exactly trancheTokensPayout on both deposit() and mint()
+        // exactly trancheTokenPayout on both deposit() and mint()
         LPValues storage lpValues = orderbook[liquidityPool][user];
         lpValues.depositPrice = _calculatePrice(
-            liquidityPool,
-            _maxDeposit(liquidityPool, user) + trancheTokensPayout,
-            lpValues.maxMint + trancheTokensPayout
+            liquidityPool, _maxDeposit(liquidityPool, user) + trancheTokenPayout, lpValues.maxMint + trancheTokenPayout
         );
-        lpValues.maxMint = lpValues.maxMint + trancheTokensPayout;
+        lpValues.maxMint = lpValues.maxMint + trancheTokenPayout;
         lpValues.remainingRedeemOrder = remainingRedeemOrder;
 
-        emit ExecutedDecreaseRedeemOrder(poolId, trancheId, user, currency, trancheTokensPayout);
+        emit ExecutedDecreaseRedeemOrder(poolId, trancheId, user, currencyId, trancheTokenPayout);
     }
 
     function handleTriggerIncreaseRedeemOrder(
         uint64 poolId,
         bytes16 trancheId,
         address user,
-        uint128 currency,
+        uint128 currencyId,
         uint128 trancheTokenAmount
     ) public onlyGateway {
-        address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, currency);
+        address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, currencyId);
         _processIncreaseRedeemRequest(liquidityPool, trancheTokenAmount, user);
-        emit TriggerIncreaseRedeemOrder(poolId, trancheId, user, currency, trancheTokenAmount);
+        emit TriggerIncreaseRedeemOrder(poolId, trancheId, user, currencyId, trancheTokenAmount);
     }
 
     // --- View functions ---
