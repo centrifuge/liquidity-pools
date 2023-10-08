@@ -153,7 +153,7 @@ contract InvestmentManager is Auth {
     }
 
     // --- Outgoing message handling ---
-    /// @notice Request deposit. Liquidity pools have to request investments from Centrifuge before
+    /// @notice Liquidity pools have to request investments from Centrifuge before
     ///         tranche tokens can be minted. The deposit requests are added to the order book
     ///         on Centrifuge. Once the next epoch is executed on Centrifuge, liquidity pools can
     ///         proceed with tranche token payouts in case their orders got fulfilled.
@@ -520,7 +520,7 @@ contract InvestmentManager is Auth {
     // --- Liquidity Pool processing functions ---
     /// @notice Processes owner's currency deposit / investment after the epoch has been executed on Centrifuge.
     ///         The currency required to fulfill the invest order is already locked in escrow upon calling
-    /// requestDeposit.
+    ///         requestDeposit.
     function deposit(address liquidityPool, uint256 currencyAmount, address receiver, address owner)
         public
         auth
@@ -532,7 +532,7 @@ contract InvestmentManager is Auth {
 
     /// @notice Processes owner's currency deposit / investment after the epoch has been executed on Centrifuge.
     ///         The currency required to fulfill the invest order is already locked in escrow upon calling
-    /// requestDeposit.
+    ///         requestDeposit.
     function mint(address liquidityPool, uint256 trancheTokenAmount, address receiver, address owner)
         public
         auth
@@ -573,7 +573,6 @@ contract InvestmentManager is Auth {
     /// @dev    Processes owner's tranche token redemption after the epoch has been executed on Centrifuge.
     ///         The trancheTokenAmount required to fulfill the redemption order was already locked in escrow
     ///         upon calling requestRedeem.
-    ///         the currencyAmount payout/withdrawal.
     function withdraw(address liquidityPool, uint256 currencyAmount, address receiver, address owner)
         public
         auth
@@ -639,7 +638,7 @@ contract InvestmentManager is Auth {
         view
         returns (uint256 price)
     {
-        if (trancheTokenAmount == 0) {
+        if (currencyAmount == 0 || trancheTokenAmount == 0) {
             return 0;
         }
 
