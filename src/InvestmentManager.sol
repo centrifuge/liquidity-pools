@@ -206,10 +206,10 @@ contract InvestmentManager is Auth {
             "InvestmentManager/currency-not-allowed"
         );
 
-        _increaseRedeemRequest(liquidityPool, _trancheTokenAmount, user);
+        _processIncreaseRedeemRequest(liquidityPool, _trancheTokenAmount, user);
     }
 
-    function _increaseRedeemRequest(address liquidityPool, uint128 trancheTokenAmount, address user) internal {
+    function _processIncreaseRedeemRequest(address liquidityPool, uint128 trancheTokenAmount, address user) internal {
         LiquidityPoolLike lPool = LiquidityPoolLike(liquidityPool);
         LPValues storage lpValues = orderbook[liquidityPool][user];
         lpValues.remainingRedeemOrder = lpValues.remainingRedeemOrder + trancheTokenAmount;
@@ -430,7 +430,7 @@ contract InvestmentManager is Auth {
     ) public onlyGateway {
         address _currency = poolManager.currencyIdToAddress(currency);
         address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, _currency);
-        _increaseRedeemRequest(liquidityPool, trancheTokenAmount, user);
+        _processIncreaseRedeemRequest(liquidityPool, trancheTokenAmount, user);
         emit TriggerIncreaseRedeemOrder(poolId, trancheId, user, currency, trancheTokenAmount);
     }
 
@@ -521,30 +521,33 @@ contract InvestmentManager is Auth {
     /// @notice Processes owner's currency deposit / investment after the epoch has been executed on Centrifuge.
     ///         The currency required to fulfill the invest order is already locked in escrow upon calling
     /// requestDeposit.
-    function processDeposit(address liquidityPool, uint256 currencyAmount, address receiver, address owner)
+    function depost(address liquidityPool, uint256 currencyAmount, address receiver, address owner)
         public
         auth
         returns (uint256 trancheTokenAmount)
     {
         trancheTokenAmount = previewDeposit(liquidityPool, owner, currencyAmount);
-        _deposit(orderbook[liquidityPool][owner], _toUint128(currencyAmount), liquidityPool, receiver);
+        _processDeposit(orderbook[liquidityPool][owner], _toUint128(trancheTokenAmount), liquidityPool, receiver);
     }
 
     /// @notice Processes owner's currency deposit / investment after the epoch has been executed on Centrifuge.
     ///         The currency required to fulfill the invest order is already locked in escrow upon calling
     /// requestDeposit.
-    function processMint(address liquidityPool, uint256 trancheTokenAmount, address receiver, address owner)
+    function mint(address liquidityPool, uint256 trancheTokenAmount, address receiver, address owner)
         public
         auth
         returns (uint256 currencyAmount)
     {
         currencyAmount = previewMint(liquidityPool, owner, trancheTokenAmount);
-        _deposit(orderbook[liquidityPool][owner], _toUint128(trancheTokenAmount), liquidityPool, receiver);
+        _processDeposit(orderbook[liquidityPool][owner], _toUint128(trancheTokenAmount), liquidityPool, receiver);
     }
 
-    function _deposit(LPValues storage lpValues, uint128 trancheTokenAmount, address liquidityPool, address receiver)
-        internal
-    {
+    function _processDeposit(
+        LPValues storage lpValues,
+        uint128 trancheTokenAmount,
+        address liquidityPool,
+        address receiver
+    ) internal {
         LiquidityPoolLike lPool = LiquidityPoolLike(liquidityPool);
         require(trancheTokenAmount != 0, "InvestmentManager/tranche-token-amount-is-zero");
         require(trancheTokenAmount <= lpValues.maxMint, "InvestmentManager/exceeds-deposit-limits");
@@ -558,29 +561,29 @@ contract InvestmentManager is Auth {
     /// @dev    Processes owner's tranche Token redemption after the epoch has been executed on Centrifuge.
     ///         The trancheTokenAmount required to fulfill the redemption order was already locked in escrow
     ///         upon calling requestRedeem.
-    function processRedeem(address liquidityPool, uint256 trancheTokenAmount, address receiver, address owner)
+    function redeem(address liquidityPool, uint256 trancheTokenAmount, address receiver, address owner)
         public
         auth
         returns (uint256 currencyAmount)
     {
         currencyAmount = previewRedeem(liquidityPool, owner, trancheTokenAmount);
-        _redeem(orderbook[liquidityPool][owner], _toUint128(currencyAmount), liquidityPool, receiver, owner);
+        _processRedeem(orderbook[liquidityPool][owner], _toUint128(currencyAmount), liquidityPool, receiver, owner);
     }
 
     /// @dev    Processes owner's tranche token redemption after the epoch has been executed on Centrifuge.
     ///         The trancheTokenAmount required to fulfill the redemption order was already locked in escrow
     ///         upon calling requestRedeem.
     ///         the currencyAmount payout/withdrawal.
-    function processWithdraw(address liquidityPool, uint256 currencyAmount, address receiver, address owner)
+    function withdraw(address liquidityPool, uint256 currencyAmount, address receiver, address owner)
         public
         auth
         returns (uint256 trancheTokenAmount)
     {
         trancheTokenAmount = previewWithdraw(liquidityPool, owner, currencyAmount);
-        _redeem(orderbook[liquidityPool][owner], _toUint128(currencyAmount), liquidityPool, receiver, owner);
+        _processRedeem(orderbook[liquidityPool][owner], _toUint128(currencyAmount), liquidityPool, receiver, owner);
     }
 
-    function _redeem(
+    function _processRedeem(
         LPValues storage lpValues,
         uint128 currencyAmount,
         address liquidityPool,

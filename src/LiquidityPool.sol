@@ -14,10 +14,10 @@ interface ERC20PermitLike {
 interface TrancheTokenLike is IERC20, ERC20PermitLike {}
 
 interface ManagerLike {
-    function processDeposit(address lp, uint256 assets, address receiver, address owner) external returns (uint256);
-    function processMint(address lp, uint256 shares, address receiver, address owner) external returns (uint256);
-    function processWithdraw(address lp, uint256 assets, address receiver, address owner) external returns (uint256);
-    function processRedeem(address lp, uint256 shares, address receiver, address owner) external returns (uint256);
+    function deposit(address lp, uint256 assets, address receiver, address owner) external returns (uint256);
+    function mint(address lp, uint256 shares, address receiver, address owner) external returns (uint256);
+    function withdraw(address lp, uint256 assets, address receiver, address owner) external returns (uint256);
+    function redeem(address lp, uint256 shares, address receiver, address owner) external returns (uint256);
     function maxDeposit(address lp, address user) external view returns (uint256);
     function maxMint(address lp, address user) external view returns (uint256);
     function maxWithdraw(address lp, address user) external view returns (uint256);
@@ -144,14 +144,14 @@ contract LiquidityPool is Auth, IERC4626 {
     /// @notice Collect shares for deposited assets after Centrifuge epoch execution.
     ///         maxDeposit is the max amount of assets that can be deposited.
     function deposit(uint256 assets, address receiver) public returns (uint256 shares) {
-        shares = manager.processDeposit(address(this), assets, receiver, msg.sender);
+        shares = manager.deposit(address(this), assets, receiver, msg.sender);
         emit Deposit(address(this), receiver, assets, shares);
     }
 
     /// @notice Collect shares for deposited assets after Centrifuge epoch execution.
     ///         maxMint is the max amount of shares that can be minted.
     function mint(uint256 shares, address receiver) public returns (uint256 assets) {
-        assets = manager.processMint(address(this), shares, receiver, msg.sender);
+        assets = manager.mint(address(this), shares, receiver, msg.sender);
         emit Deposit(address(this), receiver, assets, shares);
     }
 
@@ -184,7 +184,7 @@ contract LiquidityPool is Auth, IERC4626 {
         withApproval(owner)
         returns (uint256 shares)
     {
-        shares = manager.processWithdraw(address(this), assets, receiver, owner);
+        shares = manager.withdraw(address(this), assets, receiver, owner);
         emit Withdraw(address(this), receiver, owner, assets, shares);
     }
 
@@ -207,7 +207,7 @@ contract LiquidityPool is Auth, IERC4626 {
         withApproval(owner)
         returns (uint256 assets)
     {
-        assets = manager.processRedeem(address(this), shares, receiver, owner);
+        assets = manager.redeem(address(this), shares, receiver, owner);
         emit Withdraw(address(this), receiver, owner, assets, shares);
     }
 
