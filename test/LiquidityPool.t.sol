@@ -18,7 +18,7 @@ contract LiquidityPoolTest is TestSetup {
         LiquidityPool lPool = LiquidityPool(lPool_);
 
         // values set correctly
-        assertEq(address(lPool.investmentManager()), address(investmentManager));
+        assertEq(address(lPool.manager()), address(investmentManager));
         assertEq(lPool.asset(), address(erc20));
         assertEq(lPool.poolId(), poolId);
         assertEq(lPool.trancheId(), trancheId);
@@ -37,10 +37,10 @@ contract LiquidityPoolTest is TestSetup {
         LiquidityPool lPool = LiquidityPool(lPool_);
 
         vm.expectRevert(bytes("Auth/not-authorized"));
-        lPool.file("investmentManager", self);
+        lPool.file("manager", self);
 
         root.relyContract(lPool_, self);
-        lPool.file("investmentManager", self);
+        lPool.file("manager", self);
 
         vm.expectRevert(bytes("LiquidityPool/file-unrecognized-param"));
         lPool.file("random", self);
