@@ -281,7 +281,7 @@ contract InvestmentManager is Auth {
         onlyGateway
     {
         address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, currencyId);
-        LiquidityPoolLike(liquidityPool).updatePrice(price);
+        LiquidityPoolLike(liquidityPool).updatePrice(uint256(price));
     }
 
     function handleExecutedCollectInvest(
@@ -415,12 +415,12 @@ contract InvestmentManager is Auth {
 
     // --- View functions ---
     function convertToShares(address liquidityPool, uint256 _assets) public view returns (uint256 shares) {
-        uint128 latestPrice = LiquidityPoolLike(liquidityPool).latestPrice();
+        uint256 latestPrice = LiquidityPoolLike(liquidityPool).latestPrice();
         shares = uint256(_calculateTrancheTokenAmount(_assets.toUint128(), liquidityPool, latestPrice));
     }
 
     function convertToAssets(address liquidityPool, uint256 _shares) public view returns (uint256 assets) {
-        uint128 latestPrice = LiquidityPoolLike(liquidityPool).latestPrice();
+        uint256 latestPrice = LiquidityPoolLike(liquidityPool).latestPrice();
         assets = uint256(_calculateCurrencyAmount(_shares.toUint128(), liquidityPool, latestPrice));
     }
 
