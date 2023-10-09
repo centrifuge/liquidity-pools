@@ -15,8 +15,8 @@ interface ERC20Like {
 }
 
 interface LiquidityPoolLike is IERC4626 {
-    function requestDeposit(uint256 assets, address owner) external;
-    function requestRedeem(uint256 shares, address owner) external;
+    function requestDeposit(uint256 assets) external;
+    function requestRedeem(uint256 shares) external;
     function share() external view returns (address);
     function manager() external view returns (address);
 }
@@ -36,19 +36,24 @@ contract InvestorHandler is Test {
     address immutable escrow;
     address immutable investmentManager;
 
-    uint256 public totalDepositRequested;
-    uint256 public totalRedeemRequested;
+    uint256 public immutable numInvestors;
+    address[] public investors;
+    address currentInvestor;
 
-    // For deposits we can just look at TT balance,
-    // but for redemptions we need to bookkeep this
-    // as we are also minting currency
-    uint256 public totalCurrencyReceived;
+    struct InvestorState {
+        uint256 totalDepositRequested;
+        uint256 totalRedeemRequested;
+        // For deposits we can just look at TT balance,
+        // but for redemptions we need to bookkeep this
+        // as we are also minting currency
+        uint256 totalCurrencyReceived;
+        uint256 totalTrancheTokensPaidOutOnInvest;
+        uint256 totalCurrencyPaidOutOnInvest;
+        uint256 totalCurrencyPaidOutOnRedeem;
+        uint256 totalTrancheTokensPaidOutOnRedeem;
+    }
 
-    uint256 public totalTrancheTokensPaidOutOnInvest;
-    uint256 public totalCurrencyPaidOutOnInvest;
-
-    uint256 public totalCurrencyPaidOutOnRedeem;
-    uint256 public totalTrancheTokensPaidOutOnRedeem;
+    mapping(address => InvestorState) public investorState;
 
     constructor(
         uint64 poolId_,
@@ -57,98 +62,127 @@ contract InvestorHandler is Test {
         address _liquidityPool,
         address mockCentrifugeChain_,
         address erc20_,
-        address escrow_
+        address escrow_,
+        uint256 numInvestors_
     ) {
         poolId = poolId_;
         trancheId = trancheId_;
         currencyId = currencyId_;
+
         liquidityPool = LiquidityPoolLike(_liquidityPool);
         centrifugeChain = MockCentrifugeChain(mockCentrifugeChain_);
         erc20 = ERC20Like(erc20_);
         trancheToken = ERC20Like(liquidityPool.share());
         escrow = escrow_;
         investmentManager = liquidityPool.manager();
+
+        numInvestors = numInvestors_;
+        for (uint256 i; i < numInvestors; ++i) {
+            address investor = makeAddr(string(abi.encode("investor", i)));
+            investors.push(investor);
+            centrifugeChain.updateMember(poolId, trancheId, investor, type(uint64).max);
+        }
+    }
+
+    modifier useRandomInvestor(uint256 investorIndex_) {
+        currentInvestor = investors[_bound(investorIndex_, 0, investors.length - 1)];
+        (, address currentPrank,) = vm.readCallers();
+        if (currentPrank != currentInvestor) vm.startPrank(currentInvestor);
+        _;
+        vm.stopPrank();
     }
 
     // --- Investments ---
-    function requestDeposit(uint128 amount) public {
+    function requestDeposit(uint256 investorSeed, uint128 amount) public useRandomInvestor(investorSeed) {
+        InvestorState storage state = investorState[currentInvestor];
+
         // Don't allow total outstanding deposit requests > type(uint128).max
-        uint256 amount_ =
-            bound(amount, 0, uint128(type(uint128).max - totalDepositRequested + totalCurrencyPaidOutOnInvest));
+        uint256 amount_ = bound(
+            amount, 0, uint128(type(uint128).max - state.totalDepositRequested + state.totalCurrencyPaidOutOnInvest)
+        );
         if (amount == 0) return;
 
-        erc20.mint(address(this), amount_);
+        vm.stopPrank();
+        erc20.mint(currentInvestor, amount_);
+        vm.startPrank(currentInvestor);
+
         erc20.approve(investmentManager, amount_);
-        liquidityPool.requestDeposit(amount_, address(this));
+        liquidityPool.requestDeposit(amount_);
 
-        totalDepositRequested += amount_;
+        state.totalDepositRequested += amount_;
     }
 
-    function deposit(uint128 amount) public {
-        uint256 amount_ = bound(amount, 0, liquidityPool.maxDeposit(address(this)));
+    function deposit(uint256 investorSeed, uint128 amount) public useRandomInvestor(investorSeed) {
+        uint256 amount_ = bound(amount, 0, liquidityPool.maxDeposit(currentInvestor));
         if (amount_ == 0) return;
 
-        liquidityPool.deposit(amount_, address(this));
+        liquidityPool.deposit(amount_, currentInvestor);
     }
 
-    function mint(uint128 amount) public {
-        uint256 amount_ = bound(amount, 0, liquidityPool.maxMint(address(this)));
+    function mint(uint256 investorSeed, uint128 amount) public useRandomInvestor(investorSeed) {
+        uint256 amount_ = bound(amount, 0, liquidityPool.maxMint(currentInvestor));
         if (amount_ == 0) return;
 
-        liquidityPool.mint(amount_, address(this));
+        liquidityPool.mint(amount_, currentInvestor);
     }
 
     // --- Redemptions ---
-    function requestRedeem(uint128 amount) public {
+    function requestRedeem(uint256 investorSeed, uint128 amount) public useRandomInvestor(investorSeed) {
+        InvestorState storage state = investorState[currentInvestor];
+
         uint256 amount_ = bound(
             amount,
             0,
             _min(
                 // Don't allow total outstanding redeem requests > type(uint128).max
-                uint128(type(uint128).max - totalRedeemRequested + totalTrancheTokensPaidOutOnRedeem),
+                uint128(type(uint128).max - state.totalRedeemRequested + state.totalTrancheTokensPaidOutOnRedeem),
                 // Cannot redeem more than current balance of TT
-                trancheToken.balanceOf(address(this))
+                trancheToken.balanceOf(currentInvestor)
             )
         );
         if (amount_ == 0) return;
 
-        liquidityPool.requestRedeem(amount_, address(this));
+        liquidityPool.requestRedeem(amount_);
 
-        totalRedeemRequested += amount_;
+        state.totalRedeemRequested += amount_;
     }
 
-    function redeem(uint128 amount) public {
-        uint256 amount_ = bound(amount, 0, liquidityPool.maxRedeem(address(this)));
+    function redeem(uint256 investorSeed, uint128 amount) public useRandomInvestor(investorSeed) {
+        InvestorState storage state = investorState[currentInvestor];
+
+        uint256 amount_ = bound(amount, 0, liquidityPool.maxRedeem(currentInvestor));
         if (amount_ == 0) return;
 
-        uint256 preBalance = erc20.balanceOf(address(this));
-        liquidityPool.redeem(amount_, address(this), address(this));
-        uint256 postBalance = erc20.balanceOf(address(this));
-        totalCurrencyReceived += postBalance - preBalance;
+        uint256 preBalance = erc20.balanceOf(currentInvestor);
+        liquidityPool.redeem(amount_, currentInvestor, currentInvestor);
+        uint256 postBalance = erc20.balanceOf(currentInvestor);
+        state.totalCurrencyReceived += postBalance - preBalance;
     }
 
-    function withdraw(uint128 amount) public {
-        uint256 amount_ = bound(amount, 0, liquidityPool.maxWithdraw(address(this)));
+    function withdraw(uint256 investorSeed, uint128 amount) public useRandomInvestor(investorSeed) {
+        InvestorState storage state = investorState[currentInvestor];
+
+        uint256 amount_ = bound(amount, 0, liquidityPool.maxWithdraw(currentInvestor));
         if (amount_ == 0) return;
 
-        uint256 preBalance = erc20.balanceOf(address(this));
-        liquidityPool.withdraw(amount_, address(this), address(this));
-        uint256 postBalance = erc20.balanceOf(address(this));
-        totalCurrencyReceived += postBalance - preBalance;
+        uint256 preBalance = erc20.balanceOf(currentInvestor);
+        liquidityPool.withdraw(amount_, currentInvestor, currentInvestor);
+        uint256 postBalance = erc20.balanceOf(currentInvestor);
+        state.totalCurrencyReceived += postBalance - preBalance;
     }
 
     // --- Misc ---
-    /// @dev Simulate deposit from another user into the escrow
-    function randomDeposit(uint128 amount) public {
-        trancheToken.mint(escrow, amount);
-    }
-
     // TODO: should be moved to a separate contract
-    function executedCollectInvest(uint256 fulfillmentRatio, uint256 fulfillmentPrice) public {
+    function executedCollectInvest(uint256 investorSeed, uint256 fulfillmentRatio, uint256 fulfillmentPrice)
+        public
+        useRandomInvestor(investorSeed)
+    {
+        InvestorState storage state = investorState[currentInvestor];
+
         fulfillmentRatio = bound(fulfillmentRatio, 0, 1 * 10 ** 18); // 0% to 100%
         fulfillmentPrice = bound(fulfillmentPrice, 0, 2 * 10 ** 18); // 0.00 to 2.00
 
-        uint256 outstandingDepositRequest = totalDepositRequested - totalCurrencyPaidOutOnInvest;
+        uint256 outstandingDepositRequest = state.totalDepositRequested - state.totalCurrencyPaidOutOnInvest;
 
         if (outstandingDepositRequest == 0) {
             return;
@@ -162,22 +196,27 @@ contract InvestorHandler is Test {
         centrifugeChain.isExecutedCollectInvest(
             poolId,
             trancheId,
-            bytes32(bytes20(address(this))),
+            bytes32(bytes20(currentInvestor)),
             currencyId,
             currencyPayout,
             trancheTokenPayout,
             uint128(outstandingDepositRequest - currencyPayout)
         );
 
-        totalCurrencyPaidOutOnInvest += currencyPayout;
-        totalTrancheTokensPaidOutOnInvest += trancheTokenPayout;
+        state.totalCurrencyPaidOutOnInvest += currencyPayout;
+        state.totalTrancheTokensPaidOutOnInvest += trancheTokenPayout;
     }
 
-    function executedCollectRedeem(uint256 fulfillmentRatio, uint256 fulfillmentPrice) public {
+    function executedCollectRedeem(uint256 investorSeed, uint256 fulfillmentRatio, uint256 fulfillmentPrice)
+        public
+        useRandomInvestor(investorSeed)
+    {
+        InvestorState storage state = investorState[currentInvestor];
+
         fulfillmentRatio = bound(fulfillmentRatio, 0, 1 * 10 ** 18); // 0% to 100%
         fulfillmentPrice = bound(fulfillmentPrice, 0, 2 * 10 ** 18); // 0.00 to 2.00
 
-        uint256 outstandingRedeemRequest = totalRedeemRequested - totalTrancheTokensPaidOutOnRedeem;
+        uint256 outstandingRedeemRequest = state.totalRedeemRequested - state.totalTrancheTokensPaidOutOnRedeem;
 
         if (outstandingRedeemRequest == 0) {
             return;
@@ -191,15 +230,15 @@ contract InvestorHandler is Test {
         centrifugeChain.isExecutedCollectRedeem(
             poolId,
             trancheId,
-            bytes32(bytes20(address(this))),
+            bytes32(bytes20(currentInvestor)),
             currencyId,
             currencyPayout,
             trancheTokenPayout,
             uint128(outstandingRedeemRequest - currencyPayout)
         );
 
-        totalTrancheTokensPaidOutOnRedeem += trancheTokenPayout;
-        totalCurrencyPaidOutOnRedeem += currencyPayout;
+        state.totalTrancheTokensPaidOutOnRedeem += trancheTokenPayout;
+        state.totalCurrencyPaidOutOnRedeem += currencyPayout;
     }
 
     /// @notice Returns the smallest of two numbers.

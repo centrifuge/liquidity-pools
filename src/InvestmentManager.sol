@@ -587,7 +587,7 @@ contract InvestmentManager is Auth {
             (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getPoolDecimals(liquidityPool);
 
             uint256 trancheTokenAmountInPriceDecimals = _toPriceDecimals(currencyAmount, currencyDecimals).mulDiv(
-                10 ** PRICE_DECIMALS, price, MathLib.Rounding.Down
+                10 ** PRICE_DECIMALS, price, MathLib.Rounding.Up
             );
 
             trancheTokenAmount = _fromPriceDecimals(trancheTokenAmountInPriceDecimals, trancheTokenDecimals);
@@ -605,7 +605,7 @@ contract InvestmentManager is Auth {
             (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getPoolDecimals(liquidityPool);
 
             uint256 currencyAmountInPriceDecimals = _toPriceDecimals(trancheTokenAmount, trancheTokenDecimals).mulDiv(
-                price, 10 ** PRICE_DECIMALS, MathLib.Rounding.Down
+                price, 10 ** PRICE_DECIMALS, MathLib.Rounding.Up
             );
 
             currencyAmount = _fromPriceDecimals(currencyAmountInPriceDecimals, currencyDecimals);
