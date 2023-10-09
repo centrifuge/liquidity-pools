@@ -7,7 +7,9 @@ import {IERC4626} from "src/interfaces/IERC4626.sol";
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
-interface LiquidityPoolLike is IERC4626 {}
+interface LiquidityPoolLike is IERC4626 {
+    function latestPrice() external view returns (uint256);
+}
 
 interface ERC20Like {
     function balanceOf(address account) external view returns (uint256);
@@ -52,8 +54,31 @@ contract InvestmentInvariants is TestSetup {
 
     // Invariant 3: convertToAssets(totalSupply) == totalAssets
     function invariant_convertToAssetsEquivalence() external {
+        // Does not hold if the price is 0
+        if (liquidityPool.latestPrice() == 0) return;
+
         if (liquidityPool.totalAssets() < type(uint128).max) {
             assertEq(liquidityPool.convertToAssets(liquidityPool.totalSupply()), liquidityPool.totalAssets());
         }
+    }
+
+    // Invariant 4: convertToShares(totalAssets) == totalSupply
+    function invariant_convertToSharesEquivalence() external {
+        // Does not hold if the price is 0
+        if (liquidityPool.latestPrice() == 0) return;
+
+        if (liquidityPool.totalSupply() < type(uint128).max) {
+            assertEq(liquidityPool.convertToShares(liquidityPool.totalAssets()), liquidityPool.totalSupply());
+        }
+    }
+
+    // Invariant 5: lp.maxDeposit <= sum(requestDeposit)
+    function invariant_maxDepositLtDepositRequest() external {
+        assertLe(liquidityPool.maxDeposit(address(investorHandler)), investorHandler.totalDepositRequested());
+    }
+
+    // Invariant 6: lp.maxRedeem <= sum(requestRedeem)
+    function invariant_maxRedeemLtRedeemRequest() external {
+        assertLe(liquidityPool.maxRedeem(address(investorHandler)), investorHandler.totalRedeemRequested());
     }
 }

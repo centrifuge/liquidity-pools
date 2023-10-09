@@ -73,50 +73,53 @@ contract InvestorHandler is Test {
     // --- Investments ---
     function requestDeposit(uint128 amount) public {
         // Don't allow total outstanding deposit requests > type(uint128).max
-        amount =
-            uint128(bound(amount, 0, uint128(type(uint128).max - totalDepositRequested + totalCurrencyPaidOutOnInvest)));
+        uint256 amount_ =
+            bound(amount, 0, uint128(type(uint128).max - totalDepositRequested + totalCurrencyPaidOutOnInvest));
+        if (amount == 0) return;
 
-        erc20.mint(address(this), amount);
-        erc20.approve(investmentManager, amount);
-        liquidityPool.requestDeposit(uint256(amount), address(this));
+        erc20.mint(address(this), amount_);
+        erc20.approve(investmentManager, amount_);
+        liquidityPool.requestDeposit(amount_, address(this));
 
-        totalDepositRequested += uint256(amount);
+        totalDepositRequested += amount_;
     }
 
     function deposit(uint128 amount) public {
         uint256 amount_ = bound(amount, 0, liquidityPool.maxDeposit(address(this)));
+        if (amount_ == 0) return;
 
         liquidityPool.deposit(amount_, address(this));
     }
 
     function mint(uint128 amount) public {
         uint256 amount_ = bound(amount, 0, liquidityPool.maxMint(address(this)));
+        if (amount_ == 0) return;
 
         liquidityPool.mint(amount_, address(this));
     }
 
     // --- Redemptions ---
     function requestRedeem(uint128 amount) public {
-        amount = uint128(
-            bound(
-                amount,
-                0,
-                _min(
-                    // Don't allow total outstanding redeem requests > type(uint128).max
-                    uint128(type(uint128).max - totalRedeemRequested + totalTrancheTokensPaidOutOnRedeem),
-                    // Cannot redeem more than current balance of TT
-                    trancheToken.balanceOf(address(this))
-                )
+        uint256 amount_ = bound(
+            amount,
+            0,
+            _min(
+                // Don't allow total outstanding redeem requests > type(uint128).max
+                uint128(type(uint128).max - totalRedeemRequested + totalTrancheTokensPaidOutOnRedeem),
+                // Cannot redeem more than current balance of TT
+                trancheToken.balanceOf(address(this))
             )
         );
+        if (amount_ == 0) return;
 
-        liquidityPool.requestRedeem(uint256(amount), address(this));
+        liquidityPool.requestRedeem(amount_, address(this));
 
-        totalRedeemRequested += uint256(amount);
+        totalRedeemRequested += amount_;
     }
 
     function redeem(uint128 amount) public {
         uint256 amount_ = bound(amount, 0, liquidityPool.maxRedeem(address(this)));
+        if (amount_ == 0) return;
 
         uint256 preBalance = erc20.balanceOf(address(this));
         liquidityPool.redeem(amount_, address(this), address(this));
@@ -126,6 +129,7 @@ contract InvestorHandler is Test {
 
     function withdraw(uint128 amount) public {
         uint256 amount_ = bound(amount, 0, liquidityPool.maxWithdraw(address(this)));
+        if (amount_ == 0) return;
 
         uint256 preBalance = erc20.balanceOf(address(this));
         liquidityPool.withdraw(amount_, address(this), address(this));
