@@ -207,6 +207,7 @@ contract InvestmentManager is Auth {
         LiquidityPoolLike lPool = LiquidityPoolLike(liquidityPool);
         InvestmentState storage state = investments[liquidityPool][user];
         state.remainingRedeemRequest = state.remainingRedeemRequest + trancheTokenAmount;
+        state.exists = true;
 
         // Transfer the tranche token amount from user to escrow (lock tranche tokens in escrow)
         require(
