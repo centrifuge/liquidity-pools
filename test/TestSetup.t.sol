@@ -37,7 +37,7 @@ contract TestSetup is Deployer, Test {
 
     // default values
     uint128 defaultCurrencyId = 1;
-    uint128 defaultPrice = 1;
+    uint128 defaultPrice = 1 * 10**18;
 
     function setUp() public virtual {
         vm.chainId(1);
