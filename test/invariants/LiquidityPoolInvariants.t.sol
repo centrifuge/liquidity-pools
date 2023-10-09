@@ -17,7 +17,7 @@ interface ERC20Like {
 }
 
 contract InvestmentInvariants is TestSetup {
-    uint256 public constant NUM_INVESTORS = 1;
+    uint256 public constant NUM_INVESTORS = 2;
 
     InvestorHandler investorHandler;
     LiquidityPoolLike liquidityPool;
