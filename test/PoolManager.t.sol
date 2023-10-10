@@ -659,7 +659,7 @@ contract PoolManagerTest is TestSetup {
         // check LiquidityPool state
         LiquidityPool lPool = LiquidityPool(lPool_);
         TrancheToken trancheToken = TrancheToken(trancheToken_);
-        assertEq(address(lPool.investmentManager()), address(investmentManager));
+        assertEq(address(lPool.manager()), address(investmentManager));
         assertEq(lPool.asset(), address(erc20));
         assertEq(lPool.poolId(), poolId);
         assertEq(lPool.trancheId(), trancheId);
