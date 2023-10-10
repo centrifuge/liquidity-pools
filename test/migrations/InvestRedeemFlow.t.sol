@@ -6,7 +6,7 @@ import {LiquidityPool} from "src/LiquidityPool.sol";
 import {MathLib} from "src/util/MathLib.sol";
 
 contract InvestRedeemFlow is TestSetup {
-    using MathLib for uint128;
+    using MathLib for uint256;
 
     uint8 internal constant PRICE_DECIMALS = 18;
 
@@ -33,7 +33,7 @@ contract InvestRedeemFlow is TestSetup {
         removeDeployerAccess(address(router), address(this));
     }
 
-    function VerifyInvestAndRedeemFlow(uint64 poolId_, bytes16 trancheId_, address liquidityPool) public {
+    function verifyInvestAndRedeemFlow(uint64 poolId_, bytes16 trancheId_, address liquidityPool) public {
         uint128 price = uint128(2 * 10 ** PRICE_DECIMALS); //TODO: fuzz price
         LiquidityPool lPool = LiquidityPool(liquidityPool);
 
@@ -43,42 +43,37 @@ contract InvestRedeemFlow is TestSetup {
         redeemWithdraw(poolId_, trancheId_, price, redeemAmount, lPool);
     }
 
-    function depositMint(uint64 poolId_, bytes16 trancheId_, uint128 price, uint256 amount, LiquidityPool lPool)
+    function depositMint(uint64 poolId_, bytes16 trancheId_, uint128 price, uint256 currencyAmount, LiquidityPool lPool)
         public
     {
         vm.prank(investor);
-        erc20.approve(address(investmentManager), amount); // add allowance
+        erc20.approve(address(investmentManager), currencyAmount); // add allowance
 
         vm.prank(investor);
-        lPool.requestDeposit(amount);
+        lPool.requestDeposit(currencyAmount);
 
         // ensure funds are locked in escrow
-        assertEq(erc20.balanceOf(address(escrow)), amount);
-        assertEq(erc20.balanceOf(investor), investorCurrencyAmount - amount);
-
-        // trigger executed collectInvest
-        uint128 _currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
-
-        uint128 trancheTokensPayout = _toUint128(
-            uint128(amount).mulDiv(
-                10 ** (PRICE_DECIMALS - erc20.decimals() + lPool.decimals()), price, MathLib.Rounding.Down
-            )
-        );
+        assertEq(erc20.balanceOf(address(escrow)), currencyAmount);
+        assertEq(erc20.balanceOf(investor), investorCurrencyAmount - currencyAmount);
 
         // Assume an epoch execution happens on cent chain
         // Assume a bot calls collectInvest for this user on cent chain
+        uint128 _currencyId = poolManager.currencyAddressToId(address(erc20));
+        uint128 trancheTokensPayout = currencyAmount.mulDiv(
+            10 ** (PRICE_DECIMALS - erc20.decimals() + lPool.decimals()), price, MathLib.Rounding.Down
+        ).toUint128();
         vm.prank(address(gateway));
         investmentManager.handleExecutedCollectInvest(
-            poolId_, trancheId_, investor, _currencyId, uint128(amount), trancheTokensPayout, 0
+            poolId_, trancheId_, investor, _currencyId, uint128(currencyAmount), trancheTokensPayout, 0
         );
 
         assertEq(lPool.maxMint(investor), trancheTokensPayout);
         assertEq(lPool.balanceOf(address(escrow)), trancheTokensPayout);
-        assertEq(erc20.balanceOf(investor), investorCurrencyAmount - amount);
+        assertEq(erc20.balanceOf(investor), investorCurrencyAmount - currencyAmount);
 
         uint256 div = 2;
         vm.prank(investor);
-        lPool.deposit(amount / div, investor);
+        lPool.deposit(currencyAmount / div, investor);
 
         assertEq(lPool.balanceOf(investor), trancheTokensPayout / div);
         assertEq(lPool.balanceOf(address(escrow)), trancheTokensPayout - trancheTokensPayout / div);
@@ -89,40 +84,39 @@ contract InvestRedeemFlow is TestSetup {
         lPool.mint(maxMint, investor);
 
         assertEq(lPool.balanceOf(investor), trancheTokensPayout);
-        assertTrue(lPool.balanceOf(address(escrow)) <= 1);
-        assertTrue(lPool.maxMint(investor) <= 1);
+        assertLe(lPool.balanceOf(address(escrow)), 1);
+        assertLe(lPool.maxMint(investor), 1);
     }
 
-    function redeemWithdraw(uint64 poolId_, bytes16 trancheId_, uint128 price, uint256 amount, LiquidityPool lPool)
+    function redeemWithdraw(uint64 poolId_, bytes16 trancheId_, uint128 price, uint256 tokenAmount, LiquidityPool lPool)
         public
     {
         vm.prank(investor);
-        lPool.requestRedeem(amount);
+        lPool.requestRedeem(tokenAmount);
 
-        // redeem
-        uint128 _currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
-        uint128 currencyPayout = _toUint128(
-            uint128(amount).mulDiv(price, 10 ** (18 - erc20.decimals() + lPool.decimals()), MathLib.Rounding.Down)
-        );
         // Assume an epoch execution happens on cent chain
         // Assume a bot calls collectRedeem for this user on cent chain
+        uint128 _currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
+        uint128 currencyPayout = tokenAmount.mulDiv(
+            price, 10 ** (18 - erc20.decimals() + lPool.decimals()), MathLib.Rounding.Down
+        ).toUint128();
         vm.prank(address(gateway));
         investmentManager.handleExecutedCollectRedeem(
-            poolId_, trancheId_, investor, _currencyId, currencyPayout, uint128(amount), 0
+            poolId_, trancheId_, investor, _currencyId, currencyPayout, uint128(tokenAmount), 0
         );
 
         assertEq(lPool.maxWithdraw(investor), currencyPayout);
-        assertEq(lPool.maxRedeem(investor), amount);
+        assertEq(lPool.maxRedeem(investor), tokenAmount);
         assertEq(lPool.balanceOf(address(escrow)), 0);
 
         uint128 div = 2;
         vm.prank(investor);
-        lPool.redeem(amount / div, investor, investor);
+        lPool.redeem(tokenAmount / div, investor, investor);
         assertEq(lPool.balanceOf(investor), 0);
         assertEq(lPool.balanceOf(address(escrow)), 0);
         assertEq(erc20.balanceOf(investor), currencyPayout / div);
         assertEq(lPool.maxWithdraw(investor), currencyPayout / div);
-        assertEq(lPool.maxRedeem(investor), amount / div);
+        assertEq(lPool.maxRedeem(investor), tokenAmount / div);
 
         uint256 maxWithdraw = lPool.maxWithdraw(investor);
         vm.prank(investor);
@@ -132,15 +126,5 @@ contract InvestRedeemFlow is TestSetup {
         assertEq(erc20.balanceOf(investor), currencyPayout);
         assertEq(lPool.maxWithdraw(investor), 0);
         assertEq(lPool.maxRedeem(investor), 0);
-    }
-
-    // --- Utils ---
-
-    function _toUint128(uint256 _value) internal pure returns (uint128 value) {
-        if (_value > type(uint128).max) {
-            revert("InvestmentManager/uint128-overflow");
-        } else {
-            value = uint128(_value);
-        }
     }
 }

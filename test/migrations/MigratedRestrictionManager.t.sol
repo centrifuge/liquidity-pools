@@ -2,9 +2,13 @@
 pragma solidity 0.8.21;
 
 import {MigratedRestrictionManager, RestrictionManager} from "./migrationContracts/MigratedRestrictionManager.sol";
-// import {TrancheTokenLike} from "src/token/Tranche.sol";
 import {LiquidityPool} from "src/LiquidityPool.sol";
 import {InvestRedeemFlow} from "./InvestRedeemFlow.t.sol";
+
+interface TrancheTokenLike {
+    function restrictionManager() external view returns (address);
+    function file(bytes32, address) external;
+}
 
 contract MigratedRestrictionManagerTest is InvestRedeemFlow {
     function setUp() public override {
@@ -19,17 +23,16 @@ contract MigratedRestrictionManagerTest is InvestRedeemFlow {
 
         address[] memory restrictionManagerWards = new address[](1);
         restrictionManagerWards[0] = address(poolManager);
+        address token = address(LiquidityPool(_lPool).share());
 
         // Deploy new Gateway
-        MigratedRestrictionManager newRestrictionManager =
-            new MigratedRestrictionManager(address(LiquidityPool(_lPool).share()));
+        MigratedRestrictionManager newRestrictionManager = new MigratedRestrictionManager(token);
 
-        RestrictionManager oldRestrictionManager =
-            RestrictionManager(LiquidityPool(_lPool).share().restrictionManager());
+        RestrictionManager oldRestrictionManager = RestrictionManager(TrancheTokenLike(token).restrictionManager());
 
         // Rewire contracts
-        root.relyContract(address(LiquidityPool(_lPool).share()), address(this));
-        LiquidityPool(_lPool).share().file("restrictionManager", address(newRestrictionManager));
+        root.relyContract(token, address(this));
+        TrancheTokenLike(token).file("restrictionManager", address(newRestrictionManager));
         newRestrictionManager.updateMember(address(escrow), type(uint256).max);
         newRestrictionManager.rely(address(root));
         for (uint256 i = 0; i < restrictionManagerWards.length; i++) {
@@ -38,7 +41,7 @@ contract MigratedRestrictionManagerTest is InvestRedeemFlow {
 
         // clean up
         newRestrictionManager.deny(address(this));
-        root.denyContract(address(LiquidityPool(_lPool).share()), address(this));
+        root.denyContract(token, address(this));
         root.deny(address(this));
 
         // verify permissions
@@ -46,7 +49,7 @@ contract MigratedRestrictionManagerTest is InvestRedeemFlow {
 
         // TODO: test that everything is working
         // restrictionManager = newRestrictionManager;
-        // VerifyInvestAndRedeemFlow(poolId, trancheId, _lPool);
+        // verifyInvestAndRedeemFlow(poolId, trancheId, _lPool);
     }
 
     function verifyMigratedRestrictionManagerPermissions(

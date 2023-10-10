@@ -36,12 +36,12 @@ contract MigratedAdmin is InvestRedeemFlow {
         root.deny(address(this));
 
         // verify permissions
-        verifyMigratedDelayedAdminPermissions(delayedAdmin, newDelayedAdmin, pauseAdmin, newPauseAdmin);
+        verifyMigratedAdminPermissions(delayedAdmin, newDelayedAdmin, pauseAdmin, newPauseAdmin);
 
         // TODO: test admin functionality still works
     }
 
-    function verifyMigratedDelayedAdminPermissions(
+    function verifyMigratedAdminPermissions(
         DelayedAdmin oldDelayedAdmin,
         DelayedAdmin newDelayedAdmin,
         PauseAdmin oldPauseAdmin,

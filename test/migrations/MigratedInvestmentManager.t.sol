@@ -78,7 +78,7 @@ contract MigratedInvestmentManagerTest is InvestRedeemFlow {
         verifyMigratedInvestmentManagerPermissions(investmentManager, newInvestmentManager);
 
         investmentManager = newInvestmentManager;
-        VerifyInvestAndRedeemFlow(poolId, trancheId, _lPool);
+        verifyInvestAndRedeemFlow(poolId, trancheId, _lPool);
     }
 
     function verifyMigratedInvestmentManagerPermissions(
@@ -137,10 +137,24 @@ contract MigratedInvestmentManagerTest is InvestRedeemFlow {
         InvestmentManager investmentManager,
         InvestmentManager newInvestmentManager
     ) public {
-        (,,, uint256 newRedeemPrice, uint128 newRemainingDepositRequest, uint128 newRemainingRedeemRequest, bool newExists) =
-            newInvestmentManager.investments(investor, liquidityPool);
-        (,,, uint256 oldRedeemPrice, uint128 oldRemainingDepositRequest, uint128 oldRemainingRedeemRequest, bool oldExists) =
-            investmentManager.investments(investor, liquidityPool);
+        (
+            ,
+            ,
+            ,
+            uint256 newRedeemPrice,
+            uint128 newRemainingDepositRequest,
+            uint128 newRemainingRedeemRequest,
+            bool newExists
+        ) = newInvestmentManager.investments(investor, liquidityPool);
+        (
+            ,
+            ,
+            ,
+            uint256 oldRedeemPrice,
+            uint128 oldRemainingDepositRequest,
+            uint128 oldRemainingRedeemRequest,
+            bool oldExists
+        ) = investmentManager.investments(investor, liquidityPool);
         assertEq(newRedeemPrice, oldRedeemPrice);
         assertEq(newRemainingDepositRequest, oldRemainingDepositRequest);
         assertEq(newRemainingRedeemRequest, oldRemainingRedeemRequest);

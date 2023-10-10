@@ -92,7 +92,7 @@ contract MigrationsTest is InvestRedeemFlow {
         address _lPool2 = poolManager.deployLiquidityPool(poolId + 1, trancheId, address(erc20));
         centrifugeChain.updateMember(poolId + 1, trancheId, investor, uint64(block.timestamp + 1000 days));
 
-        VerifyInvestAndRedeemFlow(poolId + 1, trancheId, _lPool2);
+        verifyInvestAndRedeemFlow(poolId + 1, trancheId, _lPool2);
     }
 
     function verifyMigratedPoolManagerPermissions(PoolManager oldPoolManager, PoolManager newPoolManager) public {

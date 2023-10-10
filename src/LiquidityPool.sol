@@ -11,10 +11,7 @@ interface ERC20PermitLike {
         external;
 }
 
-interface TrancheTokenLike is IERC20, ERC20PermitLike {
-    function restrictionManager() external view returns (address);
-    function file(bytes32 what, address data) external;
-}
+interface TrancheTokenLike is IERC20, ERC20PermitLike {}
 
 interface ManagerLike {
     function deposit(address lp, uint256 assets, address receiver, address owner) external returns (uint256);
