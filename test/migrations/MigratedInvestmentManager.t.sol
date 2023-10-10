@@ -55,7 +55,7 @@ contract MigratedInvestmentManagerTest is InvestRedeemFlow {
             root.relyContract(address(liquidityPools[i]), address(this));
             LiquidityPool lPool = LiquidityPool(liquidityPools[i]);
 
-            lPool.file("investmentManager", address(newInvestmentManager));
+            lPool.file("manager", address(newInvestmentManager));
             lPool.rely(address(newInvestmentManager));
             lPool.deny(address(investmentManager));
             root.relyContract(address(lPool.share()), address(this));
@@ -123,9 +123,9 @@ contract MigratedInvestmentManagerTest is InvestRedeemFlow {
         InvestmentManager newInvestmentManager
     ) public {
         (uint128 newMaxMint, uint256 newDepositPrice, uint128 newMaxWithdraw,,,,) =
-            newInvestmentManager.orderbook(investor, liquidityPool);
+            newInvestmentManager.investments(investor, liquidityPool);
         (uint128 oldMaxMint, uint256 oldDepositPrice, uint128 oldMaxWithdraw,,,,) =
-            investmentManager.orderbook(investor, liquidityPool);
+            investmentManager.investments(investor, liquidityPool);
         assertEq(newMaxMint, oldMaxMint);
         assertEq(newDepositPrice, oldDepositPrice);
         assertEq(newMaxWithdraw, oldMaxWithdraw);
@@ -137,13 +137,13 @@ contract MigratedInvestmentManagerTest is InvestRedeemFlow {
         InvestmentManager investmentManager,
         InvestmentManager newInvestmentManager
     ) public {
-        (,,, uint256 newRedeemPrice, uint128 newRemainingInvestOrder, uint128 newRemainingRedeemOrder, bool newExists) =
-            newInvestmentManager.orderbook(investor, liquidityPool);
-        (,,, uint256 oldRedeemPrice, uint128 oldRemainingInvestOrder, uint128 oldRemainingRedeemOrder, bool oldExists) =
-            investmentManager.orderbook(investor, liquidityPool);
+        (,,, uint256 newRedeemPrice, uint128 newRemainingDepositRequest, uint128 newRemainingRedeemRequest, bool newExists) =
+            newInvestmentManager.investments(investor, liquidityPool);
+        (,,, uint256 oldRedeemPrice, uint128 oldRemainingDepositRequest, uint128 oldRemainingRedeemRequest, bool oldExists) =
+            investmentManager.investments(investor, liquidityPool);
         assertEq(newRedeemPrice, oldRedeemPrice);
-        assertEq(newRemainingInvestOrder, oldRemainingInvestOrder);
-        assertEq(newRemainingRedeemOrder, oldRemainingRedeemOrder);
+        assertEq(newRemainingDepositRequest, oldRemainingDepositRequest);
+        assertEq(newRemainingRedeemRequest, oldRemainingRedeemRequest);
         assertEq(newExists, oldExists);
     }
 }

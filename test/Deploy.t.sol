@@ -26,7 +26,7 @@ interface ApproveLike {
 }
 
 contract DeployTest is Test, Deployer {
-    using MathLib for uint128;
+    using MathLib for uint256;
 
     uint8 constant PRICE_DECIMALS = 18;
 
@@ -94,11 +94,11 @@ contract DeployTest is Test, Deployer {
         // trigger executed collectInvest
         uint128 _currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
 
-        uint128 trancheTokensPayout = _toUint128(
-            uint128(amount).mulDiv(
+        uint128 trancheTokensPayout = (
+            amount.mulDiv(
                 10 ** (PRICE_DECIMALS - erc20.decimals() + lPool.decimals()), price, MathLib.Rounding.Down
             )
-        );
+        ).toUint128();
 
         // Assume an epoch execution happens on cent chain
         // Assume a bot calls collectInvest for this user on cent chain
@@ -135,9 +135,9 @@ contract DeployTest is Test, Deployer {
 
         // redeem
         uint128 _currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
-        uint128 currencyPayout = _toUint128(
-            uint128(amount).mulDiv(price, 10 ** (18 - erc20.decimals() + lPool.decimals()), MathLib.Rounding.Down)
-        );
+        uint128 currencyPayout = (
+            amount.mulDiv(price, 10 ** (18 - erc20.decimals() + lPool.decimals()), MathLib.Rounding.Down)
+        ).toUint128();
         // Assume an epoch execution happens on cent chain
         // Assume a bot calls collectRedeem for this user on cent chain
         vm.prank(address(gateway));
@@ -184,14 +184,6 @@ contract DeployTest is Test, Deployer {
         poolManager.deployTranche(poolId, trancheId);
         address lPool = poolManager.deployLiquidityPool(poolId, trancheId, address(erc20));
         return lPool;
-    }
-
-    function _toUint128(uint256 _value) internal pure returns (uint128 value) {
-        if (_value > type(uint128).max) {
-            revert();
-        } else {
-            value = uint128(_value);
-        }
     }
 
     function newErc20(string memory name, string memory symbol, uint8 decimals) internal returns (ERC20) {

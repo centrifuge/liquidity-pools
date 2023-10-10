@@ -7,6 +7,7 @@ import {RestrictionManagerLike} from "./token/RestrictionManager.sol";
 import {IERC20} from "./interfaces/IERC20.sol";
 import {Auth} from "./util/Auth.sol";
 import {SafeTransferLib} from "./util/SafeTransferLib.sol";
+import {MathLib} from "./util/MathLib.sol";
 
 interface GatewayLike {
     function transferTrancheTokensToCentrifuge(
@@ -70,6 +71,8 @@ struct UndeployedTranche {
 /// @notice This contract manages which pools & tranches exist,
 ///         as well as managing allowed pool currencies, and incoming and outgoing transfers.
 contract PoolManager is Auth {
+    using MathLib for uint256;
+
     uint8 internal constant MIN_DECIMALS = 1;
     uint8 internal constant MAX_DECIMALS = 18;
 
@@ -148,7 +151,7 @@ contract PoolManager is Auth {
         uint256 preBalance = IERC20(currencyAddress).balanceOf(address(escrow));
         SafeTransferLib.safeTransferFrom(currencyAddress, msg.sender, address(escrow), amount);
         uint256 postBalance = IERC20(currencyAddress).balanceOf(address(escrow));
-        uint128 transferredAmount = _toUint128(postBalance - preBalance);
+        uint128 transferredAmount = (postBalance - preBalance).toUint128();
 
         gateway.transfer(currency, msg.sender, recipient, transferredAmount);
         emit TransferCurrency(currencyAddress, recipient, transferredAmount);
@@ -407,8 +410,16 @@ contract PoolManager is Auth {
         return tranche.token;
     }
 
-    function getLiquidityPool(uint64 poolId, bytes16 trancheId, address currency) public view returns (address) {
-        return pools[poolId].tranches[trancheId].liquidityPools[currency];
+    function getLiquidityPool(uint64 poolId, bytes16 trancheId, uint128 currencyId) public view returns (address) {
+        return pools[poolId].tranches[trancheId].liquidityPools[currencyIdToAddress[currencyId]];
+    }
+
+    function getLiquidityPool(uint64 poolId, bytes16 trancheId, address currencyAddress)
+        public
+        view
+        returns (address)
+    {
+        return pools[poolId].tranches[trancheId].liquidityPools[currencyAddress];
     }
 
     function isAllowedAsInvestmentCurrency(uint64 poolId, address currencyAddress) public view returns (bool) {
@@ -419,16 +430,5 @@ contract PoolManager is Auth {
         }
 
         return pools[poolId].allowedCurrencies[currencyAddress];
-    }
-
-    /// @dev    Safe type conversion from uint256 to uint128. Revert if value is too big to
-    ///         be stored with uint128. Avoid data loss.
-    /// @return value - safely converted without data loss
-    function _toUint128(uint256 _value) internal pure returns (uint128 value) {
-        if (_value > type(uint128).max) {
-            revert("PoolManager/uint128-overflow");
-        } else {
-            value = uint128(_value);
-        }
     }
 }

@@ -54,7 +54,7 @@ contract MigrationsTest is InvestRedeemFlow {
         assertEq(address(oldLiquidityPool.share()), address(newLiquidityPool.share()));
         address token = poolManager.getTrancheToken(poolId, trancheId);
         assertEq(address(newLiquidityPool.share()), token);
-        assertEq(address(oldLiquidityPool.investmentManager()), address(newLiquidityPool.investmentManager()));
+        assertEq(address(oldLiquidityPool.manager()), address(newLiquidityPool.manager()));
         assertEq(newLiquidityPool.wards(address(root)), 1);
         assertEq(newLiquidityPool.wards(address(investmentManager)), 1);
         assertEq(investmentManager.wards(address(newLiquidityPool)), 1);
