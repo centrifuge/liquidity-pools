@@ -3,6 +3,7 @@ pragma solidity 0.8.21;
 
 import {Auth} from "./util/Auth.sol";
 import {MathLib} from "./util/MathLib.sol";
+import {SafeTransferLib} from "./util/SafeTransferLib.sol";
 import {IERC20} from "./interfaces/IERC20.sol";
 import {IERC4626} from "./interfaces/IERC4626.sol";
 
@@ -11,7 +12,9 @@ interface ERC20PermitLike {
         external;
 }
 
-interface TrancheTokenLike is IERC20, ERC20PermitLike {}
+interface TrancheTokenLike is IERC20, ERC20PermitLike {
+    function authTransferFrom(address from, address to, uint256 amount) external returns (bool);
+}
 
 interface ManagerLike {
     function deposit(address lp, uint256 assets, address receiver, address owner) external returns (uint256);
@@ -28,8 +31,8 @@ interface ManagerLike {
     function previewMint(address lp, address user, uint256 shares) external view returns (uint256);
     function previewWithdraw(address lp, address user, uint256 assets) external view returns (uint256);
     function previewRedeem(address lp, address user, uint256 shares) external view returns (uint256);
-    function requestRedeem(address lp, uint256 shares, address receiver) external;
-    function requestDeposit(address lp, uint256 assets, address receiver) external;
+    function requestDeposit(address lp, uint256 assets, address receiver) external returns (bool);
+    function requestRedeem(address lp, uint256 shares, address receiver) external returns (bool);
     function decreaseDepositRequest(address lp, uint256 assets, address receiver) external;
     function decreaseRedeemRequest(address lp, uint256 shares, address receiver) external;
     function cancelDepositRequest(address lp, address receiver) external;
@@ -67,6 +70,9 @@ contract LiquidityPool is Auth, IERC4626 {
     /// @dev    Also known as tranche tokens.
     TrancheTokenLike public immutable share;
 
+    /// @notice Escrow contract for tokens
+    address public immutable escrow;
+
     /// @notice Liquidity Pool business logic implementation contract
     ManagerLike public manager;
 
@@ -86,11 +92,12 @@ contract LiquidityPool is Auth, IERC4626 {
     event CancelRedeemRequest(address indexed owner);
     event PriceUpdate(uint256 price);
 
-    constructor(uint64 poolId_, bytes16 trancheId_, address asset_, address share_, address manager_) {
+    constructor(uint64 poolId_, bytes16 trancheId_, address asset_, address share_, address escrow_, address manager_) {
         poolId = poolId_;
         trancheId = trancheId_;
         asset = asset_;
         share = TrancheTokenLike(share_);
+        escrow = escrow_;
         manager = ManagerLike(manager_);
 
         wards[msg.sender] = 1;
@@ -100,6 +107,12 @@ contract LiquidityPool is Auth, IERC4626 {
     /// @dev Owner needs to be the msg.sender
     modifier withApproval(address owner) {
         require((msg.sender == owner), "LiquidityPool/no-approval");
+        _;
+    }
+
+    /// @dev msg.sender has approval to spent owner's tokens
+    modifier withTokenApproval(address owner, uint256 amount) {
+        require(msg.sender == owner || share.allowance(owner, msg.sender) >= amount, "LiquidityPool/no-token-allowance");
         _;
     }
 
@@ -216,7 +229,8 @@ contract LiquidityPool is Auth, IERC4626 {
     /// @notice Request can only be called by the owner of the assets
     ///         Asset is locked in the escrow on request submission
     function requestDeposit(uint256 assets) public {
-        manager.requestDeposit(address(this), assets, msg.sender);
+        require(manager.requestDeposit(address(this), assets, msg.sender), "LiquidityPool/request-deposit-failed");
+        SafeTransferLib.safeTransferFrom(asset, msg.sender, address(escrow), assets);
         emit DepositRequest(msg.sender, assets);
     }
 
@@ -225,7 +239,8 @@ contract LiquidityPool is Auth, IERC4626 {
         public
     {
         _withPermit(asset, owner, address(manager), assets, deadline, v, r, s);
-        manager.requestDeposit(address(this), assets, owner);
+        require(manager.requestDeposit(address(this), assets, owner), "LiquidityPool/request-deposit-failed");
+        SafeTransferLib.safeTransferFrom(asset, owner, address(escrow), assets);
         emit DepositRequest(owner, assets);
     }
 
@@ -251,9 +266,17 @@ contract LiquidityPool is Auth, IERC4626 {
     /// @notice Request share redemption for a receiver to be included in the next epoch execution.
     /// @notice Request can only be called by the owner of the shares
     ///         Shares are locked in the escrow on request submission
-    function requestRedeem(uint256 shares) public {
-        manager.requestRedeem(address(this), shares, msg.sender);
-        emit RedeemRequest(msg.sender, shares);
+    function requestRedeem(uint256 shares, address owner) public withTokenApproval(owner, shares) {
+        require(manager.requestRedeem(address(this), shares, owner), "LiquidityPool/request-redeem-failed");
+
+        if (owner == msg.sender) {
+            // If the owner is the msg.sender, auth transfer is used so EIP-20 approval is not required
+            require(_authTransferFrom(owner, address(escrow), shares), "LiquidityPool/transfer-failed");
+        } else {
+            require(share.transferFrom(owner, address(escrow), shares), "LiquidityPool/transfer-failed");
+        }
+
+        emit RedeemRequest(owner, shares);
     }
 
     /// @notice Request decreasing the outstanding redemption orders. Will return the shares once the order
@@ -302,6 +325,17 @@ contract LiquidityPool is Auth, IERC4626 {
 
     function transferFrom(address, address, uint256) public returns (bool) {
         (bool success, bytes memory data) = address(share).call(bytes.concat(msg.data, bytes20(msg.sender)));
+        _successCheck(success);
+        return abi.decode(data, (bool));
+    }
+
+    // Required to call share.authTransferFrom while retaining msg.sender as address(this)
+    function _authTransferFrom(address from, address to, uint256 value) internal returns (bool) {
+        (bool success, bytes memory data) = address(share).call(
+            abi.encodeWithSignature(
+                "authTransferFrom(address,address,uint256)", from, to, value, bytes20(address(this))
+            )
+        );
         _successCheck(success);
         return abi.decode(data, (bool));
     }

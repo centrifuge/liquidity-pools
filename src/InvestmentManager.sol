@@ -153,7 +153,7 @@ contract InvestmentManager is Auth {
     ///         proceed with tranche token payouts in case their orders got fulfilled.
     /// @dev    The user currency amount required to fulfill the deposit request have to be locked,
     ///         even though the tranche token payout can only happen after epoch execution.
-    function requestDeposit(address liquidityPool, uint256 currencyAmount, address user) public auth {
+    function requestDeposit(address liquidityPool, uint256 currencyAmount, address user) public auth returns (bool) {
         LiquidityPoolLike lPool = LiquidityPoolLike(liquidityPool);
         uint128 _currencyAmount = currencyAmount.toUint128();
         require(_currencyAmount != 0, "InvestmentManager/zero-amount-not-allowed");
@@ -166,20 +166,15 @@ contract InvestmentManager is Auth {
             "InvestmentManager/transfer-not-allowed"
         );
 
-        // Transfer the currency amount from user to escrow (lock currency in escrow)
-        // Checks actual balance difference to support fee-on-transfer tokens
-        uint256 preBalance = ERC20Like(currency).balanceOf(address(escrow));
-        SafeTransferLib.safeTransferFrom(currency, user, address(escrow), _currencyAmount);
-        uint256 postBalance = ERC20Like(currency).balanceOf(address(escrow));
-        uint128 transferredAmount = (postBalance - preBalance).toUint128();
-
         InvestmentState storage state = investments[liquidityPool][user];
-        state.remainingDepositRequest = state.remainingDepositRequest + transferredAmount;
+        state.remainingDepositRequest = state.remainingDepositRequest + _currencyAmount;
         state.exists = true;
 
         gateway.increaseInvestOrder(
-            poolId, lPool.trancheId(), user, poolManager.currencyAddressToId(currency), transferredAmount
+            poolId, lPool.trancheId(), user, poolManager.currencyAddressToId(currency), _currencyAmount
         );
+
+        return true;
     }
 
     /// @notice Request tranche token redemption. Liquidity pools have to request redemptions
@@ -189,7 +184,11 @@ contract InvestmentManager is Auth {
     ///         in case their orders got fulfilled.
     /// @dev    The user tranche tokens required to fulfill the redemption request have to be locked,
     ///         even though the currency payout can only happen after epoch execution.
-    function requestRedeem(address liquidityPool, uint256 trancheTokenAmount, address user) public auth {
+    function requestRedeem(address liquidityPool, uint256 trancheTokenAmount, address user)
+        public
+        auth
+        returns (bool)
+    {
         uint128 _trancheTokenAmount = trancheTokenAmount.toUint128();
         require(_trancheTokenAmount != 0, "InvestmentManager/zero-amount-not-allowed");
         LiquidityPoolLike lPool = LiquidityPoolLike(liquidityPool);
@@ -200,24 +199,23 @@ contract InvestmentManager is Auth {
             "InvestmentManager/currency-not-allowed"
         );
 
-        _processIncreaseRedeemRequest(liquidityPool, _trancheTokenAmount, user);
+        return _processIncreaseRedeemRequest(liquidityPool, _trancheTokenAmount, user);
     }
 
-    function _processIncreaseRedeemRequest(address liquidityPool, uint128 trancheTokenAmount, address user) internal {
+    function _processIncreaseRedeemRequest(address liquidityPool, uint128 trancheTokenAmount, address user)
+        internal
+        returns (bool)
+    {
         LiquidityPoolLike lPool = LiquidityPoolLike(liquidityPool);
         InvestmentState storage state = investments[liquidityPool][user];
         state.remainingRedeemRequest = state.remainingRedeemRequest + trancheTokenAmount;
         state.exists = true;
 
-        // Transfer the tranche token amount from user to escrow (lock tranche tokens in escrow)
-        require(
-            AuthTransferLike(address(lPool.share())).authTransferFrom(user, address(escrow), trancheTokenAmount),
-            "InvestmentManager/transfer-failed"
-        );
-
         gateway.increaseRedeemOrder(
             lPool.poolId(), lPool.trancheId(), user, poolManager.currencyAddressToId(lPool.asset()), trancheTokenAmount
         );
+
+        return true;
     }
 
     function decreaseDepositRequest(address liquidityPool, uint256 _currencyAmount, address user) public auth {
@@ -410,7 +408,19 @@ contract InvestmentManager is Auth {
         uint128 trancheTokenAmount
     ) public onlyGateway {
         address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, currencyId);
-        _processIncreaseRedeemRequest(liquidityPool, trancheTokenAmount, user);
+        require(
+            _processIncreaseRedeemRequest(liquidityPool, trancheTokenAmount, user),
+            "InvestmentManager/failed-redeem-request"
+        );
+
+        // Transfer the tranche token amount from user to escrow (lock tranche tokens in escrow)
+        require(
+            AuthTransferLike(address(LiquidityPoolLike(liquidityPool).share())).authTransferFrom(
+                user, address(escrow), trancheTokenAmount
+            ),
+            "InvestmentManager/transfer-failed"
+        );
+
         emit TriggerIncreaseRedeemOrder(poolId, trancheId, user, currencyId, trancheTokenAmount);
     }
 

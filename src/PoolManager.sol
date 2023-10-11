@@ -381,7 +381,7 @@ contract PoolManager is Auth {
 
         // Deploy liquidity pool
         liquidityPool = liquidityPoolFactory.newLiquidityPool(
-            poolId, trancheId, currency, tranche.token, address(investmentManager), liquidityPoolWards
+            poolId, trancheId, currency, tranche.token, address(escrow), address(investmentManager), liquidityPoolWards
         );
         tranche.liquidityPools[currency] = liquidityPool;
 
