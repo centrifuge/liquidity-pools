@@ -33,7 +33,7 @@ To run all tests locally:
 forge test
 ```
 
-## Audit Reports
+## Audit reports
 
 | Auditor | Report Link |
 |---|---|
