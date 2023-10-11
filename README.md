@@ -35,7 +35,7 @@ forge test
 
 ## Audit reports
 
-| Auditor | Report Link |
+| Auditor | Report link |
 |---|---|
 | Code4rena | [`September 2023 - Code4rena Report`](https://code4rena.com/reports/2023-09-centrifuge) |
 | SRLabs | [`September 2023 - SRLabs Report`](https://github.com/centrifuge/liquidity-pools/audits/2023-09-SRLabs.pdf) |
