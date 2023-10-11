@@ -41,4 +41,4 @@ forge test
 | SRLabs | [`September 2023 - SRLabs Report`](https://github.com/centrifuge/liquidity-pools/audits/2023-09-SRLabs.pdf) |
 
 ## License
-This codebase is licensed under [GNU Lesser General Public License v3.0](https://github.com/centrifuge/centrifuge-chain/blob/main/LICENSE).
+This codebase is licensed under [GNU Lesser General Public License v3.0](https://github.com/centrifuge/liquidity-pools/blob/main/LICENSE).
