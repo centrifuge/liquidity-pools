@@ -148,8 +148,8 @@ contract PoolManager is Auth {
 
         SafeTransferLib.safeTransferFrom(currencyAddress, msg.sender, address(escrow), amount);
 
-        gateway.transfer(currency, msg.sender, recipient, transferredAmount);
-        emit TransferCurrency(currencyAddress, recipient, transferredAmount);
+        gateway.transfer(currency, msg.sender, recipient, amount);
+        emit TransferCurrency(currencyAddress, recipient, amount);
     }
 
     function transferTrancheTokensToCentrifuge(

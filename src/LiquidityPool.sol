@@ -215,7 +215,7 @@ contract LiquidityPool is Auth, IERC4626 {
     /// @notice Request can only be called by the owner of the assets
     ///         Asset is locked in the escrow on request submission
     function requestDeposit(uint256 assets) public {
-        require(IERC20(asset).allowance(msg.sender, address(this)) >= assets, "LiquidityPool/insufficient-allowance");
+        require(IERC20(asset).balanceOf(msg.sender) >= assets, "LiquidityPool/insufficient-balance");
         require(manager.requestDeposit(address(this), assets, msg.sender), "LiquidityPool/request-deposit-failed");
         SafeTransferLib.safeTransferFrom(asset, msg.sender, address(escrow), assets);
         emit DepositRequest(msg.sender, assets);
@@ -256,9 +256,7 @@ contract LiquidityPool is Auth, IERC4626 {
     ///         DOES support flow where owner != msg.sender but has allowance to spend its shares
     ///         Shares are locked in the escrow on request submission
     function requestRedeem(uint256 shares, address owner) public {
-        require(
-            msg.sender == owner || share.allowance(owner, msg.sender) >= shares, "LiquidityPool/insufficient-allowance"
-        );
+        require(share.balanceOf(msg.sender) >= shares, "LiquidityPool/insufficient-balance");
         require(manager.requestRedeem(address(this), shares, owner), "LiquidityPool/request-redeem-failed");
         require(_transferFrom(owner, address(escrow), shares), "LiquidityPool/transfer-failed");
         emit RedeemRequest(owner, shares);
