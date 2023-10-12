@@ -254,7 +254,7 @@ contract LiquidityPool is Auth, IERC4626 {
     function requestRedeem(uint256 shares, address owner) public {
         require(share.balanceOf(msg.sender) >= shares, "LiquidityPool/insufficient-balance");
         require(manager.requestRedeem(address(this), shares, owner), "LiquidityPool/request-redeem-failed");
-        require(_transferFrom(owner, address(escrow), shares), "LiquidityPool/transfer-failed");
+        require(transferFrom(owner, address(escrow), shares), "LiquidityPool/transfer-failed");
         emit RedeemRequest(owner, shares);
     }
 
@@ -304,13 +304,7 @@ contract LiquidityPool is Auth, IERC4626 {
         return share.allowance(owner, spender);
     }
 
-    function transferFrom(address, address, uint256) public returns (bool) {
-        (bool success, bytes memory data) = address(share).call(bytes.concat(msg.data, bytes20(msg.sender)));
-        _successCheck(success);
-        return abi.decode(data, (bool));
-    }
-
-    function _transferFrom(address from, address to, uint256 value) internal returns (bool) {
+    function transferFrom(address from, address to, uint256 value) public returns (bool) {
         (bool success, bytes memory data) = address(share).call(
             bytes.concat(
                 abi.encodeWithSignature("transferFrom(address,address,uint256)", from, to, value), bytes20(msg.sender)
@@ -320,13 +314,13 @@ contract LiquidityPool is Auth, IERC4626 {
         return abi.decode(data, (bool));
     }
 
-    function transfer(address, uint256) public returns (bool) {
+    function transfer(address, uint256) external returns (bool) {
         (bool success, bytes memory data) = address(share).call(bytes.concat(msg.data, bytes20(msg.sender)));
         _successCheck(success);
         return abi.decode(data, (bool));
     }
 
-    function approve(address, uint256) public returns (bool) {
+    function approve(address, uint256) external returns (bool) {
         (bool success, bytes memory data) = address(share).call(bytes.concat(msg.data, bytes20(msg.sender)));
         _successCheck(success);
         return abi.decode(data, (bool));
