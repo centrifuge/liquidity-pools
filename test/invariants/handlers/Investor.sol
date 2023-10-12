@@ -5,8 +5,7 @@ import {TestSetup} from "test/TestSetup.t.sol";
 import {MockCentrifugeChain} from "test/mock/MockCentrifugeChain.sol";
 import {MathLib} from "src/util/MathLib.sol";
 import {IERC4626} from "src/interfaces/IERC4626.sol";
-
-import "forge-std/Test.sol";
+import {BaseHandler} from "./BaseHandler.sol";
 
 interface ERC20Like {
     function mint(address user, uint256 amount) external;
@@ -21,7 +20,7 @@ interface LiquidityPoolLike is IERC4626 {
     function manager() external view returns (address);
 }
 
-contract InvestorHandler is Test {
+contract InvestorHandler is BaseHandler {
     using MathLib for uint256;
     using MathLib for uint128;
 
@@ -35,10 +34,6 @@ contract InvestorHandler is Test {
     MockCentrifugeChain immutable centrifugeChain;
     address immutable escrow;
     address immutable investmentManager;
-
-    uint256 public immutable numInvestors;
-    address[] public investors;
-    address currentInvestor;
 
     struct InvestorState {
         uint256 totalDepositRequested;
@@ -63,8 +58,8 @@ contract InvestorHandler is Test {
         address mockCentrifugeChain_,
         address erc20_,
         address escrow_,
-        uint256 numInvestors_
-    ) {
+        address state_
+    ) BaseHandler(state_) {
         poolId = poolId_;
         trancheId = trancheId_;
         currencyId = currencyId_;
@@ -75,21 +70,6 @@ contract InvestorHandler is Test {
         trancheToken = ERC20Like(liquidityPool.share());
         escrow = escrow_;
         investmentManager = liquidityPool.manager();
-
-        numInvestors = numInvestors_;
-        for (uint256 i; i < numInvestors; ++i) {
-            address investor = makeAddr(string(abi.encode("investor", i)));
-            investors.push(investor);
-            centrifugeChain.updateMember(poolId, trancheId, investor, type(uint64).max);
-        }
-    }
-
-    modifier useRandomInvestor(uint256 investorIndex_) {
-        currentInvestor = investors[_bound(investorIndex_, 0, investors.length - 1)];
-        (, address currentPrank,) = vm.readCallers();
-        if (currentPrank != currentInvestor) vm.startPrank(currentInvestor);
-        _;
-        vm.stopPrank();
     }
 
     // --- Investments ---
@@ -239,10 +219,5 @@ contract InvestorHandler is Test {
 
         state.totalTrancheTokensPaidOutOnRedeem += trancheTokenPayout;
         state.totalCurrencyPaidOutOnRedeem += currencyPayout;
-    }
-
-    /// @notice Returns the smallest of two numbers.
-    function _min(uint256 a, uint256 b) internal pure returns (uint256) {
-        return a > b ? b : a;
     }
 }
