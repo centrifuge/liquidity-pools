@@ -7,8 +7,6 @@ import {SafeTransferLib} from "./util/SafeTransferLib.sol";
 import {IERC20} from "./interfaces/IERC20.sol";
 import {IERC4626} from "./interfaces/IERC4626.sol";
 
-import "forge-std/console.sol";
-
 interface ERC20PermitLike {
     function permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
         external;
