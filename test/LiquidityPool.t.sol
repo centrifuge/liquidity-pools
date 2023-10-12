@@ -983,7 +983,7 @@ contract LiquidityPoolTest is TestSetup {
                     erc20.DOMAIN_SEPARATOR(),
                     keccak256(
                         abi.encode(
-                            erc20.PERMIT_TYPEHASH(), investor, address(investmentManager), amount, 0, block.timestamp
+                            erc20.PERMIT_TYPEHASH(), investor, lPool_, amount, 0, block.timestamp
                         )
                     )
                 )
@@ -991,7 +991,7 @@ contract LiquidityPoolTest is TestSetup {
         );
 
         vm.prank(random_); // random fr permit
-        erc20.permit(investor, address(investmentManager), amount, block.timestamp, v, r, s);
+        erc20.permit(investor, lPool_, amount, block.timestamp, v, r, s);
 
         // investor still able to requestDepositWithPermit
         lPool.requestDepositWithPermit(amount, investor, block.timestamp, v, r, s);
@@ -1022,7 +1022,7 @@ contract LiquidityPoolTest is TestSetup {
                     erc20.DOMAIN_SEPARATOR(),
                     keccak256(
                         abi.encode(
-                            erc20.PERMIT_TYPEHASH(), investor, address(investmentManager), amount, 0, block.timestamp
+                            erc20.PERMIT_TYPEHASH(), investor, lPool_, amount, 0, block.timestamp
                         )
                     )
                 )

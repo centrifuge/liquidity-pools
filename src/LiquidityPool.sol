@@ -238,7 +238,7 @@ contract LiquidityPool is Auth, IERC4626 {
     function requestDepositWithPermit(uint256 assets, address owner, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
         public
     {
-        _withPermit(asset, owner, address(manager), assets, deadline, v, r, s);
+        _withPermit(asset, owner, address(this), assets, deadline, v, r, s);
         require(manager.requestDeposit(address(this), assets, owner), "LiquidityPool/request-deposit-failed");
         SafeTransferLib.safeTransferFrom(asset, owner, address(escrow), assets);
         emit DepositRequest(owner, assets);
@@ -268,14 +268,7 @@ contract LiquidityPool is Auth, IERC4626 {
     ///         Shares are locked in the escrow on request submission
     function requestRedeem(uint256 shares, address owner) public withTokenApproval(owner, shares) {
         require(manager.requestRedeem(address(this), shares, owner), "LiquidityPool/request-redeem-failed");
-
-        if (owner == msg.sender) {
-            // If the owner is the msg.sender, auth transfer is used so EIP-20 approval is not required
-            require(_authTransferFrom(owner, address(escrow), shares), "LiquidityPool/transfer-failed");
-        } else {
-            require(share.transferFrom(owner, address(escrow), shares), "LiquidityPool/transfer-failed");
-        }
-
+        require(_transferFrom(owner, address(escrow), shares), "LiquidityPool/transfer-failed");
         emit RedeemRequest(owner, shares);
     }
 
@@ -329,11 +322,10 @@ contract LiquidityPool is Auth, IERC4626 {
         return abi.decode(data, (bool));
     }
 
-    // Required to call share.authTransferFrom while retaining msg.sender as address(this)
-    function _authTransferFrom(address from, address to, uint256 value) internal returns (bool) {
+    function _transferFrom(address from, address to, uint256 value) internal returns (bool) {
         (bool success, bytes memory data) = address(share).call(
-            abi.encodeWithSignature(
-                "authTransferFrom(address,address,uint256)", from, to, value, bytes20(address(this))
+            bytes.concat(
+                abi.encodeWithSignature("transferFrom(address,address,uint256)", from, to, value), bytes20(msg.sender)
             )
         );
         _successCheck(success);
