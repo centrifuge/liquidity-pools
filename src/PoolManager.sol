@@ -146,12 +146,7 @@ contract PoolManager is Auth {
         uint128 currency = currencyAddressToId[currencyAddress];
         require(currency != 0, "PoolManager/unknown-currency");
 
-        // Transfer the currency amount from user to escrow (lock currency in escrow)
-        // Checks actual balance difference to support fee-on-transfer tokens
-        uint256 preBalance = IERC20(currencyAddress).balanceOf(address(escrow));
         SafeTransferLib.safeTransferFrom(currencyAddress, msg.sender, address(escrow), amount);
-        uint256 postBalance = IERC20(currencyAddress).balanceOf(address(escrow));
-        uint128 transferredAmount = (postBalance - preBalance).toUint128();
 
         gateway.transfer(currency, msg.sender, recipient, transferredAmount);
         emit TransferCurrency(currencyAddress, recipient, transferredAmount);
