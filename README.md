@@ -33,5 +33,12 @@ To run all tests locally:
 forge test
 ```
 
+## Audit reports
+
+| Auditor | Report link |
+|---|---|
+| Code4rena | [`September 2023 - Code4rena Report`](https://code4rena.com/reports/2023-09-centrifuge) |
+| SRLabs | [`September 2023 - SRLabs Report`](https://github.com/centrifuge/liquidity-pools/blob/main/audits/2023-09-SRLabs.pdf) |
+
 ## License
-This codebase is licensed under [GNU Lesser General Public License v3.0](https://github.com/centrifuge/centrifuge-chain/blob/main/LICENSE).
+This codebase is licensed under [GNU Lesser General Public License v3.0](https://github.com/centrifuge/liquidity-pools/blob/main/LICENSE).
