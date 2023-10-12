@@ -740,8 +740,8 @@ contract LiquidityPoolTest is TestSetup {
         vm.expectRevert(bytes("SafeTransferLib/safe-transfer-from-failed"));
         lPool.requestDeposit(amount);
 
-        // successj
-        erc20.approve(lPool_, amount); // add allowance
+        // success
+        erc20.approve(lPool_, amount);
         lPool.requestDeposit(amount);
 
         // fail: no currency left
