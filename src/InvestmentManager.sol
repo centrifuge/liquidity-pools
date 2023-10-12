@@ -199,10 +199,10 @@ contract InvestmentManager is Auth {
             "InvestmentManager/currency-not-allowed"
         );
 
-        return _processIncreaseRedeemRequest(liquidityPool, _trancheTokenAmount, user);
+        return _processRedeemRequest(liquidityPool, _trancheTokenAmount, user);
     }
 
-    function _processIncreaseRedeemRequest(address liquidityPool, uint128 trancheTokenAmount, address user)
+    function _processRedeemRequest(address liquidityPool, uint128 trancheTokenAmount, address user)
         internal
         returns (bool)
     {
@@ -409,8 +409,7 @@ contract InvestmentManager is Auth {
     ) public onlyGateway {
         address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, currencyId);
         require(
-            _processIncreaseRedeemRequest(liquidityPool, trancheTokenAmount, user),
-            "InvestmentManager/failed-redeem-request"
+            _processRedeemRequest(liquidityPool, trancheTokenAmount, user), "InvestmentManager/failed-redeem-request"
         );
 
         // Transfer the tranche token amount from user to escrow (lock tranche tokens in escrow)
