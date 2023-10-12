@@ -7,6 +7,8 @@ import {SafeTransferLib} from "./util/SafeTransferLib.sol";
 import {IERC20} from "./interfaces/IERC20.sol";
 import {IERC4626} from "./interfaces/IERC4626.sol";
 
+import "forge-std/console.sol";
+
 interface ERC20PermitLike {
     function permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
         external;
@@ -104,18 +106,6 @@ contract LiquidityPool is Auth, IERC4626 {
         emit Rely(msg.sender);
     }
 
-    /// @dev Owner needs to be the msg.sender
-    modifier withApproval(address owner) {
-        require((msg.sender == owner), "LiquidityPool/no-approval");
-        _;
-    }
-
-    /// @dev msg.sender has approval to spent owner's tokens
-    modifier withTokenApproval(address owner, uint256 amount) {
-        require(msg.sender == owner || share.allowance(owner, msg.sender) >= amount, "LiquidityPool/no-token-allowance");
-        _;
-    }
-
     // --- Administration ---
     function file(bytes32 what, address data) public auth {
         if (what == "manager") manager = ManagerLike(data);
@@ -191,12 +181,10 @@ contract LiquidityPool is Auth, IERC4626 {
 
     /// @notice Withdraw assets after successful epoch execution. Receiver will receive an exact amount of assets for
     ///         a certain amount of shares that has been redeemed from Owner during epoch execution.
+    ///         DOES NOT support owner != msg.sender since shares are already transferred on requestRedeem
     /// @return shares that have been redeemed for the exact assets amount
-    function withdraw(uint256 assets, address receiver, address owner)
-        public
-        withApproval(owner)
-        returns (uint256 shares)
-    {
+    function withdraw(uint256 assets, address receiver, address owner) public returns (uint256 shares) {
+        require((msg.sender == owner), "LiquidityPool/no-approval");
         shares = manager.withdraw(address(this), assets, receiver, owner);
         emit Withdraw(address(this), receiver, owner, assets, shares);
     }
@@ -214,12 +202,10 @@ contract LiquidityPool is Auth, IERC4626 {
     /// @notice Redeem shares after successful epoch execution. Receiver will receive assets for
     /// @notice Redeem shares can only be called by the Owner or an authorized admin.
     ///         the exact amount of redeemed shares from Owner after epoch execution.
+    ///         DOES NOT support owner != msg.sender since shares are already transferred on requestRedeem
     /// @return assets payout for the exact amount of redeemed shares
-    function redeem(uint256 shares, address receiver, address owner)
-        public
-        withApproval(owner)
-        returns (uint256 assets)
-    {
+    function redeem(uint256 shares, address receiver, address owner) public returns (uint256 assets) {
+        require((msg.sender == owner), "LiquidityPool/no-approval");
         assets = manager.redeem(address(this), shares, receiver, owner);
         emit Withdraw(address(this), receiver, owner, assets, shares);
     }
@@ -229,6 +215,7 @@ contract LiquidityPool is Auth, IERC4626 {
     /// @notice Request can only be called by the owner of the assets
     ///         Asset is locked in the escrow on request submission
     function requestDeposit(uint256 assets) public {
+        require(IERC20(asset).allowance(msg.sender, address(this)) >= assets, "LiquidityPool/insufficient-allowance");
         require(manager.requestDeposit(address(this), assets, msg.sender), "LiquidityPool/request-deposit-failed");
         SafeTransferLib.safeTransferFrom(asset, msg.sender, address(escrow), assets);
         emit DepositRequest(msg.sender, assets);
@@ -245,6 +232,8 @@ contract LiquidityPool is Auth, IERC4626 {
     }
 
     /// @notice View the total amount the user has requested to deposit but isn't able to deposit or mint yet
+    /// @dev    Due to the asynchronous nature, this value might be outdated, and should only
+    ///         be used for informational purposes.
     function userDepositRequest(address user) external view returns (uint256 assets) {
         assets = manager.userDepositRequest(address(this), user);
     }
@@ -264,9 +253,12 @@ contract LiquidityPool is Auth, IERC4626 {
     }
 
     /// @notice Request share redemption for a receiver to be included in the next epoch execution.
-    /// @notice Request can only be called by the owner of the shares
+    ///         DOES support flow where owner != msg.sender but has allowance to spend its shares
     ///         Shares are locked in the escrow on request submission
-    function requestRedeem(uint256 shares, address owner) public withTokenApproval(owner, shares) {
+    function requestRedeem(uint256 shares, address owner) public {
+        require(
+            msg.sender == owner || share.allowance(owner, msg.sender) >= shares, "LiquidityPool/insufficient-allowance"
+        );
         require(manager.requestRedeem(address(this), shares, owner), "LiquidityPool/request-redeem-failed");
         require(_transferFrom(owner, address(escrow), shares), "LiquidityPool/transfer-failed");
         emit RedeemRequest(owner, shares);
@@ -287,6 +279,8 @@ contract LiquidityPool is Auth, IERC4626 {
     }
 
     /// @notice View the total amount the user has requested to redeem but isn't able to withdraw or redeem yet
+    /// @dev    Due to the asynchronous nature, this value might be outdated, and should only
+    ///         be used for informational purposes.
     function userRedeemRequest(address user) external view returns (uint256 shares) {
         shares = manager.userRedeemRequest(address(this), user);
     }
