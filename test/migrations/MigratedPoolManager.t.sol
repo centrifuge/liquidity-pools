@@ -21,6 +21,12 @@ contract MigrationsTest is InvestRedeemFlow {
         vm.warp(block.timestamp + 3 days);
         root.executeScheduledRely(address(this));
 
+        // deploy new liquidityPoolFactory
+        LiquidityPoolFactory newLiquidityPoolFactory = new LiquidityPoolFactory(address(root));
+
+        // rewire factory contracts
+        newLiquidityPoolFactory.rely(address(root));
+
         // Collect all pools, their tranches, allowed currencies and liquidity pool currencies
         // assume these records are available off-chain
         uint64[] memory poolIds = new uint64[](1);
@@ -40,7 +46,7 @@ contract MigrationsTest is InvestRedeemFlow {
         // Deploy new MigratedPoolManager
         MigratedPoolManager newPoolManager = new MigratedPoolManager(
             address(escrow),
-            liquidityPoolFactory,
+            address(newLiquidityPoolFactory),
             restrictionManagerFactory,
             trancheTokenFactory,
             address(poolManager),
@@ -56,7 +62,7 @@ contract MigrationsTest is InvestRedeemFlow {
         );
 
         // Rewire contracts
-        LiquidityPoolFactory(liquidityPoolFactory).rely(address(newPoolManager));
+        newLiquidityPoolFactory.rely(address(newPoolManager));
         TrancheTokenFactory(trancheTokenFactory).rely(address(newPoolManager));
         root.relyContract(address(gateway), address(this));
         gateway.file("poolManager", address(newPoolManager));
@@ -100,7 +106,7 @@ contract MigrationsTest is InvestRedeemFlow {
     function verifyMigratedPoolManagerPermissions(PoolManager oldPoolManager, PoolManager newPoolManager) public {
         assertTrue(address(oldPoolManager) != address(newPoolManager));
         assertEq(address(oldPoolManager.escrow()), address(newPoolManager.escrow()));
-        assertEq(address(oldPoolManager.liquidityPoolFactory()), address(newPoolManager.liquidityPoolFactory()));
+        assertFalse(address(oldPoolManager.liquidityPoolFactory()) == address(newPoolManager.liquidityPoolFactory()));
         assertEq(
             address(oldPoolManager.restrictionManagerFactory()), address(newPoolManager.restrictionManagerFactory())
         );
