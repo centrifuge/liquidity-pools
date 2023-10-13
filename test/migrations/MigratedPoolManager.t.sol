@@ -35,6 +35,7 @@ contract MigrationsTest is InvestRedeemFlow {
         liquidityPoolCurrencies[0] = new address[][](1);
         liquidityPoolCurrencies[0][0] = new address[](1);
         liquidityPoolCurrencies[0][0][0] = address(erc20);
+        address[][][] memory liquidityPoolOverrides = new address[][][](0);
 
         // Deploy new MigratedPoolManager
         MigratedPoolManager newPoolManager = new MigratedPoolManager(
@@ -46,7 +47,8 @@ contract MigrationsTest is InvestRedeemFlow {
             poolIds,
             trancheIds,
             allowedCurrencies,
-            liquidityPoolCurrencies
+            liquidityPoolCurrencies,
+            liquidityPoolOverrides
         );
 
         verifyMigratedPoolManagerState(
