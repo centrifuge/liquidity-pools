@@ -252,7 +252,7 @@ contract LiquidityPool is Auth, IERC4626 {
     ///         DOES support flow where owner != msg.sender but has allowance to spend its shares
     ///         Shares are locked in the escrow on request submission
     function requestRedeem(uint256 shares, address owner) public {
-        require(share.balanceOf(msg.sender) >= shares, "LiquidityPool/insufficient-balance");
+        require(share.balanceOf(owner) >= shares, "LiquidityPool/insufficient-balance");
         require(manager.requestRedeem(address(this), shares, owner), "LiquidityPool/request-redeem-failed");
         require(transferFrom(owner, address(escrow), shares), "LiquidityPool/transfer-failed");
         emit RedeemRequest(owner, shares);
