@@ -4,7 +4,6 @@ pragma solidity 0.8.21;
 import {Auth} from "./util/Auth.sol";
 import {MathLib} from "./util/MathLib.sol";
 import {SafeTransferLib} from "./util/SafeTransferLib.sol";
-import "forge-std/Test.sol";
 
 interface GatewayLike {
     function increaseInvestOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currencyId, uint128 amount)
@@ -83,7 +82,7 @@ struct InvestmentState {
 /// @title  Investment Manager
 /// @notice This is the main contract LiquidityPools interact with for
 ///         both incoming and outgoing investment transactions.
-contract InvestmentManager is Auth, Test {
+contract InvestmentManager is Auth {
     using MathLib for uint256;
 
     /// @dev Prices are fixed-point integers with 18 decimals
@@ -135,7 +134,6 @@ contract InvestmentManager is Auth, Test {
 
     /// @dev Gateway must be msg.sender for incoming messages
     modifier onlyGateway() {
-        console.log(msg.sender);
         require(msg.sender == address(gateway), "InvestmentManager/not-the-gateway");
         _;
     }
