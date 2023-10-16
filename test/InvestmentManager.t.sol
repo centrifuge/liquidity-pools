@@ -55,17 +55,10 @@ contract InvestmentManagerTest is TestSetup {
         vm.assume(address(gateway) != self);
         LiquidityPool lPool = LiquidityPool(deploySimplePool());
 
-<<<<<<< HEAD
         uint64 poolId = lPool.poolId();
         bytes16 trancheId = lPool.trancheId();
         vm.expectRevert(bytes("InvestmentManager/not-the-gateway"));
         investmentManager.updateTrancheTokenPrice(poolId, trancheId, defaultCurrencyId, price);
-=======
-        uint64 poolId_ = lPool.poolId();
-        bytes16 trancheId_ = lPool.trancheId();
-        vm.expectRevert(bytes("InvestmentManager/not-the-gateway"));
-        investmentManager.updateTrancheTokenPrice(poolId_, trancheId_, defaultCurrencyId, price);
->>>>>>> d3875a523d8fdc48ec19d52501168a1aae96c9f0
 
         vm.expectRevert(bytes("")); // use random pool and tranche
         centrifugeChain.updateTrancheTokenPrice(100, _stringToBytes16("100"), defaultCurrencyId, price);
