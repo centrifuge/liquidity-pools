@@ -19,24 +19,24 @@ interface ManagerLike {
     function mint(address lp, uint256 shares, address receiver, address owner) external returns (uint256);
     function withdraw(address lp, uint256 assets, address receiver, address owner) external returns (uint256);
     function redeem(address lp, uint256 shares, address receiver, address owner) external returns (uint256);
-    function maxDeposit(address lp, address user) external view returns (uint256);
-    function maxMint(address lp, address user) external view returns (uint256);
-    function maxWithdraw(address lp, address user) external view returns (uint256);
-    function maxRedeem(address lp, address user) external view returns (uint256);
+    function maxDeposit(address lp, address receiver) external view returns (uint256);
+    function maxMint(address lp, address receiver) external view returns (uint256);
+    function maxWithdraw(address lp, address receiver) external view returns (uint256);
+    function maxRedeem(address lp, address receiver) external view returns (uint256);
     function convertToShares(address lp, uint256 assets) external view returns (uint256);
     function convertToAssets(address lp, uint256 shares) external view returns (uint256);
-    function previewDeposit(address lp, address user, uint256 assets) external view returns (uint256);
-    function previewMint(address lp, address user, uint256 shares) external view returns (uint256);
-    function previewWithdraw(address lp, address user, uint256 assets) external view returns (uint256);
-    function previewRedeem(address lp, address user, uint256 shares) external view returns (uint256);
+    function previewDeposit(address lp, address operator, uint256 assets) external view returns (uint256);
+    function previewMint(address lp, address operator, uint256 shares) external view returns (uint256);
+    function previewWithdraw(address lp, address operator, uint256 assets) external view returns (uint256);
+    function previewRedeem(address lp, address operator, uint256 shares) external view returns (uint256);
     function requestDeposit(address lp, uint256 assets, address sender, address operator) external returns (bool);
     function requestRedeem(address lp, uint256 shares, address operator) external returns (bool);
-    function decreaseDepositRequest(address lp, uint256 assets, address owner) external;
-    function decreaseRedeemRequest(address lp, uint256 shares, address owner) external;
-    function cancelDepositRequest(address lp, address owner) external;
-    function cancelRedeemRequest(address lp, address owner) external;
-    function userDepositRequest(address lp, address user) external view returns (uint256);
-    function userRedeemRequest(address lp, address user) external view returns (uint256);
+    function decreaseDepositRequest(address lp, uint256 assets, address operator) external;
+    function decreaseRedeemRequest(address lp, uint256 shares, address operator) external;
+    function cancelDepositRequest(address lp, address operator) external;
+    function cancelRedeemRequest(address lp, address operator) external;
+    function pendingDepositRequest(address lp, address operator) external view returns (uint256);
+    function pendingRedeemRequest(address lp, address operator) external view returns (uint256);
 }
 
 /// @title  Liquidity Pool
@@ -235,11 +235,11 @@ contract LiquidityPool is Auth, IERC4626 {
         emit DepositRequest(owner, operator, assets);
     }
 
-    /// @notice View the total amount the user has requested to deposit but isn't able to deposit or mint yet
+    /// @notice View the total amount the operator has requested to deposit but isn't able to deposit or mint yet
     /// @dev    Due to the asynchronous nature, this value might be outdated, and should only
     ///         be used for informational purposes.
-    function userDepositRequest(address user) external view returns (uint256 assets) {
-        assets = manager.userDepositRequest(address(this), user);
+    function pendingDepositRequest(address operator) external view returns (uint256 assets) {
+        assets = manager.pendingDepositRequest(address(this), operator);
     }
 
     /// @notice Request decreasing the outstanding deposit orders. Will return the assets once the order
@@ -280,11 +280,11 @@ contract LiquidityPool is Auth, IERC4626 {
         emit CancelRedeemRequest(msg.sender);
     }
 
-    /// @notice View the total amount the user has requested to redeem but isn't able to withdraw or redeem yet
+    /// @notice View the total amount the operator has requested to redeem but isn't able to withdraw or redeem yet
     /// @dev    Due to the asynchronous nature, this value might be outdated, and should only
     ///         be used for informational purposes.
-    function userRedeemRequest(address user) external view returns (uint256 shares) {
-        shares = manager.userRedeemRequest(address(this), user);
+    function pendingRedeemRequest(address operator) external view returns (uint256 shares) {
+        shares = manager.pendingRedeemRequest(address(this), operator);
     }
 
     // --- ERC20 overrides ---

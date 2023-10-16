@@ -751,7 +751,7 @@ contract LiquidityPoolTest is TestSetup {
         // ensure funds are locked in escrow
         assertEq(erc20.balanceOf(address(escrow)), amount);
         assertEq(erc20.balanceOf(self), 0);
-        assertEq(lPool.userDepositRequest(self), amount);
+        assertEq(lPool.pendingDepositRequest(self), amount);
 
         // trigger executed collectInvest
         uint128 _currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
@@ -770,7 +770,7 @@ contract LiquidityPoolTest is TestSetup {
         // assert deposit & mint values adjusted
         assertEq(lPool.maxMint(self), trancheTokensPayout);
         assertApproxEqAbs(lPool.maxDeposit(self), amount, 1);
-        assertEq(lPool.userDepositRequest(self), 0);
+        assertEq(lPool.pendingDepositRequest(self), 0);
         // assert tranche tokens minted
         assertEq(lPool.balanceOf(address(escrow)), trancheTokensPayout);
         // assert conversions
@@ -1068,7 +1068,7 @@ contract LiquidityPoolTest is TestSetup {
         // success
         lPool.requestRedeem(amount, address(this), address(this));
         assertEq(lPool.balanceOf(address(escrow)), amount);
-        assertEq(lPool.userRedeemRequest(self), amount);
+        assertEq(lPool.pendingRedeemRequest(self), amount);
 
         // fail: no tokens left
         vm.expectRevert(bytes("LiquidityPool/insufficient-balance"));
@@ -1084,7 +1084,7 @@ contract LiquidityPoolTest is TestSetup {
         // assert withdraw & redeem values adjusted
         assertEq(lPool.maxWithdraw(self), currencyPayout); // max deposit
         assertEq(lPool.maxRedeem(self), amount); // max deposit
-        assertEq(lPool.userRedeemRequest(self), 0);
+        assertEq(lPool.pendingRedeemRequest(self), 0);
         assertEq(lPool.balanceOf(address(escrow)), 0);
         assertEq(erc20.balanceOf(address(userEscrow)), currencyPayout);
         // assert conversions
@@ -1157,7 +1157,7 @@ contract LiquidityPoolTest is TestSetup {
         lPool.requestRedeem(amount, address(this), address(this));
         assertEq(lPool.balanceOf(address(escrow)), amount);
         assertEq(erc20.balanceOf(address(userEscrow)), 0);
-        assertGt(lPool.userRedeemRequest(self), 0);
+        assertGt(lPool.pendingRedeemRequest(self), 0);
 
         // trigger executed collectRedeem
         uint128 _currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId

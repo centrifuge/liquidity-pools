@@ -265,7 +265,7 @@ contract InvestmentManager is Auth {
 
     function cancelRedeemRequest(address liquidityPool, address user) public auth {
         LiquidityPoolLike _liquidityPool = LiquidityPoolLike(liquidityPool);
-        uint256 approximateTrancheTokensPayout = userRedeemRequest(liquidityPool, user);
+        uint256 approximateTrancheTokensPayout = pendingRedeemRequest(liquidityPool, user);
         require(
             _checkTransferRestriction(liquidityPool, address(0), user, approximateTrancheTokensPayout),
             "InvestmentManager/transfer-not-allowed"
@@ -506,11 +506,15 @@ contract InvestmentManager is Auth {
         currencyAmount = uint256(_calculateCurrencyAmount(trancheTokenAmount, liquidityPool, state.redeemPrice));
     }
 
-    function userDepositRequest(address liquidityPool, address user) public view returns (uint256 currencyAmount) {
+    function pendingDepositRequest(address liquidityPool, address user) public view returns (uint256 currencyAmount) {
         currencyAmount = uint256(investments[liquidityPool][user].remainingDepositRequest);
     }
 
-    function userRedeemRequest(address liquidityPool, address user) public view returns (uint256 trancheTokenAmount) {
+    function pendingRedeemRequest(address liquidityPool, address user)
+        public
+        view
+        returns (uint256 trancheTokenAmount)
+    {
         trancheTokenAmount = uint256(investments[liquidityPool][user].remainingRedeemRequest);
     }
 
