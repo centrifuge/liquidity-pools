@@ -153,7 +153,11 @@ contract InvestmentManager is Auth {
     ///         proceed with tranche token payouts in case their orders got fulfilled.
     /// @dev    The user currency amount required to fulfill the deposit request have to be locked,
     ///         even though the tranche token payout can only happen after epoch execution.
-    function requestDeposit(address liquidityPool, uint256 currencyAmount, address user) public auth returns (bool) {
+    function requestDeposit(address liquidityPool, uint256 currencyAmount, address sender, address user)
+        public
+        auth
+        returns (bool)
+    {
         LiquidityPoolLike lPool = LiquidityPoolLike(liquidityPool);
         uint128 _currencyAmount = currencyAmount.toUint128();
         require(_currencyAmount != 0, "InvestmentManager/zero-amount-not-allowed");
@@ -161,6 +165,10 @@ contract InvestmentManager is Auth {
         uint64 poolId = lPool.poolId();
         address currency = lPool.asset();
         require(poolManager.isAllowedAsInvestmentCurrency(poolId, currency), "InvestmentManager/currency-not-allowed");
+
+        require(
+            _checkTransferRestriction(liquidityPool, address(0), sender, 0), "InvestmentManager/sender-is-restricted"
+        );
         require(
             _checkTransferRestriction(liquidityPool, address(0), user, convertToShares(liquidityPool, currencyAmount)),
             "InvestmentManager/transfer-not-allowed"

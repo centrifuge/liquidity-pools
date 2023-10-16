@@ -29,12 +29,12 @@ interface ManagerLike {
     function previewMint(address lp, address user, uint256 shares) external view returns (uint256);
     function previewWithdraw(address lp, address user, uint256 assets) external view returns (uint256);
     function previewRedeem(address lp, address user, uint256 shares) external view returns (uint256);
-    function requestDeposit(address lp, uint256 assets, address receiver) external returns (bool);
-    function requestRedeem(address lp, uint256 shares, address receiver) external returns (bool);
-    function decreaseDepositRequest(address lp, uint256 assets, address receiver) external;
-    function decreaseRedeemRequest(address lp, uint256 shares, address receiver) external;
-    function cancelDepositRequest(address lp, address receiver) external;
-    function cancelRedeemRequest(address lp, address receiver) external;
+    function requestDeposit(address lp, uint256 assets, address sender, address operator) external returns (bool);
+    function requestRedeem(address lp, uint256 shares, address operator) external returns (bool);
+    function decreaseDepositRequest(address lp, uint256 assets, address owner) external;
+    function decreaseRedeemRequest(address lp, uint256 shares, address owner) external;
+    function cancelDepositRequest(address lp, address owner) external;
+    function cancelRedeemRequest(address lp, address owner) external;
     function userDepositRequest(address lp, address user) external view returns (uint256);
     function userRedeemRequest(address lp, address user) external view returns (uint256);
 }
@@ -82,12 +82,12 @@ contract LiquidityPool is Auth, IERC4626 {
 
     // --- Events ---
     event File(bytes32 indexed what, address data);
-    event DepositRequest(address indexed owner, uint256 assets);
-    event RedeemRequest(address indexed owner, uint256 shares);
-    event DecreaseDepositRequest(address indexed owner, uint256 assets);
-    event DecreaseRedeemRequest(address indexed owner, uint256 shares);
-    event CancelDepositRequest(address indexed owner);
-    event CancelRedeemRequest(address indexed owner);
+    event DepositRequest(address indexed sender, address indexed operator, uint256 assets);
+    event RedeemRequest(address indexed sender, address indexed operator, address indexed owner, uint256 shares);
+    event DecreaseDepositRequest(address indexed sender, uint256 assets);
+    event DecreaseRedeemRequest(address indexed sender, uint256 shares);
+    event CancelDepositRequest(address indexed sender);
+    event CancelRedeemRequest(address indexed sender);
     event PriceUpdate(uint256 price);
 
     constructor(uint64 poolId_, bytes16 trancheId_, address asset_, address share_, address escrow_, address manager_) {
@@ -210,21 +210,29 @@ contract LiquidityPool is Auth, IERC4626 {
     /// @notice Request asset deposit for a receiver to be included in the next epoch execution.
     /// @notice Request can only be called by the owner of the assets
     ///         Asset is locked in the escrow on request submission
-    function requestDeposit(uint256 assets) public {
+    function requestDeposit(uint256 assets, address operator) public {
         require(IERC20(asset).balanceOf(msg.sender) >= assets, "LiquidityPool/insufficient-balance");
-        require(manager.requestDeposit(address(this), assets, msg.sender), "LiquidityPool/request-deposit-failed");
+        require(
+            manager.requestDeposit(address(this), assets, msg.sender, operator), "LiquidityPool/request-deposit-failed"
+        );
         SafeTransferLib.safeTransferFrom(asset, msg.sender, address(escrow), assets);
-        emit DepositRequest(msg.sender, assets);
+        emit DepositRequest(msg.sender, operator, assets);
     }
 
     /// @notice Similar to requestDeposit, but with a permit option
-    function requestDepositWithPermit(uint256 assets, address owner, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
-        public
-    {
+    function requestDepositWithPermit(
+        uint256 assets,
+        address operator,
+        address owner,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) public {
         _withPermit(asset, owner, address(this), assets, deadline, v, r, s);
-        require(manager.requestDeposit(address(this), assets, owner), "LiquidityPool/request-deposit-failed");
+        require(manager.requestDeposit(address(this), assets, owner, operator), "LiquidityPool/request-deposit-failed");
         SafeTransferLib.safeTransferFrom(asset, owner, address(escrow), assets);
-        emit DepositRequest(owner, assets);
+        emit DepositRequest(owner, operator, assets);
     }
 
     /// @notice View the total amount the user has requested to deposit but isn't able to deposit or mint yet
@@ -251,11 +259,11 @@ contract LiquidityPool is Auth, IERC4626 {
     /// @notice Request share redemption for a receiver to be included in the next epoch execution.
     ///         DOES support flow where owner != msg.sender but has allowance to spend its shares
     ///         Shares are locked in the escrow on request submission
-    function requestRedeem(uint256 shares, address owner) public {
+    function requestRedeem(uint256 shares, address operator, address owner) public {
         require(share.balanceOf(owner) >= shares, "LiquidityPool/insufficient-balance");
-        require(manager.requestRedeem(address(this), shares, owner), "LiquidityPool/request-redeem-failed");
+        require(manager.requestRedeem(address(this), shares, operator), "LiquidityPool/request-redeem-failed");
         require(transferFrom(owner, address(escrow), shares), "LiquidityPool/transfer-failed");
-        emit RedeemRequest(owner, shares);
+        emit RedeemRequest(msg.sender, operator, owner, shares);
     }
 
     /// @notice Request decreasing the outstanding redemption orders. Will return the shares once the order
