@@ -52,7 +52,7 @@ interface ManagerLike {
 contract LiquidityPool is Auth, IERC4626 {
     using MathLib for uint256;
 
-    uint64 public immutable poolId;
+    uint64 public poolId;
     bytes16 public immutable trancheId;
 
     /// @notice The investment currency for this Liquidity Pool.

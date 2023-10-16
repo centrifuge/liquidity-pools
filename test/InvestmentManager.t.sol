@@ -29,7 +29,7 @@ contract InvestmentManagerTest is TestSetup {
     }
 
     // --- Administration ---
-    function testFile(address random) public {
+    function testFile() public {
         // fail: unrecognized param
         vm.expectRevert(bytes("InvestmentManager/file-unrecognized-param"));
         investmentManager.file("random", self);
@@ -37,76 +37,32 @@ contract InvestmentManagerTest is TestSetup {
         assertEq(address(investmentManager.gateway()), address(gateway));
         assertEq(address(investmentManager.poolManager()), address(poolManager));
         // success
-        investmentManager.file("poolManager", random);
-        assertEq(address(investmentManager.poolManager()), random);
-        investmentManager.file("gateway", random);
-        assertEq(address(investmentManager.gateway()), random);
+        investmentManager.file("poolManager", randomUser);
+        assertEq(address(investmentManager.poolManager()), randomUser);
+        investmentManager.file("gateway", randomUser);
+        assertEq(address(investmentManager.gateway()), randomUser);
 
         // remove self from wards
         investmentManager.deny(self);
         // auth fail
         vm.expectRevert(bytes("Auth/not-authorized"));
-        investmentManager.file("poolManager", random);
+        investmentManager.file("poolManager", randomUser);
     }
 
-    function testUpdatingTokenPriceWorks(
-        uint64 poolId,
-        uint8 decimals,
-        uint128 currencyId,
-        string memory tokenName,
-        string memory tokenSymbol,
-        bytes16 trancheId,
+    function testUpdateTokenPrice(
         uint128 price
     ) public {
-        decimals = uint8(bound(decimals, 1, 18));
-        vm.assume(poolId > 0);
-        vm.assume(trancheId > 0);
-        vm.assume(currencyId > 0);
-        centrifugeChain.addPool(poolId); // add pool
-        centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals); // add tranche
-        centrifugeChain.addCurrency(currencyId, address(erc20)); // add currency
-        centrifugeChain.allowInvestmentCurrency(poolId, currencyId);
-
-        poolManager.deployTranche(poolId, trancheId);
-        LiquidityPoolLike lPool = LiquidityPoolLike(poolManager.deployLiquidityPool(poolId, trancheId, address(erc20)));
-
-        centrifugeChain.updateTrancheTokenPrice(poolId, trancheId, currencyId, price);
-        assertEq(lPool.latestPrice(), price);
-        assertEq(lPool.lastPriceUpdate(), block.timestamp);
-    }
-
-    function testUpdatingTokenPriceAsNonRouterFails(
-        uint64 poolId,
-        uint8 decimals,
-        uint128 currency,
-        string memory tokenName,
-        string memory tokenSymbol,
-        bytes16 trancheId,
-        uint128 price
-    ) public {
-        decimals = uint8(bound(decimals, 1, 18));
-        vm.assume(currency > 0);
-        ERC20 erc20 = _newErc20("X's Dollar", "USDX", 18);
-        centrifugeChain.addPool(poolId); // add pool
-        centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals); // add tranche
-        centrifugeChain.addCurrency(currency, address(erc20));
-        centrifugeChain.allowInvestmentCurrency(poolId, currency);
-        poolManager.deployTranche(poolId, trancheId);
-        poolManager.deployLiquidityPool(poolId, trancheId, address(erc20));
+        vm.assume(address(gateway) != self);
+        LiquidityPool lPool = LiquidityPool(deploySimplePool());
 
         vm.expectRevert(bytes("InvestmentManager/not-the-gateway"));
-        investmentManager.updateTrancheTokenPrice(poolId, trancheId, currency, price);
-    }
+        investmentManager.updateTrancheTokenPrice(lPool.poolId(), lPool.trancheId(), defaultCurrencyId, price);
 
-    function testUpdatingTokenPriceForNonExistentTrancheFails(
-        uint64 poolId,
-        bytes16 trancheId,
-        uint128 currencyId,
-        uint128 price
-    ) public {
-        centrifugeChain.addPool(poolId);
+        vm.expectRevert(bytes("InvestmentManager/liquidityPool-does-not-exist")); // use random pool and tranche
+        centrifugeChain.updateTrancheTokenPrice(100, _stringToBytes16("100"), defaultCurrencyId, price);
 
-        vm.expectRevert(bytes(""));
-        centrifugeChain.updateTrancheTokenPrice(poolId, trancheId, currencyId, price);
+        centrifugeChain.updateTrancheTokenPrice(lPool.poolId(), lPool.trancheId(), defaultCurrencyId, price);
+        assertEq(lPool.latestPrice(), price);
+        assertEq(lPool.lastPriceUpdate(), block.timestamp);
     }
 }

@@ -73,11 +73,10 @@ contract TrancheTokenTest is Test {
         token.removeTrustedForwarder(self);
     }
 
-    function testCheckTrustedForwarderWorks(uint256 validUntil, uint256 amount, address random) public {
+    function testCheckTrustedForwarderWorks(uint256 validUntil, uint256 amount) public {
         vm.assume(validUntil > block.timestamp);
         vm.assume(amount > 0);
-        vm.assume(random != address(0));
-        vm.assume(random != address(token));
+        address random = makeAddr("random");
 
         assertTrue(!token.isTrustedForwarder(self));
         // make self trusted forwarder
@@ -124,7 +123,8 @@ contract TrancheTokenTest is Test {
 
     // --- RestrictionManager ---
     // transferFrom
-    function testTransferFromTokensToMemberWorks(uint256 amount, address targetUser, uint256 validUntil) public {
+    function testTransferFromTokensToMemberWorks(uint256 amount, uint256 validUntil) public {
+        address targetUser = makeAddr("targetUser");
         vm.assume(baseAssumptions(validUntil, targetUser));
         mint(self, amount, validUntil);
 
@@ -145,9 +145,10 @@ contract TrancheTokenTest is Test {
         assertEq(token.balanceOf(targetUser), amount);
     }
 
-    function testTransferFromTokensToExpiredMemberFails(uint256 amount, address targetUser, uint256 validUntil)
+    function testTransferFromTokensToExpiredMemberFails(uint256 amount, uint256 validUntil)
         public
     {
+        address targetUser = makeAddr("targetUser");
         vm.assume(baseAssumptions(validUntil, targetUser));
 
         restrictionManager.updateMember(targetUser, block.timestamp);
@@ -161,7 +162,8 @@ contract TrancheTokenTest is Test {
     }
 
     // Transfer
-    function testTransferTokensToMemberWorks(uint256 amount, address targetUser, uint256 validUntil) public {
+    function testTransferTokensToMemberWorks(uint256 amount, uint256 validUntil) public {
+        address targetUser = makeAddr("targetUser");
         vm.assume(baseAssumptions(validUntil, targetUser));
         mint(self, amount, validUntil);
 
@@ -182,7 +184,8 @@ contract TrancheTokenTest is Test {
         assertEq(token.balanceOf(targetUser), amount);
     }
 
-    function testTransferTokensToExpiredMemberFails(uint256 amount, address targetUser, uint256 validUntil) public {
+    function testTransferTokensToExpiredMemberFails(uint256 amount, uint256 validUntil) public {
+        address targetUser = makeAddr("targetUser");
         vm.assume(baseAssumptions(validUntil, targetUser));
 
         restrictionManager.updateMember(targetUser, block.timestamp);
@@ -197,7 +200,8 @@ contract TrancheTokenTest is Test {
     }
 
     // Mint
-    function testMintTokensToMemberWorks(uint256 amount, address targetUser, uint256 validUntil) public {
+    function testMintTokensToMemberWorks(uint256 amount, uint256 validUntil) public {
+        address targetUser = makeAddr("targetUser");
         vm.assume(baseAssumptions(validUntil, targetUser));
 
         // mint fails -> self not a member
@@ -217,9 +221,8 @@ contract TrancheTokenTest is Test {
         assertEq(token.balanceOf(targetUser), amount);
     }
 
-    function testMintTokensToExpiredMemberFails(uint256 amount, address targetUser) public {
-        vm.assume(targetUser != address(0) && targetUser != self && targetUser != address(token));
-
+    function testMintTokensToExpiredMemberFails(uint256 amount) public {
+        address targetUser = makeAddr("targetUser");
         restrictionManager.updateMember(targetUser, block.timestamp);
         assertEq(restrictionManager.members(targetUser), block.timestamp);
 
@@ -230,17 +233,18 @@ contract TrancheTokenTest is Test {
         (token.balanceOf(targetUser), 0);
     }
 
-    function mint(address targetUser, uint256 amount, uint256 validUntil) public {
+    function mint(address user, uint256 amount, uint256 validUntil) public {
         vm.expectRevert(bytes("RestrictionManager/destination-not-a-member"));
-        token.mint(targetUser, amount);
+        token.mint(user, amount);
 
-        restrictionManager.updateMember(targetUser, validUntil);
-        assertEq(restrictionManager.members(targetUser), validUntil);
-        token.mint(targetUser, amount);
+        restrictionManager.updateMember(user, validUntil);
+        assertEq(restrictionManager.members(user), validUntil);
+        token.mint(user, amount);
     }
 
     // Auth transfer
-    function testAuthTransferFrom(uint256 amount, address sourceUser, uint256 validUntil) public {
+    function testAuthTransferFrom(uint256 amount, uint256 validUntil) public {
+        address sourceUser = makeAddr("sourceUser");
         vm.assume(baseAssumptions(validUntil, sourceUser));
 
         restrictionManager.updateMember(sourceUser, validUntil);

@@ -32,6 +32,7 @@ contract TestSetup is Deployer, Test {
 
     address self = address(this);
     address investor = makeAddr("investor");
+    address randomUser = makeAddr("randomUser");
 
     uint128 constant MAX_UINT128 = type(uint128).max;
 
@@ -77,7 +78,7 @@ contract TestSetup is Deployer, Test {
         excludeContract(address(poolManager.liquidityPoolFactory()));
     }
 
-    // helpers
+    // liquidity pool helper functions
     function deployLiquidityPool(
         uint64 poolId,
         uint8 trancheTokenDecimals,
@@ -110,7 +111,32 @@ contract TestSetup is Deployer, Test {
     }
 
     function deploySimplePool() public returns (address) {
-        return deployLiquidityPool(1, 6, "name", "symbol", _stringToBytes16("1"), defaultCurrencyId, address(erc20));
+        return deployLiquidityPool(5, 6, "name", "symbol", _stringToBytes16("1"), defaultCurrencyId, address(erc20));
+    }
+
+    function deposit(address _lPool, address investor, uint256 amount) public {
+        LiquidityPool lPool = LiquidityPool(_lPool);
+        erc20.mint(investor, amount);
+        centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), investor, type(uint64).max); // add user as member
+        vm.prank(investor);
+        erc20.approve(address(investmentManager), amount); // add allowance
+
+        vm.prank(investor);
+        lPool.requestDeposit(amount);
+        // trigger executed collectInvest
+        uint128 currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
+        centrifugeChain.isExecutedCollectInvest(
+            lPool.poolId(),
+            lPool.trancheId(),
+            bytes32(bytes20(investor)),
+            currencyId,
+            uint128(amount),
+            uint128(amount),
+            0
+        );
+
+        vm.prank(investor);
+        lPool.deposit(amount, investor); // withdraw the amount
     }
 
     // Helpers
@@ -160,6 +186,18 @@ contract TestSetup is Deployer, Test {
         return string(bytesArray);
     }
 
+    function _bytes16ToString(bytes16 _bytes16) public pure returns (string memory) {
+        uint8 i = 0;
+        while(i < 16 && _bytes16[i] != 0) {
+            i++;
+        }
+        bytes memory bytesArray = new bytes(i);
+        for (i = 0; i < 16 && _bytes16[i] != 0; i++) {
+            bytesArray[i] = _bytes16[i];
+        }
+        return string(bytesArray);
+    }
+
     function _stringToBytes128(string memory source) internal pure returns (bytes memory) {
         bytes memory temp = bytes(source);
         bytes memory result = new bytes(128);
@@ -191,4 +229,23 @@ contract TestSetup is Deployer, Test {
 
         return string(bytesArray);
     }
+
+    function random(uint256 maxValue, uint256 nonce) internal view returns (uint256) {
+        if (maxValue == 1) {
+            return maxValue;
+        }
+        uint256 randomnumber = uint256(keccak256(abi.encodePacked(block.timestamp, self, nonce))) % (maxValue - 1);
+        return randomnumber + 1;
+    }
+
+    // assumptions
+    function amountAssumption(uint256 amount) public pure returns (bool) {
+        return (amount > 1 && amount < MAX_UINT128);
+    }
+
+    function addressAssumption(address user) public view returns (bool) {
+        return (user != address(0) && user != address(erc20) && user.code.length == 0);
+    }
+
+
 }
