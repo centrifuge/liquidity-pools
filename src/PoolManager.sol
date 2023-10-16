@@ -405,20 +405,6 @@ contract PoolManager is Auth {
     }
 
     // --- Helpers ---
-    function updateLiquidityPoolAddress(uint64 poolId, bytes16 trancheId, address currency, address liquidityPool)
-        external
-        auth
-    {
-        Tranche storage tranche = pools[poolId].tranches[trancheId];
-        require(tranche.token != address(0), "PoolManager/tranche-does-not-exist");
-        require(isAllowedAsInvestmentCurrency(poolId, currency), "PoolManager/currency-not-supported");
-
-        address oldLiquidityPool = tranche.liquidityPools[currency];
-        require(oldLiquidityPool != address(0), "PoolManager/liquidity-pool-not-deployed");
-
-        tranche.liquidityPools[currency] = liquidityPool;
-        emit DeployLiquidityPool(poolId, trancheId, liquidityPool);
-    }
 
     function getTrancheToken(uint64 poolId, bytes16 trancheId) public view returns (address) {
         Tranche storage tranche = pools[poolId].tranches[trancheId];
