@@ -145,9 +145,7 @@ contract TrancheTokenTest is Test {
         assertEq(token.balanceOf(targetUser), amount);
     }
 
-    function testTransferFromTokensToExpiredMemberFails(uint256 amount, uint256 validUntil)
-        public
-    {
+    function testTransferFromTokensToExpiredMemberFails(uint256 amount, uint256 validUntil) public {
         address targetUser = makeAddr("targetUser");
         vm.assume(baseAssumptions(validUntil, targetUser));
 

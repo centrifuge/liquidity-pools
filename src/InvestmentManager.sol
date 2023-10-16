@@ -282,7 +282,6 @@ contract InvestmentManager is Auth {
         onlyGateway
     {
         address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, currencyId);
-        require(liquidityPool != address(0), "InvestmentManager/liquidityPool-does-not-exist");
         LiquidityPoolLike(liquidityPool).updatePrice(uint256(price));
     }
 

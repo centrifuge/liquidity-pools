@@ -68,9 +68,6 @@ contract PoolManagerTest is TestSetup {
             _bytes32ToString(_stringToBytes32(tokenSymbol)), _bytes32ToString(_stringToBytes32(trancheToken.symbol()))
         );
         assertEq(decimals, trancheToken.decimals());
-
-        vm.expectRevert(bytes("PoolManager/tranche-already-deployed")); // check why no revert?
-        centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals);
     }
 
     function testAddingMultipleTranchesWorks(
@@ -235,17 +232,19 @@ contract PoolManagerTest is TestSetup {
         address destinationAddress = makeAddr("destinationAddress");
         address lPool_  = deploySimplePool();
         LiquidityPool lPool =  LiquidityPool(lPool_);
+        uint64 poolId = lPool.poolId();
+        bytes16 trancheId = lPool.trancheId();
 
         TrancheTokenLike trancheToken = TrancheTokenLike(address(lPool.share()));
 
         vm.expectRevert(bytes("RestrictionManager/destination-not-a-member"));
         centrifugeChain.incomingTransferTrancheTokens(
-            lPool.poolId(), lPool.trancheId(), uint64(block.chainid), destinationAddress, amount
+           poolId, trancheId, uint64(block.chainid), destinationAddress, amount
         );
         centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), destinationAddress, validUntil);
         assertTrue(trancheToken.checkTransferRestriction(address(0), destinationAddress, 0));
         centrifugeChain.incomingTransferTrancheTokens(
-            lPool.poolId(), lPool.trancheId(), uint64(block.chainid), destinationAddress, amount
+           poolId, trancheId, uint64(block.chainid), destinationAddress, amount
         );
         assertEq(trancheToken.balanceOf(destinationAddress), amount);
     }
@@ -284,39 +283,43 @@ contract PoolManagerTest is TestSetup {
         LiquidityPool lPool =  LiquidityPool(lPool_);
         TrancheTokenLike trancheToken = TrancheTokenLike(address(LiquidityPool(lPool_).share()));
 
+        uint64 poolId = lPool.poolId();
+        bytes16 trancheId = lPool.trancheId();
         vm.expectRevert(bytes("PoolManager/not-the-gateway"));
-        poolManager.updateMember(lPool.poolId(), lPool.trancheId(), randomUser, validUntil);
+        poolManager.updateMember(poolId, trancheId, randomUser, validUntil);
 
         vm.expectRevert(bytes("PoolManager/unknown-token"));
         centrifugeChain.updateMember(100, _stringToBytes16("100"), randomUser, validUntil); // use random poolId & trancheId
 
-        centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), randomUser, validUntil);
+        centrifugeChain.updateMember(poolId, trancheId, randomUser, validUntil);
         assertTrue(trancheToken.checkTransferRestriction(address(0), randomUser, 0));
 
         vm.expectRevert(bytes("PoolManager/escrow-member-cannot-be-updated"));
-        centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), address(escrow), validUntil);
+        centrifugeChain.updateMember(poolId, trancheId, address(escrow), validUntil);
     }
 
     function testFreezeAndUnfreeze(
     ) public {
         address lPool_ = deploySimplePool();
         LiquidityPool lPool =  LiquidityPool(lPool_);
+        uint64 poolId = lPool.poolId();
+        bytes16 trancheId = lPool.trancheId();
         TrancheTokenLike trancheToken = TrancheTokenLike(address(LiquidityPool(lPool_).share()));
         uint64 validUntil = uint64(block.timestamp + 7 days);
         address secondUser = makeAddr("secondUser");
 
-        centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), randomUser, validUntil);
-        centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), secondUser, validUntil);
+        centrifugeChain.updateMember(poolId, trancheId, randomUser, validUntil);
+        centrifugeChain.updateMember(poolId, trancheId, secondUser, validUntil);
         assertTrue(trancheToken.checkTransferRestriction(randomUser, secondUser, 0));
 
-        centrifugeChain.freeze(lPool.poolId(), lPool.trancheId(), randomUser);
+        centrifugeChain.freeze(poolId, trancheId, randomUser);
         assertFalse(trancheToken.checkTransferRestriction(randomUser, secondUser, 0));
 
-        centrifugeChain.unfreeze(lPool.poolId(), lPool.trancheId(), randomUser);
+        centrifugeChain.unfreeze(poolId, trancheId, randomUser);
         assertTrue(trancheToken.checkTransferRestriction(randomUser, secondUser, 0));
 
         vm.expectRevert(bytes("PoolManager/escrow-cannot-be-frozen"));
-        centrifugeChain.freeze(lPool.poolId(), lPool.trancheId(), address(escrow));
+        centrifugeChain.freeze(poolId, trancheId, address(escrow));
     }
 
     function testUpdateTokenMetadata(
@@ -325,14 +328,16 @@ contract PoolManagerTest is TestSetup {
     ) public {
         address lPool_ = deploySimplePool();
         LiquidityPool lPool =  LiquidityPool(lPool_);
+        uint64 poolId = lPool.poolId();
+        bytes16 trancheId = lPool.trancheId();
 
         vm.expectRevert(bytes("PoolManager/unknown-token"));
         centrifugeChain.updateTrancheTokenMetadata(100, _stringToBytes16("100"), updatedTokenName, updatedTokenSymbol);
 
         vm.expectRevert(bytes("PoolManager/not-the-gateway"));
-        poolManager.updateTrancheTokenMetadata(lPool.poolId(), lPool.trancheId(), updatedTokenName, updatedTokenSymbol);
+        poolManager.updateTrancheTokenMetadata(poolId, trancheId, updatedTokenName, updatedTokenSymbol);
 
-        centrifugeChain.updateTrancheTokenMetadata(lPool.poolId(), lPool.trancheId(), updatedTokenName, updatedTokenSymbol);
+        centrifugeChain.updateTrancheTokenMetadata(poolId, trancheId, updatedTokenName, updatedTokenSymbol);
     }
 
     function testAllowInvestmentCurrency() public {

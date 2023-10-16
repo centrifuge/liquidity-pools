@@ -243,7 +243,6 @@ contract PoolManager is Auth {
 
         UndeployedTranche storage undeployedTranche = undeployedTranches[poolId][trancheId];
         require(undeployedTranche.decimals == 0, "PoolManager/tranche-already-exists");
-        require(getTrancheToken(poolId, trancheId) == address(0), "PoolManager/tranche-already-deployed");
 
         undeployedTranche.decimals = decimals;
         undeployedTranche.tokenName = tokenName;

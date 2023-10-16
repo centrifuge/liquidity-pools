@@ -35,7 +35,8 @@ contract AssetShareConversionTest is TestSetup {
         assertEq(lPool.latestPrice(), 1000000000000000000);
         assertEq(lPool.totalSupply(), 100000000000000000000);
         assertEq(lPool.totalAssets(), 100000000);
-        assertEq(lPool.convertToShares(100000000), 100000000000000000000); // tranche tokens have 12 more decimals than assets
+        assertEq(lPool.convertToShares(100000000), 100000000000000000000); // tranche tokens have 12 more decimals than
+            // assets
         assertEq(lPool.convertToAssets(lPool.convertToShares(100000000000000000000)), 100000000000000000000);
 
         // assert share/asset conversion after price update
@@ -43,7 +44,8 @@ contract AssetShareConversionTest is TestSetup {
 
         assertEq(lPool.latestPrice(), 1200000000000000000);
         assertEq(lPool.totalAssets(), 120000000);
-        assertEq(lPool.convertToShares(120000000), 100000000000000000000); // tranche tokens have 12 more decimals than assets
+        assertEq(lPool.convertToShares(120000000), 100000000000000000000); // tranche tokens have 12 more decimals than
+            // assets
         assertEq(lPool.convertToAssets(lPool.convertToShares(120000000000000000000)), 120000000000000000000);
     }
 
@@ -78,7 +80,8 @@ contract AssetShareConversionTest is TestSetup {
         assertEq(lPool.latestPrice(), 1000000000000000000);
         assertEq(lPool.totalSupply(), 100000000);
         assertEq(lPool.totalAssets(), 100000000000000000000);
-        assertEq(lPool.convertToShares(100000000000000000000), 100000000); // tranche tokens have 12 less decimals than assets
+        assertEq(lPool.convertToShares(100000000000000000000), 100000000); // tranche tokens have 12 less decimals than
+            // assets
         assertEq(lPool.convertToAssets(lPool.convertToShares(100000000000000000000)), 100000000000000000000);
 
         // assert share/asset conversion after price update
@@ -86,13 +89,8 @@ contract AssetShareConversionTest is TestSetup {
 
         assertEq(lPool.latestPrice(), 1200000000000000000);
         assertEq(lPool.totalAssets(), 120000000000000000000);
-        assertEq(lPool.convertToShares(120000000000000000000), 100000000); // tranche tokens have 12 less decimals than assets
+        assertEq(lPool.convertToShares(120000000000000000000), 100000000); // tranche tokens have 12 less decimals than
+            // assets
         assertEq(lPool.convertToAssets(lPool.convertToShares(120000000000000000000)), 120000000000000000000);
     }
-   
 }
-
-    
-    
-    
-    

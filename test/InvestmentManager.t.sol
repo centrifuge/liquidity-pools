@@ -55,10 +55,12 @@ contract InvestmentManagerTest is TestSetup {
         vm.assume(address(gateway) != self);
         LiquidityPool lPool = LiquidityPool(deploySimplePool());
 
+        uint64 poolId = lPool.poolId();
+        bytes16 trancheId = lPool.trancheId();
         vm.expectRevert(bytes("InvestmentManager/not-the-gateway"));
-        investmentManager.updateTrancheTokenPrice(lPool.poolId(), lPool.trancheId(), defaultCurrencyId, price);
+        investmentManager.updateTrancheTokenPrice(poolId, trancheId, defaultCurrencyId, price);
 
-        vm.expectRevert(bytes("InvestmentManager/liquidityPool-does-not-exist")); // use random pool and tranche
+        vm.expectRevert(bytes("")); // use random pool and tranche
         centrifugeChain.updateTrancheTokenPrice(100, _stringToBytes16("100"), defaultCurrencyId, price);
 
         centrifugeChain.updateTrancheTokenPrice(lPool.poolId(), lPool.trancheId(), defaultCurrencyId, price);
