@@ -1005,7 +1005,8 @@ contract LiquidityPoolTest is TestSetup {
 
         // Use a wallet with a known private key so we can sign the permit message
         address investor = vm.addr(0xABCD);
-        vm.prank(vm.addr(0xABCD));
+        address randomUser = makeAddr("randomUser");
+        vm.prank(investor);
 
         address lPool_ = deploySimplePool();
         LiquidityPool lPool = LiquidityPool(lPool_);
@@ -1026,7 +1027,13 @@ contract LiquidityPoolTest is TestSetup {
                     )
                 )
             )
-        );
+        );  
+
+        // frontrunnign with lower amount should not be possible
+        vm.startPrank(randomUser);
+        vm.expectRevert(bytes("LiquidityPool/permit-failure"));
+        lPool.requestDepositWithPermit((amount - 1), investor, block.timestamp, v, r, s);
+        vm.stopPrank();
 
         lPool.requestDepositWithPermit(amount, investor, block.timestamp, v, r, s);
         // To avoid stack too deep errors

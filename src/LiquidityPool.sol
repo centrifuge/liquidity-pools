@@ -353,7 +353,7 @@ contract LiquidityPool is Auth, IERC4626 {
         try ERC20PermitLike(token).permit(owner, spender, value, deadline, v, r, s) {
             return;
         } catch {
-            if (IERC20(token).allowance(owner, spender) >= value) {
+            if (IERC20(token).allowance(owner, spender) == value) {
                 return;
             }
         }
