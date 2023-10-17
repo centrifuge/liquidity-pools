@@ -1031,6 +1031,7 @@ contract LiquidityPoolTest is TestSetup {
 
         // frontrunnign with lower amount should not be possible
         vm.startPrank(randomUser);
+        ERC20(address(lPool.asset())).permit(investor, lPool_, amount, block.timestamp, v, r, s);
         vm.expectRevert(bytes("LiquidityPool/permit-failure"));
         lPool.requestDepositWithPermit((amount - 1), investor, block.timestamp, v, r, s);
         vm.stopPrank();
