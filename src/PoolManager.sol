@@ -78,8 +78,8 @@ contract PoolManager is Auth {
 
     EscrowLike public immutable escrow;
     LiquidityPoolFactoryLike public immutable liquidityPoolFactory;
-    RestrictionManagerFactoryLike public immutable restrictionManagerFactory;
     TrancheTokenFactoryLike public immutable trancheTokenFactory;
+    RestrictionManagerFactoryLike public restrictionManagerFactory;
 
     GatewayLike public gateway;
     InvestmentManagerLike public investmentManager;
@@ -137,6 +137,7 @@ contract PoolManager is Auth {
     function file(bytes32 what, address data) external auth {
         if (what == "gateway") gateway = GatewayLike(data);
         else if (what == "investmentManager") investmentManager = InvestmentManagerLike(data);
+        else if (what == "restrictionManagerFactory") restrictionManagerFactory = RestrictionManagerFactoryLike(data);
         else revert("PoolManager/file-unrecognized-param");
         emit File(what, data);
     }
