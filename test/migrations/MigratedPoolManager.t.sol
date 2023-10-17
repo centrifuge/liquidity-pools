@@ -2,7 +2,7 @@
 pragma solidity 0.8.21;
 
 import {MigratedPoolManager, PoolManager} from "./migrationContracts/MigratedPoolManager.sol";
-import {LiquidityPoolFactory, TrancheTokenFactory} from "src/util/Factory.sol";
+import {TrancheTokenFactory, LiquidityPoolFactory, RestrictionManagerFactory} from "src/util/Factory.sol";
 import {InvestRedeemFlow} from "./InvestRedeemFlow.t.sol";
 
 interface AuthLike {
@@ -64,6 +64,7 @@ contract MigrationsTest is InvestRedeemFlow {
         // Rewire contracts
         newLiquidityPoolFactory.rely(address(newPoolManager));
         TrancheTokenFactory(trancheTokenFactory).rely(address(newPoolManager));
+        TrancheTokenFactory(trancheTokenFactory).deny(address(poolManager));
         root.relyContract(address(gateway), address(this));
         gateway.file("poolManager", address(newPoolManager));
         root.relyContract(address(investmentManager), address(this));
@@ -104,24 +105,27 @@ contract MigrationsTest is InvestRedeemFlow {
     }
 
     function verifyMigratedPoolManagerPermissions(PoolManager oldPoolManager, PoolManager newPoolManager) public {
+        // verify permissions
         assertTrue(address(oldPoolManager) != address(newPoolManager));
+        assertEq(TrancheTokenFactory(trancheTokenFactory).wards(address(newPoolManager)), 1);
+        assertEq(TrancheTokenFactory(trancheTokenFactory).wards(address(oldPoolManager)), 0);
+        assertEq(address(gateway.poolManager()), address(newPoolManager));
+        assertEq(address(investmentManager.poolManager()), address(newPoolManager));
+        assertEq(address(oldPoolManager.investmentManager()), address(newPoolManager.investmentManager()));
+        assertEq(address(oldPoolManager.gateway()), address(newPoolManager.gateway()));
+        assertEq(investmentManager.wards(address(newPoolManager)), 1);
+        assertEq(investmentManager.wards(address(oldPoolManager)), 0);
+        assertEq(newPoolManager.wards(address(root)), 1);
+        assertEq(escrow.wards(address(newPoolManager)), 1);
+        assertEq(escrow.wards(address(oldPoolManager)), 0);
+
+        // verify dependencies
         assertEq(address(oldPoolManager.escrow()), address(newPoolManager.escrow()));
         assertFalse(address(oldPoolManager.liquidityPoolFactory()) == address(newPoolManager.liquidityPoolFactory()));
         assertEq(
             address(oldPoolManager.restrictionManagerFactory()), address(newPoolManager.restrictionManagerFactory())
         );
         assertEq(address(oldPoolManager.trancheTokenFactory()), address(newPoolManager.trancheTokenFactory()));
-        assertEq(address(oldPoolManager.investmentManager()), address(newPoolManager.investmentManager()));
-        assertEq(address(oldPoolManager.gateway()), address(newPoolManager.gateway()));
-        assertEq(address(gateway.poolManager()), address(newPoolManager));
-        assertEq(address(investmentManager.poolManager()), address(newPoolManager));
-        assertEq(newPoolManager.wards(address(root)), 1);
-        assertEq(investmentManager.wards(address(newPoolManager)), 1);
-        assertEq(investmentManager.wards(address(oldPoolManager)), 0);
-        assertEq(escrow.wards(address(newPoolManager)), 1);
-        assertEq(escrow.wards(address(oldPoolManager)), 0);
-        assertEq(investmentManager.wards(address(newPoolManager)), 1);
-        assertEq(investmentManager.wards(address(oldPoolManager)), 0);
     }
 
     // --- State Verification Helpers ---

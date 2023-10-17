@@ -33,6 +33,12 @@ contract MigrationsTest is InvestRedeemFlow {
         vm.warp(block.timestamp + 3 days);
         root.executeScheduledRely(address(this));
 
+        // deploy new liquidityPoolFactory
+        LiquidityPoolFactory newLiquidityPoolFactory = new LiquidityPoolFactory(address(root));
+
+        // rewire factory contracts
+        newLiquidityPoolFactory.rely(address(root));
+
         // Deploy new liquidity pool
         MigratedLiquidityPool newLiquidityPool = new MigratedLiquidityPool(
             poolId, trancheId, address(erc20), address(LiquidityPool(_lPool).share()), address(escrow), address(investmentManager)
@@ -59,7 +65,7 @@ contract MigrationsTest is InvestRedeemFlow {
         // Deploy new MigratedPoolManager
         MigratedPoolManager newPoolManager = new MigratedPoolManager(
             address(escrow),
-            liquidityPoolFactory,
+            address(newLiquidityPoolFactory),
             restrictionManagerFactory,
             trancheTokenFactory,
             address(poolManager),
@@ -71,6 +77,7 @@ contract MigrationsTest is InvestRedeemFlow {
         );
 
         // rewire migrated pool manager
+        newLiquidityPoolFactory.rely(address(newPoolManager));
         LiquidityPoolFactory(liquidityPoolFactory).rely(address(newPoolManager));
         TrancheTokenFactory(trancheTokenFactory).rely(address(newPoolManager));
         root.relyContract(address(gateway), address(this));
@@ -98,19 +105,19 @@ contract MigrationsTest is InvestRedeemFlow {
         TrancheTokenLike token = TrancheTokenLike(address(LiquidityPool(_lPool).share()));
         root.relyContract(address(token), address(this));
         token.rely(address(newLiquidityPool));
+        token.deny(_lPool);
         token.addTrustedForwarder(address(newLiquidityPool));
+        token.removeTrustedForwarder(_lPool);
         investmentManager.rely(address(newLiquidityPool));
+        investmentManager.deny(_lPool);
         newLiquidityPool.rely(address(root));
         newLiquidityPool.rely(address(investmentManager));
-        escrow.approve(address(token), address(investmentManager), type(uint256).max);
+        // escrow.approve(address(token), address(investmentManager), type(uint256).max);
         escrow.approve(address(token), address(newLiquidityPool), type(uint256).max);
+        escrow.approve(address(token), _lPool, 0);
 
         // clean up new liquidity pool
-        investmentManager.deny(_lPool);
-        escrow.approve(address(token), _lPool, 0);
         newLiquidityPool.deny(address(this));
-        token.deny(_lPool);
-        token.removeTrustedForwarder(_lPool);
         root.denyContract(address(token), address(this));
         root.denyContract(address(investmentManager), address(this));
         root.denyContract(address(escrow), address(this));
@@ -128,23 +135,26 @@ contract MigrationsTest is InvestRedeemFlow {
     // --- Permissions & Dependencies Checks ---
 
     function verifyLiquidityPoolPermissions(LiquidityPool oldLiquidityPool, LiquidityPool newLiquidityPool) public {
+        // verify permissions
         assertTrue(address(oldLiquidityPool) != address(newLiquidityPool));
+        address token = poolManager.getTrancheToken(poolId, trancheId);
+        assertEq(TrancheTokenLike(token).wards(address(oldLiquidityPool)), 0);
+        assertEq(TrancheTokenLike(token).wards(address(newLiquidityPool)), 1);
+        assertEq(TrancheTokenLike(token).trustedForwarders(address(oldLiquidityPool)), false);
+        assertEq(TrancheTokenLike(token).trustedForwarders(address(newLiquidityPool)), true);
+        assertEq(investmentManager.wards(address(newLiquidityPool)), 1);
+        assertEq(investmentManager.wards(address(oldLiquidityPool)), 0);
+        assertEq(newLiquidityPool.wards(address(root)), 1);
+        assertEq(newLiquidityPool.wards(address(investmentManager)), 1);
+        assertEq(TrancheTokenLike(token).allowance(address(escrow), address(oldLiquidityPool)), 0);
+        assertEq(TrancheTokenLike(token).allowance(address(escrow), address(newLiquidityPool)), type(uint256).max);
+
+        // verify dependancies
         assertEq(oldLiquidityPool.poolId(), newLiquidityPool.poolId());
         assertEq(oldLiquidityPool.trancheId(), newLiquidityPool.trancheId());
         assertEq(address(oldLiquidityPool.asset()), address(newLiquidityPool.asset()));
         assertEq(address(oldLiquidityPool.share()), address(newLiquidityPool.share()));
-        address token = poolManager.getTrancheToken(poolId, trancheId);
         assertEq(address(newLiquidityPool.share()), token);
-        assertEq(TrancheTokenLike(token).trustedForwarders(address(oldLiquidityPool)), false);
-        assertEq(TrancheTokenLike(token).trustedForwarders(address(newLiquidityPool)), true);
-        assertEq(TrancheTokenLike(token).wards(address(oldLiquidityPool)), 0);
-        assertEq(TrancheTokenLike(token).wards(address(newLiquidityPool)), 1);
         assertEq(address(oldLiquidityPool.manager()), address(newLiquidityPool.manager()));
-        assertEq(newLiquidityPool.wards(address(root)), 1);
-        assertEq(newLiquidityPool.wards(address(investmentManager)), 1);
-        assertEq(investmentManager.wards(address(newLiquidityPool)), 1);
-        assertEq(investmentManager.wards(address(oldLiquidityPool)), 0);
-        assertEq(TrancheTokenLike(token).allowance(address(escrow), address(oldLiquidityPool)), 0);
-        assertEq(TrancheTokenLike(token).allowance(address(escrow), address(newLiquidityPool)), type(uint256).max);
     }
 }

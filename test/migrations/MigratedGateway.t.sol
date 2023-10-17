@@ -44,13 +44,16 @@ contract MigratedGatewayTest is InvestRedeemFlow {
     }
 
     function verifyMigratedGatewayPermissions(Gateway oldGateway, Gateway newGateway) public {
+        // verify permissions
         assertTrue(address(oldGateway) != address(newGateway));
-        assertEq(address(oldGateway.investmentManager()), address(newGateway.investmentManager()));
-        assertEq(address(oldGateway.poolManager()), address(newGateway.poolManager()));
-        assertEq(address(oldGateway.root()), address(newGateway.root()));
+        assertEq(newGateway.wards(address(root)), 1);
         assertEq(address(investmentManager.gateway()), address(newGateway));
         assertEq(address(poolManager.gateway()), address(newGateway));
         assertEq(address(router.gateway()), address(newGateway));
-        assertEq(newGateway.wards(address(root)), 1);
+
+        // verify dependencies
+        assertEq(address(oldGateway.investmentManager()), address(newGateway.investmentManager()));
+        assertEq(address(oldGateway.poolManager()), address(newGateway.poolManager()));
+        assertEq(address(oldGateway.root()), address(newGateway.root()));
     }
 }

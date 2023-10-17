@@ -37,10 +37,8 @@ contract MigratedInvestmentManagerTest is InvestRedeemFlow {
         // Rewire contracts
         root.relyContract(address(gateway), address(this));
         gateway.file("investmentManager", address(newInvestmentManager));
-        newInvestmentManager.file("poolManager", address(poolManager));
         root.relyContract(address(poolManager), address(this));
         poolManager.file("investmentManager", address(newInvestmentManager));
-        newInvestmentManager.file("gateway", address(gateway));
         newInvestmentManager.rely(address(root));
         newInvestmentManager.rely(address(poolManager));
         root.relyContract(address(escrow), address(this));
@@ -49,21 +47,23 @@ contract MigratedInvestmentManagerTest is InvestRedeemFlow {
         root.relyContract(address(userEscrow), address(this));
         userEscrow.rely(address(newInvestmentManager));
         userEscrow.deny(address(investmentManager));
+        newInvestmentManager.file("poolManager", address(poolManager));
+        newInvestmentManager.file("gateway", address(gateway));
 
         // file investmentManager on all LiquidityPools
         for (uint256 i = 0; i < liquidityPools.length; i++) {
-            root.relyContract(address(liquidityPools[i]), address(this));
+            root.relyContract(liquidityPools[i], address(this));
             LiquidityPool lPool = LiquidityPool(liquidityPools[i]);
 
-            lPool.file("manager", address(newInvestmentManager));
-            lPool.rely(address(newInvestmentManager));
-            lPool.deny(address(investmentManager));
-            root.relyContract(address(lPool.share()), address(this));
-            AuthLike(address(lPool.share())).rely(address(newInvestmentManager));
-            AuthLike(address(lPool.share())).deny(address(investmentManager));
-            newInvestmentManager.rely(address(lPool));
-            escrow.approve(address(lPool), address(newInvestmentManager), type(uint256).max);
-            escrow.approve(address(lPool), address(investmentManager), 0);
+            LiquidityPool(liquidityPools[i]).file("manager", address(newInvestmentManager));
+            LiquidityPool(liquidityPools[i]).rely(address(newInvestmentManager));
+            LiquidityPool(liquidityPools[i]).deny(address(investmentManager));
+            root.relyContract(address(LiquidityPool(liquidityPools[i]).share()), address(this));
+            AuthLike(address(LiquidityPool(liquidityPools[i]).share())).rely(address(newInvestmentManager));
+            AuthLike(address(LiquidityPool(liquidityPools[i]).share())).deny(address(investmentManager));
+            newInvestmentManager.rely(address(LiquidityPool(liquidityPools[i])));
+            escrow.approve(address(LiquidityPool(liquidityPools[i])), address(newInvestmentManager), type(uint256).max);
+            escrow.approve(address(LiquidityPool(liquidityPools[i])), address(investmentManager), 0);
         }
 
         // clean up
@@ -85,11 +85,8 @@ contract MigratedInvestmentManagerTest is InvestRedeemFlow {
         InvestmentManager oldInvestmentManager,
         InvestmentManager newInvestmentManager
     ) public {
+        // Verify permissions
         assertTrue(address(oldInvestmentManager) != address(newInvestmentManager));
-        assertEq(address(oldInvestmentManager.gateway()), address(newInvestmentManager.gateway()));
-        assertEq(address(oldInvestmentManager.poolManager()), address(newInvestmentManager.poolManager()));
-        assertEq(address(oldInvestmentManager.escrow()), address(newInvestmentManager.escrow()));
-        assertEq(address(oldInvestmentManager.userEscrow()), address(newInvestmentManager.userEscrow()));
         assertEq(address(gateway.investmentManager()), address(newInvestmentManager));
         assertEq(address(poolManager.investmentManager()), address(newInvestmentManager));
         assertEq(newInvestmentManager.wards(address(root)), 1);
@@ -98,6 +95,12 @@ contract MigratedInvestmentManagerTest is InvestRedeemFlow {
         assertEq(escrow.wards(address(oldInvestmentManager)), 0);
         assertEq(userEscrow.wards(address(newInvestmentManager)), 1);
         assertEq(userEscrow.wards(address(oldInvestmentManager)), 0);
+
+        // Verify dependencies
+        assertEq(address(oldInvestmentManager.gateway()), address(newInvestmentManager.gateway()));
+        assertEq(address(oldInvestmentManager.poolManager()), address(newInvestmentManager.poolManager()));
+        assertEq(address(oldInvestmentManager.escrow()), address(newInvestmentManager.escrow()));
+        assertEq(address(oldInvestmentManager.userEscrow()), address(newInvestmentManager.userEscrow()));
     }
 
     // --- State Verification Helpers ---

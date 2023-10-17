@@ -47,14 +47,17 @@ contract MigratedAdmin is InvestRedeemFlow {
         PauseAdmin oldPauseAdmin,
         PauseAdmin newPauseAdmin
     ) public {
+        // verify permissions
         assertTrue(address(oldDelayedAdmin) != address(newDelayedAdmin));
         assertTrue(address(oldPauseAdmin) != address(newPauseAdmin));
-        assertEq(address(newDelayedAdmin.pauseAdmin()), address(newPauseAdmin));
         assertEq(root.wards(address(newDelayedAdmin)), 1);
         assertEq(root.wards(address(oldDelayedAdmin)), 0);
         assertEq(root.wards(address(newPauseAdmin)), 1);
         assertEq(root.wards(address(oldPauseAdmin)), 0);
         assertEq(newPauseAdmin.wards(address(newDelayedAdmin)), 1);
         assertEq(newPauseAdmin.wards(address(oldDelayedAdmin)), 0);
+
+        // verify dependencies
+        assertEq(address(newDelayedAdmin.pauseAdmin()), address(newPauseAdmin));
     }
 }
