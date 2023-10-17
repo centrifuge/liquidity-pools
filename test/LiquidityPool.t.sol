@@ -993,7 +993,7 @@ contract LiquidityPoolTest is TestSetup {
         erc20.permit(investor, lPool_, amount, block.timestamp, v, r, s);
 
         // investor still able to requestDepositWithPermit
-        lPool.requestDepositWithPermit(amount, investor, investor, block.timestamp, v, r, s);
+        lPool.requestDepositWithPermit(amount, investor, block.timestamp, v, r, s);
 
         // ensure funds are locked in escrow
         assertEq(erc20.balanceOf(address(escrow)), amount);
@@ -1028,7 +1028,7 @@ contract LiquidityPoolTest is TestSetup {
             )
         );
 
-        lPool.requestDepositWithPermit(amount, investor, investor, block.timestamp, v, r, s);
+        lPool.requestDepositWithPermit(amount, investor, block.timestamp, v, r, s);
         // To avoid stack too deep errors
         delete v;
         delete r;

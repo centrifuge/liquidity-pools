@@ -220,19 +220,13 @@ contract LiquidityPool is Auth, IERC4626 {
     }
 
     /// @notice Similar to requestDeposit, but with a permit option
-    function requestDepositWithPermit(
-        uint256 assets,
-        address operator,
-        address owner,
-        uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) public {
+    function requestDepositWithPermit(uint256 assets, address owner, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
+        public
+    {
         _withPermit(asset, owner, address(this), assets, deadline, v, r, s);
-        require(manager.requestDeposit(address(this), assets, owner, operator), "LiquidityPool/request-deposit-failed");
+        require(manager.requestDeposit(address(this), assets, owner, owner), "LiquidityPool/request-deposit-failed");
         SafeTransferLib.safeTransferFrom(asset, owner, address(escrow), assets);
-        emit DepositRequest(owner, operator, assets);
+        emit DepositRequest(owner, owner, assets);
     }
 
     /// @notice View the total amount the operator has requested to deposit but isn't able to deposit or mint yet
@@ -262,7 +256,11 @@ contract LiquidityPool is Auth, IERC4626 {
     function requestRedeem(uint256 shares, address operator, address owner) public {
         require(share.balanceOf(owner) >= shares, "LiquidityPool/insufficient-balance");
         require(manager.requestRedeem(address(this), shares, operator), "LiquidityPool/request-redeem-failed");
+
+        // This is possible because of the trusted forwarder pattern -> msg.sender is forwarded
+        // and the call can only be executed, if msg.sender has owner's approval to spend tokens
         require(transferFrom(owner, address(escrow), shares), "LiquidityPool/transfer-failed");
+
         emit RedeemRequest(msg.sender, operator, owner, shares);
     }
 
