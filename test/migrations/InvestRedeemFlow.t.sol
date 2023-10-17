@@ -47,10 +47,10 @@ contract InvestRedeemFlow is TestSetup {
         public
     {
         vm.prank(investor);
-        erc20.approve(address(investmentManager), currencyAmount); // add allowance
+        erc20.approve(address(lPool), currencyAmount); // add allowance
 
         vm.prank(investor);
-        lPool.requestDeposit(currencyAmount);
+        lPool.requestDeposit(currencyAmount, investor);
 
         // ensure funds are locked in escrow
         assertEq(erc20.balanceOf(address(escrow)), currencyAmount);
@@ -92,7 +92,7 @@ contract InvestRedeemFlow is TestSetup {
         public
     {
         vm.prank(investor);
-        lPool.requestRedeem(tokenAmount);
+        lPool.requestRedeem(tokenAmount, investor, investor);
 
         // Assume an epoch execution happens on cent chain
         // Assume a bot calls collectRedeem for this user on cent chain

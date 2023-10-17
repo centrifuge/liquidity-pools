@@ -35,7 +35,7 @@ contract MigrationsTest is InvestRedeemFlow {
 
         // Deploy new liquidity pool
         MigratedLiquidityPool newLiquidityPool = new MigratedLiquidityPool(
-            poolId, trancheId, address(erc20), address(LiquidityPool(_lPool).share()), address(investmentManager)
+            poolId, trancheId, address(erc20), address(LiquidityPool(_lPool).share()), address(escrow), address(investmentManager)
         );
 
         // set MigratedPoolManager input parameters
