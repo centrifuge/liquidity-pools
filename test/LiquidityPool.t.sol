@@ -84,11 +84,16 @@ contract LiquidityPoolTest is TestSetup {
         vm.expectRevert(bytes("MathLib/uint128-overflow"));
         lPool.redeem(amount, random_, self);
 
+        erc20.mint(address(this), amount);
         vm.expectRevert(bytes("MathLib/uint128-overflow"));
-        lPool.requestDeposit(amount);
+        lPool.requestDeposit(amount, self);
 
+        TrancheTokenLike trancheToken = TrancheTokenLike(address(lPool.share()));
+        centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), self, type(uint64).max);
+        root.relyContract(address(trancheToken), self);
+        trancheToken.mint(address(this), amount);
         vm.expectRevert(bytes("MathLib/uint128-overflow"));
-        lPool.requestRedeem(amount);
+        lPool.requestRedeem(amount, address(this), address(this));
 
         vm.expectRevert(bytes("MathLib/uint128-overflow"));
         lPool.decreaseDepositRequest(amount);
@@ -110,14 +115,7 @@ contract LiquidityPoolTest is TestSetup {
 
         // investor can requestRedeem
         vm.prank(investor);
-        lPool.requestRedeem(amount);
-
-        // fail: ward can not requestRedeem if investment manager has no auth on the tranche token
-        root.denyContract(address(lPool.share()), address(investmentManager));
-        vm.prank(investor);
-        vm.expectRevert(bytes("Auth/not-authorized"));
-        lPool.requestRedeem(amount);
-        root.relyContract(address(lPool.share()), address(investmentManager));
+        lPool.requestRedeem(amount, investor, investor);
 
         uint128 tokenAmount = uint128(lPool.balanceOf(address(escrow)));
         centrifugeChain.isExecutedCollectRedeem(
@@ -136,16 +134,16 @@ contract LiquidityPoolTest is TestSetup {
         // test for both scenarios redeem & withdraw
 
         // fail: self cannot redeem for investor
-        vm.expectRevert(bytes("LiquidityPool/no-approval"));
+        vm.expectRevert(bytes("LiquidityPool/not-the-owner"));
         lPool.redeem(redemption1, investor, investor);
-        vm.expectRevert(bytes("LiquidityPool/no-approval"));
+        vm.expectRevert(bytes("LiquidityPool/not-the-owner"));
         lPool.withdraw(redemption1, investor, investor);
 
         // fail: ward can not make requests on behalf of investor
         root.relyContract(lPool_, self);
-        vm.expectRevert(bytes("LiquidityPool/no-approval"));
+        vm.expectRevert(bytes("LiquidityPool/not-the-owner"));
         lPool.redeem(redemption1, investor, investor);
-        vm.expectRevert(bytes("LiquidityPool/no-approval"));
+        vm.expectRevert(bytes("LiquidityPool/not-the-owner"));
         lPool.withdraw(redemption1, investor, investor);
 
         // investor redeems rest for himself
@@ -355,9 +353,9 @@ contract LiquidityPoolTest is TestSetup {
         // invest
         uint256 investmentAmount = 100000000; // 100 * 10**6
         centrifugeChain.updateMember(poolId, trancheId, self, type(uint64).max);
-        currency.approve(address(investmentManager), investmentAmount);
+        currency.approve(lPool_, investmentAmount);
         currency.mint(self, investmentAmount);
-        lPool.requestDeposit(investmentAmount);
+        lPool.requestDeposit(investmentAmount, self);
 
         // trigger executed collectInvest of the first 50% at a price of 1.2
         uint128 _currencyId = poolManager.currencyAddressToId(address(currency)); // retrieve currencyId
@@ -393,7 +391,7 @@ contract LiquidityPoolTest is TestSetup {
         assertEq(lPool.balanceOf(self), firstTrancheTokenPayout + secondTrancheTokenPayout);
 
         // redeem
-        lPool.requestRedeem(firstTrancheTokenPayout + secondTrancheTokenPayout);
+        lPool.requestRedeem(firstTrancheTokenPayout + secondTrancheTokenPayout, address(this), address(this));
 
         // trigger executed collectRedeem at a price of 1.5
         // 50% invested at 1.2 and 50% invested at 1.4 leads to ~77 tranche tokens
@@ -438,9 +436,9 @@ contract LiquidityPoolTest is TestSetup {
         // invest
         uint256 investmentAmount = 100000000000000000000; // 100 * 10**18
         centrifugeChain.updateMember(poolId, trancheId, self, type(uint64).max);
-        currency.approve(address(investmentManager), investmentAmount);
+        currency.approve(lPool_, investmentAmount);
         currency.mint(self, investmentAmount);
-        lPool.requestDeposit(investmentAmount);
+        lPool.requestDeposit(investmentAmount, self);
 
         // trigger executed collectInvest of the first 50% at a price of 1.2
         uint128 _currencyId = poolManager.currencyAddressToId(address(currency)); // retrieve currencyId
@@ -476,7 +474,7 @@ contract LiquidityPoolTest is TestSetup {
         assertEq(lPool.balanceOf(self), firstTrancheTokenPayout + secondTrancheTokenPayout);
 
         // redeem
-        lPool.requestRedeem(firstTrancheTokenPayout + secondTrancheTokenPayout);
+        lPool.requestRedeem(firstTrancheTokenPayout + secondTrancheTokenPayout, address(this), address(this));
 
         // trigger executed collectRedeem at a price of 1.5
         // 50% invested at 1.2 and 50% invested at 1.4 leads to ~77 tranche tokens
@@ -523,9 +521,9 @@ contract LiquidityPoolTest is TestSetup {
         // invest
         uint256 investmentAmount = 100000000; // 100 * 10**6
         centrifugeChain.updateMember(poolId, trancheId, self, type(uint64).max);
-        currency.approve(address(investmentManager), investmentAmount);
+        currency.approve(lPool_, investmentAmount);
         currency.mint(self, investmentAmount);
-        lPool.requestDeposit(investmentAmount);
+        lPool.requestDeposit(investmentAmount, self);
 
         // trigger executed collectInvest at a tranche token price of 1.2
         uint128 _currencyId = poolManager.currencyAddressToId(address(currency)); // retrieve currencyId
@@ -573,9 +571,9 @@ contract LiquidityPoolTest is TestSetup {
         // invest
         uint256 investmentAmount = 100000000000000000000; // 100 * 10**18
         centrifugeChain.updateMember(poolId, trancheId, self, type(uint64).max);
-        currency.approve(address(investmentManager), investmentAmount);
+        currency.approve(lPool_, investmentAmount);
         currency.mint(self, investmentAmount);
-        lPool.requestDeposit(investmentAmount);
+        lPool.requestDeposit(investmentAmount, self);
 
         // trigger executed collectInvest at a tranche token price of 1.2
         uint128 _currencyId = poolManager.currencyAddressToId(address(currency)); // retrieve currencyId
@@ -615,9 +613,9 @@ contract LiquidityPoolTest is TestSetup {
         // invest
         uint256 investmentAmount = 100000000; // 100 * 10**6
         centrifugeChain.updateMember(poolId, trancheId, self, type(uint64).max);
-        currency.approve(address(investmentManager), investmentAmount);
+        currency.approve(lPool_, investmentAmount);
         currency.mint(self, investmentAmount);
-        lPool.requestDeposit(investmentAmount);
+        lPool.requestDeposit(investmentAmount, self);
 
         // trigger executed collectInvest at a price of 1.0
         uint128 _currencyId = poolManager.currencyAddressToId(address(currency)); // retrieve currencyId
@@ -658,9 +656,9 @@ contract LiquidityPoolTest is TestSetup {
         // invest
         uint256 investmentAmount = 100000000000000000000; // 100 * 10**18
         centrifugeChain.updateMember(poolId, trancheId, self, type(uint64).max);
-        currency.approve(address(investmentManager), investmentAmount);
+        currency.approve(lPool_, investmentAmount);
         currency.mint(self, investmentAmount);
-        lPool.requestDeposit(investmentAmount);
+        lPool.requestDeposit(investmentAmount, self);
 
         // trigger executed collectInvest at a price of 1.0
         uint128 _currencyId = poolManager.currencyAddressToId(address(currency)); // retrieve currencyId
@@ -694,10 +692,10 @@ contract LiquidityPoolTest is TestSetup {
         LiquidityPool lPool = LiquidityPool(lPool_);
         centrifugeChain.updateTrancheTokenPrice(lPool.poolId(), lPool.trancheId(), defaultCurrencyId, price);
         erc20.mint(self, amount);
-        erc20.approve(address(investmentManager), amount); // add allowance
+        erc20.approve(lPool_, amount); // add allowance
         centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), self, type(uint64).max);
 
-        lPool.requestDeposit(amount);
+        lPool.requestDeposit(amount, self);
 
         assertEq(erc20.balanceOf(address(escrow)), amount);
         assertEq(erc20.balanceOf(address(self)), 0);
@@ -733,26 +731,27 @@ contract LiquidityPoolTest is TestSetup {
         erc20.mint(self, amount);
 
         // will fail - user not member: can not receive trancheToken
-        vm.expectRevert(bytes("InvestmentManager/transfer-not-allowed"));
-        lPool.requestDeposit(amount);
+        vm.expectRevert(bytes("InvestmentManager/sender-is-restricted"));
+        lPool.requestDeposit(amount, self);
+
         centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), self, type(uint64).max); // add user as member
 
-        // // will fail - user did not give currency allowance to investmentManager
+        // will fail - user did not give currency allowance to liquidity pool
         vm.expectRevert(bytes("SafeTransferLib/safe-transfer-from-failed"));
-        lPool.requestDeposit(amount);
+        lPool.requestDeposit(amount, self);
 
         // success
-        erc20.approve(address(investmentManager), amount); // add allowance
-        lPool.requestDeposit(amount);
+        erc20.approve(lPool_, amount);
+        lPool.requestDeposit(amount, self);
 
         // fail: no currency left
-        vm.expectRevert(bytes("SafeTransferLib/safe-transfer-from-failed"));
-        lPool.requestDeposit(amount);
+        vm.expectRevert(bytes("LiquidityPool/insufficient-balance"));
+        lPool.requestDeposit(amount, self);
 
         // ensure funds are locked in escrow
         assertEq(erc20.balanceOf(address(escrow)), amount);
         assertEq(erc20.balanceOf(self), 0);
-        assertEq(lPool.userDepositRequest(self), amount);
+        assertEq(lPool.pendingDepositRequest(self), amount);
 
         // trigger executed collectInvest
         uint128 _currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
@@ -771,7 +770,7 @@ contract LiquidityPoolTest is TestSetup {
         // assert deposit & mint values adjusted
         assertEq(lPool.maxMint(self), trancheTokensPayout);
         assertApproxEqAbs(lPool.maxDeposit(self), amount, 1);
-        assertEq(lPool.userDepositRequest(self), 0);
+        assertEq(lPool.pendingDepositRequest(self), 0);
         // assert tranche tokens minted
         assertEq(lPool.balanceOf(address(escrow)), trancheTokensPayout);
         // assert conversions
@@ -811,8 +810,8 @@ contract LiquidityPoolTest is TestSetup {
         // fund user & request deposit
         centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), self, uint64(block.timestamp));
         erc20.mint(self, totalAmount);
-        erc20.approve(address(investmentManager), totalAmount);
-        lPool.requestDeposit(totalAmount);
+        erc20.approve(address(lPool), totalAmount);
+        lPool.requestDeposit(totalAmount, self);
 
         // Ensure funds were locked in escrow
         assertEq(erc20.balanceOf(address(escrow)), totalAmount);
@@ -868,8 +867,8 @@ contract LiquidityPoolTest is TestSetup {
         // fund user & request deposit
         centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), self, uint64(block.timestamp));
         erc20.mint(self, totalAmount);
-        erc20.approve(address(investmentManager), totalAmount);
-        lPool.requestDeposit(totalAmount);
+        erc20.approve(address(lPool), totalAmount);
+        lPool.requestDeposit(totalAmount, self);
 
         // Ensure funds were locked in escrow
         assertEq(erc20.balanceOf(address(escrow)), totalAmount);
@@ -916,8 +915,8 @@ contract LiquidityPoolTest is TestSetup {
         erc20.mint(self, amount);
 
         centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), self, type(uint64).max); // add user as member
-        erc20.approve(address(investmentManager), amount); // add allowance
-        lPool.requestDeposit(amount);
+        erc20.approve(lPool_, amount); // add allowance
+        lPool.requestDeposit(amount, self);
 
         // trigger executed collectInvest
         uint128 _currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
@@ -983,7 +982,7 @@ contract LiquidityPoolTest is TestSetup {
                     erc20.DOMAIN_SEPARATOR(),
                     keccak256(
                         abi.encode(
-                            erc20.PERMIT_TYPEHASH(), investor, address(investmentManager), amount, 0, block.timestamp
+                            erc20.PERMIT_TYPEHASH(), investor, lPool_, amount, 0, block.timestamp
                         )
                     )
                 )
@@ -991,7 +990,7 @@ contract LiquidityPoolTest is TestSetup {
         );
 
         vm.prank(random_); // random fr permit
-        erc20.permit(investor, address(investmentManager), amount, block.timestamp, v, r, s);
+        erc20.permit(investor, lPool_, amount, block.timestamp, v, r, s);
 
         // investor still able to requestDepositWithPermit
         lPool.requestDepositWithPermit(amount, investor, block.timestamp, v, r, s);
@@ -1022,7 +1021,7 @@ contract LiquidityPoolTest is TestSetup {
                     erc20.DOMAIN_SEPARATOR(),
                     keccak256(
                         abi.encode(
-                            erc20.PERMIT_TYPEHASH(), investor, address(investmentManager), amount, 0, block.timestamp
+                            erc20.PERMIT_TYPEHASH(), investor, lPool_, amount, 0, block.timestamp
                         )
                     )
                 )
@@ -1067,13 +1066,13 @@ contract LiquidityPoolTest is TestSetup {
         centrifugeChain.updateTrancheTokenPrice(lPool.poolId(), lPool.trancheId(), defaultCurrencyId, defaultPrice);
 
         // success
-        lPool.requestRedeem(amount);
+        lPool.requestRedeem(amount, address(this), address(this));
         assertEq(lPool.balanceOf(address(escrow)), amount);
-        assertEq(lPool.userRedeemRequest(self), amount);
+        assertEq(lPool.pendingRedeemRequest(self), amount);
 
         // fail: no tokens left
-        vm.expectRevert(bytes("ERC20/insufficient-balance"));
-        lPool.requestRedeem(amount);
+        vm.expectRevert(bytes("LiquidityPool/insufficient-balance"));
+        lPool.requestRedeem(amount, address(this), address(this));
 
         // trigger executed collectRedeem
         uint128 _currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
@@ -1085,7 +1084,7 @@ contract LiquidityPoolTest is TestSetup {
         // assert withdraw & redeem values adjusted
         assertEq(lPool.maxWithdraw(self), currencyPayout); // max deposit
         assertEq(lPool.maxRedeem(self), amount); // max deposit
-        assertEq(lPool.userRedeemRequest(self), 0);
+        assertEq(lPool.pendingRedeemRequest(self), 0);
         assertEq(lPool.balanceOf(address(escrow)), 0);
         assertEq(erc20.balanceOf(address(userEscrow)), currencyPayout);
         // assert conversions
@@ -1125,7 +1124,7 @@ contract LiquidityPoolTest is TestSetup {
         LiquidityPool lPool = LiquidityPool(lPool_);
         deposit(lPool_, self, amount); // deposit funds first
 
-        lPool.requestRedeem(amount);
+        lPool.requestRedeem(amount, address(this), address(this));
         assertEq(lPool.balanceOf(address(escrow)), amount);
         assertEq(lPool.balanceOf(self), 0);
 
@@ -1155,14 +1154,10 @@ contract LiquidityPoolTest is TestSetup {
         deposit(lPool_, self, amount); // deposit funds first
         centrifugeChain.updateTrancheTokenPrice(lPool.poolId(), lPool.trancheId(), defaultCurrencyId, defaultPrice);
 
-        // will fail - user did not give tranche token allowance to investmentManager
-        vm.expectRevert(bytes("SafeTransferLib/safe-transfer-from-failed"));
-        lPool.requestDeposit(amount);
-
-        lPool.requestRedeem(amount);
+        lPool.requestRedeem(amount, address(this), address(this));
         assertEq(lPool.balanceOf(address(escrow)), amount);
         assertEq(erc20.balanceOf(address(userEscrow)), 0);
-        assertGt(lPool.userRedeemRequest(self), 0);
+        assertGt(lPool.pendingRedeemRequest(self), 0);
 
         // trigger executed collectRedeem
         uint128 _currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
@@ -1211,8 +1206,8 @@ contract LiquidityPoolTest is TestSetup {
 
         erc20.mint(self, amount);
         centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), self, type(uint64).max); // add user as member
-        erc20.approve(address(investmentManager), amount); // add allowance
-        lPool.requestDeposit(amount);
+        erc20.approve(lPool_, amount); // add allowance
+        lPool.requestDeposit(amount, self);
 
         assertEq(erc20.balanceOf(address(escrow)), amount);
         assertEq(erc20.balanceOf(self), 0);
@@ -1238,7 +1233,7 @@ contract LiquidityPoolTest is TestSetup {
         LiquidityPool lPool = LiquidityPool(lPool_);
         centrifugeChain.updateTrancheTokenPrice(lPool.poolId(), lPool.trancheId(), defaultCurrencyId, defaultPrice);
         deposit(lPool_, self, amount);
-        lPool.requestRedeem(amount);
+        lPool.requestRedeem(amount, address(this), address(this));
 
         assertEq(lPool.balanceOf(address(escrow)), amount);
         assertEq(lPool.balanceOf(self), 0);
@@ -1304,9 +1299,9 @@ contract LiquidityPoolTest is TestSetup {
         // invest
         uint256 investmentAmount = 100000000; // 100 * 10**6
         centrifugeChain.updateMember(poolId, trancheId, self, type(uint64).max);
-        currency.approve(address(investmentManager), investmentAmount);
+        currency.approve(lPool_, investmentAmount);
         currency.mint(self, investmentAmount);
-        lPool.requestDeposit(investmentAmount);
+        lPool.requestDeposit(investmentAmount, self);
         uint128 _currencyId = poolManager.currencyAddressToId(address(currency)); // retrieve currencyId
 
         // first trigger executed collectInvest of the first 50% at a price of 1.4
@@ -1349,10 +1344,10 @@ contract LiquidityPoolTest is TestSetup {
         erc20.mint(investor, amount);
         centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), investor, type(uint64).max); // add user as member
         vm.prank(investor);
-        erc20.approve(address(investmentManager), amount); // add allowance
+        erc20.approve(_lPool, amount); // add allowance
 
         vm.prank(investor);
-        lPool.requestDeposit(amount);
+        lPool.requestDeposit(amount, investor);
         // trigger executed collectInvest
         uint128 currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
         centrifugeChain.isExecutedCollectInvest(
