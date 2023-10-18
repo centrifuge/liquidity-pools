@@ -598,6 +598,59 @@ contract LiquidityPoolTest is TestSetup {
         assertEq(depositPrice, 1200000000000000000);
     }
 
+    function testDecreaseDepositPrecision(uint64 poolId, bytes16 trancheId, uint128 currencyId) public {
+        vm.assume(currencyId > 0);
+
+        uint8 TRANCHE_TOKEN_DECIMALS = 18; // Like DAI
+        uint8 INVESTMENT_CURRENCY_DECIMALS = 6; // 6, like USDC
+
+        ERC20 currency = _newErc20("Currency", "CR", INVESTMENT_CURRENCY_DECIMALS);
+        address lPool_ =
+            deployLiquidityPool(poolId, TRANCHE_TOKEN_DECIMALS, "", "", trancheId, currencyId, address(currency));
+        LiquidityPool lPool = LiquidityPool(lPool_);
+        centrifugeChain.updateTrancheTokenPrice(poolId, trancheId, currencyId, 1000000000000000000);
+
+        // invest
+        uint256 investmentAmount = 100000000; // 100 * 10**6
+        centrifugeChain.updateMember(poolId, trancheId, self, type(uint64).max);
+        currency.approve(lPool_, investmentAmount);
+        currency.mint(self, investmentAmount);
+        lPool.requestDeposit(investmentAmount, self);
+
+        // trigger executed collectInvest of the first 50% at a price of 1.2
+        uint128 _currencyId = poolManager.currencyAddressToId(address(currency)); // retrieve currencyId
+        uint128 currencyPayout = 50000000; // 50 * 10**6
+        uint128 firstTrancheTokenPayout = 41666666666666666666; // 50 * 10**18 / 1.2, rounded down
+        centrifugeChain.isExecutedCollectInvest(
+            poolId,
+            trancheId,
+            bytes32(bytes20(self)),
+            _currencyId,
+            currencyPayout,
+            firstTrancheTokenPayout,
+            uint128(investmentAmount) - currencyPayout
+        );
+
+        // assert deposit & mint values adjusted
+        assertApproxEqAbs(lPool.maxDeposit(self), currencyPayout, 1);
+        assertEq(lPool.maxMint(self), firstTrancheTokenPayout);
+
+        // decrease the remaining 50% 
+        uint256 decreaseAmount = 50000000;
+        lPool.decreaseDepositRequest(decreaseAmount);
+        centrifugeChain.isExecutedDecreaseInvestOrder(
+            poolId,
+            trancheId, bytes32(bytes20(self)), _currencyId, uint128(decreaseAmount), 0
+        );
+
+        
+        // deposit price should be ~1.2*10**18, redeem price should be 1.0*10**6
+        (, uint256 depositPrice,, uint256 redeemPrice,,,) = investmentManager.investments(address(lPool), self);
+        assertEq(depositPrice, 1200000000000000000);
+        assertEq(redeemPrice, 1000000);
+
+    }
+
     function testAssetShareConversion(uint64 poolId, bytes16 trancheId, uint128 currencyId) public {
         vm.assume(currencyId > 0);
 
