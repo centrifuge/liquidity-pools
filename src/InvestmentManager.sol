@@ -419,8 +419,15 @@ contract InvestmentManager is Auth {
 
         // If there's any unclaimed deposits, claim those first
         InvestmentState storage state = investments[liquidityPool][user];
+        uint128 _tokensToTransfer = trancheTokenAmount;
         if (state.maxMint > 0) {
-            _processDeposit(state, state.maxMint, liquidityPool, user);
+            if (state.maxMint >= trancheTokenAmount) {
+                state.maxMint = state.maxMint - trancheTokenAmount;
+                _tokensToTransfer = 0;
+            } else {
+                _tokensToTransfer = trancheTokenAmount - state.maxMint;
+                state.maxMint = 0;
+            }
         }
 
         require(
@@ -428,13 +435,14 @@ contract InvestmentManager is Auth {
         );
 
         // Transfer the tranche token amount from user to escrow (lock tranche tokens in escrow)
-        require(
-            AuthTransferLike(address(LiquidityPoolLike(liquidityPool).share())).authTransferFrom(
-                user, address(escrow), trancheTokenAmount
-            ),
-            "InvestmentManager/transfer-failed"
-        );
-
+        if (_tokensToTransfer > 0) {
+            require(
+                AuthTransferLike(address(LiquidityPoolLike(liquidityPool).share())).authTransferFrom(
+                    user, address(escrow), _tokensToTransfer
+                ),
+                "InvestmentManager/transfer-failed"
+            );
+        }
         emit TriggerIncreaseRedeemOrder(poolId, trancheId, user, currencyId, trancheTokenAmount);
     }
 

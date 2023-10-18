@@ -1257,22 +1257,44 @@ contract LiquidityPoolTest is TestSetup {
         assertEq(lPool.maxMint(self), decreaseAmount);
     }
 
-    function testTriggerIncreaseRedeemOrder(uint256 amount) public {
-        amount = uint128(bound(amount, 2, MAX_UINT128));
+
+    function testTriggerIncreaseRedeemOrderTokens(uint128 amount) public {
+        amount = uint128(bound(amount, 2, (MAX_UINT128 - 1)));
 
         address lPool_ = deploySimplePool();
         LiquidityPool lPool = LiquidityPool(lPool_);
         deposit(lPool_, investor, amount, false); // request and execute deposit, but don't claim
         uint256 investorBalanceBefore = erc20.balanceOf(investor);
         assertEq(lPool.maxMint(investor), amount);
+        uint64 poolId = lPool.poolId();
+        bytes16 trancheId = lPool.trancheId();
 
-        // Trigger request redeem of half the amount
+        vm.prank(investor); // investor mints half of the amount
+        lPool.mint(amount / 2, investor); // investor mints the tokens
+
+        assertApproxEqAbs(lPool.balanceOf(investor), amount / 2, 1);
+        assertApproxEqAbs(lPool.balanceOf(address(escrow)), amount / 2, 1);
+        assertApproxEqAbs(lPool.maxMint(investor), amount / 2, 1);
+
+
+        // Fail - Redeem amount too big 
+        vm.expectRevert(bytes("ERC20/insufficient-balance"));
         centrifugeChain.triggerIncreaseRedeemOrder(
-            lPool.poolId(), lPool.trancheId(), investor, defaultCurrencyId, uint128(amount / 2)
+           poolId, trancheId, investor, defaultCurrencyId, uint128(amount + 1)
         );
 
-        assertApproxEqAbs(lPool.balanceOf(address(escrow)), amount / 2, 1);
-        assertApproxEqAbs(lPool.balanceOf(investor), amount / 2, 1);
+        // should work even if investor is frozen
+        centrifugeChain.freeze(poolId, trancheId, investor); // freeze investor
+        assertTrue(!TrancheToken(address(lPool.share())).checkTransferRestriction(investor, address(escrow), amount));
+
+
+        // half of the amount will be trabsferred from the investor's wallet & half of the amount will be taken from escrow
+        centrifugeChain.triggerIncreaseRedeemOrder(
+           poolId, trancheId, investor, defaultCurrencyId, amount
+        );
+
+        assertApproxEqAbs(lPool.balanceOf(investor), 0, 1);
+        assertApproxEqAbs(lPool.balanceOf(address(escrow)), amount, 1);
         assertEq(lPool.maxMint(investor), 0);
 
         centrifugeChain.isExecutedCollectRedeem(
@@ -1280,18 +1302,74 @@ contract LiquidityPoolTest is TestSetup {
             lPool.trancheId(),
             bytes32(bytes20(investor)),
             defaultCurrencyId,
-            uint128(amount / 2),
-            uint128(amount / 2),
-            uint128(amount / 2)
+            uint128(amount),
+            uint128(amount),
+            uint128(amount)
         );
 
         assertApproxEqAbs(lPool.balanceOf(address(escrow)), 0, 1);
-        assertApproxEqAbs(erc20.balanceOf(address(userEscrow)), amount / 2, 1);
-
+        assertApproxEqAbs(erc20.balanceOf(address(userEscrow)), amount, 1);
         vm.prank(investor);
-        lPool.redeem(amount / 2, investor, investor);
+        lPool.redeem(amount, investor, investor);
+        assertApproxEqAbs(erc20.balanceOf(investor), investorBalanceBefore + amount, 1);
+    }
 
-        assertApproxEqAbs(erc20.balanceOf(investor), investorBalanceBefore + amount / 2, 1);
+    function testTriggerIncreaseRedeemOrderTokensUnmitedTokensInEscrow(uint128 amount) public {
+        amount = uint128(bound(amount, 2, (MAX_UINT128 - 1)));
+
+        address lPool_ = deploySimplePool();
+        LiquidityPool lPool = LiquidityPool(lPool_);
+        deposit(lPool_, investor, amount, false); // request and execute deposit, but don't claim
+        uint256 investorBalanceBefore = erc20.balanceOf(investor);
+        assertEq(lPool.maxMint(investor), amount);
+        uint64 poolId = lPool.poolId();
+        bytes16 trancheId = lPool.trancheId();
+
+        // Fail - Redeem amount too big 
+        vm.expectRevert(bytes("ERC20/insufficient-balance"));
+        centrifugeChain.triggerIncreaseRedeemOrder(
+           poolId, trancheId, investor, defaultCurrencyId, uint128(amount + 1)
+        );
+
+         // should work even if investor is frozen
+        centrifugeChain.freeze(poolId, trancheId, investor); // freeze investor
+        assertTrue(!TrancheToken(address(lPool.share())).checkTransferRestriction(investor, address(escrow), amount));
+
+        // Test trigger partial redeem (maxMint > redeemAmount), where investor did not mint their tokens - user tokens are still locked in escrow 
+        uint128 redeemAmount = uint128(amount / 2); 
+        centrifugeChain.triggerIncreaseRedeemOrder(
+           poolId, trancheId, investor, defaultCurrencyId, redeemAmount
+        );
+        assertApproxEqAbs(lPool.balanceOf(address(escrow)), amount, 1);
+        assertEq(lPool.balanceOf(investor), 0);
+        assertEq(lPool.maxMint(investor), (amount - redeemAmount));
+
+        // Test trigger full redeem (maxMint = redeemAmount), where investor did not mint their tokens - user tokens are still locked in escrow 
+        redeemAmount = uint128(lPool.maxMint(investor));
+        centrifugeChain.triggerIncreaseRedeemOrder(
+           poolId, trancheId, investor, defaultCurrencyId, redeemAmount
+        );
+        assertApproxEqAbs(lPool.balanceOf(address(escrow)), amount, 1);
+        assertEq(lPool.balanceOf(investor), 0);
+        assertEq(lPool.maxMint(investor), 0);
+
+
+        centrifugeChain.isExecutedCollectRedeem(
+            lPool.poolId(),
+            lPool.trancheId(),
+            bytes32(bytes20(investor)),
+            defaultCurrencyId,
+            uint128(amount),
+            uint128(amount),
+            uint128(amount)
+        );
+
+        assertApproxEqAbs(lPool.balanceOf(address(escrow)), 0, 1);
+        assertApproxEqAbs(erc20.balanceOf(address(userEscrow)), amount, 1);
+        vm.prank(investor);
+        lPool.redeem(amount, investor, investor);
+
+        assertApproxEqAbs(erc20.balanceOf(investor), investorBalanceBefore + amount, 1);
     }
 
     function testPartialExecutions(uint64 poolId, bytes16 trancheId, uint128 currencyId) public {
