@@ -114,6 +114,9 @@ contract LiquidityPoolTest is TestSetup {
         redemption1 = uint128(bound(redemption1, 2, MAX_UINT128 / 4));
         redemption2 = uint128(bound(redemption2, 2, MAX_UINT128 / 4));
         uint256 amount = redemption1 + redemption2;
+        console.log("amount: %s", amount);
+        console.log("redemption1: %s", redemption1);
+        console.log("redemption2: %s", redemption2);
         vm.assume(amountAssumption(amount));
 
         address lPool_ = deploySimplePool();
@@ -159,6 +162,7 @@ contract LiquidityPoolTest is TestSetup {
         lPool.redeem(redemption1, investor, investor);
         vm.prank(investor);
         lPool.withdraw(redemption2, investor, investor);
+        assertTrue(false);
     }
 
     function testMint(uint256 amount) public {
@@ -1301,12 +1305,20 @@ contract LiquidityPoolTest is TestSetup {
         address lPool_ =
             deployLiquidityPool(poolId, TRANCHE_TOKEN_DECIMALS, "", "", trancheId, currencyId, address(currency));
         LiquidityPool lPool = LiquidityPool(lPool_);
+
         centrifugeChain.updateTrancheTokenPrice(poolId, trancheId, currencyId, 1000000000000000000);
+
+        partialDeposit(poolId, trancheId, lPool, currency);
+
+        partialRedeem(poolId, trancheId, lPool, currency);
+    }
+
+    function partialDeposit(uint64 poolId, bytes16 trancheId, LiquidityPool lPool, ERC20 currency) public {
 
         // invest
         uint256 investmentAmount = 100000000; // 100 * 10**6
         centrifugeChain.updateMember(poolId, trancheId, self, type(uint64).max);
-        currency.approve(lPool_, investmentAmount);
+        currency.approve(address(lPool), investmentAmount);
         currency.mint(self, investmentAmount);
         lPool.requestDeposit(investmentAmount, self);
         uint128 _currencyId = poolManager.currencyAddressToId(address(currency)); // retrieve currencyId
@@ -1343,6 +1355,26 @@ contract LiquidityPoolTest is TestSetup {
         // collect the tranche tokens
         lPool.mint(firstTrancheTokenPayout + secondTrancheTokenPayout, self);
         assertEq(lPool.balanceOf(self), firstTrancheTokenPayout + secondTrancheTokenPayout);
+    }
+
+    function partialRedeem(uint64 poolId, bytes16 trancheId, LiquidityPool lPool, ERC20 currency) public {
+        console.log("REDEEM");
+        uint128 currencyId = poolManager.currencyAddressToId(address(currency));
+        
+        uint256 redeemAmount = 77380952380952380951;
+        assertEq(redeemAmount, lPool.balanceOf(self));
+        lPool.requestRedeem(redeemAmount, self, self);
+
+        // first trigger executed collectRedeem of the first 50 trancheTokens at a price of 1.1
+        uint128 firstTrancheTokenRedeem = 50000000000000000000;
+        uint128 secondTrancheTokenRedeem = 27380952380952380951;
+        uint128 firstCurrencyPayout = 55000000; // 50 * 10**6 * 1.1
+        centrifugeChain.isExecutedCollectRedeem(
+            poolId, trancheId, bytes32(bytes20(self)), currencyId, firstCurrencyPayout, firstTrancheTokenRedeem, secondTrancheTokenRedeem 
+        );
+            
+        (,,, uint256 redeemPrice,,,) = investmentManager.investments(address(lPool), self);
+        assertEq(redeemPrice, 1100000000000000000);
     }
 
     // helpers
