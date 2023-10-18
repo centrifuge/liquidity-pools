@@ -568,6 +568,9 @@ contract PoolManagerTest is TestSetup {
             _bytes32ToString(_stringToBytes32(tokenSymbol)), _bytes32ToString(_stringToBytes32(trancheToken.symbol()))
         );
         assertEq(decimals, trancheToken.decimals());
+
+        vm.expectRevert(bytes("PoolManager/tranche-already-deployed"));
+        centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals);
     }
 
     function testAddingTrancheMultipleTimesFails(

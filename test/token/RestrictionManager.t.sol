@@ -27,4 +27,15 @@ contract RestrictionManagerTest is Test {
         restrictionManager.updateMember(address(this), validUntil);
         assert(restrictionManager.hasMember(address(this)));
     }
+
+    function testFreeze() public {
+        restrictionManager.freeze(address(this));
+        assertEq(restrictionManager.frozen(address(this)), 1);
+    }
+
+    function testFreezingZeroAddress() public {
+        vm.expectRevert("RestrictionManager/cannot-freeze-zero-address");
+        restrictionManager.freeze(address(0));
+        assertEq(restrictionManager.frozen(address(0)), 0);
+    }
 }

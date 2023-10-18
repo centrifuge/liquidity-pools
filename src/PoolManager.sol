@@ -146,15 +146,10 @@ contract PoolManager is Auth {
         uint128 currency = currencyAddressToId[currencyAddress];
         require(currency != 0, "PoolManager/unknown-currency");
 
-        // Transfer the currency amount from user to escrow (lock currency in escrow)
-        // Checks actual balance difference to support fee-on-transfer tokens
-        uint256 preBalance = IERC20(currencyAddress).balanceOf(address(escrow));
         SafeTransferLib.safeTransferFrom(currencyAddress, msg.sender, address(escrow), amount);
-        uint256 postBalance = IERC20(currencyAddress).balanceOf(address(escrow));
-        uint128 transferredAmount = (postBalance - preBalance).toUint128();
 
-        gateway.transfer(currency, msg.sender, recipient, transferredAmount);
-        emit TransferCurrency(currencyAddress, recipient, transferredAmount);
+        gateway.transfer(currency, msg.sender, recipient, amount);
+        emit TransferCurrency(currencyAddress, recipient, amount);
     }
 
     function transferTrancheTokensToCentrifuge(
@@ -243,6 +238,7 @@ contract PoolManager is Auth {
 
         UndeployedTranche storage undeployedTranche = undeployedTranches[poolId][trancheId];
         require(undeployedTranche.decimals == 0, "PoolManager/tranche-already-exists");
+        require(getTrancheToken(poolId, trancheId) == address(0), "PoolManager/tranche-already-deployed");
 
         undeployedTranche.decimals = decimals;
         undeployedTranche.tokenName = tokenName;
@@ -381,7 +377,7 @@ contract PoolManager is Auth {
 
         // Deploy liquidity pool
         liquidityPool = liquidityPoolFactory.newLiquidityPool(
-            poolId, trancheId, currency, tranche.token, address(investmentManager), liquidityPoolWards
+            poolId, trancheId, currency, tranche.token, address(escrow), address(investmentManager), liquidityPoolWards
         );
         tranche.liquidityPools[currency] = liquidityPool;
 
