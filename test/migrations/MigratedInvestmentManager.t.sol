@@ -53,7 +53,6 @@ contract MigratedInvestmentManagerTest is InvestRedeemFlow {
         // file investmentManager on all LiquidityPools
         for (uint256 i = 0; i < liquidityPools.length; i++) {
             root.relyContract(liquidityPools[i], address(this));
-            LiquidityPool lPool = LiquidityPool(liquidityPools[i]);
 
             LiquidityPool(liquidityPools[i]).file("manager", address(newInvestmentManager));
             LiquidityPool(liquidityPools[i]).rely(address(newInvestmentManager));
