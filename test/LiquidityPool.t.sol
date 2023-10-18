@@ -159,7 +159,6 @@ contract LiquidityPoolTest is TestSetup {
         lPool.redeem(redemption1, investor, investor);
         vm.prank(investor);
         lPool.withdraw(redemption2, investor, investor);
-        assertTrue(false);
     }
 
     function testMint(uint256 amount) public {
@@ -1302,11 +1301,9 @@ contract LiquidityPoolTest is TestSetup {
         address lPool_ =
             deployLiquidityPool(poolId, TRANCHE_TOKEN_DECIMALS, "", "", trancheId, currencyId, address(currency));
         LiquidityPool lPool = LiquidityPool(lPool_);
-
         centrifugeChain.updateTrancheTokenPrice(poolId, trancheId, currencyId, 1000000000000000000);
 
         partialDeposit(poolId, trancheId, lPool, currency);
-
         partialRedeem(poolId, trancheId, lPool, currency);
     }
 
@@ -1362,7 +1359,7 @@ contract LiquidityPoolTest is TestSetup {
         assertTrue(redeemAmount <= totalTrancheTokens);
         lPool.requestRedeem(redeemAmount, self, self);
 
-        // first trigger executed collectRedeem of the first 50 trancheTokens at a price of 1.1
+        // first trigger executed collectRedeem of the first 25 trancheTokens at a price of 1.1
         uint128 firstTrancheTokenRedeem = 25000000000000000000;
         uint128 secondTrancheTokenRedeem = 25000000000000000000;
         assertEq(firstTrancheTokenRedeem + secondTrancheTokenRedeem, redeemAmount);
@@ -1376,7 +1373,7 @@ contract LiquidityPoolTest is TestSetup {
         (,,, uint256 redeemPrice,,,) = investmentManager.investments(address(lPool), self);
         assertEq(redeemPrice, 1100000000000000000);
 
-        // second trigger executed collectRedeem of the second 50 trancheTokens at a price of 1.3
+        // second trigger executed collectRedeem of the second 25 trancheTokens at a price of 1.3
         uint128 secondCurrencyPayout = 32500000; // (25000000000000000000/10**18) * 10**6 * 1.3
         centrifugeChain.isExecutedCollectRedeem(
             poolId, trancheId, bytes32(bytes20(self)), currencyId, secondCurrencyPayout, secondTrancheTokenRedeem, 0
