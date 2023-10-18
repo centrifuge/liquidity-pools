@@ -1308,8 +1308,6 @@ contract LiquidityPoolTest is TestSetup {
     }
 
     function partialDeposit(uint64 poolId, bytes16 trancheId, LiquidityPool lPool, ERC20 currency) public {
-
-        // invest
         uint256 investmentAmount = 100000000; // 100 * 10**6
         centrifugeChain.updateMember(poolId, trancheId, self, type(uint64).max);
         currency.approve(address(lPool), investmentAmount);
@@ -1353,7 +1351,6 @@ contract LiquidityPoolTest is TestSetup {
 
     function partialRedeem(uint64 poolId, bytes16 trancheId, LiquidityPool lPool, ERC20 currency) public {
         uint128 currencyId = poolManager.currencyAddressToId(address(currency));
-        
         uint256 totalTrancheTokens = lPool.balanceOf(self);
         uint256 redeemAmount = 50000000000000000000;
         assertTrue(redeemAmount <= totalTrancheTokens);
