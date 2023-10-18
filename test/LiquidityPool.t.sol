@@ -1262,8 +1262,10 @@ contract LiquidityPoolTest is TestSetup {
 
         address lPool_ = deploySimplePool();
         LiquidityPool lPool = LiquidityPool(lPool_);
-        deposit(lPool_, investor, amount); // deposit funds first
+        deposit(lPool_, investor, amount, false); // request and execute deposit, but don't claim
         uint256 investorBalanceBefore = erc20.balanceOf(investor);
+        assertEq(lPool.maxMint(investor), amount);
+
         // Trigger request redeem of half the amount
         centrifugeChain.triggerIncreaseRedeemOrder(
             lPool.poolId(), lPool.trancheId(), investor, defaultCurrencyId, uint128(amount / 2)
@@ -1271,6 +1273,7 @@ contract LiquidityPoolTest is TestSetup {
 
         assertApproxEqAbs(lPool.balanceOf(address(escrow)), amount / 2, 1);
         assertApproxEqAbs(lPool.balanceOf(investor), amount / 2, 1);
+        assertEq(lPool.maxMint(investor), 0);
 
         centrifugeChain.isExecutedCollectRedeem(
             lPool.poolId(),
@@ -1346,7 +1349,7 @@ contract LiquidityPoolTest is TestSetup {
     }
 
     // helpers
-    function deposit(address _lPool, address investor, uint256 amount) public {
+    function deposit(address _lPool, address investor, uint256 amount, bool claimDeposit) public {
         LiquidityPool lPool = LiquidityPool(_lPool);
         erc20.mint(investor, amount);
         centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), investor, type(uint64).max); // add user as member
@@ -1367,8 +1370,14 @@ contract LiquidityPoolTest is TestSetup {
             0
         );
 
-        vm.prank(investor);
-        lPool.deposit(amount, investor); // withdraw the amount
+        if (claimDeposit) {
+            vm.prank(investor);
+            lPool.deposit(amount, investor); // withdraw the amount
+        }
+    }
+
+    function deposit(address _lPool, address investor, uint256 amount) public {
+        deposit(_lPool, investor, amount, true);
     }
 
     function amountAssumption(uint256 amount) public pure returns (bool) {

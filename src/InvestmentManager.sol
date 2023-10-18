@@ -416,6 +416,13 @@ contract InvestmentManager is Auth {
         uint128 trancheTokenAmount
     ) public onlyGateway {
         address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, currencyId);
+
+        // If there's any unclaimed deposits, claim those first
+        InvestmentState storage state = investments[liquidityPool][user];
+        if (state.maxMint > 0) {
+            _processDeposit(state, state.maxMint, liquidityPool, user);
+        }
+
         require(
             _processRedeemRequest(liquidityPool, trancheTokenAmount, user), "InvestmentManager/failed-redeem-request"
         );
