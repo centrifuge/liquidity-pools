@@ -61,18 +61,6 @@ contract LiquidityPoolTest is TestSetup {
         lPool.convertToAssets(amount);
 
         vm.expectRevert(bytes("MathLib/uint128-overflow"));
-        lPool.previewDeposit(amount);
-
-        vm.expectRevert(bytes("MathLib/uint128-overflow"));
-        lPool.previewRedeem(amount);
-
-        vm.expectRevert(bytes("MathLib/uint128-overflow"));
-        lPool.previewMint(amount);
-
-        vm.expectRevert(bytes("MathLib/uint128-overflow"));
-        lPool.previewWithdraw(amount);
-
-        vm.expectRevert(bytes("MathLib/uint128-overflow"));
         lPool.deposit(amount, random_);
 
         vm.expectRevert(bytes("MathLib/uint128-overflow"));
@@ -100,6 +88,26 @@ contract LiquidityPoolTest is TestSetup {
 
         vm.expectRevert(bytes("MathLib/uint128-overflow"));
         lPool.decreaseRedeemRequest(amount);
+    }
+
+    // --- preview checks ---
+    function testPreviewReverts(uint256 amount, address random_) public {
+        vm.assume(amount > MAX_UINT128); // amount has to overflow UINT128
+        vm.assume(random_.code.length == 0);
+        address lPool_ = deploySimplePool();
+        LiquidityPool lPool = LiquidityPool(lPool_);
+
+        vm.expectRevert(bytes(""));
+        lPool.previewDeposit(amount);
+
+        vm.expectRevert(bytes(""));
+        lPool.previewRedeem(amount);
+
+        vm.expectRevert(bytes(""));
+        lPool.previewMint(amount);
+
+        vm.expectRevert(bytes(""));
+        lPool.previewWithdraw(amount);
     }
 
     function testRedeemWithApproval(uint256 redemption1, uint256 redemption2) public {
@@ -773,9 +781,6 @@ contract LiquidityPoolTest is TestSetup {
         assertEq(lPool.pendingDepositRequest(self), 0);
         // assert tranche tokens minted
         assertEq(lPool.balanceOf(address(escrow)), trancheTokensPayout);
-        // assert conversions
-        assertEq(lPool.previewDeposit(amount), trancheTokensPayout);
-        assertApproxEqAbs(lPool.previewMint(trancheTokensPayout), amount, 1);
 
         // deposit 50% of the amount
         lPool.deposit(amount / 2, self); // mint half the amount
@@ -937,9 +942,6 @@ contract LiquidityPoolTest is TestSetup {
         assertEq(lPool.maxDeposit(self), amount); // max deposit
         // assert tranche tokens minted
         assertEq(lPool.balanceOf(address(escrow)), trancheTokensPayout);
-        // assert conversions
-        assertEq(lPool.previewDeposit(amount), trancheTokensPayout);
-        assertApproxEqAbs(lPool.previewMint(trancheTokensPayout), amount, 1);
 
         // deposit 1/2 funds to receiver
         vm.expectRevert(bytes("RestrictionManager/destination-not-a-member"));
@@ -1005,7 +1007,8 @@ contract LiquidityPoolTest is TestSetup {
 
         // Use a wallet with a known private key so we can sign the permit message
         address investor = vm.addr(0xABCD);
-        vm.prank(vm.addr(0xABCD));
+        address randomUser = makeAddr("randomUser");
+        vm.prank(investor);
 
         address lPool_ = deploySimplePool();
         LiquidityPool lPool = LiquidityPool(lPool_);
@@ -1026,7 +1029,14 @@ contract LiquidityPoolTest is TestSetup {
                     )
                 )
             )
-        );
+        );  
+
+        // frontrunnign with lower amount should not be possible
+        vm.startPrank(randomUser);
+        ERC20(address(lPool.asset())).permit(investor, lPool_, amount, block.timestamp, v, r, s);
+        vm.expectRevert(bytes("LiquidityPool/permit-failure"));
+        lPool.requestDepositWithPermit((amount - 1), investor, block.timestamp, v, r, s);
+        vm.stopPrank();
 
         lPool.requestDepositWithPermit(amount, investor, block.timestamp, v, r, s);
         // To avoid stack too deep errors
@@ -1087,9 +1097,6 @@ contract LiquidityPoolTest is TestSetup {
         assertEq(lPool.pendingRedeemRequest(self), 0);
         assertEq(lPool.balanceOf(address(escrow)), 0);
         assertEq(erc20.balanceOf(address(userEscrow)), currencyPayout);
-        // assert conversions
-        assertEq(lPool.previewWithdraw(currencyPayout), amount);
-        assertEq(lPool.previewRedeem(amount), currencyPayout);
 
         // success
         lPool.redeem(amount / 2, self, self); // redeem half the amount to own wallet

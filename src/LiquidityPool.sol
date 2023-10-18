@@ -25,10 +25,6 @@ interface ManagerLike {
     function maxRedeem(address lp, address receiver) external view returns (uint256);
     function convertToShares(address lp, uint256 assets) external view returns (uint256);
     function convertToAssets(address lp, uint256 shares) external view returns (uint256);
-    function previewDeposit(address lp, address operator, uint256 assets) external view returns (uint256);
-    function previewMint(address lp, address operator, uint256 shares) external view returns (uint256);
-    function previewWithdraw(address lp, address operator, uint256 assets) external view returns (uint256);
-    function previewRedeem(address lp, address operator, uint256 shares) external view returns (uint256);
     function requestDeposit(address lp, uint256 assets, address sender, address operator) external returns (bool);
     function requestRedeem(address lp, uint256 shares, address operator) external returns (bool);
     function decreaseDepositRequest(address lp, uint256 assets, address operator) external;
@@ -134,14 +130,9 @@ contract LiquidityPool is Auth, IERC4626 {
     function maxDeposit(address receiver) public view returns (uint256 maxAssets) {
         maxAssets = manager.maxDeposit(address(this), receiver);
     }
-
-    /// @return shares that any user would get for an amount of assets provided
-    function previewDeposit(uint256 assets) public view returns (uint256 shares) {
-        shares = manager.previewDeposit(address(this), msg.sender, assets);
-    }
-
     /// @notice Collect shares for deposited assets after Centrifuge epoch execution.
     ///         maxDeposit is the max amount of assets that can be deposited.
+
     function deposit(uint256 assets, address receiver) public returns (uint256 shares) {
         shares = manager.deposit(address(this), assets, receiver, msg.sender);
         emit Deposit(address(this), receiver, assets, shares);
@@ -159,20 +150,9 @@ contract LiquidityPool is Auth, IERC4626 {
         maxShares = manager.maxMint(address(this), receiver);
     }
 
-    /// @return assets that any user would get for an amount of shares provided -> convertToAssets
-    function previewMint(uint256 shares) external view returns (uint256 assets) {
-        assets = manager.previewMint(address(this), msg.sender, shares);
-    }
-
     /// @return maxAssets that the receiver can withdraw
     function maxWithdraw(address receiver) public view returns (uint256 maxAssets) {
         maxAssets = manager.maxWithdraw(address(this), receiver);
-    }
-
-    /// @return shares that a user would need to redeem in order to receive
-    ///         the given amount of assets -> convertToAssets
-    function previewWithdraw(uint256 assets) public view returns (uint256 shares) {
-        shares = manager.previewWithdraw(address(this), msg.sender, assets);
     }
 
     /// @notice Withdraw assets after successful epoch execution. Receiver will receive an exact amount of assets for
@@ -188,11 +168,6 @@ contract LiquidityPool is Auth, IERC4626 {
     /// @notice maxShares that can be redeemed by the owner after redemption was requested
     function maxRedeem(address owner) public view returns (uint256 maxShares) {
         maxShares = manager.maxRedeem(address(this), owner);
-    }
-
-    /// @return assets that any user could redeem for a given amount of shares
-    function previewRedeem(uint256 shares) public view returns (uint256 assets) {
-        assets = manager.previewRedeem(address(this), msg.sender, shares);
     }
 
     /// @notice Redeem shares after successful epoch execution. Receiver will receive assets for
@@ -285,6 +260,23 @@ contract LiquidityPool is Auth, IERC4626 {
         shares = manager.pendingRedeemRequest(address(this), operator);
     }
 
+    /// @dev Preview functions for async 4626 vaults revert
+    function previewDeposit(uint256) external pure returns (uint256) {
+        revert();
+    }
+
+    function previewMint(uint256) external pure returns (uint256) {
+        revert();
+    }
+
+    function previewWithdraw(uint256) external pure returns (uint256) {
+        revert();
+    }
+
+    function previewRedeem(uint256) external pure returns (uint256) {
+        revert();
+    }
+
     // --- ERC20 overrides ---
     function name() public view returns (string memory) {
         return share.name();
@@ -353,7 +345,7 @@ contract LiquidityPool is Auth, IERC4626 {
         try ERC20PermitLike(token).permit(owner, spender, value, deadline, v, r, s) {
             return;
         } catch {
-            if (IERC20(token).allowance(owner, spender) >= value) {
+            if (IERC20(token).allowance(owner, spender) == value) {
                 return;
             }
         }
