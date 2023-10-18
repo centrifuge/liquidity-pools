@@ -466,46 +466,6 @@ contract InvestmentManager is Auth {
         return uint256(_calculateTrancheTokenAmount(state.maxWithdraw, liquidityPool, state.redeemPrice));
     }
 
-    function previewDeposit(address liquidityPool, address user, uint256 _currencyAmount)
-        public
-        view
-        returns (uint256 trancheTokenAmount)
-    {
-        uint128 currencyAmount = _currencyAmount.toUint128();
-        InvestmentState memory state = investments[liquidityPool][user];
-        trancheTokenAmount = uint256(_calculateTrancheTokenAmount(currencyAmount, liquidityPool, state.depositPrice));
-    }
-
-    function previewMint(address liquidityPool, address user, uint256 _trancheTokenAmount)
-        public
-        view
-        returns (uint256 currencyAmount)
-    {
-        uint128 trancheTokenAmount = _trancheTokenAmount.toUint128();
-        InvestmentState memory state = investments[liquidityPool][user];
-        currencyAmount = uint256(_calculateCurrencyAmount(trancheTokenAmount, liquidityPool, state.depositPrice));
-    }
-
-    function previewWithdraw(address liquidityPool, address user, uint256 _currencyAmount)
-        public
-        view
-        returns (uint256 trancheTokenAmount)
-    {
-        uint128 currencyAmount = _currencyAmount.toUint128();
-        InvestmentState memory state = investments[liquidityPool][user];
-        trancheTokenAmount = uint256(_calculateTrancheTokenAmount(currencyAmount, liquidityPool, state.redeemPrice));
-    }
-
-    function previewRedeem(address liquidityPool, address user, uint256 _trancheTokenAmount)
-        public
-        view
-        returns (uint256 currencyAmount)
-    {
-        uint128 trancheTokenAmount = _trancheTokenAmount.toUint128();
-        InvestmentState memory state = investments[liquidityPool][user];
-        currencyAmount = uint256(_calculateCurrencyAmount(trancheTokenAmount, liquidityPool, state.redeemPrice));
-    }
-
     function pendingDepositRequest(address liquidityPool, address user) public view returns (uint256 currencyAmount) {
         currencyAmount = uint256(investments[liquidityPool][user].remainingDepositRequest);
     }
@@ -527,8 +487,11 @@ contract InvestmentManager is Auth {
         auth
         returns (uint256 trancheTokenAmount)
     {
-        trancheTokenAmount = previewDeposit(liquidityPool, owner, currencyAmount);
-        _processDeposit(investments[liquidityPool][owner], trancheTokenAmount.toUint128(), liquidityPool, receiver);
+        InvestmentState storage state = investments[liquidityPool][owner];
+        uint128 trancheTokenAmount_ =
+            _calculateTrancheTokenAmount(currencyAmount.toUint128(), liquidityPool, state.depositPrice);
+        _processDeposit(state, trancheTokenAmount_, liquidityPool, receiver);
+        trancheTokenAmount = uint256(trancheTokenAmount_);
     }
 
     /// @notice Processes owner's currency deposit / investment after the epoch has been executed on Centrifuge.
@@ -539,8 +502,10 @@ contract InvestmentManager is Auth {
         auth
         returns (uint256 currencyAmount)
     {
-        currencyAmount = previewMint(liquidityPool, owner, trancheTokenAmount);
+        InvestmentState storage state = investments[liquidityPool][owner];
         _processDeposit(investments[liquidityPool][owner], trancheTokenAmount.toUint128(), liquidityPool, receiver);
+        currencyAmount =
+            uint256(_calculateCurrencyAmount(trancheTokenAmount.toUint128(), liquidityPool, state.depositPrice));
     }
 
     function _processDeposit(
@@ -567,8 +532,11 @@ contract InvestmentManager is Auth {
         auth
         returns (uint256 currencyAmount)
     {
-        currencyAmount = previewRedeem(liquidityPool, owner, trancheTokenAmount);
-        _processRedeem(investments[liquidityPool][owner], currencyAmount.toUint128(), liquidityPool, receiver, owner);
+        InvestmentState storage state = investments[liquidityPool][owner];
+        uint128 currencyAmount_ =
+            _calculateCurrencyAmount(trancheTokenAmount.toUint128(), liquidityPool, state.depositPrice);
+        _processRedeem(investments[liquidityPool][owner], currencyAmount_, liquidityPool, receiver, owner);
+        currencyAmount = uint256(currencyAmount_);
     }
 
     /// @dev    Processes owner's tranche token redemption after the epoch has been executed on Centrifuge.
@@ -579,8 +547,12 @@ contract InvestmentManager is Auth {
         auth
         returns (uint256 trancheTokenAmount)
     {
-        trancheTokenAmount = previewWithdraw(liquidityPool, owner, currencyAmount);
-        _processRedeem(investments[liquidityPool][owner], currencyAmount.toUint128(), liquidityPool, receiver, owner);
+        InvestmentState storage state = investments[liquidityPool][owner];
+        _processRedeem(
+            investments[liquidityPool][owner], currencyAmount.toUint128(), liquidityPool, receiver, owner
+        );
+        trancheTokenAmount =
+            uint256(_calculateTrancheTokenAmount(currencyAmount.toUint128(), liquidityPool, state.depositPrice));
     }
 
     function _processRedeem(
