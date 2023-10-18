@@ -1269,8 +1269,8 @@ contract LiquidityPoolTest is TestSetup {
         uint64 poolId = lPool.poolId();
         bytes16 trancheId = lPool.trancheId();
 
-        vm.prank(investor); // investor mints half of the amount
-        lPool.mint(amount / 2, investor); // investor mints the tokens
+        vm.prank(investor); 
+        lPool.mint(amount / 2, investor); // investor mints half of the amount
 
         assertApproxEqAbs(lPool.balanceOf(investor), amount / 2, 1);
         assertApproxEqAbs(lPool.balanceOf(address(escrow)), amount / 2, 1);
