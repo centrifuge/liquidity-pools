@@ -260,6 +260,7 @@ contract LiquidityPool is Auth, IERC4626 {
         shares = manager.pendingRedeemRequest(address(this), operator);
     }
 
+    /// @dev Preview functions for async 4626 vaults revert
     function previewDeposit(uint256) external pure returns (uint256) {
         revert();
     }
