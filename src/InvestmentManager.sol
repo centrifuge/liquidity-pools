@@ -550,7 +550,7 @@ contract InvestmentManager is Auth {
         InvestmentState storage state = investments[liquidityPool][owner];
         _processRedeem(investments[liquidityPool][owner], currencyAmount.toUint128(), liquidityPool, receiver, owner);
         trancheTokenAmount =
-            uint256(_calculateTrancheTokenAmount(currencyAmount.toUint128(), liquidityPool, state.depositPrice));
+            uint256(_calculateTrancheTokenAmount(currencyAmount.toUint128(), liquidityPool, state.redeemPrice));
     }
 
     function _processRedeem(
