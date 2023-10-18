@@ -652,11 +652,12 @@ contract LiquidityPoolTest is TestSetup {
         );
 
         
-        // deposit price should be ~1.2*10**18, redeem price should be 1.0*10**6
+        // deposit price should be ~1.2*10**18, redeem price should be 1.0*10**18
         (, uint256 depositPrice,, uint256 redeemPrice,,,) = investmentManager.investments(address(lPool), self);
         assertEq(depositPrice, 1200000000000000000);
-        assertEq(redeemPrice, 1000000);
-
+        assertEq(redeemPrice, 1000000000000000000);
+        assertEq(lPool.maxWithdraw(self), 50000000);
+        assertEq(lPool.maxRedeem(self), 50000000000000000000);
     }
 
     function testAssetShareConversion(uint64 poolId, bytes16 trancheId, uint128 currencyId) public {
