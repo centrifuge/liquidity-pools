@@ -503,7 +503,7 @@ contract InvestmentManager is Auth {
         returns (uint256 currencyAmount)
     {
         InvestmentState storage state = investments[liquidityPool][owner];
-        _processDeposit(investments[liquidityPool][owner], trancheTokenAmount.toUint128(), liquidityPool, receiver);
+        _processDeposit(state, trancheTokenAmount.toUint128(), liquidityPool, receiver);
         currencyAmount =
             uint256(_calculateCurrencyAmount(trancheTokenAmount.toUint128(), liquidityPool, state.depositPrice));
     }
