@@ -4,7 +4,6 @@ pragma solidity 0.8.21;
 import {Auth} from "./util/Auth.sol";
 import {MathLib} from "./util/MathLib.sol";
 import {SafeTransferLib} from "./util/SafeTransferLib.sol";
-import "forge-std/console.sol";
 
 interface GatewayLike {
     function increaseInvestOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currencyId, uint128 amount)
@@ -339,11 +338,9 @@ contract InvestmentManager is Auth {
             state.maxWithdraw + currencyPayout,
             ((maxRedeem(liquidityPool, user)) + trancheTokenPayout).toUint128()
         );
-        console.log("Redeem Price:", state.redeemPrice);
         state.maxWithdraw = state.maxWithdraw + currencyPayout;
         state.remainingRedeemRequest = remainingRedeemOrder;
 
-        console.log("another price calc:", _calculatePrice(liquidityPool, currencyPayout, trancheTokenPayout));
         LiquidityPoolLike(liquidityPool).updatePrice(_calculatePrice(liquidityPool, currencyPayout, trancheTokenPayout));
 
         // Transfer currency to user escrow to claim on withdraw/redeem,
@@ -352,7 +349,6 @@ contract InvestmentManager is Auth {
         ERC20Like trancheToken = ERC20Like(LiquidityPoolLike(liquidityPool).share());
         trancheToken.burn(address(escrow), trancheTokenPayout);
 
-        console.log("Final price:", state.redeemPrice);
         emit ExecutedCollectRedeem(poolId, trancheId, user, currencyId, currencyPayout, trancheTokenPayout);
     }
 
@@ -537,13 +533,8 @@ contract InvestmentManager is Auth {
         returns (uint256 currencyAmount)
     {
         InvestmentState storage state = investments[liquidityPool][owner];
-        console.log("state.depositPrice", state.depositPrice);
-        console.log("state.redeemPrice", state.redeemPrice);
-        console.log("state.maxWithdraw", state.maxWithdraw);
-        console.log("state.maxMint", state.maxMint);
-
         uint128 currencyAmount_ =
-            _calculateCurrencyAmount(trancheTokenAmount.toUint128(), liquidityPool, state.depositPrice);
+            _calculateCurrencyAmount(trancheTokenAmount.toUint128(), liquidityPool, state.redeemPrice);
         _processRedeem(state, currencyAmount_, liquidityPool, receiver, owner);
         currencyAmount = uint256(currencyAmount_);
     }
@@ -618,24 +609,18 @@ contract InvestmentManager is Auth {
         view
         returns (uint256 price)
     {
-        console.log("CALCULATE PRICE");
         if (currencyAmount == 0 || trancheTokenAmount == 0) {
             return 0;
         }
 
         (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getPoolDecimals(liquidityPool);
-        console.log("currencyDecimals", currencyDecimals);
-        console.log("trancheTokenDecimals", trancheTokenDecimals);
 
         uint256 currencyAmountInPriceDecimals = _toPriceDecimals(currencyAmount, currencyDecimals);
-        console.log("currencyAmountInPriceDecimals", currencyAmountInPriceDecimals);
         uint256 trancheTokenAmountInPriceDecimals = _toPriceDecimals(trancheTokenAmount, trancheTokenDecimals);
-        console.log("trancheTokenAmountInPriceDecimals", trancheTokenAmountInPriceDecimals);
 
         price = currencyAmountInPriceDecimals.mulDiv(
             10 ** PRICE_DECIMALS, trancheTokenAmountInPriceDecimals, MathLib.Rounding.Down
         );
-        console.log("price", price);
     }
 
     /// @dev    When converting currency to tranche token amounts using the price,

@@ -114,9 +114,6 @@ contract LiquidityPoolTest is TestSetup {
         redemption1 = uint128(bound(redemption1, 2, MAX_UINT128 / 4));
         redemption2 = uint128(bound(redemption2, 2, MAX_UINT128 / 4));
         uint256 amount = redemption1 + redemption2;
-        console.log("amount: %s", amount);
-        console.log("redemption1: %s", redemption1);
-        console.log("redemption2: %s", redemption2);
         vm.assume(amountAssumption(amount));
 
         address lPool_ = deploySimplePool();
@@ -1358,23 +1355,43 @@ contract LiquidityPoolTest is TestSetup {
     }
 
     function partialRedeem(uint64 poolId, bytes16 trancheId, LiquidityPool lPool, ERC20 currency) public {
-        console.log("REDEEM");
         uint128 currencyId = poolManager.currencyAddressToId(address(currency));
         
-        uint256 redeemAmount = 77380952380952380951;
-        assertEq(redeemAmount, lPool.balanceOf(self));
+        uint256 totalTrancheTokens = lPool.balanceOf(self);
+        uint256 redeemAmount = 50000000000000000000;
+        assertTrue(redeemAmount <= totalTrancheTokens);
         lPool.requestRedeem(redeemAmount, self, self);
 
         // first trigger executed collectRedeem of the first 50 trancheTokens at a price of 1.1
-        uint128 firstTrancheTokenRedeem = 50000000000000000000;
-        uint128 secondTrancheTokenRedeem = 27380952380952380951;
-        uint128 firstCurrencyPayout = 55000000; // 50 * 10**6 * 1.1
+        uint128 firstTrancheTokenRedeem = 25000000000000000000;
+        uint128 secondTrancheTokenRedeem = 25000000000000000000;
+        assertEq(firstTrancheTokenRedeem + secondTrancheTokenRedeem, redeemAmount);
+        uint128 firstCurrencyPayout = 27500000; // (25000000000000000000/10**18) * 10**6 * 1.1
         centrifugeChain.isExecutedCollectRedeem(
             poolId, trancheId, bytes32(bytes20(self)), currencyId, firstCurrencyPayout, firstTrancheTokenRedeem, secondTrancheTokenRedeem 
         );
+
+        assertEq(lPool.maxRedeem(self), firstTrancheTokenRedeem);
             
         (,,, uint256 redeemPrice,,,) = investmentManager.investments(address(lPool), self);
         assertEq(redeemPrice, 1100000000000000000);
+
+        // second trigger executed collectRedeem of the second 50 trancheTokens at a price of 1.3
+        uint128 secondCurrencyPayout = 32500000; // (25000000000000000000/10**18) * 10**6 * 1.3
+        centrifugeChain.isExecutedCollectRedeem(
+            poolId, trancheId, bytes32(bytes20(self)), currencyId, secondCurrencyPayout, secondTrancheTokenRedeem, 0
+        );
+
+        (,,, redeemPrice,,,) = investmentManager.investments(address(lPool), self);
+        assertEq(redeemPrice, 1200000000000000000);
+
+        assertApproxEqAbs(lPool.maxWithdraw(self), firstCurrencyPayout + secondCurrencyPayout, 2);
+        assertEq(lPool.maxRedeem(self), redeemAmount);
+
+        // collect the currency
+        lPool.redeem(redeemAmount, self, self);
+        assertEq(lPool.balanceOf(self), totalTrancheTokens - redeemAmount);
+        assertEq(currency.balanceOf(self), firstCurrencyPayout + secondCurrencyPayout);
     }
 
     // helpers
