@@ -12,25 +12,38 @@ interface IERC7540 is IERC4626 {
 
     /**
      * @dev Transfers assets from msg.sender into the Vault and submits a Request for asynchronous deposit/mint.
-     *      This places the Request in Pending state, with a corresponding increase in pendingDepositRequest for the
-     * amount assets.
+     *
+     * - MUST support ERC-20 approve / transferFrom on asset as a deposit Request flow.
+     * - MUST revert if all of assets cannot be requested for deposit/mint.
+     *
+     * NOTE: most implementations will require pre-approval of the Vault with the Vault's underlying asset token.
      */
     function requestDeposit(uint256 assets, address operator) external;
 
     /**
      * @dev Returns the amount of requested assets in Pending state for the operator to deposit or mint.
+     *
+     * - MUST NOT include any assets in Claimable state for deposit or mint.
+     * - MUST NOT show any variations depending on the caller.
+     * - MUST NOT revert unless due to integer overflow caused by an unreasonably large input.
      */
     function pendingDepositRequest(address operator) external view returns (uint256 assets);
 
     /**
      * @dev Assumes control of shares from owner and submits a Request for asynchronous redeem/withdraw.
-     *      This places the Request in Pending state, with a corresponding increase in pendingRedeemRequest for the
-     * amount shares.
+     *
+     * - MUST support a redeem Request flow where the control of shares is taken from owner directly
+     *   where msg.sender has ERC-20 approval over the shares of owner.
+     * - MUST revert if all of shares cannot be requested for redeem / withdraw.
      */
     function requestRedeem(uint256 shares, address operator, address owner) external;
 
     /**
      * @dev Returns the amount of requested shares in Pending state for the operator to redeem or withdraw.
+     *
+     * - MUST NOT include any shares in Claimable state for redeem or withdraw.
+     * - MUST NOT show any variations depending on the caller.
+     * - MUST NOT revert unless due to integer overflow caused by an unreasonably large input.
      */
     function pendingRedeemRequest(address operator) external view returns (uint256 shares);
 }
