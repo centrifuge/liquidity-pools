@@ -4,15 +4,8 @@ pragma solidity 0.8.21;
 import {Auth} from "./util/Auth.sol";
 import {MathLib} from "./util/MathLib.sol";
 import {SafeTransferLib} from "./util/SafeTransferLib.sol";
-import {IERC20} from "./interfaces/IERC20.sol";
-import {IERC4626} from "./interfaces/IERC4626.sol";
-
-interface ERC20PermitLike {
-    function permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
-        external;
-}
-
-interface TrancheTokenLike is IERC20, ERC20PermitLike {}
+import {IERC20, IERC20Metadata, IERC20Permit} from "./interfaces/IERC20.sol";
+import {IERC7540} from "./interfaces/IERC7540.sol";
 
 interface ManagerLike {
     function deposit(address lp, uint256 assets, address receiver, address owner) external returns (uint256);
@@ -37,16 +30,16 @@ interface ManagerLike {
 
 /// @title  Liquidity Pool
 /// @notice Liquidity Pool implementation for Centrifuge pools
-///         following the EIP4626 standard, with asynchronous extension methods.
+///         following the ERC-7540 Asynchronous Tokenized Vault standard
 ///
-/// @dev    Each Liquidity Pool is a tokenized vault issuing shares of Centrifuge tranches as restricted ERC20 tokens
+/// @dev    Each Liquidity Pool is a tokenized vault issuing shares of Centrifuge tranches as restricted ERC-20 tokens
 ///         against currency deposits based on the current share price.
 ///
-///         This is extending the EIP4626 standard by 'requestDeposit' & 'requestRedeem' functions, where deposit and
-///         redeem orders are submitted to the pools to be included in the execution of the following epoch. After
-///         execution users can use the deposit, mint, redeem and withdraw functions to get their shares
+///         ERC-7540 is an extension of the ERC-4626 standard by 'requestDeposit' & 'requestRedeem' methods, where
+///         deposit and redeem orders are submitted to the pools to be included in the execution of the following epoch.
+///         After execution users can use the deposit, mint, redeem and withdraw functions to get their shares
 ///         and/or assets from the pools.
-contract LiquidityPool is Auth, IERC4626 {
+contract LiquidityPool is Auth, IERC7540 {
     using MathLib for uint256;
 
     uint64 public immutable poolId;
@@ -62,7 +55,7 @@ contract LiquidityPool is Auth, IERC4626 {
     /// @notice The restricted ERC-20 Liquidity Pool token. Has a ratio (token price) of underlying assets
     ///         exchanged on deposit/withdraw/redeem.
     /// @dev    Also known as tranche tokens.
-    TrancheTokenLike public immutable share;
+    IERC20Metadata public immutable share;
 
     /// @notice Escrow contract for tokens
     address public immutable escrow;
@@ -78,8 +71,6 @@ contract LiquidityPool is Auth, IERC4626 {
 
     // --- Events ---
     event File(bytes32 indexed what, address data);
-    event DepositRequest(address indexed sender, address indexed operator, uint256 assets);
-    event RedeemRequest(address indexed sender, address indexed operator, address indexed owner, uint256 shares);
     event DecreaseDepositRequest(address indexed sender, uint256 assets);
     event DecreaseRedeemRequest(address indexed sender, uint256 shares);
     event CancelDepositRequest(address indexed sender);
@@ -90,7 +81,7 @@ contract LiquidityPool is Auth, IERC4626 {
         poolId = poolId_;
         trancheId = trancheId_;
         asset = asset_;
-        share = TrancheTokenLike(share_);
+        share = IERC20Metadata(share_);
         escrow = escrow_;
         manager = ManagerLike(manager_);
 
@@ -105,7 +96,7 @@ contract LiquidityPool is Auth, IERC4626 {
         emit File(what, data);
     }
 
-    // --- ERC4626 functions ---
+    // --- ERC-4626 methods ---
     /// @return Total value of the shares, denominated in the asset of this Liquidity Pool
     function totalAssets() public view returns (uint256) {
         return convertToAssets(totalSupply());
@@ -181,7 +172,7 @@ contract LiquidityPool is Auth, IERC4626 {
         emit Withdraw(address(this), receiver, owner, assets, shares);
     }
 
-    // --- Asynchronous 4626 functions ---
+    // --- ERC-7540 methods ---
     /// @notice Request asset deposit for a receiver to be included in the next epoch execution.
     /// @notice Request can only be called by the owner of the assets
     ///         Asset is locked in the escrow on request submission
@@ -211,20 +202,6 @@ contract LiquidityPool is Auth, IERC4626 {
         assets = manager.pendingDepositRequest(address(this), operator);
     }
 
-    /// @notice Request decreasing the outstanding deposit orders. Will return the assets once the order
-    ///         on Centrifuge is successfully decreased.
-    function decreaseDepositRequest(uint256 assets) public {
-        manager.decreaseDepositRequest(address(this), assets, msg.sender);
-        emit DecreaseDepositRequest(msg.sender, assets);
-    }
-
-    /// @notice Request cancelling the outstanding deposit orders. Will return the assets once the order
-    ///         on Centrifuge is successfully cancelled.
-    function cancelDepositRequest() public {
-        manager.cancelDepositRequest(address(this), msg.sender);
-        emit CancelDepositRequest(msg.sender);
-    }
-
     /// @notice Request share redemption for a receiver to be included in the next epoch execution.
     ///         DOES support flow where owner != msg.sender but has allowance to spend its shares
     ///         Shares are locked in the escrow on request submission
@@ -237,20 +214,6 @@ contract LiquidityPool is Auth, IERC4626 {
         require(transferFrom(owner, address(escrow), shares), "LiquidityPool/transfer-failed");
 
         emit RedeemRequest(msg.sender, operator, owner, shares);
-    }
-
-    /// @notice Request decreasing the outstanding redemption orders. Will return the shares once the order
-    ///         on Centrifuge is successfully decreased.
-    function decreaseRedeemRequest(uint256 shares) public {
-        manager.decreaseRedeemRequest(address(this), shares, msg.sender);
-        emit DecreaseRedeemRequest(msg.sender, shares);
-    }
-
-    /// @notice Request cancelling the outstanding redemption orders. Will return the shares once the order
-    ///         on Centrifuge is successfully cancelled.
-    function cancelRedeemRequest() public {
-        manager.cancelRedeemRequest(address(this), msg.sender);
-        emit CancelRedeemRequest(msg.sender);
     }
 
     /// @notice View the total amount the operator has requested to redeem but isn't able to withdraw or redeem yet
@@ -277,7 +240,36 @@ contract LiquidityPool is Auth, IERC4626 {
         revert();
     }
 
-    // --- ERC20 overrides ---
+    // --- Misc asynchronous vault methods ---
+    /// @notice Request decreasing the outstanding deposit orders. Will return the assets once the order
+    ///         on Centrifuge is successfully decreased.
+    function decreaseDepositRequest(uint256 assets) public {
+        manager.decreaseDepositRequest(address(this), assets, msg.sender);
+        emit DecreaseDepositRequest(msg.sender, assets);
+    }
+
+    /// @notice Request cancelling the outstanding deposit orders. Will return the assets once the order
+    ///         on Centrifuge is successfully cancelled.
+    function cancelDepositRequest() public {
+        manager.cancelDepositRequest(address(this), msg.sender);
+        emit CancelDepositRequest(msg.sender);
+    }
+
+    /// @notice Request decreasing the outstanding redemption orders. Will return the shares once the order
+    ///         on Centrifuge is successfully decreased.
+    function decreaseRedeemRequest(uint256 shares) public {
+        manager.decreaseRedeemRequest(address(this), shares, msg.sender);
+        emit DecreaseRedeemRequest(msg.sender, shares);
+    }
+
+    /// @notice Request cancelling the outstanding redemption orders. Will return the shares once the order
+    ///         on Centrifuge is successfully cancelled.
+    function cancelRedeemRequest() public {
+        manager.cancelRedeemRequest(address(this), msg.sender);
+        emit CancelRedeemRequest(msg.sender);
+    }
+
+    // --- ERC-20 overrides ---
     function name() public view returns (string memory) {
         return share.name();
     }
@@ -342,7 +334,7 @@ contract LiquidityPool is Auth, IERC4626 {
         bytes32 r,
         bytes32 s
     ) internal {
-        try ERC20PermitLike(token).permit(owner, spender, value, deadline, v, r, s) {
+        try IERC20Permit(token).permit(owner, spender, value, deadline, v, r, s) {
             return;
         } catch {
             if (IERC20(token).allowance(owner, spender) == value) {
