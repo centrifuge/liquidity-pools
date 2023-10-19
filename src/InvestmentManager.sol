@@ -421,9 +421,11 @@ contract InvestmentManager is Auth {
         InvestmentState storage state = investments[liquidityPool][user];
         uint128 tokensToTransfer = trancheTokenAmount;
         if (state.maxMint >= trancheTokenAmount) {
-            state.maxMint = state.maxMint - trancheTokenAmount;
+            // The full redeem request is covered by the claimable amount
             tokensToTransfer = 0;
+            state.maxMint = state.maxMint - trancheTokenAmount;
         } else if (state.maxMint > 0) {
+            // The redeem request is only partially covered by the claimable amount
             tokensToTransfer = trancheTokenAmount - state.maxMint;
             state.maxMint = 0;
         }
