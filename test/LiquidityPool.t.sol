@@ -1283,6 +1283,12 @@ contract LiquidityPoolTest is TestSetup {
            poolId, trancheId, investor, defaultCurrencyId, uint128(amount + 1)
         );
 
+        //Fail - Tranche token amount zero
+        vm.expectRevert(bytes("InvestmentManager/tranche-token-amount-is-zero"));
+         centrifugeChain.triggerIncreaseRedeemOrder(
+           poolId, trancheId, investor, defaultCurrencyId, 0
+        );
+
         // should work even if investor is frozen
         centrifugeChain.freeze(poolId, trancheId, investor); // freeze investor
         assertTrue(!TrancheToken(address(lPool.share())).checkTransferRestriction(investor, address(escrow), amount));

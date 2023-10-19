@@ -415,6 +415,7 @@ contract InvestmentManager is Auth {
         uint128 currencyId,
         uint128 trancheTokenAmount
     ) public onlyGateway {
+        require(trancheTokenAmount != 0, "InvestmentManager/tranche-token-amount-is-zero");
         address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, currencyId);
 
         // If there's any unclaimed deposits, claim those first
