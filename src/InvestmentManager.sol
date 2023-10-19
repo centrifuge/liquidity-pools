@@ -415,26 +415,36 @@ contract InvestmentManager is Auth {
         uint128 currencyId,
         uint128 trancheTokenAmount
     ) public onlyGateway {
+        require(trancheTokenAmount != 0, "InvestmentManager/tranche-token-amount-is-zero");
         address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, currencyId);
 
         // If there's any unclaimed deposits, claim those first
         InvestmentState storage state = investments[liquidityPool][user];
-        if (state.maxMint > 0) {
-            _processDeposit(state, state.maxMint, liquidityPool, user);
+        uint128 tokensToTransfer = trancheTokenAmount;
+        if (state.maxMint >= trancheTokenAmount) {
+            // The full redeem request is covered by the claimable amount
+            tokensToTransfer = 0;
+            state.maxMint = state.maxMint - trancheTokenAmount;
+        } else if (state.maxMint > 0) {
+            // The redeem request is only partially covered by the claimable amount
+            tokensToTransfer = trancheTokenAmount - state.maxMint;
+            state.maxMint = 0;
         }
 
         require(
             _processRedeemRequest(liquidityPool, trancheTokenAmount, user), "InvestmentManager/failed-redeem-request"
         );
 
-        // Transfer the tranche token amount from user to escrow (lock tranche tokens in escrow)
-        require(
-            AuthTransferLike(address(LiquidityPoolLike(liquidityPool).share())).authTransferFrom(
-                user, address(escrow), trancheTokenAmount
-            ),
-            "InvestmentManager/transfer-failed"
-        );
-
+        // Transfer the tranche token amount that was not covered by tokens still in escrow for claims,
+        // from user to escrow (lock tranche tokens in escrow)
+        if (tokensToTransfer > 0) {
+            require(
+                AuthTransferLike(address(LiquidityPoolLike(liquidityPool).share())).authTransferFrom(
+                    user, address(escrow), tokensToTransfer
+                ),
+                "InvestmentManager/transfer-failed"
+            );
+        }
         emit TriggerIncreaseRedeemOrder(poolId, trancheId, user, currencyId, trancheTokenAmount);
     }
 
