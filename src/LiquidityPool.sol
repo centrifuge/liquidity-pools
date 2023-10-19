@@ -4,15 +4,8 @@ pragma solidity 0.8.21;
 import {Auth} from "./util/Auth.sol";
 import {MathLib} from "./util/MathLib.sol";
 import {SafeTransferLib} from "./util/SafeTransferLib.sol";
-import {IERC20} from "./interfaces/IERC20.sol";
+import {IERC20, IERC20Metadata, IERC20Permit} from "./interfaces/IERC20.sol";
 import {IERC7540} from "./interfaces/IERC7540.sol";
-
-interface ERC20PermitLike {
-    function permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
-        external;
-}
-
-interface TrancheTokenLike is IERC20, ERC20PermitLike {}
 
 interface ManagerLike {
     function deposit(address lp, uint256 assets, address receiver, address owner) external returns (uint256);
@@ -62,7 +55,7 @@ contract LiquidityPool is Auth, IERC7540 {
     /// @notice The restricted ERC-20 Liquidity Pool token. Has a ratio (token price) of underlying assets
     ///         exchanged on deposit/withdraw/redeem.
     /// @dev    Also known as tranche tokens.
-    TrancheTokenLike public immutable share;
+    IERC20Metadata public immutable share;
 
     /// @notice Escrow contract for tokens
     address public immutable escrow;
@@ -88,7 +81,7 @@ contract LiquidityPool is Auth, IERC7540 {
         poolId = poolId_;
         trancheId = trancheId_;
         asset = asset_;
-        share = TrancheTokenLike(share_);
+        share = IERC20Metadata(share_);
         escrow = escrow_;
         manager = ManagerLike(manager_);
 
@@ -341,7 +334,7 @@ contract LiquidityPool is Auth, IERC7540 {
         bytes32 r,
         bytes32 s
     ) internal {
-        try ERC20PermitLike(token).permit(owner, spender, value, deadline, v, r, s) {
+        try IERC20Permit(token).permit(owner, spender, value, deadline, v, r, s) {
             return;
         } catch {
             if (IERC20(token).allowance(owner, spender) == value) {
