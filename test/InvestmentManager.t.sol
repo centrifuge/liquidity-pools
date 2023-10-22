@@ -109,4 +109,48 @@ contract InvestmentManagerTest is TestSetup {
         vm.expectRevert(bytes(""));
         centrifugeChain.updateTrancheTokenPrice(poolId, trancheId, currencyId, price);
     }
+
+    function testRequestDeposit_failsIfAmountIsZero() public {
+        address sender = makeAddr("sender");
+        address user = makeAddr("user");
+        LiquidityPool lPool = LiquidityPool(deploySimplePool());
+        vm.expectRevert(bytes("InvestmentManager/zero-amount-not-allowed"));
+        investmentManager.requestDeposit(address(lPool), 0, sender, user);
+    }
+
+    function testRequestDeposit_failsIfCurrencyNotAllowed() public {
+        address sender = makeAddr("sender");
+        address user = makeAddr("user");
+        LiquidityPool lPool = LiquidityPool(deploySimplePool());
+        centrifugeChain.disallowInvestmentCurrency(lPool.poolId(), poolManager.currencyAddressToId(lPool.asset()));
+        vm.expectRevert(bytes("InvestmentManager/currency-not-allowed"));
+        investmentManager.requestDeposit(address(lPool), 10**18, sender, user);
+    }
+
+    function testRequestDeposit_failsIfSenderIsRestricted() public {
+        address sender = makeAddr("sender");
+        address user = makeAddr("user");
+        LiquidityPool lPool = LiquidityPool(deploySimplePool());
+        vm.expectRevert(bytes("InvestmentManager/sender-is-restricted"));
+        investmentManager.requestDeposit(address(lPool), 10**18, sender, user);
+    }
+
+    function testRequestDeposit_failsIfTransferIsRestricted() public {
+        address sender = makeAddr("sender");
+        address user = makeAddr("user");
+        LiquidityPool lPool = LiquidityPool(deploySimplePool());
+        centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), sender, type(uint64).max);
+        vm.expectRevert(bytes("InvestmentManager/transfer-not-allowed"));
+        investmentManager.requestDeposit(address(lPool), 10**18, sender, user);
+    }
+
+    function testRequestDeposit() public {
+        address sender = makeAddr("sender");
+        address user = makeAddr("user");
+        LiquidityPool lPool = LiquidityPool(deploySimplePool());
+        centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), sender, type(uint64).max);
+        centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), user, type(uint64).max);
+        vm.prank(address(lPool));
+        investmentManager.requestDeposit(address(lPool), 10**18, sender, user);
+    }
 }
