@@ -227,4 +227,33 @@ contract InvestmentManagerTest is TestSetup {
         vm.prank(address(lPool));
         investmentManager.decreaseRedeemRequest(address(lPool), 0.5e18, sender);
     }
+
+    function testCancelDepositRequest() public {
+        address sender = makeAddr("sender");
+        address user = makeAddr("user");
+        LiquidityPool lPool = LiquidityPool(deploySimplePool());
+
+        vm.prank(address(lPool));
+        investmentManager.cancelDepositRequest(address(lPool), sender);
+    }
+
+    function testCancelRedeemRequest_failsIfTransferIsRestricted() public {
+        address sender = makeAddr("sender");
+        address user = makeAddr("user");
+        LiquidityPool lPool = LiquidityPool(deploySimplePool());
+
+        vm.prank(address(lPool));
+        vm.expectRevert(bytes("InvestmentManager/transfer-not-allowed"));
+        investmentManager.cancelRedeemRequest(address(lPool), sender);
+    }
+
+    function testCancelRedeemRequest() public {
+        address sender = makeAddr("sender");
+        address user = makeAddr("user");
+        LiquidityPool lPool = LiquidityPool(deploySimplePool());
+        centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), sender, type(uint64).max);
+
+        vm.prank(address(lPool));
+        investmentManager.cancelRedeemRequest(address(lPool), sender);
+    }
 }
