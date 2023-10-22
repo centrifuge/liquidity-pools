@@ -6,6 +6,7 @@ import {MathLib} from "./util/MathLib.sol";
 import {SafeTransferLib} from "./util/SafeTransferLib.sol";
 import {IERC20, IERC20Metadata, IERC20Permit} from "./interfaces/IERC20.sol";
 import {IERC7540} from "./interfaces/IERC7540.sol";
+import "forge-std/console.sol";
 
 interface ManagerLike {
     function deposit(address lp, uint256 assets, address receiver, address owner) external returns (uint256);

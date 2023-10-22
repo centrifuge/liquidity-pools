@@ -124,7 +124,7 @@ contract InvestmentManagerTest is TestSetup {
         LiquidityPool lPool = LiquidityPool(deploySimplePool());
         centrifugeChain.disallowInvestmentCurrency(lPool.poolId(), poolManager.currencyAddressToId(lPool.asset()));
         vm.expectRevert(bytes("InvestmentManager/currency-not-allowed"));
-        investmentManager.requestDeposit(address(lPool), 10**18, sender, user);
+        investmentManager.requestDeposit(address(lPool), 1e18, sender, user);
     }
 
     function testRequestDeposit_failsIfSenderIsRestricted() public {
@@ -132,7 +132,7 @@ contract InvestmentManagerTest is TestSetup {
         address user = makeAddr("user");
         LiquidityPool lPool = LiquidityPool(deploySimplePool());
         vm.expectRevert(bytes("InvestmentManager/sender-is-restricted"));
-        investmentManager.requestDeposit(address(lPool), 10**18, sender, user);
+        investmentManager.requestDeposit(address(lPool), 1e18, sender, user);
     }
 
     function testRequestDeposit_failsIfTransferIsRestricted() public {
@@ -141,7 +141,7 @@ contract InvestmentManagerTest is TestSetup {
         LiquidityPool lPool = LiquidityPool(deploySimplePool());
         centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), sender, type(uint64).max);
         vm.expectRevert(bytes("InvestmentManager/transfer-not-allowed"));
-        investmentManager.requestDeposit(address(lPool), 10**18, sender, user);
+        investmentManager.requestDeposit(address(lPool), 1e18, sender, user);
     }
 
     function testRequestDeposit() public {
@@ -151,6 +151,52 @@ contract InvestmentManagerTest is TestSetup {
         centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), sender, type(uint64).max);
         centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), user, type(uint64).max);
         vm.prank(address(lPool));
-        investmentManager.requestDeposit(address(lPool), 10**18, sender, user);
+        investmentManager.requestDeposit(address(lPool), 1e18, sender, user);
+    }
+
+    function requestRedeemSetup(LiquidityPool lPool, address sender, address user) public {
+        centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), sender, type(uint64).max);
+        centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), user, type(uint64).max);
+        deal(address(lPool.asset()), sender, 1e18);
+        vm.startPrank(sender);
+        ERC20(lPool.asset()).approve(address(lPool), 1e18);
+        LiquidityPool(lPool).requestDeposit(1e18, user);
+        centrifugeChain.isExecutedCollectInvest(lPool.poolId(), lPool.trancheId(), bytes32(bytes20(sender)), poolManager.currencyAddressToId(lPool.asset()), 1e18, 1e18, 0);
+        LiquidityPool(lPool).deposit(1e18, user);
+        vm.stopPrank();
+
+    }
+
+    function testRequestRedeem_failsIfAmountIsZero() public {
+        address sender = makeAddr("sender");
+        address user = makeAddr("user");
+        LiquidityPool lPool = LiquidityPool(deploySimplePool());
+        requestRedeemSetup(lPool, sender, user);
+
+        vm.expectRevert(bytes("InvestmentManager/zero-amount-not-allowed"));
+        vm.prank(address(lPool));
+        investmentManager.requestRedeem(address(lPool), 0, user);
+    }
+
+    function testRequestRedeem_failsIfCurrencyNotAllowed() public {
+        address sender = makeAddr("sender");
+        address user = makeAddr("user");
+        LiquidityPool lPool = LiquidityPool(deploySimplePool());
+        requestRedeemSetup(lPool, sender, user);
+
+        centrifugeChain.disallowInvestmentCurrency(lPool.poolId(), poolManager.currencyAddressToId(lPool.asset()));
+        vm.expectRevert(bytes("InvestmentManager/currency-not-allowed"));
+        vm.prank(address(lPool));
+        investmentManager.requestRedeem(address(lPool), 1e18, user);   
+    }
+
+    function testRequestRedeem() public {
+        address sender = makeAddr("sender");
+        address user = makeAddr("user");
+        LiquidityPool lPool = LiquidityPool(deploySimplePool());
+        requestRedeemSetup(lPool, sender, user);
+
+        vm.prank(address(lPool));
+        investmentManager.requestRedeem(address(lPool), 1e18, user);
     }
 }
