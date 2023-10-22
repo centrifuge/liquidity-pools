@@ -164,7 +164,6 @@ contract InvestmentManagerTest is TestSetup {
         centrifugeChain.isExecutedCollectInvest(lPool.poolId(), lPool.trancheId(), bytes32(bytes20(sender)), poolManager.currencyAddressToId(lPool.asset()), 1e18, 1e18, 0);
         LiquidityPool(lPool).deposit(1e18, user);
         vm.stopPrank();
-
     }
 
     function testRequestRedeem_failsIfAmountIsZero() public {
@@ -198,5 +197,34 @@ contract InvestmentManagerTest is TestSetup {
 
         vm.prank(address(lPool));
         investmentManager.requestRedeem(address(lPool), 1e18, user);
+    }
+
+    function testDecreaseDepositRequest() public {
+        address sender = makeAddr("sender");
+        address user = makeAddr("user");
+        LiquidityPool lPool = LiquidityPool(deploySimplePool());
+        
+        vm.prank(address(lPool));
+        investmentManager.decreaseDepositRequest(address(lPool), 0.5e18, sender);
+    }
+
+    function testDecreaseRedeemRequest_failsIfTransferIsRestricted() public {
+        address sender = makeAddr("sender");
+        address user = makeAddr("user");
+        LiquidityPool lPool = LiquidityPool(deploySimplePool());
+        
+        vm.prank(address(lPool));
+        vm.expectRevert(bytes("InvestmentManager/transfer-not-allowed"));
+        investmentManager.decreaseRedeemRequest(address(lPool), 0.5e18, sender);
+    }
+
+    function testDecreaseRedeemRequest() public {
+        address sender = makeAddr("sender");
+        address user = makeAddr("user");
+        LiquidityPool lPool = LiquidityPool(deploySimplePool());
+        centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), sender, type(uint64).max);
+        
+        vm.prank(address(lPool));
+        investmentManager.decreaseRedeemRequest(address(lPool), 0.5e18, sender);
     }
 }
