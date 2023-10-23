@@ -4,7 +4,7 @@ pragma solidity ^0.8.18;
 import {TestSetup} from "test/TestSetup.t.sol";
 import {MockCentrifugeChain} from "test/mock/MockCentrifugeChain.sol";
 import {MathLib} from "src/util/MathLib.sol";
-import {IERC4626} from "src/interfaces/IERC4626.sol";
+import {IERC7540} from "src/interfaces/IERC7540.sol";
 import {BaseHandler} from "./BaseHandler.sol";
 
 interface ERC20Like {
@@ -13,9 +13,7 @@ interface ERC20Like {
     function balanceOf(address user) external view returns (uint256);
 }
 
-interface LiquidityPoolLike is IERC4626 {
-    function requestDeposit(uint256 assets) external;
-    function requestRedeem(uint256 shares) external;
+interface LiquidityPoolLike is IERC7540 {
     function share() external view returns (address);
     function manager() external view returns (address);
 }
@@ -86,8 +84,10 @@ contract InvestorHandler is BaseHandler {
         erc20.mint(currentInvestor, amount_);
         vm.startPrank(currentInvestor);
 
-        erc20.approve(investmentManager, amount_);
-        liquidityPool.requestDeposit(amount_);
+        erc20.approve(address(liquidityPool), amount_);
+
+        // TODO: we should also set up tests where currentInvestor != operator
+        liquidityPool.requestDeposit(amount_, currentInvestor);
 
         state.totalDepositRequested += amount_;
     }
@@ -122,7 +122,7 @@ contract InvestorHandler is BaseHandler {
         );
         if (amount_ == 0) return;
 
-        liquidityPool.requestRedeem(amount_);
+        liquidityPool.requestRedeem(amount_, currentInvestor, currentInvestor);
 
         state.totalRedeemRequested += amount_;
     }

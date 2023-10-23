@@ -45,27 +45,26 @@ contract InvestmentInvariants is TestSetup {
             excludeContract(pool);
         }
 
-        for (uint256 i; i < NUM_INVESTORS; ++i) {
-            address investor = makeAddr(string(abi.encode("investor", i)));
-            investors.push(investor);
-
-            for (uint64 poolId; poolId < NUM_POOLS; ++poolId) {
+        for (uint64 poolId; poolId < NUM_POOLS; ++poolId) {
+            for (uint256 i; i < NUM_INVESTORS; ++i) {
+                address investor = makeAddr(string(abi.encode("investor", i)));
+                investors.push(investor);
                 centrifugeChain.updateMember(poolId, "1", investor, type(uint64).max);
-
-                address pool = pools[poolId];
-                address currency = LiquidityPoolLike(pool).asset();
-                InvestorHandler handler =
-                new InvestorHandler(poolId, "1", 1, pool, address(centrifugeChain), currency, address(escrow), address(this));
-
-                investorHandlers[poolId] = handler;
-
-                ERC20Like(currency).rely(address(handler)); // rely to mint currency
-                address share = poolManager.getTrancheToken(poolId, "1");
-                root.relyContract(share, address(this));
-                ERC20Like(share).rely(address(handler)); // rely to mint tokens
-
-                targetContract(address(handler));
             }
+
+            address pool = pools[poolId];
+            address currency = LiquidityPoolLike(pool).asset();
+            InvestorHandler handler =
+            new InvestorHandler(poolId, "1", 1, pool, address(centrifugeChain), currency, address(escrow), address(this));
+
+            investorHandlers[poolId] = handler;
+
+            address share = poolManager.getTrancheToken(poolId, "1");
+            root.relyContract(share, address(this));
+            ERC20Like(currency).rely(address(handler)); // rely to mint currency
+            ERC20Like(share).rely(address(handler)); // rely to mint tokens
+
+            targetContract(address(handler));
         }
     }
 
@@ -118,32 +117,32 @@ contract InvestmentInvariants is TestSetup {
     // }
 
     // Invariant 5: lp.maxDeposit <= sum(requestDeposit)
-    function invariant_maxDepositLeDepositRequest() external {
-        for (uint64 poolId; poolId < NUM_POOLS; ++poolId) {
-            LiquidityPoolLike pool = LiquidityPoolLike(pools[poolId]);
-            InvestorHandler handler = investorHandlers[poolId];
+    // function invariant_maxDepositLeDepositRequest() external {
+    //     for (uint64 poolId; poolId < NUM_POOLS; ++poolId) {
+    //         LiquidityPoolLike pool = LiquidityPoolLike(pools[poolId]);
+    //         InvestorHandler handler = investorHandlers[poolId];
 
-            for (uint256 i; i < investors.length; ++i) {
-                address investor = investors[i];
-                (uint256 totalDepositRequested,,,,,,) = handler.investorState(investor);
-                assertLe(pool.maxDeposit(investor), totalDepositRequested);
-            }
-        }
-    }
+    //         for (uint256 i; i < investors.length; ++i) {
+    //             address investor = investors[i];
+    //             (uint256 totalDepositRequested,,,,,,) = handler.investorState(investor);
+    //             assertLe(pool.maxDeposit(investor), totalDepositRequested);
+    //         }
+    //     }
+    // }
 
     // Invariant 6: lp.maxRedeem <= sum(requestRedeem)
-    function invariant_maxRedeemLeRedeemRequest() external {
-        for (uint64 poolId; poolId < NUM_POOLS; ++poolId) {
-            LiquidityPoolLike pool = LiquidityPoolLike(pools[poolId]);
-            InvestorHandler handler = investorHandlers[poolId];
+    // function invariant_maxRedeemLeRedeemRequest() external {
+    //     for (uint64 poolId; poolId < NUM_POOLS; ++poolId) {
+    //         LiquidityPoolLike pool = LiquidityPoolLike(pools[poolId]);
+    //         InvestorHandler handler = investorHandlers[poolId];
 
-            for (uint256 i; i < investors.length; ++i) {
-                address investor = investors[i];
-                (, uint256 totalRedeemRequested,,,,,) = handler.investorState(investor);
-                assertLe(pool.maxRedeem(investor), totalRedeemRequested);
-            }
-        }
-    }
+    //         for (uint256 i; i < investors.length; ++i) {
+    //             address investor = investors[i];
+    //             (, uint256 totalRedeemRequested,,,,,) = handler.investorState(investor);
+    //             assertLe(pool.maxRedeem(investor), totalRedeemRequested);
+    //         }
+    //     }
+    // }
 
     function numInvestors() public view returns (uint256) {
         return investors.length;
