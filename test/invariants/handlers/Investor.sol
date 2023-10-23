@@ -14,6 +14,7 @@ interface ERC20Like {
 }
 
 interface LiquidityPoolLike is IERC7540 {
+    function decreaseDepositRequest(uint256 assets) external;
     function share() external view returns (address);
     function manager() external view returns (address);
 }
@@ -90,6 +91,18 @@ contract InvestorHandler is BaseHandler {
         liquidityPool.requestDeposit(amount_, currentInvestor);
 
         state.totalDepositRequested += amount_;
+    }
+
+    function decreaseDepositRequest(uint256 investorSeed, uint128 amount) public useRandomInvestor(investorSeed) {
+        InvestorState storage state = investorState[currentInvestor];
+        uint256 outstandingDepositRequest = state.totalDepositRequested - state.totalCurrencyPaidOutOnInvest;
+
+        uint256 amount_ = bound( amount, 0, outstandingDepositRequest );
+        if (amount == 0) return;
+
+        liquidityPool.decreaseDepositRequest(amount_);
+
+        state.totalDecreaseDepositRequested += amount_;
     }
 
     function deposit(uint256 investorSeed, uint128 amount) public useRandomInvestor(investorSeed) {
