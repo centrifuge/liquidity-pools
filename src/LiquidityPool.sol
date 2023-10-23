@@ -126,14 +126,14 @@ contract LiquidityPool is Auth, IERC7540 {
 
     function deposit(uint256 assets, address receiver) public returns (uint256 shares) {
         shares = manager.deposit(address(this), assets, receiver, msg.sender);
-        emit Deposit(address(this), receiver, assets, shares);
+        emit Deposit(msg.sender, receiver, assets, shares);
     }
 
     /// @notice Collect shares for deposited assets after Centrifuge epoch execution.
     ///         maxMint is the max amount of shares that can be minted.
     function mint(uint256 shares, address receiver) public returns (uint256 assets) {
         assets = manager.mint(address(this), shares, receiver, msg.sender);
-        emit Deposit(address(this), receiver, assets, shares);
+        emit Deposit(msg.sender, receiver, assets, shares);
     }
 
     /// @notice maxShares that can be claimed by the receiver after the epoch has been executed on the Centrifuge side.
@@ -153,7 +153,7 @@ contract LiquidityPool is Auth, IERC7540 {
     function withdraw(uint256 assets, address receiver, address owner) public returns (uint256 shares) {
         require((msg.sender == owner), "LiquidityPool/not-the-owner");
         shares = manager.withdraw(address(this), assets, receiver, owner);
-        emit Withdraw(address(this), receiver, owner, assets, shares);
+        emit Withdraw(msg.sender, receiver, owner, assets, shares);
     }
 
     /// @notice maxShares that can be redeemed by the owner after redemption was requested
@@ -169,7 +169,7 @@ contract LiquidityPool is Auth, IERC7540 {
     function redeem(uint256 shares, address receiver, address owner) public returns (uint256 assets) {
         require((msg.sender == owner), "LiquidityPool/not-the-owner");
         assets = manager.redeem(address(this), shares, receiver, owner);
-        emit Withdraw(address(this), receiver, owner, assets, shares);
+        emit Withdraw(msg.sender, receiver, owner, assets, shares);
     }
 
     // --- ERC-7540 methods ---
@@ -192,7 +192,7 @@ contract LiquidityPool is Auth, IERC7540 {
         _withPermit(asset, owner, address(this), assets, deadline, v, r, s);
         require(manager.requestDeposit(address(this), assets, owner, owner), "LiquidityPool/request-deposit-failed");
         SafeTransferLib.safeTransferFrom(asset, owner, address(escrow), assets);
-        emit DepositRequest(owner, owner, assets);
+        emit DepositRequest(msg.sender, owner, assets);
     }
 
     /// @notice View the total amount the operator has requested to deposit but isn't able to deposit or mint yet
