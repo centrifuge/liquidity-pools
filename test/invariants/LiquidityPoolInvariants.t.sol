@@ -18,29 +18,32 @@ interface ERC20Like {
 
 contract InvestmentInvariants is TestSetup {
     uint256 public constant NUM_POOLS = 1;
-    uint256 public constant NUM_CURRENCIES = 1;
     uint256 public constant NUM_INVESTORS = 2;
 
     InvestorHandler investorHandler;
-    LiquidityPoolLike liquidityPool;
 
     address[] public pools;
     address[] public investors;
-    address[] public currencies;
 
     function setUp() public override {
         super.setUp();
 
-        // TODO: right now, share and asset decimals are the same. We should also fuzz this
-        deployLiquidityPool(1, erc20.decimals(), "", "", "1", 1, address(erc20));
-        address liquidityPool_ = poolManager.getLiquidityPool(1, "1", address(erc20));
-        liquidityPool = LiquidityPoolLike(liquidityPool_);
+        for (uint256 i; i < NUM_POOLS; ++i) {
+            uint8 trancheTokenDecimals = 1 + _random(17, 1); // 1-18
+            uint8 currencyDecimals = 1 + _random(17, 1); // 1-18
 
-        excludeContract(liquidityPool_);
+            address currency = _newErc20(abi.encode("currency", i), abi.encode("currency", i), currencyDecimals);
+            address pool = deployLiquidityPool(i, trancheTokenDecimals, "", "", "1", i, currency);
+            pools.push(pool);
+
+            excludeContract(pool);
+        }
 
         for (uint256 i; i < NUM_INVESTORS; ++i) {
             address investor = makeAddr(string(abi.encode("investor", i)));
             investors.push(investor);
+
+            // todo: per pool
             centrifugeChain.updateMember(1, "1", investor, type(uint64).max);
         }
 
@@ -114,5 +117,13 @@ contract InvestmentInvariants is TestSetup {
 
     function numInvestors() public view returns (uint256) {
         return investors.length;
+    }
+
+    function _random(uint256 maxValue, uint256 nonce) internal view returns (uint256) {
+        if (maxValue == 1) {
+            return maxValue;
+        }
+        uint256 randomnumber = uint256(keccak256(abi.encodePacked(block.timestamp, self, nonce))) % (maxValue - 1);
+        return randomnumber + 1;
     }
 }
