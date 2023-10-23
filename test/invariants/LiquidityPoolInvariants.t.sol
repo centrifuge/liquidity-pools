@@ -76,22 +76,23 @@ contract InvestmentInvariants is TestSetup {
 
             for (uint256 i; i < investors.length; ++i) {
                 address investor = investors[i];
-                (,,, uint256 totalTrancheTokensPaidOutOnInvest,,,) = handler.investorState(investor);
+                (,,,,, uint256 totalTrancheTokensPaidOutOnInvest,,,,) = handler.investorState(investor);
                 assertLe(pool.balanceOf(investor), totalTrancheTokensPaidOutOnInvest);
             }
         }
     }
 
-    // Invariant 2: currency.balanceOf[user] <= sum(currencyPayout)
+    // Invariant 2: currency.balanceOf[user] <= sum(currencyPayout for each redemption)
+    //              + sum(currencyPayout for each decreased investment)
     function invariant_cannotReceiveMoreCurrencyThanPayout() external {
         for (uint64 poolId; poolId < NUM_POOLS; ++poolId) {
             InvestorHandler handler = investorHandlers[poolId];
 
             for (uint256 i; i < investors.length; ++i) {
                 address investor = investors[i];
-                (,, uint256 totalCurrencyReceived,,, uint256 totalCurrencyPaidOutOnRedeem,) =
+                (,,,, uint256 totalCurrencyReceived,,, uint256 totalCurrencyPaidOutOnRedeem,,uint256 totalCurrencyPaidOutOnDecreaseInvest) =
                     handler.investorState(investor);
-                assertLe(totalCurrencyReceived, totalCurrencyPaidOutOnRedeem);
+                assertLe(totalCurrencyReceived, totalCurrencyPaidOutOnRedeem + totalCurrencyPaidOutOnDecreaseInvest);
             }
         }
     }
@@ -124,7 +125,7 @@ contract InvestmentInvariants is TestSetup {
 
     //         for (uint256 i; i < investors.length; ++i) {
     //             address investor = investors[i];
-    //             (uint256 totalDepositRequested,,,,,,) = handler.investorState(investor);
+    //             (uint256 totalDepositRequested,,,,,,,,,) = handler.investorState(investor);
     //             assertLe(pool.maxDeposit(investor), totalDepositRequested);
     //         }
     //     }
@@ -138,7 +139,7 @@ contract InvestmentInvariants is TestSetup {
 
     //         for (uint256 i; i < investors.length; ++i) {
     //             address investor = investors[i];
-    //             (, uint256 totalRedeemRequested,,,,,) = handler.investorState(investor);
+    //             (, uint256 totalRedeemRequested,,,,,,,,) = handler.investorState(investor);
     //             assertLe(pool.maxRedeem(investor), totalRedeemRequested);
     //         }
     //     }

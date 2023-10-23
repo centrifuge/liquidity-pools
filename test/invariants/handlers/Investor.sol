@@ -37,6 +37,8 @@ contract InvestorHandler is BaseHandler {
     struct InvestorState {
         uint256 totalDepositRequested;
         uint256 totalRedeemRequested;
+        uint256 outstandingDecreaseDepositRequested;
+        uint256 outstandingDecreaseRedeemRequested;
         // For deposits we can just look at TT balance,
         // but for redemptions we need to bookkeep this
         // as we are also minting currency
@@ -45,6 +47,7 @@ contract InvestorHandler is BaseHandler {
         uint256 totalCurrencyPaidOutOnInvest;
         uint256 totalCurrencyPaidOutOnRedeem;
         uint256 totalTrancheTokensPaidOutOnRedeem;
+        uint256 totalCurrencyPaidOutOnDecreaseInvest;
     }
 
     mapping(address investor => InvestorState) public investorState;
@@ -102,7 +105,7 @@ contract InvestorHandler is BaseHandler {
 
         liquidityPool.decreaseDepositRequest(amount_);
 
-        state.totalDecreaseDepositRequested += amount_;
+        state.outstandingDecreaseDepositRequested += amount_;
     }
 
     function deposit(uint256 investorSeed, uint128 amount) public useRandomInvestor(investorSeed) {
@@ -175,6 +178,8 @@ contract InvestorHandler is BaseHandler {
         fulfillmentRatio = bound(fulfillmentRatio, 0, 1 * 10 ** 18); // 0% to 100%
         fulfillmentPrice = bound(fulfillmentPrice, 0, 2 * 10 ** 18); // 0.00 to 2.00
 
+        // TODO: subtracting outstandingDecreaseDepositRequested here means that decrease requests
+        // are never executed, which is not necessarily true 
         uint256 outstandingDepositRequest = state.totalDepositRequested - state.totalCurrencyPaidOutOnInvest;
 
         if (outstandingDepositRequest == 0) {
@@ -233,4 +238,34 @@ contract InvestorHandler is BaseHandler {
         state.totalTrancheTokensPaidOutOnRedeem += trancheTokenPayout;
         state.totalCurrencyPaidOutOnRedeem += currencyPayout;
     }
+
+    // TODO: should be moved to a separate contract
+    function executedDecreaseInvestOrder(uint256 investorSeed, uint256 decreaseRatio)
+        public
+        useRandomInvestor(investorSeed)
+    {
+        InvestorState storage state = investorState[currentInvestor];
+
+        decreaseRatio = bound(decreaseRatio, 0, 1 * 10 ** 18); // 0% to 100%
+
+        if (state.outstandingDecreaseDepositRequested == 0) {
+            return;
+        }
+
+        uint128 currencyPayout =
+            uint128(state.outstandingDecreaseDepositRequested.mulDiv(decreaseRatio, 1 * 10 ** 18, MathLib.Rounding.Down));
+
+        centrifugeChain.isExecutedDecreaseInvestOrder(
+            poolId,
+            trancheId,
+            bytes32(bytes20(currentInvestor)),
+            currencyId,
+            currencyPayout,
+            uint128(state.outstandingDecreaseDepositRequested - currencyPayout)
+        );
+
+        state.outstandingDecreaseDepositRequested -= currencyPayout;
+        state.totalCurrencyPaidOutOnDecreaseInvest += currencyPayout;
+    }
+
 }
