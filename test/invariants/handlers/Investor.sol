@@ -48,7 +48,7 @@ contract InvestorHandler is BaseHandler {
         uint256 totalTrancheTokensPaidOutOnRedeem;
     }
 
-    mapping(address => InvestorState) public investorState;
+    mapping(address investor => InvestorState) public investorState;
 
     constructor(
         uint64 poolId_,
