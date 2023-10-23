@@ -32,12 +32,10 @@ interface TrancheTokenLike is ERC20Like {
 }
 
 interface LiquidityPoolLike is ERC20Like {
-    function poolId() external returns (uint64);
-    function trancheId() external returns (bytes16);
+    function poolId() external view returns (uint64);
+    function trancheId() external view returns (bytes16);
     function asset() external view returns (address);
     function share() external view returns (address);
-    function updatePrice(uint256 price) external;
-    function latestPrice() external view returns (uint128);
 }
 
 interface AuthTransferLike {
@@ -48,6 +46,10 @@ interface PoolManagerLike {
     function currencyIdToAddress(uint128 currencyId) external view returns (address);
     function currencyAddressToId(address addr) external view returns (uint128);
     function getTrancheToken(uint64 poolId, bytes16 trancheId) external view returns (address);
+    function getTrancheTokenPrice(uint64 poolId, bytes16 trancheId, address currencyAddress)
+        external
+        view
+        returns (uint256 price, uint64 computedAt);
     function getLiquidityPool(uint64 poolId, bytes16 trancheId, uint128 currencyId) external view returns (address);
     function isAllowedAsInvestmentCurrency(uint64 poolId, address currencyAddress) external view returns (bool);
 }
@@ -279,18 +281,6 @@ contract InvestmentManager is Auth {
     }
 
     // --- Incoming message handling ---
-    /// @notice Update the price of a tranche token
-    /// @dev    This also happens automatically on incoming order executions,
-    ///         but this incoming call from Centrifuge can be used to update the price
-    ///         whenever the price is outdated but no orders are outstanding.
-    function updateTrancheTokenPrice(uint64 poolId, bytes16 trancheId, uint128 currencyId, uint128 price)
-        public
-        onlyGateway
-    {
-        address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, currencyId);
-        LiquidityPoolLike(liquidityPool).updatePrice(uint256(price));
-    }
-
     function handleExecutedCollectInvest(
         uint64 poolId,
         bytes16 trancheId,
@@ -308,8 +298,6 @@ contract InvestmentManager is Auth {
         );
         state.maxMint = state.maxMint + trancheTokenPayout;
         state.remainingDepositRequest = remainingInvestOrder;
-
-        LiquidityPoolLike(liquidityPool).updatePrice(_calculatePrice(liquidityPool, currencyPayout, trancheTokenPayout));
 
         // Mint to escrow. Recipient can claim by calling withdraw / redeem
         ERC20Like trancheToken = ERC20Like(LiquidityPoolLike(liquidityPool).share());
@@ -340,8 +328,6 @@ contract InvestmentManager is Auth {
         );
         state.maxWithdraw = state.maxWithdraw + currencyPayout;
         state.remainingRedeemRequest = remainingRedeemOrder;
-
-        LiquidityPoolLike(liquidityPool).updatePrice(_calculatePrice(liquidityPool, currencyPayout, trancheTokenPayout));
 
         // Transfer currency to user escrow to claim on withdraw/redeem,
         // and burn redeemed tranche tokens from escrow
@@ -458,12 +444,18 @@ contract InvestmentManager is Auth {
 
     // --- View functions ---
     function convertToShares(address liquidityPool, uint256 _assets) public view returns (uint256 shares) {
-        uint256 latestPrice = LiquidityPoolLike(liquidityPool).latestPrice();
+        LiquidityPoolLike liquidityPool_ = LiquidityPoolLike(liquidityPool);
+        (uint256 latestPrice,) = poolManager.getTrancheTokenPrice(
+            liquidityPool_.poolId(), liquidityPool_.trancheId(), liquidityPool_.asset()
+        );
         shares = uint256(_calculateTrancheTokenAmount(_assets.toUint128(), liquidityPool, latestPrice));
     }
 
     function convertToAssets(address liquidityPool, uint256 _shares) public view returns (uint256 assets) {
-        uint256 latestPrice = LiquidityPoolLike(liquidityPool).latestPrice();
+        LiquidityPoolLike liquidityPool_ = LiquidityPoolLike(liquidityPool);
+        (uint256 latestPrice,) = poolManager.getTrancheTokenPrice(
+            liquidityPool_.poolId(), liquidityPool_.trancheId(), liquidityPool_.asset()
+        );
         assets = uint256(_calculateCurrencyAmount(_shares.toUint128(), liquidityPool, latestPrice));
     }
 
@@ -501,6 +493,13 @@ contract InvestmentManager is Auth {
         returns (uint256 trancheTokenAmount)
     {
         trancheTokenAmount = uint256(investments[liquidityPool][user].remainingRedeemRequest);
+    }
+
+    function exchangeRateLastUpdated(address liquidityPool) public view returns (uint64 lastUpdated) {
+        LiquidityPoolLike liquidityPool_ = LiquidityPoolLike(liquidityPool);
+        (, lastUpdated) = poolManager.getTrancheTokenPrice(
+            liquidityPool_.poolId(), liquidityPool_.trancheId(), liquidityPool_.asset()
+        );
     }
 
     // --- Liquidity Pool processing functions ---
@@ -643,7 +642,7 @@ contract InvestmentManager is Auth {
 
     function _calculatePrice(uint256 currencyAmountInPriceDecimals, uint256 trancheTokenAmountInPriceDecimals)
         internal
-        view
+        pure
         returns (uint256 price)
     {
         if (currencyAmountInPriceDecimals == 0 || trancheTokenAmountInPriceDecimals == 0) {

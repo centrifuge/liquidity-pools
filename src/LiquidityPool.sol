@@ -26,6 +26,7 @@ interface ManagerLike {
     function cancelRedeemRequest(address lp, address operator) external;
     function pendingDepositRequest(address lp, address operator) external view returns (uint256);
     function pendingRedeemRequest(address lp, address operator) external view returns (uint256);
+    function exchangeRateLastUpdated(address liquidityPool) external view returns (uint64 lastUpdated);
 }
 
 /// @title  Liquidity Pool
@@ -63,19 +64,12 @@ contract LiquidityPool is Auth, IERC7540 {
     /// @notice Liquidity Pool business logic implementation contract
     ManagerLike public manager;
 
-    /// @notice Tranche token price, denominated in the asset
-    uint256 public latestPrice;
-
-    /// @notice Timestamp of the last price update
-    uint256 public lastPriceUpdate;
-
     // --- Events ---
     event File(bytes32 indexed what, address data);
     event DecreaseDepositRequest(address indexed sender, uint256 assets);
     event DecreaseRedeemRequest(address indexed sender, uint256 shares);
     event CancelDepositRequest(address indexed sender);
     event CancelRedeemRequest(address indexed sender);
-    event PriceUpdate(uint256 price);
 
     constructor(uint64 poolId_, bytes16 trancheId_, address asset_, address share_, address escrow_, address manager_) {
         poolId = poolId_;
@@ -269,6 +263,10 @@ contract LiquidityPool is Auth, IERC7540 {
         emit CancelRedeemRequest(msg.sender);
     }
 
+    function exchangeRateLastUpdated() public view returns (uint64) {
+        return manager.exchangeRateLastUpdated(address(this));
+    }
+
     // --- ERC-20 overrides ---
     function name() public view returns (string memory) {
         return share.name();
@@ -314,13 +312,6 @@ contract LiquidityPool is Auth, IERC7540 {
         (bool success, bytes memory data) = address(share).call(bytes.concat(msg.data, bytes20(msg.sender)));
         _successCheck(success);
         return abi.decode(data, (bool));
-    }
-
-    // --- Pricing ---
-    function updatePrice(uint256 price) public auth {
-        latestPrice = price;
-        lastPriceUpdate = block.timestamp;
-        emit PriceUpdate(price);
     }
 
     // --- Helpers ---
