@@ -192,7 +192,7 @@ contract InvestmentManager is Auth {
     ///         in case their orders got fulfilled.
     /// @dev    The user tranche tokens required to fulfill the redemption request have to be locked,
     ///         even though the currency payout can only happen after epoch execution.
-    function requestRedeem(address liquidityPool, uint256 trancheTokenAmount, address user)
+    function requestRedeem(address liquidityPool, uint256 trancheTokenAmount, address operator, address owner)
         public
         auth
         returns (bool)
@@ -207,13 +207,21 @@ contract InvestmentManager is Auth {
             "InvestmentManager/currency-not-allowed"
         );
 
-        // Check that the user (operator) is a non-frozen member
+        // Check that the owner is a member and the operator is a non-frozen member
         require(
-            _checkTransferRestriction(liquidityPool, user, user, convertToAssets(liquidityPool, trancheTokenAmount)),
+            _checkTransferRestriction(
+                liquidityPool, owner, address(escrow), convertToAssets(liquidityPool, trancheTokenAmount)
+            ),
+            "InvestmentManager/transfer-not-allowed"
+        );
+        require(
+            _checkTransferRestriction(
+                liquidityPool, operator, operator, convertToAssets(liquidityPool, trancheTokenAmount)
+            ),
             "InvestmentManager/transfer-not-allowed"
         );
 
-        return _processRedeemRequest(liquidityPool, _trancheTokenAmount, user);
+        return _processRedeemRequest(liquidityPool, _trancheTokenAmount, operator);
     }
 
     function _processRedeemRequest(address liquidityPool, uint128 trancheTokenAmount, address user)

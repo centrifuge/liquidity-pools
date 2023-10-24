@@ -19,7 +19,7 @@ interface ManagerLike {
     function convertToShares(address lp, uint256 assets) external view returns (uint256);
     function convertToAssets(address lp, uint256 shares) external view returns (uint256);
     function requestDeposit(address lp, uint256 assets, address sender, address operator) external returns (bool);
-    function requestRedeem(address lp, uint256 shares, address operator) external returns (bool);
+    function requestRedeem(address lp, uint256 shares, address operator, address owner) external returns (bool);
     function decreaseDepositRequest(address lp, uint256 assets, address operator) external;
     function decreaseRedeemRequest(address lp, uint256 shares, address operator) external;
     function cancelDepositRequest(address lp, address operator) external;
@@ -207,7 +207,7 @@ contract LiquidityPool is Auth, IERC7540 {
     ///         Shares are locked in the escrow on request submission
     function requestRedeem(uint256 shares, address operator, address owner) public {
         require(share.balanceOf(owner) >= shares, "LiquidityPool/insufficient-balance");
-        require(manager.requestRedeem(address(this), shares, operator), "LiquidityPool/request-redeem-failed");
+        require(manager.requestRedeem(address(this), shares, operator, owner), "LiquidityPool/request-redeem-failed");
 
         // This is possible because of the trusted forwarder pattern -> msg.sender is forwarded
         // and the call can only be executed, if msg.sender has owner's approval to spend tokens
