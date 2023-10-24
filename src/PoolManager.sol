@@ -4,7 +4,7 @@ pragma solidity 0.8.21;
 import {TrancheTokenFactoryLike, RestrictionManagerFactoryLike, LiquidityPoolFactoryLike} from "./util/Factory.sol";
 import {TrancheTokenLike} from "./token/Tranche.sol";
 import {RestrictionManagerLike} from "./token/RestrictionManager.sol";
-import {IERC20} from "./interfaces/IERC20.sol";
+import {IERC20Metadata} from "./interfaces/IERC20.sol";
 import {Auth} from "./util/Auth.sol";
 import {SafeTransferLib} from "./util/SafeTransferLib.sol";
 import {MathLib} from "./util/MathLib.sol";
@@ -78,9 +78,9 @@ contract PoolManager is Auth {
 
     EscrowLike public immutable escrow;
     LiquidityPoolFactoryLike public immutable liquidityPoolFactory;
-    RestrictionManagerFactoryLike public immutable restrictionManagerFactory;
     TrancheTokenFactoryLike public immutable trancheTokenFactory;
 
+    RestrictionManagerFactoryLike public restrictionManagerFactory;
     GatewayLike public gateway;
     InvestmentManagerLike public investmentManager;
 
@@ -137,6 +137,7 @@ contract PoolManager is Auth {
     function file(bytes32 what, address data) external auth {
         if (what == "gateway") gateway = GatewayLike(data);
         else if (what == "investmentManager") investmentManager = InvestmentManagerLike(data);
+        else if (what == "restrictionManagerFactory") restrictionManagerFactory = RestrictionManagerFactoryLike(data);
         else revert("PoolManager/file-unrecognized-param");
         emit File(what, data);
     }
@@ -146,15 +147,10 @@ contract PoolManager is Auth {
         uint128 currency = currencyAddressToId[currencyAddress];
         require(currency != 0, "PoolManager/unknown-currency");
 
-        // Transfer the currency amount from user to escrow (lock currency in escrow)
-        // Checks actual balance difference to support fee-on-transfer tokens
-        uint256 preBalance = IERC20(currencyAddress).balanceOf(address(escrow));
         SafeTransferLib.safeTransferFrom(currencyAddress, msg.sender, address(escrow), amount);
-        uint256 postBalance = IERC20(currencyAddress).balanceOf(address(escrow));
-        uint128 transferredAmount = (postBalance - preBalance).toUint128();
 
-        gateway.transfer(currency, msg.sender, recipient, transferredAmount);
-        emit TransferCurrency(currencyAddress, recipient, transferredAmount);
+        gateway.transfer(currency, msg.sender, recipient, amount);
+        emit TransferCurrency(currencyAddress, recipient, amount);
     }
 
     function transferTrancheTokensToCentrifuge(
@@ -243,6 +239,7 @@ contract PoolManager is Auth {
 
         UndeployedTranche storage undeployedTranche = undeployedTranches[poolId][trancheId];
         require(undeployedTranche.decimals == 0, "PoolManager/tranche-already-exists");
+        require(getTrancheToken(poolId, trancheId) == address(0), "PoolManager/tranche-already-deployed");
 
         undeployedTranche.decimals = decimals;
         undeployedTranche.tokenName = tokenName;
@@ -302,7 +299,7 @@ contract PoolManager is Auth {
         require(currencyIdToAddress[currency] == address(0), "PoolManager/currency-id-in-use");
         require(currencyAddressToId[currencyAddress] == 0, "PoolManager/currency-address-in-use");
 
-        uint8 currencyDecimals = IERC20(currencyAddress).decimals();
+        uint8 currencyDecimals = IERC20Metadata(currencyAddress).decimals();
         require(currencyDecimals >= MIN_DECIMALS, "PoolManager/too-few-currency-decimals");
         require(currencyDecimals <= MAX_DECIMALS, "PoolManager/too-many-currency-decimals");
 
@@ -381,7 +378,7 @@ contract PoolManager is Auth {
 
         // Deploy liquidity pool
         liquidityPool = liquidityPoolFactory.newLiquidityPool(
-            poolId, trancheId, currency, tranche.token, address(investmentManager), liquidityPoolWards
+            poolId, trancheId, currency, tranche.token, address(escrow), address(investmentManager), liquidityPoolWards
         );
         tranche.liquidityPools[currency] = liquidityPool;
 
@@ -396,7 +393,7 @@ contract PoolManager is Auth {
         // in the escrow to transfer to the user on deposit or mint
         escrow.approve(tranche.token, address(investmentManager), type(uint256).max);
 
-        // Give investment manager infinite approval for tranche tokens
+        // Give liquidity pool infinite approval for tranche tokens
         // in the escrow to burn on executed redemptions
         escrow.approve(tranche.token, liquidityPool, type(uint256).max);
 
