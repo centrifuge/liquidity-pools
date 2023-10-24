@@ -286,8 +286,9 @@ contract PoolManager is Auth {
         require(tranche.token != address(0), "PoolManager/tranche-does-not-exist");
 
         address currencyAddress = currencyIdToAddress[currencyId];
-        tranche.prices[currencyAddress] = TrancheTokenPrice(price, computedAt);
+        require(computedAt >= tranche.prices[currencyAddress].computedAt, "PoolManager/cannot-set-older-price");
 
+        tranche.prices[currencyAddress] = TrancheTokenPrice(price, computedAt);
         emit PriceUpdate(poolId, trancheId, currencyId, price, computedAt);
     }
 
