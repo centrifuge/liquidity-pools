@@ -209,9 +209,7 @@ contract InvestmentManager is Auth {
 
         // Check that the user (operator) is a non-frozen member
         require(
-            _checkTransferRestriction(
-                liquidityPool, user, user, convertToAssets(liquidityPool, trancheTokenAmount)
-            ),
+            _checkTransferRestriction(liquidityPool, user, user, convertToAssets(liquidityPool, trancheTokenAmount)),
             "InvestmentManager/transfer-not-allowed"
         );
 
