@@ -19,13 +19,14 @@ interface ManagerLike {
     function convertToShares(address lp, uint256 assets) external view returns (uint256);
     function convertToAssets(address lp, uint256 shares) external view returns (uint256);
     function requestDeposit(address lp, uint256 assets, address sender, address operator) external returns (bool);
-    function requestRedeem(address lp, uint256 shares, address operator) external returns (bool);
+    function requestRedeem(address lp, uint256 shares, address operator, address owner) external returns (bool);
     function decreaseDepositRequest(address lp, uint256 assets, address operator) external;
     function decreaseRedeemRequest(address lp, uint256 shares, address operator) external;
     function cancelDepositRequest(address lp, address operator) external;
     function cancelRedeemRequest(address lp, address operator) external;
     function pendingDepositRequest(address lp, address operator) external view returns (uint256);
     function pendingRedeemRequest(address lp, address operator) external view returns (uint256);
+    function exchangeRateLastUpdated(address liquidityPool) external view returns (uint64 lastUpdated);
 }
 
 /// @title  Liquidity Pool
@@ -63,19 +64,12 @@ contract LiquidityPool is Auth, IERC7540 {
     /// @notice Liquidity Pool business logic implementation contract
     ManagerLike public manager;
 
-    /// @notice Tranche token price, denominated in the asset
-    uint256 public latestPrice;
-
-    /// @notice Timestamp of the last price update
-    uint256 public lastPriceUpdate;
-
     // --- Events ---
     event File(bytes32 indexed what, address data);
     event DecreaseDepositRequest(address indexed sender, uint256 assets);
     event DecreaseRedeemRequest(address indexed sender, uint256 shares);
     event CancelDepositRequest(address indexed sender);
     event CancelRedeemRequest(address indexed sender);
-    event PriceUpdate(uint256 price);
 
     constructor(uint64 poolId_, bytes16 trancheId_, address asset_, address share_, address escrow_, address manager_) {
         poolId = poolId_;
@@ -186,13 +180,14 @@ contract LiquidityPool is Auth, IERC7540 {
     }
 
     /// @notice Similar to requestDeposit, but with a permit option
-    function requestDepositWithPermit(uint256 assets, address owner, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
-        public
-    {
-        _withPermit(asset, owner, address(this), assets, deadline, v, r, s);
-        require(manager.requestDeposit(address(this), assets, owner, owner), "LiquidityPool/request-deposit-failed");
-        SafeTransferLib.safeTransferFrom(asset, owner, address(escrow), assets);
-        emit DepositRequest(owner, owner, assets);
+    function requestDepositWithPermit(uint256 assets, uint256 deadline, uint8 v, bytes32 r, bytes32 s) public {
+        try IERC20Permit(asset).permit(msg.sender, address(this), assets, deadline, v, r, s) {} catch {}
+        require(
+            manager.requestDeposit(address(this), assets, msg.sender, msg.sender),
+            "LiquidityPool/request-deposit-failed"
+        );
+        SafeTransferLib.safeTransferFrom(asset, msg.sender, address(escrow), assets);
+        emit DepositRequest(msg.sender, msg.sender, assets);
     }
 
     /// @notice View the total amount the operator has requested to deposit but isn't able to deposit or mint yet
@@ -207,7 +202,7 @@ contract LiquidityPool is Auth, IERC7540 {
     ///         Shares are locked in the escrow on request submission
     function requestRedeem(uint256 shares, address operator, address owner) public {
         require(share.balanceOf(owner) >= shares, "LiquidityPool/insufficient-balance");
-        require(manager.requestRedeem(address(this), shares, operator), "LiquidityPool/request-redeem-failed");
+        require(manager.requestRedeem(address(this), shares, operator, owner), "LiquidityPool/request-redeem-failed");
 
         // This is possible because of the trusted forwarder pattern -> msg.sender is forwarded
         // and the call can only be executed, if msg.sender has owner's approval to spend tokens
@@ -269,6 +264,10 @@ contract LiquidityPool is Auth, IERC7540 {
         emit CancelRedeemRequest(msg.sender);
     }
 
+    function exchangeRateLastUpdated() public view returns (uint64) {
+        return manager.exchangeRateLastUpdated(address(this));
+    }
+
     // --- ERC-20 overrides ---
     function name() public view returns (string memory) {
         return share.name();
@@ -316,33 +315,7 @@ contract LiquidityPool is Auth, IERC7540 {
         return abi.decode(data, (bool));
     }
 
-    // --- Pricing ---
-    function updatePrice(uint256 price) public auth {
-        latestPrice = price;
-        lastPriceUpdate = block.timestamp;
-        emit PriceUpdate(price);
-    }
-
     // --- Helpers ---
-    function _withPermit(
-        address token,
-        address owner,
-        address spender,
-        uint256 value,
-        uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) internal {
-        try IERC20Permit(token).permit(owner, spender, value, deadline, v, r, s) {
-            return;
-        } catch {
-            if (IERC20(token).allowance(owner, spender) == value) {
-                return;
-            }
-        }
-        revert("LiquidityPool/permit-failure");
-    }
 
     /// @dev In case of unsuccessful tx, parse the revert message
     function _successCheck(bool success) internal pure {
