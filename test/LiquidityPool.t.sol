@@ -1048,7 +1048,8 @@ contract LiquidityPoolTest is TestSetup {
         vm.startPrank(random_); // random fr permit
         erc20.permit(investor, lPool_, amount, block.timestamp, v, r, s);
          // frontrunnign not possible
-        vm.expectRevert(bytes("LiquidityPool/permit-failure"));
+        centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), random_, type(uint64).max);
+        vm.expectRevert(bytes("SafeTransferLib/safe-transfer-from-failed"));
         lPool.requestDepositWithPermit((amount), block.timestamp, v, r, s);
         vm.stopPrank();
 
@@ -1073,6 +1074,7 @@ contract LiquidityPoolTest is TestSetup {
         LiquidityPool lPool = LiquidityPool(lPool_);
         erc20.mint(investor, amount);
         centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), investor, type(uint64).max);
+        centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), address(this), type(uint64).max);
 
         // Sign permit for depositing investment currency
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(
@@ -1091,7 +1093,7 @@ contract LiquidityPoolTest is TestSetup {
         );  
 
         // premit functions can only be executed by the owner
-        vm.expectRevert(bytes("LiquidityPool/permit-failure"));
+        vm.expectRevert(bytes("SafeTransferLib/safe-transfer-from-failed"));
         lPool.requestDepositWithPermit(amount, block.timestamp, v, r, s);
         vm.prank(vm.addr(0xABCD));
         lPool.requestDepositWithPermit(amount, block.timestamp, v, r, s);
