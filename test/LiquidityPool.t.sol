@@ -1045,11 +1045,17 @@ contract LiquidityPoolTest is TestSetup {
             )
         );
 
-        vm.prank(random_); // random fr permit
+        vm.startPrank(random_); // random fr permit
         erc20.permit(investor, lPool_, amount, block.timestamp, v, r, s);
+         // frontrunnign not possible
+        centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), random_, type(uint64).max);
+        vm.expectRevert(bytes("SafeTransferLib/safe-transfer-from-failed"));
+        lPool.requestDepositWithPermit((amount), block.timestamp, v, r, s);
+        vm.stopPrank();
 
         // investor still able to requestDepositWithPermit
-        lPool.requestDepositWithPermit(amount, investor, block.timestamp, v, r, s);
+        vm.prank(vm.addr(0xABCD));
+        lPool.requestDepositWithPermit(amount, block.timestamp, v, r, s);
 
         // ensure funds are locked in escrow
         assertEq(erc20.balanceOf(address(escrow)), amount);
@@ -1068,6 +1074,7 @@ contract LiquidityPoolTest is TestSetup {
         LiquidityPool lPool = LiquidityPool(lPool_);
         erc20.mint(investor, amount);
         centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), investor, type(uint64).max);
+        centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), address(this), type(uint64).max);
 
         // Sign permit for depositing investment currency
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(
@@ -1085,14 +1092,12 @@ contract LiquidityPoolTest is TestSetup {
             )
         );  
 
-        // frontrunnign with lower amount should not be possible
-        vm.startPrank(randomUser);
-        ERC20(address(lPool.asset())).permit(investor, lPool_, amount, block.timestamp, v, r, s);
-        vm.expectRevert(bytes("LiquidityPool/permit-failure"));
-        lPool.requestDepositWithPermit((amount - 1), investor, block.timestamp, v, r, s);
-        vm.stopPrank();
+        // premit functions can only be executed by the owner
+        vm.expectRevert(bytes("SafeTransferLib/safe-transfer-from-failed"));
+        lPool.requestDepositWithPermit(amount, block.timestamp, v, r, s);
+        vm.prank(vm.addr(0xABCD));
+        lPool.requestDepositWithPermit(amount, block.timestamp, v, r, s);
 
-        lPool.requestDepositWithPermit(amount, investor, block.timestamp, v, r, s);
         // To avoid stack too deep errors
         delete v;
         delete r;

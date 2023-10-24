@@ -186,13 +186,14 @@ contract LiquidityPool is Auth, IERC7540 {
     }
 
     /// @notice Similar to requestDeposit, but with a permit option
-    function requestDepositWithPermit(uint256 assets, address owner, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
-        public
-    {
-        _withPermit(asset, owner, address(this), assets, deadline, v, r, s);
-        require(manager.requestDeposit(address(this), assets, owner, owner), "LiquidityPool/request-deposit-failed");
-        SafeTransferLib.safeTransferFrom(asset, owner, address(escrow), assets);
-        emit DepositRequest(owner, owner, assets);
+    function requestDepositWithPermit(uint256 assets, uint256 deadline, uint8 v, bytes32 r, bytes32 s) public {
+        try IERC20Permit(asset).permit(msg.sender, address(this), assets, deadline, v, r, s) {} catch {}
+        require(
+            manager.requestDeposit(address(this), assets, msg.sender, msg.sender),
+            "LiquidityPool/request-deposit-failed"
+        );
+        SafeTransferLib.safeTransferFrom(asset, msg.sender, address(escrow), assets);
+        emit DepositRequest(msg.sender, msg.sender, assets);
     }
 
     /// @notice View the total amount the operator has requested to deposit but isn't able to deposit or mint yet
@@ -324,25 +325,6 @@ contract LiquidityPool is Auth, IERC7540 {
     }
 
     // --- Helpers ---
-    function _withPermit(
-        address token,
-        address owner,
-        address spender,
-        uint256 value,
-        uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) internal {
-        try IERC20Permit(token).permit(owner, spender, value, deadline, v, r, s) {
-            return;
-        } catch {
-            if (IERC20(token).allowance(owner, spender) == value) {
-                return;
-            }
-        }
-        revert("LiquidityPool/permit-failure");
-    }
 
     /// @dev In case of unsuccessful tx, parse the revert message
     function _successCheck(bool success) internal pure {
