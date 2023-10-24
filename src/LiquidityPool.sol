@@ -221,9 +221,7 @@ contract LiquidityPool is Auth, IERC4626 {
     }
 
     /// @notice Similar to requestDeposit, but with a permit option
-    function requestDepositWithPermit(uint256 assets, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
-        public
-    {
+    function requestDepositWithPermit(uint256 assets, uint256 deadline, uint8 v, bytes32 r, bytes32 s) public {
         try ERC20PermitLike(asset).permit(msg.sender, address(manager), assets, deadline, v, r, s) {} catch {}
         require(IERC20(asset).allowance(msg.sender, address(manager)) == assets, "LiquidityPool/permit-failure");
         manager.requestDeposit(address(this), assets, msg.sender);
