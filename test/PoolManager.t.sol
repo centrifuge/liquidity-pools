@@ -809,9 +809,9 @@ contract PoolManagerTest is TestSetup {
         vm.assume(poolId > 0);
         vm.assume(trancheId > 0);
         vm.assume(currencyId > 0);
-        centrifugeChain.addPool(poolId); // add pool
-        centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals); // add tranche
-        centrifugeChain.addCurrency(currencyId, address(erc20)); // add currency
+        centrifugeChain.addPool(poolId);
+        centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals);
+        centrifugeChain.addCurrency(currencyId, address(erc20));
         centrifugeChain.allowInvestmentCurrency(poolId, currencyId);
 
         poolManager.deployTranche(poolId, trancheId);
