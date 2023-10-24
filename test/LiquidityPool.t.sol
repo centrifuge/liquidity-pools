@@ -2,6 +2,7 @@
 pragma solidity 0.8.21;
 
 import "./TestSetup.t.sol";
+import {IERC7540Deposit, IERC7540Redeem} from "src/interfaces/IERC7540.sol";
 
 contract LiquidityPoolTest is TestSetup {
     // Deployment
@@ -88,6 +89,27 @@ contract LiquidityPoolTest is TestSetup {
 
         vm.expectRevert(bytes("MathLib/uint128-overflow"));
         lPool.decreaseRedeemRequest(amount);
+    }
+
+    // --- erc165 checks ---
+    function testERC165Support(bytes4 unsupportedInterfaceId) public {
+        bytes4 erc165 = 0x01ffc9a7;
+        bytes4 erc7540Deposit = 0xea446681;
+        bytes4 erc7540Redeem = 0x2e9dd5bd;
+
+        vm.assume(unsupportedInterfaceId != erc165 && unsupportedInterfaceId != erc7540Deposit && unsupportedInterfaceId != erc7540Redeem);
+
+        address lPool_ = deploySimplePool();
+        LiquidityPool lPool = LiquidityPool(lPool_);
+
+        assertEq(type(IERC7540Deposit).interfaceId, erc7540Deposit);
+        assertEq(type(IERC7540Redeem).interfaceId, erc7540Redeem);
+
+        assertEq(lPool.supportsInterface(erc165), true);
+        assertEq(lPool.supportsInterface(erc7540Deposit), true);
+        assertEq(lPool.supportsInterface(erc7540Redeem), true);
+
+        assertEq(lPool.supportsInterface(unsupportedInterfaceId), false);
     }
 
     // --- preview checks ---

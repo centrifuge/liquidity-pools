@@ -3,12 +3,18 @@ pragma solidity 0.8.21;
 
 import {IERC4626} from "./IERC4626.sol";
 
-/// @title  IERC7540
-/// @dev    Interface of the ERC7540 "Asynchronous Tokenized Vault Standard", as defined in
-///         https://github.com/ethereum/EIPs/blob/2e63f2096b0c7d8388458bb0a03a7ce0eb3422a4/EIPS/eip-7540.md[ERC-7540].
-interface IERC7540 is IERC4626 {
+interface IERC165 {
+    /// @notice Query if a contract implements an interface
+    /// @param interfaceId The interface identifier, as specified in ERC-165
+    /// @dev Interface identification is specified in ERC-165. This function
+    ///  uses less than 30,000 gas.
+    /// @return `true` if the contract implements `interfaceId` and
+    ///  `interfaceId` is not 0xffffffff, `false` otherwise
+    function supportsInterface(bytes4 interfaceId) external pure returns (bool);
+}
+
+interface IERC7540Deposit is IERC4626, IERC165 {
     event DepositRequest(address indexed sender, address indexed operator, uint256 assets);
-    event RedeemRequest(address indexed sender, address indexed operator, address indexed owner, uint256 shares);
 
     /**
      * @dev Transfers assets from msg.sender into the Vault and submits a Request for asynchronous deposit/mint.
@@ -28,6 +34,10 @@ interface IERC7540 is IERC4626 {
      * - MUST NOT revert unless due to integer overflow caused by an unreasonably large input.
      */
     function pendingDepositRequest(address operator) external view returns (uint256 assets);
+}
+
+interface IERC7540Redeem is IERC4626, IERC165 {
+    event RedeemRequest(address indexed sender, address indexed operator, address indexed owner, uint256 shares);
 
     /**
      * @dev Assumes control of shares from owner and submits a Request for asynchronous redeem/withdraw.
@@ -47,3 +57,8 @@ interface IERC7540 is IERC4626 {
      */
     function pendingRedeemRequest(address operator) external view returns (uint256 shares);
 }
+
+/// @title  IERC7540
+/// @dev    Interface of the ERC7540 "Asynchronous Tokenized Vault Standard", as defined in
+///         https://github.com/ethereum/EIPs/blob/2e63f2096b0c7d8388458bb0a03a7ce0eb3422a4/EIPS/eip-7540.md[ERC-7540].
+interface IERC7540 is IERC7540Deposit, IERC7540Redeem {}
