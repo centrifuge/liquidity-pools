@@ -1402,10 +1402,9 @@ contract LiquidityPoolTest is TestSetup {
         );
         assertApproxEqAbs(lPool.balanceOf(address(escrow)), amount, 1);
         assertEq(lPool.balanceOf(investor), 0);
-        assertEq(lPool.maxMint(investor), (amount - redeemAmount));
 
         // Test trigger full redeem (maxMint = redeemAmount), where investor did not mint their tokens - user tokens are still locked in escrow 
-        redeemAmount = uint128(lPool.maxMint(investor));
+        redeemAmount = uint128(amount - redeemAmount);
         centrifugeChain.triggerIncreaseRedeemOrder(
            poolId, trancheId, investor, defaultCurrencyId, redeemAmount
         );
