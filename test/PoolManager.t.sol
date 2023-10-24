@@ -816,10 +816,16 @@ contract PoolManagerTest is TestSetup {
 
         poolManager.deployTranche(poolId, trancheId);
 
+        // Allows us to go back in time later
+        vm.warp(block.timestamp + 1 days);
+
         centrifugeChain.updateTrancheTokenPrice(poolId, trancheId, currencyId, price, uint64(block.timestamp));
         (uint256 latestPrice, uint64 priceComputedAt) = poolManager.getTrancheTokenPrice(poolId, trancheId, address(erc20));
         assertEq(latestPrice, price);
         assertEq(priceComputedAt, block.timestamp);
+
+        vm.expectRevert(bytes("PoolManager/cannot-set-older-price"));
+        centrifugeChain.updateTrancheTokenPrice(poolId, trancheId, currencyId, price, uint64(block.timestamp - 1));
     }
 
     function testUpdatingTokenPriceAsNonRouterFails(
