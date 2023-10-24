@@ -207,6 +207,13 @@ contract InvestmentManager is Auth {
             "InvestmentManager/currency-not-allowed"
         );
 
+        require(
+            _checkTransferRestriction(
+                liquidityPool, address(0), user, convertToAssets(liquidityPool, trancheTokenAmount)
+            ),
+            "InvestmentManager/transfer-not-allowed"
+        );
+
         return _processRedeemRequest(liquidityPool, _trancheTokenAmount, user);
     }
 
