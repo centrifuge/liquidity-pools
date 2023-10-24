@@ -13,7 +13,7 @@ interface IERC165 {
     function supportsInterface(bytes4 interfaceId) external pure returns (bool);
 }
 
-interface IERC7540Deposit is IERC4626, IERC165 {
+interface IERC7540Deposit {
     event DepositRequest(address indexed sender, address indexed operator, uint256 assets);
 
     /**
@@ -36,7 +36,7 @@ interface IERC7540Deposit is IERC4626, IERC165 {
     function pendingDepositRequest(address operator) external view returns (uint256 assets);
 }
 
-interface IERC7540Redeem is IERC4626, IERC165 {
+interface IERC7540Redeem {
     event RedeemRequest(address indexed sender, address indexed operator, address indexed owner, uint256 shares);
 
     /**
@@ -61,4 +61,4 @@ interface IERC7540Redeem is IERC4626, IERC165 {
 /// @title  IERC7540
 /// @dev    Interface of the ERC7540 "Asynchronous Tokenized Vault Standard", as defined in
 ///         https://github.com/ethereum/EIPs/blob/2e63f2096b0c7d8388458bb0a03a7ce0eb3422a4/EIPS/eip-7540.md[ERC-7540].
-interface IERC7540 is IERC7540Deposit, IERC7540Redeem {}
+interface IERC7540 is IERC7540Deposit, IERC7540Redeem, IERC4626, IERC165 {}
