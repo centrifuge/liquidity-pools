@@ -994,6 +994,7 @@ contract LiquidityPoolTest is TestSetup {
         erc20.permit(investor, address(investmentManager), amount, block.timestamp, v, r, s);
 
         // investor still able to requestDepositWithPermit
+        vm.prank(vm.addr(0xABCD));
         lPool.requestDepositWithPermit(amount, investor, block.timestamp, v, r, s);
 
         // ensure funds are locked in escrow
@@ -1029,6 +1030,9 @@ contract LiquidityPoolTest is TestSetup {
             )
         );
 
+        vm.expectRevert(bytes( "LiquidityPool/sender-not-owner"));
+        lPool.requestDepositWithPermit(amount, investor, block.timestamp, v, r, s);
+        vm.prank(vm.addr(0xABCD));
         lPool.requestDepositWithPermit(amount, investor, block.timestamp, v, r, s);
         // To avoid stack too deep errors
         delete v;

@@ -224,6 +224,7 @@ contract LiquidityPool is Auth, IERC4626 {
     function requestDepositWithPermit(uint256 assets, address owner, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
         public
     {
+        require(msg.sender == owner, "LiquidityPool/sender-not-owner");
         _withPermit(asset, owner, address(manager), assets, deadline, v, r, s);
         manager.requestDeposit(address(this), assets, owner);
         emit DepositRequest(owner, assets);
@@ -337,9 +338,11 @@ contract LiquidityPool is Auth, IERC4626 {
         bytes32 s
     ) internal {
         try ERC20PermitLike(token).permit(owner, spender, value, deadline, v, r, s) {
-            return;
+            if (IERC20(token).allowance(owner, spender) == value) {
+                return;
+            }
         } catch {
-            if (IERC20(token).allowance(owner, spender) >= value) {
+            if (IERC20(token).allowance(owner, spender) == value) {
                 return;
             }
         }
