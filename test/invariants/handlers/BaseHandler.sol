@@ -18,6 +18,11 @@ contract BaseHandler is Test {
 
     address currentInvestor;
 
+    // Key-value store
+    mapping(address entity => mapping(bytes32 key => uint256 value)) public values;
+
+    // TODO: add key value store like in Mock, per investor, for InvestorState
+
     constructor(address state_) {
         state = SystemStateLike(state_);
     }
@@ -28,6 +33,10 @@ contract BaseHandler is Test {
         if (currentPrank != currentInvestor) vm.startPrank(currentInvestor);
         _;
         vm.stopPrank();
+    }
+
+    function setValue(address entity, bytes32 key, uint256 value) public {
+        values[entity][key] = value;
     }
 
     /// @notice Returns the smallest of two numbers.

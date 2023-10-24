@@ -76,8 +76,7 @@ contract InvestmentInvariants is TestSetup {
 
             for (uint256 i; i < investors.length; ++i) {
                 address investor = investors[i];
-                (,,,,, uint256 totalTrancheTokensPaidOutOnInvest,,,,) = handler.investorState(investor);
-                assertLe(pool.balanceOf(investor), totalTrancheTokensPaidOutOnInvest);
+                assertLe(pool.balanceOf(investor), handler.values(investor, "totalTrancheTokensPaidOutOnInvest"));
             }
         }
     }
@@ -90,9 +89,11 @@ contract InvestmentInvariants is TestSetup {
 
             for (uint256 i; i < investors.length; ++i) {
                 address investor = investors[i];
-                (,,,, uint256 totalCurrencyReceived,,, uint256 totalCurrencyPaidOutOnRedeem,,uint256 totalCurrencyPaidOutOnDecreaseInvest) =
-                    handler.investorState(investor);
-                assertLe(totalCurrencyReceived, totalCurrencyPaidOutOnRedeem + totalCurrencyPaidOutOnDecreaseInvest);
+                assertLe(
+                    handler.values(investor, "totalCurrencyReceived"),
+                    handler.values(investor, "totalCurrencyPaidOutOnRedeem")
+                        + handler.values(investor, "totalCurrencyPaidOutOnDecreaseInvest")
+                );
             }
         }
     }
