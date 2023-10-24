@@ -4,6 +4,25 @@ pragma solidity 0.8.21;
 import "./TestSetup.t.sol";
 
 contract PoolManagerTest is TestSetup {
+
+    function testFile() public {
+        address newGateway = makeAddr("newGateway");
+        poolManager.file("gateway", newGateway);
+        assertEq(address(poolManager.gateway()), newGateway);
+
+        address newInvestmentManager = makeAddr("newInvestmentManager");
+        poolManager.file("investmentManager", newInvestmentManager);
+        assertEq(address(poolManager.investmentManager()), newInvestmentManager);
+
+        address newRestrictionManagerFactory = makeAddr("newRestrictionManagerFactory");
+        poolManager.file("restrictionManagerFactory", newRestrictionManagerFactory);
+        assertEq(address(poolManager.restrictionManagerFactory()), newRestrictionManagerFactory);
+
+        address newEscrow = makeAddr("newEscrow");
+        vm.expectRevert("PoolManager/file-unrecognized-param");
+        poolManager.file("escrow", newEscrow);
+    }
+
     // Deployment
     function testDeployment() public {
         // values set correctly
@@ -568,6 +587,9 @@ contract PoolManagerTest is TestSetup {
             _bytes32ToString(_stringToBytes32(tokenSymbol)), _bytes32ToString(_stringToBytes32(trancheToken.symbol()))
         );
         assertEq(decimals, trancheToken.decimals());
+
+        vm.expectRevert(bytes("PoolManager/tranche-already-deployed"));
+        centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals);
     }
 
     function testAddingTrancheMultipleTimesFails(

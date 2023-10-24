@@ -71,6 +71,7 @@ contract RestrictionManager is Auth {
 
     // --- Handling freezes ---
     function freeze(address user) public auth {
+        require(user != address(0), "RestrictionManager/cannot-freeze-zero-address");
         frozen[user] = 1;
         emit Freeze(user);
     }
