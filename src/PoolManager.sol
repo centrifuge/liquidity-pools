@@ -55,6 +55,13 @@ struct Tranche {
     /// @dev Each tranche can have multiple liquidity pools deployed,
     ///      each linked to a unique investment currency (asset)
     mapping(address currencyAddress => address liquidityPool) liquidityPools;
+    /// @dev Each tranche has a price per liquidity pool
+    mapping(address liquidityPool => TrancheTokenPrice) prices;
+}
+
+struct TrancheTokenPrice {
+    uint256 price;
+    uint64 computedAt;
 }
 
 /// @dev Temporary storage that is only present between addTranche and deployTranche
@@ -100,6 +107,13 @@ contract PoolManager is Auth {
     event DeployTranche(uint64 indexed poolId, bytes16 indexed trancheId, address indexed token);
     event AddCurrency(uint128 indexed currency, address indexed currencyAddress);
     event DeployLiquidityPool(uint64 indexed poolId, bytes16 indexed trancheId, address indexed liquidityPool);
+    event PriceUpdate(
+        uint64 indexed poolId,
+        bytes16 indexed trancheId,
+        uint128 indexed currency,
+        uint256 price,
+        uint64 priceComputedAt
+    );
     event TransferCurrency(address indexed currencyAddress, bytes32 indexed recipient, uint128 amount);
     event TransferTrancheTokensToCentrifuge(
         uint64 indexed poolId, bytes16 indexed trancheId, bytes32 destinationAddress, uint128 amount
@@ -261,6 +275,23 @@ contract PoolManager is Auth {
         trancheToken.file("symbol", tokenSymbol);
     }
 
+    function updateTrancheTokenPrice(
+        uint64 poolId,
+        bytes16 trancheId,
+        uint128 currencyId,
+        uint128 price,
+        uint64 computedAt
+    ) public onlyGateway {
+        Tranche storage tranche = pools[poolId].tranches[trancheId];
+        require(tranche.token != address(0), "PoolManager/tranche-does-not-exist");
+
+        address currencyAddress = currencyIdToAddress[currencyId];
+        require(computedAt >= tranche.prices[currencyAddress].computedAt, "PoolManager/cannot-set-older-price");
+
+        tranche.prices[currencyAddress] = TrancheTokenPrice(price, computedAt);
+        emit PriceUpdate(poolId, trancheId, currencyId, price, computedAt);
+    }
+
     function updateMember(uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) public onlyGateway {
         require(user != address(escrow), "PoolManager/escrow-member-cannot-be-updated");
 
@@ -417,6 +448,16 @@ contract PoolManager is Auth {
         returns (address)
     {
         return pools[poolId].tranches[trancheId].liquidityPools[currencyAddress];
+    }
+
+    function getTrancheTokenPrice(uint64 poolId, bytes16 trancheId, address currencyAddress)
+        public
+        view
+        returns (uint256 price, uint64 computedAt)
+    {
+        TrancheTokenPrice memory value = pools[poolId].tranches[trancheId].prices[currencyAddress];
+        price = value.price;
+        computedAt = value.computedAt;
     }
 
     function isAllowedAsInvestmentCurrency(uint64 poolId, address currencyAddress) public view returns (bool) {

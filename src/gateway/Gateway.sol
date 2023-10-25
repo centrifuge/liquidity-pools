@@ -5,7 +5,6 @@ import {Messages} from "./Messages.sol";
 import {Auth} from "./../util/Auth.sol";
 
 interface InvestmentManagerLike {
-    function updateTrancheTokenPrice(uint64 poolId, bytes16 trancheId, uint128 currencyId, uint128 price) external;
     function handleExecutedDecreaseInvestOrder(
         uint64 poolId,
         bytes16 trancheId,
@@ -68,6 +67,13 @@ interface PoolManagerLike {
         bytes16 trancheId,
         string memory tokenName,
         string memory tokenSymbol
+    ) external;
+    function updateTrancheTokenPrice(
+        uint64 poolId,
+        bytes16 trancheId,
+        uint128 currencyId,
+        uint128 price,
+        uint64 computedAt
     ) external;
     function addCurrency(uint128 currency, address currencyAddress) external;
     function handleTransfer(uint128 currency, address recipient, uint128 amount) external;
@@ -310,9 +316,9 @@ contract Gateway is Auth {
             (uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) = Messages.parseUpdateMember(message);
             poolManager.updateMember(poolId, trancheId, user, validUntil);
         } else if (Messages.isUpdateTrancheTokenPrice(message)) {
-            (uint64 poolId, bytes16 trancheId, uint128 currencyId, uint128 price) =
+            (uint64 poolId, bytes16 trancheId, uint128 currencyId, uint128 price, uint64 computedAt) =
                 Messages.parseUpdateTrancheTokenPrice(message);
-            investmentManager.updateTrancheTokenPrice(poolId, trancheId, currencyId, price);
+            poolManager.updateTrancheTokenPrice(poolId, trancheId, currencyId, price, computedAt);
         } else if (Messages.isTransfer(message)) {
             (uint128 currency, address recipient, uint128 amount) = Messages.parseIncomingTransfer(message);
             poolManager.handleTransfer(currency, recipient, amount);
