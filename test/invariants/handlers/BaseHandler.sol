@@ -19,7 +19,7 @@ contract BaseHandler is Test {
     address currentInvestor;
 
     // Key-value store
-    mapping(address entity => mapping(bytes32 key => uint256 value)) public values;
+    mapping(address entity => mapping(string key => uint256 value)) public values;
 
     // TODO: add key value store like in Mock, per investor, for InvestorState
 
@@ -35,7 +35,7 @@ contract BaseHandler is Test {
         vm.stopPrank();
     }
 
-    function setValue(address entity, bytes32 key, uint256 value) public {
+    function setValue(address entity, string calldata key, uint256 value) public {
         values[entity][key] = value;
     }
 
