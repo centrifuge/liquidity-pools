@@ -5,7 +5,7 @@ import {Auth} from "./util/Auth.sol";
 import {MathLib} from "./util/MathLib.sol";
 import {SafeTransferLib} from "./util/SafeTransferLib.sol";
 import {IERC20, IERC20Metadata, IERC20Permit} from "./interfaces/IERC20.sol";
-import {IERC7540} from "./interfaces/IERC7540.sol";
+import {IERC7540, IERC165, IERC7540Deposit, IERC7540Redeem} from "./interfaces/IERC7540.sol";
 
 interface ManagerLike {
     function deposit(address lp, uint256 assets, address receiver, address owner) external returns (uint256);
@@ -233,6 +233,12 @@ contract LiquidityPool is Auth, IERC7540 {
 
     function previewRedeem(uint256) external pure returns (uint256) {
         revert();
+    }
+
+    // --- ERC165 support ---
+    function supportsInterface(bytes4 interfaceId) external pure override returns (bool) {
+        return interfaceId == type(IERC165).interfaceId || interfaceId == type(IERC7540Deposit).interfaceId
+            || interfaceId == type(IERC7540Redeem).interfaceId;
     }
 
     // --- Misc asynchronous vault methods ---

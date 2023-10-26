@@ -43,8 +43,6 @@ contract Deployer is Script {
         userEscrow = new UserEscrow();
         root = new Root{salt: salt}(address(escrow), delay, deployer);
 
-        investmentManager = new InvestmentManager(address(escrow), address(userEscrow));
-
         address liquidityPoolFactory = address(new LiquidityPoolFactory(address(root)));
         address restrictionManagerFactory = address(new RestrictionManagerFactory(address(root)));
         address trancheTokenFactory = address(new TrancheTokenFactory{salt: salt}(address(root), deployer));
