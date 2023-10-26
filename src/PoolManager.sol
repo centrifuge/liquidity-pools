@@ -105,7 +105,7 @@ contract PoolManager is Auth {
     event DisallowInvestmentCurrency(uint128 indexed currency, uint64 indexed poolId);
     event AddTranche(uint64 indexed poolId, bytes16 indexed trancheId);
     event DeployTranche(uint64 indexed poolId, bytes16 indexed trancheId, address indexed token);
-    event AddCurrency(uint128 indexed currencyId, address indexed currency);
+    event AddCurrency(uint128 indexed currency, address indexed currencyAddress);
     event DeployLiquidityPool(uint64 indexed poolId, bytes16 indexed trancheId, address indexed liquidityPool);
     event PriceUpdate(
         uint64 indexed poolId,
