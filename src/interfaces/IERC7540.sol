@@ -71,5 +71,5 @@ interface IERC7540Redeem {
  * @title  IERC7540
  * @dev    Interface of the ERC7540 "Asynchronous Tokenized Vault Standard", as defined in
  *         https://github.com/ethereum/EIPs/blob/2e63f2096b0c7d8388458bb0a03a7ce0eb3422a4/EIPS/eip-7540.md[ERC-7540].
-*/
+ */
 interface IERC7540 is IERC7540Deposit, IERC7540Redeem, IERC4626, IERC165 {}
