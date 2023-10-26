@@ -74,6 +74,7 @@ contract Root is Auth {
 
     /// @notice Cancel a pending scheduled rely
     function cancelRely(address target) external auth {
+        require(schedule[target] != 0, "Root/target-not-scheduled");
         schedule[target] = 0;
         emit CancelRely(target);
     }

@@ -162,6 +162,9 @@ contract AdminTest is TestSetup {
 
     function testCancellingScheduleWorks() public {
         address spell = vm.addr(1);
+        vm.expectRevert("Root/target-not-scheduled");
+        root.cancelRely(spell);
+
         delayedAdmin.scheduleRely(spell);
         assertEq(root.schedule(spell), block.timestamp + delay);
         delayedAdmin.cancelRely(spell);
