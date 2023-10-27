@@ -90,82 +90,6 @@ contract LiquidityPool is Auth, IERC7540 {
         emit File(what, data);
     }
 
-    // --- ERC-4626 methods ---
-    /// @return Total value of the shares, denominated in the asset of this Liquidity Pool
-    function totalAssets() public view returns (uint256) {
-        return convertToAssets(totalSupply());
-    }
-
-    /// @notice Calculates the amount of shares that any user would approximately get for the amount of assets provided.
-    ///         The calculation is based on the token price from the most recent epoch retrieved from Centrifuge.
-    ///         The actual conversion will likely differ as the price changes between order submission and execution.
-    function convertToShares(uint256 assets) public view returns (uint256 shares) {
-        shares = manager.convertToShares(address(this), assets);
-    }
-
-    /// @notice Calculates the asset value for an amount of shares provided.
-    ///         The calculation is based on the token price from the most recent epoch retrieved from Centrifuge.
-    ///         The actual conversion will likely differ as the price changes between order submission and execution.
-    function convertToAssets(uint256 shares) public view returns (uint256 assets) {
-        assets = manager.convertToAssets(address(this), shares);
-    }
-
-    /// @return maxAssets that can be deposited into the Tranche by the receiver
-    ///         after the epoch had been executed on Centrifuge.
-    function maxDeposit(address receiver) public view returns (uint256 maxAssets) {
-        maxAssets = manager.maxDeposit(address(this), receiver);
-    }
-    /// @notice Collect shares for deposited assets after Centrifuge epoch execution.
-    ///         maxDeposit is the max amount of assets that can be deposited.
-
-    function deposit(uint256 assets, address receiver) public returns (uint256 shares) {
-        shares = manager.deposit(address(this), assets, receiver, msg.sender);
-        emit Deposit(msg.sender, receiver, assets, shares);
-    }
-
-    /// @notice Collect shares for deposited assets after Centrifuge epoch execution.
-    ///         maxMint is the max amount of shares that can be minted.
-    function mint(uint256 shares, address receiver) public returns (uint256 assets) {
-        assets = manager.mint(address(this), shares, receiver, msg.sender);
-        emit Deposit(msg.sender, receiver, assets, shares);
-    }
-
-    /// @notice maxShares that can be claimed by the receiver after the epoch has been executed on the Centrifuge side.
-    function maxMint(address receiver) external view returns (uint256 maxShares) {
-        maxShares = manager.maxMint(address(this), receiver);
-    }
-
-    /// @return maxAssets that the receiver can withdraw
-    function maxWithdraw(address receiver) public view returns (uint256 maxAssets) {
-        maxAssets = manager.maxWithdraw(address(this), receiver);
-    }
-
-    /// @notice Withdraw assets after successful epoch execution. Receiver will receive an exact amount of assets for
-    ///         a certain amount of shares that has been redeemed from Owner during epoch execution.
-    ///         DOES NOT support owner != msg.sender since shares are already transferred on requestRedeem
-    /// @return shares that have been redeemed for the exact assets amount
-    function withdraw(uint256 assets, address receiver, address owner) public returns (uint256 shares) {
-        require((msg.sender == owner), "LiquidityPool/not-the-owner");
-        shares = manager.withdraw(address(this), assets, receiver, owner);
-        emit Withdraw(msg.sender, receiver, owner, assets, shares);
-    }
-
-    /// @notice maxShares that can be redeemed by the owner after redemption was requested
-    function maxRedeem(address owner) public view returns (uint256 maxShares) {
-        maxShares = manager.maxRedeem(address(this), owner);
-    }
-
-    /// @notice Redeem shares after successful epoch execution. Receiver will receive assets for
-    /// @notice Redeem shares can only be called by the Owner or an authorized admin.
-    ///         the exact amount of redeemed shares from Owner after epoch execution.
-    ///         DOES NOT support owner != msg.sender since shares are already transferred on requestRedeem
-    /// @return assets payout for the exact amount of redeemed shares
-    function redeem(uint256 shares, address receiver, address owner) public returns (uint256 assets) {
-        require((msg.sender == owner), "LiquidityPool/not-the-owner");
-        assets = manager.redeem(address(this), shares, receiver, owner);
-        emit Withdraw(msg.sender, receiver, owner, assets, shares);
-    }
-
     // --- ERC-7540 methods ---
     /// @notice Request asset deposit for a receiver to be included in the next epoch execution.
     /// @notice Request can only be called by the owner of the assets
@@ -274,6 +198,82 @@ contract LiquidityPool is Auth, IERC7540 {
         return manager.exchangeRateLastUpdated(address(this));
     }
 
+    // --- ERC-4626 methods ---
+    /// @return Total value of the shares, denominated in the asset of this Liquidity Pool
+    function totalAssets() public view returns (uint256) {
+        return convertToAssets(totalSupply());
+    }
+
+    /// @notice Calculates the amount of shares that any user would approximately get for the amount of assets provided.
+    ///         The calculation is based on the token price from the most recent epoch retrieved from Centrifuge.
+    ///         The actual conversion will likely differ as the price changes between order submission and execution.
+    function convertToShares(uint256 assets) public view returns (uint256 shares) {
+        shares = manager.convertToShares(address(this), assets);
+    }
+
+    /// @notice Calculates the asset value for an amount of shares provided.
+    ///         The calculation is based on the token price from the most recent epoch retrieved from Centrifuge.
+    ///         The actual conversion will likely differ as the price changes between order submission and execution.
+    function convertToAssets(uint256 shares) public view returns (uint256 assets) {
+        assets = manager.convertToAssets(address(this), shares);
+    }
+
+    /// @return maxAssets that can be deposited into the Tranche by the receiver
+    ///         after the epoch had been executed on Centrifuge.
+    function maxDeposit(address receiver) public view returns (uint256 maxAssets) {
+        maxAssets = manager.maxDeposit(address(this), receiver);
+    }
+    /// @notice Collect shares for deposited assets after Centrifuge epoch execution.
+    ///         maxDeposit is the max amount of assets that can be deposited.
+
+    function deposit(uint256 assets, address receiver) public returns (uint256 shares) {
+        shares = manager.deposit(address(this), assets, receiver, msg.sender);
+        emit Deposit(msg.sender, receiver, assets, shares);
+    }
+
+    /// @notice Collect shares for deposited assets after Centrifuge epoch execution.
+    ///         maxMint is the max amount of shares that can be minted.
+    function mint(uint256 shares, address receiver) public returns (uint256 assets) {
+        assets = manager.mint(address(this), shares, receiver, msg.sender);
+        emit Deposit(msg.sender, receiver, assets, shares);
+    }
+
+    /// @notice maxShares that can be claimed by the receiver after the epoch has been executed on the Centrifuge side.
+    function maxMint(address receiver) external view returns (uint256 maxShares) {
+        maxShares = manager.maxMint(address(this), receiver);
+    }
+
+    /// @return maxAssets that the receiver can withdraw
+    function maxWithdraw(address receiver) public view returns (uint256 maxAssets) {
+        maxAssets = manager.maxWithdraw(address(this), receiver);
+    }
+
+    /// @notice Withdraw assets after successful epoch execution. Receiver will receive an exact amount of assets for
+    ///         a certain amount of shares that has been redeemed from Owner during epoch execution.
+    ///         DOES NOT support owner != msg.sender since shares are already transferred on requestRedeem
+    /// @return shares that have been redeemed for the exact assets amount
+    function withdraw(uint256 assets, address receiver, address owner) public returns (uint256 shares) {
+        require((msg.sender == owner), "LiquidityPool/not-the-owner");
+        shares = manager.withdraw(address(this), assets, receiver, owner);
+        emit Withdraw(msg.sender, receiver, owner, assets, shares);
+    }
+
+    /// @notice maxShares that can be redeemed by the owner after redemption was requested
+    function maxRedeem(address owner) public view returns (uint256 maxShares) {
+        maxShares = manager.maxRedeem(address(this), owner);
+    }
+
+    /// @notice Redeem shares after successful epoch execution. Receiver will receive assets for
+    /// @notice Redeem shares can only be called by the Owner or an authorized admin.
+    ///         the exact amount of redeemed shares from Owner after epoch execution.
+    ///         DOES NOT support owner != msg.sender since shares are already transferred on requestRedeem
+    /// @return assets payout for the exact amount of redeemed shares
+    function redeem(uint256 shares, address receiver, address owner) public returns (uint256 assets) {
+        require((msg.sender == owner), "LiquidityPool/not-the-owner");
+        assets = manager.redeem(address(this), shares, receiver, owner);
+        emit Withdraw(msg.sender, receiver, owner, assets, shares);
+    }
+
     // --- ERC-20 overrides ---
     function name() public view returns (string memory) {
         return share.name();
@@ -322,8 +322,6 @@ contract LiquidityPool is Auth, IERC7540 {
     }
 
     // --- Helpers ---
-
-    /// @dev In case of unsuccessful tx, parse the revert message
     function _successCheck(bool success) internal pure {
         if (!success) {
             assembly {
