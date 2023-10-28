@@ -142,29 +142,6 @@ contract LiquidityPool is Auth, IERC7540 {
         shares = manager.pendingRedeemRequest(address(this), operator);
     }
 
-    /// @dev Preview functions for async 4626 vaults revert
-    function previewDeposit(uint256) external pure returns (uint256) {
-        revert();
-    }
-
-    function previewMint(uint256) external pure returns (uint256) {
-        revert();
-    }
-
-    function previewWithdraw(uint256) external pure returns (uint256) {
-        revert();
-    }
-
-    function previewRedeem(uint256) external pure returns (uint256) {
-        revert();
-    }
-
-    // --- ERC165 support ---
-    function supportsInterface(bytes4 interfaceId) external pure override returns (bool) {
-        return interfaceId == type(IERC165).interfaceId || interfaceId == type(IERC7540Deposit).interfaceId
-            || interfaceId == type(IERC7540Redeem).interfaceId;
-    }
-
     // --- Misc asynchronous vault methods ---
     /// @notice Request decreasing the outstanding deposit orders. Will return the assets once the order
     ///         on Centrifuge is successfully decreased.
@@ -196,6 +173,12 @@ contract LiquidityPool is Auth, IERC7540 {
 
     function exchangeRateLastUpdated() public view returns (uint64) {
         return manager.exchangeRateLastUpdated(address(this));
+    }
+
+    // --- ERC165 support ---
+    function supportsInterface(bytes4 interfaceId) external pure override returns (bool) {
+        return interfaceId == type(IERC165).interfaceId || interfaceId == type(IERC7540Deposit).interfaceId
+            || interfaceId == type(IERC7540Redeem).interfaceId;
     }
 
     // --- ERC-4626 methods ---
@@ -272,6 +255,23 @@ contract LiquidityPool is Auth, IERC7540 {
         require((msg.sender == owner), "LiquidityPool/not-the-owner");
         assets = manager.redeem(address(this), shares, receiver, owner);
         emit Withdraw(msg.sender, receiver, owner, assets, shares);
+    }
+
+    /// @dev Preview functions for ERC-7540 vaults revert
+    function previewDeposit(uint256) external pure returns (uint256) {
+        revert();
+    }
+
+    function previewMint(uint256) external pure returns (uint256) {
+        revert();
+    }
+
+    function previewWithdraw(uint256) external pure returns (uint256) {
+        revert();
+    }
+
+    function previewRedeem(uint256) external pure returns (uint256) {
+        revert();
     }
 
     // --- ERC-20 overrides ---
