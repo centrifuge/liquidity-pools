@@ -99,11 +99,11 @@ interface RootLike {
 ///         will not be forwarded
 contract Gateway is Auth {
     RootLike public immutable root;
-    InvestmentManagerLike public investmentManager;
     PoolManagerLike public poolManager;
+    InvestmentManagerLike public investmentManager;
 
-    mapping(address => bool) public incomingRouters;
     RouterLike public outgoingRouter;
+    mapping(address => bool) public incomingRouters;
 
     // --- Events ---
     event File(bytes32 indexed what, address data);
