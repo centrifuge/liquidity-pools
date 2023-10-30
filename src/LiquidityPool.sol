@@ -68,6 +68,8 @@ contract LiquidityPool is Auth, IERC7540 {
 
     // --- Events ---
     event File(bytes32 indexed what, address data);
+    event DepositClaimable(address indexed operator, uint256 assets, uint256 shares);
+    event RedeemClaimable(address indexed operator, uint256 assets, uint256 shares);
     event DecreaseDepositRequest(address indexed sender, uint256 assets);
     event DecreaseRedeemRequest(address indexed sender, uint256 shares);
     event CancelDepositRequest(address indexed sender);
@@ -321,6 +323,14 @@ contract LiquidityPool is Auth, IERC7540 {
     }
 
     // --- Helpers ---
+    function emitDepositClaimable(address operator, uint256 assets, uint256 shares) public auth {
+        emit DepositClaimable(operator, assets, shares);
+    }
+
+    function emitRedeemClaimable(address operator, uint256 assets, uint256 shares) public auth {
+        emit RedeemClaimable(operator, assets, shares);
+    }
+
     function _successCheck(bool success) internal pure {
         if (!success) {
             assembly {

@@ -36,6 +36,8 @@ interface LiquidityPoolLike is ERC20Like {
     function trancheId() external view returns (bytes16);
     function asset() external view returns (address);
     function share() external view returns (address);
+    function emitDepositClaimable(address operator, uint256 assets, uint256 shares) external;
+    function emitRedeemClaimable(address operator, uint256 assets, uint256 shares) external;
 }
 
 interface AuthTransferLike {
@@ -100,30 +102,8 @@ contract InvestmentManager is Auth {
 
     // --- Events ---
     event File(bytes32 indexed what, address data);
-    event ExecutedCollectInvest(
-        uint64 indexed poolId,
-        bytes16 indexed trancheId,
-        address user,
-        uint128 currencyId,
-        uint128 currencyPayout,
-        uint128 trancheTokenPayout
-    );
-    event ExecutedCollectRedeem(
-        uint64 indexed poolId,
-        bytes16 indexed trancheId,
-        address user,
-        uint128 currencyId,
-        uint128 currencyPayout,
-        uint128 trancheTokenPayout
-    );
-    event ExecutedDecreaseInvestOrder(
-        uint64 indexed poolId, bytes16 indexed trancheId, address user, uint128 currencyId, uint128 currencyPayout
-    );
-    event ExecutedDecreaseRedeemOrder(
-        uint64 indexed poolId, bytes16 indexed trancheId, address user, uint128 currencyId, uint128 trancheTokenPayout
-    );
     event TriggerIncreaseRedeemOrder(
-        uint64 indexed poolId, bytes16 indexed trancheId, address user, uint128 currencyId, uint128 trancheTokenAmount
+        uint64 indexed poolId, bytes16 indexed trancheId, address user, address currency, uint128 trancheTokenAmount
     );
 
     constructor(address escrow_, address userEscrow_) {
@@ -312,7 +292,7 @@ contract InvestmentManager is Auth {
         ERC20Like trancheToken = ERC20Like(LiquidityPoolLike(liquidityPool).share());
         trancheToken.mint(address(escrow), trancheTokenPayout);
 
-        emit ExecutedCollectInvest(poolId, trancheId, user, currencyId, currencyPayout, trancheTokenPayout);
+        LiquidityPoolLike(liquidityPool).emitDepositClaimable(user, currencyPayout, trancheTokenPayout);
     }
 
     function handleExecutedCollectRedeem(
@@ -344,7 +324,7 @@ contract InvestmentManager is Auth {
         ERC20Like trancheToken = ERC20Like(LiquidityPoolLike(liquidityPool).share());
         trancheToken.burn(address(escrow), trancheTokenPayout);
 
-        emit ExecutedCollectRedeem(poolId, trancheId, user, currencyId, currencyPayout, trancheTokenPayout);
+        LiquidityPoolLike(liquidityPool).emitRedeemClaimable(user, currencyPayout, trancheTokenPayout);
     }
 
     function handleExecutedDecreaseInvestOrder(
@@ -377,7 +357,7 @@ contract InvestmentManager is Auth {
         // Transfer currency amount to userEscrow
         userEscrow.transferIn(poolManager.currencyIdToAddress(currencyId), address(escrow), user, currencyPayout);
 
-        emit ExecutedDecreaseInvestOrder(poolId, trancheId, user, currencyId, currencyPayout);
+        LiquidityPoolLike(liquidityPool).emitRedeemClaimable(user, currencyPayout, currencyPayout);
     }
 
     /// @dev Compared to handleExecutedDecreaseInvestOrder, there is no
@@ -408,7 +388,7 @@ contract InvestmentManager is Auth {
         state.maxMint = state.maxMint + trancheTokenPayout;
         state.remainingRedeemRequest = remainingRedeemOrder;
 
-        emit ExecutedDecreaseRedeemOrder(poolId, trancheId, user, currencyId, trancheTokenPayout);
+        LiquidityPoolLike(liquidityPool).emitRedeemClaimable(user, trancheTokenPayout, trancheTokenPayout);
     }
 
     function handleTriggerIncreaseRedeemOrder(
@@ -448,7 +428,9 @@ contract InvestmentManager is Auth {
                 "InvestmentManager/transfer-failed"
             );
         }
-        emit TriggerIncreaseRedeemOrder(poolId, trancheId, user, currencyId, trancheTokenAmount);
+        emit TriggerIncreaseRedeemOrder(
+            poolId, trancheId, user, poolManager.currencyIdToAddress(currencyId), trancheTokenAmount
+        );
     }
 
     // --- View functions ---
