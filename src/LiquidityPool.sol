@@ -60,11 +60,11 @@ contract LiquidityPool is Auth, IERC7540 {
     ///         Has a ratio (token price) of underlying assets exchanged on deposit/mint/withdraw/redeem.
     IERC20Metadata public immutable share;
 
-    /// @notice Escrow contract for tokens
-    address public immutable escrow;
-
     /// @notice Liquidity Pool implementation contract
     ManagerLike public manager;
+
+    /// @notice Escrow contract for tokens
+    address public immutable escrow;
 
     // --- Events ---
     event File(bytes32 indexed what, address data);

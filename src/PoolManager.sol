@@ -87,9 +87,9 @@ contract PoolManager is Auth {
     LiquidityPoolFactoryLike public immutable liquidityPoolFactory;
     TrancheTokenFactoryLike public immutable trancheTokenFactory;
 
-    RestrictionManagerFactoryLike public restrictionManagerFactory;
     GatewayLike public gateway;
     InvestmentManagerLike public investmentManager;
+    RestrictionManagerFactoryLike public restrictionManagerFactory;
 
     mapping(uint64 poolId => Pool) public pools;
     mapping(uint64 poolId => mapping(bytes16 => UndeployedTranche)) public undeployedTranches;
