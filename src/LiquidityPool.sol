@@ -43,25 +43,26 @@ interface ManagerLike {
 contract LiquidityPool is Auth, IERC7540 {
     using MathLib for uint256;
 
+    /// @notice Identifier of the Centrifuge pool
     uint64 public immutable poolId;
+
+    /// @notice Identifier of the tranche of the Centrifuge pool
     bytes16 public immutable trancheId;
 
-    /// @notice The investment currency for this Liquidity Pool.
+    /// @notice The investment currency (asset) for this Liquidity Pool.
     ///         Each tranche of a Centrifuge pool can have multiple Liquidity Pools.
-    ///         One Liquidity Pool for each supported asset.
-    ///         Thus tranche shares can be linked to multiple LiquidityPools with different assets.
-    /// @dev    Also known as the investment currency.
+    ///         One Liquidity Pool for each supported investment currency.
+    ///         Thus tranche shares can be linked to multiple Liquidity Pools with different currencies.
     address public immutable asset;
 
-    /// @notice The restricted ERC-20 Liquidity Pool token. Has a ratio (token price) of underlying assets
-    ///         exchanged on deposit/withdraw/redeem.
-    /// @dev    Also known as tranche tokens.
+    /// @notice The restricted ERC-20 Liquidity Pool share (tranche token).
+    ///         Has a ratio (token price) of underlying assets exchanged on deposit/mint/withdraw/redeem.
     IERC20Metadata public immutable share;
 
     /// @notice Escrow contract for tokens
     address public immutable escrow;
 
-    /// @notice Liquidity Pool business logic implementation contract
+    /// @notice Liquidity Pool implementation contract
     ManagerLike public manager;
 
     // --- Events ---
@@ -91,9 +92,7 @@ contract LiquidityPool is Auth, IERC7540 {
     }
 
     // --- ERC-7540 methods ---
-    /// @notice Request asset deposit for a receiver to be included in the next epoch execution.
-    /// @notice Request can only be called by the owner of the assets
-    ///         Asset is locked in the escrow on request submission
+    /// @inheritdoc IERC7540Deposit
     function requestDeposit(uint256 assets, address operator) public {
         require(IERC20(asset).balanceOf(msg.sender) >= assets, "LiquidityPool/insufficient-balance");
         require(
@@ -103,7 +102,7 @@ contract LiquidityPool is Auth, IERC7540 {
         emit DepositRequest(msg.sender, operator, assets);
     }
 
-    /// @notice Similar to requestDeposit, but with a permit option
+    /// @notice Transfers assets from msg.sender into the Vault and submits a Request for asynchronous deposit/mint.
     function requestDepositWithPermit(uint256 assets, uint256 deadline, uint8 v, bytes32 r, bytes32 s) public {
         try IERC20Permit(asset).permit(msg.sender, address(this), assets, deadline, v, r, s) {} catch {}
         require(
@@ -114,16 +113,12 @@ contract LiquidityPool is Auth, IERC7540 {
         emit DepositRequest(msg.sender, msg.sender, assets);
     }
 
-    /// @notice View the total amount the operator has requested to deposit but isn't able to deposit or mint yet
-    /// @dev    Due to the asynchronous nature, this value might be outdated, and should only
-    ///         be used for informational purposes.
+    /// @inheritdoc IERC7540Deposit
     function pendingDepositRequest(address operator) external view returns (uint256 assets) {
         assets = manager.pendingDepositRequest(address(this), operator);
     }
 
-    /// @notice Request share redemption for a receiver to be included in the next epoch execution.
-    ///         DOES support flow where owner != msg.sender but has allowance to spend its shares
-    ///         Shares are locked in the escrow on request submission
+    /// @inheritdoc IERC7540Redeem
     function requestRedeem(uint256 shares, address operator, address owner) public {
         require(share.balanceOf(owner) >= shares, "LiquidityPool/insufficient-balance");
         require(manager.requestRedeem(address(this), shares, operator, owner), "LiquidityPool/request-redeem-failed");
@@ -135,9 +130,7 @@ contract LiquidityPool is Auth, IERC7540 {
         emit RedeemRequest(msg.sender, operator, owner, shares);
     }
 
-    /// @notice View the total amount the operator has requested to redeem but isn't able to withdraw or redeem yet
-    /// @dev    Due to the asynchronous nature, this value might be outdated, and should only
-    ///         be used for informational purposes.
+    /// @inheritdoc IERC7540Redeem
     function pendingRedeemRequest(address operator) external view returns (uint256 shares) {
         shares = manager.pendingRedeemRequest(address(this), operator);
     }
@@ -176,81 +169,74 @@ contract LiquidityPool is Auth, IERC7540 {
     }
 
     // --- ERC165 support ---
+    /// @inheritdoc IERC165
     function supportsInterface(bytes4 interfaceId) external pure override returns (bool) {
         return interfaceId == type(IERC165).interfaceId || interfaceId == type(IERC7540Deposit).interfaceId
             || interfaceId == type(IERC7540Redeem).interfaceId;
     }
 
     // --- ERC-4626 methods ---
-    /// @return Total value of the shares, denominated in the asset of this Liquidity Pool
+    /// @inheritdoc IERC4626
     function totalAssets() public view returns (uint256) {
         return convertToAssets(totalSupply());
     }
 
-    /// @notice Calculates the amount of shares that any user would approximately get for the amount of assets provided.
-    ///         The calculation is based on the token price from the most recent epoch retrieved from Centrifuge.
-    ///         The actual conversion will likely differ as the price changes between order submission and execution.
+    /// @inheritdoc IERC4626
+    /// @notice     The calculation is based on the token price from the most recent epoch retrieved from Centrifuge.
+    ///             The actual conversion MAY change between order submission and execution.
     function convertToShares(uint256 assets) public view returns (uint256 shares) {
         shares = manager.convertToShares(address(this), assets);
     }
 
-    /// @notice Calculates the asset value for an amount of shares provided.
-    ///         The calculation is based on the token price from the most recent epoch retrieved from Centrifuge.
-    ///         The actual conversion will likely differ as the price changes between order submission and execution.
+    /// @inheritdoc IERC4626
+    /// @notice     The calculation is based on the token price from the most recent epoch retrieved from Centrifuge.
+    ///             The actual conversion MAY change between order submission and execution.
     function convertToAssets(uint256 shares) public view returns (uint256 assets) {
         assets = manager.convertToAssets(address(this), shares);
     }
 
-    /// @return maxAssets that can be deposited into the Tranche by the receiver
-    ///         after the epoch had been executed on Centrifuge.
+    /// @inheritdoc IERC4626
     function maxDeposit(address receiver) public view returns (uint256 maxAssets) {
         maxAssets = manager.maxDeposit(address(this), receiver);
     }
-    /// @notice Collect shares for deposited assets after Centrifuge epoch execution.
-    ///         maxDeposit is the max amount of assets that can be deposited.
 
+    /// @inheritdoc IERC4626
     function deposit(uint256 assets, address receiver) public returns (uint256 shares) {
         shares = manager.deposit(address(this), assets, receiver, msg.sender);
         emit Deposit(msg.sender, receiver, assets, shares);
     }
 
-    /// @notice Collect shares for deposited assets after Centrifuge epoch execution.
-    ///         maxMint is the max amount of shares that can be minted.
+    /// @inheritdoc IERC4626
     function mint(uint256 shares, address receiver) public returns (uint256 assets) {
         assets = manager.mint(address(this), shares, receiver, msg.sender);
         emit Deposit(msg.sender, receiver, assets, shares);
     }
 
-    /// @notice maxShares that can be claimed by the receiver after the epoch has been executed on the Centrifuge side.
+    /// @inheritdoc IERC4626
     function maxMint(address receiver) external view returns (uint256 maxShares) {
         maxShares = manager.maxMint(address(this), receiver);
     }
 
-    /// @return maxAssets that the receiver can withdraw
+    /// @inheritdoc IERC4626
     function maxWithdraw(address receiver) public view returns (uint256 maxAssets) {
         maxAssets = manager.maxWithdraw(address(this), receiver);
     }
 
-    /// @notice Withdraw assets after successful epoch execution. Receiver will receive an exact amount of assets for
-    ///         a certain amount of shares that has been redeemed from Owner during epoch execution.
-    ///         DOES NOT support owner != msg.sender since shares are already transferred on requestRedeem
-    /// @return shares that have been redeemed for the exact assets amount
+    /// @inheritdoc IERC4626
+    /// @notice DOES NOT support owner != msg.sender since shares are already transferred on requestRedeem
     function withdraw(uint256 assets, address receiver, address owner) public returns (uint256 shares) {
         require((msg.sender == owner), "LiquidityPool/not-the-owner");
         shares = manager.withdraw(address(this), assets, receiver, owner);
         emit Withdraw(msg.sender, receiver, owner, assets, shares);
     }
 
-    /// @notice maxShares that can be redeemed by the owner after redemption was requested
+    /// @inheritdoc IERC4626
     function maxRedeem(address owner) public view returns (uint256 maxShares) {
         maxShares = manager.maxRedeem(address(this), owner);
     }
 
-    /// @notice Redeem shares after successful epoch execution. Receiver will receive assets for
-    /// @notice Redeem shares can only be called by the Owner or an authorized admin.
-    ///         the exact amount of redeemed shares from Owner after epoch execution.
-    ///         DOES NOT support owner != msg.sender since shares are already transferred on requestRedeem
-    /// @return assets payout for the exact amount of redeemed shares
+    /// @inheritdoc IERC4626
+    /// @notice     DOES NOT support owner != msg.sender since shares are already transferred on requestRedeem
     function redeem(uint256 shares, address receiver, address owner) public returns (uint256 assets) {
         require((msg.sender == owner), "LiquidityPool/not-the-owner");
         assets = manager.redeem(address(this), shares, receiver, owner);
@@ -262,43 +248,53 @@ contract LiquidityPool is Auth, IERC7540 {
         revert();
     }
 
+    /// @dev Preview functions for ERC-7540 vaults revert
     function previewMint(uint256) external pure returns (uint256) {
         revert();
     }
 
+    /// @dev Preview functions for ERC-7540 vaults revert
     function previewWithdraw(uint256) external pure returns (uint256) {
         revert();
     }
 
+    /// @dev Preview functions for ERC-7540 vaults revert
     function previewRedeem(uint256) external pure returns (uint256) {
         revert();
     }
 
     // --- ERC-20 overrides ---
+    /// @inheritdoc IERC20Metadata
     function name() public view returns (string memory) {
         return share.name();
     }
 
+    /// @inheritdoc IERC20Metadata
     function symbol() public view returns (string memory) {
         return share.symbol();
     }
 
+    /// @inheritdoc IERC20Metadata
     function decimals() public view returns (uint8) {
         return share.decimals();
     }
 
+    /// @inheritdoc IERC20
     function totalSupply() public view returns (uint256) {
         return share.totalSupply();
     }
 
+    /// @inheritdoc IERC20
     function balanceOf(address owner) public view returns (uint256) {
         return share.balanceOf(owner);
     }
 
+    /// @inheritdoc IERC20
     function allowance(address owner, address spender) public view returns (uint256) {
         return share.allowance(owner, spender);
     }
 
+    /// @inheritdoc IERC20
     function transferFrom(address from, address to, uint256 value) public returns (bool) {
         (bool success, bytes memory data) = address(share).call(
             bytes.concat(
@@ -309,12 +305,14 @@ contract LiquidityPool is Auth, IERC7540 {
         return abi.decode(data, (bool));
     }
 
+    /// @inheritdoc IERC20
     function transfer(address, uint256) external returns (bool) {
         (bool success, bytes memory data) = address(share).call(bytes.concat(msg.data, bytes20(msg.sender)));
         _successCheck(success);
         return abi.decode(data, (bool));
     }
 
+    /// @inheritdoc IERC20
     function approve(address, uint256) external returns (bool) {
         (bool success, bytes memory data) = address(share).call(bytes.concat(msg.data, bytes20(msg.sender)));
         _successCheck(success);
