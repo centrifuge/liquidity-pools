@@ -155,7 +155,7 @@ contract PoolManager is Auth {
     }
 
     // --- Outgoing message handling ---
-    function transfer(address currency, bytes32 recipient, uint128 amount) public {
+    function transfer(address currency, bytes32 recipient, uint128 amount) external {
         uint128 currencyId = currencyAddressToId[currency];
         require(currencyId != 0, "PoolManager/unknown-currency");
 
@@ -170,7 +170,7 @@ contract PoolManager is Auth {
         bytes16 trancheId,
         bytes32 destinationAddress,
         uint128 amount
-    ) public {
+    ) external {
         TrancheTokenLike trancheToken = TrancheTokenLike(getTrancheToken(poolId, trancheId));
         require(address(trancheToken) != address(0), "PoolManager/unknown-token");
 
@@ -186,7 +186,7 @@ contract PoolManager is Auth {
         uint64 destinationChainId,
         address destinationAddress,
         uint128 amount
-    ) public {
+    ) external {
         TrancheTokenLike trancheToken = TrancheTokenLike(getTrancheToken(poolId, trancheId));
         require(address(trancheToken) != address(0), "PoolManager/unknown-token");
 

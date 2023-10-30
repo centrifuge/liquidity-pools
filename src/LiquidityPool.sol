@@ -4,6 +4,7 @@ pragma solidity 0.8.21;
 import {Auth} from "./util/Auth.sol";
 import {MathLib} from "./util/MathLib.sol";
 import {SafeTransferLib} from "./util/SafeTransferLib.sol";
+import {IERC4626} from "./interfaces/IERC4626.sol";
 import {IERC20, IERC20Metadata, IERC20Permit} from "./interfaces/IERC20.sol";
 import {IERC7540, IERC165, IERC7540Deposit, IERC7540Redeem} from "./interfaces/IERC7540.sol";
 
@@ -85,7 +86,7 @@ contract LiquidityPool is Auth, IERC7540 {
     }
 
     // --- Administration ---
-    function file(bytes32 what, address data) public auth {
+    function file(bytes32 what, address data) external auth {
         if (what == "manager") manager = ManagerLike(data);
         else revert("LiquidityPool/file-unrecognized-param");
         emit File(what, data);
@@ -93,7 +94,7 @@ contract LiquidityPool is Auth, IERC7540 {
 
     // --- ERC-7540 methods ---
     /// @inheritdoc IERC7540Deposit
-    function requestDeposit(uint256 assets, address operator) public {
+    function requestDeposit(uint256 assets, address operator) external {
         require(IERC20(asset).balanceOf(msg.sender) >= assets, "LiquidityPool/insufficient-balance");
         require(
             manager.requestDeposit(address(this), assets, msg.sender, operator), "LiquidityPool/request-deposit-failed"
@@ -103,7 +104,7 @@ contract LiquidityPool is Auth, IERC7540 {
     }
 
     /// @notice Transfers assets from msg.sender into the Vault and submits a Request for asynchronous deposit/mint.
-    function requestDepositWithPermit(uint256 assets, uint256 deadline, uint8 v, bytes32 r, bytes32 s) public {
+    function requestDepositWithPermit(uint256 assets, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external {
         try IERC20Permit(asset).permit(msg.sender, address(this), assets, deadline, v, r, s) {} catch {}
         require(
             manager.requestDeposit(address(this), assets, msg.sender, msg.sender),
@@ -119,7 +120,7 @@ contract LiquidityPool is Auth, IERC7540 {
     }
 
     /// @inheritdoc IERC7540Redeem
-    function requestRedeem(uint256 shares, address operator, address owner) public {
+    function requestRedeem(uint256 shares, address operator, address owner) external {
         require(share.balanceOf(owner) >= shares, "LiquidityPool/insufficient-balance");
         require(manager.requestRedeem(address(this), shares, operator, owner), "LiquidityPool/request-redeem-failed");
 
@@ -138,33 +139,33 @@ contract LiquidityPool is Auth, IERC7540 {
     // --- Misc asynchronous vault methods ---
     /// @notice Request decreasing the outstanding deposit orders. Will return the assets once the order
     ///         on Centrifuge is successfully decreased.
-    function decreaseDepositRequest(uint256 assets) public {
+    function decreaseDepositRequest(uint256 assets) external {
         manager.decreaseDepositRequest(address(this), assets, msg.sender);
         emit DecreaseDepositRequest(msg.sender, assets);
     }
 
     /// @notice Request cancelling the outstanding deposit orders. Will return the assets once the order
     ///         on Centrifuge is successfully cancelled.
-    function cancelDepositRequest() public {
+    function cancelDepositRequest() external {
         manager.cancelDepositRequest(address(this), msg.sender);
         emit CancelDepositRequest(msg.sender);
     }
 
     /// @notice Request decreasing the outstanding redemption orders. Will return the shares once the order
     ///         on Centrifuge is successfully decreased.
-    function decreaseRedeemRequest(uint256 shares) public {
+    function decreaseRedeemRequest(uint256 shares) external {
         manager.decreaseRedeemRequest(address(this), shares, msg.sender);
         emit DecreaseRedeemRequest(msg.sender, shares);
     }
 
     /// @notice Request cancelling the outstanding redemption orders. Will return the shares once the order
     ///         on Centrifuge is successfully cancelled.
-    function cancelRedeemRequest() public {
+    function cancelRedeemRequest() external {
         manager.cancelRedeemRequest(address(this), msg.sender);
         emit CancelRedeemRequest(msg.sender);
     }
 
-    function exchangeRateLastUpdated() public view returns (uint64) {
+    function exchangeRateLastUpdated() external view returns (uint64) {
         return manager.exchangeRateLastUpdated(address(this));
     }
 
@@ -177,7 +178,7 @@ contract LiquidityPool is Auth, IERC7540 {
 
     // --- ERC-4626 methods ---
     /// @inheritdoc IERC4626
-    function totalAssets() public view returns (uint256) {
+    function totalAssets() external view returns (uint256) {
         return convertToAssets(totalSupply());
     }
 
@@ -196,18 +197,18 @@ contract LiquidityPool is Auth, IERC7540 {
     }
 
     /// @inheritdoc IERC4626
-    function maxDeposit(address receiver) public view returns (uint256 maxAssets) {
+    function maxDeposit(address receiver) external view returns (uint256 maxAssets) {
         maxAssets = manager.maxDeposit(address(this), receiver);
     }
 
     /// @inheritdoc IERC4626
-    function deposit(uint256 assets, address receiver) public returns (uint256 shares) {
+    function deposit(uint256 assets, address receiver) external returns (uint256 shares) {
         shares = manager.deposit(address(this), assets, receiver, msg.sender);
         emit Deposit(msg.sender, receiver, assets, shares);
     }
 
     /// @inheritdoc IERC4626
-    function mint(uint256 shares, address receiver) public returns (uint256 assets) {
+    function mint(uint256 shares, address receiver) external returns (uint256 assets) {
         assets = manager.mint(address(this), shares, receiver, msg.sender);
         emit Deposit(msg.sender, receiver, assets, shares);
     }
@@ -218,26 +219,26 @@ contract LiquidityPool is Auth, IERC7540 {
     }
 
     /// @inheritdoc IERC4626
-    function maxWithdraw(address receiver) public view returns (uint256 maxAssets) {
+    function maxWithdraw(address receiver) external view returns (uint256 maxAssets) {
         maxAssets = manager.maxWithdraw(address(this), receiver);
     }
 
     /// @inheritdoc IERC4626
     /// @notice DOES NOT support owner != msg.sender since shares are already transferred on requestRedeem
-    function withdraw(uint256 assets, address receiver, address owner) public returns (uint256 shares) {
+    function withdraw(uint256 assets, address receiver, address owner) external returns (uint256 shares) {
         require((msg.sender == owner), "LiquidityPool/not-the-owner");
         shares = manager.withdraw(address(this), assets, receiver, owner);
         emit Withdraw(msg.sender, receiver, owner, assets, shares);
     }
 
     /// @inheritdoc IERC4626
-    function maxRedeem(address owner) public view returns (uint256 maxShares) {
+    function maxRedeem(address owner) external view returns (uint256 maxShares) {
         maxShares = manager.maxRedeem(address(this), owner);
     }
 
     /// @inheritdoc IERC4626
     /// @notice     DOES NOT support owner != msg.sender since shares are already transferred on requestRedeem
-    function redeem(uint256 shares, address receiver, address owner) public returns (uint256 assets) {
+    function redeem(uint256 shares, address receiver, address owner) external returns (uint256 assets) {
         require((msg.sender == owner), "LiquidityPool/not-the-owner");
         assets = manager.redeem(address(this), shares, receiver, owner);
         emit Withdraw(msg.sender, receiver, owner, assets, shares);
@@ -265,17 +266,17 @@ contract LiquidityPool is Auth, IERC7540 {
 
     // --- ERC-20 overrides ---
     /// @inheritdoc IERC20Metadata
-    function name() public view returns (string memory) {
+    function name() external view returns (string memory) {
         return share.name();
     }
 
     /// @inheritdoc IERC20Metadata
-    function symbol() public view returns (string memory) {
+    function symbol() external view returns (string memory) {
         return share.symbol();
     }
 
     /// @inheritdoc IERC20Metadata
-    function decimals() public view returns (uint8) {
+    function decimals() external view returns (uint8) {
         return share.decimals();
     }
 
@@ -285,12 +286,12 @@ contract LiquidityPool is Auth, IERC7540 {
     }
 
     /// @inheritdoc IERC20
-    function balanceOf(address owner) public view returns (uint256) {
+    function balanceOf(address owner) external view returns (uint256) {
         return share.balanceOf(owner);
     }
 
     /// @inheritdoc IERC20
-    function allowance(address owner, address spender) public view returns (uint256) {
+    function allowance(address owner, address spender) external view returns (uint256) {
         return share.allowance(owner, spender);
     }
 
