@@ -43,7 +43,7 @@ contract TrancheToken is ERC20 {
     }
 
     // --- Administration ---
-    function file(bytes32 what, address data) public auth {
+    function file(bytes32 what, address data) external auth {
         if (what == "restrictionManager") restrictionManager = ERC1404Like(data);
         else revert("TrancheToken/file-unrecognized-param");
         emit File(what, data);

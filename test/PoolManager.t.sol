@@ -795,6 +795,73 @@ contract PoolManagerTest is TestSetup {
         poolManager.deployLiquidityPool(poolId, trancheId, address(erc20));
     }
 
+
+    function testUpdatingTokenPriceWorks(
+        uint64 poolId,
+        uint8 decimals,
+        uint128 currencyId,
+        string memory tokenName,
+        string memory tokenSymbol,
+        bytes16 trancheId,
+        uint128 price
+    ) public {
+        decimals = uint8(bound(decimals, 1, 18));
+        vm.assume(poolId > 0);
+        vm.assume(trancheId > 0);
+        vm.assume(currencyId > 0);
+        centrifugeChain.addPool(poolId);
+        centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals);
+        centrifugeChain.addCurrency(currencyId, address(erc20));
+        centrifugeChain.allowInvestmentCurrency(poolId, currencyId);
+
+        poolManager.deployTranche(poolId, trancheId);
+
+        // Allows us to go back in time later
+        vm.warp(block.timestamp + 1 days);
+
+        centrifugeChain.updateTrancheTokenPrice(poolId, trancheId, currencyId, price, uint64(block.timestamp));
+        (uint256 latestPrice, uint64 priceComputedAt) = poolManager.getTrancheTokenPrice(poolId, trancheId, address(erc20));
+        assertEq(latestPrice, price);
+        assertEq(priceComputedAt, block.timestamp);
+
+        vm.expectRevert(bytes("PoolManager/cannot-set-older-price"));
+        centrifugeChain.updateTrancheTokenPrice(poolId, trancheId, currencyId, price, uint64(block.timestamp - 1));
+    }
+
+    function testUpdatingTokenPriceAsNonRouterFails(
+        uint64 poolId,
+        uint8 decimals,
+        uint128 currency,
+        string memory tokenName,
+        string memory tokenSymbol,
+        bytes16 trancheId,
+        uint128 price
+    ) public {
+        decimals = uint8(bound(decimals, 1, 18));
+        vm.assume(currency > 0);
+        ERC20 erc20 = _newErc20("X's Dollar", "USDX", 18);
+        centrifugeChain.addPool(poolId); // add pool
+        centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals); // add tranche
+        centrifugeChain.addCurrency(currency, address(erc20));
+        centrifugeChain.allowInvestmentCurrency(poolId, currency);
+        poolManager.deployTranche(poolId, trancheId);
+        poolManager.deployLiquidityPool(poolId, trancheId, address(erc20));
+
+        vm.expectRevert(bytes("PoolManager/not-the-gateway"));
+        poolManager.updateTrancheTokenPrice(poolId, trancheId, currency, price, uint64(block.timestamp));
+    }
+
+    function testUpdatingTokenPriceForNonExistentTrancheFails(
+        uint64 poolId,
+        bytes16 trancheId,
+        uint128 currencyId,
+        uint128 price
+    ) public {
+        centrifugeChain.addPool(poolId);
+
+        vm.expectRevert(bytes("PoolManager/tranche-does-not-exist"));
+        centrifugeChain.updateTrancheTokenPrice(poolId, trancheId, currencyId, price, uint64(block.timestamp));
+    }
     // helpers
     function hasDuplicates(bytes16[4] calldata array) internal pure returns (bool) {
         uint256 length = array.length;

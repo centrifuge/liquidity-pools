@@ -51,7 +51,7 @@ contract AxelarScript is Deployer {
             LiquidityPoolLike liquidityPool = LiquidityPoolLike(
                 poolManager.getLiquidityPool(1171854325, 0x102f4ef817340a8839a515d2c73a7c1d, address(currency))
             );
-            currency.approve(address(investmentManager), 1000 * 10 ** 18);
+            currency.approve(address(liquidityPool), 1000 * 10 ** 18);
             liquidityPool.requestDeposit(200 * 10 ** 18, msg.sender);
             liquidityPool.requestDeposit(200 * 10 ** 18, msg.sender);
             liquidityPool.requestDeposit(200 * 10 ** 18, msg.sender);

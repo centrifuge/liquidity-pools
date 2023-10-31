@@ -5,7 +5,6 @@ import {Messages} from "./Messages.sol";
 import {Auth} from "./../util/Auth.sol";
 
 interface InvestmentManagerLike {
-    function updateTrancheTokenPrice(uint64 poolId, bytes16 trancheId, uint128 currencyId, uint128 price) external;
     function handleExecutedDecreaseInvestOrder(
         uint64 poolId,
         bytes16 trancheId,
@@ -69,6 +68,13 @@ interface PoolManagerLike {
         string memory tokenName,
         string memory tokenSymbol
     ) external;
+    function updateTrancheTokenPrice(
+        uint64 poolId,
+        bytes16 trancheId,
+        uint128 currencyId,
+        uint128 price,
+        uint64 computedAt
+    ) external;
     function addCurrency(uint128 currency, address currencyAddress) external;
     function handleTransfer(uint128 currency, address recipient, uint128 amount) external;
     function handleTransferTrancheTokens(uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 amount)
@@ -93,11 +99,11 @@ interface RootLike {
 ///         will not be forwarded
 contract Gateway is Auth {
     RootLike public immutable root;
-    InvestmentManagerLike public investmentManager;
     PoolManagerLike public poolManager;
+    InvestmentManagerLike public investmentManager;
 
-    mapping(address => bool) public incomingRouters;
     RouterLike public outgoingRouter;
+    mapping(address => bool) public incomingRouters;
 
     // --- Events ---
     event File(bytes32 indexed what, address data);
@@ -310,9 +316,9 @@ contract Gateway is Auth {
             (uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) = Messages.parseUpdateMember(message);
             poolManager.updateMember(poolId, trancheId, user, validUntil);
         } else if (Messages.isUpdateTrancheTokenPrice(message)) {
-            (uint64 poolId, bytes16 trancheId, uint128 currencyId, uint128 price) =
+            (uint64 poolId, bytes16 trancheId, uint128 currencyId, uint128 price, uint64 computedAt) =
                 Messages.parseUpdateTrancheTokenPrice(message);
-            investmentManager.updateTrancheTokenPrice(poolId, trancheId, currencyId, price);
+            poolManager.updateTrancheTokenPrice(poolId, trancheId, currencyId, price, computedAt);
         } else if (Messages.isTransfer(message)) {
             (uint128 currency, address recipient, uint128 amount) = Messages.parseIncomingTransfer(message);
             poolManager.handleTransfer(currency, recipient, amount);
