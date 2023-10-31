@@ -76,9 +76,9 @@ struct InvestmentState {
     /// @dev Weighted average price of redemptions, used to convert maxWithdraw to maxRedeem
     uint256 redeemPrice;
     /// @dev Remaining invest (deposit) order in currency
-    uint128 remainingDepositRequest;
+    uint128 pendingDepositRequest;
     /// @dev Remaining redeem order in currency
-    uint128 remainingRedeemRequest;
+    uint128 pendingRedeemRequest;
     ///@dev Flag whether this user has ever interacted with this liquidity pool
     bool exists;
 }
@@ -159,7 +159,7 @@ contract InvestmentManager is Auth {
         );
 
         InvestmentState storage state = investments[liquidityPool][operator];
-        state.remainingDepositRequest = state.remainingDepositRequest + _currencyAmount;
+        state.pendingDepositRequest = state.pendingDepositRequest + _currencyAmount;
         state.exists = true;
 
         gateway.increaseInvestOrder(
@@ -207,7 +207,7 @@ contract InvestmentManager is Auth {
     {
         LiquidityPoolLike lPool = LiquidityPoolLike(liquidityPool);
         InvestmentState storage state = investments[liquidityPool][user];
-        state.remainingRedeemRequest = state.remainingRedeemRequest + trancheTokenAmount;
+        state.pendingRedeemRequest = state.pendingRedeemRequest + trancheTokenAmount;
         state.exists = true;
 
         gateway.increaseRedeemOrder(
@@ -286,7 +286,7 @@ contract InvestmentManager is Auth {
             liquidityPool, _maxDeposit(liquidityPool, user) + currencyPayout, state.maxMint + trancheTokenPayout
         );
         state.maxMint = state.maxMint + trancheTokenPayout;
-        state.remainingDepositRequest = remainingInvestOrder;
+        state.pendingDepositRequest = remainingInvestOrder;
 
         // Mint to escrow. Recipient can claim by calling withdraw / redeem
         ERC20Like trancheToken = ERC20Like(LiquidityPoolLike(liquidityPool).share());
@@ -316,7 +316,7 @@ contract InvestmentManager is Auth {
             ((maxRedeem(liquidityPool, user)) + trancheTokenPayout).toUint128()
         );
         state.maxWithdraw = state.maxWithdraw + currencyPayout;
-        state.remainingRedeemRequest = remainingRedeemOrder;
+        state.pendingRedeemRequest = remainingRedeemOrder;
 
         // Transfer currency to user escrow to claim on withdraw/redeem,
         // and burn redeemed tranche tokens from escrow
@@ -352,7 +352,7 @@ contract InvestmentManager is Auth {
         );
 
         state.maxWithdraw = state.maxWithdraw + currencyPayout;
-        state.remainingDepositRequest = remainingInvestOrder;
+        state.pendingDepositRequest = remainingInvestOrder;
 
         // Transfer currency amount to userEscrow
         userEscrow.transferIn(poolManager.currencyIdToAddress(currencyId), address(escrow), user, currencyPayout);
@@ -386,7 +386,7 @@ contract InvestmentManager is Auth {
         );
 
         state.maxMint = state.maxMint + trancheTokenPayout;
-        state.remainingRedeemRequest = remainingRedeemOrder;
+        state.pendingRedeemRequest = remainingRedeemOrder;
 
         LiquidityPoolLike(liquidityPool).emitRedeemClaimable(user, trancheTokenPayout, trancheTokenPayout);
     }
@@ -475,7 +475,7 @@ contract InvestmentManager is Auth {
     }
 
     function pendingDepositRequest(address liquidityPool, address user) public view returns (uint256 currencyAmount) {
-        currencyAmount = uint256(investments[liquidityPool][user].remainingDepositRequest);
+        currencyAmount = uint256(investments[liquidityPool][user].pendingDepositRequest);
     }
 
     function pendingRedeemRequest(address liquidityPool, address user)
@@ -483,7 +483,7 @@ contract InvestmentManager is Auth {
         view
         returns (uint256 trancheTokenAmount)
     {
-        trancheTokenAmount = uint256(investments[liquidityPool][user].remainingRedeemRequest);
+        trancheTokenAmount = uint256(investments[liquidityPool][user].pendingRedeemRequest);
     }
 
     function exchangeRateLastUpdated(address liquidityPool) public view returns (uint64 lastUpdated) {

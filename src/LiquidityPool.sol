@@ -105,7 +105,8 @@ contract LiquidityPool is Auth, IERC7540 {
         emit DepositRequest(msg.sender, operator, assets);
     }
 
-    /// @notice Transfers assets from msg.sender into the Vault and submits a Request for asynchronous deposit/mint.
+    /// @notice Uses EIP-2612 permit to set approval of asset, then transfers assets from msg.sender
+    ///         into the Vault and submits a Request for asynchronous deposit/mint.
     function requestDepositWithPermit(uint256 assets, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external {
         try IERC20Permit(asset).permit(msg.sender, address(this), assets, deadline, v, r, s) {} catch {}
         require(
@@ -125,11 +126,7 @@ contract LiquidityPool is Auth, IERC7540 {
     function requestRedeem(uint256 shares, address operator, address owner) external {
         require(share.balanceOf(owner) >= shares, "LiquidityPool/insufficient-balance");
         require(manager.requestRedeem(address(this), shares, operator, owner), "LiquidityPool/request-redeem-failed");
-
-        // This is possible because of the trusted forwarder pattern -> msg.sender is forwarded
-        // and the call can only be executed, if msg.sender has owner's approval to spend tokens
         require(transferFrom(owner, address(escrow), shares), "LiquidityPool/transfer-failed");
-
         emit RedeemRequest(msg.sender, operator, owner, shares);
     }
 
@@ -139,29 +136,25 @@ contract LiquidityPool is Auth, IERC7540 {
     }
 
     // --- Misc asynchronous vault methods ---
-    /// @notice Request decreasing the outstanding deposit orders. Will return the assets once the order
-    ///         on Centrifuge is successfully decreased.
+    /// @notice Request decreasing the outstanding deposit orders.
     function decreaseDepositRequest(uint256 assets) external {
         manager.decreaseDepositRequest(address(this), assets, msg.sender);
         emit DecreaseDepositRequest(msg.sender, assets);
     }
 
-    /// @notice Request cancelling the outstanding deposit orders. Will return the assets once the order
-    ///         on Centrifuge is successfully cancelled.
+    /// @notice Request cancelling the outstanding deposit orders.
     function cancelDepositRequest() external {
         manager.cancelDepositRequest(address(this), msg.sender);
         emit CancelDepositRequest(msg.sender);
     }
 
-    /// @notice Request decreasing the outstanding redemption orders. Will return the shares once the order
-    ///         on Centrifuge is successfully decreased.
+    /// @notice Request decreasing the outstanding redemption orders.
     function decreaseRedeemRequest(uint256 shares) external {
         manager.decreaseRedeemRequest(address(this), shares, msg.sender);
         emit DecreaseRedeemRequest(msg.sender, shares);
     }
 
-    /// @notice Request cancelling the outstanding redemption orders. Will return the shares once the order
-    ///         on Centrifuge is successfully cancelled.
+    /// @notice Request cancelling the outstanding redemption orders.
     function cancelRedeemRequest() external {
         manager.cancelRedeemRequest(address(this), msg.sender);
         emit CancelRedeemRequest(msg.sender);
