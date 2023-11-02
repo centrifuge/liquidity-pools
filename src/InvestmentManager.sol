@@ -36,6 +36,8 @@ interface LiquidityPoolLike is ERC20Like {
     function trancheId() external view returns (bytes16);
     function asset() external view returns (address);
     function share() external view returns (address);
+    function emitDepositClaimable(address operator, uint256 assets, uint256 shares) external;
+    function emitRedeemClaimable(address operator, uint256 assets, uint256 shares) external;
 }
 
 interface AuthTransferLike {
@@ -74,9 +76,9 @@ struct InvestmentState {
     /// @dev Weighted average price of redemptions, used to convert maxWithdraw to maxRedeem
     uint256 redeemPrice;
     /// @dev Remaining invest (deposit) order in currency
-    uint128 remainingDepositRequest;
+    uint128 pendingDepositRequest;
     /// @dev Remaining redeem order in currency
-    uint128 remainingRedeemRequest;
+    uint128 pendingRedeemRequest;
     ///@dev Flag whether this user has ever interacted with this liquidity pool
     bool exists;
 }
@@ -100,30 +102,8 @@ contract InvestmentManager is Auth {
 
     // --- Events ---
     event File(bytes32 indexed what, address data);
-    event ExecutedCollectInvest(
-        uint64 indexed poolId,
-        bytes16 indexed trancheId,
-        address user,
-        uint128 currencyId,
-        uint128 currencyPayout,
-        uint128 trancheTokenPayout
-    );
-    event ExecutedCollectRedeem(
-        uint64 indexed poolId,
-        bytes16 indexed trancheId,
-        address user,
-        uint128 currencyId,
-        uint128 currencyPayout,
-        uint128 trancheTokenPayout
-    );
-    event ExecutedDecreaseInvestOrder(
-        uint64 indexed poolId, bytes16 indexed trancheId, address user, uint128 currencyId, uint128 currencyPayout
-    );
-    event ExecutedDecreaseRedeemOrder(
-        uint64 indexed poolId, bytes16 indexed trancheId, address user, uint128 currencyId, uint128 trancheTokenPayout
-    );
     event TriggerIncreaseRedeemOrder(
-        uint64 indexed poolId, bytes16 indexed trancheId, address user, uint128 currencyId, uint128 trancheTokenAmount
+        uint64 indexed poolId, bytes16 indexed trancheId, address user, address currency, uint128 trancheTokenAmount
     );
 
     constructor(address escrow_, address userEscrow_) {
@@ -179,7 +159,7 @@ contract InvestmentManager is Auth {
         );
 
         InvestmentState storage state = investments[liquidityPool][operator];
-        state.remainingDepositRequest = state.remainingDepositRequest + _currencyAmount;
+        state.pendingDepositRequest = state.pendingDepositRequest + _currencyAmount;
         state.exists = true;
 
         gateway.increaseInvestOrder(
@@ -227,7 +207,7 @@ contract InvestmentManager is Auth {
     {
         LiquidityPoolLike lPool = LiquidityPoolLike(liquidityPool);
         InvestmentState storage state = investments[liquidityPool][user];
-        state.remainingRedeemRequest = state.remainingRedeemRequest + trancheTokenAmount;
+        state.pendingRedeemRequest = state.pendingRedeemRequest + trancheTokenAmount;
         state.exists = true;
 
         gateway.increaseRedeemOrder(
@@ -306,13 +286,13 @@ contract InvestmentManager is Auth {
             liquidityPool, _maxDeposit(liquidityPool, user) + currencyPayout, state.maxMint + trancheTokenPayout
         );
         state.maxMint = state.maxMint + trancheTokenPayout;
-        state.remainingDepositRequest = remainingInvestOrder;
+        state.pendingDepositRequest = remainingInvestOrder;
 
         // Mint to escrow. Recipient can claim by calling withdraw / redeem
         ERC20Like trancheToken = ERC20Like(LiquidityPoolLike(liquidityPool).share());
         trancheToken.mint(address(escrow), trancheTokenPayout);
 
-        emit ExecutedCollectInvest(poolId, trancheId, user, currencyId, currencyPayout, trancheTokenPayout);
+        LiquidityPoolLike(liquidityPool).emitDepositClaimable(user, currencyPayout, trancheTokenPayout);
     }
 
     function handleExecutedCollectRedeem(
@@ -336,7 +316,7 @@ contract InvestmentManager is Auth {
             ((maxRedeem(liquidityPool, user)) + trancheTokenPayout).toUint128()
         );
         state.maxWithdraw = state.maxWithdraw + currencyPayout;
-        state.remainingRedeemRequest = remainingRedeemOrder;
+        state.pendingRedeemRequest = remainingRedeemOrder;
 
         // Transfer currency to user escrow to claim on withdraw/redeem,
         // and burn redeemed tranche tokens from escrow
@@ -344,7 +324,7 @@ contract InvestmentManager is Auth {
         ERC20Like trancheToken = ERC20Like(LiquidityPoolLike(liquidityPool).share());
         trancheToken.burn(address(escrow), trancheTokenPayout);
 
-        emit ExecutedCollectRedeem(poolId, trancheId, user, currencyId, currencyPayout, trancheTokenPayout);
+        LiquidityPoolLike(liquidityPool).emitRedeemClaimable(user, currencyPayout, trancheTokenPayout);
     }
 
     function handleExecutedDecreaseInvestOrder(
@@ -372,12 +352,12 @@ contract InvestmentManager is Auth {
         );
 
         state.maxWithdraw = state.maxWithdraw + currencyPayout;
-        state.remainingDepositRequest = remainingInvestOrder;
+        state.pendingDepositRequest = remainingInvestOrder;
 
         // Transfer currency amount to userEscrow
         userEscrow.transferIn(poolManager.currencyIdToAddress(currencyId), address(escrow), user, currencyPayout);
 
-        emit ExecutedDecreaseInvestOrder(poolId, trancheId, user, currencyId, currencyPayout);
+        LiquidityPoolLike(liquidityPool).emitRedeemClaimable(user, currencyPayout, currencyPayout);
     }
 
     /// @dev Compared to handleExecutedDecreaseInvestOrder, there is no
@@ -406,9 +386,9 @@ contract InvestmentManager is Auth {
         );
 
         state.maxMint = state.maxMint + trancheTokenPayout;
-        state.remainingRedeemRequest = remainingRedeemOrder;
+        state.pendingRedeemRequest = remainingRedeemOrder;
 
-        emit ExecutedDecreaseRedeemOrder(poolId, trancheId, user, currencyId, trancheTokenPayout);
+        LiquidityPoolLike(liquidityPool).emitRedeemClaimable(user, trancheTokenPayout, trancheTokenPayout);
     }
 
     function handleTriggerIncreaseRedeemOrder(
@@ -448,7 +428,9 @@ contract InvestmentManager is Auth {
                 "InvestmentManager/transfer-failed"
             );
         }
-        emit TriggerIncreaseRedeemOrder(poolId, trancheId, user, currencyId, trancheTokenAmount);
+        emit TriggerIncreaseRedeemOrder(
+            poolId, trancheId, user, poolManager.currencyIdToAddress(currencyId), trancheTokenAmount
+        );
     }
 
     // --- View functions ---
@@ -493,7 +475,7 @@ contract InvestmentManager is Auth {
     }
 
     function pendingDepositRequest(address liquidityPool, address user) public view returns (uint256 currencyAmount) {
-        currencyAmount = uint256(investments[liquidityPool][user].remainingDepositRequest);
+        currencyAmount = uint256(investments[liquidityPool][user].pendingDepositRequest);
     }
 
     function pendingRedeemRequest(address liquidityPool, address user)
@@ -501,7 +483,7 @@ contract InvestmentManager is Auth {
         view
         returns (uint256 trancheTokenAmount)
     {
-        trancheTokenAmount = uint256(investments[liquidityPool][user].remainingRedeemRequest);
+        trancheTokenAmount = uint256(investments[liquidityPool][user].pendingRedeemRequest);
     }
 
     function exchangeRateLastUpdated(address liquidityPool) public view returns (uint64 lastUpdated) {
