@@ -62,7 +62,12 @@ contract TrancheToken is ERC20 {
     }
 
     // --- ERC20 overrides with restrictions ---
-    function transfer(address to, uint256 value) public override restricted(_msgSender(), to, value) returns (bool success) {
+    function transfer(address to, uint256 value)
+        public
+        override
+        restricted(_msgSender(), to, value)
+        returns (bool success)
+    {
         success = super.transfer(to, value);
         if (success) restrictionManager.afterTransfer(_msgSender(), to, value);
     }
@@ -71,7 +76,6 @@ contract TrancheToken is ERC20 {
         public
         override
         restricted(from, to, value)
-    
         returns (bool success)
     {
         success = super.transferFrom(from, to, value);

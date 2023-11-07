@@ -124,11 +124,11 @@ contract RestrictionManagerFactory is Auth {
         emit Rely(msg.sender);
     }
 
-    function newRestrictionManager(uint8 /* restrictionSet */, address token, address[] calldata restrictionManagerWards)
-        public
-        auth
-        returns (address)
-    {
+    function newRestrictionManager(
+        uint8, /* restrictionSet */
+        address token,
+        address[] calldata restrictionManagerWards
+    ) public auth returns (address) {
         RestrictionManager restrictionManager = new RestrictionManager(token);
 
         restrictionManager.updateMember(RootLike(root).escrow(), type(uint256).max);

@@ -170,7 +170,14 @@ library Messages {
     function parseAddTranche(bytes memory _msg)
         internal
         pure
-        returns (uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol, uint8 decimals, uint8 restrictionSet)
+        returns (
+            uint64 poolId,
+            bytes16 trancheId,
+            string memory tokenName,
+            string memory tokenSymbol,
+            uint8 decimals,
+            uint8 restrictionSet
+        )
     {
         poolId = BytesLib.toUint64(_msg, 1);
         trancheId = BytesLib.toBytes16(_msg, 9);
