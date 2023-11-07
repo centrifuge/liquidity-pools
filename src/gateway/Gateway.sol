@@ -57,7 +57,8 @@ interface PoolManagerLike {
         bytes16 trancheId,
         string memory tokenName,
         string memory tokenSymbol,
-        uint8 decimals
+        uint8 decimals,
+        uint8 restrictionSet
     ) external;
     function updateMember(uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) external;
     function freeze(uint64 poolId, bytes16 trancheId, address user) external;
@@ -309,9 +310,9 @@ contract Gateway is Auth {
             (uint64 poolId, uint128 currency) = Messages.parseAllowInvestmentCurrency(message);
             poolManager.allowInvestmentCurrency(poolId, currency);
         } else if (Messages.isAddTranche(message)) {
-            (uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol, uint8 decimals) =
+            (uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol, uint8 decimals, uint8 restrictionSet) =
                 Messages.parseAddTranche(message);
-            poolManager.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals);
+            poolManager.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, restrictionSet);
         } else if (Messages.isUpdateMember(message)) {
             (uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) = Messages.parseUpdateMember(message);
             poolManager.updateMember(poolId, trancheId, user, validUntil);
