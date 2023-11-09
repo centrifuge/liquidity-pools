@@ -27,28 +27,28 @@ contract DelayedAdmin is Auth {
     }
 
     // --- Admin actions ---
-    function pause() public auth {
+    function pause() external auth {
         root.pause();
     }
 
-    function unpause() public auth {
+    function unpause() external auth {
         root.unpause();
     }
 
-    function scheduleRely(address target) public auth {
+    function scheduleRely(address target) external auth {
         root.scheduleRely(target);
     }
 
-    function cancelRely(address target) public auth {
+    function cancelRely(address target) external auth {
         root.cancelRely(target);
     }
 
     // --- PauseAdmin management ---
-    function addPauser(address user) public auth {
+    function addPauser(address user) external auth {
         pauseAdmin.addPauser(user);
     }
 
-    function removePauser(address user) public auth {
+    function removePauser(address user) external auth {
         pauseAdmin.removePauser(user);
     }
 }
