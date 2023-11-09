@@ -33,8 +33,8 @@ contract MigratedInvestmentManager is InvestmentManager {
                     uint256 depositPrice,
                     uint128 maxWithdraw,
                     uint256 redeemPrice,
-                    uint128 remainingDepositRequest,
-                    uint128 remainingRedeemRequest,
+                    uint128 pendingDepositRequest,
+                    uint128 pendingRedeemRequest,
                     bool exists
                 ) = oldInvestmentManager.investments(investor, liquidityPool);
                 investments[investor][liquidityPool] = InvestmentState({
@@ -42,8 +42,8 @@ contract MigratedInvestmentManager is InvestmentManager {
                     depositPrice: depositPrice,
                     maxWithdraw: maxWithdraw,
                     redeemPrice: redeemPrice,
-                    remainingDepositRequest: remainingDepositRequest,
-                    remainingRedeemRequest: remainingRedeemRequest,
+                    pendingDepositRequest: pendingDepositRequest,
+                    pendingRedeemRequest: pendingRedeemRequest,
                     exists: exists
                 });
             }
