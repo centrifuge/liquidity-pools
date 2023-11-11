@@ -34,7 +34,7 @@ contract InvestRedeemFlow is TestSetup {
     }
 
     function verifyInvestAndRedeemFlow(uint64 poolId_, bytes16 trancheId_, address liquidityPool) public {
-        uint128 price = uint128(2 * 10 ** PRICE_DECIMALS); //TODO: fuzz price
+        uint128 price = uint128(2 * 10 ** PRICE_DECIMALS);
         LiquidityPool lPool = LiquidityPool(liquidityPool);
 
         depositMint(poolId_, trancheId_, price, investorCurrencyAmount, lPool);

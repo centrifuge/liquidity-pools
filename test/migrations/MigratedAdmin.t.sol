@@ -37,8 +37,6 @@ contract MigratedAdmin is InvestRedeemFlow {
 
         // verify permissions
         verifyMigratedAdminPermissions(delayedAdmin, newDelayedAdmin, pauseAdmin, newPauseAdmin);
-
-        // TODO: test admin functionality still works
     }
 
     function verifyMigratedAdminPermissions(
