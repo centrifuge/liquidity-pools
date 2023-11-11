@@ -44,62 +44,8 @@ contract MigrationsTest is InvestRedeemFlow {
             poolId, trancheId, address(erc20), address(LiquidityPool(_lPool).share()), address(escrow), address(investmentManager)
         );
 
-        // set MigratedPoolManager input parameters
-        uint64[] memory poolIds = new uint64[](1);
-        poolIds[0] = poolId;
-        bytes16[][] memory trancheIds = new bytes16[][](1);
-        trancheIds[0] = new bytes16[](1);
-        trancheIds[0][0] = trancheId;
-        address[][] memory allowedCurrencies = new address[][](1);
-        allowedCurrencies[0] = new address[](1);
-        allowedCurrencies[0][0] = address(erc20);
-        address[][][] memory liquidityPoolCurrencies = new address[][][](1);
-        liquidityPoolCurrencies[0] = new address[][](1);
-        liquidityPoolCurrencies[0][0] = new address[](1);
-        liquidityPoolCurrencies[0][0][0] = address(erc20);
-        address[][][] memory liquidityPoolOverrides = new address[][][](1);
-        liquidityPoolOverrides[0] = new address[][](1);
-        liquidityPoolOverrides[0][0] = new address[](1);
-        liquidityPoolOverrides[0][0][0] = address(newLiquidityPool);
-
-        // Deploy new MigratedPoolManager
-        MigratedPoolManager newPoolManager = new MigratedPoolManager(
-            address(escrow),
-            address(newLiquidityPoolFactory),
-            restrictionManagerFactory,
-            trancheTokenFactory,
-            address(poolManager),
-            poolIds,
-            trancheIds,
-            allowedCurrencies,
-            liquidityPoolCurrencies,
-            liquidityPoolOverrides
-        );
-
-        // rewire migrated pool manager
-        newLiquidityPoolFactory.rely(address(newPoolManager));
-        LiquidityPoolFactory(liquidityPoolFactory).rely(address(newPoolManager));
-        TrancheTokenFactory(trancheTokenFactory).rely(address(newPoolManager));
-        root.relyContract(address(gateway), address(this));
-        gateway.file("poolManager", address(newPoolManager));
-        root.relyContract(address(investmentManager), address(this));
-        investmentManager.file("poolManager", address(newPoolManager));
-        newPoolManager.file("investmentManager", address(investmentManager));
-        newPoolManager.file("gateway", address(gateway));
-        investmentManager.rely(address(newPoolManager));
-        investmentManager.deny(address(poolManager));
-        newPoolManager.rely(address(root));
-        root.relyContract(address(escrow), address(this));
-        escrow.rely(address(newPoolManager));
-        escrow.deny(address(poolManager));
-        root.relyContract(restrictionManagerFactory, address(this));
-        AuthLike(restrictionManagerFactory).rely(address(newPoolManager));
-        AuthLike(restrictionManagerFactory).deny(address(poolManager));
-
-        // clean up migrated pool manager
-        newPoolManager.deny(address(this));
-        root.denyContract(address(gateway), address(this));
-        root.denyContract(restrictionManagerFactory, address(this));
+        root.relyContract(address(poolManager), address(this));
+        poolManager.updateLiquidityPool(poolId, trancheId, address(erc20), address(newLiquidityPool));
 
         // Rewire new liquidity pool
         TrancheTokenLike token = TrancheTokenLike(address(LiquidityPool(_lPool).share()));
@@ -108,11 +54,13 @@ contract MigrationsTest is InvestRedeemFlow {
         token.deny(_lPool);
         token.addTrustedForwarder(address(newLiquidityPool));
         token.removeTrustedForwarder(_lPool);
+        root.relyContract(address(investmentManager), address(this));
         investmentManager.rely(address(newLiquidityPool));
         investmentManager.deny(_lPool);
         newLiquidityPool.rely(address(root));
         newLiquidityPool.rely(address(investmentManager));
         // escrow.approve(address(token), address(investmentManager), type(uint256).max);
+        root.relyContract(address(escrow), address(this));
         escrow.approve(address(token), address(newLiquidityPool), type(uint256).max);
         escrow.approve(address(token), _lPool, 0);
 
@@ -128,7 +76,7 @@ contract MigrationsTest is InvestRedeemFlow {
 
         // TODO: test that everything is working
         _lPool = address(newLiquidityPool);
-        poolManager = newPoolManager;
+        // poolManager = newPoolManager;
         verifyInvestAndRedeemFlow(poolId, trancheId, _lPool);
     }
 
@@ -142,6 +90,7 @@ contract MigrationsTest is InvestRedeemFlow {
         assertEq(TrancheTokenLike(token).wards(address(newLiquidityPool)), 1);
         assertEq(TrancheTokenLike(token).trustedForwarders(address(oldLiquidityPool)), false);
         assertEq(TrancheTokenLike(token).trustedForwarders(address(newLiquidityPool)), true);
+        assertEq(poolManager.getLiquidityPool(poolId, trancheId, address(erc20)), address(newLiquidityPool));
         assertEq(investmentManager.wards(address(newLiquidityPool)), 1);
         assertEq(investmentManager.wards(address(oldLiquidityPool)), 0);
         assertEq(newLiquidityPool.wards(address(root)), 1);
