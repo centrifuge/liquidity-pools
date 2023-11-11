@@ -11,6 +11,5 @@ contract MigratedLiquidityPool is LiquidityPool {
         address share_,
         address escrow_,
         address investmentManager_
-    ) LiquidityPool(poolId_, trancheId_, asset_, share_, escrow_, investmentManager_) {
-    }
+    ) LiquidityPool(poolId_, trancheId_, asset_, share_, escrow_, investmentManager_) {}
 }

@@ -430,8 +430,12 @@ contract PoolManager is Auth {
         return liquidityPool;
     }
 
-    function updateLiquidityPool(uint64 poolId, bytes16 trancheId, address currency, address liquidityPool) public auth {
+    function updateLiquidityPool(uint64 poolId, bytes16 trancheId, address currency, address liquidityPool)
+        public
+        auth
+    {
         require(pools[poolId].createdAt != 0, "PoolManager/pool-does-not-exist");
+        require(isAllowedAsInvestmentCurrency(poolId, currency), "PoolManager/currency-not-supported");
         Tranche storage tranche = pools[poolId].tranches[trancheId];
         require(tranche.token != address(0), "PoolManager/tranche-does-not-exist");
         tranche.liquidityPools[currency] = liquidityPool;
