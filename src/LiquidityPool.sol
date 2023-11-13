@@ -185,9 +185,9 @@ contract LiquidityPool is Auth, IERC7540 {
     function claimRequest(uint256 rid, address to) external {
         address operator = ownerOf(rid);
         if (rid > type(uint160).max) {
-            mint(maxMint(operator), to);
-        } else {
             withdraw(maxWithdraw(operator), to, operator);
+        } else {
+            mint(maxMint(operator), to);
         }
     }
 
