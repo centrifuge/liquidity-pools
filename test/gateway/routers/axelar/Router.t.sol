@@ -46,26 +46,33 @@ contract AxelarRouterTest is Test {
         bytes32 commandId,
         string calldata sourceChain,
         string calldata sourceAddress,
-        bytes calldata payload
+        bytes calldata payload,
+        address invalidOrigin,
+        string memory invalidAxelarCentrifugeChainId,
+        address relayer
     ) public {
-        vm.assume(keccak256(abi.encodePacked(sourceChain)) != keccak256(abi.encodePacked(axelarCentrifugeChainId)));
-
+        vm.assume(keccak256(abi.encodePacked(sourceChain)) != keccak256(abi.encodePacked("centrifuge")));
+        vm.assume(invalidOrigin != address(axelarGateway));
         vm.assume(
             keccak256(abi.encodePacked(sourceAddress)) != keccak256(abi.encodePacked(axelarCentrifugeChainAddress))
         );
+        vm.assume(relayer.code.length == 0);
 
+        vm.prank(address(relayer));
         vm.expectRevert(bytes("AxelarRouter/invalid-source-chain"));
         router.execute(commandId, sourceChain, axelarCentrifugeChainAddress, payload);
 
+        vm.prank(address(relayer));
         vm.expectRevert(bytes("AxelarRouter/invalid-source-address"));
         router.execute(commandId, axelarCentrifugeChainId, sourceAddress, payload);
 
         axelarGateway.setReturn("validateContractCall", false);
-
+        vm.prank(address(relayer));
         vm.expectRevert(bytes("Router/not-approved-by-gateway"));
         router.execute(commandId, axelarCentrifugeChainId, axelarCentrifugeChainAddress, payload);
 
         axelarGateway.setReturn("validateContractCall", true);
+        vm.prank(address(relayer));
         router.execute(commandId, axelarCentrifugeChainId, axelarCentrifugeChainAddress, payload);
     }
 

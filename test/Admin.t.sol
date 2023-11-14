@@ -34,10 +34,10 @@ contract AdminTest is TestSetup {
         assertEq(root.paused(), false);
     }
 
-    function testPauseAuth(address usr) public {
-        vm.assume(usr != address(this));
+    function testPauseAuth(address user) public {
+        vm.assume(user != address(this));
         vm.expectRevert("PauseAdmin/not-authorized-to-pause");
-        vm.prank(usr);
+        vm.prank(user);
         pauseAdmin.pause();
     }
 
@@ -49,8 +49,7 @@ contract AdminTest is TestSetup {
         address recipient,
         uint128 amount
     ) public {
-        vm.assume(decimals > 0);
-        vm.assume(decimals <= 18);
+        decimals = uint8(bound(decimals, 1, 18));
         vm.assume(amount > 0);
         vm.assume(currency != 0);
         vm.assume(recipient != address(0));
@@ -76,8 +75,7 @@ contract AdminTest is TestSetup {
         address recipient,
         uint128 amount
     ) public {
-        vm.assume(decimals > 0);
-        vm.assume(decimals <= 18);
+        decimals = uint8(bound(decimals, 1, 18));
         vm.assume(amount > 0);
         vm.assume(currency != 0);
         vm.assume(recipient != address(0));
@@ -106,8 +104,7 @@ contract AdminTest is TestSetup {
         address recipient,
         uint128 amount
     ) public {
-        vm.assume(decimals > 0);
-        vm.assume(decimals <= 18);
+        decimals = uint8(bound(decimals, 1, 18));
         vm.assume(amount > 0);
         vm.assume(currency != 0);
         vm.assume(recipient != address(investmentManager.escrow()));
@@ -140,10 +137,10 @@ contract AdminTest is TestSetup {
         assertEq(root.paused(), false);
     }
 
-    function testDelayedAdminPauseAuth(address usr) public {
-        vm.assume(usr != address(this));
+    function testDelayedAdminPauseAuth(address user) public {
+        vm.assume(user != address(this));
         vm.expectRevert("Auth/not-authorized");
-        vm.prank(usr);
+        vm.prank(user);
         delayedAdmin.pause();
     }
 
@@ -165,6 +162,9 @@ contract AdminTest is TestSetup {
 
     function testCancellingScheduleWorks() public {
         address spell = vm.addr(1);
+        vm.expectRevert("Root/target-not-scheduled");
+        root.cancelRely(spell);
+
         delayedAdmin.scheduleRely(spell);
         assertEq(root.schedule(spell), block.timestamp + delay);
         delayedAdmin.cancelRely(spell);

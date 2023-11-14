@@ -39,7 +39,7 @@ contract PauseAdmin is Auth {
     }
 
     // --- Admin actions ---
-    function pause() public canPause {
+    function pause() external canPause {
         root.pause();
     }
 }

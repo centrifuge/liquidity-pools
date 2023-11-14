@@ -2,9 +2,9 @@
 pragma solidity 0.8.21;
 
 /// @title  Bytes Lib
-/// @author çalo Sá <goncalo.sa@consensys.net>
 /// @dev    Bytes tightly packed arrays utility library for ethereum contracts written in Solidity.
 ///         The library lets you concatenate, slice and type cast bytes arrays both in memory and storage.
+/// @author Modified from Solidity Bytes Arrays Utils v0.8.0
 library BytesLib {
     function slice(bytes memory _bytes, uint256 _start, uint256 _length) internal pure returns (bytes memory) {
         require(_length + 31 >= _length, "slice_overflow");

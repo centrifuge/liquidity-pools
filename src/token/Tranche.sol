@@ -5,9 +5,13 @@ import {ERC20} from "./ERC20.sol";
 import {IERC20} from "../interfaces/IERC20.sol";
 
 interface TrancheTokenLike is IERC20 {
+    function mint(address user, uint256 value) external;
+    function burn(address user, uint256 value) external;
     function file(bytes32 what, string memory data) external;
     function file(bytes32 what, address data) external;
     function restrictionManager() external view returns (address);
+    function addTrustedForwarder(address forwarder) external;
+    function checkTransferRestriction(address from, address to, uint256 value) external view returns (bool);
 }
 
 interface ERC1404Like {
@@ -18,18 +22,17 @@ interface ERC1404Like {
 
 /// @title  Tranche Token
 /// @notice Extension of ERC20 + ERC1404 for tranche tokens,
-///         which manages the liquidity pools that are considered
-///         trusted forwarders for the ERC20 token, and ensures
+///         which manages the trusted forwarders for the ERC20 token, and ensures
 ///         the transfer restrictions as defined in the RestrictionManager.
-contract TrancheToken is ERC20, ERC1404Like {
+contract TrancheToken is ERC20 {
     ERC1404Like public restrictionManager;
 
-    mapping(address => bool) public liquidityPools;
+    mapping(address => bool) public trustedForwarders;
 
     // --- Events ---
     event File(bytes32 indexed what, address data);
-    event AddLiquidityPool(address indexed liquidityPool);
-    event RemoveLiquidityPool(address indexed liquidityPool);
+    event AddTrustedForwarder(address indexed trustedForwarder);
+    event RemoveTrustedForwarder(address indexed trustedForwarder);
 
     constructor(uint8 decimals_) ERC20(decimals_) {}
 
@@ -40,20 +43,20 @@ contract TrancheToken is ERC20, ERC1404Like {
     }
 
     // --- Administration ---
-    function file(bytes32 what, address data) public auth {
+    function file(bytes32 what, address data) external auth {
         if (what == "restrictionManager") restrictionManager = ERC1404Like(data);
         else revert("TrancheToken/file-unrecognized-param");
         emit File(what, data);
     }
 
-    function addLiquidityPool(address liquidityPool) public auth {
-        liquidityPools[liquidityPool] = true;
-        emit AddLiquidityPool(liquidityPool);
+    function addTrustedForwarder(address trustedForwarder) public auth {
+        trustedForwarders[trustedForwarder] = true;
+        emit AddTrustedForwarder(trustedForwarder);
     }
 
-    function removeLiquidityPool(address liquidityPool) public auth {
-        liquidityPools[liquidityPool] = false;
-        emit RemoveLiquidityPool(liquidityPool);
+    function removeTrustedForwarder(address trustedForwarder) public auth {
+        trustedForwarders[trustedForwarder] = false;
+        emit RemoveTrustedForwarder(trustedForwarder);
     }
 
     // --- ERC20 overrides with restrictions ---
@@ -92,16 +95,15 @@ contract TrancheToken is ERC20, ERC1404Like {
     }
 
     // --- ERC2771Context ---
+    /// @dev Trusted forwarders can forward custom msg.sender and
+    ///      msg.data to the underlying ERC20 contract
     function isTrustedForwarder(address forwarder) public view returns (bool) {
-        // Liquidity Pools are considered trusted forwarders
-        // for the ERC2771Context implementation of the underlying
-        // ERC20 token
-        return liquidityPools[forwarder];
+        return trustedForwarders[forwarder];
     }
 
-    /// @dev    Override for `msg.sender`. Defaults to the original `msg.sender` whenever
-    ///         a call is not performed by the trusted forwarder or the calldata length is less than
-    ///         20 bytes (an address length).
+    /// @dev Override for `msg.sender`. Defaults to the original `msg.sender` whenever
+    ///      a call is not performed by the trusted forwarder or the calldata length is less than
+    ///      20 bytes (an address length).
     function _msgSender() internal view virtual override returns (address sender) {
         if (isTrustedForwarder(msg.sender) && msg.data.length >= 20) {
             // The assembly code is more direct than the Solidity version using `abi.decode`.

@@ -5,3 +5,4 @@ broadcast/
 .idea/
 .DS_Store
 .env.*
+lcov.info

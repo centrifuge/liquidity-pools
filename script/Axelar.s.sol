@@ -19,7 +19,7 @@ contract AxelarScript is Deployer {
 
         admin = vm.envAddress("ADMIN");
 
-        deployInvestmentManager();
+        deployInvestmentManager(msg.sender);
         AxelarRouter router = new AxelarRouter(
                 address(vm.envAddress("AXELAR_GATEWAY")),
                 address(vm.envAddress("CENTRIFUGE_FORWARDER"))
@@ -29,11 +29,10 @@ contract AxelarScript is Deployer {
 
         // Set up test data
         if (vm.envBool("SETUP_TEST_DATA")) {
-            uint8 decimals = 18;
-            ERC20 currency = new ERC20(decimals);
+            ERC20 currency = new ERC20(18);
             currency.file("name", "Mock Currency");
             currency.file("symbol", "MC");
-            currency.mint(msg.sender, 10000 * 10 ** decimals);
+            currency.mint(msg.sender, 10000 * 10 ** 18);
 
             root.relyContract(address(poolManager), msg.sender);
             poolManager.file("gateway", msg.sender);
@@ -54,16 +53,16 @@ contract AxelarScript is Deployer {
             LiquidityPoolLike liquidityPool = LiquidityPoolLike(
                 poolManager.getLiquidityPool(1171854325, 0x102f4ef817340a8839a515d2c73a7c1d, address(currency))
             );
-            currency.approve(address(investmentManager), 10000 * 10 ** decimals);
-            liquidityPool.requestDeposit(200 * 10 ** decimals, msg.sender);
-            liquidityPool.requestDeposit(200 * 10 ** decimals, msg.sender);
-            liquidityPool.requestDeposit(200 * 10 ** decimals, msg.sender);
-            liquidityPool.requestDeposit(200 * 10 ** decimals, msg.sender);
-            liquidityPool.requestDeposit(200 * 10 ** decimals, msg.sender);
+            currency.approve(address(liquidityPool), 1000 * 10 ** 18);
+            liquidityPool.requestDeposit(200 * 10 ** 18, msg.sender);
+            liquidityPool.requestDeposit(200 * 10 ** 18, msg.sender);
+            liquidityPool.requestDeposit(200 * 10 ** 18, msg.sender);
+            liquidityPool.requestDeposit(200 * 10 ** 18, msg.sender);
+            liquidityPool.requestDeposit(200 * 10 ** 18, msg.sender);
         }
 
         giveAdminAccess();
-        removeDeployerAccess(address(router));
+        removeDeployerAccess(address(router), msg.sender);
 
         vm.stopBroadcast();
     }

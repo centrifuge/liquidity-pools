@@ -16,8 +16,9 @@ interface LiquidityPoolFactoryLike {
         bytes16 trancheId,
         address currency,
         address trancheToken,
+        address escrow,
         address investmentManager,
-        address[] calldata wards
+        address[] calldata wards_
     ) external returns (address);
 }
 
@@ -38,14 +39,16 @@ contract LiquidityPoolFactory is Auth {
         bytes16 trancheId,
         address currency,
         address trancheToken,
+        address escrow,
         address investmentManager,
-        address[] calldata wards
+        address[] calldata wards_
     ) public auth returns (address) {
-        LiquidityPool liquidityPool = new LiquidityPool(poolId, trancheId, currency, trancheToken, investmentManager);
+        LiquidityPool liquidityPool =
+            new LiquidityPool(poolId, trancheId, currency, trancheToken, escrow, investmentManager);
 
         liquidityPool.rely(root);
-        for (uint256 i = 0; i < wards.length; i++) {
-            liquidityPool.rely(wards[i]);
+        for (uint256 i = 0; i < wards_.length; i++) {
+            liquidityPool.rely(wards_[i]);
         }
         liquidityPool.deny(address(this));
         return address(liquidityPool);
@@ -70,11 +73,10 @@ interface TrancheTokenFactoryLike {
 contract TrancheTokenFactory is Auth {
     address public immutable root;
 
-    constructor(address _root) {
+    constructor(address _root, address deployer) {
         root = _root;
-
-        wards[msg.sender] = 1;
-        emit Rely(msg.sender);
+        wards[deployer] = 1;
+        emit Rely(deployer);
     }
 
     function newTrancheToken(
