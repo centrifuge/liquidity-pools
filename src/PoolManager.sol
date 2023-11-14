@@ -85,11 +85,11 @@ contract PoolManager is Auth {
     uint8 internal constant MAX_DECIMALS = 18;
 
     EscrowLike public immutable escrow;
-    LiquidityPoolFactoryLike public liquidityPoolFactory;
     TrancheTokenFactoryLike public immutable trancheTokenFactory;
 
     GatewayLike public gateway;
     InvestmentManagerLike public investmentManager;
+    LiquidityPoolFactoryLike public liquidityPoolFactory;
     RestrictionManagerFactoryLike public restrictionManagerFactory;
 
     mapping(uint64 poolId => Pool) public pools;

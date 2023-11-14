@@ -501,6 +501,18 @@ contract PoolManagerTest is TestSetup {
         assertEq(poolManager.getLiquidityPool(poolId, trancheId, currency), address(0));
     }
 
+    function testRemoveLiquidityPool_failsWithoutAuth() public {
+        address lPool_ = deploySimplePool();
+        LiquidityPool lPool =  LiquidityPool(lPool_);
+        uint64 poolId = lPool.poolId();
+        bytes16 trancheId = lPool.trancheId();
+        address currency = address(lPool.asset());
+
+        poolManager.deny(address(this));
+        vm.expectRevert(bytes("Auth/not-authorized"));
+        poolManager.removeLiquidityPool(poolId, trancheId, currency);
+    }
+
     function testRemoveLiquidityPool_failsWhenPoolDoesntExist() public {
         address lPool_ = deploySimplePool();
         LiquidityPool lPool =  LiquidityPool(lPool_);
@@ -508,7 +520,6 @@ contract PoolManagerTest is TestSetup {
         bytes16 trancheId = lPool.trancheId();
         address currency = address(lPool.asset());
 
-        root.relyContract(address(poolManager), address(this));
         vm.expectRevert(bytes("PoolManager/pool-does-not-exist"));
         poolManager.removeLiquidityPool(poolId + 1, trancheId, currency);
     }
@@ -520,7 +531,6 @@ contract PoolManagerTest is TestSetup {
         bytes16 trancheId = lPool.trancheId();
         address currency = address(lPool.asset());
 
-        root.relyContract(address(poolManager), address(this));
         vm.expectRevert(bytes("PoolManager/tranche-does-not-exist"));
         poolManager.removeLiquidityPool(poolId, bytes16(0), currency);
     }
@@ -532,7 +542,6 @@ contract PoolManagerTest is TestSetup {
         bytes16 trancheId = lPool.trancheId();
         address currency = address(lPool.asset());
 
-        root.relyContract(address(poolManager), address(this));
         vm.expectRevert(bytes("PoolManager/currency-not-supported"));
         poolManager.removeLiquidityPool(poolId, trancheId, makeAddr("wrongCurrency"));
     }
@@ -548,7 +557,6 @@ contract PoolManagerTest is TestSetup {
         centrifugeChain.allowInvestmentCurrency(poolId, 10);
         poolManager.deployTranche(poolId, trancheId);
 
-        root.relyContract(address(poolManager), address(this));
         vm.expectRevert(bytes("PoolManager/liquidity-pool-not-deployed"));
         poolManager.removeLiquidityPool(poolId, trancheId, address(erc20));
     }
@@ -568,7 +576,6 @@ contract PoolManagerTest is TestSetup {
         poolManager.file("liquidityPoolFactory", address(newLiquidityPoolFactory));
 
         // Remove old liquidity pool
-        root.relyContract(address(poolManager), address(this));
         poolManager.removeLiquidityPool(poolId, trancheId, currency);
         assertEq(poolManager.getLiquidityPool(poolId, trancheId, currency), address(0));
 
