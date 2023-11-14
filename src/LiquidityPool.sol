@@ -6,7 +6,7 @@ import {MathLib} from "./util/MathLib.sol";
 import {SafeTransferLib} from "./util/SafeTransferLib.sol";
 import {IERC4626} from "./interfaces/IERC4626.sol";
 import {IERC20, IERC20Metadata, IERC20Permit} from "./interfaces/IERC20.sol";
-import {IERC7540, IERC165, IERC7540Deposit, IERC7540Redeem} from "./interfaces/IERC7540.sol";
+import {IERC7540, IERC165, IERC7540Deposit, IERC7540Redeem, IERC7540DepositReceiver} from "./interfaces/IERC7540.sol";
 
 interface ManagerLike {
     function deposit(address lp, uint256 assets, address receiver, address owner) external returns (uint256);
@@ -96,18 +96,29 @@ contract LiquidityPool is Auth, IERC7540 {
 
     // --- ERC-7540 methods ---
     /// @inheritdoc IERC7540Deposit
-    function requestDeposit(uint256 assets, address operator) external {
-        require(IERC20(asset).balanceOf(msg.sender) >= assets, "LiquidityPool/insufficient-balance");
+    function requestDeposit(uint256 assets, address receiver, address sender, bytes calldata data)
+        external
+        returns (uint256 rid)
+    {
+        require(sender == msg.sender, "LiquidityPool/not-msg-sender");
+        require(IERC20(asset).balanceOf(sender) >= assets, "LiquidityPool/insufficient-balance");
+        require(manager.requestDeposit(address(this), assets, sender, receiver), "LiquidityPool/request-deposit-failed");
+        SafeTransferLib.safeTransferFrom(asset, sender, address(escrow), assets);
+        emit DepositRequest(sender, receiver, assets);
+        rid = uint256(uint160(receiver));
+
         require(
-            manager.requestDeposit(address(this), assets, msg.sender, operator), "LiquidityPool/request-deposit-failed"
+            receiver.code.length == 0
+                || IERC7540DepositReceiver(receiver).onERC7540DepositReceived(receiver, sender, rid, data)
+                    == IERC7540DepositReceiver.onERC7540DepositReceived.selector,
+            "LiquidityPool/receiver-failed"
         );
-        SafeTransferLib.safeTransferFrom(asset, msg.sender, address(escrow), assets);
-        emit DepositRequest(msg.sender, operator, assets);
     }
 
     /// @notice Uses EIP-2612 permit to set approval of asset, then transfers assets from msg.sender
     ///         into the Vault and submits a Request for asynchronous deposit/mint.
     function requestDepositWithPermit(uint256 assets, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external {
+        // TODO: update
         try IERC20Permit(asset).permit(msg.sender, address(this), assets, deadline, v, r, s) {} catch {}
         require(
             manager.requestDeposit(address(this), assets, msg.sender, msg.sender),
@@ -118,8 +129,18 @@ contract LiquidityPool is Auth, IERC7540 {
     }
 
     /// @inheritdoc IERC7540Deposit
-    function pendingDepositRequest(address operator) external view returns (uint256 assets) {
-        assets = manager.pendingDepositRequest(address(this), operator);
+    function pendingDepositRequest(uint256 rid) external view returns (uint256 assets) {
+        assets = manager.pendingDepositRequest(address(this), address(uint160(rid)));
+    }
+
+    /// @inheritdoc IERC7540Deposit
+    function claimDeposit(uint256 rid, address receiver) external returns (uint256 shares) {
+        address operator = address(uint160(rid));
+        require(operator == msg.sender, "LiquidityPool/not-the-operator");
+        shares = maxMint(operator);
+
+        uint256 assets = manager.mint(address(this), shares, receiver, operator);
+        emit Deposit(msg.sender, receiver, assets, shares);
     }
 
     /// @inheritdoc IERC7540Redeem
@@ -203,7 +224,7 @@ contract LiquidityPool is Auth, IERC7540 {
     }
 
     /// @inheritdoc IERC4626
-    function maxMint(address operator) external view returns (uint256 maxShares) {
+    function maxMint(address operator) public view returns (uint256 maxShares) {
         maxShares = manager.maxMint(address(this), operator);
     }
 
