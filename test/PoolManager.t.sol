@@ -35,6 +35,10 @@ contract PoolManagerTest is TestSetup {
         poolManager.file("restrictionManagerFactory", newRestrictionManagerFactory);
         assertEq(address(poolManager.restrictionManagerFactory()), newRestrictionManagerFactory);
 
+        address newLiquidityPoolFactory = makeAddr("newLiquidityPoolFactory");
+        poolManager.file("liquidityPoolFactory", newLiquidityPoolFactory);
+        assertEq(address(poolManager.liquidityPoolFactory()), newLiquidityPoolFactory);
+
         address newEscrow = makeAddr("newEscrow");
         vm.expectRevert("PoolManager/file-unrecognized-param");
         poolManager.file("escrow", newEscrow);
@@ -547,6 +551,30 @@ contract PoolManagerTest is TestSetup {
         root.relyContract(address(poolManager), address(this));
         vm.expectRevert(bytes("PoolManager/liquidity-pool-not-deployed"));
         poolManager.removeLiquidityPool(poolId, trancheId, address(erc20));
+    }
+
+    function testLiquidityPoolMigration() public {
+        address oldLiquidityPool_ = deploySimplePool();
+
+        LiquidityPool oldLiquidityPool =  LiquidityPool(oldLiquidityPool_);
+        uint64 poolId = oldLiquidityPool.poolId();
+        bytes16 trancheId = oldLiquidityPool.trancheId();
+        address currency = address(oldLiquidityPool.asset());
+
+        LiquidityPoolFactory newLiquidityPoolFactory = new LiquidityPoolFactory(address(root));
+
+        // rewire factory contracts
+        newLiquidityPoolFactory.rely(address(poolManager));
+        poolManager.file("liquidityPoolFactory", address(newLiquidityPoolFactory));
+
+        // Remove old liquidity pool
+        root.relyContract(address(poolManager), address(this));
+        poolManager.removeLiquidityPool(poolId, trancheId, currency);
+        assertEq(poolManager.getLiquidityPool(poolId, trancheId, currency), address(0));
+
+        // Deploy new liquidity pool
+        address newLiquidityPool = poolManager.deployLiquidityPool(poolId, trancheId, currency);
+        assertEq(poolManager.getLiquidityPool(poolId, trancheId, currency), newLiquidityPool);
     }
 
     // helpers

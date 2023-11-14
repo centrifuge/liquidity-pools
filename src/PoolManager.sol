@@ -85,7 +85,7 @@ contract PoolManager is Auth {
     uint8 internal constant MAX_DECIMALS = 18;
 
     EscrowLike public immutable escrow;
-    LiquidityPoolFactoryLike public immutable liquidityPoolFactory;
+    LiquidityPoolFactoryLike public liquidityPoolFactory;
     TrancheTokenFactoryLike public immutable trancheTokenFactory;
 
     GatewayLike public gateway;
@@ -151,6 +151,7 @@ contract PoolManager is Auth {
         if (what == "gateway") gateway = GatewayLike(data);
         else if (what == "investmentManager") investmentManager = InvestmentManagerLike(data);
         else if (what == "restrictionManagerFactory") restrictionManagerFactory = RestrictionManagerFactoryLike(data);
+        else if (what == "liquidityPoolFactory") liquidityPoolFactory = LiquidityPoolFactoryLike(data);
         else revert("PoolManager/file-unrecognized-param");
         emit File(what, data);
     }
