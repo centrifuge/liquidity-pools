@@ -32,6 +32,7 @@ contract TestSetup is Deployer, Test {
 
     address self = address(this);
     address investor = makeAddr("investor");
+    address randomUser = makeAddr("randomUser");
 
     uint128 constant MAX_UINT128 = type(uint128).max;
 
@@ -110,7 +111,36 @@ contract TestSetup is Deployer, Test {
     }
 
     function deploySimplePool() public returns (address) {
-        return deployLiquidityPool(1, 6, "name", "symbol", _stringToBytes16("1"), defaultCurrencyId, address(erc20));
+        return deployLiquidityPool(5, 6, "name", "symbol", _stringToBytes16("1"), defaultCurrencyId, address(erc20));
+    }
+
+    function deposit(address _lPool, address _investor, uint256 amount) public {
+        deposit(_lPool, _investor, amount, true);
+    }
+
+    function deposit(address _lPool, address _investor, uint256 amount, bool claimDeposit) public {
+        LiquidityPool lPool = LiquidityPool(_lPool);
+        erc20.mint(_investor, amount);
+        centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), _investor, type(uint64).max); // add user as member
+        vm.startPrank(_investor);
+        erc20.approve(_lPool, amount); // add allowance
+        lPool.requestDeposit(amount, _investor);
+        // trigger executed collectInvest
+        uint128 currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
+        centrifugeChain.isExecutedCollectInvest(
+            lPool.poolId(),
+            lPool.trancheId(),
+            bytes32(bytes20(_investor)),
+            currencyId,
+            uint128(amount),
+            uint128(amount),
+            0
+        );
+
+        if (claimDeposit) {
+           lPool.deposit(amount, _investor); // claim the trancheTokens
+        }
+        vm.stopPrank();
     }
 
     // Helpers
@@ -145,6 +175,18 @@ contract TestSetup is Deployer, Test {
         assembly {
             result := mload(add(source, 16))
         }
+    }
+
+    function _bytes16ToString(bytes16 _bytes16) public pure returns (string memory) {
+        uint8 i = 0;
+        while(i < 16 && _bytes16[i] != 0) {
+            i++;
+        }
+        bytes memory bytesArray = new bytes(i);
+        for (i = 0; i < 16 && _bytes16[i] != 0; i++) {
+            bytesArray[i] = _bytes16[i];
+        }
+        return string(bytesArray);
     }
 
     function _bytes32ToString(bytes32 _bytes32) internal pure returns (string memory) {
@@ -190,5 +232,22 @@ contract TestSetup is Deployer, Test {
         }
 
         return string(bytesArray);
+    }
+
+    function random(uint256 maxValue, uint256 nonce) internal view returns (uint256) {
+        if (maxValue == 1) {
+            return maxValue;
+        }
+        uint256 randomnumber = uint256(keccak256(abi.encodePacked(block.timestamp, self, nonce))) % (maxValue - 1);
+        return randomnumber + 1;
+    }
+
+    // assumptions
+    function amountAssumption(uint256 amount) public pure returns (bool) {
+        return (amount > 1 && amount < MAX_UINT128);
+    }
+
+    function addressAssumption(address user) public view returns (bool) {
+        return (user != address(0) && user != address(erc20) && user.code.length == 0);
     }
 }
