@@ -150,11 +150,6 @@ contract LiquidityPool is Auth, IERC7540 {
         mint(shares, receiver);
     }
 
-    /// @inheritdoc IERC7540Deposit
-    function transferDepositRequest(uint256, address, bytes calldata) external {
-        revert();
-    }
-
     /// @inheritdoc IERC7540Redeem
     function requestRedeem(uint256 shares, address operator, address owner) external {
         require(share.balanceOf(owner) >= shares, "LiquidityPool/insufficient-balance");
