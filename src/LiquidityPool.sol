@@ -107,11 +107,14 @@ contract LiquidityPool is Auth, IERC7540 {
 
     /// @notice Uses EIP-2612 permit to set approval of asset, then transfers assets from msg.sender
     ///         into the Vault and submits a Request for asynchronous deposit/mint.
-    function requestDepositWithPermit(uint256 assets, bytes calldata data, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
-        external
-        returns (uint256 rid)
-    {
-        // TODO: update
+    function requestDepositWithPermit(
+        uint256 assets,
+        bytes calldata data,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external returns (uint256 rid) {
         try IERC20Permit(asset).permit(msg.sender, address(this), assets, deadline, v, r, s) {} catch {}
         rid = _requestDeposit(assets, msg.sender, msg.sender, data);
     }
@@ -139,6 +142,19 @@ contract LiquidityPool is Auth, IERC7540 {
         assets = manager.pendingDepositRequest(address(this), address(uint160(rid)));
     }
 
+    /// @inheritdoc IERC7540Deposit
+    function claimDeposit(uint256 rid, address receiver) external returns (uint256 shares) {
+        address operator = address(uint160(rid));
+        require(operator == msg.sender, "LiquidityPool/not-the-operator");
+        shares = maxMint(operator);
+        mint(shares, receiver);
+    }
+
+    /// @inheritdoc IERC7540Deposit
+    function transferDepositRequest(uint256, address, bytes calldata) external {
+        revert();
+    }
+
     /// @inheritdoc IERC7540Redeem
     function requestRedeem(uint256 shares, address operator, address owner) external {
         require(share.balanceOf(owner) >= shares, "LiquidityPool/insufficient-balance");
@@ -152,6 +168,7 @@ contract LiquidityPool is Auth, IERC7540 {
         shares = manager.pendingRedeemRequest(address(this), operator);
     }
 
+    /// @inheritdoc IERC7540
     function ownerOf(uint256 rid) external view returns (address owner) {
         owner = address(uint160(rid));
     }
@@ -229,7 +246,7 @@ contract LiquidityPool is Auth, IERC7540 {
     }
 
     /// @inheritdoc IERC4626
-    function mint(uint256 shares, address receiver) external returns (uint256 assets) {
+    function mint(uint256 shares, address receiver) public returns (uint256 assets) {
         assets = manager.mint(address(this), shares, receiver, msg.sender);
         emit Deposit(msg.sender, receiver, assets, shares);
     }

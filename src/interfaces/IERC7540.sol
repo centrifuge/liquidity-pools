@@ -68,6 +68,30 @@ interface IERC7540Deposit {
         returns (uint256 rid);
 
     /**
+     * @dev Claims a deposit request and sends associated shares to the receiver
+     *
+     * @param rid the requestId of the deposit request
+     * @param receiver the receiver of the claim who will receive the shares output
+     */
+    function claimDeposit(uint256 rid, address receiver) external returns (uint256 shares);
+
+    /**
+     * @dev Transfers a deposit request to the receiver
+     *
+     * @param rid the id of the deposit request to transfer
+     * @param receiver the receiver of the request who will be able to operate the request
+     * @param data additional data which may be used to approve or call the receiver contract
+     *
+     * NOTE: most implementations will require pre-approval of the Vault with the Vault's underlying asset token.
+     *
+     * Behavior, if data is nonzero, attempt to call the receiver onERC7540DepositReceiver otherwise just send the
+     * request to the receiver
+     * sender MUST = msg.sender unless some unspecified explicit approval is given by the caller, approval of ERC7540
+     * vault shares is NOT enough.
+     */
+    function transferDepositRequest(uint256 rid, address receiver, bytes calldata data) external;
+
+    /**
      * @dev Returns the amount of requested assets in Pending state for the operator to deposit or mint.
      *
      * - MUST NOT include any assets in Claimable state for deposit or mint.
@@ -107,7 +131,8 @@ interface IERC7540Redeem {
 interface IERC7540 is IERC7540Deposit, IERC7540Redeem, IERC4626, IERC165 {
     /**
      * @dev returns the owner of a given request by requestId
-     * Note: the rid MUST be unique for any given caller but not necessarily any given request. I.e. Rid may be an alias for `owner` OR it may uniquely identify a request. Contracts must be able to handle both cases.
+     * Note: the rid MUST be unique for any given caller but not necessarily any given request. I.e. Rid may be an alias
+     * for `owner` OR it may uniquely identify a request. Contracts must be able to handle both cases.
      */
     function ownerOf(uint256 rid) external view returns (address owner);
 }
