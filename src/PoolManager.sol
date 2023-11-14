@@ -430,6 +430,23 @@ contract PoolManager is Auth {
         return liquidityPool;
     }
 
+    function removeLiquidityPool(uint64 poolId, bytes16 trancheId, address currency) public auth {
+        require(pools[poolId].createdAt != 0, "PoolManager/pool-does-not-exist");
+        Tranche storage tranche = pools[poolId].tranches[trancheId];
+        require(tranche.token != address(0), "PoolManager/tranche-does-not-exist");
+        require(isAllowedAsInvestmentCurrency(poolId, currency), "PoolManager/currency-not-supported");
+
+        address liquidityPool = tranche.liquidityPools[currency];
+        require(liquidityPool != address(0), "PoolManager/liquidity-pool-not-deployed");
+
+        delete tranche.liquidityPools[currency];
+
+        AuthLike(address(investmentManager)).deny(liquidityPool);
+
+        AuthLike(tranche.token).deny(liquidityPool);
+        TrancheTokenLike(tranche.token).removeTrustedForwarder(liquidityPool);
+    }
+
     // --- Helpers ---
     function getTrancheToken(uint64 poolId, bytes16 trancheId) public view returns (address) {
         Tranche storage tranche = pools[poolId].tranches[trancheId];
