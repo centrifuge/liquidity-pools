@@ -128,7 +128,7 @@ contract LiquidityPool is Auth, IERC7540 {
 
         rid = uint256(uint160(receiver));
         require(
-            receiver.code.length == 0
+            receiver.code.length == 0 || data == ""
                 || IERC7540DepositReceiver(receiver).onERC7540DepositReceived(receiver, sender, rid, data)
                     == IERC7540DepositReceiver.onERC7540DepositReceived.selector,
             "LiquidityPool/receiver-failed"
