@@ -29,7 +29,7 @@ contract InvestmentManagerTest is TestSetup {
     }
 
     // --- Administration ---
-    function testFile(address random) public {
+    function testFile() public {
         // fail: unrecognized param
         vm.expectRevert(bytes("InvestmentManager/file-unrecognized-param"));
         investmentManager.file("random", self);
@@ -37,15 +37,15 @@ contract InvestmentManagerTest is TestSetup {
         assertEq(address(investmentManager.gateway()), address(gateway));
         assertEq(address(investmentManager.poolManager()), address(poolManager));
         // success
-        investmentManager.file("poolManager", random);
-        assertEq(address(investmentManager.poolManager()), random);
-        investmentManager.file("gateway", random);
-        assertEq(address(investmentManager.gateway()), random);
+        investmentManager.file("poolManager", randomUser);
+        assertEq(address(investmentManager.poolManager()), randomUser);
+        investmentManager.file("gateway", randomUser);
+        assertEq(address(investmentManager.gateway()), randomUser);
 
         // remove self from wards
         investmentManager.deny(self);
         // auth fail
         vm.expectRevert(bytes("Auth/not-authorized"));
-        investmentManager.file("poolManager", random);
+        investmentManager.file("poolManager", randomUser);
     }
 }
