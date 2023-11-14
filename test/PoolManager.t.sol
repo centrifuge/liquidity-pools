@@ -485,6 +485,70 @@ contract PoolManagerTest is TestSetup {
         centrifugeChain.updateTrancheTokenPrice(poolId, trancheId, currencyId, price, uint64(block.timestamp - 1));
     }
 
+    function testRemoveLiquidityPool()public {
+        address lPool_ = deploySimplePool();
+        LiquidityPool lPool =  LiquidityPool(lPool_);
+        uint64 poolId = lPool.poolId();
+        bytes16 trancheId = lPool.trancheId();
+        address currency = address(lPool.asset());
+
+        root.relyContract(address(poolManager), address(this));
+        poolManager.removeLiquidityPool(poolId, trancheId, currency);
+        assertEq(poolManager.getLiquidityPool(poolId, trancheId, currency), address(0));
+    }
+
+    function testRemoveLiquidityPool_failsWhenPoolDoesntExist() public {
+        address lPool_ = deploySimplePool();
+        LiquidityPool lPool =  LiquidityPool(lPool_);
+        uint64 poolId = lPool.poolId();
+        bytes16 trancheId = lPool.trancheId();
+        address currency = address(lPool.asset());
+
+        root.relyContract(address(poolManager), address(this));
+        vm.expectRevert(bytes("PoolManager/pool-does-not-exist"));
+        poolManager.removeLiquidityPool(poolId + 1, trancheId, currency);
+    }
+
+    function testRemoveLiquidityPool_failsWhenTrancheDoesntExist() public {
+        address lPool_ = deploySimplePool();
+        LiquidityPool lPool =  LiquidityPool(lPool_);
+        uint64 poolId = lPool.poolId();
+        bytes16 trancheId = lPool.trancheId();
+        address currency = address(lPool.asset());
+
+        root.relyContract(address(poolManager), address(this));
+        vm.expectRevert(bytes("PoolManager/tranche-does-not-exist"));
+        poolManager.removeLiquidityPool(poolId, bytes16(0), currency);
+    }
+
+    function testRemoveLiquidityPool_failsWhenCurrencyNotAllowed() public {
+        address lPool_ = deploySimplePool();
+        LiquidityPool lPool =  LiquidityPool(lPool_);
+        uint64 poolId = lPool.poolId();
+        bytes16 trancheId = lPool.trancheId();
+        address currency = address(lPool.asset());
+
+        root.relyContract(address(poolManager), address(this));
+        vm.expectRevert(bytes("PoolManager/currency-not-supported"));
+        poolManager.removeLiquidityPool(poolId, trancheId, makeAddr("wrongCurrency"));
+    }
+
+    function testRemoveLiquidityPool_failsWhenLiquidityPoolNotDeployed() public {
+        uint64 poolId = 5;
+        bytes16 trancheId = _stringToBytes16("1");
+
+        centrifugeChain.addPool(poolId); // add pool
+        centrifugeChain.addTranche(poolId, trancheId, "Test Token", "TT", 6); // add tranche
+
+        centrifugeChain.addCurrency(10, address(erc20));
+        centrifugeChain.allowInvestmentCurrency(poolId, 10);
+        poolManager.deployTranche(poolId, trancheId);
+
+        root.relyContract(address(poolManager), address(this));
+        vm.expectRevert(bytes("PoolManager/liquidity-pool-not-deployed"));
+        poolManager.removeLiquidityPool(poolId, trancheId, address(erc20));
+    }
+
     // helpers
     function hasDuplicates(bytes16[4] calldata array) internal pure returns (bool) {
         uint256 length = array.length;
