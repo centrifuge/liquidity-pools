@@ -102,45 +102,41 @@ contract LiquidityPool is Auth, IERC7540 {
     {
         require(sender == msg.sender, "LiquidityPool/not-msg-sender");
         require(IERC20(asset).balanceOf(sender) >= assets, "LiquidityPool/insufficient-balance");
+        rid = _requestDeposit(assets, receiver, sender, data);
+    }
+
+    /// @notice Uses EIP-2612 permit to set approval of asset, then transfers assets from msg.sender
+    ///         into the Vault and submits a Request for asynchronous deposit/mint.
+    function requestDepositWithPermit(uint256 assets, bytes calldata data, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
+        external
+        returns (uint256 rid)
+    {
+        // TODO: update
+        try IERC20Permit(asset).permit(msg.sender, address(this), assets, deadline, v, r, s) {} catch {}
+        rid = _requestDeposit(assets, msg.sender, msg.sender, data);
+    }
+
+    function _requestDeposit(uint256 assets, address receiver, address sender, bytes calldata data)
+        internal
+        returns (uint256 rid)
+    {
         require(manager.requestDeposit(address(this), assets, sender, receiver), "LiquidityPool/request-deposit-failed");
         SafeTransferLib.safeTransferFrom(asset, sender, address(escrow), assets);
-        emit DepositRequest(sender, receiver, assets);
-        rid = uint256(uint160(receiver));
 
+        rid = uint256(uint160(receiver));
         require(
             receiver.code.length == 0
                 || IERC7540DepositReceiver(receiver).onERC7540DepositReceived(receiver, sender, rid, data)
                     == IERC7540DepositReceiver.onERC7540DepositReceived.selector,
             "LiquidityPool/receiver-failed"
         );
-    }
 
-    /// @notice Uses EIP-2612 permit to set approval of asset, then transfers assets from msg.sender
-    ///         into the Vault and submits a Request for asynchronous deposit/mint.
-    function requestDepositWithPermit(uint256 assets, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external {
-        // TODO: update
-        try IERC20Permit(asset).permit(msg.sender, address(this), assets, deadline, v, r, s) {} catch {}
-        require(
-            manager.requestDeposit(address(this), assets, msg.sender, msg.sender),
-            "LiquidityPool/request-deposit-failed"
-        );
-        SafeTransferLib.safeTransferFrom(asset, msg.sender, address(escrow), assets);
-        emit DepositRequest(msg.sender, msg.sender, assets);
+        emit DepositRequest(sender, receiver, assets);
     }
 
     /// @inheritdoc IERC7540Deposit
     function pendingDepositRequest(uint256 rid) external view returns (uint256 assets) {
         assets = manager.pendingDepositRequest(address(this), address(uint160(rid)));
-    }
-
-    /// @inheritdoc IERC7540Deposit
-    function claimDeposit(uint256 rid, address receiver) external returns (uint256 shares) {
-        address operator = address(uint160(rid));
-        require(operator == msg.sender, "LiquidityPool/not-the-operator");
-        shares = maxMint(operator);
-
-        uint256 assets = manager.mint(address(this), shares, receiver, operator);
-        emit Deposit(msg.sender, receiver, assets, shares);
     }
 
     /// @inheritdoc IERC7540Redeem
@@ -154,6 +150,10 @@ contract LiquidityPool is Auth, IERC7540 {
     /// @inheritdoc IERC7540Redeem
     function pendingRedeemRequest(address operator) external view returns (uint256 shares) {
         shares = manager.pendingRedeemRequest(address(this), operator);
+    }
+
+    function ownerOf(uint256 rid) external view returns (address owner) {
+        owner = address(uint160(rid));
     }
 
     // --- Misc asynchronous vault methods ---

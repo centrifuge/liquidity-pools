@@ -68,16 +68,6 @@ interface IERC7540Deposit {
         returns (uint256 rid);
 
     /**
-     * @dev Claims a deposit request and sends associated shares to the receiver
-     *
-     * @param rid the requestId of the deposit request
-     * @param receiver the receiver of the claim who will receive the shares output
-     *
-     * @returns shares the amount of shares actually received by the claim
-     */
-    function claimDeposit(uint256 rid, address receiver) external returns (uint256 shares);
-
-    /**
      * @dev Returns the amount of requested assets in Pending state for the operator to deposit or mint.
      *
      * - MUST NOT include any assets in Claimable state for deposit or mint.
@@ -114,4 +104,10 @@ interface IERC7540Redeem {
  * @dev    Interface of the ERC7540 "Asynchronous Tokenized Vault Standard", as defined in
  *         https://github.com/ethereum/EIPs/blob/2e63f2096b0c7d8388458bb0a03a7ce0eb3422a4/EIPS/eip-7540.md[ERC-7540].
  */
-interface IERC7540 is IERC7540Deposit, IERC7540Redeem, IERC4626, IERC165 {}
+interface IERC7540 is IERC7540Deposit, IERC7540Redeem, IERC4626, IERC165 {
+    /**
+     * @dev returns the owner of a given request by requestId
+     * Note: the rid MUST be unique for any given caller but not necessarily any given request. I.e. Rid may be an alias for `owner` OR it may uniquely identify a request. Contracts must be able to handle both cases.
+     */
+    function ownerOf(uint256 rid) external view returns (address owner);
+}
