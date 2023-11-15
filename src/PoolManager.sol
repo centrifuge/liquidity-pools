@@ -442,6 +442,7 @@ contract PoolManager is Auth {
         require(liquidityPool != address(0), "PoolManager/liquidity-pool-not-deployed");
 
         delete tranche.liquidityPools[currency];
+        escrow.approve(address(tranche.token), liquidityPool, 0);
 
         AuthLike(address(investmentManager)).deny(liquidityPool);
 
