@@ -192,8 +192,8 @@ contract LiquidityPool is Auth, IERC7540 {
     }
 
     /// @inheritdoc IERC4626
-    function maxDeposit(address receiver) external view returns (uint256 maxAssets) {
-        maxAssets = manager.maxDeposit(address(this), receiver);
+    function maxDeposit(address operator) external view returns (uint256 maxAssets) {
+        maxAssets = manager.maxDeposit(address(this), operator);
     }
 
     /// @inheritdoc IERC4626
@@ -203,40 +203,40 @@ contract LiquidityPool is Auth, IERC7540 {
     }
 
     /// @inheritdoc IERC4626
+    function maxMint(address operator) external view returns (uint256 maxShares) {
+        maxShares = manager.maxMint(address(this), operator);
+    }
+
+    /// @inheritdoc IERC4626
     function mint(uint256 shares, address receiver) external returns (uint256 assets) {
         assets = manager.mint(address(this), shares, receiver, msg.sender);
         emit Deposit(msg.sender, receiver, assets, shares);
     }
 
     /// @inheritdoc IERC4626
-    function maxMint(address receiver) external view returns (uint256 maxShares) {
-        maxShares = manager.maxMint(address(this), receiver);
+    function maxWithdraw(address operator) external view returns (uint256 maxAssets) {
+        maxAssets = manager.maxWithdraw(address(this), operator);
     }
 
     /// @inheritdoc IERC4626
-    function maxWithdraw(address receiver) external view returns (uint256 maxAssets) {
-        maxAssets = manager.maxWithdraw(address(this), receiver);
+    /// @notice DOES NOT support operator != msg.sender since shares are already transferred on requestRedeem
+    function withdraw(uint256 assets, address receiver, address operator) external returns (uint256 shares) {
+        require((msg.sender == operator), "LiquidityPool/not-the-operator");
+        shares = manager.withdraw(address(this), assets, receiver, operator);
+        emit Withdraw(msg.sender, receiver, operator, assets, shares);
     }
 
     /// @inheritdoc IERC4626
-    /// @notice DOES NOT support owner != msg.sender since shares are already transferred on requestRedeem
-    function withdraw(uint256 assets, address receiver, address owner) external returns (uint256 shares) {
-        require((msg.sender == owner), "LiquidityPool/not-the-owner");
-        shares = manager.withdraw(address(this), assets, receiver, owner);
-        emit Withdraw(msg.sender, receiver, owner, assets, shares);
+    function maxRedeem(address operator) external view returns (uint256 maxShares) {
+        maxShares = manager.maxRedeem(address(this), operator);
     }
 
     /// @inheritdoc IERC4626
-    function maxRedeem(address owner) external view returns (uint256 maxShares) {
-        maxShares = manager.maxRedeem(address(this), owner);
-    }
-
-    /// @inheritdoc IERC4626
-    /// @notice     DOES NOT support owner != msg.sender since shares are already transferred on requestRedeem
-    function redeem(uint256 shares, address receiver, address owner) external returns (uint256 assets) {
-        require((msg.sender == owner), "LiquidityPool/not-the-owner");
-        assets = manager.redeem(address(this), shares, receiver, owner);
-        emit Withdraw(msg.sender, receiver, owner, assets, shares);
+    /// @notice     DOES NOT support operator != msg.sender since shares are already transferred on requestRedeem
+    function redeem(uint256 shares, address receiver, address operator) external returns (uint256 assets) {
+        require((msg.sender == operator), "LiquidityPool/not-the-operator");
+        assets = manager.redeem(address(this), shares, receiver, operator);
+        emit Withdraw(msg.sender, receiver, operator, assets, shares);
     }
 
     /// @dev Preview functions for ERC-7540 vaults revert
