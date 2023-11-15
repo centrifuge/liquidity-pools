@@ -535,17 +535,6 @@ contract PoolManagerTest is TestSetup {
         poolManager.removeLiquidityPool(poolId, bytes16(0), currency);
     }
 
-    function testRemoveLiquidityPool_failsWhenCurrencyNotAllowed() public {
-        address lPool_ = deploySimplePool();
-        LiquidityPool lPool =  LiquidityPool(lPool_);
-        uint64 poolId = lPool.poolId();
-        bytes16 trancheId = lPool.trancheId();
-        address currency = address(lPool.asset());
-
-        vm.expectRevert(bytes("PoolManager/currency-not-supported"));
-        poolManager.removeLiquidityPool(poolId, trancheId, makeAddr("wrongCurrency"));
-    }
-
     function testRemoveLiquidityPool_failsWhenLiquidityPoolNotDeployed() public {
         uint64 poolId = 5;
         bytes16 trancheId = _stringToBytes16("1");

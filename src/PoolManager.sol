@@ -436,7 +436,6 @@ contract PoolManager is Auth {
         require(pools[poolId].createdAt != 0, "PoolManager/pool-does-not-exist");
         Tranche storage tranche = pools[poolId].tranches[trancheId];
         require(tranche.token != address(0), "PoolManager/tranche-does-not-exist");
-        require(isAllowedAsInvestmentCurrency(poolId, currency), "PoolManager/currency-not-supported");
 
         address liquidityPool = tranche.liquidityPools[currency];
         require(liquidityPool != address(0), "PoolManager/liquidity-pool-not-deployed");
