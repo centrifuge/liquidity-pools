@@ -117,25 +117,19 @@ contract LiquidityPool is Auth, IERC7540 {
         emit DepositRequest(sender, receiver, assets);
     }
 
-    function requestDeposit(uint256 assets, address receiver)
-        external
-        returns (uint256 rid)
-    {
+    function requestDeposit(uint256 assets, address receiver) external returns (uint256 rid) {
         rid = requestDeposit(assets, receiver, msg.sender, "");
     }
 
     /// @notice Uses EIP-2612 permit to set approval of asset, then transfers assets from msg.sender
     ///         into the Vault and submits a Request for asynchronous deposit/mint.
-    function requestDepositWithPermit(
-        uint256 assets,
-        uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external {
+    function requestDepositWithPermit(uint256 assets, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external {
         try IERC20Permit(asset).permit(msg.sender, address(this), assets, deadline, v, r, s) {} catch {}
 
-        require(manager.requestDeposit(address(this), assets, msg.sender, msg.sender), "LiquidityPool/request-deposit-failed");
+        require(
+            manager.requestDeposit(address(this), assets, msg.sender, msg.sender),
+            "LiquidityPool/request-deposit-failed"
+        );
         SafeTransferLib.safeTransferFrom(asset, msg.sender, address(escrow), assets);
 
         emit DepositRequest(msg.sender, msg.sender, assets);
