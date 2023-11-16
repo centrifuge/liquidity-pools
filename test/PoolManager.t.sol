@@ -94,7 +94,7 @@ contract PoolManagerTest is TestSetup {
         );
         assertEq(decimals, trancheToken.decimals());
 
-        vm.expectRevert(bytes("PoolManager/tranche-already-deployed")); // comment back in, once reviews merged
+        vm.expectRevert(bytes("PoolManager/tranche-already-deployed"));
         centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, restrictionSet);
     }
 

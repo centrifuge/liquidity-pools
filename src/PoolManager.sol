@@ -9,9 +9,6 @@ import {Auth} from "./util/Auth.sol";
 import {SafeTransferLib} from "./util/SafeTransferLib.sol";
 import {MathLib} from "./util/MathLib.sol";
 
-// test env
-import "forge-std/Test.sol";
-
 interface GatewayLike {
     function transferTrancheTokensToCentrifuge(
         uint64 poolId,
@@ -82,7 +79,7 @@ struct UndeployedTranche {
 /// @title  Pool Manager
 /// @notice This contract manages which pools & tranches exist,
 ///         as well as managing allowed pool currencies, and incoming and outgoing transfers.
-contract PoolManager is Auth, Test {
+contract PoolManager is Auth {
     using MathLib for uint256;
 
     uint8 internal constant MIN_DECIMALS = 1;
