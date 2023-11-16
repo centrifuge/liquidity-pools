@@ -79,7 +79,7 @@ contract TrancheToken is ERC20 {
         returns (bool success)
     {
         success = super.transferFrom(from, to, value);
-        if (success) restrictionManager.afterTransfer(_msgSender(), to, value);
+        if (success) restrictionManager.afterTransfer(from, to, value);
     }
 
     function mint(address to, uint256 value) public override restricted(_msgSender(), to, value) {

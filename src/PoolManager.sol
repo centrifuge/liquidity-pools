@@ -9,6 +9,9 @@ import {Auth} from "./util/Auth.sol";
 import {SafeTransferLib} from "./util/SafeTransferLib.sol";
 import {MathLib} from "./util/MathLib.sol";
 
+// test env
+import "forge-std/Test.sol";
+
 interface GatewayLike {
     function transferTrancheTokensToCentrifuge(
         uint64 poolId,
@@ -79,7 +82,7 @@ struct UndeployedTranche {
 /// @title  Pool Manager
 /// @notice This contract manages which pools & tranches exist,
 ///         as well as managing allowed pool currencies, and incoming and outgoing transfers.
-contract PoolManager is Auth {
+contract PoolManager is Auth, Test {
     using MathLib for uint256;
 
     uint8 internal constant MIN_DECIMALS = 1;
@@ -385,7 +388,9 @@ contract PoolManager is Auth {
             undeployedTranche.decimals,
             trancheTokenWards
         );
-        address restrictionManager = restrictionManagerFactory.newRestrictionManager(token, restrictionManagerWards);
+        address restrictionManager = restrictionManagerFactory.newRestrictionManager(
+            undeployedTranche.restrictionSet, token, restrictionManagerWards
+        );
         TrancheTokenLike(token).file("restrictionManager", restrictionManager);
 
         pools[poolId].tranches[trancheId].token = token;
@@ -438,6 +443,10 @@ contract PoolManager is Auth {
     function getTrancheToken(uint64 poolId, bytes16 trancheId) public view returns (address) {
         Tranche storage tranche = pools[poolId].tranches[trancheId];
         return tranche.token;
+    }
+
+    function getTrancheTokenRestriction(uint64 poolId, bytes16 trancheId) public view returns (uint8 restrictionSet) {
+        return undeployedTranches[poolId][trancheId].restrictionSet;
     }
 
     function getLiquidityPool(uint64 poolId, bytes16 trancheId, uint128 currencyId) public view returns (address) {

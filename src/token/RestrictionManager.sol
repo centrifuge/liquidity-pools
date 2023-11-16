@@ -104,6 +104,6 @@ contract RestrictionManager is Auth {
     }
 
     // --- Misc ---
-    function afterTransfer(address, /* from */ address, /* to */ uint256 /* value */ ) public auth {}
-    function afterMint(address, /* to */ uint256 /* value */ ) public auth {}
+    function afterTransfer(address, /* from */ address, /* to */ uint256 /* value */ ) public virtual auth {}
+    function afterMint(address, /* to */ uint256 /* value */ ) public virtual auth {}
 }
