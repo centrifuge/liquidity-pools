@@ -110,6 +110,9 @@ contract PoolManager is Auth {
     event DeployLiquidityPool(
         uint64 indexed poolId, bytes16 indexed trancheId, address indexed currency, address liquidityPool
     );
+    event RemoveLiquidityPool(
+        uint64 indexed poolId, bytes16 indexed trancheId, address indexed currency, address liquidityPool
+    );
     event PriceUpdate(
         uint64 indexed poolId, bytes16 indexed trancheId, address indexed currency, uint256 price, uint64 computedAt
     );
@@ -447,6 +450,8 @@ contract PoolManager is Auth {
 
         AuthLike(tranche.token).deny(liquidityPool);
         TrancheTokenLike(tranche.token).removeTrustedForwarder(liquidityPool);
+
+        emit RemoveLiquidityPool(poolId, trancheId, currency, liquidityPool);
     }
 
     // --- Helpers ---

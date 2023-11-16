@@ -489,16 +489,22 @@ contract PoolManagerTest is TestSetup {
         centrifugeChain.updateTrancheTokenPrice(poolId, trancheId, currencyId, price, uint64(block.timestamp - 1));
     }
 
-    function testRemoveLiquidityPool()public {
+    function testRemoveLiquidityPool() public {
         address lPool_ = deploySimplePool();
         LiquidityPool lPool =  LiquidityPool(lPool_);
         uint64 poolId = lPool.poolId();
         bytes16 trancheId = lPool.trancheId();
         address currency = address(lPool.asset());
+        address trancheToken_ = address(lPool.share());
+        TrancheToken trancheToken = TrancheToken(trancheToken_);
 
         root.relyContract(address(poolManager), address(this));
         poolManager.removeLiquidityPool(poolId, trancheId, currency);
         assertEq(poolManager.getLiquidityPool(poolId, trancheId, currency), address(0));
+        assertEq(investmentManager.wards(lPool_), 0);
+        assertEq(trancheToken.wards(lPool_), 0);
+        assertEq(trancheToken.isTrustedForwarder(lPool_), false);
+        assertEq(trancheToken.allowance(address(escrow), lPool_), 0);
     }
 
     function testRemoveLiquidityPool_failsWithoutAuth() public {
