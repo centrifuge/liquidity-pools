@@ -90,7 +90,7 @@ contract DepositTest is TestSetup {
 
         ERC20 currency = _newErc20("Currency", "CR", INVESTMENT_CURRENCY_DECIMALS);
         address lPool_ =
-            deployLiquidityPool(poolId, TRANCHE_TOKEN_DECIMALS, 2, "", "", trancheId, currencyId, address(currency));
+            deployLiquidityPool(poolId, TRANCHE_TOKEN_DECIMALS, defaultRestrictionSet, "", "", trancheId, currencyId, address(currency));
         LiquidityPool lPool = LiquidityPool(lPool_);
         centrifugeChain.updateTrancheTokenPrice(
             poolId, trancheId, currencyId, 1000000000000000000, uint64(block.timestamp)
