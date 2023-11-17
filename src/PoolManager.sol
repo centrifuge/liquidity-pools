@@ -40,6 +40,7 @@ interface EscrowLike {
 
 interface AuthLike {
     function rely(address user) external;
+    function deny(address user) external;
 }
 
 /// @dev Centrifuge pools
@@ -86,11 +87,11 @@ contract PoolManager is Auth {
     uint8 internal constant MAX_DECIMALS = 18;
 
     EscrowLike public immutable escrow;
-    LiquidityPoolFactoryLike public immutable liquidityPoolFactory;
     TrancheTokenFactoryLike public immutable trancheTokenFactory;
 
     GatewayLike public gateway;
     InvestmentManagerLike public investmentManager;
+    LiquidityPoolFactoryLike public liquidityPoolFactory;
     RestrictionManagerFactoryLike public restrictionManagerFactory;
 
     mapping(uint64 poolId => Pool) public pools;
@@ -109,6 +110,9 @@ contract PoolManager is Auth {
     event AddTranche(uint64 indexed poolId, bytes16 indexed trancheId);
     event DeployTranche(uint64 indexed poolId, bytes16 indexed trancheId, address indexed trancheToken);
     event DeployLiquidityPool(
+        uint64 indexed poolId, bytes16 indexed trancheId, address indexed currency, address liquidityPool
+    );
+    event RemoveLiquidityPool(
         uint64 indexed poolId, bytes16 indexed trancheId, address indexed currency, address liquidityPool
     );
     event PriceUpdate(
@@ -152,6 +156,7 @@ contract PoolManager is Auth {
         if (what == "gateway") gateway = GatewayLike(data);
         else if (what == "investmentManager") investmentManager = InvestmentManagerLike(data);
         else if (what == "restrictionManagerFactory") restrictionManagerFactory = RestrictionManagerFactoryLike(data);
+        else if (what == "liquidityPoolFactory") liquidityPoolFactory = LiquidityPoolFactoryLike(data);
         else revert("PoolManager/file-unrecognized-param");
         emit File(what, data);
     }
@@ -394,6 +399,10 @@ contract PoolManager is Auth {
 
         delete undeployedTranches[poolId][trancheId];
 
+        // Give investment manager infinite approval for tranche tokens
+        // in the escrow to transfer to the user on deposit or mint
+        escrow.approve(token, address(investmentManager), type(uint256).max);
+
         emit DeployTranche(poolId, trancheId, token);
         return token;
     }
@@ -424,16 +433,32 @@ contract PoolManager is Auth {
         AuthLike(tranche.token).rely(liquidityPool);
         TrancheTokenLike(tranche.token).addTrustedForwarder(liquidityPool);
 
-        // Give investment manager infinite approval for tranche tokens
-        // in the escrow to transfer to the user on deposit or mint
-        escrow.approve(tranche.token, address(investmentManager), type(uint256).max);
-
         // Give liquidity pool infinite approval for tranche tokens
         // in the escrow to burn on executed redemptions
         escrow.approve(tranche.token, liquidityPool, type(uint256).max);
 
         emit DeployLiquidityPool(poolId, trancheId, currency, liquidityPool);
         return liquidityPool;
+    }
+
+    function removeLiquidityPool(uint64 poolId, bytes16 trancheId, address currency) public auth {
+        require(pools[poolId].createdAt != 0, "PoolManager/pool-does-not-exist");
+        Tranche storage tranche = pools[poolId].tranches[trancheId];
+        require(tranche.token != address(0), "PoolManager/tranche-does-not-exist");
+
+        address liquidityPool = tranche.liquidityPools[currency];
+        require(liquidityPool != address(0), "PoolManager/liquidity-pool-not-deployed");
+
+        delete tranche.liquidityPools[currency];
+
+        AuthLike(address(investmentManager)).deny(liquidityPool);
+
+        AuthLike(tranche.token).deny(liquidityPool);
+        TrancheTokenLike(tranche.token).removeTrustedForwarder(liquidityPool);
+
+        escrow.approve(address(tranche.token), liquidityPool, 0);
+
+        emit RemoveLiquidityPool(poolId, trancheId, currency, liquidityPool);
     }
 
     // --- Helpers ---
