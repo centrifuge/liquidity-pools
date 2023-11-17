@@ -80,9 +80,10 @@ contract PoolManagerTest is TestSetup {
         vm.expectRevert(bytes("PoolManager/tranche-already-exists"));
         centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, restrictionSet);  
 
-        assertEq(poolManager.getTrancheTokenRestriction(poolId, trancheId), restrictionSet);
+        (,,,uint8 _restrictionSet) = poolManager.undeployedTranches(poolId, trancheId);
+        assertEq(_restrictionSet, restrictionSet);
 
-        poolManager.deployTranche(poolId, trancheId);
+       poolManager.deployTranche(poolId, trancheId);
 
         TrancheToken trancheToken = TrancheToken(poolManager.getTrancheToken(poolId, trancheId));
 

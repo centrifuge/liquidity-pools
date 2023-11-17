@@ -442,10 +442,6 @@ contract PoolManager is Auth {
         return tranche.token;
     }
 
-    function getTrancheTokenRestriction(uint64 poolId, bytes16 trancheId) public view returns (uint8 restrictionSet) {
-        return undeployedTranches[poolId][trancheId].restrictionSet;
-    }
-
     function getLiquidityPool(uint64 poolId, bytes16 trancheId, uint128 currencyId) public view returns (address) {
         return pools[poolId].tranches[trancheId].liquidityPools[currencyIdToAddress[currencyId]];
     }

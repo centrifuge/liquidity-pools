@@ -88,6 +88,20 @@ contract MessagesTest is Test {
         assertEq(decodedTokenSymbol, symbol);
         assertEq(decodedDecimals, decimals);
         assertEq(decodedRestrictionSet, restrictionSet);
+
+        // for backwards compatibelity
+        bytes memory expectedHexWithoutRestrictionSet =
+            hex"040000000000000001811acd5b3f17c06841c7e41e9e04cb1b536f6d65204e616d65000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000053594d424f4c00000000000000000000000000000000000000000000000000000f";
+
+        (decodedPoolId, decodedTrancheId, decodedTokenName, decodedTokenSymbol, decodedDecimals, decodedRestrictionSet)
+        = Messages.parseAddTranche(expectedHexWithoutRestrictionSet);
+
+        assertEq(uint256(decodedPoolId), poolId);
+        assertEq(decodedTrancheId, trancheId);
+        assertEq(decodedTokenName, name);
+        assertEq(decodedTokenSymbol, symbol);
+        assertEq(decodedDecimals, decimals);
+        assertEq(decodedRestrictionSet, 0);
     }
 
     function testAddTrancheEquivalence(
