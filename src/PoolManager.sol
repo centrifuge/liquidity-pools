@@ -393,6 +393,10 @@ contract PoolManager is Auth {
 
         delete undeployedTranches[poolId][trancheId];
 
+        // Give investment manager infinite approval for tranche tokens
+        // in the escrow to transfer to the user on deposit or mint
+        escrow.approve(tranche.token, address(investmentManager), type(uint256).max);
+
         emit DeployTranche(poolId, trancheId, token);
         return token;
     }
@@ -423,10 +427,6 @@ contract PoolManager is Auth {
         AuthLike(tranche.token).rely(liquidityPool);
         TrancheTokenLike(tranche.token).addTrustedForwarder(liquidityPool);
 
-        // Give investment manager infinite approval for tranche tokens
-        // in the escrow to transfer to the user on deposit or mint
-        escrow.approve(tranche.token, address(investmentManager), type(uint256).max);
-
         // Give liquidity pool infinite approval for tranche tokens
         // in the escrow to burn on executed redemptions
         escrow.approve(tranche.token, liquidityPool, type(uint256).max);
@@ -444,12 +444,13 @@ contract PoolManager is Auth {
         require(liquidityPool != address(0), "PoolManager/liquidity-pool-not-deployed");
 
         delete tranche.liquidityPools[currency];
-        escrow.approve(address(tranche.token), liquidityPool, 0);
 
         AuthLike(address(investmentManager)).deny(liquidityPool);
 
         AuthLike(tranche.token).deny(liquidityPool);
         TrancheTokenLike(tranche.token).removeTrustedForwarder(liquidityPool);
+
+        escrow.approve(address(tranche.token), liquidityPool, 0);
 
         emit RemoveLiquidityPool(poolId, trancheId, currency, liquidityPool);
     }
