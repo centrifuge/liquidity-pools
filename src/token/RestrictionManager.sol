@@ -102,4 +102,8 @@ contract RestrictionManager is Auth {
     function hasMember(address user) public view returns (bool) {
         return members[user] >= block.timestamp;
     }
+
+    // --- Misc ---
+    function afterTransfer(address, /* from */ address, /* to */ uint256 /* value */ ) public virtual auth {}
+    function afterMint(address, /* to */ uint256 /* value */ ) public virtual auth {}
 }

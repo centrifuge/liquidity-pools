@@ -37,8 +37,10 @@ contract TestSetup is Deployer, Test {
     uint128 constant MAX_UINT128 = type(uint128).max;
 
     // default values
-    uint128 defaultCurrencyId = 1;
-    uint128 defaultPrice = 1 * 10**18;
+    uint128 public defaultCurrencyId = 1;
+    uint128 public defaultPrice = 1 * 10**18;
+    uint8 public defaultRestrictionSet = 2;
+    uint8 public defaultDecimals = 8;
 
     function setUp() public virtual {
         vm.chainId(1);
@@ -82,6 +84,7 @@ contract TestSetup is Deployer, Test {
     function deployLiquidityPool(
         uint64 poolId,
         uint8 trancheTokenDecimals,
+        uint8 restrictionSet,
         string memory tokenName,
         string memory tokenSymbol,
         bytes16 trancheId,
@@ -89,7 +92,7 @@ contract TestSetup is Deployer, Test {
         address currency
     ) public returns (address) {
         centrifugeChain.addPool(poolId); // add pool
-        centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, trancheTokenDecimals); // add tranche
+        centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, trancheTokenDecimals, restrictionSet); // add tranche
 
         centrifugeChain.addCurrency(currencyId, currency);
         centrifugeChain.allowInvestmentCurrency(poolId, currencyId);
@@ -107,11 +110,12 @@ contract TestSetup is Deployer, Test {
         bytes16 trancheId,
         uint128 currency
     ) public returns (address) {
-        return deployLiquidityPool(poolId, decimals, tokenName, tokenSymbol, trancheId, currency, address(erc20));
+        uint8 restrictionSet = 2;
+        return deployLiquidityPool(poolId, decimals, restrictionSet, tokenName, tokenSymbol, trancheId, currency, address(erc20));
     }
 
     function deploySimplePool() public returns (address) {
-        return deployLiquidityPool(5, 6, "name", "symbol", _stringToBytes16("1"), defaultCurrencyId, address(erc20));
+        return deployLiquidityPool(5, 6, defaultRestrictionSet, "name", "symbol", _stringToBytes16("1"), defaultCurrencyId, address(erc20));
     }
 
     function deposit(address _lPool, address _investor, uint256 amount) public {

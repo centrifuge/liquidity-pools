@@ -32,7 +32,9 @@ contract FactoryTest is Test {
             vm.selectFork(mainnetFork);
             TestSetup testSetup1 = new TestSetup{salt: keccak256(abi.encode(vm.envString("DEPLOYMENT_SALT")))}();
             testSetup1.setUp();
-            testSetup1.deployLiquidityPool(poolId, 18, "", "", trancheId, 1, address(testSetup1.erc20()));
+            testSetup1.deployLiquidityPool(
+                poolId, 18, testSetup1.defaultRestrictionSet(), "", "", trancheId, 1, address(testSetup1.erc20())
+            );
             address trancheToken1 =
                 PoolManagerLike(address(testSetup1.poolManager())).getTrancheToken(poolId, trancheId);
             address root1 = address(testSetup1.root());
@@ -40,7 +42,9 @@ contract FactoryTest is Test {
             vm.selectFork(polygonFork);
             TestSetup testSetup2 = new TestSetup{salt: keccak256(abi.encode(vm.envString("DEPLOYMENT_SALT")))}();
             testSetup2.setUp();
-            testSetup2.deployLiquidityPool(poolId, 18, "", "", trancheId, 1, address(testSetup2.erc20()));
+            testSetup2.deployLiquidityPool(
+                poolId, 18, testSetup2.defaultRestrictionSet(), "", "", trancheId, 1, address(testSetup2.erc20())
+            );
             address trancheToken2 =
                 PoolManagerLike(address(testSetup2.poolManager())).getTrancheToken(poolId, trancheId);
             address root2 = address(testSetup2.root());

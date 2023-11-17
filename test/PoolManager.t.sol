@@ -3,6 +3,9 @@ pragma solidity 0.8.21;
 
 import "./TestSetup.t.sol";
 
+// Mocks
+import "./mock/RestrictionManagerFactory.sol";
+
 contract PoolManagerTest is TestSetup {
 
     // Deployment
@@ -57,26 +60,30 @@ contract PoolManagerTest is TestSetup {
         bytes16 trancheId,
         string memory tokenName,
         string memory tokenSymbol,
-        uint8 decimals
+        uint8 decimals,
+        uint8 restrictionSet
     ) public {
         decimals = uint8(bound(decimals, 1, 18));
 
         vm.expectRevert(bytes("PoolManager/invalid-pool"));
-        centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals);
+        centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, restrictionSet);
         centrifugeChain.addPool(poolId);
 
         vm.expectRevert(bytes("PoolManager/not-the-gateway"));
-        poolManager.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals);
+        poolManager.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, restrictionSet);
 
         vm.expectRevert(bytes("PoolManager/too-many-tranche-token-decimals"));
-        centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, 19);
+        centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, 19, restrictionSet);
 
-        centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals);
+        centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, restrictionSet);
 
-        vm.expectRevert(bytes("PoolManager/tranche-already-exists")); // check why no revert
-        centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals);
+        vm.expectRevert(bytes("PoolManager/tranche-already-exists"));
+        centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, restrictionSet);  
 
-        poolManager.deployTranche(poolId, trancheId);
+        (,,,uint8 _restrictionSet) = poolManager.undeployedTranches(poolId, trancheId);
+        assertEq(_restrictionSet, restrictionSet);
+
+       poolManager.deployTranche(poolId, trancheId);
 
         TrancheToken trancheToken = TrancheToken(poolManager.getTrancheToken(poolId, trancheId));
 
@@ -88,8 +95,8 @@ contract PoolManagerTest is TestSetup {
         );
         assertEq(decimals, trancheToken.decimals());
 
-        vm.expectRevert(bytes("PoolManager/tranche-already-deployed")); // comment back in, once reviews merged
-        centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals);
+        vm.expectRevert(bytes("PoolManager/tranche-already-deployed"));
+        centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, restrictionSet);
     }
 
     function testAddMultipleTranchesWorks(
@@ -97,14 +104,15 @@ contract PoolManagerTest is TestSetup {
         bytes16[4] calldata trancheIds,
         string memory tokenName,
         string memory tokenSymbol,
-        uint8 decimals
+        uint8 decimals,
+        uint8 restrictionSet
     ) public {
         decimals = uint8(bound(decimals, 1, 18));
         vm.assume(!hasDuplicates(trancheIds));
         centrifugeChain.addPool(poolId);
 
         for (uint256 i = 0; i < trancheIds.length; i++) {
-            centrifugeChain.addTranche(poolId, trancheIds[i], tokenName, tokenSymbol, decimals);
+            centrifugeChain.addTranche(poolId, trancheIds[i], tokenName, tokenSymbol, decimals, restrictionSet);
             poolManager.deployTranche(poolId, trancheIds[i]);
             TrancheToken trancheToken = TrancheToken(poolManager.getTrancheToken(poolId, trancheIds[i]));
              assertEq(
@@ -120,6 +128,7 @@ contract PoolManagerTest is TestSetup {
     function testDeployTranche(
         uint64 poolId,
         uint8 decimals,
+        uint8 restrictionSet,
         string memory tokenName,
         string memory tokenSymbol,
         bytes16 trancheId,
@@ -131,7 +140,7 @@ contract PoolManagerTest is TestSetup {
 
         vm.expectRevert(bytes("PoolManager/tranche-not-added"));
         poolManager.deployTranche(poolId, trancheId);
-        centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals); // add tranche
+        centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, restrictionSet); // add tranche
         address trancheToken_ = poolManager.deployTranche(poolId, trancheId);
         TrancheToken trancheToken = TrancheToken(trancheToken_);
         assertEq(trancheToken.wards(address(root)), 1);
@@ -142,6 +151,20 @@ contract PoolManagerTest is TestSetup {
         assertEq(
             _bytes32ToString(_stringToBytes32(tokenSymbol)), _bytes32ToString(_stringToBytes32(trancheToken.symbol()))
         );
+    }
+
+        function testRestrictionSetIntegration( 
+        uint64 poolId,
+        bytes16 trancheId,
+        uint8 restrictionSet
+    ) public {
+        RestrictionManagerFactoryMock restrictionManagerFactory = new RestrictionManagerFactoryMock();
+        poolManager.file("restrictionManagerFactory", address(restrictionManagerFactory));
+        centrifugeChain.addPool(poolId);
+        centrifugeChain.addTranche(poolId, trancheId, "", "", defaultDecimals, restrictionSet);
+        poolManager.deployTranche(poolId, trancheId);
+        // assert restrictionSet info is passed correctly to the factory
+        assertEq(restrictionManagerFactory.values_uint8("restrictionSet"), restrictionSet);
     }
 
     function testAddCurrency(uint128 currency) public {
@@ -169,6 +192,7 @@ contract PoolManagerTest is TestSetup {
     function testDeployLiquidityPool(
         uint64 poolId,
         uint8 decimals,
+        uint8 restrictionSet,
         string memory tokenName,
         string memory tokenSymbol,
         bytes16 trancheId,
@@ -178,7 +202,7 @@ contract PoolManagerTest is TestSetup {
         vm.assume(currency > 0);
 
         centrifugeChain.addPool(poolId); // add pool
-        centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals); // add tranche
+        centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, restrictionSet); // add tranche
         centrifugeChain.addCurrency(currency, address(erc20));
        
         vm.expectRevert(bytes("PoolManager/tranche-does-not-exist"));
@@ -449,6 +473,7 @@ contract PoolManagerTest is TestSetup {
     function testUpdateTokenPriceWorks(
         uint64 poolId,
         uint8 decimals,
+        uint8 restrictionSet,
         uint128 currencyId,
         string memory tokenName,
         string memory tokenSymbol,
@@ -464,7 +489,7 @@ contract PoolManagerTest is TestSetup {
         vm.expectRevert(bytes("PoolManager/tranche-does-not-exist"));
         centrifugeChain.updateTrancheTokenPrice(poolId, trancheId, currencyId, price, uint64(block.timestamp));
 
-        centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals);
+        centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, restrictionSet);
         centrifugeChain.addCurrency(currencyId, address(erc20));
         centrifugeChain.allowInvestmentCurrency(poolId, currencyId);
 
