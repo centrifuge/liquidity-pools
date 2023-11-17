@@ -73,6 +73,8 @@ struct UndeployedTranche {
     /// @dev Metadata of the to be deployed erc20 token
     string tokenName;
     string tokenSymbol;
+    /// @dev Identifier of the restriction set that applies to this tranche token
+    uint8 restrictionSet;
 }
 
 /// @title  Pool Manager
@@ -246,7 +248,8 @@ contract PoolManager is Auth {
         bytes16 trancheId,
         string memory tokenName,
         string memory tokenSymbol,
-        uint8 decimals
+        uint8 decimals,
+        uint8 restrictionSet
     ) public onlyGateway {
         require(decimals >= MIN_DECIMALS, "PoolManager/too-few-tranche-token-decimals");
         require(decimals <= MAX_DECIMALS, "PoolManager/too-many-tranche-token-decimals");
@@ -261,6 +264,7 @@ contract PoolManager is Auth {
         undeployedTranche.decimals = decimals;
         undeployedTranche.tokenName = tokenName;
         undeployedTranche.tokenSymbol = tokenSymbol;
+        undeployedTranche.restrictionSet = restrictionSet;
 
         emit AddTranche(poolId, trancheId);
     }
@@ -386,7 +390,9 @@ contract PoolManager is Auth {
             undeployedTranche.decimals,
             trancheTokenWards
         );
-        address restrictionManager = restrictionManagerFactory.newRestrictionManager(token, restrictionManagerWards);
+        address restrictionManager = restrictionManagerFactory.newRestrictionManager(
+            undeployedTranche.restrictionSet, token, restrictionManagerWards
+        );
         TrancheTokenLike(token).file("restrictionManager", restrictionManager);
 
         pools[poolId].tranches[trancheId].token = token;

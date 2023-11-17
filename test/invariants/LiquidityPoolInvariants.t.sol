@@ -18,7 +18,7 @@ contract InvestmentInvariants is TestSetup {
         super.setUp();
 
         // TODO: right now, share and asset decimals are the same. We should also fuzz this
-        deployLiquidityPool(1, erc20.decimals(), "", "", "1", 1, address(erc20));
+        deployLiquidityPool(1, erc20.decimals(), defaultRestrictionSet, "", "", "1", 1, address(erc20));
         address liquidityPool = poolManager.getLiquidityPool(1, "1", address(erc20));
 
         excludeContract(address(liquidityPool));

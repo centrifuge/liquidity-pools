@@ -15,10 +15,12 @@ interface TrancheTokenLike is IERC20 {
     function checkTransferRestriction(address from, address to, uint256 value) external view returns (bool);
 }
 
-interface ERC1404Like {
+interface RestrictionManagerLike {
     function detectTransferRestriction(address from, address to, uint256 value) external view returns (uint8);
     function messageForTransferRestriction(uint8 restrictionCode) external view returns (string memory);
     function SUCCESS_CODE() external view returns (uint8);
+    function afterTransfer(address from, address to, uint256 value) external;
+    function afterMint(address to, uint256 value) external;
 }
 
 /// @title  Tranche Token
@@ -26,7 +28,7 @@ interface ERC1404Like {
 ///         which manages the trusted forwarders for the ERC20 token, and ensures
 ///         the transfer restrictions as defined in the RestrictionManager.
 contract TrancheToken is ERC20 {
-    ERC1404Like public restrictionManager;
+    RestrictionManagerLike public restrictionManager;
 
     mapping(address => bool) public trustedForwarders;
 
@@ -45,7 +47,7 @@ contract TrancheToken is ERC20 {
 
     // --- Administration ---
     function file(bytes32 what, address data) external auth {
-        if (what == "restrictionManager") restrictionManager = ERC1404Like(data);
+        if (what == "restrictionManager") restrictionManager = RestrictionManagerLike(data);
         else revert("TrancheToken/file-unrecognized-param");
         emit File(what, data);
     }
@@ -61,21 +63,30 @@ contract TrancheToken is ERC20 {
     }
 
     // --- ERC20 overrides with restrictions ---
-    function transfer(address to, uint256 value) public override restricted(_msgSender(), to, value) returns (bool) {
-        return super.transfer(to, value);
+    function transfer(address to, uint256 value)
+        public
+        override
+        restricted(_msgSender(), to, value)
+        returns (bool success)
+    {
+        success = super.transfer(to, value);
+        if (success) restrictionManager.afterTransfer(_msgSender(), to, value);
     }
 
     function transferFrom(address from, address to, uint256 value)
         public
         override
         restricted(from, to, value)
-        returns (bool)
+        returns (bool success)
     {
-        return super.transferFrom(from, to, value);
+        success = super.transferFrom(from, to, value);
+        if (success) restrictionManager.afterTransfer(from, to, value);
     }
 
     function mint(address to, uint256 value) public override restricted(_msgSender(), to, value) {
-        return super.mint(to, value);
+        // TODO: does this need extra checks?
+        super.mint(to, value);
+        restrictionManager.afterMint(to, value);
     }
 
     // --- ERC1404 implementation ---
