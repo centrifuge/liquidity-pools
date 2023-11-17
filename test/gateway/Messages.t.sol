@@ -61,7 +61,7 @@ contract MessagesTest is Test {
         assertEq(decodedCurrency, uint256(currency));
     }
 
-    function testAddTrancheMoin() public {
+    function testAddTranche() public {
         uint64 poolId = 1;
         bytes16 trancheId = bytes16(hex"811acd5b3f17c06841c7e41e9e04cb1b");
         string memory name = "Some Name";
