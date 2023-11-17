@@ -84,7 +84,6 @@ contract TrancheToken is ERC20 {
     }
 
     function mint(address to, uint256 value) public override restricted(_msgSender(), to, value) {
-        // TODO: does this need extra checks?
         super.mint(to, value);
         restrictionManager.afterMint(to, value);
     }
