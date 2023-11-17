@@ -147,7 +147,7 @@ contract TrancheTokenTest is Test {
         assertEq(token.balanceOf(targetUser), amount);
         afterTransferAssumptions(self, targetUser, amount);
     }
-
+    
     function testTransferFromTokensToExpiredMemberFails(uint256 amount, uint256 validUntil) public {
         vm.assume(baseAssumptions(validUntil, targetUser));
 
