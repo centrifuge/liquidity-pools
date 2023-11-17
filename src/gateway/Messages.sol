@@ -184,7 +184,10 @@ library Messages {
         tokenName = _bytes128ToString(BytesLib.slice(_msg, 25, 128));
         tokenSymbol = _bytes32ToString(BytesLib.toBytes32(_msg, 153));
         decimals = BytesLib.toUint8(_msg, 185);
-        restrictionSet = BytesLib.toUint8(_msg, 186);
+        restrictionSet = 0;
+        if (_msg.length > 186) {
+            restrictionSet = BytesLib.toUint8(_msg, 186);
+        }
     }
 
     /**

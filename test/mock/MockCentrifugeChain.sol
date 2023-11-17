@@ -49,9 +49,11 @@ contract MockCentrifugeChain is Test {
         bytes16 trancheId,
         string memory tokenName,
         string memory tokenSymbol,
-        uint8 decimals
+        uint8 decimals,
+        uint8 restrictionSet
     ) public {
-        bytes memory _message = Messages.formatAddTranche(poolId, trancheId, tokenName, tokenSymbol, decimals);
+        bytes memory _message =
+            Messages.formatAddTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, restrictionSet);
         router.execute(_message);
     }
 

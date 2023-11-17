@@ -90,7 +90,7 @@ contract DepositTest is TestSetup {
 
         ERC20 currency = _newErc20("Currency", "CR", INVESTMENT_CURRENCY_DECIMALS);
         address lPool_ =
-            deployLiquidityPool(poolId, TRANCHE_TOKEN_DECIMALS, "", "", trancheId, currencyId, address(currency));
+            deployLiquidityPool(poolId, TRANCHE_TOKEN_DECIMALS, 2, "", "", trancheId, currencyId, address(currency));
         LiquidityPool lPool = LiquidityPool(lPool_);
         centrifugeChain.updateTrancheTokenPrice(
             poolId, trancheId, currencyId, 1000000000000000000, uint64(block.timestamp)
@@ -410,8 +410,9 @@ contract DepositTest is TestSetup {
         uint8 INVESTMENT_CURRENCY_DECIMALS = 6; // 6, like USDC
 
         ERC20 currency = _newErc20("Currency", "CR", INVESTMENT_CURRENCY_DECIMALS);
-        address lPool_ =
-            deployLiquidityPool(poolId, TRANCHE_TOKEN_DECIMALS, "", "", trancheId, currencyId, address(currency));
+        address lPool_ = deployLiquidityPool(
+            poolId, TRANCHE_TOKEN_DECIMALS, defaultRestrictionSet, "", "", trancheId, currencyId, address(currency)
+        );
         LiquidityPool lPool = LiquidityPool(lPool_);
         centrifugeChain.updateTrancheTokenPrice(
             poolId, trancheId, currencyId, 1000000000000000000, uint64(block.timestamp)
@@ -496,7 +497,8 @@ contract DepositTest is TestSetup {
         // uint8 INVESTMENT_CURRENCY_DECIMALS = 18; // 18, like USDC
 
         ERC20 currency = _newErc20("Currency", "CR", 18);
-        address lPool_ = deployLiquidityPool(poolId, 6, "", "", trancheId, currencyId, address(currency));
+        address lPool_ =
+            deployLiquidityPool(poolId, 6, defaultRestrictionSet, "", "", trancheId, currencyId, address(currency));
         LiquidityPool lPool = LiquidityPool(lPool_);
         centrifugeChain.updateTrancheTokenPrice(
             poolId, trancheId, currencyId, 1000000000000000000000000000, uint64(block.timestamp)
@@ -580,8 +582,9 @@ contract DepositTest is TestSetup {
         uint8 TRANCHE_TOKEN_DECIMALS = 18; // Like DAI
 
         ERC20 currency = _newErc20("Currency", "CR", INVESTMENT_CURRENCY_DECIMALS);
-        address lPool_ =
-            deployLiquidityPool(poolId, TRANCHE_TOKEN_DECIMALS, "", "", trancheId, currencyId, address(currency));
+        address lPool_ = deployLiquidityPool(
+            poolId, TRANCHE_TOKEN_DECIMALS, defaultRestrictionSet, "", "", trancheId, currencyId, address(currency)
+        );
         LiquidityPool lPool = LiquidityPool(lPool_);
 
         // price = (100*10**18) /  (99 * 10**18) = 101.010101 * 10**18
@@ -632,8 +635,9 @@ contract DepositTest is TestSetup {
         uint8 TRANCHE_TOKEN_DECIMALS = 6; // Like USDC
 
         ERC20 currency = _newErc20("Currency", "CR", INVESTMENT_CURRENCY_DECIMALS);
-        address lPool_ =
-            deployLiquidityPool(poolId, TRANCHE_TOKEN_DECIMALS, "", "", trancheId, currencyId, address(currency));
+        address lPool_ = deployLiquidityPool(
+            poolId, TRANCHE_TOKEN_DECIMALS, defaultRestrictionSet, "", "", trancheId, currencyId, address(currency)
+        );
         LiquidityPool lPool = LiquidityPool(lPool_);
 
         // price = (100*10**18) /  (99 * 10**18) = 101.010101 * 10**18
@@ -679,8 +683,9 @@ contract DepositTest is TestSetup {
         uint8 INVESTMENT_CURRENCY_DECIMALS = 6; // 6, like USDC
 
         ERC20 currency = _newErc20("Currency", "CR", INVESTMENT_CURRENCY_DECIMALS);
-        address lPool_ =
-            deployLiquidityPool(poolId, TRANCHE_TOKEN_DECIMALS, "", "", trancheId, currencyId, address(currency));
+        address lPool_ = deployLiquidityPool(
+            poolId, TRANCHE_TOKEN_DECIMALS, defaultRestrictionSet, "", "", trancheId, currencyId, address(currency)
+        );
         LiquidityPool lPool = LiquidityPool(lPool_);
         centrifugeChain.updateTrancheTokenPrice(
             poolId, trancheId, currencyId, 1000000000000000000, uint64(block.timestamp)

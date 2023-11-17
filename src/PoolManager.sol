@@ -385,7 +385,9 @@ contract PoolManager is Auth {
             undeployedTranche.decimals,
             trancheTokenWards
         );
-        address restrictionManager = restrictionManagerFactory.newRestrictionManager(token, restrictionManagerWards);
+        address restrictionManager = restrictionManagerFactory.newRestrictionManager(
+            undeployedTranche.restrictionSet, token, restrictionManagerWards
+        );
         TrancheTokenLike(token).file("restrictionManager", restrictionManager);
 
         pools[poolId].tranches[trancheId].token = token;
