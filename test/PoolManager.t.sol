@@ -523,7 +523,18 @@ contract PoolManagerTest is TestSetup {
         address trancheToken_ = address(lPool.share());
         TrancheToken trancheToken = TrancheToken(trancheToken_);
 
+        poolManager.deny(address(this));
+        vm.expectRevert(bytes("Auth/not-authorized"));
+        poolManager.removeLiquidityPool(poolId, trancheId, currency);
+
         root.relyContract(address(poolManager), address(this));
+
+        vm.expectRevert(bytes("PoolManager/pool-does-not-exist"));
+        poolManager.removeLiquidityPool(poolId + 1, trancheId, currency);
+
+        vm.expectRevert(bytes("PoolManager/tranche-does-not-exist"));
+        poolManager.removeLiquidityPool(poolId, bytes16(0), currency);
+
         poolManager.removeLiquidityPool(poolId, trancheId, currency);
         assertEq(poolManager.getLiquidityPool(poolId, trancheId, currency), address(0));
         assertEq(investmentManager.wards(lPool_), 0);
@@ -532,46 +543,12 @@ contract PoolManagerTest is TestSetup {
         assertEq(trancheToken.allowance(address(escrow), lPool_), 0);
     }
 
-    function testRemoveLiquidityPool_failsWithoutAuth() public {
-        address lPool_ = deploySimplePool();
-        LiquidityPool lPool =  LiquidityPool(lPool_);
-        uint64 poolId = lPool.poolId();
-        bytes16 trancheId = lPool.trancheId();
-        address currency = address(lPool.asset());
-
-        poolManager.deny(address(this));
-        vm.expectRevert(bytes("Auth/not-authorized"));
-        poolManager.removeLiquidityPool(poolId, trancheId, currency);
-    }
-
-    function testRemoveLiquidityPool_failsWhenPoolDoesntExist() public {
-        address lPool_ = deploySimplePool();
-        LiquidityPool lPool =  LiquidityPool(lPool_);
-        uint64 poolId = lPool.poolId();
-        bytes16 trancheId = lPool.trancheId();
-        address currency = address(lPool.asset());
-
-        vm.expectRevert(bytes("PoolManager/pool-does-not-exist"));
-        poolManager.removeLiquidityPool(poolId + 1, trancheId, currency);
-    }
-
-    function testRemoveLiquidityPool_failsWhenTrancheDoesntExist() public {
-        address lPool_ = deploySimplePool();
-        LiquidityPool lPool =  LiquidityPool(lPool_);
-        uint64 poolId = lPool.poolId();
-        bytes16 trancheId = lPool.trancheId();
-        address currency = address(lPool.asset());
-
-        vm.expectRevert(bytes("PoolManager/tranche-does-not-exist"));
-        poolManager.removeLiquidityPool(poolId, bytes16(0), currency);
-    }
-
-    function testRemoveLiquidityPool_failsWhenLiquidityPoolNotDeployed() public {
+    function testRemoveLiquidityPoolFailsWhenLiquidityPoolNotDeployed() public {
         uint64 poolId = 5;
         bytes16 trancheId = _stringToBytes16("1");
 
         centrifugeChain.addPool(poolId); // add pool
-        centrifugeChain.addTranche(poolId, trancheId, "Test Token", "TT", 6); // add tranche
+        centrifugeChain.addTranche(poolId, trancheId, "Test Token", "TT", 6, 2); // add tranche
 
         centrifugeChain.addCurrency(10, address(erc20));
         centrifugeChain.allowInvestmentCurrency(poolId, 10);
@@ -581,7 +558,7 @@ contract PoolManagerTest is TestSetup {
         poolManager.removeLiquidityPool(poolId, trancheId, address(erc20));
     }
 
-     function testRemoveLiquidityPool_ArbitraryTransferAfterRemovalFails(
+     function testRemoveLiquidityPoolArbitraryTransferAfterRemovalFails(
     ) public {
         uint128 amount = 100;
         address lPool_ = deploySimplePool();
