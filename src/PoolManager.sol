@@ -395,7 +395,7 @@ contract PoolManager is Auth {
 
         // Give investment manager infinite approval for tranche tokens
         // in the escrow to transfer to the user on deposit or mint
-        escrow.approve(tranche.token, address(investmentManager), type(uint256).max);
+        escrow.approve(token, address(investmentManager), type(uint256).max);
 
         emit DeployTranche(poolId, trancheId, token);
         return token;
