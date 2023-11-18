@@ -17,7 +17,7 @@ contract RedeemTest is TestSetup {
         // success
         lPool.requestRedeem(amount, address(this), address(this));
         assertEq(lPool.balanceOf(address(escrow)), amount);
-        assertEq(lPool.pendingRedeemRequest(self), amount);
+        assertEq(lPool.pendingRedeemRequest(0, self), amount);
 
         // fail: no tokens left
         vm.expectRevert(bytes("LiquidityPool/insufficient-balance"));
@@ -33,7 +33,7 @@ contract RedeemTest is TestSetup {
         // assert withdraw & redeem values adjusted
         assertEq(lPool.maxWithdraw(self), currencyPayout); // max deposit
         assertEq(lPool.maxRedeem(self), amount); // max deposit
-        assertEq(lPool.pendingRedeemRequest(self), 0);
+        assertEq(lPool.pendingRedeemRequest(0, self), 0);
         assertEq(lPool.balanceOf(address(escrow)), 0);
         assertEq(erc20.balanceOf(address(userEscrow)), currencyPayout);
 
@@ -77,7 +77,7 @@ contract RedeemTest is TestSetup {
         lPool.requestRedeem(amount, address(this), address(this));
         assertEq(lPool.balanceOf(address(escrow)), amount);
         assertEq(erc20.balanceOf(address(userEscrow)), 0);
-        assertGt(lPool.pendingRedeemRequest(self), 0);
+        assertGt(lPool.pendingRedeemRequest(0, self), 0);
 
         // trigger executed collectRedeem
         uint128 _currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
