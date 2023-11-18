@@ -6,7 +6,14 @@ import {MathLib} from "./util/MathLib.sol";
 import {SafeTransferLib} from "./util/SafeTransferLib.sol";
 import {IERC4626} from "./interfaces/IERC4626.sol";
 import {IERC20, IERC20Metadata, IERC20Permit} from "./interfaces/IERC20.sol";
-import {IERC7540, IERC165, IERC7540Deposit, IERC7540Redeem, IERC7540DepositReceiver, IERC7540RedeemReceiver} from "./interfaces/IERC7540.sol";
+import {
+    IERC7540,
+    IERC165,
+    IERC7540Deposit,
+    IERC7540Redeem,
+    IERC7540DepositReceiver,
+    IERC7540RedeemReceiver
+} from "./interfaces/IERC7540.sol";
 
 interface ManagerLike {
     function deposit(address lp, uint256 assets, address receiver, address owner) external returns (uint256);
@@ -153,7 +160,10 @@ contract LiquidityPool is Auth, IERC7540 {
     }
 
     /// @inheritdoc IERC7540Redeem
-    function requestRedeem(uint256 shares, address operator, address sender, bytes memory data) public returns (uint256 rid) {
+    function requestRedeem(uint256 shares, address operator, address sender, bytes memory data)
+        public
+        returns (uint256 rid)
+    {
         require(share.balanceOf(sender) >= shares, "LiquidityPool/insufficient-balance");
         require(manager.requestRedeem(address(this), shares, operator, sender), "LiquidityPool/request-redeem-failed");
         require(transferFrom(sender, address(escrow), shares), "LiquidityPool/transfer-failed");

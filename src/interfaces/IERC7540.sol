@@ -37,7 +37,13 @@ interface IERC7540DepositReceiver {
     /// @param _data Additional data with no specified format
     /// @return `bytes4(keccak256("onERC7540DepositReceived(address,address,address,uint256,bytes)"))`
     ///  unless throwing
-    function onERC7540DepositReceived(address _operator, address _sender, address _receiver, uint256 _requestId, bytes memory _data) external returns(bytes4);
+    function onERC7540DepositReceived(
+        address _operator,
+        address _sender,
+        address _receiver,
+        uint256 _requestId,
+        bytes memory _data
+    ) external returns (bytes4);
 }
 
 interface IERC7540RedeemReceiver {
@@ -55,7 +61,13 @@ interface IERC7540RedeemReceiver {
     /// @param _data Additional data with no specified format
     /// @return `bytes4(keccak256("onERC7540RedeemReceived(address,address,address,uint256,bytes)"))`
     ///  unless throwing
-    function onERC7540RedeemReceived(address _operator, address _sender, address _receiver, uint256 _requestId, bytes memory _data) external returns(bytes4);
+    function onERC7540RedeemReceived(
+        address _operator,
+        address _sender,
+        address _receiver,
+        uint256 _requestId,
+        bytes memory _data
+    ) external returns (bytes4);
 }
 
 interface IERC7540Deposit {
@@ -66,25 +78,29 @@ interface IERC7540Deposit {
      *
      * - MUST support ERC-20 approve / transferFrom on asset as a deposit Request flow.
      * - MUST revert if all of assets cannot be requested for deposit/mint.
-     * - sender MUST = msg.sender unless some unspecified explicit approval is given by the caller, approval of ERC7540 vault shares is NOT enough.
+     * - sender MUST = msg.sender unless some unspecified explicit approval is given by the caller, approval of ERC7540
+     * vault shares is NOT enough.
      *
      * @param assets the amount of deposit assets from sender
      * @param receiver the receiver of the request who will be able to operate the request
      * @param sender the source of the deposit assets
      * @param data additional bytes which may be used to approve or call the receiver contract
-     * 
+     *
      * NOTE: most implementations will require pre-approval of the Vault with the Vault's underlying asset token.
-     * 
-     * Behavior, if data is nonzero, attempt to call the receiver onERC7540DepositReceived otherwise just send the request to the receiver
+     *
+     * Behavior, if data is nonzero, attempt to call the receiver onERC7540DepositReceived otherwise just send the
+     * request to the receiver
      */
-    function requestDeposit(uint256 assets, address receiver, address sender, bytes calldata data) external returns (uint256 rid);
+    function requestDeposit(uint256 assets, address receiver, address sender, bytes calldata data)
+        external
+        returns (uint256 rid);
 
     /**
      * @dev Claims a deposit request and sends associated shares to the receiver
      *
      * @param rid the requestId of the deposit request
      * @param receiver the receiver of the claim who will receive the shares output
-     * 
+     *
      * @return shares the amount of shares actually received by the claim
      */
     function claimDeposit(uint256 rid, address receiver, address owner) external returns (uint256 shares);
@@ -97,7 +113,7 @@ interface IERC7540Deposit {
      * - MUST NOT revert unless due to integer overflow caused by an unreasonably large input.
      */
     function pendingDepositRequest(uint256 rid, address owner) external view returns (uint256 pendingAssets);
-    
+
     /**
      * @dev Returns the amount of requested assets in Claimable state for the operator to deposit or mint.
      *
@@ -113,29 +129,33 @@ interface IERC7540Redeem {
 
     /**
      * @dev Assumes control of shares from sender into the Vault and submits a Request for asynchronous redeem/withdraw.
-     * 
+     *
      * - MUST support a redeem Request flow where the control of shares is taken from owner directly
      *   where msg.sender has ERC-20 approval over the shares of owner.
      * - MUST revert if all of shares cannot be requested for redeem / withdraw.
-     * - sender MUST = msg.sender unless some unspecified explicit approval is given by the caller, approval of ERC7540 vault shares is NOT enough.
+     * - sender MUST = msg.sender unless some unspecified explicit approval is given by the caller, approval of ERC7540
+     * vault shares is NOT enough.
      *
      * @param shares the amount of redemption shares from sender
      * @param receiver the receiver of the request who will be able to operate the request
      * @param sender the source of the redemption shares
      * @param data additional bytes which may be used to approve or call the receiver contract
-     * 
+     *
      * NOTE: most implementations will require pre-approval of the Vault with the Vault's share token.
-     * 
-     * Behavior, if data is nonzero, attempt to call the receiver onERC7540RedeemReceived otherwise just send the request to the receiver
+     *
+     * Behavior, if data is nonzero, attempt to call the receiver onERC7540RedeemReceived otherwise just send the
+     * request to the receiver
      */
-    function requestRedeem(uint256 shares, address receiver, address sender, bytes calldata data) external returns (uint256 rid);
+    function requestRedeem(uint256 shares, address receiver, address sender, bytes calldata data)
+        external
+        returns (uint256 rid);
 
     /**
      * @dev Claims a redeem request and sends associated assets to the receiver
      *
      * @param rid the requestId of the request
      * @param receiver the receiver of the claim who will receive the assets output
-     * 
+     *
      * @return assets the amount of assets actually received by the claim
      */
     function claimRedemption(uint256 rid, address receiver, address owner) external returns (uint256 assets);
