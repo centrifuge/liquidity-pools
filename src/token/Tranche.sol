@@ -11,6 +11,7 @@ interface TrancheTokenLike is IERC20 {
     function file(bytes32 what, address data) external;
     function restrictionManager() external view returns (address);
     function addTrustedForwarder(address forwarder) external;
+    function removeTrustedForwarder(address forwarder) external;
     function checkTransferRestriction(address from, address to, uint256 value) external view returns (bool);
 }
 

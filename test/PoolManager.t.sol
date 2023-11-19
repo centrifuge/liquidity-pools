@@ -38,6 +38,10 @@ contract PoolManagerTest is TestSetup {
         poolManager.file("restrictionManagerFactory", newRestrictionManagerFactory);
         assertEq(address(poolManager.restrictionManagerFactory()), newRestrictionManagerFactory);
 
+        address newLiquidityPoolFactory = makeAddr("newLiquidityPoolFactory");
+        poolManager.file("liquidityPoolFactory", newLiquidityPoolFactory);
+        assertEq(address(poolManager.liquidityPoolFactory()), newLiquidityPoolFactory);
+
         address newEscrow = makeAddr("newEscrow");
         vm.expectRevert("PoolManager/file-unrecognized-param");
         poolManager.file("escrow", newEscrow);
@@ -508,6 +512,100 @@ contract PoolManagerTest is TestSetup {
 
         vm.expectRevert(bytes("PoolManager/cannot-set-older-price"));
         centrifugeChain.updateTrancheTokenPrice(poolId, trancheId, currencyId, price, uint64(block.timestamp - 1));
+    }
+
+    function testRemoveLiquidityPool() public {
+        address lPool_ = deploySimplePool();
+        LiquidityPool lPool =  LiquidityPool(lPool_);
+        uint64 poolId = lPool.poolId();
+        bytes16 trancheId = lPool.trancheId();
+        address currency = address(lPool.asset());
+        address trancheToken_ = address(lPool.share());
+        TrancheToken trancheToken = TrancheToken(trancheToken_);
+
+        poolManager.deny(address(this));
+        vm.expectRevert(bytes("Auth/not-authorized"));
+        poolManager.removeLiquidityPool(poolId, trancheId, currency);
+
+        root.relyContract(address(poolManager), address(this));
+
+        vm.expectRevert(bytes("PoolManager/pool-does-not-exist"));
+        poolManager.removeLiquidityPool(poolId + 1, trancheId, currency);
+
+        vm.expectRevert(bytes("PoolManager/tranche-does-not-exist"));
+        poolManager.removeLiquidityPool(poolId, bytes16(0), currency);
+
+        poolManager.removeLiquidityPool(poolId, trancheId, currency);
+        assertEq(poolManager.getLiquidityPool(poolId, trancheId, currency), address(0));
+        assertEq(investmentManager.wards(lPool_), 0);
+        assertEq(trancheToken.wards(lPool_), 0);
+        assertEq(trancheToken.isTrustedForwarder(lPool_), false);
+        assertEq(trancheToken.allowance(address(escrow), lPool_), 0);
+    }
+
+    function testRemoveLiquidityPoolFailsWhenLiquidityPoolNotDeployed() public {
+        uint64 poolId = 5;
+        bytes16 trancheId = _stringToBytes16("1");
+
+        centrifugeChain.addPool(poolId); // add pool
+        centrifugeChain.addTranche(poolId, trancheId, "Test Token", "TT", 6, 2); // add tranche
+
+        centrifugeChain.addCurrency(10, address(erc20));
+        centrifugeChain.allowInvestmentCurrency(poolId, 10);
+        poolManager.deployTranche(poolId, trancheId);
+
+        vm.expectRevert(bytes("PoolManager/liquidity-pool-not-deployed"));
+        poolManager.removeLiquidityPool(poolId, trancheId, address(erc20));
+    }
+
+     function testRemoveLiquidityPoolArbitraryTransferAfterRemovalFails(
+    ) public {
+        uint128 amount = 100;
+        address lPool_ = deploySimplePool();
+        LiquidityPool lPool =  LiquidityPool(lPool_);
+        uint64 poolId = lPool.poolId();
+        bytes16 trancheId = lPool.trancheId();
+        address currency = address(lPool.asset());
+
+        address randomAddress = makeAddr("randomAddr");
+        centrifugeChain.updateMember(poolId, trancheId, randomAddress, uint64(block.timestamp + 7 days));
+        
+        centrifugeChain.incomingTransferTrancheTokens(poolId, trancheId, uint64(block.chainid), address(escrow), amount);
+        assertEq(LiquidityPool(lPool_).balanceOf(address(escrow)), amount);
+        uint256 balance = LiquidityPool(lPool_).balanceOf(address(escrow));
+        TrancheToken trancheToken = TrancheToken(address(LiquidityPool(lPool_).share()));
+        root.relyContract(address(poolManager), self);
+        poolManager.removeLiquidityPool(poolId, trancheId, currency);
+
+        // arbitrary transferFrom execution
+        bytes memory payload = abi.encodeWithSelector(ERC20.transferFrom.selector, address(escrow), randomAddress, balance);
+        vm.expectRevert(bytes("ERC20/insufficient-allowance"));
+        (bool success, bytes memory data) = address(lPool_).call(payload);
+
+        assertEq(LiquidityPool(lPool_).balanceOf(address(escrow)), amount);
+    }
+
+    function testLiquidityPoolMigration() public {
+        address oldLiquidityPool_ = deploySimplePool();
+
+        LiquidityPool oldLiquidityPool =  LiquidityPool(oldLiquidityPool_);
+        uint64 poolId = oldLiquidityPool.poolId();
+        bytes16 trancheId = oldLiquidityPool.trancheId();
+        address currency = address(oldLiquidityPool.asset());
+
+        LiquidityPoolFactory newLiquidityPoolFactory = new LiquidityPoolFactory(address(root));
+
+        // rewire factory contracts
+        newLiquidityPoolFactory.rely(address(poolManager));
+        poolManager.file("liquidityPoolFactory", address(newLiquidityPoolFactory));
+
+        // Remove old liquidity pool
+        poolManager.removeLiquidityPool(poolId, trancheId, currency);
+        assertEq(poolManager.getLiquidityPool(poolId, trancheId, currency), address(0));
+
+        // Deploy new liquidity pool
+        address newLiquidityPool = poolManager.deployLiquidityPool(poolId, trancheId, currency);
+        assertEq(poolManager.getLiquidityPool(poolId, trancheId, currency), newLiquidityPool);
     }
 
     // helpers
