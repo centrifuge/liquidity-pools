@@ -147,16 +147,16 @@ contract RedeemTest is TestSetup {
         // test for both scenarios redeem & withdraw
 
         // fail: self cannot redeem for investor
-        vm.expectRevert(bytes("LiquidityPool/not-the-operator"));
+        vm.expectRevert(bytes("LiquidityPool/not-the-owner"));
         lPool.redeem(redemption1, investor, investor);
-        vm.expectRevert(bytes("LiquidityPool/not-the-operator"));
+        vm.expectRevert(bytes("LiquidityPool/not-the-owner"));
         lPool.withdraw(redemption1, investor, investor);
 
         // fail: ward can not make requests on behalf of investor
         root.relyContract(lPool_, self);
-        vm.expectRevert(bytes("LiquidityPool/not-the-operator"));
+        vm.expectRevert(bytes("LiquidityPool/not-the-owner"));
         lPool.redeem(redemption1, investor, investor);
-        vm.expectRevert(bytes("LiquidityPool/not-the-operator"));
+        vm.expectRevert(bytes("LiquidityPool/not-the-owner"));
         lPool.withdraw(redemption1, investor, investor);
 
         // investor redeems rest for himself
