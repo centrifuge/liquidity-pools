@@ -332,12 +332,12 @@ contract DepositTest is TestSetup {
         // frontrunnign not possible
         centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), randomUser, type(uint64).max);
         vm.expectRevert(bytes("SafeTransferLib/safe-transfer-from-failed"));
-        lPool.requestDepositWithPermit((amount), block.timestamp, v, r, s);
+        lPool.requestDepositWithPermit(amount, self, block.timestamp, v, r, s);
         vm.stopPrank();
 
         // investor still able to requestDepositWithPermit
         vm.prank(vm.addr(0xABCD));
-        lPool.requestDepositWithPermit(amount, block.timestamp, v, r, s);
+        lPool.requestDepositWithPermit(amount, self, block.timestamp, v, r, s);
 
         // ensure funds are locked in escrow
         assertEq(erc20.balanceOf(address(escrow)), amount);
@@ -372,9 +372,9 @@ contract DepositTest is TestSetup {
 
         // premit functions can only be executed by the owner
         vm.expectRevert(bytes("SafeTransferLib/safe-transfer-from-failed"));
-        lPool.requestDepositWithPermit(amount, block.timestamp, v, r, s);
+        lPool.requestDepositWithPermit(amount, self, block.timestamp, v, r, s);
         vm.prank(vm.addr(0xABCD));
-        lPool.requestDepositWithPermit(amount, block.timestamp, v, r, s);
+        lPool.requestDepositWithPermit(amount, self, block.timestamp, v, r, s);
 
         // To avoid stack too deep errors
         delete v;
