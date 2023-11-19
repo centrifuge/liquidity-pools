@@ -26,14 +26,14 @@ interface ManagerLike {
     function maxRedeem(address lp, address receiver) external view returns (uint256);
     function convertToShares(address lp, uint256 assets) external view returns (uint256);
     function convertToAssets(address lp, uint256 shares) external view returns (uint256);
-    function requestDeposit(address lp, uint256 assets, address sender, address operator) external returns (bool);
-    function requestRedeem(address lp, uint256 shares, address operator, address owner) external returns (bool);
-    function decreaseDepositRequest(address lp, uint256 assets, address operator) external;
-    function decreaseRedeemRequest(address lp, uint256 shares, address operator) external;
-    function cancelDepositRequest(address lp, address operator) external;
-    function cancelRedeemRequest(address lp, address operator) external;
-    function pendingDepositRequest(address lp, address operator) external view returns (uint256);
-    function pendingRedeemRequest(address lp, address operator) external view returns (uint256);
+    function requestDeposit(address lp, uint256 assets, address sender, address receiver) external returns (bool);
+    function requestRedeem(address lp, uint256 shares, address receiver, address owner) external returns (bool);
+    function decreaseDepositRequest(address lp, uint256 assets, address owner) external;
+    function decreaseRedeemRequest(address lp, uint256 shares, address owner) external;
+    function cancelDepositRequest(address lp, address owner) external;
+    function cancelRedeemRequest(address lp, address owner) external;
+    function pendingDepositRequest(address lp, address owner) external view returns (uint256);
+    function pendingRedeemRequest(address lp, address owner) external view returns (uint256);
     function exchangeRateLastUpdated(address liquidityPool) external view returns (uint64 lastUpdated);
 }
 
@@ -75,8 +75,8 @@ contract LiquidityPool is Auth, IERC7540 {
 
     // --- Events ---
     event File(bytes32 indexed what, address data);
-    event DepositClaimable(address indexed operator, uint256 assets, uint256 shares);
-    event RedeemClaimable(address indexed operator, uint256 assets, uint256 shares);
+    event DepositClaimable(address indexed owner, uint256 assets, uint256 shares);
+    event RedeemClaimable(address indexed owner, uint256 assets, uint256 shares);
     event DecreaseDepositRequest(address indexed sender, uint256 assets);
     event DecreaseRedeemRequest(address indexed sender, uint256 shares);
     event CancelDepositRequest(address indexed sender);
@@ -251,8 +251,8 @@ contract LiquidityPool is Auth, IERC7540 {
     }
 
     /// @inheritdoc IERC4626
-    function maxDeposit(address operator) public view returns (uint256 maxAssets) {
-        maxAssets = manager.maxDeposit(address(this), operator);
+    function maxDeposit(address owner) public view returns (uint256 maxAssets) {
+        maxAssets = manager.maxDeposit(address(this), owner);
     }
 
     /// @inheritdoc IERC4626
@@ -262,8 +262,8 @@ contract LiquidityPool is Auth, IERC7540 {
     }
 
     /// @inheritdoc IERC4626
-    function maxMint(address operator) public view returns (uint256 maxShares) {
-        maxShares = manager.maxMint(address(this), operator);
+    function maxMint(address owner) public view returns (uint256 maxShares) {
+        maxShares = manager.maxMint(address(this), owner);
     }
 
     /// @inheritdoc IERC4626
@@ -273,29 +273,29 @@ contract LiquidityPool is Auth, IERC7540 {
     }
 
     /// @inheritdoc IERC4626
-    function maxWithdraw(address operator) public view returns (uint256 maxAssets) {
-        maxAssets = manager.maxWithdraw(address(this), operator);
+    function maxWithdraw(address owner) public view returns (uint256 maxAssets) {
+        maxAssets = manager.maxWithdraw(address(this), owner);
     }
 
     /// @inheritdoc IERC4626
-    /// @notice DOES NOT support operator != msg.sender since shares are already transferred on requestRedeem
-    function withdraw(uint256 assets, address receiver, address operator) public returns (uint256 shares) {
-        require((msg.sender == operator), "LiquidityPool/not-the-operator");
-        shares = manager.withdraw(address(this), assets, receiver, operator);
-        emit Withdraw(msg.sender, receiver, operator, assets, shares);
+    /// @notice DOES NOT support owner != msg.sender since shares are already transferred on requestRedeem
+    function withdraw(uint256 assets, address receiver, address owner) public returns (uint256 shares) {
+        require((msg.sender == owner), "LiquidityPool/not-the-owner");
+        shares = manager.withdraw(address(this), assets, receiver, owner);
+        emit Withdraw(msg.sender, receiver, owner, assets, shares);
     }
 
     /// @inheritdoc IERC4626
-    function maxRedeem(address operator) public view returns (uint256 maxShares) {
-        maxShares = manager.maxRedeem(address(this), operator);
+    function maxRedeem(address owner) public view returns (uint256 maxShares) {
+        maxShares = manager.maxRedeem(address(this), owner);
     }
 
     /// @inheritdoc IERC4626
-    /// @notice     DOES NOT support operator != msg.sender since shares are already transferred on requestRedeem
-    function redeem(uint256 shares, address receiver, address operator) external returns (uint256 assets) {
-        require((msg.sender == operator), "LiquidityPool/not-the-operator");
-        assets = manager.redeem(address(this), shares, receiver, operator);
-        emit Withdraw(msg.sender, receiver, operator, assets, shares);
+    /// @notice     DOES NOT support owner != msg.sender since shares are already transferred on requestRedeem
+    function redeem(uint256 shares, address receiver, address owner) external returns (uint256 assets) {
+        require((msg.sender == owner), "LiquidityPool/not-the-owner");
+        assets = manager.redeem(address(this), shares, receiver, owner);
+        emit Withdraw(msg.sender, receiver, owner, assets, shares);
     }
 
     /// @dev Preview functions for ERC-7540 vaults revert
@@ -375,12 +375,12 @@ contract LiquidityPool is Auth, IERC7540 {
     }
 
     // --- Helpers ---
-    function emitDepositClaimable(address operator, uint256 assets, uint256 shares) public auth {
-        emit DepositClaimable(operator, assets, shares);
+    function emitDepositClaimable(address owner, uint256 assets, uint256 shares) public auth {
+        emit DepositClaimable(owner, assets, shares);
     }
 
-    function emitRedeemClaimable(address operator, uint256 assets, uint256 shares) public auth {
-        emit RedeemClaimable(operator, assets, shares);
+    function emitRedeemClaimable(address owner, uint256 assets, uint256 shares) public auth {
+        emit RedeemClaimable(owner, assets, shares);
     }
 
     function _successCheck(bool success) internal pure {
