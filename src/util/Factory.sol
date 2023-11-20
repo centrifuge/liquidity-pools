@@ -107,7 +107,7 @@ contract TrancheTokenFactory is Auth {
 }
 
 interface RestrictionManagerFactoryLike {
-    function newRestrictionManager(address token, address[] calldata restrictionManagerWards)
+    function newRestrictionManager(uint8 restrictionSet, address token, address[] calldata restrictionManagerWards)
         external
         returns (address);
 }
@@ -124,7 +124,7 @@ contract RestrictionManagerFactory is Auth {
         emit Rely(msg.sender);
     }
 
-    function newRestrictionManager(address token, address[] calldata restrictionManagerWards)
+    function newRestrictionManager(uint8, address token, address[] calldata restrictionManagerWards)
         public
         auth
         returns (address)
@@ -134,6 +134,7 @@ contract RestrictionManagerFactory is Auth {
         restrictionManager.updateMember(RootLike(root).escrow(), type(uint256).max);
 
         restrictionManager.rely(root);
+        restrictionManager.rely(token);
         for (uint256 i = 0; i < restrictionManagerWards.length; i++) {
             restrictionManager.rely(restrictionManagerWards[i]);
         }

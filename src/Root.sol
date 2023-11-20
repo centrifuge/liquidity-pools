@@ -74,13 +74,14 @@ contract Root is Auth {
 
     /// @notice Cancel a pending scheduled rely
     function cancelRely(address target) external auth {
+        require(schedule[target] != 0, "Root/target-not-scheduled");
         schedule[target] = 0;
         emit CancelRely(target);
     }
 
     /// @notice Execute a scheduled rely
     /// @dev    Can be triggered by anyone since the scheduling is protected
-    function executeScheduledRely(address target) public {
+    function executeScheduledRely(address target) external {
         require(schedule[target] != 0, "Root/target-not-scheduled");
         require(schedule[target] <= block.timestamp, "Root/target-not-ready");
 
@@ -92,13 +93,13 @@ contract Root is Auth {
 
     /// --- External contract ward management ---
     /// @notice Make an address a ward on any contract that Root is a ward on
-    function relyContract(address target, address user) public auth {
+    function relyContract(address target, address user) external auth {
         AuthLike(target).rely(user);
         emit RelyContract(target, user);
     }
 
     /// @notice Removes an address as a ward on any contract that Root is a ward on
-    function denyContract(address target, address user) public auth {
+    function denyContract(address target, address user) external auth {
         AuthLike(target).deny(user);
         emit DenyContract(target, user);
     }

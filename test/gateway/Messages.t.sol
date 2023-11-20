@@ -67,17 +67,19 @@ contract MessagesTest is Test {
         string memory name = "Some Name";
         string memory symbol = "SYMBOL";
         uint8 decimals = 15;
+        uint8 restrictionSet = 2;
         bytes memory expectedHex =
-            hex"040000000000000001811acd5b3f17c06841c7e41e9e04cb1b536f6d65204e616d65000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000053594d424f4c00000000000000000000000000000000000000000000000000000f";
+            hex"040000000000000001811acd5b3f17c06841c7e41e9e04cb1b536f6d65204e616d65000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000053594d424f4c00000000000000000000000000000000000000000000000000000f02";
 
-        assertEq(Messages.formatAddTranche(poolId, trancheId, name, symbol, decimals), expectedHex);
+        assertEq(Messages.formatAddTranche(poolId, trancheId, name, symbol, decimals, restrictionSet), expectedHex);
 
         (
             uint64 decodedPoolId,
             bytes16 decodedTrancheId,
             string memory decodedTokenName,
             string memory decodedTokenSymbol,
-            uint8 decodedDecimals
+            uint8 decodedDecimals,
+            uint8 decodedRestrictionSet
         ) = Messages.parseAddTranche(expectedHex);
 
         assertEq(uint256(decodedPoolId), poolId);
@@ -85,6 +87,21 @@ contract MessagesTest is Test {
         assertEq(decodedTokenName, name);
         assertEq(decodedTokenSymbol, symbol);
         assertEq(decodedDecimals, decimals);
+        assertEq(decodedRestrictionSet, restrictionSet);
+
+        // for backwards compatibility
+        bytes memory expectedHexWithoutRestrictionSet =
+            hex"040000000000000001811acd5b3f17c06841c7e41e9e04cb1b536f6d65204e616d65000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000053594d424f4c00000000000000000000000000000000000000000000000000000f";
+
+        (decodedPoolId, decodedTrancheId, decodedTokenName, decodedTokenSymbol, decodedDecimals, decodedRestrictionSet)
+        = Messages.parseAddTranche(expectedHexWithoutRestrictionSet);
+
+        assertEq(uint256(decodedPoolId), poolId);
+        assertEq(decodedTrancheId, trancheId);
+        assertEq(decodedTokenName, name);
+        assertEq(decodedTokenSymbol, symbol);
+        assertEq(decodedDecimals, decimals);
+        assertEq(decodedRestrictionSet, 0);
     }
 
     function testAddTrancheEquivalence(
@@ -92,15 +109,18 @@ contract MessagesTest is Test {
         bytes16 trancheId,
         string memory tokenName,
         string memory tokenSymbol,
-        uint8 decimals
+        uint8 decimals,
+        uint8 restrictionSet
     ) public {
-        bytes memory _message = Messages.formatAddTranche(poolId, trancheId, tokenName, tokenSymbol, decimals);
+        bytes memory _message =
+            Messages.formatAddTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, restrictionSet);
         (
             uint64 decodedPoolId,
             bytes16 decodedTrancheId,
             string memory decodedTokenName,
             string memory decodedTokenSymbol,
-            uint8 decodedDecimals
+            uint8 decodedDecimals,
+            uint8 decodedRestrictionSet
         ) = Messages.parseAddTranche(_message);
         assertEq(uint256(decodedPoolId), uint256(poolId));
         assertEq(decodedTrancheId, trancheId);
@@ -111,6 +131,7 @@ contract MessagesTest is Test {
         assertEq(decodedTokenName, Messages._bytes128ToString(Messages._stringToBytes128(tokenName)));
         assertEq(decodedTokenSymbol, Messages._bytes32ToString(Messages._stringToBytes32(tokenSymbol)));
         assertEq(decodedDecimals, decimals);
+        assertEq(decodedRestrictionSet, restrictionSet);
     }
 
     function testUpdateTrancheTokenPrice() public {
@@ -118,29 +139,46 @@ contract MessagesTest is Test {
         bytes16 trancheId = bytes16(hex"811acd5b3f17c06841c7e41e9e04cb1b");
         uint128 currencyId = 2;
         uint128 price = 1_000_000_000_000_000_000_000_000_000;
+        uint64 computedAt = uint64(block.timestamp);
         bytes memory expectedHex =
-            hex"050000000000000001811acd5b3f17c06841c7e41e9e04cb1b0000000000000000000000000000000200000000033b2e3c9fd0803ce8000000";
+            hex"050000000000000001811acd5b3f17c06841c7e41e9e04cb1b0000000000000000000000000000000200000000033b2e3c9fd0803ce80000000000000000000001";
 
-        assertEq(Messages.formatUpdateTrancheTokenPrice(poolId, trancheId, currencyId, price), expectedHex);
+        assertEq(Messages.formatUpdateTrancheTokenPrice(poolId, trancheId, currencyId, price, computedAt), expectedHex);
 
-        (uint64 decodedPoolId, bytes16 decodedTrancheId, uint128 decodedCurrencyId, uint128 decodedPrice) =
-            Messages.parseUpdateTrancheTokenPrice(expectedHex);
+        (
+            uint64 decodedPoolId,
+            bytes16 decodedTrancheId,
+            uint128 decodedCurrencyId,
+            uint128 decodedPrice,
+            uint64 decodedComputedAt
+        ) = Messages.parseUpdateTrancheTokenPrice(expectedHex);
         assertEq(uint256(decodedPoolId), poolId);
         assertEq(decodedTrancheId, trancheId);
         assertEq(decodedCurrencyId, currencyId);
         assertEq(decodedPrice, price);
+        assertEq(decodedComputedAt, computedAt);
     }
 
-    function testUpdateTrancheTokenPriceEquivalence(uint64 poolId, bytes16 trancheId, uint128 currencyId, uint128 price)
-        public
-    {
-        bytes memory _message = Messages.formatUpdateTrancheTokenPrice(poolId, trancheId, currencyId, price);
-        (uint64 decodedPoolId, bytes16 decodedTrancheId, uint128 decodedCurrencyId, uint128 decodedPrice) =
-            Messages.parseUpdateTrancheTokenPrice(_message);
+    function testUpdateTrancheTokenPriceEquivalence(
+        uint64 poolId,
+        bytes16 trancheId,
+        uint128 currencyId,
+        uint128 price,
+        uint64 computedAt
+    ) public {
+        bytes memory _message = Messages.formatUpdateTrancheTokenPrice(poolId, trancheId, currencyId, price, computedAt);
+        (
+            uint64 decodedPoolId,
+            bytes16 decodedTrancheId,
+            uint128 decodedCurrencyId,
+            uint128 decodedPrice,
+            uint64 decodedComputedAt
+        ) = Messages.parseUpdateTrancheTokenPrice(_message);
         assertEq(uint256(decodedPoolId), uint256(poolId));
         assertEq(decodedTrancheId, trancheId);
         assertEq(decodedCurrencyId, currencyId);
         assertEq(uint256(decodedPrice), uint256(price));
+        assertEq(decodedComputedAt, computedAt);
     }
 
     // Note: UpdateMember encodes differently in Solidity compared to the Rust counterpart because `user` is a 20-byte

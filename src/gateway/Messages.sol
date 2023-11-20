@@ -142,13 +142,15 @@ library Messages {
      * 25-152: tokenName (string = 128 bytes)
      * 153-184: tokenSymbol (string = 32 bytes)
      * 185: decimals (uint8 = 1 byte)
+     * 186: restriction set (uint8 = 1 byte)
      */
     function formatAddTranche(
         uint64 poolId,
         bytes16 trancheId,
         string memory tokenName,
         string memory tokenSymbol,
-        uint8 decimals
+        uint8 decimals,
+        uint8 restrictionSet
     ) internal pure returns (bytes memory) {
         return abi.encodePacked(
             uint8(Call.AddTranche),
@@ -156,7 +158,8 @@ library Messages {
             trancheId,
             _stringToBytes128(tokenName),
             _stringToBytes32(tokenSymbol),
-            decimals
+            decimals,
+            restrictionSet
         );
     }
 
@@ -167,13 +170,24 @@ library Messages {
     function parseAddTranche(bytes memory _msg)
         internal
         pure
-        returns (uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol, uint8 decimals)
+        returns (
+            uint64 poolId,
+            bytes16 trancheId,
+            string memory tokenName,
+            string memory tokenSymbol,
+            uint8 decimals,
+            uint8 restrictionSet
+        )
     {
         poolId = BytesLib.toUint64(_msg, 1);
         trancheId = BytesLib.toBytes16(_msg, 9);
         tokenName = _bytes128ToString(BytesLib.slice(_msg, 25, 128));
         tokenSymbol = _bytes32ToString(BytesLib.toBytes32(_msg, 153));
         decimals = BytesLib.toUint8(_msg, 185);
+        restrictionSet = 0;
+        if (_msg.length > 186) {
+            restrictionSet = BytesLib.toUint8(_msg, 186);
+        }
     }
 
     /**
@@ -225,13 +239,16 @@ library Messages {
      * 9-24: trancheId (16 bytes)
      * 25-40: currency (uint128 = 16 bytes)
      * 41-56: price (uint128 = 16 bytes)
+     * 57-64: computedAt (uint64 = 8 bytes)
      */
-    function formatUpdateTrancheTokenPrice(uint64 poolId, bytes16 trancheId, uint128 currencyId, uint128 price)
-        internal
-        pure
-        returns (bytes memory)
-    {
-        return abi.encodePacked(uint8(Call.UpdateTrancheTokenPrice), poolId, trancheId, currencyId, price);
+    function formatUpdateTrancheTokenPrice(
+        uint64 poolId,
+        bytes16 trancheId,
+        uint128 currencyId,
+        uint128 price,
+        uint64 computedAt
+    ) internal pure returns (bytes memory) {
+        return abi.encodePacked(uint8(Call.UpdateTrancheTokenPrice), poolId, trancheId, currencyId, price, computedAt);
     }
 
     function isUpdateTrancheTokenPrice(bytes memory _msg) internal pure returns (bool) {
@@ -241,12 +258,13 @@ library Messages {
     function parseUpdateTrancheTokenPrice(bytes memory _msg)
         internal
         pure
-        returns (uint64 poolId, bytes16 trancheId, uint128 currencyId, uint128 price)
+        returns (uint64 poolId, bytes16 trancheId, uint128 currencyId, uint128 price, uint64 computedAt)
     {
         poolId = BytesLib.toUint64(_msg, 1);
         trancheId = BytesLib.toBytes16(_msg, 9);
         currencyId = BytesLib.toUint128(_msg, 25);
         price = BytesLib.toUint128(_msg, 41);
+        computedAt = BytesLib.toUint64(_msg, 57);
     }
 
     /*

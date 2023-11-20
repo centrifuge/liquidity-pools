@@ -17,20 +17,22 @@ interface RestrictionManagerLike {
 contract RestrictionManager is Auth {
     string internal constant SUCCESS_MESSAGE = "RestrictionManager/transfer-allowed";
     string internal constant SOURCE_IS_FROZEN_MESSAGE = "RestrictionManager/source-is-frozen";
+    string internal constant DESTINATION_IS_FROZEN_MESSAGE = "RestrictionManager/destination-is-frozen";
     string internal constant DESTINATION_NOT_A_MEMBER_RESTRICTION_MESSAGE =
         "RestrictionManager/destination-not-a-member";
 
     uint8 public constant SUCCESS_CODE = 0;
     uint8 public constant SOURCE_IS_FROZEN_CODE = 1;
-    uint8 public constant DESTINATION_NOT_A_MEMBER_RESTRICTION_CODE = 2;
+    uint8 public constant DESTINATION_IS_FROZEN_CODE = 2;
+    uint8 public constant DESTINATION_NOT_A_MEMBER_RESTRICTION_CODE = 3;
 
     IERC20 public immutable token;
 
-    /// @dev Frozen accounts that tokens cannot be transferred from
-    mapping(address => uint256) public frozen;
+    /// @dev Frozen accounts that tokens cannot be transferred from or to
+    mapping(address => uint256 isFrozen) public frozen;
 
-    /// @dev Member accounts that tokens can be transferred to
-    mapping(address => uint256) public members;
+    /// @dev Member accounts that tokens can be transferred to, with an end date
+    mapping(address => uint256 validUntil) public members;
 
     // --- Events ---
     event UpdateMember(address indexed user, uint256 validUntil);
@@ -50,6 +52,10 @@ contract RestrictionManager is Auth {
             return SOURCE_IS_FROZEN_CODE;
         }
 
+        if (frozen[to] == 1) {
+            return DESTINATION_IS_FROZEN_CODE;
+        }
+
         if (!hasMember(to)) {
             return DESTINATION_NOT_A_MEMBER_RESTRICTION_CODE;
         }
@@ -60,6 +66,10 @@ contract RestrictionManager is Auth {
     function messageForTransferRestriction(uint8 restrictionCode) public pure returns (string memory) {
         if (restrictionCode == SOURCE_IS_FROZEN_CODE) {
             return SOURCE_IS_FROZEN_MESSAGE;
+        }
+
+        if (restrictionCode == DESTINATION_IS_FROZEN_CODE) {
+            return DESTINATION_IS_FROZEN_MESSAGE;
         }
 
         if (restrictionCode == DESTINATION_NOT_A_MEMBER_RESTRICTION_CODE) {
@@ -92,4 +102,8 @@ contract RestrictionManager is Auth {
     function hasMember(address user) public view returns (bool) {
         return members[user] >= block.timestamp;
     }
+
+    // --- Misc ---
+    function afterTransfer(address, /* from */ address, /* to */ uint256 /* value */ ) public virtual auth {}
+    function afterMint(address, /* to */ uint256 /* value */ ) public virtual auth {}
 }
