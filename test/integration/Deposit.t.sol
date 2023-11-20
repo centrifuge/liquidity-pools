@@ -349,7 +349,6 @@ contract DepositTest is TestSetup {
 
         // Use a wallet with a known private key so we can sign the permit message
         address investor = vm.addr(0xABCD);
-        address randomUser = makeAddr("randomUser");
         vm.prank(investor);
 
         address lPool_ = deploySimplePool();

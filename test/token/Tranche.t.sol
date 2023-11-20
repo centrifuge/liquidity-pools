@@ -280,9 +280,9 @@ contract TrancheTokenTest is Test {
         token.mint(targetUser, amount);
     }
 
-    function baseAssumptions(uint256 validUntil, address targetUser) internal view returns (bool) {
-        return validUntil > block.timestamp && targetUser != address(0) && targetUser != self
-            && targetUser != address(token);
+    function baseAssumptions(uint256 validUntil, address targetUser_) internal view returns (bool) {
+        return validUntil > block.timestamp && targetUser_ != address(0) && targetUser_ != self
+            && targetUser_ != address(token);
     }
 
     function afterTransferAssumptions(address from, address to, uint256 amount) internal {

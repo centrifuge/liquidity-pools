@@ -573,14 +573,14 @@ contract PoolManagerTest is TestSetup {
         centrifugeChain.incomingTransferTrancheTokens(poolId, trancheId, uint64(block.chainid), address(escrow), amount);
         assertEq(LiquidityPool(lPool_).balanceOf(address(escrow)), amount);
         uint256 balance = LiquidityPool(lPool_).balanceOf(address(escrow));
-        TrancheToken trancheToken = TrancheToken(address(LiquidityPool(lPool_).share()));
         root.relyContract(address(poolManager), self);
         poolManager.removeLiquidityPool(poolId, trancheId, currency);
 
         // arbitrary transferFrom execution
         bytes memory payload = abi.encodeWithSelector(ERC20.transferFrom.selector, address(escrow), randomAddress, balance);
         vm.expectRevert(bytes("ERC20/insufficient-allowance"));
-        (bool success, bytes memory data) = address(lPool_).call(payload);
+        (bool success,) = address(lPool_).call(payload);
+        assertEq(success, true);
 
         assertEq(LiquidityPool(lPool_).balanceOf(address(escrow)), amount);
     }
