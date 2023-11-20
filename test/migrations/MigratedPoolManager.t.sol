@@ -2,6 +2,8 @@
 pragma solidity 0.8.21;
 
 import {MigratedPoolManager, PoolManager} from "./migrationContracts/MigratedPoolManager.sol";
+import {LiquidityPool} from "src/LiquidityPool.sol";
+import {ERC20} from "src/token/ERC20.sol";
 import {TrancheTokenFactory, LiquidityPoolFactory, RestrictionManagerFactory} from "src/util/Factory.sol";
 import {InvestRedeemFlow} from "./InvestRedeemFlow.t.sol";
 
@@ -95,7 +97,9 @@ contract MigrationsTest is InvestRedeemFlow {
         // test that everything is working
         poolManager = newPoolManager;
         centrifugeChain.addPool(poolId + 1); // add pool
-        centrifugeChain.addTranche(poolId + 1, trancheId, "Test Token 2", "TT2", trancheTokenDecimals); // add tranche
+        LiquidityPool lPool = LiquidityPool(lPool_);
+        ERC20 asset = ERC20(lPool.asset());
+        centrifugeChain.addTranche(poolId + 1, trancheId, "Test Token 2", "TT2", asset.decimals(), 2); // add tranche
         centrifugeChain.allowInvestmentCurrency(poolId + 1, currencyId);
         poolManager.deployTranche(poolId + 1, trancheId);
         address _lPool2 = poolManager.deployLiquidityPool(poolId + 1, trancheId, address(erc20));
@@ -174,9 +178,9 @@ contract MigrationsTest is InvestRedeemFlow {
         PoolManager newPoolManager
     ) public {
         for (uint256 i = 0; i < trancheIds.length; i++) {
-            (uint8 oldDecimals, string memory oldTokenName, string memory oldTokenSymbol) =
+            (uint8 oldDecimals, string memory oldTokenName, string memory oldTokenSymbol, uint8 oldRestrictionSet) =
                 poolManager.undeployedTranches(poolId, trancheIds[i]);
-            (uint8 newDecimals, string memory newTokenName, string memory newTokenSymbol) =
+            (uint8 newDecimals, string memory newTokenName, string memory newTokenSymbol, uint8 newRestrictionSet) =
                 newPoolManager.undeployedTranches(poolId, trancheIds[i]);
             assertEq(newDecimals, oldDecimals);
             assertEq(newTokenName, oldTokenName);

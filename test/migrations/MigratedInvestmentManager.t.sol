@@ -26,7 +26,7 @@ contract MigratedInvestmentManagerTest is InvestRedeemFlow {
         address[] memory investors = new address[](1);
         investors[0] = investor;
         address[] memory liquidityPools = new address[](1);
-        liquidityPools[0] = _lPool;
+        liquidityPools[0] = lPool_;
 
         // Deploy new MigratedInvestmentManager
         MigratedInvestmentManager newInvestmentManager =
@@ -77,7 +77,7 @@ contract MigratedInvestmentManagerTest is InvestRedeemFlow {
         verifyMigratedInvestmentManagerPermissions(investmentManager, newInvestmentManager);
 
         investmentManager = newInvestmentManager;
-        verifyInvestAndRedeemFlow(poolId, trancheId, _lPool);
+        verifyInvestAndRedeemFlow(poolId, trancheId, lPool_);
     }
 
     function verifyMigratedInvestmentManagerPermissions(

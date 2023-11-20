@@ -13,19 +13,16 @@ contract InvestRedeemFlow is TestSetup {
     uint64 poolId;
     bytes16 trancheId;
     uint128 currencyId;
-    uint8 trancheTokenDecimals;
-    address _lPool;
+    address lPool_;
     uint256 investorCurrencyAmount;
 
     function setUp() public virtual override {
         super.setUp();
-        poolId = 1;
-        trancheId = bytes16(hex"811acd5b3f17c06841c7e41e9e04cb1b");
-        currencyId = 1;
-        trancheTokenDecimals = 18;
-        _lPool = deployLiquidityPool(
-            poolId, trancheTokenDecimals, erc20.name(), erc20.symbol(), trancheId, currencyId, address(erc20)
-        );
+        lPool_ = deploySimplePool();
+        LiquidityPool lPool = LiquidityPool(lPool_);
+        poolId = lPool.poolId();
+        trancheId = lPool.trancheId();
+        currencyId = poolManager.currencyAddressToId(address(lPool.asset()));
 
         investorCurrencyAmount = 1000 * 10 ** erc20.decimals();
         deal(address(erc20), investor, investorCurrencyAmount);

@@ -24,7 +24,7 @@ contract MigratedRestrictionManagerTest is InvestRedeemFlow {
 
         address[] memory restrictionManagerWards = new address[](1);
         restrictionManagerWards[0] = address(poolManager);
-        address token = address(LiquidityPool(_lPool).share());
+        address token = address(LiquidityPool(lPool_).share());
         RestrictionManager oldRestrictionManager = RestrictionManager(TrancheTokenLike(token).restrictionManager());
 
         // Deploy new RestrictionManagerFactory
@@ -65,7 +65,7 @@ contract MigratedRestrictionManagerTest is InvestRedeemFlow {
 
         // TODO: test that everything is working
         // restrictionManager = newRestrictionManager;
-        // verifyInvestAndRedeemFlow(poolId, trancheId, _lPool);
+        // verifyInvestAndRedeemFlow(poolId, trancheId, lPool_);
     }
 
     function verifyMigratedRestrictionManagerPermissions(

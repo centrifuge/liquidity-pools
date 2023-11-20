@@ -28,56 +28,39 @@ contract MigrationsTest is InvestRedeemFlow {
     }
 
     function testLiquidityPoolMigration() public {
-        // Simulate intended upgrade flow
         centrifugeChain.incomingScheduleUpgrade(address(this));
         vm.warp(block.timestamp + 3 days);
         root.executeScheduledRely(address(this));
 
-        // deploy new liquidityPoolFactory
-        LiquidityPoolFactory newLiquidityPoolFactory = new LiquidityPoolFactory(address(root));
+        LiquidityPool oldLiquidityPool = LiquidityPool(lPool_);
+        uint64 poolId = oldLiquidityPool.poolId();
+        bytes16 trancheId = oldLiquidityPool.trancheId();
+        address currency = address(oldLiquidityPool.asset());
 
-        // rewire factory contracts
+        LiquidityPoolFactory newLiquidityPoolFactory = new LiquidityPoolFactory(address(root));
         newLiquidityPoolFactory.rely(address(root));
 
-        // Deploy new liquidity pool
-        MigratedLiquidityPool newLiquidityPool = new MigratedLiquidityPool(
-            poolId, trancheId, address(erc20), address(LiquidityPool(_lPool).share()), address(escrow), address(investmentManager)
-        );
-
+        // rewire factory contracts
+        newLiquidityPoolFactory.rely(address(poolManager));
         root.relyContract(address(poolManager), address(this));
-        poolManager.updateLiquidityPool(poolId, trancheId, address(erc20), address(newLiquidityPool));
+        poolManager.file("liquidityPoolFactory", address(newLiquidityPoolFactory));
 
-        // Rewire new liquidity pool
-        TrancheTokenLike token = TrancheTokenLike(address(LiquidityPool(_lPool).share()));
-        root.relyContract(address(token), address(this));
-        token.rely(address(newLiquidityPool));
-        token.deny(_lPool);
-        token.addTrustedForwarder(address(newLiquidityPool));
-        token.removeTrustedForwarder(_lPool);
-        root.relyContract(address(investmentManager), address(this));
-        investmentManager.rely(address(newLiquidityPool));
-        investmentManager.deny(_lPool);
-        newLiquidityPool.rely(address(root));
-        newLiquidityPool.rely(address(investmentManager));
-        // escrow.approve(address(token), address(investmentManager), type(uint256).max);
-        root.relyContract(address(escrow), address(this));
-        escrow.approve(address(token), address(newLiquidityPool), type(uint256).max);
-        escrow.approve(address(token), _lPool, 0);
+        // Remove old liquidity pool
+        poolManager.removeLiquidityPool(poolId, trancheId, currency);
+        assertEq(poolManager.getLiquidityPool(poolId, trancheId, currency), address(0));
 
-        // clean up new liquidity pool
-        newLiquidityPool.deny(address(this));
-        root.denyContract(address(token), address(this));
-        root.denyContract(address(investmentManager), address(this));
-        root.denyContract(address(escrow), address(this));
-        root.deny(address(this));
+        // Deploy new liquidity pool
+        address newLiquidityPool = poolManager.deployLiquidityPool(poolId, trancheId, currency);
+        assertEq(poolManager.getLiquidityPool(poolId, trancheId, currency), newLiquidityPool);
+
+        root.denyContract(address(poolManager), address(this));
+        root.denyContract(address(newLiquidityPoolFactory), address(this));
 
         // verify permissions
-        verifyLiquidityPoolPermissions(LiquidityPool(_lPool), newLiquidityPool);
+        verifyLiquidityPoolPermissions(LiquidityPool(lPool_), LiquidityPool(newLiquidityPool));
 
-        // TODO: test that everything is working
-        _lPool = address(newLiquidityPool);
-        // poolManager = newPoolManager;
-        verifyInvestAndRedeemFlow(poolId, trancheId, _lPool);
+        lPool_ = address(newLiquidityPool);
+        verifyInvestAndRedeemFlow(poolId, trancheId, lPool_);
     }
 
     // --- Permissions & Dependencies Checks ---

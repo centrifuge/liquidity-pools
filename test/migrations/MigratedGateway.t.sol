@@ -40,7 +40,7 @@ contract MigratedGatewayTest is InvestRedeemFlow {
 
         // test that everything is working
         gateway = newGateway;
-        verifyInvestAndRedeemFlow(poolId, trancheId, _lPool);
+        verifyInvestAndRedeemFlow(poolId, trancheId, lPool_);
     }
 
     function verifyMigratedGatewayPermissions(Gateway oldGateway, Gateway newGateway) public {
