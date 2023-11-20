@@ -5,7 +5,7 @@ import "./Mock.sol";
 import "../../src/token/RestrictionManager.sol";
 
 contract RestrictionManagerMock is RestrictionManager, Mock {
-    constructor(address token_) public RestrictionManager(token_) {}
+    constructor(address token_) RestrictionManager(token_) {}
 
     // --- Misc ---
     function afterTransfer(address from, address to, uint256 amount) public override auth {
