@@ -49,9 +49,11 @@ contract MockCentrifugeChain is Test {
         bytes16 trancheId,
         string memory tokenName,
         string memory tokenSymbol,
-        uint8 decimals
+        uint8 decimals,
+        uint8 restrictionSet
     ) public {
-        bytes memory _message = Messages.formatAddTranche(poolId, trancheId, tokenName, tokenSymbol, decimals);
+        bytes memory _message =
+            Messages.formatAddTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, restrictionSet);
         router.execute(_message);
     }
 
@@ -70,8 +72,14 @@ contract MockCentrifugeChain is Test {
         router.execute(_message);
     }
 
-    function updateTrancheTokenPrice(uint64 poolId, bytes16 trancheId, uint128 currencyId, uint128 price) public {
-        bytes memory _message = Messages.formatUpdateTrancheTokenPrice(poolId, trancheId, currencyId, price);
+    function updateTrancheTokenPrice(
+        uint64 poolId,
+        bytes16 trancheId,
+        uint128 currencyId,
+        uint128 price,
+        uint64 computedAt
+    ) public {
+        bytes memory _message = Messages.formatUpdateTrancheTokenPrice(poolId, trancheId, currencyId, price, computedAt);
         router.execute(_message);
     }
 

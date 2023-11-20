@@ -26,7 +26,7 @@ interface ApproveLike {
 }
 
 contract DeployTest is Test, Deployer {
-    using MathLib for uint128;
+    using MathLib for uint256;
 
     uint8 constant PRICE_DECIMALS = 18;
 
@@ -63,13 +63,15 @@ contract DeployTest is Test, Deployer {
         uint64 poolId,
         string memory tokenName,
         string memory tokenSymbol,
-        bytes16 trancheId
+        bytes16 trancheId,
+        uint8 decimals,
+        uint8 restrictionSet
     ) public {
-        uint8 decimals = 6; // TODO: use fuzzed decimals
+        vm.assume(decimals <= 18 && decimals > 0);   
         uint128 price = uint128(2 * 10 ** PRICE_DECIMALS); //TODO: fuzz price
         uint256 amount = 1000 * 10 ** erc20.decimals();
         uint64 validUntil = uint64(block.timestamp + 1000 days);
-        address lPool_ = deployPoolAndTranche(poolId, trancheId, tokenName, tokenSymbol, decimals);
+        address lPool_ = deployPoolAndTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, restrictionSet);
         LiquidityPool lPool = LiquidityPool(lPool_);
 
         deal(address(erc20), self, amount);
@@ -84,8 +86,8 @@ contract DeployTest is Test, Deployer {
     }
 
     function depositMint(uint64 poolId, bytes16 trancheId, uint128 price, uint256 amount, LiquidityPool lPool) public {
-        erc20.approve(address(investmentManager), amount); // add allowance
-        lPool.requestDeposit(amount);
+        erc20.approve(address(lPool), amount); // add allowance
+        lPool.requestDeposit(amount, self);
 
         // ensure funds are locked in escrow
         assertEq(erc20.balanceOf(address(escrow)), amount);
@@ -94,11 +96,11 @@ contract DeployTest is Test, Deployer {
         // trigger executed collectInvest
         uint128 _currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
 
-        uint128 trancheTokensPayout = _toUint128(
-            uint128(amount).mulDiv(
+        uint128 trancheTokensPayout = (
+            amount.mulDiv(
                 10 ** (PRICE_DECIMALS - erc20.decimals() + lPool.decimals()), price, MathLib.Rounding.Down
             )
-        );
+        ).toUint128();
 
         // Assume an epoch execution happens on cent chain
         // Assume a bot calls collectInvest for this user on cent chain
@@ -131,13 +133,13 @@ contract DeployTest is Test, Deployer {
     function redeemWithdraw(uint64 poolId, bytes16 trancheId, uint128 price, uint256 amount, LiquidityPool lPool)
         public
     {
-        lPool.requestRedeem(amount);
+        lPool.requestRedeem(amount, address(this), address(this));
 
         // redeem
         uint128 _currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
-        uint128 currencyPayout = _toUint128(
-            uint128(amount).mulDiv(price, 10 ** (18 - erc20.decimals() + lPool.decimals()), MathLib.Rounding.Down)
-        );
+        uint128 currencyPayout = (
+            amount.mulDiv(price, 10 ** (18 - erc20.decimals() + lPool.decimals()), MathLib.Rounding.Down)
+        ).toUint128();
         // Assume an epoch execution happens on cent chain
         // Assume a bot calls collectRedeem for this user on cent chain
         vm.prank(address(gateway));
@@ -172,11 +174,12 @@ contract DeployTest is Test, Deployer {
         bytes16 trancheId,
         string memory tokenName,
         string memory tokenSymbol,
-        uint8 decimals
+        uint8 decimals,
+        uint8 restrictionSet
     ) public returns (address) {
         vm.startPrank(address(gateway));
         poolManager.addPool(poolId);
-        poolManager.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals);
+        poolManager.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, restrictionSet);
         poolManager.addCurrency(1, address(erc20));
         poolManager.allowInvestmentCurrency(poolId, 1);
         vm.stopPrank();
@@ -184,14 +187,6 @@ contract DeployTest is Test, Deployer {
         poolManager.deployTranche(poolId, trancheId);
         address lPool = poolManager.deployLiquidityPool(poolId, trancheId, address(erc20));
         return lPool;
-    }
-
-    function _toUint128(uint256 _value) internal pure returns (uint128 value) {
-        if (_value > type(uint128).max) {
-            revert();
-        } else {
-            value = uint128(_value);
-        }
     }
 
     function newErc20(string memory name, string memory symbol, uint8 decimals) internal returns (ERC20) {

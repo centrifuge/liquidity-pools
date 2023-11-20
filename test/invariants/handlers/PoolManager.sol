@@ -4,9 +4,8 @@ pragma solidity 0.8.21;
 import {MockCentrifugeChain} from "test/mock/MockCentrifugeChain.sol";
 import {PoolManager} from "src/PoolManager.sol";
 import {ERC20} from "src/token/ERC20.sol";
-import "forge-std/Test.sol";
 
-contract PoolManagerHandler is Test {
+contract PoolManagerHandler {
     uint64[] public allPools;
     bytes16[] public allTranches;
     address[] public allLiquidityPools;
@@ -30,9 +29,10 @@ contract PoolManagerHandler is Test {
         bytes16 trancheId,
         string memory tokenName,
         string memory tokenSymbol,
-        uint8 decimals
+        uint8 decimals,
+        uint8 restrictionSet
     ) public {
-        centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals);
+        centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, restrictionSet);
 
         allTranches.push(trancheId);
         trancheIdToPoolId[trancheId] = poolId;
@@ -47,11 +47,13 @@ contract PoolManagerHandler is Test {
         allLiquidityPools.push(pool);
     }
 
-    function addPoolTrancheAndLiquidityPool(uint64 poolId, bytes16 trancheId, uint8 decimals) public {
+    function addPoolTrancheAndLiquidityPool(uint64 poolId, bytes16 trancheId, uint8 decimals, uint8 restrictionSet)
+        public
+    {
         string memory tokenName = "tokenName";
         string memory tokenSymbol = "tokenSymbol";
         addPool(poolId);
-        addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals);
+        addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, restrictionSet);
         address erc20 = address(_newErc20(tokenName, tokenSymbol, decimals));
         deployLiquidityPool(poolId, trancheId, erc20);
     }

@@ -4,9 +4,10 @@ pragma solidity 0.8.21;
 import {TrancheTokenFactoryLike, RestrictionManagerFactoryLike, LiquidityPoolFactoryLike} from "./util/Factory.sol";
 import {TrancheTokenLike} from "./token/Tranche.sol";
 import {RestrictionManagerLike} from "./token/RestrictionManager.sol";
-import {IERC20} from "./interfaces/IERC20.sol";
+import {IERC20Metadata} from "./interfaces/IERC20.sol";
 import {Auth} from "./util/Auth.sol";
 import {SafeTransferLib} from "./util/SafeTransferLib.sol";
+import {MathLib} from "./util/MathLib.sol";
 
 interface GatewayLike {
     function transferTrancheTokensToCentrifuge(
@@ -39,13 +40,14 @@ interface EscrowLike {
 
 interface AuthLike {
     function rely(address user) external;
+    function deny(address user) external;
 }
 
 /// @dev Centrifuge pools
 struct Pool {
     uint256 createdAt;
     mapping(bytes16 trancheId => Tranche) tranches;
-    mapping(address currencyAddress => bool) allowedCurrencies;
+    mapping(address currency => bool) allowedCurrencies;
 }
 
 /// @dev Each Centrifuge pool is associated to 1 or more tranches
@@ -53,7 +55,14 @@ struct Tranche {
     address token;
     /// @dev Each tranche can have multiple liquidity pools deployed,
     ///      each linked to a unique investment currency (asset)
-    mapping(address currencyAddress => address liquidityPool) liquidityPools;
+    mapping(address currency => address liquidityPool) liquidityPools;
+    /// @dev Each tranche has a price per liquidity pool
+    mapping(address liquidityPool => TrancheTokenPrice) prices;
+}
+
+struct TrancheTokenPrice {
+    uint256 price;
+    uint64 computedAt;
 }
 
 /// @dev Temporary storage that is only present between addTranche and deployTranche
@@ -64,22 +73,26 @@ struct UndeployedTranche {
     /// @dev Metadata of the to be deployed erc20 token
     string tokenName;
     string tokenSymbol;
+    /// @dev Identifier of the restriction set that applies to this tranche token
+    uint8 restrictionSet;
 }
 
 /// @title  Pool Manager
 /// @notice This contract manages which pools & tranches exist,
 ///         as well as managing allowed pool currencies, and incoming and outgoing transfers.
 contract PoolManager is Auth {
+    using MathLib for uint256;
+
     uint8 internal constant MIN_DECIMALS = 1;
     uint8 internal constant MAX_DECIMALS = 18;
 
     EscrowLike public immutable escrow;
-    LiquidityPoolFactoryLike public immutable liquidityPoolFactory;
-    RestrictionManagerFactoryLike public immutable restrictionManagerFactory;
     TrancheTokenFactoryLike public immutable trancheTokenFactory;
 
     GatewayLike public gateway;
     InvestmentManagerLike public investmentManager;
+    LiquidityPoolFactoryLike public liquidityPoolFactory;
+    RestrictionManagerFactoryLike public restrictionManagerFactory;
 
     mapping(uint64 poolId => Pool) public pools;
     mapping(uint64 poolId => mapping(bytes16 => UndeployedTranche)) public undeployedTranches;
@@ -90,14 +103,22 @@ contract PoolManager is Auth {
 
     // --- Events ---
     event File(bytes32 indexed what, address data);
+    event AddCurrency(uint128 indexed currencyId, address indexed currency);
     event AddPool(uint64 indexed poolId);
-    event AllowInvestmentCurrency(uint128 indexed currency, uint64 indexed poolId);
-    event DisallowInvestmentCurrency(uint128 indexed currency, uint64 indexed poolId);
+    event AllowInvestmentCurrency(uint64 indexed poolId, address indexed currency);
+    event DisallowInvestmentCurrency(uint64 indexed poolId, address indexed currency);
     event AddTranche(uint64 indexed poolId, bytes16 indexed trancheId);
-    event DeployTranche(uint64 indexed poolId, bytes16 indexed trancheId, address indexed token);
-    event AddCurrency(uint128 indexed currency, address indexed currencyAddress);
-    event DeployLiquidityPool(uint64 indexed poolId, bytes16 indexed trancheId, address indexed liquidityPool);
-    event TransferCurrency(address indexed currencyAddress, bytes32 indexed recipient, uint128 amount);
+    event DeployTranche(uint64 indexed poolId, bytes16 indexed trancheId, address indexed trancheToken);
+    event DeployLiquidityPool(
+        uint64 indexed poolId, bytes16 indexed trancheId, address indexed currency, address liquidityPool
+    );
+    event RemoveLiquidityPool(
+        uint64 indexed poolId, bytes16 indexed trancheId, address indexed currency, address liquidityPool
+    );
+    event PriceUpdate(
+        uint64 indexed poolId, bytes16 indexed trancheId, address indexed currency, uint256 price, uint64 computedAt
+    );
+    event TransferCurrency(address indexed currency, bytes32 indexed recipient, uint128 amount);
     event TransferTrancheTokensToCentrifuge(
         uint64 indexed poolId, bytes16 indexed trancheId, bytes32 destinationAddress, uint128 amount
     );
@@ -134,24 +155,21 @@ contract PoolManager is Auth {
     function file(bytes32 what, address data) external auth {
         if (what == "gateway") gateway = GatewayLike(data);
         else if (what == "investmentManager") investmentManager = InvestmentManagerLike(data);
+        else if (what == "restrictionManagerFactory") restrictionManagerFactory = RestrictionManagerFactoryLike(data);
+        else if (what == "liquidityPoolFactory") liquidityPoolFactory = LiquidityPoolFactoryLike(data);
         else revert("PoolManager/file-unrecognized-param");
         emit File(what, data);
     }
 
     // --- Outgoing message handling ---
-    function transfer(address currencyAddress, bytes32 recipient, uint128 amount) public {
-        uint128 currency = currencyAddressToId[currencyAddress];
-        require(currency != 0, "PoolManager/unknown-currency");
+    function transfer(address currency, bytes32 recipient, uint128 amount) external {
+        uint128 currencyId = currencyAddressToId[currency];
+        require(currencyId != 0, "PoolManager/unknown-currency");
 
-        // Transfer the currency amount from user to escrow (lock currency in escrow)
-        // Checks actual balance difference to support fee-on-transfer tokens
-        uint256 preBalance = IERC20(currencyAddress).balanceOf(address(escrow));
-        SafeTransferLib.safeTransferFrom(currencyAddress, msg.sender, address(escrow), amount);
-        uint256 postBalance = IERC20(currencyAddress).balanceOf(address(escrow));
-        uint128 transferredAmount = _toUint128(postBalance - preBalance);
+        SafeTransferLib.safeTransferFrom(currency, msg.sender, address(escrow), amount);
 
-        gateway.transfer(currency, msg.sender, recipient, transferredAmount);
-        emit TransferCurrency(currencyAddress, recipient, transferredAmount);
+        gateway.transfer(currencyId, msg.sender, recipient, amount);
+        emit TransferCurrency(currency, recipient, amount);
     }
 
     function transferTrancheTokensToCentrifuge(
@@ -159,7 +177,7 @@ contract PoolManager is Auth {
         bytes16 trancheId,
         bytes32 destinationAddress,
         uint128 amount
-    ) public {
+    ) external {
         TrancheTokenLike trancheToken = TrancheTokenLike(getTrancheToken(poolId, trancheId));
         require(address(trancheToken) != address(0), "PoolManager/unknown-token");
 
@@ -175,7 +193,7 @@ contract PoolManager is Auth {
         uint64 destinationChainId,
         address destinationAddress,
         uint128 amount
-    ) public {
+    ) external {
         TrancheTokenLike trancheToken = TrancheTokenLike(getTrancheToken(poolId, trancheId));
         require(address(trancheToken) != address(0), "PoolManager/unknown-token");
 
@@ -201,26 +219,26 @@ contract PoolManager is Auth {
     ///             a new supported currency to the pool details.
     ///             Adding new currencies allow the creation of new liquidity pools for the underlying Centrifuge pool.
     /// @dev        The function can only be executed by the gateway contract.
-    function allowInvestmentCurrency(uint64 poolId, uint128 currency) public onlyGateway {
+    function allowInvestmentCurrency(uint64 poolId, uint128 currencyId) public onlyGateway {
         Pool storage pool = pools[poolId];
         require(pool.createdAt != 0, "PoolManager/invalid-pool");
 
-        address currencyAddress = currencyIdToAddress[currency];
-        require(currencyAddress != address(0), "PoolManager/unknown-currency");
+        address currency = currencyIdToAddress[currencyId];
+        require(currency != address(0), "PoolManager/unknown-currency");
 
-        pools[poolId].allowedCurrencies[currencyAddress] = true;
-        emit AllowInvestmentCurrency(currency, poolId);
+        pools[poolId].allowedCurrencies[currency] = true;
+        emit AllowInvestmentCurrency(poolId, currency);
     }
 
-    function disallowInvestmentCurrency(uint64 poolId, uint128 currency) public onlyGateway {
+    function disallowInvestmentCurrency(uint64 poolId, uint128 currencyId) public onlyGateway {
         Pool storage pool = pools[poolId];
         require(pool.createdAt != 0, "PoolManager/invalid-pool");
 
-        address currencyAddress = currencyIdToAddress[currency];
-        require(currencyAddress != address(0), "PoolManager/unknown-currency");
+        address currency = currencyIdToAddress[currencyId];
+        require(currency != address(0), "PoolManager/unknown-currency");
 
-        pools[poolId].allowedCurrencies[currencyAddress] = false;
-        emit DisallowInvestmentCurrency(currency, poolId);
+        pools[poolId].allowedCurrencies[currency] = false;
+        emit DisallowInvestmentCurrency(poolId, currency);
     }
 
     /// @notice     New tranche details from an existing Centrifuge pool are added.
@@ -230,7 +248,8 @@ contract PoolManager is Auth {
         bytes16 trancheId,
         string memory tokenName,
         string memory tokenSymbol,
-        uint8 decimals
+        uint8 decimals,
+        uint8 restrictionSet
     ) public onlyGateway {
         require(decimals >= MIN_DECIMALS, "PoolManager/too-few-tranche-token-decimals");
         require(decimals <= MAX_DECIMALS, "PoolManager/too-many-tranche-token-decimals");
@@ -240,10 +259,12 @@ contract PoolManager is Auth {
 
         UndeployedTranche storage undeployedTranche = undeployedTranches[poolId][trancheId];
         require(undeployedTranche.decimals == 0, "PoolManager/tranche-already-exists");
+        require(getTrancheToken(poolId, trancheId) == address(0), "PoolManager/tranche-already-deployed");
 
         undeployedTranche.decimals = decimals;
         undeployedTranche.tokenName = tokenName;
         undeployedTranche.tokenSymbol = tokenSymbol;
+        undeployedTranche.restrictionSet = restrictionSet;
 
         emit AddTranche(poolId, trancheId);
     }
@@ -259,6 +280,23 @@ contract PoolManager is Auth {
 
         trancheToken.file("name", tokenName);
         trancheToken.file("symbol", tokenSymbol);
+    }
+
+    function updateTrancheTokenPrice(
+        uint64 poolId,
+        bytes16 trancheId,
+        uint128 currencyId,
+        uint128 price,
+        uint64 computedAt
+    ) public onlyGateway {
+        Tranche storage tranche = pools[poolId].tranches[trancheId];
+        require(tranche.token != address(0), "PoolManager/tranche-does-not-exist");
+
+        address currency = currencyIdToAddress[currencyId];
+        require(computedAt >= tranche.prices[currency].computedAt, "PoolManager/cannot-set-older-price");
+
+        tranche.prices[currency] = TrancheTokenPrice(price, computedAt);
+        emit PriceUpdate(poolId, trancheId, currency, price, computedAt);
     }
 
     function updateMember(uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) public onlyGateway {
@@ -293,32 +331,32 @@ contract PoolManager is Auth {
     ///         a currency from the Centrifuge index to its corresponding address on the evm chain.
     ///         The chain agnostic currency id has to be used to pass currency information to the Centrifuge.
     /// @dev    This function can only be executed by the gateway contract.
-    function addCurrency(uint128 currency, address currencyAddress) public onlyGateway {
+    function addCurrency(uint128 currencyId, address currency) public onlyGateway {
         // Currency index on the Centrifuge side should start at 1
-        require(currency != 0, "PoolManager/currency-id-has-to-be-greater-than-0");
-        require(currencyIdToAddress[currency] == address(0), "PoolManager/currency-id-in-use");
-        require(currencyAddressToId[currencyAddress] == 0, "PoolManager/currency-address-in-use");
+        require(currencyId != 0, "PoolManager/currency-id-has-to-be-greater-than-0");
+        require(currencyIdToAddress[currencyId] == address(0), "PoolManager/currency-id-in-use");
+        require(currencyAddressToId[currency] == 0, "PoolManager/currency-address-in-use");
 
-        uint8 currencyDecimals = IERC20(currencyAddress).decimals();
+        uint8 currencyDecimals = IERC20Metadata(currency).decimals();
         require(currencyDecimals >= MIN_DECIMALS, "PoolManager/too-few-currency-decimals");
         require(currencyDecimals <= MAX_DECIMALS, "PoolManager/too-many-currency-decimals");
 
-        currencyIdToAddress[currency] = currencyAddress;
-        currencyAddressToId[currencyAddress] = currency;
+        currencyIdToAddress[currencyId] = currency;
+        currencyAddressToId[currency] = currencyId;
 
         // Give investment manager infinite approval for currency in the escrow
         // to transfer to the user escrow on redeem, withdraw or transfer
-        escrow.approve(currencyAddress, investmentManager.userEscrow(), type(uint256).max);
+        escrow.approve(currency, investmentManager.userEscrow(), type(uint256).max);
 
-        emit AddCurrency(currency, currencyAddress);
+        emit AddCurrency(currencyId, currency);
     }
 
-    function handleTransfer(uint128 currency, address recipient, uint128 amount) public onlyGateway {
-        address currencyAddress = currencyIdToAddress[currency];
-        require(currencyAddress != address(0), "PoolManager/unknown-currency");
+    function handleTransfer(uint128 currencyId, address recipient, uint128 amount) public onlyGateway {
+        address currency = currencyIdToAddress[currencyId];
+        require(currency != address(0), "PoolManager/unknown-currency");
 
-        escrow.approve(currencyAddress, address(this), amount);
-        SafeTransferLib.safeTransferFrom(currencyAddress, address(escrow), recipient, amount);
+        escrow.approve(currency, address(this), amount);
+        SafeTransferLib.safeTransferFrom(currency, address(escrow), recipient, amount);
     }
 
     function handleTransferTrancheTokens(uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 amount)
@@ -352,12 +390,18 @@ contract PoolManager is Auth {
             undeployedTranche.decimals,
             trancheTokenWards
         );
-        address restrictionManager = restrictionManagerFactory.newRestrictionManager(token, restrictionManagerWards);
+        address restrictionManager = restrictionManagerFactory.newRestrictionManager(
+            undeployedTranche.restrictionSet, token, restrictionManagerWards
+        );
         TrancheTokenLike(token).file("restrictionManager", restrictionManager);
 
         pools[poolId].tranches[trancheId].token = token;
 
         delete undeployedTranches[poolId][trancheId];
+
+        // Give investment manager infinite approval for tranche tokens
+        // in the escrow to transfer to the user on deposit or mint
+        escrow.approve(token, address(investmentManager), type(uint256).max);
 
         emit DeployTranche(poolId, trancheId, token);
         return token;
@@ -378,7 +422,7 @@ contract PoolManager is Auth {
 
         // Deploy liquidity pool
         liquidityPool = liquidityPoolFactory.newLiquidityPool(
-            poolId, trancheId, currency, tranche.token, address(investmentManager), liquidityPoolWards
+            poolId, trancheId, currency, tranche.token, address(escrow), address(investmentManager), liquidityPoolWards
         );
         tranche.liquidityPools[currency] = liquidityPool;
 
@@ -389,16 +433,32 @@ contract PoolManager is Auth {
         AuthLike(tranche.token).rely(liquidityPool);
         TrancheTokenLike(tranche.token).addTrustedForwarder(liquidityPool);
 
-        // Give investment manager infinite approval for tranche tokens
-        // in the escrow to transfer to the user on deposit or mint
-        escrow.approve(tranche.token, address(investmentManager), type(uint256).max);
-
-        // Give investment manager infinite approval for tranche tokens
+        // Give liquidity pool infinite approval for tranche tokens
         // in the escrow to burn on executed redemptions
         escrow.approve(tranche.token, liquidityPool, type(uint256).max);
 
-        emit DeployLiquidityPool(poolId, trancheId, liquidityPool);
+        emit DeployLiquidityPool(poolId, trancheId, currency, liquidityPool);
         return liquidityPool;
+    }
+
+    function removeLiquidityPool(uint64 poolId, bytes16 trancheId, address currency) public auth {
+        require(pools[poolId].createdAt != 0, "PoolManager/pool-does-not-exist");
+        Tranche storage tranche = pools[poolId].tranches[trancheId];
+        require(tranche.token != address(0), "PoolManager/tranche-does-not-exist");
+
+        address liquidityPool = tranche.liquidityPools[currency];
+        require(liquidityPool != address(0), "PoolManager/liquidity-pool-not-deployed");
+
+        delete tranche.liquidityPools[currency];
+
+        AuthLike(address(investmentManager)).deny(liquidityPool);
+
+        AuthLike(tranche.token).deny(liquidityPool);
+        TrancheTokenLike(tranche.token).removeTrustedForwarder(liquidityPool);
+
+        escrow.approve(address(tranche.token), liquidityPool, 0);
+
+        emit RemoveLiquidityPool(poolId, trancheId, currency, liquidityPool);
     }
 
     // --- Helpers ---
@@ -407,28 +467,25 @@ contract PoolManager is Auth {
         return tranche.token;
     }
 
+    function getLiquidityPool(uint64 poolId, bytes16 trancheId, uint128 currencyId) public view returns (address) {
+        return pools[poolId].tranches[trancheId].liquidityPools[currencyIdToAddress[currencyId]];
+    }
+
     function getLiquidityPool(uint64 poolId, bytes16 trancheId, address currency) public view returns (address) {
         return pools[poolId].tranches[trancheId].liquidityPools[currency];
     }
 
-    function isAllowedAsInvestmentCurrency(uint64 poolId, address currencyAddress) public view returns (bool) {
-        uint128 currency = currencyAddressToId[currencyAddress];
-        if (currency == 0) {
-            // Currency index on the Centrifuge side should start at 1
-            return false;
-        }
-
-        return pools[poolId].allowedCurrencies[currencyAddress];
+    function getTrancheTokenPrice(uint64 poolId, bytes16 trancheId, address currency)
+        public
+        view
+        returns (uint256 price, uint64 computedAt)
+    {
+        TrancheTokenPrice memory value = pools[poolId].tranches[trancheId].prices[currency];
+        price = value.price;
+        computedAt = value.computedAt;
     }
 
-    /// @dev    Safe type conversion from uint256 to uint128. Revert if value is too big to
-    ///         be stored with uint128. Avoid data loss.
-    /// @return value - safely converted without data loss
-    function _toUint128(uint256 _value) internal pure returns (uint128 value) {
-        if (_value > type(uint128).max) {
-            revert("PoolManager/uint128-overflow");
-        } else {
-            value = uint128(_value);
-        }
+    function isAllowedAsInvestmentCurrency(uint64 poolId, address currency) public view returns (bool) {
+        return pools[poolId].allowedCurrencies[currency];
     }
 }

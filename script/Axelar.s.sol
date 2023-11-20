@@ -39,7 +39,7 @@ contract AxelarScript is Deployer {
 
             poolManager.addCurrency(1, address(currency));
             poolManager.addPool(1171854325);
-            poolManager.addTranche(1171854325, 0x102f4ef817340a8839a515d2c73a7c1d, "Some Token", "ST", 6);
+            poolManager.addTranche(1171854325, 0x102f4ef817340a8839a515d2c73a7c1d, "Some Token", "ST", 6, 2);
             poolManager.deployTranche(1171854325, 0x102f4ef817340a8839a515d2c73a7c1d);
             poolManager.allowInvestmentCurrency(1171854325, 1);
             poolManager.deployLiquidityPool(1171854325, 0x102f4ef817340a8839a515d2c73a7c1d, address(currency));
@@ -51,7 +51,7 @@ contract AxelarScript is Deployer {
             LiquidityPoolLike liquidityPool = LiquidityPoolLike(
                 poolManager.getLiquidityPool(1171854325, 0x102f4ef817340a8839a515d2c73a7c1d, address(currency))
             );
-            currency.approve(address(investmentManager), 1000 * 10 ** 18);
+            currency.approve(address(liquidityPool), 1000 * 10 ** 18);
             liquidityPool.requestDeposit(200 * 10 ** 18, msg.sender);
             liquidityPool.requestDeposit(200 * 10 ** 18, msg.sender);
             liquidityPool.requestDeposit(200 * 10 ** 18, msg.sender);
