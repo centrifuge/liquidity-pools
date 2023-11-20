@@ -89,7 +89,6 @@ contract PoolManager is Auth {
     EscrowLike public immutable escrow;
     TrancheTokenFactoryLike public immutable trancheTokenFactory;
 
-    RestrictionManagerFactoryLike public restrictionManagerFactory;
     GatewayLike public gateway;
     InvestmentManagerLike public investmentManager;
     LiquidityPoolFactoryLike public liquidityPoolFactory;

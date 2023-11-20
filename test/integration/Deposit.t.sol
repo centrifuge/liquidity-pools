@@ -810,22 +810,22 @@ contract DepositTest is TestSetup {
         uint128 currencyPayout = 50000000; // 50 * 10**6
         uint128 firstTrancheTokenPayout = 35714285714285714285; // 50 * 10**18 / 1.4, rounded down
         centrifugeChain.isExecutedCollectInvest(
-            poolId, trancheId, bytes32(bytes20(self)), _currencyId, currencyPayout, firstTrancheTokenPayout, currencyPayout
+            poolId,
+            trancheId,
+            bytes32(bytes20(self)),
+            _currencyId,
+            currencyPayout,
+            firstTrancheTokenPayout,
+            currencyPayout
         );
-        
+
         (, uint256 depositPrice,,,,,) = investmentManager.investments(address(lPool), self);
         assertEq(depositPrice, 1400000000000000000);
 
         // second trigger executed collectInvest of the second 50% at a price of 1.2
         uint128 secondTrancheTokenPayout = 41666666666666666666; // 50 * 10**18 / 1.2, rounded down
         centrifugeChain.isExecutedCollectInvest(
-            poolId,
-            trancheId,
-            bytes32(bytes20(self)),
-            _currencyId,
-            currencyPayout,
-            secondTrancheTokenPayout,
-            0
+            poolId, trancheId, bytes32(bytes20(self)), _currencyId, currencyPayout, secondTrancheTokenPayout, 0
         );
 
         (, depositPrice,,,,,) = investmentManager.investments(address(lPool), self);

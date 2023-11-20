@@ -341,11 +341,17 @@ contract RedeemTest is TestSetup {
         assertEq(firstTrancheTokenRedeem + secondTrancheTokenRedeem, redeemAmount);
         uint128 firstCurrencyPayout = 27500000; // (25000000000000000000/10**18) * 10**6 * 1.1
         centrifugeChain.isExecutedCollectRedeem(
-            poolId, trancheId, bytes32(bytes20(self)), currencyId, firstCurrencyPayout, firstTrancheTokenRedeem, secondTrancheTokenRedeem 
+            poolId,
+            trancheId,
+            bytes32(bytes20(self)),
+            currencyId,
+            firstCurrencyPayout,
+            firstTrancheTokenRedeem,
+            secondTrancheTokenRedeem
         );
 
         assertEq(lPool.maxRedeem(self), firstTrancheTokenRedeem);
-            
+
         (,,, uint256 redeemPrice,,,) = investmentManager.investments(address(lPool), self);
         assertEq(redeemPrice, 1100000000000000000);
 
