@@ -39,7 +39,7 @@ contract InvestmentInvariants is TestSetup {
                 )
             );
             uint128 currencyId = poolId + 1;
-            address pool = deployLiquidityPool(poolId, trancheTokenDecimals, "", "", "1", currencyId, currency);
+            address pool = deployLiquidityPool(poolId, trancheTokenDecimals, 1, "", "", "1", currencyId, currency);
             pools.push(pool);
 
             excludeContract(pool);

@@ -23,7 +23,7 @@ contract PoolManagerInvariants is TestSetup {
     function setUp() public override {
         super.setUp();
 
-        deployLiquidityPool(1, erc20.decimals(), "", "", "1", 1, address(erc20));
+        deployLiquidityPool(1, erc20.decimals(), defaultRestrictionSet, "", "", "1", 1, address(erc20));
 
         // Performs random pool, tranche, and liquidityPool creations
         poolManagerHandler = new PoolManagerHandler(address(centrifugeChain), address(poolManager));
