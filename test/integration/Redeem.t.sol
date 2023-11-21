@@ -327,4 +327,49 @@ contract RedeemTest is TestSetup {
 
         assertApproxEqAbs(erc20.balanceOf(investor), investorBalanceBefore + amount, 1);
     }
+
+    function partialRedeem(uint64 poolId, bytes16 trancheId, LiquidityPool lPool, ERC20 currency) public {
+        uint128 currencyId = poolManager.currencyAddressToId(address(currency));
+        uint256 totalTrancheTokens = lPool.balanceOf(self);
+        uint256 redeemAmount = 50000000000000000000;
+        assertTrue(redeemAmount <= totalTrancheTokens);
+        lPool.requestRedeem(redeemAmount, self, self);
+
+        // first trigger executed collectRedeem of the first 25 trancheTokens at a price of 1.1
+        uint128 firstTrancheTokenRedeem = 25000000000000000000;
+        uint128 secondTrancheTokenRedeem = 25000000000000000000;
+        assertEq(firstTrancheTokenRedeem + secondTrancheTokenRedeem, redeemAmount);
+        uint128 firstCurrencyPayout = 27500000; // (25000000000000000000/10**18) * 10**6 * 1.1
+        centrifugeChain.isExecutedCollectRedeem(
+            poolId,
+            trancheId,
+            bytes32(bytes20(self)),
+            currencyId,
+            firstCurrencyPayout,
+            firstTrancheTokenRedeem,
+            secondTrancheTokenRedeem
+        );
+
+        assertEq(lPool.maxRedeem(self), firstTrancheTokenRedeem);
+
+        (,,, uint256 redeemPrice,,,) = investmentManager.investments(address(lPool), self);
+        assertEq(redeemPrice, 1100000000000000000);
+
+        // second trigger executed collectRedeem of the second 25 trancheTokens at a price of 1.3
+        uint128 secondCurrencyPayout = 32500000; // (25000000000000000000/10**18) * 10**6 * 1.3
+        centrifugeChain.isExecutedCollectRedeem(
+            poolId, trancheId, bytes32(bytes20(self)), currencyId, secondCurrencyPayout, secondTrancheTokenRedeem, 0
+        );
+
+        (,,, redeemPrice,,,) = investmentManager.investments(address(lPool), self);
+        assertEq(redeemPrice, 1200000000000000000);
+
+        assertApproxEqAbs(lPool.maxWithdraw(self), firstCurrencyPayout + secondCurrencyPayout, 2);
+        assertEq(lPool.maxRedeem(self), redeemAmount);
+
+        // collect the currency
+        lPool.redeem(redeemAmount, self, self);
+        assertEq(lPool.balanceOf(self), totalTrancheTokens - redeemAmount);
+        assertEq(currency.balanceOf(self), firstCurrencyPayout + secondCurrencyPayout);
+    }
 }
