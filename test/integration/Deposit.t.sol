@@ -82,7 +82,7 @@ contract DepositTest is TestSetup {
         assertTrue(lPool.maxDeposit(self) <= amount * 0.01e18);
     }
 
-    function testPartialExecutions(uint64 poolId, bytes16 trancheId, uint128 currencyId) public {
+    function testPartialDepositExecutions(uint64 poolId, bytes16 trancheId, uint128 currencyId) public {
         vm.assume(currencyId > 0);
 
         uint8 TRANCHE_TOKEN_DECIMALS = 18; // Like DAI
@@ -796,47 +796,5 @@ contract DepositTest is TestSetup {
         assertEq(erc20.balanceOf(self), 0);
         assertEq(lPool.maxRedeem(self), amount);
         assertEq(lPool.maxWithdraw(self), amount);
-    }
-
-    function partialDeposit(uint64 poolId, bytes16 trancheId, LiquidityPool lPool, ERC20 currency) public {
-        uint256 investmentAmount = 100000000; // 100 * 10**6
-        centrifugeChain.updateMember(poolId, trancheId, self, type(uint64).max);
-        currency.approve(address(lPool), investmentAmount);
-        currency.mint(self, investmentAmount);
-        lPool.requestDeposit(investmentAmount, self);
-        uint128 _currencyId = poolManager.currencyAddressToId(address(currency)); // retrieve currencyId
-
-        // first trigger executed collectInvest of the first 50% at a price of 1.4
-        uint128 currencyPayout = 50000000; // 50 * 10**6
-        uint128 firstTrancheTokenPayout = 35714285714285714285; // 50 * 10**18 / 1.4, rounded down
-        centrifugeChain.isExecutedCollectInvest(
-            poolId,
-            trancheId,
-            bytes32(bytes20(self)),
-            _currencyId,
-            currencyPayout,
-            firstTrancheTokenPayout,
-            currencyPayout
-        );
-
-        (, uint256 depositPrice,,,,,) = investmentManager.investments(address(lPool), self);
-        assertEq(depositPrice, 1400000000000000000);
-
-        // second trigger executed collectInvest of the second 50% at a price of 1.2
-        uint128 secondTrancheTokenPayout = 41666666666666666666; // 50 * 10**18 / 1.2, rounded down
-        centrifugeChain.isExecutedCollectInvest(
-            poolId, trancheId, bytes32(bytes20(self)), _currencyId, currencyPayout, secondTrancheTokenPayout, 0
-        );
-
-        (, depositPrice,,,,,) = investmentManager.investments(address(lPool), self);
-        assertEq(depositPrice, 1292307679384615384);
-
-        // assert deposit & mint values adjusted
-        assertApproxEqAbs(lPool.maxDeposit(self), currencyPayout * 2, 2);
-        assertEq(lPool.maxMint(self), firstTrancheTokenPayout + secondTrancheTokenPayout);
-
-        // collect the tranche tokens
-        lPool.mint(firstTrancheTokenPayout + secondTrancheTokenPayout, self);
-        assertEq(lPool.balanceOf(self), firstTrancheTokenPayout + secondTrancheTokenPayout);
     }
 }
