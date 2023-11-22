@@ -174,7 +174,7 @@ contract InvestmentManager is Auth {
     ///         in case their orders got fulfilled.
     /// @dev    The user tranche tokens required to fulfill the redemption request have to be locked,
     ///         even though the currency payout can only happen after epoch execution.
-    function requestRedeem(address liquidityPool, uint256 trancheTokenAmount, address receiver, address /* owner */)
+    function requestRedeem(address liquidityPool, uint256 trancheTokenAmount, address receiver, address /* owner */ )
         public
         auth
         returns (bool)
