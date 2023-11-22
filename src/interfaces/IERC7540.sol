@@ -23,48 +23,57 @@ interface IERC165 {
 }
 
 interface IERC7540Deposit {
-    event DepositRequest(address indexed sender, address indexed operator, uint256 assets);
+    event DepositRequest(address indexed sender, address indexed receiver, address indexed owner, uint256 assets);
 
     /**
-     * @dev Transfers assets from msg.sender into the Vault and submits a Request for asynchronous deposit/mint.
+     * @dev Transfers assets from sender into the Vault and submits a Request for asynchronous deposit.
      *
      * - MUST support ERC-20 approve / transferFrom on asset as a deposit Request flow.
-     * - MUST revert if all of assets cannot be requested for deposit/mint.
+     * - MUST revert if all of assets cannot be requested for deposit.
+     * - owner MUST be msg.sender unless some unspecified explicit approval is given by the caller,
+     *    approval of ERC-20 shares from owner to sender is NOT enough.
      *
+     * @param assets the amount of assets to transfer from owner
+     * @param receiver the receiver of the request who will be able to operate the request
+     * 
      * NOTE: most implementations will require pre-approval of the Vault with the Vault's underlying asset token.
      */
-    function requestDeposit(uint256 assets, address operator) external;
+    function requestDeposit(uint256 assets, address receiver) external;
 
     /**
-     * @dev Returns the amount of requested assets in Pending state for the operator to deposit or mint.
+     * @dev Returns the amount of requested assets in Pending state for the owner to deposit or mint.
      *
      * - MUST NOT include any assets in Claimable state for deposit or mint.
      * - MUST NOT show any variations depending on the caller.
      * - MUST NOT revert unless due to integer overflow caused by an unreasonably large input.
      */
-    function pendingDepositRequest(address operator) external view returns (uint256 assets);
+    function pendingDepositRequest(address owner) external view returns (uint256 assets);
 }
 
 interface IERC7540Redeem {
-    event RedeemRequest(address indexed sender, address indexed operator, address indexed owner, uint256 shares);
+    event RedeemRequest(address indexed sender, address indexed receiver, address indexed owner, uint256 shares);
 
     /**
-     * @dev Assumes control of shares from owner and submits a Request for asynchronous redeem/withdraw.
+     * @dev Assumes control of shares from owner and submits a Request for asynchronous redeem.
      *
      * - MUST support a redeem Request flow where the control of shares is taken from owner directly
      *   where msg.sender has ERC-20 approval over the shares of owner.
-     * - MUST revert if all of shares cannot be requested for redeem / withdraw.
+     * - MUST revert if all of shares cannot be requested for redeem.
+     *
+     * @param shares the amount of shares to transfer from owner
+     * @param receiver the receiver of the request who will be able to operate the request
+     * @param owner the source of the shares
      */
-    function requestRedeem(uint256 shares, address operator, address owner) external;
+    function requestRedeem(uint256 shares, address receiver, address owner) external;
 
     /**
-     * @dev Returns the amount of requested shares in Pending state for the operator to redeem or withdraw.
+     * @dev Returns the amount of requested shares in Pending state for the owner to redeem or withdraw.
      *
      * - MUST NOT include any shares in Claimable state for redeem or withdraw.
      * - MUST NOT show any variations depending on the caller.
      * - MUST NOT revert unless due to integer overflow caused by an unreasonably large input.
      */
-    function pendingRedeemRequest(address operator) external view returns (uint256 shares);
+    function pendingRedeemRequest(address owner) external view returns (uint256 shares);
 }
 
 /**
