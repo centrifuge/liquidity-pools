@@ -6,7 +6,6 @@ import {AxelarGatewayMock} from "../../../mock/AxelarGatewayMock.sol";
 import {GatewayMock} from "../../../mock/GatewayMock.sol";
 import "forge-std/Test.sol";
 import {AxelarForwarder} from "../../../../src/gateway/routers/axelar/Forwarder.sol";
-import {BytesLib} from "../../../../src/util/BytesLib.sol";
 
 contract AxelarRouterTest is Test {
     AxelarGatewayMock axelarGateway;
@@ -22,7 +21,7 @@ contract AxelarRouterTest is Test {
         gateway = new GatewayMock();
 
         forwarder = new AxelarForwarder(address(axelarGateway));
-        router = new AxelarRouter(address(axelarGateway), address(forwarder));
+        router = new AxelarRouter(address(axelarGateway), axelarCentrifugeChainId, AxelarRouterTest.toHex(abi.encodePacked(forwarder)));
         router.file("gateway", address(gateway));
     }
 
@@ -86,8 +85,22 @@ contract AxelarRouterTest is Test {
         router.send(message);
 
         assertEq(axelarGateway.values_string("destinationChain"), axelarCentrifugeChainId);
-        // TODO: Would be great to have a test on the toHex library
-        assertEq(axelarGateway.values_string("contractAddress"), BytesLib.toHex(abi.encodePacked(forwarder)));
+        assertEq(axelarGateway.values_string("contractAddress"),  AxelarRouterTest.toHex(abi.encodePacked(forwarder)));
         assertEq(axelarGateway.values_bytes("payload"), message);
+    }
+
+
+    function toHex(bytes memory _bytes) public pure returns (string memory) {
+        // Fixed buffer size for hexadecimal convertion
+        bytes memory converted = new bytes(_bytes.length * 2);
+
+        bytes memory _base = "0123456789abcdef";
+
+        for (uint256 i = 0; i < _bytes.length; i++) {
+            converted[i * 2] = _base[uint8(_bytes[i]) / _base.length];
+            converted[i * 2 + 1] = _base[uint8(_bytes[i]) % _base.length];
+        }
+
+        return string(abi.encodePacked("0x", converted));
     }
 }
