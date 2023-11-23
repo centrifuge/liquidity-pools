@@ -23,28 +23,20 @@ interface GatewayLike {
 /// @title  Axelar Router
 /// @notice Routing contract that integrates with an Axelar Gateway
 contract AxelarRouter is Auth {
-    // The EVM address of the Centrifuge chains sovereign account
+    string internal constant CENTRIFUGE_CHAIN_ID = "centrifuge";
     string internal constant CENTRIFUGE_CHAIN_ADDRESS = "0x7369626CEF070000000000000000000000000000";
 
-    // NOTE: This value is `centrifuge-2` in the testnet and `centrifuge` in the production network
-    string public immutable centrifugeChainId;
-
-    // NOTE: This value is the address of the forwarder deployed on centrifuge. Form: `0x...`
-    string public immutable centrifugeExecutable;
-
-    // The Axelar gateway contract in the domain this contract lives on
     AxelarGatewayLike public immutable axelarGateway;
+    address public immutable centrifugeAxelarExecutable;
 
-    // The LP gateway that is allowed to submit messages through the router
     GatewayLike public gateway;
 
     // --- Events ---
     event File(bytes32 indexed what, address addr);
 
-    constructor(address axelarGateway_, string centrifugeChainId_, string centrifugeExecutable_) {
-        centrifugeChainId = centrifugeChainId_;
-        centrifugeExecutable = centrifugeExecutable_;
+    constructor(address axelarGateway_, address centrifugeAxelarExecutable_) {
         axelarGateway = AxelarGatewayLike(axelarGateway_);
+        centrifugeAxelarExecutable = centrifugeAxelarExecutable_;
 
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
@@ -96,7 +88,7 @@ contract AxelarRouter is Auth {
     // --- Outgoing ---
     function send(bytes calldata message) public onlyGateway {
         axelarGateway.callContract(
-            centrifugeChainId, centrifugeExecutable, message
+            CENTRIFUGE_CHAIN_ID, BytesLib.toHex(abi.encodePacked(centrifugeAxelarExecutable)), message
         );
     }
 }
