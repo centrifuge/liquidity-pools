@@ -2,7 +2,7 @@
 pragma solidity 0.8.21;
 
 import {Auth} from "./../../../util/Auth.sol";
-import {BytesLib} from "../../../util/BytesLib.sol";
+import { BytesLib } from "./../../../util/BytesLib.sol";
 
 interface AxelarGatewayLike {
     function callContract(string calldata destinationChain, string calldata contractAddress, bytes calldata payload)
@@ -27,14 +27,14 @@ contract AxelarRouter is Auth {
     string internal constant CENTRIFUGE_CHAIN_ADDRESS = "0x7369626CEF070000000000000000000000000000";
 
     AxelarGatewayLike public immutable axelarGateway;
-    address public immutable centrifugeAxelarExecutable;
+    string public centrifugeAxelarExecutable;
 
     GatewayLike public gateway;
 
     // --- Events ---
-    event File(bytes32 indexed what, address addr);
+    event File(bytes32 indexed what, bytes addr);
 
-    constructor(address axelarGateway_, address centrifugeAxelarExecutable_) {
+    constructor(address axelarGateway_, string memory centrifugeAxelarExecutable_) {
         axelarGateway = AxelarGatewayLike(axelarGateway_);
         centrifugeAxelarExecutable = centrifugeAxelarExecutable_;
 
@@ -59,9 +59,11 @@ contract AxelarRouter is Auth {
     }
 
     // --- Administration ---
-    function file(bytes32 what, address data) external auth {
+    function file(bytes32 what, bytes memory data) external auth {
         if (what == "gateway") {
-            gateway = GatewayLike(data);
+            gateway = GatewayLike(BytesLib.toAddress(data, 0));
+        } else if (what == "executable") {
+            centrifugeAxelarExecutable = string(data);
         } else {
             revert("AxelarRouter/file-unrecognized-param");
         }
@@ -88,7 +90,7 @@ contract AxelarRouter is Auth {
     // --- Outgoing ---
     function send(bytes calldata message) public onlyGateway {
         axelarGateway.callContract(
-            CENTRIFUGE_CHAIN_ID, BytesLib.toHex(abi.encodePacked(centrifugeAxelarExecutable)), message
+            CENTRIFUGE_CHAIN_ID, centrifugeAxelarExecutable, message
         );
     }
 }

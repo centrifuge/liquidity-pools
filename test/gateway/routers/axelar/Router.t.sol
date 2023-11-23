@@ -22,24 +22,35 @@ contract AxelarRouterTest is Test {
         gateway = new GatewayMock();
 
         forwarder = new AxelarForwarder(address(axelarGateway));
-        router = new AxelarRouter(address(axelarGateway), address(forwarder));
-        router.file("gateway", address(gateway));
+        router = new AxelarRouter(address(axelarGateway), AxelarRouterTest.toHex(abi.encodePacked(forwarder)));
+        router.file("gateway", abi.encodePacked(gateway));
     }
 
     function testInvalidFile() public {
         vm.expectRevert("AxelarRouter/file-unrecognized-param");
-        router.file("not-gateway", address(1));
+        router.file("not-gateway", abi.encodePacked(address(1)));
     }
 
-    function testFile(address invalidOrigin, address anotherGateway) public {
+    function testFileGateway(address invalidOrigin, address anotherGateway) public {
         vm.assume(invalidOrigin != address(this));
 
         vm.prank(invalidOrigin);
         vm.expectRevert(bytes("Auth/not-authorized"));
-        router.file("gateway", anotherGateway);
+        router.file("gateway", abi.encodePacked(anotherGateway));
 
-        router.file("gateway", anotherGateway);
+        router.file("gateway", abi.encodePacked(anotherGateway));
         assertEq(address(router.gateway()), anotherGateway);
+    }
+
+    function testFileExecutable(address invalidOrigin, string memory anotherExecutable) public {
+        vm.assume(invalidOrigin != address(this));
+
+        vm.prank(invalidOrigin);
+        vm.expectRevert(bytes("Auth/not-authorized"));
+        router.file("executable", abi.encodePacked(anotherExecutable));
+
+        router.file("executable",  abi.encodePacked(anotherExecutable));
+        assertEq(router.centrifugeAxelarExecutable(), anotherExecutable);
     }
 
     function testIncomingCalls(
@@ -86,8 +97,22 @@ contract AxelarRouterTest is Test {
         router.send(message);
 
         assertEq(axelarGateway.values_string("destinationChain"), axelarCentrifugeChainId);
-        // TODO: Would be great to have a test on the toHex library
-        assertEq(axelarGateway.values_string("contractAddress"), BytesLib.toHex(abi.encodePacked(forwarder)));
+        assertEq(axelarGateway.values_string("contractAddress"), AxelarRouterTest.toHex(abi.encodePacked(forwarder)));
         assertEq(axelarGateway.values_bytes("payload"), message);
+    }
+
+
+    function toHex(bytes memory _bytes) public pure returns (string memory) {
+        // Fixed buffer size for hexadecimal convertion
+        bytes memory converted = new bytes(_bytes.length * 2);
+
+        bytes memory _base = "0123456789abcdef";
+
+        for (uint256 i = 0; i < _bytes.length; i++) {
+            converted[i * 2] = _base[uint8(_bytes[i]) / _base.length];
+            converted[i * 2 + 1] = _base[uint8(_bytes[i]) % _base.length];
+        }
+
+        return string(abi.encodePacked("0x", converted));
     }
 }
