@@ -2,7 +2,7 @@
 pragma solidity 0.8.21;
 
 import {Auth} from "./../../../util/Auth.sol";
-import { BytesLib } from "./../../../util/BytesLib.sol";
+import {BytesLib} from "./../../../util/BytesLib.sol";
 
 interface AxelarGatewayLike {
     function callContract(string calldata destinationChain, string calldata contractAddress, bytes calldata payload)
@@ -89,8 +89,6 @@ contract AxelarRouter is Auth {
 
     // --- Outgoing ---
     function send(bytes calldata message) public onlyGateway {
-        axelarGateway.callContract(
-            CENTRIFUGE_CHAIN_ID, centrifugeAxelarExecutable, message
-        );
+        axelarGateway.callContract(CENTRIFUGE_CHAIN_ID, centrifugeAxelarExecutable, message);
     }
 }

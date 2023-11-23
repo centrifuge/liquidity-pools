@@ -49,7 +49,7 @@ contract AxelarRouterTest is Test {
         vm.expectRevert(bytes("Auth/not-authorized"));
         router.file("executable", abi.encodePacked(anotherExecutable));
 
-        router.file("executable",  abi.encodePacked(anotherExecutable));
+        router.file("executable", abi.encodePacked(anotherExecutable));
         assertEq(router.centrifugeAxelarExecutable(), anotherExecutable);
     }
 
@@ -100,7 +100,6 @@ contract AxelarRouterTest is Test {
         assertEq(axelarGateway.values_string("contractAddress"), AxelarRouterTest.toHex(abi.encodePacked(forwarder)));
         assertEq(axelarGateway.values_bytes("payload"), message);
     }
-
 
     function toHex(bytes memory _bytes) public pure returns (string memory) {
         // Fixed buffer size for hexadecimal convertion
