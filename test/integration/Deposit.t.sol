@@ -89,8 +89,9 @@ contract DepositTest is TestSetup {
         uint8 INVESTMENT_CURRENCY_DECIMALS = 6; // 6, like USDC
 
         ERC20 currency = _newErc20("Currency", "CR", INVESTMENT_CURRENCY_DECIMALS);
-        address lPool_ =
-            deployLiquidityPool(poolId, TRANCHE_TOKEN_DECIMALS, "", "", trancheId, currencyId, address(currency));
+        address lPool_ = deployLiquidityPool(
+            poolId, TRANCHE_TOKEN_DECIMALS, defaultRestrictionSet, "", "", trancheId, currencyId, address(currency)
+        );
         LiquidityPool lPool = LiquidityPool(lPool_);
         centrifugeChain.updateTrancheTokenPrice(
             poolId, trancheId, currencyId, 1000000000000000000, uint64(block.timestamp)
@@ -348,7 +349,6 @@ contract DepositTest is TestSetup {
 
         // Use a wallet with a known private key so we can sign the permit message
         address investor = vm.addr(0xABCD);
-        address randomUser = makeAddr("randomUser");
         vm.prank(investor);
 
         address lPool_ = deploySimplePool();
@@ -410,8 +410,9 @@ contract DepositTest is TestSetup {
         uint8 INVESTMENT_CURRENCY_DECIMALS = 6; // 6, like USDC
 
         ERC20 currency = _newErc20("Currency", "CR", INVESTMENT_CURRENCY_DECIMALS);
-        address lPool_ =
-            deployLiquidityPool(poolId, TRANCHE_TOKEN_DECIMALS, "", "", trancheId, currencyId, address(currency));
+        address lPool_ = deployLiquidityPool(
+            poolId, TRANCHE_TOKEN_DECIMALS, defaultRestrictionSet, "", "", trancheId, currencyId, address(currency)
+        );
         LiquidityPool lPool = LiquidityPool(lPool_);
         centrifugeChain.updateTrancheTokenPrice(
             poolId, trancheId, currencyId, 1000000000000000000, uint64(block.timestamp)
@@ -496,7 +497,8 @@ contract DepositTest is TestSetup {
         // uint8 INVESTMENT_CURRENCY_DECIMALS = 18; // 18, like USDC
 
         ERC20 currency = _newErc20("Currency", "CR", 18);
-        address lPool_ = deployLiquidityPool(poolId, 6, "", "", trancheId, currencyId, address(currency));
+        address lPool_ =
+            deployLiquidityPool(poolId, 6, defaultRestrictionSet, "", "", trancheId, currencyId, address(currency));
         LiquidityPool lPool = LiquidityPool(lPool_);
         centrifugeChain.updateTrancheTokenPrice(
             poolId, trancheId, currencyId, 1000000000000000000000000000, uint64(block.timestamp)
@@ -580,8 +582,9 @@ contract DepositTest is TestSetup {
         uint8 TRANCHE_TOKEN_DECIMALS = 18; // Like DAI
 
         ERC20 currency = _newErc20("Currency", "CR", INVESTMENT_CURRENCY_DECIMALS);
-        address lPool_ =
-            deployLiquidityPool(poolId, TRANCHE_TOKEN_DECIMALS, "", "", trancheId, currencyId, address(currency));
+        address lPool_ = deployLiquidityPool(
+            poolId, TRANCHE_TOKEN_DECIMALS, defaultRestrictionSet, "", "", trancheId, currencyId, address(currency)
+        );
         LiquidityPool lPool = LiquidityPool(lPool_);
 
         // price = (100*10**18) /  (99 * 10**18) = 101.010101 * 10**18
@@ -632,8 +635,9 @@ contract DepositTest is TestSetup {
         uint8 TRANCHE_TOKEN_DECIMALS = 6; // Like USDC
 
         ERC20 currency = _newErc20("Currency", "CR", INVESTMENT_CURRENCY_DECIMALS);
-        address lPool_ =
-            deployLiquidityPool(poolId, TRANCHE_TOKEN_DECIMALS, "", "", trancheId, currencyId, address(currency));
+        address lPool_ = deployLiquidityPool(
+            poolId, TRANCHE_TOKEN_DECIMALS, defaultRestrictionSet, "", "", trancheId, currencyId, address(currency)
+        );
         LiquidityPool lPool = LiquidityPool(lPool_);
 
         // price = (100*10**18) /  (99 * 10**18) = 101.010101 * 10**18
@@ -679,8 +683,9 @@ contract DepositTest is TestSetup {
         uint8 INVESTMENT_CURRENCY_DECIMALS = 6; // 6, like USDC
 
         ERC20 currency = _newErc20("Currency", "CR", INVESTMENT_CURRENCY_DECIMALS);
-        address lPool_ =
-            deployLiquidityPool(poolId, TRANCHE_TOKEN_DECIMALS, "", "", trancheId, currencyId, address(currency));
+        address lPool_ = deployLiquidityPool(
+            poolId, TRANCHE_TOKEN_DECIMALS, defaultRestrictionSet, "", "", trancheId, currencyId, address(currency)
+        );
         LiquidityPool lPool = LiquidityPool(lPool_);
         centrifugeChain.updateTrancheTokenPrice(
             poolId, trancheId, currencyId, 1000000000000000000, uint64(block.timestamp)
@@ -791,5 +796,47 @@ contract DepositTest is TestSetup {
         assertEq(erc20.balanceOf(self), 0);
         assertEq(lPool.maxRedeem(self), amount);
         assertEq(lPool.maxWithdraw(self), amount);
+    }
+
+    function partialDeposit(uint64 poolId, bytes16 trancheId, LiquidityPool lPool, ERC20 currency) public {
+        uint256 investmentAmount = 100000000; // 100 * 10**6
+        centrifugeChain.updateMember(poolId, trancheId, self, type(uint64).max);
+        currency.approve(address(lPool), investmentAmount);
+        currency.mint(self, investmentAmount);
+        lPool.requestDeposit(investmentAmount, self);
+        uint128 _currencyId = poolManager.currencyAddressToId(address(currency)); // retrieve currencyId
+
+        // first trigger executed collectInvest of the first 50% at a price of 1.4
+        uint128 currencyPayout = 50000000; // 50 * 10**6
+        uint128 firstTrancheTokenPayout = 35714285714285714285; // 50 * 10**18 / 1.4, rounded down
+        centrifugeChain.isExecutedCollectInvest(
+            poolId,
+            trancheId,
+            bytes32(bytes20(self)),
+            _currencyId,
+            currencyPayout,
+            firstTrancheTokenPayout,
+            currencyPayout
+        );
+
+        (, uint256 depositPrice,,,,,) = investmentManager.investments(address(lPool), self);
+        assertEq(depositPrice, 1400000000000000000);
+
+        // second trigger executed collectInvest of the second 50% at a price of 1.2
+        uint128 secondTrancheTokenPayout = 41666666666666666666; // 50 * 10**18 / 1.2, rounded down
+        centrifugeChain.isExecutedCollectInvest(
+            poolId, trancheId, bytes32(bytes20(self)), _currencyId, currencyPayout, secondTrancheTokenPayout, 0
+        );
+
+        (, depositPrice,,,,,) = investmentManager.investments(address(lPool), self);
+        assertEq(depositPrice, 1292307679384615384);
+
+        // assert deposit & mint values adjusted
+        assertApproxEqAbs(lPool.maxDeposit(self), currencyPayout * 2, 2);
+        assertEq(lPool.maxMint(self), firstTrancheTokenPayout + secondTrancheTokenPayout);
+
+        // collect the tranche tokens
+        lPool.mint(firstTrancheTokenPayout + secondTrancheTokenPayout, self);
+        assertEq(lPool.balanceOf(self), firstTrancheTokenPayout + secondTrancheTokenPayout);
     }
 }

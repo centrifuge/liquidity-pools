@@ -63,13 +63,15 @@ contract DeployTest is Test, Deployer {
         uint64 poolId,
         string memory tokenName,
         string memory tokenSymbol,
-        bytes16 trancheId
+        bytes16 trancheId,
+        uint8 decimals,
+        uint8 restrictionSet
     ) public {
-        uint8 decimals = 6; // TODO: use fuzzed decimals
+        vm.assume(decimals <= 18 && decimals > 0);   
         uint128 price = uint128(2 * 10 ** PRICE_DECIMALS); //TODO: fuzz price
         uint256 amount = 1000 * 10 ** erc20.decimals();
         uint64 validUntil = uint64(block.timestamp + 1000 days);
-        address lPool_ = deployPoolAndTranche(poolId, trancheId, tokenName, tokenSymbol, decimals);
+        address lPool_ = deployPoolAndTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, restrictionSet);
         LiquidityPool lPool = LiquidityPool(lPool_);
 
         deal(address(erc20), self, amount);
@@ -172,11 +174,12 @@ contract DeployTest is Test, Deployer {
         bytes16 trancheId,
         string memory tokenName,
         string memory tokenSymbol,
-        uint8 decimals
+        uint8 decimals,
+        uint8 restrictionSet
     ) public returns (address) {
         vm.startPrank(address(gateway));
         poolManager.addPool(poolId);
-        poolManager.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals);
+        poolManager.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, restrictionSet);
         poolManager.addCurrency(1, address(erc20));
         poolManager.allowInvestmentCurrency(poolId, 1);
         vm.stopPrank();
