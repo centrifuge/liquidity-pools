@@ -2,6 +2,7 @@
 pragma solidity 0.8.21;
 
 import {Auth} from "./../../../util/Auth.sol";
+import {BytesLib} from "../../../util/BytesLib.sol";
 
 interface AxelarGatewayLike {
     function callContract(string calldata destinationChain, string calldata contractAddress, bytes calldata payload)
@@ -26,10 +27,10 @@ contract AxelarRouter is Auth {
     string internal constant CENTRIFUGE_CHAIN_ADDRESS = "0x7369626CEF070000000000000000000000000000";
 
     // NOTE: This value is `centrifuge-2` in the testnet and `centrifuge` in the production network
-    string internal immutable centrifugeChainId;
+    string public immutable centrifugeChainId;
 
     // NOTE: This value is the address of the forwarder deployed on centrifuge. Form: `0x...`
-    string internal immutable centrifugeExecutable;
+    string public immutable centrifugeExecutable;
 
     // The Axelar gateway contract in the domain this contract lives on
     AxelarGatewayLike public immutable axelarGateway;
@@ -40,7 +41,7 @@ contract AxelarRouter is Auth {
     // --- Events ---
     event File(bytes32 indexed what, address addr);
 
-    constructor(address axelarGateway_, string memory centrifugeChainId_, string memory centrifugeExecutable_) {
+    constructor(address axelarGateway_, string centrifugeChainId_, string centrifugeExecutable_) {
         centrifugeChainId = centrifugeChainId_;
         centrifugeExecutable = centrifugeExecutable_;
         axelarGateway = AxelarGatewayLike(axelarGateway_);
@@ -51,7 +52,7 @@ contract AxelarRouter is Auth {
 
     modifier onlyCentrifugeChainOrigin(string calldata sourceChain, string calldata sourceAddress) {
         require(
-            keccak256(bytes(centrifugeChainId)) == keccak256(bytes(sourceChain)), "AxelarRouter/invalid-source-chain"
+            keccak256(bytes(CENTRIFUGE_CHAIN_ID)) == keccak256(bytes(sourceChain)), "AxelarRouter/invalid-source-chain"
         );
         require(
             keccak256(bytes(CENTRIFUGE_CHAIN_ADDRESS)) == keccak256(bytes(sourceAddress)),
