@@ -73,7 +73,7 @@ contract FactoryTest is Test {
                 )
             )
         );
-        TrancheTokenFactory trancheTokenFactory = new TrancheTokenFactory{ salt: salt }(root, address(this));
+        TrancheTokenFactory trancheTokenFactory = new TrancheTokenFactory{salt: salt}(root, address(this));
         assertEq(address(trancheTokenFactory), predictedAddress);
     }
 
@@ -87,7 +87,7 @@ contract FactoryTest is Test {
         string memory symbol,
         uint8 decimals
     ) public {
-        TrancheTokenFactory trancheTokenFactory = new TrancheTokenFactory{ salt: salt }(root, address(this));
+        TrancheTokenFactory trancheTokenFactory = new TrancheTokenFactory{salt: salt}(root, address(this));
 
         bytes32 hashedSalt = keccak256(abi.encodePacked(poolId, trancheId));
         address predictedAddress = address(
@@ -148,7 +148,7 @@ contract FactoryTest is Test {
         trancheTokenWards[0] = address(investmentManager);
         trancheTokenWards[1] = address(poolManager);
 
-        TrancheTokenFactory trancheTokenFactory = new TrancheTokenFactory{ salt: salt }(root, address(this));
+        TrancheTokenFactory trancheTokenFactory = new TrancheTokenFactory{salt: salt}(root, address(this));
         assertEq(address(trancheTokenFactory), predictedAddress);
 
         trancheTokenFactory.newTrancheToken(poolId, trancheId, name, symbol, decimals, trancheTokenWards);
