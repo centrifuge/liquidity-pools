@@ -24,7 +24,7 @@ interface GatewayLike {
 contract AxelarRouter is Auth {
     string public constant CENTRIFUGE_CHAIN_ID = "centrifuge";
     string public constant CENTRIFUGE_CHAIN_ADDRESS = "0x7369626CEF070000000000000000000000000000";
-    string public constant CENTRIFUGE_AXELAR_EXECUTABLE  = '0x7369626CEF070000000000000000000000000000';
+    string public constant CENTRIFUGE_AXELAR_EXECUTABLE  = '0x0000000000000000000000000000000000000000';
 
     AxelarGatewayLike public immutable axelarGateway;
 
