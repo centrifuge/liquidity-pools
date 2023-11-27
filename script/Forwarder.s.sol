@@ -18,9 +18,6 @@ contract ForwarderScript is Script {
         );
 
         router.rely(admin);
-        if (keccak256(abi.encodePacked(admin)) != keccak256(abi.encodePacked(address(this)))) {
-            router.deny(address(this));
-        }
 
         vm.stopBroadcast();
     }
