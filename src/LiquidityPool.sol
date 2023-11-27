@@ -218,7 +218,7 @@ contract LiquidityPool is Auth, IERC7540 {
     /// @inheritdoc IERC4626
     /// @notice DOES NOT support owner != msg.sender since shares are already transferred on requestRedeem
     function withdraw(uint256 assets, address receiver, address owner) external returns (uint256 shares) {
-        require((msg.sender == owner), "LiquidityPool/not-the-owner");
+        require(msg.sender == owner, "LiquidityPool/not-the-owner");
         shares = manager.withdraw(address(this), assets, receiver, owner);
         emit Withdraw(msg.sender, receiver, owner, assets, shares);
     }
@@ -231,7 +231,7 @@ contract LiquidityPool is Auth, IERC7540 {
     /// @inheritdoc IERC4626
     /// @notice     DOES NOT support owner != msg.sender since shares are already transferred on requestRedeem
     function redeem(uint256 shares, address receiver, address owner) external returns (uint256 assets) {
-        require((msg.sender == owner), "LiquidityPool/not-the-owner");
+        require(msg.sender == owner, "LiquidityPool/not-the-owner");
         assets = manager.redeem(address(this), shares, receiver, owner);
         emit Withdraw(msg.sender, receiver, owner, assets, shares);
     }
