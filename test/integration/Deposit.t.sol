@@ -20,7 +20,7 @@ contract DepositTest is TestSetup {
         erc20.mint(self, amount);
 
         // will fail - user not member: can not receive trancheToken
-        vm.expectRevert(bytes("InvestmentManager/sender-is-restricted"));
+        vm.expectRevert(bytes("InvestmentManager/owner-is-restricted"));
         lPool.requestDeposit(amount, self);
 
         centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), self, type(uint64).max); // add user as member
@@ -82,7 +82,7 @@ contract DepositTest is TestSetup {
         assertTrue(lPool.maxDeposit(self) <= amount * 0.01e18);
     }
 
-    function testPartialExecutions(uint64 poolId, bytes16 trancheId, uint128 currencyId) public {
+    function testPartialDepositExecutions(uint64 poolId, bytes16 trancheId, uint128 currencyId) public {
         vm.assume(currencyId > 0);
 
         uint8 TRANCHE_TOKEN_DECIMALS = 18; // Like DAI
@@ -331,13 +331,13 @@ contract DepositTest is TestSetup {
         erc20.permit(investor, lPool_, amount, block.timestamp, v, r, s);
         // frontrunnign not possible
         centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), randomUser, type(uint64).max);
-        vm.expectRevert(bytes("SafeTransferLib/safe-transfer-from-failed"));
-        lPool.requestDepositWithPermit((amount), block.timestamp, v, r, s);
+        vm.expectRevert(bytes("LiquidityPool/insufficient-balance"));
+        lPool.requestDepositWithPermit((amount), vm.addr(0xABCD), block.timestamp, v, r, s);
         vm.stopPrank();
 
         // investor still able to requestDepositWithPermit
         vm.prank(vm.addr(0xABCD));
-        lPool.requestDepositWithPermit(amount, block.timestamp, v, r, s);
+        lPool.requestDepositWithPermit(amount, vm.addr(0xABCD), block.timestamp, v, r, s);
 
         // ensure funds are locked in escrow
         assertEq(erc20.balanceOf(address(escrow)), amount);
@@ -370,10 +370,10 @@ contract DepositTest is TestSetup {
         );
 
         // premit functions can only be executed by the owner
-        vm.expectRevert(bytes("SafeTransferLib/safe-transfer-from-failed"));
-        lPool.requestDepositWithPermit(amount, block.timestamp, v, r, s);
+        vm.expectRevert(bytes("LiquidityPool/insufficient-balance"));
+        lPool.requestDepositWithPermit(amount, vm.addr(0xABCD), block.timestamp, v, r, s);
         vm.prank(vm.addr(0xABCD));
-        lPool.requestDepositWithPermit(amount, block.timestamp, v, r, s);
+        lPool.requestDepositWithPermit(amount, vm.addr(0xABCD), block.timestamp, v, r, s);
 
         // To avoid stack too deep errors
         delete v;
