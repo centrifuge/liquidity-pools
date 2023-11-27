@@ -2,7 +2,6 @@
 pragma solidity 0.8.21;
 
 import {Auth} from "./util/Auth.sol";
-import {MathLib} from "./util/MathLib.sol";
 import {SafeTransferLib} from "./util/SafeTransferLib.sol";
 import {IERC4626} from "./interfaces/IERC4626.sol";
 import {IERC20, IERC20Metadata, IERC20Permit} from "./interfaces/IERC20.sol";
@@ -16,6 +15,15 @@ import {
 } from "./interfaces/IERC7540.sol";
 
 interface ManagerLike {
+    function requestDeposit(address lp, uint256 assets, address receiver, address owner) external returns (bool);
+    function requestRedeem(address lp, uint256 shares, address receiver, address owner) external returns (bool);
+    function decreaseDepositRequest(address lp, uint256 assets, address owner) external;
+    function decreaseRedeemRequest(address lp, uint256 shares, address owner) external;
+    function cancelDepositRequest(address lp, address owner) external;
+    function cancelRedeemRequest(address lp, address owner) external;
+    function pendingDepositRequest(address lp, address owner) external view returns (uint256);
+    function pendingRedeemRequest(address lp, address owner) external view returns (uint256);
+    function exchangeRateLastUpdated(address lp) external view returns (uint64);
     function deposit(address lp, uint256 assets, address receiver, address owner) external returns (uint256);
     function mint(address lp, uint256 shares, address receiver, address owner) external returns (uint256);
     function withdraw(address lp, uint256 assets, address receiver, address owner) external returns (uint256);
@@ -26,15 +34,6 @@ interface ManagerLike {
     function maxRedeem(address lp, address receiver) external view returns (uint256);
     function convertToShares(address lp, uint256 assets) external view returns (uint256);
     function convertToAssets(address lp, uint256 shares) external view returns (uint256);
-    function requestDeposit(address lp, uint256 assets, address sender, address receiver) external returns (bool);
-    function requestRedeem(address lp, uint256 shares, address receiver, address owner) external returns (bool);
-    function decreaseDepositRequest(address lp, uint256 assets, address owner) external;
-    function decreaseRedeemRequest(address lp, uint256 shares, address owner) external;
-    function cancelDepositRequest(address lp, address owner) external;
-    function cancelRedeemRequest(address lp, address owner) external;
-    function pendingDepositRequest(address lp, address owner) external view returns (uint256);
-    function pendingRedeemRequest(address lp, address owner) external view returns (uint256);
-    function exchangeRateLastUpdated(address liquidityPool) external view returns (uint64 lastUpdated);
 }
 
 /// @title  Liquidity Pool
@@ -49,8 +48,6 @@ interface ManagerLike {
 ///         After execution users can use the deposit, mint, redeem and withdraw functions to get their shares
 ///         and/or assets from the pools.
 contract LiquidityPool is Auth, IERC7540 {
-    using MathLib for uint256;
-
     /// @notice Identifier of the Centrifuge pool
     uint64 public immutable poolId;
 
@@ -110,7 +107,7 @@ contract LiquidityPool is Auth, IERC7540 {
         require(owner == msg.sender, "LiquidityPool/not-msg-sender");
         require(IERC20(asset).balanceOf(owner) >= assets, "LiquidityPool/insufficient-balance");
 
-        require(manager.requestDeposit(address(this), assets, owner, receiver), "LiquidityPool/request-deposit-failed");
+        require(manager.requestDeposit(address(this), assets, receiver, owner), "LiquidityPool/request-deposit-failed");
         SafeTransferLib.safeTransferFrom(asset, owner, address(escrow), assets);
 
         rid = 0;
@@ -280,7 +277,7 @@ contract LiquidityPool is Auth, IERC7540 {
     /// @inheritdoc IERC4626
     /// @notice DOES NOT support owner != msg.sender since shares are already transferred on requestRedeem
     function withdraw(uint256 assets, address receiver, address owner) public returns (uint256 shares) {
-        require((msg.sender == owner), "LiquidityPool/not-the-owner");
+        require(msg.sender == owner, "LiquidityPool/not-the-owner");
         shares = manager.withdraw(address(this), assets, receiver, owner);
         emit Withdraw(msg.sender, receiver, owner, assets, shares);
     }
@@ -293,7 +290,7 @@ contract LiquidityPool is Auth, IERC7540 {
     /// @inheritdoc IERC4626
     /// @notice     DOES NOT support owner != msg.sender since shares are already transferred on requestRedeem
     function redeem(uint256 shares, address receiver, address owner) external returns (uint256 assets) {
-        require((msg.sender == owner), "LiquidityPool/not-the-owner");
+        require(msg.sender == owner, "LiquidityPool/not-the-owner");
         assets = manager.redeem(address(this), shares, receiver, owner);
         emit Withdraw(msg.sender, receiver, owner, assets, shares);
     }

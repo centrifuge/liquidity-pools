@@ -24,7 +24,7 @@ interface IERC165 {
 
 interface IERC7540DepositReceiver {
     /**
-     * @dev Handle the receipt of an deposit Request
+     * @dev Handle the receipt of a deposit Request
      *
      * The ERC7540 smart contract calls this function on the recipient
      * after a `requestDeposit`. This function MAY throw to revert and reject the
@@ -48,7 +48,7 @@ interface IERC7540DepositReceiver {
 
 interface IERC7540RedeemReceiver {
     /**
-     * @dev Handle the receipt of an deposit Request
+     * @dev Handle the receipt of a redeem Request
      *
      * The ERC7540 smart contract calls this function on the recipient
      * after a `requestRedeem`. This function MAY throw to revert and reject the
@@ -74,12 +74,12 @@ interface IERC7540Deposit {
     event DepositRequest(address indexed sender, address indexed receiver, address indexed owner, uint256 assets);
 
     /**
-     * @dev Transfers assets from sender into the Vault and submits a Request for asynchronous deposit/mint.
+     * @dev Transfers assets from sender into the Vault and submits a Request for asynchronous deposit.
      *
      * - MUST support ERC-20 approve / transferFrom on asset as a deposit Request flow.
-     * - MUST revert if all of assets cannot be requested for deposit/mint.
+     * - MUST revert if all of assets cannot be requested for deposit.
      * - owner MUST be msg.sender unless some unspecified explicit approval is given by the caller,
-     *    approval of ERC-20 shares from owner to sender is NOT enough.
+     *    approval of ERC-20 tokens from owner to sender is NOT enough.
      *
      * @param assets the amount of deposit assets to transfer from owner
      * @param receiver the receiver of the request who will be able to operate the request
@@ -107,7 +107,7 @@ interface IERC7540Deposit {
     function claimDepositRequest(uint256 rid, address receiver, address owner) external returns (uint256 shares);
 
     /**
-     * @dev Returns the amount of requested assets in Pending state for the owner to deposit or mint.
+     * @dev Returns the amount of requested assets in Pending state.
      *
      * - MUST NOT include any assets in Claimable state for deposit or mint.
      * - MUST NOT show any variations depending on the caller.
@@ -129,11 +129,11 @@ interface IERC7540Redeem {
     event RedeemRequest(address indexed sender, address indexed receiver, address indexed owner, uint256 shares);
 
     /**
-     * @dev Assumes control of shares from sender into the Vault and submits a Request for asynchronous redeem/withdraw.
+     * @dev Assumes control of shares from sender into the Vault and submits a Request for asynchronous redeem.
      *
      * - MUST support a redeem Request flow where the control of shares is taken from sender directly
      *   where msg.sender has ERC-20 approval over the shares of owner.
-     * - MUST revert if all of shares cannot be requested for redeem / withdraw.
+     * - MUST revert if all of shares cannot be requested for redeem.
      *
      * @param shares the amount of redemption shares to transfer from owner
      * @param receiver the receiver of the request who will be able to operate the request
@@ -161,7 +161,7 @@ interface IERC7540Redeem {
     function claimRedeemRequest(uint256 rid, address receiver, address owner) external returns (uint256 assets);
 
     /**
-     * @dev Returns the amount of requested shares in Pending state for the operator to redeem or withdraw.
+     * @dev Returns the amount of requested shares in Pending state.
      *
      * - MUST NOT include any shares in Claimable state for redeem or withdraw.
      * - MUST NOT show any variations depending on the caller.
@@ -170,7 +170,7 @@ interface IERC7540Redeem {
     function pendingRedeemRequest(uint256 rid, address owner) external view returns (uint256 pendingShares);
 
     /**
-     * @dev Returns the amount of requested shares in Claimable state for the operator to redeem or withdraw.
+     * @dev Returns the amount of requested shares in Claimable state for the owner to redeem or withdraw.
      *
      * - MUST NOT include any shares in Pending state for redeem or withdraw.
      * - MUST NOT show any variations depending on the caller.
