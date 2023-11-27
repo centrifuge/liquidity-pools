@@ -36,8 +36,8 @@ interface LiquidityPoolLike is ERC20Like {
     function trancheId() external view returns (bytes16);
     function asset() external view returns (address);
     function share() external view returns (address);
-    function emitDepositClaimable(address operator, uint256 assets, uint256 shares) external;
-    function emitRedeemClaimable(address operator, uint256 assets, uint256 shares) external;
+    function emitDepositClaimable(address owner, uint256 assets, uint256 shares) external;
+    function emitRedeemClaimable(address owner, uint256 assets, uint256 shares) external;
 }
 
 interface AuthTransferLike {
@@ -135,7 +135,7 @@ contract InvestmentManager is Auth {
     ///         proceed with tranche token payouts in case their orders got fulfilled.
     /// @dev    The user currency amount required to fulfill the deposit request have to be locked,
     ///         even though the tranche token payout can only happen after epoch execution.
-    function requestDeposit(address liquidityPool, uint256 currencyAmount, address sender, address operator)
+    function requestDeposit(address liquidityPool, uint256 currencyAmount, address receiver, address owner)
         public
         auth
         returns (bool)
@@ -148,22 +148,20 @@ contract InvestmentManager is Auth {
         address currency = lPool.asset();
         require(poolManager.isAllowedAsInvestmentCurrency(poolId, currency), "InvestmentManager/currency-not-allowed");
 
-        require(
-            _checkTransferRestriction(liquidityPool, address(0), sender, 0), "InvestmentManager/sender-is-restricted"
-        );
+        require(_checkTransferRestriction(liquidityPool, address(0), owner, 0), "InvestmentManager/owner-is-restricted");
         require(
             _checkTransferRestriction(
-                liquidityPool, address(0), operator, convertToShares(liquidityPool, currencyAmount)
+                liquidityPool, address(0), receiver, convertToShares(liquidityPool, currencyAmount)
             ),
             "InvestmentManager/transfer-not-allowed"
         );
 
-        InvestmentState storage state = investments[liquidityPool][operator];
+        InvestmentState storage state = investments[liquidityPool][receiver];
         state.pendingDepositRequest = state.pendingDepositRequest + _currencyAmount;
         state.exists = true;
 
         gateway.increaseInvestOrder(
-            poolId, lPool.trancheId(), operator, poolManager.currencyAddressToId(currency), _currencyAmount
+            poolId, lPool.trancheId(), receiver, poolManager.currencyAddressToId(currency), _currencyAmount
         );
 
         return true;
@@ -176,7 +174,7 @@ contract InvestmentManager is Auth {
     ///         in case their orders got fulfilled.
     /// @dev    The user tranche tokens required to fulfill the redemption request have to be locked,
     ///         even though the currency payout can only happen after epoch execution.
-    function requestRedeem(address liquidityPool, uint256 trancheTokenAmount, address operator, address /* owner */ )
+    function requestRedeem(address liquidityPool, uint256 trancheTokenAmount, address receiver, address /* owner */ )
         public
         auth
         returns (bool)
@@ -193,78 +191,78 @@ contract InvestmentManager is Auth {
 
         require(
             _checkTransferRestriction(
-                liquidityPool, operator, address(escrow), convertToAssets(liquidityPool, trancheTokenAmount)
+                liquidityPool, receiver, address(escrow), convertToAssets(liquidityPool, trancheTokenAmount)
             ),
             "InvestmentManager/transfer-not-allowed"
         );
 
-        return _processRedeemRequest(liquidityPool, _trancheTokenAmount, operator);
+        return _processRedeemRequest(liquidityPool, _trancheTokenAmount, receiver);
     }
 
-    function _processRedeemRequest(address liquidityPool, uint128 trancheTokenAmount, address user)
+    function _processRedeemRequest(address liquidityPool, uint128 trancheTokenAmount, address owner)
         internal
         returns (bool)
     {
         LiquidityPoolLike lPool = LiquidityPoolLike(liquidityPool);
-        InvestmentState storage state = investments[liquidityPool][user];
+        InvestmentState storage state = investments[liquidityPool][owner];
         state.pendingRedeemRequest = state.pendingRedeemRequest + trancheTokenAmount;
         state.exists = true;
 
         gateway.increaseRedeemOrder(
-            lPool.poolId(), lPool.trancheId(), user, poolManager.currencyAddressToId(lPool.asset()), trancheTokenAmount
+            lPool.poolId(), lPool.trancheId(), owner, poolManager.currencyAddressToId(lPool.asset()), trancheTokenAmount
         );
 
         return true;
     }
 
-    function decreaseDepositRequest(address liquidityPool, uint256 _currencyAmount, address user) public auth {
+    function decreaseDepositRequest(address liquidityPool, uint256 _currencyAmount, address owner) public auth {
         LiquidityPoolLike _liquidityPool = LiquidityPoolLike(liquidityPool);
         gateway.decreaseInvestOrder(
             _liquidityPool.poolId(),
             _liquidityPool.trancheId(),
-            user,
+            owner,
             poolManager.currencyAddressToId(_liquidityPool.asset()),
             _currencyAmount.toUint128()
         );
     }
 
-    function decreaseRedeemRequest(address liquidityPool, uint256 _trancheTokenAmount, address user) public auth {
+    function decreaseRedeemRequest(address liquidityPool, uint256 _trancheTokenAmount, address owner) public auth {
         uint128 trancheTokenAmount = _trancheTokenAmount.toUint128();
         LiquidityPoolLike _liquidityPool = LiquidityPoolLike(liquidityPool);
         require(
-            _checkTransferRestriction(liquidityPool, address(0), user, _trancheTokenAmount),
+            _checkTransferRestriction(liquidityPool, address(0), owner, _trancheTokenAmount),
             "InvestmentManager/transfer-not-allowed"
         );
         gateway.decreaseRedeemOrder(
             _liquidityPool.poolId(),
             _liquidityPool.trancheId(),
-            user,
+            owner,
             poolManager.currencyAddressToId(_liquidityPool.asset()),
             trancheTokenAmount
         );
     }
 
-    function cancelDepositRequest(address liquidityPool, address user) public auth {
+    function cancelDepositRequest(address liquidityPool, address owner) public auth {
         LiquidityPoolLike _liquidityPool = LiquidityPoolLike(liquidityPool);
         gateway.cancelInvestOrder(
             _liquidityPool.poolId(),
             _liquidityPool.trancheId(),
-            user,
+            owner,
             poolManager.currencyAddressToId(_liquidityPool.asset())
         );
     }
 
-    function cancelRedeemRequest(address liquidityPool, address user) public auth {
+    function cancelRedeemRequest(address liquidityPool, address owner) public auth {
         LiquidityPoolLike _liquidityPool = LiquidityPoolLike(liquidityPool);
-        uint256 approximateTrancheTokensPayout = pendingRedeemRequest(liquidityPool, user);
+        uint256 approximateTrancheTokensPayout = pendingRedeemRequest(liquidityPool, owner);
         require(
-            _checkTransferRestriction(liquidityPool, address(0), user, approximateTrancheTokensPayout),
+            _checkTransferRestriction(liquidityPool, address(0), owner, approximateTrancheTokensPayout),
             "InvestmentManager/transfer-not-allowed"
         );
         gateway.cancelRedeemOrder(
             _liquidityPool.poolId(),
             _liquidityPool.trancheId(),
-            user,
+            owner,
             poolManager.currencyAddressToId(_liquidityPool.asset())
         );
     }
