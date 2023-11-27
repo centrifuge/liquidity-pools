@@ -30,10 +30,8 @@ interface IERC7540Deposit {
      *
      * - MUST support ERC-20 approve / transferFrom on asset as a deposit Request flow.
      * - MUST revert if all of assets cannot be requested for deposit.
-     * - owner MUST be msg.sender unless some unspecified explicit approval is given by the caller,
-     *    approval of ERC-20 shares from owner to sender is NOT enough.
      *
-     * @param assets the amount of assets to transfer from owner
+     * @param assets the amount of assets to transfer from sender
      * @param receiver the receiver of the request who will be able to operate the request
      *
      * NOTE: most implementations will require pre-approval of the Vault with the Vault's underlying asset token.
