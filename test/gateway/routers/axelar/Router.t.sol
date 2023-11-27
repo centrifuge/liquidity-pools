@@ -22,7 +22,7 @@ contract AxelarRouterTest is Test {
         gateway = new GatewayMock();
 
         forwarder = new AxelarForwarder(address(axelarGateway));
-        router = new AxelarRouter(address(axelarGateway), AxelarRouterTest.toHex(abi.encodePacked(forwarder)));
+        router = new AxelarRouter(address(axelarGateway));
         router.file("gateway", address(gateway));
     }
 
@@ -40,17 +40,6 @@ contract AxelarRouterTest is Test {
 
         router.file("gateway", anotherGateway);
         assertEq(address(router.gateway()), anotherGateway);
-    }
-
-    function testFileExecutable(address invalidOrigin, string memory anotherExecutable) public {
-        vm.assume(invalidOrigin != address(this));
-
-        vm.prank(invalidOrigin);
-        vm.expectRevert(bytes("Auth/not-authorized"));
-        router.file("executable", anotherExecutable);
-
-        router.file("executable", anotherExecutable);
-        assertEq(router.centrifugeAxelarExecutable(), anotherExecutable);
     }
 
     function testIncomingCalls(
@@ -97,21 +86,7 @@ contract AxelarRouterTest is Test {
         router.send(message);
 
         assertEq(axelarGateway.values_string("destinationChain"), axelarCentrifugeChainId);
-        assertEq(axelarGateway.values_string("contractAddress"), AxelarRouterTest.toHex(abi.encodePacked(forwarder)));
+        assertEq(axelarGateway.values_string("contractAddress"), router.CENTRIFUGE_AXELAR_EXECUTABLE());
         assertEq(axelarGateway.values_bytes("payload"), message);
-    }
-
-    function toHex(bytes memory _bytes) public pure returns (string memory) {
-        // Fixed buffer size for hexadecimal convertion
-        bytes memory converted = new bytes(_bytes.length * 2);
-
-        bytes memory _base = "0123456789abcdef";
-
-        for (uint256 i = 0; i < _bytes.length; i++) {
-            converted[i * 2] = _base[uint8(_bytes[i]) / _base.length];
-            converted[i * 2 + 1] = _base[uint8(_bytes[i]) % _base.length];
-        }
-
-        return string(abi.encodePacked("0x", converted));
     }
 }

@@ -22,21 +22,19 @@ interface GatewayLike {
 /// @title  Axelar Router
 /// @notice Routing contract that integrates with an Axelar Gateway
 contract AxelarRouter is Auth {
-    string internal constant CENTRIFUGE_CHAIN_ID = "centrifuge";
-    string internal constant CENTRIFUGE_CHAIN_ADDRESS = "0x7369626CEF070000000000000000000000000000";
+    string public constant CENTRIFUGE_CHAIN_ID = "centrifuge";
+    string public constant CENTRIFUGE_CHAIN_ADDRESS = "0x7369626CEF070000000000000000000000000000";
+    string public constant CENTRIFUGE_AXELAR_EXECUTABLE  = '0x7369626CEF070000000000000000000000000000';
 
     AxelarGatewayLike public immutable axelarGateway;
-    string public centrifugeAxelarExecutable;
 
     GatewayLike public gateway;
 
     // --- Events ---
     event File(bytes32 indexed what, address addr);
-    event File(bytes32 indexed what, string addr);
 
-    constructor(address axelarGateway_, string memory centrifugeAxelarExecutable_) {
+    constructor(address axelarGateway_) {
         axelarGateway = AxelarGatewayLike(axelarGateway_);
-        centrifugeAxelarExecutable = centrifugeAxelarExecutable_;
 
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
@@ -69,16 +67,6 @@ contract AxelarRouter is Auth {
         emit File(what, data);
     }
 
-    function file(bytes32 what, string memory data) external auth {
-        if (what == "executable") {
-            centrifugeAxelarExecutable = data;
-        } else {
-            revert("AxelarRouter/file-unrecognized-param");
-        }
-
-        emit File(what, data);
-    }
-
     // --- Incoming ---
     function execute(
         bytes32 commandId,
@@ -97,6 +85,6 @@ contract AxelarRouter is Auth {
 
     // --- Outgoing ---
     function send(bytes calldata message) public onlyGateway {
-        axelarGateway.callContract(CENTRIFUGE_CHAIN_ID, centrifugeAxelarExecutable, message);
+        axelarGateway.callContract(CENTRIFUGE_CHAIN_ID, CENTRIFUGE_AXELAR_EXECUTABLE, message);
     }
 }
