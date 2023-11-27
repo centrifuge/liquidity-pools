@@ -13,9 +13,7 @@ contract ForwarderScript is Script {
 
         address admin = vm.envAddress("ADMIN");
 
-        AxelarForwarder router = new AxelarForwarder(
-            address(vm.envAddress("AXELAR_GATEWAY"))
-        );
+        AxelarForwarder router = new AxelarForwarder(address(vm.envAddress("AXELAR_GATEWAY")));
 
         router.rely(admin);
 
