@@ -16,6 +16,7 @@ interface ManagerLike {
     function cancelRedeemRequest(address lp, address owner) external;
     function pendingDepositRequest(address lp, address owner) external view returns (uint256);
     function pendingRedeemRequest(address lp, address owner) external view returns (uint256);
+    function exchangeRateLastUpdated(address lp) external view returns (uint64);
     function deposit(address lp, uint256 assets, address receiver, address owner) external returns (uint256);
     function mint(address lp, uint256 shares, address receiver, address owner) external returns (uint256);
     function withdraw(address lp, uint256 assets, address receiver, address owner) external returns (uint256);
@@ -26,7 +27,6 @@ interface ManagerLike {
     function maxRedeem(address lp, address receiver) external view returns (uint256);
     function convertToShares(address lp, uint256 assets) external view returns (uint256);
     function convertToAssets(address lp, uint256 shares) external view returns (uint256);
-    function exchangeRateLastUpdated(address liquidityPool) external view returns (uint64 lastUpdated);
 }
 
 /// @title  Liquidity Pool
