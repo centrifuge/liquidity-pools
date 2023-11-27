@@ -147,16 +147,16 @@ contract RedeemTest is TestSetup {
         // test for both scenarios redeem & withdraw
 
         // fail: self cannot redeem for investor
-        vm.expectRevert(bytes("LiquidityPool/not-the-operator"));
+        vm.expectRevert(bytes("LiquidityPool/not-the-owner"));
         lPool.redeem(redemption1, investor, investor);
-        vm.expectRevert(bytes("LiquidityPool/not-the-operator"));
+        vm.expectRevert(bytes("LiquidityPool/not-the-owner"));
         lPool.withdraw(redemption1, investor, investor);
 
         // fail: ward can not make requests on behalf of investor
         root.relyContract(lPool_, self);
-        vm.expectRevert(bytes("LiquidityPool/not-the-operator"));
+        vm.expectRevert(bytes("LiquidityPool/not-the-owner"));
         lPool.redeem(redemption1, investor, investor);
-        vm.expectRevert(bytes("LiquidityPool/not-the-operator"));
+        vm.expectRevert(bytes("LiquidityPool/not-the-owner"));
         lPool.withdraw(redemption1, investor, investor);
 
         // investor redeems rest for himself
@@ -335,7 +335,6 @@ contract RedeemTest is TestSetup {
         bytes16 trancheId = lPool.trancheId();
         address currency_ = address(lPool.asset());
         ERC20 currency = ERC20(currency_);
-        ERC20 token = ERC20(address(lPool.share()));
         uint128 currencyId = poolManager.currencyAddressToId(currency_);
         centrifugeChain.updateTrancheTokenPrice(
             poolId, trancheId, currencyId, 1000000000000000000, uint64(block.timestamp)
