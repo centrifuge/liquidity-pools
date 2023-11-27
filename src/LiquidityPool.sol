@@ -135,20 +135,8 @@ contract LiquidityPool is Auth, IERC7540 {
     }
 
     /// @inheritdoc IERC7540Deposit
-    function claimDepositRequest(uint256, address receiver, address owner) external returns (uint256 shares) {
-        require(owner == msg.sender, "LiquidityPool/not-the-owner");
-        shares = maxMint(owner);
-        mint(shares, receiver);
-    }
-
-    /// @inheritdoc IERC7540Deposit
     function pendingDepositRequest(uint256, address owner) external view returns (uint256 pendingAssets) {
         pendingAssets = manager.pendingDepositRequest(address(this), owner);
-    }
-
-    /// @inheritdoc IERC7540Deposit
-    function claimableDepositRequest(uint256, address owner) external view returns (uint256 claimableAssets) {
-        claimableAssets = maxDeposit(owner);
     }
 
     /// @inheritdoc IERC7540Redeem
@@ -176,19 +164,8 @@ contract LiquidityPool is Auth, IERC7540 {
     }
 
     /// @inheritdoc IERC7540Redeem
-    function claimRedeemRequest(uint256, address receiver, address owner) external returns (uint256 assets) {
-        assets = maxWithdraw(owner);
-        withdraw(assets, receiver, owner);
-    }
-
-    /// @inheritdoc IERC7540Redeem
     function pendingRedeemRequest(uint256, address owner) external view returns (uint256 pendingShares) {
         pendingShares = manager.pendingRedeemRequest(address(this), owner);
-    }
-
-    /// @inheritdoc IERC7540Redeem
-    function claimableRedeemRequest(uint256, address owner) external view returns (uint256 claimableShares) {
-        claimableShares = maxRedeem(owner);
     }
 
     // --- Misc asynchronous vault methods ---
