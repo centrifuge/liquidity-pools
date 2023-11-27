@@ -2,7 +2,6 @@
 pragma solidity 0.8.21;
 
 import {Auth} from "./util/Auth.sol";
-import {MathLib} from "./util/MathLib.sol";
 import {SafeTransferLib} from "./util/SafeTransferLib.sol";
 import {IERC4626} from "./interfaces/IERC4626.sol";
 import {IERC20, IERC20Metadata, IERC20Permit} from "./interfaces/IERC20.sol";
@@ -42,8 +41,6 @@ interface ManagerLike {
 ///         After execution users can use the deposit, mint, redeem and withdraw functions to get their shares
 ///         and/or assets from the pools.
 contract LiquidityPool is Auth, IERC7540 {
-    using MathLib for uint256;
-
     /// @notice Identifier of the Centrifuge pool
     uint64 public immutable poolId;
 

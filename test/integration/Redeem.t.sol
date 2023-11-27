@@ -335,7 +335,6 @@ contract RedeemTest is TestSetup {
         bytes16 trancheId = lPool.trancheId();
         address currency_ = address(lPool.asset());
         ERC20 currency = ERC20(currency_);
-        ERC20 token = ERC20(address(lPool.share()));
         uint128 currencyId = poolManager.currencyAddressToId(currency_);
         centrifugeChain.updateTrancheTokenPrice(
             poolId, trancheId, currencyId, 1000000000000000000, uint64(block.timestamp)
