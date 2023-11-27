@@ -82,7 +82,7 @@ contract DepositTest is TestSetup {
         assertTrue(lPool.maxDeposit(self) <= amount * 0.01e18);
     }
 
-    function testPartialExecutions(uint64 poolId, bytes16 trancheId, uint128 currencyId) public {
+    function testPartialDepositExecutions(uint64 poolId, bytes16 trancheId, uint128 currencyId) public {
         vm.assume(currencyId > 0);
 
         uint8 TRANCHE_TOKEN_DECIMALS = 18; // Like DAI
