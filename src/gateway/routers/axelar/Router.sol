@@ -22,7 +22,7 @@ interface GatewayLike {
 /// @title  Axelar Router
 /// @notice Routing contract that integrates with an Axelar Gateway
 contract AxelarRouter is Auth {
-    string internal constant CENTRIFUGE_CHAIN_ID = "centrifuge-2";
+    string internal constant CENTRIFUGE_CHAIN_ID = "centrifuge";
     string internal constant CENTRIFUGE_CHAIN_ADDRESS = "0x7369626CEF070000000000000000000000000000";
 
     AxelarGatewayLike public immutable axelarGateway;
