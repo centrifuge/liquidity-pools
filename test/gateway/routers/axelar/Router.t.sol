@@ -23,12 +23,12 @@ contract AxelarRouterTest is Test {
 
         forwarder = new AxelarForwarder(address(axelarGateway));
         router = new AxelarRouter(address(axelarGateway), AxelarRouterTest.toHex(abi.encodePacked(forwarder)));
-        router.file("gateway", abi.encodePacked(gateway));
+        router.file("gateway", address(gateway));
     }
 
     function testInvalidFile() public {
         vm.expectRevert("AxelarRouter/file-unrecognized-param");
-        router.file("not-gateway", abi.encodePacked(address(1)));
+        router.file("not-gateway", address(1));
     }
 
     function testFileGateway(address invalidOrigin, address anotherGateway) public {
@@ -36,9 +36,9 @@ contract AxelarRouterTest is Test {
 
         vm.prank(invalidOrigin);
         vm.expectRevert(bytes("Auth/not-authorized"));
-        router.file("gateway", abi.encodePacked(anotherGateway));
+        router.file("gateway", anotherGateway);
 
-        router.file("gateway", abi.encodePacked(anotherGateway));
+        router.file("gateway", anotherGateway);
         assertEq(address(router.gateway()), anotherGateway);
     }
 
@@ -47,9 +47,9 @@ contract AxelarRouterTest is Test {
 
         vm.prank(invalidOrigin);
         vm.expectRevert(bytes("Auth/not-authorized"));
-        router.file("executable", abi.encodePacked(anotherExecutable));
+        router.file("executable", anotherExecutable);
 
-        router.file("executable", abi.encodePacked(anotherExecutable));
+        router.file("executable", anotherExecutable);
         assertEq(router.centrifugeAxelarExecutable(), anotherExecutable);
     }
 

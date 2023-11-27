@@ -25,7 +25,7 @@ contract AxelarScript is Deployer {
                 vm.envString("CENTRIFUGE_FORWARDER")
         );
         wire(address(router));
-        router.file("gateway", abi.encodePacked(gateway));
+        router.file("gateway", address(gateway));
 
         // Set up test data
         if (vm.envBool("SETUP_TEST_DATA")) {
