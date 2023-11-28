@@ -24,9 +24,6 @@ interface GatewayLike {
 contract AxelarRouter is Auth {
     string public constant CENTRIFUGE_CHAIN_ID = "centrifuge";
     string public constant CENTRIFUGE_CHAIN_ADDRESS = "0x7369626CEF070000000000000000000000000000";
-    // NOTE: This is a fixed contract on centrifuge mainnet that acts as the verification facade to our precompile
-    //       - creation at: 4,339,378 (evm tx-hash: 0xc0b73c23c57b7baa9511c13e21b6a05b6b257d3bfe60857a89a8a081bd366c85)
-    //       - deny of admin at: TBD ONCE AXELAR DEPLOYS GATWAY AND THE GATWAY IS FILED
     string public constant CENTRIFUGE_AXELAR_EXECUTABLE = "0xc1757c6A0563E37048869A342dF0651b9F267e41";
 
     AxelarGatewayLike public immutable axelarGateway;
