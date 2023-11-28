@@ -13,11 +13,11 @@ fi
 echo "RPC endpoint = $RPC_URL"
 
 case "$1" in
-  Permissionless|Axelar)
+  Permissionless|Axelar|Forwarder)
     forge script script/$1.s.sol:$1Script --optimize --rpc-url $RPC_URL --private-key $PRIVATE_KEY --verify --broadcast --chain-id $CHAIN_ID --etherscan-api-key $ETHERSCAN_KEY $2
     ;;
   *)
-    echo "Router should be one of Permissionless, Axelar"
+    echo "Router should be one of Permissionless, Axelar, Forwarder"
     exit 1
     ;;
 esac
