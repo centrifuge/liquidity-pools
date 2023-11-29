@@ -10,24 +10,22 @@ interface ERC20Like {
 }
 
 contract RestrictedTransferProxy {
-
     PoolManagerLike immutable poolManager;
+    bytes32 immutable destination;
 
-    constructor(address poolManager_, bytes32 destination) {
+    constructor(address poolManager_, bytes32 destination_) {
         poolManager = PoolManagerLike(poolManager_);
+        destination = destination_;
     }
 
     function transfer(address currency, uint128 amount) external {
         ERC20Like(currency).approve(address(poolManager), currency, amount);
-        poolManager.transfer(currency, amount);
+        poolManager.transfer(currency, destination, amount);
     }
-
 }
 
 interface RestrictedTransferProxyFactoryLike {
-    function newRestrictedTransferProxy(bytes32 destination)
-        external
-        returns (address);
+    function newRestrictedTransferProxy(bytes32 destination) external returns (address);
 }
 
 /// @title  Restricted Transfer Proxy Factory
@@ -39,10 +37,7 @@ contract RestrictedTransferProxyFactory {
         poolManager = poolManager_;
     }
 
-    function newRestrictedTransferProxy(bytes32 destination)
-        public
-        returns (address)
-    {
+    function newRestrictedTransferProxy(bytes32 destination) public returns (address) {
         RestrictedTransferProxy restrictedTransferProxy = new RestrictedTransferProxy(destination);
         return (address(restrictedTransferProxy));
     }
