@@ -121,8 +121,23 @@ contract LiquidityPool is Auth, IERC7540 {
         emit DepositRequest(msg.sender, 0, receiver, owner, assets);
     }
 
-    function requestDeposit(uint256 assets, address receiver) external returns (uint256 rid) {
-        rid = requestDeposit(assets, receiver, msg.sender, "");
+    function requestDeposit(uint256 assets, address receiver) external {
+        requestDeposit(assets, receiver, msg.sender, "");
+    }
+
+    /// @notice Uses EIP-2612 permit to set approval of asset, then transfers assets from msg.sender
+    ///         into the Vault and submits a Request for asynchronous deposit/mint.
+    function requestDepositWithPermit(
+        uint256 assets,
+        address receiver,
+        bytes memory data,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external {
+        try IERC20Permit(asset).permit(msg.sender, address(this), assets, deadline, v, r, s) {} catch {}
+        requestDeposit(assets, receiver, msg.sender, data);
     }
 
     /// @notice Uses EIP-2612 permit to set approval of asset, then transfers assets from msg.sender
@@ -164,8 +179,8 @@ contract LiquidityPool is Auth, IERC7540 {
         emit RedeemRequest(msg.sender, 0, receiver, owner, shares);
     }
 
-    function requestRedeem(uint256 shares, address receiver, address owner) external returns (uint256 rid) {
-        rid = requestRedeem(shares, receiver, owner, "");
+    function requestRedeem(uint256 shares, address receiver, address owner) external {
+        requestRedeem(shares, receiver, owner, "");
     }
 
     /// @inheritdoc IERC7540Redeem
