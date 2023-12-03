@@ -3,6 +3,8 @@ pragma solidity 0.8.21;
 
 import "./TestSetup.t.sol";
 import {IERC7540Deposit, IERC7540Redeem} from "src/interfaces/IERC7540.sol";
+import {SucceedingRequestReceiver} from "test/mock/SucceedingRequestReceiver.sol";
+import {FailingRequestReceiver} from "test/mock/FailingRequestReceiver.sol";
 
 contract LiquidityPoolTest is TestSetup {
     // Deployment
@@ -109,6 +111,104 @@ contract LiquidityPoolTest is TestSetup {
         assertEq(lPool.supportsInterface(erc7540Redeem), true);
 
         assertEq(lPool.supportsInterface(unsupportedInterfaceId), false);
+    }
+    
+    // --- callbacks ---
+    function testSucceedingCallbacks(bytes memory depositData, bytes memory redeemData) public {
+        vm.assume(depositData.length > 0);
+        vm.assume(redeemData.length > 0);
+        
+        address lPool_ = deploySimplePool();
+        LiquidityPool lPool = LiquidityPool(lPool_);
+        SucceedingRequestReceiver receiver = new SucceedingRequestReceiver();
+
+        centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), address(receiver), type(uint64).max);
+        centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), self, type(uint64).max);
+
+        uint256 amount = 100*10**6;
+        erc20.mint(self, amount);
+        erc20.approve(lPool_, amount);
+
+        // Check deposit callback
+        lPool.requestDeposit(amount, address(receiver), self, depositData);
+
+        assertEq(erc20.balanceOf(self), 0);
+        assertEq(receiver.values_address("requestDeposit_operator"), self);
+        assertEq(receiver.values_address("requestDeposit_owner"), self);
+        assertEq(receiver.values_uint256("requestDeposit_requestId"), 0);
+        assertEq(receiver.values_bytes("requestDeposit_data"), depositData);
+
+        assertTrue(receiver.onERC7540DepositReceived(self, self, 0, depositData) == 0xe74d2a41);
+
+        // Claim deposit request
+        // Note this is sending it to self, which is technically incorrect, it should be going to the receiver
+        centrifugeChain.isExecutedCollectInvest(
+            lPool.poolId(),
+            lPool.trancheId(),
+            bytes32(bytes20(self)),
+            defaultCurrencyId,
+            uint128(amount),
+            uint128(amount),
+            0
+        );
+        lPool.mint(lPool.maxMint(self), self);
+
+        // Check redeem callback
+        lPool.requestRedeem(amount, address(receiver), self, redeemData);
+
+        assertEq(lPool.balanceOf(self), 0);
+        assertEq(receiver.values_address("requestRedeem_operator"), self);
+        assertEq(receiver.values_address("requestRedeem_owner"), self);
+        assertEq(receiver.values_uint256("requestRedeem_requestId"), 0);
+        assertEq(receiver.values_bytes("requestRedeem_data"), redeemData);
+
+        assertTrue(receiver.onERC7540RedeemReceived(self, self, 0, redeemData) == 0x0102fde4);
+    }
+
+    function testFailingCallbacks(bytes memory depositData, bytes memory redeemData) public {
+        address lPool_ = deploySimplePool();
+        LiquidityPool lPool = LiquidityPool(lPool_);
+        FailingRequestReceiver receiver = new FailingRequestReceiver();
+
+        centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), address(receiver), type(uint64).max);
+        centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), self, type(uint64).max);
+
+        uint256 amount = 100*10**6;
+        erc20.mint(self, amount);
+        erc20.approve(lPool_, amount);
+
+        // Check deposit callback
+        vm.expectRevert(bytes("LiquidityPool/receiver-failed"));
+        lPool.requestDeposit(amount, address(receiver), self, depositData);
+
+        assertEq(erc20.balanceOf(self), amount);
+        assertEq(receiver.values_address("requestDeposit_operator"), self);
+        assertEq(receiver.values_address("requestDeposit_owner"), self);
+        assertEq(receiver.values_uint256("requestDeposit_requestId"), 0);
+        assertEq(receiver.values_bytes("requestDeposit_data"), depositData);
+
+        // Re-submit and claim deposit request
+        lPool.requestDeposit(amount, self, self, depositData);
+        centrifugeChain.isExecutedCollectInvest(
+            lPool.poolId(),
+            lPool.trancheId(),
+            bytes32(bytes20(self)),
+            defaultCurrencyId,
+            uint128(amount),
+            uint128(amount),
+            0
+        );
+        lPool.mint(lPool.maxMint(self), self);
+
+        // Check redeem callback
+        vm.expectRevert(bytes("LiquidityPool/receiver-failed"));
+        lPool.requestRedeem(amount, address(receiver), self, redeemData);
+
+        assertEq(erc20.balanceOf(self), amount);
+        assertEq(receiver.values_address("requestRedeem_operator"), self);
+        assertEq(receiver.values_address("requestRedeem_owner"), self);
+        assertEq(receiver.values_uint256("requestRedeem_requestId"), 0);
+        assertEq(receiver.values_bytes("requestRedeem_data"), redeemData);
     }
 
     // --- preview checks ---
