@@ -93,8 +93,8 @@ contract LiquidityPoolTest is TestSetup {
     // --- erc165 checks ---
     function testERC165Support(bytes4 unsupportedInterfaceId) public {
         bytes4 erc165 = 0x01ffc9a7;
-        bytes4 erc7540Deposit = 0x8fdd504a;
-        bytes4 erc7540Redeem = 0xe274d60c;
+        bytes4 erc7540Deposit = 0x1683f250;
+        bytes4 erc7540Redeem = 0x0899cb0b;
 
         vm.assume(unsupportedInterfaceId != erc165 && unsupportedInterfaceId != erc7540Deposit && unsupportedInterfaceId != erc7540Redeem);
 

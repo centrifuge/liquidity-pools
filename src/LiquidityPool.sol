@@ -118,7 +118,7 @@ contract LiquidityPool is Auth, IERC7540 {
             "LiquidityPool/receiver-failed"
         );
 
-        emit DepositRequest(msg.sender, receiver, owner, assets);
+        emit DepositRequest(msg.sender, 0, receiver, owner, assets);
     }
 
     function requestDeposit(uint256 assets, address receiver) external returns (uint256 rid) {
@@ -139,6 +139,11 @@ contract LiquidityPool is Auth, IERC7540 {
         pendingAssets = manager.pendingDepositRequest(address(this), owner);
     }
 
+    /// @inheritdoc IERC7540Deposit
+    function claimableDepositRequest(uint256, address owner) external view returns (uint256 claimableAssets) {
+        claimableAssets = maxDeposit(owner);
+    }
+
     /// @inheritdoc IERC7540Redeem
     function requestRedeem(uint256 shares, address receiver, address owner, bytes memory data)
         public
@@ -156,7 +161,7 @@ contract LiquidityPool is Auth, IERC7540 {
             "LiquidityPool/receiver-failed"
         );
 
-        emit RedeemRequest(msg.sender, receiver, owner, shares);
+        emit RedeemRequest(msg.sender, 0, receiver, owner, shares);
     }
 
     function requestRedeem(uint256 shares, address receiver, address owner) external returns (uint256 rid) {
@@ -166,6 +171,11 @@ contract LiquidityPool is Auth, IERC7540 {
     /// @inheritdoc IERC7540Redeem
     function pendingRedeemRequest(uint256, address owner) external view returns (uint256 pendingShares) {
         pendingShares = manager.pendingRedeemRequest(address(this), owner);
+    }
+
+    /// @inheritdoc IERC7540Redeem
+    function claimableRedeemRequest(uint256, address owner) external view returns (uint256 claimableShares) {
+        claimableShares = maxRedeem(owner);
     }
 
     // --- Misc asynchronous vault methods ---
