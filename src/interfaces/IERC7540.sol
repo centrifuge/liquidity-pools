@@ -72,7 +72,7 @@ interface IERC7540RedeemReceiver {
 
 interface IERC7540Deposit {
     event DepositRequest(
-        address sender, uint256 indexed rid, address indexed receiver, address indexed owner, uint256 assets
+        address indexed receiver, address indexed owner, uint256 indexed requestId, address sender, uint256 assets
     );
 
     /**
@@ -95,7 +95,7 @@ interface IERC7540Deposit {
      */
     function requestDeposit(uint256 assets, address receiver, address owner, bytes calldata data)
         external
-        returns (uint256 rid);
+        returns (uint256 requestId);
 
     /**
      * @dev Returns the amount of requested assets in Pending state.
@@ -104,7 +104,7 @@ interface IERC7540Deposit {
      * - MUST NOT show any variations depending on the caller.
      * - MUST NOT revert unless due to integer overflow caused by an unreasonably large input.
      */
-    function pendingDepositRequest(uint256 rid, address owner) external view returns (uint256 pendingAssets);
+    function pendingDepositRequest(uint256 requestId, address owner) external view returns (uint256 pendingAssets);
 
     /**
      * @dev Returns the amount of requested assets in Claimable state for the operator to deposit or mint.
@@ -113,12 +113,15 @@ interface IERC7540Deposit {
      * - MUST NOT show any variations depending on the caller.
      * - MUST NOT revert unless due to integer overflow caused by an unreasonably large input.
      */
-    function claimableDepositRequest(uint256 rid, address owner) external view returns (uint256 claimableAssets);
+    function claimableDepositRequest(uint256 requestId, address owner)
+        external
+        view
+        returns (uint256 claimableAssets);
 }
 
 interface IERC7540Redeem {
     event RedeemRequest(
-        address sender, uint256 indexed rid, address indexed receiver, address indexed owner, uint256 assets
+        address indexed receiver, address indexed owner, uint256 indexed requestId, address sender, uint256 assets
     );
 
     /**
@@ -140,7 +143,7 @@ interface IERC7540Redeem {
      */
     function requestRedeem(uint256 shares, address receiver, address owner, bytes calldata data)
         external
-        returns (uint256 rid);
+        returns (uint256 requestId);
 
     /**
      * @dev Returns the amount of requested shares in Pending state.
@@ -149,7 +152,7 @@ interface IERC7540Redeem {
      * - MUST NOT show any variations depending on the caller.
      * - MUST NOT revert unless due to integer overflow caused by an unreasonably large input.
      */
-    function pendingRedeemRequest(uint256 rid, address owner) external view returns (uint256 pendingShares);
+    function pendingRedeemRequest(uint256 requestId, address owner) external view returns (uint256 pendingShares);
 
     /**
      * @dev Returns the amount of requested shares in Claimable state for the operator to redeem or withdraw.
@@ -158,7 +161,7 @@ interface IERC7540Redeem {
      * - MUST NOT show any variations depending on the caller.
      * - MUST NOT revert unless due to integer overflow caused by an unreasonably large input.
      */
-    function claimableRedeemRequest(uint256 rid, address owner) external view returns (uint256 claimableShares);
+    function claimableRedeemRequest(uint256 requestId, address owner) external view returns (uint256 claimableShares);
 }
 
 /**

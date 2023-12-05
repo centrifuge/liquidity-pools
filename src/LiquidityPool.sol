@@ -118,7 +118,7 @@ contract LiquidityPool is Auth, IERC7540 {
             "LiquidityPool/receiver-failed"
         );
 
-        emit DepositRequest(msg.sender, 0, receiver, owner, assets);
+        emit DepositRequest(receiver, owner, rid, msg.sender, assets);
     }
 
     function requestDeposit(uint256 assets, address receiver) external {
@@ -176,7 +176,7 @@ contract LiquidityPool is Auth, IERC7540 {
             "LiquidityPool/receiver-failed"
         );
 
-        emit RedeemRequest(msg.sender, 0, receiver, owner, shares);
+        emit RedeemRequest(receiver, owner, rid, msg.sender, shares);
     }
 
     function requestRedeem(uint256 shares, address receiver, address owner) external {
