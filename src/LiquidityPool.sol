@@ -70,14 +70,15 @@ contract LiquidityPool is Auth, IERC7540 {
     /// @notice Escrow contract for tokens
     address public immutable escrow;
 
+    /// @dev    Requests for Centrifuge pool are non-transferable and all have ID = 0
+    uint256 constant REQUEST_ID = 0;
+
     // --- Events ---
     event File(bytes32 indexed what, address data);
-    event DepositClaimable(uint256 indexed requestId, address indexed owner, uint256 assets, uint256 shares);
-    event RedeemClaimable(uint256 indexed requestId, address indexed owner, uint256 assets, uint256 shares);
-    event DecreaseDepositRequest(address indexed sender, uint256 assets);
-    event DecreaseRedeemRequest(address indexed sender, uint256 shares);
-    event CancelDepositRequest(address indexed sender);
-    event CancelRedeemRequest(address indexed sender);
+    event DepositClaimable(address indexed owner, uint256 indexed requestId, uint256 assets, uint256 shares);
+    event RedeemClaimable(address indexed owner, uint256 indexed requestId, uint256 assets, uint256 shares);
+    event DecreaseDepositRequest(address indexed owner, uint256 assets);
+    event DecreaseRedeemRequest(address indexed owner, uint256 shares);
 
     constructor(uint64 poolId_, bytes16 trancheId_, address asset_, address share_, address escrow_, address manager_) {
         poolId = poolId_;
@@ -102,7 +103,7 @@ contract LiquidityPool is Auth, IERC7540 {
     /// @inheritdoc IERC7540Deposit
     function requestDeposit(uint256 assets, address receiver, address owner, bytes memory data)
         public
-        returns (uint256 rid)
+        returns (uint256)
     {
         require(owner == msg.sender, "LiquidityPool/not-msg-sender");
         require(IERC20(asset).balanceOf(owner) >= assets, "LiquidityPool/insufficient-balance");
@@ -110,15 +111,15 @@ contract LiquidityPool is Auth, IERC7540 {
         require(manager.requestDeposit(address(this), assets, receiver, owner), "LiquidityPool/request-deposit-failed");
         SafeTransferLib.safeTransferFrom(asset, owner, address(escrow), assets);
 
-        rid = 0;
         require(
             data.length == 0 || receiver.code.length == 0
-                || IERC7540DepositReceiver(receiver).onERC7540DepositReceived(msg.sender, owner, rid, data)
+                || IERC7540DepositReceiver(receiver).onERC7540DepositReceived(msg.sender, owner, REQUEST_ID, data)
                     == IERC7540DepositReceiver.onERC7540DepositReceived.selector,
             "LiquidityPool/receiver-failed"
         );
 
-        emit DepositRequest(receiver, owner, rid, msg.sender, assets);
+        emit DepositRequest(receiver, owner, REQUEST_ID, msg.sender, assets);
+        return REQUEST_ID;
     }
 
     function requestDeposit(uint256 assets, address receiver) external {
@@ -150,7 +151,7 @@ contract LiquidityPool is Auth, IERC7540 {
     }
 
     /// @inheritdoc IERC7540Deposit
-    function pendingDepositRequest(uint256, address owner) external view returns (uint256 pendingAssets) {
+    function pendingDepositRequest(uint256, address owner) public view returns (uint256 pendingAssets) {
         pendingAssets = manager.pendingDepositRequest(address(this), owner);
     }
 
@@ -162,21 +163,21 @@ contract LiquidityPool is Auth, IERC7540 {
     /// @inheritdoc IERC7540Redeem
     function requestRedeem(uint256 shares, address receiver, address owner, bytes memory data)
         public
-        returns (uint256 rid)
+        returns (uint256)
     {
         require(share.balanceOf(owner) >= shares, "LiquidityPool/insufficient-balance");
         require(manager.requestRedeem(address(this), shares, receiver, owner), "LiquidityPool/request-redeem-failed");
         require(transferFrom(owner, address(escrow), shares), "LiquidityPool/transfer-failed");
 
-        rid = 0;
         require(
             data.length == 0 || receiver.code.length == 0
-                || IERC7540RedeemReceiver(receiver).onERC7540RedeemReceived(msg.sender, owner, rid, data)
+                || IERC7540RedeemReceiver(receiver).onERC7540RedeemReceived(msg.sender, owner, REQUEST_ID, data)
                     == IERC7540RedeemReceiver.onERC7540RedeemReceived.selector,
             "LiquidityPool/receiver-failed"
         );
 
-        emit RedeemRequest(receiver, owner, rid, msg.sender, shares);
+        emit RedeemRequest(receiver, owner, REQUEST_ID, msg.sender, shares);
+        return REQUEST_ID;
     }
 
     function requestRedeem(uint256 shares, address receiver, address owner) external {
@@ -184,7 +185,7 @@ contract LiquidityPool is Auth, IERC7540 {
     }
 
     /// @inheritdoc IERC7540Redeem
-    function pendingRedeemRequest(uint256, address owner) external view returns (uint256 pendingShares) {
+    function pendingRedeemRequest(uint256, address owner) public view returns (uint256 pendingShares) {
         pendingShares = manager.pendingRedeemRequest(address(this), owner);
     }
 
@@ -203,7 +204,7 @@ contract LiquidityPool is Auth, IERC7540 {
     /// @notice Request cancelling the outstanding deposit orders.
     function cancelDepositRequest() external {
         manager.cancelDepositRequest(address(this), msg.sender);
-        emit CancelDepositRequest(msg.sender);
+        emit DecreaseDepositRequest(msg.sender, pendingDepositRequest(REQUEST_ID, msg.sender));
     }
 
     /// @notice Request decreasing the outstanding redemption orders.
@@ -215,7 +216,7 @@ contract LiquidityPool is Auth, IERC7540 {
     /// @notice Request cancelling the outstanding redemption orders.
     function cancelRedeemRequest() external {
         manager.cancelRedeemRequest(address(this), msg.sender);
-        emit CancelRedeemRequest(msg.sender);
+        emit DecreaseRedeemRequest(msg.sender, pendingRedeemRequest(REQUEST_ID, msg.sender));
     }
 
     function exchangeRateLastUpdated() external view returns (uint64) {
@@ -375,11 +376,11 @@ contract LiquidityPool is Auth, IERC7540 {
 
     // --- Helpers ---
     function emitDepositClaimable(address owner, uint256 assets, uint256 shares) public auth {
-        emit DepositClaimable(0, owner, assets, shares);
+        emit DepositClaimable(owner, REQUEST_ID, assets, shares);
     }
 
     function emitRedeemClaimable(address owner, uint256 assets, uint256 shares) public auth {
-        emit RedeemClaimable(0, owner, assets, shares);
+        emit RedeemClaimable(owner, REQUEST_ID, assets, shares);
     }
 
     function _successCheck(bool success) internal pure {

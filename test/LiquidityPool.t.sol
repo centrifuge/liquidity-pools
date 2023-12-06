@@ -115,9 +115,6 @@ contract LiquidityPoolTest is TestSetup {
     
     // --- callbacks ---
     function testSucceedingCallbacks(bytes memory depositData, bytes memory redeemData) public {
-        vm.assume(depositData.length > 0);
-        vm.assume(redeemData.length > 0);
-        
         address lPool_ = deploySimplePool();
         LiquidityPool lPool = LiquidityPool(lPool_);
         SucceedingRequestReceiver receiver = new SucceedingRequestReceiver();
@@ -163,6 +160,49 @@ contract LiquidityPoolTest is TestSetup {
         assertEq(receiver.values_bytes("requestRedeem_data"), redeemData);
 
         assertTrue(receiver.onERC7540RedeemReceived(self, self, 0, redeemData) == 0x0102fde4);
+    }
+
+    function testSucceedingCallbacksNotCalledWithEmptyData() public {
+        address lPool_ = deploySimplePool();
+        LiquidityPool lPool = LiquidityPool(lPool_);
+        SucceedingRequestReceiver receiver = new SucceedingRequestReceiver();
+
+        centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), address(receiver), type(uint64).max);
+        centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), self, type(uint64).max);
+
+        uint256 amount = 100*10**6;
+        erc20.mint(self, amount);
+        erc20.approve(lPool_, amount);
+
+        // Check deposit callback
+        lPool.requestDeposit(amount, address(receiver), self, "");
+
+        assertEq(receiver.values_address("requestDeposit_operator"), address(0));
+        assertEq(receiver.values_address("requestDeposit_owner"), address(0));
+        assertEq(receiver.values_uint256("requestDeposit_requestId"), 0);
+        assertEq(receiver.values_bytes("requestDeposit_data"), "");
+
+        // Claim deposit request
+        // Note this is sending it to self, which is technically incorrect, it should be going to the receiver
+        centrifugeChain.isExecutedCollectInvest(
+            lPool.poolId(),
+            lPool.trancheId(),
+            bytes32(bytes20(self)),
+            defaultCurrencyId,
+            uint128(amount),
+            uint128(amount),
+            0
+        );
+        lPool.mint(lPool.maxMint(self), self);
+
+        // Check redeem callback
+        lPool.requestRedeem(amount, address(receiver), self, "");
+
+        assertEq(lPool.balanceOf(self), 0);
+        assertEq(receiver.values_address("requestRedeem_operator"), address(0));
+        assertEq(receiver.values_address("requestRedeem_owner"), address(0));
+        assertEq(receiver.values_uint256("requestRedeem_requestId"), 0);
+        assertEq(receiver.values_bytes("requestRedeem_data"), "");
     }
 
     function testFailingCallbacks(bytes memory depositData, bytes memory redeemData) public {
