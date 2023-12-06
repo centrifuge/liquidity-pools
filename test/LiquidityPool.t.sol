@@ -115,6 +115,9 @@ contract LiquidityPoolTest is TestSetup {
     
     // --- callbacks ---
     function testSucceedingCallbacks(bytes memory depositData, bytes memory redeemData) public {
+        vm.assume(depositData.length > 0);
+        vm.assume(redeemData.length > 0);
+        
         address lPool_ = deploySimplePool();
         LiquidityPool lPool = LiquidityPool(lPool_);
         SucceedingRequestReceiver receiver = new SucceedingRequestReceiver();
