@@ -64,11 +64,11 @@ contract LiquidityPool is Auth, IERC7540 {
     ///         Has a ratio (token price) of underlying assets exchanged on deposit/mint/withdraw/redeem.
     IERC20Metadata public immutable share;
 
-    /// @notice Liquidity Pool implementation contract
-    ManagerLike public manager;
-
     /// @notice Escrow contract for tokens
     address public immutable escrow;
+
+    /// @notice Liquidity Pool implementation contract
+    ManagerLike public manager;
 
     /// @dev    Requests for Centrifuge pool are non-transferable and all have ID = 0
     uint256 constant REQUEST_ID = 0;
