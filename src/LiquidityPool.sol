@@ -79,6 +79,8 @@ contract LiquidityPool is Auth, IERC7540 {
     event RedeemClaimable(address indexed owner, uint256 assets, uint256 shares);
     event DecreaseDepositRequest(address indexed owner, uint256 assets);
     event DecreaseRedeemRequest(address indexed owner, uint256 shares);
+    event CancelDepositRequest(address indexed sender);
+    event CancelRedeemRequest(address indexed sender);
 
     constructor(uint64 poolId_, bytes16 trancheId_, address asset_, address share_, address escrow_, address manager_) {
         poolId = poolId_;
@@ -204,7 +206,7 @@ contract LiquidityPool is Auth, IERC7540 {
     /// @notice Request cancelling the outstanding deposit orders.
     function cancelDepositRequest() external {
         manager.cancelDepositRequest(address(this), msg.sender);
-        emit DecreaseDepositRequest(msg.sender, pendingDepositRequest(REQUEST_ID, msg.sender));
+        emit CancelDepositRequest(msg.sender);
     }
 
     /// @notice Request decreasing the outstanding redemption orders.
@@ -216,7 +218,7 @@ contract LiquidityPool is Auth, IERC7540 {
     /// @notice Request cancelling the outstanding redemption orders.
     function cancelRedeemRequest() external {
         manager.cancelRedeemRequest(address(this), msg.sender);
-        emit DecreaseRedeemRequest(msg.sender, pendingRedeemRequest(REQUEST_ID, msg.sender));
+        emit CancelRedeemRequest(msg.sender);
     }
 
     function exchangeRateLastUpdated() external view returns (uint64) {
