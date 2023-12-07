@@ -434,14 +434,14 @@ contract PoolManagerTest is TestSetup {
         centrifugeChain.freeze(poolId, trancheId, address(escrow));
     }
 
-    function testUpdateTokenMetadata(
-        string memory updatedTokenName,
-        string memory updatedTokenSymbol
-    ) public {
+    function testUpdateTokenMetadata() public {
         address lPool_ = deploySimplePool();
         LiquidityPool lPool =  LiquidityPool(lPool_);
         uint64 poolId = lPool.poolId();
         bytes16 trancheId = lPool.trancheId();
+
+        string memory updatedTokenName = "newName";
+        string memory updatedTokenSymbol = "newSymbol";
 
         vm.expectRevert(bytes("PoolManager/unknown-token"));
         centrifugeChain.updateTrancheTokenMetadata(100, _stringToBytes16("100"), updatedTokenName, updatedTokenSymbol);
@@ -449,7 +449,12 @@ contract PoolManagerTest is TestSetup {
         vm.expectRevert(bytes("PoolManager/not-the-gateway"));
         poolManager.updateTrancheTokenMetadata(poolId, trancheId, updatedTokenName, updatedTokenSymbol);
 
+        assertEq(lPool.name(), "name");
+        assertEq(lPool.symbol(), "symbol");
+        
         centrifugeChain.updateTrancheTokenMetadata(poolId, trancheId, updatedTokenName, updatedTokenSymbol);
+        assertEq(lPool.name(), updatedTokenName);
+        assertEq(lPool.symbol(), updatedTokenSymbol);
     }
 
     function testAllowInvestmentCurrency() public {
