@@ -107,7 +107,7 @@ interface IERC7540Deposit {
     function pendingDepositRequest(uint256 requestId, address owner) external view returns (uint256 pendingAssets);
 
     /**
-     * @dev Returns the amount of requested assets in Claimable state for the operator to deposit or mint.
+     * @dev Returns the amount of requested assets in Claimable state for the owner to deposit or mint.
      *
      * - MUST NOT include any assets in Pending state.
      * - MUST NOT show any variations depending on the caller.
@@ -131,9 +131,9 @@ interface IERC7540Redeem {
      *   where msg.sender has ERC-20 approval over the shares of owner.
      * - MUST revert if all of shares cannot be requested for redeem.
      *
-     * @param shares the amount of redemption shares to transfer from owner
+     * @param shares the amount of shares to be redeemed to transfer from owner
      * @param receiver the receiver of the request who will be able to operate the request
-     * @param owner the source of the redemption shares
+     * @param owner the source of the shares to be redeemed
      * @param data additional bytes which may be used to approve or call the receiver contract
      *
      * NOTE: most implementations will require pre-approval of the Vault with the Vault's share token.
@@ -155,7 +155,7 @@ interface IERC7540Redeem {
     function pendingRedeemRequest(uint256 requestId, address owner) external view returns (uint256 pendingShares);
 
     /**
-     * @dev Returns the amount of requested shares in Claimable state for the operator to redeem or withdraw.
+     * @dev Returns the amount of requested shares in Claimable state for the owner to redeem or withdraw.
      *
      * - MUST NOT include any shares in Pending state for redeem or withdraw.
      * - MUST NOT show any variations depending on the caller.
