@@ -15,6 +15,7 @@ contract AssetShareConversionTest is TestSetup {
             poolId, TRANCHE_TOKEN_DECIMALS, defaultRestrictionSet, "", "", trancheId, currencyId, address(currency)
         );
         LiquidityPool lPool = LiquidityPool(lPool_);
+        TrancheTokenLike trancheToken = TrancheTokenLike(address(LiquidityPool(lPool_).share()));
         centrifugeChain.updateTrancheTokenPrice(poolId, trancheId, currencyId, 1000000, uint64(block.timestamp));
 
         // invest
@@ -36,7 +37,7 @@ contract AssetShareConversionTest is TestSetup {
         );
 
         // assert share/asset conversion
-        assertEq(lPool.totalSupply(), 100000000000000000000);
+        assertEq(trancheToken.totalSupply(), 100000000000000000000);
         assertEq(lPool.totalAssets(), 100000000);
         assertEq(lPool.convertToShares(100000000), 100000000000000000000); // tranche tokens have 12 more decimals than
             // assets
@@ -64,6 +65,7 @@ contract AssetShareConversionTest is TestSetup {
             poolId, TRANCHE_TOKEN_DECIMALS, defaultRestrictionSet, "", "", trancheId, currencyId, address(currency)
         );
         LiquidityPool lPool = LiquidityPool(lPool_);
+        TrancheTokenLike trancheToken = TrancheTokenLike(address(LiquidityPool(lPool_).share()));
         centrifugeChain.updateTrancheTokenPrice(poolId, trancheId, currencyId, 1000000, uint64(block.timestamp));
 
         // invest
@@ -85,7 +87,7 @@ contract AssetShareConversionTest is TestSetup {
         );
 
         // assert share/asset conversion
-        assertEq(lPool.totalSupply(), 100000000);
+        assertEq(trancheToken.totalSupply(), 100000000);
         assertEq(lPool.totalAssets(), 100000000000000000000);
         assertEq(lPool.convertToShares(100000000000000000000), 100000000); // tranche tokens have 12 less decimals than
             // assets

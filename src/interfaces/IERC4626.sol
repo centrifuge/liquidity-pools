@@ -1,13 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {IERC20Metadata} from "./IERC20.sol";
-
 /// @title  IERC4626
 /// @dev    Interface of the ERC4626 "Tokenized Vault Standard", as defined in
 ///         https://eips.ethereum.org/EIPS/eip-4626[ERC-4626].
 /// @author Modified from OpenZeppelin Contracts (last updated v4.9.0) (interfaces/IERC4626.sol)
-interface IERC4626 is IERC20Metadata {
+interface IERC4626 {
     event Deposit(address indexed sender, address indexed owner, uint256 assets, uint256 shares);
 
     event Withdraw(

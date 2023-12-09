@@ -62,7 +62,7 @@ contract LiquidityPool is Auth, IERC7540 {
 
     /// @notice The restricted ERC-20 Liquidity Pool share (tranche token).
     ///         Has a ratio (token price) of underlying assets exchanged on deposit/mint/withdraw/redeem.
-    IERC20Metadata public immutable share;
+    address public immutable share;
 
     /// @notice Escrow contract for tokens
     address public immutable escrow;
@@ -86,7 +86,7 @@ contract LiquidityPool is Auth, IERC7540 {
         poolId = poolId_;
         trancheId = trancheId_;
         asset = asset_;
-        share = IERC20Metadata(share_);
+        share = share_;
         escrow = escrow_;
         manager = ManagerLike(manager_);
 
@@ -167,7 +167,7 @@ contract LiquidityPool is Auth, IERC7540 {
         public
         returns (uint256)
     {
-        require(share.balanceOf(owner) >= shares, "LiquidityPool/insufficient-balance");
+        require(IERC20Metadata(share).balanceOf(owner) >= shares, "LiquidityPool/insufficient-balance");
         require(manager.requestRedeem(address(this), shares, receiver, owner), "LiquidityPool/request-redeem-failed");
         require(transferFrom(owner, address(escrow), shares), "LiquidityPool/transfer-failed");
 
@@ -235,7 +235,7 @@ contract LiquidityPool is Auth, IERC7540 {
     // --- ERC-4626 methods ---
     /// @inheritdoc IERC4626
     function totalAssets() external view returns (uint256) {
-        return convertToAssets(totalSupply());
+        return convertToAssets(IERC20Metadata(share).totalSupply());
     }
 
     /// @inheritdoc IERC4626
@@ -320,38 +320,7 @@ contract LiquidityPool is Auth, IERC7540 {
         revert();
     }
 
-    // --- ERC-20 overrides ---
-    /// @inheritdoc IERC20Metadata
-    function name() external view returns (string memory) {
-        return share.name();
-    }
-
-    /// @inheritdoc IERC20Metadata
-    function symbol() external view returns (string memory) {
-        return share.symbol();
-    }
-
-    /// @inheritdoc IERC20Metadata
-    function decimals() external view returns (uint8) {
-        return share.decimals();
-    }
-
-    /// @inheritdoc IERC20
-    function totalSupply() public view returns (uint256) {
-        return share.totalSupply();
-    }
-
-    /// @inheritdoc IERC20
-    function balanceOf(address owner) external view returns (uint256) {
-        return share.balanceOf(owner);
-    }
-
-    /// @inheritdoc IERC20
-    function allowance(address owner, address spender) external view returns (uint256) {
-        return share.allowance(owner, spender);
-    }
-
-    /// @inheritdoc IERC20
+    // --- ERC-20 passthrough ---
     function transferFrom(address from, address to, uint256 value) public returns (bool) {
         (bool success, bytes memory data) = address(share).call(
             bytes.concat(
@@ -362,18 +331,8 @@ contract LiquidityPool is Auth, IERC7540 {
         return abi.decode(data, (bool));
     }
 
-    /// @inheritdoc IERC20
-    function transfer(address, uint256) external returns (bool) {
-        (bool success, bytes memory data) = address(share).call(bytes.concat(msg.data, bytes20(msg.sender)));
-        _successCheck(success);
-        return abi.decode(data, (bool));
-    }
-
-    /// @inheritdoc IERC20
-    function approve(address, uint256) external returns (bool) {
-        (bool success, bytes memory data) = address(share).call(bytes.concat(msg.data, bytes20(msg.sender)));
-        _successCheck(success);
-        return abi.decode(data, (bool));
+    function decimals() external view returns (uint8) {
+        return IERC20Metadata(share).decimals();
     }
 
     // --- Helpers ---
