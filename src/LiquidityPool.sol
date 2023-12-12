@@ -6,12 +6,13 @@ import {SafeTransferLib} from "./util/SafeTransferLib.sol";
 import {IERC4626} from "./interfaces/IERC4626.sol";
 import {IERC20, IERC20Metadata, IERC20Permit} from "./interfaces/IERC20.sol";
 import {
-    IERC7540,
     IERC165,
+    IERC7540,
     IERC7540Deposit,
     IERC7540Redeem,
     IERC7540DepositReceiver,
-    IERC7540RedeemReceiver
+    IERC7540RedeemReceiver,
+    IERC7575
 } from "./interfaces/IERC7540.sol";
 
 interface ManagerLike {
@@ -229,7 +230,7 @@ contract LiquidityPool is Auth, IERC7540 {
     /// @inheritdoc IERC165
     function supportsInterface(bytes4 interfaceId) external pure override returns (bool) {
         return interfaceId == type(IERC165).interfaceId || interfaceId == type(IERC7540Deposit).interfaceId
-            || interfaceId == type(IERC7540Redeem).interfaceId;
+            || interfaceId == type(IERC7540Redeem).interfaceId || interfaceId == type(IERC7575).interfaceId;
     }
 
     // --- ERC-4626 methods ---

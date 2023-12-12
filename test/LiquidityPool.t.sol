@@ -2,7 +2,7 @@
 pragma solidity 0.8.21;
 
 import "./TestSetup.t.sol";
-import {IERC7540Deposit, IERC7540Redeem} from "src/interfaces/IERC7540.sol";
+import {IERC7540Deposit, IERC7540Redeem, IERC7575} from "src/interfaces/IERC7540.sol";
 import {SucceedingRequestReceiver} from "test/mock/SucceedingRequestReceiver.sol";
 import {FailingRequestReceiver} from "test/mock/FailingRequestReceiver.sol";
 
@@ -97,14 +97,16 @@ contract LiquidityPoolTest is TestSetup {
         bytes4 erc165 = 0x01ffc9a7;
         bytes4 erc7540Deposit = 0x1683f250;
         bytes4 erc7540Redeem = 0x0899cb0b;
+        bytes4 erc7575 = 0xa8d5fd65;
 
-        vm.assume(unsupportedInterfaceId != erc165 && unsupportedInterfaceId != erc7540Deposit && unsupportedInterfaceId != erc7540Redeem);
+        vm.assume(unsupportedInterfaceId != erc165 && unsupportedInterfaceId != erc7540Deposit && unsupportedInterfaceId != erc7540Redeem && unsupportedInterfaceId != erc7575);
 
         address lPool_ = deploySimplePool();
         LiquidityPool lPool = LiquidityPool(lPool_);
 
         assertEq(type(IERC7540Deposit).interfaceId, erc7540Deposit);
         assertEq(type(IERC7540Redeem).interfaceId, erc7540Redeem);
+        assertEq(type(IERC7575).interfaceId, erc7575);
 
         assertEq(lPool.supportsInterface(erc165), true);
         assertEq(lPool.supportsInterface(erc7540Deposit), true);

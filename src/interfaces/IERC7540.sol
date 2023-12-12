@@ -164,7 +164,7 @@ interface IERC7540Redeem {
     function claimableRedeemRequest(uint256 requestId, address owner) external view returns (uint256 claimableShares);
 }
 
-interface IERCX {
+interface IERC7575 {
     /**
      * @dev Returns the address of the share token
      *
@@ -179,4 +179,4 @@ interface IERCX {
  * @dev    Interface of the ERC7540 "Asynchronous Tokenized Vault Standard", as defined in
  *         https://github.com/ethereum/EIPs/blob/2e63f2096b0c7d8388458bb0a03a7ce0eb3422a4/EIPS/eip-7540.md[ERC-7540].
  */
-interface IERC7540 is IERC7540Deposit, IERC7540Redeem, IERCX, IERC4626, IERC165 {}
+interface IERC7540 is IERC7540Deposit, IERC7540Redeem, IERC7575, IERC4626, IERC165 {}
