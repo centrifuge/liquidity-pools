@@ -17,13 +17,13 @@ contract RedeemTest is TestSetup {
         );
 
         // success
-        lPool.requestRedeem(amount, address(this), address(this));
+        lPool.requestRedeem(amount, address(this), address(this), "");
         assertEq(trancheToken.balanceOf(address(escrow)), amount);
         assertEq(lPool.pendingRedeemRequest(0, self), amount);
 
         // fail: no tokens left
         vm.expectRevert(bytes("LiquidityPool/insufficient-balance"));
-        lPool.requestRedeem(amount, address(this), address(this));
+        lPool.requestRedeem(amount, address(this), address(this), "");
 
         // trigger executed collectRedeem
         uint128 _currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
@@ -77,7 +77,7 @@ contract RedeemTest is TestSetup {
             lPool.poolId(), lPool.trancheId(), defaultCurrencyId, defaultPrice, uint64(block.timestamp)
         );
 
-        lPool.requestRedeem(amount, address(this), address(this));
+        lPool.requestRedeem(amount, address(this), address(this), "");
         assertEq(trancheToken.balanceOf(address(escrow)), amount);
         assertEq(erc20.balanceOf(address(userEscrow)), 0);
         assertGt(lPool.pendingRedeemRequest(0, self), 0);
@@ -132,7 +132,7 @@ contract RedeemTest is TestSetup {
 
         // investor can requestRedeem
         vm.prank(investor);
-        lPool.requestRedeem(amount, investor, investor);
+        lPool.requestRedeem(amount, investor, investor, "");
 
         uint128 tokenAmount = uint128(trancheToken.balanceOf(address(escrow)));
         centrifugeChain.isExecutedCollectRedeem(
@@ -178,7 +178,7 @@ contract RedeemTest is TestSetup {
         TrancheTokenLike trancheToken = TrancheTokenLike(address(lPool.share()));
         deposit(lPool_, self, amount); // deposit funds first
 
-        lPool.requestRedeem(amount, address(this), address(this));
+        lPool.requestRedeem(amount, address(this), address(this), "");
         assertEq(trancheToken.balanceOf(address(escrow)), amount);
         assertEq(trancheToken.balanceOf(self), 0);
 
@@ -210,7 +210,7 @@ contract RedeemTest is TestSetup {
             lPool.poolId(), lPool.trancheId(), defaultCurrencyId, defaultPrice, uint64(block.timestamp)
         );
         deposit(lPool_, self, amount);
-        lPool.requestRedeem(amount, address(this), address(this));
+        lPool.requestRedeem(amount, address(this), address(this), "");
 
         assertEq(trancheToken.balanceOf(address(escrow)), amount);
         assertEq(trancheToken.balanceOf(self), 0);
@@ -355,7 +355,7 @@ contract RedeemTest is TestSetup {
         currency.approve(address(investmentManager), investmentAmount);
         currency.mint(self, investmentAmount);
         erc20.approve(address(lPool), investmentAmount);
-        lPool.requestDeposit(investmentAmount, self);
+        lPool.requestDeposit(investmentAmount, self, self, "");
         uint128 _currencyId = poolManager.currencyAddressToId(address(currency)); // retrieve currencyId
 
         uint128 trancheTokenPayout = 100000000;
@@ -375,7 +375,7 @@ contract RedeemTest is TestSetup {
         assertEq(trancheToken.balanceOf(self), trancheTokenPayout);
 
         // redeem
-        lPool.requestRedeem(trancheTokenPayout, self, self);
+        lPool.requestRedeem(trancheTokenPayout, self, self, "");
 
         // trigger first executed collectRedeem at a price of 1.5
         // user is able to redeem 50 tranche tokens, at 1.5 price, 75 currency is paid out
@@ -416,7 +416,7 @@ contract RedeemTest is TestSetup {
         uint256 totalTrancheTokens = trancheToken.balanceOf(self);
         uint256 redeemAmount = 50000000000000000000;
         assertTrue(redeemAmount <= totalTrancheTokens);
-        lPool.requestRedeem(redeemAmount, self, self);
+        lPool.requestRedeem(redeemAmount, self, self, "");
 
         // first trigger executed collectRedeem of the first 25 trancheTokens at a price of 1.1
         uint128 firstTrancheTokenRedeem = 25000000000000000000;

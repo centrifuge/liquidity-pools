@@ -23,7 +23,7 @@ contract AssetShareConversionTest is TestSetup {
         centrifugeChain.updateMember(poolId, trancheId, self, type(uint64).max);
         currency.approve(lPool_, investmentAmount);
         currency.mint(self, investmentAmount);
-        lPool.requestDeposit(investmentAmount, self);
+        lPool.requestDeposit(investmentAmount, self, self, "");
 
         // trigger executed collectInvest at a price of 1.0
         uint128 _currencyId = poolManager.currencyAddressToId(address(currency)); // retrieve currencyId
@@ -73,7 +73,7 @@ contract AssetShareConversionTest is TestSetup {
         centrifugeChain.updateMember(poolId, trancheId, self, type(uint64).max);
         currency.approve(lPool_, investmentAmount);
         currency.mint(self, investmentAmount);
-        lPool.requestDeposit(investmentAmount, self);
+        lPool.requestDeposit(investmentAmount, self, self, "");
 
         // trigger executed collectInvest at a price of 1.0
         uint128 _currencyId = poolManager.currencyAddressToId(address(currency)); // retrieve currencyId

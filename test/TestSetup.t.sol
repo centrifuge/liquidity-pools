@@ -128,7 +128,7 @@ contract TestSetup is Deployer, Test {
         centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), _investor, type(uint64).max); // add user as member
         vm.startPrank(_investor);
         erc20.approve(_lPool, amount); // add allowance
-        lPool.requestDeposit(amount, _investor);
+        lPool.requestDeposit(amount, _investor, _investor, "");
         // trigger executed collectInvest
         uint128 currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
         centrifugeChain.isExecutedCollectInvest(

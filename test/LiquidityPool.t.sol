@@ -77,14 +77,14 @@ contract LiquidityPoolTest is TestSetup {
 
         erc20.mint(address(this), amount);
         vm.expectRevert(bytes("MathLib/uint128-overflow"));
-        lPool.requestDeposit(amount, self);
+        lPool.requestDeposit(amount, self, self, "");
 
         TrancheTokenLike trancheToken = TrancheTokenLike(address(lPool.share()));
         centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), self, type(uint64).max);
         root.relyContract(address(trancheToken), self);
         trancheToken.mint(address(this), amount);
         vm.expectRevert(bytes("MathLib/uint128-overflow"));
-        lPool.requestRedeem(amount, address(this), address(this));
+        lPool.requestRedeem(amount, address(this), address(this), "");
 
         vm.expectRevert(bytes("MathLib/uint128-overflow"));
         lPool.decreaseDepositRequest(amount);

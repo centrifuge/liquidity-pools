@@ -88,7 +88,7 @@ contract DeployTest is Test, Deployer {
 
     function depositMint(uint64 poolId, bytes16 trancheId, uint128 price, uint256 amount, LiquidityPool lPool) public {
         erc20.approve(address(lPool), amount); // add allowance
-        lPool.requestDeposit(amount, self);
+        lPool.requestDeposit(amount, self, self, "");
 
         // ensure funds are locked in escrow
         assertEq(erc20.balanceOf(address(escrow)), amount);
@@ -135,7 +135,7 @@ contract DeployTest is Test, Deployer {
     function redeemWithdraw(uint64 poolId, bytes16 trancheId, uint128 price, uint256 amount, LiquidityPool lPool)
         public
     {
-        lPool.requestRedeem(amount, address(this), address(this));
+        lPool.requestRedeem(amount, address(this), address(this), "");
 
         // redeem
         uint128 _currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
