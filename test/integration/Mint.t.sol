@@ -24,7 +24,7 @@ contract MintTest is TestSetup {
 
         // success
         trancheToken.mint(investor, amount);
-        assertEq(lPool.balanceOf(investor), amount);
-        assertEq(lPool.balanceOf(investor), trancheToken.balanceOf(investor));
+        assertEq(trancheToken.balanceOf(investor), amount);
+        assertEq(trancheToken.balanceOf(investor), trancheToken.balanceOf(investor));
     }
 }
