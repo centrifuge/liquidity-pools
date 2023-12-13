@@ -55,6 +55,7 @@ interface IERC7540Deposit {
     event DepositRequest(
         address indexed receiver, address indexed owner, uint256 indexed requestId, address sender, uint256 assets
     );
+    event DepositClaimable(address indexed owner, uint256 indexed requestId, uint256 assets, uint256 shares);
 
     /**
      * @dev Transfers assets from sender into the Vault and submits a Request for asynchronous deposit.
@@ -104,6 +105,7 @@ interface IERC7540Redeem {
     event RedeemRequest(
         address indexed receiver, address indexed owner, uint256 indexed requestId, address sender, uint256 assets
     );
+    event RedeemClaimable(address indexed owner, uint256 indexed requestId, uint256 assets, uint256 shares);
 
     /**
      * @dev Assumes control of shares from sender into the Vault and submits a Request for asynchronous redeem.

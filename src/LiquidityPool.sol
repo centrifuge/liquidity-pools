@@ -3,23 +3,9 @@ pragma solidity 0.8.21;
 
 import {Auth} from "./util/Auth.sol";
 import {SafeTransferLib} from "./util/SafeTransferLib.sol";
-import {
-    IERC7575Minimal,
-    IERC7575Deposit,
-    IERC7575Mint,
-    IERC7575Withdraw,
-    IERC7575Redeem,
-    IERC4626,
-    IERC165
-} from "src/interfaces/IERC7575.sol";
-import {IERC20, IERC20Metadata, IERC20Permit} from "./interfaces/IERC20.sol";
-import {
-    IERC7540,
-    IERC7540Deposit,
-    IERC7540Redeem,
-    IERC7540DepositReceiver,
-    IERC7540RedeemReceiver
-} from "./interfaces/IERC7540.sol";
+import "./interfaces/IERC7540.sol";
+import "./interfaces/IERC7575.sol";
+import "./interfaces/IERC20.sol";
 
 interface ManagerLike {
     function requestDeposit(address lp, uint256 assets, address receiver, address owner) external returns (bool);
@@ -82,8 +68,6 @@ contract LiquidityPool is Auth, IERC7540 {
 
     // --- Events ---
     event File(bytes32 indexed what, address data);
-    event DepositClaimable(address indexed owner, uint256 assets, uint256 shares);
-    event RedeemClaimable(address indexed owner, uint256 assets, uint256 shares);
     event DecreaseDepositRequest(address indexed owner, uint256 assets);
     event DecreaseRedeemRequest(address indexed owner, uint256 shares);
     event CancelDepositRequest(address indexed sender);
@@ -312,7 +296,7 @@ contract LiquidityPool is Auth, IERC7540 {
         revert();
     }
 
-    // --- ERC-20 passthrough ---
+    // --- ERC-20 forwarding ---
     function transferFrom(address from, address to, uint256 value) public returns (bool) {
         (bool success, bytes memory data) = address(share).call(
             bytes.concat(
@@ -329,11 +313,11 @@ contract LiquidityPool is Auth, IERC7540 {
 
     // --- Helpers ---
     function emitDepositClaimable(address owner, uint256 assets, uint256 shares) public auth {
-        emit DepositClaimable(owner, assets, shares);
+        emit DepositClaimable(owner, REQUEST_ID, assets, shares);
     }
 
     function emitRedeemClaimable(address owner, uint256 assets, uint256 shares) public auth {
-        emit RedeemClaimable(owner, assets, shares);
+        emit RedeemClaimable(owner, REQUEST_ID, assets, shares);
     }
 
     function _successCheck(bool success) internal pure {
