@@ -4,7 +4,7 @@ pragma solidity ^0.8.18;
 import {TestSetup} from "test/TestSetup.t.sol";
 import {MockCentrifugeChain} from "test/mock/MockCentrifugeChain.sol";
 import {MathLib} from "src/util/MathLib.sol";
-import {IERC4626} from "src/interfaces/IERC4626.sol";
+import {IERC4626} from "src/interfaces/IERC7575.sol";
 
 import "forge-std/Test.sol";
 
