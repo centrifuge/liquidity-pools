@@ -3,11 +3,12 @@ pragma solidity 0.8.21;
 
 import {TestSetup} from "test/TestSetup.t.sol";
 import {InvestorHandler} from "test/invariants/handlers/Investor.sol";
-import {IERC4626} from "src/interfaces/IERC4626.sol";
+import {IERC7540} from "src/interfaces/IERC7540.sol";
+import {IERC20} from "src/interfaces/IERC20.sol";
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
-interface LiquidityPoolLike is IERC4626 {
+interface LiquidityPoolLike is IERC7540 {
     function latestPrice() external view returns (uint256);
     function asset() external view returns (address);
 }
@@ -54,8 +55,9 @@ contract InvestmentInvariants is TestSetup {
 
             address pool = pools[poolId];
             address currency = LiquidityPoolLike(pool).asset();
-            InvestorHandler handler =
-            new InvestorHandler(poolId, "1", 1, pool, address(centrifugeChain), currency, address(escrow), address(this));
+            InvestorHandler handler = new InvestorHandler(
+                poolId, "1", 1, pool, address(centrifugeChain), currency, address(escrow), address(this)
+            );
 
             investorHandlers[poolId] = handler;
 
@@ -76,7 +78,7 @@ contract InvestmentInvariants is TestSetup {
 
             for (uint256 i; i < investors.length; ++i) {
                 address investor = investors[i];
-                assertLe(pool.balanceOf(investor), handler.values(investor, "totalTrancheTokensPaidOutOnInvest"));
+                assertLe(IERC20(pool.share()).balanceOf(investor), handler.values(investor, "totalTrancheTokensPaidOutOnInvest"));
             }
         }
     }

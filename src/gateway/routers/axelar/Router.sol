@@ -22,9 +22,9 @@ interface GatewayLike {
 /// @title  Axelar Router
 /// @notice Routing contract that integrates with an Axelar Gateway
 contract AxelarRouter is Auth {
-    string internal constant CENTRIFUGE_CHAIN_ID = "centrifuge";
-    string internal constant CENTRIFUGE_CHAIN_ADDRESS = "0x7369626cef070000000000000000000000000000";
-    string internal constant LP_PRECOMPILE_ADDRESS = "0x0000000000000000000000000000000000002048";
+    string public constant CENTRIFUGE_CHAIN_ID = "centrifuge";
+    string public constant CENTRIFUGE_CHAIN_ADDRESS = "0x7369626CEF070000000000000000000000000000";
+    string public constant CENTRIFUGE_AXELAR_EXECUTABLE = "0xc1757c6A0563E37048869A342dF0651b9F267e41";
 
     AxelarGatewayLike public immutable axelarGateway;
 
@@ -85,6 +85,6 @@ contract AxelarRouter is Auth {
 
     // --- Outgoing ---
     function send(bytes calldata message) public onlyGateway {
-        axelarGateway.callContract(CENTRIFUGE_CHAIN_ID, LP_PRECOMPILE_ADDRESS, message);
+        axelarGateway.callContract(CENTRIFUGE_CHAIN_ID, CENTRIFUGE_AXELAR_EXECUTABLE, message);
     }
 }

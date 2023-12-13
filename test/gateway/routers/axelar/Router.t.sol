@@ -5,20 +5,23 @@ import {AxelarRouter} from "src/gateway/routers/axelar/Router.sol";
 import {AxelarGatewayMock} from "../../../mock/AxelarGatewayMock.sol";
 import {GatewayMock} from "../../../mock/GatewayMock.sol";
 import "forge-std/Test.sol";
+import {AxelarForwarder} from "../../../../src/gateway/routers/axelar/Forwarder.sol";
+import {BytesLib} from "../../../../src/util/BytesLib.sol";
 
 contract AxelarRouterTest is Test {
     AxelarGatewayMock axelarGateway;
     GatewayMock gateway;
     AxelarRouter router;
+    AxelarForwarder forwarder;
 
     string private constant axelarCentrifugeChainId = "centrifuge";
-    string private constant axelarCentrifugeChainAddress = "0x7369626cef070000000000000000000000000000";
-    string private constant centrifugeGatewayPrecompileAddress = "0x0000000000000000000000000000000000002048";
+    string private constant axelarCentrifugeChainAddress = "0x7369626CEF070000000000000000000000000000";
 
     function setUp() public {
         axelarGateway = new AxelarGatewayMock();
         gateway = new GatewayMock();
 
+        forwarder = new AxelarForwarder(address(axelarGateway));
         router = new AxelarRouter(address(axelarGateway));
         router.file("gateway", address(gateway));
     }
@@ -28,7 +31,7 @@ contract AxelarRouterTest is Test {
         router.file("not-gateway", address(1));
     }
 
-    function testFile(address invalidOrigin, address anotherGateway) public {
+    function testFileGateway(address invalidOrigin, address anotherGateway) public {
         vm.assume(invalidOrigin != address(this));
 
         vm.prank(invalidOrigin);
@@ -51,14 +54,13 @@ contract AxelarRouterTest is Test {
         vm.assume(keccak256(abi.encodePacked(sourceChain)) != keccak256(abi.encodePacked("centrifuge")));
         vm.assume(invalidOrigin != address(axelarGateway));
         vm.assume(
-            keccak256(abi.encodePacked(invalidAxelarCentrifugeChainId))
-                != keccak256(abi.encodePacked(axelarCentrifugeChainId))
+            keccak256(abi.encodePacked(sourceAddress)) != keccak256(abi.encodePacked(axelarCentrifugeChainAddress))
         );
         vm.assume(relayer.code.length == 0);
 
         vm.prank(address(relayer));
         vm.expectRevert(bytes("AxelarRouter/invalid-source-chain"));
-        router.execute(commandId, sourceChain, sourceAddress, payload);
+        router.execute(commandId, sourceChain, axelarCentrifugeChainAddress, payload);
 
         vm.prank(address(relayer));
         vm.expectRevert(bytes("AxelarRouter/invalid-source-address"));
@@ -84,7 +86,7 @@ contract AxelarRouterTest is Test {
         router.send(message);
 
         assertEq(axelarGateway.values_string("destinationChain"), axelarCentrifugeChainId);
-        assertEq(axelarGateway.values_string("contractAddress"), centrifugeGatewayPrecompileAddress);
+        assertEq(axelarGateway.values_string("contractAddress"), router.CENTRIFUGE_AXELAR_EXECUTABLE());
         assertEq(axelarGateway.values_bytes("payload"), message);
     }
 }

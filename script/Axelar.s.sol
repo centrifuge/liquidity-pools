@@ -4,6 +4,7 @@ pragma solidity 0.8.21;
 import {AxelarRouter} from "src/gateway/routers/axelar/Router.sol";
 import {ERC20} from "src/token/ERC20.sol";
 import {Deployer, RouterLike} from "./Deployer.sol";
+import {AxelarForwarder} from "src/gateway/routers/axelar/Forwarder.sol";
 
 interface LiquidityPoolLike {
     function requestDeposit(uint256 assets, address owner) external;

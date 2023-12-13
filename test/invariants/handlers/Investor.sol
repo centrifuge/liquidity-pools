@@ -76,7 +76,7 @@ contract InvestorHandler is BaseHandler {
         erc20.approve(address(liquidityPool), amount_);
 
         // TODO: we should also set up tests where currentInvestor != operator
-        liquidityPool.requestDeposit(amount_, currentInvestor);
+        liquidityPool.requestDeposit(amount_, currentInvestor, currentInvestor, "");
 
         values[currentInvestor]["totalDepositRequested"] += amount;
     }
@@ -124,7 +124,7 @@ contract InvestorHandler is BaseHandler {
         );
         if (amount_ == 0) return;
 
-        liquidityPool.requestRedeem(amount_, currentInvestor, currentInvestor);
+        liquidityPool.requestRedeem(amount_, currentInvestor, currentInvestor, "");
 
         values[currentInvestor]["totalRedeemRequested"] += amount_;
     }

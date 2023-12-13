@@ -80,14 +80,15 @@ contract DeployTest is Test, Deployer {
         poolManager.updateMember(poolId, trancheId, self, validUntil);
 
         depositMint(poolId, trancheId, price, amount, lPool);
-        amount = lPool.balanceOf(self);
+        TrancheToken trancheToken = TrancheToken(address(lPool.share()));
+        amount = trancheToken.balanceOf(self);
 
         redeemWithdraw(poolId, trancheId, price, amount, lPool);
     }
 
     function depositMint(uint64 poolId, bytes16 trancheId, uint128 price, uint256 amount, LiquidityPool lPool) public {
         erc20.approve(address(lPool), amount); // add allowance
-        lPool.requestDeposit(amount, self);
+        lPool.requestDeposit(amount, self, self, "");
 
         // ensure funds are locked in escrow
         assertEq(erc20.balanceOf(address(escrow)), amount);
@@ -96,9 +97,10 @@ contract DeployTest is Test, Deployer {
         // trigger executed collectInvest
         uint128 _currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
 
+        TrancheToken trancheToken = TrancheToken(address(lPool.share()));
         uint128 trancheTokensPayout = (
             amount.mulDiv(
-                10 ** (PRICE_DECIMALS - erc20.decimals() + lPool.decimals()), price, MathLib.Rounding.Down
+                10 ** (PRICE_DECIMALS - erc20.decimals() + trancheToken.decimals()), price, MathLib.Rounding.Down
             )
         ).toUint128();
 
@@ -112,28 +114,28 @@ contract DeployTest is Test, Deployer {
 
         assertEq(lPool.maxMint(self), trancheTokensPayout);
         assertEq(lPool.maxDeposit(self), amount);
-        assertEq(lPool.balanceOf(address(escrow)), trancheTokensPayout);
+        assertEq(trancheToken.balanceOf(address(escrow)), trancheTokensPayout);
         assertEq(erc20.balanceOf(self), 0);
 
         uint256 div = 2;
         lPool.deposit(amount / div, self);
 
-        assertEq(lPool.balanceOf(self), trancheTokensPayout / div);
-        assertEq(lPool.balanceOf(address(escrow)), trancheTokensPayout - trancheTokensPayout / div);
+        assertEq(trancheToken.balanceOf(self), trancheTokensPayout / div);
+        assertEq(trancheToken.balanceOf(address(escrow)), trancheTokensPayout - trancheTokensPayout / div);
         assertEq(lPool.maxMint(self), trancheTokensPayout - trancheTokensPayout / div);
         assertEq(lPool.maxDeposit(self), amount - amount / div); // max deposit
 
         lPool.mint(lPool.maxMint(self), self);
 
-        assertEq(lPool.balanceOf(self), trancheTokensPayout);
-        assertTrue(lPool.balanceOf(address(escrow)) <= 1);
+        assertEq(trancheToken.balanceOf(self), trancheTokensPayout);
+        assertTrue(trancheToken.balanceOf(address(escrow)) <= 1);
         assertTrue(lPool.maxMint(self) <= 1);
     }
 
     function redeemWithdraw(uint64 poolId, bytes16 trancheId, uint128 price, uint256 amount, LiquidityPool lPool)
         public
     {
-        lPool.requestRedeem(amount, address(this), address(this));
+        lPool.requestRedeem(amount, address(this), address(this), "");
 
         // redeem
         uint128 _currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
@@ -147,21 +149,22 @@ contract DeployTest is Test, Deployer {
             poolId, trancheId, self, _currencyId, currencyPayout, uint128(amount), 0
         );
 
+        TrancheToken trancheToken = TrancheToken(address(lPool.share()));
         assertEq(lPool.maxWithdraw(self), currencyPayout);
         assertEq(lPool.maxRedeem(self), amount);
-        assertEq(lPool.balanceOf(address(escrow)), 0);
+        assertEq(trancheToken.balanceOf(address(escrow)), 0);
 
         uint128 div = 2;
         lPool.redeem(amount / div, self, self);
-        assertEq(lPool.balanceOf(self), 0);
-        assertEq(lPool.balanceOf(address(escrow)), 0);
+        assertEq(trancheToken.balanceOf(self), 0);
+        assertEq(trancheToken.balanceOf(address(escrow)), 0);
         assertEq(erc20.balanceOf(self), currencyPayout / div);
         assertEq(lPool.maxWithdraw(self), currencyPayout / div);
         assertEq(lPool.maxRedeem(self), amount / div);
 
         lPool.withdraw(lPool.maxWithdraw(self), self, self);
-        assertEq(lPool.balanceOf(self), 0);
-        assertEq(lPool.balanceOf(address(escrow)), 0);
+        assertEq(trancheToken.balanceOf(self), 0);
+        assertEq(trancheToken.balanceOf(address(escrow)), 0);
         assertEq(erc20.balanceOf(self), currencyPayout);
         assertEq(lPool.maxWithdraw(self), 0);
         assertEq(lPool.maxRedeem(self), 0);
