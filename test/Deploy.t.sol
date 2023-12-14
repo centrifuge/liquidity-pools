@@ -25,6 +25,10 @@ interface ApproveLike {
     function approve(address, uint256) external;
 }
 
+interface WardLike {
+    function wards(address who) external returns(uint);
+}
+
 contract DeployTest is Test, Deployer {
     using MathLib for uint256;
 
@@ -54,9 +58,14 @@ contract DeployTest is Test, Deployer {
         assertEq(investmentManager.wards(address(this)), 0);
         assertEq(poolManager.wards(address(this)), 0);
         assertEq(escrow.wards(address(this)), 0);
+        assertEq(userEscrow.wards(address(this)), 0);
         assertEq(gateway.wards(address(this)), 0);
         assertEq(pauseAdmin.wards(address(this)), 0);
         assertEq(delayedAdmin.wards(address(this)), 0);
+        // check factories
+        assertEq(WardLike(trancheTokenFactory).wards(address(this)), 0);
+        assertEq(WardLike(liquidityPoolFactory).wards(address(this)), 0);
+        assertEq(WardLike(restrictionManagerFactory).wards(address(this)), 0);
     }
 
     function testDeployAndInvestRedeem(
