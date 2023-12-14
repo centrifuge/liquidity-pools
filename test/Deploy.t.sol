@@ -63,7 +63,6 @@ contract DeployTest is Test, Deployer {
         assertEq(pauseAdmin.wards(address(this)), 0);
         assertEq(delayedAdmin.wards(address(this)), 0);
         // check factories
-        
         assertEq(WardLike(address(poolManager.trancheTokenFactory())).wards(address(this)), 0);
         assertEq(WardLike(address(poolManager.liquidityPoolFactory())).wards(address(this)), 0);
         assertEq(WardLike(address(poolManager.restrictionManagerFactory())).wards(address(this)), 0);
