@@ -35,6 +35,9 @@ contract Deployer is Script {
     PauseAdmin public pauseAdmin;
     DelayedAdmin public delayedAdmin;
     Gateway public gateway;
+    address public liquidityPoolFactory;
+    address public restrictionManagerFactory;
+    address public trancheTokenFactory;
 
     function deployInvestmentManager(address deployer) public {
         // If no salt is provided, a pseudo-random salt is generated,
@@ -46,9 +49,9 @@ contract Deployer is Script {
         userEscrow = new UserEscrow();
         root = new Root{salt: salt}(address(escrow), delay, deployer);
 
-        address liquidityPoolFactory = address(new LiquidityPoolFactory(address(root)));
-        address restrictionManagerFactory = address(new RestrictionManagerFactory(address(root)));
-        address trancheTokenFactory = address(new TrancheTokenFactory{salt: salt}(address(root), deployer));
+        liquidityPoolFactory = address(new LiquidityPoolFactory(address(root)));
+        restrictionManagerFactory = address(new RestrictionManagerFactory(address(root)));
+        trancheTokenFactory = address(new TrancheTokenFactory{salt: salt}(address(root), deployer));
         investmentManager = new InvestmentManager(address(escrow), address(userEscrow));
         poolManager =
             new PoolManager(address(escrow), liquidityPoolFactory, restrictionManagerFactory, trancheTokenFactory);
@@ -60,10 +63,6 @@ contract Deployer is Script {
         AuthLike(liquidityPoolFactory).rely(address(root));
         AuthLike(trancheTokenFactory).rely(address(root));
         AuthLike(restrictionManagerFactory).rely(address(root));
-
-        AuthLike(liquidityPoolFactory).deny(deployer);
-        AuthLike(trancheTokenFactory).deny(deployer);
-        AuthLike(restrictionManagerFactory).deny(deployer);
     }
 
     function wire(address router) public {
@@ -100,6 +99,9 @@ contract Deployer is Script {
 
     function removeDeployerAccess(address router, address deployer) public {
         AuthLike(router).deny(deployer);
+        AuthLike(liquidityPoolFactory).deny(deployer);
+        AuthLike(trancheTokenFactory).deny(deployer);
+        AuthLike(restrictionManagerFactory).deny(deployer);
         root.deny(deployer);
         investmentManager.deny(deployer);
         poolManager.deny(deployer);
