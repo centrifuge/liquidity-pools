@@ -127,7 +127,6 @@ contract TrancheTokenTest is Test {
     // --- RestrictionManager ---
     // transferFrom
     function testTransferFrom(uint256 amount) public {
-        uint256 validUntil = block.timestamp + 7 days;
         restrictionManager.updateMember(self, validUntil);
         token.mint(self, amount);
 
