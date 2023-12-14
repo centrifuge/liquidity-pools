@@ -26,6 +26,7 @@ contract Deployer is Script {
     uint256 internal constant delay = 48 hours;
 
     address admin;
+    address[] pauseAdmins;
 
     Root public root;
     InvestmentManager public investmentManager;
@@ -70,6 +71,8 @@ contract Deployer is Script {
         pauseAdmin = new PauseAdmin(address(root));
         delayedAdmin = new DelayedAdmin(address(root), address(pauseAdmin));
         gateway = new Gateway(address(root), address(investmentManager), address(poolManager), address(router));
+
+        // Wire admins
         pauseAdmin.rely(address(delayedAdmin));
         root.rely(address(pauseAdmin));
         root.rely(address(delayedAdmin));
@@ -93,8 +96,11 @@ contract Deployer is Script {
     }
 
     function giveAdminAccess() public {
-        pauseAdmin.rely(address(admin));
         delayedAdmin.rely(address(admin));
+
+        for (uint256 i = 0; i < pauseAdmins.length; i++) {
+            pauseAdmin.addPauser(pauseAdmins[i]);
+        }
     }
 
     function removeDeployerAccess(address router, address deployer) public {

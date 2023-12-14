@@ -12,6 +12,16 @@ if [[ -z "$ROUTER" ]]; then
 fi
 echo "Router = $ROUTER"
 
+if [[ -z "$DELAYED_ADMIN" ]]; then
+    error_exit "DELAYED_ADMIN is not defined"
+fi
+echo "Delayed Admin = $DELAYED_ADMIN"
+
+if [[ -z "$PAUSE_ADMINS" ]]; then
+    error_exit "PAUSE_ADMINS is not defined"
+fi
+echo "Pause Admins = $PAUSE_ADMINS"
+
 case "$ROUTER" in
   Permissionless|Axelar|Forwarder)
     forge script script/${ROUTER}.s.sol:${ROUTER}Script --optimize --rpc-url $RPC_URL --private-key $PRIVATE_KEY --verify --broadcast --chain-id $CHAIN_ID --etherscan-api-key $ETHERSCAN_KEY $1
