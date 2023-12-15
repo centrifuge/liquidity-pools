@@ -33,7 +33,7 @@ contract Spell is Addresses {
     string public constant description = "Liquidity Pool Factory migration spell";
 
     address public constant LIQUIDITY_POOL_FACTORY_NEW = address(0x8273E36EEcf7A8604BEdEe68FC24Af121B64f165);
-    address public constant DEPRICATED_LIQUIDITY_POOL = address(0xa0872E8D2975483b2Ab4Afcee729133D8666F6f5);
+    address public constant DEPRECATED_LIQUIDITY_POOL = address(0xa0872E8D2975483b2Ab4Afcee729133D8666F6f5);
 
     address self;
 
@@ -68,10 +68,10 @@ contract Spell is Addresses {
     }
 
     function removeLiquidityPool() internal {
-        LiquidityPoolLike lp = LiquidityPoolLike(DEPRICATED_LIQUIDITY_POOL);
+        LiquidityPoolLike lp = LiquidityPoolLike(DEPRECATED_LIQUIDITY_POOL);
         address liquidityPoolToRemove =
             PoolManagerLike(poolManager).getLiquidityPool(lp.poolId(), lp.trancheId(), lp.asset());
-        require(liquidityPoolToRemove == DEPRICATED_LIQUIDITY_POOL, "SPELL - unknown Liquidity Pool");
+        require(liquidityPoolToRemove == DEPRECATED_LIQUIDITY_POOL, "SPELL - unknown Liquidity Pool");
         PoolManagerLike(poolManager).removeLiquidityPool(lp.poolId(), lp.trancheId(), lp.asset());
     }
 }

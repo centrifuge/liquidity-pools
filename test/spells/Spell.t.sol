@@ -33,16 +33,16 @@ contract SpellTest is RPCTest {
     }
 
     function testCastSuccessfull() public {
-        address depricatedLP = spell.DEPRICATED_LIQUIDITY_POOL();
-        LiquidityPoolLike lp = LiquidityPoolLike(depricatedLP);
+        address deprecatedLP = spell.DEPRECATED_LIQUIDITY_POOL();
+        LiquidityPoolLike lp = LiquidityPoolLike(deprecatedLP);
         address liquidityPoolToRemove =
             PoolManagerLike(poolManager).getLiquidityPool(lp.poolId(), lp.trancheId(), lp.asset());
         assertEq(liquidityPoolToRemove, address(0));
 
         // check if pool removed correctly
-        assertEq(InvestmentManager(investmentManager).wards(depricatedLP), 0);
-        assertEq(TrancheToken(anemoyToken).wards(depricatedLP), 0);
-        assertEq(TrancheToken(anemoyToken).isTrustedForwarder(depricatedLP), false);
-        assertEq(TrancheToken(anemoyToken).allowance(address(escrow), depricatedLP), 0);
+        assertEq(InvestmentManager(investmentManager).wards(deprecatedLP), 0);
+        assertEq(TrancheToken(anemoyToken).wards(deprecatedLP), 0);
+        assertEq(TrancheToken(anemoyToken).isTrustedForwarder(deprecatedLP), false);
+        assertEq(TrancheToken(anemoyToken).allowance(address(escrow), deprecatedLP), 0);
     }
 }
