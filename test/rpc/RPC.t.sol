@@ -17,10 +17,10 @@ import {PauseAdmin} from "src/admins/pauseAdmin.sol";
 
 contract RPCTest is Test, Addresses {
     uint256 mainnetFork;
-    string RPC_URL = vm.envString("RPC_URL");
+    string MAINNET_RPC_URL = vm.envString("MAINNET_RPC_URL");
 
     function setUp() public virtual {
-        mainnetFork = vm.createFork(RPC_URL); // setup fork
+        mainnetFork = vm.createFork(MAINNET_RPC_URL); // setup ETH mainnet fork
         // use fork
         vm.selectFork(mainnetFork);
     }
