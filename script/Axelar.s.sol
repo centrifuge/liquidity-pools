@@ -17,8 +17,8 @@ contract AxelarScript is Deployer {
     function run() public {
         vm.startBroadcast();
 
-        admin = vm.envAddress("DELAYED_ADMIN");
-        pauseAdmins = vm.envAddress("PAUSE_ADMINS", ",");
+        admin = vm.envAddress("ADMIN");
+        pausers = vm.envAddress("PAUSERS", ",");
 
         deployInvestmentManager(msg.sender);
         AxelarRouter router = new AxelarRouter(address(vm.envAddress("AXELAR_GATEWAY")));

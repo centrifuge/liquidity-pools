@@ -26,7 +26,7 @@ contract Deployer is Script {
     uint256 internal constant delay = 48 hours;
 
     address admin;
-    address[] pauseAdmins;
+    address[] pausers;
 
     Root public root;
     InvestmentManager public investmentManager;
@@ -98,8 +98,8 @@ contract Deployer is Script {
     function giveAdminAccess() public {
         delayedAdmin.rely(address(admin));
 
-        for (uint256 i = 0; i < pauseAdmins.length; i++) {
-            pauseAdmin.addPauser(pauseAdmins[i]);
+        for (uint256 i = 0; i < pausers.length; i++) {
+            pauseAdmin.addPauser(pausers[i]);
         }
     }
 

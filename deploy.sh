@@ -12,15 +12,15 @@ if [[ -z "$ROUTER" ]]; then
 fi
 echo "Router = $ROUTER"
 
-if [[ -z "$DELAYED_ADMIN" ]]; then
-    error_exit "DELAYED_ADMIN is not defined"
+if [[ -z "$ADMIN" ]]; then
+    error_exit "ADMIN is not defined"
 fi
-echo "Delayed Admin = $DELAYED_ADMIN"
+echo "Admin = $ADMIN"
 
-if [[ -z "$PAUSE_ADMINS" ]]; then
-    error_exit "PAUSE_ADMINS is not defined"
+if [[ -z "$PAUSERS" ]]; then
+    error_exit "PAUSERS is not defined"
 fi
-echo "Pause Admins = $PAUSE_ADMINS"
+echo "Pausers = $PAUSERS"
 
 case "$ROUTER" in
   Permissionless|Axelar|Forwarder)

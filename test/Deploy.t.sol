@@ -43,6 +43,10 @@ contract DeployTest is Test, Deployer {
         wire(address(router));
         RouterLike(address(router)).file("gateway", address(gateway));
 
+        admin = makeAddr("admin");
+        pausers.push(makeAddr("pauser1"));
+        pausers.push(makeAddr("pauser2"));
+        pausers.push(makeAddr("pauser3"));
         giveAdminAccess();
 
         erc20 = newErc20("Test", "TEST", 6); // TODO: fuzz decimals
@@ -66,6 +70,19 @@ contract DeployTest is Test, Deployer {
         assertEq(WardLike(trancheTokenFactory).wards(address(this)), 0);
         assertEq(WardLike(liquidityPoolFactory).wards(address(this)), 0);
         assertEq(WardLike(restrictionManagerFactory).wards(address(this)), 0);
+    }
+
+    function testAdminSetup(address nonAdmin, address nonPauser) public {
+        vm.assume(nonAdmin != admin);
+        vm.assume(nonPauser != pausers[0] && nonPauser != pausers[1] && nonPauser != pausers[2]);
+
+        assertEq(delayedAdmin.wards(admin), 1);
+        assertEq(delayedAdmin.wards(nonAdmin), 0);
+
+        assertEq(pauseAdmin.pausers(pausers[0]), 1);
+        assertEq(pauseAdmin.pausers(pausers[1]), 1);
+        assertEq(pauseAdmin.pausers(pausers[2]), 1);
+        assertEq(pauseAdmin.pausers(nonPauser), 0);
     }
 
     function testDeployAndInvestRedeem(
