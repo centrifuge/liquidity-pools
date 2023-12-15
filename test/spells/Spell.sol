@@ -52,7 +52,7 @@ contract Spell is Addresses {
         root.relyContract(poolManager, self);
 
         // spell magic
-        migrateLiquidtyPoolFactory();
+        migrateLiquidityPoolFactory();
         removeLiquidityPool();
 
         // revoke all permissions from spell
@@ -61,7 +61,7 @@ contract Spell is Addresses {
         AuthLike(poolManager).deny(self);
     }
 
-    function migrateLiquidtyPoolFactory() internal {
+    function migrateLiquidityPoolFactory() internal {
         AuthLike(LIQUIDITY_POOL_FACTORY_NEW).rely(poolManager);
         AuthLike(LIQUIDITY_POOL_FACTORY_NEW).deny(deployer);
         FileLike(poolManager).file("liquidityPoolFactory", LIQUIDITY_POOL_FACTORY_NEW);
