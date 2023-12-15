@@ -250,4 +250,25 @@ interface IERC7575Redeem {
     function redeem(uint256 shares, address receiver, address owner) external returns (uint256 assets);
 }
 
+/// @dev Only used for generating the full ERC-7575 interface ID
+interface IERC7575 {
+    function asset() external view returns (address);
+    function share() external view returns (address);
+    function convertToShares(uint256) external view returns (uint256);
+    function convertToAssets(uint256) external view returns (uint256);
+    function totalAssets() external view returns (uint256);
+    function maxDeposit(address) external view returns (uint256);
+    function previewDeposit(uint256) external view returns (uint256);
+    function deposit(uint256, address) external returns (uint256);
+    function maxMint(address) external view returns (uint256);
+    function previewMint(uint256) external view returns (uint256);
+    function mint(uint256, address) external returns (uint256);
+    function maxWithdraw(address) external view returns (uint256);
+    function previewWithdraw(uint256) external view returns (uint256);
+    function withdraw(uint256, address, address) external returns (uint256);
+    function maxRedeem(address) external view returns (uint256);
+    function previewRedeem(uint256) external view returns (uint256);
+    function redeem(uint256, address, address) external returns (uint256);
+}
+
 interface IERC4626 is IERC7575Minimal, IERC7575Deposit, IERC7575Mint, IERC7575Withdraw, IERC7575Redeem, IERC165 {}
