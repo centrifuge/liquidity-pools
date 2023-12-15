@@ -18,6 +18,7 @@ interface AuthLike {
 
 interface PoolManagerLike {
     function removeLiquidityPool(uint64 poolId, bytes16 trancheId, address currency) external;
+    function deployLiquidityPool(uint64 poolId, bytes16 trancheId, address currency) external returns (address);
     function getLiquidityPool(uint64 poolId, bytes16 trancheId, address currency) external returns (address);
 }
 
@@ -34,6 +35,7 @@ contract Spell is Addresses {
 
     address public constant LIQUIDITY_POOL_FACTORY_NEW = address(0x8273E36EEcf7A8604BEdEe68FC24Af121B64f165);
     address public constant DEPRECATED_LIQUIDITY_POOL = address(0xa0872E8D2975483b2Ab4Afcee729133D8666F6f5);
+    address public newLiquidityPool;
 
     address self;
 
@@ -53,7 +55,7 @@ contract Spell is Addresses {
 
         // spell magic
         migrateLiquidityPoolFactory();
-        removeLiquidityPool();
+        migrateLiquidityPool();
 
         // revoke all permissions from spell
         AuthLike(address(root)).deny(self);
@@ -67,11 +69,19 @@ contract Spell is Addresses {
         FileLike(poolManager).file("liquidityPoolFactory", LIQUIDITY_POOL_FACTORY_NEW);
     }
 
-    function removeLiquidityPool() internal {
-        LiquidityPoolLike lp = LiquidityPoolLike(DEPRECATED_LIQUIDITY_POOL);
-        address liquidityPoolToRemove =
-            PoolManagerLike(poolManager).getLiquidityPool(lp.poolId(), lp.trancheId(), lp.asset());
-        require(liquidityPoolToRemove == DEPRECATED_LIQUIDITY_POOL, "SPELL - unknown Liquidity Pool");
-        PoolManagerLike(poolManager).removeLiquidityPool(lp.poolId(), lp.trancheId(), lp.asset());
+    function migrateLiquidityPool() internal {
+        LiquidityPoolLike deprectaedLP = LiquidityPoolLike(DEPRECATED_LIQUIDITY_POOL);
+        address deprectaedLP_ = PoolManagerLike(poolManager).getLiquidityPool(
+            deprectaedLP.poolId(), deprectaedLP.trancheId(), deprectaedLP.asset()
+        );
+        require(deprectaedLP_ == DEPRECATED_LIQUIDITY_POOL, "SPELL - unknown Liquidity Pool");
+        // remove deprectaed pool
+        PoolManagerLike(poolManager).removeLiquidityPool(
+            deprectaedLP.poolId(), deprectaedLP.trancheId(), deprectaedLP.asset()
+        );
+        // add new pool
+        newLiquidityPool = PoolManagerLike(poolManager).deployLiquidityPool(
+            deprectaedLP.poolId(), deprectaedLP.trancheId(), deprectaedLP.asset()
+        );
     }
 }

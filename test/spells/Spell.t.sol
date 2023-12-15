@@ -18,7 +18,7 @@ contract SpellTest is RPCTest {
         AuthLike(newLPFactory).rely(root);
 
         liquidityPoolFactory = newLPFactory; // replace liquidityPoolFactory address in the deployment addresses to
-            // check for correct wiring
+        // check for correct wiring
         castSpell();
     }
 
@@ -33,16 +33,25 @@ contract SpellTest is RPCTest {
     }
 
     function testCastSuccessfull() public {
-        address deprecatedLP = spell.DEPRECATED_LIQUIDITY_POOL();
-        LiquidityPoolLike lp = LiquidityPoolLike(deprecatedLP);
-        address liquidityPoolToRemove =
-            PoolManagerLike(poolManager).getLiquidityPool(lp.poolId(), lp.trancheId(), lp.asset());
-        assertEq(liquidityPoolToRemove, address(0));
+        address newLP_ = spell.newLiquidityPool();
+        address deprecatedLP_ = spell.DEPRECATED_LIQUIDITY_POOL();
+        LiquidityPoolLike deprecatedLP = LiquidityPoolLike(deprecatedLP_);
+        LiquidityPoolLike newLP = LiquidityPoolLike(newLP_);
 
-        // check if pool removed correctly
-        assertEq(InvestmentManager(investmentManager).wards(deprecatedLP), 0);
-        assertEq(TrancheToken(anemoyToken).wards(deprecatedLP), 0);
-        assertEq(TrancheToken(anemoyToken).isTrustedForwarder(deprecatedLP), false);
-        assertEq(TrancheToken(anemoyToken).allowance(address(escrow), deprecatedLP), 0);
+        assertEq(deprecatedLP.poolId(), newLP.poolId());
+        assertEq(deprecatedLP.trancheId(), newLP.trancheId());
+        assertEq(deprecatedLP.asset(), newLP.asset());
+
+        // check if deprectaed pool removed correctly
+        assertEq(InvestmentManager(investmentManager).wards(deprecatedLP_), 0);
+        assertEq(TrancheToken(anemoyToken).wards(deprecatedLP_), 0);
+        assertEq(TrancheToken(anemoyToken).isTrustedForwarder(deprecatedLP_), false);
+        assertEq(TrancheToken(anemoyToken).allowance(address(escrow), deprecatedLP_), 0);
+
+        // check if new pool added correctly
+        assertEq(InvestmentManager(investmentManager).wards(newLP_), 1);
+        assertEq(TrancheToken(anemoyToken).wards(newLP_), 1);
+        assertEq(TrancheToken(anemoyToken).isTrustedForwarder(newLP_), true);
+        assertEq(TrancheToken(anemoyToken).allowance(address(escrow), newLP_), UINT256_MAX);
     }
 }
