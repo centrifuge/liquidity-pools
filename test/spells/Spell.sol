@@ -28,7 +28,7 @@ interface LiquidityPoolLike {
     function asset() external returns (address);
 }
 
-// Spell to mirate the LiquidityPool factory contract
+// Spell to migrate the LiquidityPool factory contract
 contract Spell is Addresses {
     bool public done;
     string public constant description = "Liquidity Pool Factory migration spell";

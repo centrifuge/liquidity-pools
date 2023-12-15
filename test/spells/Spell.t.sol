@@ -32,7 +32,7 @@ contract SpellTest is RPCTest {
         spell.cast();
     }
 
-    function testCastSuccessfull() public {
+    function testCastSuccessful() public {
         address newLP_ = spell.newLiquidityPool();
         address deprecatedLP_ = spell.DEPRECATED_LIQUIDITY_POOL();
         LiquidityPoolLike deprecatedLP = LiquidityPoolLike(deprecatedLP_);
