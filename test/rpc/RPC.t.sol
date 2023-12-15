@@ -12,8 +12,8 @@ import {TrancheToken} from "src/token/Tranche.sol";
 import {Gateway} from "src/gateway/Gateway.sol";
 import {AxelarRouter} from "src/gateway/routers/axelar/Router.sol";
 import {TrancheTokenFactory, LiquidityPoolFactory, RestrictionManagerFactory} from "src/util/Factory.sol";
-import {DelayedAdmin} from "src/admins/delayedAdmin.sol";
-import {PauseAdmin} from "src/admins/pauseAdmin.sol";
+import {DelayedAdmin} from "src/admins/DelayedAdmin.sol";
+import {PauseAdmin} from "src/admins/PauseAdmin.sol";
 
 contract RPCTest is Test, Addresses {
     uint256 mainnetFork;
