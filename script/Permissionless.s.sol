@@ -13,6 +13,7 @@ contract PermissionlessScript is Deployer {
         vm.startBroadcast();
 
         admin = msg.sender;
+        pausers = [msg.sender];
 
         // Deploy contracts
         deployInvestmentManager(msg.sender);
