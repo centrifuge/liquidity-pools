@@ -205,7 +205,8 @@ contract LiquidityPool is Auth, IERC7540 {
         return interfaceId == type(IERC7540Deposit).interfaceId || interfaceId == type(IERC7540Redeem).interfaceId
             || interfaceId == type(IERC7575Minimal).interfaceId || interfaceId == type(IERC7575Deposit).interfaceId
             || interfaceId == type(IERC7575Mint).interfaceId || interfaceId == type(IERC7575Withdraw).interfaceId
-            || interfaceId == type(IERC7575Redeem).interfaceId || interfaceId == type(IERC165).interfaceId;
+            || interfaceId == type(IERC7575Redeem).interfaceId || interfaceId == type(IERC7575).interfaceId
+            || interfaceId == type(IERC165).interfaceId;
     }
 
     // --- ERC-4626 methods ---
