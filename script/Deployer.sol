@@ -10,7 +10,9 @@ import {Escrow} from "src/Escrow.sol";
 import {UserEscrow} from "src/UserEscrow.sol";
 import {PauseAdmin} from "src/admins/PauseAdmin.sol";
 import {DelayedAdmin} from "src/admins/DelayedAdmin.sol";
-import {LiquidityPoolFactory, RestrictionManagerFactory, TrancheTokenFactory} from "src/util/Factory.sol";
+import {LiquidityPoolFactory} from "src/util/factories/LiquidityPoolFactory.sol";
+import {RestrictionManagerFactory} from "src/util/factories/RestrictionManagerFactory.sol";
+import {TrancheTokenFactory} from "src/util/factories/TrancheTokenFactory.sol";
 import "forge-std/Script.sol";
 
 interface RouterLike {

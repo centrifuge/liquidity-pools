@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {TrancheTokenFactoryLike, RestrictionManagerFactoryLike, LiquidityPoolFactoryLike} from "./util/Factory.sol";
+import {LiquidityPoolFactory, LiquidityPoolFactoryLike} from "src/util/factories/LiquidityPoolFactory.sol";
+import {
+    RestrictionManagerFactory, RestrictionManagerFactoryLike
+} from "src/util/factories/RestrictionManagerFactory.sol";
+import {TrancheTokenFactory, TrancheTokenFactoryLike} from "src/util/factories/TrancheTokenFactory.sol";
 import {TrancheTokenLike} from "./token/Tranche.sol";
 import {RestrictionManagerLike} from "./token/RestrictionManager.sol";
 import {IERC20Metadata} from "./interfaces/IERC20.sol";

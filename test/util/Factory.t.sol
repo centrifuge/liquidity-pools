@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {TrancheTokenFactory} from "src/util/Factory.sol";
+import {TrancheTokenFactory} from "src/util/factories/TrancheTokenFactory.sol";
 import {TrancheToken} from "src/token/Tranche.sol";
 import {Root} from "src/Root.sol";
 import {Escrow} from "src/Escrow.sol";

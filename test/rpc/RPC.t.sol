@@ -11,7 +11,9 @@ import {UserEscrow} from "src/UserEscrow.sol";
 import {TrancheToken} from "src/token/Tranche.sol";
 import {Gateway} from "src/gateway/Gateway.sol";
 import {AxelarRouter} from "src/gateway/routers/axelar/Router.sol";
-import {TrancheTokenFactory, LiquidityPoolFactory, RestrictionManagerFactory} from "src/util/Factory.sol";
+import {LiquidityPoolFactory} from "src/util/factories/LiquidityPoolFactory.sol";
+import {RestrictionManagerFactory} from "src/util/factories/RestrictionManagerFactory.sol";
+import {TrancheTokenFactory} from "src/util/factories/TrancheTokenFactory.sol";
 import {DelayedAdmin} from "src/admins/DelayedAdmin.sol";
 import {PauseAdmin} from "src/admins/PauseAdmin.sol";
 
