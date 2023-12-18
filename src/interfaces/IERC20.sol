@@ -74,7 +74,12 @@ interface IERC20 {
      * Emits a {Transfer} event.
      */
     function transferFrom(address from, address to, uint256 value) external returns (bool);
-    
+}
+
+/**
+ * @dev Interface for the optional metadata functions from the ERC20 standard.
+ */
+interface IERC20Metadata is IERC20 {
     /**
      * @dev Returns the name of the token.
      */
