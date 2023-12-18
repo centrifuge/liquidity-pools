@@ -87,10 +87,10 @@ contract PoolManager is Auth {
     uint8 internal constant MAX_DECIMALS = 18;
 
     EscrowLike public immutable escrow;
-    TrancheTokenFactoryLike public immutable trancheTokenFactory;
 
     GatewayLike public gateway;
     InvestmentManagerLike public investmentManager;
+    TrancheTokenFactoryLike public trancheTokenFactory;
     LiquidityPoolFactoryLike public liquidityPoolFactory;
     RestrictionManagerFactoryLike public restrictionManagerFactory;
 
@@ -155,8 +155,9 @@ contract PoolManager is Auth {
     function file(bytes32 what, address data) external auth {
         if (what == "gateway") gateway = GatewayLike(data);
         else if (what == "investmentManager") investmentManager = InvestmentManagerLike(data);
-        else if (what == "restrictionManagerFactory") restrictionManagerFactory = RestrictionManagerFactoryLike(data);
+        else if (what == "trancheTokenFactory") trancheTokenFactory = TrancheTokenFactoryLike(data);
         else if (what == "liquidityPoolFactory") liquidityPoolFactory = LiquidityPoolFactoryLike(data);
+        else if (what == "restrictionManagerFactory") restrictionManagerFactory = RestrictionManagerFactoryLike(data);
         else revert("PoolManager/file-unrecognized-param");
         emit File(what, data);
     }
