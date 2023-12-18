@@ -4,7 +4,7 @@ pragma solidity 0.8.21;
 import {TrancheTokenFactoryLike, RestrictionManagerFactoryLike, LiquidityPoolFactoryLike} from "./util/Factory.sol";
 import {TrancheTokenLike} from "./token/Tranche.sol";
 import {RestrictionManagerLike} from "./token/RestrictionManager.sol";
-import {IERC20Metadata} from "./interfaces/IERC20.sol";
+import {IERC20} from "./interfaces/IERC20.sol";
 import {Auth} from "./util/Auth.sol";
 import {SafeTransferLib} from "./util/SafeTransferLib.sol";
 import {MathLib} from "./util/MathLib.sol";
@@ -338,7 +338,7 @@ contract PoolManager is Auth {
         require(currencyIdToAddress[currencyId] == address(0), "PoolManager/currency-id-in-use");
         require(currencyAddressToId[currency] == 0, "PoolManager/currency-address-in-use");
 
-        uint8 currencyDecimals = IERC20Metadata(currency).decimals();
+        uint8 currencyDecimals = IERC20(currency).decimals();
         require(currencyDecimals >= MIN_DECIMALS, "PoolManager/too-few-currency-decimals");
         require(currencyDecimals <= MAX_DECIMALS, "PoolManager/too-many-currency-decimals");
 

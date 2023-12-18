@@ -145,7 +145,7 @@ contract LiquidityPool is Auth, IERC7540 {
         public
         returns (uint256)
     {
-        require(IERC20Metadata(share).balanceOf(owner) >= shares, "LiquidityPool/insufficient-balance");
+        require(IERC20(share).balanceOf(owner) >= shares, "LiquidityPool/insufficient-balance");
         require(manager.requestRedeem(address(this), shares, receiver, owner), "LiquidityPool/request-redeem-failed");
         require(transferFrom(owner, address(escrow), shares), "LiquidityPool/transfer-failed");
 
@@ -212,7 +212,7 @@ contract LiquidityPool is Auth, IERC7540 {
     // --- ERC-4626 methods ---
     /// @inheritdoc IERC7575Minimal
     function totalAssets() external view returns (uint256) {
-        return convertToAssets(IERC20Metadata(share).totalSupply());
+        return convertToAssets(IERC20(share).totalSupply());
     }
 
     /// @inheritdoc IERC7575Minimal
@@ -309,7 +309,7 @@ contract LiquidityPool is Auth, IERC7540 {
     }
 
     function decimals() external view returns (uint8) {
-        return IERC20Metadata(share).decimals();
+        return IERC20(share).decimals();
     }
 
     // --- Helpers ---
