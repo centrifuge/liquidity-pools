@@ -455,12 +455,12 @@ contract PoolManagerTest is TestSetup {
         vm.expectRevert(bytes("PoolManager/not-the-gateway"));
         poolManager.updateTrancheTokenMetadata(poolId, trancheId, updatedTokenName, updatedTokenSymbol);
 
-        assertEq(IERC20Metadata(address(trancheToken)).name(), "name");
-        assertEq(IERC20Metadata(address(trancheToken)).symbol(), "symbol");
+        assertEq(trancheToken.name(), "name");
+        assertEq(trancheToken.symbol(), "symbol");
         
         centrifugeChain.updateTrancheTokenMetadata(poolId, trancheId, updatedTokenName, updatedTokenSymbol);
-        assertEq(IERC20Metadata(address(trancheToken)).name(), updatedTokenName);
-        assertEq(IERC20Metadata(address(trancheToken)).symbol(), updatedTokenSymbol);
+        assertEq(trancheToken.name(), updatedTokenName);
+        assertEq(trancheToken.symbol(), updatedTokenSymbol);
     }
 
     function testAllowInvestmentCurrency() public {
