@@ -24,7 +24,7 @@ echo "Pausers = $PAUSERS"
 
 case "$ROUTER" in
   Permissionless|Axelar|Forwarder)
-    forge script script/${ROUTER}.s.sol:${ROUTER}Script --optimize --rpc-url $RPC_URL --private-key $PRIVATE_KEY --verify --broadcast --chain-id $CHAIN_ID --etherscan-api-key $ETHERSCAN_KEY $1
+    forge script script/${ROUTER}.s.sol:${ROUTER}Script --optimize --slow --rpc-url $RPC_URL --private-key $PRIVATE_KEY --verify --broadcast --chain-id $CHAIN_ID --etherscan-api-key $ETHERSCAN_KEY --verifier-url $ETHERSCAN_URL $1
     ;;
   *)
     echo "Router should be one of Permissionless, Axelar, Forwarder"
