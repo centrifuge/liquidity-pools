@@ -2,15 +2,33 @@
 
 source .env
 
+if [[ -z "$ROUTER" ]]; then
+    error_exit "ROUTER is not defined"
+fi
+echo "Router = $ROUTER"
+
 if [[ -z "$RPC_URL" ]]; then
     error_exit "RPC_URL is not defined"
 fi
 echo "RPC endpoint = $RPC_URL"
 
-if [[ -z "$ROUTER" ]]; then
-    error_exit "ROUTER is not defined"
+if [[ -z "$PRIVATE_KEY" ]]; then
+    error_exit "PRIVATE_KEY is not defined"
 fi
-echo "Router = $ROUTER"
+
+if [[ -z "$CHAIN_ID" ]]; then
+    error_exit "CHAIN_ID is not defined"
+fi
+echo "Chain ID = $CHAIN_ID"
+
+if [[ -z "$ETHERSCAN_KEY" ]]; then
+    error_exit "ETHERSCAN_KEY is not defined"
+fi
+
+if [[ -z "$ETHERSCAN_URL" ]]; then
+    error_exit "ETHERSCAN_URL is not defined"
+fi
+echo "Etherscan endpoint = $ETHERSCAN_URL"
 
 if [[ -z "$ADMIN" ]]; then
     error_exit "ADMIN is not defined"
