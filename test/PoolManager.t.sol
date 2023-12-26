@@ -34,6 +34,10 @@ contract PoolManagerTest is TestSetup {
         poolManager.file("investmentManager", newInvestmentManager);
         assertEq(address(poolManager.investmentManager()), newInvestmentManager);
 
+        address newTrancheTokenFactory = makeAddr("newTrancheTokenFactory");
+        poolManager.file("trancheTokenFactory", newTrancheTokenFactory);
+        assertEq(address(poolManager.trancheTokenFactory()), newTrancheTokenFactory);
+
         address newRestrictionManagerFactory = makeAddr("newRestrictionManagerFactory");
         poolManager.file("restrictionManagerFactory", newRestrictionManagerFactory);
         assertEq(address(poolManager.restrictionManagerFactory()), newRestrictionManagerFactory);
