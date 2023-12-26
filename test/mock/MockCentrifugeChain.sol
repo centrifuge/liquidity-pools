@@ -18,7 +18,9 @@ contract MockCentrifugeChain is Test {
     bytes32 public dispatchRecipient;
     uint256 public dispatchCalls;
 
-    enum Types {AddPool}
+    enum Types {
+        AddPool
+    }
 
     constructor(address xcmRouter) {
         router = RouterLike(xcmRouter);

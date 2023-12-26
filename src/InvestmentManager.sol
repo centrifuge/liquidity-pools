@@ -342,15 +342,11 @@ contract InvestmentManager is Auth {
         // leads to an effective redeem price of 1.0 and thus the user actually receiving
         // exactly currencyPayout on both deposit() and mint()
         (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getPoolDecimals(liquidityPool);
-        // uint256 currencyPayoutInPriceDecimals = _toPriceDecimals(currencyPayout, currencyDecimals);
-        // state.redeemPrice = _calculatePrice(
-        //     _toPriceDecimals(state.maxWithdraw, currencyDecimals) + currencyPayoutInPriceDecimals,
-        //     _toPriceDecimals(maxRedeem(liquidityPool, user).toUint128(), trancheTokenDecimals)
-        //         + currencyPayoutInPriceDecimals
-        // );
+        uint256 currencyPayoutInPriceDecimals = _toPriceDecimals(currencyPayout, currencyDecimals);
         state.redeemPrice = _calculatePrice(
-            _toPriceDecimals(state.maxWithdraw + currencyPayout, currencyDecimals),
-            _toPriceDecimals(maxRedeem(liquidityPool, user).toUint128() + currencyPayout, trancheTokenDecimals)
+            _toPriceDecimals(state.maxWithdraw, currencyDecimals) + currencyPayoutInPriceDecimals,
+            _toPriceDecimals(maxRedeem(liquidityPool, user).toUint128(), trancheTokenDecimals)
+                + currencyPayoutInPriceDecimals
         );
 
         state.maxWithdraw = state.maxWithdraw + currencyPayout;

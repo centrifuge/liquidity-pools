@@ -3,6 +3,7 @@ pragma solidity 0.8.21;
 
 import {TestSetup} from "test/TestSetup.t.sol";
 import {InvestorHandler} from "test/invariants/handlers/Investor.sol";
+import {EpochExecutorHandler} from "test/invariants/handlers/EpochExecutor.sol";
 import {IERC7540} from "src/interfaces/IERC7540.sol";
 import {IERC20} from "src/interfaces/IERC20.sol";
 import "forge-std/Test.sol";
@@ -22,10 +23,15 @@ contract InvestmentInvariants is TestSetup {
     uint256 public constant NUM_POOLS = 1;
     uint256 public constant NUM_INVESTORS = 2;
 
+    bytes16 public constant TRANCHE_ID = "1";
+    uint128 public constant CURRENCY_ID = 1;
+    uint8 public constant RESTRICTION_SET = 1;
+
     address[] public pools;
     address[] public investors;
 
     mapping(uint64 poolId => InvestorHandler handler) investorHandlers;
+    mapping(uint64 poolId => EpochExecutorHandler handler) epochExecutorHandlers;
 
     function setUp() public override {
         super.setUp();
@@ -40,7 +46,9 @@ contract InvestmentInvariants is TestSetup {
                 )
             );
             uint128 currencyId = poolId + 1;
-            address pool = deployLiquidityPool(poolId, trancheTokenDecimals, 1, "", "", "1", currencyId, currency);
+            address pool = deployLiquidityPool(
+                poolId, trancheTokenDecimals, RESTRICTION_SET, "", "", TRANCHE_ID, currencyId, currency
+            );
             pools.push(pool);
 
             excludeContract(pool);
@@ -50,18 +58,28 @@ contract InvestmentInvariants is TestSetup {
             for (uint256 i; i < NUM_INVESTORS; ++i) {
                 address investor = makeAddr(string(abi.encode("investor", i)));
                 investors.push(investor);
-                centrifugeChain.updateMember(poolId, "1", investor, type(uint64).max);
+                centrifugeChain.updateMember(poolId, TRANCHE_ID, investor, type(uint64).max);
             }
 
             address pool = pools[poolId];
             address currency = LiquidityPoolLike(pool).asset();
             InvestorHandler handler = new InvestorHandler(
-                poolId, "1", 1, pool, address(centrifugeChain), currency, address(escrow), address(this)
+                poolId,
+                TRANCHE_ID,
+                CURRENCY_ID,
+                pool,
+                address(centrifugeChain),
+                currency,
+                address(escrow),
+                address(this)
             );
-
             investorHandlers[poolId] = handler;
 
-            address share = poolManager.getTrancheToken(poolId, "1");
+            EpochExecutorHandler eeHandler =
+                new EpochExecutorHandler(poolId, TRANCHE_ID, CURRENCY_ID, address(centrifugeChain), address(this));
+            epochExecutorHandlers[poolId] = eeHandler;
+
+            address share = poolManager.getTrancheToken(poolId, TRANCHE_ID);
             root.relyContract(share, address(this));
             ERC20Like(currency).rely(address(handler)); // rely to mint currency
             ERC20Like(share).rely(address(handler)); // rely to mint tokens
@@ -78,7 +96,10 @@ contract InvestmentInvariants is TestSetup {
 
             for (uint256 i; i < investors.length; ++i) {
                 address investor = investors[i];
-                assertLe(IERC20(pool.share()).balanceOf(investor), handler.values(investor, "totalTrancheTokensPaidOutOnInvest"));
+                assertLe(
+                    IERC20(pool.share()).balanceOf(investor),
+                    handler.values(investor, "totalTrancheTokensPaidOutOnInvest")
+                );
             }
         }
     }
@@ -101,52 +122,63 @@ contract InvestmentInvariants is TestSetup {
     }
 
     // Invariant 3: convertToAssets(totalSupply) == totalAssets
-    // function invariant_convertToAssetsEquivalence() external {
-    //     // Does not hold if the price is 0
-    //     if (liquidityPool.latestPrice() == 0) return;
+    function invariant_convertToAssetsEquivalence() external {
+        for (uint64 poolId; poolId < NUM_POOLS; ++poolId) {
+            LiquidityPoolLike pool = LiquidityPoolLike(pools[poolId]);
 
-    //     if (liquidityPool.totalAssets() < type(uint128).max) {
-    //         assertEq(liquidityPool.convertToAssets(liquidityPool.totalSupply()), liquidityPool.totalAssets());
-    //     }
-    // }
+            // Does not hold if the price is 0
+            if (pool.convertToAssets(1) == 0) return;
+
+            if (pool.totalAssets() < type(uint128).max) {
+                assertEq(pool.convertToAssets(IERC20(pool.share()).totalSupply()), pool.totalAssets());
+            }
+        }
+    }
 
     // Invariant 4: convertToShares(totalAssets) == totalSupply
-    // function invariant_convertToSharesEquivalence() external {
-    //     // Does not hold if the price is 0
-    //     if (liquidityPool.latestPrice() == 0) return;
+    function invariant_convertToSharesEquivalence() external {
+        for (uint64 poolId; poolId < NUM_POOLS; ++poolId) {
+            LiquidityPoolLike pool = LiquidityPoolLike(pools[poolId]);
 
-    //     if (liquidityPool.totalSupply() < type(uint128).max) {
-    //         assertEq(liquidityPool.convertToShares(liquidityPool.totalAssets()), liquidityPool.totalSupply());
-    //     }
-    // }
+            // Does not hold if the price is 0
+            if (pool.convertToAssets(1) == 0) return;
+
+            if (IERC20(pool.share()).totalSupply() < type(uint128).max) {
+                assertEq(pool.convertToShares(pool.totalAssets()), IERC20(pool.share()).totalSupply());
+            }
+        }
+    }
 
     // Invariant 5: lp.maxDeposit <= sum(requestDeposit)
-    // function invariant_maxDepositLeDepositRequest() external {
-    //     for (uint64 poolId; poolId < NUM_POOLS; ++poolId) {
-    //         LiquidityPoolLike pool = LiquidityPoolLike(pools[poolId]);
-    //         InvestorHandler handler = investorHandlers[poolId];
+    function invariant_maxDepositLeDepositRequest() external {
+        for (uint64 poolId; poolId < NUM_POOLS; ++poolId) {
+            LiquidityPoolLike pool = LiquidityPoolLike(pools[poolId]);
+            InvestorHandler handler = investorHandlers[poolId];
 
-    //         for (uint256 i; i < investors.length; ++i) {
-    //             address investor = investors[i];
-    //             (uint256 totalDepositRequested,,,,,,,,,) = handler.investorState(investor);
-    //             assertLe(pool.maxDeposit(investor), totalDepositRequested);
-    //         }
-    //     }
-    // }
+            for (uint256 i; i < investors.length; ++i) {
+                address investor = investors[i];
+                assertLe(pool.maxDeposit(investor), handler.values(investor, "totalDepositRequested"));
+            }
+        }
+    }
 
-    // Invariant 6: lp.maxRedeem <= sum(requestRedeem)
-    // function invariant_maxRedeemLeRedeemRequest() external {
-    //     for (uint64 poolId; poolId < NUM_POOLS; ++poolId) {
-    //         LiquidityPoolLike pool = LiquidityPoolLike(pools[poolId]);
-    //         InvestorHandler handler = investorHandlers[poolId];
+    // Invariant 6: lp.maxRedeem <= sum(requestRedeem) + sum(decreaseDepositRequest)
+    // TODO: handle cancel behaviour
+    function invariant_maxRedeemLeRedeemRequest() external {
+        for (uint64 poolId; poolId < NUM_POOLS; ++poolId) {
+            LiquidityPoolLike pool = LiquidityPoolLike(pools[poolId]);
+            InvestorHandler handler = investorHandlers[poolId];
 
-    //         for (uint256 i; i < investors.length; ++i) {
-    //             address investor = investors[i];
-    //             (, uint256 totalRedeemRequested,,,,,,,,) = handler.investorState(investor);
-    //             assertLe(pool.maxRedeem(investor), totalRedeemRequested);
-    //         }
-    //     }
-    // }
+            for (uint256 i; i < investors.length; ++i) {
+                address investor = investors[i];
+                assertLe(
+                    pool.maxRedeem(investor),
+                    handler.values(investor, "totalRedeemRequested")
+                        + handler.values(investor, "totalDecreaseDepositRequested")
+                );
+            }
+        }
+    }
 
     function numInvestors() public view returns (uint256) {
         return investors.length;
