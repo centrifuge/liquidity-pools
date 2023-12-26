@@ -3,7 +3,7 @@ pragma solidity 0.8.21;
 
 import {TrancheToken} from "src/token/Tranche.sol";
 import {RestrictionManagerLike} from "src/token/RestrictionManager.sol";
-import {RestrictionManagerMock} from "../mock/RestrictionManager.sol";
+import {RestrictionManagerMock} from "test/mock/RestrictionManager.sol";
 import "forge-std/Test.sol";
 
 interface ERC20Like {

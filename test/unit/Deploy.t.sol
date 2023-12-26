@@ -11,7 +11,7 @@ import {MockRouter} from "test/mock/MockRouter.sol";
 import {PoolManager, Pool, Tranche} from "src/PoolManager.sol";
 import {ERC20} from "src/token/ERC20.sol";
 import {TrancheToken} from "src/token/Tranche.sol";
-import {LiquidityPoolTest} from "test/LiquidityPool.t.sol";
+import {LiquidityPoolTest} from "test/unit/LiquidityPool.t.sol";
 import {PermissionlessRouter} from "test/mock/PermissionlessRouter.sol";
 import {Root} from "src/Root.sol";
 import {LiquidityPool} from "src/LiquidityPool.sol";
@@ -26,7 +26,7 @@ interface ApproveLike {
 }
 
 interface WardLike {
-    function wards(address who) external returns(uint);
+    function wards(address who) external returns (uint256);
 }
 
 contract DeployTest is Test, Deployer {
@@ -93,7 +93,7 @@ contract DeployTest is Test, Deployer {
         uint8 decimals,
         uint8 restrictionSet
     ) public {
-        vm.assume(decimals <= 18 && decimals > 0);   
+        vm.assume(decimals <= 18 && decimals > 0);
         uint128 price = uint128(2 * 10 ** PRICE_DECIMALS); //TODO: fuzz price
         uint256 amount = 1000 * 10 ** erc20.decimals();
         uint64 validUntil = uint64(block.timestamp + 1000 days);
@@ -165,9 +165,8 @@ contract DeployTest is Test, Deployer {
 
         // redeem
         uint128 _currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
-        uint128 currencyPayout = (
-            amount.mulDiv(price, 10 ** (18 - erc20.decimals() + lPool.decimals()), MathLib.Rounding.Down)
-        ).toUint128();
+        uint128 currencyPayout =
+            (amount.mulDiv(price, 10 ** (18 - erc20.decimals() + lPool.decimals()), MathLib.Rounding.Down)).toUint128();
         // Assume an epoch execution happens on cent chain
         // Assume a bot calls collectRedeem for this user on cent chain
         vm.prank(address(gateway));

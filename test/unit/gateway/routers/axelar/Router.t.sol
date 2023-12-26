@@ -2,11 +2,11 @@
 pragma solidity 0.8.21;
 
 import {AxelarRouter} from "src/gateway/routers/axelar/Router.sol";
-import {AxelarGatewayMock} from "../../../mock/AxelarGatewayMock.sol";
-import {GatewayMock} from "../../../mock/GatewayMock.sol";
+import {AxelarGatewayMock} from "test/mock/AxelarGatewayMock.sol";
+import {GatewayMock} from "test/mock/GatewayMock.sol";
 import "forge-std/Test.sol";
-import {AxelarForwarder} from "../../../../src/gateway/routers/axelar/Forwarder.sol";
-import {BytesLib} from "../../../../src/util/BytesLib.sol";
+import {AxelarForwarder} from "src/gateway/routers/axelar/Forwarder.sol";
+import {BytesLib} from "src/util/BytesLib.sol";
 
 contract AxelarRouterTest is Test {
     AxelarGatewayMock axelarGateway;
