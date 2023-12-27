@@ -10,7 +10,6 @@ import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
 interface LiquidityPoolLike is IERC7540 {
-    function latestPrice() external view returns (uint256);
     function asset() external view returns (address);
 }
 
@@ -88,7 +87,7 @@ contract InvestmentInvariants is TestSetup {
         }
     }
 
-    // Invariant 1: trancheToken.balanceOf[user] <= sum(tranchyTokenPayout)
+    // Invariant 1: trancheToken.balanceOf[user] <= sum(trancheTokenPayout)
     function invariant_cannotReceiveMoreTrancheTokensThanPayout() external {
         for (uint64 poolId; poolId < NUM_POOLS; ++poolId) {
             LiquidityPoolLike pool = LiquidityPoolLike(pools[poolId]);
