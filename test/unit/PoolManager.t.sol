@@ -2,7 +2,7 @@
 pragma solidity 0.8.21;
 
 import "test/TestSetup.t.sol";
-import "test/mock/RestrictionManagerFactory.sol";
+import "test/mocks/RestrictionManagerFactory.sol";
 
 contract PoolManagerTest is TestSetup {
     // Deployment

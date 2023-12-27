@@ -26,7 +26,7 @@ interface ApproveLike {
 }
 
 interface WardLike {
-    function wards(address who) external returns (uint256);
+    function wards(address who) external returns(uint);
 }
 
 contract DeployTest is Test, Deployer {
@@ -93,7 +93,7 @@ contract DeployTest is Test, Deployer {
         uint8 decimals,
         uint8 restrictionSet
     ) public {
-        vm.assume(decimals <= 18 && decimals > 0);
+        vm.assume(decimals <= 18 && decimals > 0);   
         uint128 price = uint128(2 * 10 ** PRICE_DECIMALS); //TODO: fuzz price
         uint256 amount = 1000 * 10 ** erc20.decimals();
         uint64 validUntil = uint64(block.timestamp + 1000 days);
@@ -165,8 +165,9 @@ contract DeployTest is Test, Deployer {
 
         // redeem
         uint128 _currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
-        uint128 currencyPayout =
-            (amount.mulDiv(price, 10 ** (18 - erc20.decimals() + lPool.decimals()), MathLib.Rounding.Down)).toUint128();
+        uint128 currencyPayout = (
+            amount.mulDiv(price, 10 ** (18 - erc20.decimals() + lPool.decimals()), MathLib.Rounding.Down)
+        ).toUint128();
         // Assume an epoch execution happens on cent chain
         // Assume a bot calls collectRedeem for this user on cent chain
         vm.prank(address(gateway));

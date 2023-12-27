@@ -4,8 +4,8 @@ pragma solidity 0.8.21;
 import "test/TestSetup.t.sol";
 import "src/interfaces/IERC7575.sol";
 import "src/interfaces/IERC7540.sol";
-import {SucceedingRequestReceiver} from "test/mock/SucceedingRequestReceiver.sol";
-import {FailingRequestReceiver} from "test/mock/FailingRequestReceiver.sol";
+import {SucceedingRequestReceiver} from "test/mocks/SucceedingRequestReceiver.sol";
+import {FailingRequestReceiver} from "test/mocks/FailingRequestReceiver.sol";
 
 contract LiquidityPoolTest is TestSetup {
     // Deployment

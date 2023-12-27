@@ -2,7 +2,7 @@
 pragma solidity ^0.8.18;
 
 import {PoolManager} from "src/PoolManager.sol";
-import {MockCentrifugeChain} from "test/mock/MockCentrifugeChain.sol";
+import {MockCentrifugeChain} from "test/mocks/MockCentrifugeChain.sol";
 import "forge-std/Test.sol";
 
 interface ERC20Like {
