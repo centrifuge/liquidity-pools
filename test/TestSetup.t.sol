@@ -94,7 +94,10 @@ contract TestSetup is Deployer, Test {
         centrifugeChain.addPool(poolId); // add pool
         centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, trancheTokenDecimals, restrictionSet); // add tranche
 
-        centrifugeChain.addCurrency(currencyId, currency);
+        if (poolManager.currencyIdToAddress(currencyId) == address(0)) {
+            centrifugeChain.addCurrency(currencyId, currency);
+        }
+        
         centrifugeChain.allowInvestmentCurrency(poolId, currencyId);
         poolManager.deployTranche(poolId, trancheId);
 
