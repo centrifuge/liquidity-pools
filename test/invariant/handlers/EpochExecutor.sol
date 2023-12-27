@@ -143,8 +143,4 @@ contract EpochExecutorHandler is BaseHandler {
         values[currentInvestor]["maxRedeemFulfillmentPrice"] =
             _max(values[currentInvestor]["maxRedeemFulfillmentPrice"], 1 * 10 ** 18);
     }
-
-    function _max(uint256 a, uint256 b) internal pure returns (uint256) {
-        return a > b ? a : b;
-    }
 }

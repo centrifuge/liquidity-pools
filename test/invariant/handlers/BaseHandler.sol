@@ -20,8 +20,6 @@ contract BaseHandler is Test {
     // Key-value store
     mapping(address entity => mapping(string key => uint256 value)) public values;
 
-    // TODO: add key value store like in Mock, per investor, for InvestorState
-
     constructor(address state_) {
         state = SystemStateLike(state_);
     }
@@ -34,12 +32,13 @@ contract BaseHandler is Test {
         vm.stopPrank();
     }
 
-    function setValue(address entity, string calldata key, uint256 value) public {
-        values[entity][key] = value;
-    }
-
     /// @notice Returns the smallest of two numbers.
     function _min(uint256 a, uint256 b) internal pure returns (uint256) {
         return a > b ? b : a;
+    }
+
+    /// @notice Returns the largest of two numbers.
+    function _max(uint256 a, uint256 b) internal pure returns (uint256) {
+        return a > b ? a : b;
     }
 }
