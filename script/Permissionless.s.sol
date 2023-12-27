@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {PermissionlessRouter} from "test/mock/PermissionlessRouter.sol";
+import {PermissionlessRouter} from "test/mocks/PermissionlessRouter.sol";
 import {InvestmentManager} from "src/InvestmentManager.sol";
 import {Deployer, RouterLike} from "./Deployer.sol";
 

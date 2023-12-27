@@ -2,8 +2,8 @@
 pragma solidity 0.8.21;
 
 import {TestSetup} from "test/TestSetup.t.sol";
-import {PoolManagerHandler} from "test/invariants/handlers/PoolManager.sol";
-import {TrancheTokenHolderHandler} from "test/invariants/handlers/TrancheTokenHolder.sol";
+import {PoolManagerHandler} from "test/invariant/handlers/PoolManager.sol";
+import {TrancheTokenHolderHandler} from "test/invariant/handlers/TrancheTokenHolder.sol";
 import "forge-std/Test.sol";
 
 interface LiquidityPoolLike {

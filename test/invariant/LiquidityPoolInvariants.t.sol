@@ -2,8 +2,8 @@
 pragma solidity 0.8.21;
 
 import {TestSetup} from "test/TestSetup.t.sol";
-import {InvestorHandler} from "test/invariants/handlers/Investor.sol";
-import {EpochExecutorHandler} from "test/invariants/handlers/EpochExecutor.sol";
+import {InvestorHandler} from "test/invariant/handlers/Investor.sol";
+import {EpochExecutorHandler} from "test/invariant/handlers/EpochExecutor.sol";
 import {IERC7540} from "src/interfaces/IERC7540.sol";
 import {IERC20} from "src/interfaces/IERC20.sol";
 import "forge-std/Test.sol";

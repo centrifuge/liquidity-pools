@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import "./TestSetup.t.sol";
+import "test/TestSetup.t.sol";
 import "src/interfaces/IERC7575.sol";
 import "src/interfaces/IERC7540.sol";
-import {SucceedingRequestReceiver} from "test/mock/SucceedingRequestReceiver.sol";
-import {FailingRequestReceiver} from "test/mock/FailingRequestReceiver.sol";
+import {SucceedingRequestReceiver} from "test/mocks/SucceedingRequestReceiver.sol";
+import {FailingRequestReceiver} from "test/mocks/FailingRequestReceiver.sol";
 
 contract LiquidityPoolTest is TestSetup {
     // Deployment
@@ -28,8 +28,12 @@ contract LiquidityPoolTest is TestSetup {
         assertEq(lPool.trancheId(), trancheId);
         address token = poolManager.getTrancheToken(poolId, trancheId);
         assertEq(address(lPool.share()), token);
-        assertEq(_bytes128ToString(_stringToBytes128(tokenName)), _bytes128ToString(_stringToBytes128(ERC20(token).name())));
-        assertEq(_bytes32ToString(_stringToBytes32(tokenSymbol)), _bytes32ToString(_stringToBytes32(ERC20(token).symbol())));
+        assertEq(
+            _bytes128ToString(_stringToBytes128(tokenName)), _bytes128ToString(_stringToBytes128(ERC20(token).name()))
+        );
+        assertEq(
+            _bytes32ToString(_stringToBytes32(tokenSymbol)), _bytes32ToString(_stringToBytes32(ERC20(token).symbol()))
+        );
 
         // permissions set correctly
         assertEq(lPool.wards(address(root)), 1);
@@ -96,7 +100,7 @@ contract LiquidityPoolTest is TestSetup {
     // --- erc165 checks ---
     function testERC165Support(bytes4 unsupportedInterfaceId) public {
         bytes4 erc165 = 0x01ffc9a7;
-        bytes4 erc7575= 0x2f0a18c5;
+        bytes4 erc7575 = 0x2f0a18c5;
         bytes4 erc7575Minimal = 0x50a526d6;
         bytes4 erc7575Deposit = 0xc1f329ef;
         bytes4 erc7575Mint = 0xe1550342;
@@ -105,7 +109,13 @@ contract LiquidityPoolTest is TestSetup {
         bytes4 erc7540Deposit = 0x1683f250;
         bytes4 erc7540Redeem = 0x0899cb0b;
 
-        vm.assume(unsupportedInterfaceId != erc165 && unsupportedInterfaceId != erc7575 && unsupportedInterfaceId != erc7575Minimal && unsupportedInterfaceId != erc7575Deposit && unsupportedInterfaceId != erc7575Mint && unsupportedInterfaceId != erc7575Withdraw && unsupportedInterfaceId != erc7575Redeem && unsupportedInterfaceId != erc7540Deposit && unsupportedInterfaceId != erc7540Redeem);
+        vm.assume(
+            unsupportedInterfaceId != erc165 && unsupportedInterfaceId != erc7575
+                && unsupportedInterfaceId != erc7575Minimal && unsupportedInterfaceId != erc7575Deposit
+                && unsupportedInterfaceId != erc7575Mint && unsupportedInterfaceId != erc7575Withdraw
+                && unsupportedInterfaceId != erc7575Redeem && unsupportedInterfaceId != erc7540Deposit
+                && unsupportedInterfaceId != erc7540Redeem
+        );
 
         address lPool_ = deploySimplePool();
         LiquidityPool lPool = LiquidityPool(lPool_);
@@ -132,12 +142,12 @@ contract LiquidityPoolTest is TestSetup {
 
         assertEq(lPool.supportsInterface(unsupportedInterfaceId), false);
     }
-    
+
     // --- callbacks ---
     function testSucceedingCallbacks(bytes memory depositData, bytes memory redeemData) public {
         vm.assume(depositData.length > 0);
         vm.assume(redeemData.length > 0);
-        
+
         address lPool_ = deploySimplePool();
         LiquidityPool lPool = LiquidityPool(lPool_);
         SucceedingRequestReceiver receiver = new SucceedingRequestReceiver();
@@ -145,7 +155,7 @@ contract LiquidityPoolTest is TestSetup {
         centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), address(receiver), type(uint64).max);
         centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), self, type(uint64).max);
 
-        uint256 amount = 100*10**6;
+        uint256 amount = 100 * 10 ** 6;
         erc20.mint(self, amount);
         erc20.approve(lPool_, amount);
 
@@ -194,7 +204,7 @@ contract LiquidityPoolTest is TestSetup {
         centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), address(receiver), type(uint64).max);
         centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), self, type(uint64).max);
 
-        uint256 amount = 100*10**6;
+        uint256 amount = 100 * 10 ** 6;
         erc20.mint(self, amount);
         erc20.approve(lPool_, amount);
 
@@ -238,7 +248,7 @@ contract LiquidityPoolTest is TestSetup {
         centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), address(receiver), type(uint64).max);
         centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), self, type(uint64).max);
 
-        uint256 amount = 100*10**6;
+        uint256 amount = 100 * 10 ** 6;
         erc20.mint(self, amount);
         erc20.approve(lPool_, amount);
 
@@ -304,8 +314,11 @@ contract LiquidityPoolTest is TestSetup {
 
         deposit(lPool_, investor, amount); // deposit funds first // deposit funds first
         LiquidityPool lPool = LiquidityPool(lPool_);
-        centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), self, type(uint64).max); // put self on memberlist to be able to receive tranche tokens
-        centrifugeChain.updateTrancheTokenPrice(lPool.poolId(), lPool.trancheId(), defaultCurrencyId, defaultPrice, uint64(block.timestamp));
+        centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), self, type(uint64).max); // put self on
+            // memberlist to be able to receive tranche tokens
+        centrifugeChain.updateTrancheTokenPrice(
+            lPool.poolId(), lPool.trancheId(), defaultCurrencyId, defaultPrice, uint64(block.timestamp)
+        );
 
         TrancheToken trancheToken = TrancheToken(address(lPool.share()));
         assertEq(trancheToken.isTrustedForwarder(lPool_), true); // Lpool is trusted forwarder on token

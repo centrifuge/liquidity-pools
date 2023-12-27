@@ -2,7 +2,7 @@
 pragma solidity 0.8.21;
 
 import {UserEscrow} from "src/UserEscrow.sol";
-import "./TestSetup.t.sol";
+import "test/TestSetup.t.sol";
 
 interface ERC20Like {
     function balanceOf(address account) external view returns (uint256);
