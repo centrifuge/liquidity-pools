@@ -108,8 +108,9 @@ contract InvestmentInvariants is TestSetup {
             console.log(4);
             investorHandlers[lpoolId] = handler;
 
-            EpochExecutorHandler eeHandler =
-                new EpochExecutorHandler(lpool.poolId(), TRANCHE_ID, CURRENCY_ID, address(centrifugeChain), address(this));
+            EpochExecutorHandler eeHandler = new EpochExecutorHandler(
+                lpool.poolId(), TRANCHE_ID, CURRENCY_ID, address(centrifugeChain), address(this)
+            );
             epochExecutorHandlers[lpoolId] = eeHandler;
 
             address share = poolManager.getTrancheToken(lpool.poolId(), TRANCHE_ID);
