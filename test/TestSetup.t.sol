@@ -91,15 +91,21 @@ contract TestSetup is Deployer, Test {
         uint128 currencyId,
         address currency
     ) public returns (address) {
-        centrifugeChain.addPool(poolId); // add pool
-        centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, trancheTokenDecimals, restrictionSet); // add tranche
-
         if (poolManager.currencyIdToAddress(currencyId) == address(0)) {
             centrifugeChain.addCurrency(currencyId, currency);
         }
         
-        centrifugeChain.allowInvestmentCurrency(poolId, currencyId);
-        poolManager.deployTranche(poolId, trancheId);
+        if (poolManager.getTrancheToken(poolId, trancheId) == address(0)) {
+            centrifugeChain.addPool(poolId);
+            centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, trancheTokenDecimals, restrictionSet);
+
+            centrifugeChain.allowInvestmentCurrency(poolId, currencyId);
+            poolManager.deployTranche(poolId, trancheId);
+        }
+
+        if (!poolManager.isAllowedAsInvestmentCurrency(poolId, currency)) {
+            centrifugeChain.allowInvestmentCurrency(poolId, currencyId);
+        }
 
         address lPoolAddress = poolManager.deployLiquidityPool(poolId, trancheId, currency);
         return lPoolAddress;

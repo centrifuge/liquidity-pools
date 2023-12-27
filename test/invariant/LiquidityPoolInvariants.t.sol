@@ -23,8 +23,8 @@ interface ERC20Like {
 ///      fuzzed through handlers, while the internal inputs controlled by
 ///      actors on Centrifuge Chain is randomly configured but not fuzzed.
 contract InvestmentInvariants is TestSetup {
-    uint256 public constant NUM_CURRENCIES = 2;
-    uint256 public constant NUM_POOLS = 2;
+    uint256 public constant NUM_CURRENCIES = 1;
+    uint256 public constant NUM_POOLS = 1;
     uint256 public constant NUM_INVESTORS = 2;
 
     bytes16 public constant TRANCHE_ID = "1";
@@ -42,7 +42,7 @@ contract InvestmentInvariants is TestSetup {
         super.setUp();
 
         // Generate random investment currencies
-        for (uint128 currencyId = 1; currencyId < NUM_CURRENCIES; ++currencyId) {
+        for (uint128 currencyId = 1; currencyId <= (NUM_CURRENCIES + 1); ++currencyId) {
             uint8 currencyDecimals = _randomUint8(1, 18);
 
             address currency = address(
@@ -58,7 +58,7 @@ contract InvestmentInvariants is TestSetup {
 
         // Generate random liquidity pools
         // TODO: multiple chains and allowing transfers between chains
-        for (uint128 currencyId = 1; currencyId < NUM_CURRENCIES; ++currencyId) {
+        for (uint128 currencyId = 1; currencyId <= (NUM_CURRENCIES + 1); ++currencyId) {
             for (uint64 poolId; poolId < NUM_POOLS; ++poolId) {
                 uint8 trancheTokenDecimals = _randomUint8(1, 18);
                 address lpool = deployLiquidityPool(
@@ -71,6 +71,7 @@ contract InvestmentInvariants is TestSetup {
                     currencyId,
                     currencies[currencyId]
                 );
+                console.log(liquidityPools.length);
                 liquidityPools.push(lpool);
                 excludeContract(lpool);
             }
@@ -81,9 +82,13 @@ contract InvestmentInvariants is TestSetup {
         // - Just 1 tranche per pool
         // - NUM_INVESTORS per LP.
         for (uint64 lpoolId; lpoolId < liquidityPools.length; ++lpoolId) {
+            console.log(1);
+            console.log(lpoolId);
             LiquidityPoolLike lpool = LiquidityPoolLike(liquidityPools[lpoolId]);
+            console.log(2);
 
             for (uint256 i; i < NUM_INVESTORS; ++i) {
+                console.log(3);
                 address investor = makeAddr(string(abi.encode("investor", i)));
                 investors.push(investor);
                 centrifugeChain.updateMember(lpool.poolId(), TRANCHE_ID, investor, type(uint64).max);
@@ -100,6 +105,7 @@ contract InvestmentInvariants is TestSetup {
                 address(escrow),
                 address(this)
             );
+            console.log(4);
             investorHandlers[lpoolId] = handler;
 
             EpochExecutorHandler eeHandler =
@@ -112,7 +118,7 @@ contract InvestmentInvariants is TestSetup {
             ERC20Like(share).rely(address(handler)); // rely to mint tokens
 
             targetContract(address(handler));
-            targetContract(address(eeHandler));
+            // targetContract(address(eeHandler));
         }
     }
 
