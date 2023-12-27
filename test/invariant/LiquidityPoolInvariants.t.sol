@@ -2,7 +2,7 @@
 pragma solidity 0.8.21;
 
 import {TestSetup} from "test/TestSetup.t.sol";
-import {InvestorHandler} from "test/invariants/handlers/Investor.sol";
+import {InvestorHandler} from "test/invariant/handlers/Investor.sol";
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 

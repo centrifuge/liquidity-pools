@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {MockCentrifugeChain} from "test/mock/MockCentrifugeChain.sol";
+import {MockCentrifugeChain} from "test/mocks/MockCentrifugeChain.sol";
 import {PoolManager} from "src/PoolManager.sol";
 import {ERC20} from "src/token/ERC20.sol";
 

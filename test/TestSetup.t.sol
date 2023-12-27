@@ -19,8 +19,8 @@ import {Deployer} from "../script/Deployer.sol";
 import "../src/interfaces/IERC20.sol";
 
 // mocks
-import {MockCentrifugeChain} from "./mock/MockCentrifugeChain.sol";
-import {MockRouter} from "./mock/MockRouter.sol";
+import {MockCentrifugeChain} from "./mocks/MockCentrifugeChain.sol";
+import {MockRouter} from "./mocks/MockRouter.sol";
 
 // test env
 import "forge-std/Test.sol";
