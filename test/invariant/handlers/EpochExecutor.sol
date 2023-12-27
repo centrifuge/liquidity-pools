@@ -72,6 +72,8 @@ contract EpochExecutorHandler is BaseHandler {
 
         values[currentInvestor]["totalCurrencyPaidOutOnInvest"] += currencyPayout;
         values[currentInvestor]["totalTrancheTokensPaidOutOnInvest"] += trancheTokenPayout;
+        values[currentInvestor]["maxDepositFulfillmentPrice"] =
+            _max(values[currentInvestor]["maxDepositFulfillmentPrice"], fulfillmentPrice);
     }
 
     function executedCollectRedeem(uint256 investorSeed, uint256 fulfillmentRatio, uint256 fulfillmentPrice)
@@ -105,6 +107,8 @@ contract EpochExecutorHandler is BaseHandler {
 
         values[currentInvestor]["totalTrancheTokensPaidOutOnRedeem"] += trancheTokenPayout;
         values[currentInvestor]["totalCurrencyPaidOutOnRedeem"] += currencyPayout;
+        values[currentInvestor]["maxRedeemFulfillmentPrice"] =
+            _max(values[currentInvestor]["maxRedeemFulfillmentPrice"], fulfillmentPrice);
     }
 
     function executedDecreaseInvestOrder(uint256 investorSeed, uint256 decreaseRatio)
@@ -134,5 +138,13 @@ contract EpochExecutorHandler is BaseHandler {
 
         values[currentInvestor]["outstandingDecreaseDepositRequested"] -= currencyPayout;
         values[currentInvestor]["totalCurrencyPaidOutOnDecreaseInvest"] += currencyPayout;
+
+        // An executed invest decrease indirectly leads to a redeem fulfillment at price 1.0
+        values[currentInvestor]["maxRedeemFulfillmentPrice"] =
+            _max(values[currentInvestor]["maxRedeemFulfillmentPrice"], 1 * 10 ** 18);
+    }
+
+    function _max(uint256 a, uint256 b) internal pure returns (uint256) {
+        return a > b ? a : b;
     }
 }

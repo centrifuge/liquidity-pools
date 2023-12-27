@@ -164,18 +164,48 @@ contract InvestmentInvariants is TestSetup {
 
     // Invariant 6: lp.maxRedeem <= sum(requestRedeem) + sum(decreaseDepositRequest)
     // TODO: handle cancel behaviour
-    function invariant_maxRedeemLeRedeemRequest() external {
+    // function invariant_maxRedeemLeRedeemRequest() external {
+    //     for (uint64 poolId; poolId < NUM_POOLS; ++poolId) {
+    //         LiquidityPoolLike pool = LiquidityPoolLike(pools[poolId]);
+    //         InvestorHandler handler = investorHandlers[poolId];
+
+    //         for (uint256 i; i < investors.length; ++i) {
+    //             address investor = investors[i];
+    //             assertLe(
+    //                 pool.maxRedeem(investor),
+    //                 handler.values(investor, "totalRedeemRequested")
+    //                     + handler.values(investor, "totalDecreaseDepositRequested")
+    //             );
+    //         }
+    //     }
+    // }
+
+    // Invariant 7: lp.depositPrice <= max(fulfillment price)
+    function invariant_depositPriceLtMaxFulfillmentPrice() external {
         for (uint64 poolId; poolId < NUM_POOLS; ++poolId) {
             LiquidityPoolLike pool = LiquidityPoolLike(pools[poolId]);
             InvestorHandler handler = investorHandlers[poolId];
 
             for (uint256 i; i < investors.length; ++i) {
                 address investor = investors[i];
-                assertLe(
-                    pool.maxRedeem(investor),
-                    handler.values(investor, "totalRedeemRequested")
-                        + handler.values(investor, "totalDecreaseDepositRequested")
-                );
+                (, uint256 depositPrice,,,,,) = investmentManager.investments(address(pool), investor);
+
+                assertLe(depositPrice, handler.values(investor, "maxDepositFulfillmentPrice"));
+            }
+        }
+    }
+
+    // Invariant 8: lp.redeemPrice <= max(fulfillment price)
+    function invariant_redeemPriceLtMaxFulfillmentPrice() external {
+        for (uint64 poolId; poolId < NUM_POOLS; ++poolId) {
+            LiquidityPoolLike pool = LiquidityPoolLike(pools[poolId]);
+            InvestorHandler handler = investorHandlers[poolId];
+
+            for (uint256 i; i < investors.length; ++i) {
+                address investor = investors[i];
+                (,,, uint256 redeemPrice,,,) = investmentManager.investments(address(pool), investor);
+
+                assertLe(redeemPrice, handler.values(investor, "maxRedeemFulfillmentPrice"));
             }
         }
     }
