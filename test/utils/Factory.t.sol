@@ -19,8 +19,8 @@ contract FactoryTest is Test {
 
     function setUp() public {
         if (vm.envOr("FORK_TESTS", false)) {
-            mainnetFork = vm.createFork(vm.envString("MAINNET_RPC_URL"));
-            polygonFork = vm.createFork(vm.envString("POLYGON_RPC_URL"));
+            mainnetFork = vm.createFork(vm.rpcUrl("ethereum-mainnet"));
+            polygonFork = vm.createFork(vm.rpcUrl("polygon-mainnet"));
         }
 
         root = address(new Root(address(new Escrow(address(this))), 48 hours, address(this)));

@@ -22,9 +22,6 @@ jobs:
         run: forge test --no-match-path "test/invariants/**/*.sol"
         env:
           FOUNDRY_PROFILE: ci
-          CENTRIFUGE_CHAIN_ORIGIN: ${{ vars.CENTRIFUGE_CHAIN_ORIGIN }}
-          MAINNET_RPC_URL: ${{ vars.MAINNET_RPC_URL }}
-          POLYGON_RPC_URL: ${{ vars.POLYGON_RPC_URL }}
           SETUP_TEST_DATA: false
           FORK_TESTS: false
 
@@ -40,9 +37,6 @@ jobs:
         run: forge test --match-path "test/invariants/**/*.sol"
         env:
           FOUNDRY_PROFILE: ci
-          CENTRIFUGE_CHAIN_ORIGIN: ${{ vars.CENTRIFUGE_CHAIN_ORIGIN }}
-          MAINNET_RPC_URL: ${{ vars.MAINNET_RPC_URL }}
-          POLYGON_RPC_URL: ${{ vars.POLYGON_RPC_URL }}
           SETUP_TEST_DATA: false
           FORK_TESTS: false
 
@@ -79,7 +73,7 @@ jobs:
         run: forge coverage --report summary --report lcov
         env:
           SETUP_TEST_DATA: false
-          FORK_TESTS: true
+          FORK_TESTS: false
 
       # To ignore coverage for certain directories modify the paths in this step as needed. The
       # below default ignores coverage results for the test and script directories. Alternatively,
