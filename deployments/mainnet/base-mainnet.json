@@ -37,5 +37,6 @@
         "delayedAdmin": "0x2559998026796Ca6fd057f3aa66F2d6ecdEd9028",
         "messages": "0xAf9F6Ac63C057EB7F59b6Fae2c3d447191b58Ea5"
     },
-    "deploymentBlock": 8053054
+    "deploymentBlock": 8053054,
+    "isTestnet": false
 }

@@ -40,5 +40,6 @@
     "deploymentBlock": 18671269,
     "spells": [
         "0xcfbd142ec8f00bbf5f1aa22f66abf2eb476948a7"
-    ]
+    ],
+    "isTestnet": false
 }
