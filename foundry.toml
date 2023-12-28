@@ -10,6 +10,8 @@ optimizer = true
 optimizer_runs = 1_000
 verbosity = 3
 
+fs_permissions = [{ access = "read", path = "./deployments"}]
+
 [profile.default.fuzz]
 runs = 100
 max_test_rejects = 1_000_000 # Number of times `vm.assume` can fail
