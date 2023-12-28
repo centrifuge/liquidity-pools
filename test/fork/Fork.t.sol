@@ -20,6 +20,12 @@ interface RouterLike {
     function wards(address ward) external view returns (uint256);
 }
 
+interface SafeLike {
+    function getOwners() external view returns (address[] memory);
+    function isOwner(address signer) external view returns (bool);
+    function getThreshold() external view returns (uint256);
+}
+
 contract ForkTest is Test {
     using stdJson for string;
 
@@ -28,6 +34,8 @@ contract ForkTest is Test {
     function setUp() public virtual {
         _loadDeployment("ethereum-mainnet");
         _loadDeployment("base-mainnet");
+        _loadDeployment("arbitrum-mainnet");
+        _loadDeployment("celo-mainnet");
     }
 
     function _loadDeployment(string memory name) internal {
@@ -160,6 +168,7 @@ contract ForkTest is Test {
                 address delayedAdmin = _get(i, ".contracts.delayedAdmin");
                 address deployer = _get(i, ".config.deployer");
                 address admin = _get(i, ".config.admin");
+                address[] memory pausers = abi.decode(deployments[i].parseRaw(".config.pausers"), (address[]));
                 _loadFork(i);
 
                 // DelayedAdmin
@@ -173,11 +182,36 @@ contract ForkTest is Test {
                 assertEq(address(PauseAdmin(pauseAdmin).root()), root);
                 assertEq(PauseAdmin(pauseAdmin).wards(delayedAdmin), 1);
                 assertEq(PauseAdmin(pauseAdmin).wards(admin), 0);
-                // assertEq(PauseAdmin(pauseAdmin).pausers(pauser1), 1);
                 assertEq(Root(root).wards(pauseAdmin), 1);
                 assertEq(PauseAdmin(pauseAdmin).wards(root), 0);
                 assertEq(PauseAdmin(pauseAdmin).wards(deployer), 0);
                 assertEq(PauseAdmin(pauseAdmin).wards(admin), 0);
+
+                for (uint j = 0; j < pausers.length; j++) {
+                    assertEq(PauseAdmin(pauseAdmin).pausers(pausers[j]), 1);
+                }
+            }
+        }
+    }
+
+    function testAdminSigners() public {
+        if (vm.envOr("FORK_TESTS", false)) {
+            for (uint i = 0; i < deployments.length; i++) {
+                // Read deployment file
+                address admin = _get(i, ".config.admin");
+                address[] memory adminSigners = abi.decode(deployments[i].parseRaw(".config.adminSigners"), (address[]));
+                _loadFork(i);
+
+                // Check Safe signers
+                SafeLike safe = SafeLike(admin);
+                address[] memory signers = safe.getOwners();
+                assertEq(signers.length, adminSigners.length);
+                for (uint j = 0; j < adminSigners.length; j++) {
+                    assertTrue(safe.isOwner(adminSigners[j]));
+                }
+
+                // Check threshold
+                assertEq(safe.getThreshold(), 4);
             }
         }
     }

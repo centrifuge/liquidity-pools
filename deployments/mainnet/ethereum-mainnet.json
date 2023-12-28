@@ -4,6 +4,16 @@
     "config": {
         "deployer": "0x7270b20603FbB3dF0921381670fbd62b9991aDa4",
         "admin": "0xD9D30ab47c0f096b0AA67e9B8B1624504a63e7FD",
+        "adminSigners": [
+            "0x71d9f8CFdcCEF71B59DD81AB387e523E2834F2b8",
+            "0xEf270f8877Aa1875fc13e78dcA31f3235210368f",
+            "0x2F1724cc5005F376411747dFE24fb7412f5955B1",
+            "0x46a71eEf8DbcFcbAC7A0e8D5d6B634A649e61fb8",
+            "0x9eDec77dd2651Ce062ab17e941347018AD4eAEA9",
+            "0x518B822e679Cc5162AD2C644760767D42d2fb80b",
+            "0xc4576CE4603552c5BeAa056c449b0795D48fcf92",
+            "0x790c2c860DDC993f3da92B19cB440cF8338C59a6"
+        ],
         "pausers": [
             "0x9eDec77dd2651Ce062ab17e941347018AD4eAEA9",
             "0x790c2c860DDC993f3da92B19cB440cF8338C59a6",

@@ -1,9 +1,9 @@
 {
-  "chainId": 8453,
-  "rpcUrl": "https://mainnet.base.org",
+  "chainId": 42220,
+  "rpcUrl": "https://celo-mainnet.infura.io/v3/ed5e0e19bcbc427cbf8f661736d44516",
   "config": {
       "deployer": "0x7270b20603FbB3dF0921381670fbd62b9991aDa4",
-      "admin": "0x8b83962fB9dB346a20c95D98d4E312f17f4C0d9b",
+      "admin": "0x2464f95F6901233bF4a0130A3611d5B4CBd83195",
       "adminSigners": [
           "0x71d9f8CFdcCEF71B59DD81AB387e523E2834F2b8",
           "0xEf270f8877Aa1875fc13e78dcA31f3235210368f",
@@ -34,6 +34,6 @@
       "restrictionManagerFactory": "0xf4D7F6919eF0B495a2551F7299324961F29aE7aC",
       "pauseAdmin": "0xce86472007Ea37a5d0208f8C1559A37530c8067C",
       "delayedAdmin": "0x2559998026796Ca6fd057f3aa66F2d6ecdEd9028",
-      "messages": "0xAf9F6Ac63C057EB7F59b6Fae2c3d447191b58Ea5"
+      "messages": "0x811f7bd79d9cf392f6a60c8e8f570c96769d92c3"
   }
 }
