@@ -10,6 +10,8 @@ optimizer = true
 optimizer_runs = 1_000
 verbosity = 3
 
+fs_permissions = [{ access = "read", path = "./deployments"}]
+
 [profile.default.fuzz]
 runs = 100
 max_test_rejects = 1_000_000 # Number of times `vm.assume` can fail
@@ -72,3 +74,7 @@ fail_on_revert = false
   number_underscore = "preserve"
   wrap_comments = true
   ignore = ["test/*.sol"]
+
+[rpc_endpoints]
+ethereum-mainnet = "https://mainnet.infura.io/v3/${INFURA_API_KEY}"
+polygon-mainnet = "https://polygon-mainnet.infura.io/v3/${INFURA_API_KEY}" 

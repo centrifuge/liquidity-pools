@@ -33,7 +33,7 @@ contract Spell is Addresses {
     bool public done;
     string public constant description = "Liquidity Pool Factory migration spell";
 
-    address public constant LIQUIDITY_POOL_FACTORY_NEW = address(0x8273E36EEcf7A8604BEdEe68FC24Af121B64f165);
+    address public constant LIQUIDITY_POOL_FACTORY_NEW = address(0x7f93eDB11d5Dc23F04C4E9382aa0d3F31E95BF2C);
     address public constant DEPRECATED_LIQUIDITY_POOL = address(0xa0872E8D2975483b2Ab4Afcee729133D8666F6f5);
     address public newLiquidityPool;
 
