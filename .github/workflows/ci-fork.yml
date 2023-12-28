@@ -23,5 +23,4 @@ jobs:
         run: forge test --match-path "test/fork/Fork.t.sol"
         env:
           FOUNDRY_PROFILE: ci
-          SETUP_TEST_DATA: false
           FORK_TESTS: true
