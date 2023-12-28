@@ -15,7 +15,7 @@ import {TrancheTokenFactory, LiquidityPoolFactory, RestrictionManagerFactory} fr
 import {DelayedAdmin} from "src/admins/DelayedAdmin.sol";
 import {PauseAdmin} from "src/admins/PauseAdmin.sol";
 
-contract RPCTest is Test, Addresses {
+contract ForkTest is Test, Addresses {
     uint256 mainnetFork;
 
     function setUp() public virtual {
