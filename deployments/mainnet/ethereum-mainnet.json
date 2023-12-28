@@ -2,6 +2,7 @@
     "chainId": 1,
     "rpcUrl": "https://mainnet.infura.io/v3/ed5e0e19bcbc427cbf8f661736d44516",
     "config": {
+        "commitHash": "da5c31462b5fe615d3510ca35f884018fd8055c7",
         "deployer": "0x7270b20603FbB3dF0921381670fbd62b9991aDa4",
         "admin": "0xD9D30ab47c0f096b0AA67e9B8B1624504a63e7FD",
         "adminSigners": [
@@ -35,5 +36,6 @@
         "pauseAdmin": "0xce86472007Ea37a5d0208f8C1559A37530c8067C",
         "delayedAdmin": "0x2559998026796Ca6fd057f3aa66F2d6ecdEd9028",
         "messages": "0xAf9F6Ac63C057EB7F59b6Fae2c3d447191b58Ea5"
-    }
+    },
+    "deploymentBlock": 18671269
 }
