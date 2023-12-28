@@ -20,7 +20,13 @@
             "0x790c2c860DDC993f3da92B19cB440cF8338C59a6",
             "0x2F1724cc5005F376411747dFE24fb7412f5955B1",
             "0x3cE760441A4E9BD2c40A69d39A472052Ac14e0D9"
-        ]
+        ],
+        "router": {
+            "name": "Axelar",
+            "axelarGateway": "0x4F4495243837681061C4743b74B3eEdf548D56A5"
+        },
+        "deploymentSalt": "e416b338a274162320c79445ae6604141d1cb08275eb27011b69f002dc094d05",
+        "etherscanUrl": "https://api.etherscan.io/api/"
     },
     "contracts": {
         "root": "0x498016d30Cd5f0db50d7ACE329C07313a0420502",
