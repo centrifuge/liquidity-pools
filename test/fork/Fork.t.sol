@@ -13,7 +13,6 @@ import {Gateway} from "src/gateway/Gateway.sol";
 import {TrancheTokenFactory, LiquidityPoolFactory, RestrictionManagerFactory} from "src/util/Factory.sol";
 import {DelayedAdmin} from "src/admins/DelayedAdmin.sol";
 import {PauseAdmin} from "src/admins/PauseAdmin.sol";
-import {Deployment} from "./Deployment.sol";
 
 interface RouterLike {
     function send(bytes memory message) external;
@@ -52,10 +51,9 @@ contract ForkTest is Test {
         return abi.decode(deployments[id].parseRaw(key), (address));
     }
 
-
     function testBaseContractsWiredCorrectly() public {
         if (vm.envOr("FORK_TESTS", false)) {
-            for (uint i = 0; i < deployments.length; i++) {
+            for (uint256 i = 0; i < deployments.length; i++) {
                 // Read deployment file
                 address root = _get(i, ".contracts.root");
                 address investmentManager = _get(i, ".contracts.investmentManager");
@@ -128,7 +126,7 @@ contract ForkTest is Test {
 
     function testFactoriesWiredCorrectly() public {
         if (vm.envOr("FORK_TESTS", false)) {
-            for (uint i = 0; i < deployments.length; i++) {
+            for (uint256 i = 0; i < deployments.length; i++) {
                 // Read deployment file
                 address root = _get(i, ".contracts.root");
                 address poolManager = _get(i, ".contracts.poolManager");
@@ -161,7 +159,7 @@ contract ForkTest is Test {
 
     function testAdminsWiredCorrectly() public {
         if (vm.envOr("FORK_TESTS", false)) {
-            for (uint i = 0; i < deployments.length; i++) {
+            for (uint256 i = 0; i < deployments.length; i++) {
                 // Read deployment file
                 address root = _get(i, ".contracts.root");
                 address pauseAdmin = _get(i, ".contracts.pauseAdmin");
@@ -187,7 +185,7 @@ contract ForkTest is Test {
                 assertEq(PauseAdmin(pauseAdmin).wards(deployer), 0);
                 assertEq(PauseAdmin(pauseAdmin).wards(admin), 0);
 
-                for (uint j = 0; j < pausers.length; j++) {
+                for (uint256 j = 0; j < pausers.length; j++) {
                     assertEq(PauseAdmin(pauseAdmin).pausers(pausers[j]), 1);
                 }
             }
@@ -196,7 +194,7 @@ contract ForkTest is Test {
 
     function testAdminSigners() public {
         if (vm.envOr("FORK_TESTS", false)) {
-            for (uint i = 0; i < deployments.length; i++) {
+            for (uint256 i = 0; i < deployments.length; i++) {
                 // Read deployment file
                 address admin = _get(i, ".config.admin");
                 address[] memory adminSigners = abi.decode(deployments[i].parseRaw(".config.adminSigners"), (address[]));
@@ -206,7 +204,7 @@ contract ForkTest is Test {
                 SafeLike safe = SafeLike(admin);
                 address[] memory signers = safe.getOwners();
                 assertEq(signers.length, adminSigners.length);
-                for (uint j = 0; j < adminSigners.length; j++) {
+                for (uint256 j = 0; j < adminSigners.length; j++) {
                     assertTrue(safe.isOwner(adminSigners[j]));
                 }
 
