@@ -198,7 +198,8 @@ contract ForkTest is Test {
                 if (!isTestnet) {
                     // Read deployment file
                     address admin = _get(i, ".config.admin");
-                    address[] memory adminSigners = abi.decode(deployments[i].parseRaw(".config.adminSigners"), (address[]));
+                    address[] memory adminSigners =
+                        abi.decode(deployments[i].parseRaw(".config.adminSigners"), (address[]));
                     _loadFork(i);
 
                     // Check Safe signers
