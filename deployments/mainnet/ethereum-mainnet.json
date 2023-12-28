@@ -37,5 +37,8 @@
         "delayedAdmin": "0x2559998026796Ca6fd057f3aa66F2d6ecdEd9028",
         "messages": "0xAf9F6Ac63C057EB7F59b6Fae2c3d447191b58Ea5"
     },
-    "deploymentBlock": 18671269
+    "deploymentBlock": 18671269,
+    "spells": [
+        "0xcfbd142ec8f00bbf5f1aa22f66abf2eb476948a7"
+    ]
 }
