@@ -45,7 +45,6 @@ jobs:
         run: forge test --no-match-path "test/invariants/**/*.sol"
         env:
           FOUNDRY_PROFILE: ci
-          SETUP_TEST_DATA: false
           FORK_TESTS: false
 
   test-invariant:
@@ -75,5 +74,4 @@ jobs:
         run: forge test --match-path "test/invariants/**/*.sol"
         env:
           FOUNDRY_PROFILE: ci
-          SETUP_TEST_DATA: false
           FORK_TESTS: false
