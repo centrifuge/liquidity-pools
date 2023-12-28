@@ -37,20 +37,6 @@ contract ForkTest is Test {
         _loadDeployment("celo-mainnet");
     }
 
-    function _loadDeployment(string memory name) internal {
-        deployments.push(vm.readFile(string.concat(vm.projectRoot(), "/deployments/mainnet/", name, ".json")));
-    }
-
-    function _loadFork(uint256 id) internal {
-        string memory rpcUrl = abi.decode(deployments[id].parseRaw(".rpcUrl"), (string));
-        uint256 forkId = vm.createFork(rpcUrl);
-        vm.selectFork(forkId);
-    }
-
-    function _get(uint256 id, string memory key) internal view returns (address) {
-        return abi.decode(deployments[id].parseRaw(key), (address));
-    }
-
     function testBaseContractsWiredCorrectly() public {
         if (vm.envOr("FORK_TESTS", false)) {
             for (uint256 i = 0; i < deployments.length; i++) {
@@ -212,5 +198,19 @@ contract ForkTest is Test {
                 assertEq(safe.getThreshold(), 4);
             }
         }
+    }
+
+    function _loadDeployment(string memory name) internal {
+        deployments.push(vm.readFile(string.concat(vm.projectRoot(), "/deployments/mainnet/", name, ".json")));
+    }
+
+    function _loadFork(uint256 id) internal {
+        string memory rpcUrl = abi.decode(deployments[id].parseRaw(".rpcUrl"), (string));
+        uint256 forkId = vm.createFork(rpcUrl);
+        vm.selectFork(forkId);
+    }
+
+    function _get(uint256 id, string memory key) internal view returns (address) {
+        return abi.decode(deployments[id].parseRaw(key), (address));
     }
 }
