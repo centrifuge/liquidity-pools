@@ -1,0 +1,22 @@
+name: "CI Fork"
+
+on: "workflow_dispatch"
+
+env:
+  FOUNDRY_PROFILE: ci
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Run tests
+        run: forge test --match-path "test/fork/Fork.t.sol"
+        env:
+          FOUNDRY_PROFILE: ci
+          SETUP_TEST_DATA: false
+          FORK_TESTS: true
