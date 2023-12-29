@@ -82,7 +82,7 @@ contract SafeTransferLibTest is Test {
     }
 
     function testApprove(address spender, uint256 amount) public {
-        this.approve(address(tokenWithoutBoolean), spender, amount);
+        this.safeApprove(address(tokenWithoutBoolean), spender, amount);
     }
 
     function testSafeTransferWithBoolFalse(address to, uint256 amount) public {
