@@ -115,6 +115,4 @@ contract SafeTransferLibTest is Test {
     function safeApprove(address token, address spender, uint256 amount) external {
         SafeTransferLib.safeApprove(token, spender, amount);
     }
-
-    // TODO: safeApprove tests
 }
