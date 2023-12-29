@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {TestSetup} from "test/TestSetup.t.sol";
+import {BaseTest} from "test/BaseTest.sol";
 import {InvestorHandler} from "test/invariant/handlers/Investor.sol";
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
@@ -11,7 +11,7 @@ interface ERC20Like {
     function rely(address user) external;
 }
 
-contract InvestmentInvariants is TestSetup {
+contract InvestmentInvariants is BaseTest {
     InvestorHandler investorHandler;
 
     function setUp() public override {

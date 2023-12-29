@@ -18,7 +18,7 @@ import {LiquidityPool} from "src/LiquidityPool.sol";
 
 import {AxelarScript} from "script/Axelar.s.sol";
 import "script/Deployer.sol";
-import "src/util/MathLib.sol";
+import "src/libraries/MathLib.sol";
 import "forge-std/Test.sol";
 
 interface ApproveLike {

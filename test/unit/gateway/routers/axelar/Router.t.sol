@@ -6,7 +6,7 @@ import {AxelarGatewayMock} from "test/mocks/AxelarGatewayMock.sol";
 import {GatewayMock} from "test/mocks/GatewayMock.sol";
 import "forge-std/Test.sol";
 import {AxelarForwarder} from "src/gateway/routers/axelar/Forwarder.sol";
-import {BytesLib} from "src/util/BytesLib.sol";
+import {BytesLib} from "src/libraries/BytesLib.sol";
 
 contract AxelarRouterTest is Test {
     AxelarGatewayMock axelarGateway;

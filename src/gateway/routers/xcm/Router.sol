@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {MessagesLib} from "../../../util/MessagesLib.sol";
-import {Auth} from "./../../../util/Auth.sol";
+import {MessagesLib} from "../../../libraries/MessagesLib.sol";
+import {Auth} from "./../../../Auth.sol";
 
 struct Multilocation {
     uint8 parents;

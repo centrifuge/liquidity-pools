@@ -2,14 +2,14 @@ pragma solidity 0.8.21;
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma abicoder v2;
 
-import "test/TestSetup.t.sol";
+import "test/BaseTest.sol";
 
 interface LiquidityPoolLike {
     function latestPrice() external view returns (uint128);
     function priceComputedAt() external view returns (uint64);
 }
 
-contract InvestmentManagerTest is TestSetup {
+contract InvestmentManagerTest is BaseTest {
     // Deployment
     function testDeployment() public {
         // values set correctly

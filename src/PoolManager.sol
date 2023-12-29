@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {TrancheTokenFactoryLike, RestrictionManagerFactoryLike, LiquidityPoolFactoryLike} from "./util/Factory.sol";
+import {LiquidityPoolFactoryLike} from "src/factories/LiquidityPoolFactory.sol";
+import {RestrictionManagerFactoryLike} from "src/factories/RestrictionManagerFactory.sol";
+import {TrancheTokenFactoryLike} from "src/factories/TrancheTokenFactory.sol";
 import {TrancheTokenLike} from "./token/Tranche.sol";
 import {RestrictionManagerLike} from "./token/RestrictionManager.sol";
 import {IERC20Metadata} from "./interfaces/IERC20.sol";
-import {Auth} from "./util/Auth.sol";
-import {SafeTransferLib} from "./util/SafeTransferLib.sol";
-import {MathLib} from "./util/MathLib.sol";
+import {Auth} from "./Auth.sol";
+import {SafeTransferLib} from "./libraries/SafeTransferLib.sol";
+import {MathLib} from "./libraries/MathLib.sol";
 
 interface GatewayLike {
     function transferTrancheTokensToCentrifuge(

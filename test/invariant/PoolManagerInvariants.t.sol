@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {TestSetup} from "test/TestSetup.t.sol";
+import {BaseTest} from "test/BaseTest.sol";
 import {PoolManagerHandler} from "test/invariant/handlers/PoolManager.sol";
 import {TrancheTokenHolderHandler} from "test/invariant/handlers/TrancheTokenHolder.sol";
 import "forge-std/Test.sol";
@@ -16,7 +16,7 @@ interface ERC20Like {
     function balanceOf(address account) external view returns (uint256);
 }
 
-contract PoolManagerInvariants is TestSetup {
+contract PoolManagerInvariants is BaseTest {
     PoolManagerHandler poolManagerHandler;
     TrancheTokenHolderHandler trancheTokenHolder;
 

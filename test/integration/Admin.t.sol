@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import "test/TestSetup.t.sol";
+import "test/BaseTest.sol";
 
-contract AdminTest is TestSetup {
+contract AdminTest is BaseTest {
     function setUp() public override {
         super.setUp();
         pauseAdmin.addPauser(address(this));

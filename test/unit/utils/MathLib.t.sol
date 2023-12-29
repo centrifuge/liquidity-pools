@@ -3,7 +3,7 @@ pragma solidity 0.8.21;
 
 import "forge-std/Test.sol";
 import {IERC20} from "src/interfaces/IERC20.sol";
-import {MathLib} from "src/util/MathLib.sol";
+import {MathLib} from "src/libraries/MathLib.sol";
 
 /// @author Modified from https://github.com/morpho-org/morpho-blue/blob/main/test/forge/libraries/MathLibTest.sol
 contract MathLibTest is Test {

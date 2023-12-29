@@ -10,7 +10,9 @@ import {Escrow} from "src/Escrow.sol";
 import {UserEscrow} from "src/UserEscrow.sol";
 import {TrancheToken} from "src/token/Tranche.sol";
 import {Gateway} from "src/gateway/Gateway.sol";
-import {TrancheTokenFactory, LiquidityPoolFactory, RestrictionManagerFactory} from "src/util/Factory.sol";
+import {LiquidityPoolFactory} from "src/factories/LiquidityPoolFactory.sol";
+import {RestrictionManagerFactory} from "src/factories/RestrictionManagerFactory.sol";
+import {TrancheTokenFactory} from "src/factories/TrancheTokenFactory.sol";
 import {DelayedAdmin} from "src/admins/DelayedAdmin.sol";
 import {PauseAdmin} from "src/admins/PauseAdmin.sol";
 
