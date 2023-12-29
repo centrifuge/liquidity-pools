@@ -319,11 +319,11 @@ contract PoolManagerTest is TestSetup {
         assertEq(trancheToken.balanceOf(address(this)), 0);
 
         // Finally, verify the connector called `router.send`
-        bytes memory message = Messages.formatTransferTrancheTokens(
+        bytes memory message = MessagesLib.formatTransferTrancheTokens(
             lPool.poolId(),
             lPool.trancheId(),
             bytes32(bytes20(address(this))),
-            Messages.formatDomain(Messages.Domain.Centrifuge),
+            MessagesLib.formatDomain(MessagesLib.Domain.Centrifuge),
             centChainAddress,
             amount
         );

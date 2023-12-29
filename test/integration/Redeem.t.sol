@@ -184,7 +184,7 @@ contract RedeemTest is TestSetup {
 
         // check message was send out to centchain
         lPool.cancelRedeemRequest();
-        bytes memory cancelOrderMessage = Messages.formatCancelRedeemOrder(
+        bytes memory cancelOrderMessage = MessagesLib.formatCancelRedeemOrder(
             lPool.poolId(), lPool.trancheId(), _addressToBytes32(self), defaultCurrencyId
         );
         assertEq(cancelOrderMessage, router.values_bytes("send"));
