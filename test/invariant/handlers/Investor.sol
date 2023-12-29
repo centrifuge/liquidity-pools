@@ -219,34 +219,4 @@ contract InvestorHandler is BaseHandler {
         values[currentInvestor]["totalTrancheTokensPaidOutOnRedeem"] += trancheTokenPayout;
         values[currentInvestor]["totalCurrencyPaidOutOnRedeem"] += currencyPayout;
     }
-
-    // TODO: should be moved to a separate contract
-    function executedDecreaseInvestOrder(uint256 investorSeed, uint256 decreaseRatio)
-        public
-        useRandomInvestor(investorSeed)
-    {
-        decreaseRatio = bound(decreaseRatio, 0, 1 * 10 ** 18); // 0% to 100%
-
-        if (values[currentInvestor]["outstandingDecreaseDepositRequested"] == 0) {
-            return;
-        }
-
-        uint128 currencyPayout = uint128(
-            values[currentInvestor]["outstandingDecreaseDepositRequested"].mulDiv(
-                decreaseRatio, 1 * 10 ** 18, MathLib.Rounding.Down
-            )
-        );
-
-        centrifugeChain.isExecutedDecreaseInvestOrder(
-            poolId,
-            trancheId,
-            bytes32(bytes20(currentInvestor)),
-            currencyId,
-            currencyPayout,
-            uint128(values[currentInvestor]["outstandingDecreaseDepositRequested"] - currencyPayout)
-        );
-
-        values[currentInvestor]["outstandingDecreaseDepositRequested"] -= currencyPayout;
-        values[currentInvestor]["totalCurrencyPaidOutOnDecreaseInvest"] += currencyPayout;
-    }
 }
