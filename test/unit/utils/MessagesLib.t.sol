@@ -143,7 +143,9 @@ contract MessagesLibTest is Test {
         bytes memory expectedHex =
             hex"050000000000000001811acd5b3f17c06841c7e41e9e04cb1b0000000000000000000000000000000200000000033b2e3c9fd0803ce80000000000000000000001";
 
-        assertEq(MessagesLib.formatUpdateTrancheTokenPrice(poolId, trancheId, currencyId, price, computedAt), expectedHex);
+        assertEq(
+            MessagesLib.formatUpdateTrancheTokenPrice(poolId, trancheId, currencyId, price, computedAt), expectedHex
+        );
 
         (
             uint64 decodedPoolId,
@@ -166,7 +168,8 @@ contract MessagesLibTest is Test {
         uint128 price,
         uint64 computedAt
     ) public {
-        bytes memory _message = MessagesLib.formatUpdateTrancheTokenPrice(poolId, trancheId, currencyId, price, computedAt);
+        bytes memory _message =
+            MessagesLib.formatUpdateTrancheTokenPrice(poolId, trancheId, currencyId, price, computedAt);
         (
             uint64 decodedPoolId,
             bytes16 decodedTrancheId,
@@ -264,7 +267,9 @@ contract MessagesLibTest is Test {
         bytes memory expectedHex =
             hex"080000000000000001811acd5b3f17c06841c7e41e9e04cb1b45645645645645645645645645645645645645645645645645645645645645640100000000000005041231231231231231231231231231231231231231000000000000000000000000000000000052b7d2dcc80cd2e4000000";
 
-        assertEq(MessagesLib.formatTransferTrancheTokens(poolId, trancheId, sender, domain, receiver, amount), expectedHex);
+        assertEq(
+            MessagesLib.formatTransferTrancheTokens(poolId, trancheId, sender, domain, receiver, amount), expectedHex
+        );
 
         (uint64 decodedPoolId, bytes16 decodedTrancheId, address decodedReceiver, uint128 decodedAmount) =
             MessagesLib.parseTransferTrancheTokens20(expectedHex);
@@ -932,7 +937,9 @@ contract MessagesLibTest is Test {
         bytes memory expectedHex =
             hex"1b0000000000000001811acd5b3f17c06841c7e41e9e04cb1b12312312312312312312312312312312312312310000000000000000000000000000000000000000000000000eb5ec7b000000000052b7d2dcc80cd2e4000000";
 
-        assertEq(MessagesLib.formatTriggerIncreaseRedeemOrder(poolId, trancheId, investor, currency, amount), expectedHex);
+        assertEq(
+            MessagesLib.formatTriggerIncreaseRedeemOrder(poolId, trancheId, investor, currency, amount), expectedHex
+        );
 
         (
             uint64 decodedPoolId,
