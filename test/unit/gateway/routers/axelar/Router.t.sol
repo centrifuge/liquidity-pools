@@ -48,7 +48,6 @@ contract AxelarRouterTest is Test {
         string calldata sourceAddress,
         bytes calldata payload,
         address invalidOrigin,
-        string memory invalidAxelarCentrifugeChainId,
         address relayer
     ) public {
         vm.assume(keccak256(abi.encodePacked(sourceChain)) != keccak256(abi.encodePacked("centrifuge")));
