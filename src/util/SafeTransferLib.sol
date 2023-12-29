@@ -29,7 +29,7 @@ library SafeTransferLib {
     }
 
     /// @notice Approves the stipulated contract to spend the given allowance in the given token
-    /// @dev Errors if transfer fails
+    /// @dev Errors if approval fails
     /// @param token The contract address of the token to be approved
     /// @param to The target of the approval
     /// @param value The amount of the given token the target will be allowed to spend

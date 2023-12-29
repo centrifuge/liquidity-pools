@@ -4,7 +4,6 @@ pragma solidity 0.8.21;
 import {ERC20, IERC1271} from "src/token/ERC20.sol";
 import "forge-std/Test.sol";
 
-/// @author Modified from from https://github.com/makerdao/xdomain-dss/blob/master/src/test/Dai.t.sol
 contract MockMultisig is IERC1271 {
     address public immutable signer1;
     address public immutable signer2;
@@ -39,6 +38,7 @@ contract MockMultisig is IERC1271 {
     function test() public {}
 }
 
+/// @author Modified from from https://github.com/makerdao/xdomain-dss/blob/master/src/test/Dai.t.sol
 contract ERC20Test is Test {
     ERC20 token;
 
