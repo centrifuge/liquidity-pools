@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {Messages} from "../../Messages.sol";
+import {MessagesLib} from "../../../util/MessagesLib.sol";
 import {Auth} from "./../../../util/Auth.sol";
 
 struct Multilocation {
@@ -154,22 +154,22 @@ contract XCMRouter is Auth {
     // Obtain the Scale-encoded length of a given message. Each Liquidity Pools Message is fixed-sized and
     // have thus a fixed scale-encoded length associated to which message variant (aka Call).
     function messageLengthScaleEncoded(bytes memory _msg) internal pure returns (bytes memory) {
-        if (Messages.isTransfer(_msg)) {
+        if (MessagesLib.isTransfer(_msg)) {
             return hex"8501";
-        } else if (Messages.isTransferTrancheTokens(_msg)) {
+        } else if (MessagesLib.isTransferTrancheTokens(_msg)) {
             // A TransferTrancheTokens message is 82 bytes long which encodes to 0x4901 in Scale
             return hex"4901";
-        } else if (Messages.isIncreaseInvestOrder(_msg)) {
+        } else if (MessagesLib.isIncreaseInvestOrder(_msg)) {
             return hex"6501";
-        } else if (Messages.isDecreaseInvestOrder(_msg)) {
+        } else if (MessagesLib.isDecreaseInvestOrder(_msg)) {
             return hex"6501";
-        } else if (Messages.isIncreaseRedeemOrder(_msg)) {
+        } else if (MessagesLib.isIncreaseRedeemOrder(_msg)) {
             return hex"6501";
-        } else if (Messages.isDecreaseRedeemOrder(_msg)) {
+        } else if (MessagesLib.isDecreaseRedeemOrder(_msg)) {
             return hex"6501";
-        } else if (Messages.isCollectInvest(_msg)) {
+        } else if (MessagesLib.isCollectInvest(_msg)) {
             return hex"e4";
-        } else if (Messages.isCollectRedeem(_msg)) {
+        } else if (MessagesLib.isCollectRedeem(_msg)) {
             return hex"e4";
         } else {
             revert("XCMRouter/unsupported-outgoing-message");

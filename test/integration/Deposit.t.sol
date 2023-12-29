@@ -780,7 +780,7 @@ contract DepositTest is TestSetup {
 
         // check message was send out to centchain
         lPool.cancelDepositRequest();
-        bytes memory cancelOrderMessage = Messages.formatCancelInvestOrder(
+        bytes memory cancelOrderMessage = MessagesLib.formatCancelInvestOrder(
             lPool.poolId(), lPool.trancheId(), _addressToBytes32(self), defaultCurrencyId
         );
         assertEq(cancelOrderMessage, router.values_bytes("send"));
