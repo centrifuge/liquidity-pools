@@ -33,6 +33,7 @@ contract BaseTest is Deployer, Test {
 
     address self = address(this);
     address investor = makeAddr("investor");
+    address nonMember = makeAddr("nonMember");
     address randomUser = makeAddr("randomUser");
 
     uint128 constant MAX_UINT128 = type(uint128).max;

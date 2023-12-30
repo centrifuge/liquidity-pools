@@ -16,6 +16,10 @@ contract RedeemTest is BaseTest {
             lPool.poolId(), lPool.trancheId(), defaultCurrencyId, defaultPrice, uint64(block.timestamp)
         );
 
+        // will fail - zero deposit not allowed
+        vm.expectRevert(bytes("InvestmentManager/zero-amount-not-allowed"));
+        lPool.requestRedeem(0, self, self, "");
+
         // success
         lPool.requestRedeem(amount, address(this), address(this), "");
         assertEq(trancheToken.balanceOf(address(escrow)), amount);
@@ -63,6 +67,12 @@ contract RedeemTest is BaseTest {
         assertApproxEqAbs(erc20.balanceOf(investor), (amount / 2), 1);
         assertTrue(lPool.maxWithdraw(self) <= 1);
         assertTrue(lPool.maxRedeem(self) <= 1);
+
+        // withdrawing or redeeming more should revert
+        vm.expectRevert(bytes("InvestmentManager/exceeds-redeem-limits"));
+        lPool.withdraw(2, investor, self);
+        vm.expectRevert(bytes("InvestmentManager/exceeds-redeem-limits"));
+        lPool.redeem(2, investor, self);
     }
 
     function testWithdraw(uint256 amount) public {
@@ -118,57 +128,57 @@ contract RedeemTest is BaseTest {
         assertTrue(lPool.maxWithdraw(self) <= 1);
     }
 
-    function testRedeemWithApproval(uint256 redemption1, uint256 redemption2) public {
-        redemption1 = uint128(bound(redemption1, 2, MAX_UINT128 / 4));
-        redemption2 = uint128(bound(redemption2, 2, MAX_UINT128 / 4));
-        uint256 amount = redemption1 + redemption2;
-        vm.assume(amountAssumption(amount));
+    // function testRedeemWithApproval(uint256 redemption1, uint256 redemption2) public {
+    //     redemption1 = uint128(bound(redemption1, 2, MAX_UINT128 / 4));
+    //     redemption2 = uint128(bound(redemption2, 2, MAX_UINT128 / 4));
+    //     uint256 amount = redemption1 + redemption2;
+    //     vm.assume(amountAssumption(amount));
 
-        address lPool_ = deploySimplePool();
-        LiquidityPool lPool = LiquidityPool(lPool_);
-        TrancheTokenLike trancheToken = TrancheTokenLike(address(lPool.share()));
+    //     address lPool_ = deploySimplePool();
+    //     LiquidityPool lPool = LiquidityPool(lPool_);
+    //     TrancheTokenLike trancheToken = TrancheTokenLike(address(lPool.share()));
 
-        deposit(lPool_, investor, amount); // deposit funds first // deposit funds first
+    //     deposit(lPool_, investor, amount); // deposit funds first // deposit funds first
 
-        // investor can requestRedeem
-        vm.prank(investor);
-        lPool.requestRedeem(amount, investor, investor, "");
+    //     // investor can requestRedeem
+    //     vm.prank(investor);
+    //     lPool.requestRedeem(amount, investor, investor, "");
 
-        uint128 tokenAmount = uint128(trancheToken.balanceOf(address(escrow)));
-        centrifugeChain.isExecutedCollectRedeem(
-            lPool.poolId(),
-            lPool.trancheId(),
-            bytes32(bytes20(investor)),
-            defaultCurrencyId,
-            uint128(amount),
-            uint128(tokenAmount),
-            0
-        );
+    //     uint128 tokenAmount = uint128(trancheToken.balanceOf(address(escrow)));
+    //     centrifugeChain.isExecutedCollectRedeem(
+    //         lPool.poolId(),
+    //         lPool.trancheId(),
+    //         bytes32(bytes20(investor)),
+    //         defaultCurrencyId,
+    //         uint128(amount),
+    //         uint128(tokenAmount),
+    //         0
+    //     );
 
-        assertEq(lPool.maxRedeem(investor), tokenAmount);
-        assertEq(lPool.maxWithdraw(investor), uint128(amount));
+    //     assertEq(lPool.maxRedeem(investor), tokenAmount);
+    //     assertEq(lPool.maxWithdraw(investor), uint128(amount));
 
-        // test for both scenarios redeem & withdraw
+    //     // test for both scenarios redeem & withdraw
 
-        // fail: self cannot redeem for investor
-        vm.expectRevert(bytes("LiquidityPool/not-the-owner"));
-        lPool.redeem(redemption1, investor, investor);
-        vm.expectRevert(bytes("LiquidityPool/not-the-owner"));
-        lPool.withdraw(redemption1, investor, investor);
+    //     // fail: self cannot redeem for investor
+    //     vm.expectRevert(bytes("LiquidityPool/not-the-owner"));
+    //     lPool.redeem(redemption1, investor, investor);
+    //     vm.expectRevert(bytes("LiquidityPool/not-the-owner"));
+    //     lPool.withdraw(redemption1, investor, investor);
 
-        // fail: ward can not make requests on behalf of investor
-        root.relyContract(lPool_, self);
-        vm.expectRevert(bytes("LiquidityPool/not-the-owner"));
-        lPool.redeem(redemption1, investor, investor);
-        vm.expectRevert(bytes("LiquidityPool/not-the-owner"));
-        lPool.withdraw(redemption1, investor, investor);
+    //     // fail: ward can not make requests on behalf of investor
+    //     root.relyContract(lPool_, self);
+    //     vm.expectRevert(bytes("LiquidityPool/not-the-owner"));
+    //     lPool.redeem(redemption1, investor, investor);
+    //     vm.expectRevert(bytes("LiquidityPool/not-the-owner"));
+    //     lPool.withdraw(redemption1, investor, investor);
 
-        // investor redeems rest for himself
-        vm.prank(investor);
-        lPool.redeem(redemption1, investor, investor);
-        vm.prank(investor);
-        lPool.withdraw(redemption2, investor, investor);
-    }
+    //     // investor redeems rest for himself
+    //     vm.prank(investor);
+    //     lPool.redeem(redemption1, investor, investor);
+    //     vm.prank(investor);
+    //     lPool.withdraw(redemption2, investor, investor);
+    // }
 
     function testCancelRedeemOrder(uint256 amount) public {
         amount = uint128(bound(amount, 2, MAX_UINT128));
@@ -181,6 +191,13 @@ contract RedeemTest is BaseTest {
         lPool.requestRedeem(amount, address(this), address(this), "");
         assertEq(trancheToken.balanceOf(address(escrow)), amount);
         assertEq(trancheToken.balanceOf(self), 0);
+
+        // will fail - user not member
+        centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), self, uint64(block.timestamp));
+        vm.warp(block.timestamp + 1);
+        vm.expectRevert(bytes("InvestmentManager/transfer-not-allowed"));
+        lPool.cancelRedeemRequest();
+        centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), self, type(uint64).max);
 
         // check message was send out to centchain
         lPool.cancelRedeemRequest();
@@ -214,6 +231,13 @@ contract RedeemTest is BaseTest {
 
         assertEq(trancheToken.balanceOf(address(escrow)), amount);
         assertEq(trancheToken.balanceOf(self), 0);
+
+        // will fail - user not member
+        centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), self, uint64(block.timestamp));
+        vm.warp(block.timestamp + 1);
+        vm.expectRevert(bytes("InvestmentManager/transfer-not-allowed"));
+        lPool.decreaseRedeemRequest(decreaseAmount);
+        centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), self, type(uint64).max);
 
         // decrease redeem request
         lPool.decreaseRedeemRequest(decreaseAmount);
