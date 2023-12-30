@@ -38,6 +38,10 @@ contract DepositTest is BaseTest {
         vm.expectRevert(bytes("InvestmentManager/zero-amount-not-allowed"));
         lPool.requestDeposit(0, self, self, "");
 
+        // will fail - owner != msg.sender not allowed
+        vm.expectRevert(bytes("LiquidityPool/not-msg-sender"));
+        lPool.requestDeposit(amount, self, nonMember, "");
+
         // success
         erc20.approve(lPool_, amount);
         lPool.requestDeposit(amount, self, self, "");

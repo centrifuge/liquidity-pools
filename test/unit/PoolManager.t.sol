@@ -174,10 +174,17 @@ contract PoolManagerTest is BaseTest {
         uint128 badCurrency = 2;
         vm.assume(currency > 0);
         vm.assume(currency != badCurrency);
-        ERC20 erc20_invalid = _newErc20("X's Dollar", "USDX", 42);
+        ERC20 erc20_invalid_too_few = _newErc20("X's Dollar", "USDX", 0);
+        ERC20 erc20_invalid_too_many = _newErc20("X's Dollar", "USDX", 42);
+
+        vm.expectRevert(bytes("PoolManager/too-few-currency-decimals"));
+        centrifugeChain.addCurrency(currency, address(erc20_invalid_too_few));
 
         vm.expectRevert(bytes("PoolManager/too-many-currency-decimals"));
-        centrifugeChain.addCurrency(currency, address(erc20_invalid));
+        centrifugeChain.addCurrency(currency, address(erc20_invalid_too_many));
+
+        vm.expectRevert(bytes("PoolManager/currency-id-has-to-be-greater-than-0"));
+        centrifugeChain.addCurrency(0, address(erc20));
 
         centrifugeChain.addCurrency(currency, address(erc20));
 

@@ -52,6 +52,20 @@ contract ERC20Test is Test {
         token = new ERC20(18);
     }
 
+    function testFile(string memory newName, string memory newSymbol, address invalidOrigin) public {
+        vm.assume(invalidOrigin != address(this));
+
+        vm.prank(invalidOrigin);
+        vm.expectRevert(bytes("Auth/not-authorized"));
+        token.file("name", newName);
+
+        token.file("name", newName);
+        assertEq(token.name(), newName);
+
+        token.file("symbol", newSymbol);
+        assertEq(token.symbol(), newSymbol);
+    }
+
     function testMint() public {
         vm.expectEmit(true, true, true, true);
         emit Transfer(address(0), address(0xBEEF), 1e18);
