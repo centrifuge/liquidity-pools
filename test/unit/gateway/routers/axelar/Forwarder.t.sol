@@ -6,7 +6,7 @@ import {AxelarPrecompileMock} from "test/mocks/AxelarPrecompileMock.sol";
 import {AxelarGatewayMock} from "test/mocks/AxelarGatewayMock.sol";
 import {AxelarForwarder} from "src/gateway/routers/axelar/Forwarder.sol";
 
-contract AxelarRouterTest is Test {
+contract AxelarForwarderTest is Test {
     // Represents the precompile address on Centrifuge. Precompile is located at `address(2048)` which is
     // 0x0000000000000000000000000000000000000800 in hex.
     address internal constant PRECOMPILE = 0x0000000000000000000000000000000000000800;
