@@ -20,7 +20,13 @@ contract RedeemTest is BaseTest {
         vm.expectRevert(bytes("InvestmentManager/zero-amount-not-allowed"));
         lPool.requestRedeem(0, self, self, "");
 
+        // will fail - investment currency not allowed
+        centrifugeChain.disallowInvestmentCurrency(lPool.poolId(), defaultCurrencyId);
+        vm.expectRevert(bytes("InvestmentManager/currency-not-allowed"));
+        lPool.requestRedeem(amount, address(this), address(this), "");
+
         // success
+        centrifugeChain.allowInvestmentCurrency(lPool.poolId(), defaultCurrencyId);
         lPool.requestRedeem(amount, address(this), address(this), "");
         assertEq(trancheToken.balanceOf(address(escrow)), amount);
         assertEq(lPool.pendingRedeemRequest(0, self), amount);
