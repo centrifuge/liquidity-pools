@@ -66,7 +66,7 @@ contract AxelarForwarderTest is Test {
         assertEq(precompile.values_bytes("payload"), payload);
     }
 
-    function testIncomingCalls(
+    function testExecuteWithTokenReverts(
         bytes32 commandId,
         string calldata sourceChain,
         string calldata sourceAddress,
