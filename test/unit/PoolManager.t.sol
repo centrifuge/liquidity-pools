@@ -320,15 +320,21 @@ contract PoolManagerTest is BaseTest {
         );
         assertEq(trancheToken.balanceOf(address(this)), amount); // Verify the address(this) has the expected amount
 
+        // fails for invalid tranche token
+        uint64 poolId = lPool.poolId();
+        bytes16 trancheId = lPool.trancheId();
+        vm.expectRevert(bytes("PoolManager/unknown-token"));
+        poolManager.transferTrancheTokensToCentrifuge(poolId + 1, trancheId, centChainAddress, amount);
+
         // send the transfer from EVM -> Cent Chain
         trancheToken.approve(address(poolManager), amount);
-        poolManager.transferTrancheTokensToCentrifuge(lPool.poolId(), lPool.trancheId(), centChainAddress, amount);
+        poolManager.transferTrancheTokensToCentrifuge(poolId, trancheId, centChainAddress, amount);
         assertEq(trancheToken.balanceOf(address(this)), 0);
 
         // Finally, verify the connector called `router.send`
         bytes memory message = MessagesLib.formatTransferTrancheTokens(
-            lPool.poolId(),
-            lPool.trancheId(),
+            poolId,
+            trancheId,
             bytes32(bytes20(address(this))),
             MessagesLib.formatDomain(MessagesLib.Domain.Centrifuge),
             centChainAddress,
@@ -380,6 +386,12 @@ contract PoolManagerTest is BaseTest {
         );
         assertEq(trancheToken.balanceOf(address(this)), amount);
 
+        // fails for invalid tranche token
+        uint64 poolId = lPool.poolId();
+        bytes16 trancheId = lPool.trancheId();
+        vm.expectRevert(bytes("PoolManager/unknown-token"));
+        poolManager.transferTrancheTokensToEVM(poolId + 1, trancheId, uint64(block.chainid), destinationAddress, amount);
+
         // Approve and transfer amount from this address to destinationAddress
         trancheToken.approve(address(poolManager), amount);
         poolManager.transferTrancheTokensToEVM(
@@ -419,6 +431,15 @@ contract PoolManagerTest is BaseTest {
         uint64 validUntil = uint64(block.timestamp + 7 days);
         address secondUser = makeAddr("secondUser");
 
+        vm.expectRevert(bytes("PoolManager/escrow-cannot-be-frozen"));
+        centrifugeChain.freeze(poolId, trancheId, address(escrow));
+
+        vm.expectRevert(bytes("PoolManager/unknown-token"));
+        centrifugeChain.freeze(poolId + 1, trancheId, randomUser);
+
+        vm.expectRevert(bytes("PoolManager/unknown-token"));
+        centrifugeChain.unfreeze(poolId + 1, trancheId, randomUser);
+
         centrifugeChain.updateMember(poolId, trancheId, randomUser, validUntil);
         centrifugeChain.updateMember(poolId, trancheId, secondUser, validUntil);
         assertTrue(trancheToken.checkTransferRestriction(randomUser, secondUser, 0));
@@ -434,9 +455,6 @@ contract PoolManagerTest is BaseTest {
 
         centrifugeChain.unfreeze(poolId, trancheId, secondUser);
         assertTrue(trancheToken.checkTransferRestriction(randomUser, secondUser, 0));
-
-        vm.expectRevert(bytes("PoolManager/escrow-cannot-be-frozen"));
-        centrifugeChain.freeze(poolId, trancheId, address(escrow));
     }
 
     function testUpdateTokenMetadata() public {
@@ -481,8 +499,14 @@ contract PoolManagerTest is BaseTest {
         vm.expectRevert(bytes("PoolManager/unknown-currency"));
         centrifugeChain.allowInvestmentCurrency(poolId, randomCurrency);
 
+        vm.expectRevert(bytes("PoolManager/invalid-pool"));
+        centrifugeChain.allowInvestmentCurrency(poolId + 1, randomCurrency);
+
         vm.expectRevert(bytes("PoolManager/unknown-currency"));
         centrifugeChain.disallowInvestmentCurrency(poolId, randomCurrency);
+
+        vm.expectRevert(bytes("PoolManager/invalid-pool"));
+        centrifugeChain.disallowInvestmentCurrency(poolId + 1, randomCurrency);
     }
 
     function testUpdateTokenPriceWorks(
