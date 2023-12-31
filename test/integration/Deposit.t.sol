@@ -42,7 +42,13 @@ contract DepositTest is BaseTest {
         vm.expectRevert(bytes("LiquidityPool/not-msg-sender"));
         lPool.requestDeposit(amount, self, nonMember, "");
 
+        // will fail - investment currency not allowed
+        centrifugeChain.disallowInvestmentCurrency(lPool.poolId(), defaultCurrencyId);
+        vm.expectRevert(bytes("InvestmentManager/currency-not-allowed"));
+        lPool.requestDeposit(amount, self, self, "");
+
         // success
+        centrifugeChain.allowInvestmentCurrency(lPool.poolId(), defaultCurrencyId);
         erc20.approve(lPool_, amount);
         lPool.requestDeposit(amount, self, self, "");
 

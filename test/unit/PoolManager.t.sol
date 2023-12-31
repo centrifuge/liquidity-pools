@@ -358,7 +358,13 @@ contract PoolManagerTest is BaseTest {
         centrifugeChain.incomingTransferTrancheTokens(
             poolId, trancheId, uint64(block.chainid), destinationAddress, amount
         );
-        centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), destinationAddress, validUntil);
+        centrifugeChain.updateMember(poolId, trancheId, destinationAddress, validUntil);
+
+        vm.expectRevert(bytes("PoolManager/unknown-token"));
+        centrifugeChain.incomingTransferTrancheTokens(
+            poolId + 1, trancheId, uint64(block.chainid), destinationAddress, amount
+        );
+
         assertTrue(trancheToken.checkTransferRestriction(address(0), destinationAddress, 0));
         centrifugeChain.incomingTransferTrancheTokens(
             poolId, trancheId, uint64(block.chainid), destinationAddress, amount
