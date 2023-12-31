@@ -54,6 +54,7 @@ contract DepositTest is BaseTest {
         assertEq(erc20.balanceOf(address(escrow)), amount);
         assertEq(erc20.balanceOf(self), 0);
         assertEq(lPool.pendingDepositRequest(0, self), amount);
+        assertEq(lPool.claimableDepositRequest(0, self), 0);
 
         // trigger executed collectInvest
         uint128 _currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
@@ -73,6 +74,7 @@ contract DepositTest is BaseTest {
         assertEq(lPool.maxMint(self), trancheTokensPayout);
         assertApproxEqAbs(lPool.maxDeposit(self), amount, 1);
         assertEq(lPool.pendingDepositRequest(0, self), 0);
+        assertEq(lPool.claimableDepositRequest(0, self), amount);
         // assert tranche tokens minted
         assertEq(trancheToken.balanceOf(address(escrow)), trancheTokensPayout);
 

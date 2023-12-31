@@ -24,6 +24,7 @@ contract RedeemTest is BaseTest {
         lPool.requestRedeem(amount, address(this), address(this), "");
         assertEq(trancheToken.balanceOf(address(escrow)), amount);
         assertEq(lPool.pendingRedeemRequest(0, self), amount);
+        assertEq(lPool.claimableRedeemRequest(0, self), 0);
 
         // fail: no tokens left
         vm.expectRevert(bytes("LiquidityPool/insufficient-balance"));
@@ -40,6 +41,7 @@ contract RedeemTest is BaseTest {
         assertEq(lPool.maxWithdraw(self), currencyPayout); // max deposit
         assertEq(lPool.maxRedeem(self), amount); // max deposit
         assertEq(lPool.pendingRedeemRequest(0, self), 0);
+        assertEq(lPool.claimableRedeemRequest(0, self), amount);
         assertEq(trancheToken.balanceOf(address(escrow)), 0);
         assertEq(erc20.balanceOf(address(userEscrow)), currencyPayout);
 

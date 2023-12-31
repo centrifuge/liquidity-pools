@@ -429,6 +429,12 @@ contract PoolManagerTest is BaseTest {
         centrifugeChain.unfreeze(poolId, trancheId, randomUser);
         assertTrue(trancheToken.checkTransferRestriction(randomUser, secondUser, 0));
 
+        centrifugeChain.freeze(poolId, trancheId, secondUser);
+        assertFalse(trancheToken.checkTransferRestriction(randomUser, secondUser, 0));
+
+        centrifugeChain.unfreeze(poolId, trancheId, secondUser);
+        assertTrue(trancheToken.checkTransferRestriction(randomUser, secondUser, 0));
+
         vm.expectRevert(bytes("PoolManager/escrow-cannot-be-frozen"));
         centrifugeChain.freeze(poolId, trancheId, address(escrow));
     }

@@ -65,4 +65,16 @@ contract AxelarForwarderTest is Test {
         assertEq(precompile.values_string("sourceAddress"), sourceAddress);
         assertEq(precompile.values_bytes("payload"), payload);
     }
+
+    function testIncomingCalls(
+        bytes32 commandId,
+        string calldata sourceChain,
+        string calldata sourceAddress,
+        bytes calldata payload,
+        string memory tokenSymbol,
+        uint256 amount
+    ) public {
+        vm.expectRevert(bytes("AxelarForwarder/execute-with-token-not-supported"));
+        forwarder.executeWithToken(commandId, sourceChain, sourceAddress, payload, tokenSymbol, amount);
+    }
 }
