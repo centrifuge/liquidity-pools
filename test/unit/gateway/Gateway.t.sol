@@ -49,31 +49,31 @@ contract GatewayTest is BaseTest {
         assertTrue(!gateway.incomingRouters(router)); // router not added
 
         //success
-        gateway.addIncomingRouter(router);
+        gateway.file("incomingRouter", router, true);
         assertTrue(gateway.incomingRouters(router));
 
         // remove self from wards
         gateway.deny(self);
         // auth fail
         vm.expectRevert(bytes("Auth/not-authorized"));
-        gateway.addIncomingRouter(router);
+        gateway.file("incomingRouter", router, true);
     }
 
     function testRemoveRouter(address router) public {
         vm.assume(router.code.length == 0);
 
-        gateway.addIncomingRouter(router);
+        gateway.file("incomingRouter", router, true);
         assertTrue(gateway.incomingRouters(router));
 
         //success
-        gateway.removeIncomingRouter(router);
+        gateway.file("incomingRouter", router, false);
         assertTrue(!gateway.incomingRouters(router));
 
         // remove self from wards
         gateway.deny(self);
         // auth fail
         vm.expectRevert(bytes("Auth/not-authorized"));
-        gateway.removeIncomingRouter(router);
+        gateway.file("incomingRouter", router, false);
     }
 
     function testUpdateOutgoingRouter(address router) public {
@@ -81,14 +81,14 @@ contract GatewayTest is BaseTest {
 
         assertTrue(address(gateway.outgoingRouter()) != router);
 
-        gateway.updateOutgoingRouter(router);
+        gateway.file("outgoingRouter", router);
         assertTrue(address(gateway.outgoingRouter()) == router);
 
         // remove self from wards
         gateway.deny(self);
         // auth fail
         vm.expectRevert(bytes("Auth/not-authorized"));
-        gateway.updateOutgoingRouter(router);
+        gateway.file("outgoingRouter", router);
     }
 
     // --- Permissions ---
@@ -102,87 +102,87 @@ contract GatewayTest is BaseTest {
         gateway.handle(message);
 
         //success
-        gateway.addIncomingRouter(self);
+        gateway.file("incomingRouter", self, true);
         assertTrue(gateway.incomingRouters(self));
 
         gateway.handle(message);
     }
 
     //onlyPoolManager can call
-    function testOnlyPoolManagerCanCall(
-        uint64 poolId,
-        bytes16 trancheId,
-        address sender,
-        uint64 destinationChainId,
-        address destinationAddress,
-        bytes32 destinationAddressBytes,
-        uint128 amount,
-        uint128 token,
-        bytes32 receiver
-    ) public {
-        assertTrue(address(gateway.poolManager()) != self);
+    // function testOnlyPoolManagerCanCall(
+    //     uint64 poolId,
+    //     bytes16 trancheId,
+    //     address sender,
+    //     uint64 destinationChainId,
+    //     address destinationAddress,
+    //     bytes32 destinationAddressBytes,
+    //     uint128 amount,
+    //     uint128 token,
+    //     bytes32 receiver
+    // ) public {
+    //     assertTrue(address(gateway.poolManager()) != self);
 
-        // fail -> self not pool manager
-        vm.expectRevert(bytes("Gateway/only-pool-manager-allowed-to-call"));
-        gateway.transferTrancheTokensToCentrifuge(poolId, trancheId, sender, destinationAddressBytes, amount);
+    //     // fail -> self not pool manager
+    //     vm.expectRevert(bytes("Gateway/only-pool-manager-allowed-to-call"));
+    //     gateway.transferTrancheTokensToCentrifuge(poolId, trancheId, sender, destinationAddressBytes, amount);
 
-        vm.expectRevert(bytes("Gateway/only-pool-manager-allowed-to-call"));
-        gateway.transferTrancheTokensToEVM(poolId, trancheId, sender, destinationChainId, destinationAddress, amount);
+    //     vm.expectRevert(bytes("Gateway/only-pool-manager-allowed-to-call"));
+    //     gateway.transferTrancheTokensToEVM(poolId, trancheId, sender, destinationChainId, destinationAddress, amount);
 
-        vm.expectRevert(bytes("Gateway/only-pool-manager-allowed-to-call"));
-        gateway.transfer(token, sender, receiver, amount);
+    //     vm.expectRevert(bytes("Gateway/only-pool-manager-allowed-to-call"));
+    //     gateway.transfer(token, sender, receiver, amount);
 
-        gateway.file("poolManager", self);
-        gateway.transferTrancheTokensToCentrifuge(poolId, trancheId, sender, destinationAddressBytes, amount);
-        gateway.transferTrancheTokensToEVM(poolId, trancheId, sender, destinationChainId, destinationAddress, amount);
-        gateway.transfer(token, sender, receiver, amount);
-    }
+    //     gateway.file("poolManager", self);
+    //     gateway.transferTrancheTokensToCentrifuge(poolId, trancheId, sender, destinationAddressBytes, amount);
+    //     gateway.transferTrancheTokensToEVM(poolId, trancheId, sender, destinationChainId, destinationAddress, amount);
+    //     gateway.transfer(token, sender, receiver, amount);
+    // }
 
     //onlyInvestmentManager can call
-    function testOnlyInvestmentManagerCanCall(
-        uint64 poolId,
-        bytes16 trancheId,
-        address investor,
-        uint128 currency,
-        uint128 currencyAmount,
-        uint128 trancheTokenAmount
-    ) public {
-        assertTrue(address(gateway.investmentManager()) != self);
+    // function testOnlyInvestmentManagerCanCall(
+    //     uint64 poolId,
+    //     bytes16 trancheId,
+    //     address investor,
+    //     uint128 currency,
+    //     uint128 currencyAmount,
+    //     uint128 trancheTokenAmount
+    // ) public {
+    //     assertTrue(address(gateway.investmentManager()) != self);
 
-        // fail -> self investment manager
-        vm.expectRevert(bytes("Gateway/only-investment-manager-allowed-to-call"));
-        gateway.increaseInvestOrder(poolId, trancheId, investor, currency, currencyAmount);
+    //     // fail -> self investment manager
+    //     vm.expectRevert(bytes("Gateway/only-investment-manager-allowed-to-call"));
+    //     gateway.increaseInvestOrder(poolId, trancheId, investor, currency, currencyAmount);
 
-        vm.expectRevert(bytes("Gateway/only-investment-manager-allowed-to-call"));
-        gateway.decreaseInvestOrder(poolId, trancheId, investor, currency, currencyAmount);
+    //     vm.expectRevert(bytes("Gateway/only-investment-manager-allowed-to-call"));
+    //     gateway.decreaseInvestOrder(poolId, trancheId, investor, currency, currencyAmount);
 
-        vm.expectRevert(bytes("Gateway/only-investment-manager-allowed-to-call"));
-        gateway.increaseRedeemOrder(poolId, trancheId, investor, currency, trancheTokenAmount);
+    //     vm.expectRevert(bytes("Gateway/only-investment-manager-allowed-to-call"));
+    //     gateway.increaseRedeemOrder(poolId, trancheId, investor, currency, trancheTokenAmount);
 
-        vm.expectRevert(bytes("Gateway/only-investment-manager-allowed-to-call"));
-        gateway.decreaseRedeemOrder(poolId, trancheId, investor, currency, trancheTokenAmount);
+    //     vm.expectRevert(bytes("Gateway/only-investment-manager-allowed-to-call"));
+    //     gateway.decreaseRedeemOrder(poolId, trancheId, investor, currency, trancheTokenAmount);
 
-        vm.expectRevert(bytes("Gateway/only-investment-manager-allowed-to-call"));
-        gateway.collectInvest(poolId, trancheId, investor, currency);
+    //     vm.expectRevert(bytes("Gateway/only-investment-manager-allowed-to-call"));
+    //     gateway.collectInvest(poolId, trancheId, investor, currency);
 
-        vm.expectRevert(bytes("Gateway/only-investment-manager-allowed-to-call"));
-        gateway.collectRedeem(poolId, trancheId, investor, currency);
+    //     vm.expectRevert(bytes("Gateway/only-investment-manager-allowed-to-call"));
+    //     gateway.collectRedeem(poolId, trancheId, investor, currency);
 
-        vm.expectRevert(bytes("Gateway/only-investment-manager-allowed-to-call"));
-        gateway.cancelInvestOrder(poolId, trancheId, investor, currency);
+    //     vm.expectRevert(bytes("Gateway/only-investment-manager-allowed-to-call"));
+    //     gateway.cancelInvestOrder(poolId, trancheId, investor, currency);
 
-        vm.expectRevert(bytes("Gateway/only-investment-manager-allowed-to-call"));
-        gateway.cancelRedeemOrder(poolId, trancheId, investor, currency);
+    //     vm.expectRevert(bytes("Gateway/only-investment-manager-allowed-to-call"));
+    //     gateway.cancelRedeemOrder(poolId, trancheId, investor, currency);
 
-        gateway.file("investmentManager", self);
-        // success
-        gateway.increaseInvestOrder(poolId, trancheId, investor, currency, currencyAmount);
-        gateway.decreaseInvestOrder(poolId, trancheId, investor, currency, currencyAmount);
-        gateway.increaseRedeemOrder(poolId, trancheId, investor, currency, trancheTokenAmount);
-        gateway.decreaseRedeemOrder(poolId, trancheId, investor, currency, trancheTokenAmount);
-        gateway.collectInvest(poolId, trancheId, investor, currency);
-        gateway.collectRedeem(poolId, trancheId, investor, currency);
-        gateway.cancelInvestOrder(poolId, trancheId, investor, currency);
-        gateway.cancelRedeemOrder(poolId, trancheId, investor, currency);
-    }
+    //     gateway.file("investmentManager", self);
+    //     // success
+    //     gateway.increaseInvestOrder(poolId, trancheId, investor, currency, currencyAmount);
+    //     gateway.decreaseInvestOrder(poolId, trancheId, investor, currency, currencyAmount);
+    //     gateway.increaseRedeemOrder(poolId, trancheId, investor, currency, trancheTokenAmount);
+    //     gateway.decreaseRedeemOrder(poolId, trancheId, investor, currency, trancheTokenAmount);
+    //     gateway.collectInvest(poolId, trancheId, investor, currency);
+    //     gateway.collectRedeem(poolId, trancheId, investor, currency);
+    //     gateway.cancelInvestOrder(poolId, trancheId, investor, currency);
+    //     gateway.cancelRedeemOrder(poolId, trancheId, investor, currency);
+    // }
 }

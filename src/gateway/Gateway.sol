@@ -2,6 +2,7 @@
 pragma solidity 0.8.21;
 
 import {MessagesLib} from "./../libraries/MessagesLib.sol";
+import {BytesLib} from "src/libraries/BytesLib.sol";
 import {Auth} from "./../Auth.sol";
 
 interface InvestmentManagerLike {
@@ -100,17 +101,18 @@ interface RootLike {
 ///         will not be forwarded
 contract Gateway is Auth {
     RootLike public immutable root;
-    PoolManagerLike public poolManager;
-    InvestmentManagerLike public investmentManager;
+    PoolManagerLike public immutable poolManager;
+    InvestmentManagerLike public immutable investmentManager;
 
     RouterLike public outgoingRouter;
     mapping(address => bool) public incomingRouters;
 
+    mapping(uint8 => address) public managerByMessageId;
+
     // --- Events ---
     event File(bytes32 indexed what, address data);
-    event AddIncomingRouter(address indexed router);
-    event RemoveIncomingRouter(address indexed router);
-    event UpdateOutgoingRouter(address indexed router);
+    event File(bytes32 indexed what, address router, bool enabled);
+    event File(bytes32 indexed what, uint8 messageId, address manager);
 
     constructor(address root_, address investmentManager_, address poolManager_, address router_) {
         root = RootLike(root_);
@@ -121,16 +123,6 @@ contract Gateway is Auth {
 
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
-    }
-
-    modifier onlyInvestmentManager() {
-        require(msg.sender == address(investmentManager), "Gateway/only-investment-manager-allowed-to-call");
-        _;
-    }
-
-    modifier onlyPoolManager() {
-        require(msg.sender == address(poolManager), "Gateway/only-pool-manager-allowed-to-call");
-        _;
     }
 
     modifier onlyIncomingRouter() {
@@ -144,166 +136,32 @@ contract Gateway is Auth {
     }
 
     // --- Administration ---
-    function file(bytes32 what, address data) public auth {
-        if (what == "poolManager") poolManager = PoolManagerLike(data);
-        else if (what == "investmentManager") investmentManager = InvestmentManagerLike(data);
+    function file(bytes32 what, address router) public auth {
+        if (what == "outgoingRouter") outgoingRouter = RouterLike(router);
         else revert("Gateway/file-unrecognized-param");
-        emit File(what, data);
+        emit File(what, router);
     }
 
-    function addIncomingRouter(address router) public auth {
-        incomingRouters[router] = true;
-        emit AddIncomingRouter(router);
+    function file(bytes32 what, address router, bool enabled) public auth {
+        if (what == "incomingRouter") incomingRouters[router] = enabled;
+        else revert("Gateway/file-unrecognized-param");
+        emit File(what, router, enabled);
     }
 
-    function removeIncomingRouter(address router) public auth {
-        incomingRouters[router] = false;
-        emit RemoveIncomingRouter(router);
-    }
-
-    function updateOutgoingRouter(address router) public auth {
-        outgoingRouter = RouterLike(router);
-        emit UpdateOutgoingRouter(router);
+    function file(bytes32 what, uint8 messageId, address manager) public auth {
+        if (what == "message") {
+            require(messageId > 27, "Gateway/cannot-override-existing-message");
+            managerByMessageId[messageId] = manager;
+        } else {
+            revert("Gateway/file-unrecognized-param");
+        }
+        emit File(what, messageId, manager);
     }
 
     // --- Outgoing ---
-    function transferTrancheTokensToCentrifuge(
-        uint64 poolId,
-        bytes16 trancheId,
-        address sender,
-        bytes32 destinationAddress,
-        uint128 amount
-    ) public onlyPoolManager pauseable {
-        outgoingRouter.send(
-            MessagesLib.formatTransferTrancheTokens(
-                poolId,
-                trancheId,
-                _addressToBytes32(sender),
-                MessagesLib.formatDomain(MessagesLib.Domain.Centrifuge),
-                destinationAddress,
-                amount
-            )
-        );
-    }
-
-    function transferTrancheTokensToEVM(
-        uint64 poolId,
-        bytes16 trancheId,
-        address sender,
-        uint64 destinationChainId,
-        address destinationAddress,
-        uint128 amount
-    ) public onlyPoolManager pauseable {
-        outgoingRouter.send(
-            MessagesLib.formatTransferTrancheTokens(
-                poolId,
-                trancheId,
-                _addressToBytes32(sender),
-                MessagesLib.formatDomain(MessagesLib.Domain.EVM, destinationChainId),
-                destinationAddress,
-                amount
-            )
-        );
-    }
-
-    function transfer(uint128 token, address sender, bytes32 receiver, uint128 amount)
-        public
-        onlyPoolManager
-        pauseable
-    {
-        outgoingRouter.send(MessagesLib.formatTransfer(token, _addressToBytes32(sender), receiver, amount));
-    }
-
-    function increaseInvestOrder(
-        uint64 poolId,
-        bytes16 trancheId,
-        address investor,
-        uint128 currency,
-        uint128 currencyAmount
-    ) public onlyInvestmentManager pauseable {
-        outgoingRouter.send(
-            MessagesLib.formatIncreaseInvestOrder(
-                poolId, trancheId, _addressToBytes32(investor), currency, currencyAmount
-            )
-        );
-    }
-
-    function decreaseInvestOrder(
-        uint64 poolId,
-        bytes16 trancheId,
-        address investor,
-        uint128 currency,
-        uint128 currencyAmount
-    ) public onlyInvestmentManager pauseable {
-        outgoingRouter.send(
-            MessagesLib.formatDecreaseInvestOrder(
-                poolId, trancheId, _addressToBytes32(investor), currency, currencyAmount
-            )
-        );
-    }
-
-    function increaseRedeemOrder(
-        uint64 poolId,
-        bytes16 trancheId,
-        address investor,
-        uint128 currency,
-        uint128 trancheTokenAmount
-    ) public onlyInvestmentManager pauseable {
-        outgoingRouter.send(
-            MessagesLib.formatIncreaseRedeemOrder(
-                poolId, trancheId, _addressToBytes32(investor), currency, trancheTokenAmount
-            )
-        );
-    }
-
-    function decreaseRedeemOrder(
-        uint64 poolId,
-        bytes16 trancheId,
-        address investor,
-        uint128 currency,
-        uint128 trancheTokenAmount
-    ) public onlyInvestmentManager pauseable {
-        outgoingRouter.send(
-            MessagesLib.formatDecreaseRedeemOrder(
-                poolId, trancheId, _addressToBytes32(investor), currency, trancheTokenAmount
-            )
-        );
-    }
-
-    function collectInvest(uint64 poolId, bytes16 trancheId, address investor, uint128 currency)
-        public
-        onlyInvestmentManager
-        pauseable
-    {
-        outgoingRouter.send(MessagesLib.formatCollectInvest(poolId, trancheId, _addressToBytes32(investor), currency));
-    }
-
-    function collectRedeem(uint64 poolId, bytes16 trancheId, address investor, uint128 currency)
-        public
-        onlyInvestmentManager
-        pauseable
-    {
-        outgoingRouter.send(MessagesLib.formatCollectRedeem(poolId, trancheId, _addressToBytes32(investor), currency));
-    }
-
-    function cancelInvestOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency)
-        public
-        onlyInvestmentManager
-        pauseable
-    {
-        outgoingRouter.send(
-            MessagesLib.formatCancelInvestOrder(poolId, trancheId, _addressToBytes32(investor), currency)
-        );
-    }
-
-    function cancelRedeemOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency)
-        public
-        onlyInvestmentManager
-        pauseable
-    {
-        outgoingRouter.send(
-            MessagesLib.formatCancelRedeemOrder(poolId, trancheId, _addressToBytes32(investor), currency)
-        );
+    function send(bytes calldata message) public pauseable {
+        require(msg.sender == _getManager(message), "Gateway/invalid-manager");
+        outgoingRouter.send(message);
     }
 
     // --- Incoming ---
@@ -422,6 +280,27 @@ contract Gateway is Auth {
     }
 
     // --- Helpers ---
+    function _getManager(bytes calldata message) internal view returns (address) {
+        uint8 id = BytesLib.toUint8(message, 0);
+
+        // Hardcoded paths for pool & investment managers for gas efficiency
+        if (id >= 1 && id <= 8) {
+            return address(poolManager);
+        } else if (id >= 9 && id <= 20) {
+            return address(investmentManager);
+        } else if (id >= 21 && id <= 26) {
+            return address(poolManager);
+        } else if (id == 27) {
+            return address(investmentManager);
+        } else {
+            // Dynamic path for other managers, to be able to easily
+            // extend functionality of Liquidity Pools
+            address manager = managerByMessageId[id];
+            require(manager != address(0), "Gateway/unregistered-message-id");
+            return manager;
+        }
+    }
+
     function _addressToBytes32(address x) internal pure returns (bytes32) {
         return bytes32(bytes20(x));
     }
