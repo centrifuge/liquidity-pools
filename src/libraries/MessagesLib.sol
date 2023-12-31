@@ -85,10 +85,6 @@ library MessagesLib {
         return abi.encodePacked(uint8(Call.AddCurrency), currency, currencyAddress);
     }
 
-    function isAddCurrency(bytes memory _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.AddCurrency;
-    }
-
     function parseAddCurrency(bytes memory _msg) internal pure returns (uint128 currency, address currencyAddress) {
         currency = BytesLib.toUint128(_msg, 1);
         currencyAddress = BytesLib.toAddress(_msg, 17);
@@ -104,10 +100,6 @@ library MessagesLib {
         return abi.encodePacked(uint8(Call.AddPool), poolId);
     }
 
-    function isAddPool(bytes memory _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.AddPool;
-    }
-
     function parseAddPool(bytes memory _msg) internal pure returns (uint64 poolId) {
         poolId = BytesLib.toUint64(_msg, 1);
     }
@@ -121,10 +113,6 @@ library MessagesLib {
      */
     function formatAllowInvestmentCurrency(uint64 poolId, uint128 currency) internal pure returns (bytes memory) {
         return abi.encodePacked(uint8(Call.AllowInvestmentCurrency), poolId, currency);
-    }
-
-    function isAllowInvestmentCurrency(bytes memory _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.AllowInvestmentCurrency;
     }
 
     function parseAllowInvestmentCurrency(bytes memory _msg) internal pure returns (uint64 poolId, uint128 currency) {
@@ -160,10 +148,6 @@ library MessagesLib {
             decimals,
             restrictionSet
         );
-    }
-
-    function isAddTranche(bytes memory _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.AddTranche;
     }
 
     function parseAddTranche(bytes memory _msg)
@@ -215,10 +199,6 @@ library MessagesLib {
         return abi.encodePacked(uint8(Call.UpdateMember), poolId, trancheId, member, validUntil);
     }
 
-    function isUpdateMember(bytes memory _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.UpdateMember;
-    }
-
     function parseUpdateMember(bytes memory _msg)
         internal
         pure
@@ -250,10 +230,6 @@ library MessagesLib {
         return abi.encodePacked(uint8(Call.UpdateTrancheTokenPrice), poolId, trancheId, currencyId, price, computedAt);
     }
 
-    function isUpdateTrancheTokenPrice(bytes memory _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.UpdateTrancheTokenPrice;
-    }
-
     function parseUpdateTrancheTokenPrice(bytes memory _msg)
         internal
         pure
@@ -281,10 +257,6 @@ library MessagesLib {
         returns (bytes memory)
     {
         return abi.encodePacked(uint8(Call.Transfer), currency, sender, receiver, amount);
-    }
-
-    function isTransfer(bytes memory _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.Transfer;
     }
 
     function parseTransfer(bytes memory _msg)
@@ -351,10 +323,6 @@ library MessagesLib {
         );
     }
 
-    function isTransferTrancheTokens(bytes memory _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.TransferTrancheTokens;
-    }
-
     // Parse a TransferTrancheTokens to an EVM-based `destinationAddress` (20-byte long).
     // We ignore the `sender` and the `domain` since it's not relevant when parsing an incoming message.
     function parseTransferTrancheTokens20(bytes memory _msg)
@@ -390,10 +358,6 @@ library MessagesLib {
         return abi.encodePacked(uint8(Call.IncreaseInvestOrder), poolId, trancheId, investor, currency, amount);
     }
 
-    function isIncreaseInvestOrder(bytes memory _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.IncreaseInvestOrder;
-    }
-
     function parseIncreaseInvestOrder(bytes memory _msg)
         internal
         pure
@@ -426,10 +390,6 @@ library MessagesLib {
         return abi.encodePacked(uint8(Call.DecreaseInvestOrder), poolId, trancheId, investor, currency, amount);
     }
 
-    function isDecreaseInvestOrder(bytes memory _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.DecreaseInvestOrder;
-    }
-
     function parseDecreaseInvestOrder(bytes memory _msg)
         internal
         pure
@@ -456,10 +416,6 @@ library MessagesLib {
         uint128 amount
     ) internal pure returns (bytes memory) {
         return abi.encodePacked(uint8(Call.IncreaseRedeemOrder), poolId, trancheId, investor, currency, amount);
-    }
-
-    function isIncreaseRedeemOrder(bytes memory _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.IncreaseRedeemOrder;
     }
 
     function parseIncreaseRedeemOrder(bytes memory _msg)
@@ -490,10 +446,6 @@ library MessagesLib {
         return abi.encodePacked(uint8(Call.DecreaseRedeemOrder), poolId, trancheId, investor, currency, amount);
     }
 
-    function isDecreaseRedeemOrder(bytes memory _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.DecreaseRedeemOrder;
-    }
-
     function parseDecreaseRedeemOrder(bytes memory _msg)
         internal
         pure
@@ -516,10 +468,6 @@ library MessagesLib {
         returns (bytes memory)
     {
         return abi.encodePacked(uint8(Call.CollectInvest), poolId, trancheId, investor, currency);
-    }
-
-    function isCollectInvest(bytes memory _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.CollectInvest;
     }
 
     function parseCollectInvest(bytes memory _msg)
@@ -547,10 +495,6 @@ library MessagesLib {
         returns (bytes memory)
     {
         return abi.encodePacked(uint8(Call.CollectRedeem), poolId, trancheId, investor, currency);
-    }
-
-    function isCollectRedeem(bytes memory _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.CollectRedeem;
     }
 
     function parseCollectRedeem(bytes memory _msg)
@@ -581,10 +525,6 @@ library MessagesLib {
             currencyPayout,
             remainingInvestOrder
         );
-    }
-
-    function isExecutedDecreaseInvestOrder(bytes memory _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.ExecutedDecreaseInvestOrder;
     }
 
     function parseExecutedDecreaseInvestOrder(bytes memory _msg)
@@ -626,10 +566,6 @@ library MessagesLib {
         );
     }
 
-    function isExecutedDecreaseRedeemOrder(bytes memory _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.ExecutedDecreaseRedeemOrder;
-    }
-
     function parseExecutedDecreaseRedeemOrder(bytes memory _msg)
         internal
         pure
@@ -669,10 +605,6 @@ library MessagesLib {
             trancheTokensPayout,
             remainingInvestOrder
         );
-    }
-
-    function isExecutedCollectInvest(bytes memory _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.ExecutedCollectInvest;
     }
 
     function parseExecutedCollectInvest(bytes memory _msg)
@@ -718,10 +650,6 @@ library MessagesLib {
         );
     }
 
-    function isExecutedCollectRedeem(bytes memory _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.ExecutedCollectRedeem;
-    }
-
     function parseExecutedCollectRedeem(bytes memory _msg)
         internal
         pure
@@ -748,20 +676,12 @@ library MessagesLib {
         return abi.encodePacked(uint8(Call.ScheduleUpgrade), _contract);
     }
 
-    function isScheduleUpgrade(bytes memory _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.ScheduleUpgrade;
-    }
-
     function parseScheduleUpgrade(bytes memory _msg) internal pure returns (address _contract) {
         _contract = BytesLib.toAddress(_msg, 1);
     }
 
     function formatCancelUpgrade(address _contract) internal pure returns (bytes memory) {
         return abi.encodePacked(uint8(Call.CancelUpgrade), _contract);
-    }
-
-    function isCancelUpgrade(bytes memory _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.CancelUpgrade;
     }
 
     function parseCancelUpgrade(bytes memory _msg) internal pure returns (address _contract) {
@@ -790,10 +710,6 @@ library MessagesLib {
             _stringToBytes128(tokenName),
             _stringToBytes32(tokenSymbol)
         );
-    }
-
-    function isUpdateTrancheTokenMetadata(bytes memory _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.UpdateTrancheTokenMetadata;
     }
 
     function parseUpdateTrancheTokenMetadata(bytes memory _msg)
@@ -856,10 +772,6 @@ library MessagesLib {
         return abi.encodePacked(uint8(Call.DisallowInvestmentCurrency), poolId, currency);
     }
 
-    function isDisallowInvestmentCurrency(bytes memory _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.DisallowInvestmentCurrency;
-    }
-
     function parseDisallowInvestmentCurrency(bytes memory _msg)
         internal
         pure
@@ -882,10 +794,6 @@ library MessagesLib {
         return abi.encodePacked(uint8(Call.Freeze), poolId, trancheId, bytes32(bytes20(member)));
     }
 
-    function isFreeze(bytes memory _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.Freeze;
-    }
-
     function parseFreeze(bytes memory _msg) internal pure returns (uint64 poolId, bytes16 trancheId, address user) {
         poolId = BytesLib.toUint64(_msg, 1);
         trancheId = BytesLib.toBytes16(_msg, 9);
@@ -903,10 +811,6 @@ library MessagesLib {
      */
     function formatUnfreeze(uint64 poolId, bytes16 trancheId, address user) internal pure returns (bytes memory) {
         return abi.encodePacked(uint8(Call.Unfreeze), poolId, trancheId, bytes32(bytes20(user)));
-    }
-
-    function isUnfreeze(bytes memory _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.Unfreeze;
     }
 
     function parseUnfreeze(bytes memory _msg) internal pure returns (uint64 poolId, bytes16 trancheId, address user) {
@@ -935,10 +839,6 @@ library MessagesLib {
         return abi.encodePacked(
             uint8(Call.TriggerIncreaseRedeemOrder), poolId, trancheId, investor, currency, trancheTokenAmount
         );
-    }
-
-    function isTriggerIncreaseRedeemOrder(bytes memory _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.TriggerIncreaseRedeemOrder;
     }
 
     function parseTriggerIncreaseRedeemOrder(bytes memory _msg)
