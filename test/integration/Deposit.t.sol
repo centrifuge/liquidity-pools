@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import "./../TestSetup.t.sol";
+import "./../BaseTest.sol";
 
-contract DepositTest is TestSetup {
+contract DepositTest is BaseTest {
     function testDepositMint(uint256 amount) public {
         // If lower than 4 or odd, rounding down can lead to not receiving any tokens
         amount = uint128(bound(amount, 4, MAX_UINT128));
@@ -20,17 +20,35 @@ contract DepositTest is TestSetup {
 
         erc20.mint(self, amount);
 
-        // will fail - user not member: can not receive trancheToken
+        // will fail - user not member: can not send funds
         vm.expectRevert(bytes("InvestmentManager/owner-is-restricted"));
         lPool.requestDeposit(amount, self, self, "");
 
         centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), self, type(uint64).max); // add user as member
 
+        // will fail - user not member: can not receive trancheToken
+        vm.expectRevert(bytes("InvestmentManager/transfer-not-allowed"));
+        lPool.requestDeposit(amount, nonMember, self, "");
+
         // will fail - user did not give currency allowance to liquidity pool
         vm.expectRevert(bytes("SafeTransferLib/safe-transfer-from-failed"));
         lPool.requestDeposit(amount, self, self, "");
 
+        // will fail - zero deposit not allowed
+        vm.expectRevert(bytes("InvestmentManager/zero-amount-not-allowed"));
+        lPool.requestDeposit(0, self, self, "");
+
+        // will fail - owner != msg.sender not allowed
+        vm.expectRevert(bytes("LiquidityPool/not-msg-sender"));
+        lPool.requestDeposit(amount, self, nonMember, "");
+
+        // will fail - investment currency not allowed
+        centrifugeChain.disallowInvestmentCurrency(lPool.poolId(), defaultCurrencyId);
+        vm.expectRevert(bytes("InvestmentManager/currency-not-allowed"));
+        lPool.requestDeposit(amount, self, self, "");
+
         // success
+        centrifugeChain.allowInvestmentCurrency(lPool.poolId(), defaultCurrencyId);
         erc20.approve(lPool_, amount);
         lPool.requestDeposit(amount, self, self, "");
 
@@ -42,6 +60,7 @@ contract DepositTest is TestSetup {
         assertEq(erc20.balanceOf(address(escrow)), amount);
         assertEq(erc20.balanceOf(self), 0);
         assertEq(lPool.pendingDepositRequest(0, self), amount);
+        assertEq(lPool.claimableDepositRequest(0, self), 0);
 
         // trigger executed collectInvest
         uint128 _currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
@@ -61,8 +80,16 @@ contract DepositTest is TestSetup {
         assertEq(lPool.maxMint(self), trancheTokensPayout);
         assertApproxEqAbs(lPool.maxDeposit(self), amount, 1);
         assertEq(lPool.pendingDepositRequest(0, self), 0);
+        assertEq(lPool.claimableDepositRequest(0, self), amount);
         // assert tranche tokens minted
         assertEq(trancheToken.balanceOf(address(escrow)), trancheTokensPayout);
+
+        // check maxDeposit and maxMint are 0 for non-members
+        centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), self, uint64(block.timestamp));
+        vm.warp(block.timestamp + 1);
+        assertEq(lPool.maxDeposit(self), 0);
+        assertEq(lPool.maxMint(self), 0);
+        centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), self, type(uint64).max);
 
         // deposit 50% of the amount
         lPool.deposit(amount / 2, self); // mint half the amount
@@ -78,6 +105,12 @@ contract DepositTest is TestSetup {
         assertEq(trancheToken.balanceOf(self), trancheTokensPayout - lPool.maxMint(self));
         assertTrue(trancheToken.balanceOf(address(escrow)) <= 1);
         assertTrue(lPool.maxMint(self) <= 1);
+
+        // minting or depositing more should revert
+        vm.expectRevert(bytes("InvestmentManager/exceeds-deposit-limits"));
+        lPool.mint(1, self);
+        vm.expectRevert(bytes("InvestmentManager/exceeds-deposit-limits"));
+        lPool.deposit(2, self);
 
         // remainder is rounding difference
         assertTrue(lPool.maxDeposit(self) <= amount * 0.01e18);

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {TestSetup} from "test/TestSetup.t.sol";
+import {BaseTest} from "test/BaseTest.sol";
 import {InvestorHandler} from "test/invariant/handlers/Investor.sol";
 import {EpochExecutorHandler} from "test/invariant/handlers/EpochExecutor.sol";
 import {IERC7540} from "src/interfaces/IERC7540.sol";
@@ -22,7 +22,7 @@ interface ERC20Like {
 /// @dev Goal: Set up a global state where all external inputs are statefully
 ///      fuzzed through handlers, while the internal inputs controlled by
 ///      actors on Centrifuge Chain is randomly configured but not fuzzed.
-contract InvestmentInvariants is TestSetup {
+contract InvestmentInvariants is BaseTest {
     uint256 public constant NUM_CURRENCIES = 1;
     uint256 public constant NUM_POOLS = 1;
     uint256 public constant NUM_INVESTORS = 2;

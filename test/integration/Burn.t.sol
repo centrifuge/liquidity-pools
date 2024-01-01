@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import "./../TestSetup.t.sol";
+import "./../BaseTest.sol";
 
-contract BurnTest is TestSetup {
+contract BurnTest is BaseTest {
     function testBurn(uint256 amount) public {
         amount = uint128(bound(amount, 2, MAX_UINT128));
 

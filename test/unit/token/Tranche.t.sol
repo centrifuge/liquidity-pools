@@ -143,6 +143,12 @@ contract TrancheTokenTest is Test {
         assertEq(token.balanceOf(targetUser), 0);
 
         restrictionManager.unfreeze(self);
+        restrictionManager.freeze(targetUser);
+        vm.expectRevert(bytes("RestrictionManager/destination-is-frozen"));
+        token.transferFrom(self, targetUser, amount);
+        assertEq(token.balanceOf(targetUser), 0);
+
+        restrictionManager.unfreeze(targetUser);
         token.transferFrom(self, targetUser, amount);
         assertEq(token.balanceOf(targetUser), amount);
         afterTransferAssumptions(self, targetUser, amount);

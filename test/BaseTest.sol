@@ -8,13 +8,14 @@ import {InvestmentManager} from "../src/InvestmentManager.sol";
 import {PoolManager, Tranche} from "../src/PoolManager.sol";
 import {Escrow} from "../src/Escrow.sol";
 import {UserEscrow} from "../src/UserEscrow.sol";
-import {LiquidityPoolFactory, TrancheTokenFactory} from "../src/util/Factory.sol";
+import {LiquidityPoolFactory} from "src/factories/LiquidityPoolFactory.sol";
+import {TrancheTokenFactory} from "src/factories/TrancheTokenFactory.sol";
 import {LiquidityPool} from "../src/LiquidityPool.sol";
 import {TrancheToken, TrancheTokenLike} from "../src/token/Tranche.sol";
 import {ERC20} from "../src/token/ERC20.sol";
 import {Gateway} from "../src/gateway/Gateway.sol";
 import {RestrictionManagerLike, RestrictionManager} from "../src/token/RestrictionManager.sol";
-import {MessagesLib} from "../src/util/MessagesLib.sol";
+import {MessagesLib} from "../src/libraries/MessagesLib.sol";
 import {Deployer} from "../script/Deployer.sol";
 import "../src/interfaces/IERC20.sol";
 
@@ -25,13 +26,14 @@ import {MockRouter} from "./mocks/MockRouter.sol";
 // test env
 import "forge-std/Test.sol";
 
-contract TestSetup is Deployer, Test {
+contract BaseTest is Deployer, Test {
     MockCentrifugeChain centrifugeChain;
     MockRouter router;
     ERC20 public erc20;
 
     address self = address(this);
     address investor = makeAddr("investor");
+    address nonMember = makeAddr("nonMember");
     address randomUser = makeAddr("randomUser");
 
     uint128 constant MAX_UINT128 = type(uint128).max;

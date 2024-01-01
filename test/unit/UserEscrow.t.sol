@@ -2,13 +2,13 @@
 pragma solidity 0.8.21;
 
 import {UserEscrow} from "src/UserEscrow.sol";
-import "test/TestSetup.t.sol";
+import "test/BaseTest.sol";
 
 interface ERC20Like {
     function balanceOf(address account) external view returns (uint256);
 }
 
-contract userEscrowTest is TestSetup {
+contract userEscrowTest is BaseTest {
     function testTransferIn(uint256 mintAmount, uint256 amount) public {
         amount = bound(amount, 1, type(uint256).max); // amount > 0
         mintAmount = bound(mintAmount, amount, type(uint256).max); // mintAmount >= amount
