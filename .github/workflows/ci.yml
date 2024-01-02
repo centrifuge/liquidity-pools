@@ -19,7 +19,7 @@ jobs:
         uses: foundry-rs/foundry-toolchain@v1
 
       - name: Run tests
-        run: forge test --no-match-path "test/invariants/**/*.sol"
+        run: forge test --no-match-path "test/invariant/**/*.sol"
         env:
           FOUNDRY_PROFILE: ci
           FORK_TESTS: false
@@ -33,7 +33,7 @@ jobs:
         uses: foundry-rs/foundry-toolchain@v1
 
       - name: Run tests
-        run: forge test --match-path "test/invariants/**/*.sol"
+        run: forge test --match-path "test/invariant/**/*.sol"
         env:
           FOUNDRY_PROFILE: ci
           FORK_TESTS: false
