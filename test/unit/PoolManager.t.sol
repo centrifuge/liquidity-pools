@@ -485,6 +485,9 @@ contract PoolManagerTest is BaseTest {
         centrifugeChain.updateTrancheTokenMetadata(poolId, trancheId, updatedTokenName, updatedTokenSymbol);
         assertEq(trancheToken.name(), updatedTokenName);
         assertEq(trancheToken.symbol(), updatedTokenSymbol);
+
+        vm.expectRevert(bytes("PoolManager/old-metadata"));
+        centrifugeChain.updateTrancheTokenMetadata(poolId, trancheId, updatedTokenName, updatedTokenSymbol);
     }
 
     function testAllowInvestmentCurrency() public {

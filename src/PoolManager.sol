@@ -281,6 +281,12 @@ contract PoolManager is Auth {
         TrancheTokenLike trancheToken = TrancheTokenLike(getTrancheToken(poolId, trancheId));
         require(address(trancheToken) != address(0), "PoolManager/unknown-token");
 
+        require(
+            keccak256(bytes(trancheToken.name())) != keccak256(bytes(tokenName))
+                || keccak256(bytes(trancheToken.symbol())) != keccak256(bytes(tokenSymbol)),
+            "PoolManager/old-metadata"
+        );
+
         trancheToken.file("name", tokenName);
         trancheToken.file("symbol", tokenSymbol);
     }
