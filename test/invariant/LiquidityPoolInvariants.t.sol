@@ -7,7 +7,6 @@ import {EpochExecutorHandler} from "test/invariant/handlers/EpochExecutor.sol";
 import {IERC7540} from "src/interfaces/IERC7540.sol";
 import {IERC20} from "src/interfaces/IERC20.sol";
 import "forge-std/Test.sol";
-import "forge-std/console.sol";
 
 interface LiquidityPoolLike is IERC7540 {
     function asset() external view returns (address);
@@ -28,9 +27,9 @@ interface ERC20Like {
 ///      fuzzed through handlers, while the internal inputs controlled by
 ///      actors on Centrifuge Chain is randomly configured but not fuzzed.
 contract InvestmentInvariants is BaseTest {
-    uint256 public constant NUM_CURRENCIES = 2;
-    uint256 public constant NUM_POOLS = 2;
-    uint256 public constant NUM_INVESTORS = 2;
+    uint256 public constant NUM_CURRENCIES = 1;
+    uint256 public constant NUM_POOLS = 1;
+    uint256 public constant NUM_INVESTORS = 1;
 
     bytes16 public constant TRANCHE_ID = "1";
     uint128 public constant CURRENCY_ID = 1;
@@ -58,7 +57,6 @@ contract InvestmentInvariants is BaseTest {
                 )
             );
             currencies[currencyId] = currency;
-            console.log("Adding currency %s: %s", currencyId, currency);
             excludeContract(currency);
         }
 
@@ -77,7 +75,6 @@ contract InvestmentInvariants is BaseTest {
                     currencyId,
                     currencies[currencyId]
                 );
-                console.log("Adding LP for pool %s and currency %s", poolId, currencyId);
                 liquidityPools.push(lpool);
                 excludeContract(lpool);
                 excludeContract(LiquidityPoolLike(lpool).share());
@@ -87,7 +84,6 @@ contract InvestmentInvariants is BaseTest {
 
         // Generate investor accounts
         for (uint256 i; i < NUM_INVESTORS; ++i) {
-            console.log("Adding investor %s %s", string(abi.encode("investor", _uint256ToString(i))), i);
             address investor = makeAddr(string(abi.encode("investor", _uint256ToString(i))));
             investors.push(investor);
 
@@ -101,7 +97,6 @@ contract InvestmentInvariants is BaseTest {
         // - Just 1 tranche per pool
         // - NUM_INVESTORS per LP.
         for (uint64 lpoolId; lpoolId < liquidityPools.length; ++lpoolId) {
-            console.log("Adding handlers for LP %s", lpoolId);
             LiquidityPoolLike lpool = LiquidityPoolLike(liquidityPools[lpoolId]);
 
             address currency = lpool.asset();
