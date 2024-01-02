@@ -42,7 +42,7 @@ jobs:
           cache: false # Requires a seed: https://github.com/foundry-rs/foundry-toolchain#fuzzing
 
       - name: Run tests
-        run: forge test --no-match-path "test/invariants/**/*.sol"
+        run: forge test --no-match-path "test/invariant/**/*.sol"
         env:
           FOUNDRY_PROFILE: ci
           FORK_TESTS: false
@@ -71,7 +71,7 @@ jobs:
           cache: false # Requires a seed: https://github.com/foundry-rs/foundry-toolchain#fuzzing
 
       - name: Run tests
-        run: forge test --match-path "test/invariants/**/*.sol"
+        run: forge test --match-path "test/invariant/**/*.sol"
         env:
           FOUNDRY_PROFILE: ci
           FORK_TESTS: false
