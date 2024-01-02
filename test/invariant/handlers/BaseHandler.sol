@@ -31,27 +31,27 @@ contract BaseHandler is Test {
     }
 
     // --- Shadow variables ---
-    function getVar(address entity, string memory key) public view returns (uint256) {
+    function getVar(address entity, string memory key) internal view returns (uint256) {
         return state.getShadowVar(entity, key);
     }
 
-    function setVar(address entity, string memory key, uint256 value) public {
+    function setVar(address entity, string memory key, uint256 value) internal {
         return state.setShadowVar(entity, key, value);
     }
 
-    function increaseVar(address entity, string memory key, uint256 addition) public {
+    function increaseVar(address entity, string memory key, uint256 addition) internal {
         return state.setShadowVar(entity, key, state.getShadowVar(entity, key) + addition);
     }
 
-    function decreaseVar(address entity, string memory key, uint256 addition) public {
+    function decreaseVar(address entity, string memory key, uint256 addition) internal {
         return state.setShadowVar(entity, key, state.getShadowVar(entity, key) - addition);
     }
 
-    function setMaxVar(address entity, string memory key, uint256 value) public {
+    function setMaxVar(address entity, string memory key, uint256 value) internal {
         return state.setShadowVar(entity, key, _max(state.getShadowVar(entity, key), value));
     }
 
-    function setMinVar(address entity, string memory key, uint256 value) public {
+    function setMinVar(address entity, string memory key, uint256 value) internal {
         return state.setShadowVar(entity, key, _min(state.getShadowVar(entity, key), value));
     }
 
