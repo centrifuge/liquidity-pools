@@ -249,6 +249,28 @@ contract BaseTest is Deployer, Test {
         return string(bytesArray);
     }
 
+    function _uint256ToString(uint _i) internal pure returns (string memory _uintAsString) {
+            if (_i == 0) {
+                return "0";
+            }
+            uint j = _i;
+            uint len;
+            while (j != 0) {
+                len++;
+                j /= 10;
+            }
+            bytes memory bstr = new bytes(len);
+            uint k = len;
+            while (_i != 0) {
+                k = k-1;
+                uint8 temp = (48 + uint8(_i - _i / 10 * 10));
+                bytes1 b1 = bytes1(temp);
+                bstr[k] = b1;
+                _i /= 10;
+            }
+            return string(bstr);
+        }
+
     function random(uint256 maxValue, uint256 nonce) internal view returns (uint256) {
         if (maxValue == 1) {
             return maxValue;

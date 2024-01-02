@@ -11,7 +11,12 @@ import "forge-std/console.sol";
 
 interface LiquidityPoolLike is IERC7540 {
     function asset() external view returns (address);
+    function share() external view returns (address);
     function poolId() external view returns (uint64);
+}
+
+interface TrancheTokenLike {
+    function restrictionManager() external view returns (address);
 }
 
 interface ERC20Like {
@@ -23,8 +28,8 @@ interface ERC20Like {
 ///      fuzzed through handlers, while the internal inputs controlled by
 ///      actors on Centrifuge Chain is randomly configured but not fuzzed.
 contract InvestmentInvariants is BaseTest {
-    uint256 public constant NUM_CURRENCIES = 1;
-    uint256 public constant NUM_POOLS = 1;
+    uint256 public constant NUM_CURRENCIES = 2;
+    uint256 public constant NUM_POOLS = 2;
     uint256 public constant NUM_INVESTORS = 2;
 
     bytes16 public constant TRANCHE_ID = "1";
@@ -42,7 +47,7 @@ contract InvestmentInvariants is BaseTest {
         super.setUp();
 
         // Generate random investment currencies
-        for (uint128 currencyId = 1; currencyId <= (NUM_CURRENCIES + 1); ++currencyId) {
+        for (uint128 currencyId = 1; currencyId < NUM_CURRENCIES + 1; ++currencyId) {
             uint8 currencyDecimals = _randomUint8(1, 18);
 
             address currency = address(
@@ -53,12 +58,13 @@ contract InvestmentInvariants is BaseTest {
                 )
             );
             currencies[currencyId] = currency;
+            console.log("Adding currency %s: %s", currencyId, currency);
             excludeContract(currency);
         }
 
         // Generate random liquidity pools
         // TODO: multiple chains and allowing transfers between chains
-        for (uint128 currencyId = 1; currencyId <= (NUM_CURRENCIES + 1); ++currencyId) {
+        for (uint128 currencyId = 1; currencyId < NUM_CURRENCIES + 1; ++currencyId) {
             for (uint64 poolId; poolId < NUM_POOLS; ++poolId) {
                 uint8 trancheTokenDecimals = _randomUint8(1, 18);
                 address lpool = deployLiquidityPool(
@@ -71,9 +77,22 @@ contract InvestmentInvariants is BaseTest {
                     currencyId,
                     currencies[currencyId]
                 );
-                console.log(liquidityPools.length);
+                console.log("Adding LP for pool %s and currency %s", poolId, currencyId);
                 liquidityPools.push(lpool);
                 excludeContract(lpool);
+                excludeContract(LiquidityPoolLike(lpool).share());
+                excludeContract(TrancheTokenLike(LiquidityPoolLike(lpool).share()).restrictionManager());
+            }
+        }
+
+        // Generate investor accounts
+        for (uint256 i; i < NUM_INVESTORS; ++i) {
+            console.log("Adding investor %s %s", string(abi.encode("investor", _uint256ToString(i))), i);
+            address investor = makeAddr(string(abi.encode("investor", _uint256ToString(i))));
+            investors.push(investor);
+
+            for (uint64 poolId; poolId < NUM_POOLS; ++poolId) {
+                centrifugeChain.updateMember(poolId, TRANCHE_ID, investor, type(uint64).max);
             }
         }
 
@@ -82,17 +101,8 @@ contract InvestmentInvariants is BaseTest {
         // - Just 1 tranche per pool
         // - NUM_INVESTORS per LP.
         for (uint64 lpoolId; lpoolId < liquidityPools.length; ++lpoolId) {
-            console.log(1);
-            console.log(lpoolId);
+            console.log("Adding handlers for LP %s", lpoolId);
             LiquidityPoolLike lpool = LiquidityPoolLike(liquidityPools[lpoolId]);
-            console.log(2);
-
-            for (uint256 i; i < NUM_INVESTORS; ++i) {
-                console.log(3);
-                address investor = makeAddr(string(abi.encode("investor", i)));
-                investors.push(investor);
-                centrifugeChain.updateMember(lpool.poolId(), TRANCHE_ID, investor, type(uint64).max);
-            }
 
             address currency = lpool.asset();
             InvestorHandler handler = new InvestorHandler(
@@ -105,7 +115,6 @@ contract InvestmentInvariants is BaseTest {
                 address(escrow),
                 address(this)
             );
-            console.log(4);
             investorHandlers[lpoolId] = handler;
 
             EpochExecutorHandler eeHandler = new EpochExecutorHandler(
@@ -119,7 +128,7 @@ contract InvestmentInvariants is BaseTest {
             ERC20Like(share).rely(address(handler)); // rely to mint tokens
 
             targetContract(address(handler));
-            // targetContract(address(eeHandler));
+            targetContract(address(eeHandler));
         }
     }
 
