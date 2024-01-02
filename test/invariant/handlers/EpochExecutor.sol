@@ -47,8 +47,8 @@ contract EpochExecutorHandler is BaseHandler {
 
         // TODO: subtracting outstandingDecreaseDepositRequested here means that decrease requests
         // are never executed, which is not necessarily true
-        uint256 outstandingDepositRequest = getVar(currentInvestor, "totalDepositRequested")
-            - getVar(currentInvestor, "totalCurrencyPaidOutOnInvest");
+        uint256 outstandingDepositRequest =
+            getVar(currentInvestor, "totalDepositRequested") - getVar(currentInvestor, "totalCurrencyPaidOutOnInvest");
 
         if (outstandingDepositRequest == 0) {
             return;
