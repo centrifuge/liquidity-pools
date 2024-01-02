@@ -68,7 +68,7 @@ jobs:
         uses: foundry-rs/foundry-toolchain@v1
 
       - name: Run coverage
-        run: forge coverage --report summary --report lcov
+        run: forge coverage --report summary --report lcov --no-match-path "test/invariant/**/*.sol"
         env:
           FORK_TESTS: false
 
