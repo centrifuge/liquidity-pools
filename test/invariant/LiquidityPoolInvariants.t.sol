@@ -42,6 +42,9 @@ contract InvestmentInvariants is BaseTest {
     mapping(uint64 poolId => InvestorHandler handler) investorHandlers;
     mapping(uint64 poolId => EpochExecutorHandler handler) epochExecutorHandlers;
 
+    // Key-value store for shadow variables
+    mapping(address entity => mapping(string key => uint256 value)) public shadowVariables;
+
     function setUp() public override {
         super.setUp();
 
@@ -131,13 +134,12 @@ contract InvestmentInvariants is BaseTest {
     function invariant_cannotReceiveMoreTrancheTokensThanPayout() external {
         for (uint64 lpoolId; lpoolId < liquidityPools.length; ++lpoolId) {
             LiquidityPoolLike lpool = LiquidityPoolLike(liquidityPools[lpoolId]);
-            InvestorHandler handler = investorHandlers[lpoolId];
 
             for (uint256 i; i < investors.length; ++i) {
                 address investor = investors[i];
                 assertLe(
                     IERC20(lpool.share()).balanceOf(investor),
-                    handler.values(investor, "totalTrancheTokensPaidOutOnInvest")
+                    getShadowVar(investor, "totalTrancheTokensPaidOutOnInvest")
                 );
             }
         }
@@ -147,14 +149,12 @@ contract InvestmentInvariants is BaseTest {
     //              + sum(currencyPayout for each decreased investment)
     function invariant_cannotReceiveMoreCurrencyThanPayout() external {
         for (uint64 lpoolId; lpoolId < liquidityPools.length; ++lpoolId) {
-            InvestorHandler handler = investorHandlers[lpoolId];
-
             for (uint256 i; i < investors.length; ++i) {
                 address investor = investors[i];
                 assertLe(
-                    handler.values(investor, "totalCurrencyReceived"),
-                    handler.values(investor, "totalCurrencyPaidOutOnRedeem")
-                        + handler.values(investor, "totalCurrencyPaidOutOnDecreaseInvest")
+                    getShadowVar(investor, "totalCurrencyReceived"),
+                    getShadowVar(investor, "totalCurrencyPaidOutOnRedeem")
+                        + getShadowVar(investor, "totalCurrencyPaidOutOnDecreaseInvest")
                 );
             }
         }
@@ -196,7 +196,7 @@ contract InvestmentInvariants is BaseTest {
 
     //         for (uint256 i; i < investors.length; ++i) {
     //             address investor = investors[i];
-    //             assertLe(lpool.maxDeposit(investor), handler.values(investor, "totalDepositRequested"));
+    //             assertLe(lpool.maxDeposit(investor), getShadowVar(investor, "totalDepositRequested"));
     //         }
     //     }
     // }
@@ -212,8 +212,8 @@ contract InvestmentInvariants is BaseTest {
     //             address investor = investors[i];
     //             assertLe(
     //                 lpool.maxRedeem(investor),
-    //                 handler.values(investor, "totalRedeemRequested")
-    //                     + handler.values(investor, "totalDecreaseDepositRequested")
+    //                 getShadowVar(investor, "totalRedeemRequested")
+    //                     + getShadowVar(investor, "totalDecreaseDepositRequested")
     //             );
     //         }
     //     }
@@ -223,13 +223,12 @@ contract InvestmentInvariants is BaseTest {
     function invariant_depositPriceLtMaxFulfillmentPrice() external {
         for (uint64 lpoolId; lpoolId < liquidityPools.length; ++lpoolId) {
             LiquidityPoolLike lpool = LiquidityPoolLike(liquidityPools[lpoolId]);
-            InvestorHandler handler = investorHandlers[lpoolId];
 
             for (uint256 i; i < investors.length; ++i) {
                 address investor = investors[i];
                 (, uint256 depositPrice,,,,,) = investmentManager.investments(address(lpool), investor);
 
-                assertLe(depositPrice, handler.values(investor, "maxDepositFulfillmentPrice"));
+                assertLe(depositPrice, getShadowVar(investor, "maxDepositFulfillmentPrice"));
             }
         }
     }
@@ -238,15 +237,22 @@ contract InvestmentInvariants is BaseTest {
     function invariant_redeemPriceLtMaxFulfillmentPrice() external {
         for (uint64 lpoolId; lpoolId < liquidityPools.length; ++lpoolId) {
             LiquidityPoolLike lpool = LiquidityPoolLike(liquidityPools[lpoolId]);
-            InvestorHandler handler = investorHandlers[lpoolId];
 
             for (uint256 i; i < investors.length; ++i) {
                 address investor = investors[i];
                 (,,, uint256 redeemPrice,,,) = investmentManager.investments(address(lpool), investor);
 
-                assertLe(redeemPrice, handler.values(investor, "maxRedeemFulfillmentPrice"));
+                assertLe(redeemPrice, getShadowVar(investor, "maxRedeemFulfillmentPrice"));
             }
         }
+    }
+
+    function getShadowVar(address entity, string memory key) public view returns (uint256) {
+        return shadowVariables[entity][key];
+    }
+
+    function setShadowVar(address entity, string memory key, uint256 value) public {
+        shadowVariables[entity][key] = value;
     }
 
     function numInvestors() public view returns (uint256) {

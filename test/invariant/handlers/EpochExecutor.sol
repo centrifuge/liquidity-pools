@@ -47,8 +47,8 @@ contract EpochExecutorHandler is BaseHandler {
 
         // TODO: subtracting outstandingDecreaseDepositRequested here means that decrease requests
         // are never executed, which is not necessarily true
-        uint256 outstandingDepositRequest =
-            values[currentInvestor]["totalDepositRequested"] - values[currentInvestor]["totalCurrencyPaidOutOnInvest"];
+        uint256 outstandingDepositRequest = getVar(currentInvestor, "totalDepositRequested")
+            - getVar(currentInvestor, "totalCurrencyPaidOutOnInvest");
 
         if (outstandingDepositRequest == 0) {
             return;
@@ -69,10 +69,9 @@ contract EpochExecutorHandler is BaseHandler {
             uint128(outstandingDepositRequest - currencyPayout)
         );
 
-        values[currentInvestor]["totalCurrencyPaidOutOnInvest"] += currencyPayout;
-        values[currentInvestor]["totalTrancheTokensPaidOutOnInvest"] += trancheTokenPayout;
-        values[currentInvestor]["maxDepositFulfillmentPrice"] =
-            _max(values[currentInvestor]["maxDepositFulfillmentPrice"], fulfillmentPrice);
+        increaseVar(currentInvestor, "totalCurrencyPaidOutOnInvest", currencyPayout);
+        increaseVar(currentInvestor, "totalTrancheTokensPaidOutOnInvest", trancheTokenPayout);
+        setMaxVar(currentInvestor, "maxDepositFulfillmentPrice", fulfillmentPrice);
     }
 
     function executedCollectRedeem(uint256 investorSeed, uint256 fulfillmentRatio, uint256 fulfillmentPrice)
@@ -82,8 +81,8 @@ contract EpochExecutorHandler is BaseHandler {
         fulfillmentRatio = bound(fulfillmentRatio, 0, 1 * 10 ** 18); // 0% to 100%
         fulfillmentPrice = bound(fulfillmentPrice, 0, 2 * 10 ** 18); // 0.00 to 2.00
 
-        uint256 outstandingRedeemRequest = values[currentInvestor]["totalRedeemRequested"]
-            - values[currentInvestor]["totalTrancheTokensPaidOutOnRedeem"];
+        uint256 outstandingRedeemRequest = getVar(currentInvestor, "totalRedeemRequested")
+            - getVar(currentInvestor, "totalTrancheTokensPaidOutOnRedeem");
 
         if (outstandingRedeemRequest == 0) {
             return;
@@ -104,10 +103,9 @@ contract EpochExecutorHandler is BaseHandler {
             uint128(outstandingRedeemRequest - currencyPayout)
         );
 
-        values[currentInvestor]["totalTrancheTokensPaidOutOnRedeem"] += trancheTokenPayout;
-        values[currentInvestor]["totalCurrencyPaidOutOnRedeem"] += currencyPayout;
-        values[currentInvestor]["maxRedeemFulfillmentPrice"] =
-            _max(values[currentInvestor]["maxRedeemFulfillmentPrice"], fulfillmentPrice);
+        increaseVar(currentInvestor, "totalTrancheTokensPaidOutOnRedeem", trancheTokenPayout);
+        increaseVar(currentInvestor, "totalCurrencyPaidOutOnRedeem", currencyPayout);
+        setMaxVar(currentInvestor, "maxRedeemFulfillmentPrice", fulfillmentPrice);
     }
 
     function executedDecreaseInvestOrder(uint256 investorSeed, uint256 decreaseRatio)
@@ -116,12 +114,12 @@ contract EpochExecutorHandler is BaseHandler {
     {
         decreaseRatio = bound(decreaseRatio, 0, 1 * 10 ** 18); // 0% to 100%
 
-        if (values[currentInvestor]["outstandingDecreaseDepositRequested"] == 0) {
+        if (getVar(currentInvestor, "outstandingDecreaseDepositRequested") == 0) {
             return;
         }
 
         uint128 currencyPayout = uint128(
-            values[currentInvestor]["outstandingDecreaseDepositRequested"].mulDiv(
+            getVar(currentInvestor, "outstandingDecreaseDepositRequested").mulDiv(
                 decreaseRatio, 1 * 10 ** 18, MathLib.Rounding.Down
             )
         );
@@ -132,14 +130,13 @@ contract EpochExecutorHandler is BaseHandler {
             bytes32(bytes20(currentInvestor)),
             currencyId,
             currencyPayout,
-            uint128(values[currentInvestor]["outstandingDecreaseDepositRequested"] - currencyPayout)
+            uint128(getVar(currentInvestor, "outstandingDecreaseDepositRequested") - currencyPayout)
         );
 
-        values[currentInvestor]["outstandingDecreaseDepositRequested"] -= currencyPayout;
-        values[currentInvestor]["totalCurrencyPaidOutOnDecreaseInvest"] += currencyPayout;
+        decreaseVar(currentInvestor, "outstandingDecreaseDepositRequested", currencyPayout);
+        increaseVar(currentInvestor, "totalCurrencyPaidOutOnDecreaseInvest", currencyPayout);
 
         // An executed invest decrease indirectly leads to a redeem fulfillment at price 1.0
-        values[currentInvestor]["maxRedeemFulfillmentPrice"] =
-            _max(values[currentInvestor]["maxRedeemFulfillmentPrice"], 1 * 10 ** 18);
+        setMaxVar(currentInvestor, "maxRedeemFulfillmentPrice", 1 * 10 ** 18);
     }
 }

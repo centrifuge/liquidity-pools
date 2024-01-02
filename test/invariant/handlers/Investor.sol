@@ -64,8 +64,8 @@ contract InvestorHandler is BaseHandler {
             amount,
             0,
             uint128(
-                type(uint128).max - values[currentInvestor]["totalDepositRequested"]
-                    + values[currentInvestor]["totalCurrencyPaidOutOnInvest"]
+                type(uint128).max - getVar(currentInvestor, "totalDepositRequested")
+                    + getVar(currentInvestor, "totalCurrencyPaidOutOnInvest")
             )
         );
         if (amount == 0) return;
@@ -79,20 +79,20 @@ contract InvestorHandler is BaseHandler {
         // TODO: we should also set up tests where currentInvestor != operator
         liquidityPool.requestDeposit(amount_, currentInvestor, currentInvestor, "");
 
-        values[currentInvestor]["totalDepositRequested"] += amount;
+        increaseVar(currentInvestor, "totalDepositRequested", amount);
     }
 
     function decreaseDepositRequest(uint256 investorSeed, uint128 amount) public useRandomInvestor(investorSeed) {
         uint256 outstandingDepositRequest =
-            values[currentInvestor]["totalDepositRequested"] - values[currentInvestor]["totalCurrencyPaidOutOnInvest"];
+            getVar(currentInvestor, "totalDepositRequested") - getVar(currentInvestor, "totalCurrencyPaidOutOnInvest");
 
         uint256 amount_ = bound(amount, 0, outstandingDepositRequest);
         if (amount == 0) return;
 
         liquidityPool.decreaseDepositRequest(amount_);
 
-        values[currentInvestor]["outstandingDecreaseDepositRequested"] += amount_;
-        values[currentInvestor]["totalDecreaseDepositRequested"] += amount_;
+        increaseVar(currentInvestor, "outstandingDecreaseDepositRequested", amount_);
+        increaseVar(currentInvestor, "totalDecreaseDepositRequested", amount_);
     }
 
     function deposit(uint256 investorSeed, uint128 amount) public useRandomInvestor(investorSeed) {
@@ -117,8 +117,8 @@ contract InvestorHandler is BaseHandler {
             _min(
                 // Don't allow total outstanding redeem requests > type(uint128).max
                 uint128(
-                    type(uint128).max - values[currentInvestor]["totalRedeemRequested"]
-                        + values[currentInvestor]["totalTrancheTokensPaidOutOnRedeem"]
+                    type(uint128).max - getVar(currentInvestor, "totalRedeemRequested")
+                        + getVar(currentInvestor, "totalTrancheTokensPaidOutOnRedeem")
                 ),
                 // Cannot redeem more than current balance of TT
                 trancheToken.balanceOf(currentInvestor)
@@ -128,7 +128,7 @@ contract InvestorHandler is BaseHandler {
 
         liquidityPool.requestRedeem(amount_, currentInvestor, currentInvestor, "");
 
-        values[currentInvestor]["totalRedeemRequested"] += amount_;
+        increaseVar(currentInvestor, "totalRedeemRequested", amount_);
     }
 
     function redeem(uint256 investorSeed, uint128 amount) public useRandomInvestor(investorSeed) {
@@ -138,7 +138,7 @@ contract InvestorHandler is BaseHandler {
         uint256 preBalance = erc20.balanceOf(currentInvestor);
         liquidityPool.redeem(amount_, currentInvestor, currentInvestor);
         uint256 postBalance = erc20.balanceOf(currentInvestor);
-        values[currentInvestor]["totalCurrencyReceived"] += postBalance - preBalance;
+        increaseVar(currentInvestor, "totalCurrencyReceived", postBalance - preBalance);
     }
 
     function withdraw(uint256 investorSeed, uint128 amount) public useRandomInvestor(investorSeed) {
@@ -148,7 +148,7 @@ contract InvestorHandler is BaseHandler {
         uint256 preBalance = erc20.balanceOf(currentInvestor);
         liquidityPool.withdraw(amount_, currentInvestor, currentInvestor);
         uint256 postBalance = erc20.balanceOf(currentInvestor);
-        values[currentInvestor]["totalCurrencyReceived"] += postBalance - preBalance;
+        increaseVar(currentInvestor, "totalCurrencyReceived", postBalance - preBalance);
     }
 
     // --- Misc ---
@@ -163,7 +163,7 @@ contract InvestorHandler is BaseHandler {
         // TODO: subtracting outstandingDecreaseDepositRequested here means that decrease requests
         // are never executed, which is not necessarily true
         uint256 outstandingDepositRequest =
-            values[currentInvestor]["totalDepositRequested"] - values[currentInvestor]["totalCurrencyPaidOutOnInvest"];
+            getVar(currentInvestor, "totalDepositRequested") - getVar(currentInvestor, "totalCurrencyPaidOutOnInvest");
 
         if (outstandingDepositRequest == 0) {
             return;
@@ -184,8 +184,8 @@ contract InvestorHandler is BaseHandler {
             uint128(outstandingDepositRequest - currencyPayout)
         );
 
-        values[currentInvestor]["totalCurrencyPaidOutOnInvest"] += currencyPayout;
-        values[currentInvestor]["totalTrancheTokensPaidOutOnInvest"] += trancheTokenPayout;
+        increaseVar(currentInvestor, "totalCurrencyPaidOutOnInvest", currencyPayout);
+        increaseVar(currentInvestor, "totalTrancheTokensPaidOutOnInvest", trancheTokenPayout);
     }
 
     function executedCollectRedeem(uint256 investorSeed, uint256 fulfillmentRatio, uint256 fulfillmentPrice)
@@ -195,8 +195,8 @@ contract InvestorHandler is BaseHandler {
         fulfillmentRatio = bound(fulfillmentRatio, 0, 1 * 10 ** 18); // 0% to 100%
         fulfillmentPrice = bound(fulfillmentPrice, 0, 2 * 10 ** 18); // 0.00 to 2.00
 
-        uint256 outstandingRedeemRequest = values[currentInvestor]["totalRedeemRequested"]
-            - values[currentInvestor]["totalTrancheTokensPaidOutOnRedeem"];
+        uint256 outstandingRedeemRequest = getVar(currentInvestor, "totalRedeemRequested")
+            - getVar(currentInvestor, "totalTrancheTokensPaidOutOnRedeem");
 
         if (outstandingRedeemRequest == 0) {
             return;
@@ -217,7 +217,7 @@ contract InvestorHandler is BaseHandler {
             uint128(outstandingRedeemRequest - currencyPayout)
         );
 
-        values[currentInvestor]["totalTrancheTokensPaidOutOnRedeem"] += trancheTokenPayout;
-        values[currentInvestor]["totalCurrencyPaidOutOnRedeem"] += currencyPayout;
+        increaseVar(currentInvestor, "totalTrancheTokensPaidOutOnRedeem", trancheTokenPayout);
+        increaseVar(currentInvestor, "totalCurrencyPaidOutOnRedeem", currencyPayout);
     }
 }

@@ -9,15 +9,14 @@ import "forge-std/Test.sol";
 interface SystemStateLike {
     function numInvestors() external view returns (uint256);
     function investors(uint256 index) external view returns (address);
+    function getShadowVar(address entity, string memory key) external view returns (uint256);
+    function setShadowVar(address entity, string memory key, uint256 value) external;
 }
 
 contract BaseHandler is Test {
     SystemStateLike immutable state;
 
     address currentInvestor;
-
-    // Key-value store
-    mapping(address entity => mapping(string key => uint256 value)) public values;
 
     constructor(address state_) {
         state = SystemStateLike(state_);
@@ -31,6 +30,32 @@ contract BaseHandler is Test {
         vm.stopPrank();
     }
 
+    // --- Shadow variables ---
+    function getVar(address entity, string memory key) public view returns (uint256) {
+        return state.getShadowVar(entity, key);
+    }
+
+    function setVar(address entity, string memory key, uint256 value) public {
+        return state.setShadowVar(entity, key, value);
+    }
+
+    function increaseVar(address entity, string memory key, uint256 addition) public {
+        return state.setShadowVar(entity, key, state.getShadowVar(entity, key) + addition);
+    }
+
+    function decreaseVar(address entity, string memory key, uint256 addition) public {
+        return state.setShadowVar(entity, key, state.getShadowVar(entity, key) - addition);
+    }
+
+    function setMaxVar(address entity, string memory key, uint256 value) public {
+        return state.setShadowVar(entity, key, _max(state.getShadowVar(entity, key), value));
+    }
+
+    function setMinVar(address entity, string memory key, uint256 value) public {
+        return state.setShadowVar(entity, key, _min(state.getShadowVar(entity, key), value));
+    }
+
+    // --- Helpers ---
     /// @notice Returns the smallest of two numbers.
     function _min(uint256 a, uint256 b) internal pure returns (uint256) {
         return a > b ? b : a;
