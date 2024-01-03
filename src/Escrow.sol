@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {Auth} from "./util/Auth.sol";
-import {SafeTransferLib} from "./util/SafeTransferLib.sol";
+import {Auth} from "./Auth.sol";
+import {SafeTransferLib} from "./libraries/SafeTransferLib.sol";
 
 /// @title  Escrow
 /// @notice Escrow contract that holds tokens.

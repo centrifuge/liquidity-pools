@@ -4,7 +4,7 @@ pragma solidity 0.8.21;
 import "forge-std/Test.sol";
 import {InvestmentManager} from "src/InvestmentManager.sol";
 import {Gateway} from "src/gateway/Gateway.sol";
-import {Auth} from "src/util/Auth.sol";
+import {Auth} from "src/Auth.sol";
 import "./Mock.sol";
 
 contract MockRouter is Auth, Mock {

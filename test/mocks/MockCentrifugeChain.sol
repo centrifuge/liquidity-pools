@@ -1,9 +1,8 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDw-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {MessagesLib} from "src/util/MessagesLib.sol";
+import {MessagesLib} from "src/libraries/MessagesLib.sol";
 import "forge-std/Test.sol";
-import {XCMRouter} from "src/gateway/routers/xcm/Router.sol";
 
 interface RouterLike {
     function execute(bytes memory _message) external;

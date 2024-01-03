@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import "test/TestSetup.t.sol";
+import "test/BaseTest.sol";
 import "test/mocks/RestrictionManagerFactory.sol";
 
-contract PoolManagerTest is TestSetup {
+contract PoolManagerTest is BaseTest {
     // Deployment
     function testDeployment() public {
         // values set correctly

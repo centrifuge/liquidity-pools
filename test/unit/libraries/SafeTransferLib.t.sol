@@ -3,7 +3,7 @@ pragma solidity 0.8.21;
 
 import "forge-std/Test.sol";
 import {IERC20} from "src/interfaces/IERC20.sol";
-import {SafeTransferLib} from "src/util/SafeTransferLib.sol";
+import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 
 /// @dev Token not returning any boolean.
 contract ERC20WithoutBoolean {
@@ -115,6 +115,4 @@ contract SafeTransferLibTest is Test {
     function safeApprove(address token, address spender, uint256 amount) external {
         SafeTransferLib.safeApprove(token, spender, amount);
     }
-
-    // TODO: safeApprove tests
 }

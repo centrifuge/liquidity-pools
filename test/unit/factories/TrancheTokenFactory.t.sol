@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {TrancheTokenFactory} from "src/util/Factory.sol";
+import {TrancheTokenFactory} from "src/factories/TrancheTokenFactory.sol";
 import {TrancheToken} from "src/token/Tranche.sol";
 import {Root} from "src/Root.sol";
 import {Escrow} from "src/Escrow.sol";
-import {TestSetup} from "test/TestSetup.t.sol";
+import {BaseTest} from "test/BaseTest.sol";
 import "forge-std/Test.sol";
 
 interface PoolManagerLike {
@@ -30,7 +30,7 @@ contract FactoryTest is Test {
         if (vm.envOr("FORK_TESTS", false)) {
             vm.setEnv("DEPLOYMENT_SALT", "0x290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563");
             vm.selectFork(mainnetFork);
-            TestSetup testSetup1 = new TestSetup{salt: keccak256(abi.encode(vm.envString("DEPLOYMENT_SALT")))}();
+            BaseTest testSetup1 = new BaseTest{salt: keccak256(abi.encode(vm.envString("DEPLOYMENT_SALT")))}();
             testSetup1.setUp();
             testSetup1.deployLiquidityPool(
                 poolId, 18, testSetup1.defaultRestrictionSet(), "", "", trancheId, 1, address(testSetup1.erc20())
@@ -40,7 +40,7 @@ contract FactoryTest is Test {
             address root1 = address(testSetup1.root());
 
             vm.selectFork(polygonFork);
-            TestSetup testSetup2 = new TestSetup{salt: keccak256(abi.encode(vm.envString("DEPLOYMENT_SALT")))}();
+            BaseTest testSetup2 = new BaseTest{salt: keccak256(abi.encode(vm.envString("DEPLOYMENT_SALT")))}();
             testSetup2.setUp();
             testSetup2.deployLiquidityPool(
                 poolId, 18, testSetup2.defaultRestrictionSet(), "", "", trancheId, 1, address(testSetup2.erc20())

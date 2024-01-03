@@ -2,7 +2,7 @@
 pragma solidity 0.8.21;
 
 import {Root} from "../Root.sol";
-import {Auth} from "./../util/Auth.sol";
+import {Auth} from "./../Auth.sol";
 
 interface PauseAdminLike {
     function addPauser(address user) external;
