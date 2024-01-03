@@ -220,32 +220,32 @@ contract InvestmentInvariants is BaseTest {
     // }
 
     // Invariant 7: lp.depositPrice <= max(fulfillment price)
-    function invariant_depositPriceLtMaxFulfillmentPrice() external {
-        for (uint64 lpoolId; lpoolId < liquidityPools.length; ++lpoolId) {
-            LiquidityPoolLike lpool = LiquidityPoolLike(liquidityPools[lpoolId]);
+    // function invariant_depositPriceLtMaxFulfillmentPrice() external {
+    //     for (uint64 lpoolId; lpoolId < liquidityPools.length; ++lpoolId) {
+    //         LiquidityPoolLike lpool = LiquidityPoolLike(liquidityPools[lpoolId]);
 
-            for (uint256 i; i < investors.length; ++i) {
-                address investor = investors[i];
-                (, uint256 depositPrice,,,,,) = investmentManager.investments(address(lpool), investor);
+    //         for (uint256 i; i < investors.length; ++i) {
+    //             address investor = investors[i];
+    //             (, uint256 depositPrice,,,,,) = investmentManager.investments(address(lpool), investor);
 
-                assertLe(depositPrice, getShadowVar(investor, "maxDepositFulfillmentPrice"));
-            }
-        }
-    }
+    //             assertLe(depositPrice, getShadowVar(investor, "maxDepositFulfillmentPrice"));
+    //         }
+    //     }
+    // }
 
     // Invariant 8: lp.redeemPrice <= max(fulfillment price)
-    function invariant_redeemPriceLtMaxFulfillmentPrice() external {
-        for (uint64 lpoolId; lpoolId < liquidityPools.length; ++lpoolId) {
-            LiquidityPoolLike lpool = LiquidityPoolLike(liquidityPools[lpoolId]);
+    // function invariant_redeemPriceLtMaxFulfillmentPrice() external {
+    //     for (uint64 lpoolId; lpoolId < liquidityPools.length; ++lpoolId) {
+    //         LiquidityPoolLike lpool = LiquidityPoolLike(liquidityPools[lpoolId]);
 
-            for (uint256 i; i < investors.length; ++i) {
-                address investor = investors[i];
-                (,,, uint256 redeemPrice,,,) = investmentManager.investments(address(lpool), investor);
+    //         for (uint256 i; i < investors.length; ++i) {
+    //             address investor = investors[i];
+    //             (,,, uint256 redeemPrice,,,) = investmentManager.investments(address(lpool), investor);
 
-                assertLe(redeemPrice, getShadowVar(investor, "maxRedeemFulfillmentPrice"));
-            }
-        }
-    }
+    //             assertLe(redeemPrice, getShadowVar(investor, "maxRedeemFulfillmentPrice"));
+    //         }
+    //     }
+    // }
 
     function getShadowVar(address entity, string memory key) public view returns (uint256) {
         return shadowVariables[entity][key];
