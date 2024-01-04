@@ -93,12 +93,21 @@ contract BaseTest is Deployer, Test {
         uint128 currencyId,
         address currency
     ) public returns (address) {
-        centrifugeChain.addPool(poolId); // add pool
-        centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, trancheTokenDecimals, restrictionSet); // add tranche
+        if (poolManager.currencyIdToAddress(currencyId) == address(0)) {
+            centrifugeChain.addCurrency(currencyId, currency);
+        }
+        
+        if (poolManager.getTrancheToken(poolId, trancheId) == address(0)) {
+            centrifugeChain.addPool(poolId);
+            centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, trancheTokenDecimals, restrictionSet);
 
-        centrifugeChain.addCurrency(currencyId, currency);
-        centrifugeChain.allowInvestmentCurrency(poolId, currencyId);
-        poolManager.deployTranche(poolId, trancheId);
+            centrifugeChain.allowInvestmentCurrency(poolId, currencyId);
+            poolManager.deployTranche(poolId, trancheId);
+        }
+
+        if (!poolManager.isAllowedAsInvestmentCurrency(poolId, currency)) {
+            centrifugeChain.allowInvestmentCurrency(poolId, currencyId);
+        }
 
         address lPoolAddress = poolManager.deployLiquidityPool(poolId, trancheId, currency);
         return lPoolAddress;
@@ -239,6 +248,28 @@ contract BaseTest is Deployer, Test {
 
         return string(bytesArray);
     }
+
+    function _uint256ToString(uint _i) internal pure returns (string memory _uintAsString) {
+            if (_i == 0) {
+                return "0";
+            }
+            uint j = _i;
+            uint len;
+            while (j != 0) {
+                len++;
+                j /= 10;
+            }
+            bytes memory bstr = new bytes(len);
+            uint k = len;
+            while (_i != 0) {
+                k = k-1;
+                uint8 temp = (48 + uint8(_i - _i / 10 * 10));
+                bytes1 b1 = bytes1(temp);
+                bstr[k] = b1;
+                _i /= 10;
+            }
+            return string(bstr);
+        }
 
     function random(uint256 maxValue, uint256 nonce) internal view returns (uint256) {
         if (maxValue == 1) {

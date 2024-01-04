@@ -5,7 +5,6 @@ pragma abicoder v2;
 import "test/BaseTest.sol";
 
 interface LiquidityPoolLike {
-    function latestPrice() external view returns (uint128);
     function priceComputedAt() external view returns (uint64);
 }
 
