@@ -23,7 +23,9 @@ interface GatewayLike {
 /// @notice Routing contract that integrates with an Axelar Gateway
 contract AxelarRouter is Auth {
     string public constant CENTRIFUGE_CHAIN_ID = "centrifuge";
-    string public constant CENTRIFUGE_CHAIN_ADDRESS = "0x7369626CEF070000000000000000000000000000";
+    bytes32 public constant CENTRIFUGE_CHAIN_ID_HASH = keccak256(bytes("centrifuge"));
+    bytes32 public constant CENTRIFUGE_CHAIN_ADDRESS_HASH =
+        keccak256(bytes("0x7369626CEF070000000000000000000000000000"));
     string public constant CENTRIFUGE_AXELAR_EXECUTABLE = "0xc1757c6A0563E37048869A342dF0651b9F267e41";
 
     AxelarGatewayLike public immutable axelarGateway;
@@ -38,22 +40,6 @@ contract AxelarRouter is Auth {
 
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
-    }
-
-    modifier onlyCentrifugeChainOrigin(string calldata sourceChain, string calldata sourceAddress) {
-        require(
-            keccak256(bytes(CENTRIFUGE_CHAIN_ID)) == keccak256(bytes(sourceChain)), "AxelarRouter/invalid-source-chain"
-        );
-        require(
-            keccak256(bytes(CENTRIFUGE_CHAIN_ADDRESS)) == keccak256(bytes(sourceAddress)),
-            "AxelarRouter/invalid-source-address"
-        );
-        _;
-    }
-
-    modifier onlyGateway() {
-        require(msg.sender == address(gateway), "AxelarRouter/only-gateway-allowed-to-call");
-        _;
     }
 
     // --- Administration ---
@@ -73,7 +59,10 @@ contract AxelarRouter is Auth {
         string calldata sourceChain,
         string calldata sourceAddress,
         bytes calldata payload
-    ) public onlyCentrifugeChainOrigin(sourceChain, sourceAddress) {
+    ) public {
+        require(keccak256(bytes(sourceChain)) == CENTRIFUGE_CHAIN_ID_HASH, "AxelarRouter/invalid-source-chain");
+        require(keccak256(bytes(sourceAddress)) == CENTRIFUGE_CHAIN_ADDRESS_HASH, "AxelarRouter/invalid-source-address");
+
         bytes32 payloadHash = keccak256(payload);
         require(
             axelarGateway.validateContractCall(commandId, sourceChain, sourceAddress, payloadHash),
@@ -84,7 +73,8 @@ contract AxelarRouter is Auth {
     }
 
     // --- Outgoing ---
-    function send(bytes calldata message) public onlyGateway {
+    function send(bytes calldata message) public {
+        require(msg.sender == address(gateway), "AxelarRouter/only-gateway-allowed-to-call");
         axelarGateway.callContract(CENTRIFUGE_CHAIN_ID, CENTRIFUGE_AXELAR_EXECUTABLE, message);
     }
 }
