@@ -174,10 +174,17 @@ contract PoolManagerTest is BaseTest {
         uint128 badCurrency = 2;
         vm.assume(currency > 0);
         vm.assume(currency != badCurrency);
-        ERC20 erc20_invalid = _newErc20("X's Dollar", "USDX", 42);
+        ERC20 erc20_invalid_too_few = _newErc20("X's Dollar", "USDX", 0);
+        ERC20 erc20_invalid_too_many = _newErc20("X's Dollar", "USDX", 42);
+
+        vm.expectRevert(bytes("PoolManager/too-few-currency-decimals"));
+        centrifugeChain.addCurrency(currency, address(erc20_invalid_too_few));
 
         vm.expectRevert(bytes("PoolManager/too-many-currency-decimals"));
-        centrifugeChain.addCurrency(currency, address(erc20_invalid));
+        centrifugeChain.addCurrency(currency, address(erc20_invalid_too_many));
+
+        vm.expectRevert(bytes("PoolManager/currency-id-has-to-be-greater-than-0"));
+        centrifugeChain.addCurrency(0, address(erc20));
 
         centrifugeChain.addCurrency(currency, address(erc20));
 
@@ -313,15 +320,21 @@ contract PoolManagerTest is BaseTest {
         );
         assertEq(trancheToken.balanceOf(address(this)), amount); // Verify the address(this) has the expected amount
 
+        // fails for invalid tranche token
+        uint64 poolId = lPool.poolId();
+        bytes16 trancheId = lPool.trancheId();
+        vm.expectRevert(bytes("PoolManager/unknown-token"));
+        poolManager.transferTrancheTokensToCentrifuge(poolId + 1, trancheId, centChainAddress, amount);
+
         // send the transfer from EVM -> Cent Chain
         trancheToken.approve(address(poolManager), amount);
-        poolManager.transferTrancheTokensToCentrifuge(lPool.poolId(), lPool.trancheId(), centChainAddress, amount);
+        poolManager.transferTrancheTokensToCentrifuge(poolId, trancheId, centChainAddress, amount);
         assertEq(trancheToken.balanceOf(address(this)), 0);
 
         // Finally, verify the connector called `router.send`
         bytes memory message = MessagesLib.formatTransferTrancheTokens(
-            lPool.poolId(),
-            lPool.trancheId(),
+            poolId,
+            trancheId,
             bytes32(bytes20(address(this))),
             MessagesLib.formatDomain(MessagesLib.Domain.Centrifuge),
             centChainAddress,
@@ -345,7 +358,13 @@ contract PoolManagerTest is BaseTest {
         centrifugeChain.incomingTransferTrancheTokens(
             poolId, trancheId, uint64(block.chainid), destinationAddress, amount
         );
-        centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), destinationAddress, validUntil);
+        centrifugeChain.updateMember(poolId, trancheId, destinationAddress, validUntil);
+
+        vm.expectRevert(bytes("PoolManager/unknown-token"));
+        centrifugeChain.incomingTransferTrancheTokens(
+            poolId + 1, trancheId, uint64(block.chainid), destinationAddress, amount
+        );
+
         assertTrue(trancheToken.checkTransferRestriction(address(0), destinationAddress, 0));
         centrifugeChain.incomingTransferTrancheTokens(
             poolId, trancheId, uint64(block.chainid), destinationAddress, amount
@@ -372,6 +391,12 @@ contract PoolManagerTest is BaseTest {
             lPool.poolId(), lPool.trancheId(), uint64(block.chainid), address(this), amount
         );
         assertEq(trancheToken.balanceOf(address(this)), amount);
+
+        // fails for invalid tranche token
+        uint64 poolId = lPool.poolId();
+        bytes16 trancheId = lPool.trancheId();
+        vm.expectRevert(bytes("PoolManager/unknown-token"));
+        poolManager.transferTrancheTokensToEVM(poolId + 1, trancheId, uint64(block.chainid), destinationAddress, amount);
 
         // Approve and transfer amount from this address to destinationAddress
         trancheToken.approve(address(poolManager), amount);
@@ -412,6 +437,15 @@ contract PoolManagerTest is BaseTest {
         uint64 validUntil = uint64(block.timestamp + 7 days);
         address secondUser = makeAddr("secondUser");
 
+        vm.expectRevert(bytes("PoolManager/escrow-cannot-be-frozen"));
+        centrifugeChain.freeze(poolId, trancheId, address(escrow));
+
+        vm.expectRevert(bytes("PoolManager/unknown-token"));
+        centrifugeChain.freeze(poolId + 1, trancheId, randomUser);
+
+        vm.expectRevert(bytes("PoolManager/unknown-token"));
+        centrifugeChain.unfreeze(poolId + 1, trancheId, randomUser);
+
         centrifugeChain.updateMember(poolId, trancheId, randomUser, validUntil);
         centrifugeChain.updateMember(poolId, trancheId, secondUser, validUntil);
         assertTrue(trancheToken.checkTransferRestriction(randomUser, secondUser, 0));
@@ -422,8 +456,11 @@ contract PoolManagerTest is BaseTest {
         centrifugeChain.unfreeze(poolId, trancheId, randomUser);
         assertTrue(trancheToken.checkTransferRestriction(randomUser, secondUser, 0));
 
-        vm.expectRevert(bytes("PoolManager/escrow-cannot-be-frozen"));
-        centrifugeChain.freeze(poolId, trancheId, address(escrow));
+        centrifugeChain.freeze(poolId, trancheId, secondUser);
+        assertFalse(trancheToken.checkTransferRestriction(randomUser, secondUser, 0));
+
+        centrifugeChain.unfreeze(poolId, trancheId, secondUser);
+        assertTrue(trancheToken.checkTransferRestriction(randomUser, secondUser, 0));
     }
 
     function testUpdateTokenMetadata() public {
@@ -468,8 +505,14 @@ contract PoolManagerTest is BaseTest {
         vm.expectRevert(bytes("PoolManager/unknown-currency"));
         centrifugeChain.allowInvestmentCurrency(poolId, randomCurrency);
 
+        vm.expectRevert(bytes("PoolManager/invalid-pool"));
+        centrifugeChain.allowInvestmentCurrency(poolId + 1, randomCurrency);
+
         vm.expectRevert(bytes("PoolManager/unknown-currency"));
         centrifugeChain.disallowInvestmentCurrency(poolId, randomCurrency);
+
+        vm.expectRevert(bytes("PoolManager/invalid-pool"));
+        centrifugeChain.disallowInvestmentCurrency(poolId + 1, randomCurrency);
     }
 
     function testUpdateTokenPriceWorks(

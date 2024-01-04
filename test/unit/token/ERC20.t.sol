@@ -52,6 +52,20 @@ contract ERC20Test is Test {
         token = new ERC20(18);
     }
 
+    function testFile(string memory newName, string memory newSymbol, address invalidOrigin) public {
+        vm.assume(invalidOrigin != address(this));
+
+        vm.prank(invalidOrigin);
+        vm.expectRevert(bytes("Auth/not-authorized"));
+        token.file("name", newName);
+
+        token.file("name", newName);
+        assertEq(token.name(), newName);
+
+        token.file("symbol", newSymbol);
+        assertEq(token.symbol(), newSymbol);
+    }
+
     function testMint() public {
         vm.expectEmit(true, true, true, true);
         emit Transfer(address(0), address(0xBEEF), 1e18);
@@ -444,6 +458,26 @@ contract ERC20Test is Test {
 
         uint256 app = from == address(this) || approval == type(uint256).max ? approval : approval - amount;
         assertEq(token.allowance(from, address(this)), app);
+
+        if (from == to) {
+            assertEq(token.balanceOf(from), amount);
+        } else {
+            assertEq(token.balanceOf(from), 0);
+            assertEq(token.balanceOf(to), amount);
+        }
+    }
+
+    function testAuthTransferFrom(address to, uint256 amount) public {
+        if (to == address(0) || to == address(token)) return;
+
+        address from = address(0xABCD);
+
+        token.mint(from, amount);
+
+        vm.expectEmit(true, true, true, true);
+        emit Transfer(from, to, amount);
+        assertTrue(token.authTransferFrom(from, to, amount));
+        assertEq(token.totalSupply(), amount);
 
         if (from == to) {
             assertEq(token.balanceOf(from), amount);

@@ -21,8 +21,8 @@ contract MockCentrifugeChain is Test {
         AddPool
     }
 
-    constructor(address xcmRouter) {
-        router = RouterLike(xcmRouter);
+    constructor(address router_) {
+        router = RouterLike(router_);
     }
 
     function addCurrency(uint128 currency, address currencyAddress) public {

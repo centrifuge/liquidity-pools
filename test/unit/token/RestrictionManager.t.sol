@@ -17,6 +17,9 @@ contract RestrictionManagerTest is Test {
     function testAddMember(uint64 validUntil) public {
         vm.assume(validUntil >= block.timestamp);
 
+        vm.expectRevert("RestrictionManager/invalid-valid-until");
+        restrictionManager.updateMember(address(this), block.timestamp - 1);
+
         restrictionManager.updateMember(address(this), validUntil);
         assertEq(restrictionManager.members(address(this)), validUntil);
     }
