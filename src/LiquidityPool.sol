@@ -147,7 +147,7 @@ contract LiquidityPool is Auth, IERC7540 {
     {
         require(IERC20Metadata(share).balanceOf(owner) >= shares, "LiquidityPool/insufficient-balance");
         require(manager.requestRedeem(address(this), shares, receiver, owner), "LiquidityPool/request-redeem-failed");
-        require(transferFrom(owner, address(escrow), shares), "LiquidityPool/transfer-failed");
+        require(_transferFrom(owner, address(escrow), shares), "LiquidityPool/transfer-failed");
 
         require(
             data.length == 0 || receiver.code.length == 0
@@ -297,8 +297,8 @@ contract LiquidityPool is Auth, IERC7540 {
         revert();
     }
 
-    // --- ERC-20 forwarding ---
-    function transferFrom(address from, address to, uint256 value) public returns (bool) {
+    // --- Helpers ---
+    function _transferFrom(address from, address to, uint256 value) internal returns (bool) {
         (bool success, bytes memory data) = address(share).call(
             bytes.concat(
                 abi.encodeWithSignature("transferFrom(address,address,uint256)", from, to, value), bytes20(msg.sender)
@@ -308,11 +308,6 @@ contract LiquidityPool is Auth, IERC7540 {
         return abi.decode(data, (bool));
     }
 
-    function decimals() external view returns (uint8) {
-        return IERC20Metadata(share).decimals();
-    }
-
-    // --- Helpers ---
     function emitDepositClaimable(address owner, uint256 assets, uint256 shares) public auth {
         emit DepositClaimable(owner, REQUEST_ID, assets, shares);
     }
