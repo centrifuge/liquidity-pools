@@ -131,8 +131,13 @@ contract RouterAggregator is Auth {
     // Can we allow resending the payload over another router?
     function send(bytes calldata message) public {
         require(msg.sender == address(gateway), "RouterAggregator/only-gateway-allowed-to-call");
-        for (uint256 i = 0; i < routers.length; ++i) {
-            RouterLike(routers[i]).send(message);
+
+        // Send full payload once
+        RouterLike(routers[0]).send(message);
+
+        // Send proofs n-1 times
+        for (uint256 i = 1; i < routers.length; ++i) {
+            RouterLike(routers[i]).send(MessagesLib.formatMessageProof(message));
         }
     }
 

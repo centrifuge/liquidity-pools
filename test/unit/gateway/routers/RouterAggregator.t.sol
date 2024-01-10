@@ -24,7 +24,7 @@ contract RouterAggregatorTest is BaseTest {
         routers.push(router3);
     }
 
-    function testExecution() public {
+    function testIncoming() public {
         aggregator.file("routers", routers, 2);
 
         bytes memory firstPayload = MessagesLib.formatAddPool(1);
@@ -89,4 +89,6 @@ contract RouterAggregatorTest is BaseTest {
         aggregator.execute(thirdPayload);
         assertEq(gatewayMock.handled(thirdPayload), 1);
     }
+
+    // TODO: set up mock router and test sending messages
 }
