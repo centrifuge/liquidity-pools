@@ -17,15 +17,17 @@ interface RouterLike {
 /// @notice Routing contract that forwards to multiple routers
 ///         and validates multiple routers have confirmed a message
 contract RouterAggregator is Auth {
-    uint8 public constant MAX_QUORUM = 3;
-    uint8 public constant MAX_ROUTER_COUNT = 4;
+    uint8 public constant MAX_QUORUM = 6;
+
+    // Array of 8 is used to store paylods & proofs, but index 0 is reserved
+    // as this is the default value and therefore used to detect invalid routers
+    uint8 public constant MAX_ROUTER_COUNT = 7;
 
     GatewayLike public gateway;
 
     uint8 public quorum;
     address[] public routers;
-    mapping(address router => uint8) public routerIds;
-    mapping(address router => bool isValid) public validRouters;
+    mapping(address router => uint8 id) public validRouters;
 
     /// @dev This router does not use unique message IDs. If there are multiple
     ///      messages with the exact same payload, the received counts will be
@@ -33,21 +35,13 @@ contract RouterAggregator is Auth {
     ///      of 4 and a quorum of 3, both messages can be executed if the received
     ///      count exeeds 6. The counts are added across payloads and proofs.
     ///
-    ///      A single bytes32 value can store 4 uint64 values
     struct ConfirmationState {
-        uint64[4] payloads;
-        uint64[4] proofs;
+        // Each uint32[8] value is packed in a single bytes32 slot
+        uint32[8] payloads;
+        uint32[8] proofs;
         // If 1 or more proofs are received before full payload,
         // store here for later execution
         bytes fullPayload;
-    }
-
-    // TODO: scale up to 8 routers with uint32
-    struct Counts {
-        uint64 router0;
-        uint64 router1;
-        uint64 router2;
-        uint64 router3;
     }
 
     mapping(bytes32 messageHash => ConfirmationState) public confirmations;
@@ -79,15 +73,14 @@ contract RouterAggregator is Auth {
 
             // Disable old routers
             // TODO: try to combine with loop later to save storage reads/writes
-            for (uint8 i = 0; i < routers.length; ++i) {
-                validRouters[address(routers[i])] = false;
+            for (uint8 i = 1; i <= routers.length; ++i) {
+                validRouters[address(routers[i])] = 0;
             }
 
             // Enable new routers and set quorum
             routers = routers_;
             for (uint8 i = 0; i < routers_.length; ++i) {
-                validRouters[routers_[i]] = true;
-                routerIds[routers_[i]] = i;
+                validRouters[routers_[i]] = i + 1;
             }
             quorum = quorum_;
         } else {
@@ -100,8 +93,8 @@ contract RouterAggregator is Auth {
     // --- Incoming ---
     /// @dev Assumes routers ensure messages cannot be confirmed more than once
     function execute(bytes calldata payload) public {
-        require(validRouters[msg.sender] == true, "RouterAggregator/invalid-router");
-        uint8 routerId = routerIds[msg.sender];
+        uint8 routerId = validRouters[msg.sender];
+        require(routerId != 0, "RouterAggregator/invalid-router");
 
         ConfirmationState storage state;
         if (MessagesLib.isMessageProof(payload)) {
@@ -114,12 +107,12 @@ contract RouterAggregator is Auth {
             state.payloads[routerId]++;
         }
 
-        uint8 totalPayloads = countNonZeroValues(state.payloads);
-        uint8 totalProofs = countNonZeroValues(state.proofs);
+        uint8 totalPayloads = _countNonZeroValues(state.payloads);
+        uint8 totalProofs = _countNonZeroValues(state.proofs);
 
         if (totalPayloads + totalProofs >= quorum && totalPayloads >= 1) {
-            decreaseValues(state.payloads, 1);
-            decreaseValues(state.proofs, 1);
+            _decreaseValues(state.payloads, 1);
+            _decreaseValues(state.proofs, 1);
 
             if (MessagesLib.isMessageProof(payload)) {
                 gateway.handle(state.fullPayload);
@@ -131,23 +124,28 @@ contract RouterAggregator is Auth {
         }
     }
 
-    function countNonZeroValues(uint64[4] memory arr) internal pure returns (uint8 count) {
+    // --- Outgoing ---
+    // TODO: how to choose which router for the payload and which for proofs,
+    // and how to handle recovery if the payload router fails?
+    //
+    // Can we allow resending the payload over another router?
+    function send(bytes calldata message) public {
+        require(msg.sender == address(gateway), "RouterAggregator/only-gateway-allowed-to-call");
+        for (uint256 i = 0; i < routers.length; ++i) {
+            RouterLike(routers[i]).send(message);
+        }
+    }
+
+    // --- Helpers ---
+    function _countNonZeroValues(uint32[8] memory arr) internal pure returns (uint8 count) {
         for (uint256 i = 0; i < arr.length; ++i) {
             if (arr[i] > 0) ++count;
         }
     }
 
-    function decreaseValues(uint64[4] storage arr, uint64 decrease) internal {
+    function _decreaseValues(uint32[8] storage arr, uint32 decrease) internal {
         for (uint256 i = 0; i < arr.length; ++i) {
             if (arr[i] > 0) arr[i] -= decrease;
-        }
-    }
-
-    // --- Outgoing ---
-    function send(bytes calldata message) public {
-        require(msg.sender == address(gateway), "RouterAggregator/only-gateway-allowed-to-call");
-        for (uint256 i = 0; i < routers.length; ++i) {
-            RouterLike(routers[i]).send(message);
         }
     }
 }
