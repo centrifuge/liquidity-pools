@@ -4,11 +4,13 @@ pragma solidity 0.8.21;
 import "./Mock.sol";
 
 contract GatewayMock is Mock {
+    mapping(bytes => uint256) public handled;
+
     constructor() {}
 
     // --- Incoming ---
     function handle(bytes calldata message) public {
-        values_bytes["handle_message"] = message;
+        handled[message] += 1;
     }
 
     // --- Outgoing ---

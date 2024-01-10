@@ -8,24 +8,12 @@ import {Auth} from "src/Auth.sol";
 import "./Mock.sol";
 
 contract MockRouter is Auth, Mock {
-    address public immutable centrifugeChainOrigin;
     address public gateway;
 
     mapping(bytes => bool) public sentMessages;
 
-    constructor(address centrifugeChainOrigin_) {
-        centrifugeChainOrigin = centrifugeChainOrigin_;
+    constructor() {
         wards[msg.sender] = 1;
-    }
-
-    modifier onlyCentrifugeChainOrigin() {
-        require(msg.sender == address(centrifugeChainOrigin), "MockRouter/invalid-origin");
-        _;
-    }
-
-    modifier onlyGateway() {
-        require(msg.sender == address(gateway), "MockRouter/only-gateway-allowed-to-call");
-        _;
     }
 
     function file(bytes32 what, address addr) external {
@@ -40,7 +28,7 @@ contract MockRouter is Auth, Mock {
         Gateway(gateway).handle(_message);
     }
 
-    function send(bytes memory message) public onlyGateway {
+    function send(bytes memory message) public {
         values_bytes["send"] = message;
         sentMessages[message] = true;
     }

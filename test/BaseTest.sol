@@ -53,7 +53,7 @@ contract BaseTest is Deployer, Test {
         // deploy core contracts
         deployInvestmentManager(address(this));
         // deploy mockRouter
-        router = new MockRouter(address(investmentManager));
+        router = new MockRouter();
         // wire contracts
         wire(address(router));
         // give admin access
