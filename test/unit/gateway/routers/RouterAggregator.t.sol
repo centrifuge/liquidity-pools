@@ -25,52 +25,68 @@ contract RouterAggregatorTest is BaseTest {
     }
 
     function testExecution() public {
-        aggregator.file("routerId", router1, 0);
-        aggregator.file("routerId", router2, 1);
-        aggregator.file("routerId", router3, 2);
-        aggregator.file("routers", routers);
-        aggregator.file("quorum", 2);
+        aggregator.file("routers", routers, 2);
 
         bytes memory firstPayload = MessagesLib.formatAddPool(1);
-        bytes memory secondPayload = MessagesLib.formatAddPool(2);
+        bytes memory firstPayloadProof = MessagesLib.formatMessageProof(MessagesLib.formatAddPool(1));
 
+        // Executes after quorum is reached
         vm.prank(router1);
         aggregator.execute(firstPayload);
         assertEq(gatewayMock.handled(firstPayload), 0);
 
         vm.prank(router2);
-        aggregator.execute(firstPayload);
+        aggregator.execute(firstPayloadProof);
         assertEq(gatewayMock.handled(firstPayload), 1);
 
         vm.prank(router3);
-        aggregator.execute(firstPayload);
+        aggregator.execute(firstPayloadProof);
         assertEq(gatewayMock.handled(firstPayload), 1);
 
-        // Immediately executed because payload matches
+        // Resending same payload works
+        // Immediately executes because of 3rd proof from previous matching payload
         vm.prank(router1);
         aggregator.execute(firstPayload);
         assertEq(gatewayMock.handled(firstPayload), 2);
 
         vm.prank(router2);
-        aggregator.execute(firstPayload);
+        aggregator.execute(firstPayloadProof);
         assertEq(gatewayMock.handled(firstPayload), 2);
 
         vm.prank(router3);
-        aggregator.execute(firstPayload);
+        aggregator.execute(firstPayloadProof);
         assertEq(gatewayMock.handled(firstPayload), 2);
 
-        // Not immediately executed
+        // Sending another payload works
+        bytes memory secondPayload = MessagesLib.formatAddPool(2);
+        bytes memory secondPayloadProof = MessagesLib.formatMessageProof(MessagesLib.formatAddPool(2));
+
         vm.prank(router1);
         aggregator.execute(secondPayload);
         assertEq(gatewayMock.handled(secondPayload), 0);
 
         vm.prank(router2);
-        aggregator.execute(secondPayload);
+        aggregator.execute(secondPayloadProof);
         assertEq(gatewayMock.handled(secondPayload), 1);
 
         vm.prank(router3);
-        aggregator.execute(secondPayload);
+        aggregator.execute(secondPayloadProof);
         assertEq(gatewayMock.handled(secondPayload), 1);
 
+        // Swapping order of payload vs proofs works
+        bytes memory thirdPayload = MessagesLib.formatAddPool(3);
+        bytes memory thirdPayloadProof = MessagesLib.formatMessageProof(MessagesLib.formatAddPool(3));
+
+        vm.prank(router1);
+        aggregator.execute(thirdPayloadProof);
+        assertEq(gatewayMock.handled(thirdPayload), 0);
+
+        vm.prank(router2);
+        aggregator.execute(thirdPayloadProof);
+        assertEq(gatewayMock.handled(thirdPayload), 0);
+
+        vm.prank(router3);
+        aggregator.execute(thirdPayload);
+        assertEq(gatewayMock.handled(thirdPayload), 1);
     }
 }

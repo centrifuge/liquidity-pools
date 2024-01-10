@@ -62,7 +62,9 @@ library MessagesLib {
         /// 26 - Unfreeze tranche tokens
         Unfreeze,
         /// 27 - Request redeem investor
-        TriggerIncreaseRedeemOrder
+        TriggerIncreaseRedeemOrder,
+        /// 28 - Proof
+        MessageProof
     }
 
     enum Domain {
@@ -951,6 +953,24 @@ library MessagesLib {
         investor = BytesLib.toAddress(_msg, 25);
         currency = BytesLib.toUint128(_msg, 57);
         trancheTokenAmount = BytesLib.toUint128(_msg, 73);
+    }
+
+    /**
+     * Message Proof
+     *
+     * 0: call type (uint8 = 1 byte)
+     * 1-32: The keccak message proof (bytes32)
+     */
+    function formatMessageProof(bytes memory message) internal pure returns (bytes memory) {
+        return abi.encodePacked(uint8(Call.MessageProof), keccak256(message));
+    }
+
+    function isMessageProof(bytes memory _msg) internal pure returns (bool) {
+        return messageType(_msg) == Call.MessageProof;
+    }
+
+    function parseMessageProof(bytes memory _msg) internal pure returns (bytes32 proof) {
+        proof = BytesLib.toBytes32(_msg, 1);
     }
 
     // Utils
