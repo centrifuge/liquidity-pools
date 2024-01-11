@@ -603,34 +603,6 @@ contract PoolManagerTest is BaseTest {
         poolManager.removeLiquidityPool(poolId, trancheId, address(erc20));
     }
 
-    function testRemoveLiquidityPoolArbitraryTransferAfterRemovalFails() public {
-        uint128 amount = 100;
-        address lPool_ = deploySimplePool();
-        LiquidityPool lPool = LiquidityPool(lPool_);
-        uint64 poolId = lPool.poolId();
-        bytes16 trancheId = lPool.trancheId();
-        address currency = address(lPool.asset());
-        TrancheTokenLike trancheToken = TrancheTokenLike(address(LiquidityPool(lPool_).share()));
-
-        address randomAddress = makeAddr("randomAddr");
-        centrifugeChain.updateMember(poolId, trancheId, randomAddress, uint64(block.timestamp + 7 days));
-
-        centrifugeChain.incomingTransferTrancheTokens(poolId, trancheId, uint64(block.chainid), address(escrow), amount);
-        assertEq(trancheToken.balanceOf(address(escrow)), amount);
-        uint256 balance = trancheToken.balanceOf(address(escrow));
-        root.relyContract(address(poolManager), self);
-        poolManager.removeLiquidityPool(poolId, trancheId, currency);
-
-        // arbitrary transferFrom execution
-        bytes memory payload =
-            abi.encodeWithSelector(ERC20.transferFrom.selector, address(escrow), randomAddress, balance);
-        vm.expectRevert(bytes("ERC20/insufficient-allowance"));
-        (bool success,) = address(lPool_).call(payload);
-        assertEq(success, true);
-
-        assertEq(trancheToken.balanceOf(address(escrow)), amount);
-    }
-
     function testLiquidityPoolMigration() public {
         address oldLiquidityPool_ = deploySimplePool();
 

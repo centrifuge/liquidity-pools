@@ -164,9 +164,11 @@ contract DeployTest is Test, Deployer {
         lPool.requestRedeem(amount, address(this), address(this), "");
 
         // redeem
+        TrancheToken trancheToken = TrancheToken(address(lPool.share()));
         uint128 _currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
-        uint128 currencyPayout =
-            (amount.mulDiv(price, 10 ** (18 - erc20.decimals() + lPool.decimals()), MathLib.Rounding.Down)).toUint128();
+        uint128 currencyPayout = (
+            amount.mulDiv(price, 10 ** (18 - erc20.decimals() + trancheToken.decimals()), MathLib.Rounding.Down)
+        ).toUint128();
         // Assume an epoch execution happens on cent chain
         // Assume a bot calls collectRedeem for this user on cent chain
         vm.prank(address(gateway));
@@ -174,7 +176,6 @@ contract DeployTest is Test, Deployer {
             poolId, trancheId, self, _currencyId, currencyPayout, uint128(amount), 0
         );
 
-        TrancheToken trancheToken = TrancheToken(address(lPool.share()));
         assertEq(lPool.maxWithdraw(self), currencyPayout);
         assertEq(lPool.maxRedeem(self), amount);
         assertEq(trancheToken.balanceOf(address(escrow)), 0);
