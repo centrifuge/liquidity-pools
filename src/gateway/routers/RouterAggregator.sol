@@ -141,7 +141,9 @@ contract RouterAggregator is Auth {
 
     /// @dev Recovery method in case the first (primary) router failed to send a message
     ///      or more than (num routers - quorum) failed to send the proof
-    function resend(bytes calldata message, uint8 primaryRouterId) public auth {
+    function recover(bytes calldata message, uint8 primaryRouterId) public auth {
+        // TODO: invalidate previous full payload message by sending `InvalidateMessageId` message
+        // with router specific message id passed as arg to `resend`?
         _send(message, primaryRouterId);
     }
 
