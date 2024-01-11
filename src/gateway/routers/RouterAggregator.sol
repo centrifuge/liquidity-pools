@@ -14,7 +14,7 @@ interface RouterLike {
 }
 
 /// @title  RouterAggregator
-/// @notice Routing contract that forwards to multiple routers
+/// @notice Routing contract that forwards to multiple routers (1 payload, n-1 proofs)
 ///         and validates multiple routers have confirmed a message
 contract RouterAggregator is Auth {
     uint8 public constant MIN_QUORUM = 1;
@@ -30,11 +30,10 @@ contract RouterAggregator is Auth {
     address[] public routers;
     mapping(address router => uint8 id) public validRouters;
 
-    /// @dev This router does not use unique message IDs. If there are multiple
-    ///      messages with the exact same payload, the payload & proof counts will be
-    ///      increased beyond 1 if the messages are processed in parallel.
     struct ConfirmationState {
-        // Each uint32[8] value is packed in a single bytes32 slot
+        // Counts are stored as integers (instead of boolean values) to accommodate duplicate
+        // messages (e.g. two investments from the same user with the same amount) being
+        // processed in parallel. Each uint32[8] value is packed in a single bytes32 slot
         uint32[8] payloads;
         uint32[8] proofs;
         // If 1 or more proofs are received before full payload,
