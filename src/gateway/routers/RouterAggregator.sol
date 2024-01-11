@@ -136,16 +136,19 @@ contract RouterAggregator is Auth {
     ///      proofs (hash of message). This ensures message uniqueness (can only be executed on the destination once).
     function send(bytes calldata message) public {
         require(msg.sender == address(gateway), "RouterAggregator/only-gateway-allowed-to-call");
+        _send(message, 0);
+    }
 
-        // TODO: how to choose which router for the payload and which for proofs,
-        // and how to handle recovery if the payload router fails?
+    /// @dev Recovery method in case the first (primary) router failed to send a message
+    ///      or more than (num routers - quorum) failed to send the proof
+    function resend(bytes calldata message, uint8 primaryRouterId) public auth {
+        _send(message, primaryRouterId);
+    }
 
-        // Send full payload once
-        RouterLike(routers[0]).send(message);
-
-        // Send proofs n-1 times
-        for (uint256 i = 1; i < routers.length; ++i) {
-            RouterLike(routers[i]).send(MessagesLib.formatMessageProof(message));
+    function _send(bytes calldata message, uint8 primaryRouterId) internal {
+        bytes memory proofMessage = MessagesLib.formatMessageProof(message);
+        for (uint256 i = 0; i < routers.length; ++i) {
+            RouterLike(routers[i]).send(i == primaryRouterId ? message : proofMessage);
         }
     }
 
