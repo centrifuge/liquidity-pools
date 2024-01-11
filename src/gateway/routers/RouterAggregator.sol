@@ -31,10 +31,8 @@ contract RouterAggregator is Auth {
     mapping(address router => uint8 id) public validRouters;
 
     /// @dev This router does not use unique message IDs. If there are multiple
-    ///      messages with the exact same payload, the received counts will be
-    ///      increased beyond the router length. E.g. for 2 messages, a router length
-    ///      of 4 and a quorum of 3, both messages can be executed if the received
-    ///      count exeeds 6. The counts are added across payloads and proofs.
+    ///      messages with the exact same payload, the payload & proof counts will be
+    ///      increased beyond 1 if the messages are processed in parallel.
     struct ConfirmationState {
         // Each uint32[8] value is packed in a single bytes32 slot
         uint32[8] payloads;
