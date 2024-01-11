@@ -75,7 +75,7 @@ contract RouterAggregator is Auth {
 
             // Disable old routers
             // TODO: try to combine with loop later to save storage reads/writes
-            for (uint8 i = 1; i <= routers.length; ++i) {
+            for (uint8 i = 0; i < routers.length; ++i) {
                 validRouters[address(routers[i])] = 0;
             }
 
@@ -101,6 +101,7 @@ contract RouterAggregator is Auth {
         if (quorum == 1 && !MessagesLib.isMessageProof(payload)) {
             // Special case for gas efficiency
             gateway.handle(payload);
+            return;
         }
 
         ConfirmationState storage state;

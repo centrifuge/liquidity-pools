@@ -7,8 +7,12 @@ import {Gateway} from "src/gateway/Gateway.sol";
 import {Auth} from "src/Auth.sol";
 import "./Mock.sol";
 
+interface GatewayLike {
+    function handle(bytes memory message) external;
+}
+
 contract MockRouter is Auth, Mock {
-    address public gateway;
+    GatewayLike public gateway;
 
     mapping(bytes => uint256) public sent;
 
@@ -18,14 +22,14 @@ contract MockRouter is Auth, Mock {
 
     function file(bytes32 what, address addr) external {
         if (what == "gateway") {
-            gateway = addr;
+            gateway = GatewayLike(addr);
         } else {
             revert("MockRouter/file-unrecognized-param");
         }
     }
 
     function execute(bytes memory _message) external {
-        Gateway(gateway).handle(_message);
+        GatewayLike(gateway).handle(_message);
     }
 
     function send(bytes memory message) public {

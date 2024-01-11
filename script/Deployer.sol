@@ -2,7 +2,7 @@
 pragma solidity 0.8.21;
 
 import {Root} from "src/Root.sol";
-import {AxelarRouter} from "src/gateway/routers/axelar/Router.sol";
+import {RouterAggregator} from "src/gateway/routers/RouterAggregator.sol";
 import {Gateway, InvestmentManagerLike} from "src/gateway/Gateway.sol";
 import {InvestmentManager} from "src/InvestmentManager.sol";
 import {PoolManager} from "src/PoolManager.sol";
@@ -29,6 +29,7 @@ contract Deployer is Script {
 
     address admin;
     address[] pausers;
+    address[] routers;
 
     Root public root;
     InvestmentManager public investmentManager;
@@ -38,6 +39,7 @@ contract Deployer is Script {
     PauseAdmin public pauseAdmin;
     DelayedAdmin public delayedAdmin;
     Gateway public gateway;
+    RouterAggregator public aggregator;
     address public liquidityPoolFactory;
     address public restrictionManagerFactory;
     address public trancheTokenFactory;
@@ -69,10 +71,19 @@ contract Deployer is Script {
     }
 
     function wire(address router) public {
+        routers.push(router);
+
         // Deploy gateway and admins
         pauseAdmin = new PauseAdmin(address(root));
         delayedAdmin = new DelayedAdmin(address(root), address(pauseAdmin));
-        gateway = new Gateway(address(root), address(investmentManager), address(poolManager), address(router));
+        gateway = new Gateway(address(root), address(investmentManager), address(poolManager));
+
+        // Deploy and wire aggregator
+        aggregator = new RouterAggregator();
+        aggregator.file("routers", routers, 1);
+        aggregator.file("gateway", address(gateway));
+        gateway.addIncomingRouter(address(aggregator));
+        gateway.updateOutgoingRouter(address(aggregator));
 
         // Wire admins
         pauseAdmin.rely(address(delayedAdmin));
@@ -116,6 +127,7 @@ contract Deployer is Script {
         escrow.deny(deployer);
         userEscrow.deny(deployer);
         gateway.deny(deployer);
+        aggregator.deny(deployer);
         pauseAdmin.deny(deployer);
         delayedAdmin.deny(deployer);
     }

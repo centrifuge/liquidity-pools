@@ -63,6 +63,7 @@ contract DeployTest is Test, Deployer {
         assertEq(escrow.wards(address(this)), 0);
         assertEq(userEscrow.wards(address(this)), 0);
         assertEq(gateway.wards(address(this)), 0);
+        assertEq(aggregator.wards(address(this)), 0);
         assertEq(pauseAdmin.wards(address(this)), 0);
         assertEq(delayedAdmin.wards(address(this)), 0);
         // check factories

@@ -7,20 +7,17 @@ import {GatewayMock} from "test/mocks/GatewayMock.sol";
 import {MockRouter} from "test/mocks/MockRouter.sol";
 
 contract RouterAggregatorTest is BaseTest {
-    RouterAggregator aggregator;
-
     GatewayMock gatewayMock;
     MockRouter router1;
     MockRouter router2;
     MockRouter router3;
-    address[] routers;
+    address[] mockRouters;
 
     function setUp() public override {
         super.setUp();
 
         gatewayMock = new GatewayMock();
 
-        aggregator = new RouterAggregator();
         aggregator.file("gateway", address(gatewayMock));
 
         router1 = new MockRouter();
@@ -30,9 +27,9 @@ contract RouterAggregatorTest is BaseTest {
         router3 = new MockRouter();
         router3.file("gateway", address(aggregator));
 
-        routers.push(address(router1));
-        routers.push(address(router2));
-        routers.push(address(router3));
+        mockRouters.push(address(router1));
+        mockRouters.push(address(router2));
+        mockRouters.push(address(router3));
     }
 
     function testFile() public {
@@ -45,12 +42,12 @@ contract RouterAggregatorTest is BaseTest {
         // TODO: RouterAggregator/exceeds-max-router-count
 
         vm.expectRevert(bytes("RouterAggregator/less-than-min-quorum"));
-        aggregator.file("routers", routers, 0);
+        aggregator.file("routers", mockRouters, 0);
 
         // TODO: RouterAggregator/exceeds-max-quorum
 
         vm.expectRevert(bytes("RouterAggregator/quorum-exceeds-num-routers"));
-        aggregator.file("routers", routers, 4);
+        aggregator.file("routers", mockRouters, 4);
 
         aggregator.deny(self);
         vm.expectRevert(bytes("Auth/not-authorized"));
@@ -58,7 +55,7 @@ contract RouterAggregatorTest is BaseTest {
     }
 
     function testIncomingAggregatedMessages() public {
-        aggregator.file("routers", routers, 2);
+        aggregator.file("routers", mockRouters, 2);
 
         bytes memory firstPayload = MessagesLib.formatAddPool(1);
         bytes memory firstPayloadProof = MessagesLib.formatMessageProof(MessagesLib.formatAddPool(1));
@@ -115,7 +112,7 @@ contract RouterAggregatorTest is BaseTest {
     }
 
     function testOutgoingAggregatedMessages() public {
-        aggregator.file("routers", routers, 2);
+        aggregator.file("routers", mockRouters, 2);
 
         bytes memory firstPayload = MessagesLib.formatAddPool(1);
         bytes memory firstPayloadProof = MessagesLib.formatMessageProof(MessagesLib.formatAddPool(1));

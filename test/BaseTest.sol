@@ -63,13 +63,14 @@ contract BaseTest is Deployer, Test {
 
         centrifugeChain = new MockCentrifugeChain(address(router));
         erc20 = _newErc20("X's Dollar", "USDX", 6);
-        router.file("gateway", address(gateway));
+        router.file("gateway", address(aggregator));
 
         // Exclude predeployed contracts from invariant tests by default
         excludeContract(address(root));
         excludeContract(address(investmentManager));
         excludeContract(address(poolManager));
         excludeContract(address(gateway));
+        excludeContract(address(aggregator));
         excludeContract(address(erc20));
         excludeContract(address(centrifugeChain));
         excludeContract(address(router));
