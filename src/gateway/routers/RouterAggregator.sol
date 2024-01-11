@@ -119,6 +119,7 @@ contract RouterAggregator is Auth {
 
         if (totalPayloads + totalProofs >= quorum && totalPayloads >= 1) {
             _decreaseValues(state.payloads, 1);
+            // TODO: this should reduce (quorum - 1) of the highest values, not all, by one
             _decreaseValues(state.proofs, 1);
 
             if (MessagesLib.isMessageProof(payload)) {
