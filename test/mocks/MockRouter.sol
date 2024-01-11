@@ -10,7 +10,7 @@ import "./Mock.sol";
 contract MockRouter is Auth, Mock {
     address public gateway;
 
-    mapping(bytes => bool) public sentMessages;
+    mapping(bytes => uint256) public sent;
 
     constructor() {
         wards[msg.sender] = 1;
@@ -30,7 +30,7 @@ contract MockRouter is Auth, Mock {
 
     function send(bytes memory message) public {
         values_bytes["send"] = message;
-        sentMessages[message] = true;
+        sent[message]++;
     }
 
     // Added to be ignored in coverage report

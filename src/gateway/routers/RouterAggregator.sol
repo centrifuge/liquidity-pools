@@ -34,7 +34,6 @@ contract RouterAggregator is Auth {
     ///      increased beyond the router length. E.g. for 2 messages, a router length
     ///      of 4 and a quorum of 3, both messages can be executed if the received
     ///      count exeeds 6. The counts are added across payloads and proofs.
-    ///
     struct ConfirmationState {
         // Each uint32[8] value is packed in a single bytes32 slot
         uint32[8] payloads;
@@ -92,7 +91,7 @@ contract RouterAggregator is Auth {
 
     // --- Incoming ---
     /// @dev Assumes routers ensure messages cannot be confirmed more than once
-    function execute(bytes calldata payload) public {
+    function handle(bytes calldata payload) public {
         uint8 routerId = validRouters[msg.sender];
         require(routerId != 0, "RouterAggregator/invalid-router");
 
@@ -128,7 +127,7 @@ contract RouterAggregator is Auth {
     // TODO: how to choose which router for the payload and which for proofs,
     // and how to handle recovery if the payload router fails?
     //
-    // Can we allow resending the payload over another router?
+    // Can we allow resending the payload over another router, only by the initial user or some kind of admin?
     function send(bytes calldata message) public {
         require(msg.sender == address(gateway), "RouterAggregator/only-gateway-allowed-to-call");
 
