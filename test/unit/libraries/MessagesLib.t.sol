@@ -1020,6 +1020,22 @@ contract MessagesLibTest is Test {
         assertEq(decodedCurrency, uint256(currency));
     }
 
+    function testMessageProof() public {
+        bytes memory payload = MessagesLib.formatAddPool(1);
+        bytes memory expectedHex = hex"1cfe5c5905ed051500f0e9887c795a77399087aa6cbcbf48b19a9d162ba1b7fa76";
+
+        assertEq(MessagesLib.formatMessageProof(payload), expectedHex);
+
+        (bytes32 decodedProof) = MessagesLib.parseMessageProof(expectedHex);
+        assertEq(decodedProof, keccak256(payload));
+    }
+
+    function testMessageProofEquivalence(bytes memory payload) public {
+        bytes memory _message = MessagesLib.formatMessageProof(payload);
+        (bytes32 decodedProof) = MessagesLib.parseMessageProof(_message);
+        assertEq(decodedProof, keccak256(payload));
+    }
+
     function testFormatDomainCentrifuge() public {
         assertEq(MessagesLib.formatDomain(MessagesLib.Domain.Centrifuge), hex"000000000000000000");
     }
