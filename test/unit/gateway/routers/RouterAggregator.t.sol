@@ -42,6 +42,16 @@ contract RouterAggregatorTest is BaseTest {
         aggregator.file("gateway", randomUser);
         assertEq(address(aggregator.gateway()), randomUser);
 
+        // TODO: RouterAggregator/exceeds-max-router-count
+
+        vm.expectRevert(bytes("RouterAggregator/less-than-min-quorum"));
+        aggregator.file("routers", routers, 0);
+
+        // TODO: RouterAggregator/exceeds-max-quorum
+
+        vm.expectRevert(bytes("RouterAggregator/quorum-exceeds-num-routers"));
+        aggregator.file("routers", routers, 4);
+
         aggregator.deny(self);
         vm.expectRevert(bytes("Auth/not-authorized"));
         aggregator.file("gateway", randomUser);

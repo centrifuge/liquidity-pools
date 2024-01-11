@@ -17,6 +17,7 @@ interface RouterLike {
 /// @notice Routing contract that forwards to multiple routers
 ///         and validates multiple routers have confirmed a message
 contract RouterAggregator is Auth {
+    uint8 public constant MIN_QUORUM = 1;
     uint8 public constant MAX_QUORUM = 6;
 
     // Array of 8 is used to store paylods & proofs, but index 0 is reserved
@@ -68,7 +69,9 @@ contract RouterAggregator is Auth {
     function file(bytes32 what, address[] calldata routers_, uint8 quorum_) external auth {
         if (what == "routers") {
             require(routers_.length <= MAX_ROUTER_COUNT, "RouterAggregator/exceeds-max-router-count");
+            require(quorum_ >= MIN_QUORUM, "RouterAggregator/less-than-min-quorum");
             require(quorum_ <= MAX_QUORUM, "RouterAggregator/exceeds-max-quorum");
+            require(quorum_ <= routers_.length, "RouterAggregator/quorum-exceeds-num-routers");
 
             // Disable old routers
             // TODO: try to combine with loop later to save storage reads/writes
@@ -94,6 +97,11 @@ contract RouterAggregator is Auth {
     function handle(bytes calldata payload) public {
         uint8 routerId = validRouters[msg.sender];
         require(routerId != 0, "RouterAggregator/invalid-router");
+
+        if (quorum == 1 && !MessagesLib.isMessageProof(payload)) {
+            // Special case for gas efficiency
+            gateway.handle(payload);
+        }
 
         ConfirmationState storage state;
         if (MessagesLib.isMessageProof(payload)) {
@@ -124,12 +132,13 @@ contract RouterAggregator is Auth {
     }
 
     // --- Outgoing ---
-    // TODO: how to choose which router for the payload and which for proofs,
-    // and how to handle recovery if the payload router fails?
-    //
-    // Can we allow resending the payload over another router, only by the initial user or some kind of admin?
+    /// @dev Sends 1 message to the first router with full payload, and n-1 messages to the other routers with
+    ///      proofs (hash of message). This ensures message uniqueness (can only be executed on the destination once).
     function send(bytes calldata message) public {
         require(msg.sender == address(gateway), "RouterAggregator/only-gateway-allowed-to-call");
+
+        // TODO: how to choose which router for the payload and which for proofs,
+        // and how to handle recovery if the payload router fails?
 
         // Send full payload once
         RouterLike(routers[0]).send(message);
