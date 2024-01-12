@@ -50,7 +50,7 @@ contract AxelarRouterTest is Test {
 
         axelarGateway.setReturn("validateContractCall", false);
         vm.prank(address(relayer));
-        vm.expectRevert(bytes("Router/not-approved-by-gateway"));
+        vm.expectRevert(bytes("AxelarRouter/not-approved-by-axelar-gateway"));
         router.execute(commandId, axelarCentrifugeChainId, axelarCentrifugeChainAddress, payload);
 
         axelarGateway.setReturn("validateContractCall", true);
@@ -61,7 +61,7 @@ contract AxelarRouterTest is Test {
     function testOutgoingCalls(bytes calldata message, address invalidOrigin) public {
         vm.assume(invalidOrigin != address(gateway));
 
-        vm.expectRevert(bytes("AxelarRouter/only-gateway-allowed-to-call"));
+        vm.expectRevert(bytes("AxelarRouter/only-aggregator-allowed-to-call"));
         router.send(message);
 
         vm.prank(address(gateway));

@@ -6,21 +6,21 @@ import {RouterAggregator} from "src/gateway/routers/RouterAggregator.sol";
 import {GatewayMock} from "test/mocks/GatewayMock.sol";
 import {MockRouter} from "test/mocks/MockRouter.sol";
 
-contract RouterAggregatorTest is BaseTest {
-    GatewayMock gatewayMock;
+contract RouterAggregatorTest is Test {
+    RouterAggregator aggregator;
+    GatewayMock gateway;
     MockRouter router1;
     MockRouter router2;
     MockRouter router3;
     address[] mockRouters;
 
-    function setUp() public override {
-        super.setUp();
+    function setUp() public {
+        gateway = new GatewayMock();
+        aggregator = new RouterAggregator(address(gateway));
 
-        gatewayMock = new GatewayMock();
-
-        router1 = new MockRouter(address(gateway));
-        router2 = new MockRouter(address(gateway));
-        router3 = new MockRouter(address(gateway));
+        router1 = new MockRouter(address(aggregator));
+        router2 = new MockRouter(address(aggregator));
+        router3 = new MockRouter(address(aggregator));
 
         mockRouters.push(address(router1));
         mockRouters.push(address(router2));
@@ -38,7 +38,7 @@ contract RouterAggregatorTest is BaseTest {
         vm.expectRevert(bytes("RouterAggregator/quorum-exceeds-num-routers"));
         aggregator.file("routers", mockRouters, 4);
 
-        aggregator.deny(self);
+        aggregator.deny(address(this));
         vm.expectRevert(bytes("Auth/not-authorized"));
         aggregator.file("routers", mockRouters, 4);
     }
@@ -54,50 +54,50 @@ contract RouterAggregatorTest is BaseTest {
 
         // Executes after quorum is reached
         router1.execute(firstPayload);
-        assertEq(gatewayMock.handled(firstPayload), 0);
+        assertEq(gateway.handled(firstPayload), 0);
 
         router2.execute(firstPayloadProof);
-        assertEq(gatewayMock.handled(firstPayload), 1);
+        assertEq(gateway.handled(firstPayload), 1);
 
         router3.execute(firstPayloadProof);
-        assertEq(gatewayMock.handled(firstPayload), 1);
+        assertEq(gateway.handled(firstPayload), 1);
 
         // Resending same payload works
         // Immediately executes because of 3rd proof from previous matching payload
         router1.execute(firstPayload);
-        assertEq(gatewayMock.handled(firstPayload), 2);
+        assertEq(gateway.handled(firstPayload), 2);
 
         router2.execute(firstPayloadProof);
-        assertEq(gatewayMock.handled(firstPayload), 2);
+        assertEq(gateway.handled(firstPayload), 2);
 
         router3.execute(firstPayloadProof);
-        assertEq(gatewayMock.handled(firstPayload), 2);
+        assertEq(gateway.handled(firstPayload), 2);
 
         // Sending another payload works
         bytes memory secondPayload = MessagesLib.formatAddPool(2);
         bytes memory secondPayloadProof = MessagesLib.formatMessageProof(MessagesLib.formatAddPool(2));
 
         router1.execute(secondPayload);
-        assertEq(gatewayMock.handled(secondPayload), 0);
+        assertEq(gateway.handled(secondPayload), 0);
 
         router2.execute(secondPayloadProof);
-        assertEq(gatewayMock.handled(secondPayload), 1);
+        assertEq(gateway.handled(secondPayload), 1);
 
         router3.execute(secondPayloadProof);
-        assertEq(gatewayMock.handled(secondPayload), 1);
+        assertEq(gateway.handled(secondPayload), 1);
 
         // Swapping order of payload vs proofs works
         bytes memory thirdPayload = MessagesLib.formatAddPool(3);
         bytes memory thirdPayloadProof = MessagesLib.formatMessageProof(MessagesLib.formatAddPool(3));
 
         router1.execute(thirdPayloadProof);
-        assertEq(gatewayMock.handled(thirdPayload), 0);
+        assertEq(gateway.handled(thirdPayload), 0);
 
         router2.execute(thirdPayloadProof);
-        assertEq(gatewayMock.handled(thirdPayload), 0);
+        assertEq(gateway.handled(thirdPayload), 0);
 
         router3.execute(thirdPayload);
-        assertEq(gatewayMock.handled(thirdPayload), 1);
+        assertEq(gateway.handled(thirdPayload), 1);
     }
 
     function testOutgoingAggregatedMessages() public {
@@ -116,7 +116,7 @@ contract RouterAggregatorTest is BaseTest {
         vm.expectRevert(bytes("RouterAggregator/only-gateway-allowed-to-call"));
         aggregator.send(firstPayload);
 
-        vm.prank(address(gatewayMock));
+        vm.prank(address(gateway));
         aggregator.send(firstPayload);
 
         assertEq(router1.sent(firstPayload), 1);

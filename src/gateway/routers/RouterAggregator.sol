@@ -15,27 +15,30 @@ interface RouterLike {
 
 /// @title  RouterAggregator
 /// @notice Routing contract that forwards to multiple routers (1 payload, n-1 proofs)
-///         and validates multiple routers have confirmed a message
+///         and validates multiple routers have confirmed a message.
+///
+///         Supports processing multiple duplicate messages in parallel by
+///         storing counts of payloads and proofs that have been received.
 contract RouterAggregator is Auth {
     uint8 public constant MIN_QUORUM = 1;
     uint8 public constant MAX_QUORUM = 6;
 
-    // Array of 8 is used to store paylods & proofs, but index 0 is reserved
+    // Array of 8 is used to store payloads & proofs, but index 0 is reserved
     // as this is the default value and therefore used to detect invalid routers
     uint8 public constant MAX_ROUTER_COUNT = 7;
 
     GatewayLike public immutable gateway;
 
-    uint8 public quorum;
     address[] public routers;
+    mapping(address router => Router) public validRouters;
+    mapping(bytes32 messageHash => bytes) public storedPayload;
+    mapping(bytes32 messageHash => ConfirmationState) internal _confirmations;
 
     struct Router {
         // We pack each router struct with the quorum to reduce SLOADs on handle
         uint8 id;
         uint8 quorum;
     }
-
-    mapping(address router => Router) public validRouters;
 
     struct ConfirmationState {
         // Counts are stored as integers (instead of boolean values) to accommodate duplicate
@@ -45,12 +48,6 @@ contract RouterAggregator is Auth {
         uint16[8] payloads;
         uint16[8] proofs;
     }
-
-    mapping(bytes32 messageHash => ConfirmationState) internal _confirmations;
-
-    // If 1 or more proofs are received before full payload,
-    // store here for later execution
-    mapping(bytes32 messageHash => bytes) public storedPayload;
 
     // --- Events ---
     event File(bytes32 indexed what, address[] routers, uint8 quorum);
@@ -156,8 +153,13 @@ contract RouterAggregator is Auth {
     }
 
     // --- Helpers ---
+    function quorum() external view returns (uint8) {
+        Router memory router = validRouters[routers[0]];
+        return router.quorum;
+    }
+
     function confirmations(bytes32 messageHash)
-        public
+        external
         view
         returns (uint16[8] memory payloads, uint16[8] memory proofs)
     {
