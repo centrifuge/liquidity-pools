@@ -22,24 +22,7 @@ contract AxelarRouterTest is Test {
         gateway = new GatewayMock();
 
         forwarder = new AxelarForwarder(address(axelarGateway));
-        router = new AxelarRouter(address(axelarGateway));
-        router.file("gateway", address(gateway));
-    }
-
-    function testInvalidFile() public {
-        vm.expectRevert("AxelarRouter/file-unrecognized-param");
-        router.file("not-gateway", address(1));
-    }
-
-    function testFileGateway(address invalidOrigin, address anotherGateway) public {
-        vm.assume(invalidOrigin != address(this));
-
-        vm.prank(invalidOrigin);
-        vm.expectRevert(bytes("Auth/not-authorized"));
-        router.file("gateway", anotherGateway);
-
-        router.file("gateway", anotherGateway);
-        assertEq(address(router.gateway()), anotherGateway);
+        router = new AxelarRouter(address(gateway), address(axelarGateway));
     }
 
     function testIncomingCalls(

@@ -44,7 +44,7 @@ contract Deployer is Script {
     address public restrictionManagerFactory;
     address public trancheTokenFactory;
 
-    function deployInvestmentManager(address deployer) public {
+    function deploy(address deployer) public {
         // If no salt is provided, a pseudo-random salt is generated,
         // thus effectively making the deployment non-deterministic
         bytes32 salt = vm.envOr(
@@ -68,20 +68,19 @@ contract Deployer is Script {
         AuthLike(liquidityPoolFactory).rely(address(root));
         AuthLike(trancheTokenFactory).rely(address(root));
         AuthLike(restrictionManagerFactory).rely(address(root));
+
+        gateway = new Gateway(address(root), address(investmentManager), address(poolManager));
+        aggregator = new RouterAggregator(address(gateway));
+
+        pauseAdmin = new PauseAdmin(address(root));
+        delayedAdmin = new DelayedAdmin(address(root), address(pauseAdmin));
     }
 
     function wire(address router) public {
         routers.push(router);
 
-        // Deploy gateway and admins
-        pauseAdmin = new PauseAdmin(address(root));
-        delayedAdmin = new DelayedAdmin(address(root), address(pauseAdmin));
-        gateway = new Gateway(address(root), address(investmentManager), address(poolManager));
-
-        // Deploy and wire aggregator
-        aggregator = new RouterAggregator();
+        // Wire aggregator
         aggregator.file("routers", routers, 1);
-        aggregator.file("gateway", address(gateway));
         gateway.addIncomingRouter(address(aggregator));
         gateway.updateOutgoingRouter(address(aggregator));
 

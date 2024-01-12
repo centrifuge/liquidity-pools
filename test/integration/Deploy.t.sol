@@ -37,10 +37,9 @@ contract DeployTest is Test, Deployer {
     ERC20 erc20;
 
     function setUp() public {
-        deployInvestmentManager(address(this));
-        PermissionlessRouter router = new PermissionlessRouter();
+        deploy(address(this));
+        PermissionlessRouter router = new PermissionlessRouter(address(aggregator));
         wire(address(router));
-        RouterLike(address(router)).file("gateway", address(gateway));
 
         admin = makeAddr("admin");
         pausers.push(makeAddr("pauser1"));

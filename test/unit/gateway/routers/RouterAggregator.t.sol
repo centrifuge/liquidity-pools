@@ -18,14 +18,9 @@ contract RouterAggregatorTest is BaseTest {
 
         gatewayMock = new GatewayMock();
 
-        aggregator.file("gateway", address(gatewayMock));
-
-        router1 = new MockRouter();
-        router1.file("gateway", address(aggregator));
-        router2 = new MockRouter();
-        router2.file("gateway", address(aggregator));
-        router3 = new MockRouter();
-        router3.file("gateway", address(aggregator));
+        router1 = new MockRouter(address(gateway));
+        router2 = new MockRouter(address(gateway));
+        router3 = new MockRouter(address(gateway));
 
         mockRouters.push(address(router1));
         mockRouters.push(address(router2));
@@ -33,12 +28,6 @@ contract RouterAggregatorTest is BaseTest {
     }
 
     function testFile() public {
-        vm.expectRevert(bytes("RouterAggregator/file-unrecognized-param"));
-        aggregator.file("random", self);
-
-        aggregator.file("gateway", randomUser);
-        assertEq(address(aggregator.gateway()), randomUser);
-
         // TODO: RouterAggregator/exceeds-max-router-count
 
         vm.expectRevert(bytes("RouterAggregator/less-than-min-quorum"));
@@ -51,7 +40,7 @@ contract RouterAggregatorTest is BaseTest {
 
         aggregator.deny(self);
         vm.expectRevert(bytes("Auth/not-authorized"));
-        aggregator.file("gateway", randomUser);
+        aggregator.file("routers", mockRouters, 4);
     }
 
     function testIncomingAggregatedMessages() public {

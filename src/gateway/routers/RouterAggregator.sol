@@ -24,16 +24,23 @@ contract RouterAggregator is Auth {
     // as this is the default value and therefore used to detect invalid routers
     uint8 public constant MAX_ROUTER_COUNT = 7;
 
-    GatewayLike public gateway;
+    GatewayLike public immutable gateway;
 
     uint8 public quorum;
     address[] public routers;
-    mapping(address router => uint8 id) public validRouters;
+
+    struct Router {
+        // We pack each router struct with the quorum to reduce SLOADs on handle
+        uint8 id;
+        uint8 quorum;
+    }
+
+    mapping(address router => Router) public validRouters;
 
     struct ConfirmationState {
         // Counts are stored as integers (instead of boolean values) to accommodate duplicate
         // messages (e.g. two investments from the same user with the same amount) being
-        // processed in parallel. Both uint16[8] values are packed in a single bytes32 slot.
+        // processed in parallel. The entire struct is packed in a single bytes32 slot.
         // Max uint16 = 65,535 so at most 65,535 duplicate messages can be processed in parallel.
         uint16[8] payloads;
         uint16[8] proofs;
@@ -46,25 +53,16 @@ contract RouterAggregator is Auth {
     mapping(bytes32 messageHash => bytes) public storedPayload;
 
     // --- Events ---
-    event File(bytes32 indexed what, address gateway);
     event File(bytes32 indexed what, address[] routers, uint8 quorum);
 
-    constructor() {
+    constructor(address gateway_) {
+        gateway = GatewayLike(gateway_);
+
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
     }
 
     // --- Administration ---
-    function file(bytes32 what, address data) external auth {
-        if (what == "gateway") {
-            gateway = GatewayLike(data);
-        } else {
-            revert("RouterAggregator/file-unrecognized-param");
-        }
-
-        emit File(what, data);
-    }
-
     function file(bytes32 what, address[] calldata routers_, uint8 quorum_) external auth {
         if (what == "routers") {
             require(routers_.length <= MAX_ROUTER_COUNT, "RouterAggregator/exceeds-max-router-count");
@@ -75,16 +73,15 @@ contract RouterAggregator is Auth {
             // Disable old routers
             // TODO: try to combine with loop later to save storage reads/writes
             for (uint8 i = 0; i < routers.length; ++i) {
-                validRouters[address(routers[i])] = 0;
+                delete validRouters[address(routers[i])];
             }
 
             // Enable new routers and set quorum
             routers = routers_;
             for (uint8 i = 0; i < routers_.length; ++i) {
                 // Ids are assigned sequentially starting at 1
-                validRouters[routers_[i]] = i + 1;
+                validRouters[routers_[i]] = Router(i + 1, quorum_);
             }
-            quorum = quorum_;
         } else {
             revert("RouterAggregator/file-unrecognized-param");
         }
@@ -95,10 +92,10 @@ contract RouterAggregator is Auth {
     // --- Incoming ---
     /// @dev Assumes routers ensure messages cannot be confirmed more than once
     function handle(bytes calldata payload) public {
-        uint8 routerId = validRouters[msg.sender];
-        require(routerId != 0, "RouterAggregator/invalid-router");
+        Router memory router = validRouters[msg.sender];
+        require(router.id != 0, "RouterAggregator/invalid-router");
 
-        if (quorum == 1 && !MessagesLib.isMessageProof(payload)) {
+        if (router.quorum == 1 && !MessagesLib.isMessageProof(payload)) {
             // Special case for gas efficiency
             gateway.handle(payload);
             return;
@@ -109,17 +106,17 @@ contract RouterAggregator is Auth {
         if (MessagesLib.isMessageProof(payload)) {
             messageHash = MessagesLib.parseMessageProof(payload);
             state = _confirmations[messageHash];
-            state.proofs[routerId]++;
+            state.proofs[router.id]++;
         } else {
             messageHash = keccak256(payload);
             state = _confirmations[messageHash];
-            state.payloads[routerId]++;
+            state.payloads[router.id]++;
         }
 
         uint8 totalPayloads = _countNonZeroValues(state.payloads);
         uint8 totalProofs = _countNonZeroValues(state.proofs);
 
-        if (totalPayloads + totalProofs >= quorum && totalPayloads >= 1) {
+        if (totalPayloads + totalProofs >= router.quorum && totalPayloads >= 1) {
             _decreaseValues(state.payloads, 1);
             // TODO: this should reduce (quorum - 1) of the highest values, not all, by one
             _decreaseValues(state.proofs, 1);

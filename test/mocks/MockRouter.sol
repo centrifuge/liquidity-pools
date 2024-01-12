@@ -2,34 +2,26 @@
 pragma solidity 0.8.21;
 
 import "forge-std/Test.sol";
-import {InvestmentManager} from "src/InvestmentManager.sol";
-import {Gateway} from "src/gateway/Gateway.sol";
 import {Auth} from "src/Auth.sol";
 import "./Mock.sol";
 
-interface GatewayLike {
+interface AggregatorLike {
     function handle(bytes memory message) external;
 }
 
 contract MockRouter is Auth, Mock {
-    GatewayLike public gateway;
+    AggregatorLike public immutable aggregator;
 
     mapping(bytes => uint256) public sent;
 
-    constructor() {
+    constructor(address aggregator_) {
+        aggregator = AggregatorLike(aggregator_);
+
         wards[msg.sender] = 1;
     }
 
-    function file(bytes32 what, address addr) external {
-        if (what == "gateway") {
-            gateway = GatewayLike(addr);
-        } else {
-            revert("MockRouter/file-unrecognized-param");
-        }
-    }
-
     function execute(bytes memory _message) external {
-        GatewayLike(gateway).handle(_message);
+        AggregatorLike(aggregator).handle(_message);
     }
 
     function send(bytes memory message) public {

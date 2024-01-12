@@ -15,7 +15,7 @@ interface AxelarGatewayLike {
     ) external returns (bool);
 }
 
-interface GatewayLike {
+interface AggregatorLike {
     function handle(bytes memory message) external;
 }
 
@@ -28,29 +28,15 @@ contract AxelarRouter is Auth {
         keccak256(bytes("0x7369626CEF070000000000000000000000000000"));
     string public constant CENTRIFUGE_AXELAR_EXECUTABLE = "0xc1757c6A0563E37048869A342dF0651b9F267e41";
 
+    AggregatorLike public immutable aggregator;
     AxelarGatewayLike public immutable axelarGateway;
 
-    GatewayLike public gateway;
-
-    // --- Events ---
-    event File(bytes32 indexed what, address addr);
-
-    constructor(address axelarGateway_) {
+    constructor(address aggregator_, address axelarGateway_) {
+        aggregator = AggregatorLike(aggregator_);
         axelarGateway = AxelarGatewayLike(axelarGateway_);
 
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
-    }
-
-    // --- Administration ---
-    function file(bytes32 what, address data) external auth {
-        if (what == "gateway") {
-            gateway = GatewayLike(data);
-        } else {
-            revert("AxelarRouter/file-unrecognized-param");
-        }
-
-        emit File(what, data);
     }
 
     // --- Incoming ---
@@ -66,15 +52,15 @@ contract AxelarRouter is Auth {
         bytes32 payloadHash = keccak256(payload);
         require(
             axelarGateway.validateContractCall(commandId, sourceChain, sourceAddress, payloadHash),
-            "Router/not-approved-by-gateway"
+            "AxelarRouter/not-approved-by-axelar-gateway"
         );
 
-        gateway.handle(payload);
+        aggregator.handle(payload);
     }
 
     // --- Outgoing ---
     function send(bytes calldata message) public {
-        require(msg.sender == address(gateway), "AxelarRouter/only-gateway-allowed-to-call");
+        require(msg.sender == address(aggregator), "AxelarRouter/only-aggregator-allowed-to-call");
         axelarGateway.callContract(CENTRIFUGE_CHAIN_ID, CENTRIFUGE_AXELAR_EXECUTABLE, message);
     }
 }

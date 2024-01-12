@@ -51,9 +51,9 @@ contract BaseTest is Deployer, Test {
         admin = self;
 
         // deploy core contracts
-        deployInvestmentManager(address(this));
+        deploy(address(this));
         // deploy mockRouter
-        router = new MockRouter();
+        router = new MockRouter(address(aggregator));
         // wire contracts
         wire(address(router));
         // give admin access
@@ -63,7 +63,6 @@ contract BaseTest is Deployer, Test {
 
         centrifugeChain = new MockCentrifugeChain(address(router));
         erc20 = _newErc20("X's Dollar", "USDX", 6);
-        router.file("gateway", address(aggregator));
 
         // Label contracts
         vm.label(address(root), "Root");
