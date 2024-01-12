@@ -128,4 +128,61 @@ contract RouterAggregatorTest is Test {
     }
 
     // TODO testRecoverIncomingAggregatedMessages
+
+    function testMessagesCannotBeReplayed(
+        uint8 numRouters,
+        uint8 quorum,
+        uint8 numParallelDuplicateMessages,
+        uint256 entropy
+    ) public {
+        numRouters = uint8(bound(numRouters, 1, aggregator.MAX_ROUTER_COUNT()));
+        quorum = uint8(bound(quorum, 1, _min(numRouters, aggregator.MAX_QUORUM())));
+        numParallelDuplicateMessages = uint8(bound(numParallelDuplicateMessages, 2, 4)); // TODO: increase
+
+        bytes memory payload = MessagesLib.formatAddPool(1);
+        bytes memory proof = MessagesLib.formatMessageProof(MessagesLib.formatAddPool(1));
+
+        // Setup routers
+        address[] memory testRouters = new address[](numRouters);
+        for (uint256 i = 0; i < numRouters; i++) {
+            testRouters[i] = address(new MockRouter(address(aggregator)));
+        }
+        aggregator.file("routers", testRouters, quorum);
+
+        // Generate random sequence of confirming payloads and proofs
+        uint256 it = 0;
+        uint256 totalSent = 0;
+        uint256[] memory sentPerRouter = new uint256[](numRouters);
+        while (totalSent < numParallelDuplicateMessages * numRouters) {
+            it++;
+            uint8 randomRouterId =
+                numRouters > 1 ? uint8(uint256(keccak256(abi.encodePacked(entropy, it)))) % numRouters : 0;
+
+            if (sentPerRouter[randomRouterId] == numParallelDuplicateMessages) {
+                // Already confirmed all the messages
+                // TODO: see if we can make this more efficient (not just skipping iterations in the loop)
+                continue;
+            }
+
+            // Send the payload or proof
+            if (randomRouterId == 0) {
+                MockRouter(testRouters[randomRouterId]).execute(payload);
+            } else {
+                MockRouter(testRouters[randomRouterId]).execute(proof);
+            }
+
+            totalSent++;
+            sentPerRouter[randomRouterId]++;
+        }
+
+        // Check that each message was confirmed exactly numParallelDuplicateMessages times
+        for (uint256 j = 0; j < numParallelDuplicateMessages; j++) {
+            assertEq(gateway.handled(payload), numParallelDuplicateMessages);
+        }
+    }
+
+    /// @notice Returns the smallest of two numbers.
+    function _min(uint256 a, uint256 b) internal pure returns (uint256) {
+        return a > b ? b : a;
+    }
 }

@@ -120,7 +120,9 @@ contract RouterAggregator is Auth {
 
             if (MessagesLib.isMessageProof(payload)) {
                 gateway.handle(storedPayload[messageHash]);
-                delete storedPayload[messageHash];
+
+                // Only if there are no more pending messages, remove the stored payload
+                if (_isEmpty(state.payloads) && _isEmpty(state.proofs)) delete storedPayload[messageHash];
             } else {
                 gateway.handle(payload);
             }
@@ -178,5 +180,12 @@ contract RouterAggregator is Auth {
         for (uint256 i = 0; i < arr.length; ++i) {
             if (arr[i] > 0) arr[i] -= decrease;
         }
+    }
+
+    function _isEmpty(uint16[8] memory arr) internal pure returns (bool) {
+        for (uint256 i = 0; i < arr.length; ++i) {
+            if (arr[i] > 0) return false;
+        }
+        return true;
     }
 }
