@@ -132,17 +132,17 @@ contract RouterAggregatorTest is Test {
     function testMessagesCannotBeReplayed(
         uint8 numRouters,
         uint8 quorum,
-        uint8 numParallelDuplicateMessages,
+        uint8 numParallelDuplicateMessages_,
         uint256 entropy
     ) public {
         numRouters = uint8(bound(numRouters, 1, aggregator.MAX_ROUTER_COUNT()));
         quorum = uint8(bound(quorum, 1, _min(numRouters, aggregator.MAX_QUORUM())));
-        numParallelDuplicateMessages = uint8(bound(numParallelDuplicateMessages, 2, 4)); // TODO: increase
+        uint16 numParallelDuplicateMessages = uint16(bound(numParallelDuplicateMessages_, 1, 255));
 
         bytes memory payload = MessagesLib.formatAddPool(1);
         bytes memory proof = MessagesLib.formatMessageProof(MessagesLib.formatAddPool(1));
 
-        // Setup routers
+        // Setup random set of routers
         address[] memory testRouters = new address[](numRouters);
         for (uint256 i = 0; i < numRouters; i++) {
             testRouters[i] = address(new MockRouter(address(aggregator)));
