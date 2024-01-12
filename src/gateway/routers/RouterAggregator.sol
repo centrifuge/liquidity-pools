@@ -33,15 +33,17 @@ contract RouterAggregator is Auth {
     struct ConfirmationState {
         // Counts are stored as integers (instead of boolean values) to accommodate duplicate
         // messages (e.g. two investments from the same user with the same amount) being
-        // processed in parallel. Each uint32[8] value is packed in a single bytes32 slot
-        uint32[8] payloads;
-        uint32[8] proofs;
-        // If 1 or more proofs are received before full payload,
-        // store here for later execution
-        bytes fullPayload;
+        // processed in parallel. Both uint16[8] values are packed in a single bytes32 slot.
+        // Max uint16 = 65,535 so at most 65,535 duplicate messages can be processed in parallel.
+        uint16[8] payloads;
+        uint16[8] proofs;
     }
 
-    mapping(bytes32 messageHash => ConfirmationState) public confirmations;
+    mapping(bytes32 messageHash => ConfirmationState) internal _confirmations;
+
+    // If 1 or more proofs are received before full payload,
+    // store here for later execution
+    mapping(bytes32 messageHash => bytes) public storedPayload;
 
     // --- Events ---
     event File(bytes32 indexed what, address gateway);
@@ -79,6 +81,7 @@ contract RouterAggregator is Auth {
             // Enable new routers and set quorum
             routers = routers_;
             for (uint8 i = 0; i < routers_.length; ++i) {
+                // Ids are assigned sequentially starting at 1
                 validRouters[routers_[i]] = i + 1;
             }
             quorum = quorum_;
@@ -101,14 +104,15 @@ contract RouterAggregator is Auth {
             return;
         }
 
+        bytes32 messageHash;
         ConfirmationState storage state;
         if (MessagesLib.isMessageProof(payload)) {
-            bytes32 messageHash = MessagesLib.parseMessageProof(payload);
-            state = confirmations[messageHash];
+            messageHash = MessagesLib.parseMessageProof(payload);
+            state = _confirmations[messageHash];
             state.proofs[routerId]++;
         } else {
-            bytes32 messageHash = keccak256(payload);
-            state = confirmations[messageHash];
+            messageHash = keccak256(payload);
+            state = _confirmations[messageHash];
             state.payloads[routerId]++;
         }
 
@@ -121,12 +125,13 @@ contract RouterAggregator is Auth {
             _decreaseValues(state.proofs, 1);
 
             if (MessagesLib.isMessageProof(payload)) {
-                gateway.handle(state.fullPayload);
+                gateway.handle(storedPayload[messageHash]);
+                delete storedPayload[messageHash];
             } else {
                 gateway.handle(payload);
             }
         } else if (!MessagesLib.isMessageProof(payload)) {
-            state.fullPayload = payload;
+            storedPayload[messageHash] = payload;
         }
     }
 
@@ -154,13 +159,23 @@ contract RouterAggregator is Auth {
     }
 
     // --- Helpers ---
-    function _countNonZeroValues(uint32[8] memory arr) internal pure returns (uint8 count) {
+    function confirmations(bytes32 messageHash)
+        public
+        view
+        returns (uint16[8] memory payloads, uint16[8] memory proofs)
+    {
+        ConfirmationState storage state = _confirmations[messageHash];
+        payloads = state.payloads;
+        proofs = state.proofs;
+    }
+
+    function _countNonZeroValues(uint16[8] memory arr) internal pure returns (uint8 count) {
         for (uint256 i = 0; i < arr.length; ++i) {
             if (arr[i] > 0) ++count;
         }
     }
 
-    function _decreaseValues(uint32[8] storage arr, uint32 decrease) internal {
+    function _decreaseValues(uint16[8] storage arr, uint16 decrease) internal {
         for (uint256 i = 0; i < arr.length; ++i) {
             if (arr[i] > 0) arr[i] -= decrease;
         }
