@@ -62,10 +62,10 @@ contract RouterAggregator is Auth {
     // --- Administration ---
     function file(bytes32 what, address[] calldata routers_, uint8 quorum_) external auth {
         if (what == "routers") {
-            require(routers_.length <= MAX_ROUTER_COUNT, "RouterAggregator/exceeds-max-router-count");
             require(quorum_ >= MIN_QUORUM, "RouterAggregator/less-than-min-quorum");
             require(quorum_ <= MAX_QUORUM, "RouterAggregator/exceeds-max-quorum");
             require(quorum_ <= routers_.length, "RouterAggregator/quorum-exceeds-num-routers");
+            require(routers_.length <= MAX_ROUTER_COUNT, "RouterAggregator/exceeds-max-router-count");
 
             // Disable old routers
             // TODO: try to combine with loop later to save storage reads/writes
