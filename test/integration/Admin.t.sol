@@ -261,5 +261,11 @@ contract AdminTest is BaseTest {
         assertEq(investmentManager.wards(address(this)), 1);
     }
 
-    // TODO: router recovery tests
+    //------ TODO: router recovery tests ------///
+    // function testRecoverMessage(address user, bytes calldata payload) public {
+    //     vm.assume(user != address(this));
+    //     vm.expectRevert("Auth/not-authorized");
+    //     vm.prank(user);
+    //     delayedAdmin.recoverMessage(payload, 1);
+    // }
 }

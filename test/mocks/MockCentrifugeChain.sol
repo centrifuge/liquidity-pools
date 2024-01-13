@@ -9,40 +9,32 @@ interface RouterLike {
 }
 
 contract MockCentrifugeChain is Test {
-    RouterLike public immutable router;
+    address[] public routers;
 
-    uint32 public dispatchDomain;
-    uint256 public dispatchChainId;
-    bytes public dispatchMessage;
-    bytes32 public dispatchRecipient;
-    uint256 public dispatchCalls;
-
-    enum Types {
-        AddPool
-    }
-
-    constructor(address router_) {
-        router = RouterLike(router_);
+    constructor(address[] memory routers_) {
+        for (uint i = 0; i < routers_.length; i++) {
+            routers.push(routers_[i]);
+        }
     }
 
     function addCurrency(uint128 currency, address currencyAddress) public {
         bytes memory _message = MessagesLib.formatAddCurrency(currency, currencyAddress);
-        router.execute(_message);
+        _execute(_message);
     }
 
     function addPool(uint64 poolId) public {
         bytes memory _message = MessagesLib.formatAddPool(poolId);
-        router.execute(_message);
+        _execute(_message);
     }
 
     function allowInvestmentCurrency(uint64 poolId, uint128 currency) public {
         bytes memory _message = MessagesLib.formatAllowInvestmentCurrency(poolId, currency);
-        router.execute(_message);
+        _execute(_message);
     }
 
     function disallowInvestmentCurrency(uint64 poolId, uint128 currency) public {
         bytes memory _message = MessagesLib.formatDisallowInvestmentCurrency(poolId, currency);
-        router.execute(_message);
+        _execute(_message);
     }
 
     function addTranche(
@@ -55,12 +47,12 @@ contract MockCentrifugeChain is Test {
     ) public {
         bytes memory _message =
             MessagesLib.formatAddTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, restrictionSet);
-        router.execute(_message);
+        _execute(_message);
     }
 
     function updateMember(uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) public {
         bytes memory _message = MessagesLib.formatUpdateMember(poolId, trancheId, user, validUntil);
-        router.execute(_message);
+        _execute(_message);
     }
 
     function updateTrancheTokenMetadata(
@@ -70,7 +62,7 @@ contract MockCentrifugeChain is Test {
         string memory tokenSymbol
     ) public {
         bytes memory _message = MessagesLib.formatUpdateTrancheTokenMetadata(poolId, trancheId, tokenName, tokenSymbol);
-        router.execute(_message);
+        _execute(_message);
     }
 
     function updateTrancheTokenPrice(
@@ -82,7 +74,7 @@ contract MockCentrifugeChain is Test {
     ) public {
         bytes memory _message =
             MessagesLib.formatUpdateTrancheTokenPrice(poolId, trancheId, currencyId, price, computedAt);
-        router.execute(_message);
+        _execute(_message);
     }
 
     function triggerIncreaseRedeemOrder(
@@ -95,13 +87,13 @@ contract MockCentrifugeChain is Test {
         bytes memory _message = MessagesLib.formatTriggerIncreaseRedeemOrder(
             poolId, trancheId, bytes32(bytes20(investor)), currencyId, amount
         );
-        router.execute(_message);
+        _execute(_message);
     }
 
     // Trigger an incoming (e.g. Centrifuge Chain -> EVM) transfer of stable coins
     function incomingTransfer(uint128 currency, bytes32 sender, bytes32 recipient, uint128 amount) public {
         bytes memory _message = MessagesLib.formatTransfer(currency, sender, recipient, amount);
-        router.execute(_message);
+        _execute(_message);
     }
 
     // Trigger an incoming (e.g. Centrifuge Chain -> EVM) transfer of tranche tokens
@@ -120,27 +112,27 @@ contract MockCentrifugeChain is Test {
             destinationAddress,
             amount
         );
-        router.execute(_message);
+        _execute(_message);
     }
 
     function incomingScheduleUpgrade(address target) public {
         bytes memory _message = MessagesLib.formatScheduleUpgrade(target);
-        router.execute(_message);
+        _execute(_message);
     }
 
     function incomingCancelUpgrade(address target) public {
         bytes memory _message = MessagesLib.formatCancelUpgrade(target);
-        router.execute(_message);
+        _execute(_message);
     }
 
     function freeze(uint64 poolId, bytes16 trancheId, address user) public {
         bytes memory _message = MessagesLib.formatFreeze(poolId, trancheId, user);
-        router.execute(_message);
+        _execute(_message);
     }
 
     function unfreeze(uint64 poolId, bytes16 trancheId, address user) public {
         bytes memory _message = MessagesLib.formatUnfreeze(poolId, trancheId, user);
-        router.execute(_message);
+        _execute(_message);
     }
 
     function isExecutedDecreaseInvestOrder(
@@ -154,7 +146,7 @@ contract MockCentrifugeChain is Test {
         bytes memory _message = MessagesLib.formatExecutedDecreaseInvestOrder(
             poolId, trancheId, investor, currency, currencyPayout, remainingInvestOrder
         );
-        router.execute(_message);
+        _execute(_message);
     }
 
     function isExecutedDecreaseRedeemOrder(
@@ -168,7 +160,7 @@ contract MockCentrifugeChain is Test {
         bytes memory _message = MessagesLib.formatExecutedDecreaseRedeemOrder(
             poolId, trancheId, investor, currency, trancheTokensPayout, remainingRedeemOrder
         );
-        router.execute(_message);
+        _execute(_message);
     }
 
     function isExecutedCollectInvest(
@@ -183,7 +175,7 @@ contract MockCentrifugeChain is Test {
         bytes memory _message = MessagesLib.formatExecutedCollectInvest(
             poolId, trancheId, investor, currency, currencyPayout, trancheTokensPayout, remainingInvestOrder
         );
-        router.execute(_message);
+        _execute(_message);
     }
 
     function isExecutedCollectRedeem(
@@ -198,20 +190,14 @@ contract MockCentrifugeChain is Test {
         bytes memory _message = MessagesLib.formatExecutedCollectRedeem(
             poolId, trancheId, investor, currency, currencyPayout, trancheTokensPayout, remainingRedeemOrder
         );
-        router.execute(_message);
+        _execute(_message);
     }
 
-    function dispatch(
-        uint32 _destinationDomain,
-        uint256 _destinationChainId,
-        bytes32 _recipientAddress,
-        bytes memory _messageBody
-    ) external {
-        dispatchCalls++;
-        dispatchDomain = _destinationDomain;
-        dispatchChainId = _destinationChainId;
-        dispatchMessage = _messageBody;
-        dispatchRecipient = _recipientAddress;
+    function _execute(bytes memory message) internal {
+        bytes memory proof = MessagesLib.formatMessageProof(message);
+        for (uint i = 0; i < routers.length; i++) {
+            RouterLike(routers[i]).execute(i == 0 ? message : proof);
+        }
     }
 
     // Added to be ignored in coverage report

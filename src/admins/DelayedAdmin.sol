@@ -59,7 +59,7 @@ contract DelayedAdmin is Auth {
     }
 
     // --- Router recovery management ---
-    function recover(bytes calldata message, address primaryRouter) external auth {
+    function recoverMessage(bytes calldata message, address primaryRouter) external auth {
         routerAggregator.recover(message, primaryRouter);
     }
 }

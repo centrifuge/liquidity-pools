@@ -28,7 +28,10 @@ import "forge-std/Test.sol";
 
 contract BaseTest is Deployer, Test {
     MockCentrifugeChain centrifugeChain;
-    MockRouter router;
+    MockRouter router1;
+    MockRouter router2;
+    MockRouter router3;
+    address[] testRouters;
     ERC20 public erc20;
 
     address self = address(this);
@@ -52,16 +55,27 @@ contract BaseTest is Deployer, Test {
 
         // deploy core contracts
         deploy(address(this));
-        // deploy mockRouter
-        router = new MockRouter(address(aggregator));
+
+        // deploy mock routers
+        router1 = new MockRouter(address(aggregator));
+        router2 = new MockRouter(address(aggregator));
+        router3 = new MockRouter(address(aggregator));
+
+        testRouters.push(address(router1));
+        testRouters.push(address(router2));
+        testRouters.push(address(router3));
+
         // wire contracts
-        wire(address(router));
+        wire(address(router1));
+        aggregator.file("routers", testRouters, 2);
+
         // give admin access
         giveAdminAccess();
+
         // remove deployer access
         // removeDeployerAccess(address(router)); // need auth permissions in tests
 
-        centrifugeChain = new MockCentrifugeChain(address(router));
+        centrifugeChain = new MockCentrifugeChain(testRouters);
         erc20 = _newErc20("X's Dollar", "USDX", 6);
 
         // Label contracts
@@ -70,9 +84,11 @@ contract BaseTest is Deployer, Test {
         vm.label(address(poolManager), "PoolManager");
         vm.label(address(gateway), "Gateway");
         vm.label(address(aggregator), "Aggregator");
+        vm.label(address(router1), "MockRouter1");
+        vm.label(address(router2), "MockRouter2");
+        vm.label(address(router3), "MockRouter3");
         vm.label(address(erc20), "ERC20");
         vm.label(address(centrifugeChain), "CentrifugeChain");
-        vm.label(address(router), "Router");
         vm.label(address(escrow), "Escrow");
         vm.label(address(userEscrow), "UserEscrow");
         vm.label(address(pauseAdmin), "PauseAdmin");
@@ -89,7 +105,9 @@ contract BaseTest is Deployer, Test {
         excludeContract(address(aggregator));
         excludeContract(address(erc20));
         excludeContract(address(centrifugeChain));
-        excludeContract(address(router));
+        excludeContract(address(router1));
+        excludeContract(address(router2));
+        excludeContract(address(router3));
         excludeContract(address(escrow));
         excludeContract(address(userEscrow));
         excludeContract(address(pauseAdmin));

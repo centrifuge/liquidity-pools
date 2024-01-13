@@ -816,7 +816,7 @@ contract DepositTest is BaseTest {
         bytes memory cancelOrderMessage = MessagesLib.formatCancelInvestOrder(
             lPool.poolId(), lPool.trancheId(), _addressToBytes32(self), defaultCurrencyId
         );
-        assertEq(cancelOrderMessage, router.values_bytes("send"));
+        assertEq(cancelOrderMessage, router1.values_bytes("send"));
 
         centrifugeChain.isExecutedDecreaseInvestOrder(
             lPool.poolId(), lPool.trancheId(), _addressToBytes32(self), defaultCurrencyId, uint128(amount), 0
