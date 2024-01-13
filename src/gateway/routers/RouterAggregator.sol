@@ -14,16 +14,16 @@ interface RouterLike {
 }
 
 /// @title  RouterAggregator
-/// @notice Routing contract that forwards to multiple routers (1 payload, n-1 proofs)
+/// @notice Routing contract that forwards to multiple routers (1 full message, n-1 proofs)
 ///         and validates multiple routers have confirmed a message.
 ///
 ///         Supports processing multiple duplicate messages in parallel by
-///         storing counts of payloads and proofs that have been received.
+///         storing counts of messages and proofs that have been received.
 contract RouterAggregator is Auth {
     uint8 public constant MIN_QUORUM = 1;
     uint8 public constant MAX_QUORUM = 6;
 
-    // Array of 8 is used to store payloads & proofs, but index 0 is reserved
+    // Array of 8 is used to store messages & proofs, but index 0 is reserved
     // as this is the default value and therefore used to detect invalid routers
     uint8 public constant MAX_ROUTER_COUNT = 7;
 
@@ -31,7 +31,7 @@ contract RouterAggregator is Auth {
 
     address[] public routers;
     mapping(address router => Router) public validRouters;
-    mapping(bytes32 messageHash => bytes) public storedPayload;
+    mapping(bytes32 messageHash => bytes) public pendingMessages;
     mapping(bytes32 messageHash => ConfirmationState) internal _confirmations;
 
     struct Router {
@@ -45,13 +45,13 @@ contract RouterAggregator is Auth {
         // messages (e.g. two investments from the same user with the same amount) being
         // processed in parallel. The entire struct is packed in a single bytes32 slot.
         // Max uint16 = 65,535 so at most 65,535 duplicate messages can be processed in parallel.
-        uint16[8] payloads;
+        uint16[8] messages;
         uint16[8] proofs;
     }
 
     // --- Events ---
-    event PayloadHandled(bytes32 messageHash, address router);
-    event ProofHandled(bytes32 messageHash, address router);
+    event MessageConfirmed(bytes32 messageHash, address router);
+    event ProofConfirmed(bytes32 messageHash, address router);
     event MessageExecuted(bytes32 messageHash);
     event File(bytes32 indexed what, address[] routers, uint8 quorum);
 
@@ -107,38 +107,38 @@ contract RouterAggregator is Auth {
             messageHash = MessagesLib.parseMessageProof(payload);
             state = _confirmations[messageHash];
             state.proofs[router.id]++;
-            emit ProofHandled(messageHash, msg.sender);
+            emit ProofConfirmed(messageHash, msg.sender);
         } else {
             messageHash = keccak256(payload);
             state = _confirmations[messageHash];
-            state.payloads[router.id]++;
-            emit PayloadHandled(messageHash, msg.sender);
+            state.messages[router.id]++;
+            emit MessageConfirmed(messageHash, msg.sender);
         }
 
-        uint8 totalPayloads = _countNonZeroValues(state.payloads);
+        uint8 totalPayloads = _countNonZeroValues(state.messages);
         uint8 totalProofs = _countNonZeroValues(state.proofs);
 
         if (totalPayloads >= 1 && totalProofs >= router.quorum - 1) {
-            _decreaseValues(state.payloads, 1);
+            _decreaseValues(state.messages, 1);
             // TODO: this should reduce (quorum - 1) of the highest values, not all, by one
-            _decreaseValues(state.proofs, 1);
+            // _decreaseValues(state.proofs, 1);
 
             emit MessageExecuted(messageHash);
             if (MessagesLib.isMessageProof(payload)) {
-                gateway.handle(storedPayload[messageHash]);
+                gateway.handle(pendingMessages[messageHash]);
 
-                // Only if there are no more pending messages, remove the stored payload
-                if (_isEmpty(state.payloads) && _isEmpty(state.proofs)) delete storedPayload[messageHash];
+                // Only if there are no more pending messages, remove the pending message
+                if (_isEmpty(state.messages) && _isEmpty(state.proofs)) delete pendingMessages[messageHash];
             } else {
                 gateway.handle(payload);
             }
         } else if (!MessagesLib.isMessageProof(payload)) {
-            storedPayload[messageHash] = payload;
+            pendingMessages[messageHash] = payload;
         }
     }
 
     // --- Outgoing ---
-    /// @dev Sends 1 message to the first router with full payload, and n-1 messages to the other routers with
+    /// @dev Sends 1 message to the first router with the full message, and n-1 messages to the other routers with
     ///      proofs (hash of message). This ensures message uniqueness (can only be executed on the destination once).
     function send(bytes calldata message) public {
         require(msg.sender == address(gateway), "RouterAggregator/only-gateway-allowed-to-call");
@@ -148,7 +148,7 @@ contract RouterAggregator is Auth {
     /// @dev Recovery method in case the first (primary) router failed to send a message
     ///      or more than (num routers - quorum) failed to send the proof
     function recover(bytes calldata message, uint8 primaryRouterId) public auth {
-        // TODO: invalidate previous full payload message by sending `InvalidateMessageId` message
+        // TODO: invalidate previous full message by sending `InvalidateMessageId` message
         // with router specific message id passed as arg to `resend`?
         _send(message, primaryRouterId);
     }
@@ -168,7 +168,7 @@ contract RouterAggregator is Auth {
 
     function confirmations(bytes32 messageHash) external view returns (uint256) {
         ConfirmationState storage state = _confirmations[messageHash];
-        return _countValues(state.payloads) + _countValues(state.proofs);
+        return _countValues(state.messages) + _countValues(state.proofs);
     }
 
     function _countNonZeroValues(uint16[8] memory arr) internal pure returns (uint8 count) {

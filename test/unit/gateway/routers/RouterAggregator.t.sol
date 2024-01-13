@@ -46,94 +46,94 @@ contract RouterAggregatorTest is Test {
     function testIncomingAggregatedMessages() public {
         aggregator.file("routers", mockRouters, 2);
 
-        bytes memory firstPayload = MessagesLib.formatAddPool(1);
+        bytes memory firstMessage = MessagesLib.formatAddPool(1);
         bytes memory firstProof = MessagesLib.formatMessageProof(MessagesLib.formatAddPool(1));
 
         vm.expectRevert(bytes("RouterAggregator/invalid-router"));
-        aggregator.handle(firstPayload);
+        aggregator.handle(firstMessage);
 
         // Executes after quorum is reached
-        router1.execute(firstPayload);
-        assertEq(gateway.handled(firstPayload), 0);
-        assertEq(aggregator.confirmations(keccak256(firstPayload)), 1);
+        router1.execute(firstMessage);
+        assertEq(gateway.handled(firstMessage), 0);
+        assertEq(aggregator.confirmations(keccak256(firstMessage)), 1);
 
         router2.execute(firstProof);
-        assertEq(gateway.handled(firstPayload), 1);
-        assertEq(aggregator.confirmations(keccak256(firstPayload)), 0);
+        assertEq(gateway.handled(firstMessage), 1);
+        assertEq(aggregator.confirmations(keccak256(firstMessage)), 0);
 
         router3.execute(firstProof);
-        assertEq(gateway.handled(firstPayload), 1);
-        assertEq(aggregator.confirmations(keccak256(firstPayload)), 1);
+        assertEq(gateway.handled(firstMessage), 1);
+        assertEq(aggregator.confirmations(keccak256(firstMessage)), 1);
 
-        // Resending same payload works
-        // Immediately executes because of 3rd proof from previous matching payload
-        router1.execute(firstPayload);
-        assertEq(gateway.handled(firstPayload), 2);
-        assertEq(aggregator.confirmations(keccak256(firstPayload)), 0);
+        // Resending same message works
+        // Immediately executes because of 3rd proof from previous matching message
+        router1.execute(firstMessage);
+        assertEq(gateway.handled(firstMessage), 2);
+        assertEq(aggregator.confirmations(keccak256(firstMessage)), 0);
 
         router2.execute(firstProof);
-        assertEq(gateway.handled(firstPayload), 2);
-        assertEq(aggregator.confirmations(keccak256(firstPayload)), 1);
+        assertEq(gateway.handled(firstMessage), 2);
+        assertEq(aggregator.confirmations(keccak256(firstMessage)), 1);
 
         router3.execute(firstProof);
-        assertEq(gateway.handled(firstPayload), 2);
-        assertEq(aggregator.confirmations(keccak256(firstPayload)), 2);
+        assertEq(gateway.handled(firstMessage), 2);
+        assertEq(aggregator.confirmations(keccak256(firstMessage)), 2);
 
-        // Sending another payload works
-        bytes memory secondPayload = MessagesLib.formatAddPool(2);
+        // Sending another message works
+        bytes memory secondMessage = MessagesLib.formatAddPool(2);
         bytes memory secondProof = MessagesLib.formatMessageProof(MessagesLib.formatAddPool(2));
 
-        router1.execute(secondPayload);
-        assertEq(gateway.handled(secondPayload), 0);
-        assertEq(aggregator.confirmations(keccak256(secondPayload)), 1);
+        router1.execute(secondMessage);
+        assertEq(gateway.handled(secondMessage), 0);
+        assertEq(aggregator.confirmations(keccak256(secondMessage)), 1);
 
         router2.execute(secondProof);
-        assertEq(gateway.handled(secondPayload), 1);
-        assertEq(aggregator.confirmations(keccak256(secondPayload)), 0);
+        assertEq(gateway.handled(secondMessage), 1);
+        assertEq(aggregator.confirmations(keccak256(secondMessage)), 0);
 
         router3.execute(secondProof);
-        assertEq(gateway.handled(secondPayload), 1);
-        assertEq(aggregator.confirmations(keccak256(secondPayload)), 1);
+        assertEq(gateway.handled(secondMessage), 1);
+        assertEq(aggregator.confirmations(keccak256(secondMessage)), 1);
 
-        // Swapping order of payload vs proofs works
-        bytes memory thirdPayload = MessagesLib.formatAddPool(3);
+        // Swapping order of message vs proofs works
+        bytes memory thirdMessage = MessagesLib.formatAddPool(3);
         bytes memory thirdProof = MessagesLib.formatMessageProof(MessagesLib.formatAddPool(3));
 
         router1.execute(thirdProof);
-        assertEq(gateway.handled(thirdPayload), 0);
-        assertEq(aggregator.confirmations(keccak256(thirdPayload)), 1);
+        assertEq(gateway.handled(thirdMessage), 0);
+        assertEq(aggregator.confirmations(keccak256(thirdMessage)), 1);
 
         router2.execute(thirdProof);
-        assertEq(gateway.handled(thirdPayload), 0);
-        assertEq(aggregator.confirmations(keccak256(thirdPayload)), 2);
+        assertEq(gateway.handled(thirdMessage), 0);
+        assertEq(aggregator.confirmations(keccak256(thirdMessage)), 2);
 
-        router3.execute(thirdPayload);
-        assertEq(gateway.handled(thirdPayload), 1);
-        assertEq(aggregator.confirmations(keccak256(thirdPayload)), 0);
+        router3.execute(thirdMessage);
+        assertEq(gateway.handled(thirdMessage), 1);
+        assertEq(aggregator.confirmations(keccak256(thirdMessage)), 0);
     }
 
     function testOutgoingAggregatedMessages() public {
         aggregator.file("routers", mockRouters, 2);
 
-        bytes memory payload = MessagesLib.formatAddPool(1);
+        bytes memory message = MessagesLib.formatAddPool(1);
         bytes memory proof = MessagesLib.formatMessageProof(MessagesLib.formatAddPool(1));
 
-        assertEq(router1.sent(payload), 0);
-        assertEq(router2.sent(payload), 0);
-        assertEq(router3.sent(payload), 0);
+        assertEq(router1.sent(message), 0);
+        assertEq(router2.sent(message), 0);
+        assertEq(router3.sent(message), 0);
         assertEq(router1.sent(proof), 0);
         assertEq(router2.sent(proof), 0);
         assertEq(router3.sent(proof), 0);
 
         vm.expectRevert(bytes("RouterAggregator/only-gateway-allowed-to-call"));
-        aggregator.send(payload);
+        aggregator.send(message);
 
         vm.prank(address(gateway));
-        aggregator.send(payload);
+        aggregator.send(message);
 
-        assertEq(router1.sent(payload), 1);
-        assertEq(router2.sent(payload), 0);
-        assertEq(router3.sent(payload), 0);
+        assertEq(router1.sent(message), 1);
+        assertEq(router2.sent(message), 0);
+        assertEq(router3.sent(message), 0);
         assertEq(router1.sent(proof), 0);
         assertEq(router2.sent(proof), 1);
         assertEq(router3.sent(proof), 1);
@@ -151,7 +151,7 @@ contract RouterAggregatorTest is Test {
         quorum = uint8(bound(quorum, 1, _min(numRouters, aggregator.MAX_QUORUM())));
         uint16 numParallelDuplicateMessages = uint16(bound(numParallelDuplicateMessages_, 1, 255));
 
-        bytes memory payload = MessagesLib.formatAddPool(1);
+        bytes memory message = MessagesLib.formatAddPool(1);
         bytes memory proof = MessagesLib.formatMessageProof(MessagesLib.formatAddPool(1));
 
         // Setup random set of routers
@@ -161,7 +161,7 @@ contract RouterAggregatorTest is Test {
         }
         aggregator.file("routers", testRouters, quorum);
 
-        // Generate random sequence of confirming payloads and proofs
+        // Generate random sequence of confirming messages and proofs
         uint256 it = 0;
         uint256 totalSent = 0;
         uint256[] memory sentPerRouter = new uint256[](numRouters);
@@ -175,9 +175,9 @@ contract RouterAggregatorTest is Test {
                 continue;
             }
 
-            // Send the payload or proof
+            // Send the message or proof
             if (randomRouterId == 0) {
-                MockRouter(testRouters[randomRouterId]).execute(payload);
+                MockRouter(testRouters[randomRouterId]).execute(message);
             } else {
                 MockRouter(testRouters[randomRouterId]).execute(proof);
             }
@@ -188,7 +188,7 @@ contract RouterAggregatorTest is Test {
 
         // Check that each message was confirmed exactly numParallelDuplicateMessages times
         for (uint256 j = 0; j < numParallelDuplicateMessages; j++) {
-            assertEq(gateway.handled(payload), numParallelDuplicateMessages);
+            assertEq(gateway.handled(message), numParallelDuplicateMessages);
         }
     }
 
