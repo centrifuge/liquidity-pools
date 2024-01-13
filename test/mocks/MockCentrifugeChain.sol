@@ -12,7 +12,7 @@ contract MockCentrifugeChain is Test {
     address[] public routers;
 
     constructor(address[] memory routers_) {
-        for (uint i = 0; i < routers_.length; i++) {
+        for (uint256 i = 0; i < routers_.length; i++) {
             routers.push(routers_[i]);
         }
     }
@@ -195,7 +195,7 @@ contract MockCentrifugeChain is Test {
 
     function _execute(bytes memory message) internal {
         bytes memory proof = MessagesLib.formatMessageProof(message);
-        for (uint i = 0; i < routers.length; i++) {
+        for (uint256 i = 0; i < routers.length; i++) {
             RouterLike(routers[i]).execute(i == 0 ? message : proof);
         }
     }
