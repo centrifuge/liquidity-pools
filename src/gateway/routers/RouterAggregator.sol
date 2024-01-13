@@ -50,9 +50,11 @@ contract RouterAggregator is Auth {
     }
 
     // --- Events ---
-    event MessageConfirmed(bytes32 messageHash, address router);
-    event ProofConfirmed(bytes32 messageHash, address router);
-    event MessageExecuted(bytes32 messageHash);
+    event HandleMessage(bytes32 messageHash, address router);
+    event HandleProof(bytes32 messageHash, address router);
+    event ExecuteMessage(bytes32 messageHash);
+    event SendMessage(bytes message);
+    event RecoverMessage(bytes message, address primaryRouter);
     event File(bytes32 indexed what, address[] routers, uint8 quorum);
 
     constructor(address gateway_) {
@@ -107,12 +109,14 @@ contract RouterAggregator is Auth {
             messageHash = MessagesLib.parseMessageProof(payload);
             state = _confirmations[messageHash];
             state.proofs[router.id]++;
-            emit ProofConfirmed(messageHash, msg.sender);
+
+            emit HandleProof(messageHash, msg.sender);
         } else {
             messageHash = keccak256(payload);
             state = _confirmations[messageHash];
             state.messages[router.id]++;
-            emit MessageConfirmed(messageHash, msg.sender);
+
+            emit HandleMessage(messageHash, msg.sender);
         }
 
         uint8 totalPayloads = _countNonZeroValues(state.messages);
@@ -121,9 +125,8 @@ contract RouterAggregator is Auth {
         if (totalPayloads >= 1 && totalProofs >= router.quorum - 1) {
             _decreaseValues(state.messages, 1);
             // TODO: this should reduce (quorum - 1) of the highest values, not all, by one
-            // _decreaseValues(state.proofs, 1);
+            _decreaseValues(state.proofs, 1);
 
-            emit MessageExecuted(messageHash);
             if (MessagesLib.isMessageProof(payload)) {
                 gateway.handle(pendingMessages[messageHash]);
 
@@ -132,6 +135,8 @@ contract RouterAggregator is Auth {
             } else {
                 gateway.handle(payload);
             }
+
+            emit ExecuteMessage(messageHash);
         } else if (!MessagesLib.isMessageProof(payload)) {
             pendingMessages[messageHash] = payload;
         }
@@ -143,14 +148,21 @@ contract RouterAggregator is Auth {
     function send(bytes calldata message) public {
         require(msg.sender == address(gateway), "RouterAggregator/only-gateway-allowed-to-call");
         _send(message, 0);
+
+        emit SendMessage(message);
     }
 
-    /// @dev Recovery method in case the first (primary) router failed to send a message
+    /// @dev Recovery method in case the first (primary) router failed to send the message
     ///      or more than (num routers - quorum) failed to send the proof
-    function recover(bytes calldata message, uint8 primaryRouterId) public auth {
+    function recover(bytes calldata message, address primaryRouter) public auth {
+        Router memory router = validRouters[primaryRouter];
+        require(router.id != 0, "RouterAggregator/invalid-primary-router");
+        _send(message, router.id);
+
+        emit RecoverMessage(message, primaryRouter);
+
         // TODO: invalidate previous full message by sending `InvalidateMessageId` message
         // with router specific message id passed as arg to `resend`?
-        _send(message, primaryRouterId);
     }
 
     function _send(bytes calldata message, uint8 primaryRouterId) internal {
