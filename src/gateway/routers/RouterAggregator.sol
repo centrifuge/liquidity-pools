@@ -50,6 +50,9 @@ contract RouterAggregator is Auth {
     }
 
     // --- Events ---
+    event PayloadHandled(bytes32 messageHash, address router);
+    event ProofHandled(bytes32 messageHash, address router);
+    event MessageExecuted(bytes32 messageHash);
     event File(bytes32 indexed what, address[] routers, uint8 quorum);
 
     constructor(address gateway_) {
@@ -104,20 +107,23 @@ contract RouterAggregator is Auth {
             messageHash = MessagesLib.parseMessageProof(payload);
             state = _confirmations[messageHash];
             state.proofs[router.id]++;
+            emit ProofHandled(messageHash, msg.sender);
         } else {
             messageHash = keccak256(payload);
             state = _confirmations[messageHash];
             state.payloads[router.id]++;
+            emit PayloadHandled(messageHash, msg.sender);
         }
 
         uint8 totalPayloads = _countNonZeroValues(state.payloads);
         uint8 totalProofs = _countNonZeroValues(state.proofs);
 
-        if (totalPayloads + totalProofs >= router.quorum && totalPayloads >= 1) {
+        if (totalPayloads >= 1 && totalProofs >= router.quorum - 1) {
             _decreaseValues(state.payloads, 1);
             // TODO: this should reduce (quorum - 1) of the highest values, not all, by one
             _decreaseValues(state.proofs, 1);
 
+            emit MessageExecuted(messageHash);
             if (MessagesLib.isMessageProof(payload)) {
                 gateway.handle(storedPayload[messageHash]);
 
@@ -160,19 +166,20 @@ contract RouterAggregator is Auth {
         return router.quorum;
     }
 
-    function confirmations(bytes32 messageHash)
-        external
-        view
-        returns (uint16[8] memory payloads, uint16[8] memory proofs)
-    {
+    function confirmations(bytes32 messageHash) external view returns (uint256) {
         ConfirmationState storage state = _confirmations[messageHash];
-        payloads = state.payloads;
-        proofs = state.proofs;
+        return _countValues(state.payloads) + _countValues(state.proofs);
     }
 
     function _countNonZeroValues(uint16[8] memory arr) internal pure returns (uint8 count) {
         for (uint256 i = 0; i < arr.length; ++i) {
             if (arr[i] > 0) ++count;
+        }
+    }
+
+    function _countValues(uint16[8] memory arr) internal pure returns (uint256 count) {
+        for (uint256 i = 0; i < arr.length; ++i) {
+            count += arr[i];
         }
     }
 
