@@ -131,7 +131,9 @@ contract RouterAggregator is Auth {
                 gateway.handle(pendingMessages[messageHash]);
 
                 // Only if there are no more pending messages, remove the pending message
-                if (_isEmpty(state.messages) && _isEmpty(state.proofs)) delete pendingMessages[messageHash];
+                if (_isEmpty(state.messages) && _isEmpty(state.proofs)) {
+                    delete pendingMessages[messageHash];
+                }
             } else {
                 gateway.handle(payload);
             }

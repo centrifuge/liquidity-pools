@@ -10,7 +10,7 @@ interface PauseAdminLike {
 }
 
 interface RouterAggregatorLike {
-    function recover(bytes calldata message, uint8 primaryRouterId) external;
+    function recover(bytes calldata message, address primaryRouter) external;
 }
 
 /// @title  Delayed Admin
@@ -21,12 +21,12 @@ interface RouterAggregatorLike {
 contract DelayedAdmin is Auth {
     Root public immutable root;
     PauseAdminLike public immutable pauseAdmin;
+    RouterAggregatorLike public immutable routerAggregator;
 
-    RouterAggregatorLike public routerAggregator;
-
-    constructor(address root_, address pauseAdmin_) {
+    constructor(address root_, address pauseAdmin_, address routerAggregator_) {
         root = Root(root_);
         pauseAdmin = PauseAdminLike(pauseAdmin_);
+        routerAggregator = RouterAggregatorLike(routerAggregator_);
 
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
@@ -59,7 +59,7 @@ contract DelayedAdmin is Auth {
     }
 
     // --- Router recovery management ---
-    function recover(bytes calldata message, uint8 primaryRouterId) external auth {
-        routerAggregator.recover(message, primaryRouterId);
+    function recover(bytes calldata message, address primaryRouter) external auth {
+        routerAggregator.recover(message, primaryRouter);
     }
 }
