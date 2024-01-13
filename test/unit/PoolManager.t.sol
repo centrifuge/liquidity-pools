@@ -69,6 +69,8 @@ contract PoolManagerTest is BaseTest {
         uint8 restrictionSet
     ) public {
         decimals = uint8(bound(decimals, 1, 18));
+        vm.assume(bytes(tokenName).length <= 128);
+        vm.assume(bytes(tokenSymbol).length <= 32);
 
         vm.expectRevert(bytes("PoolManager/invalid-pool"));
         centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, restrictionSet);
@@ -92,12 +94,8 @@ contract PoolManagerTest is BaseTest {
 
         TrancheToken trancheToken = TrancheToken(poolManager.getTrancheToken(poolId, trancheId));
 
-        assertEq(
-            _bytes128ToString(_stringToBytes128(tokenName)), _bytes128ToString(_stringToBytes128(trancheToken.name()))
-        );
-        assertEq(
-            _bytes32ToString(_stringToBytes32(tokenSymbol)), _bytes32ToString(_stringToBytes32(trancheToken.symbol()))
-        );
+        assertEq(tokenName, trancheToken.name());
+        assertEq(tokenSymbol, trancheToken.symbol());
         assertEq(decimals, trancheToken.decimals());
 
         vm.expectRevert(bytes("PoolManager/tranche-already-deployed"));
@@ -114,20 +112,17 @@ contract PoolManagerTest is BaseTest {
     ) public {
         decimals = uint8(bound(decimals, 1, 18));
         vm.assume(!hasDuplicates(trancheIds));
+        vm.assume(bytes(tokenName).length <= 128);
+        vm.assume(bytes(tokenSymbol).length <= 32);
+
         centrifugeChain.addPool(poolId);
 
         for (uint256 i = 0; i < trancheIds.length; i++) {
             centrifugeChain.addTranche(poolId, trancheIds[i], tokenName, tokenSymbol, decimals, restrictionSet);
             poolManager.deployTranche(poolId, trancheIds[i]);
             TrancheToken trancheToken = TrancheToken(poolManager.getTrancheToken(poolId, trancheIds[i]));
-            assertEq(
-                _bytes128ToString(_stringToBytes128(tokenName)),
-                _bytes128ToString(_stringToBytes128(trancheToken.name()))
-            );
-            assertEq(
-                _bytes32ToString(_stringToBytes32(tokenSymbol)),
-                _bytes32ToString(_stringToBytes32(trancheToken.symbol()))
-            );
+            assertEq(tokenName, trancheToken.name());
+            assertEq(tokenSymbol, trancheToken.symbol());
             assertEq(decimals, trancheToken.decimals());
         }
     }
@@ -143,6 +138,9 @@ contract PoolManagerTest is BaseTest {
     ) public {
         vm.assume(currency > 0);
         decimals = uint8(bound(decimals, 1, 18));
+        vm.assume(bytes(tokenName).length <= 128);
+        vm.assume(bytes(tokenSymbol).length <= 32);
+
         centrifugeChain.addPool(poolId); // add pool
 
         vm.expectRevert(bytes("PoolManager/tranche-not-added"));
@@ -152,12 +150,8 @@ contract PoolManagerTest is BaseTest {
         TrancheToken trancheToken = TrancheToken(trancheToken_);
         assertEq(trancheToken.wards(address(root)), 1);
         assertEq(trancheToken.wards(address(investmentManager)), 1);
-        assertEq(
-            _bytes128ToString(_stringToBytes128(tokenName)), _bytes128ToString(_stringToBytes128(trancheToken.name()))
-        );
-        assertEq(
-            _bytes32ToString(_stringToBytes32(tokenSymbol)), _bytes32ToString(_stringToBytes32(trancheToken.symbol()))
-        );
+        assertEq(tokenName, trancheToken.name());
+        assertEq(tokenSymbol, trancheToken.symbol());
     }
 
     function testRestrictionSetIntegration(uint64 poolId, bytes16 trancheId, uint8 restrictionSet) public {
@@ -210,6 +204,8 @@ contract PoolManagerTest is BaseTest {
     ) public {
         decimals = uint8(bound(decimals, 1, 18));
         vm.assume(currency > 0);
+        vm.assume(bytes(tokenName).length <= 128);
+        vm.assume(bytes(tokenSymbol).length <= 32);
 
         centrifugeChain.addPool(poolId); // add pool
         centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, restrictionSet); // add tranche
@@ -245,8 +241,8 @@ contract PoolManagerTest is BaseTest {
         assertTrue(lPool.wards(address(this)) == 0);
         assertTrue(investmentManager.wards(lPoolAddress) == 1);
 
-        assertEq(trancheToken.name(), _bytes128ToString(_stringToBytes128(tokenName)));
-        assertEq(trancheToken.symbol(), _bytes32ToString(_stringToBytes32(tokenSymbol)));
+        assertEq(trancheToken.name(), tokenName);
+        assertEq(trancheToken.symbol(), tokenSymbol);
         assertEq(trancheToken.decimals(), decimals);
         assertTrue(
             RestrictionManagerLike(address(trancheToken.restrictionManager())).hasMember(

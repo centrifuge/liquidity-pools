@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {BytesLib} from "src/libraries/BytesLib.sol";
+import {BytesLib} from "src/libraries/BytesLIb.sol";
 
 /// @title  MessagesLib
 /// @dev    Library for encoding and decoding messages.
 library MessagesLib {
+    using BytesLib for bytes;
+
     enum Call {
         /// 0 - An invalid message
         Invalid,
@@ -73,12 +75,10 @@ library MessagesLib {
     }
 
     function messageType(bytes memory _msg) internal pure returns (Call _call) {
-        _call = Call(BytesLib.toUint8(_msg, 0));
+        _call = Call(_msg.toUint8(0));
     }
 
     /**
-     * Add Currency
-     *
      * 0: call type (uint8 = 1 byte)
      * 1-16: The Liquidity Pool's global currency id (uint128 = 16 bytes)
      * 17-36: The EVM address of the currency (address = 20 bytes)
@@ -87,18 +87,12 @@ library MessagesLib {
         return abi.encodePacked(uint8(Call.AddCurrency), currency, currencyAddress);
     }
 
-    function isAddCurrency(bytes memory _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.AddCurrency;
-    }
-
     function parseAddCurrency(bytes memory _msg) internal pure returns (uint128 currency, address currencyAddress) {
-        currency = BytesLib.toUint128(_msg, 1);
-        currencyAddress = BytesLib.toAddress(_msg, 17);
+        currency = _msg.toUint128(1);
+        currencyAddress = _msg.toAddress(17);
     }
 
     /**
-     * Add pool
-     *
      * 0: call type (uint8 = 1 byte)
      * 1-8: poolId (uint64 = 8 bytes)
      */
@@ -106,17 +100,11 @@ library MessagesLib {
         return abi.encodePacked(uint8(Call.AddPool), poolId);
     }
 
-    function isAddPool(bytes memory _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.AddPool;
-    }
-
     function parseAddPool(bytes memory _msg) internal pure returns (uint64 poolId) {
-        poolId = BytesLib.toUint64(_msg, 1);
+        poolId = _msg.toUint64(1);
     }
 
     /**
-     * Allow Investment Currency
-     *
      * 0: call type (uint8 = 1 byte)
      * 1-8: poolId (uint64 = 8 bytes)
      * 9-24: currency (uint128 = 16 bytes)
@@ -125,18 +113,12 @@ library MessagesLib {
         return abi.encodePacked(uint8(Call.AllowInvestmentCurrency), poolId, currency);
     }
 
-    function isAllowInvestmentCurrency(bytes memory _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.AllowInvestmentCurrency;
-    }
-
     function parseAllowInvestmentCurrency(bytes memory _msg) internal pure returns (uint64 poolId, uint128 currency) {
-        poolId = BytesLib.toUint64(_msg, 1);
-        currency = BytesLib.toUint128(_msg, 9);
+        poolId = _msg.toUint64(1);
+        currency = _msg.toUint128(9);
     }
 
     /**
-     * Add tranche
-     *
      * 0: call type (uint8 = 1 byte)
      * 1-8: poolId (uint64 = 8 bytes)
      * 9-24: trancheId (16 bytes)
@@ -158,14 +140,10 @@ library MessagesLib {
             poolId,
             trancheId,
             _stringToBytes128(tokenName),
-            _stringToBytes32(tokenSymbol),
+            bytes32(bytes(tokenSymbol)),
             decimals,
             restrictionSet
         );
-    }
-
-    function isAddTranche(bytes memory _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.AddTranche;
     }
 
     function parseAddTranche(bytes memory _msg)
@@ -180,20 +158,15 @@ library MessagesLib {
             uint8 restrictionSet
         )
     {
-        poolId = BytesLib.toUint64(_msg, 1);
-        trancheId = BytesLib.toBytes16(_msg, 9);
-        tokenName = _bytes128ToString(BytesLib.slice(_msg, 25, 128));
-        tokenSymbol = _bytes32ToString(BytesLib.toBytes32(_msg, 153));
-        decimals = BytesLib.toUint8(_msg, 185);
-        restrictionSet = 0;
-        if (_msg.length > 186) {
-            restrictionSet = BytesLib.toUint8(_msg, 186);
-        }
+        poolId = _msg.toUint64(1);
+        trancheId = _msg.toBytes16(9);
+        tokenName = _bytes128ToString(_msg.slice(25, 128));
+        tokenSymbol = _bytes32ToString(_msg.toBytes32(153));
+        decimals = _msg.toUint8(185);
+        restrictionSet = _msg.toUint8(186);
     }
 
     /**
-     * Update member
-     *
      * 0: call type (uint8 = 1 byte)
      * 1-8: poolId (uint64 = 8 bytes)
      * 9-24: trancheId (16 bytes)
@@ -217,24 +190,18 @@ library MessagesLib {
         return abi.encodePacked(uint8(Call.UpdateMember), poolId, trancheId, member, validUntil);
     }
 
-    function isUpdateMember(bytes memory _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.UpdateMember;
-    }
-
     function parseUpdateMember(bytes memory _msg)
         internal
         pure
         returns (uint64 poolId, bytes16 trancheId, address user, uint64 validUntil)
     {
-        poolId = BytesLib.toUint64(_msg, 1);
-        trancheId = BytesLib.toBytes16(_msg, 9);
-        user = BytesLib.toAddress(_msg, 25);
-        validUntil = BytesLib.toUint64(_msg, 57);
+        poolId = _msg.toUint64(1);
+        trancheId = _msg.toBytes16(9);
+        user = _msg.toAddress(25);
+        validUntil = _msg.toUint64(57);
     }
 
     /**
-     * Update a Tranche token's price
-     *
      * 0: call type (uint8 = 1 byte)
      * 1-8: poolId (uint64 = 8 bytes)
      * 9-24: trancheId (16 bytes)
@@ -252,25 +219,15 @@ library MessagesLib {
         return abi.encodePacked(uint8(Call.UpdateTrancheTokenPrice), poolId, trancheId, currencyId, price, computedAt);
     }
 
-    function isUpdateTrancheTokenPrice(bytes memory _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.UpdateTrancheTokenPrice;
-    }
-
     function parseUpdateTrancheTokenPrice(bytes memory _msg)
         internal
         pure
-        returns (uint64 poolId, bytes16 trancheId, uint128 currencyId, uint128 price, uint64 computedAt)
+        returns (uint64, bytes16, uint128, uint128, uint64)
     {
-        poolId = BytesLib.toUint64(_msg, 1);
-        trancheId = BytesLib.toBytes16(_msg, 9);
-        currencyId = BytesLib.toUint128(_msg, 25);
-        price = BytesLib.toUint128(_msg, 41);
-        computedAt = BytesLib.toUint64(_msg, 57);
+        return (_msg.toUint64(1), _msg.toBytes16(9), _msg.toUint128(25), _msg.toUint128(41), _msg.toUint64(57));
     }
 
     /*
-     * Transfer Message - Transfer stable coins
-     *
      * 0: call type (uint8 = 1 byte)
      * 1-16: currency (uint128 = 16 bytes)
      * 17-48: sender address (32 bytes)
@@ -285,19 +242,15 @@ library MessagesLib {
         return abi.encodePacked(uint8(Call.Transfer), currency, sender, receiver, amount);
     }
 
-    function isTransfer(bytes memory _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.Transfer;
-    }
-
     function parseTransfer(bytes memory _msg)
         internal
         pure
         returns (uint128 currency, bytes32 sender, bytes32 receiver, uint128 amount)
     {
-        currency = BytesLib.toUint128(_msg, 1);
-        sender = BytesLib.toBytes32(_msg, 17);
-        receiver = BytesLib.toBytes32(_msg, 49);
-        amount = BytesLib.toUint128(_msg, 81);
+        currency = _msg.toUint128(1);
+        sender = _msg.toBytes32(17);
+        receiver = _msg.toBytes32(49);
+        amount = _msg.toUint128(81);
     }
 
     // An optimised `parseTransfer` function that saves gas by ignoring the `sender` field and that
@@ -307,14 +260,12 @@ library MessagesLib {
         pure
         returns (uint128 currency, address recipient, uint128 amount)
     {
-        currency = BytesLib.toUint128(_msg, 1);
-        recipient = BytesLib.toAddress(_msg, 49);
-        amount = BytesLib.toUint128(_msg, 81);
+        currency = _msg.toUint128(1);
+        recipient = _msg.toAddress(49);
+        amount = _msg.toUint128(81);
     }
 
     /**
-     * TransferTrancheTokens
-     *
      * 0: call type (uint8 = 1 byte)
      * 1-8: poolId (uint64 = 8 bytes)
      * 9-24: trancheId (16 bytes)
@@ -353,10 +304,6 @@ library MessagesLib {
         );
     }
 
-    function isTransferTrancheTokens(bytes memory _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.TransferTrancheTokens;
-    }
-
     // Parse a TransferTrancheTokens to an EVM-based `destinationAddress` (20-byte long).
     // We ignore the `sender` and the `domain` since it's not relevant when parsing an incoming message.
     function parseTransferTrancheTokens20(bytes memory _msg)
@@ -364,17 +311,15 @@ library MessagesLib {
         pure
         returns (uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 amount)
     {
-        poolId = BytesLib.toUint64(_msg, 1);
-        trancheId = BytesLib.toBytes16(_msg, 9);
+        poolId = _msg.toUint64(1);
+        trancheId = _msg.toBytes16(9);
         // ignore: `sender` at bytes 25-56
         // ignore: `domain` at bytes 57-65
-        destinationAddress = BytesLib.toAddress(_msg, 66);
-        amount = BytesLib.toUint128(_msg, 98);
+        destinationAddress = _msg.toAddress(66);
+        amount = _msg.toUint128(98);
     }
 
     /*
-     * IncreaseInvestOrder Message
-     *
      * 0: call type (uint8 = 1 byte)
      * 1-8: poolId (uint64 = 8 bytes)
      * 9-24: trancheId (16 bytes)
@@ -392,25 +337,19 @@ library MessagesLib {
         return abi.encodePacked(uint8(Call.IncreaseInvestOrder), poolId, trancheId, investor, currency, amount);
     }
 
-    function isIncreaseInvestOrder(bytes memory _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.IncreaseInvestOrder;
-    }
-
     function parseIncreaseInvestOrder(bytes memory _msg)
         internal
         pure
         returns (uint64 poolId, bytes16 trancheId, bytes32 investor, uint128 currency, uint128 amount)
     {
-        poolId = BytesLib.toUint64(_msg, 1);
-        trancheId = BytesLib.toBytes16(_msg, 9);
-        investor = BytesLib.toBytes32(_msg, 25);
-        currency = BytesLib.toUint128(_msg, 57);
-        amount = BytesLib.toUint128(_msg, 73);
+        poolId = _msg.toUint64(1);
+        trancheId = _msg.toBytes16(9);
+        investor = _msg.toBytes32(25);
+        currency = _msg.toUint128(57);
+        amount = _msg.toUint128(73);
     }
 
     /*
-     * DecreaseInvestOrder Message
-     *
      * 0: call type (uint8 = 1 byte)
      * 1-8: poolId (uint64 = 8 bytes)
      * 9-24: trancheId (16 bytes)
@@ -428,10 +367,6 @@ library MessagesLib {
         return abi.encodePacked(uint8(Call.DecreaseInvestOrder), poolId, trancheId, investor, currency, amount);
     }
 
-    function isDecreaseInvestOrder(bytes memory _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.DecreaseInvestOrder;
-    }
-
     function parseDecreaseInvestOrder(bytes memory _msg)
         internal
         pure
@@ -441,8 +376,6 @@ library MessagesLib {
     }
 
     /*
-     * IncreaseRedeemOrder Message
-     *
      * 0: call type (uint8 = 1 byte)
      * 1-8: poolId (uint64 = 8 bytes)
      * 9-24: trancheId (16 bytes)
@@ -460,10 +393,6 @@ library MessagesLib {
         return abi.encodePacked(uint8(Call.IncreaseRedeemOrder), poolId, trancheId, investor, currency, amount);
     }
 
-    function isIncreaseRedeemOrder(bytes memory _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.IncreaseRedeemOrder;
-    }
-
     function parseIncreaseRedeemOrder(bytes memory _msg)
         internal
         pure
@@ -473,8 +402,6 @@ library MessagesLib {
     }
 
     /*
-     * DecreaseRedeemOrder Message
-     *
      * 0: call type (uint8 = 1 byte)
      * 1-8: poolId (uint64 = 8 bytes)
      * 9-24: trancheId (16 bytes)
@@ -492,10 +419,6 @@ library MessagesLib {
         return abi.encodePacked(uint8(Call.DecreaseRedeemOrder), poolId, trancheId, investor, currency, amount);
     }
 
-    function isDecreaseRedeemOrder(bytes memory _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.DecreaseRedeemOrder;
-    }
-
     function parseDecreaseRedeemOrder(bytes memory _msg)
         internal
         pure
@@ -505,8 +428,6 @@ library MessagesLib {
     }
 
     /*
-     * CollectInvest Message
-     *
      * 0: call type (uint8 = 1 byte)
      * 1-8: poolId (uint64 = 8 bytes)
      * 9-24: trancheId (16 bytes)
@@ -520,24 +441,18 @@ library MessagesLib {
         return abi.encodePacked(uint8(Call.CollectInvest), poolId, trancheId, investor, currency);
     }
 
-    function isCollectInvest(bytes memory _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.CollectInvest;
-    }
-
     function parseCollectInvest(bytes memory _msg)
         internal
         pure
         returns (uint64 poolId, bytes16 trancheId, bytes32 investor, uint128 currency)
     {
-        poolId = BytesLib.toUint64(_msg, 1);
-        trancheId = BytesLib.toBytes16(_msg, 9);
-        investor = BytesLib.toBytes32(_msg, 25);
-        currency = BytesLib.toUint128(_msg, 57);
+        poolId = _msg.toUint64(1);
+        trancheId = _msg.toBytes16(9);
+        investor = _msg.toBytes32(25);
+        currency = _msg.toUint128(57);
     }
 
     /*
-     * CollectRedeem Message
-     *
      * 0: call type (uint8 = 1 byte)
      * 1-8: poolId (uint64 = 8 bytes)
      * 9-24: trancheId (16 bytes)
@@ -551,19 +466,15 @@ library MessagesLib {
         return abi.encodePacked(uint8(Call.CollectRedeem), poolId, trancheId, investor, currency);
     }
 
-    function isCollectRedeem(bytes memory _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.CollectRedeem;
-    }
-
     function parseCollectRedeem(bytes memory _msg)
         internal
         pure
         returns (uint64 poolId, bytes16 trancheId, bytes32 investor, uint128 currency)
     {
-        poolId = BytesLib.toUint64(_msg, 1);
-        trancheId = BytesLib.toBytes16(_msg, 9);
-        investor = BytesLib.toBytes32(_msg, 25);
-        currency = BytesLib.toUint128(_msg, 57);
+        poolId = _msg.toUint64(1);
+        trancheId = _msg.toBytes16(9);
+        investor = _msg.toBytes32(25);
+        currency = _msg.toUint128(57);
     }
 
     function formatExecutedDecreaseInvestOrder(
@@ -585,10 +496,6 @@ library MessagesLib {
         );
     }
 
-    function isExecutedDecreaseInvestOrder(bytes memory _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.ExecutedDecreaseInvestOrder;
-    }
-
     function parseExecutedDecreaseInvestOrder(bytes memory _msg)
         internal
         pure
@@ -601,12 +508,12 @@ library MessagesLib {
             uint128 remainingInvestOrder
         )
     {
-        poolId = BytesLib.toUint64(_msg, 1);
-        trancheId = BytesLib.toBytes16(_msg, 9);
-        investor = BytesLib.toAddress(_msg, 25);
-        currency = BytesLib.toUint128(_msg, 57);
-        trancheTokenPayout = BytesLib.toUint128(_msg, 73);
-        remainingInvestOrder = BytesLib.toUint128(_msg, 89);
+        poolId = _msg.toUint64(1);
+        trancheId = _msg.toBytes16(9);
+        investor = _msg.toAddress(25);
+        currency = _msg.toUint128(57);
+        trancheTokenPayout = _msg.toUint128(73);
+        remainingInvestOrder = _msg.toUint128(89);
     }
 
     function formatExecutedDecreaseRedeemOrder(
@@ -628,10 +535,6 @@ library MessagesLib {
         );
     }
 
-    function isExecutedDecreaseRedeemOrder(bytes memory _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.ExecutedDecreaseRedeemOrder;
-    }
-
     function parseExecutedDecreaseRedeemOrder(bytes memory _msg)
         internal
         pure
@@ -644,12 +547,12 @@ library MessagesLib {
             uint128 remainingRedeemOrder
         )
     {
-        poolId = BytesLib.toUint64(_msg, 1);
-        trancheId = BytesLib.toBytes16(_msg, 9);
-        investor = BytesLib.toAddress(_msg, 25);
-        currency = BytesLib.toUint128(_msg, 57);
-        trancheTokensPayout = BytesLib.toUint128(_msg, 73);
-        remainingRedeemOrder = BytesLib.toUint128(_msg, 89);
+        poolId = _msg.toUint64(1);
+        trancheId = _msg.toBytes16(9);
+        investor = _msg.toAddress(25);
+        currency = _msg.toUint128(57);
+        trancheTokensPayout = _msg.toUint128(73);
+        remainingRedeemOrder = _msg.toUint128(89);
     }
 
     function formatExecutedCollectInvest(
@@ -673,10 +576,6 @@ library MessagesLib {
         );
     }
 
-    function isExecutedCollectInvest(bytes memory _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.ExecutedCollectInvest;
-    }
-
     function parseExecutedCollectInvest(bytes memory _msg)
         internal
         pure
@@ -690,13 +589,13 @@ library MessagesLib {
             uint128 remainingInvestOrder
         )
     {
-        poolId = BytesLib.toUint64(_msg, 1);
-        trancheId = BytesLib.toBytes16(_msg, 9);
-        investor = BytesLib.toAddress(_msg, 25);
-        currency = BytesLib.toUint128(_msg, 57);
-        currencyPayout = BytesLib.toUint128(_msg, 73);
-        trancheTokensPayout = BytesLib.toUint128(_msg, 89);
-        remainingInvestOrder = BytesLib.toUint128(_msg, 105);
+        poolId = _msg.toUint64(1);
+        trancheId = _msg.toBytes16(9);
+        investor = _msg.toAddress(25);
+        currency = _msg.toUint128(57);
+        currencyPayout = _msg.toUint128(73);
+        trancheTokensPayout = _msg.toUint128(89);
+        remainingInvestOrder = _msg.toUint128(105);
     }
 
     function formatExecutedCollectRedeem(
@@ -720,10 +619,6 @@ library MessagesLib {
         );
     }
 
-    function isExecutedCollectRedeem(bytes memory _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.ExecutedCollectRedeem;
-    }
-
     function parseExecutedCollectRedeem(bytes memory _msg)
         internal
         pure
@@ -737,42 +632,32 @@ library MessagesLib {
             uint128 remainingRedeemOrder
         )
     {
-        poolId = BytesLib.toUint64(_msg, 1);
-        trancheId = BytesLib.toBytes16(_msg, 9);
-        investor = BytesLib.toAddress(_msg, 25);
-        currency = BytesLib.toUint128(_msg, 57);
-        currencyPayout = BytesLib.toUint128(_msg, 73);
-        trancheTokensPayout = BytesLib.toUint128(_msg, 89);
-        remainingRedeemOrder = BytesLib.toUint128(_msg, 105);
+        poolId = _msg.toUint64(1);
+        trancheId = _msg.toBytes16(9);
+        investor = _msg.toAddress(25);
+        currency = _msg.toUint128(57);
+        currencyPayout = _msg.toUint128(73);
+        trancheTokensPayout = _msg.toUint128(89);
+        remainingRedeemOrder = _msg.toUint128(105);
     }
 
     function formatScheduleUpgrade(address _contract) internal pure returns (bytes memory) {
         return abi.encodePacked(uint8(Call.ScheduleUpgrade), _contract);
     }
 
-    function isScheduleUpgrade(bytes memory _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.ScheduleUpgrade;
-    }
-
     function parseScheduleUpgrade(bytes memory _msg) internal pure returns (address _contract) {
-        _contract = BytesLib.toAddress(_msg, 1);
+        _contract = _msg.toAddress(1);
     }
 
     function formatCancelUpgrade(address _contract) internal pure returns (bytes memory) {
         return abi.encodePacked(uint8(Call.CancelUpgrade), _contract);
     }
 
-    function isCancelUpgrade(bytes memory _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.CancelUpgrade;
-    }
-
     function parseCancelUpgrade(bytes memory _msg) internal pure returns (address _contract) {
-        _contract = BytesLib.toAddress(_msg, 1);
+        _contract = _msg.toAddress(1);
     }
 
     /**
-     * Update tranche token metadata
-     *
      * 0: call type (uint8 = 1 byte)
      * 1-8: poolId (uint64 = 8 bytes)
      * 9-24: trancheId (16 bytes)
@@ -790,12 +675,8 @@ library MessagesLib {
             poolId,
             trancheId,
             _stringToBytes128(tokenName),
-            _stringToBytes32(tokenSymbol)
+            bytes32(bytes(tokenSymbol))
         );
-    }
-
-    function isUpdateTrancheTokenMetadata(bytes memory _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.UpdateTrancheTokenMetadata;
     }
 
     function parseUpdateTrancheTokenMetadata(bytes memory _msg)
@@ -803,10 +684,10 @@ library MessagesLib {
         pure
         returns (uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol)
     {
-        poolId = BytesLib.toUint64(_msg, 1);
-        trancheId = BytesLib.toBytes16(_msg, 9);
-        tokenName = _bytes128ToString(BytesLib.slice(_msg, 25, 128));
-        tokenSymbol = _bytes32ToString(BytesLib.toBytes32(_msg, 153));
+        poolId = _msg.toUint64(1);
+        trancheId = _msg.toBytes16(9);
+        tokenName = _bytes128ToString(_msg.slice(25, 128));
+        tokenSymbol = _bytes32ToString(_msg.toBytes32(153));
     }
 
     function formatCancelInvestOrder(uint64 poolId, bytes16 trancheId, bytes32 investor, uint128 currency)
@@ -822,10 +703,10 @@ library MessagesLib {
         pure
         returns (uint64 poolId, bytes16 trancheId, address investor, uint128 currency)
     {
-        poolId = BytesLib.toUint64(_msg, 1);
-        trancheId = BytesLib.toBytes16(_msg, 9);
-        investor = BytesLib.toAddress(_msg, 25);
-        currency = BytesLib.toUint128(_msg, 57);
+        poolId = _msg.toUint64(1);
+        trancheId = _msg.toBytes16(9);
+        investor = _msg.toAddress(25);
+        currency = _msg.toUint128(57);
     }
 
     function formatCancelRedeemOrder(uint64 poolId, bytes16 trancheId, bytes32 investor, uint128 currency)
@@ -841,15 +722,13 @@ library MessagesLib {
         pure
         returns (uint64 poolId, bytes16 trancheId, address investor, uint128 currency)
     {
-        poolId = BytesLib.toUint64(_msg, 1);
-        trancheId = BytesLib.toBytes16(_msg, 9);
-        investor = BytesLib.toAddress(_msg, 25);
-        currency = BytesLib.toUint128(_msg, 57);
+        poolId = _msg.toUint64(1);
+        trancheId = _msg.toBytes16(9);
+        investor = _msg.toAddress(25);
+        currency = _msg.toUint128(57);
     }
 
     /**
-     * Disallow Investment Currency
-     *
      * 0: call type (uint8 = 1 byte)
      * 1-8: poolId (uint64 = 8 bytes)
      * 9-24: currency (uint128 = 16 bytes)
@@ -858,22 +737,16 @@ library MessagesLib {
         return abi.encodePacked(uint8(Call.DisallowInvestmentCurrency), poolId, currency);
     }
 
-    function isDisallowInvestmentCurrency(bytes memory _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.DisallowInvestmentCurrency;
-    }
-
     function parseDisallowInvestmentCurrency(bytes memory _msg)
         internal
         pure
         returns (uint64 poolId, uint128 currency)
     {
-        poolId = BytesLib.toUint64(_msg, 1);
-        currency = BytesLib.toUint128(_msg, 9);
+        poolId = _msg.toUint64(1);
+        currency = _msg.toUint128(9);
     }
 
     /**
-     * Freeze
-     *
      * 0: call type (uint8 = 1 byte)
      * 1-8: poolId (uint64 = 8 bytes)
      * 9-24: trancheId (16 bytes)
@@ -884,19 +757,13 @@ library MessagesLib {
         return abi.encodePacked(uint8(Call.Freeze), poolId, trancheId, bytes32(bytes20(member)));
     }
 
-    function isFreeze(bytes memory _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.Freeze;
-    }
-
     function parseFreeze(bytes memory _msg) internal pure returns (uint64 poolId, bytes16 trancheId, address user) {
-        poolId = BytesLib.toUint64(_msg, 1);
-        trancheId = BytesLib.toBytes16(_msg, 9);
-        user = BytesLib.toAddress(_msg, 25);
+        poolId = _msg.toUint64(1);
+        trancheId = _msg.toBytes16(9);
+        user = _msg.toAddress(25);
     }
 
     /**
-     * Unfreeze
-     *
      * 0: call type (uint8 = 1 byte)
      * 1-8: poolId (uint64 = 8 bytes)
      * 9-24: trancheId (16 bytes)
@@ -907,19 +774,13 @@ library MessagesLib {
         return abi.encodePacked(uint8(Call.Unfreeze), poolId, trancheId, bytes32(bytes20(user)));
     }
 
-    function isUnfreeze(bytes memory _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.Unfreeze;
-    }
-
     function parseUnfreeze(bytes memory _msg) internal pure returns (uint64 poolId, bytes16 trancheId, address user) {
-        poolId = BytesLib.toUint64(_msg, 1);
-        trancheId = BytesLib.toBytes16(_msg, 9);
-        user = BytesLib.toAddress(_msg, 25);
+        poolId = _msg.toUint64(1);
+        trancheId = _msg.toBytes16(9);
+        user = _msg.toAddress(25);
     }
 
     /*
-     * TriggerIncreaseRedeemOrder Message
-     *
      * 0: call type (uint8 = 1 byte)
      * 1-8: poolId (uint64 = 8 bytes)
      * 9-24: trancheId (16 bytes)
@@ -939,25 +800,19 @@ library MessagesLib {
         );
     }
 
-    function isTriggerIncreaseRedeemOrder(bytes memory _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.TriggerIncreaseRedeemOrder;
-    }
-
     function parseTriggerIncreaseRedeemOrder(bytes memory _msg)
         internal
         pure
         returns (uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 trancheTokenAmount)
     {
-        poolId = BytesLib.toUint64(_msg, 1);
-        trancheId = BytesLib.toBytes16(_msg, 9);
-        investor = BytesLib.toAddress(_msg, 25);
-        currency = BytesLib.toUint128(_msg, 57);
-        trancheTokenAmount = BytesLib.toUint128(_msg, 73);
+        poolId = _msg.toUint64(1);
+        trancheId = _msg.toBytes16(9);
+        investor = _msg.toAddress(25);
+        currency = _msg.toUint128(57);
+        trancheTokenAmount = _msg.toUint128(73);
     }
 
     /**
-     * Message Proof
-     *
      * 0: call type (uint8 = 1 byte)
      * 1-32: The keccak message proof (bytes32)
      */
@@ -965,12 +820,8 @@ library MessagesLib {
         return abi.encodePacked(uint8(Call.MessageProof), keccak256(message));
     }
 
-    function isMessageProof(bytes memory _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.MessageProof;
-    }
-
     function parseMessageProof(bytes memory _msg) internal pure returns (bytes32 proof) {
-        proof = BytesLib.toBytes32(_msg, 1);
+        proof = _msg.toBytes32(1);
     }
 
     // Utils
@@ -1012,17 +863,6 @@ library MessagesLib {
         }
 
         return string(bytesArray);
-    }
-
-    function _stringToBytes32(string memory source) internal pure returns (bytes32 result) {
-        bytes memory tempEmptyStringTest = bytes(source);
-        if (tempEmptyStringTest.length == 0) {
-            return 0x0;
-        }
-
-        assembly {
-            result := mload(add(source, 32))
-        }
     }
 
     function _bytes32ToString(bytes32 _bytes32) internal pure returns (string memory) {

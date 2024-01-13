@@ -205,17 +205,6 @@ contract BaseTest is Deployer, Test {
         return currency;
     }
 
-    function _stringToBytes32(string memory source) internal pure returns (bytes32 result) {
-        bytes memory tempEmptyStringTest = bytes(source);
-        if (tempEmptyStringTest.length == 0) {
-            return 0x0;
-        }
-
-        assembly {
-            result := mload(add(source, 32))
-        }
-    }
-
     function _stringToBytes16(string memory source) internal pure returns (bytes16 result) {
         bytes memory tempEmptyStringTest = bytes(source);
         if (tempEmptyStringTest.length == 0) {
@@ -235,19 +224,6 @@ contract BaseTest is Deployer, Test {
         bytes memory bytesArray = new bytes(i);
         for (i = 0; i < 16 && _bytes16[i] != 0; i++) {
             bytesArray[i] = _bytes16[i];
-        }
-        return string(bytesArray);
-    }
-
-    function _bytes32ToString(bytes32 _bytes32) internal pure returns (string memory) {
-        uint8 i = 0;
-        while (i < 32 && _bytes32[i] != 0) {
-            i++;
-        }
-
-        bytes memory bytesArray = new bytes(i);
-        for (i = 0; i < 32 && _bytes32[i] != 0; i++) {
-            bytesArray[i] = _bytes32[i];
         }
         return string(bytesArray);
     }

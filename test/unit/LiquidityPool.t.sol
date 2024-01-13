@@ -17,6 +17,8 @@ contract LiquidityPoolTest is BaseTest {
         uint128 currencyId
     ) public {
         vm.assume(currencyId > 0);
+        vm.assume(bytes(tokenName).length <= 128);
+        vm.assume(bytes(tokenSymbol).length <= 32);
 
         address lPool_ = deployLiquidityPool(poolId, erc20.decimals(), tokenName, tokenSymbol, trancheId, currencyId);
         LiquidityPool lPool = LiquidityPool(lPool_);
@@ -28,12 +30,8 @@ contract LiquidityPoolTest is BaseTest {
         assertEq(lPool.trancheId(), trancheId);
         address token = poolManager.getTrancheToken(poolId, trancheId);
         assertEq(address(lPool.share()), token);
-        assertEq(
-            _bytes128ToString(_stringToBytes128(tokenName)), _bytes128ToString(_stringToBytes128(ERC20(token).name()))
-        );
-        assertEq(
-            _bytes32ToString(_stringToBytes32(tokenSymbol)), _bytes32ToString(_stringToBytes32(ERC20(token).symbol()))
-        );
+        assertEq(tokenName, ERC20(token).name());
+        assertEq(tokenSymbol, ERC20(token).symbol());
 
         // permissions set correctly
         assertEq(lPool.wards(address(root)), 1);

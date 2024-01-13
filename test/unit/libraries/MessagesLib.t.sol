@@ -88,20 +88,6 @@ contract MessagesLibTest is Test {
         assertEq(decodedTokenSymbol, symbol);
         assertEq(decodedDecimals, decimals);
         assertEq(decodedRestrictionSet, restrictionSet);
-
-        // for backwards compatibility
-        bytes memory expectedHexWithoutRestrictionSet =
-            hex"040000000000000001811acd5b3f17c06841c7e41e9e04cb1b536f6d65204e616d65000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000053594d424f4c00000000000000000000000000000000000000000000000000000f";
-
-        (decodedPoolId, decodedTrancheId, decodedTokenName, decodedTokenSymbol, decodedDecimals, decodedRestrictionSet)
-        = MessagesLib.parseAddTranche(expectedHexWithoutRestrictionSet);
-
-        assertEq(uint256(decodedPoolId), poolId);
-        assertEq(decodedTrancheId, trancheId);
-        assertEq(decodedTokenName, name);
-        assertEq(decodedTokenSymbol, symbol);
-        assertEq(decodedDecimals, decimals);
-        assertEq(decodedRestrictionSet, 0);
     }
 
     function testAddTrancheEquivalence(
@@ -112,6 +98,9 @@ contract MessagesLibTest is Test {
         uint8 decimals,
         uint8 restrictionSet
     ) public {
+        vm.assume(bytes(tokenName).length <= 128);
+        vm.assume(bytes(tokenSymbol).length <= 32);
+
         bytes memory _message =
             MessagesLib.formatAddTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, restrictionSet);
         (
@@ -128,8 +117,8 @@ contract MessagesLibTest is Test {
         // Intended behaviour is that byte strings will be treated as bytes and converted to strings instead
         // of treated as strings themselves. This conversion from string to bytes32 to string is used to simulate
         // this intended behaviour.
-        assertEq(decodedTokenName, MessagesLib._bytes128ToString(MessagesLib._stringToBytes128(tokenName)));
-        assertEq(decodedTokenSymbol, MessagesLib._bytes32ToString(MessagesLib._stringToBytes32(tokenSymbol)));
+        assertEq(decodedTokenName, tokenName);
+        assertEq(decodedTokenSymbol, tokenSymbol);
         assertEq(decodedDecimals, decimals);
         assertEq(decodedRestrictionSet, restrictionSet);
     }
@@ -849,6 +838,9 @@ contract MessagesLibTest is Test {
         string memory tokenName,
         string memory tokenSymbol
     ) public {
+        vm.assume(bytes(tokenName).length <= 128);
+        vm.assume(bytes(tokenSymbol).length <= 32);
+
         bytes memory _message = MessagesLib.formatUpdateTrancheTokenMetadata(poolId, trancheId, tokenName, tokenSymbol);
         (
             uint64 decodedPoolId,
@@ -862,8 +854,8 @@ contract MessagesLibTest is Test {
         // Intended behaviour is that byte strings will be treated as bytes and converted to strings instead
         // of treated as strings themselves. This conversion from string to bytes32 to string is used to simulate
         // this intended behaviour.
-        assertEq(decodedTokenName, MessagesLib._bytes128ToString(MessagesLib._stringToBytes128(tokenName)));
-        assertEq(decodedTokenSymbol, MessagesLib._bytes32ToString(MessagesLib._stringToBytes32(tokenSymbol)));
+        assertEq(decodedTokenName, tokenName);
+        assertEq(decodedTokenSymbol, tokenSymbol);
     }
 
     function testCancelInvestOrder() public {

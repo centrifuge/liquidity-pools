@@ -97,7 +97,9 @@ contract RouterAggregator is Auth {
         Router memory router = validRouters[msg.sender];
         require(router.id != 0, "RouterAggregator/invalid-router");
 
-        if (router.quorum == 1 && !MessagesLib.isMessageProof(payload)) {
+        bool isMessageProof = MessagesLib.messageType(payload) == MessagesLib.Call.MessageProof;
+
+        if (router.quorum == 1 && !isMessageProof) {
             // Special case for gas efficiency
             gateway.handle(payload);
             return;
@@ -105,7 +107,7 @@ contract RouterAggregator is Auth {
 
         bytes32 messageHash;
         ConfirmationState storage state;
-        if (MessagesLib.isMessageProof(payload)) {
+        if (isMessageProof) {
             messageHash = MessagesLib.parseMessageProof(payload);
             state = _confirmations[messageHash];
             state.proofs[router.id]++;
@@ -127,7 +129,7 @@ contract RouterAggregator is Auth {
             // TODO: this should reduce (quorum - 1) of the highest values, not all, by one
             _decreaseValues(state.proofs, 1);
 
-            if (MessagesLib.isMessageProof(payload)) {
+            if (isMessageProof) {
                 gateway.handle(pendingMessages[messageHash]);
 
                 // Only if there are no more pending messages, remove the pending message
@@ -139,7 +141,7 @@ contract RouterAggregator is Auth {
             }
 
             emit ExecuteMessage(messageHash);
-        } else if (!MessagesLib.isMessageProof(payload)) {
+        } else if (!isMessageProof) {
             pendingMessages[messageHash] = payload;
         }
     }
