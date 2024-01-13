@@ -19,8 +19,11 @@ contract RouterAggregatorTest is Test {
         aggregator = new RouterAggregator(address(gateway));
 
         router1 = new MockRouter(address(aggregator));
+        vm.label(address(router1), "MockRouter1");
         router2 = new MockRouter(address(aggregator));
+        vm.label(address(router2), "MockRouter2");
         router3 = new MockRouter(address(aggregator));
+        vm.label(address(router3), "MockRouter3");
 
         mockRouters.push(address(router1));
         mockRouters.push(address(router2));
@@ -139,7 +142,37 @@ contract RouterAggregatorTest is Test {
         assertEq(router3.sent(proof), 1);
     }
 
-    // TODO testRecoverIncomingAggregatedMessages
+    function testRecoverAggregatedMessages() public {
+        aggregator.file("routers", mockRouters, 2);
+
+        bytes memory message = MessagesLib.formatAddPool(1);
+        bytes memory proof = MessagesLib.formatMessageProof(MessagesLib.formatAddPool(1));
+
+        vm.prank(address(gateway));
+        aggregator.send(message);
+
+        vm.expectRevert(bytes("RouterAggregator/invalid-primary-router"));
+        aggregator.recover(message, address(0));
+
+        vm.expectRevert(bytes("RouterAggregator/cannot-recover-first-router"));
+        aggregator.recover(message, address(router1));
+
+        aggregator.recover(message, address(router2));
+        assertEq(router1.sent(message), 1);
+        assertEq(router2.sent(message), 1);
+        assertEq(router3.sent(message), 0);
+        assertEq(router1.sent(proof), 1);
+        assertEq(router2.sent(proof), 1);
+        assertEq(router3.sent(proof), 2);
+
+        aggregator.recover(message, address(router3));
+        assertEq(router1.sent(message), 1);
+        assertEq(router2.sent(message), 1);
+        assertEq(router3.sent(message), 1);
+        assertEq(router1.sent(proof), 2);
+        assertEq(router2.sent(proof), 2);
+        assertEq(router3.sent(proof), 2);
+    }
 
     function testMessagesCannotBeReplayed(
         uint8 numRouters,

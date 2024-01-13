@@ -149,7 +149,7 @@ contract RouterAggregator is Auth {
     ///      proofs (hash of message). This ensures message uniqueness (can only be executed on the destination once).
     function send(bytes calldata message) public {
         require(msg.sender == address(gateway), "RouterAggregator/only-gateway-allowed-to-call");
-        _send(message, 0);
+        _send(message, 1);
 
         emit SendMessage(message);
     }
@@ -159,6 +159,7 @@ contract RouterAggregator is Auth {
     function recover(bytes calldata message, address primaryRouter) public auth {
         Router memory router = validRouters[primaryRouter];
         require(router.id != 0, "RouterAggregator/invalid-primary-router");
+        require(router.id != 1, "RouterAggregator/cannot-recover-first-router");
         _send(message, router.id);
 
         emit RecoverMessage(message, primaryRouter);
@@ -170,7 +171,7 @@ contract RouterAggregator is Auth {
     function _send(bytes calldata message, uint8 primaryRouterId) internal {
         bytes memory proofMessage = MessagesLib.formatMessageProof(message);
         for (uint256 i = 0; i < routers.length; ++i) {
-            RouterLike(routers[i]).send(i == primaryRouterId ? message : proofMessage);
+            RouterLike(routers[i]).send(i == primaryRouterId - 1 ? message : proofMessage);
         }
     }
 
