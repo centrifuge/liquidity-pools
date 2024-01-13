@@ -414,7 +414,7 @@ contract PoolManagerTest is BaseTest {
         poolManager.updateMember(poolId, trancheId, randomUser, validUntil);
 
         vm.expectRevert(bytes("PoolManager/unknown-token"));
-        centrifugeChain.updateMember(100, _stringToBytes16("100"), randomUser, validUntil); // use random poolId &
+        centrifugeChain.updateMember(100, bytes16(bytes("100")), randomUser, validUntil); // use random poolId &
             // trancheId
 
         centrifugeChain.updateMember(poolId, trancheId, randomUser, validUntil);
@@ -470,7 +470,7 @@ contract PoolManagerTest is BaseTest {
         string memory updatedTokenSymbol = "newSymbol";
 
         vm.expectRevert(bytes("PoolManager/unknown-token"));
-        centrifugeChain.updateTrancheTokenMetadata(100, _stringToBytes16("100"), updatedTokenName, updatedTokenSymbol);
+        centrifugeChain.updateTrancheTokenMetadata(100, bytes16(bytes("100")), updatedTokenName, updatedTokenSymbol);
 
         vm.expectRevert(bytes("PoolManager/not-the-gateway"));
         poolManager.updateTrancheTokenMetadata(poolId, trancheId, updatedTokenName, updatedTokenSymbol);
@@ -586,7 +586,7 @@ contract PoolManagerTest is BaseTest {
 
     function testRemoveLiquidityPoolFailsWhenLiquidityPoolNotDeployed() public {
         uint64 poolId = 5;
-        bytes16 trancheId = _stringToBytes16("1");
+        bytes16 trancheId = bytes16(bytes("1"));
 
         centrifugeChain.addPool(poolId); // add pool
         centrifugeChain.addTranche(poolId, trancheId, "Test Token", "TT", 6, 2); // add tranche

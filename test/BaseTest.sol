@@ -161,7 +161,7 @@ contract BaseTest is Deployer, Test {
     }
 
     function deploySimplePool() public returns (address) {
-        return deployLiquidityPool(5, 6, defaultRestrictionSet, "name", "symbol", _stringToBytes16("1"), defaultCurrencyId, address(erc20));
+        return deployLiquidityPool(5, 6, defaultRestrictionSet, "name", "symbol", bytes16(bytes("1")), defaultCurrencyId, address(erc20));
     }
 
     function deposit(address _lPool, address _investor, uint256 amount) public {
@@ -205,17 +205,6 @@ contract BaseTest is Deployer, Test {
         return currency;
     }
 
-    function _stringToBytes16(string memory source) internal pure returns (bytes16 result) {
-        bytes memory tempEmptyStringTest = bytes(source);
-        if (tempEmptyStringTest.length == 0) {
-            return 0x0;
-        }
-
-        assembly {
-            result := mload(add(source, 16))
-        }
-    }
-
     function _bytes16ToString(bytes16 _bytes16) public pure returns (string memory) {
         uint8 i = 0;
         while(i < 16 && _bytes16[i] != 0) {
@@ -225,38 +214,6 @@ contract BaseTest is Deployer, Test {
         for (i = 0; i < 16 && _bytes16[i] != 0; i++) {
             bytesArray[i] = _bytes16[i];
         }
-        return string(bytesArray);
-    }
-
-    function _stringToBytes128(string memory source) internal pure returns (bytes memory) {
-        bytes memory temp = bytes(source);
-        bytes memory result = new bytes(128);
-
-        for (uint256 i = 0; i < 128; i++) {
-            if (i < temp.length) {
-                result[i] = temp[i];
-            } else {
-                result[i] = 0x00;
-            }
-        }
-
-        return result;
-    }
-
-    function _bytes128ToString(bytes memory _bytes128) internal pure returns (string memory) {
-        require(_bytes128.length == 128, "Input should be 128 bytes");
-
-        uint8 i = 0;
-        while (i < 128 && _bytes128[i] != 0) {
-            i++;
-        }
-
-        bytes memory bytesArray = new bytes(i);
-
-        for (uint8 j = 0; j < i; j++) {
-            bytesArray[j] = _bytes128[j];
-        }
-
         return string(bytesArray);
     }
 
