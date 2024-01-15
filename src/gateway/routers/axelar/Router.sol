@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {Auth} from "./../../../Auth.sol";
-
 interface AxelarGatewayLike {
     function callContract(string calldata destinationChain, string calldata contractAddress, bytes calldata payload)
         external;
@@ -21,7 +19,7 @@ interface AggregatorLike {
 
 /// @title  Axelar Router
 /// @notice Routing contract that integrates with an Axelar Gateway
-contract AxelarRouter is Auth {
+contract AxelarRouter {
     string public constant CENTRIFUGE_CHAIN_ID = "centrifuge";
     bytes32 public constant CENTRIFUGE_CHAIN_ID_HASH = keccak256(bytes("centrifuge"));
     bytes32 public constant CENTRIFUGE_CHAIN_ADDRESS_HASH =
@@ -34,9 +32,6 @@ contract AxelarRouter is Auth {
     constructor(address aggregator_, address axelarGateway_) {
         aggregator = AggregatorLike(aggregator_);
         axelarGateway = AxelarGatewayLike(axelarGateway_);
-
-        wards[msg.sender] = 1;
-        emit Rely(msg.sender);
     }
 
     // --- Incoming ---
