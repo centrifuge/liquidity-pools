@@ -102,6 +102,7 @@ contract RouterAggregator is Auth {
         if (router.quorum == 1 && !isMessageProof) {
             // Special case for gas efficiency
             gateway.handle(payload);
+            emit ExecuteMessage(keccak256(payload));
             return;
         }
 
