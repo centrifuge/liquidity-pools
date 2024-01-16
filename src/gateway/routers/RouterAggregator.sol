@@ -194,18 +194,6 @@ contract RouterAggregator is Auth {
         }
     }
 
-    function _countValues(uint16[8] memory arr) internal pure returns (uint256 count) {
-        for (uint256 i = 0; i < arr.length; ++i) {
-            count += arr[i];
-        }
-    }
-
-    function _decreaseValues(uint16[8] storage arr, uint16 decrease) internal {
-        for (uint256 i = 0; i < arr.length; ++i) {
-            if (arr[i] > 0) arr[i] -= decrease;
-        }
-    }
-
     function _decreaseFirstNValues(uint16[8] storage arr, uint8 numValues, uint16 decrease) internal {
         for (uint256 i = 0; i < arr.length; ++i) {
             if (arr[i] > 0) {
