@@ -34,7 +34,7 @@ contract RouterAggregator is Auth {
     struct Router {
         // Starts at 1 and maps to id - 1 as the index on the routers array
         uint8 id;
-        // We pack each router struct with the quorum to reduce SLOADs on handle
+        // Each router struct is packed with the quorum to reduce SLOADs on handle
         uint8 quorum;
     }
 
