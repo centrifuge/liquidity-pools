@@ -119,9 +119,6 @@ contract RouterAggregator is Auth {
         }
 
         if (_countNonZeroValues(state.messages) >= 1 && _countNonZeroValues(state.proofs) >= router.quorum - 1) {
-            // TODO: do we need to store counts per router at all?!
-            // => for proofs, we do, otherwise 3 proofs from 1 router is sufficient
-            // => but for payloads??
             // Reduce total message confiration count by 1, by finding the first non-zero value
             _decreaseFirstNValues(state.messages, 1, 1);
 
