@@ -167,8 +167,11 @@ contract RouterAggregator is Auth {
     }
 
     function _send(bytes calldata message, uint8 primaryRouterId) internal {
+        uint256 numRouters = routers.length;
+        require(numRouters > 0, "RouterAggregator/not-initialized");
+
         bytes memory proof = MessagesLib.formatMessageProof(message);
-        for (uint256 i = 0; i < routers.length; ++i) {
+        for (uint256 i = 0; i < numRouters; ++i) {
             RouterLike(routers[i]).send(i == primaryRouterId - 1 ? message : proof);
         }
     }

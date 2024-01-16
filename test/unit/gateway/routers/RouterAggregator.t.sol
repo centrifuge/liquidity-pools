@@ -46,6 +46,15 @@ contract RouterAggregatorTest is Test {
         aggregator.file("routers", mockRouters, 4);
     }
 
+    function testUseBeforeInitialization() public {
+        vm.expectRevert(bytes("RouterAggregator/invalid-router"));
+        aggregator.handle(MessagesLib.formatAddPool(1));
+
+        vm.prank(address(gateway));
+        vm.expectRevert(bytes("RouterAggregator/not-initialized"));
+        aggregator.send(MessagesLib.formatAddPool(1));
+    }
+
     function testIncomingAggregatedMessages() public {
         aggregator.file("routers", mockRouters, 2);
 
