@@ -485,66 +485,6 @@ contract MessagesLibTest is Test {
         assertEq(decodedAmount, amount);
     }
 
-    function testCollectInvest() public {
-        uint64 poolId = 1;
-        bytes16 trancheId = bytes16(hex"811acd5b3f17c06841c7e41e9e04cb1b");
-        bytes32 investor = bytes32(0x4564564564564564564564564564564564564564564564564564564564564564);
-        uint128 currency = 246803579;
-
-        bytes memory expectedHex =
-            hex"0d0000000000000001811acd5b3f17c06841c7e41e9e04cb1b45645645645645645645645645645645645645645645645645645645645645640000000000000000000000000eb5ec7b";
-
-        assertEq(MessagesLib.formatCollectInvest(poolId, trancheId, investor, currency), expectedHex);
-
-        (uint64 decodedPoolId, bytes16 decodedTrancheId, bytes32 decodedInvestor, uint128 decodedCurrency) =
-            MessagesLib.parseCollectInvest(expectedHex);
-        assertEq(uint256(decodedPoolId), poolId);
-        assertEq(decodedTrancheId, trancheId);
-        assertEq(decodedInvestor, investor);
-        assertEq(decodedCurrency, currency);
-    }
-
-    function testCollectInvestEquivalence(uint64 poolId, bytes16 trancheId, bytes32 user, uint128 currency) public {
-        bytes memory _message = MessagesLib.formatCollectInvest(poolId, trancheId, user, currency);
-        (uint64 decodedPoolId, bytes16 decodedTrancheId, bytes32 decodedUser, uint128 decodedCurrency) =
-            MessagesLib.parseCollectInvest(_message);
-
-        assertEq(uint256(decodedPoolId), uint256(poolId));
-        assertEq(decodedTrancheId, trancheId);
-        assertEq(decodedUser, user);
-        assertEq(decodedCurrency, currency);
-    }
-
-    function testCollectRedeem() public {
-        uint64 poolId = 12378532;
-        bytes16 trancheId = bytes16(hex"811acd5b3f17c06841c7e41e9e04cb1b");
-        bytes32 investor = bytes32(0x4564564564564564564564564564564564564564564564564564564564564564);
-        uint128 currency = 246803579;
-
-        bytes memory expectedHex =
-            hex"0e0000000000bce1a4811acd5b3f17c06841c7e41e9e04cb1b45645645645645645645645645645645645645645645645645645645645645640000000000000000000000000eb5ec7b";
-
-        assertEq(MessagesLib.formatCollectRedeem(poolId, trancheId, investor, currency), expectedHex);
-
-        (uint64 decodedPoolId, bytes16 decodedTrancheId, bytes32 decodedInvestor, uint128 decodedCurrency) =
-            MessagesLib.parseCollectRedeem(expectedHex);
-        assertEq(uint256(decodedPoolId), poolId);
-        assertEq(decodedTrancheId, trancheId);
-        assertEq(decodedInvestor, investor);
-        assertEq(decodedCurrency, currency);
-    }
-
-    function testCollectRedeemEquivalence(uint64 poolId, bytes16 trancheId, bytes32 user, uint128 currency) public {
-        bytes memory _message = MessagesLib.formatCollectRedeem(poolId, trancheId, user, currency);
-        (uint64 decodedPoolId, bytes16 decodedTrancheId, bytes32 decodedUser, uint128 decodedCurrency) =
-            MessagesLib.parseCollectRedeem(_message);
-
-        assertEq(uint256(decodedPoolId), uint256(poolId));
-        assertEq(decodedTrancheId, trancheId);
-        assertEq(decodedUser, user);
-        assertEq(decodedCurrency, currency);
-    }
-
     function testExecutedDecreaseInvestOrder() public {
         uint64 poolId = 12378532;
         bytes16 trancheId = bytes16(hex"811acd5b3f17c06841c7e41e9e04cb1b");

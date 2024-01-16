@@ -36,9 +36,9 @@ library MessagesLib {
         /// 12 - Decrease a Redeem order by a given amount
         DecreaseRedeemOrder,
         /// 13 - Collect investment
-        CollectInvest,
+        DEPRECATED_CollectInvest,
         /// 14 - Collect Redeem
-        CollectRedeem,
+        DEPRECATED_CollectRedeem,
         /// 15 - Executed Decrease Invest Order
         ExecutedDecreaseInvestOrder,
         /// 16 - Executed Decrease Redeem Order
@@ -425,56 +425,6 @@ library MessagesLib {
         returns (uint64 poolId, bytes16 trancheId, bytes32 investor, uint128 currency, uint128 amount)
     {
         return parseDecreaseInvestOrder(_msg);
-    }
-
-    /*
-     * 0: call type (uint8 = 1 byte)
-     * 1-8: poolId (uint64 = 8 bytes)
-     * 9-24: trancheId (16 bytes)
-     * 25-56: investor address (32 bytes)
-     */
-    function formatCollectInvest(uint64 poolId, bytes16 trancheId, bytes32 investor, uint128 currency)
-        internal
-        pure
-        returns (bytes memory)
-    {
-        return abi.encodePacked(uint8(Call.CollectInvest), poolId, trancheId, investor, currency);
-    }
-
-    function parseCollectInvest(bytes memory _msg)
-        internal
-        pure
-        returns (uint64 poolId, bytes16 trancheId, bytes32 investor, uint128 currency)
-    {
-        poolId = _msg.toUint64(1);
-        trancheId = _msg.toBytes16(9);
-        investor = _msg.toBytes32(25);
-        currency = _msg.toUint128(57);
-    }
-
-    /*
-     * 0: call type (uint8 = 1 byte)
-     * 1-8: poolId (uint64 = 8 bytes)
-     * 9-24: trancheId (16 bytes)
-     * 25-56: investor address (32 bytes)
-     */
-    function formatCollectRedeem(uint64 poolId, bytes16 trancheId, bytes32 investor, uint128 currency)
-        internal
-        pure
-        returns (bytes memory)
-    {
-        return abi.encodePacked(uint8(Call.CollectRedeem), poolId, trancheId, investor, currency);
-    }
-
-    function parseCollectRedeem(bytes memory _msg)
-        internal
-        pure
-        returns (uint64 poolId, bytes16 trancheId, bytes32 investor, uint128 currency)
-    {
-        poolId = _msg.toUint64(1);
-        trancheId = _msg.toBytes16(9);
-        investor = _msg.toBytes32(25);
-        currency = _msg.toUint128(57);
     }
 
     function formatExecutedDecreaseInvestOrder(

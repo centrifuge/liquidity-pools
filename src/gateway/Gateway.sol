@@ -268,22 +268,6 @@ contract Gateway is Auth {
         );
     }
 
-    function collectInvest(uint64 poolId, bytes16 trancheId, address investor, uint128 currency)
-        public
-        onlyInvestmentManager
-        pauseable
-    {
-        outgoingRouter.send(MessagesLib.formatCollectInvest(poolId, trancheId, _addressToBytes32(investor), currency));
-    }
-
-    function collectRedeem(uint64 poolId, bytes16 trancheId, address investor, uint128 currency)
-        public
-        onlyInvestmentManager
-        pauseable
-    {
-        outgoingRouter.send(MessagesLib.formatCollectRedeem(poolId, trancheId, _addressToBytes32(investor), currency));
-    }
-
     function cancelInvestOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency)
         public
         onlyInvestmentManager

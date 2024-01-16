@@ -170,12 +170,6 @@ contract GatewayTest is BaseTest {
         gateway.decreaseRedeemOrder(poolId, trancheId, investor, currency, trancheTokenAmount);
 
         vm.expectRevert(bytes("Gateway/only-investment-manager-allowed-to-call"));
-        gateway.collectInvest(poolId, trancheId, investor, currency);
-
-        vm.expectRevert(bytes("Gateway/only-investment-manager-allowed-to-call"));
-        gateway.collectRedeem(poolId, trancheId, investor, currency);
-
-        vm.expectRevert(bytes("Gateway/only-investment-manager-allowed-to-call"));
         gateway.cancelInvestOrder(poolId, trancheId, investor, currency);
 
         vm.expectRevert(bytes("Gateway/only-investment-manager-allowed-to-call"));
@@ -187,8 +181,6 @@ contract GatewayTest is BaseTest {
         gateway.decreaseInvestOrder(poolId, trancheId, investor, currency, currencyAmount);
         gateway.increaseRedeemOrder(poolId, trancheId, investor, currency, trancheTokenAmount);
         gateway.decreaseRedeemOrder(poolId, trancheId, investor, currency, trancheTokenAmount);
-        gateway.collectInvest(poolId, trancheId, investor, currency);
-        gateway.collectRedeem(poolId, trancheId, investor, currency);
         gateway.cancelInvestOrder(poolId, trancheId, investor, currency);
         gateway.cancelRedeemOrder(poolId, trancheId, investor, currency);
     }
