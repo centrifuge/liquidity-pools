@@ -43,10 +43,8 @@ contract AxelarRouter {
     ) public {
         require(keccak256(bytes(sourceChain)) == CENTRIFUGE_CHAIN_ID_HASH, "AxelarRouter/invalid-source-chain");
         require(keccak256(bytes(sourceAddress)) == CENTRIFUGE_CHAIN_ADDRESS_HASH, "AxelarRouter/invalid-source-address");
-
-        bytes32 payloadHash = keccak256(payload);
         require(
-            axelarGateway.validateContractCall(commandId, sourceChain, sourceAddress, payloadHash),
+            axelarGateway.validateContractCall(commandId, sourceChain, sourceAddress, keccak256(payload)),
             "AxelarRouter/not-approved-by-axelar-gateway"
         );
 
@@ -56,6 +54,7 @@ contract AxelarRouter {
     // --- Outgoing ---
     function send(bytes calldata message) public {
         require(msg.sender == address(aggregator), "AxelarRouter/only-aggregator-allowed-to-call");
+
         axelarGateway.callContract(CENTRIFUGE_CHAIN_ID, CENTRIFUGE_AXELAR_EXECUTABLE, message);
     }
 }
