@@ -21,11 +21,8 @@ interface RouterLike {
 ///         storing counts of messages and proofs that have been received.
 contract RouterAggregator is Auth {
     uint8 public constant MIN_QUORUM = 1;
-    uint8 public constant MAX_QUORUM = 6;
-
-    // Array of 8 is used to store messages & proofs, but index 0 is reserved
-    // as this is the default value and therefore used to detect invalid routers
-    uint8 public constant MAX_ROUTER_COUNT = 7;
+    uint8 public constant MAX_QUORUM = 7;
+    uint8 public constant MAX_ROUTER_COUNT = 8;
 
     GatewayLike public immutable gateway;
 
@@ -35,8 +32,9 @@ contract RouterAggregator is Auth {
     mapping(bytes32 messageHash => ConfirmationState) internal _confirmations;
 
     struct Router {
-        // We pack each router struct with the quorum to reduce SLOADs on handle
+        // Starts at 1 and maps to id - 1 as the index on the routers array
         uint8 id;
+        // We pack each router struct with the quorum to reduce SLOADs on handle
         uint8 quorum;
     }
 
@@ -50,9 +48,9 @@ contract RouterAggregator is Auth {
     }
 
     // --- Events ---
-    event HandleMessage(bytes32 messageHash, address router);
+    event HandleMessage(bytes message, address router);
     event HandleProof(bytes32 messageHash, address router);
-    event ExecuteMessage(bytes32 messageHash);
+    event ExecuteMessage(bytes message);
     event SendMessage(bytes message);
     event RecoverMessage(bytes message, address primaryRouter);
     event File(bytes32 indexed what, address[] routers, uint8 quorum);
@@ -100,7 +98,7 @@ contract RouterAggregator is Auth {
         if (router.quorum == 1 && !MessagesLib.isMessageProof(payload)) {
             // Special case for gas efficiency
             gateway.handle(payload);
-            emit ExecuteMessage(keccak256(payload));
+            emit ExecuteMessage(payload);
             return;
         }
 
@@ -109,24 +107,26 @@ contract RouterAggregator is Auth {
         if (MessagesLib.isMessageProof(payload)) {
             messageHash = MessagesLib.parseMessageProof(payload);
             state = _confirmations[messageHash];
-            state.proofs[router.id]++;
+            state.proofs[router.id - 1]++;
 
             emit HandleProof(messageHash, msg.sender);
         } else {
             messageHash = keccak256(payload);
             state = _confirmations[messageHash];
-            state.messages[router.id]++;
+            state.messages[router.id - 1]++;
 
-            emit HandleMessage(messageHash, msg.sender);
+            emit HandleMessage(payload, msg.sender);
         }
 
-        uint8 totalPayloads = _countNonZeroValues(state.messages);
-        uint8 totalProofs = _countNonZeroValues(state.proofs);
+        if (_countNonZeroValues(state.messages) >= 1 && _countNonZeroValues(state.proofs) >= router.quorum - 1) {
+            // TODO: do we need to store counts per router at all?!
+            // => for proofs, we do, otherwise 3 proofs from 1 router is sufficient
+            // => but for payloads??
+            // Reduce total message confiration count by 1, by finding the first non-zero value
+            _decreaseFirstNValues(state.messages, 1, 1);
 
-        if (totalPayloads >= 1 && totalProofs >= router.quorum - 1) {
-            _decreaseValues(state.messages, 1);
-            // TODO: this should reduce (quorum - 1) of the highest values, not all, by one
-            _decreaseValues(state.proofs, 1);
+            // Reduce total proof confiration count by quorum - 1 (removing 1 for the message confirmation)
+            _decreaseFirstNValues(state.proofs, router.quorum - 1, 1);
 
             if (MessagesLib.isMessageProof(payload)) {
                 gateway.handle(pendingMessages[messageHash]);
@@ -139,7 +139,7 @@ contract RouterAggregator is Auth {
                 gateway.handle(payload);
             }
 
-            emit ExecuteMessage(messageHash);
+            emit ExecuteMessage(payload);
         } else if (!MessagesLib.isMessageProof(payload)) {
             pendingMessages[messageHash] = payload;
         }
@@ -182,9 +182,13 @@ contract RouterAggregator is Auth {
         return router.quorum;
     }
 
-    function confirmations(bytes32 messageHash) external view returns (uint256) {
+    function confirmations(bytes32 messageHash)
+        external
+        view
+        returns (uint16[8] memory messages, uint16[8] memory proofs)
+    {
         ConfirmationState storage state = _confirmations[messageHash];
-        return _countValues(state.messages) + _countValues(state.proofs);
+        return (state.messages, state.proofs);
     }
 
     function _countNonZeroValues(uint16[8] memory arr) internal pure returns (uint8 count) {
@@ -202,6 +206,17 @@ contract RouterAggregator is Auth {
     function _decreaseValues(uint16[8] storage arr, uint16 decrease) internal {
         for (uint256 i = 0; i < arr.length; ++i) {
             if (arr[i] > 0) arr[i] -= decrease;
+        }
+    }
+
+    function _decreaseFirstNValues(uint16[8] storage arr, uint8 numValues, uint16 decrease) internal {
+        for (uint256 i = 0; i < arr.length; ++i) {
+            if (arr[i] > 0) {
+                arr[i] -= decrease;
+                numValues--;
+
+                if (numValues == 0) return;
+            }
         }
     }
 
