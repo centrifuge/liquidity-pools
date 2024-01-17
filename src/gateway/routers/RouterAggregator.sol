@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {Auth} from "./../../Auth.sol";
+import {Auth} from "src/Auth.sol";
 import {MessagesLib} from "src/libraries/MessagesLib.sol";
-import "forge-std/Console.sol";
 
 interface GatewayLike {
     function handle(bytes memory message) external;
