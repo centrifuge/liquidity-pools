@@ -30,12 +30,9 @@ contract RouterAggregator is Auth {
 
     address[] public routers;
     mapping(address router => Router) public validRouters;
-
+    mapping(bytes32 messageHash => Recovery) public recoveries;
     mapping(bytes32 messageHash => bytes) public pendingMessages;
     mapping(bytes32 messageHash => ConfirmationState) internal _confirmations;
-
-    mapping(bytes32 messageHash => Recovery) public recoveringMessages;
-    mapping(bytes32 messageHash => Recovery) public recoveringProofs;
 
     struct Router {
         // Starts at 1 and maps to id - 1 as the index on the routers array
@@ -164,27 +161,27 @@ contract RouterAggregator is Auth {
     /// @dev Governance on Centrifuge Chain can initiate message recovery. After the challenge period,
     ///      the recovery can be executed. If a malign router initiates message recovery, governance on
     ///      Centrifuge Chain can dispute and immediately cancel the recovery, using any other valid router.
-    ///         
+    ///
     ///      Only 1 recovery can be outstanding per message hash. If multiple routers fail at the same time,
     //       these will need to be recovered serially (increasing the challenge period for each failed router).
     function _handleRecovery(bytes calldata payload) internal {
         if (MessagesLib.isInitiateMessageRecovery(payload)) {
             (bytes32 messageHash, address router) = MessagesLib.parseInitiateMessageRecovery(payload);
-            recoveringMessages[messageHash] = Recovery(block.timestamp + RECOVERY_CHALLENGE_PERIOD, router);
+            recoveries[messageHash] = Recovery(block.timestamp + RECOVERY_CHALLENGE_PERIOD, router);
         } else if (MessagesLib.isDisputeMessageRecovery(payload)) {
             bytes32 messageHash = MessagesLib.parseDisputeMessageRecovery(payload);
-            delete recoveringMessages[messageHash];
+            delete recoveries[messageHash];
         }
     }
 
     function executeMessageRecovery(bytes calldata message) internal {
         bytes32 messageHash = keccak256(message);
-        Recovery storage recovery = recoveringMessages[messageHash];
+        Recovery storage recovery = recoveries[messageHash];
         require(recovery.timestamp != 0, "RouterAggregator/message-recovery-not-initiated");
         require(recovery.timestamp <= block.timestamp, "RouterAggregator/challenge-period-has-not-ended");
 
         _handle(message, validRouters[recovery.router]);
-        delete recoveringMessages[messageHash];
+        delete recoveries[messageHash];
     }
 
     // --- Outgoing ---
