@@ -80,7 +80,7 @@ contract Deployer is Script {
         routers.push(router);
 
         // Wire aggregator
-        aggregator.file("routers", routers, 1);
+        aggregator.file("routers", routers);
         gateway.addIncomingRouter(address(aggregator));
         gateway.updateOutgoingRouter(address(aggregator));
         aggregator.rely(address(delayedAdmin));

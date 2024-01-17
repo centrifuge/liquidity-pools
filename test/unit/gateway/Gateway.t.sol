@@ -19,7 +19,7 @@ contract GatewayTest is BaseTest {
 
         // aggregator setup
         assertEq(address(aggregator.gateway()), address(gateway));
-        assertEq(aggregator.quorum(), 2);
+        assertEq(aggregator.quorum(), 3);
         assertEq(aggregator.routers(0), address(router1));
         assertEq(aggregator.routers(1), address(router2));
         assertEq(aggregator.routers(2), address(router3));

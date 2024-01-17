@@ -67,7 +67,7 @@ contract BaseTest is Deployer, Test {
 
         // wire contracts
         wire(address(router1));
-        aggregator.file("routers", testRouters, 2);
+        aggregator.file("routers", testRouters);
 
         // give admin access
         giveAdminAccess();

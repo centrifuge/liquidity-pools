@@ -19,8 +19,6 @@ interface RouterLike {
 ///         Supports processing multiple duplicate messages in parallel by
 ///         storing counts of messages and proofs that have been received.
 contract RouterAggregator is Auth {
-    uint8 public constant MIN_QUORUM = 1;
-    uint8 public constant MAX_QUORUM = 7;
     uint8 public constant MAX_ROUTER_COUNT = 8;
 
     GatewayLike public immutable gateway;
@@ -52,7 +50,7 @@ contract RouterAggregator is Auth {
     event ExecuteMessage(bytes message, address router);
     event SendMessage(bytes message);
     event RecoverMessage(bytes message, address primaryRouter);
-    event File(bytes32 indexed what, address[] routers, uint8 quorum);
+    event File(bytes32 indexed what, address[] routers);
 
     constructor(address gateway_) {
         gateway = GatewayLike(gateway_);
@@ -62,11 +60,8 @@ contract RouterAggregator is Auth {
     }
 
     // --- Administration ---
-    function file(bytes32 what, address[] calldata routers_, uint8 quorum_) external auth {
+    function file(bytes32 what, address[] calldata routers_) external auth {
         if (what == "routers") {
-            require(quorum_ >= MIN_QUORUM, "RouterAggregator/less-than-min-quorum");
-            require(quorum_ <= MAX_QUORUM, "RouterAggregator/exceeds-max-quorum");
-            require(quorum_ <= routers_.length, "RouterAggregator/quorum-exceeds-num-routers");
             require(routers_.length <= MAX_ROUTER_COUNT, "RouterAggregator/exceeds-max-router-count");
 
             // Disable old routers
@@ -77,6 +72,7 @@ contract RouterAggregator is Auth {
 
             // Enable new routers and set quorum
             routers = routers_;
+            uint8 quorum_ = uint8(routers_.length);
             for (uint8 i; i < routers_.length; ++i) {
                 // Ids are assigned sequentially starting at 1
                 validRouters[routers_[i]] = Router(i + 1, quorum_);
@@ -85,7 +81,7 @@ contract RouterAggregator is Auth {
             revert("RouterAggregator/file-unrecognized-param");
         }
 
-        emit File(what, routers_, quorum_);
+        emit File(what, routers_);
     }
 
     // --- Incoming ---
@@ -121,8 +117,8 @@ contract RouterAggregator is Auth {
             // Reduce total message confiration count by 1, by finding the first non-zero value
             _decreaseFirstNValues(state.messages, 1, 1);
 
-            // Reduce total proof confiration count by quorum - 1 (removing 1 for the message confirmation)
-            _decreaseFirstNValues(state.proofs, router.quorum - 1, 1);
+            // Reduce total proof confiration count by quorum
+            _decreaseFirstNValues(state.proofs, router.quorum, 1);
 
             if (MessagesLib.isMessageProof(payload)) {
                 gateway.handle(pendingMessages[messageHash]);

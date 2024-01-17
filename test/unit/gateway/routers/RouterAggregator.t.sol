@@ -33,17 +33,9 @@ contract RouterAggregatorTest is Test {
     function testFile() public {
         // TODO: RouterAggregator/exceeds-max-router-count
 
-        vm.expectRevert(bytes("RouterAggregator/less-than-min-quorum"));
-        aggregator.file("routers", mockRouters, 0);
-
-        // TODO: RouterAggregator/exceeds-max-quorum
-
-        vm.expectRevert(bytes("RouterAggregator/quorum-exceeds-num-routers"));
-        aggregator.file("routers", mockRouters, 4);
-
         aggregator.deny(address(this));
         vm.expectRevert(bytes("Auth/not-authorized"));
-        aggregator.file("routers", mockRouters, 4);
+        aggregator.file("routers", mockRouters);
     }
 
     function testUseBeforeInitialization() public {
@@ -56,7 +48,7 @@ contract RouterAggregatorTest is Test {
     }
 
     function testIncomingAggregatedMessages() public {
-        aggregator.file("routers", mockRouters, 2);
+        aggregator.file("routers", mockRouters);
 
         bytes memory firstMessage = MessagesLib.formatAddPool(1);
         bytes memory firstProof = MessagesLib.formatMessageProof(MessagesLib.formatAddPool(1));
@@ -70,26 +62,25 @@ contract RouterAggregatorTest is Test {
         assertConfirmations(firstMessage, 1, 0, 0, 0, 0, 0);
 
         router2.execute(firstProof);
-        assertEq(gateway.handled(firstMessage), 1);
-        assertConfirmations(firstMessage, 0, 0, 0, 0, 0, 0);
+        assertEq(gateway.handled(firstMessage), 0);
+        assertConfirmations(firstMessage, 1, 0, 0, 0, 1, 0);
 
         router3.execute(firstProof);
         assertEq(gateway.handled(firstMessage), 1);
-        assertConfirmations(firstMessage, 0, 0, 0, 0, 0, 1);
+        assertConfirmations(firstMessage, 0, 0, 0, 0, 0, 0);
 
         // Resending same message works
-        // Immediately executes because of 3rd proof from previous matching message
         router1.execute(firstMessage);
-        assertEq(gateway.handled(firstMessage), 2);
-        assertConfirmations(firstMessage, 0, 0, 0, 0, 0, 0);
+        assertEq(gateway.handled(firstMessage), 1);
+        assertConfirmations(firstMessage, 1, 0, 0, 0, 0, 0);
 
         router2.execute(firstProof);
-        assertEq(gateway.handled(firstMessage), 2);
-        assertConfirmations(firstMessage, 0, 0, 0, 0, 1, 0);
+        assertEq(gateway.handled(firstMessage), 1);
+        assertConfirmations(firstMessage, 1, 0, 0, 0, 1, 0);
 
         router3.execute(firstProof);
         assertEq(gateway.handled(firstMessage), 2);
-        assertConfirmations(firstMessage, 0, 0, 0, 0, 1, 1);
+        assertConfirmations(firstMessage, 0, 0, 0, 0, 0, 0);
 
         // Sending another message works
         bytes memory secondMessage = MessagesLib.formatAddPool(2);
@@ -100,12 +91,12 @@ contract RouterAggregatorTest is Test {
         assertConfirmations(secondMessage, 1, 0, 0, 0, 0, 0);
 
         router2.execute(secondProof);
-        assertEq(gateway.handled(secondMessage), 1);
-        assertConfirmations(secondMessage, 0, 0, 0, 0, 0, 0);
+        assertEq(gateway.handled(secondMessage), 0);
+        assertConfirmations(secondMessage, 1, 0, 0, 0, 1, 0);
 
         router3.execute(secondProof);
         assertEq(gateway.handled(secondMessage), 1);
-        assertConfirmations(secondMessage, 0, 0, 0, 0, 0, 1);
+        assertConfirmations(secondMessage, 0, 0, 0, 0, 0, 0);
 
         // Swapping order of message vs proofs works
         bytes memory thirdMessage = MessagesLib.formatAddPool(3);
@@ -121,11 +112,11 @@ contract RouterAggregatorTest is Test {
 
         router3.execute(thirdMessage);
         assertEq(gateway.handled(thirdMessage), 1);
-        assertConfirmations(thirdMessage, 0, 0, 0, 0, 1, 0);
+        assertConfirmations(thirdMessage, 0, 0, 0, 0, 0, 0);
     }
 
     function testOneFasterPayloadRouter() public {
-        aggregator.file("routers", mockRouters, 2);
+        aggregator.file("routers", mockRouters);
 
         bytes memory message = MessagesLib.formatAddPool(1);
         bytes memory proof = MessagesLib.formatMessageProof(MessagesLib.formatAddPool(1));
@@ -141,17 +132,17 @@ contract RouterAggregatorTest is Test {
 
         // Submit first proof
         router2.execute(proof);
-        assertEq(gateway.handled(message), 1);
-        assertConfirmations(message, 0, 1, 0, 0, 0, 0);
+        assertEq(gateway.handled(message), 0);
+        assertConfirmations(message, 1, 1, 0, 0, 1, 0);
 
         // Submit second proof
         router3.execute(proof);
-        assertEq(gateway.handled(message), 2);
-        assertConfirmations(message, 0, 0, 0, 0, 0, 0);
+        assertEq(gateway.handled(message), 1);
+        assertConfirmations(message, 0, 1, 0, 0, 0, 0);
     }
 
     function testOutgoingAggregatedMessages() public {
-        aggregator.file("routers", mockRouters, 2);
+        aggregator.file("routers", mockRouters);
 
         bytes memory message = MessagesLib.formatAddPool(1);
         bytes memory proof = MessagesLib.formatMessageProof(MessagesLib.formatAddPool(1));
@@ -178,7 +169,7 @@ contract RouterAggregatorTest is Test {
     }
 
     function testRecoverAggregatedMessages() public {
-        aggregator.file("routers", mockRouters, 2);
+        aggregator.file("routers", mockRouters);
 
         bytes memory message = MessagesLib.formatAddPool(1);
         bytes memory proof = MessagesLib.formatMessageProof(MessagesLib.formatAddPool(1));
@@ -206,14 +197,10 @@ contract RouterAggregatorTest is Test {
         assertEq(router3.sent(proof), 2);
     }
 
-    function testMessagesCannotBeReplayed(
-        uint8 numRouters,
-        uint8 quorum,
-        uint8 numParallelDuplicateMessages_,
-        uint256 entropy
-    ) public {
+    function testMessagesCannotBeReplayed(uint8 numRouters, uint8 numParallelDuplicateMessages_, uint256 entropy)
+        public
+    {
         numRouters = uint8(bound(numRouters, 1, aggregator.MAX_ROUTER_COUNT()));
-        quorum = uint8(bound(quorum, 1, _min(numRouters, aggregator.MAX_QUORUM())));
         uint16 numParallelDuplicateMessages = uint16(bound(numParallelDuplicateMessages_, 1, 255));
 
         bytes memory message = MessagesLib.formatAddPool(1);
@@ -224,7 +211,7 @@ contract RouterAggregatorTest is Test {
         for (uint256 i = 0; i < numRouters; i++) {
             testRouters[i] = address(new MockRouter(address(aggregator)));
         }
-        aggregator.file("routers", testRouters, quorum);
+        aggregator.file("routers", testRouters);
 
         // Generate random sequence of confirming messages and proofs
         uint256 it = 0;
