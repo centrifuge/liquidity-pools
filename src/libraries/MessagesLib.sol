@@ -965,6 +965,10 @@ library MessagesLib {
         return abi.encodePacked(uint8(Call.MessageProof), keccak256(message));
     }
 
+    function formatMessageProof(bytes32 messageHash) internal pure returns (bytes memory) {
+        return abi.encodePacked(uint8(Call.MessageProof), messageHash);
+    }
+
     function isMessageProof(bytes memory _msg) internal pure returns (bool) {
         return messageType(_msg) == Call.MessageProof;
     }

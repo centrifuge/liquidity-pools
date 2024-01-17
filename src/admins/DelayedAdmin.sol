@@ -10,7 +10,8 @@ interface PauseAdminLike {
 }
 
 interface RouterAggregatorLike {
-    function recover(bytes calldata message, address primaryRouter) external;
+    function recover(address router, bytes calldata message) external;
+    function recover(address router, bytes32 proof) external;
 }
 
 /// @title  Delayed Admin
@@ -59,7 +60,11 @@ contract DelayedAdmin is Auth {
     }
 
     // --- Router recovery management ---
-    function recoverMessage(bytes calldata message, address primaryRouter) external auth {
-        routerAggregator.recover(message, primaryRouter);
+    function recoverMessage(address router, bytes calldata message) external auth {
+        routerAggregator.recover(router, message);
+    }
+
+    function recoverProof(address router, bytes32 messageHash) external auth {
+        routerAggregator.recover(router, messageHash);
     }
 }

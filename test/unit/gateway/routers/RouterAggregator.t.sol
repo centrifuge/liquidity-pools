@@ -168,32 +168,33 @@ contract RouterAggregatorTest is Test {
         assertEq(router3.sent(proof), 1);
     }
 
-    function testRecoverAggregatedMessages() public {
+    function testRecoverFailedMessage() public {
         aggregator.file("routers", mockRouters);
 
         bytes memory message = MessagesLib.formatAddPool(1);
-        bytes memory proof = MessagesLib.formatMessageProof(MessagesLib.formatAddPool(1));
+        bytes memory proof = MessagesLib.formatMessageProof(message);
+        bytes32 messageHash = keccak256(message);
 
         vm.prank(address(gateway));
         aggregator.send(message);
 
-        vm.expectRevert(bytes("RouterAggregator/invalid-primary-router"));
-        aggregator.recover(message, address(0));
+        vm.expectRevert(bytes("RouterAggregator/invalid-router"));
+        aggregator.recover(address(0), message);
 
-        aggregator.recover(message, address(router2));
+        aggregator.recover(address(router2), message);
         assertEq(router1.sent(message), 1);
         assertEq(router2.sent(message), 1);
         assertEq(router3.sent(message), 0);
-        assertEq(router1.sent(proof), 1);
+        assertEq(router1.sent(proof), 0);
         assertEq(router2.sent(proof), 1);
-        assertEq(router3.sent(proof), 2);
+        assertEq(router3.sent(proof), 1);
 
-        aggregator.recover(message, address(router3));
+        aggregator.recover(address(router3), messageHash);
         assertEq(router1.sent(message), 1);
         assertEq(router2.sent(message), 1);
-        assertEq(router3.sent(message), 1);
-        assertEq(router1.sent(proof), 2);
-        assertEq(router2.sent(proof), 2);
+        assertEq(router3.sent(message), 0);
+        assertEq(router1.sent(proof), 0);
+        assertEq(router2.sent(proof), 1);
         assertEq(router3.sent(proof), 2);
     }
 

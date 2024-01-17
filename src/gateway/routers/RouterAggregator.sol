@@ -20,6 +20,7 @@ interface RouterLike {
 ///         storing counts of messages and proofs that have been received.
 contract RouterAggregator is Auth {
     uint8 public constant MAX_ROUTER_COUNT = 8;
+    uint8 public constant PRIMARY_ROUTER_ID = 1;
 
     GatewayLike public immutable gateway;
 
@@ -49,7 +50,8 @@ contract RouterAggregator is Auth {
     event HandleProof(bytes32 messageHash, address router);
     event ExecuteMessage(bytes message, address router);
     event SendMessage(bytes message);
-    event RecoverMessage(bytes message, address primaryRouter);
+    event RecoverMessage(address router, bytes message);
+    event RecoverProof(address router, bytes32 messageHash);
     event File(bytes32 indexed what, address[] routers);
 
     constructor(address gateway_) {
@@ -142,32 +144,30 @@ contract RouterAggregator is Auth {
     ///      proofs (hash of message). This ensures message uniqueness (can only be executed on the destination once).
     function send(bytes calldata message) public {
         require(msg.sender == address(gateway), "RouterAggregator/only-gateway-allowed-to-call");
-        _send(message, 1);
 
-        emit SendMessage(message);
-    }
-
-    /// @dev Recovery method in case the first (primary) router failed to send the message
-    ///      or more than (num routers - quorum) failed to send the proof
-    function recover(bytes calldata message, address primaryRouter) public auth {
-        Router memory router = validRouters[primaryRouter];
-        require(router.id != 0, "RouterAggregator/invalid-primary-router");
-        _send(message, router.id);
-
-        emit RecoverMessage(message, primaryRouter);
-
-        // TODO: invalidate previous full message by sending `InvalidateMessageId` message
-        // with router specific message id passed as arg to `resend`?
-    }
-
-    function _send(bytes calldata message, uint8 primaryRouterId) internal {
         uint256 numRouters = routers.length;
         require(numRouters > 0, "RouterAggregator/not-initialized");
 
         bytes memory proof = MessagesLib.formatMessageProof(message);
         for (uint256 i; i < numRouters; ++i) {
-            RouterLike(routers[i]).send(i == primaryRouterId - 1 ? message : proof);
+            RouterLike(routers[i]).send(i == PRIMARY_ROUTER_ID - 1 ? message : proof);
         }
+
+        emit SendMessage(message);
+    }
+
+    /// @dev Recovery method in case the first (primary) router failed to send the message
+    function recover(address router, bytes calldata message) public auth {
+        require(validRouters[router].id != 0, "RouterAggregator/invalid-router");
+        RouterLike(router).send(message);
+        emit RecoverMessage(router, message);
+    }
+
+    /// @dev Recovery method in case one of the non-primary routers failed to send the proof
+    function recover(address router, bytes32 messageHash) public auth {
+        require(validRouters[router].id != 0, "RouterAggregator/invalid-router");
+        RouterLike(router).send(MessagesLib.formatMessageProof(messageHash));
+        emit RecoverProof(router, messageHash);
     }
 
     // --- Helpers ---
