@@ -71,13 +71,13 @@ contract RouterAggregator is Auth {
 
             // Disable old routers
             // TODO: try to combine with loop later to save storage reads/writes
-            for (uint8 i = 0; i < routers.length; ++i) {
+            for (uint8 i; i < routers.length; ++i) {
                 delete validRouters[address(routers[i])];
             }
 
             // Enable new routers and set quorum
             routers = routers_;
-            for (uint8 i = 0; i < routers_.length; ++i) {
+            for (uint8 i; i < routers_.length; ++i) {
                 // Ids are assigned sequentially starting at 1
                 validRouters[routers_[i]] = Router(i + 1, quorum_);
             }
@@ -170,7 +170,7 @@ contract RouterAggregator is Auth {
         require(numRouters > 0, "RouterAggregator/not-initialized");
 
         bytes memory proof = MessagesLib.formatMessageProof(message);
-        for (uint256 i = 0; i < numRouters; ++i) {
+        for (uint256 i; i < numRouters; ++i) {
             RouterLike(routers[i]).send(i == primaryRouterId - 1 ? message : proof);
         }
     }
@@ -191,13 +191,13 @@ contract RouterAggregator is Auth {
     }
 
     function _countNonZeroValues(uint16[8] memory arr) internal pure returns (uint8 count) {
-        for (uint256 i = 0; i < arr.length; ++i) {
+        for (uint256 i; i < arr.length; ++i) {
             if (arr[i] > 0) ++count;
         }
     }
 
     function _decreaseFirstNValues(uint16[8] storage arr, uint8 numValues, uint16 decrease) internal {
-        for (uint256 i = 0; i < arr.length; ++i) {
+        for (uint256 i; i < arr.length; ++i) {
             if (arr[i] > 0) {
                 arr[i] -= decrease;
                 numValues--;
@@ -208,7 +208,7 @@ contract RouterAggregator is Auth {
     }
 
     function _isEmpty(uint16[8] memory arr) internal pure returns (bool) {
-        for (uint256 i = 0; i < arr.length; ++i) {
+        for (uint256 i; i < arr.length; ++i) {
             if (arr[i] > 0) return false;
         }
         return true;
