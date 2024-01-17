@@ -58,13 +58,4 @@ contract DelayedAdmin is Auth {
     function removePauser(address user) external auth {
         pauseAdmin.removePauser(user);
     }
-
-    // --- Router recovery management ---
-    function recoverMessage(address router, bytes calldata message) external auth {
-        routerAggregator.recoverMessage(router, message);
-    }
-
-    function recoverProof(address router, bytes32 messageHash) external auth {
-        routerAggregator.recoverProof(router, messageHash);
-    }
 }

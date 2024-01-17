@@ -24,13 +24,18 @@ contract RouterAggregator is Auth {
 
     uint8 public constant MAX_ROUTER_COUNT = 8;
     uint8 public constant PRIMARY_ROUTER_ID = 1;
+    uint256 public constant RECOVERY_CHALLENGE_PERIOD = 7 days;
 
     GatewayLike public immutable gateway;
 
     address[] public routers;
     mapping(address router => Router) public validRouters;
+
     mapping(bytes32 messageHash => bytes) public pendingMessages;
     mapping(bytes32 messageHash => ConfirmationState) internal _confirmations;
+
+    mapping(bytes32 messageHash => Recovery) public recoveringMessages;
+    mapping(bytes32 messageHash => Recovery) public recoveringProofs;
 
     struct Router {
         // Starts at 1 and maps to id - 1 as the index on the routers array
@@ -46,6 +51,11 @@ contract RouterAggregator is Auth {
         // Max uint16 = 65,535 so at most 65,535 duplicate messages can be processed in parallel.
         uint16[8] messages;
         uint16[8] proofs;
+    }
+
+    struct Recovery {
+        uint256 timestamp;
+        address router;
     }
 
     // --- Events ---
@@ -90,15 +100,24 @@ contract RouterAggregator is Auth {
     }
 
     // --- Incoming ---
-    /// @dev Assumes routers ensure messages cannot be confirmed more than once
+    /// @dev Handle incoming messages, proofs, and recoveries.
+    ///      Assumes routers ensure messages cannot be confirmed more than once.
     function handle(bytes calldata payload) public {
         Router memory router = validRouters[msg.sender];
         require(router.id != 0, "RouterAggregator/invalid-router");
+        _handle(payload, router);
+    }
 
+    function _handle(bytes calldata payload, Router memory router) public {
         if (router.quorum == 1 && !MessagesLib.isMessageProof(payload)) {
             // Special case for gas efficiency
             gateway.handle(payload);
             emit ExecuteMessage(payload, msg.sender);
+            return;
+        }
+
+        if (MessagesLib.isRecoveryMessage(payload)) {
+            _handleRecovery(payload);
             return;
         }
 
@@ -142,6 +161,32 @@ contract RouterAggregator is Auth {
         }
     }
 
+    /// @dev Governance on Centrifuge Chain can initiate message recovery. After the challenge period,
+    ///      the recovery can be executed. If a malign router initiates message recovery, governance on
+    ///      Centrifuge Chain can dispute and immediately cancel the recovery, using any other valid router.
+    ///         
+    ///      Only 1 recovery can be outstanding per message hash. If multiple routers fail at the same time,
+    //       these will need to be recovered serially (increasing the challenge period for each failed router).
+    function _handleRecovery(bytes calldata payload) internal {
+        if (MessagesLib.isInitiateMessageRecovery(payload)) {
+            (bytes32 messageHash, address router) = MessagesLib.parseInitiateMessageRecovery(payload);
+            recoveringMessages[messageHash] = Recovery(block.timestamp + RECOVERY_CHALLENGE_PERIOD, router);
+        } else if (MessagesLib.isDisputeMessageRecovery(payload)) {
+            bytes32 messageHash = MessagesLib.parseDisputeMessageRecovery(payload);
+            delete recoveringMessages[messageHash];
+        }
+    }
+
+    function executeMessageRecovery(bytes calldata message) internal {
+        bytes32 messageHash = keccak256(message);
+        Recovery storage recovery = recoveringMessages[messageHash];
+        require(recovery.timestamp != 0, "RouterAggregator/message-recovery-not-initiated");
+        require(recovery.timestamp <= block.timestamp, "RouterAggregator/challenge-period-has-not-ended");
+
+        _handle(message, validRouters[recovery.router]);
+        delete recoveringMessages[messageHash];
+    }
+
     // --- Outgoing ---
     /// @dev Sends 1 message to the first router with the full message, and n-1 messages to the other routers with
     ///      proofs (hash of message). This ensures message uniqueness (can only be executed on the destination once).
@@ -157,20 +202,6 @@ contract RouterAggregator is Auth {
         }
 
         emit SendMessage(message);
-    }
-
-    /// @dev Recovery method in case the first (primary) router failed to send the message
-    function recoverMessage(address router, bytes calldata message) public auth {
-        require(validRouters[router].id != 0, "RouterAggregator/invalid-router");
-        RouterLike(router).send(message);
-        emit RecoverMessage(router, message);
-    }
-
-    /// @dev Recovery method in case one of the non-primary routers failed to send the proof
-    function recoverProof(address router, bytes32 messageHash) public auth {
-        require(validRouters[router].id != 0, "RouterAggregator/invalid-router");
-        RouterLike(router).send(MessagesLib.formatMessageProof(messageHash));
-        emit RecoverProof(router, messageHash);
     }
 
     // --- Helpers ---

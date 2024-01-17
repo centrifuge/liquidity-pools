@@ -65,10 +65,10 @@ library MessagesLib {
         TriggerIncreaseRedeemOrder,
         /// 28 - Proof
         MessageProof,
-        /// 28 - Recover Message
-        RecoverMessage,
-        /// 28 - Recover Proof
-        RecoverProof
+        /// 29 - Initiate Message Recovery
+        InitiateMessageRecovery,
+        /// 30 - Dispute Message Recovery
+        DisputeMessageRecovery
     }
 
     enum Domain {
@@ -982,39 +982,49 @@ library MessagesLib {
     }
 
     /**
-     * Recover Message
+     * Initiate Message Recovery
      *
      * 0: call type (uint8 = 1 byte)
-     * 1-: The message (bytes)
+     * 1-32: The message hash (32 bytes)
+     * 33-52: The router address (32 bytes)
      */
-    function formatRecoverMessage(bytes memory message) internal pure returns (bytes memory) {
-        return abi.encodePacked(uint8(Call.RecoverMessage), message);
+    function formatInitiateMessageRecovery(bytes memory message, address router) internal pure returns (bytes memory) {
+        return abi.encodePacked(uint8(Call.InitiateMessageRecovery), keccak256(message), bytes32(bytes20(router)));
     }
 
-    function isRecoverMessage(bytes memory _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.RecoverMessage;
+    function isInitiateMessageRecovery(bytes memory _msg) internal pure returns (bool) {
+        return messageType(_msg) == Call.InitiateMessageRecovery;
     }
 
-    function parseRecoverMessage(bytes memory _msg) internal pure returns (bytes memory message) {
-        message = BytesLib.slice(_msg, 1, _msg.length - 1);
+    function parseInitiateMessageRecovery(bytes memory _msg)
+        internal
+        pure
+        returns (bytes32 messageHash, address router)
+    {
+        messageHash = BytesLib.toBytes32(_msg, 1);
+        router = BytesLib.toAddress(_msg, 33);
     }
 
     /**
-     * Recover Proof
+     * Dispute Message Recovery
      *
      * 0: call type (uint8 = 1 byte)
-     * 1-: The message hash (bytes)
+     * 1-32: Message hash (32 bytes)
      */
-    function formatRecoverProof(bytes32 messageHash) internal pure returns (bytes memory) {
-        return abi.encodePacked(uint8(Call.RecoverProof), messageHash);
+    function formatDisputeMessageRecovery(bytes memory message) internal pure returns (bytes memory) {
+        return abi.encodePacked(uint8(Call.DisputeMessageRecovery), keccak256(message));
     }
 
-    function isRecoverProof(bytes memory _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.RecoverProof;
+    function isDisputeMessageRecovery(bytes memory _msg) internal pure returns (bool) {
+        return messageType(_msg) == Call.DisputeMessageRecovery;
     }
 
-    function parseRecoverProof(bytes memory _msg) internal pure returns (bytes32 proof) {
-        proof = BytesLib.toBytes32(_msg, 1);
+    function parseDisputeMessageRecovery(bytes memory _msg) internal pure returns (bytes32 messageHash) {
+        messageHash = BytesLib.toBytes32(_msg, 1);
+    }
+
+    function isRecoveryMessage(bytes memory _msg) internal pure returns (bool) {
+        return messageType(_msg) == Call.InitiateMessageRecovery || messageType(_msg) == Call.DisputeMessageRecovery;
     }
 
     // Utils

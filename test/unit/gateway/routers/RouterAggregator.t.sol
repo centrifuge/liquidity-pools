@@ -222,38 +222,38 @@ contract RouterAggregatorTest is Test {
         assertEq(router3.sent(proof), 1);
     }
 
-    function testRecoverFailedMessage() public {
-        aggregator.file("routers", threeMockRouters);
+    // function testRecoverFailedMessage() public {
+    //     aggregator.file("routers", threeMockRouters);
 
-        bytes memory message = MessagesLib.formatAddPool(1);
-        bytes memory proof = MessagesLib.formatMessageProof(message);
-        bytes32 messageHash = keccak256(message);
+    //     bytes memory message = MessagesLib.formatAddPool(1);
+    //     bytes memory proof = MessagesLib.formatMessageProof(message);
+    //     bytes32 messageHash = keccak256(message);
 
-        vm.prank(address(gateway));
-        aggregator.send(message);
+    //     vm.prank(address(gateway));
+    //     aggregator.send(message);
 
-        vm.expectRevert(bytes("RouterAggregator/invalid-router"));
-        aggregator.recoverMessage(address(0), message);
+    //     vm.expectRevert(bytes("RouterAggregator/invalid-router"));
+    //     aggregator.recoverMessage(address(0), message);
 
-        aggregator.recoverMessage(address(router2), message);
-        assertEq(router1.sent(message), 1);
-        assertEq(router2.sent(message), 1);
-        assertEq(router3.sent(message), 0);
-        assertEq(router1.sent(proof), 0);
-        assertEq(router2.sent(proof), 1);
-        assertEq(router3.sent(proof), 1);
+    //     aggregator.recoverMessage(address(router2), message);
+    //     assertEq(router1.sent(message), 1);
+    //     assertEq(router2.sent(message), 1);
+    //     assertEq(router3.sent(message), 0);
+    //     assertEq(router1.sent(proof), 0);
+    //     assertEq(router2.sent(proof), 1);
+    //     assertEq(router3.sent(proof), 1);
 
-        vm.expectRevert(bytes("RouterAggregator/invalid-router"));
-        aggregator.recoverProof(address(0), messageHash);
+    //     vm.expectRevert(bytes("RouterAggregator/invalid-router"));
+    //     aggregator.recoverProof(address(0), messageHash);
 
-        aggregator.recoverProof(address(router3), messageHash);
-        assertEq(router1.sent(message), 1);
-        assertEq(router2.sent(message), 1);
-        assertEq(router3.sent(message), 0);
-        assertEq(router1.sent(proof), 0);
-        assertEq(router2.sent(proof), 1);
-        assertEq(router3.sent(proof), 2);
-    }
+    //     aggregator.recoverProof(address(router3), messageHash);
+    //     assertEq(router1.sent(message), 1);
+    //     assertEq(router2.sent(message), 1);
+    //     assertEq(router3.sent(message), 0);
+    //     assertEq(router1.sent(proof), 0);
+    //     assertEq(router2.sent(proof), 1);
+    //     assertEq(router3.sent(proof), 2);
+    // }
 
     function testMessagesCannotBeReplayed(uint8 numRouters, uint8 numParallelDuplicateMessages_, uint256 entropy)
         public
