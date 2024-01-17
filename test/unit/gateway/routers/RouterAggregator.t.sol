@@ -189,9 +189,6 @@ contract RouterAggregatorTest is Test {
         vm.expectRevert(bytes("RouterAggregator/invalid-primary-router"));
         aggregator.recover(message, address(0));
 
-        vm.expectRevert(bytes("RouterAggregator/cannot-recover-first-router"));
-        aggregator.recover(message, address(router1));
-
         aggregator.recover(message, address(router2));
         assertEq(router1.sent(message), 1);
         assertEq(router2.sent(message), 1);

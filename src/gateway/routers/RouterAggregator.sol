@@ -156,7 +156,6 @@ contract RouterAggregator is Auth {
     function recover(bytes calldata message, address primaryRouter) public auth {
         Router memory router = validRouters[primaryRouter];
         require(router.id != 0, "RouterAggregator/invalid-primary-router");
-        require(router.id != 1, "RouterAggregator/cannot-recover-first-router");
         _send(message, router.id);
 
         emit RecoverMessage(message, primaryRouter);
