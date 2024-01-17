@@ -66,19 +66,19 @@ contract RouterAggregator is Auth {
         if (what == "routers") {
             require(routers_.length <= MAX_ROUTER_COUNT, "RouterAggregator/exceeds-max-router-count");
 
-            // Disable old routers
-            // TODO: try to combine with loop later to save storage reads/writes
-            for (uint8 i; i < routers.length; ++i) {
-                delete validRouters[address(routers[i])];
-            }
-
-            // Enable new routers and set quorum
-            routers = routers_;
+            // Enable new routers, setting quorum to number of routers
             uint8 quorum_ = uint8(routers_.length);
             for (uint8 i; i < routers_.length; ++i) {
                 // Ids are assigned sequentially starting at 1
                 validRouters[routers_[i]] = Router(i + 1, quorum_);
             }
+
+            // Disable old routers that weren't already overridden
+            for (uint8 j = uint8(routers_.length); j < routers.length; ++j) {
+                delete validRouters[address(routers[j])];
+            }
+
+            routers = routers_;
         } else {
             revert("RouterAggregator/file-unrecognized-param");
         }

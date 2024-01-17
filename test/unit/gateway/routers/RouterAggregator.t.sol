@@ -12,7 +12,10 @@ contract RouterAggregatorTest is Test {
     MockRouter router1;
     MockRouter router2;
     MockRouter router3;
-    address[] mockRouters;
+    MockRouter router4;
+    address[] threeMockRouters;
+    address[] fourMockRouters;
+    address[] nineMockRouters;
 
     function setUp() public {
         gateway = new GatewayMock();
@@ -24,18 +27,69 @@ contract RouterAggregatorTest is Test {
         vm.label(address(router2), "MockRouter2");
         router3 = new MockRouter(address(aggregator));
         vm.label(address(router3), "MockRouter3");
+        router4 = new MockRouter(address(aggregator));
+        vm.label(address(router4), "MockRouter4");
 
-        mockRouters.push(address(router1));
-        mockRouters.push(address(router2));
-        mockRouters.push(address(router3));
+        threeMockRouters.push(address(router1));
+        threeMockRouters.push(address(router2));
+        threeMockRouters.push(address(router3));
+
+        fourMockRouters.push(address(router1));
+        fourMockRouters.push(address(router2));
+        fourMockRouters.push(address(router3));
+        fourMockRouters.push(address(router4));
+
+        nineMockRouters.push(address(router1));
+        nineMockRouters.push(address(router1));
+        nineMockRouters.push(address(router1));
+        nineMockRouters.push(address(router1));
+        nineMockRouters.push(address(router1));
+        nineMockRouters.push(address(router1));
+        nineMockRouters.push(address(router1));
+        nineMockRouters.push(address(router1));
+        nineMockRouters.push(address(router1));
     }
 
-    function testFile() public {
-        // TODO: RouterAggregator/exceeds-max-router-count
+    function testFileRouters() public {
+        aggregator.file("routers", threeMockRouters);
+        assertEq(aggregator.routers(0), address(router1));
+        assertEq(aggregator.routers(1), address(router2));
+        assertEq(aggregator.routers(2), address(router3));
+        vm.expectRevert(bytes(""));
+        assertEq(aggregator.routers(3), address(0));
+
+        (uint8 validRouter1Id, uint8 validRouter1Quorum) = aggregator.validRouters(address(router1));
+        assertEq(validRouter1Id, 1);
+        assertEq(validRouter1Quorum, 3);
+        (uint8 validRouter2Id, uint8 validRouter2Quorum) = aggregator.validRouters(address(router2));
+        assertEq(validRouter2Id, 2);
+        assertEq(validRouter2Quorum, 3);
+        (uint8 validRouter3Id, uint8 validRouter3Quorum) = aggregator.validRouters(address(router3));
+        assertEq(validRouter3Id, 3);
+        assertEq(validRouter3Quorum, 3);
+        (uint8 invalidRouter4Id, uint8 invalidRouter4Quorum) = aggregator.validRouters(address(router4));
+        assertEq(invalidRouter4Id, 0);
+        assertEq(invalidRouter4Quorum, 0);
+
+        aggregator.file("routers", fourMockRouters);
+        (uint8 validRouter4Id, uint8 validRouter4Quorum) = aggregator.validRouters(address(router4));
+        assertEq(validRouter4Id, 4);
+        assertEq(validRouter4Quorum, 4);
+        assertEq(aggregator.routers(3), address(router4));
+
+        aggregator.file("routers", threeMockRouters);
+        (invalidRouter4Id, invalidRouter4Quorum) = aggregator.validRouters(address(router4));
+        assertEq(invalidRouter4Id, 0);
+        assertEq(invalidRouter4Quorum, 0);
+        vm.expectRevert(bytes(""));
+        assertEq(aggregator.routers(3), address(0));
+
+        vm.expectRevert(bytes("RouterAggregator/exceeds-max-router-count"));
+        aggregator.file("routers", nineMockRouters);
 
         aggregator.deny(address(this));
         vm.expectRevert(bytes("Auth/not-authorized"));
-        aggregator.file("routers", mockRouters);
+        aggregator.file("routers", threeMockRouters);
     }
 
     function testUseBeforeInitialization() public {
@@ -48,7 +102,7 @@ contract RouterAggregatorTest is Test {
     }
 
     function testIncomingAggregatedMessages() public {
-        aggregator.file("routers", mockRouters);
+        aggregator.file("routers", threeMockRouters);
 
         bytes memory firstMessage = MessagesLib.formatAddPool(1);
         bytes memory firstProof = MessagesLib.formatMessageProof(MessagesLib.formatAddPool(1));
@@ -116,7 +170,7 @@ contract RouterAggregatorTest is Test {
     }
 
     function testOneFasterPayloadRouter() public {
-        aggregator.file("routers", mockRouters);
+        aggregator.file("routers", threeMockRouters);
 
         bytes memory message = MessagesLib.formatAddPool(1);
         bytes memory proof = MessagesLib.formatMessageProof(MessagesLib.formatAddPool(1));
@@ -142,7 +196,7 @@ contract RouterAggregatorTest is Test {
     }
 
     function testOutgoingAggregatedMessages() public {
-        aggregator.file("routers", mockRouters);
+        aggregator.file("routers", threeMockRouters);
 
         bytes memory message = MessagesLib.formatAddPool(1);
         bytes memory proof = MessagesLib.formatMessageProof(MessagesLib.formatAddPool(1));
@@ -169,7 +223,7 @@ contract RouterAggregatorTest is Test {
     }
 
     function testRecoverFailedMessage() public {
-        aggregator.file("routers", mockRouters);
+        aggregator.file("routers", threeMockRouters);
 
         bytes memory message = MessagesLib.formatAddPool(1);
         bytes memory proof = MessagesLib.formatMessageProof(message);
