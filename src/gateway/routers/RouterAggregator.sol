@@ -2,6 +2,7 @@
 pragma solidity 0.8.21;
 
 import {Auth} from "src/Auth.sol";
+import {ArrayLib} from "src/libraries/ArrayLib.sol";
 import {MessagesLib} from "src/libraries/MessagesLib.sol";
 
 interface GatewayLike {
@@ -19,6 +20,8 @@ interface RouterLike {
 ///         Supports processing multiple duplicate messages in parallel by
 ///         storing counts of messages and proofs that have been received.
 contract RouterAggregator is Auth {
+    using ArrayLib for uint16[8];
+
     uint8 public constant MAX_ROUTER_COUNT = 8;
     uint8 public constant PRIMARY_ROUTER_ID = 1;
 
@@ -115,18 +118,18 @@ contract RouterAggregator is Auth {
             emit HandleMessage(payload, msg.sender);
         }
 
-        if (_countNonZeroValues(state.messages) >= 1 && _countNonZeroValues(state.proofs) >= router.quorum - 1) {
+        if (state.messages.countNonZeroValues() >= 1 && state.proofs.countNonZeroValues() >= router.quorum - 1) {
             // Reduce total message confiration count by 1, by finding the first non-zero value
-            _decreaseFirstNValues(state.messages, 1, 1);
+            state.messages.decreaseFirstNValues(1, 1);
 
             // Reduce total proof confiration count by quorum
-            _decreaseFirstNValues(state.proofs, router.quorum, 1);
+            state.proofs.decreaseFirstNValues(router.quorum, 1);
 
             if (MessagesLib.isMessageProof(payload)) {
                 gateway.handle(pendingMessages[messageHash]);
 
                 // Only if there are no more pending messages, remove the pending message
-                if (_isEmpty(state.messages) && _isEmpty(state.proofs)) {
+                if (state.messages.isEmpty() && state.proofs.isEmpty()) {
                     delete pendingMessages[messageHash];
                 }
             } else {
@@ -183,29 +186,5 @@ contract RouterAggregator is Auth {
     {
         ConfirmationState storage state = _confirmations[messageHash];
         return (state.messages, state.proofs);
-    }
-
-    function _countNonZeroValues(uint16[8] memory arr) internal pure returns (uint8 count) {
-        for (uint256 i; i < arr.length; ++i) {
-            if (arr[i] > 0) ++count;
-        }
-    }
-
-    function _decreaseFirstNValues(uint16[8] storage arr, uint8 numValues, uint16 decrease) internal {
-        for (uint256 i; i < arr.length; ++i) {
-            if (arr[i] > 0) {
-                arr[i] -= decrease;
-                numValues--;
-
-                if (numValues == 0) return;
-            }
-        }
-    }
-
-    function _isEmpty(uint16[8] memory arr) internal pure returns (bool) {
-        for (uint256 i; i < arr.length; ++i) {
-            if (arr[i] > 0) return false;
-        }
-        return true;
     }
 }

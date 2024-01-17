@@ -64,7 +64,11 @@ library MessagesLib {
         /// 27 - Request redeem investor
         TriggerIncreaseRedeemOrder,
         /// 28 - Proof
-        MessageProof
+        MessageProof,
+        /// 28 - Recover Message
+        RecoverMessage,
+        /// 28 - Recover Proof
+        RecoverProof
     }
 
     enum Domain {
@@ -974,6 +978,42 @@ library MessagesLib {
     }
 
     function parseMessageProof(bytes memory _msg) internal pure returns (bytes32 proof) {
+        proof = BytesLib.toBytes32(_msg, 1);
+    }
+
+    /**
+     * Recover Message
+     *
+     * 0: call type (uint8 = 1 byte)
+     * 1-: The message (bytes)
+     */
+    function formatRecoverMessage(bytes memory message) internal pure returns (bytes memory) {
+        return abi.encodePacked(uint8(Call.RecoverMessage), message);
+    }
+
+    function isRecoverMessage(bytes memory _msg) internal pure returns (bool) {
+        return messageType(_msg) == Call.RecoverMessage;
+    }
+
+    function parseRecoverMessage(bytes memory _msg) internal pure returns (bytes memory message) {
+        message = BytesLib.slice(_msg, 1, _msg.length - 1);
+    }
+
+    /**
+     * Recover Proof
+     *
+     * 0: call type (uint8 = 1 byte)
+     * 1-: The message hash (bytes)
+     */
+    function formatRecoverProof(bytes32 messageHash) internal pure returns (bytes memory) {
+        return abi.encodePacked(uint8(Call.RecoverProof), messageHash);
+    }
+
+    function isRecoverProof(bytes memory _msg) internal pure returns (bool) {
+        return messageType(_msg) == Call.RecoverProof;
+    }
+
+    function parseRecoverProof(bytes memory _msg) internal pure returns (bytes32 proof) {
         proof = BytesLib.toBytes32(_msg, 1);
     }
 
