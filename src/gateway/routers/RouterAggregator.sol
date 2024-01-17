@@ -49,7 +49,7 @@ contract RouterAggregator is Auth {
     // --- Events ---
     event HandleMessage(bytes message, address router);
     event HandleProof(bytes32 messageHash, address router);
-    event ExecuteMessage(bytes message);
+    event ExecuteMessage(bytes message, address router);
     event SendMessage(bytes message);
     event RecoverMessage(bytes message, address primaryRouter);
     event File(bytes32 indexed what, address[] routers, uint8 quorum);
@@ -97,7 +97,7 @@ contract RouterAggregator is Auth {
         if (router.quorum == 1 && !MessagesLib.isMessageProof(payload)) {
             // Special case for gas efficiency
             gateway.handle(payload);
-            emit ExecuteMessage(payload);
+            emit ExecuteMessage(payload, msg.sender);
             return;
         }
 
@@ -135,7 +135,7 @@ contract RouterAggregator is Auth {
                 gateway.handle(payload);
             }
 
-            emit ExecuteMessage(payload);
+            emit ExecuteMessage(payload, msg.sender);
         } else if (!MessagesLib.isMessageProof(payload)) {
             pendingMessages[messageHash] = payload;
         }
