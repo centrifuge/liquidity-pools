@@ -179,9 +179,9 @@ contract RouterAggregatorTest is Test {
         aggregator.send(message);
 
         vm.expectRevert(bytes("RouterAggregator/invalid-router"));
-        aggregator.recover(address(0), message);
+        aggregator.recoverMessage(address(0), message);
 
-        aggregator.recover(address(router2), message);
+        aggregator.recoverMessage(address(router2), message);
         assertEq(router1.sent(message), 1);
         assertEq(router2.sent(message), 1);
         assertEq(router3.sent(message), 0);
@@ -189,7 +189,10 @@ contract RouterAggregatorTest is Test {
         assertEq(router2.sent(proof), 1);
         assertEq(router3.sent(proof), 1);
 
-        aggregator.recover(address(router3), messageHash);
+        vm.expectRevert(bytes("RouterAggregator/invalid-router"));
+        aggregator.recoverProof(address(0), messageHash);
+
+        aggregator.recoverProof(address(router3), messageHash);
         assertEq(router1.sent(message), 1);
         assertEq(router2.sent(message), 1);
         assertEq(router3.sent(message), 0);

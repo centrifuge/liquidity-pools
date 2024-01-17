@@ -157,14 +157,14 @@ contract RouterAggregator is Auth {
     }
 
     /// @dev Recovery method in case the first (primary) router failed to send the message
-    function recover(address router, bytes calldata message) public auth {
+    function recoverMessage(address router, bytes calldata message) public auth {
         require(validRouters[router].id != 0, "RouterAggregator/invalid-router");
         RouterLike(router).send(message);
         emit RecoverMessage(router, message);
     }
 
     /// @dev Recovery method in case one of the non-primary routers failed to send the proof
-    function recover(address router, bytes32 messageHash) public auth {
+    function recoverProof(address router, bytes32 messageHash) public auth {
         require(validRouters[router].id != 0, "RouterAggregator/invalid-router");
         RouterLike(router).send(MessagesLib.formatMessageProof(messageHash));
         emit RecoverProof(router, messageHash);
