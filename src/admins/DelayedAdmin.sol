@@ -9,11 +9,6 @@ interface PauseAdminLike {
     function removePauser(address user) external;
 }
 
-interface RouterAggregatorLike {
-    function recoverMessage(address router, bytes calldata message) external;
-    function recoverProof(address router, bytes32 proof) external;
-}
-
 /// @title  Delayed Admin
 /// @dev    Any ward on this contract can trigger
 ///         instantaneous pausing and unpausing
@@ -22,12 +17,10 @@ interface RouterAggregatorLike {
 contract DelayedAdmin is Auth {
     Root public immutable root;
     PauseAdminLike public immutable pauseAdmin;
-    RouterAggregatorLike public immutable routerAggregator;
 
-    constructor(address root_, address pauseAdmin_, address routerAggregator_) {
+    constructor(address root_, address pauseAdmin_) {
         root = Root(root_);
         pauseAdmin = PauseAdminLike(pauseAdmin_);
-        routerAggregator = RouterAggregatorLike(routerAggregator_);
 
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
