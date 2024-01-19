@@ -102,8 +102,13 @@ contract MockCentrifugeChain is Test {
         uint128 currencyId,
         uint128 amount
     ) public {
-        bytes memory _message = MessagesLib.formatTriggerIncreaseRedeemOrder(
-            poolId, trancheId, bytes32(bytes20(investor)), currencyId, amount
+        bytes memory _message = abi.encodePacked(
+            uint8(MessagesLib.Call.TriggerIncreaseRedeemOrder),
+            poolId,
+            trancheId,
+            investor.toBytes32(),
+            currencyId,
+            amount
         );
         _execute(_message);
     }
@@ -126,7 +131,7 @@ contract MockCentrifugeChain is Test {
             uint8(MessagesLib.Call.TransferTrancheTokens),
             poolId,
             trancheId,
-            msg.sender,
+            msg.sender.toBytes32(),
             MessagesLib.formatDomain(MessagesLib.Domain.EVM, destinationChainId),
             destinationAddress.toBytes32(),
             amount
@@ -135,22 +140,22 @@ contract MockCentrifugeChain is Test {
     }
 
     function incomingScheduleUpgrade(address target) public {
-        bytes memory _message = MessagesLib.formatScheduleUpgrade(target);
+        bytes memory _message = abi.encodePacked(uint8(MessagesLib.Call.ScheduleUpgrade), target);
         _execute(_message);
     }
 
     function incomingCancelUpgrade(address target) public {
-        bytes memory _message = MessagesLib.formatCancelUpgrade(target);
+        bytes memory _message = abi.encodePacked(uint8(MessagesLib.Call.CancelUpgrade), target);
         _execute(_message);
     }
 
     function freeze(uint64 poolId, bytes16 trancheId, address user) public {
-        bytes memory _message = MessagesLib.formatFreeze(poolId, trancheId, user);
+        bytes memory _message = abi.encodePacked(uint8(MessagesLib.Call.Freeze), poolId, trancheId, user.toBytes32());
         _execute(_message);
     }
 
     function unfreeze(uint64 poolId, bytes16 trancheId, address user) public {
-        bytes memory _message = MessagesLib.formatUnfreeze(poolId, trancheId, user);
+        bytes memory _message = abi.encodePacked(uint8(MessagesLib.Call.Unfreeze), poolId, trancheId, user.toBytes32());
         _execute(_message);
     }
 
@@ -162,8 +167,14 @@ contract MockCentrifugeChain is Test {
         uint128 currencyPayout,
         uint128 remainingInvestOrder
     ) public {
-        bytes memory _message = MessagesLib.formatExecutedDecreaseInvestOrder(
-            poolId, trancheId, investor, currency, currencyPayout, remainingInvestOrder
+        bytes memory _message = abi.encodePacked(
+            uint8(MessagesLib.Call.ExecutedDecreaseInvestOrder),
+            poolId,
+            trancheId,
+            investor,
+            currency,
+            currencyPayout,
+            remainingInvestOrder
         );
         _execute(_message);
     }
@@ -176,8 +187,14 @@ contract MockCentrifugeChain is Test {
         uint128 trancheTokensPayout,
         uint128 remainingRedeemOrder
     ) public {
-        bytes memory _message = MessagesLib.formatExecutedDecreaseRedeemOrder(
-            poolId, trancheId, investor, currency, trancheTokensPayout, remainingRedeemOrder
+        bytes memory _message = abi.encodePacked(
+            uint8(MessagesLib.Call.ExecutedDecreaseRedeemOrder),
+            poolId,
+            trancheId,
+            investor,
+            currency,
+            trancheTokensPayout,
+            remainingRedeemOrder
         );
         _execute(_message);
     }
@@ -191,8 +208,15 @@ contract MockCentrifugeChain is Test {
         uint128 trancheTokensPayout,
         uint128 remainingInvestOrder
     ) public {
-        bytes memory _message = MessagesLib.formatExecutedCollectInvest(
-            poolId, trancheId, investor, currency, currencyPayout, trancheTokensPayout, remainingInvestOrder
+        bytes memory _message = abi.encodePacked(
+            uint8(MessagesLib.Call.ExecutedCollectInvest),
+            poolId,
+            trancheId,
+            investor,
+            currency,
+            currencyPayout,
+            trancheTokensPayout,
+            remainingInvestOrder
         );
         _execute(_message);
     }
@@ -206,14 +230,21 @@ contract MockCentrifugeChain is Test {
         uint128 trancheTokensPayout,
         uint128 remainingRedeemOrder
     ) public {
-        bytes memory _message = MessagesLib.formatExecutedCollectRedeem(
-            poolId, trancheId, investor, currency, currencyPayout, trancheTokensPayout, remainingRedeemOrder
+        bytes memory _message = abi.encodePacked(
+            uint8(MessagesLib.Call.ExecutedCollectRedeem),
+            poolId,
+            trancheId,
+            investor,
+            currency,
+            currencyPayout,
+            trancheTokensPayout,
+            remainingRedeemOrder
         );
         _execute(_message);
     }
 
     function _execute(bytes memory message) internal {
-        bytes memory proof = MessagesLib.formatMessageProof(message);
+        bytes memory proof = abi.encodePacked(uint8(MessagesLib.Call.MessageProof), keccak256(message));
         for (uint256 i = 0; i < routers.length; i++) {
             RouterLike(routers[i]).execute(i == 0 ? message : proof);
         }

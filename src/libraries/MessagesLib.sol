@@ -298,25 +298,6 @@ library MessagesLib {
         return parseDecreaseInvestOrder(_msg);
     }
 
-    function formatExecutedDecreaseInvestOrder(
-        uint64 poolId,
-        bytes16 trancheId,
-        bytes32 investor,
-        uint128 currency,
-        uint128 currencyPayout,
-        uint128 remainingInvestOrder
-    ) internal pure returns (bytes memory) {
-        return abi.encodePacked(
-            uint8(Call.ExecutedDecreaseInvestOrder),
-            poolId,
-            trancheId,
-            investor,
-            currency,
-            currencyPayout,
-            remainingInvestOrder
-        );
-    }
-
     function parseExecutedDecreaseInvestOrder(bytes memory _msg)
         internal
         pure
@@ -337,25 +318,6 @@ library MessagesLib {
         remainingInvestOrder = _msg.toUint128(89);
     }
 
-    function formatExecutedDecreaseRedeemOrder(
-        uint64 poolId,
-        bytes16 trancheId,
-        bytes32 investor,
-        uint128 currency,
-        uint128 trancheTokenPayout,
-        uint128 remainingRedeemOrder
-    ) internal pure returns (bytes memory) {
-        return abi.encodePacked(
-            uint8(Call.ExecutedDecreaseRedeemOrder),
-            poolId,
-            trancheId,
-            investor,
-            currency,
-            trancheTokenPayout,
-            remainingRedeemOrder
-        );
-    }
-
     function parseExecutedDecreaseRedeemOrder(bytes memory _msg)
         internal
         pure
@@ -374,27 +336,6 @@ library MessagesLib {
         currency = _msg.toUint128(57);
         trancheTokensPayout = _msg.toUint128(73);
         remainingRedeemOrder = _msg.toUint128(89);
-    }
-
-    function formatExecutedCollectInvest(
-        uint64 poolId,
-        bytes16 trancheId,
-        bytes32 investor,
-        uint128 currency,
-        uint128 currencyPayout,
-        uint128 trancheTokensPayout,
-        uint128 remainingInvestOrder
-    ) internal pure returns (bytes memory) {
-        return abi.encodePacked(
-            uint8(Call.ExecutedCollectInvest),
-            poolId,
-            trancheId,
-            investor,
-            currency,
-            currencyPayout,
-            trancheTokensPayout,
-            remainingInvestOrder
-        );
     }
 
     function parseExecutedCollectInvest(bytes memory _msg)
@@ -419,27 +360,6 @@ library MessagesLib {
         remainingInvestOrder = _msg.toUint128(105);
     }
 
-    function formatExecutedCollectRedeem(
-        uint64 poolId,
-        bytes16 trancheId,
-        bytes32 investor,
-        uint128 currency,
-        uint128 currencyPayout,
-        uint128 trancheTokensPayout,
-        uint128 remainingRedeemOrder
-    ) internal pure returns (bytes memory) {
-        return abi.encodePacked(
-            uint8(Call.ExecutedCollectRedeem),
-            poolId,
-            trancheId,
-            investor,
-            currency,
-            currencyPayout,
-            trancheTokensPayout,
-            remainingRedeemOrder
-        );
-    }
-
     function parseExecutedCollectRedeem(bytes memory _msg)
         internal
         pure
@@ -462,16 +382,8 @@ library MessagesLib {
         remainingRedeemOrder = _msg.toUint128(105);
     }
 
-    function formatScheduleUpgrade(address _contract) internal pure returns (bytes memory) {
-        return abi.encodePacked(uint8(Call.ScheduleUpgrade), _contract);
-    }
-
     function parseScheduleUpgrade(bytes memory _msg) internal pure returns (address _contract) {
         _contract = _msg.toAddress(1);
-    }
-
-    function formatCancelUpgrade(address _contract) internal pure returns (bytes memory) {
-        return abi.encodePacked(uint8(Call.CancelUpgrade), _contract);
     }
 
     function parseCancelUpgrade(bytes memory _msg) internal pure returns (address _contract) {
@@ -539,10 +451,6 @@ library MessagesLib {
      * 25-45: user (Ethereum address, 20 bytes - Skip 12 bytes from 32-byte addresses)
      *
      */
-    function formatFreeze(uint64 poolId, bytes16 trancheId, address member) internal pure returns (bytes memory) {
-        return abi.encodePacked(uint8(Call.Freeze), poolId, trancheId, member.toBytes32());
-    }
-
     function parseFreeze(bytes memory _msg) internal pure returns (uint64 poolId, bytes16 trancheId, address user) {
         poolId = _msg.toUint64(1);
         trancheId = _msg.toBytes16(9);
@@ -556,10 +464,6 @@ library MessagesLib {
      * 25-45: user (Ethereum address, 20 bytes - Skip 12 bytes from 32-byte addresses)
      *
      */
-    function formatUnfreeze(uint64 poolId, bytes16 trancheId, address user) internal pure returns (bytes memory) {
-        return abi.encodePacked(uint8(Call.Unfreeze), poolId, trancheId, user.toBytes32());
-    }
-
     function parseUnfreeze(bytes memory _msg) internal pure returns (uint64 poolId, bytes16 trancheId, address user) {
         poolId = _msg.toUint64(1);
         trancheId = _msg.toBytes16(9);
@@ -574,18 +478,6 @@ library MessagesLib {
      * 57-72: currency (uint128 = 16 bytes)
      * 73-89: amount (uint128 = 16 bytes)
      */
-    function formatTriggerIncreaseRedeemOrder(
-        uint64 poolId,
-        bytes16 trancheId,
-        bytes32 investor,
-        uint128 currency,
-        uint128 trancheTokenAmount
-    ) internal pure returns (bytes memory) {
-        return abi.encodePacked(
-            uint8(Call.TriggerIncreaseRedeemOrder), poolId, trancheId, investor, currency, trancheTokenAmount
-        );
-    }
-
     function parseTriggerIncreaseRedeemOrder(bytes memory _msg)
         internal
         pure
@@ -621,10 +513,6 @@ library MessagesLib {
      * 1-32: The message hash (32 bytes)
      * 33-52: The router address (32 bytes)
      */
-    function formatInitiateMessageRecovery(bytes memory message, address router) internal pure returns (bytes memory) {
-        return abi.encodePacked(uint8(Call.InitiateMessageRecovery), keccak256(message), router.toBytes32());
-    }
-
     function parseInitiateMessageRecovery(bytes memory _msg)
         internal
         pure
@@ -640,10 +528,6 @@ library MessagesLib {
      * 0: call type (uint8 = 1 byte)
      * 1-32: Message hash (32 bytes)
      */
-    function formatDisputeMessageRecovery(bytes memory message) internal pure returns (bytes memory) {
-        return abi.encodePacked(uint8(Call.DisputeMessageRecovery), keccak256(message));
-    }
-
     function parseDisputeMessageRecovery(bytes memory _msg) internal pure returns (bytes32 messageHash) {
         messageHash = BytesLib.toBytes32(_msg, 1);
     }

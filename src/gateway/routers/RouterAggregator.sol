@@ -196,7 +196,7 @@ contract RouterAggregator is Auth {
         uint256 numRouters = routers.length;
         require(numRouters > 0, "RouterAggregator/not-initialized");
 
-        bytes memory proof = MessagesLib.formatMessageProof(message);
+        bytes memory proof = abi.encodePacked(uint8(MessagesLib.Call.MessageProof), keccak256(message));
         for (uint256 i; i < numRouters; ++i) {
             RouterLike(routers[i]).send(i == PRIMARY_ROUTER_ID - 1 ? message : proof);
         }
