@@ -83,7 +83,6 @@ contract Deployer is Script {
         aggregator.file("routers", routers);
         gateway.addIncomingRouter(address(aggregator));
         gateway.updateOutgoingRouter(address(aggregator));
-        aggregator.rely(address(delayedAdmin));
 
         // Wire admins
         pauseAdmin.rely(address(delayedAdmin));
