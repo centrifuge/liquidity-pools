@@ -4,18 +4,10 @@ pragma solidity 0.8.21;
 import {Auth} from "./Auth.sol";
 import {MathLib} from "./libraries/MathLib.sol";
 import {SafeTransferLib} from "./libraries/SafeTransferLib.sol";
+import {MessagesLib} from "./libraries/MessagesLib.sol";
 
 interface GatewayLike {
-    function increaseInvestOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currencyId, uint128 amount)
-        external;
-    function decreaseInvestOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currencyId, uint128 amount)
-        external;
-    function increaseRedeemOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currencyId, uint128 amount)
-        external;
-    function decreaseRedeemOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currencyId, uint128 amount)
-        external;
-    function cancelInvestOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currencyId) external;
-    function cancelRedeemOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currencyId) external;
+    function send(bytes memory message) external;
 }
 
 interface ERC20Like {
@@ -160,8 +152,15 @@ contract InvestmentManager is Auth {
         state.pendingDepositRequest = state.pendingDepositRequest + _currencyAmount;
         state.exists = true;
 
-        gateway.increaseInvestOrder(
-            poolId, lPool.trancheId(), receiver, poolManager.currencyAddressToId(currency), _currencyAmount
+        gateway.send(
+            abi.encodePacked(
+                uint8(MessagesLib.Call.IncreaseInvestOrder),
+                poolId,
+                lPool.trancheId(),
+                receiver,
+                poolManager.currencyAddressToId(currency),
+                _currencyAmount
+            )
         );
 
         return true;
@@ -208,8 +207,15 @@ contract InvestmentManager is Auth {
         state.pendingRedeemRequest = state.pendingRedeemRequest + trancheTokenAmount;
         state.exists = true;
 
-        gateway.increaseRedeemOrder(
-            lPool.poolId(), lPool.trancheId(), owner, poolManager.currencyAddressToId(lPool.asset()), trancheTokenAmount
+        gateway.send(
+            abi.encodePacked(
+                uint8(MessagesLib.Call.IncreaseRedeemOrder),
+                lPool.poolId(),
+                lPool.trancheId(),
+                owner,
+                poolManager.currencyAddressToId(lPool.asset()),
+                trancheTokenAmount
+            )
         );
 
         return true;
@@ -217,12 +223,15 @@ contract InvestmentManager is Auth {
 
     function decreaseDepositRequest(address liquidityPool, uint256 _currencyAmount, address owner) public auth {
         LiquidityPoolLike _liquidityPool = LiquidityPoolLike(liquidityPool);
-        gateway.decreaseInvestOrder(
-            _liquidityPool.poolId(),
-            _liquidityPool.trancheId(),
-            owner,
-            poolManager.currencyAddressToId(_liquidityPool.asset()),
-            _currencyAmount.toUint128()
+        gateway.send(
+            abi.encodePacked(
+                uint8(MessagesLib.Call.DecreaseInvestOrder),
+                _liquidityPool.poolId(),
+                _liquidityPool.trancheId(),
+                owner,
+                poolManager.currencyAddressToId(_liquidityPool.asset()),
+                _currencyAmount.toUint128()
+            )
         );
     }
 
@@ -233,22 +242,28 @@ contract InvestmentManager is Auth {
             _checkTransferRestriction(liquidityPool, address(0), owner, _trancheTokenAmount),
             "InvestmentManager/transfer-not-allowed"
         );
-        gateway.decreaseRedeemOrder(
-            _liquidityPool.poolId(),
-            _liquidityPool.trancheId(),
-            owner,
-            poolManager.currencyAddressToId(_liquidityPool.asset()),
-            trancheTokenAmount
+        gateway.send(
+            abi.encodePacked(
+                uint8(MessagesLib.Call.DecreaseRedeemOrder),
+                _liquidityPool.poolId(),
+                _liquidityPool.trancheId(),
+                owner,
+                poolManager.currencyAddressToId(_liquidityPool.asset()),
+                trancheTokenAmount
+            )
         );
     }
 
     function cancelDepositRequest(address liquidityPool, address owner) public auth {
         LiquidityPoolLike _liquidityPool = LiquidityPoolLike(liquidityPool);
-        gateway.cancelInvestOrder(
-            _liquidityPool.poolId(),
-            _liquidityPool.trancheId(),
-            owner,
-            poolManager.currencyAddressToId(_liquidityPool.asset())
+        gateway.send(
+            abi.encodePacked(
+                uint8(MessagesLib.Call.CancelInvestOrder),
+                _liquidityPool.poolId(),
+                _liquidityPool.trancheId(),
+                owner,
+                poolManager.currencyAddressToId(_liquidityPool.asset())
+            )
         );
     }
 
@@ -259,11 +274,14 @@ contract InvestmentManager is Auth {
             _checkTransferRestriction(liquidityPool, address(0), owner, approximateTrancheTokensPayout),
             "InvestmentManager/transfer-not-allowed"
         );
-        gateway.cancelRedeemOrder(
-            _liquidityPool.poolId(),
-            _liquidityPool.trancheId(),
-            owner,
-            poolManager.currencyAddressToId(_liquidityPool.asset())
+        gateway.send(
+            abi.encodePacked(
+                uint8(MessagesLib.Call.CancelRedeemOrder),
+                _liquidityPool.poolId(),
+                _liquidityPool.trancheId(),
+                owner,
+                poolManager.currencyAddressToId(_liquidityPool.asset())
+            )
         );
     }
 

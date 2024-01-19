@@ -209,8 +209,12 @@ contract RedeemTest is BaseTest {
 
         // check message was send out to centchain
         lPool.cancelRedeemRequest();
-        bytes memory cancelOrderMessage = MessagesLib.formatCancelRedeemOrder(
-            lPool.poolId(), lPool.trancheId(), _addressToBytes32(self), defaultCurrencyId
+        bytes memory cancelOrderMessage = abi.encodePacked(
+            uint8(MessagesLib.Call.CancelRedeemOrder),
+            lPool.poolId(),
+            lPool.trancheId(),
+            bytes32(bytes20(self)),
+            defaultCurrencyId
         );
         assertEq(cancelOrderMessage, router1.values_bytes("send"));
 

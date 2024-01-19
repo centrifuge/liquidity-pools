@@ -813,9 +813,14 @@ contract DepositTest is BaseTest {
 
         // check message was send out to centchain
         lPool.cancelDepositRequest();
-        bytes memory cancelOrderMessage = MessagesLib.formatCancelInvestOrder(
-            lPool.poolId(), lPool.trancheId(), _addressToBytes32(self), defaultCurrencyId
+        bytes memory cancelOrderMessage = abi.encodePacked(
+            uint8(MessagesLib.Call.CancelInvestOrder),
+            lPool.poolId(),
+            lPool.trancheId(),
+            bytes32(bytes20(self)),
+            defaultCurrencyId
         );
+
         assertEq(cancelOrderMessage, router1.values_bytes("send"));
 
         centrifugeChain.isExecutedDecreaseInvestOrder(

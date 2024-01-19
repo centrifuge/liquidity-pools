@@ -94,18 +94,19 @@ contract RouterAggregatorTest is Test {
 
     function testUseBeforeInitialization() public {
         vm.expectRevert(bytes("RouterAggregator/invalid-router"));
-        aggregator.handle(MessagesLib.formatAddPool(1));
+        aggregator.handle(abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1)));
 
         vm.prank(address(gateway));
         vm.expectRevert(bytes("RouterAggregator/not-initialized"));
-        aggregator.send(MessagesLib.formatAddPool(1));
+        aggregator.send(abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1)));
     }
 
     function testIncomingAggregatedMessages() public {
         aggregator.file("routers", threeMockRouters);
 
-        bytes memory firstMessage = MessagesLib.formatAddPool(1);
-        bytes memory firstProof = MessagesLib.formatMessageProof(MessagesLib.formatAddPool(1));
+        bytes memory firstMessage = abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1));
+        bytes memory firstProof =
+            MessagesLib.formatMessageProof(abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1)));
 
         vm.expectRevert(bytes("RouterAggregator/invalid-router"));
         aggregator.handle(firstMessage);
@@ -137,8 +138,9 @@ contract RouterAggregatorTest is Test {
         assertConfirmations(firstMessage, 0, 0, 0, 0, 0, 0);
 
         // Sending another message works
-        bytes memory secondMessage = MessagesLib.formatAddPool(2);
-        bytes memory secondProof = MessagesLib.formatMessageProof(MessagesLib.formatAddPool(2));
+        bytes memory secondMessage = abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(2));
+        bytes memory secondProof =
+            MessagesLib.formatMessageProof(abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(2)));
 
         router1.execute(secondMessage);
         assertEq(gateway.handled(secondMessage), 0);
@@ -153,8 +155,9 @@ contract RouterAggregatorTest is Test {
         assertConfirmations(secondMessage, 0, 0, 0, 0, 0, 0);
 
         // Swapping order of message vs proofs works
-        bytes memory thirdMessage = MessagesLib.formatAddPool(3);
-        bytes memory thirdProof = MessagesLib.formatMessageProof(MessagesLib.formatAddPool(3));
+        bytes memory thirdMessage = abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(3));
+        bytes memory thirdProof =
+            MessagesLib.formatMessageProof(abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(3)));
 
         router1.execute(thirdProof);
         assertEq(gateway.handled(thirdMessage), 0);
@@ -172,8 +175,9 @@ contract RouterAggregatorTest is Test {
     function testOneFasterPayloadRouter() public {
         aggregator.file("routers", threeMockRouters);
 
-        bytes memory message = MessagesLib.formatAddPool(1);
-        bytes memory proof = MessagesLib.formatMessageProof(MessagesLib.formatAddPool(1));
+        bytes memory message = abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1));
+        bytes memory proof =
+            MessagesLib.formatMessageProof(abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1)));
 
         vm.expectRevert(bytes("RouterAggregator/invalid-router"));
         aggregator.handle(message);
@@ -198,8 +202,9 @@ contract RouterAggregatorTest is Test {
     function testOutgoingAggregatedMessages() public {
         aggregator.file("routers", threeMockRouters);
 
-        bytes memory message = MessagesLib.formatAddPool(1);
-        bytes memory proof = MessagesLib.formatMessageProof(MessagesLib.formatAddPool(1));
+        bytes memory message = abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1));
+        bytes memory proof =
+            MessagesLib.formatMessageProof(abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1)));
 
         assertEq(router1.sent(message), 0);
         assertEq(router2.sent(message), 0);
@@ -225,7 +230,7 @@ contract RouterAggregatorTest is Test {
     // function testRecoverFailedMessage() public {
     //     aggregator.file("routers", threeMockRouters);
 
-    //     bytes memory message = MessagesLib.formatAddPool(1);
+    //     bytes memory message = abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1));
     //     bytes memory proof = MessagesLib.formatMessageProof(message);
     //     bytes32 messageHash = keccak256(message);
 
@@ -261,8 +266,9 @@ contract RouterAggregatorTest is Test {
         numRouters = uint8(bound(numRouters, 1, aggregator.MAX_ROUTER_COUNT()));
         uint16 numParallelDuplicateMessages = uint16(bound(numParallelDuplicateMessages_, 1, 255));
 
-        bytes memory message = MessagesLib.formatAddPool(1);
-        bytes memory proof = MessagesLib.formatMessageProof(MessagesLib.formatAddPool(1));
+        bytes memory message = abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1));
+        bytes memory proof =
+            MessagesLib.formatMessageProof(abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1)));
 
         // Setup random set of routers
         address[] memory testRouters = new address[](numRouters);

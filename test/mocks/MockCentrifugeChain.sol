@@ -2,6 +2,7 @@
 pragma solidity 0.8.21;
 
 import {MessagesLib} from "src/libraries/MessagesLib.sol";
+import {CastLib} from "src/libraries/CastLib.sol";
 import "forge-std/Test.sol";
 
 interface RouterLike {
@@ -9,6 +10,8 @@ interface RouterLike {
 }
 
 contract MockCentrifugeChain is Test {
+    using CastLib for *;
+
     address[] public routers;
 
     constructor(address[] memory routers_) {
@@ -18,22 +21,22 @@ contract MockCentrifugeChain is Test {
     }
 
     function addCurrency(uint128 currency, address currencyAddress) public {
-        bytes memory _message = MessagesLib.formatAddCurrency(currency, currencyAddress);
+        bytes memory _message = abi.encodePacked(uint8(MessagesLib.Call.AddCurrency), currency, currencyAddress);
         _execute(_message);
     }
 
     function addPool(uint64 poolId) public {
-        bytes memory _message = MessagesLib.formatAddPool(poolId);
+        bytes memory _message = abi.encodePacked(uint8(MessagesLib.Call.AddPool), poolId);
         _execute(_message);
     }
 
     function allowInvestmentCurrency(uint64 poolId, uint128 currency) public {
-        bytes memory _message = MessagesLib.formatAllowInvestmentCurrency(poolId, currency);
+        bytes memory _message = abi.encodePacked(uint8(MessagesLib.Call.AllowInvestmentCurrency), poolId, currency);
         _execute(_message);
     }
 
     function disallowInvestmentCurrency(uint64 poolId, uint128 currency) public {
-        bytes memory _message = MessagesLib.formatDisallowInvestmentCurrency(poolId, currency);
+        bytes memory _message = abi.encodePacked(uint8(MessagesLib.Call.DisallowInvestmentCurrency), poolId, currency);
         _execute(_message);
     }
 
@@ -45,13 +48,21 @@ contract MockCentrifugeChain is Test {
         uint8 decimals,
         uint8 restrictionSet
     ) public {
-        bytes memory _message =
-            MessagesLib.formatAddTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, restrictionSet);
+        bytes memory _message = abi.encodePacked(
+            uint8(MessagesLib.Call.AddTranche),
+            poolId,
+            trancheId,
+            tokenName.toBytes128(),
+            tokenSymbol.toBytes32(),
+            decimals,
+            restrictionSet
+        );
         _execute(_message);
     }
 
     function updateMember(uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) public {
-        bytes memory _message = MessagesLib.formatUpdateMember(poolId, trancheId, user, validUntil);
+        bytes memory _message =
+            abi.encodePacked(uint8(MessagesLib.Call.UpdateMember), poolId, trancheId, user.toBytes32(), validUntil);
         _execute(_message);
     }
 
@@ -61,7 +72,13 @@ contract MockCentrifugeChain is Test {
         string memory tokenName,
         string memory tokenSymbol
     ) public {
-        bytes memory _message = MessagesLib.formatUpdateTrancheTokenMetadata(poolId, trancheId, tokenName, tokenSymbol);
+        bytes memory _message = abi.encodePacked(
+            uint8(MessagesLib.Call.UpdateTrancheTokenMetadata),
+            poolId,
+            trancheId,
+            tokenName.toBytes128(),
+            tokenSymbol.toBytes32()
+        );
         _execute(_message);
     }
 
@@ -72,8 +89,9 @@ contract MockCentrifugeChain is Test {
         uint128 price,
         uint64 computedAt
     ) public {
-        bytes memory _message =
-            MessagesLib.formatUpdateTrancheTokenPrice(poolId, trancheId, currencyId, price, computedAt);
+        bytes memory _message = abi.encodePacked(
+            uint8(MessagesLib.Call.UpdateTrancheTokenPrice), poolId, trancheId, currencyId, price, computedAt
+        );
         _execute(_message);
     }
 
@@ -92,7 +110,7 @@ contract MockCentrifugeChain is Test {
 
     // Trigger an incoming (e.g. Centrifuge Chain -> EVM) transfer of stable coins
     function incomingTransfer(uint128 currency, bytes32 sender, bytes32 recipient, uint128 amount) public {
-        bytes memory _message = MessagesLib.formatTransfer(currency, sender, recipient, amount);
+        bytes memory _message = abi.encodePacked(uint8(MessagesLib.Call.Transfer), currency, sender, recipient, amount);
         _execute(_message);
     }
 
@@ -104,12 +122,13 @@ contract MockCentrifugeChain is Test {
         address destinationAddress,
         uint128 amount
     ) public {
-        bytes memory _message = MessagesLib.formatTransferTrancheTokens(
+        bytes memory _message = abi.encodePacked(
+            uint8(MessagesLib.Call.TransferTrancheTokens),
             poolId,
             trancheId,
-            bytes32(bytes20(msg.sender)),
+            msg.sender,
             MessagesLib.formatDomain(MessagesLib.Domain.EVM, destinationChainId),
-            destinationAddress,
+            destinationAddress.toBytes32(),
             amount
         );
         _execute(_message);

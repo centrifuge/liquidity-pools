@@ -328,7 +328,8 @@ contract PoolManagerTest is BaseTest {
         assertEq(trancheToken.balanceOf(address(this)), 0);
 
         // Finally, verify the connector called `router.send`
-        bytes memory message = MessagesLib.formatTransferTrancheTokens(
+        bytes memory message = abi.encodePacked(
+            uint8(MessagesLib.Call.TransferTrancheTokens),
             poolId,
             trancheId,
             bytes32(bytes20(address(this))),
