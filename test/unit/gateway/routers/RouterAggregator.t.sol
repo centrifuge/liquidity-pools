@@ -12,7 +12,10 @@ contract RouterAggregatorTest is Test {
     MockRouter router1;
     MockRouter router2;
     MockRouter router3;
-    address[] mockRouters;
+    MockRouter router4;
+    address[] threeMockRouters;
+    address[] fourMockRouters;
+    address[] nineMockRouters;
 
     function setUp() public {
         gateway = new GatewayMock();
@@ -24,30 +27,82 @@ contract RouterAggregatorTest is Test {
         vm.label(address(router2), "MockRouter2");
         router3 = new MockRouter(address(aggregator));
         vm.label(address(router3), "MockRouter3");
+        router4 = new MockRouter(address(aggregator));
+        vm.label(address(router4), "MockRouter4");
 
-        mockRouters.push(address(router1));
-        mockRouters.push(address(router2));
-        mockRouters.push(address(router3));
+        threeMockRouters.push(address(router1));
+        threeMockRouters.push(address(router2));
+        threeMockRouters.push(address(router3));
+
+        fourMockRouters.push(address(router1));
+        fourMockRouters.push(address(router2));
+        fourMockRouters.push(address(router3));
+        fourMockRouters.push(address(router4));
+
+        nineMockRouters.push(address(router1));
+        nineMockRouters.push(address(router1));
+        nineMockRouters.push(address(router1));
+        nineMockRouters.push(address(router1));
+        nineMockRouters.push(address(router1));
+        nineMockRouters.push(address(router1));
+        nineMockRouters.push(address(router1));
+        nineMockRouters.push(address(router1));
+        nineMockRouters.push(address(router1));
     }
 
-    function testFile() public {
-        // TODO: RouterAggregator/exceeds-max-router-count
+    function testFileRouters() public {
+        aggregator.file("routers", threeMockRouters);
+        assertEq(aggregator.routers(0), address(router1));
+        assertEq(aggregator.routers(1), address(router2));
+        assertEq(aggregator.routers(2), address(router3));
+        vm.expectRevert(bytes(""));
+        assertEq(aggregator.routers(3), address(0));
 
-        vm.expectRevert(bytes("RouterAggregator/less-than-min-quorum"));
-        aggregator.file("routers", mockRouters, 0);
+        (uint8 validRouter1Id, uint8 validRouter1Quorum) = aggregator.validRouters(address(router1));
+        assertEq(validRouter1Id, 1);
+        assertEq(validRouter1Quorum, 3);
+        (uint8 validRouter2Id, uint8 validRouter2Quorum) = aggregator.validRouters(address(router2));
+        assertEq(validRouter2Id, 2);
+        assertEq(validRouter2Quorum, 3);
+        (uint8 validRouter3Id, uint8 validRouter3Quorum) = aggregator.validRouters(address(router3));
+        assertEq(validRouter3Id, 3);
+        assertEq(validRouter3Quorum, 3);
+        (uint8 invalidRouter4Id, uint8 invalidRouter4Quorum) = aggregator.validRouters(address(router4));
+        assertEq(invalidRouter4Id, 0);
+        assertEq(invalidRouter4Quorum, 0);
 
-        // TODO: RouterAggregator/exceeds-max-quorum
+        aggregator.file("routers", fourMockRouters);
+        (uint8 validRouter4Id, uint8 validRouter4Quorum) = aggregator.validRouters(address(router4));
+        assertEq(validRouter4Id, 4);
+        assertEq(validRouter4Quorum, 4);
+        assertEq(aggregator.routers(3), address(router4));
 
-        vm.expectRevert(bytes("RouterAggregator/quorum-exceeds-num-routers"));
-        aggregator.file("routers", mockRouters, 4);
+        aggregator.file("routers", threeMockRouters);
+        (invalidRouter4Id, invalidRouter4Quorum) = aggregator.validRouters(address(router4));
+        assertEq(invalidRouter4Id, 0);
+        assertEq(invalidRouter4Quorum, 0);
+        vm.expectRevert(bytes(""));
+        assertEq(aggregator.routers(3), address(0));
+
+        vm.expectRevert(bytes("RouterAggregator/exceeds-max-router-count"));
+        aggregator.file("routers", nineMockRouters);
 
         aggregator.deny(address(this));
         vm.expectRevert(bytes("Auth/not-authorized"));
-        aggregator.file("routers", mockRouters, 4);
+        aggregator.file("routers", threeMockRouters);
+    }
+
+    function testUseBeforeInitialization() public {
+        vm.expectRevert(bytes("RouterAggregator/invalid-router"));
+        aggregator.handle(MessagesLib.formatAddPool(1));
+
+        vm.prank(address(gateway));
+        vm.expectRevert(bytes("RouterAggregator/not-initialized"));
+        aggregator.send(MessagesLib.formatAddPool(1));
     }
 
     function testIncomingAggregatedMessages() public {
-        aggregator.file("routers", mockRouters, 2);
+        aggregator.file("routers", threeMockRouters);
 
         bytes memory firstMessage = MessagesLib.formatAddPool(1);
         bytes memory firstProof = MessagesLib.formatMessageProof(MessagesLib.formatAddPool(1));
@@ -61,26 +116,25 @@ contract RouterAggregatorTest is Test {
         assertConfirmations(firstMessage, 1, 0, 0, 0, 0, 0);
 
         router2.execute(firstProof);
-        assertEq(gateway.handled(firstMessage), 1);
-        assertConfirmations(firstMessage, 0, 0, 0, 0, 0, 0);
+        assertEq(gateway.handled(firstMessage), 0);
+        assertConfirmations(firstMessage, 1, 0, 0, 0, 1, 0);
 
         router3.execute(firstProof);
         assertEq(gateway.handled(firstMessage), 1);
-        assertConfirmations(firstMessage, 0, 0, 0, 0, 0, 1);
+        assertConfirmations(firstMessage, 0, 0, 0, 0, 0, 0);
 
         // Resending same message works
-        // Immediately executes because of 3rd proof from previous matching message
         router1.execute(firstMessage);
-        assertEq(gateway.handled(firstMessage), 2);
-        assertConfirmations(firstMessage, 0, 0, 0, 0, 0, 0);
+        assertEq(gateway.handled(firstMessage), 1);
+        assertConfirmations(firstMessage, 1, 0, 0, 0, 0, 0);
 
         router2.execute(firstProof);
-        assertEq(gateway.handled(firstMessage), 2);
-        assertConfirmations(firstMessage, 0, 0, 0, 0, 1, 0);
+        assertEq(gateway.handled(firstMessage), 1);
+        assertConfirmations(firstMessage, 1, 0, 0, 0, 1, 0);
 
         router3.execute(firstProof);
         assertEq(gateway.handled(firstMessage), 2);
-        assertConfirmations(firstMessage, 0, 0, 0, 0, 1, 1);
+        assertConfirmations(firstMessage, 0, 0, 0, 0, 0, 0);
 
         // Sending another message works
         bytes memory secondMessage = MessagesLib.formatAddPool(2);
@@ -91,12 +145,12 @@ contract RouterAggregatorTest is Test {
         assertConfirmations(secondMessage, 1, 0, 0, 0, 0, 0);
 
         router2.execute(secondProof);
-        assertEq(gateway.handled(secondMessage), 1);
-        assertConfirmations(secondMessage, 0, 0, 0, 0, 0, 0);
+        assertEq(gateway.handled(secondMessage), 0);
+        assertConfirmations(secondMessage, 1, 0, 0, 0, 1, 0);
 
         router3.execute(secondProof);
         assertEq(gateway.handled(secondMessage), 1);
-        assertConfirmations(secondMessage, 0, 0, 0, 0, 0, 1);
+        assertConfirmations(secondMessage, 0, 0, 0, 0, 0, 0);
 
         // Swapping order of message vs proofs works
         bytes memory thirdMessage = MessagesLib.formatAddPool(3);
@@ -112,11 +166,11 @@ contract RouterAggregatorTest is Test {
 
         router3.execute(thirdMessage);
         assertEq(gateway.handled(thirdMessage), 1);
-        assertConfirmations(thirdMessage, 0, 0, 0, 0, 1, 0);
+        assertConfirmations(thirdMessage, 0, 0, 0, 0, 0, 0);
     }
 
     function testOneFasterPayloadRouter() public {
-        aggregator.file("routers", mockRouters, 2);
+        aggregator.file("routers", threeMockRouters);
 
         bytes memory message = MessagesLib.formatAddPool(1);
         bytes memory proof = MessagesLib.formatMessageProof(MessagesLib.formatAddPool(1));
@@ -132,17 +186,17 @@ contract RouterAggregatorTest is Test {
 
         // Submit first proof
         router2.execute(proof);
-        assertEq(gateway.handled(message), 1);
-        assertConfirmations(message, 0, 1, 0, 0, 0, 0);
+        assertEq(gateway.handled(message), 0);
+        assertConfirmations(message, 1, 1, 0, 0, 1, 0);
 
         // Submit second proof
         router3.execute(proof);
-        assertEq(gateway.handled(message), 2);
-        assertConfirmations(message, 0, 0, 0, 0, 0, 0);
+        assertEq(gateway.handled(message), 1);
+        assertConfirmations(message, 0, 1, 0, 0, 0, 0);
     }
 
     function testOutgoingAggregatedMessages() public {
-        aggregator.file("routers", mockRouters, 2);
+        aggregator.file("routers", threeMockRouters);
 
         bytes memory message = MessagesLib.formatAddPool(1);
         bytes memory proof = MessagesLib.formatMessageProof(MessagesLib.formatAddPool(1));
@@ -168,46 +222,43 @@ contract RouterAggregatorTest is Test {
         assertEq(router3.sent(proof), 1);
     }
 
-    function testRecoverAggregatedMessages() public {
-        aggregator.file("routers", mockRouters, 2);
+    // function testRecoverFailedMessage() public {
+    //     aggregator.file("routers", threeMockRouters);
 
-        bytes memory message = MessagesLib.formatAddPool(1);
-        bytes memory proof = MessagesLib.formatMessageProof(MessagesLib.formatAddPool(1));
+    //     bytes memory message = MessagesLib.formatAddPool(1);
+    //     bytes memory proof = MessagesLib.formatMessageProof(message);
+    //     bytes32 messageHash = keccak256(message);
 
-        vm.prank(address(gateway));
-        aggregator.send(message);
+    //     vm.prank(address(gateway));
+    //     aggregator.send(message);
 
-        vm.expectRevert(bytes("RouterAggregator/invalid-primary-router"));
-        aggregator.recover(message, address(0));
+    //     vm.expectRevert(bytes("RouterAggregator/invalid-router"));
+    //     aggregator.recoverMessage(address(0), message);
 
-        vm.expectRevert(bytes("RouterAggregator/cannot-recover-first-router"));
-        aggregator.recover(message, address(router1));
+    //     aggregator.recoverMessage(address(router2), message);
+    //     assertEq(router1.sent(message), 1);
+    //     assertEq(router2.sent(message), 1);
+    //     assertEq(router3.sent(message), 0);
+    //     assertEq(router1.sent(proof), 0);
+    //     assertEq(router2.sent(proof), 1);
+    //     assertEq(router3.sent(proof), 1);
 
-        aggregator.recover(message, address(router2));
-        assertEq(router1.sent(message), 1);
-        assertEq(router2.sent(message), 1);
-        assertEq(router3.sent(message), 0);
-        assertEq(router1.sent(proof), 1);
-        assertEq(router2.sent(proof), 1);
-        assertEq(router3.sent(proof), 2);
+    //     vm.expectRevert(bytes("RouterAggregator/invalid-router"));
+    //     aggregator.recoverProof(address(0), messageHash);
 
-        aggregator.recover(message, address(router3));
-        assertEq(router1.sent(message), 1);
-        assertEq(router2.sent(message), 1);
-        assertEq(router3.sent(message), 1);
-        assertEq(router1.sent(proof), 2);
-        assertEq(router2.sent(proof), 2);
-        assertEq(router3.sent(proof), 2);
-    }
+    //     aggregator.recoverProof(address(router3), messageHash);
+    //     assertEq(router1.sent(message), 1);
+    //     assertEq(router2.sent(message), 1);
+    //     assertEq(router3.sent(message), 0);
+    //     assertEq(router1.sent(proof), 0);
+    //     assertEq(router2.sent(proof), 1);
+    //     assertEq(router3.sent(proof), 2);
+    // }
 
-    function testMessagesCannotBeReplayed(
-        uint8 numRouters,
-        uint8 quorum,
-        uint8 numParallelDuplicateMessages_,
-        uint256 entropy
-    ) public {
+    function testMessagesCannotBeReplayed(uint8 numRouters, uint8 numParallelDuplicateMessages_, uint256 entropy)
+        public
+    {
         numRouters = uint8(bound(numRouters, 1, aggregator.MAX_ROUTER_COUNT()));
-        quorum = uint8(bound(quorum, 1, _min(numRouters, aggregator.MAX_QUORUM())));
         uint16 numParallelDuplicateMessages = uint16(bound(numParallelDuplicateMessages_, 1, 255));
 
         bytes memory message = MessagesLib.formatAddPool(1);
@@ -218,7 +269,7 @@ contract RouterAggregatorTest is Test {
         for (uint256 i = 0; i < numRouters; i++) {
             testRouters[i] = address(new MockRouter(address(aggregator)));
         }
-        aggregator.file("routers", testRouters, quorum);
+        aggregator.file("routers", testRouters);
 
         // Generate random sequence of confirming messages and proofs
         uint256 it = 0;

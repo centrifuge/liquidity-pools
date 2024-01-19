@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {Auth} from "./../../Auth.sol";
+import {Auth} from "src/Auth.sol";
+import {ArrayLib} from "src/libraries/ArrayLib.sol";
 import {MessagesLib} from "src/libraries/MessagesLib.sol";
-import "forge-std/Console.sol";
 
 interface GatewayLike {
     function handle(bytes memory message) external;
@@ -20,21 +20,24 @@ interface RouterLike {
 ///         Supports processing multiple duplicate messages in parallel by
 ///         storing counts of messages and proofs that have been received.
 contract RouterAggregator is Auth {
-    uint8 public constant MIN_QUORUM = 1;
-    uint8 public constant MAX_QUORUM = 7;
+    using ArrayLib for uint16[8];
+
     uint8 public constant MAX_ROUTER_COUNT = 8;
+    uint8 public constant PRIMARY_ROUTER_ID = 1;
+    uint256 public constant RECOVERY_CHALLENGE_PERIOD = 7 days;
 
     GatewayLike public immutable gateway;
 
     address[] public routers;
     mapping(address router => Router) public validRouters;
+    mapping(bytes32 messageHash => Recovery) public recoveries;
     mapping(bytes32 messageHash => bytes) public pendingMessages;
     mapping(bytes32 messageHash => ConfirmationState) internal _confirmations;
 
     struct Router {
         // Starts at 1 and maps to id - 1 as the index on the routers array
         uint8 id;
-        // We pack each router struct with the quorum to reduce SLOADs on handle
+        // Each router struct is packed with the quorum to reduce SLOADs on handle
         uint8 quorum;
     }
 
@@ -47,13 +50,19 @@ contract RouterAggregator is Auth {
         uint16[8] proofs;
     }
 
+    struct Recovery {
+        uint256 timestamp;
+        address router;
+    }
+
     // --- Events ---
     event HandleMessage(bytes message, address router);
     event HandleProof(bytes32 messageHash, address router);
-    event ExecuteMessage(bytes message);
+    event ExecuteMessage(bytes message, address router);
     event SendMessage(bytes message);
-    event RecoverMessage(bytes message, address primaryRouter);
-    event File(bytes32 indexed what, address[] routers, uint8 quorum);
+    event RecoverMessage(address router, bytes message);
+    event RecoverProof(address router, bytes32 messageHash);
+    event File(bytes32 indexed what, address[] routers);
 
     constructor(address gateway_) {
         gateway = GatewayLike(gateway_);
@@ -63,44 +72,51 @@ contract RouterAggregator is Auth {
     }
 
     // --- Administration ---
-    function file(bytes32 what, address[] calldata routers_, uint8 quorum_) external auth {
+    function file(bytes32 what, address[] calldata routers_) external auth {
         if (what == "routers") {
-            require(quorum_ >= MIN_QUORUM, "RouterAggregator/less-than-min-quorum");
-            require(quorum_ <= MAX_QUORUM, "RouterAggregator/exceeds-max-quorum");
-            require(quorum_ <= routers_.length, "RouterAggregator/quorum-exceeds-num-routers");
             require(routers_.length <= MAX_ROUTER_COUNT, "RouterAggregator/exceeds-max-router-count");
 
-            // Disable old routers
-            // TODO: try to combine with loop later to save storage reads/writes
-            for (uint8 i = 0; i < routers.length; ++i) {
-                delete validRouters[address(routers[i])];
-            }
-
-            // Enable new routers and set quorum
-            routers = routers_;
-            for (uint8 i = 0; i < routers_.length; ++i) {
+            // Enable new routers, setting quorum to number of routers
+            uint8 quorum_ = uint8(routers_.length);
+            for (uint8 i; i < routers_.length; ++i) {
                 // Ids are assigned sequentially starting at 1
                 validRouters[routers_[i]] = Router(i + 1, quorum_);
             }
+
+            // Disable old routers that weren't already overridden
+            for (uint8 j = uint8(routers_.length); j < routers.length; ++j) {
+                delete validRouters[address(routers[j])];
+            }
+
+            routers = routers_;
         } else {
             revert("RouterAggregator/file-unrecognized-param");
         }
 
-        emit File(what, routers_, quorum_);
+        emit File(what, routers_);
     }
 
     // --- Incoming ---
-    /// @dev Assumes routers ensure messages cannot be confirmed more than once
+    /// @dev Handle incoming messages, proofs, and recoveries.
+    ///      Assumes routers ensure messages cannot be confirmed more than once.
     function handle(bytes calldata payload) public {
         Router memory router = validRouters[msg.sender];
         require(router.id != 0, "RouterAggregator/invalid-router");
+        _handle(payload, router);
+    }
 
+    function _handle(bytes calldata payload, Router memory router) public {
         bool isMessageProof = MessagesLib.messageType(payload) == MessagesLib.Call.MessageProof;
 
         if (router.quorum == 1 && !isMessageProof) {
             // Special case for gas efficiency
             gateway.handle(payload);
-            emit ExecuteMessage(payload);
+            emit ExecuteMessage(payload, msg.sender);
+            return;
+        }
+
+        if (MessagesLib.isRecoveryMessage(payload)) {
+            _handleRecovery(payload);
             return;
         }
 
@@ -120,31 +136,54 @@ contract RouterAggregator is Auth {
             emit HandleMessage(payload, msg.sender);
         }
 
-        if (_countNonZeroValues(state.messages) >= 1 && _countNonZeroValues(state.proofs) >= router.quorum - 1) {
-            // TODO: do we need to store counts per router at all?!
-            // => for proofs, we do, otherwise 3 proofs from 1 router is sufficient
-            // => but for payloads??
+        if (state.messages.countNonZeroValues() >= 1 && state.proofs.countNonZeroValues() >= router.quorum - 1) {
             // Reduce total message confiration count by 1, by finding the first non-zero value
-            _decreaseFirstNValues(state.messages, 1, 1);
+            state.messages.decreaseFirstNValues(1, 1);
 
-            // Reduce total proof confiration count by quorum - 1 (removing 1 for the message confirmation)
-            _decreaseFirstNValues(state.proofs, router.quorum - 1, 1);
+            // Reduce total proof confiration count by quorum
+            state.proofs.decreaseFirstNValues(router.quorum, 1);
 
             if (isMessageProof) {
                 gateway.handle(pendingMessages[messageHash]);
 
                 // Only if there are no more pending messages, remove the pending message
-                if (_isEmpty(state.messages) && _isEmpty(state.proofs)) {
+                if (state.messages.isEmpty() && state.proofs.isEmpty()) {
                     delete pendingMessages[messageHash];
                 }
             } else {
                 gateway.handle(payload);
             }
 
-            emit ExecuteMessage(payload);
-        } else if (!MessagesLib.isMessageProof(payload)) {
+            emit ExecuteMessage(payload, msg.sender);
+        } else if (!isMessageProof) {
             pendingMessages[messageHash] = payload;
         }
+    }
+
+    /// @dev Governance on Centrifuge Chain can initiate message recovery. After the challenge period,
+    ///      the recovery can be executed. If a malign router initiates message recovery, governance on
+    ///      Centrifuge Chain can dispute and immediately cancel the recovery, using any other valid router.
+    ///
+    ///      Only 1 recovery can be outstanding per message hash. If multiple routers fail at the same time,
+    //       these will need to be recovered serially (increasing the challenge period for each failed router).
+    function _handleRecovery(bytes calldata payload) internal {
+        if (MessagesLib.messageType(payload) == MessagesLib.Call.InitiateMessageRecovery) {
+            (bytes32 messageHash, address router) = MessagesLib.parseInitiateMessageRecovery(payload);
+            recoveries[messageHash] = Recovery(block.timestamp + RECOVERY_CHALLENGE_PERIOD, router);
+        } else if (MessagesLib.messageType(payload) == MessagesLib.Call.DisputeMessageRecovery) {
+            bytes32 messageHash = MessagesLib.parseDisputeMessageRecovery(payload);
+            delete recoveries[messageHash];
+        }
+    }
+
+    function executeMessageRecovery(bytes calldata message) internal {
+        bytes32 messageHash = keccak256(message);
+        Recovery storage recovery = recoveries[messageHash];
+        require(recovery.timestamp != 0, "RouterAggregator/message-recovery-not-initiated");
+        require(recovery.timestamp <= block.timestamp, "RouterAggregator/challenge-period-has-not-ended");
+
+        _handle(message, validRouters[recovery.router]);
+        delete recoveries[messageHash];
     }
 
     // --- Outgoing ---
@@ -152,30 +191,16 @@ contract RouterAggregator is Auth {
     ///      proofs (hash of message). This ensures message uniqueness (can only be executed on the destination once).
     function send(bytes calldata message) public {
         require(msg.sender == address(gateway), "RouterAggregator/only-gateway-allowed-to-call");
-        _send(message, 1);
+
+        uint256 numRouters = routers.length;
+        require(numRouters > 0, "RouterAggregator/not-initialized");
+
+        bytes memory proof = MessagesLib.formatMessageProof(message);
+        for (uint256 i; i < numRouters; ++i) {
+            RouterLike(routers[i]).send(i == PRIMARY_ROUTER_ID - 1 ? message : proof);
+        }
 
         emit SendMessage(message);
-    }
-
-    /// @dev Recovery method in case the first (primary) router failed to send the message
-    ///      or more than (num routers - quorum) failed to send the proof
-    function recover(bytes calldata message, address primaryRouter) public auth {
-        Router memory router = validRouters[primaryRouter];
-        require(router.id != 0, "RouterAggregator/invalid-primary-router");
-        require(router.id != 1, "RouterAggregator/cannot-recover-first-router");
-        _send(message, router.id);
-
-        emit RecoverMessage(message, primaryRouter);
-
-        // TODO: invalidate previous full message by sending `InvalidateMessageId` message
-        // with router specific message id passed as arg to `resend`?
-    }
-
-    function _send(bytes calldata message, uint8 primaryRouterId) internal {
-        bytes memory proof = MessagesLib.formatMessageProof(message);
-        for (uint256 i = 0; i < routers.length; ++i) {
-            RouterLike(routers[i]).send(i == primaryRouterId - 1 ? message : proof);
-        }
     }
 
     // --- Helpers ---
@@ -191,41 +216,5 @@ contract RouterAggregator is Auth {
     {
         ConfirmationState storage state = _confirmations[messageHash];
         return (state.messages, state.proofs);
-    }
-
-    function _countNonZeroValues(uint16[8] memory arr) internal pure returns (uint8 count) {
-        for (uint256 i = 0; i < arr.length; ++i) {
-            if (arr[i] > 0) ++count;
-        }
-    }
-
-    function _countValues(uint16[8] memory arr) internal pure returns (uint256 count) {
-        for (uint256 i = 0; i < arr.length; ++i) {
-            count += arr[i];
-        }
-    }
-
-    function _decreaseValues(uint16[8] storage arr, uint16 decrease) internal {
-        for (uint256 i = 0; i < arr.length; ++i) {
-            if (arr[i] > 0) arr[i] -= decrease;
-        }
-    }
-
-    function _decreaseFirstNValues(uint16[8] storage arr, uint8 numValues, uint16 decrease) internal {
-        for (uint256 i = 0; i < arr.length; ++i) {
-            if (arr[i] > 0) {
-                arr[i] -= decrease;
-                numValues--;
-
-                if (numValues == 0) return;
-            }
-        }
-    }
-
-    function _isEmpty(uint16[8] memory arr) internal pure returns (bool) {
-        for (uint256 i = 0; i < arr.length; ++i) {
-            if (arr[i] > 0) return false;
-        }
-        return true;
     }
 }

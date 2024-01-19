@@ -18,7 +18,6 @@ contract AdminTest is BaseTest {
         assertEq(root.wards(address(delayedAdmin)), 1);
         assertEq(root.wards(address(pauseAdmin)), 1);
         assertEq(pauseAdmin.wards(address(delayedAdmin)), 1);
-        assertEq(aggregator.wards(address(delayedAdmin)), 1);
     }
 
     //------ PauseAdmin tests ------//
@@ -260,12 +259,4 @@ contract AdminTest is BaseTest {
         root.relyContract(address(investmentManager), address(this));
         assertEq(investmentManager.wards(address(this)), 1);
     }
-
-    //------ TODO: router recovery tests ------///
-    // function testRecoverMessage(address user, bytes calldata payload) public {
-    //     vm.assume(user != address(this));
-    //     vm.expectRevert("Auth/not-authorized");
-    //     vm.prank(user);
-    //     delayedAdmin.recoverMessage(payload, 1);
-    // }
 }
