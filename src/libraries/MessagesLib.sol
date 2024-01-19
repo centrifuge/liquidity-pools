@@ -146,7 +146,7 @@ library MessagesLib {
             poolId,
             trancheId,
             tokenName.toBytes128(),
-            bytes32(bytes(tokenSymbol)),
+            tokenSymbol.toBytes32(),
             decimals,
             restrictionSet
         );
@@ -627,11 +627,7 @@ library MessagesLib {
         string memory tokenSymbol
     ) internal pure returns (bytes memory) {
         return abi.encodePacked(
-            uint8(Call.UpdateTrancheTokenMetadata),
-            poolId,
-            trancheId,
-            tokenName.toBytes128(),
-            bytes32(bytes(tokenSymbol))
+            uint8(Call.UpdateTrancheTokenMetadata), poolId, trancheId, tokenName.toBytes128(), tokenSymbol.toBytes32()
         );
     }
 

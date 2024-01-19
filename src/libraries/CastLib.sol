@@ -7,21 +7,18 @@ library CastLib {
         return bytes32(bytes20(addr));
     }
 
-    function toBytes128(string memory source) internal pure returns (bytes memory) {
-        bytes memory temp = bytes(source);
-        bytes memory result = new bytes(128);
-
-        for (uint256 i = 0; i < 128; i++) {
-            if (i < temp.length) {
-                result[i] = temp[i];
-            } else {
-                result[i] = 0x00;
-            }
-        }
-
-        return result;
+    /// @dev Adds zero padding
+    function toBytes32(string memory source) internal pure returns (bytes32) {
+        return bytes32(bytes(source));
     }
 
+    /// @dev Adds zero padding
+    function toBytes128(string memory source) internal pure returns (bytes memory) {
+        bytes memory sourceBytes = bytes(source);
+        return bytes.concat(sourceBytes, new bytes(128 - sourceBytes.length));
+    }
+
+    /// @dev Removes zero padding
     function bytes128ToString(bytes memory _bytes128) internal pure returns (string memory) {
         require(_bytes128.length == 128, "Input should be 128 bytes");
 
