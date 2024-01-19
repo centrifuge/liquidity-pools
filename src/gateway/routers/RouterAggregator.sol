@@ -169,6 +169,7 @@ contract RouterAggregator is Auth {
     function _handleRecovery(bytes calldata payload) internal {
         if (MessagesLib.messageType(payload) == MessagesLib.Call.InitiateMessageRecovery) {
             (bytes32 messageHash, address router) = MessagesLib.parseInitiateMessageRecovery(payload);
+            require(validRouters[msg.sender].id != 0, "RouterAggregator/invalid-router");
             recoveries[messageHash] = Recovery(block.timestamp + RECOVERY_CHALLENGE_PERIOD, router);
         } else if (MessagesLib.messageType(payload) == MessagesLib.Call.DisputeMessageRecovery) {
             bytes32 messageHash = MessagesLib.parseDisputeMessageRecovery(payload);
