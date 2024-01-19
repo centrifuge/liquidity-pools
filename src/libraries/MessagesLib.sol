@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {BytesLib} from "src/libraries/BytesLIb.sol";
+import {BytesLib} from "src/libraries/BytesLib.sol";
+import {CastLib} from "src/libraries/CastLib.sol";
 
 /// @title  MessagesLib
 /// @dev    Library for encoding and decoding messages.
 library MessagesLib {
     using BytesLib for bytes;
+    using CastLib for *;
 
     enum Call {
         /// 0 - An invalid message
@@ -143,7 +145,7 @@ library MessagesLib {
             uint8(Call.AddTranche),
             poolId,
             trancheId,
-            _stringToBytes128(tokenName),
+            tokenName.toBytes128(),
             bytes32(bytes(tokenSymbol)),
             decimals,
             restrictionSet
@@ -164,8 +166,8 @@ library MessagesLib {
     {
         poolId = _msg.toUint64(1);
         trancheId = _msg.toBytes16(9);
-        tokenName = _bytes128ToString(_msg.slice(25, 128));
-        tokenSymbol = _bytes32ToString(_msg.toBytes32(153));
+        tokenName = _msg.slice(25, 128).bytes128ToString();
+        tokenSymbol = _msg.toBytes32(153).toString();
         decimals = _msg.toUint8(185);
         restrictionSet = _msg.toUint8(186);
     }
@@ -183,7 +185,7 @@ library MessagesLib {
         pure
         returns (bytes memory)
     {
-        return formatUpdateMember(poolId, trancheId, bytes32(bytes20(member)), validUntil);
+        return formatUpdateMember(poolId, trancheId, member.toBytes32(), validUntil);
     }
 
     function formatUpdateMember(uint64 poolId, bytes16 trancheId, bytes32 member, uint64 validUntil)
@@ -304,7 +306,7 @@ library MessagesLib {
         uint128 amount
     ) internal pure returns (bytes memory) {
         return formatTransferTrancheTokens(
-            poolId, trancheId, sender, destinationDomain, bytes32(bytes20(destinationAddress)), amount
+            poolId, trancheId, sender, destinationDomain, destinationAddress.toBytes32(), amount
         );
     }
 
@@ -628,7 +630,7 @@ library MessagesLib {
             uint8(Call.UpdateTrancheTokenMetadata),
             poolId,
             trancheId,
-            _stringToBytes128(tokenName),
+            tokenName.toBytes128(),
             bytes32(bytes(tokenSymbol))
         );
     }
@@ -640,8 +642,8 @@ library MessagesLib {
     {
         poolId = _msg.toUint64(1);
         trancheId = _msg.toBytes16(9);
-        tokenName = _bytes128ToString(_msg.slice(25, 128));
-        tokenSymbol = _bytes32ToString(_msg.toBytes32(153));
+        tokenName = _msg.slice(25, 128).bytes128ToString();
+        tokenSymbol = _msg.toBytes32(153).toString();
     }
 
     function formatCancelInvestOrder(uint64 poolId, bytes16 trancheId, bytes32 investor, uint128 currency)
@@ -708,7 +710,7 @@ library MessagesLib {
      *
      */
     function formatFreeze(uint64 poolId, bytes16 trancheId, address member) internal pure returns (bytes memory) {
-        return abi.encodePacked(uint8(Call.Freeze), poolId, trancheId, bytes32(bytes20(member)));
+        return abi.encodePacked(uint8(Call.Freeze), poolId, trancheId, member.toBytes32());
     }
 
     function parseFreeze(bytes memory _msg) internal pure returns (uint64 poolId, bytes16 trancheId, address user) {
@@ -725,7 +727,7 @@ library MessagesLib {
      *
      */
     function formatUnfreeze(uint64 poolId, bytes16 trancheId, address user) internal pure returns (bytes memory) {
-        return abi.encodePacked(uint8(Call.Unfreeze), poolId, trancheId, bytes32(bytes20(user)));
+        return abi.encodePacked(uint8(Call.Unfreeze), poolId, trancheId, user.toBytes32());
     }
 
     function parseUnfreeze(bytes memory _msg) internal pure returns (uint64 poolId, bytes16 trancheId, address user) {
@@ -790,7 +792,7 @@ library MessagesLib {
      * 33-52: The router address (32 bytes)
      */
     function formatInitiateMessageRecovery(bytes memory message, address router) internal pure returns (bytes memory) {
-        return abi.encodePacked(uint8(Call.InitiateMessageRecovery), keccak256(message), bytes32(bytes20(router)));
+        return abi.encodePacked(uint8(Call.InitiateMessageRecovery), keccak256(message), router.toBytes32());
     }
 
     function parseInitiateMessageRecovery(bytes memory _msg)
@@ -827,49 +829,5 @@ library MessagesLib {
 
     function formatDomain(Domain domain, uint64 chainId) public pure returns (bytes9) {
         return bytes9(BytesLib.slice(abi.encodePacked(uint8(domain), chainId), 0, 9));
-    }
-
-    function _stringToBytes128(string memory source) internal pure returns (bytes memory) {
-        bytes memory temp = bytes(source);
-        bytes memory result = new bytes(128);
-
-        for (uint256 i = 0; i < 128; i++) {
-            if (i < temp.length) {
-                result[i] = temp[i];
-            } else {
-                result[i] = 0x00;
-            }
-        }
-
-        return result;
-    }
-
-    function _bytes128ToString(bytes memory _bytes128) internal pure returns (string memory) {
-        require(_bytes128.length == 128, "Input should be 128 bytes");
-
-        uint8 i = 0;
-        while (i < 128 && _bytes128[i] != 0) {
-            i++;
-        }
-
-        bytes memory bytesArray = new bytes(i);
-
-        for (uint8 j = 0; j < i; j++) {
-            bytesArray[j] = _bytes128[j];
-        }
-
-        return string(bytesArray);
-    }
-
-    function _bytes32ToString(bytes32 _bytes32) internal pure returns (string memory) {
-        uint8 i = 0;
-        while (i < 32 && _bytes32[i] != 0) {
-            i++;
-        }
-        bytes memory bytesArray = new bytes(i);
-        for (i = 0; i < 32 && _bytes32[i] != 0; i++) {
-            bytesArray[i] = _bytes32[i];
-        }
-        return string(bytesArray);
     }
 }
