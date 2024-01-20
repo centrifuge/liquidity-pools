@@ -105,8 +105,7 @@ contract RouterAggregatorTest is Test {
         aggregator.file("routers", threeMockRouters);
 
         bytes memory firstMessage = abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1));
-        bytes memory firstProof =
-            MessagesLib.formatMessageProof(abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1)));
+        bytes memory firstProof = _formatMessageProof(abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1)));
 
         vm.expectRevert(bytes("RouterAggregator/invalid-router"));
         aggregator.handle(firstMessage);
@@ -139,8 +138,7 @@ contract RouterAggregatorTest is Test {
 
         // Sending another message works
         bytes memory secondMessage = abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(2));
-        bytes memory secondProof =
-            MessagesLib.formatMessageProof(abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(2)));
+        bytes memory secondProof = _formatMessageProof(abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(2)));
 
         router1.execute(secondMessage);
         assertEq(gateway.handled(secondMessage), 0);
@@ -156,8 +154,7 @@ contract RouterAggregatorTest is Test {
 
         // Swapping order of message vs proofs works
         bytes memory thirdMessage = abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(3));
-        bytes memory thirdProof =
-            MessagesLib.formatMessageProof(abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(3)));
+        bytes memory thirdProof = _formatMessageProof(abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(3)));
 
         router1.execute(thirdProof);
         assertEq(gateway.handled(thirdMessage), 0);
@@ -176,8 +173,7 @@ contract RouterAggregatorTest is Test {
         aggregator.file("routers", threeMockRouters);
 
         bytes memory message = abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1));
-        bytes memory proof =
-            MessagesLib.formatMessageProof(abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1)));
+        bytes memory proof = _formatMessageProof(abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1)));
 
         vm.expectRevert(bytes("RouterAggregator/invalid-router"));
         aggregator.handle(message);
@@ -203,8 +199,7 @@ contract RouterAggregatorTest is Test {
         aggregator.file("routers", threeMockRouters);
 
         bytes memory message = abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1));
-        bytes memory proof =
-            MessagesLib.formatMessageProof(abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1)));
+        bytes memory proof = _formatMessageProof(abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1)));
 
         assertEq(router1.sent(message), 0);
         assertEq(router2.sent(message), 0);
@@ -231,7 +226,7 @@ contract RouterAggregatorTest is Test {
     //     aggregator.file("routers", threeMockRouters);
 
     //     bytes memory message = abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1));
-    //     bytes memory proof = MessagesLib.formatMessageProof(message);
+    //     bytes memory proof = _formatMessageProof(message);
     //     bytes32 messageHash = keccak256(message);
 
     //     vm.prank(address(gateway));
@@ -267,8 +262,7 @@ contract RouterAggregatorTest is Test {
         uint16 numParallelDuplicateMessages = uint16(bound(numParallelDuplicateMessages_, 1, 255));
 
         bytes memory message = abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1));
-        bytes memory proof =
-            MessagesLib.formatMessageProof(abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1)));
+        bytes memory proof = _formatMessageProof(abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1)));
 
         // Setup random set of routers
         address[] memory testRouters = new address[](numRouters);
@@ -338,5 +332,13 @@ contract RouterAggregatorTest is Test {
         for (uint256 i = 0; i < arr.length; ++i) {
             count += arr[i];
         }
+    }
+
+    function _formatMessageProof(bytes memory message) internal pure returns (bytes memory) {
+        return abi.encodePacked(uint8(MessagesLib.Call.MessageProof), keccak256(message));
+    }
+
+    function _formatMessageProof(bytes32 messageHash) internal pure returns (bytes memory) {
+        return abi.encodePacked(uint8(MessagesLib.Call.MessageProof), messageHash);
     }
 }

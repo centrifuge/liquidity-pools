@@ -89,9 +89,8 @@ library MessagesLib {
      * 1-16: The Liquidity Pool's global currency id (uint128 = 16 bytes)
      * 17-36: The EVM address of the currency (address = 20 bytes)
      */
-    function parseAddCurrency(bytes memory _msg) internal pure returns (uint128 currency, address currencyAddress) {
-        currency = _msg.toUint128(1);
-        currencyAddress = _msg.toAddress(17);
+    function parseAddCurrency(bytes memory _msg) internal pure returns (uint128 currencyId, address currencyAddress) {
+        return (_msg.toUint128(1), _msg.toAddress(17));
     }
 
     /**
@@ -99,7 +98,7 @@ library MessagesLib {
      * 1-8: poolId (uint64 = 8 bytes)
      */
     function parseAddPool(bytes memory _msg) internal pure returns (uint64 poolId) {
-        poolId = _msg.toUint64(1);
+        return (_msg.toUint64(1));
     }
 
     /**
@@ -107,9 +106,12 @@ library MessagesLib {
      * 1-8: poolId (uint64 = 8 bytes)
      * 9-24: currency (uint128 = 16 bytes)
      */
-    function parseAllowInvestmentCurrency(bytes memory _msg) internal pure returns (uint64 poolId, uint128 currency) {
-        poolId = _msg.toUint64(1);
-        currency = _msg.toUint128(9);
+    function parseAllowInvestmentCurrency(bytes memory _msg)
+        internal
+        pure
+        returns (uint64 poolId, uint128 currencyId)
+    {
+        return (_msg.toUint64(1), _msg.toUint128(9));
     }
 
     /**
@@ -133,12 +135,14 @@ library MessagesLib {
             uint8 restrictionSet
         )
     {
-        poolId = _msg.toUint64(1);
-        trancheId = _msg.toBytes16(9);
-        tokenName = _msg.slice(25, 128).bytes128ToString();
-        tokenSymbol = _msg.toBytes32(153).toString();
-        decimals = _msg.toUint8(185);
-        restrictionSet = _msg.toUint8(186);
+        return (
+            _msg.toUint64(1),
+            _msg.toBytes16(9),
+            _msg.slice(25, 128).bytes128ToString(),
+            _msg.toBytes32(153).toString(),
+            _msg.toUint8(185),
+            _msg.toUint8(186)
+        );
     }
 
     /**
@@ -154,10 +158,7 @@ library MessagesLib {
         pure
         returns (uint64 poolId, bytes16 trancheId, address user, uint64 validUntil)
     {
-        poolId = _msg.toUint64(1);
-        trancheId = _msg.toBytes16(9);
-        user = _msg.toAddress(25);
-        validUntil = _msg.toUint64(57);
+        return (_msg.toUint64(1), _msg.toBytes16(9), _msg.toAddress(25), _msg.toUint64(57));
     }
 
     /**
@@ -171,7 +172,7 @@ library MessagesLib {
     function parseUpdateTrancheTokenPrice(bytes memory _msg)
         internal
         pure
-        returns (uint64, bytes16, uint128, uint128, uint64)
+        returns (uint64 poolId, bytes16 trancheId, uint128 currencyId, uint128 price, uint64 computedAt)
     {
         return (_msg.toUint64(1), _msg.toBytes16(9), _msg.toUint128(25), _msg.toUint128(41), _msg.toUint64(57));
     }
@@ -186,12 +187,9 @@ library MessagesLib {
     function parseTransfer(bytes memory _msg)
         internal
         pure
-        returns (uint128 currency, bytes32 sender, bytes32 receiver, uint128 amount)
+        returns (uint128 currencyId, bytes32 sender, bytes32 receiver, uint128 amount)
     {
-        currency = _msg.toUint128(1);
-        sender = _msg.toBytes32(17);
-        receiver = _msg.toBytes32(49);
-        amount = _msg.toUint128(81);
+        return (_msg.toUint128(1), _msg.toBytes32(17), _msg.toBytes32(49), _msg.toUint128(81));
     }
 
     // An optimised `parseTransfer` function that saves gas by ignoring the `sender` field and that
@@ -199,11 +197,9 @@ library MessagesLib {
     function parseIncomingTransfer(bytes memory _msg)
         internal
         pure
-        returns (uint128 currency, address recipient, uint128 amount)
+        returns (uint128 currencyId, address recipient, uint128 amount)
     {
-        currency = _msg.toUint128(1);
-        recipient = _msg.toAddress(49);
-        amount = _msg.toUint128(81);
+        return (_msg.toUint128(1), _msg.toAddress(49), _msg.toUint128(81));
     }
 
     /**
@@ -222,12 +218,9 @@ library MessagesLib {
         pure
         returns (uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 amount)
     {
-        poolId = _msg.toUint64(1);
-        trancheId = _msg.toBytes16(9);
         // ignore: `sender` at bytes 25-56
         // ignore: `domain` at bytes 57-65
-        destinationAddress = _msg.toAddress(66);
-        amount = _msg.toUint128(98);
+        return (_msg.toUint64(1), _msg.toBytes16(9), _msg.toAddress(66), _msg.toUint128(98));
     }
 
     /*
@@ -241,13 +234,9 @@ library MessagesLib {
     function parseIncreaseInvestOrder(bytes memory _msg)
         internal
         pure
-        returns (uint64 poolId, bytes16 trancheId, bytes32 investor, uint128 currency, uint128 amount)
+        returns (uint64 poolId, bytes16 trancheId, bytes32 investor, uint128 currencyId, uint128 amount)
     {
-        poolId = _msg.toUint64(1);
-        trancheId = _msg.toBytes16(9);
-        investor = _msg.toBytes32(25);
-        currency = _msg.toUint128(57);
-        amount = _msg.toUint128(73);
+        return (_msg.toUint64(1), _msg.toBytes16(9), _msg.toBytes32(25), _msg.toUint128(57), _msg.toUint128(73));
     }
 
     /*
@@ -261,7 +250,7 @@ library MessagesLib {
     function parseDecreaseInvestOrder(bytes memory _msg)
         internal
         pure
-        returns (uint64 poolId, bytes16 trancheId, bytes32 investor, uint128 currency, uint128 amount)
+        returns (uint64 poolId, bytes16 trancheId, bytes32 investor, uint128 currencyId, uint128 amount)
     {
         return parseIncreaseInvestOrder(_msg);
     }
@@ -277,7 +266,7 @@ library MessagesLib {
     function parseIncreaseRedeemOrder(bytes memory _msg)
         internal
         pure
-        returns (uint64 poolId, bytes16 trancheId, bytes32 investor, uint128 currency, uint128 amount)
+        returns (uint64 poolId, bytes16 trancheId, bytes32 investor, uint128 currencyId, uint128 amount)
     {
         return parseIncreaseInvestOrder(_msg);
     }
@@ -293,7 +282,7 @@ library MessagesLib {
     function parseDecreaseRedeemOrder(bytes memory _msg)
         internal
         pure
-        returns (uint64 poolId, bytes16 trancheId, bytes32 investor, uint128 currency, uint128 amount)
+        returns (uint64 poolId, bytes16 trancheId, bytes32 investor, uint128 currencyId, uint128 amount)
     {
         return parseDecreaseInvestOrder(_msg);
     }
@@ -305,17 +294,19 @@ library MessagesLib {
             uint64 poolId,
             bytes16 trancheId,
             address investor,
-            uint128 currency,
+            uint128 currencyId,
             uint128 trancheTokenPayout,
             uint128 remainingInvestOrder
         )
     {
-        poolId = _msg.toUint64(1);
-        trancheId = _msg.toBytes16(9);
-        investor = _msg.toAddress(25);
-        currency = _msg.toUint128(57);
-        trancheTokenPayout = _msg.toUint128(73);
-        remainingInvestOrder = _msg.toUint128(89);
+        return (
+            _msg.toUint64(1),
+            _msg.toBytes16(9),
+            _msg.toAddress(25),
+            _msg.toUint128(57),
+            _msg.toUint128(73),
+            _msg.toUint128(89)
+        );
     }
 
     function parseExecutedDecreaseRedeemOrder(bytes memory _msg)
@@ -325,17 +316,19 @@ library MessagesLib {
             uint64 poolId,
             bytes16 trancheId,
             address investor,
-            uint128 currency,
+            uint128 currencyId,
             uint128 trancheTokensPayout,
             uint128 remainingRedeemOrder
         )
     {
-        poolId = _msg.toUint64(1);
-        trancheId = _msg.toBytes16(9);
-        investor = _msg.toAddress(25);
-        currency = _msg.toUint128(57);
-        trancheTokensPayout = _msg.toUint128(73);
-        remainingRedeemOrder = _msg.toUint128(89);
+        return (
+            _msg.toUint64(1),
+            _msg.toBytes16(9),
+            _msg.toAddress(25),
+            _msg.toUint128(57),
+            _msg.toUint128(73),
+            _msg.toUint128(89)
+        );
     }
 
     function parseExecutedCollectInvest(bytes memory _msg)
@@ -345,19 +338,21 @@ library MessagesLib {
             uint64 poolId,
             bytes16 trancheId,
             address investor,
-            uint128 currency,
+            uint128 currencyId,
             uint128 currencyPayout,
             uint128 trancheTokensPayout,
             uint128 remainingInvestOrder
         )
     {
-        poolId = _msg.toUint64(1);
-        trancheId = _msg.toBytes16(9);
-        investor = _msg.toAddress(25);
-        currency = _msg.toUint128(57);
-        currencyPayout = _msg.toUint128(73);
-        trancheTokensPayout = _msg.toUint128(89);
-        remainingInvestOrder = _msg.toUint128(105);
+        return (
+            _msg.toUint64(1),
+            _msg.toBytes16(9),
+            _msg.toAddress(25),
+            _msg.toUint128(57),
+            _msg.toUint128(73),
+            _msg.toUint128(89),
+            _msg.toUint128(105)
+        );
     }
 
     function parseExecutedCollectRedeem(bytes memory _msg)
@@ -367,27 +362,29 @@ library MessagesLib {
             uint64 poolId,
             bytes16 trancheId,
             address investor,
-            uint128 currency,
+            uint128 currencyId,
             uint128 currencyPayout,
             uint128 trancheTokensPayout,
             uint128 remainingRedeemOrder
         )
     {
-        poolId = _msg.toUint64(1);
-        trancheId = _msg.toBytes16(9);
-        investor = _msg.toAddress(25);
-        currency = _msg.toUint128(57);
-        currencyPayout = _msg.toUint128(73);
-        trancheTokensPayout = _msg.toUint128(89);
-        remainingRedeemOrder = _msg.toUint128(105);
+        return (
+            _msg.toUint64(1),
+            _msg.toBytes16(9),
+            _msg.toAddress(25),
+            _msg.toUint128(57),
+            _msg.toUint128(73),
+            _msg.toUint128(89),
+            _msg.toUint128(105)
+        );
     }
 
     function parseScheduleUpgrade(bytes memory _msg) internal pure returns (address _contract) {
-        _contract = _msg.toAddress(1);
+        return (_msg.toAddress(1));
     }
 
     function parseCancelUpgrade(bytes memory _msg) internal pure returns (address _contract) {
-        _contract = _msg.toAddress(1);
+        return (_msg.toAddress(1));
     }
 
     /**
@@ -402,10 +399,9 @@ library MessagesLib {
         pure
         returns (uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol)
     {
-        poolId = _msg.toUint64(1);
-        trancheId = _msg.toBytes16(9);
-        tokenName = _msg.slice(25, 128).bytes128ToString();
-        tokenSymbol = _msg.toBytes32(153).toString();
+        return (
+            _msg.toUint64(1), _msg.toBytes16(9), _msg.slice(25, 128).bytes128ToString(), _msg.toBytes32(153).toString()
+        );
     }
 
     function parseCancelInvestOrder(bytes memory _msg)
@@ -413,10 +409,7 @@ library MessagesLib {
         pure
         returns (uint64 poolId, bytes16 trancheId, address investor, uint128 currency)
     {
-        poolId = _msg.toUint64(1);
-        trancheId = _msg.toBytes16(9);
-        investor = _msg.toAddress(25);
-        currency = _msg.toUint128(57);
+        return (_msg.toUint64(1), _msg.toBytes16(9), _msg.toAddress(25), _msg.toUint128(57));
     }
 
     function parseCancelRedeemOrder(bytes memory _msg)
@@ -424,10 +417,7 @@ library MessagesLib {
         pure
         returns (uint64 poolId, bytes16 trancheId, address investor, uint128 currency)
     {
-        poolId = _msg.toUint64(1);
-        trancheId = _msg.toBytes16(9);
-        investor = _msg.toAddress(25);
-        currency = _msg.toUint128(57);
+        return (_msg.toUint64(1), _msg.toBytes16(9), _msg.toAddress(25), _msg.toUint128(57));
     }
 
     /**
@@ -440,8 +430,7 @@ library MessagesLib {
         pure
         returns (uint64 poolId, uint128 currency)
     {
-        poolId = _msg.toUint64(1);
-        currency = _msg.toUint128(9);
+        return (_msg.toUint64(1), _msg.toUint128(9));
     }
 
     /**
@@ -452,9 +441,7 @@ library MessagesLib {
      *
      */
     function parseFreeze(bytes memory _msg) internal pure returns (uint64 poolId, bytes16 trancheId, address user) {
-        poolId = _msg.toUint64(1);
-        trancheId = _msg.toBytes16(9);
-        user = _msg.toAddress(25);
+        return (_msg.toUint64(1), _msg.toBytes16(9), _msg.toAddress(25));
     }
 
     /**
@@ -465,9 +452,7 @@ library MessagesLib {
      *
      */
     function parseUnfreeze(bytes memory _msg) internal pure returns (uint64 poolId, bytes16 trancheId, address user) {
-        poolId = _msg.toUint64(1);
-        trancheId = _msg.toBytes16(9);
-        user = _msg.toAddress(25);
+        return (_msg.toUint64(1), _msg.toBytes16(9), _msg.toAddress(25));
     }
 
     /*
@@ -481,29 +466,17 @@ library MessagesLib {
     function parseTriggerIncreaseRedeemOrder(bytes memory _msg)
         internal
         pure
-        returns (uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 trancheTokenAmount)
+        returns (uint64 poolId, bytes16 trancheId, address investor, uint128 currencyId, uint128 trancheTokenAmount)
     {
-        poolId = _msg.toUint64(1);
-        trancheId = _msg.toBytes16(9);
-        investor = _msg.toAddress(25);
-        currency = _msg.toUint128(57);
-        trancheTokenAmount = _msg.toUint128(73);
+        return (_msg.toUint64(1), _msg.toBytes16(9), _msg.toAddress(25), _msg.toUint128(57), _msg.toUint128(73));
     }
 
     /**
      * 0: call type (uint8 = 1 byte)
      * 1-32: The keccak message proof (bytes32)
      */
-    function formatMessageProof(bytes memory message) internal pure returns (bytes memory) {
-        return abi.encodePacked(uint8(Call.MessageProof), keccak256(message));
-    }
-
-    function formatMessageProof(bytes32 messageHash) internal pure returns (bytes memory) {
-        return abi.encodePacked(uint8(Call.MessageProof), messageHash);
-    }
-
     function parseMessageProof(bytes memory _msg) internal pure returns (bytes32 proof) {
-        proof = _msg.toBytes32(1);
+        return (_msg.toBytes32(1));
     }
 
     /**
@@ -518,8 +491,7 @@ library MessagesLib {
         pure
         returns (bytes32 messageHash, address router)
     {
-        messageHash = BytesLib.toBytes32(_msg, 1);
-        router = BytesLib.toAddress(_msg, 33);
+        return (_msg.toBytes32(1), _msg.toAddress(33));
     }
 
     /**
@@ -529,7 +501,7 @@ library MessagesLib {
      * 1-32: Message hash (32 bytes)
      */
     function parseDisputeMessageRecovery(bytes memory _msg) internal pure returns (bytes32 messageHash) {
-        messageHash = BytesLib.toBytes32(_msg, 1);
+        return (_msg.toBytes32(1));
     }
 
     function isRecoveryMessage(bytes memory _msg) internal pure returns (bool) {
