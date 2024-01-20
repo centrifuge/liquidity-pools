@@ -3,8 +3,11 @@ pragma solidity 0.8.21;
 
 import "test/BaseTest.sol";
 import "test/mocks/RestrictionManagerFactory.sol";
+import {CastLib} from "src/libraries/CastLib.sol";
 
 contract PoolManagerTest is BaseTest {
+    using CastLib for *;
+
     // Deployment
     function testDeployment() public {
         // values set correctly
@@ -260,7 +263,7 @@ contract PoolManagerTest is BaseTest {
         vm.assume(amount > 0);
         uint128 currency = defaultCurrencyId;
         address recipient = makeAddr("recipient");
-        bytes32 sender = _addressToBytes32(makeAddr("sender"));
+        bytes32 sender = makeAddr("sender").toBytes32();
 
         vm.expectRevert(bytes("PoolManager/unknown-currency"));
         centrifugeChain.incomingTransfer(currency, sender, bytes32(bytes20(recipient)), amount);
@@ -285,7 +288,7 @@ contract PoolManagerTest is BaseTest {
         initialBalance = uint128(bound(initialBalance, amount, type(uint128).max)); // initialBalance >= amount
         vm.assume(amount > 0);
         uint128 currency = defaultCurrencyId;
-        bytes32 recipient = _addressToBytes32(makeAddr("recipient"));
+        bytes32 recipient = makeAddr("recipient").toBytes32();
 
         erc20.mint(address(this), initialBalance);
         assertEq(erc20.balanceOf(address(this)), initialBalance);
@@ -304,7 +307,7 @@ contract PoolManagerTest is BaseTest {
     function testTransferTrancheTokensToCentrifuge(uint128 amount) public {
         vm.assume(amount > 0);
         uint64 validUntil = uint64(block.timestamp + 7 days);
-        bytes32 centChainAddress = _addressToBytes32(makeAddr("centChainAddress"));
+        bytes32 centChainAddress = makeAddr("centChainAddress").toBytes32();
         address lPool_ = deploySimplePool();
         LiquidityPool lPool = LiquidityPool(lPool_);
         TrancheTokenLike trancheToken = TrancheTokenLike(address(LiquidityPool(lPool_).share()));

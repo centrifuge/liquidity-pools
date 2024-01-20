@@ -289,9 +289,4 @@ contract Gateway is Auth {
             revert("Gateway/invalid-message");
         }
     }
-
-    // --- Helpers ---
-    function _addressToBytes32(address x) internal pure returns (bytes32) {
-        return bytes32(bytes20(x));
-    }
 }
