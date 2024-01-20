@@ -105,7 +105,7 @@ contract RouterAggregator is Auth {
         _handle(payload, router);
     }
 
-    function _handle(bytes calldata payload, Router memory router) public {
+    function _handle(bytes calldata payload, Router memory router) internal {
         if (router.quorum == 1 && !MessagesLib.isMessageProof(payload)) {
             // Special case for gas efficiency
             gateway.handle(payload);
