@@ -2,6 +2,7 @@
 pragma solidity 0.8.21;
 
 import {Auth} from "./Auth.sol";
+import {CastLib} from "./libraries/CastLib.sol";
 import {MathLib} from "./libraries/MathLib.sol";
 import {SafeTransferLib} from "./libraries/SafeTransferLib.sol";
 import {MessagesLib} from "./libraries/MessagesLib.sol";
@@ -80,6 +81,7 @@ struct InvestmentState {
 ///         both incoming and outgoing investment transactions.
 contract InvestmentManager is Auth {
     using MathLib for uint256;
+    using CastLib for *;
 
     /// @dev Prices are fixed-point integers with 18 decimals
     uint8 internal constant PRICE_DECIMALS = 18;
@@ -261,7 +263,7 @@ contract InvestmentManager is Auth {
                 uint8(MessagesLib.Call.CancelInvestOrder),
                 _liquidityPool.poolId(),
                 _liquidityPool.trancheId(),
-                owner,
+                owner.toBytes32(),
                 poolManager.currencyAddressToId(_liquidityPool.asset())
             )
         );
@@ -279,7 +281,7 @@ contract InvestmentManager is Auth {
                 uint8(MessagesLib.Call.CancelRedeemOrder),
                 _liquidityPool.poolId(),
                 _liquidityPool.trancheId(),
-                owner,
+                owner.toBytes32(),
                 poolManager.currencyAddressToId(_liquidityPool.asset())
             )
         );

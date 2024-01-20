@@ -178,7 +178,7 @@ contract PoolManager is Auth {
                 uint8(MessagesLib.Call.TransferTrancheTokens),
                 poolId,
                 trancheId,
-                msg.sender,
+                msg.sender.toBytes32(),
                 MessagesLib.formatDomain(MessagesLib.Domain.Centrifuge),
                 destinationAddress,
                 amount
