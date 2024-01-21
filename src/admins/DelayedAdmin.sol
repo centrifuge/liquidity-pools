@@ -1,33 +1,38 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {Root} from "../Root.sol";
-import {Auth} from "./../Auth.sol";
+import {Root} from "src/Root.sol";
 
-interface PauseAdminLike {
-    function addPauser(address user) external;
-    function removePauser(address user) external;
+interface SafeLike {
+    function isOwner(address signer) external view returns (bool);
 }
 
-/// @title  Delayed Admin
-/// @dev    Any ward on this contract can trigger
-///         instantaneous pausing and unpausing
-///         on the Root, as well as schedule and cancel
-///         new relys through the timelock.
-contract DelayedAdmin is Auth {
+/// @title  Guardian
+/// @dev    Any ward on this contract can trigger instantaneous pausing and unpausing on the
+///         Root, as well as schedule and cancel new relys through the timelock of Root.
+///
+///         If the ward is a Safe, any individual signer on this Safe can also pause.
+contract Guardian {
     Root public immutable root;
-    PauseAdminLike public immutable pauseAdmin;
+    SafeLike public immutable safe;
 
-    constructor(address root_, address pauseAdmin_) {
+    constructor(address root_, address safe_) {
         root = Root(root_);
-        pauseAdmin = PauseAdminLike(pauseAdmin_);
+        safe = SafeLike(safe_);
+    }
 
-        wards[msg.sender] = 1;
-        emit Rely(msg.sender);
+    modifier auth() {
+        require(msg.sender == address(safe), "Guardian/not-authorized");
+        _;
+    }
+
+    modifier individualOwner() {
+        require(_isSafeOwner(safe, msg.sender), "Guardian/not-authorized-to-pause");
+        _;
     }
 
     // --- Admin actions ---
-    function pause() external auth {
+    function pause() external individualOwner {
         root.pause();
     }
 
@@ -43,12 +48,12 @@ contract DelayedAdmin is Auth {
         root.cancelRely(target);
     }
 
-    // --- PauseAdmin management ---
-    function addPauser(address user) external auth {
-        pauseAdmin.addPauser(user);
-    }
-
-    function removePauser(address user) external auth {
-        pauseAdmin.removePauser(user);
+    // --- Helpers ---
+    function _isSafeOwner(address safe, address addr) internal returns (bool) {
+        try safe.isOwner(addr) returns (bool isOwner) {
+            return isOwner;
+        } catch {
+            return false;
+        }
     }
 }
