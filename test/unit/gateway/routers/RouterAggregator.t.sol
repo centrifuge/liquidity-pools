@@ -222,38 +222,85 @@ contract RouterAggregatorTest is Test {
         assertEq(router3.sent(proof), 1);
     }
 
-    // function testRecoverFailedMessage() public {
-    //     aggregator.file("routers", threeMockRouters);
+    function testRecoverFailedMessage() public {
+        aggregator.file("routers", threeMockRouters);
 
-    //     bytes memory message = MessagesLib.formatAddPool(1);
-    //     bytes memory proof = MessagesLib.formatMessageProof(message);
-    //     bytes32 messageHash = keccak256(message);
+        bytes memory message = MessagesLib.formatAddPool(1);
+        bytes memory proof = MessagesLib.formatMessageProof(message);
+        bytes32 messageHash = keccak256(message);
 
-    //     vm.prank(address(gateway));
-    //     aggregator.send(message);
+        // Only send through 2 out of 3 routers
+        router2.execute(proof);
+        router3.execute(proof);
+        assertEq(gateway.handled(message), 0);
 
-    //     vm.expectRevert(bytes("RouterAggregator/invalid-router"));
-    //     aggregator.recoverMessage(address(0), message);
+        vm.expectRevert(bytes("RouterAggregator/message-recovery-not-initiated"));
+        aggregator.executeMessageRecovery(message);
 
-    //     aggregator.recoverMessage(address(router2), message);
-    //     assertEq(router1.sent(message), 1);
-    //     assertEq(router2.sent(message), 1);
-    //     assertEq(router3.sent(message), 0);
-    //     assertEq(router1.sent(proof), 0);
-    //     assertEq(router2.sent(proof), 1);
-    //     assertEq(router3.sent(proof), 1);
+        // Initiate recovery
+        router1.execute(MessagesLib.formatInitiateMessageRecovery(message, address(router3)));
 
-    //     vm.expectRevert(bytes("RouterAggregator/invalid-router"));
-    //     aggregator.recoverProof(address(0), messageHash);
+        vm.expectRevert(bytes("RouterAggregator/challenge-period-has-not-ended"));
+        aggregator.executeMessageRecovery(message);
 
-    //     aggregator.recoverProof(address(router3), messageHash);
-    //     assertEq(router1.sent(message), 1);
-    //     assertEq(router2.sent(message), 1);
-    //     assertEq(router3.sent(message), 0);
-    //     assertEq(router1.sent(proof), 0);
-    //     assertEq(router2.sent(proof), 1);
-    //     assertEq(router3.sent(proof), 2);
-    // }
+        // Execute recovery
+        vm.warp(block.timestamp + aggregator.RECOVERY_CHALLENGE_PERIOD());
+        aggregator.executeMessageRecovery(message);
+        assertEq(gateway.handled(message), 1);
+    }
+
+    function testRecoverFailedProof() public {
+        aggregator.file("routers", threeMockRouters);
+
+        bytes memory message = MessagesLib.formatAddPool(1);
+        bytes memory proof = MessagesLib.formatMessageProof(message);
+        bytes32 messageHash = keccak256(message);
+
+        // Only send through 2 out of 3 routers
+        router1.execute(message);
+        router2.execute(proof);
+        assertEq(gateway.handled(message), 0);
+
+        vm.expectRevert(bytes("RouterAggregator/message-recovery-not-initiated"));
+        aggregator.executeMessageRecovery(proof);
+
+        // Initiate recovery
+        router1.execute(MessagesLib.formatInitiateMessageRecovery(proof, address(router3)));
+
+        vm.expectRevert(bytes("RouterAggregator/challenge-period-has-not-ended"));
+        aggregator.executeMessageRecovery(proof);
+
+        // Execute recovery
+        vm.warp(block.timestamp + aggregator.RECOVERY_CHALLENGE_PERIOD());
+        aggregator.executeMessageRecovery(proof);
+        assertEq(gateway.handled(message), 1);
+    }
+
+    function testDisputeRecovery() public {
+        aggregator.file("routers", threeMockRouters);
+
+        bytes memory message = MessagesLib.formatAddPool(1);
+        bytes memory proof = MessagesLib.formatMessageProof(message);
+        bytes32 messageHash = keccak256(message);
+
+        // Only send through 2 out of 3 routers
+        router1.execute(message);
+        router2.execute(proof);
+        assertEq(gateway.handled(message), 0);
+
+        // Initiate recovery
+        router1.execute(MessagesLib.formatInitiateMessageRecovery(proof, address(router3)));
+
+        vm.expectRevert(bytes("RouterAggregator/challenge-period-has-not-ended"));
+        aggregator.executeMessageRecovery(proof);
+
+        // Dispute recovery, then check that recovery is not possible anymore
+        router2.execute(MessagesLib.formatDisputeMessageRecovery(proof));
+
+        vm.expectRevert(bytes("RouterAggregator/message-recovery-not-initiated"));
+        aggregator.executeMessageRecovery(proof);
+        assertEq(gateway.handled(message), 0);
+    }
 
     function testMessagesCannotBeReplayed(uint8 numRouters, uint8 numParallelDuplicateMessages_, uint256 entropy)
         public

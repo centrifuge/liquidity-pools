@@ -174,7 +174,7 @@ contract RouterAggregator is Auth {
         }
     }
 
-    function executeMessageRecovery(bytes calldata message) internal {
+    function executeMessageRecovery(bytes calldata message) public {
         bytes32 messageHash = keccak256(message);
         Recovery storage recovery = recoveries[messageHash];
         require(recovery.timestamp != 0, "RouterAggregator/message-recovery-not-initiated");
