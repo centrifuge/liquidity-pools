@@ -238,7 +238,7 @@ contract RouterAggregatorTest is Test {
         aggregator.executeMessageRecovery(message);
 
         // Initiate recovery
-        router1.execute(MessagesLib.formatInitiateMessageRecovery(message, address(router3)));
+        router2.execute(MessagesLib.formatInitiateMessageRecovery(message, address(router1)));
 
         vm.expectRevert(bytes("RouterAggregator/challenge-period-has-not-ended"));
         aggregator.executeMessageRecovery(message);
@@ -294,9 +294,10 @@ contract RouterAggregatorTest is Test {
         vm.expectRevert(bytes("RouterAggregator/challenge-period-has-not-ended"));
         aggregator.executeMessageRecovery(proof);
 
-        // Dispute recovery, then check that recovery is not possible anymore
+        // Dispute recovery
         router2.execute(MessagesLib.formatDisputeMessageRecovery(proof));
 
+        // Check that recovery is not possible anymore
         vm.expectRevert(bytes("RouterAggregator/message-recovery-not-initiated"));
         aggregator.executeMessageRecovery(proof);
         assertEq(gateway.handled(message), 0);
