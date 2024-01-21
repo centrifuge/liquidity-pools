@@ -227,7 +227,6 @@ contract RouterAggregatorTest is Test {
 
         bytes memory message = MessagesLib.formatAddPool(1);
         bytes memory proof = MessagesLib.formatMessageProof(message);
-        bytes32 messageHash = keccak256(message);
 
         // Only send through 2 out of 3 routers
         router2.execute(proof);
@@ -254,7 +253,6 @@ contract RouterAggregatorTest is Test {
 
         bytes memory message = MessagesLib.formatAddPool(1);
         bytes memory proof = MessagesLib.formatMessageProof(message);
-        bytes32 messageHash = keccak256(message);
 
         // Only send through 2 out of 3 routers
         router1.execute(message);
@@ -281,7 +279,6 @@ contract RouterAggregatorTest is Test {
 
         bytes memory message = MessagesLib.formatAddPool(1);
         bytes memory proof = MessagesLib.formatMessageProof(message);
-        bytes32 messageHash = keccak256(message);
 
         // Only send through 2 out of 3 routers
         router1.execute(message);

@@ -5,7 +5,9 @@ import "forge-std/Test.sol";
 import {ArrayLib} from "src/libraries/ArrayLib.sol";
 
 contract ArrayLibTest is Test {
-    uint16[8] testArray;
+    // Used for testDecreaseFirstNValues (which requires storage pointers)
+    uint16[8] initialArray;
+    uint16[8] decreasedArray;
 
     function testCountNonZeroValues(uint8 numNonZeroes) public {
         numNonZeroes = uint8(bound(numNonZeroes, 0, 8));
@@ -14,15 +16,17 @@ contract ArrayLibTest is Test {
         assertEq(ArrayLib.countNonZeroValues(arr), numNonZeroes);
     }
 
-    // function testDecreaseFirstNValues(uint8 numNonZeroes, uint8 numValuesToDecrease) public {
-    //     numNonZeroes = uint8(bound(numNonZeroes, 0, 8));
-    //     numValuesToDecrease = uint8(bound(numValuesToDecrease, 0, 8));
-    //     testArray = _randomArray(8);
+    function testDecreaseFirstNValues(uint8 numValuesToDecrease) public {
+        numValuesToDecrease = uint8(bound(numValuesToDecrease, 0, 8));
 
-    //     // Decreasing by 1 should reduce by numNonZeroes since zero values cannot be decreased
-    //     ArrayLib.decreaseFirstNValues(testArray, numValuesToDecrease, 1);
-    //     assertEq(_count(arr) - _count(decreasedArr), numNonZeroes);
-    // }
+        initialArray = _randomArray(8);
+        decreasedArray = initialArray;
+        uint8 numNonZeroes = ArrayLib.countNonZeroValues(initialArray);
+
+        // Decreasing by 1 should reduce by min(numNonZeroes, numValuesToDecrease) since zero values cannot be decreased
+        ArrayLib.decreaseFirstNValues(decreasedArray, numValuesToDecrease, 1);
+        assertEq(_count(initialArray) - _count(decreasedArray), _min(numNonZeroes, numValuesToDecrease));
+    }
 
     function testIsEmpty(uint8 numNonZeroes) public {
         numNonZeroes = uint8(bound(numNonZeroes, 0, 8));
@@ -38,7 +42,11 @@ contract ArrayLibTest is Test {
         }
     }
 
-    function _count(uint16[8] memory arr) internal view returns (uint8 count) {
+    function _min(uint256 a, uint256 b) internal pure returns (uint256) {
+        return a > b ? b : a;
+    }
+
+    function _count(uint16[8] memory arr) internal pure returns (uint256 count) {
         for (uint256 i; i < arr.length; i++) {
             count += uint8(arr[i]);
         }
