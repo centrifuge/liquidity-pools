@@ -13,6 +13,7 @@ contract RouterAggregatorTest is Test {
     MockRouter router2;
     MockRouter router3;
     MockRouter router4;
+    address[] oneMockRouter;
     address[] threeMockRouters;
     address[] fourMockRouters;
     address[] nineMockRouters;
@@ -29,6 +30,8 @@ contract RouterAggregatorTest is Test {
         vm.label(address(router3), "MockRouter3");
         router4 = new MockRouter(address(aggregator));
         vm.label(address(router4), "MockRouter4");
+
+        oneMockRouter.push(address(router1));
 
         threeMockRouters.push(address(router1));
         threeMockRouters.push(address(router2));
@@ -86,6 +89,9 @@ contract RouterAggregatorTest is Test {
 
         vm.expectRevert(bytes("RouterAggregator/exceeds-max-router-count"));
         aggregator.file("routers", nineMockRouters);
+
+        vm.expectRevert(bytes("RouterAggregator/file-unrecognized-param"));
+        aggregator.file("notRouters", nineMockRouters);
 
         aggregator.deny(address(this));
         vm.expectRevert(bytes("Auth/not-authorized"));
@@ -167,6 +173,17 @@ contract RouterAggregatorTest is Test {
         router3.execute(thirdMessage);
         assertEq(gateway.handled(thirdMessage), 1);
         assertConfirmations(thirdMessage, 0, 0, 0, 0, 0, 0);
+    }
+
+    function testQuorumOfOne() public {
+        aggregator.file("routers", oneMockRouter);
+
+        bytes memory message = MessagesLib.formatAddPool(1);
+        bytes memory proof = MessagesLib.formatMessageProof(MessagesLib.formatAddPool(1));
+
+        // Executes immediately
+        router1.execute(message);
+        assertEq(gateway.handled(message), 1);
     }
 
     function testOneFasterPayloadRouter() public {
