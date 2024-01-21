@@ -20,10 +20,9 @@ interface AggregatorLike {
 /// @title  Axelar Router
 /// @notice Routing contract that integrates with an Axelar Gateway
 contract AxelarRouter {
-    string public constant CENTRIFUGE_CHAIN_ID = "centrifuge";
-    bytes32 public constant CENTRIFUGE_CHAIN_ID_HASH = keccak256(bytes("centrifuge"));
-    bytes32 public constant CENTRIFUGE_CHAIN_ADDRESS_HASH =
-        keccak256(bytes("0x7369626CEF070000000000000000000000000000"));
+    string public constant CENTRIFUGE_ID = "centrifuge";
+    bytes32 public constant CENTRIFUGE_ID_HASH = keccak256(bytes("centrifuge"));
+    bytes32 public constant CENTRIFUGE_ADDRESS_HASH = keccak256(bytes("0x7369626CEF070000000000000000000000000000"));
     string public constant CENTRIFUGE_AXELAR_EXECUTABLE = "0xc1757c6A0563E37048869A342dF0651b9F267e41";
 
     AggregatorLike public immutable aggregator;
@@ -41,8 +40,8 @@ contract AxelarRouter {
         string calldata sourceAddress,
         bytes calldata payload
     ) public {
-        require(keccak256(bytes(sourceChain)) == CENTRIFUGE_CHAIN_ID_HASH, "AxelarRouter/invalid-source-chain");
-        require(keccak256(bytes(sourceAddress)) == CENTRIFUGE_CHAIN_ADDRESS_HASH, "AxelarRouter/invalid-source-address");
+        require(keccak256(bytes(sourceChain)) == CENTRIFUGE_ID_HASH, "AxelarRouter/invalid-source-chain");
+        require(keccak256(bytes(sourceAddress)) == CENTRIFUGE_ADDRESS_HASH, "AxelarRouter/invalid-source-address");
         require(
             axelarGateway.validateContractCall(commandId, sourceChain, sourceAddress, keccak256(payload)),
             "AxelarRouter/not-approved-by-axelar-gateway"
@@ -55,6 +54,6 @@ contract AxelarRouter {
     function send(bytes calldata message) public {
         require(msg.sender == address(aggregator), "AxelarRouter/only-aggregator-allowed-to-call");
 
-        axelarGateway.callContract(CENTRIFUGE_CHAIN_ID, CENTRIFUGE_AXELAR_EXECUTABLE, message);
+        axelarGateway.callContract(CENTRIFUGE_ID, CENTRIFUGE_AXELAR_EXECUTABLE, message);
     }
 }

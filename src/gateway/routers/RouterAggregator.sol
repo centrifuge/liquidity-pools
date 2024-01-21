@@ -105,7 +105,7 @@ contract RouterAggregator is Auth {
         _handle(payload, router);
     }
 
-    function _handle(bytes calldata payload, Router memory router) public {
+    function _handle(bytes calldata payload, Router memory router) internal {
         bool isMessageProof = MessagesLib.messageType(payload) == MessagesLib.Call.MessageProof;
 
         if (router.quorum == 1 && !isMessageProof) {
@@ -177,7 +177,7 @@ contract RouterAggregator is Auth {
         }
     }
 
-    function executeMessageRecovery(bytes calldata message) internal {
+    function executeMessageRecovery(bytes calldata message) public {
         bytes32 messageHash = keccak256(message);
         Recovery storage recovery = recoveries[messageHash];
         require(recovery.timestamp != 0, "RouterAggregator/message-recovery-not-initiated");
