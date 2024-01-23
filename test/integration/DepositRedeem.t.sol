@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import "./../TestSetup.t.sol";
+import "./../BaseTest.sol";
 
-contract DepositRedeem is TestSetup {
+contract DepositRedeem is BaseTest {
     function testPartialDepositAndRedeemExecutions(uint64 poolId, bytes16 trancheId, uint128 currencyId) public {
         vm.assume(currencyId > 0);
 
@@ -28,11 +28,13 @@ contract DepositRedeem is TestSetup {
     // Helpers
 
     function partialDeposit(uint64 poolId, bytes16 trancheId, LiquidityPool lPool, ERC20 currency) public {
+        TrancheTokenLike trancheToken = TrancheTokenLike(address(lPool.share()));
+
         uint256 investmentAmount = 100000000; // 100 * 10**6
         centrifugeChain.updateMember(poolId, trancheId, self, type(uint64).max);
         currency.approve(address(lPool), investmentAmount);
         currency.mint(self, investmentAmount);
-        lPool.requestDeposit(investmentAmount, self);
+        lPool.requestDeposit(investmentAmount, self, self, "");
 
         // first trigger executed collectInvest of the first 50% at a price of 1.4
         uint128 _currencyId = poolManager.currencyAddressToId(address(currency)); // retrieve currencyId
@@ -66,15 +68,17 @@ contract DepositRedeem is TestSetup {
 
         // collect the tranche tokens
         lPool.mint(firstTrancheTokenPayout + secondTrancheTokenPayout, self);
-        assertEq(lPool.balanceOf(self), firstTrancheTokenPayout + secondTrancheTokenPayout);
+        assertEq(trancheToken.balanceOf(self), firstTrancheTokenPayout + secondTrancheTokenPayout);
     }
 
     function partialRedeem(uint64 poolId, bytes16 trancheId, LiquidityPool lPool, ERC20 currency) public {
+        TrancheTokenLike trancheToken = TrancheTokenLike(address(lPool.share()));
+
         uint128 currencyId = poolManager.currencyAddressToId(address(currency));
-        uint256 totalTrancheTokens = lPool.balanceOf(self);
+        uint256 totalTrancheTokens = trancheToken.balanceOf(self);
         uint256 redeemAmount = 50000000000000000000;
         assertTrue(redeemAmount <= totalTrancheTokens);
-        lPool.requestRedeem(redeemAmount, self, self);
+        lPool.requestRedeem(redeemAmount, self, self, "");
 
         // first trigger executed collectRedeem of the first 25 trancheTokens at a price of 1.1
         uint128 firstTrancheTokenRedeem = 25000000000000000000;
@@ -110,7 +114,7 @@ contract DepositRedeem is TestSetup {
 
         // collect the currency
         lPool.redeem(redeemAmount, self, self);
-        assertEq(lPool.balanceOf(self), totalTrancheTokens - redeemAmount);
+        assertEq(trancheToken.balanceOf(self), totalTrancheTokens - redeemAmount);
         assertEq(currency.balanceOf(self), firstCurrencyPayout + secondCurrencyPayout);
     }
 }

@@ -10,11 +10,16 @@ import {Escrow} from "src/Escrow.sol";
 import {UserEscrow} from "src/UserEscrow.sol";
 import {PauseAdmin} from "src/admins/PauseAdmin.sol";
 import {DelayedAdmin} from "src/admins/DelayedAdmin.sol";
-import {LiquidityPoolFactory, RestrictionManagerFactory, TrancheTokenFactory} from "src/util/Factory.sol";
+import {LiquidityPoolFactory} from "src/factories/LiquidityPoolFactory.sol";
+import {RestrictionManagerFactory} from "src/factories/RestrictionManagerFactory.sol";
+import {TrancheTokenFactory} from "src/factories/TrancheTokenFactory.sol";
 import "forge-std/Script.sol";
 
 interface RouterLike {
     function file(bytes32 what, address data) external;
+}
+
+interface AuthLike {
     function rely(address who) external;
     function deny(address who) external;
 }
@@ -23,6 +28,7 @@ contract Deployer is Script {
     uint256 internal constant delay = 48 hours;
 
     address admin;
+    address[] pausers;
 
     Root public root;
     InvestmentManager public investmentManager;
@@ -32,6 +38,9 @@ contract Deployer is Script {
     PauseAdmin public pauseAdmin;
     DelayedAdmin public delayedAdmin;
     Gateway public gateway;
+    address public liquidityPoolFactory;
+    address public restrictionManagerFactory;
+    address public trancheTokenFactory;
 
     function deployInvestmentManager(address deployer) public {
         // If no salt is provided, a pseudo-random salt is generated,
@@ -43,20 +52,20 @@ contract Deployer is Script {
         userEscrow = new UserEscrow();
         root = new Root{salt: salt}(address(escrow), delay, deployer);
 
-        address liquidityPoolFactory = address(new LiquidityPoolFactory(address(root)));
-        address restrictionManagerFactory = address(new RestrictionManagerFactory(address(root)));
-        address trancheTokenFactory = address(new TrancheTokenFactory{salt: salt}(address(root), deployer));
+        liquidityPoolFactory = address(new LiquidityPoolFactory(address(root)));
+        restrictionManagerFactory = address(new RestrictionManagerFactory(address(root)));
+        trancheTokenFactory = address(new TrancheTokenFactory{salt: salt}(address(root), deployer));
         investmentManager = new InvestmentManager(address(escrow), address(userEscrow));
         poolManager =
             new PoolManager(address(escrow), liquidityPoolFactory, restrictionManagerFactory, trancheTokenFactory);
 
-        LiquidityPoolFactory(liquidityPoolFactory).rely(address(poolManager));
-        TrancheTokenFactory(trancheTokenFactory).rely(address(poolManager));
-        RestrictionManagerFactory(restrictionManagerFactory).rely(address(poolManager));
+        AuthLike(liquidityPoolFactory).rely(address(poolManager));
+        AuthLike(trancheTokenFactory).rely(address(poolManager));
+        AuthLike(restrictionManagerFactory).rely(address(poolManager));
 
-        LiquidityPoolFactory(liquidityPoolFactory).rely(address(root));
-        TrancheTokenFactory(trancheTokenFactory).rely(address(root));
-        RestrictionManagerFactory(restrictionManagerFactory).rely(address(root));
+        AuthLike(liquidityPoolFactory).rely(address(root));
+        AuthLike(trancheTokenFactory).rely(address(root));
+        AuthLike(restrictionManagerFactory).rely(address(root));
     }
 
     function wire(address router) public {
@@ -64,6 +73,8 @@ contract Deployer is Script {
         pauseAdmin = new PauseAdmin(address(root));
         delayedAdmin = new DelayedAdmin(address(root), address(pauseAdmin));
         gateway = new Gateway(address(root), address(investmentManager), address(poolManager), address(router));
+
+        // Wire admins
         pauseAdmin.rely(address(delayedAdmin));
         root.rely(address(pauseAdmin));
         root.rely(address(delayedAdmin));
@@ -78,25 +89,32 @@ contract Deployer is Script {
         investmentManager.rely(address(poolManager));
         poolManager.rely(address(root));
         gateway.rely(address(root));
-        RouterLike(router).rely(address(root));
-        Escrow(address(escrow)).rely(address(root));
-        Escrow(address(escrow)).rely(address(investmentManager));
-        UserEscrow(address(userEscrow)).rely(address(root));
-        UserEscrow(address(userEscrow)).rely(address(investmentManager));
-        Escrow(address(escrow)).rely(address(poolManager));
+        AuthLike(router).rely(address(root));
+        AuthLike(address(escrow)).rely(address(root));
+        AuthLike(address(escrow)).rely(address(investmentManager));
+        AuthLike(address(userEscrow)).rely(address(root));
+        AuthLike(address(userEscrow)).rely(address(investmentManager));
+        AuthLike(address(escrow)).rely(address(poolManager));
     }
 
     function giveAdminAccess() public {
-        pauseAdmin.rely(address(admin));
         delayedAdmin.rely(address(admin));
+
+        for (uint256 i = 0; i < pausers.length; i++) {
+            pauseAdmin.addPauser(pausers[i]);
+        }
     }
 
     function removeDeployerAccess(address router, address deployer) public {
-        RouterLike(router).deny(deployer);
+        AuthLike(router).deny(deployer);
+        AuthLike(liquidityPoolFactory).deny(deployer);
+        AuthLike(trancheTokenFactory).deny(deployer);
+        AuthLike(restrictionManagerFactory).deny(deployer);
         root.deny(deployer);
         investmentManager.deny(deployer);
         poolManager.deny(deployer);
         escrow.deny(deployer);
+        userEscrow.deny(deployer);
         gateway.deny(deployer);
         pauseAdmin.deny(deployer);
         delayedAdmin.deny(deployer);

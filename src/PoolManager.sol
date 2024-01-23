@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {TrancheTokenFactoryLike, RestrictionManagerFactoryLike, LiquidityPoolFactoryLike} from "./util/Factory.sol";
+import {LiquidityPoolFactoryLike} from "src/factories/LiquidityPoolFactory.sol";
+import {RestrictionManagerFactoryLike} from "src/factories/RestrictionManagerFactory.sol";
+import {TrancheTokenFactoryLike} from "src/factories/TrancheTokenFactory.sol";
 import {TrancheTokenLike} from "./token/Tranche.sol";
 import {RestrictionManagerLike} from "./token/RestrictionManager.sol";
 import {IERC20Metadata} from "./interfaces/IERC20.sol";
-import {Auth} from "./util/Auth.sol";
-import {SafeTransferLib} from "./util/SafeTransferLib.sol";
-import {MathLib} from "./util/MathLib.sol";
+import {Auth} from "./Auth.sol";
+import {SafeTransferLib} from "./libraries/SafeTransferLib.sol";
+import {MathLib} from "./libraries/MathLib.sol";
 
 interface GatewayLike {
     function transferTrancheTokensToCentrifuge(
@@ -87,10 +89,10 @@ contract PoolManager is Auth {
     uint8 internal constant MAX_DECIMALS = 18;
 
     EscrowLike public immutable escrow;
-    TrancheTokenFactoryLike public immutable trancheTokenFactory;
 
     GatewayLike public gateway;
     InvestmentManagerLike public investmentManager;
+    TrancheTokenFactoryLike public trancheTokenFactory;
     LiquidityPoolFactoryLike public liquidityPoolFactory;
     RestrictionManagerFactoryLike public restrictionManagerFactory;
 
@@ -155,8 +157,9 @@ contract PoolManager is Auth {
     function file(bytes32 what, address data) external auth {
         if (what == "gateway") gateway = GatewayLike(data);
         else if (what == "investmentManager") investmentManager = InvestmentManagerLike(data);
-        else if (what == "restrictionManagerFactory") restrictionManagerFactory = RestrictionManagerFactoryLike(data);
+        else if (what == "trancheTokenFactory") trancheTokenFactory = TrancheTokenFactoryLike(data);
         else if (what == "liquidityPoolFactory") liquidityPoolFactory = LiquidityPoolFactoryLike(data);
+        else if (what == "restrictionManagerFactory") restrictionManagerFactory = RestrictionManagerFactoryLike(data);
         else revert("PoolManager/file-unrecognized-param");
         emit File(what, data);
     }
@@ -277,6 +280,12 @@ contract PoolManager is Auth {
     ) public onlyGateway {
         TrancheTokenLike trancheToken = TrancheTokenLike(getTrancheToken(poolId, trancheId));
         require(address(trancheToken) != address(0), "PoolManager/unknown-token");
+
+        require(
+            keccak256(bytes(trancheToken.name())) != keccak256(bytes(tokenName))
+                || keccak256(bytes(trancheToken.symbol())) != keccak256(bytes(tokenSymbol)),
+            "PoolManager/old-metadata"
+        );
 
         trancheToken.file("name", tokenName);
         trancheToken.file("symbol", tokenSymbol);

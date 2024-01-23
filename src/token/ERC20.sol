@@ -6,8 +6,8 @@ interface IERC1271 {
 }
 
 /// @title  ERC20
-/// @notice Standard ERC20 implementation, with mint/burn functionality and permit logic.
-///         Includes ERC1271 context support to allow multiple trusted forwarders
+/// @notice Standard ERC-20 implementation, with mint/burn functionality and permit logic.
+///         Includes ERC-2771 context support to allow multiple trusted forwarders
 /// @author Modified from https://github.com/makerdao/xdomain-dss/blob/master/src/Dai.sol
 contract ERC20 {
     mapping(address => uint256) public wards;
@@ -239,7 +239,7 @@ contract ERC20 {
         return true;
     }
 
-    // --- ERC1271 context ---
+    // --- ERC-2771 context ---
     function _msgSender() internal view virtual returns (address) {
         return msg.sender;
     }

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import "./../TestSetup.t.sol";
+import "./../BaseTest.sol";
 
-contract AssetShareConversionTest is TestSetup {
+contract AssetShareConversionTest is BaseTest {
     function testAssetShareConversion(uint64 poolId, bytes16 trancheId, uint128 currencyId) public {
         vm.assume(currencyId > 0);
 
@@ -15,14 +15,18 @@ contract AssetShareConversionTest is TestSetup {
             poolId, TRANCHE_TOKEN_DECIMALS, defaultRestrictionSet, "", "", trancheId, currencyId, address(currency)
         );
         LiquidityPool lPool = LiquidityPool(lPool_);
+        TrancheTokenLike trancheToken = TrancheTokenLike(address(LiquidityPool(lPool_).share()));
+
+        assertEq(lPool.exchangeRateLastUpdated(), 0);
         centrifugeChain.updateTrancheTokenPrice(poolId, trancheId, currencyId, 1000000, uint64(block.timestamp));
+        assertEq(lPool.exchangeRateLastUpdated(), uint64(block.timestamp));
 
         // invest
         uint256 investmentAmount = 100000000; // 100 * 10**6
         centrifugeChain.updateMember(poolId, trancheId, self, type(uint64).max);
         currency.approve(lPool_, investmentAmount);
         currency.mint(self, investmentAmount);
-        lPool.requestDeposit(investmentAmount, self);
+        lPool.requestDeposit(investmentAmount, self, self, "");
 
         // trigger executed collectInvest at a price of 1.0
         uint128 _currencyId = poolManager.currencyAddressToId(address(currency)); // retrieve currencyId
@@ -36,7 +40,7 @@ contract AssetShareConversionTest is TestSetup {
         );
 
         // assert share/asset conversion
-        assertEq(lPool.totalSupply(), 100000000000000000000);
+        assertEq(trancheToken.totalSupply(), 100000000000000000000);
         assertEq(lPool.totalAssets(), 100000000);
         assertEq(lPool.convertToShares(100000000), 100000000000000000000); // tranche tokens have 12 more decimals than
             // assets
@@ -64,6 +68,7 @@ contract AssetShareConversionTest is TestSetup {
             poolId, TRANCHE_TOKEN_DECIMALS, defaultRestrictionSet, "", "", trancheId, currencyId, address(currency)
         );
         LiquidityPool lPool = LiquidityPool(lPool_);
+        TrancheTokenLike trancheToken = TrancheTokenLike(address(LiquidityPool(lPool_).share()));
         centrifugeChain.updateTrancheTokenPrice(poolId, trancheId, currencyId, 1000000, uint64(block.timestamp));
 
         // invest
@@ -71,7 +76,7 @@ contract AssetShareConversionTest is TestSetup {
         centrifugeChain.updateMember(poolId, trancheId, self, type(uint64).max);
         currency.approve(lPool_, investmentAmount);
         currency.mint(self, investmentAmount);
-        lPool.requestDeposit(investmentAmount, self);
+        lPool.requestDeposit(investmentAmount, self, self, "");
 
         // trigger executed collectInvest at a price of 1.0
         uint128 _currencyId = poolManager.currencyAddressToId(address(currency)); // retrieve currencyId
@@ -85,7 +90,7 @@ contract AssetShareConversionTest is TestSetup {
         );
 
         // assert share/asset conversion
-        assertEq(lPool.totalSupply(), 100000000);
+        assertEq(trancheToken.totalSupply(), 100000000);
         assertEq(lPool.totalAssets(), 100000000000000000000);
         assertEq(lPool.convertToShares(100000000000000000000), 100000000); // tranche tokens have 12 less decimals than
             // assets

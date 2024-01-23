@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import "./../TestSetup.t.sol";
+import "./../BaseTest.sol";
 
-contract BurnTest is TestSetup {
+contract BurnTest is BaseTest {
     function testBurn(uint256 amount) public {
         amount = uint128(bound(amount, 2, MAX_UINT128));
 
@@ -27,10 +27,10 @@ contract BurnTest is TestSetup {
 
         // success
         vm.prank(investor);
-        lPool.approve(self, amount); // approve to burn tokens
+        trancheToken.approve(self, amount); // approve to burn tokens
         trancheToken.burn(investor, amount);
 
-        assertEq(lPool.balanceOf(investor), 0);
-        assertEq(lPool.balanceOf(investor), trancheToken.balanceOf(investor));
+        assertEq(trancheToken.balanceOf(investor), 0);
+        assertEq(trancheToken.balanceOf(investor), trancheToken.balanceOf(investor));
     }
 }

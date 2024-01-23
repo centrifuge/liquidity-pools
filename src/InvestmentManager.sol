@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {Auth} from "./util/Auth.sol";
-import {MathLib} from "./util/MathLib.sol";
-import {SafeTransferLib} from "./util/SafeTransferLib.sol";
+import {Auth} from "./Auth.sol";
+import {MathLib} from "./libraries/MathLib.sol";
+import {SafeTransferLib} from "./libraries/SafeTransferLib.sol";
 
 interface GatewayLike {
     function increaseInvestOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currencyId, uint128 amount)
@@ -527,12 +527,13 @@ contract InvestmentManager is Auth {
         address liquidityPool,
         address receiver
     ) internal {
-        LiquidityPoolLike lPool = LiquidityPoolLike(liquidityPool);
         require(trancheTokenAmount != 0, "InvestmentManager/tranche-token-amount-is-zero");
         require(trancheTokenAmount <= state.maxMint, "InvestmentManager/exceeds-deposit-limits");
         state.maxMint = state.maxMint - trancheTokenAmount;
         require(
-            lPool.transferFrom(address(escrow), receiver, trancheTokenAmount),
+            ERC20Like(LiquidityPoolLike(liquidityPool).share()).transferFrom(
+                address(escrow), receiver, trancheTokenAmount
+            ),
             "InvestmentManager/tranche-tokens-transfer-failed"
         );
     }
@@ -663,7 +664,7 @@ contract InvestmentManager is Auth {
         returns (uint8 currencyDecimals, uint8 trancheTokenDecimals)
     {
         currencyDecimals = ERC20Like(LiquidityPoolLike(liquidityPool).asset()).decimals();
-        trancheTokenDecimals = LiquidityPoolLike(liquidityPool).decimals();
+        trancheTokenDecimals = ERC20Like(LiquidityPoolLike(liquidityPool).share()).decimals();
     }
 
     function _checkTransferRestriction(address liquidityPool, address from, address to, uint256 value)
