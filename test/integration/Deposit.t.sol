@@ -871,4 +871,18 @@ contract DepositTest is BaseTest {
         lPool.mint(firstTrancheTokenPayout + secondTrancheTokenPayout, self);
         assertEq(trancheToken.balanceOf(self), firstTrancheTokenPayout + secondTrancheTokenPayout);
     }
+
+    function testHandleExecutedDecreaseInvestOrderRevertsWithNonExistantUser() public {
+        address lPool_ = deploySimplePool();
+        LiquidityPool lPool = LiquidityPool(lPool_);
+        (,,,,,, bool exists) = investmentManager.investments(address(lPool), self);
+        assertEq(exists, false);
+        uint64 poolId = lPool.poolId();
+        bytes16 trancheId = lPool.trancheId();
+        vm.prank(address(gateway));
+        vm.expectRevert("InvestmentManager/non-existent-user");
+        centrifugeChain.isExecutedDecreaseInvestOrder(
+            poolId, trancheId, _addressToBytes32(self), defaultCurrencyId, uint128(100), 0
+        );
+    }
 }

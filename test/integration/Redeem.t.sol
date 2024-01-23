@@ -265,11 +265,19 @@ contract RedeemTest is BaseTest {
         address lPool_ = deploySimplePool();
         LiquidityPool lPool = LiquidityPool(lPool_);
         TrancheTokenLike trancheToken = TrancheTokenLike(address(lPool.share()));
+        uint64 poolId = lPool.poolId();
+        bytes16 trancheId = lPool.trancheId();
+
+        // Fail - User doesn't exist in investment manager yet and thus has no escrow balance
+        (,,,,,, bool exists) = investmentManager.investments(address(lPool), investor);
+        assertEq(exists, false);
+        vm.expectRevert("ERC20/insufficient-balance");
+        centrifugeChain.triggerIncreaseRedeemOrder(poolId, trancheId, investor, defaultCurrencyId, amount);
+
         deposit(lPool_, investor, amount, false); // request and execute deposit, but don't claim
         uint256 investorBalanceBefore = erc20.balanceOf(investor);
         assertEq(lPool.maxMint(investor), amount);
-        uint64 poolId = lPool.poolId();
-        bytes16 trancheId = lPool.trancheId();
+
 
         vm.prank(investor);
         lPool.mint(amount / 2, investor); // investor mints half of the amount
@@ -315,7 +323,7 @@ contract RedeemTest is BaseTest {
         assertApproxEqAbs(erc20.balanceOf(investor), investorBalanceBefore + amount, 1);
     }
 
-    function testTriggerIncreaseRedeemOrderTokensUnmitedTokensInEscrow(uint128 amount) public {
+    function testTriggerIncreaseRedeemOrderTokensUnmintedTokensInEscrow(uint128 amount) public {
         amount = uint128(bound(amount, 2, (MAX_UINT128 - 1)));
 
         address lPool_ = deploySimplePool();
@@ -487,5 +495,20 @@ contract RedeemTest is BaseTest {
         lPool.redeem(redeemAmount, self, self);
         assertEq(trancheToken.balanceOf(self), totalTrancheTokens - redeemAmount);
         assertEq(currency.balanceOf(self), firstCurrencyPayout + secondCurrencyPayout);
+    }
+
+    function testHandleExecutedCollectRedeemRevertsWithNonExistantUser() public {
+        address lPool_ = deploySimplePool();
+        LiquidityPool lPool = LiquidityPool(lPool_);
+        (,,,,,, bool exists) = investmentManager.investments(address(lPool), self);
+        assertEq(exists, false);
+        uint64 poolId = lPool.poolId();
+        bytes16 trancheId = lPool.trancheId();
+        vm.startPrank(address(gateway));
+        vm.expectRevert("InvestmentManager/non-existent-user");
+        investmentManager.handleExecutedCollectRedeem(
+            poolId, trancheId, self, defaultCurrencyId, 100, uint128(100), 0
+        );
+        vm.stopPrank();
     }
 }
