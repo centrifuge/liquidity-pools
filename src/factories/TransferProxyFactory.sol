@@ -33,12 +33,16 @@ interface TransferProxyFactoryLike {
 contract TransferProxyFactory {
     address public immutable poolManager;
 
+    mapping(bytes32 destination => address proxy) public proxies;
+
     constructor(address poolManager_) {
         poolManager = poolManager_;
     }
 
     function newTransferProxy(bytes32 destination) public returns (address) {
-        TransferProxy restrictedTransferProxy = new TransferProxy(poolManager, destination);
-        return address(restrictedTransferProxy);
+        require(proxies[destination] == address(0), "TransferProxyFactory/proxy-already-deployed");
+        address proxy = address(new TransferProxy(poolManager, destination));
+        proxies[destination] = proxy;
+        return proxy;
     }
 }
