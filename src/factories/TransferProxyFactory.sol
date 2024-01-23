@@ -6,12 +6,12 @@ interface PoolManagerLike {
 }
 
 interface ERC20Like {
-    function approve(address token, address spender, uint256 value) external;
+    function approve(address spender, uint256 value) external;
 }
 
-contract RestrictedTransferProxy {
-    PoolManagerLike immutable poolManager;
-    bytes32 immutable destination;
+contract TransferProxy {
+    PoolManagerLike public immutable poolManager;
+    bytes32 public immutable destination;
 
     constructor(address poolManager_, bytes32 destination_) {
         poolManager = PoolManagerLike(poolManager_);
@@ -19,26 +19,26 @@ contract RestrictedTransferProxy {
     }
 
     function transfer(address currency, uint128 amount) external {
-        ERC20Like(currency).approve(address(poolManager), currency, amount);
+        ERC20Like(currency).approve(address(poolManager), amount);
         poolManager.transfer(currency, destination, amount);
     }
 }
 
-interface RestrictedTransferProxyFactoryLike {
-    function newRestrictedTransferProxy(bytes32 destination) external returns (address);
+interface TransferProxyFactoryLike {
+    function newTransferProxy(address poolManager, bytes32 destination) external returns (address);
 }
 
 /// @title  Restricted Transfer Proxy Factory
 /// @dev    Utility for deploying contracts that have a fixed destination for transfers
-contract RestrictedTransferProxyFactory {
-    address immutable poolManager;
+contract TransferProxyFactory {
+    address public immutable poolManager;
 
     constructor(address poolManager_) {
         poolManager = poolManager_;
     }
 
-    function newRestrictedTransferProxy(bytes32 destination) public returns (address) {
-        RestrictedTransferProxy restrictedTransferProxy = new RestrictedTransferProxy(destination);
-        return (address(restrictedTransferProxy));
+    function newTransferProxy(bytes32 destination) public returns (address) {
+        TransferProxy restrictedTransferProxy = new TransferProxy(poolManager, destination);
+        return address(restrictedTransferProxy);
     }
 }
