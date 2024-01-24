@@ -18,7 +18,7 @@ contract TransferProxyFactoryTest is Test {
     }
 
     function testTransferProxy(bytes32 destination, bytes32 otherDestination) public {
-        TransferProxy proxy = TransferProxy(factory.newTransferProxy(destination));
+        TransferProxy proxy = TransferProxy(factory.newTransferProxy(destination, makeAddr("recoverer")));
         assertEq(factory.poolManager(), address(poolManager));
         assertEq(factory.proxies(destination), address(proxy));
         assertEq(address(proxy.poolManager()), address(poolManager));
@@ -26,7 +26,7 @@ contract TransferProxyFactoryTest is Test {
 
         // Proxies cannot be deployed twice
         vm.expectRevert(bytes("TransferProxyFactory/proxy-already-deployed"));
-        factory.newTransferProxy(destination);
+        factory.newTransferProxy(destination, makeAddr("recoverer"));
 
         erc20.mint(address(this), 100);
         erc20.transfer(address(proxy), 100);
@@ -42,6 +42,25 @@ contract TransferProxyFactoryTest is Test {
         assertEq(poolManager.values_uint128("amount"), 100);
 
         // Proxies are unique per destination
-        assertTrue(factory.newTransferProxy(otherDestination) != address(proxy));
+        assertTrue(factory.newTransferProxy(otherDestination, makeAddr("recoverer")) != address(proxy));
+    }
+
+    function testTransferProxyRecovery(bytes32 destination, address recoverer) public {
+        vm.assume(recoverer != address(0));
+
+        TransferProxy proxy = TransferProxy(factory.newTransferProxy(destination, recoverer));
+
+        erc20.mint(address(this), 100);
+        erc20.transfer(address(proxy), 100);
+        assertEq(erc20.balanceOf(address(this)), 0);
+        assertEq(erc20.balanceOf(address(proxy)), 100);
+
+        vm.expectRevert(bytes("TransferProxy/not-recoverer"));
+        proxy.recover(address(erc20), 100);
+
+        vm.prank(recoverer);
+        proxy.recover(address(erc20), 100);
+        assertEq(erc20.balanceOf(recoverer), 100);
+        assertEq(erc20.balanceOf(address(proxy)), 0);
     }
 }

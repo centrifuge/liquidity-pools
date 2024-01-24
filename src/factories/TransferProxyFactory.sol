@@ -1,26 +1,34 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
+import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
+
 interface PoolManagerLike {
     function transfer(address currency, bytes32 recipient, uint128 amount) external;
-}
-
-interface ERC20Like {
-    function approve(address spender, uint256 value) external;
 }
 
 contract TransferProxy {
     PoolManagerLike public immutable poolManager;
     bytes32 public immutable destination;
+    address public immutable recoverer;
 
-    constructor(address poolManager_, bytes32 destination_) {
+    constructor(address poolManager_, bytes32 destination_, address recoverer_) {
         poolManager = PoolManagerLike(poolManager_);
         destination = destination_;
+        recoverer = recoverer_;
     }
 
+    // Anyone can transfer tokens.
     function transfer(address currency, uint128 amount) external {
-        ERC20Like(currency).approve(address(poolManager), amount);
+        SafeTransferLib.safeApprove(currency, address(poolManager), amount);
         poolManager.transfer(currency, destination, amount);
+    }
+
+    // The recoverer can receive tokens back. This is not permissionless as this could lead
+    // to griefing issues, where tokens are recovered before being transferred out.
+    function recover(address currency, uint128 amount) external {
+        require(msg.sender == recoverer, "TransferProxy/not-recoverer");
+        SafeTransferLib.safeTransfer(currency, address(recoverer), amount);
     }
 }
 
@@ -30,6 +38,9 @@ interface TransferProxyFactoryLike {
 
 /// @title  Restricted Transfer Proxy Factory
 /// @dev    Utility for deploying contracts that have a fixed destination for transfers
+///         Users can send tokens to the TransferProxy, from a service that only supports
+///         ERC20 transfers and not full contract calls (such as Circle).
+///         If tokens are incorrectly sent, they can be recovered to the recoverer address.
 contract TransferProxyFactory {
     address public immutable poolManager;
 
@@ -39,9 +50,9 @@ contract TransferProxyFactory {
         poolManager = poolManager_;
     }
 
-    function newTransferProxy(bytes32 destination) public returns (address) {
+    function newTransferProxy(bytes32 destination, address recoverer) public returns (address) {
         require(proxies[destination] == address(0), "TransferProxyFactory/proxy-already-deployed");
-        address proxy = address(new TransferProxy(poolManager, destination));
+        address proxy = address(new TransferProxy(poolManager, destination, recoverer));
         proxies[destination] = proxy;
         return proxy;
     }

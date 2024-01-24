@@ -4,6 +4,10 @@ pragma solidity 0.8.21;
 import "forge-std/Test.sol";
 import "./Mock.sol";
 
+interface ERC20Like {
+    function transfer(address to, uint256 value) external returns (bool);
+}
+
 contract MockPoolManager is Mock {
     function transfer(address currency, bytes32 recipient, uint128 amount) external {
         values_address["currency"] = currency;
