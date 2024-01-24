@@ -44,16 +44,19 @@ interface TransferProxyFactoryLike {
 contract TransferProxyFactory {
     address public immutable poolManager;
 
-    mapping(bytes32 destination => address proxy) public proxies;
+    // id = keccak256(destination + recoverer)
+    mapping(bytes32 id => address proxy) public proxies;
 
     constructor(address poolManager_) {
         poolManager = poolManager_;
     }
 
     function newTransferProxy(bytes32 destination, address recoverer) public returns (address) {
-        require(proxies[destination] == address(0), "TransferProxyFactory/proxy-already-deployed");
+        bytes32 id = keccak256(bytes.concat(destination, bytes20(recoverer)));
+        require(proxies[id] == address(0), "TransferProxyFactory/proxy-already-deployed");
+
         address proxy = address(new TransferProxy(poolManager, destination, recoverer));
-        proxies[destination] = proxy;
+        proxies[id] = proxy;
         return proxy;
     }
 }

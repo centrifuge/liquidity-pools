@@ -11,6 +11,8 @@ contract TransferProxyFactoryTest is Test {
     TransferProxyFactory factory;
     ERC20 erc20;
 
+    address defaultRecoverer = makeAddr("recoverer");
+
     function setUp() public {
         poolManager = new MockPoolManager();
         factory = new TransferProxyFactory(address(poolManager));
@@ -18,15 +20,15 @@ contract TransferProxyFactoryTest is Test {
     }
 
     function testTransferProxy(bytes32 destination, bytes32 otherDestination) public {
-        TransferProxy proxy = TransferProxy(factory.newTransferProxy(destination, makeAddr("recoverer")));
+        TransferProxy proxy = TransferProxy(factory.newTransferProxy(destination, defaultRecoverer));
         assertEq(factory.poolManager(), address(poolManager));
-        assertEq(factory.proxies(destination), address(proxy));
+        assertEq(factory.proxies(keccak256(bytes.concat(destination, bytes20(defaultRecoverer)))), address(proxy));
         assertEq(address(proxy.poolManager()), address(poolManager));
         assertEq(proxy.destination(), destination);
 
         // Proxies cannot be deployed twice
         vm.expectRevert(bytes("TransferProxyFactory/proxy-already-deployed"));
-        factory.newTransferProxy(destination, makeAddr("recoverer"));
+        factory.newTransferProxy(destination, defaultRecoverer);
 
         erc20.mint(address(this), 100);
         erc20.transfer(address(proxy), 100);
@@ -42,7 +44,7 @@ contract TransferProxyFactoryTest is Test {
         assertEq(poolManager.values_uint128("amount"), 100);
 
         // Proxies are unique per destination
-        assertTrue(factory.newTransferProxy(otherDestination, makeAddr("recoverer")) != address(proxy));
+        assertTrue(factory.newTransferProxy(otherDestination, defaultRecoverer) != address(proxy));
     }
 
     function testTransferProxyRecovery(bytes32 destination, address recoverer) public {
