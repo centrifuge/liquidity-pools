@@ -179,7 +179,6 @@ contract RouterAggregatorTest is Test {
         aggregator.file("routers", oneMockRouter);
 
         bytes memory message = MessagesLib.formatAddPool(1);
-        bytes memory proof = MessagesLib.formatMessageProof(MessagesLib.formatAddPool(1));
 
         // Executes immediately
         router1.execute(message);
@@ -263,6 +262,15 @@ contract RouterAggregatorTest is Test {
         vm.warp(block.timestamp + aggregator.RECOVERY_CHALLENGE_PERIOD());
         aggregator.executeMessageRecovery(message);
         assertEq(gateway.handled(message), 1);
+    }
+
+    function testCannotRecoverWithOneRouter() public {
+        aggregator.file("routers", oneMockRouter);
+
+        bytes memory message = MessagesLib.formatAddPool(1);
+
+        vm.expectRevert(bytes("RouterAggregator/no-recovery-with-one-router-allowed"));
+        router1.execute(MessagesLib.formatInitiateMessageRecovery(message, address(router1)));
     }
 
     function testRecoverFailedProof() public {
