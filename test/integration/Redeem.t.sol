@@ -224,41 +224,6 @@ contract RedeemTest is BaseTest {
         assertEq(lPool.maxMint(self), amount);
     }
 
-    function testDecreaseRedeemRequest(uint256 amount, uint256 decreaseAmount) public {
-        decreaseAmount = uint128(bound(decreaseAmount, 2, MAX_UINT128 - 1));
-        amount = uint128(bound(amount, decreaseAmount + 1, MAX_UINT128)); // amount > decreaseAmount
-
-        address lPool_ = deploySimplePool();
-        LiquidityPool lPool = LiquidityPool(lPool_);
-        TrancheTokenLike trancheToken = TrancheTokenLike(address(lPool.share()));
-        centrifugeChain.updateTrancheTokenPrice(
-            lPool.poolId(), lPool.trancheId(), defaultCurrencyId, defaultPrice, uint64(block.timestamp)
-        );
-        deposit(lPool_, self, amount);
-        lPool.requestRedeem(amount, address(this), address(this), "");
-
-        assertEq(trancheToken.balanceOf(address(escrow)), amount);
-        assertEq(trancheToken.balanceOf(self), 0);
-
-        // will fail - user not member
-        centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), self, uint64(block.timestamp));
-        vm.warp(block.timestamp + 1);
-        vm.expectRevert(bytes("InvestmentManager/transfer-not-allowed"));
-        lPool.decreaseRedeemRequest(decreaseAmount);
-        centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), self, type(uint64).max);
-
-        // decrease redeem request
-        lPool.decreaseRedeemRequest(decreaseAmount);
-        centrifugeChain.isExecutedDecreaseRedeemOrder(
-            lPool.poolId(), lPool.trancheId(), bytes32(bytes20(self)), defaultCurrencyId, uint128(decreaseAmount), 0
-        );
-
-        assertEq(trancheToken.balanceOf(address(escrow)), amount);
-        assertEq(trancheToken.balanceOf(self), 0);
-        assertEq(lPool.maxDeposit(self), decreaseAmount);
-        assertEq(lPool.maxMint(self), decreaseAmount);
-    }
-
     function testTriggerIncreaseRedeemOrderTokens(uint128 amount) public {
         amount = uint128(bound(amount, 2, (MAX_UINT128 - 1)));
 
@@ -395,7 +360,7 @@ contract RedeemTest is BaseTest {
             poolId, trancheId, bytes32(bytes20(self)), _currencyId, uint128(investmentAmount), trancheTokenPayout, 0
         );
 
-        (, uint256 depositPrice,,,,,) = investmentManager.investments(address(lPool), self);
+        (, uint256 depositPrice,,,,,,,) = investmentManager.investments(address(lPool), self);
         assertEq(depositPrice, 1000000000000000000);
 
         // assert deposit & mint values adjusted
@@ -426,7 +391,7 @@ contract RedeemTest is BaseTest {
             trancheTokenPayout / 2
         );
 
-        (,,, uint256 redeemPrice,,,) = investmentManager.investments(address(lPool), self);
+        (,,, uint256 redeemPrice,,,,,) = investmentManager.investments(address(lPool), self);
         assertEq(redeemPrice, 1500000000000000000);
 
         // trigger second executed collectRedeem at a price of 1.0
@@ -437,7 +402,7 @@ contract RedeemTest is BaseTest {
             poolId, trancheId, bytes32(bytes20(self)), _currencyId, currencyPayout, trancheTokenPayout / 2, 0
         );
 
-        (,,, redeemPrice,,,) = investmentManager.investments(address(lPool), self);
+        (,,, redeemPrice,,,,,) = investmentManager.investments(address(lPool), self);
         assertEq(redeemPrice, 1250000000000000000);
     }
 
@@ -468,7 +433,7 @@ contract RedeemTest is BaseTest {
 
         assertEq(lPool.maxRedeem(self), firstTrancheTokenRedeem);
 
-        (,,, uint256 redeemPrice,,,) = investmentManager.investments(address(lPool), self);
+        (,,, uint256 redeemPrice,,,,,) = investmentManager.investments(address(lPool), self);
         assertEq(redeemPrice, 1100000000000000000);
 
         // second trigger executed collectRedeem of the second 25 trancheTokens at a price of 1.3
@@ -477,7 +442,7 @@ contract RedeemTest is BaseTest {
             poolId, trancheId, bytes32(bytes20(self)), currencyId, secondCurrencyPayout, secondTrancheTokenRedeem, 0
         );
 
-        (,,, redeemPrice,,,) = investmentManager.investments(address(lPool), self);
+        (,,, redeemPrice,,,,,) = investmentManager.investments(address(lPool), self);
         assertEq(redeemPrice, 1200000000000000000);
 
         assertApproxEqAbs(lPool.maxWithdraw(self), firstCurrencyPayout + secondCurrencyPayout, 2);

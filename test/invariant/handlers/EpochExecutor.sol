@@ -13,7 +13,6 @@ interface ERC20Like {
 }
 
 interface LiquidityPoolLike is IERC7540 {
-    function decreaseDepositRequest(uint256 assets) external;
     function share() external view returns (address);
     function manager() external view returns (address);
 }
@@ -45,8 +44,6 @@ contract EpochExecutorHandler is BaseHandler {
         fulfillmentRatio = bound(fulfillmentRatio, 0, 1 * 10 ** 18); // 0% to 100%
         fulfillmentPrice = bound(fulfillmentPrice, 0, 2 * 10 ** 18); // 0.00 to 2.00
 
-        // TODO: subtracting outstandingDecreaseDepositRequested here means that decrease requests
-        // are never executed, which is not necessarily true
         uint256 outstandingDepositRequest =
             getVar(currentInvestor, "totalDepositRequested") - getVar(currentInvestor, "totalCurrencyPaidOutOnInvest");
 
