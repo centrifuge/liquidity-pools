@@ -183,7 +183,6 @@ contract RouterAggregator is Auth {
     }
 
     function _disputeMessageRecovery(bytes32 messageHash) internal {
-        require(routers.length > 0, "RouterAggregator/no-recovery-with-one-router-allowed");
         delete recoveries[messageHash];
         emit DisputeMessageRecovery(messageHash);
     }
