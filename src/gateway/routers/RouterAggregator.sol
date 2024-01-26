@@ -62,6 +62,9 @@ contract RouterAggregator is Auth {
     event SendMessage(bytes message);
     event RecoverMessage(address router, bytes message);
     event RecoverProof(address router, bytes32 messageHash);
+    event InitiateMessageRecovery(bytes32 messageHash, address router);
+    event DisputeMessageRecovery(bytes32 messageHash);
+    event ExecuteMessagRecovery(bytes message);
     event File(bytes32 indexed what, address[] routers);
 
     constructor(address gateway_) {
@@ -106,17 +109,16 @@ contract RouterAggregator is Auth {
     }
 
     function _handle(bytes calldata payload, Router memory router) internal {
-        bool isMessageProof = MessagesLib.messageType(payload) == MessagesLib.Call.MessageProof;
+        if (MessagesLib.isRecoveryMessage(payload)) {
+            require(routers.length > 1, "RouterAggregator/no-recovery-with-one-router-allowed");
+            return _handleRecovery(payload);
+        }
 
+        bool isMessageProof = MessagesLib.messageType(payload) == MessagesLib.Call.MessageProof;
         if (router.quorum == 1 && !isMessageProof) {
             // Special case for gas efficiency
             gateway.handle(payload);
             emit ExecuteMessage(payload, msg.sender);
-            return;
-        }
-
-        if (MessagesLib.isRecoveryMessage(payload)) {
-            _handleRecovery(payload);
             return;
         }
 
@@ -166,15 +168,26 @@ contract RouterAggregator is Auth {
     ///
     ///      Only 1 recovery can be outstanding per message hash. If multiple routers fail at the same time,
     //       these will need to be recovered serially (increasing the challenge period for each failed router).
-    function _handleRecovery(bytes calldata payload) internal {
+    function _handleRecovery(bytes memory payload) internal {
         if (MessagesLib.messageType(payload) == MessagesLib.Call.InitiateMessageRecovery) {
             (bytes32 messageHash, address router) = MessagesLib.parseInitiateMessageRecovery(payload);
             require(validRouters[msg.sender].id != 0, "RouterAggregator/invalid-router");
             recoveries[messageHash] = Recovery(block.timestamp + RECOVERY_CHALLENGE_PERIOD, router);
+            emit InitiateMessageRecovery(messageHash, router);
         } else if (MessagesLib.messageType(payload) == MessagesLib.Call.DisputeMessageRecovery) {
             bytes32 messageHash = MessagesLib.parseDisputeMessageRecovery(payload);
-            delete recoveries[messageHash];
+            return _disputeMessageRecovery(messageHash);
         }
+    }
+
+    function disputeMessageRecovery(bytes32 messageHash) public auth {
+        _disputeMessageRecovery(messageHash);
+    }
+
+    function _disputeMessageRecovery(bytes32 messageHash) internal {
+        require(routers.length > 0, "RouterAggregator/no-recovery-with-one-router-allowed");
+        delete recoveries[messageHash];
+        emit DisputeMessageRecovery(messageHash);
     }
 
     function executeMessageRecovery(bytes calldata message) public {

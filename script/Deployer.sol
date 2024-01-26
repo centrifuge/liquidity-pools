@@ -73,7 +73,7 @@ contract Deployer is Script {
         aggregator = new RouterAggregator(address(gateway));
 
         pauseAdmin = new PauseAdmin(address(root));
-        delayedAdmin = new DelayedAdmin(address(root), address(pauseAdmin));
+        delayedAdmin = new DelayedAdmin(address(root), address(pauseAdmin), address(aggregator));
     }
 
     function wire(address router) public {
@@ -89,6 +89,7 @@ contract Deployer is Script {
         root.rely(address(pauseAdmin));
         root.rely(address(delayedAdmin));
         root.rely(address(gateway));
+        aggregator.rely(address(delayedAdmin));
 
         // Wire gateway
         investmentManager.file("poolManager", address(poolManager));

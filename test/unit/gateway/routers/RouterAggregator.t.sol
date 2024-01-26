@@ -16,6 +16,7 @@ contract RouterAggregatorTest is Test {
     MockRouter router2;
     MockRouter router3;
     MockRouter router4;
+    address[] oneMockRouter;
     address[] threeMockRouters;
     address[] fourMockRouters;
     address[] nineMockRouters;
@@ -32,6 +33,8 @@ contract RouterAggregatorTest is Test {
         vm.label(address(router3), "MockRouter3");
         router4 = new MockRouter(address(aggregator));
         vm.label(address(router4), "MockRouter4");
+
+        oneMockRouter.push(address(router1));
 
         threeMockRouters.push(address(router1));
         threeMockRouters.push(address(router2));
@@ -89,6 +92,9 @@ contract RouterAggregatorTest is Test {
 
         vm.expectRevert(bytes("RouterAggregator/exceeds-max-router-count"));
         aggregator.file("routers", nineMockRouters);
+
+        vm.expectRevert(bytes("RouterAggregator/file-unrecognized-param"));
+        aggregator.file("notRouters", nineMockRouters);
 
         aggregator.deny(address(this));
         vm.expectRevert(bytes("Auth/not-authorized"));
@@ -172,6 +178,16 @@ contract RouterAggregatorTest is Test {
         assertConfirmations(thirdMessage, 0, 0, 0, 0, 0, 0);
     }
 
+    function testQuorumOfOne() public {
+        aggregator.file("routers", oneMockRouter);
+
+        bytes memory message = abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1));
+
+        // Executes immediately
+        router1.execute(message);
+        assertEq(gateway.handled(message), 1);
+    }
+
     function testOneFasterPayloadRouter() public {
         aggregator.file("routers", threeMockRouters);
 
@@ -253,6 +269,19 @@ contract RouterAggregatorTest is Test {
         vm.warp(block.timestamp + aggregator.RECOVERY_CHALLENGE_PERIOD());
         aggregator.executeMessageRecovery(message);
         assertEq(gateway.handled(message), 1);
+    }
+
+    function testCannotRecoverWithOneRouter() public {
+        aggregator.file("routers", oneMockRouter);
+
+        bytes memory message = abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1));
+
+        vm.expectRevert(bytes("RouterAggregator/no-recovery-with-one-router-allowed"));
+        router1.execute(
+            abi.encodePacked(
+                uint8(MessagesLib.Call.InitiateMessageRecovery), keccak256(message), address(router1).toBytes32()
+            )
+        );
     }
 
     function testRecoverFailedProof() public {
