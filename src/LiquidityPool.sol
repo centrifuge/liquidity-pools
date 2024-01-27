@@ -168,11 +168,15 @@ contract LiquidityPool is Auth, IERC7540 {
         claimableShares = maxRedeem(owner);
     }
 
-    // --- Misc asynchronous vault methods ---
+    // --- Asynchronous cancellation methods ---
     /// @notice Request cancelling the outstanding deposit orders.
     function cancelDepositRequest() external {
         manager.cancelDepositRequest(address(this), msg.sender);
         emit CancelDepositRequest(msg.sender);
+    }
+
+    function pendingCancelDepositRequest(uint256, address owner) public view returns (bool isPending) {
+        isPending = manager.pendingCancelDepositRequest(address(this), owner);
     }
 
     /// @notice Request cancelling the outstanding redemption orders.
@@ -181,8 +185,8 @@ contract LiquidityPool is Auth, IERC7540 {
         emit CancelRedeemRequest(msg.sender);
     }
 
-    function exchangeRateLastUpdated() external view returns (uint64) {
-        return manager.exchangeRateLastUpdated(address(this));
+    function pendingCancelRedeemRequest(uint256, address owner) public view returns (bool isPending) {
+        isPending = manager.pendingCancelRedeemRequest(address(this), owner);
     }
 
     // --- ERC165 support ---
@@ -284,6 +288,10 @@ contract LiquidityPool is Auth, IERC7540 {
     }
 
     // --- Helpers ---
+    function exchangeRateLastUpdated() external view returns (uint64) {
+        return manager.exchangeRateLastUpdated(address(this));
+    }
+
     function _transferFrom(address from, address to, uint256 value) internal returns (bool) {
         (bool success, bytes memory data) = address(share).call(
             bytes.concat(
