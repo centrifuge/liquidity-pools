@@ -42,7 +42,7 @@ contract LocalRouter {
         emit File(what, data);
     }
 
-    function file(bytes32 what, string data) external {
+    function file(bytes32 what, string calldata data) external {
         if (what == "sourceChain") {
             sourceChain = data;
         } else if (what == "sourceAddress") {
