@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
+import {Auth} from "./../../src/Auth.sol";
+
 interface PrecompileLike {
     function execute(
         bytes32 commandId,
@@ -17,7 +19,7 @@ interface GatewayLike {
 /// @title  Local Router
 /// @notice Routing contract that routes from Substrate to EVM and back.
 ///         I.e. for testing LP in a local Centrifuge Chain deployment.
-contract LocalRouter {
+contract LocalRouter is Auth {
     address internal constant PRECOMPILE = 0x0000000000000000000000000000000000000800;
     bytes32 internal constant FAKE_COMMAND_ID = keccak256("FAKE_COMMAND_ID");
 
@@ -30,7 +32,6 @@ contract LocalRouter {
     event RoutedToCentrifuge(bytes32 commandId, string sourceChain, string sourceAddress, bytes payload);
     event File(bytes32 indexed what, address addr);
     event File(bytes32 indexed what, string data);
-
 
     function file(bytes32 what, address data) external {
         if (what == "gateway") {
