@@ -716,7 +716,7 @@ contract DepositTest is BaseTest {
             lPool.poolId(), lPool.trancheId(), defaultCurrencyId, price, uint64(block.timestamp)
         );
         erc20.mint(self, amount);
-        erc20.approve(lPool_, amount); // add allowance
+        erc20.approve(lPool_, amount);
         centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), self, type(uint64).max);
 
         lPool.requestDeposit(amount, self, self, "");
@@ -731,6 +731,14 @@ contract DepositTest is BaseTest {
         );
         assertEq(cancelOrderMessage, router.values_bytes("send"));
 
+        assertEq(lPool.pendingCancelDepositRequest(0, self), true);
+
+        erc20.mint(self, amount);
+        erc20.approve(lPool_, amount);
+        vm.expectRevert(bytes("InvestmentManager/cancellation-is-pending"));
+        lPool.requestDeposit(amount, self, self, "");
+        erc20.burn(self, amount);
+
         centrifugeChain.isExecutedDecreaseInvestOrder(
             lPool.poolId(), lPool.trancheId(), _addressToBytes32(self), defaultCurrencyId, uint128(amount), 0
         );
@@ -739,6 +747,12 @@ contract DepositTest is BaseTest {
         assertEq(erc20.balanceOf(self), 0);
         assertEq(lPool.maxRedeem(self), amount);
         assertEq(lPool.maxWithdraw(self), amount);
+        assertEq(lPool.pendingCancelDepositRequest(0, self), false);
+
+        // After cancellation is executed, new request can be submitted
+        erc20.mint(self, amount);
+        erc20.approve(lPool_, amount);
+        lPool.requestDeposit(amount, self, self, "");
     }
 
     function partialDeposit(uint64 poolId, bytes16 trancheId, LiquidityPool lPool, ERC20 currency) public {

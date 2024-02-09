@@ -189,16 +189,16 @@ contract RedeemTest is BaseTest {
     }
 
     function testCancelRedeemOrder(uint256 amount) public {
-        amount = uint128(bound(amount, 2, MAX_UINT128));
+        amount = uint128(bound(amount, 2, MAX_UINT128 / 2));
 
         address lPool_ = deploySimplePool();
         LiquidityPool lPool = LiquidityPool(lPool_);
         TrancheTokenLike trancheToken = TrancheTokenLike(address(lPool.share()));
-        deposit(lPool_, self, amount); // deposit funds first
+        deposit(lPool_, self, amount * 2); // deposit funds first
 
         lPool.requestRedeem(amount, address(this), address(this), "");
         assertEq(trancheToken.balanceOf(address(escrow)), amount);
-        assertEq(trancheToken.balanceOf(self), 0);
+        assertEq(trancheToken.balanceOf(self), amount);
 
         // will fail - user not member
         centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), self, uint64(block.timestamp));
@@ -214,14 +214,23 @@ contract RedeemTest is BaseTest {
         );
         assertEq(cancelOrderMessage, router.values_bytes("send"));
 
+        assertEq(lPool.pendingCancelRedeemRequest(0, self), true);
+
+        vm.expectRevert(bytes("InvestmentManager/cancellation-is-pending"));
+        lPool.requestRedeem(amount, address(this), address(this), "");
+
         centrifugeChain.isExecutedDecreaseRedeemOrder(
             lPool.poolId(), lPool.trancheId(), _addressToBytes32(self), defaultCurrencyId, uint128(amount), 0
         );
 
         assertEq(trancheToken.balanceOf(address(escrow)), amount);
-        assertEq(trancheToken.balanceOf(self), 0);
+        assertEq(trancheToken.balanceOf(self), amount);
         assertEq(lPool.maxDeposit(self), amount);
         assertEq(lPool.maxMint(self), amount);
+        assertEq(lPool.pendingCancelRedeemRequest(0, self), false);
+
+        // After cancellation is executed, new request can be submitted
+        lPool.requestRedeem(amount, address(this), address(this), "");
     }
 
     function testTriggerIncreaseRedeemOrderTokens(uint128 amount) public {

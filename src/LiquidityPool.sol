@@ -175,6 +175,7 @@ contract LiquidityPool is Auth, IERC7540 {
         emit CancelDepositRequest(msg.sender);
     }
 
+    /// @notice Check whether the deposit request is pending cancellation.
     function pendingCancelDepositRequest(uint256, address owner) public view returns (bool isPending) {
         isPending = manager.pendingCancelDepositRequest(address(this), owner);
     }
