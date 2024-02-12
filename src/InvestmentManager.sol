@@ -227,6 +227,7 @@ contract InvestmentManager is Auth {
         LiquidityPoolLike _liquidityPool = LiquidityPoolLike(liquidityPool);
 
         InvestmentState storage state = investments[liquidityPool][owner];
+        require(state.pendingCancelDepositRequest != true, "InvestmentManager/cancellation-is-pending");
         state.pendingCancelDepositRequest = true;
 
         gateway.cancelInvestOrder(
@@ -246,6 +247,7 @@ contract InvestmentManager is Auth {
         );
 
         InvestmentState storage state = investments[liquidityPool][owner];
+        require(state.pendingCancelRedeemRequest != true, "InvestmentManager/cancellation-is-pending");
         state.pendingCancelRedeemRequest = true;
 
         gateway.cancelRedeemOrder(

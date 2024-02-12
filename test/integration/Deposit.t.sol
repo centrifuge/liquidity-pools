@@ -733,6 +733,10 @@ contract DepositTest is BaseTest {
 
         assertEq(lPool.pendingCancelDepositRequest(0, self), true);
 
+        // Cannot cancel twice
+        vm.expectRevert(bytes("InvestmentManager/cancellation-is-pending"));
+        lPool.cancelDepositRequest();
+
         erc20.mint(self, amount);
         erc20.approve(lPool_, amount);
         vm.expectRevert(bytes("InvestmentManager/cancellation-is-pending"));

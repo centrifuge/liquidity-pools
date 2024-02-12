@@ -216,6 +216,10 @@ contract RedeemTest is BaseTest {
 
         assertEq(lPool.pendingCancelRedeemRequest(0, self), true);
 
+        // Cannot cancel twice
+        vm.expectRevert(bytes("InvestmentManager/cancellation-is-pending"));
+        lPool.cancelRedeemRequest();
+
         vm.expectRevert(bytes("InvestmentManager/cancellation-is-pending"));
         lPool.requestRedeem(amount, address(this), address(this), "");
 
