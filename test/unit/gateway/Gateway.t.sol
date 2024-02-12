@@ -26,6 +26,7 @@ contract GatewayTest is BaseTest {
 
         // permissions set correctly
         assertEq(gateway.wards(address(root)), 1);
+        assertEq(aggregator.wards(address(root)), 1);
         // assertEq(gateway.wards(self), 0); // deployer has no permissions
     }
 
