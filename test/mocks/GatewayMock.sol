@@ -59,16 +59,6 @@ contract GatewayMock is Mock {
         values_uint128["amount"] = amount;
     }
 
-    function decreaseInvestOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount)
-        public
-    {
-        values_uint64["poolId"] = poolId;
-        values_bytes16["trancheId"] = trancheId;
-        values_address["investor"] = investor;
-        values_uint128["currency"] = currency;
-        values_uint128["amount"] = amount;
-    }
-
     function increaseRedeemOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount)
         public
     {
