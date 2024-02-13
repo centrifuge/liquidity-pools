@@ -79,16 +79,16 @@ contract RouterAggregator is Auth {
         if (what == "routers") {
             require(routers_.length <= MAX_ROUTER_COUNT, "RouterAggregator/exceeds-max-router-count");
 
-            // Enable new routers, setting quorum to number of routers
-            uint8 quorum_ = uint8(routers_.length);
-            for (uint8 i; i < routers_.length; ++i) {
-                // Ids are assigned sequentially starting at 1
-                validRouters[routers_[i]] = Router(i + 1, quorum_);
+            // Disable old routers
+            for (uint8 i = 0; i < routers.length; ++i) {
+                delete validRouters[address(routers[i])];
             }
 
-            // Disable old routers that weren't already overridden
-            for (uint8 j = uint8(routers_.length); j < routers.length; ++j) {
-                delete validRouters[address(routers[j])];
+            // Enable new routers, setting quorum to number of routers
+            uint8 quorum_ = uint8(routers_.length);
+            for (uint8 j; j < quorum_; ++j) {
+                // Ids are assigned sequentially starting at 1
+                validRouters[routers_[j]] = Router(j + 1, quorum_);
             }
 
             routers = routers_;
@@ -185,7 +185,6 @@ contract RouterAggregator is Auth {
     }
 
     function _disputeMessageRecovery(bytes32 messageHash) internal {
-        require(routers.length > 0, "RouterAggregator/no-recovery-with-one-router-allowed");
         delete recoveries[messageHash];
         emit DisputeMessageRecovery(messageHash);
     }

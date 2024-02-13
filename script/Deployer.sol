@@ -100,6 +100,7 @@ contract Deployer is Script {
         investmentManager.rely(address(poolManager));
         poolManager.rely(address(root));
         gateway.rely(address(root));
+        aggregator.rely(address(root));
         AuthLike(router).rely(address(root));
         AuthLike(address(escrow)).rely(address(root));
         AuthLike(address(escrow)).rely(address(investmentManager));
