@@ -233,6 +233,11 @@ contract InvestmentManager is Auth {
 
     function cancelDepositRequest(address liquidityPool, address owner) public auth {
         LiquidityPoolLike _liquidityPool = LiquidityPoolLike(liquidityPool);
+
+        InvestmentState storage state = investments[liquidityPool][owner];
+        require(state.pendingCancelDepositRequest != true, "InvestmentManager/cancellation-is-pending");
+        state.pendingCancelDepositRequest = true;
+
         gateway.send(
             abi.encodePacked(
                 uint8(MessagesLib.Call.CancelInvestOrder),
