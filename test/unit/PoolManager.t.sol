@@ -82,6 +82,9 @@ contract PoolManagerTest is BaseTest {
         vm.expectRevert(bytes("PoolManager/not-the-gateway"));
         poolManager.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, restrictionSet);
 
+        vm.expectRevert(bytes("PoolManager/too-few-tranche-token-decimals"));
+        centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, 0, restrictionSet);
+
         vm.expectRevert(bytes("PoolManager/too-many-tranche-token-decimals"));
         centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, 19, restrictionSet);
 

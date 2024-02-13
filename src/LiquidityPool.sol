@@ -10,12 +10,12 @@ import "./interfaces/IERC20.sol";
 interface ManagerLike {
     function requestDeposit(address lp, uint256 assets, address receiver, address owner) external returns (bool);
     function requestRedeem(address lp, uint256 shares, address receiver, address owner) external returns (bool);
-    function decreaseDepositRequest(address lp, uint256 assets, address owner) external;
-    function decreaseRedeemRequest(address lp, uint256 shares, address owner) external;
     function cancelDepositRequest(address lp, address owner) external;
     function cancelRedeemRequest(address lp, address owner) external;
     function pendingDepositRequest(address lp, address owner) external view returns (uint256);
     function pendingRedeemRequest(address lp, address owner) external view returns (uint256);
+    function pendingCancelDepositRequest(address lp, address owner) external view returns (bool);
+    function pendingCancelRedeemRequest(address lp, address owner) external view returns (bool);
     function exchangeRateLastUpdated(address lp) external view returns (uint64);
     function deposit(address lp, uint256 assets, address receiver, address owner) external returns (uint256);
     function mint(address lp, uint256 shares, address receiver, address owner) external returns (uint256);
@@ -68,8 +68,6 @@ contract LiquidityPool is Auth, IERC7540 {
 
     // --- Events ---
     event File(bytes32 indexed what, address data);
-    event DecreaseDepositRequest(address indexed owner, uint256 assets);
-    event DecreaseRedeemRequest(address indexed owner, uint256 shares);
     event CancelDepositRequest(address indexed sender);
     event CancelRedeemRequest(address indexed sender);
 
@@ -170,23 +168,16 @@ contract LiquidityPool is Auth, IERC7540 {
         claimableShares = maxRedeem(owner);
     }
 
-    // --- Misc asynchronous vault methods ---
-    /// @notice Request decreasing the outstanding deposit orders.
-    function decreaseDepositRequest(uint256 assets) external {
-        manager.decreaseDepositRequest(address(this), assets, msg.sender);
-        emit DecreaseDepositRequest(msg.sender, assets);
-    }
-
+    // --- Asynchronous cancellation methods ---
     /// @notice Request cancelling the outstanding deposit orders.
     function cancelDepositRequest() external {
         manager.cancelDepositRequest(address(this), msg.sender);
         emit CancelDepositRequest(msg.sender);
     }
 
-    /// @notice Request decreasing the outstanding redemption orders.
-    function decreaseRedeemRequest(uint256 shares) external {
-        manager.decreaseRedeemRequest(address(this), shares, msg.sender);
-        emit DecreaseRedeemRequest(msg.sender, shares);
+    /// @notice Check whether the deposit request is pending cancellation.
+    function pendingCancelDepositRequest(uint256, address owner) public view returns (bool isPending) {
+        isPending = manager.pendingCancelDepositRequest(address(this), owner);
     }
 
     /// @notice Request cancelling the outstanding redemption orders.
@@ -195,8 +186,8 @@ contract LiquidityPool is Auth, IERC7540 {
         emit CancelRedeemRequest(msg.sender);
     }
 
-    function exchangeRateLastUpdated() external view returns (uint64) {
-        return manager.exchangeRateLastUpdated(address(this));
+    function pendingCancelRedeemRequest(uint256, address owner) public view returns (bool isPending) {
+        isPending = manager.pendingCancelRedeemRequest(address(this), owner);
     }
 
     // --- ERC165 support ---
@@ -298,6 +289,10 @@ contract LiquidityPool is Auth, IERC7540 {
     }
 
     // --- Helpers ---
+    function exchangeRateLastUpdated() external view returns (uint64) {
+        return manager.exchangeRateLastUpdated(address(this));
+    }
+
     function _transferFrom(address from, address to, uint256 value) internal returns (bool) {
         (bool success, bytes memory data) = address(share).call(
             bytes.concat(

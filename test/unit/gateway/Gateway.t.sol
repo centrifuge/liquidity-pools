@@ -163,28 +163,26 @@ contract GatewayTest is BaseTest {
     //     vm.expectRevert(bytes("Gateway/only-investment-manager-allowed-to-call"));
     //     gateway.increaseInvestOrder(poolId, trancheId, investor, currency, currencyAmount);
 
-    //     vm.expectRevert(bytes("Gateway/only-investment-manager-allowed-to-call"));
-    //     gateway.decreaseInvestOrder(poolId, trancheId, investor, currency, currencyAmount);
+    // vm.expectRevert(bytes("Gateway/only-investment-manager-allowed-to-call"));
+    // gateway.increaseRedeemOrder(poolId, trancheId, investor, currency, trancheTokenAmount);
 
-    //     vm.expectRevert(bytes("Gateway/only-investment-manager-allowed-to-call"));
-    //     gateway.increaseRedeemOrder(poolId, trancheId, investor, currency, trancheTokenAmount);
-
-    //     vm.expectRevert(bytes("Gateway/only-investment-manager-allowed-to-call"));
-    //     gateway.decreaseRedeemOrder(poolId, trancheId, investor, currency, trancheTokenAmount);
-
-    //     vm.expectRevert(bytes("Gateway/only-investment-manager-allowed-to-call"));
-    //     gateway.cancelInvestOrder(poolId, trancheId, investor, currency);
+    // vm.expectRevert(bytes("Gateway/only-investment-manager-allowed-to-call"));
+    // gateway.collectInvest(poolId, trancheId, investor, currency);
 
     //     vm.expectRevert(bytes("Gateway/only-investment-manager-allowed-to-call"));
     //     gateway.cancelRedeemOrder(poolId, trancheId, investor, currency);
 
-    //     gateway.file("investmentManager", self);
-    //     // success
-    //     gateway.increaseInvestOrder(poolId, trancheId, investor, currency, currencyAmount);
-    //     gateway.decreaseInvestOrder(poolId, trancheId, investor, currency, currencyAmount);
-    //     gateway.increaseRedeemOrder(poolId, trancheId, investor, currency, trancheTokenAmount);
-    //     gateway.decreaseRedeemOrder(poolId, trancheId, investor, currency, trancheTokenAmount);
-    //     gateway.cancelInvestOrder(poolId, trancheId, investor, currency);
-    //     gateway.cancelRedeemOrder(poolId, trancheId, investor, currency);
+    // vm.expectRevert(bytes("Gateway/only-investment-manager-allowed-to-call"));
+    // gateway.cancelInvestOrder(poolId, trancheId, investor, currency);
+
+    // vm.expectRevert(bytes("Gateway/only-investment-manager-allowed-to-call"));
+    // gateway.cancelRedeemOrder(poolId, trancheId, investor, currency);
+
+    // gateway.file("investmentManager", self);
+    // // success
+    // gateway.increaseInvestOrder(poolId, trancheId, investor, currency, currencyAmount);
+    // gateway.increaseRedeemOrder(poolId, trancheId, investor, currency, trancheTokenAmount);
+    // gateway.cancelInvestOrder(poolId, trancheId, investor, currency);
+    // gateway.cancelRedeemOrder(poolId, trancheId, investor, currency);
     // }
 }

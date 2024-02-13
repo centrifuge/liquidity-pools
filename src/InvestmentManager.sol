@@ -72,6 +72,10 @@ struct InvestmentState {
     uint128 pendingDepositRequest;
     /// @dev Remaining redeem order in currency
     uint128 pendingRedeemRequest;
+    /// @dev Whether the depositRequest was requested to be cancelled
+    bool pendingCancelDepositRequest;
+    /// @dev Whether the redeemRequest was requested to be cancelled
+    bool pendingCancelRedeemRequest;
     ///@dev Flag whether this user has ever interacted with this liquidity pool
     bool exists;
 }
@@ -151,6 +155,8 @@ contract InvestmentManager is Auth {
         );
 
         InvestmentState storage state = investments[liquidityPool][receiver];
+        require(state.pendingCancelDepositRequest != true, "InvestmentManager/cancellation-is-pending");
+
         state.pendingDepositRequest = state.pendingDepositRequest + _currencyAmount;
         state.exists = true;
 
@@ -206,6 +212,8 @@ contract InvestmentManager is Auth {
     {
         LiquidityPoolLike lPool = LiquidityPoolLike(liquidityPool);
         InvestmentState storage state = investments[liquidityPool][owner];
+        require(state.pendingCancelRedeemRequest != true, "InvestmentManager/cancellation-is-pending");
+
         state.pendingRedeemRequest = state.pendingRedeemRequest + trancheTokenAmount;
         state.exists = true;
 
@@ -221,39 +229,6 @@ contract InvestmentManager is Auth {
         );
 
         return true;
-    }
-
-    function decreaseDepositRequest(address liquidityPool, uint256 _currencyAmount, address owner) public auth {
-        LiquidityPoolLike _liquidityPool = LiquidityPoolLike(liquidityPool);
-        gateway.send(
-            abi.encodePacked(
-                uint8(MessagesLib.Call.DecreaseInvestOrder),
-                _liquidityPool.poolId(),
-                _liquidityPool.trancheId(),
-                owner,
-                poolManager.currencyAddressToId(_liquidityPool.asset()),
-                _currencyAmount.toUint128()
-            )
-        );
-    }
-
-    function decreaseRedeemRequest(address liquidityPool, uint256 _trancheTokenAmount, address owner) public auth {
-        uint128 trancheTokenAmount = _trancheTokenAmount.toUint128();
-        LiquidityPoolLike _liquidityPool = LiquidityPoolLike(liquidityPool);
-        require(
-            _checkTransferRestriction(liquidityPool, address(0), owner, _trancheTokenAmount),
-            "InvestmentManager/transfer-not-allowed"
-        );
-        gateway.send(
-            abi.encodePacked(
-                uint8(MessagesLib.Call.DecreaseRedeemOrder),
-                _liquidityPool.poolId(),
-                _liquidityPool.trancheId(),
-                owner,
-                poolManager.currencyAddressToId(_liquidityPool.asset()),
-                trancheTokenAmount
-            )
-        );
     }
 
     function cancelDepositRequest(address liquidityPool, address owner) public auth {
@@ -276,6 +251,11 @@ contract InvestmentManager is Auth {
             _checkTransferRestriction(liquidityPool, address(0), owner, approximateTrancheTokensPayout),
             "InvestmentManager/transfer-not-allowed"
         );
+
+        InvestmentState storage state = investments[liquidityPool][owner];
+        require(state.pendingCancelRedeemRequest != true, "InvestmentManager/cancellation-is-pending");
+        state.pendingCancelRedeemRequest = true;
+
         gateway.send(
             abi.encodePacked(
                 uint8(MessagesLib.Call.CancelRedeemOrder),
@@ -372,6 +352,8 @@ contract InvestmentManager is Auth {
         state.maxWithdraw = state.maxWithdraw + currencyPayout;
         state.pendingDepositRequest = remainingInvestOrder;
 
+        if (remainingInvestOrder == 0) state.pendingCancelDepositRequest = false;
+
         // Transfer currency amount to userEscrow
         userEscrow.transferIn(poolManager.currencyIdToAddress(currencyId), address(escrow), user, currencyPayout);
 
@@ -405,6 +387,8 @@ contract InvestmentManager is Auth {
 
         state.maxMint = state.maxMint + trancheTokenPayout;
         state.pendingRedeemRequest = remainingRedeemOrder;
+
+        if (remainingRedeemOrder == 0) state.pendingCancelRedeemRequest = false;
 
         LiquidityPoolLike(liquidityPool).emitRedeemClaimable(user, trancheTokenPayout, trancheTokenPayout);
     }
@@ -502,6 +486,14 @@ contract InvestmentManager is Auth {
         returns (uint256 trancheTokenAmount)
     {
         trancheTokenAmount = uint256(investments[liquidityPool][user].pendingRedeemRequest);
+    }
+
+    function pendingCancelDepositRequest(address liquidityPool, address user) public view returns (bool isPending) {
+        isPending = investments[liquidityPool][user].pendingCancelDepositRequest;
+    }
+
+    function pendingCancelRedeemRequest(address liquidityPool, address user) public view returns (bool isPending) {
+        isPending = investments[liquidityPool][user].pendingCancelRedeemRequest;
     }
 
     function exchangeRateLastUpdated(address liquidityPool) public view returns (uint64 lastUpdated) {
