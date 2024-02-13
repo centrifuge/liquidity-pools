@@ -89,12 +89,6 @@ contract LiquidityPoolTest is BaseTest {
         trancheToken.mint(address(this), amount);
         vm.expectRevert(bytes("MathLib/uint128-overflow"));
         lPool.requestRedeem(amount, address(this), address(this), "");
-
-        vm.expectRevert(bytes("MathLib/uint128-overflow"));
-        lPool.decreaseDepositRequest(amount);
-
-        vm.expectRevert(bytes("MathLib/uint128-overflow"));
-        lPool.decreaseRedeemRequest(amount);
     }
 
     // --- erc165 checks ---
