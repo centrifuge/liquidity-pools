@@ -138,7 +138,7 @@ contract RouterAggregator is Auth {
         }
 
         if (state.messages.countNonZeroValues() >= 1 && state.proofs.countNonZeroValues() >= router.quorum - 1) {
-            // Reduce total message confiration count by 1, by finding the first non-zero value
+            // Reduce total message confirmation count by 1, by finding the first non-zero value
             state.messages.decreaseFirstNValues(1, 1);
 
             // Reduce total proof confiration count by quorum
