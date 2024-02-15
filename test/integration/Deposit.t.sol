@@ -736,7 +736,6 @@ contract DepositTest is BaseTest {
             bytes32(bytes20(self)),
             defaultCurrencyId
         );
-
         assertEq(cancelOrderMessage, router1.values_bytes("send"));
 
         assertEq(lPool.pendingCancelDepositRequest(0, self), true);
