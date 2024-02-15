@@ -212,7 +212,7 @@ contract RedeemTest is BaseTest {
         bytes memory cancelOrderMessage = MessagesLib.formatCancelRedeemOrder(
             lPool.poolId(), lPool.trancheId(), _addressToBytes32(self), defaultCurrencyId
         );
-        assertEq(cancelOrderMessage, router.values_bytes("send"));
+        assertEq(cancelOrderMessage, router1.values_bytes("send"));
 
         assertEq(lPool.pendingCancelRedeemRequest(0, self), true);
 

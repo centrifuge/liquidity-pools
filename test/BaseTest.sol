@@ -28,7 +28,10 @@ import "forge-std/Test.sol";
 
 contract BaseTest is Deployer, Test {
     MockCentrifugeChain centrifugeChain;
-    MockRouter router;
+    MockRouter router1;
+    MockRouter router2;
+    MockRouter router3;
+    address[] testRouters;
     ERC20 public erc20;
 
     address self = address(this);
@@ -51,28 +54,60 @@ contract BaseTest is Deployer, Test {
         admin = self;
 
         // deploy core contracts
-        deployInvestmentManager(address(this));
-        // deploy mockRouter
-        router = new MockRouter(address(investmentManager));
+        deploy(address(this));
+
+        // deploy mock routers
+        router1 = new MockRouter(address(aggregator));
+        router2 = new MockRouter(address(aggregator));
+        router3 = new MockRouter(address(aggregator));
+
+        testRouters.push(address(router1));
+        testRouters.push(address(router2));
+        testRouters.push(address(router3));
+
         // wire contracts
-        wire(address(router));
+        wire(address(router1));
+        aggregator.file("routers", testRouters);
+
         // give admin access
         giveAdminAccess();
+
         // remove deployer access
         // removeDeployerAccess(address(router)); // need auth permissions in tests
 
-        centrifugeChain = new MockCentrifugeChain(address(router));
+        centrifugeChain = new MockCentrifugeChain(testRouters);
         erc20 = _newErc20("X's Dollar", "USDX", 6);
-        router.file("gateway", address(gateway));
+
+        // Label contracts
+        vm.label(address(root), "Root");
+        vm.label(address(investmentManager), "InvestmentManager");
+        vm.label(address(poolManager), "PoolManager");
+        vm.label(address(gateway), "Gateway");
+        vm.label(address(aggregator), "Aggregator");
+        vm.label(address(router1), "MockRouter1");
+        vm.label(address(router2), "MockRouter2");
+        vm.label(address(router3), "MockRouter3");
+        vm.label(address(erc20), "ERC20");
+        vm.label(address(centrifugeChain), "CentrifugeChain");
+        vm.label(address(escrow), "Escrow");
+        vm.label(address(userEscrow), "UserEscrow");
+        vm.label(address(pauseAdmin), "PauseAdmin");
+        vm.label(address(delayedAdmin), "DelayedAdmin");
+        vm.label(address(poolManager.restrictionManagerFactory()), "RestrictionManagerFactory");
+        vm.label(address(poolManager.trancheTokenFactory()), "TrancheTokenFactory");
+        vm.label(address(poolManager.liquidityPoolFactory()), "LiquidityPoolFactory");
 
         // Exclude predeployed contracts from invariant tests by default
         excludeContract(address(root));
         excludeContract(address(investmentManager));
         excludeContract(address(poolManager));
         excludeContract(address(gateway));
+        excludeContract(address(aggregator));
         excludeContract(address(erc20));
         excludeContract(address(centrifugeChain));
-        excludeContract(address(router));
+        excludeContract(address(router1));
+        excludeContract(address(router2));
+        excludeContract(address(router3));
         excludeContract(address(escrow));
         excludeContract(address(userEscrow));
         excludeContract(address(pauseAdmin));

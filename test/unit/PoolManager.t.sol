@@ -343,7 +343,7 @@ contract PoolManagerTest is BaseTest {
             centChainAddress,
             amount
         );
-        assertEq(router.sentMessages(message), true);
+        assertEq(router1.sent(message), 1);
     }
 
     function testTransferTrancheTokensFromCentrifuge(uint128 amount) public {

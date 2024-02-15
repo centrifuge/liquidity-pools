@@ -8,24 +8,15 @@ interface GatewayLike {
 }
 
 contract PermissionlessRouter is Auth {
-    GatewayLike public gateway;
+    GatewayLike public immutable gateway;
 
     event Send(bytes message);
-    event File(bytes32 indexed what, address addr);
 
-    constructor() {
+    constructor(address gateway_) {
+        gateway = GatewayLike(gateway_);
+
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
-    }
-
-    function file(bytes32 what, address gateway_) external {
-        if (what == "gateway") {
-            gateway = GatewayLike(gateway_);
-        } else {
-            revert("PermissionlessRouter/file-unrecognized-param");
-        }
-
-        emit File(what, gateway_);
     }
 
     // --- Incoming ---

@@ -14,11 +14,19 @@ contract GatewayTest is BaseTest {
         assertEq(address(poolManager.gateway()), address(gateway));
 
         // router setup
-        assertEq(address(gateway.outgoingRouter()), address(router));
-        assertTrue(gateway.incomingRouters(address(router)));
+        assertEq(address(gateway.outgoingRouter()), address(aggregator));
+        assertTrue(gateway.incomingRouters(address(aggregator)));
+
+        // aggregator setup
+        assertEq(address(aggregator.gateway()), address(gateway));
+        assertEq(aggregator.quorum(), 3);
+        assertEq(aggregator.routers(0), address(router1));
+        assertEq(aggregator.routers(1), address(router2));
+        assertEq(aggregator.routers(2), address(router3));
 
         // permissions set correctly
         assertEq(gateway.wards(address(root)), 1);
+        assertEq(aggregator.wards(address(root)), 1);
         // assertEq(gateway.wards(self), 0); // deployer has no permissions
     }
 

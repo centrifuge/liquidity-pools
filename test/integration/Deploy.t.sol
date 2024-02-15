@@ -7,7 +7,6 @@ import {MockCentrifugeChain} from "test/mocks/MockCentrifugeChain.sol";
 import {Escrow} from "src/Escrow.sol";
 import {PauseAdmin} from "src/admins/PauseAdmin.sol";
 import {DelayedAdmin} from "src/admins/DelayedAdmin.sol";
-import {MockRouter} from "test/mocks/MockRouter.sol";
 import {PoolManager, Pool, Tranche} from "src/PoolManager.sol";
 import {ERC20} from "src/token/ERC20.sol";
 import {TrancheToken} from "src/token/Tranche.sol";
@@ -38,10 +37,9 @@ contract DeployTest is Test, Deployer {
     ERC20 erc20;
 
     function setUp() public {
-        deployInvestmentManager(address(this));
-        PermissionlessRouter router = new PermissionlessRouter();
+        deploy(address(this));
+        PermissionlessRouter router = new PermissionlessRouter(address(aggregator));
         wire(address(router));
-        RouterLike(address(router)).file("gateway", address(gateway));
 
         admin = makeAddr("admin");
         pausers.push(makeAddr("pauser1"));
@@ -64,6 +62,7 @@ contract DeployTest is Test, Deployer {
         assertEq(escrow.wards(address(this)), 0);
         assertEq(userEscrow.wards(address(this)), 0);
         assertEq(gateway.wards(address(this)), 0);
+        assertEq(aggregator.wards(address(this)), 0);
         assertEq(pauseAdmin.wards(address(this)), 0);
         assertEq(delayedAdmin.wards(address(this)), 0);
         // check factories

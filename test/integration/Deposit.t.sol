@@ -729,7 +729,7 @@ contract DepositTest is BaseTest {
         bytes memory cancelOrderMessage = MessagesLib.formatCancelInvestOrder(
             lPool.poolId(), lPool.trancheId(), _addressToBytes32(self), defaultCurrencyId
         );
-        assertEq(cancelOrderMessage, router.values_bytes("send"));
+        assertEq(cancelOrderMessage, router1.values_bytes("send"));
 
         assertEq(lPool.pendingCancelDepositRequest(0, self), true);
 

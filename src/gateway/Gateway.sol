@@ -112,12 +112,10 @@ contract Gateway is Auth {
     event RemoveIncomingRouter(address indexed router);
     event UpdateOutgoingRouter(address indexed router);
 
-    constructor(address root_, address investmentManager_, address poolManager_, address router_) {
+    constructor(address root_, address investmentManager_, address poolManager_) {
         root = RootLike(root_);
         investmentManager = InvestmentManagerLike(investmentManager_);
         poolManager = PoolManagerLike(poolManager_);
-        incomingRouters[router_] = true;
-        outgoingRouter = RouterLike(router_);
 
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
