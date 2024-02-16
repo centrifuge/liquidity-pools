@@ -3,6 +3,7 @@ pragma solidity 0.8.21;
 
 import {Auth} from "./Auth.sol";
 import {MathLib} from "./libraries/MathLib.sol";
+import {BitmapLib} from "./libraries/BitmapLib.sol";
 import {SafeTransferLib} from "./libraries/SafeTransferLib.sol";
 
 interface GatewayLike {
@@ -83,10 +84,12 @@ struct InvestmentState {
     ///      - Whether the depositRequest was requested to be cancelled
     ///      - Whether the redeemRequest was requested to be cancelled
     ///      - Flag whether this user has ever interacted with this liquidity pool
-    uint256 stateBitmap;
+    uint256 bitmap;
 }
 
-uint256 
+uint256 constant PENDING_CANCEL_DEPOSIT_REQUEST_BIT = 0;
+uint256 constant PENDING_CANCEL_REDEEM_REQUEST_BIT = 1;
+uint256 constant USER_EXISTS_BIT = 2;
 
 /// @title  Investment Manager
 /// @notice This is the main contract LiquidityPools interact with for
@@ -163,10 +166,12 @@ contract InvestmentManager is Auth {
         );
 
         InvestmentState storage state = investments[liquidityPool][receiver];
-        require(state.pendingCancelDepositRequest != true, "InvestmentManager/cancellation-is-pending");
+        require(
+            state.bitmap.getBit(PENDING_CANCEL_DEPOSIT_REQUEST_BIT) != true, "InvestmentManager/cancellation-is-pending"
+        );
 
         state.pendingDepositRequest = state.pendingDepositRequest + _currencyAmount;
-        state.exists = true;
+        state.bitmap = state.bitmap.setBit(USER_EXISTS_BIT, true);
 
         gateway.increaseInvestOrder(
             poolId, lPool.trancheId(), receiver, poolManager.currencyAddressToId(currency), _currencyAmount
@@ -213,10 +218,12 @@ contract InvestmentManager is Auth {
     {
         LiquidityPoolLike lPool = LiquidityPoolLike(liquidityPool);
         InvestmentState storage state = investments[liquidityPool][owner];
-        require(state.pendingCancelRedeemRequest != true, "InvestmentManager/cancellation-is-pending");
+        require(
+            state.bitmap.getBit(PENDING_CANCEL_REDEEM_REQUEST_BIT) != true, "InvestmentManager/cancellation-is-pending"
+        );
 
         state.pendingRedeemRequest = state.pendingRedeemRequest + trancheTokenAmount;
-        state.exists = true;
+        state.bitmap = state.bitmap.setBit(USER_EXISTS_BIT, true);
 
         gateway.increaseRedeemOrder(
             lPool.poolId(), lPool.trancheId(), owner, poolManager.currencyAddressToId(lPool.asset()), trancheTokenAmount
@@ -229,8 +236,10 @@ contract InvestmentManager is Auth {
         LiquidityPoolLike _liquidityPool = LiquidityPoolLike(liquidityPool);
 
         InvestmentState storage state = investments[liquidityPool][owner];
-        require(state.pendingCancelDepositRequest != true, "InvestmentManager/cancellation-is-pending");
-        state.pendingCancelDepositRequest = true;
+        require(
+            state.bitmap.getBit(PENDING_CANCEL_DEPOSIT_REQUEST_BIT) != true, "InvestmentManager/cancellation-is-pending"
+        );
+        state.bitmap = state.bitmap.setBit(PENDING_CANCEL_DEPOSIT_REQUEST_BIT, true);
 
         gateway.cancelInvestOrder(
             _liquidityPool.poolId(),
@@ -249,8 +258,10 @@ contract InvestmentManager is Auth {
         );
 
         InvestmentState storage state = investments[liquidityPool][owner];
-        require(state.pendingCancelRedeemRequest != true, "InvestmentManager/cancellation-is-pending");
-        state.pendingCancelRedeemRequest = true;
+        require(
+            state.bitmap.getBit(PENDING_CANCEL_REDEEM_REQUEST_BIT) != true, "InvestmentManager/cancellation-is-pending"
+        );
+        state.bitmap = state.bitmap.setBit(PENDING_CANCEL_REDEEM_REQUEST_BIT, true);
 
         gateway.cancelRedeemOrder(
             _liquidityPool.poolId(),
@@ -298,7 +309,7 @@ contract InvestmentManager is Auth {
         address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, currencyId);
 
         InvestmentState storage state = investments[liquidityPool][user];
-        require(state.exists == true, "InvestmentManager/non-existent-user");
+        require(state.bitmap.getBit(USER_EXISTS_BIT) == true, "InvestmentManager/non-existent-user");
 
         // Calculate new weighted average redeem price and update order book values
         state.redeemPrice = _calculatePrice(
@@ -329,7 +340,7 @@ contract InvestmentManager is Auth {
         address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, currencyId);
 
         InvestmentState storage state = investments[liquidityPool][user];
-        require(state.exists == true, "InvestmentManager/non-existent-user");
+        require(state.bitmap.getBit(USER_EXISTS_BIT) == true, "InvestmentManager/non-existent-user");
 
         // Calculating the price with both payouts as currencyPayout
         // leads to an effective redeem price of 1.0 and thus the user actually receiving
@@ -345,7 +356,7 @@ contract InvestmentManager is Auth {
         state.maxWithdraw = state.maxWithdraw + currencyPayout;
         state.pendingDepositRequest = remainingInvestOrder;
 
-        if (remainingInvestOrder == 0) state.pendingCancelDepositRequest = false;
+        if (remainingInvestOrder == 0) state.bitmap = state.bitmap.setBit(PENDING_CANCEL_DEPOSIT_REQUEST_BIT, false);
 
         // Transfer currency amount to userEscrow
         userEscrow.transferIn(poolManager.currencyIdToAddress(currencyId), address(escrow), user, currencyPayout);
@@ -381,7 +392,7 @@ contract InvestmentManager is Auth {
         state.maxMint = state.maxMint + trancheTokenPayout;
         state.pendingRedeemRequest = remainingRedeemOrder;
 
-        if (remainingRedeemOrder == 0) state.pendingCancelRedeemRequest = false;
+        if (remainingRedeemOrder == 0) state.bitmap = state.bitmap.setBit(PENDING_CANCEL_REDEEM_REQUEST_BIT, false);
 
         LiquidityPoolLike(liquidityPool).emitRedeemClaimable(user, trancheTokenPayout, trancheTokenPayout);
     }
@@ -482,11 +493,11 @@ contract InvestmentManager is Auth {
     }
 
     function pendingCancelDepositRequest(address liquidityPool, address user) public view returns (bool isPending) {
-        isPending = investments[liquidityPool][user].pendingCancelDepositRequest;
+        isPending = investments[liquidityPool][user].bitmap.getBit(PENDING_CANCEL_DEPOSIT_REQUEST_BIT);
     }
 
     function pendingCancelRedeemRequest(address liquidityPool, address user) public view returns (bool isPending) {
-        isPending = investments[liquidityPool][user].pendingCancelRedeemRequest;
+        isPending = investments[liquidityPool][user].bitmap.getBit(PENDING_CANCEL_REDEEM_REQUEST_BIT);
     }
 
     function exchangeRateLastUpdated(address liquidityPool) public view returns (uint64 lastUpdated) {
