@@ -69,29 +69,31 @@ interface UserEscrowLike {
 struct InvestmentState {
     /// @dev Tranche tokens that can be claimed using `mint()`
     uint128 maxMint;
-    /// @dev Weighted average price of deposits, used to convert maxMint to maxDeposit
-    uint256 depositPrice;
     /// @dev Currency that can be claimed using `withdraw()`
     uint128 maxWithdraw;
+    /// @dev Weighted average price of deposits, used to convert maxMint to maxDeposit
+    uint256 depositPrice;
     /// @dev Weighted average price of redemptions, used to convert maxWithdraw to maxRedeem
     uint256 redeemPrice;
     /// @dev Remaining invest (deposit) order in currency
     uint128 pendingDepositRequest;
     /// @dev Remaining redeem order in currency
     uint128 pendingRedeemRequest;
-    /// @dev Whether the depositRequest was requested to be cancelled
-    bool pendingCancelDepositRequest;
-    /// @dev Whether the redeemRequest was requested to be cancelled
-    bool pendingCancelRedeemRequest;
-    ///@dev Flag whether this user has ever interacted with this liquidity pool
-    bool exists;
+    /// @dev Stores
+    ///      - Whether the depositRequest was requested to be cancelled
+    ///      - Whether the redeemRequest was requested to be cancelled
+    ///      - Flag whether this user has ever interacted with this liquidity pool
+    uint256 stateBitmap;
 }
+
+uint256 
 
 /// @title  Investment Manager
 /// @notice This is the main contract LiquidityPools interact with for
 ///         both incoming and outgoing investment transactions.
 contract InvestmentManager is Auth {
     using MathLib for uint256;
+    using BitmapLib for uint256;
 
     /// @dev Prices are fixed-point integers with 18 decimals
     uint8 internal constant PRICE_DECIMALS = 18;
