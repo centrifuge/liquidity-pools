@@ -373,7 +373,7 @@ contract RedeemTest is BaseTest {
             poolId, trancheId, bytes32(bytes20(self)), _currencyId, uint128(investmentAmount), trancheTokenPayout, 0
         );
 
-        (, uint256 depositPrice,,,,,) = investmentManager.investments(address(lPool), self);
+        (,, uint256 depositPrice,,,,) = investmentManager.investments(address(lPool), self);
         assertEq(depositPrice, 1000000000000000000);
 
         // assert deposit & mint values adjusted

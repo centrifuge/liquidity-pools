@@ -24,7 +24,7 @@ contract RouterAggregator is Auth {
 
     uint8 public constant MAX_ROUTER_COUNT = 8;
     uint8 public constant PRIMARY_ROUTER_ID = 1;
-    uint256 public constant RECOVERY_CHALLENGE_PERIOD = 7 days;
+    uint64 public constant RECOVERY_CHALLENGE_PERIOD = 7 days;
 
     GatewayLike public immutable gateway;
 
@@ -51,7 +51,7 @@ contract RouterAggregator is Auth {
     }
 
     struct Recovery {
-        uint256 timestamp;
+        uint64 timestamp;
         address router;
     }
 
@@ -170,7 +170,7 @@ contract RouterAggregator is Auth {
     function _handleRecovery(bytes memory payload) internal {
         if (MessagesLib.isInitiateMessageRecovery(payload)) {
             (bytes32 messageHash, address router) = MessagesLib.parseInitiateMessageRecovery(payload);
-            recoveries[messageHash] = Recovery(block.timestamp + RECOVERY_CHALLENGE_PERIOD, router);
+            recoveries[messageHash] = Recovery(uint64(block.timestamp + RECOVERY_CHALLENGE_PERIOD), router);
             emit InitiateMessageRecovery(messageHash, router);
         } else if (MessagesLib.isDisputeMessageRecovery(payload)) {
             bytes32 messageHash = MessagesLib.parseDisputeMessageRecovery(payload);
