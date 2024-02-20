@@ -503,7 +503,7 @@ library MessagesLib {
     function parseDisputeMessageRecovery(bytes memory _msg) internal pure returns (bytes32 messageHash) {
         return (_msg.toBytes32(1));
     }
-    
+
     function isRecoveryMessage(bytes memory _msg) internal pure returns (bool) {
         return messageType(_msg) == Call.InitiateMessageRecovery || messageType(_msg) == Call.DisputeMessageRecovery;
     }
