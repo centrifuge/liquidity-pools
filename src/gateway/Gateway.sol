@@ -121,16 +121,6 @@ contract Gateway is Auth {
         emit Rely(msg.sender);
     }
 
-    modifier onlyInvestmentManager() {
-        require(msg.sender == address(investmentManager), "Gateway/only-investment-manager-allowed-to-call");
-        _;
-    }
-
-    modifier onlyPoolManager() {
-        require(msg.sender == address(poolManager), "Gateway/only-pool-manager-allowed-to-call");
-        _;
-    }
-
     modifier onlyIncomingRouter() {
         require(incomingRouters[msg.sender], "Gateway/only-router-allowed-to-call");
         _;
@@ -166,7 +156,6 @@ contract Gateway is Auth {
 
     // --- Outgoing ---
     function send(bytes calldata message) public pauseable {
-        // TODO: update check
         require(
             msg.sender == address(investmentManager) || msg.sender == address(poolManager), "Gateway/invalid-manager"
         );
