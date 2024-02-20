@@ -138,33 +138,33 @@ contract MessagesLibTest is Test {
         assertEq(decodedValidUntil, validUntil);
     }
 
-    // function testTransfer() public {
-    //     uint64 currency = 246803579;
-    //     bytes32 sender = bytes32(0x4564564564564564564564564564564564564564564564564564564564564564);
-    //     address receiver = 0x1231231231231231231231231231231231231231;
-    //     uint128 amount = 100000000000000000000000000;
-    //     bytes memory expectedHex =
-    //         hex"070000000000000000000000000eb5ec7b45645645645645645645645645645645645645645645645645645645645645641231231231231231231231231231231231231231000000000000000000000000000000000052b7d2dcc80cd2e4000000";
+    function testTransfer() public {
+        uint128 currency = 246803579;
+        bytes32 sender = bytes32(0x4564564564564564564564564564564564564564564564564564564564564564);
+        address receiver = 0x1231231231231231231231231231231231231231;
+        uint128 amount = 100000000000000000000000000;
+        bytes memory expectedHex =
+            hex"070000000000000000000000000eb5ec7b45645645645645645645645645645645645645645645645645645645645645641231231231231231231231231231231231231231000000000000000000000000000000000052b7d2dcc80cd2e4000000";
 
-    //     assertEq(
-    //         abi.encodePacked(uint8(MessagesLib.Call.Transfer), currency, sender, receiver.toBytes32(), amount),
-    //         expectedHex
-    //     );
+        assertEq(
+            abi.encodePacked(uint8(MessagesLib.Call.Transfer), currency, sender, receiver.toBytes32(), amount),
+            expectedHex
+        );
 
-    //     (uint128 decodedCurrency, bytes32 decodedSender, bytes32 decodedReceiver, uint128 decodedAmount) =
-    //         MessagesLib.parseTransfer(expectedHex);
-    //     assertEq(uint256(decodedCurrency), currency);
-    //     assertEq(decodedSender, sender);
-    //     assertEq(decodedReceiver, bytes32(bytes20(receiver)));
-    //     assertEq(decodedAmount, amount);
+        (uint128 decodedCurrency, bytes32 decodedSender, bytes32 decodedReceiver, uint128 decodedAmount) =
+            MessagesLib.parseTransfer(expectedHex);
+        assertEq(uint256(decodedCurrency), currency);
+        assertEq(decodedSender, sender);
+        assertEq(decodedReceiver, bytes32(bytes20(receiver)));
+        assertEq(decodedAmount, amount);
 
-    //     // Test the optimised `parseIncomingTransfer` now
-    //     (uint128 decodedCurrency2, address decodedReceiver2, uint128 decodedAmount2) =
-    //         MessagesLib.parseIncomingTransfer(expectedHex);
-    //     assertEq(uint256(decodedCurrency2), currency);
-    //     assertEq(decodedReceiver2, receiver);
-    //     assertEq(decodedAmount2, amount);
-    // }
+        // Test the optimised `parseIncomingTransfer` now
+        (uint128 decodedCurrency2, address decodedReceiver2, uint128 decodedAmount2) =
+            MessagesLib.parseIncomingTransfer(expectedHex);
+        assertEq(uint256(decodedCurrency2), currency);
+        assertEq(decodedReceiver2, receiver);
+        assertEq(decodedAmount2, amount);
+    }
 
     function testTransferTrancheTokensToEvm() public {
         uint64 poolId = 1;
