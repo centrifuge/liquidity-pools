@@ -114,7 +114,8 @@ contract RouterAggregator is Auth {
             return _handleRecovery(payload);
         }
 
-        if (router.quorum == 1 && !MessagesLib.isMessageProof(payload)) {
+        bool isMessageProof = MessagesLib.messageType(payload) == MessagesLib.Call.MessageProof;
+        if (router.quorum == 1 && !isMessageProof) {
             // Special case for gas efficiency
             gateway.handle(payload);
             emit ExecuteMessage(payload, msg.sender);
@@ -123,7 +124,7 @@ contract RouterAggregator is Auth {
 
         bytes32 messageHash;
         ConfirmationState storage state;
-        if (MessagesLib.isMessageProof(payload)) {
+        if (isMessageProof) {
             messageHash = MessagesLib.parseMessageProof(payload);
             state = _confirmations[messageHash];
             state.proofs[router.id - 1]++;
@@ -144,7 +145,7 @@ contract RouterAggregator is Auth {
             // Reduce total proof confiration count by quorum
             state.proofs.decreaseFirstNValues(router.quorum, 1);
 
-            if (MessagesLib.isMessageProof(payload)) {
+            if (isMessageProof) {
                 gateway.handle(pendingMessages[messageHash]);
 
                 // Only if there are no more pending messages, remove the pending message
@@ -156,7 +157,7 @@ contract RouterAggregator is Auth {
             }
 
             emit ExecuteMessage(payload, msg.sender);
-        } else if (!MessagesLib.isMessageProof(payload)) {
+        } else if (!isMessageProof) {
             pendingMessages[messageHash] = payload;
         }
     }
@@ -168,11 +169,12 @@ contract RouterAggregator is Auth {
     ///      Only 1 recovery can be outstanding per message hash. If multiple routers fail at the same time,
     //       these will need to be recovered serially (increasing the challenge period for each failed router).
     function _handleRecovery(bytes memory payload) internal {
-        if (MessagesLib.isInitiateMessageRecovery(payload)) {
+        if (MessagesLib.messageType(payload) == MessagesLib.Call.InitiateMessageRecovery) {
             (bytes32 messageHash, address router) = MessagesLib.parseInitiateMessageRecovery(payload);
+            require(validRouters[msg.sender].id != 0, "RouterAggregator/invalid-router");
             recoveries[messageHash] = Recovery(block.timestamp + RECOVERY_CHALLENGE_PERIOD, router);
             emit InitiateMessageRecovery(messageHash, router);
-        } else if (MessagesLib.isDisputeMessageRecovery(payload)) {
+        } else if (MessagesLib.messageType(payload) == MessagesLib.Call.DisputeMessageRecovery) {
             bytes32 messageHash = MessagesLib.parseDisputeMessageRecovery(payload);
             return _disputeMessageRecovery(messageHash);
         }
@@ -206,7 +208,7 @@ contract RouterAggregator is Auth {
         uint256 numRouters = routers.length;
         require(numRouters > 0, "RouterAggregator/not-initialized");
 
-        bytes memory proof = MessagesLib.formatMessageProof(message);
+        bytes memory proof = abi.encodePacked(uint8(MessagesLib.Call.MessageProof), keccak256(message));
         for (uint256 i; i < numRouters; ++i) {
             RouterLike(routers[i]).send(i == PRIMARY_ROUTER_ID - 1 ? message : proof);
         }

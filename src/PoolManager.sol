@@ -10,24 +10,11 @@ import {IERC20Metadata} from "./interfaces/IERC20.sol";
 import {Auth} from "./Auth.sol";
 import {SafeTransferLib} from "./libraries/SafeTransferLib.sol";
 import {MathLib} from "./libraries/MathLib.sol";
+import {MessagesLib} from "src/libraries/MessagesLib.sol";
+import {CastLib} from "src/libraries/CastLib.sol";
 
 interface GatewayLike {
-    function transferTrancheTokensToCentrifuge(
-        uint64 poolId,
-        bytes16 trancheId,
-        address sender,
-        bytes32 destinationAddress,
-        uint128 amount
-    ) external;
-    function transferTrancheTokensToEVM(
-        uint64 poolId,
-        bytes16 trancheId,
-        address sender,
-        uint64 destinationChainId,
-        address destinationAddress,
-        uint128 amount
-    ) external;
-    function transfer(uint128 currency, address sender, bytes32 recipient, uint128 amount) external;
+    function send(bytes memory message) external;
 }
 
 interface InvestmentManagerLike {
@@ -84,6 +71,7 @@ struct UndeployedTranche {
 ///         as well as managing allowed pool currencies, and incoming and outgoing transfers.
 contract PoolManager is Auth {
     using MathLib for uint256;
+    using CastLib for *;
 
     uint8 internal constant MIN_DECIMALS = 1;
     uint8 internal constant MAX_DECIMALS = 18;
@@ -171,7 +159,7 @@ contract PoolManager is Auth {
 
         SafeTransferLib.safeTransferFrom(currency, msg.sender, address(escrow), amount);
 
-        gateway.transfer(currencyId, msg.sender, recipient, amount);
+        gateway.send(abi.encodePacked(uint8(MessagesLib.Call.Transfer), currencyId, msg.sender, recipient, amount));
         emit TransferCurrency(currency, recipient, amount);
     }
 
@@ -185,7 +173,17 @@ contract PoolManager is Auth {
         require(address(trancheToken) != address(0), "PoolManager/unknown-token");
 
         trancheToken.burn(msg.sender, amount);
-        gateway.transferTrancheTokensToCentrifuge(poolId, trancheId, msg.sender, destinationAddress, amount);
+        gateway.send(
+            abi.encodePacked(
+                uint8(MessagesLib.Call.TransferTrancheTokens),
+                poolId,
+                trancheId,
+                msg.sender.toBytes32(),
+                MessagesLib.formatDomain(MessagesLib.Domain.Centrifuge),
+                destinationAddress,
+                amount
+            )
+        );
 
         emit TransferTrancheTokensToCentrifuge(poolId, trancheId, destinationAddress, amount);
     }
@@ -201,8 +199,16 @@ contract PoolManager is Auth {
         require(address(trancheToken) != address(0), "PoolManager/unknown-token");
 
         trancheToken.burn(msg.sender, amount);
-        gateway.transferTrancheTokensToEVM(
-            poolId, trancheId, msg.sender, destinationChainId, destinationAddress, amount
+        gateway.send(
+            abi.encodePacked(
+                uint8(MessagesLib.Call.TransferTrancheTokens),
+                poolId,
+                trancheId,
+                msg.sender,
+                MessagesLib.formatDomain(MessagesLib.Domain.EVM, destinationChainId),
+                destinationAddress.toBytes32(),
+                amount
+            )
         );
 
         emit TransferTrancheTokensToEVM(poolId, trancheId, destinationChainId, destinationAddress, amount);

@@ -116,71 +116,25 @@ contract GatewayTest is BaseTest {
         gateway.handle(message);
     }
 
-    //onlyPoolManager can call
-    function testOnlyPoolManagerCanCall(
-        uint64 poolId,
-        bytes16 trancheId,
-        address sender,
-        uint64 destinationChainId,
-        address destinationAddress,
-        bytes32 destinationAddressBytes,
-        uint128 amount,
-        uint128 token,
-        bytes32 receiver
-    ) public {
+    function testOnlyPoolManagerCanCall(uint64 poolId) public {
         assertTrue(address(gateway.poolManager()) != self);
 
         // fail -> self not pool manager
-        vm.expectRevert(bytes("Gateway/only-pool-manager-allowed-to-call"));
-        gateway.transferTrancheTokensToCentrifuge(poolId, trancheId, sender, destinationAddressBytes, amount);
-
-        vm.expectRevert(bytes("Gateway/only-pool-manager-allowed-to-call"));
-        gateway.transferTrancheTokensToEVM(poolId, trancheId, sender, destinationChainId, destinationAddress, amount);
-
-        vm.expectRevert(bytes("Gateway/only-pool-manager-allowed-to-call"));
-        gateway.transfer(token, sender, receiver, amount);
+        vm.expectRevert(bytes("Gateway/invalid-manager"));
+        gateway.send(abi.encodePacked(uint8(MessagesLib.Call.AddPool), poolId));
 
         gateway.file("poolManager", self);
-        gateway.transferTrancheTokensToCentrifuge(poolId, trancheId, sender, destinationAddressBytes, amount);
-        gateway.transferTrancheTokensToEVM(poolId, trancheId, sender, destinationChainId, destinationAddress, amount);
-        gateway.transfer(token, sender, receiver, amount);
+        gateway.send(abi.encodePacked(uint8(MessagesLib.Call.AddPool), poolId));
     }
 
-    //onlyInvestmentManager can call
-    function testOnlyInvestmentManagerCanCall(
-        uint64 poolId,
-        bytes16 trancheId,
-        address investor,
-        uint128 currency,
-        uint128 currencyAmount,
-        uint128 trancheTokenAmount
-    ) public {
+    function testOnlyInvestmentManagerCanCall(uint64 poolId) public {
         assertTrue(address(gateway.investmentManager()) != self);
 
-        // fail -> self investment manager
-        vm.expectRevert(bytes("Gateway/only-investment-manager-allowed-to-call"));
-        gateway.increaseInvestOrder(poolId, trancheId, investor, currency, currencyAmount);
-
-        vm.expectRevert(bytes("Gateway/only-investment-manager-allowed-to-call"));
-        gateway.increaseRedeemOrder(poolId, trancheId, investor, currency, trancheTokenAmount);
-
-        vm.expectRevert(bytes("Gateway/only-investment-manager-allowed-to-call"));
-        gateway.collectInvest(poolId, trancheId, investor, currency);
-
-        vm.expectRevert(bytes("Gateway/only-investment-manager-allowed-to-call"));
-        gateway.collectRedeem(poolId, trancheId, investor, currency);
-
-        vm.expectRevert(bytes("Gateway/only-investment-manager-allowed-to-call"));
-        gateway.cancelInvestOrder(poolId, trancheId, investor, currency);
-
-        vm.expectRevert(bytes("Gateway/only-investment-manager-allowed-to-call"));
-        gateway.cancelRedeemOrder(poolId, trancheId, investor, currency);
+        // fail -> self not investment manager
+        vm.expectRevert(bytes("Gateway/invalid-manager"));
+        gateway.send(abi.encodePacked(uint8(MessagesLib.Call.AddPool), poolId));
 
         gateway.file("investmentManager", self);
-        // success
-        gateway.increaseInvestOrder(poolId, trancheId, investor, currency, currencyAmount);
-        gateway.increaseRedeemOrder(poolId, trancheId, investor, currency, trancheTokenAmount);
-        gateway.cancelInvestOrder(poolId, trancheId, investor, currency);
-        gateway.cancelRedeemOrder(poolId, trancheId, investor, currency);
+        gateway.send(abi.encodePacked(uint8(MessagesLib.Call.AddPool), poolId));
     }
 }
