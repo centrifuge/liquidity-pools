@@ -2,8 +2,11 @@
 pragma solidity 0.8.21;
 
 import "./../BaseTest.sol";
+import {CastLib} from "src/libraries/CastLib.sol";
 
 contract DepositTest is BaseTest {
+    using CastLib for *;
+
     function testDepositMint(uint256 amount) public {
         // If lower than 4 or odd, rounding down can lead to not receiving any tokens
         amount = uint128(bound(amount, 4, MAX_UINT128));
@@ -726,8 +729,12 @@ contract DepositTest is BaseTest {
 
         // check message was send out to centchain
         lPool.cancelDepositRequest();
-        bytes memory cancelOrderMessage = MessagesLib.formatCancelInvestOrder(
-            lPool.poolId(), lPool.trancheId(), _addressToBytes32(self), defaultCurrencyId
+        bytes memory cancelOrderMessage = abi.encodePacked(
+            uint8(MessagesLib.Call.CancelInvestOrder),
+            lPool.poolId(),
+            lPool.trancheId(),
+            bytes32(bytes20(self)),
+            defaultCurrencyId
         );
         assertEq(cancelOrderMessage, router1.values_bytes("send"));
 
@@ -744,7 +751,7 @@ contract DepositTest is BaseTest {
         erc20.burn(self, amount);
 
         centrifugeChain.isExecutedDecreaseInvestOrder(
-            lPool.poolId(), lPool.trancheId(), _addressToBytes32(self), defaultCurrencyId, uint128(amount), 0
+            lPool.poolId(), lPool.trancheId(), self.toBytes32(), defaultCurrencyId, uint128(amount), 0
         );
         assertEq(erc20.balanceOf(address(escrow)), 0);
         assertEq(erc20.balanceOf(address(userEscrow)), amount);

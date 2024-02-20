@@ -3,8 +3,11 @@ pragma solidity 0.8.21;
 
 import "test/BaseTest.sol";
 import "test/mocks/RestrictionManagerFactory.sol";
+import {CastLib} from "src/libraries/CastLib.sol";
 
 contract PoolManagerTest is BaseTest {
+    using CastLib for *;
+
     // Deployment
     function testDeployment() public {
         // values set correctly
@@ -69,6 +72,8 @@ contract PoolManagerTest is BaseTest {
         uint8 restrictionSet
     ) public {
         decimals = uint8(bound(decimals, 1, 18));
+        vm.assume(bytes(tokenName).length <= 128);
+        vm.assume(bytes(tokenSymbol).length <= 32);
 
         vm.expectRevert(bytes("PoolManager/invalid-pool"));
         centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, restrictionSet);
@@ -95,12 +100,8 @@ contract PoolManagerTest is BaseTest {
 
         TrancheToken trancheToken = TrancheToken(poolManager.getTrancheToken(poolId, trancheId));
 
-        assertEq(
-            _bytes128ToString(_stringToBytes128(tokenName)), _bytes128ToString(_stringToBytes128(trancheToken.name()))
-        );
-        assertEq(
-            _bytes32ToString(_stringToBytes32(tokenSymbol)), _bytes32ToString(_stringToBytes32(trancheToken.symbol()))
-        );
+        assertEq(tokenName, trancheToken.name());
+        assertEq(tokenSymbol, trancheToken.symbol());
         assertEq(decimals, trancheToken.decimals());
 
         vm.expectRevert(bytes("PoolManager/tranche-already-deployed"));
@@ -117,20 +118,17 @@ contract PoolManagerTest is BaseTest {
     ) public {
         decimals = uint8(bound(decimals, 1, 18));
         vm.assume(!hasDuplicates(trancheIds));
+        vm.assume(bytes(tokenName).length <= 128);
+        vm.assume(bytes(tokenSymbol).length <= 32);
+
         centrifugeChain.addPool(poolId);
 
         for (uint256 i = 0; i < trancheIds.length; i++) {
             centrifugeChain.addTranche(poolId, trancheIds[i], tokenName, tokenSymbol, decimals, restrictionSet);
             poolManager.deployTranche(poolId, trancheIds[i]);
             TrancheToken trancheToken = TrancheToken(poolManager.getTrancheToken(poolId, trancheIds[i]));
-            assertEq(
-                _bytes128ToString(_stringToBytes128(tokenName)),
-                _bytes128ToString(_stringToBytes128(trancheToken.name()))
-            );
-            assertEq(
-                _bytes32ToString(_stringToBytes32(tokenSymbol)),
-                _bytes32ToString(_stringToBytes32(trancheToken.symbol()))
-            );
+            assertEq(tokenName, trancheToken.name());
+            assertEq(tokenSymbol, trancheToken.symbol());
             assertEq(decimals, trancheToken.decimals());
         }
     }
@@ -146,6 +144,9 @@ contract PoolManagerTest is BaseTest {
     ) public {
         vm.assume(currency > 0);
         decimals = uint8(bound(decimals, 1, 18));
+        vm.assume(bytes(tokenName).length <= 128);
+        vm.assume(bytes(tokenSymbol).length <= 32);
+
         centrifugeChain.addPool(poolId); // add pool
 
         vm.expectRevert(bytes("PoolManager/tranche-not-added"));
@@ -155,12 +156,8 @@ contract PoolManagerTest is BaseTest {
         TrancheToken trancheToken = TrancheToken(trancheToken_);
         assertEq(trancheToken.wards(address(root)), 1);
         assertEq(trancheToken.wards(address(investmentManager)), 1);
-        assertEq(
-            _bytes128ToString(_stringToBytes128(tokenName)), _bytes128ToString(_stringToBytes128(trancheToken.name()))
-        );
-        assertEq(
-            _bytes32ToString(_stringToBytes32(tokenSymbol)), _bytes32ToString(_stringToBytes32(trancheToken.symbol()))
-        );
+        assertEq(tokenName, trancheToken.name());
+        assertEq(tokenSymbol, trancheToken.symbol());
     }
 
     function testRestrictionSetIntegration(uint64 poolId, bytes16 trancheId, uint8 restrictionSet) public {
@@ -213,6 +210,8 @@ contract PoolManagerTest is BaseTest {
     ) public {
         decimals = uint8(bound(decimals, 1, 18));
         vm.assume(currency > 0);
+        vm.assume(bytes(tokenName).length <= 128);
+        vm.assume(bytes(tokenSymbol).length <= 32);
 
         centrifugeChain.addPool(poolId); // add pool
         centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, restrictionSet); // add tranche
@@ -248,8 +247,8 @@ contract PoolManagerTest is BaseTest {
         assertTrue(lPool.wards(address(this)) == 0);
         assertTrue(investmentManager.wards(lPoolAddress) == 1);
 
-        assertEq(trancheToken.name(), _bytes128ToString(_stringToBytes128(tokenName)));
-        assertEq(trancheToken.symbol(), _bytes32ToString(_stringToBytes32(tokenSymbol)));
+        assertEq(trancheToken.name(), tokenName);
+        assertEq(trancheToken.symbol(), tokenSymbol);
         assertEq(trancheToken.decimals(), decimals);
         assertTrue(
             RestrictionManagerLike(address(trancheToken.restrictionManager())).hasMember(
@@ -267,7 +266,7 @@ contract PoolManagerTest is BaseTest {
         vm.assume(amount > 0);
         uint128 currency = defaultCurrencyId;
         address recipient = makeAddr("recipient");
-        bytes32 sender = _addressToBytes32(makeAddr("sender"));
+        bytes32 sender = makeAddr("sender").toBytes32();
 
         vm.expectRevert(bytes("PoolManager/unknown-currency"));
         centrifugeChain.incomingTransfer(currency, sender, bytes32(bytes20(recipient)), amount);
@@ -292,7 +291,7 @@ contract PoolManagerTest is BaseTest {
         initialBalance = uint128(bound(initialBalance, amount, type(uint128).max)); // initialBalance >= amount
         vm.assume(amount > 0);
         uint128 currency = defaultCurrencyId;
-        bytes32 recipient = _addressToBytes32(makeAddr("recipient"));
+        bytes32 recipient = makeAddr("recipient").toBytes32();
 
         erc20.mint(address(this), initialBalance);
         assertEq(erc20.balanceOf(address(this)), initialBalance);
@@ -311,7 +310,7 @@ contract PoolManagerTest is BaseTest {
     function testTransferTrancheTokensToCentrifuge(uint128 amount) public {
         vm.assume(amount > 0);
         uint64 validUntil = uint64(block.timestamp + 7 days);
-        bytes32 centChainAddress = _addressToBytes32(makeAddr("centChainAddress"));
+        bytes32 centChainAddress = makeAddr("centChainAddress").toBytes32();
         address lPool_ = deploySimplePool();
         LiquidityPool lPool = LiquidityPool(lPool_);
         TrancheTokenLike trancheToken = TrancheTokenLike(address(LiquidityPool(lPool_).share()));
@@ -335,7 +334,8 @@ contract PoolManagerTest is BaseTest {
         assertEq(trancheToken.balanceOf(address(this)), 0);
 
         // Finally, verify the connector called `router.send`
-        bytes memory message = MessagesLib.formatTransferTrancheTokens(
+        bytes memory message = abi.encodePacked(
+            uint8(MessagesLib.Call.TransferTrancheTokens),
             poolId,
             trancheId,
             bytes32(bytes20(address(this))),
@@ -421,7 +421,7 @@ contract PoolManagerTest is BaseTest {
         poolManager.updateMember(poolId, trancheId, randomUser, validUntil);
 
         vm.expectRevert(bytes("PoolManager/unknown-token"));
-        centrifugeChain.updateMember(100, _stringToBytes16("100"), randomUser, validUntil); // use random poolId &
+        centrifugeChain.updateMember(100, bytes16(bytes("100")), randomUser, validUntil); // use random poolId &
             // trancheId
 
         centrifugeChain.updateMember(poolId, trancheId, randomUser, validUntil);
@@ -477,7 +477,7 @@ contract PoolManagerTest is BaseTest {
         string memory updatedTokenSymbol = "newSymbol";
 
         vm.expectRevert(bytes("PoolManager/unknown-token"));
-        centrifugeChain.updateTrancheTokenMetadata(100, _stringToBytes16("100"), updatedTokenName, updatedTokenSymbol);
+        centrifugeChain.updateTrancheTokenMetadata(100, bytes16(bytes("100")), updatedTokenName, updatedTokenSymbol);
 
         vm.expectRevert(bytes("PoolManager/not-the-gateway"));
         poolManager.updateTrancheTokenMetadata(poolId, trancheId, updatedTokenName, updatedTokenSymbol);
@@ -593,7 +593,7 @@ contract PoolManagerTest is BaseTest {
 
     function testRemoveLiquidityPoolFailsWhenLiquidityPoolNotDeployed() public {
         uint64 poolId = 5;
-        bytes16 trancheId = _stringToBytes16("1");
+        bytes16 trancheId = bytes16(bytes("1"));
 
         centrifugeChain.addPool(poolId); // add pool
         centrifugeChain.addTranche(poolId, trancheId, "Test Token", "TT", 6, 2); // add tranche
