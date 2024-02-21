@@ -2,8 +2,11 @@
 pragma solidity 0.8.21;
 
 import "./../BaseTest.sol";
+import {CastLib} from "src/libraries/CastLib.sol";
 
 contract RedeemTest is BaseTest {
+    using CastLib for *;
+
     function testRedeem(uint256 amount) public {
         amount = uint128(bound(amount, 2, MAX_UINT128 / 2));
 
@@ -209,8 +212,12 @@ contract RedeemTest is BaseTest {
 
         // check message was send out to centchain
         lPool.cancelRedeemRequest();
-        bytes memory cancelOrderMessage = MessagesLib.formatCancelRedeemOrder(
-            lPool.poolId(), lPool.trancheId(), _addressToBytes32(self), defaultCurrencyId
+        bytes memory cancelOrderMessage = abi.encodePacked(
+            uint8(MessagesLib.Call.CancelRedeemOrder),
+            lPool.poolId(),
+            lPool.trancheId(),
+            bytes32(bytes20(self)),
+            defaultCurrencyId
         );
         assertEq(cancelOrderMessage, router1.values_bytes("send"));
 
@@ -224,7 +231,7 @@ contract RedeemTest is BaseTest {
         lPool.requestRedeem(amount, address(this), address(this), "");
 
         centrifugeChain.isExecutedDecreaseRedeemOrder(
-            lPool.poolId(), lPool.trancheId(), _addressToBytes32(self), defaultCurrencyId, uint128(amount), 0
+            lPool.poolId(), lPool.trancheId(), self.toBytes32(), defaultCurrencyId, uint128(amount), 0
         );
 
         assertEq(trancheToken.balanceOf(address(escrow)), amount);
