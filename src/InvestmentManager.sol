@@ -2,20 +2,13 @@
 pragma solidity 0.8.21;
 
 import {Auth} from "./Auth.sol";
+import {CastLib} from "./libraries/CastLib.sol";
 import {MathLib} from "./libraries/MathLib.sol";
 import {SafeTransferLib} from "./libraries/SafeTransferLib.sol";
+import {MessagesLib} from "./libraries/MessagesLib.sol";
 
 interface GatewayLike {
-    function increaseInvestOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currencyId, uint128 amount)
-        external;
-    function decreaseInvestOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currencyId, uint128 amount)
-        external;
-    function increaseRedeemOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currencyId, uint128 amount)
-        external;
-    function decreaseRedeemOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currencyId, uint128 amount)
-        external;
-    function cancelInvestOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currencyId) external;
-    function cancelRedeemOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currencyId) external;
+    function send(bytes memory message) external;
 }
 
 interface ERC20Like {
@@ -92,6 +85,7 @@ struct InvestmentState {
 ///         both incoming and outgoing investment transactions.
 contract InvestmentManager is Auth {
     using MathLib for uint256;
+    using CastLib for *;
 
     /// @dev Prices are fixed-point integers with 18 decimals
     uint8 internal constant PRICE_DECIMALS = 18;
@@ -166,8 +160,15 @@ contract InvestmentManager is Auth {
         state.pendingDepositRequest = state.pendingDepositRequest + _currencyAmount;
         state.exists = true;
 
-        gateway.increaseInvestOrder(
-            poolId, lPool.trancheId(), receiver, poolManager.currencyAddressToId(currency), _currencyAmount
+        gateway.send(
+            abi.encodePacked(
+                uint8(MessagesLib.Call.IncreaseInvestOrder),
+                poolId,
+                lPool.trancheId(),
+                receiver,
+                poolManager.currencyAddressToId(currency),
+                _currencyAmount
+            )
         );
 
         return true;
@@ -216,8 +217,15 @@ contract InvestmentManager is Auth {
         state.pendingRedeemRequest = state.pendingRedeemRequest + trancheTokenAmount;
         state.exists = true;
 
-        gateway.increaseRedeemOrder(
-            lPool.poolId(), lPool.trancheId(), owner, poolManager.currencyAddressToId(lPool.asset()), trancheTokenAmount
+        gateway.send(
+            abi.encodePacked(
+                uint8(MessagesLib.Call.IncreaseRedeemOrder),
+                lPool.poolId(),
+                lPool.trancheId(),
+                owner,
+                poolManager.currencyAddressToId(lPool.asset()),
+                trancheTokenAmount
+            )
         );
 
         return true;
@@ -230,11 +238,14 @@ contract InvestmentManager is Auth {
         require(state.pendingCancelDepositRequest != true, "InvestmentManager/cancellation-is-pending");
         state.pendingCancelDepositRequest = true;
 
-        gateway.cancelInvestOrder(
-            _liquidityPool.poolId(),
-            _liquidityPool.trancheId(),
-            owner,
-            poolManager.currencyAddressToId(_liquidityPool.asset())
+        gateway.send(
+            abi.encodePacked(
+                uint8(MessagesLib.Call.CancelInvestOrder),
+                _liquidityPool.poolId(),
+                _liquidityPool.trancheId(),
+                owner.toBytes32(),
+                poolManager.currencyAddressToId(_liquidityPool.asset())
+            )
         );
     }
 
@@ -250,11 +261,14 @@ contract InvestmentManager is Auth {
         require(state.pendingCancelRedeemRequest != true, "InvestmentManager/cancellation-is-pending");
         state.pendingCancelRedeemRequest = true;
 
-        gateway.cancelRedeemOrder(
-            _liquidityPool.poolId(),
-            _liquidityPool.trancheId(),
-            owner,
-            poolManager.currencyAddressToId(_liquidityPool.asset())
+        gateway.send(
+            abi.encodePacked(
+                uint8(MessagesLib.Call.CancelRedeemOrder),
+                _liquidityPool.poolId(),
+                _liquidityPool.trancheId(),
+                owner.toBytes32(),
+                poolManager.currencyAddressToId(_liquidityPool.asset())
+            )
         );
     }
 
