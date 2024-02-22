@@ -67,9 +67,9 @@ contract LocalRouter is Auth {
 
     // From LP on Centrifuge (faking other domain) to Centrifuge
     function send(bytes calldata message) public {
-        emit RoutedToCentrifuge(FAKE_COMMAND_ID, sourceChain, sourceAddress, message);
-
         PrecompileLike precompile = PrecompileLike(PRECOMPILE);
         precompile.execute(FAKE_COMMAND_ID, sourceChain, sourceAddress, message);
+        
+        emit RouteToCentrifuge(FAKE_COMMAND_ID, sourceChain, sourceAddress, message);
     }
 }
