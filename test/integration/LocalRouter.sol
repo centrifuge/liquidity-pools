@@ -28,8 +28,8 @@ contract LocalRouter is Auth {
     string public sourceAddress;
 
     // --- Events ---
-    event RoutedToDomain(string destinationChain, string destinationContractAddress, bytes payload);
-    event RoutedToCentrifuge(bytes32 commandId, string sourceChain, string sourceAddress, bytes payload);
+    event RouteToDomain(string destinationChain, string destinationContractAddress, bytes payload);
+    event RouteToCentrifuge(bytes32 commandId, string sourceChain, string sourceAddress, bytes payload);
     event File(bytes32 indexed what, address addr);
     event File(bytes32 indexed what, string data);
 
@@ -61,15 +61,15 @@ contract LocalRouter is Auth {
         string calldata destinationContractAddress,
         bytes calldata payload
     ) public {
-        emit RoutedToDomain(destinationChain, destinationContractAddress, payload);
         gateway.handle(payload);
+        emit RouteToDomain(destinationChain, destinationContractAddress, payload);
     }
 
     // From LP on Centrifuge (faking other domain) to Centrifuge
     function send(bytes calldata message) public {
-        emit RoutedToCentrifuge(FAKE_COMMAND_ID, sourceChain, sourceAddress, message);
-
         PrecompileLike precompile = PrecompileLike(PRECOMPILE);
         precompile.execute(FAKE_COMMAND_ID, sourceChain, sourceAddress, message);
+        
+        emit RouteToCentrifuge(FAKE_COMMAND_ID, sourceChain, sourceAddress, message);
     }
 }
