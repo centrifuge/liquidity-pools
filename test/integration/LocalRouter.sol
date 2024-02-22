@@ -69,7 +69,7 @@ contract LocalRouter is Auth {
     function send(bytes calldata message) public {
         PrecompileLike precompile = PrecompileLike(PRECOMPILE);
         precompile.execute(FAKE_COMMAND_ID, sourceChain, sourceAddress, message);
-        
+
         emit RouteToCentrifuge(FAKE_COMMAND_ID, sourceChain, sourceAddress, message);
     }
 }
