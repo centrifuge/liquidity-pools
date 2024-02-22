@@ -61,8 +61,8 @@ contract LocalRouter is Auth {
         string calldata destinationContractAddress,
         bytes calldata payload
     ) public {
-        emit RoutedToDomain(destinationChain, destinationContractAddress, payload);
         gateway.handle(payload);
+        emit RouteToDomain(destinationChain, destinationContractAddress, payload);
     }
 
     // From LP on Centrifuge (faking other domain) to Centrifuge
