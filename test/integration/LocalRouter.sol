@@ -28,8 +28,8 @@ contract LocalRouter is Auth {
     string public sourceAddress;
 
     // --- Events ---
-    event RoutedToDomain(string destinationChain, string destinationContractAddress, bytes payload);
-    event RoutedToCentrifuge(bytes32 commandId, string sourceChain, string sourceAddress, bytes payload);
+    event RouteToDomain(string destinationChain, string destinationContractAddress, bytes payload);
+    event RouteToCentrifuge(bytes32 commandId, string sourceChain, string sourceAddress, bytes payload);
     event File(bytes32 indexed what, address addr);
     event File(bytes32 indexed what, string data);
 
