@@ -18,7 +18,7 @@ contract LocalRouterScript is Deployer {
         admin = address(0x361c43cd5Fd700923Aae9dED678851a201839fc6);
         pausers = [address(0x361c43cd5Fd700923Aae9dED678851a201839fc6)];
 
-        deployInvestmentManager(msg.sender);
+        deploy(msg.sender);
         LocalRouter router = new LocalRouter();
         wire(address(router));
         router.file("gateway", address(gateway));
