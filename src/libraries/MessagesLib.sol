@@ -527,11 +527,11 @@ library MessagesLib {
     }
 
     // Utils
-    function formatDomain(Domain domain) public pure returns (bytes9) {
+    function formatDomain(Domain domain) internal pure returns (bytes9) {
         return bytes9(bytes1(uint8(domain)));
     }
 
-    function formatDomain(Domain domain, uint64 chainId) public pure returns (bytes9) {
+    function formatDomain(Domain domain, uint64 chainId) internal pure returns (bytes9) {
         return bytes9(BytesLib.slice(abi.encodePacked(uint8(domain), chainId), 0, 9));
     }
 }
