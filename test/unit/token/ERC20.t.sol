@@ -52,6 +52,15 @@ contract ERC20Test is Test {
         token = new ERC20(18);
     }
 
+    function testPermissions(address anotherWard) public {
+        vm.assume(anotherWard != address(this));
+
+        token.rely(anotherWard);
+        assertEq(token.wards(anotherWard), 1);
+        token.deny(anotherWard);
+        assertEq(token.wards(anotherWard), 0);
+    }
+
     function testFile(string memory newName, string memory newSymbol, address invalidOrigin) public {
         vm.assume(invalidOrigin != address(this));
 
