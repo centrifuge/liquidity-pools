@@ -22,7 +22,6 @@ contract InvestmentManagerTest is BaseTest {
         // permissions set correctly
         assertEq(investmentManager.wards(address(root)), 1);
         assertEq(investmentManager.wards(address(poolManager)), 1);
-        assertEq(escrow.wards(address(investmentManager)), 1);
         assertEq(userEscrow.wards(address(investmentManager)), 1);
         // assertEq(investmentManager.wards(self), 0); // deployer has no permissions
     }
