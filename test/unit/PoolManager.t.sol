@@ -19,7 +19,6 @@ contract PoolManagerTest is BaseTest {
 
         // permissions set correctly
         assertEq(poolManager.wards(address(root)), 1);
-        assertEq(investmentManager.wards(address(poolManager)), 1);
         assertEq(escrow.wards(address(poolManager)), 1);
         assertEq(investmentManager.wards(address(poolManager)), 1);
         // assertEq(poolManager.wards(self), 0); // deployer has no permissions -> not possible within tests
