@@ -113,7 +113,7 @@ contract ERC20Test is Test {
         vm.prank(address(from));
         vm.expectRevert(bytes("ERC20/insufficient-allowance"));
         token.burn(address(0xBEEF), 0.9e18);
-        
+
         vm.prank(address(0xBEEF));
         token.approve(address(from), 1e18);
 
