@@ -46,6 +46,7 @@ interface PoolManagerLike {
         view
         returns (uint256 price, uint64 computedAt);
     function getLiquidityPool(uint64 poolId, bytes16 trancheId, uint128 currencyId) external view returns (address);
+    function isLiquidityPool(address liquidityPool) external view returns (bool);
     function isAllowedAsInvestmentCurrency(uint64 poolId, address currencyAddress) external view returns (bool);
 }
 
@@ -113,8 +114,17 @@ contract InvestmentManager is Auth {
     }
 
     /// @dev Gateway must be msg.sender for incoming messages
-    modifier onlyGateway() {
-        require(msg.sender == address(gateway), "InvestmentManager/not-the-gateway");
+    modifier incoming() {
+        require(msg.sender == address(gateway) || wards[msg.sender] == 1, "InvestmentManager/not-the-gateway");
+        _;
+    }
+
+    /// @dev A valid liquidity pool must be msg.sender for outgoing messages
+    modifier outgoing() {
+        require(
+            poolManager.isLiquidityPool(msg.sender) == true || wards[msg.sender] == 1,
+            "InvestmentManager/not-liquidity-pool"
+        );
         _;
     }
 
@@ -135,7 +145,7 @@ contract InvestmentManager is Auth {
     ///         even though the tranche token payout can only happen after epoch execution.
     function requestDeposit(address liquidityPool, uint256 currencyAmount, address receiver, address owner)
         public
-        auth
+        outgoing
         returns (bool)
     {
         LiquidityPoolLike lPool = LiquidityPoolLike(liquidityPool);
@@ -183,7 +193,7 @@ contract InvestmentManager is Auth {
     ///         even though the currency payout can only happen after epoch execution.
     function requestRedeem(address liquidityPool, uint256 trancheTokenAmount, address receiver, address /* owner */ )
         public
-        auth
+        outgoing
         returns (bool)
     {
         uint128 _trancheTokenAmount = trancheTokenAmount.toUint128();
@@ -231,7 +241,7 @@ contract InvestmentManager is Auth {
         return true;
     }
 
-    function cancelDepositRequest(address liquidityPool, address owner) public auth {
+    function cancelDepositRequest(address liquidityPool, address owner) public outgoing {
         LiquidityPoolLike _liquidityPool = LiquidityPoolLike(liquidityPool);
 
         InvestmentState storage state = investments[liquidityPool][owner];
@@ -249,7 +259,7 @@ contract InvestmentManager is Auth {
         );
     }
 
-    function cancelRedeemRequest(address liquidityPool, address owner) public auth {
+    function cancelRedeemRequest(address liquidityPool, address owner) public outgoing {
         LiquidityPoolLike _liquidityPool = LiquidityPoolLike(liquidityPool);
         uint256 approximateTrancheTokensPayout = pendingRedeemRequest(liquidityPool, owner);
         require(
@@ -281,7 +291,7 @@ contract InvestmentManager is Auth {
         uint128 currencyPayout,
         uint128 trancheTokenPayout,
         uint128 remainingInvestOrder
-    ) public onlyGateway {
+    ) public incoming {
         address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, currencyId);
 
         InvestmentState storage state = investments[liquidityPool][user];
@@ -306,7 +316,7 @@ contract InvestmentManager is Auth {
         uint128 currencyPayout,
         uint128 trancheTokenPayout,
         uint128 remainingRedeemOrder
-    ) public onlyGateway {
+    ) public incoming {
         address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, currencyId);
 
         InvestmentState storage state = investments[liquidityPool][user];
@@ -337,7 +347,7 @@ contract InvestmentManager is Auth {
         uint128 currencyId,
         uint128 currencyPayout,
         uint128 remainingInvestOrder
-    ) public onlyGateway {
+    ) public incoming {
         address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, currencyId);
 
         InvestmentState storage state = investments[liquidityPool][user];
@@ -375,7 +385,7 @@ contract InvestmentManager is Auth {
         uint128 currencyId,
         uint128 trancheTokenPayout,
         uint128 remainingRedeemOrder
-    ) public onlyGateway {
+    ) public incoming {
         address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, currencyId);
         InvestmentState storage state = investments[liquidityPool][user];
 
@@ -404,7 +414,7 @@ contract InvestmentManager is Auth {
         address user,
         uint128 currencyId,
         uint128 trancheTokenAmount
-    ) public onlyGateway {
+    ) public incoming {
         require(trancheTokenAmount != 0, "InvestmentManager/tranche-token-amount-is-zero");
         address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, currencyId);
 
@@ -514,7 +524,7 @@ contract InvestmentManager is Auth {
     ///         requestDeposit.
     function deposit(address liquidityPool, uint256 currencyAmount, address receiver, address owner)
         public
-        auth
+        outgoing
         returns (uint256 trancheTokenAmount)
     {
         InvestmentState storage state = investments[liquidityPool][owner];
@@ -529,7 +539,7 @@ contract InvestmentManager is Auth {
     ///         requestDeposit.
     function mint(address liquidityPool, uint256 trancheTokenAmount, address receiver, address owner)
         public
-        auth
+        outgoing
         returns (uint256 currencyAmount)
     {
         InvestmentState storage state = investments[liquidityPool][owner];
@@ -560,7 +570,7 @@ contract InvestmentManager is Auth {
     ///         upon calling requestRedeem.
     function redeem(address liquidityPool, uint256 trancheTokenAmount, address receiver, address owner)
         public
-        auth
+        outgoing
         returns (uint256 currencyAmount)
     {
         InvestmentState storage state = investments[liquidityPool][owner];
@@ -575,7 +585,7 @@ contract InvestmentManager is Auth {
     ///         upon calling requestRedeem.
     function withdraw(address liquidityPool, uint256 currencyAmount, address receiver, address owner)
         public
-        auth
+        outgoing
         returns (uint256 trancheTokenAmount)
     {
         InvestmentState storage state = investments[liquidityPool][owner];

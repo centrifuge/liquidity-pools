@@ -97,7 +97,6 @@ contract Deployer is Script {
         investmentManager.file("gateway", address(gateway));
         poolManager.file("gateway", address(gateway));
         investmentManager.rely(address(root));
-        investmentManager.rely(address(poolManager));
         poolManager.rely(address(root));
         gateway.rely(address(root));
         aggregator.rely(address(root));
