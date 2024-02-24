@@ -153,13 +153,13 @@ contract PoolManager is Auth {
     }
 
     // --- Outgoing message handling ---
-    function transfer(address currency, bytes32 recipient, uint128 amount) external {
+    function transfer(address currency, bytes32 recipient, uint128 amount) external payable {
         uint128 currencyId = currencyAddressToId[currency];
         require(currencyId != 0, "PoolManager/unknown-currency");
 
         SafeTransferLib.safeTransferFrom(currency, msg.sender, address(escrow), amount);
 
-        gateway.send(abi.encodePacked(uint8(MessagesLib.Call.Transfer), currencyId, msg.sender, recipient, amount));
+        gateway.send{ value: msg.value }(msg.sender, abi.encodePacked(uint8(MessagesLib.Call.Transfer), currencyId, msg.sender, recipient, amount));
         emit TransferCurrency(currency, recipient, amount);
     }
 
