@@ -82,7 +82,7 @@ interface PoolManagerLike {
         external;
 }
 
-interface RouterLike {
+interface RouterAggregatorLike {
     function send(bytes memory message) external;
 }
 
@@ -103,8 +103,7 @@ contract Gateway is Auth {
     PoolManagerLike public poolManager;
     InvestmentManagerLike public investmentManager;
 
-    RouterLike public outgoingRouter;
-    mapping(address => bool) public incomingRouters;
+    RouterAggregatorLike public aggregator;
 
     // --- Events ---
     event File(bytes32 indexed what, address data);
@@ -121,11 +120,6 @@ contract Gateway is Auth {
         emit Rely(msg.sender);
     }
 
-    modifier onlyIncomingRouter() {
-        require(incomingRouters[msg.sender], "Gateway/only-router-allowed-to-call");
-        _;
-    }
-
     modifier pauseable() {
         require(!root.paused(), "Gateway/paused");
         _;
@@ -134,36 +128,22 @@ contract Gateway is Auth {
     // --- Administration ---
     function file(bytes32 what, address data) public auth {
         if (what == "poolManager") poolManager = PoolManagerLike(data);
+        else if (what == "aggregator") aggregator = RouterAggregatorLike(data);
         else if (what == "investmentManager") investmentManager = InvestmentManagerLike(data);
         else revert("Gateway/file-unrecognized-param");
         emit File(what, data);
     }
 
-    function addIncomingRouter(address router) public auth {
-        incomingRouters[router] = true;
-        emit AddIncomingRouter(router);
-    }
-
-    function removeIncomingRouter(address router) public auth {
-        incomingRouters[router] = false;
-        emit RemoveIncomingRouter(router);
-    }
-
-    function updateOutgoingRouter(address router) public auth {
-        outgoingRouter = RouterLike(router);
-        emit UpdateOutgoingRouter(router);
-    }
-
     // --- Outgoing ---
-    function send(bytes calldata message) public pauseable {
+    function send(bytes calldata message) public auth pauseable {
         require(
             msg.sender == address(investmentManager) || msg.sender == address(poolManager), "Gateway/invalid-manager"
         );
-        outgoingRouter.send(message);
+        aggregator.send(message);
     }
 
     // --- Incoming ---
-    function handle(bytes calldata message) external onlyIncomingRouter pauseable {
+    function handle(bytes calldata message) external auth pauseable {
         MessagesLib.Call call = MessagesLib.messageType(message);
 
         if (call == MessagesLib.Call.AddCurrency) {
