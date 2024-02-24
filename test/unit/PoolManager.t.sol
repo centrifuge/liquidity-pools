@@ -9,7 +9,9 @@ contract PoolManagerTest is BaseTest {
     using CastLib for *;
 
     // Deployment
-    function testDeployment() public {
+    function testDeployment(address nonWard) public {
+        vm.assume(nonWard != address(root) && nonWard != address(this));
+
         // values set correctly
         assertEq(address(poolManager.gateway()), address(gateway));
         assertEq(address(poolManager.escrow()), address(escrow));
@@ -20,8 +22,7 @@ contract PoolManagerTest is BaseTest {
         // permissions set correctly
         assertEq(poolManager.wards(address(root)), 1);
         assertEq(escrow.wards(address(poolManager)), 1);
-        assertEq(investmentManager.wards(address(poolManager)), 1);
-        // assertEq(poolManager.wards(self), 0); // deployer has no permissions -> not possible within tests
+        assertEq(poolManager.wards(nonWard), 0);
     }
 
     function testFile() public {

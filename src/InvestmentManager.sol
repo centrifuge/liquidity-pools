@@ -50,10 +50,6 @@ interface PoolManagerLike {
     function isAllowedAsInvestmentCurrency(uint64 poolId, address currencyAddress) external view returns (bool);
 }
 
-interface EscrowLike {
-    function approve(address token, address spender, uint256 value) external;
-}
-
 interface UserEscrowLike {
     function transferIn(address token, address source, address destination, uint256 amount) external;
     function transferOut(address token, address owner, address destination, uint256 amount) external;
@@ -91,7 +87,7 @@ contract InvestmentManager is Auth {
     /// @dev Prices are fixed-point integers with 18 decimals
     uint8 internal constant PRICE_DECIMALS = 18;
 
-    EscrowLike public immutable escrow;
+    address public immutable escrow;
     UserEscrowLike public immutable userEscrow;
 
     GatewayLike public gateway;
@@ -106,7 +102,7 @@ contract InvestmentManager is Auth {
     );
 
     constructor(address escrow_, address userEscrow_) {
-        escrow = EscrowLike(escrow_);
+        escrow = escrow_;
         userEscrow = UserEscrowLike(userEscrow_);
 
         wards[msg.sender] = 1;

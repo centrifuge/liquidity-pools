@@ -5,7 +5,9 @@ import "test/BaseTest.sol";
 
 contract GatewayTest is BaseTest {
     // Deployment
-    function testDeployment() public {
+    function testDeployment(address nonWard) public {
+        vm.assume(nonWard != address(root) && nonWard != address(this));
+
         // values set correctly
         assertEq(address(gateway.investmentManager()), address(investmentManager));
         assertEq(address(gateway.poolManager()), address(poolManager));
@@ -27,7 +29,8 @@ contract GatewayTest is BaseTest {
         // permissions set correctly
         assertEq(gateway.wards(address(root)), 1);
         assertEq(aggregator.wards(address(root)), 1);
-        // assertEq(gateway.wards(self), 0); // deployer has no permissions
+        assertEq(gateway.wards(nonWard), 0);
+        assertEq(aggregator.wards(nonWard), 0);
     }
 
     // --- Administration ---
