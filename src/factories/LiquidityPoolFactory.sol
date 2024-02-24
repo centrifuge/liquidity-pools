@@ -16,6 +16,10 @@ interface LiquidityPoolFactoryLike {
     ) external returns (address);
 }
 
+interface AuthLike {
+    function rely(address) external;
+}
+
 /// @title  Liquidity Pool Factory
 /// @dev    Utility for deploying new liquidity pool contracts
 contract LiquidityPoolFactory is Auth {
@@ -44,6 +48,9 @@ contract LiquidityPoolFactory is Auth {
         for (uint256 i = 0; i < wards_.length; i++) {
             liquidityPool.rely(wards_[i]);
         }
+
+        AuthLike(investmentManager).rely(address(liquidityPool));
+
         liquidityPool.deny(address(this));
         return address(liquidityPool);
     }
