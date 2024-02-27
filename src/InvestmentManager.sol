@@ -46,7 +46,6 @@ interface PoolManagerLike {
         view
         returns (uint256 price, uint64 computedAt);
     function getLiquidityPool(uint64 poolId, bytes16 trancheId, uint128 currencyId) external view returns (address);
-    function isLiquidityPool(address liquidityPool) external view returns (bool);
     function isAllowedAsInvestmentCurrency(uint64 poolId, address currencyAddress) external view returns (bool);
 }
 
@@ -137,9 +136,11 @@ contract InvestmentManager is Auth {
         address currency = lPool.asset();
         require(poolManager.isAllowedAsInvestmentCurrency(poolId, currency), "InvestmentManager/currency-not-allowed");
 
-        require(_checkRestrictions(liquidityPool, address(0), owner, 0), "InvestmentManager/owner-is-restricted");
+        require(_checkTransferRestriction(liquidityPool, address(0), owner, 0), "InvestmentManager/owner-is-restricted");
         require(
-            _checkRestrictions(liquidityPool, address(0), receiver, convertToShares(liquidityPool, currencyAmount)),
+            _checkTransferRestriction(
+                liquidityPool, address(0), receiver, convertToShares(liquidityPool, currencyAmount)
+            ),
             "InvestmentManager/transfer-not-allowed"
         );
 
@@ -186,7 +187,7 @@ contract InvestmentManager is Auth {
         );
 
         require(
-            _checkRestrictions(
+            _checkTransferRestriction(
                 liquidityPool, receiver, address(escrow), convertToAssets(liquidityPool, trancheTokenAmount)
             ),
             "InvestmentManager/transfer-not-allowed"
@@ -242,7 +243,7 @@ contract InvestmentManager is Auth {
         LiquidityPoolLike _liquidityPool = LiquidityPoolLike(liquidityPool);
         uint256 approximateTrancheTokensPayout = pendingRedeemRequest(liquidityPool, owner);
         require(
-            _checkRestrictions(liquidityPool, address(0), owner, approximateTrancheTokensPayout),
+            _checkTransferRestriction(liquidityPool, address(0), owner, approximateTrancheTokensPayout),
             "InvestmentManager/transfer-not-allowed"
         );
 
@@ -447,7 +448,7 @@ contract InvestmentManager is Auth {
     }
 
     function maxDeposit(address liquidityPool, address user) public view returns (uint256) {
-        if (!_checkRestrictions(liquidityPool, address(escrow), user, 0)) return 0;
+        if (!_checkTransferRestriction(liquidityPool, address(escrow), user, 0)) return 0;
         return uint256(_maxDeposit(liquidityPool, user));
     }
 
@@ -457,7 +458,7 @@ contract InvestmentManager is Auth {
     }
 
     function maxMint(address liquidityPool, address user) public view returns (uint256 trancheTokenAmount) {
-        if (!_checkRestrictions(liquidityPool, address(escrow), user, 0)) return 0;
+        if (!_checkTransferRestriction(liquidityPool, address(escrow), user, 0)) return 0;
         return uint256(investments[liquidityPool][user].maxMint);
     }
 
@@ -673,7 +674,7 @@ contract InvestmentManager is Auth {
         trancheTokenDecimals = ERC20Like(LiquidityPoolLike(liquidityPool).share()).decimals();
     }
 
-    function _checkRestrictions(address liquidityPool, address from, address to, uint256 value)
+    function _checkTransferRestriction(address liquidityPool, address from, address to, uint256 value)
         internal
         view
         returns (bool)
