@@ -11,7 +11,7 @@ interface LiquidityPoolLike {
 contract InvestmentManagerTest is BaseTest {
     // Deployment
     function testDeployment(address nonWard) public {
-        vm.assume(nonWard != address(root) && nonWard != address(this));
+        vm.assume(nonWard != address(root) && nonWard != address(liquidityPoolFactory) && nonWard != address(this));
 
         // values set correctly
         assertEq(address(investmentManager.escrow()), address(escrow));
