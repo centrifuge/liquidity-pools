@@ -3,16 +3,13 @@ pragma solidity 0.8.21;
 
 import {Auth} from "src/Auth.sol";
 
-interface RouterAggregatorLike {
-
-}
+interface RouterAggregatorLike {}
 
 /// @title  PaymentForwarder
 contract PaymentForwarder is Auth {
-
     uint256 public messageGas = 100_000; // TODO
     uint256 public proofVerificationGas = 10_000; // TODO
-    
+
     uint256 public gasPriceOracle = 0.5 gwei;
 
     // --- Events ---

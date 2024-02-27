@@ -64,12 +64,8 @@ contract AxelarRouter {
     // --- Outgoing ---
     // TODO: is there any risk with this being public and having a sender arg?
     function pay(address sender, bytes calldata payload) public payable {
-        axelarGasService.payNativeGasForContractCall{ value: msg.value }(
-            sender,
-            CENTRIFUGE_ID,
-            CENTRIFUGE_AXELAR_EXECUTABLE,
-            payload,
-            sender
+        axelarGasService.payNativeGasForContractCall{value: msg.value}(
+            sender, CENTRIFUGE_ID, CENTRIFUGE_AXELAR_EXECUTABLE, payload, sender
         );
     }
 

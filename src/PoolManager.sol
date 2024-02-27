@@ -153,7 +153,9 @@ contract PoolManager is Auth {
 
         SafeTransferLib.safeTransferFrom(currency, msg.sender, address(escrow), amount);
 
-        gateway.send{ value: msg.value }(msg.sender, abi.encodePacked(uint8(MessagesLib.Call.Transfer), currencyId, msg.sender, recipient, amount));
+        gateway.send{value: msg.value}(
+            msg.sender, abi.encodePacked(uint8(MessagesLib.Call.Transfer), currencyId, msg.sender, recipient, amount)
+        );
         emit TransferCurrency(currency, recipient, amount);
     }
 
