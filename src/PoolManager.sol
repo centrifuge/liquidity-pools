@@ -457,7 +457,7 @@ contract PoolManager is Auth {
 
         delete tranche.liquidityPools[currency];
 
-        // TODO: deny liquidityPool on investmentManager
+        liquidityPoolFactory.denyLiquidityPool(liquidityPool, address(investmentManager));
 
         AuthLike(tranche.token).deny(liquidityPool);
         TrancheTokenLike(tranche.token).removeTrustedForwarder(liquidityPool);
