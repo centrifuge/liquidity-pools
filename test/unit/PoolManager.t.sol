@@ -59,7 +59,8 @@ contract PoolManagerTest is BaseTest {
         vm.expectRevert(bytes("PoolManager/pool-already-added"));
         centrifugeChain.addPool(poolId);
 
-        vm.expectRevert(bytes("PoolManager/not-the-gateway"));
+        vm.expectRevert(bytes("Auth/not-authorized"));
+        vm.prank(randomUser);
         poolManager.addPool(poolId);
     }
 
@@ -79,7 +80,8 @@ contract PoolManagerTest is BaseTest {
         centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, restrictionSet);
         centrifugeChain.addPool(poolId);
 
-        vm.expectRevert(bytes("PoolManager/not-the-gateway"));
+        vm.expectRevert(bytes("Auth/not-authorized"));
+        vm.prank(randomUser);
         poolManager.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, restrictionSet);
 
         vm.expectRevert(bytes("PoolManager/too-few-tranche-token-decimals"));
@@ -417,7 +419,8 @@ contract PoolManagerTest is BaseTest {
 
         uint64 poolId = lPool.poolId();
         bytes16 trancheId = lPool.trancheId();
-        vm.expectRevert(bytes("PoolManager/not-the-gateway"));
+        vm.expectRevert(bytes("Auth/not-authorized"));
+        vm.prank(randomUser);
         poolManager.updateMember(poolId, trancheId, randomUser, validUntil);
 
         vm.expectRevert(bytes("PoolManager/unknown-token"));
@@ -479,7 +482,8 @@ contract PoolManagerTest is BaseTest {
         vm.expectRevert(bytes("PoolManager/unknown-token"));
         centrifugeChain.updateTrancheTokenMetadata(100, bytes16(bytes("100")), updatedTokenName, updatedTokenSymbol);
 
-        vm.expectRevert(bytes("PoolManager/not-the-gateway"));
+        vm.expectRevert(bytes("Auth/not-authorized"));
+        vm.prank(randomUser);
         poolManager.updateTrancheTokenMetadata(poolId, trancheId, updatedTokenName, updatedTokenSymbol);
 
         assertEq(trancheToken.name(), "name");
@@ -549,7 +553,8 @@ contract PoolManagerTest is BaseTest {
         // Allows us to go back in time later
         vm.warp(block.timestamp + 1 days);
 
-        vm.expectRevert(bytes("PoolManager/not-the-gateway"));
+        vm.expectRevert(bytes("Auth/not-authorized"));
+        vm.prank(randomUser);
         poolManager.updateTrancheTokenPrice(poolId, trancheId, currencyId, price, uint64(block.timestamp));
 
         centrifugeChain.updateTrancheTokenPrice(poolId, trancheId, currencyId, price, uint64(block.timestamp));

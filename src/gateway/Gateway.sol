@@ -135,7 +135,8 @@ contract Gateway is Auth {
     }
 
     // --- Outgoing ---
-    function send(bytes calldata message) public auth pauseable {
+    function send(bytes calldata message) public pauseable {
+        // TODO: check by message ID, that the origin matches
         require(
             msg.sender == address(investmentManager) || msg.sender == address(poolManager), "Gateway/invalid-manager"
         );
