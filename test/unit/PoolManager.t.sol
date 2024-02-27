@@ -623,6 +623,7 @@ contract PoolManagerTest is BaseTest {
 
         // rewire factory contracts
         newLiquidityPoolFactory.rely(address(poolManager));
+        investmentManager.rely(address(newLiquidityPoolFactory));
         poolManager.file("liquidityPoolFactory", address(newLiquidityPoolFactory));
 
         // Remove old liquidity pool
