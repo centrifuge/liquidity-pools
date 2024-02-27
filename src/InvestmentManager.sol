@@ -108,12 +108,6 @@ contract InvestmentManager is Auth {
         emit Rely(msg.sender);
     }
 
-    /// @dev Gateway must be msg.sender for incoming messages
-    modifier onlyGateway() {
-        require(msg.sender == address(gateway), "InvestmentManager/not-the-gateway");
-        _;
-    }
-
     // --- Administration ---
     function file(bytes32 what, address data) external auth {
         if (what == "gateway") gateway = GatewayLike(data);
@@ -277,7 +271,7 @@ contract InvestmentManager is Auth {
         uint128 currencyPayout,
         uint128 trancheTokenPayout,
         uint128 remainingInvestOrder
-    ) public onlyGateway {
+    ) public auth {
         address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, currencyId);
 
         InvestmentState storage state = investments[liquidityPool][user];
@@ -302,7 +296,7 @@ contract InvestmentManager is Auth {
         uint128 currencyPayout,
         uint128 trancheTokenPayout,
         uint128 remainingRedeemOrder
-    ) public onlyGateway {
+    ) public auth {
         address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, currencyId);
 
         InvestmentState storage state = investments[liquidityPool][user];
@@ -333,7 +327,7 @@ contract InvestmentManager is Auth {
         uint128 currencyId,
         uint128 currencyPayout,
         uint128 remainingInvestOrder
-    ) public onlyGateway {
+    ) public auth {
         address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, currencyId);
 
         InvestmentState storage state = investments[liquidityPool][user];
@@ -371,7 +365,7 @@ contract InvestmentManager is Auth {
         uint128 currencyId,
         uint128 trancheTokenPayout,
         uint128 remainingRedeemOrder
-    ) public onlyGateway {
+    ) public auth {
         address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, currencyId);
         InvestmentState storage state = investments[liquidityPool][user];
 
@@ -400,7 +394,7 @@ contract InvestmentManager is Auth {
         address user,
         uint128 currencyId,
         uint128 trancheTokenAmount
-    ) public onlyGateway {
+    ) public auth {
         require(trancheTokenAmount != 0, "InvestmentManager/tranche-token-amount-is-zero");
         address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, currencyId);
 

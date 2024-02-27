@@ -10,7 +10,9 @@ interface LiquidityPoolLike {
 
 contract InvestmentManagerTest is BaseTest {
     // Deployment
-    function testDeployment() public {
+    function testDeployment(address nonWard) public {
+        vm.assume(nonWard != address(root) && nonWard != address(this));
+
         // values set correctly
         assertEq(address(investmentManager.escrow()), address(escrow));
         assertEq(address(investmentManager.userEscrow()), address(userEscrow));
@@ -21,9 +23,8 @@ contract InvestmentManagerTest is BaseTest {
 
         // permissions set correctly
         assertEq(investmentManager.wards(address(root)), 1);
-        assertEq(investmentManager.wards(address(poolManager)), 1);
         assertEq(userEscrow.wards(address(investmentManager)), 1);
-        // assertEq(investmentManager.wards(self), 0); // deployer has no permissions
+        assertEq(investmentManager.wards(nonWard), 0);
     }
 
     // --- Administration ---

@@ -8,7 +8,7 @@ interface ERC20Like {
     function balanceOf(address account) external view returns (uint256);
 }
 
-contract userEscrowTest is BaseTest {
+contract UserEscrowTest is BaseTest {
     function testTransferIn(uint256 mintAmount, uint256 amount) public {
         amount = bound(amount, 1, type(uint256).max); // amount > 0
         mintAmount = bound(mintAmount, amount, type(uint256).max); // mintAmount >= amount
