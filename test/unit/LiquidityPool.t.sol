@@ -14,8 +14,10 @@ contract LiquidityPoolTest is BaseTest {
         string memory tokenName,
         string memory tokenSymbol,
         bytes16 trancheId,
-        uint128 currencyId
+        uint128 currencyId,
+        address nonWard
     ) public {
+        vm.assume(nonWard != address(root) && nonWard != address(this));
         vm.assume(currencyId > 0);
         vm.assume(bytes(tokenName).length <= 128);
         vm.assume(bytes(tokenSymbol).length <= 32);
@@ -35,6 +37,7 @@ contract LiquidityPoolTest is BaseTest {
 
         // permissions set correctly
         assertEq(lPool.wards(address(root)), 1);
+        assertEq(lPool.wards(nonWard), 0);
     }
 
     // --- Administration ---
