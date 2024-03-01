@@ -12,6 +12,7 @@ import {SafeTransferLib} from "./libraries/SafeTransferLib.sol";
 import {MathLib} from "./libraries/MathLib.sol";
 import {MessagesLib} from "src/libraries/MessagesLib.sol";
 import {CastLib} from "src/libraries/CastLib.sol";
+import {BytesLib} from "src/libraries/BytesLib.sol";
 
 interface GatewayLike {
     function send(bytes memory message) external payable;
@@ -70,6 +71,7 @@ struct UndeployedTranche {
 /// @notice This contract manages which pools & tranches exist,
 ///         as well as managing allowed pool currencies, and incoming and outgoing transfers.
 contract PoolManager is Auth {
+    using BytesLib for bytes;
     using MathLib for uint256;
     using CastLib for *;
 
@@ -213,51 +215,34 @@ contract PoolManager is Auth {
         MessagesLib.Call call = MessagesLib.messageType(message);
 
         if (call == MessagesLib.Call.AddCurrency) {
-            (uint128 currency, address currencyAddress) = MessagesLib.parseAddCurrency(message);
-            addCurrency(currency, currencyAddress);
+            addCurrency(message.toUint128(1), message.toAddress(17));
         } else if (call == MessagesLib.Call.AddPool) {
-            (uint64 poolId) = MessagesLib.parseAddPool(message);
-            addPool(poolId);
+            addPool(message.toUint64(1));
         } else if (call == MessagesLib.Call.AllowInvestmentCurrency) {
-            (uint64 poolId, uint128 currency) = MessagesLib.parseAllowInvestmentCurrency(message);
-            allowInvestmentCurrency(poolId, currency);
+            allowInvestmentCurrency(message.toUint64(1), message.toUint128(9));
         } else if (call == MessagesLib.Call.AddTranche) {
-            (
-                uint64 poolId,
-                bytes16 trancheId,
-                string memory tokenName,
-                string memory tokenSymbol,
-                uint8 decimals,
-                uint8 restrictionSet
-            ) = MessagesLib.parseAddTranche(message);
-            addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, restrictionSet);
+            addTranche(message.toUint64(1),
+            message.toBytes16(9),
+            message.slice(25, 128).bytes128ToString(),
+            message.toBytes32(153).toString(),
+            message.toUint8(185),
+            message.toUint8(186));
         } else if (call == MessagesLib.Call.UpdateMember) {
-            (uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) = MessagesLib.parseUpdateMember(message);
-            updateMember(poolId, trancheId, user, validUntil);
+            updateMember(message.toUint64(1), message.toBytes16(9), message.toAddress(25), message.toUint64(57));
         } else if (call == MessagesLib.Call.UpdateTrancheTokenPrice) {
-            (uint64 poolId, bytes16 trancheId, uint128 currencyId, uint128 price, uint64 computedAt) =
-                MessagesLib.parseUpdateTrancheTokenPrice(message);
-            updateTrancheTokenPrice(poolId, trancheId, currencyId, price, computedAt);
+            updateTrancheTokenPrice(message.toUint64(1), message.toBytes16(9), message.toUint128(25), message.toUint128(41), message.toUint64(57));
         } else if (call == MessagesLib.Call.Transfer) {
-            (uint128 currency, address recipient, uint128 amount) = MessagesLib.parseIncomingTransfer(message);
-            handleTransfer(currency, recipient, amount);
+            handleTransfer(message.toUint128(1), message.toAddress(49), message.toUint128(81));
         } else if (call == MessagesLib.Call.TransferTrancheTokens) {
-            (uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 amount) =
-                MessagesLib.parseTransferTrancheTokens20(message);
-            handleTransferTrancheTokens(poolId, trancheId, destinationAddress, amount);
+            handleTransferTrancheTokens(message.toUint64(1), message.toBytes16(9), message.toAddress(66), message.toUint128(98));
         } else if (call == MessagesLib.Call.UpdateTrancheTokenMetadata) {
-            (uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol) =
-                MessagesLib.parseUpdateTrancheTokenMetadata(message);
-            updateTrancheTokenMetadata(poolId, trancheId, tokenName, tokenSymbol);
+            updateTrancheTokenMetadata(message.toUint64(1), message.toBytes16(9), message.slice(25, 128).bytes128ToString(), message.toBytes32(153).toString());
         } else if (call == MessagesLib.Call.Freeze) {
-            (uint64 poolId, bytes16 trancheId, address user) = MessagesLib.parseFreeze(message);
-            freeze(poolId, trancheId, user);
+            freeze(message.toUint64(1), message.toBytes16(9), message.toAddress(25));
         } else if (call == MessagesLib.Call.Unfreeze) {
-            (uint64 poolId, bytes16 trancheId, address user) = MessagesLib.parseUnfreeze(message);
-            unfreeze(poolId, trancheId, user);
+            unfreeze(message.toUint64(1), message.toBytes16(9), message.toAddress(25));
         } else if (call == MessagesLib.Call.DisallowInvestmentCurrency) {
-            (uint64 poolId, uint128 currency) = MessagesLib.parseDisallowInvestmentCurrency(message);
-            disallowInvestmentCurrency(poolId, currency);
+            disallowInvestmentCurrency(message.toUint64(1), message.toUint128(9));
         } else {
             revert("PoolManager/invalid-message");
         }
