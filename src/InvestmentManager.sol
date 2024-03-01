@@ -8,7 +8,7 @@ import {SafeTransferLib} from "./libraries/SafeTransferLib.sol";
 import {MessagesLib} from "./libraries/MessagesLib.sol";
 
 interface GatewayLike {
-    function send(bytes memory message) external;
+    function send(bytes memory message) external payable;
 }
 
 interface ERC20Like {
@@ -263,6 +263,12 @@ contract InvestmentManager is Auth {
     }
 
     // --- Incoming message handling ---
+    // function handle(
+    //     uint8 messageId, bytes memory message
+    // ) {
+
+    // }
+
     function handleExecutedCollectInvest(
         uint64 poolId,
         bytes16 trancheId,

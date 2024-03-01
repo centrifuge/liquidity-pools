@@ -9,8 +9,7 @@ interface ManagerLike {
 }
 
 interface RouterAggregatorLike {
-    function send(bytes memory message) external;
-    function routers() external view returns (address[]);
+    function send(bytes memory message) external payable;
 }
 
 interface RootLike {
@@ -66,12 +65,11 @@ contract Gateway is Auth {
     }
 
     // --- Outgoing ---
+    // TODO: forward sender
     function send(bytes calldata message) public payable pauseable {
         // TODO: check by message ID, that the origin matches
-        require(
-            msg.sender == investmentManager || msg.sender == poolManager, "Gateway/invalid-manager"
-        );
-        aggregator.send{ value: msg.value }(message);
+        require(msg.sender == investmentManager || msg.sender == poolManager, "Gateway/invalid-manager");
+        aggregator.send{value: msg.value}(message);
     }
 
     // --- Incoming ---
@@ -79,7 +77,7 @@ contract Gateway is Auth {
         (uint8 messageId, address manager) = _parse(message);
         ManagerLike(manager).handle(messageId, message);
     }
-    
+
     function _parse(bytes calldata message) internal view returns (uint8 id, address manager) {
         id = message.toUint8(0);
 
@@ -101,5 +99,4 @@ contract Gateway is Auth {
             manager = address(0);
         }
     }
-
 }

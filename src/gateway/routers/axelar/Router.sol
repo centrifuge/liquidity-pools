@@ -64,7 +64,7 @@ contract AxelarRouter {
 
     // --- Outgoing ---
     function estimate(uint256 baseCost) public returns (uint256) {
-        return baseCost; 
+        return baseCost;
     }
 
     // TODO: is there any risk with this being public and having a sender arg?
