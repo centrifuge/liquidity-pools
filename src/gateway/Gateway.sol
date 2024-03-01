@@ -5,7 +5,7 @@ import {BytesLib} from "./../libraries/BytesLib.sol";
 import {Auth} from "./../Auth.sol";
 
 interface ManagerLike {
-    function handle(uint8 messageId, bytes memory message) external;
+    function handle(bytes memory message) external;
 }
 
 interface RouterAggregatorLike {
@@ -74,14 +74,15 @@ contract Gateway is Auth {
 
     // --- Incoming ---
     function handle(bytes calldata message) external auth pauseable {
-        (uint8 messageId, address manager) = _parse(message);
-        ManagerLike(manager).handle(messageId, message);
+        (, address manager) = _parse(message);
+        ManagerLike(manager).handle(message);
     }
 
     function _parse(bytes calldata message) internal view returns (uint8 id, address manager) {
         id = message.toUint8(0);
 
         // Hardcoded paths for pool & investment managers for gas efficiency
+        // TODO: support root.schedule/cancelUpgrade
         if (id >= 1 && id <= 8) {
             manager = poolManager;
         } else if (id >= 9 && id <= 20) {

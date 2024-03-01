@@ -209,6 +209,60 @@ contract PoolManager is Auth {
     }
 
     // --- Incoming message handling ---
+    function handle(bytes calldata message) external auth {
+        MessagesLib.Call call = MessagesLib.messageType(message);
+
+        if (call == MessagesLib.Call.AddCurrency) {
+            (uint128 currency, address currencyAddress) = MessagesLib.parseAddCurrency(message);
+            addCurrency(currency, currencyAddress);
+        } else if (call == MessagesLib.Call.AddPool) {
+            (uint64 poolId) = MessagesLib.parseAddPool(message);
+            addPool(poolId);
+        } else if (call == MessagesLib.Call.AllowInvestmentCurrency) {
+            (uint64 poolId, uint128 currency) = MessagesLib.parseAllowInvestmentCurrency(message);
+            allowInvestmentCurrency(poolId, currency);
+        } else if (call == MessagesLib.Call.AddTranche) {
+            (
+                uint64 poolId,
+                bytes16 trancheId,
+                string memory tokenName,
+                string memory tokenSymbol,
+                uint8 decimals,
+                uint8 restrictionSet
+            ) = MessagesLib.parseAddTranche(message);
+            addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, restrictionSet);
+        } else if (call == MessagesLib.Call.UpdateMember) {
+            (uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) = MessagesLib.parseUpdateMember(message);
+            updateMember(poolId, trancheId, user, validUntil);
+        } else if (call == MessagesLib.Call.UpdateTrancheTokenPrice) {
+            (uint64 poolId, bytes16 trancheId, uint128 currencyId, uint128 price, uint64 computedAt) =
+                MessagesLib.parseUpdateTrancheTokenPrice(message);
+            updateTrancheTokenPrice(poolId, trancheId, currencyId, price, computedAt);
+        } else if (call == MessagesLib.Call.Transfer) {
+            (uint128 currency, address recipient, uint128 amount) = MessagesLib.parseIncomingTransfer(message);
+            handleTransfer(currency, recipient, amount);
+        } else if (call == MessagesLib.Call.TransferTrancheTokens) {
+            (uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 amount) =
+                MessagesLib.parseTransferTrancheTokens20(message);
+            handleTransferTrancheTokens(poolId, trancheId, destinationAddress, amount);
+        } else if (call == MessagesLib.Call.UpdateTrancheTokenMetadata) {
+            (uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol) =
+                MessagesLib.parseUpdateTrancheTokenMetadata(message);
+            updateTrancheTokenMetadata(poolId, trancheId, tokenName, tokenSymbol);
+        } else if (call == MessagesLib.Call.Freeze) {
+            (uint64 poolId, bytes16 trancheId, address user) = MessagesLib.parseFreeze(message);
+            freeze(poolId, trancheId, user);
+        } else if (call == MessagesLib.Call.Unfreeze) {
+            (uint64 poolId, bytes16 trancheId, address user) = MessagesLib.parseUnfreeze(message);
+            unfreeze(poolId, trancheId, user);
+        } else if (call == MessagesLib.Call.DisallowInvestmentCurrency) {
+            (uint64 poolId, uint128 currency) = MessagesLib.parseDisallowInvestmentCurrency(message);
+            disallowInvestmentCurrency(poolId, currency);
+        } else {
+            revert("PoolManager/invalid-message");
+        }
+    }
+
     /// @notice    New pool details from an existing Centrifuge pool are added.
     /// @dev       The function can only be executed by the gateway contract.
     function addPool(uint64 poolId) public auth {

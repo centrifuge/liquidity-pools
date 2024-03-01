@@ -6,6 +6,7 @@ import {CastLib} from "./libraries/CastLib.sol";
 import {MathLib} from "./libraries/MathLib.sol";
 import {SafeTransferLib} from "./libraries/SafeTransferLib.sol";
 import {MessagesLib} from "./libraries/MessagesLib.sol";
+import {BytesLib} from "./libraries/BytesLib.sol";
 
 interface GatewayLike {
     function send(bytes memory message) external payable;
@@ -80,6 +81,7 @@ struct InvestmentState {
 /// @notice This is the main contract LiquidityPools interact with for
 ///         both incoming and outgoing investment transactions.
 contract InvestmentManager is Auth {
+    using BytesLib for bytes;
     using MathLib for uint256;
     using CastLib for *;
 
@@ -263,11 +265,59 @@ contract InvestmentManager is Auth {
     }
 
     // --- Incoming message handling ---
-    // function handle(
-    //     uint8 messageId, bytes memory message
-    // ) {
+    function handle(bytes calldata message) public auth {
+        MessagesLib.Call call = MessagesLib.messageType(message);
 
-    // }
+        if (call == MessagesLib.Call.ExecutedCollectInvest) {
+            handleExecutedCollectInvest(
+                message.toUint64(1),
+                message.toBytes16(9),
+                message.toAddress(25),
+                message.toUint128(57),
+                message.toUint128(73),
+                message.toUint128(89),
+                message.toUint128(105)
+            );
+        } else if (call == MessagesLib.Call.ExecutedCollectRedeem) {
+            handleExecutedCollectRedeem(
+                message.toUint64(1),
+                message.toBytes16(9),
+                message.toAddress(25),
+                message.toUint128(57),
+                message.toUint128(73),
+                message.toUint128(89),
+                message.toUint128(105)
+            );
+        } else if (call == MessagesLib.Call.ExecutedDecreaseInvestOrder) {
+            handleExecutedDecreaseInvestOrder(
+                message.toUint64(1),
+                message.toBytes16(9),
+                message.toAddress(25),
+                message.toUint128(57),
+                message.toUint128(73),
+                message.toUint128(89)
+            );
+        } else if (call == MessagesLib.Call.ExecutedDecreaseRedeemOrder) {
+            handleExecutedDecreaseRedeemOrder(
+                message.toUint64(1),
+                message.toBytes16(9),
+                message.toAddress(25),
+                message.toUint128(57),
+                message.toUint128(73),
+                message.toUint128(89)
+            );
+        } else if (call == MessagesLib.Call.TriggerIncreaseRedeemOrder) {
+            handleTriggerIncreaseRedeemOrder(
+                message.toUint64(1),
+                message.toBytes16(9),
+                message.toAddress(25),
+                message.toUint128(57),
+                message.toUint128(73)
+            );
+        } else {
+            revert("InvestmentManager/invalid-message");
+        }
+    }
 
     function handleExecutedCollectInvest(
         uint64 poolId,
