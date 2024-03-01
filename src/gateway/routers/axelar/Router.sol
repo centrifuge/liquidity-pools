@@ -42,6 +42,7 @@ contract AxelarRouter {
     constructor(address aggregator_, address axelarGateway_, address axelarGasService_) {
         aggregator = AggregatorLike(aggregator_);
         axelarGateway = AxelarGatewayLike(axelarGateway_);
+        axelarGasService = AxelarGasServiceLike(axelarGasService_);
     }
 
     // --- Incoming ---
@@ -62,6 +63,10 @@ contract AxelarRouter {
     }
 
     // --- Outgoing ---
+    function estimate(uint256 baseCost) public returns (uint256) {
+        return baseCost; 
+    }
+
     // TODO: is there any risk with this being public and having a sender arg?
     function pay(address sender, bytes calldata payload) public payable {
         axelarGasService.payNativeGasForContractCall{value: msg.value}(
