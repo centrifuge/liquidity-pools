@@ -37,9 +37,6 @@ contract Gateway is Auth {
 
     // --- Events ---
     event File(bytes32 indexed what, address data);
-    event AddIncomingRouter(address indexed router);
-    event RemoveIncomingRouter(address indexed router);
-    event UpdateOutgoingRouter(address indexed router);
 
     constructor(address root_, address investmentManager_, address poolManager_) {
         root = RootLike(root_);

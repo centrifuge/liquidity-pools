@@ -221,22 +221,37 @@ contract PoolManager is Auth {
         } else if (call == MessagesLib.Call.AllowInvestmentCurrency) {
             allowInvestmentCurrency(message.toUint64(1), message.toUint128(9));
         } else if (call == MessagesLib.Call.AddTranche) {
-            addTranche(message.toUint64(1),
-            message.toBytes16(9),
-            message.slice(25, 128).bytes128ToString(),
-            message.toBytes32(153).toString(),
-            message.toUint8(185),
-            message.toUint8(186));
+            addTranche(
+                message.toUint64(1),
+                message.toBytes16(9),
+                message.slice(25, 128).bytes128ToString(),
+                message.toBytes32(153).toString(),
+                message.toUint8(185),
+                message.toUint8(186)
+            );
         } else if (call == MessagesLib.Call.UpdateMember) {
             updateMember(message.toUint64(1), message.toBytes16(9), message.toAddress(25), message.toUint64(57));
         } else if (call == MessagesLib.Call.UpdateTrancheTokenPrice) {
-            updateTrancheTokenPrice(message.toUint64(1), message.toBytes16(9), message.toUint128(25), message.toUint128(41), message.toUint64(57));
+            updateTrancheTokenPrice(
+                message.toUint64(1),
+                message.toBytes16(9),
+                message.toUint128(25),
+                message.toUint128(41),
+                message.toUint64(57)
+            );
         } else if (call == MessagesLib.Call.Transfer) {
             handleTransfer(message.toUint128(1), message.toAddress(49), message.toUint128(81));
         } else if (call == MessagesLib.Call.TransferTrancheTokens) {
-            handleTransferTrancheTokens(message.toUint64(1), message.toBytes16(9), message.toAddress(66), message.toUint128(98));
+            handleTransferTrancheTokens(
+                message.toUint64(1), message.toBytes16(9), message.toAddress(66), message.toUint128(98)
+            );
         } else if (call == MessagesLib.Call.UpdateTrancheTokenMetadata) {
-            updateTrancheTokenMetadata(message.toUint64(1), message.toBytes16(9), message.slice(25, 128).bytes128ToString(), message.toBytes32(153).toString());
+            updateTrancheTokenMetadata(
+                message.toUint64(1),
+                message.toBytes16(9),
+                message.slice(25, 128).bytes128ToString(),
+                message.toBytes32(153).toString()
+            );
         } else if (call == MessagesLib.Call.Freeze) {
             freeze(message.toUint64(1), message.toBytes16(9), message.toAddress(25));
         } else if (call == MessagesLib.Call.Unfreeze) {
