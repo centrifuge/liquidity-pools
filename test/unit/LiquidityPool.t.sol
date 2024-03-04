@@ -193,51 +193,51 @@ contract LiquidityPoolTest is BaseTest {
         assertTrue(receiver.onERC7540RedeemReceived(self, self, 0, amount, redeemData) == 0x01a2e97e);
     }
 
-    // function testSucceedingCallbacksNotCalledWithEmptyData() public {
-    //     address lPool_ = deploySimplePool();
-    //     LiquidityPool lPool = LiquidityPool(lPool_);
-    //     SucceedingRequestReceiver receiver = new SucceedingRequestReceiver();
+    function testSucceedingCallbacksNotCalledWithEmptyData() public {
+        address lPool_ = deploySimplePool();
+        LiquidityPool lPool = LiquidityPool(lPool_);
+        SucceedingRequestReceiver receiver = new SucceedingRequestReceiver();
 
-    //     centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), address(receiver), type(uint64).max);
-    //     centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), self, type(uint64).max);
+        centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), address(receiver), type(uint64).max);
+        centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), self, type(uint64).max);
 
-    //     uint256 amount = 100 * 10 ** 6;
-    //     erc20.mint(self, amount);
-    //     erc20.approve(lPool_, amount);
+        uint256 amount = 100 * 10 ** 6;
+        erc20.mint(self, amount);
+        erc20.approve(lPool_, amount);
 
-    //     // Check deposit callback
-    //     lPool.requestDeposit(amount, address(receiver), self, "");
+        // Check deposit callback
+        lPool.requestDeposit(amount, address(receiver), self, "");
 
-    //     assertEq(receiver.values_address("requestDeposit_operator"), address(0));
-    //     assertEq(receiver.values_address("requestDeposit_owner"), address(0));
-    //     assertEq(receiver.values_uint256("requestDeposit_requestId"), 0);
-    //     assertEq(receiver.values_uint256("requestDeposit_assets"), 0);
-    //     assertEq(receiver.values_bytes("requestDeposit_data"), "");
+        assertEq(receiver.values_address("requestDeposit_operator"), address(0));
+        assertEq(receiver.values_address("requestDeposit_owner"), address(0));
+        assertEq(receiver.values_uint256("requestDeposit_requestId"), 0);
+        assertEq(receiver.values_uint256("requestDeposit_assets"), 0);
+        assertEq(receiver.values_bytes("requestDeposit_data"), "");
 
-    //     // Claim deposit request
-    //     // Note this is sending it to self, which is technically incorrect, it should be going to the receiver
-    //     centrifugeChain.isExecutedCollectInvest(
-    //         lPool.poolId(),
-    //         lPool.trancheId(),
-    //         bytes32(bytes20(self)),
-    //         defaultCurrencyId,
-    //         uint128(amount),
-    //         uint128(amount),
-    //         0
-    //     );
-    //     lPool.mint(lPool.maxMint(self), self);
+        // Claim deposit request
+        // Note this is sending it to self, which is technically incorrect, it should be going to the receiver
+        centrifugeChain.isExecutedCollectInvest(
+            lPool.poolId(),
+            lPool.trancheId(),
+            bytes32(bytes20(self)),
+            defaultCurrencyId,
+            uint128(amount),
+            uint128(amount),
+            0
+        );
+        lPool.mint(lPool.maxMint(self), self);
 
-    //     // Check redeem callback
-    //     lPool.requestRedeem(amount, address(receiver), self, "");
+        // Check redeem callback
+        lPool.requestRedeem(amount, address(receiver), self, "");
 
-    //     TrancheToken trancheToken = TrancheToken(address(lPool.share()));
-    //     assertEq(trancheToken.balanceOf(self), 0);
-    //     assertEq(receiver.values_address("requestRedeem_operator"), address(0));
-    //     assertEq(receiver.values_address("requestRedeem_owner"), address(0));
-    //     assertEq(receiver.values_uint256("requestRedeem_requestId"), 0);
-    //     assertEq(receiver.values_uint256("requestRedeem_shares"), 0);
-    //     assertEq(receiver.values_bytes("requestRedeem_data"), "");
-    // }
+        TrancheToken trancheToken = TrancheToken(address(lPool.share()));
+        assertEq(trancheToken.balanceOf(self), 0);
+        assertEq(receiver.values_address("requestRedeem_operator"), address(0));
+        assertEq(receiver.values_address("requestRedeem_owner"), address(0));
+        assertEq(receiver.values_uint256("requestRedeem_requestId"), 0);
+        assertEq(receiver.values_uint256("requestRedeem_shares"), 0);
+        assertEq(receiver.values_bytes("requestRedeem_data"), "");
+    }
 
     function testFailingCallbacks(bytes memory depositData, bytes memory redeemData) public {
         address lPool_ = deploySimplePool();
