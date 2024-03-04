@@ -104,7 +104,7 @@ contract LiquidityPool is Auth, IERC7540 {
 
         require(
             data.length == 0 || receiver.code.length == 0
-                || IERC7540DepositReceiver(receiver).onERC7540DepositReceived(msg.sender, owner, REQUEST_ID, data)
+                || IERC7540DepositReceiver(receiver).onERC7540DepositReceived(msg.sender, owner, REQUEST_ID, assets, data)
                     == IERC7540DepositReceiver.onERC7540DepositReceived.selector,
             "LiquidityPool/receiver-failed"
         );
@@ -149,7 +149,7 @@ contract LiquidityPool is Auth, IERC7540 {
 
         require(
             data.length == 0 || receiver.code.length == 0
-                || IERC7540RedeemReceiver(receiver).onERC7540RedeemReceived(msg.sender, owner, REQUEST_ID, data)
+                || IERC7540RedeemReceiver(receiver).onERC7540RedeemReceived(msg.sender, owner, REQUEST_ID, shares, data)
                     == IERC7540RedeemReceiver.onERC7540RedeemReceived.selector,
             "LiquidityPool/receiver-failed"
         );
