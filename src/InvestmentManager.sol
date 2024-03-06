@@ -281,9 +281,10 @@ contract InvestmentManager is Auth {
         state.maxMint = state.maxMint + trancheTokenPayout;
         state.pendingDepositRequest = remainingInvestOrder;
 
-        // Mint to escrow. Recipient can claim by calling withdraw / redeem
+        // Mint and transfer to user escrow. Recipient can claim by calling withdraw / redeem
         ERC20Like trancheToken = ERC20Like(LiquidityPoolLike(liquidityPool).share());
-        trancheToken.mint(address(escrow), trancheTokenPayout);
+        trancheToken.mint(address(this), trancheTokenPayout);
+        userEscrow.transferIn(address(trancheToken), address(this), user, trancheToken);
 
         LiquidityPoolLike(liquidityPool).emitDepositClaimable(user, currencyPayout, trancheTokenPayout);
     }
@@ -384,6 +385,9 @@ contract InvestmentManager is Auth {
         state.pendingRedeemRequest = remainingRedeemOrder;
 
         if (remainingRedeemOrder == 0) state.pendingCancelRedeemRequest = false;
+
+        // Transfer tranche token amount to userEscrow
+        userEscrow.transferIn(LiquidityPoolLike(liquidityPool).share(), address(escrow), user, trancheTokenPayout);
 
         LiquidityPoolLike(liquidityPool).emitRedeemClaimable(user, trancheTokenPayout, trancheTokenPayout);
     }
@@ -510,7 +514,7 @@ contract InvestmentManager is Auth {
         InvestmentState storage state = investments[liquidityPool][owner];
         uint128 trancheTokenAmount_ =
             _calculateTrancheTokenAmount(currencyAmount.toUint128(), liquidityPool, state.depositPrice);
-        _processDeposit(state, trancheTokenAmount_, liquidityPool, receiver);
+        _processDeposit(state, trancheTokenAmount_, liquidityPool, receiver, owner);
         trancheTokenAmount = uint256(trancheTokenAmount_);
     }
 
@@ -523,7 +527,7 @@ contract InvestmentManager is Auth {
         returns (uint256 currencyAmount)
     {
         InvestmentState storage state = investments[liquidityPool][owner];
-        _processDeposit(state, trancheTokenAmount.toUint128(), liquidityPool, receiver);
+        _processDeposit(state, trancheTokenAmount.toUint128(), liquidityPool, receiver, owner);
         currencyAmount =
             uint256(_calculateCurrencyAmount(trancheTokenAmount.toUint128(), liquidityPool, state.depositPrice));
     }
@@ -532,7 +536,8 @@ contract InvestmentManager is Auth {
         InvestmentState storage state,
         uint128 trancheTokenAmount,
         address liquidityPool,
-        address receiver
+        address receiver,
+        address owner
     ) internal {
         require(trancheTokenAmount != 0, "InvestmentManager/tranche-token-amount-is-zero");
         require(trancheTokenAmount <= state.maxMint, "InvestmentManager/exceeds-deposit-limits");
@@ -543,6 +548,15 @@ contract InvestmentManager is Auth {
             ),
             "InvestmentManager/tranche-tokens-transfer-failed"
         );
+
+        ERC20Like trancheToken = ERC20Like(LiquidityPoolLike(liquidityPool).share());
+        if (owner == receiver) {
+            userEscrow.transferOut(LiquidityPoolLike(liquidityPool).share(), owner, receiver, trancheTokenAmount);
+        } else {
+
+            userEscrow.transferOut(LiquidityPoolLike(liquidityPool).share(), owner, address(this), trancheTokenAmount);
+            trancheToken.transferFrom(address(this), receiver, trancheTokenAmount);
+        }
     }
 
     /// @dev    Processes owner's tranche Token redemption after the epoch has been executed on Centrifuge.
