@@ -18,13 +18,18 @@ interface IERC7540DepositReceiver {
      * @param _operator The address which called `requestDeposit` function
      * @param _owner The address which funded the `assets` of the Request (or message sender)
      * @param _requestId The RID identifier of the Request which is being received
+     * @param _assets The amount transferred on `requestDeposit`
      * @param _data Additional data with no specified format
      * @return `bytes4(keccak256("onERC7540DepositReceived(address,address,uint256,bytes)"))`
      *  unless throwing
      */
-    function onERC7540DepositReceived(address _operator, address _owner, uint256 _requestId, bytes memory _data)
-        external
-        returns (bytes4);
+    function onERC7540DepositReceived(
+        address _operator,
+        address _owner,
+        uint256 _requestId,
+        uint256 _assets,
+        bytes memory _data
+    ) external returns (bytes4);
 }
 
 interface IERC7540RedeemReceiver {
@@ -42,13 +47,18 @@ interface IERC7540RedeemReceiver {
      * @param _operator The address which called `requestRedeem` function
      * @param _owner The address which funded the `shares` of the Request (or message sender)
      * @param _requestId The RID identifier of the Request which is being received
+     * @param _shares The amount transferred on `requestDeposit`
      * @param _data Additional data with no specified format
      * @return `bytes4(keccak256("onERC7540RedeemReceived(address,address,uint256,bytes)"))`
      *  unless throwing
      */
-    function onERC7540RedeemReceived(address _operator, address _owner, uint256 _requestId, bytes memory _data)
-        external
-        returns (bytes4);
+    function onERC7540RedeemReceived(
+        address _operator,
+        address _owner,
+        uint256 _requestId,
+        uint256 _shares,
+        bytes memory _data
+    ) external returns (bytes4);
 }
 
 interface IERC7540Deposit {
