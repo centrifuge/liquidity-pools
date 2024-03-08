@@ -19,6 +19,7 @@ contract LocalRouterScript is Deployer {
         pausers = [address(0x361c43cd5Fd700923Aae9dED678851a201839fc6)];
 
         deploy(msg.sender);
+        /*
         LocalRouter router = new LocalRouter();
         wire(address(router));
         router.file("gateway", address(gateway));
@@ -27,5 +28,6 @@ contract LocalRouterScript is Deployer {
 
         giveAdminAccess();
         removeDeployerAccess(address(router), msg.sender);
+        */
     }
 }
