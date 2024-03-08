@@ -50,6 +50,7 @@ contract Deployer is Script {
         bytes32 salt = vm.envOr(
             "DEPLOYMENT_SALT", keccak256(abi.encodePacked(string(abi.encodePacked(blockhash(block.number - 1)))))
         );
+        /*
         escrow = new Escrow{salt: salt}(deployer);
         userEscrow = new UserEscrow();
         root = new Root{salt: salt}(address(escrow), delay, deployer);
@@ -74,6 +75,7 @@ contract Deployer is Script {
 
         pauseAdmin = new PauseAdmin(address(root));
         delayedAdmin = new DelayedAdmin(address(root), address(pauseAdmin), address(aggregator));
+        */
     }
 
     function wire(address router) public {
