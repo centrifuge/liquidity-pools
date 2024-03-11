@@ -35,7 +35,7 @@ contract Gateway is Auth {
 
     uint256 public gasPriceOracle = 0.5 gwei;
 
-    mapping (uint8 messageId => address manager) messages;
+    mapping(uint8 messageId => address manager) messages;
 
     // --- Events ---
     event File(bytes32 indexed what, address data);
@@ -73,19 +73,17 @@ contract Gateway is Auth {
     // --- Outgoing ---
     // TODO: forward sender
     function send(bytes calldata message) public payable pauseable {
-        // TODO: check by message ID, that the origin matches
-        require(msg.sender == investmentManager || msg.sender == poolManager, "Gateway/invalid-manager");
+        require(
+            msg.sender == investmentManager || msg.sender == poolManager || msg.sender == messages[message.toUint8(0)],
+            "Gateway/invalid-manager"
+        );
         aggregator.send{value: msg.value}(message);
     }
 
     // --- Incoming ---
     function handle(bytes calldata message) external auth pauseable {
-        (, address manager) = _parse(message);
-        ManagerLike(manager).handle(message);
-    }
-
-    function _parse(bytes calldata message) internal view returns (uint8 id, address manager) {
-        id = message.toUint8(0);
+        uint8 id = message.toUint8(0);
+        address manager;
 
         // Hardcoded paths for root + pool & investment managers for gas efficiency
         if (id >= 1 && id <= 8) {
@@ -104,5 +102,7 @@ contract Gateway is Auth {
             manager = messages[id];
             require(manager != address(0), "Gateway/unregistered-message-id");
         }
+
+        ManagerLike(manager).handle(message);
     }
 }
