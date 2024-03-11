@@ -63,7 +63,7 @@ contract AxelarRouter {
     }
 
     // --- Outgoing ---
-    function estimate(uint256 baseCost) public returns (uint256) {
+    function estimate(uint256 baseCost) public pure returns (uint256) {
         return baseCost;
     }
 

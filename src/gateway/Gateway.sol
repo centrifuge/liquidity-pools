@@ -30,8 +30,8 @@ contract Gateway is Auth {
     RootLike public immutable root;
 
     address public poolManager;
-    RouterAggregatorLike public aggregator;
     address public investmentManager;
+    RouterAggregatorLike public aggregator;
 
     uint256 public gasPriceOracle = 0.5 gwei;
 
@@ -84,7 +84,9 @@ contract Gateway is Auth {
             manager = poolManager;
         } else if (id >= 9 && id <= 20) {
             manager = investmentManager;
-        } else if (id >= 21 && id <= 26) {
+        } else if (id >= 21 && id <= 22) {
+            manager = address(root);
+        } else if (id >= 23 && id <= 26) {
             manager = poolManager;
         } else if (id == 27) {
             manager = investmentManager;

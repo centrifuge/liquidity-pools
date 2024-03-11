@@ -31,6 +31,7 @@ contract FailingRequestReceiver is IERC7540DepositReceiver, IERC7540RedeemReceiv
         values_address["requestRedeem_operator"] = _operator;
         values_address["requestRedeem_owner"] = _owner;
         values_uint256["requestRedeem_shares"] = _shares;
+        values_uint256["requestRedeem_requestId"] = _requestId;
         values_bytes["requestRedeem_data"] = _data;
 
         revert("");
