@@ -90,6 +90,10 @@ contract LiquidityPool is Auth, IERC7540 {
         emit File(what, data);
     }
 
+    function recoverTokens(address to, uint256 amount) external auth {
+        SafeTransferLib.safeTransfer(asset, to, amount);
+    }
+
     // --- ERC-7540 methods ---
     /// @inheritdoc IERC7540Deposit
     function requestDeposit(uint256 assets, address receiver, address owner, bytes memory data)

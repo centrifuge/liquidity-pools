@@ -514,7 +514,7 @@ library MessagesLib {
     * 21-40: The recipient address (address = 20 bytes)
     * 41-56: The amount (uint128 = 16 bytes)
      */
-    function parseRecoverTokens(bytes memory _msg) internal pure returns (address token, uint256 amount) {
+    function parseRecoverTokens(bytes memory _msg) internal pure returns (address fromContract, address toUser, uint256 amount) {
         return (_msg.toAddress(1), _msg.toAddress(21), _msg.toUint256(41));
     }
 
