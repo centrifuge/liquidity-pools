@@ -72,7 +72,9 @@ library MessagesLib {
         /// 29 - Initiate Message Recovery
         InitiateMessageRecovery,
         /// 30 - Dispute Message Recovery
-        DisputeMessageRecovery
+        DisputeMessageRecovery,
+        /// 31 - Recover Tokens sent to the wrong contract
+        RecoverTokens
     }
 
     enum Domain {
@@ -502,6 +504,18 @@ library MessagesLib {
      */
     function parseDisputeMessageRecovery(bytes memory _msg) internal pure returns (bytes32 messageHash) {
         return (_msg.toBytes32(1));
+    }
+
+    /**
+    * Recover Tokens sent to the wrong contract
+    *
+    * 0: call type (uint8 = 1 byte)
+    * 1-20: The contract address (address = 20 bytes)
+    * 21-40: The recipient address (address = 20 bytes)
+    * 41-56: The amount (uint128 = 16 bytes)
+     */
+    function parseRecoverTokens(bytes memory _msg) internal pure returns (address token, uint256 amount) {
+        return (_msg.toAddress(1), _msg.toAddress(21), _msg.toUint256(41));
     }
 
     function isRecoveryMessage(bytes memory _msg) internal pure returns (bool) {
