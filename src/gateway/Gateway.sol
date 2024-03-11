@@ -35,8 +35,11 @@ contract Gateway is Auth {
 
     uint256 public gasPriceOracle = 0.5 gwei;
 
+    mapping (uint8 messageId => address manager) messages;
+
     // --- Events ---
     event File(bytes32 indexed what, address data);
+    event File(bytes32 indexed what, uint8 messageId, address manager);
 
     constructor(address root_, address investmentManager_, address poolManager_) {
         root = RootLike(root_);
@@ -61,6 +64,12 @@ contract Gateway is Auth {
         emit File(what, data);
     }
 
+    function file(bytes32 what, uint8 data1, address data2) public auth {
+        if (what == "message") messages[data1] = data2;
+        else revert("Gateway/file-unrecognized-param");
+        emit File(what, data1, data2);
+    }
+
     // --- Outgoing ---
     // TODO: forward sender
     function send(bytes calldata message) public payable pauseable {
@@ -78,8 +87,7 @@ contract Gateway is Auth {
     function _parse(bytes calldata message) internal view returns (uint8 id, address manager) {
         id = message.toUint8(0);
 
-        // Hardcoded paths for pool & investment managers for gas efficiency
-        // TODO: support root.schedule/cancelUpgrade
+        // Hardcoded paths for root + pool & investment managers for gas efficiency
         if (id >= 1 && id <= 8) {
             manager = poolManager;
         } else if (id >= 9 && id <= 20) {
@@ -91,12 +99,10 @@ contract Gateway is Auth {
         } else if (id == 27) {
             manager = investmentManager;
         } else {
-            // TODO Dynamic path for other managers, to be able to easily
+            // Dynamic path for other managers, to be able to easily
             // extend functionality of Liquidity Pools
-            // address manager = managerByMessageId[id];
-            // require(manager != address(0), "Gateway/unregistered-message-id");
-            // return manager;
-            manager = address(0);
+            manager = messages[id];
+            require(manager != address(0), "Gateway/unregistered-message-id");
         }
     }
 }
