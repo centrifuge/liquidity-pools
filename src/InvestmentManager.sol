@@ -49,10 +49,6 @@ interface PoolManagerLike {
     function isAllowedAsInvestmentCurrency(uint64 poolId, address currencyAddress) external view returns (bool);
 }
 
-interface EscrowLike {
-    function approve(address token, address spender, uint256 value) external;
-}
-
 interface UserEscrowLike {
     function transferIn(address token, address source, address destination, uint256 amount) external;
     function transferOut(address token, address owner, address destination, uint256 amount) external;
@@ -90,7 +86,7 @@ contract InvestmentManager is Auth {
     /// @dev Prices are fixed-point integers with 18 decimals
     uint8 internal constant PRICE_DECIMALS = 18;
 
-    EscrowLike public immutable escrow;
+    address public immutable escrow;
     UserEscrowLike public immutable userEscrow;
 
     GatewayLike public gateway;
@@ -105,17 +101,11 @@ contract InvestmentManager is Auth {
     );
 
     constructor(address escrow_, address userEscrow_) {
-        escrow = EscrowLike(escrow_);
+        escrow = escrow_;
         userEscrow = UserEscrowLike(userEscrow_);
 
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
-    }
-
-    /// @dev Gateway must be msg.sender for incoming messages
-    modifier onlyGateway() {
-        require(msg.sender == address(gateway), "InvestmentManager/not-the-gateway");
-        _;
     }
 
     // --- Administration ---
@@ -281,7 +271,7 @@ contract InvestmentManager is Auth {
         uint128 currencyPayout,
         uint128 trancheTokenPayout,
         uint128 remainingInvestOrder
-    ) public onlyGateway {
+    ) public auth {
         address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, currencyId);
 
         InvestmentState storage state = investments[liquidityPool][user];
@@ -306,7 +296,7 @@ contract InvestmentManager is Auth {
         uint128 currencyPayout,
         uint128 trancheTokenPayout,
         uint128 remainingRedeemOrder
-    ) public onlyGateway {
+    ) public auth {
         address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, currencyId);
 
         InvestmentState storage state = investments[liquidityPool][user];
@@ -337,7 +327,7 @@ contract InvestmentManager is Auth {
         uint128 currencyId,
         uint128 currencyPayout,
         uint128 remainingInvestOrder
-    ) public onlyGateway {
+    ) public auth {
         address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, currencyId);
 
         InvestmentState storage state = investments[liquidityPool][user];
@@ -375,7 +365,7 @@ contract InvestmentManager is Auth {
         uint128 currencyId,
         uint128 trancheTokenPayout,
         uint128 remainingRedeemOrder
-    ) public onlyGateway {
+    ) public auth {
         address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, currencyId);
         InvestmentState storage state = investments[liquidityPool][user];
 
@@ -404,7 +394,7 @@ contract InvestmentManager is Auth {
         address user,
         uint128 currencyId,
         uint128 trancheTokenAmount
-    ) public onlyGateway {
+    ) public auth {
         require(trancheTokenAmount != 0, "InvestmentManager/tranche-token-amount-is-zero");
         address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, currencyId);
 

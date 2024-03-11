@@ -14,8 +14,10 @@ contract LiquidityPoolTest is BaseTest {
         string memory tokenName,
         string memory tokenSymbol,
         bytes16 trancheId,
-        uint128 currencyId
+        uint128 currencyId,
+        address nonWard
     ) public {
+        vm.assume(nonWard != address(root) && nonWard != address(this));
         vm.assume(currencyId > 0);
         vm.assume(bytes(tokenName).length <= 128);
         vm.assume(bytes(tokenSymbol).length <= 32);
@@ -35,6 +37,7 @@ contract LiquidityPoolTest is BaseTest {
 
         // permissions set correctly
         assertEq(lPool.wards(address(root)), 1);
+        assertEq(lPool.wards(nonWard), 0);
     }
 
     // --- Administration ---
@@ -158,9 +161,10 @@ contract LiquidityPoolTest is BaseTest {
         assertEq(receiver.values_address("requestDeposit_operator"), self);
         assertEq(receiver.values_address("requestDeposit_owner"), self);
         assertEq(receiver.values_uint256("requestDeposit_requestId"), 0);
+        assertEq(receiver.values_uint256("requestDeposit_assets"), amount);
         assertEq(receiver.values_bytes("requestDeposit_data"), depositData);
 
-        assertTrue(receiver.onERC7540DepositReceived(self, self, 0, depositData) == 0xe74d2a41);
+        assertTrue(receiver.onERC7540DepositReceived(self, self, 0, amount, depositData) == 0x6d7e2da0);
 
         // Claim deposit request
         // Note this is sending it to self, which is technically incorrect, it should be going to the receiver
@@ -183,9 +187,10 @@ contract LiquidityPoolTest is BaseTest {
         assertEq(receiver.values_address("requestRedeem_operator"), self);
         assertEq(receiver.values_address("requestRedeem_owner"), self);
         assertEq(receiver.values_uint256("requestRedeem_requestId"), 0);
+        assertEq(receiver.values_uint256("requestRedeem_shares"), amount);
         assertEq(receiver.values_bytes("requestRedeem_data"), redeemData);
 
-        assertTrue(receiver.onERC7540RedeemReceived(self, self, 0, redeemData) == 0x0102fde4);
+        assertTrue(receiver.onERC7540RedeemReceived(self, self, 0, amount, redeemData) == 0x01a2e97e);
     }
 
     function testSucceedingCallbacksNotCalledWithEmptyData() public {
@@ -206,6 +211,7 @@ contract LiquidityPoolTest is BaseTest {
         assertEq(receiver.values_address("requestDeposit_operator"), address(0));
         assertEq(receiver.values_address("requestDeposit_owner"), address(0));
         assertEq(receiver.values_uint256("requestDeposit_requestId"), 0);
+        assertEq(receiver.values_uint256("requestDeposit_assets"), 0);
         assertEq(receiver.values_bytes("requestDeposit_data"), "");
 
         // Claim deposit request
@@ -229,6 +235,7 @@ contract LiquidityPoolTest is BaseTest {
         assertEq(receiver.values_address("requestRedeem_operator"), address(0));
         assertEq(receiver.values_address("requestRedeem_owner"), address(0));
         assertEq(receiver.values_uint256("requestRedeem_requestId"), 0);
+        assertEq(receiver.values_uint256("requestRedeem_shares"), 0);
         assertEq(receiver.values_bytes("requestRedeem_data"), "");
     }
 
@@ -252,6 +259,7 @@ contract LiquidityPoolTest is BaseTest {
         assertEq(receiver.values_address("requestDeposit_operator"), self);
         assertEq(receiver.values_address("requestDeposit_owner"), self);
         assertEq(receiver.values_uint256("requestDeposit_requestId"), 0);
+        assertEq(receiver.values_uint256("requestDeposit_assets"), amount);
         assertEq(receiver.values_bytes("requestDeposit_data"), depositData);
 
         // Re-submit and claim deposit request
@@ -275,6 +283,7 @@ contract LiquidityPoolTest is BaseTest {
         assertEq(receiver.values_address("requestRedeem_operator"), self);
         assertEq(receiver.values_address("requestRedeem_owner"), self);
         assertEq(receiver.values_uint256("requestRedeem_requestId"), 0);
+        assertEq(receiver.values_uint256("requestDeposit_shares"), amount);
         assertEq(receiver.values_bytes("requestRedeem_data"), redeemData);
     }
 

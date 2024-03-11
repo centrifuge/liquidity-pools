@@ -81,8 +81,8 @@ contract Deployer is Script {
 
         // Wire aggregator
         aggregator.file("routers", routers);
-        gateway.addIncomingRouter(address(aggregator));
-        gateway.updateOutgoingRouter(address(aggregator));
+        gateway.file("aggregator", address(aggregator));
+        gateway.rely(address(aggregator));
 
         // Wire admins
         pauseAdmin.rely(address(delayedAdmin));
@@ -97,13 +97,14 @@ contract Deployer is Script {
         investmentManager.file("gateway", address(gateway));
         poolManager.file("gateway", address(gateway));
         investmentManager.rely(address(root));
-        investmentManager.rely(address(poolManager));
+        investmentManager.rely(address(gateway));
+        investmentManager.rely(address(liquidityPoolFactory));
         poolManager.rely(address(root));
+        poolManager.rely(address(gateway));
         gateway.rely(address(root));
         aggregator.rely(address(root));
         AuthLike(router).rely(address(root));
         AuthLike(address(escrow)).rely(address(root));
-        AuthLike(address(escrow)).rely(address(investmentManager));
         AuthLike(address(userEscrow)).rely(address(root));
         AuthLike(address(userEscrow)).rely(address(investmentManager));
         AuthLike(address(escrow)).rely(address(poolManager));
