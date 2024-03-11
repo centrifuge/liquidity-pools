@@ -49,11 +49,6 @@ interface PoolManagerLike {
     function isAllowedAsInvestmentCurrency(uint64 poolId, address currencyAddress) external view returns (bool);
 }
 
-interface UserEscrowLike {
-    function transferIn(address token, address source, address destination, uint256 amount) external;
-    function transferOut(address token, address owner, address destination, uint256 amount) external;
-}
-
 /// @dev Liquidity Pool orders and investment/redemption limits per user
 struct InvestmentState {
     /// @dev Tranche tokens that can be claimed using `mint()`
@@ -87,7 +82,6 @@ contract InvestmentManager is Auth {
     uint8 internal constant PRICE_DECIMALS = 18;
 
     address public immutable escrow;
-    UserEscrowLike public immutable userEscrow;
 
     GatewayLike public gateway;
     PoolManagerLike public poolManager;
@@ -100,9 +94,8 @@ contract InvestmentManager is Auth {
         uint64 indexed poolId, bytes16 indexed trancheId, address user, address currency, uint128 trancheTokenAmount
     );
 
-    constructor(address escrow_, address userEscrow_) {
+    constructor(address escrow_) {
         escrow = escrow_;
-        userEscrow = UserEscrowLike(userEscrow_);
 
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
@@ -311,9 +304,7 @@ contract InvestmentManager is Auth {
         state.maxWithdraw = state.maxWithdraw + currencyPayout;
         state.pendingRedeemRequest = remainingRedeemOrder;
 
-        // Transfer currency to user escrow to claim on withdraw/redeem,
-        // and burn redeemed tranche tokens from escrow
-        userEscrow.transferIn(poolManager.currencyIdToAddress(currencyId), address(escrow), user, currencyPayout);
+        // Burn redeemed tranche tokens from escrow
         ERC20Like trancheToken = ERC20Like(LiquidityPoolLike(liquidityPool).share());
         trancheToken.burn(address(escrow), trancheTokenPayout);
 
@@ -348,9 +339,6 @@ contract InvestmentManager is Auth {
         state.pendingDepositRequest = remainingInvestOrder;
 
         if (remainingInvestOrder == 0) state.pendingCancelDepositRequest = false;
-
-        // Transfer currency amount to userEscrow
-        userEscrow.transferIn(poolManager.currencyIdToAddress(currencyId), address(escrow), user, currencyPayout);
 
         LiquidityPoolLike(liquidityPool).emitRedeemClaimable(user, currencyPayout, currencyPayout);
     }
@@ -585,7 +573,10 @@ contract InvestmentManager is Auth {
         require(currencyAmount != 0, "InvestmentManager/currency-amount-is-zero");
         require(currencyAmount <= state.maxWithdraw, "InvestmentManager/exceeds-redeem-limits");
         state.maxWithdraw = state.maxWithdraw - currencyAmount;
-        userEscrow.transferOut(lPool.asset(), owner, receiver, currencyAmount);
+        require(
+            ERC20Like(lPool.asset()).transferFrom(address(escrow), receiver, currencyAmount),
+            "InvestmentManager/currency-transfer-failed"
+        );
     }
 
     // --- Helpers ---

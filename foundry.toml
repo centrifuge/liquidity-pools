@@ -51,7 +51,6 @@ fail_on_revert = false
   "src/InvestmentManager.sol" = ["InvestmentManager"]
   "src/PoolManager.sol" = ["PoolManager"]
   "src/Escrow.sol" = ["Escrow"]
-  "src/UserEscrow.sol" = ["UserEscrow"]
   "src/Root.sol" = ["Root"]
   "src/token/ERC20.sol" = ["ERC20"]
   "src/token/Tranche.sol" = ["TrancheToken"]

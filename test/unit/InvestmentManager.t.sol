@@ -15,7 +15,6 @@ contract InvestmentManagerTest is BaseTest {
 
         // values set correctly
         assertEq(address(investmentManager.escrow()), address(escrow));
-        assertEq(address(investmentManager.userEscrow()), address(userEscrow));
         assertEq(address(investmentManager.gateway()), address(gateway));
         assertEq(address(investmentManager.poolManager()), address(poolManager));
         assertEq(address(gateway.investmentManager()), address(investmentManager));
@@ -23,7 +22,6 @@ contract InvestmentManagerTest is BaseTest {
 
         // permissions set correctly
         assertEq(investmentManager.wards(address(root)), 1);
-        assertEq(userEscrow.wards(address(investmentManager)), 1);
         assertEq(investmentManager.wards(nonWard), 0);
     }
 
