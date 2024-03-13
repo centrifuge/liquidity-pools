@@ -64,12 +64,10 @@ contract ForkTest is Test {
 
                 // InvestmentManager
                 assertEq(address(InvestmentManager(investmentManager).escrow()), escrow);
-                // assertEq(address(InvestmentManager(investmentManager).userEscrow()), userEscrow);
                 assertEq(address(InvestmentManager(investmentManager).gateway()), gateway);
                 assertEq(address(InvestmentManager(investmentManager).poolManager()), poolManager);
                 assertEq(InvestmentManager(investmentManager).wards(poolManager), 1);
                 assertEq(Escrow(escrow).wards(investmentManager), 1);
-                // assertEq(UserEscrow(userEscrow).wards(investmentManager), 1);
                 assertEq(InvestmentManager(investmentManager).wards(root), 1);
                 assertEq(InvestmentManager(investmentManager).wards(deployer), 0);
                 assertEq(InvestmentManager(investmentManager).wards(admin), 0);
@@ -104,9 +102,6 @@ contract ForkTest is Test {
                 assertEq(Escrow(escrow).wards(admin), 0);
 
                 // UserEscrow
-                // assertEq(UserEscrow(userEscrow).wards(root), 1);
-                // assertEq(UserEscrow(userEscrow).wards(deployer), 0);
-                // assertEq(UserEscrow(userEscrow).wards(admin), 0);
 
                 // Router
                 assertEq(RouterLike(router).wards(root), 1);
