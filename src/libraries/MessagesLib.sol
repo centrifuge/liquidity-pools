@@ -511,14 +511,14 @@ library MessagesLib {
      *
      * 0: call type (uint8 = 1 byte)
      * 1-32: The contract address (address = 32 bytes)
-     * 33-64: The recipient address (address = 32 bytes)
-     * 65-96: The token address (address = 32 bytes)
+     * 33-64: The token address (address = 32 bytes)
+     * 65-96: The recipient address (address = 32 bytes)
      * 97-128: The amount (uint256 = 32 bytes)
      */
     function parseRecoverTokens(bytes memory _msg)
         internal
         pure
-        returns (address fromContract, address toUser, address token, uint256 amount)
+        returns (address target, address token, address to, uint256 amount)
     {
         return (_msg.toAddress(1), _msg.toAddress(33), _msg.toAddress(65), _msg.toUint256(97));
     }
