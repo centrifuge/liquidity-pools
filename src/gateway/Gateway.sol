@@ -257,8 +257,7 @@ contract Gateway is Auth {
             (uint64 poolId, uint128 currency) = MessagesLib.parseDisallowInvestmentCurrency(message);
             poolManager.disallowInvestmentCurrency(poolId, currency);
         } else if (call == MessagesLib.Call.RecoverTokens) {
-            (address target, address token, address to, uint256 amount) =
-                MessagesLib.parseRecoverTokens(message);
+            (address target, address token, address to, uint256 amount) = MessagesLib.parseRecoverTokens(message);
             root.recoverTokens(target, token, to, amount);
         } else {
             revert("Gateway/invalid-message");
