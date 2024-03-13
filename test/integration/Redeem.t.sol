@@ -52,27 +52,17 @@ contract RedeemTest is BaseTest {
         assertEq(lPool.pendingRedeemRequest(0, self), 0);
         assertEq(lPool.claimableRedeemRequest(0, self), amount);
         assertEq(trancheToken.balanceOf(address(escrow)), 0);
-        assertEq(erc20.balanceOf(address(userEscrow)), currencyPayout);
+        assertEq(erc20.balanceOf(address(escrow)), currencyPayout);
 
-        // success
+        // can redeem to self
         lPool.redeem(amount / 2, self, self); // redeem half the amount to own wallet
 
-        // fail -> investor has no approval to receive funds
-        vm.expectRevert(bytes("UserEscrow/receiver-has-no-allowance"));
-        lPool.redeem(amount / 2, investor, self); // redeem half the amount to another wallet
-
-        // fail -> receiver needs to have max approval
-        erc20.approve(investor, lPool.maxRedeem(self));
-        vm.expectRevert(bytes("UserEscrow/receiver-has-no-allowance"));
-        lPool.redeem(amount / 2, investor, self); // redeem half the amount to investor wallet
-
-        // success
-        erc20.approve(investor, type(uint256).max);
+        // can also redeem to another user
         lPool.redeem(amount / 2, investor, self); // redeem half the amount to investor wallet
 
         assertEq(trancheToken.balanceOf(self), 0);
         assertTrue(trancheToken.balanceOf(address(escrow)) <= 1);
-        assertTrue(erc20.balanceOf(address(userEscrow)) <= 1);
+        assertTrue(erc20.balanceOf(address(escrow)) <= 1);
 
         assertApproxEqAbs(erc20.balanceOf(self), (amount / 2), 1);
         assertApproxEqAbs(erc20.balanceOf(investor), (amount / 2), 1);
@@ -100,7 +90,6 @@ contract RedeemTest is BaseTest {
 
         lPool.requestRedeem(amount, address(this), address(this), "");
         assertEq(trancheToken.balanceOf(address(escrow)), amount);
-        assertEq(erc20.balanceOf(address(userEscrow)), 0);
         assertGt(lPool.pendingRedeemRequest(0, self), 0);
 
         // trigger executed collectRedeem
@@ -114,25 +103,16 @@ contract RedeemTest is BaseTest {
         assertEq(lPool.maxWithdraw(self), currencyPayout); // max deposit
         assertEq(lPool.maxRedeem(self), amount); // max deposit
         assertEq(trancheToken.balanceOf(address(escrow)), 0);
-        assertEq(erc20.balanceOf(address(userEscrow)), currencyPayout);
+        assertEq(erc20.balanceOf(address(escrow)), currencyPayout);
 
-        lPool.withdraw(amount / 2, self, self); // withdraw half the amount
+        // can redeem to self
+        lPool.withdraw(amount / 2, self, self); // redeem half the amount to own wallet
 
-        // fail -> investor has no approval to receive funds
-        vm.expectRevert(bytes("UserEscrow/receiver-has-no-allowance"));
-        lPool.withdraw(amount / 2, investor, self); // redeem half the amount to another wallet
-
-        // fail -> receiver needs to have max approval
-        erc20.approve(investor, lPool.maxWithdraw(self));
-        vm.expectRevert(bytes("UserEscrow/receiver-has-no-allowance"));
-        lPool.withdraw(amount / 2, investor, self); // redeem half the amount to investor wallet
-
-        // success
-        erc20.approve(investor, type(uint256).max);
+        // can also withdraw to another user
         lPool.withdraw(amount / 2, investor, self); // redeem half the amount to investor wallet
 
         assertTrue(trancheToken.balanceOf(self) <= 1);
-        assertTrue(erc20.balanceOf(address(userEscrow)) <= 1);
+        assertTrue(erc20.balanceOf(address(escrow)) <= 1);
         assertApproxEqAbs(erc20.balanceOf(self), currencyPayout / 2, 1);
         assertApproxEqAbs(erc20.balanceOf(investor), currencyPayout / 2, 1);
         assertTrue(lPool.maxRedeem(self) <= 1);
@@ -294,7 +274,7 @@ contract RedeemTest is BaseTest {
         );
 
         assertApproxEqAbs(trancheToken.balanceOf(address(escrow)), 0, 1);
-        assertApproxEqAbs(erc20.balanceOf(address(userEscrow)), amount, 1);
+        assertApproxEqAbs(erc20.balanceOf(address(escrow)), amount, 1);
         vm.prank(investor);
         lPool.redeem(amount, investor, investor);
         assertApproxEqAbs(erc20.balanceOf(investor), investorBalanceBefore + amount, 1);
@@ -346,7 +326,7 @@ contract RedeemTest is BaseTest {
         );
 
         assertApproxEqAbs(trancheToken.balanceOf(address(escrow)), 0, 1);
-        assertApproxEqAbs(erc20.balanceOf(address(userEscrow)), amount, 1);
+        assertApproxEqAbs(erc20.balanceOf(address(escrow)), amount, 1);
         vm.prank(investor);
         lPool.redeem(amount, investor, investor);
 

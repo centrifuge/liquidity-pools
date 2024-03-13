@@ -6,7 +6,7 @@ import "test/BaseTest.sol";
 contract GatewayTest is BaseTest {
     // Deployment
     function testDeployment(address nonWard) public {
-        vm.assume(nonWard != address(root) && nonWard != address(this));
+        vm.assume(nonWard != address(root) && nonWard != address(delayedAdmin) && nonWard != address(this));
 
         // values set correctly
         assertEq(address(gateway.investmentManager()), address(investmentManager));
@@ -26,6 +26,7 @@ contract GatewayTest is BaseTest {
         // permissions set correctly
         assertEq(gateway.wards(address(root)), 1);
         assertEq(aggregator.wards(address(root)), 1);
+        assertEq(aggregator.wards(address(delayedAdmin)), 1);
         assertEq(gateway.wards(nonWard), 0);
         assertEq(aggregator.wards(nonWard), 0);
     }
