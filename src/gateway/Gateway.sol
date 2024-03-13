@@ -33,8 +33,6 @@ contract Gateway is Auth {
     address public investmentManager;
     RouterAggregatorLike public aggregator;
 
-    uint256 public gasPriceOracle = 0.5 gwei;
-
     mapping(uint8 messageId => address manager) messages;
 
     // --- Events ---
