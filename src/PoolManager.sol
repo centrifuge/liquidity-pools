@@ -15,7 +15,7 @@ import {CastLib} from "src/libraries/CastLib.sol";
 import {BytesLib} from "src/libraries/BytesLib.sol";
 
 interface GatewayLike {
-    function send(bytes memory message) external payable;
+    function send(bytes memory message) external;
 }
 
 interface InvestmentManagerLike {
@@ -149,7 +149,7 @@ contract PoolManager is Auth {
     }
 
     // --- Outgoing message handling ---
-    function transfer(address currency, bytes32 recipient, uint128 amount) external payable {
+    function transfer(address currency, bytes32 recipient, uint128 amount) external {
         uint128 currencyId = currencyAddressToId[currency];
         require(currencyId != 0, "PoolManager/unknown-currency");
 

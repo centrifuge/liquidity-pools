@@ -13,16 +13,6 @@ interface AxelarGatewayLike {
     ) external returns (bool);
 }
 
-interface AxelarGasServiceLike {
-    function payNativeGasForContractCall(
-        address sender,
-        string calldata destinationChain,
-        string calldata destinationAddress,
-        bytes calldata payload,
-        address refundAddress
-    ) external payable;
-}
-
 interface AggregatorLike {
     function handle(bytes memory message) external;
 }
@@ -37,12 +27,10 @@ contract AxelarRouter {
 
     AggregatorLike public immutable aggregator;
     AxelarGatewayLike public immutable axelarGateway;
-    AxelarGasServiceLike public immutable axelarGasService;
 
-    constructor(address aggregator_, address axelarGateway_, address axelarGasService_) {
+    constructor(address aggregator_, address axelarGateway_) {
         aggregator = AggregatorLike(aggregator_);
         axelarGateway = AxelarGatewayLike(axelarGateway_);
-        axelarGasService = AxelarGasServiceLike(axelarGasService_);
     }
 
     // --- Incoming ---
@@ -63,17 +51,6 @@ contract AxelarRouter {
     }
 
     // --- Outgoing ---
-    function estimate(uint256 baseCost) public pure returns (uint256) {
-        return baseCost;
-    }
-
-    // TODO: is there any risk with this being public and having a sender arg?
-    function pay(address sender, bytes calldata payload) public payable {
-        axelarGasService.payNativeGasForContractCall{value: msg.value}(
-            sender, CENTRIFUGE_ID, CENTRIFUGE_AXELAR_EXECUTABLE, payload, sender
-        );
-    }
-
     function send(bytes calldata paypload) public {
         require(msg.sender == address(aggregator), "AxelarRouter/only-aggregator-allowed-to-call");
 

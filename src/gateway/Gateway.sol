@@ -9,7 +9,7 @@ interface ManagerLike {
 }
 
 interface RouterAggregatorLike {
-    function send(bytes memory message) external payable;
+    function send(bytes memory message) external;
 }
 
 interface RootLike {
@@ -71,13 +71,12 @@ contract Gateway is Auth {
     }
 
     // --- Outgoing ---
-    // TODO: forward sender
-    function send(bytes calldata message) public payable pauseable {
+    function send(bytes calldata message) public pauseable {
         require(
             msg.sender == investmentManager || msg.sender == poolManager || msg.sender == messages[message.toUint8(0)],
             "Gateway/invalid-manager"
         );
-        aggregator.send{value: msg.value}(message);
+        aggregator.send(message);
     }
 
     // --- Incoming ---

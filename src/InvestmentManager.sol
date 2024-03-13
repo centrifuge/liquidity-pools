@@ -9,7 +9,7 @@ import {MessagesLib} from "./libraries/MessagesLib.sol";
 import {BytesLib} from "./libraries/BytesLib.sol";
 
 interface GatewayLike {
-    function send(bytes memory message) external payable;
+    function send(bytes memory message) external;
 }
 
 interface ERC20Like {

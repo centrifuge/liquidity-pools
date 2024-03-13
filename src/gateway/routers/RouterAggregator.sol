@@ -202,7 +202,7 @@ contract RouterAggregator is Auth {
     // --- Outgoing ---
     /// @dev Sends 1 message to the first router with the full message, and n-1 messages to the other routers with
     ///      proofs (hash of message). This ensures message uniqueness (can only be executed on the destination once).
-    function send(bytes calldata message) public payable {
+    function send(bytes calldata message) public {
         require(msg.sender == address(gateway), "RouterAggregator/only-gateway-allowed-to-call");
 
         uint256 numRouters = routers.length;
@@ -210,7 +210,6 @@ contract RouterAggregator is Auth {
 
         bytes memory proof = abi.encodePacked(uint8(MessagesLib.Call.MessageProof), keccak256(message));
         for (uint256 i; i < numRouters; ++i) {
-            // TODO: estimate gas cost based here, then call router.pay()
             RouterLike(routers[i]).send(i == PRIMARY_ROUTER_ID - 1 ? message : proof);
         }
 
