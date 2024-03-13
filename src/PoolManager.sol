@@ -145,6 +145,10 @@ contract PoolManager is Auth {
         emit File(what, data);
     }
 
+    function recoverTokens(address to, address token, uint256 amount) external auth {
+        SafeTransferLib.safeTransfer(token, to, amount);
+    }
+
     // --- Outgoing message handling ---
     function transfer(address currency, bytes32 recipient, uint128 amount) external {
         uint128 currencyId = currencyAddressToId[currency];
