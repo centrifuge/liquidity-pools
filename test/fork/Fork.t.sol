@@ -104,9 +104,6 @@ contract ForkTest is Test {
                 assertEq(Escrow(escrow).wards(admin), 0);
 
                 // UserEscrow
-                // assertEq(UserEscrow(userEscrow).wards(root), 1);
-                // assertEq(UserEscrow(userEscrow).wards(deployer), 0);
-                // assertEq(UserEscrow(userEscrow).wards(admin), 0);
 
                 // Router
                 assertEq(RouterLike(router).wards(root), 1);
