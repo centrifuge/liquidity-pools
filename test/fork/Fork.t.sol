@@ -53,7 +53,6 @@ contract ForkTest is Test {
                 address poolManager = _get(i, ".contracts.poolManager");
                 address gateway = _get(i, ".contracts.gateway");
                 address escrow = _get(i, ".contracts.escrow");
-                address userEscrow = _get(i, ".contracts.userEscrow");
                 address router = _get(i, ".contracts.router");
                 address trancheTokenFactory = _get(i, ".contracts.trancheTokenFactory");
                 address liquidityPoolFactory = _get(i, ".contracts.liquidityPoolFactory");
