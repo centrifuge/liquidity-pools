@@ -544,7 +544,7 @@ contract InvestmentManager is Auth {
         InvestmentState storage state = investments[liquidityPool][owner];
         uint128 currencyAmount_ =
             _calculateCurrencyAmount(trancheTokenAmount.toUint128(), liquidityPool, state.redeemPrice);
-        _processRedeem(state, currencyAmount_, liquidityPool, receiver, owner);
+        _processRedeem(state, currencyAmount_, liquidityPool, receiver);
         currencyAmount = uint256(currencyAmount_);
     }
 
@@ -557,7 +557,7 @@ contract InvestmentManager is Auth {
         returns (uint256 trancheTokenAmount)
     {
         InvestmentState storage state = investments[liquidityPool][owner];
-        _processRedeem(state, currencyAmount.toUint128(), liquidityPool, receiver, owner);
+        _processRedeem(state, currencyAmount.toUint128(), liquidityPool, receiver);
         trancheTokenAmount =
             uint256(_calculateTrancheTokenAmount(currencyAmount.toUint128(), liquidityPool, state.redeemPrice));
     }
@@ -566,8 +566,7 @@ contract InvestmentManager is Auth {
         InvestmentState storage state,
         uint128 currencyAmount,
         address liquidityPool,
-        address receiver,
-        address owner
+        address receiver
     ) internal {
         LiquidityPoolLike lPool = LiquidityPoolLike(liquidityPool);
         require(currencyAmount != 0, "InvestmentManager/currency-amount-is-zero");

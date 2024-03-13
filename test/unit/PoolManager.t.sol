@@ -10,7 +10,7 @@ contract PoolManagerTest is BaseTest {
 
     // Deployment
     function testDeployment(address nonWard) public {
-        vm.assume(nonWard != address(root) && nonWard != address(this));
+        vm.assume(nonWard != address(root) && nonWard != address(gateway) && nonWard != address(this));
 
         // values set correctly
         assertEq(address(poolManager.gateway()), address(gateway));
@@ -21,6 +21,7 @@ contract PoolManagerTest is BaseTest {
 
         // permissions set correctly
         assertEq(poolManager.wards(address(root)), 1);
+        assertEq(poolManager.wards(address(gateway)), 1);
         assertEq(escrow.wards(address(poolManager)), 1);
         assertEq(poolManager.wards(nonWard), 0);
     }
