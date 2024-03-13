@@ -7,7 +7,6 @@ import {Root} from "../src/Root.sol";
 import {InvestmentManager} from "../src/InvestmentManager.sol";
 import {PoolManager, Tranche} from "../src/PoolManager.sol";
 import {Escrow} from "../src/Escrow.sol";
-import {UserEscrow} from "../src/UserEscrow.sol";
 import {LiquidityPoolFactory} from "src/factories/LiquidityPoolFactory.sol";
 import {TrancheTokenFactory} from "src/factories/TrancheTokenFactory.sol";
 import {LiquidityPool} from "../src/LiquidityPool.sol";
@@ -90,7 +89,6 @@ contract BaseTest is Deployer, Test {
         vm.label(address(erc20), "ERC20");
         vm.label(address(centrifugeChain), "CentrifugeChain");
         vm.label(address(escrow), "Escrow");
-        vm.label(address(userEscrow), "UserEscrow");
         vm.label(address(pauseAdmin), "PauseAdmin");
         vm.label(address(delayedAdmin), "DelayedAdmin");
         vm.label(address(poolManager.restrictionManagerFactory()), "RestrictionManagerFactory");
@@ -109,7 +107,6 @@ contract BaseTest is Deployer, Test {
         excludeContract(address(router2));
         excludeContract(address(router3));
         excludeContract(address(escrow));
-        excludeContract(address(userEscrow));
         excludeContract(address(pauseAdmin));
         excludeContract(address(delayedAdmin));
         excludeContract(address(poolManager.restrictionManagerFactory()));

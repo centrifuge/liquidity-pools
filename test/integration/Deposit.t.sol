@@ -753,8 +753,7 @@ contract DepositTest is BaseTest {
         centrifugeChain.isExecutedDecreaseInvestOrder(
             lPool.poolId(), lPool.trancheId(), self.toBytes32(), defaultCurrencyId, uint128(amount), 0
         );
-        assertEq(erc20.balanceOf(address(escrow)), 0);
-        assertEq(erc20.balanceOf(address(userEscrow)), amount);
+        assertEq(erc20.balanceOf(address(escrow)), amount);
         assertEq(erc20.balanceOf(self), 0);
         assertEq(lPool.maxRedeem(self), amount);
         assertEq(lPool.maxWithdraw(self), amount);

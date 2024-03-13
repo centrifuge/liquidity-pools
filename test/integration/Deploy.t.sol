@@ -60,7 +60,6 @@ contract DeployTest is Test, Deployer {
         assertEq(investmentManager.wards(address(this)), 0);
         assertEq(poolManager.wards(address(this)), 0);
         assertEq(escrow.wards(address(this)), 0);
-        assertEq(userEscrow.wards(address(this)), 0);
         assertEq(gateway.wards(address(this)), 0);
         assertEq(aggregator.wards(address(this)), 0);
         assertEq(pauseAdmin.wards(address(this)), 0);
