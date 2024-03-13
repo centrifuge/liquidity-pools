@@ -270,12 +270,11 @@ contract AdminTest is BaseTest {
         address asset_ = lp.asset();
         ERC20 asset = ERC20(asset_);
         deal(asset_, clumsyUser, 100);
-        assertEq(asset.balanceOf(clumsyUser), 100);
         vm.prank(clumsyUser);
         asset.transfer(liquidityPool_, 100);
         assertEq(asset.balanceOf(liquidityPool_), 100);
         assertEq(asset.balanceOf(clumsyUser), 0);
-        centrifugeChain.recoverTokens(liquidityPool_, clumsyUser, 100);
+        centrifugeChain.recoverTokens(liquidityPool_, clumsyUser, asset_, 100);
         assertEq(asset.balanceOf(clumsyUser), 100);
         assertEq(asset.balanceOf(liquidityPool_), 0);
     }

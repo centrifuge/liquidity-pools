@@ -9,7 +9,7 @@ interface AuthLike {
 }
 
 interface RecoverLike {
-    function recoverTokens(address, uint256) external;
+    function recoverTokens(address, address, uint256) external;
 }
 
 /// @title  Root
@@ -34,7 +34,7 @@ contract Root is Auth {
     event CancelRely(address indexed target);
     event RelyContract(address indexed target, address indexed user);
     event DenyContract(address indexed target, address indexed user);
-    event RecoverTokens(address indexed fromContract, address indexed toUser, uint256 amount);
+    event RecoverTokens(address indexed fromContract, address indexed toUser, address indexed token, uint256 amount);
 
     constructor(address _escrow, uint256 _delay, address deployer) {
         require(_delay <= MAX_DELAY, "Root/delay-too-long");
@@ -111,8 +111,8 @@ contract Root is Auth {
 
     /// --- Token Recovery ---
     /// @notice Allows Governance to recover tokens sent to the wrong contract by mistake
-    function recoverTokens(address fromContract, address toUser, uint256 amount) external auth {
-        RecoverLike(fromContract).recoverTokens(toUser, amount);
-        emit RecoverTokens(fromContract, toUser, amount);
+    function recoverTokens(address fromContract, address toUser, address token, uint256 amount) external auth {
+        RecoverLike(fromContract).recoverTokens(toUser, token, amount);
+        emit RecoverTokens(fromContract, toUser, token, amount);
     }
 }

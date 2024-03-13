@@ -90,7 +90,7 @@ interface RootLike {
     function paused() external returns (bool);
     function scheduleRely(address target) external;
     function cancelRely(address target) external;
-    function recoverTokens(address fromContract, address toUser, uint256 amount) external;
+    function recoverTokens(address fromContract, address toUser, address token, uint256 amount) external;
 }
 
 /// @title  Gateway
@@ -257,8 +257,8 @@ contract Gateway is Auth {
             (uint64 poolId, uint128 currency) = MessagesLib.parseDisallowInvestmentCurrency(message);
             poolManager.disallowInvestmentCurrency(poolId, currency);
         } else if (call == MessagesLib.Call.RecoverTokens) {
-            (address fromContract, address toUser, uint256 amount) = MessagesLib.parseRecoverTokens(message);
-            root.recoverTokens(fromContract, toUser, amount);
+            (address fromContract, address toUser, address token, uint256 amount) = MessagesLib.parseRecoverTokens(message);
+            root.recoverTokens(fromContract, toUser, token, amount);
         } else {
             revert("Gateway/invalid-message");
         }

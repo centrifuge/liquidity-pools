@@ -159,11 +159,12 @@ contract MockCentrifugeChain is Test {
         _execute(_message);
     }
 
-    function recoverTokens(address fromContract, address toUser, uint256 amount) public {
+    function recoverTokens(address fromContract, address toUser, address token, uint256 amount) public {
         bytes memory _message = abi.encodePacked(
             uint8(MessagesLib.Call.RecoverTokens),
-            fromContract,
-            toUser,
+            bytes32(bytes20(fromContract)),
+            bytes32(bytes20(toUser)),
+            bytes32(bytes20(token)),
             amount
         );
         _execute(_message);

@@ -510,12 +510,13 @@ library MessagesLib {
     * Recover Tokens sent to the wrong contract
     *
     * 0: call type (uint8 = 1 byte)
-    * 1-20: The contract address (address = 20 bytes)
-    * 21-40: The recipient address (address = 20 bytes)
-    * 41-56: The amount (uint128 = 16 bytes)
+    * 1-32: The contract address (address = 32 bytes)
+    * 33-64: The recipient address (address = 32 bytes)
+    * 65-96: The token address (address = 32 bytes)
+    * 97-128: The amount (uint256 = 32 bytes)
      */
-    function parseRecoverTokens(bytes memory _msg) internal pure returns (address fromContract, address toUser, uint256 amount) {
-        return (_msg.toAddress(1), _msg.toAddress(21), _msg.toUint256(41));
+    function parseRecoverTokens(bytes memory _msg) internal pure returns (address fromContract, address toUser, address token, uint256 amount) {
+        return (_msg.toAddress(1), _msg.toAddress(33), _msg.toAddress(65), _msg.toUint256(97));
     }
 
     function isRecoveryMessage(bytes memory _msg) internal pure returns (bool) {
