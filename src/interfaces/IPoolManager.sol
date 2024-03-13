@@ -36,7 +36,6 @@ struct UndeployedTranche {
 }
 
 contract IPoolManager {
-    // --- Events ---
     event File(bytes32 indexed what, address data);
     event AddCurrency(uint128 indexed currencyId, address indexed currency);
     event AddPool(uint64 indexed poolId);
@@ -64,4 +63,33 @@ contract IPoolManager {
         address destinationAddress,
         uint128 amount
     );
+
+    /// @notice TODO
+    function MIN_DECIMALS() external view returns (uint8);
+
+    /// @notice TODO
+    function MAX_DECIMALS() external view returns (uint8);
+
+    // /// @notice TODO
+    // mapping(uint64 poolId => Pool) pools;
+    // /// @notice TODO
+    // mapping(uint128 currencyId => address) currencyIdToAddress;
+    // /// @notice TODO
+    // mapping(address => uint128 currencyId) currencyAddressToId;
+    // /// @notice TODO
+    // mapping(uint64 poolId => mapping(bytes16 => UndeployedTranche)) undeployedTranches;
+
+    /// @notice TODO
+    function file(bytes32 what, address data) external;
+
+    /// @notice TODO
+    function transfer(address currency, bytes32 recipient, uint128 amount) external;
+
+    /// @notice TODO
+    function transferTrancheTokensToCentrifuge(
+        uint64 poolId,
+        bytes16 trancheId,
+        bytes32 destinationAddress,
+        uint128 amount
+    ) external;
 }

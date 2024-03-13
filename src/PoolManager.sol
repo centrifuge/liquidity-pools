@@ -40,7 +40,9 @@ contract PoolManager is Auth, IPoolManager {
     using MathLib for uint256;
     using CastLib for *;
 
+    /// @inheritdoc IPoolManager
     uint8 internal constant MIN_DECIMALS = 1;
+    /// @inheritdoc IPoolManager
     uint8 internal constant MAX_DECIMALS = 18;
 
     EscrowLike public immutable escrow;
@@ -51,12 +53,14 @@ contract PoolManager is Auth, IPoolManager {
     LiquidityPoolFactoryLike public liquidityPoolFactory;
     RestrictionManagerFactoryLike public restrictionManagerFactory;
 
+    /// @inheritdoc IPoolManager
     mapping(uint64 poolId => Pool) public pools;
-    mapping(uint64 poolId => mapping(bytes16 => UndeployedTranche)) public undeployedTranches;
-
-    /// @dev Chain agnostic currency id -> evm currency address and reverse mapping
+    /// @inheritdoc IPoolManager
     mapping(uint128 currencyId => address) public currencyIdToAddress;
+    /// @inheritdoc IPoolManager
     mapping(address => uint128 currencyId) public currencyAddressToId;
+    /// @inheritdoc IPoolManager
+    mapping(uint64 poolId => mapping(bytes16 => UndeployedTranche)) public undeployedTranches;
 
     constructor(
         address escrow_,
@@ -74,6 +78,7 @@ contract PoolManager is Auth, IPoolManager {
     }
 
     // --- Administration ---
+    /// @inheritdoc IPoolManager
     function file(bytes32 what, address data) external auth {
         if (what == "gateway") gateway = GatewayLike(data);
         else if (what == "investmentManager") investmentManager = InvestmentManagerLike(data);
@@ -85,6 +90,7 @@ contract PoolManager is Auth, IPoolManager {
     }
 
     // --- Outgoing message handling ---
+    /// @inheritdoc IPoolManager
     function transfer(address currency, bytes32 recipient, uint128 amount) external {
         uint128 currencyId = currencyAddressToId[currency];
         require(currencyId != 0, "PoolManager/unknown-currency");
@@ -95,6 +101,7 @@ contract PoolManager is Auth, IPoolManager {
         emit TransferCurrency(currency, recipient, amount);
     }
 
+    /// @inheritdoc IPoolManager
     function transferTrancheTokensToCentrifuge(
         uint64 poolId,
         bytes16 trancheId,
@@ -120,6 +127,7 @@ contract PoolManager is Auth, IPoolManager {
         emit TransferTrancheTokensToCentrifuge(poolId, trancheId, destinationAddress, amount);
     }
 
+    /// @inheritdoc IPoolManager
     function transferTrancheTokensToEVM(
         uint64 poolId,
         bytes16 trancheId,
