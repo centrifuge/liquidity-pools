@@ -69,7 +69,6 @@ contract ForkTest is Test {
                 assertEq(address(InvestmentManager(investmentManager).poolManager()), poolManager);
                 assertEq(InvestmentManager(investmentManager).wards(poolManager), 1);
                 assertEq(Escrow(escrow).wards(investmentManager), 1);
-                // assertEq(UserEscrow(userEscrow).wards(investmentManager), 1);
                 assertEq(InvestmentManager(investmentManager).wards(root), 1);
                 assertEq(InvestmentManager(investmentManager).wards(deployer), 0);
                 assertEq(InvestmentManager(investmentManager).wards(admin), 0);
