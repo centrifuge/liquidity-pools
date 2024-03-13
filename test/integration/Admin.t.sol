@@ -260,4 +260,23 @@ contract AdminTest is BaseTest {
         root.relyContract(address(investmentManager), address(this));
         assertEq(investmentManager.wards(address(this)), 1);
     }
+
+    //------ Token Recovery tests ------///
+    function testRecoverTokensFromLiquidityPool() public {
+        deploySimplePool();
+        address clumsyUser = vm.addr(0x1234);
+        address liquidityPool_ = poolManager.getLiquidityPool(5, bytes16(bytes("1")), defaultCurrencyId);
+        LiquidityPool lp = LiquidityPool(liquidityPool_);
+        address asset_ = lp.asset();
+        ERC20 asset = ERC20(asset_);
+        deal(asset_, clumsyUser, 100);
+        assertEq(asset.balanceOf(clumsyUser), 100);
+        vm.prank(clumsyUser);
+        asset.transfer(liquidityPool_, 100);
+        assertEq(asset.balanceOf(liquidityPool_), 100);
+        assertEq(asset.balanceOf(clumsyUser), 0);
+        centrifugeChain.recoverTokens(liquidityPool_, clumsyUser, 100);
+        assertEq(asset.balanceOf(clumsyUser), 100);
+        assertEq(asset.balanceOf(liquidityPool_), 0);
+    }
 }
