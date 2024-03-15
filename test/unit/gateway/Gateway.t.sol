@@ -38,6 +38,9 @@ contract GatewayTest is BaseTest {
         vm.expectRevert(bytes("Gateway/file-unrecognized-param"));
         gateway.file("random", self);
 
+        vm.expectRevert(bytes("Gateway/file-unrecognized-param"));
+        gateway.file("random", uint8(1), self);
+
         assertEq(address(gateway.poolManager()), address(poolManager));
         assertEq(address(gateway.investmentManager()), address(investmentManager));
         assertEq(address(gateway.aggregator()), address(aggregator));
