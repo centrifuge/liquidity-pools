@@ -3,7 +3,7 @@ pragma solidity 0.8.21;
 
 import {Root} from "src/Root.sol";
 import {RouterAggregator} from "src/gateway/routers/RouterAggregator.sol";
-import {Gateway, InvestmentManagerLike} from "src/gateway/Gateway.sol";
+import {Gateway} from "src/gateway/Gateway.sol";
 import {InvestmentManager} from "src/InvestmentManager.sol";
 import {PoolManager} from "src/PoolManager.sol";
 import {Escrow} from "src/Escrow.sol";

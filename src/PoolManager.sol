@@ -12,6 +12,7 @@ import {SafeTransferLib} from "./libraries/SafeTransferLib.sol";
 import {MathLib} from "./libraries/MathLib.sol";
 import {MessagesLib} from "src/libraries/MessagesLib.sol";
 import {CastLib} from "src/libraries/CastLib.sol";
+import {BytesLib} from "src/libraries/BytesLib.sol";
 
 interface GatewayLike {
     function send(bytes memory message) external;
@@ -69,6 +70,7 @@ struct UndeployedTranche {
 /// @notice This contract manages which pools & tranches exist,
 ///         as well as managing allowed pool currencies, and incoming and outgoing transfers.
 contract PoolManager is Auth {
+    using BytesLib for bytes;
     using MathLib for uint256;
     using CastLib for *;
 
@@ -208,6 +210,58 @@ contract PoolManager is Auth {
     }
 
     // --- Incoming message handling ---
+    function handle(bytes calldata message) external auth {
+        MessagesLib.Call call = MessagesLib.messageType(message);
+
+        if (call == MessagesLib.Call.AddCurrency) {
+            addCurrency(message.toUint128(1), message.toAddress(17));
+        } else if (call == MessagesLib.Call.AddPool) {
+            addPool(message.toUint64(1));
+        } else if (call == MessagesLib.Call.AllowInvestmentCurrency) {
+            allowInvestmentCurrency(message.toUint64(1), message.toUint128(9));
+        } else if (call == MessagesLib.Call.AddTranche) {
+            addTranche(
+                message.toUint64(1),
+                message.toBytes16(9),
+                message.slice(25, 128).bytes128ToString(),
+                message.toBytes32(153).toString(),
+                message.toUint8(185),
+                message.toUint8(186)
+            );
+        } else if (call == MessagesLib.Call.UpdateMember) {
+            updateMember(message.toUint64(1), message.toBytes16(9), message.toAddress(25), message.toUint64(57));
+        } else if (call == MessagesLib.Call.UpdateTrancheTokenPrice) {
+            updateTrancheTokenPrice(
+                message.toUint64(1),
+                message.toBytes16(9),
+                message.toUint128(25),
+                message.toUint128(41),
+                message.toUint64(57)
+            );
+        } else if (call == MessagesLib.Call.Transfer) {
+            handleTransfer(message.toUint128(1), message.toAddress(49), message.toUint128(81));
+        } else if (call == MessagesLib.Call.TransferTrancheTokens) {
+            handleTransferTrancheTokens(
+                message.toUint64(1), message.toBytes16(9), message.toAddress(66), message.toUint128(98)
+            );
+        } else if (call == MessagesLib.Call.UpdateTrancheTokenMetadata) {
+            updateTrancheTokenMetadata(
+                message.toUint64(1),
+                message.toBytes16(9),
+                message.slice(25, 128).bytes128ToString(),
+                message.toBytes32(153).toString()
+            );
+        } else if (call == MessagesLib.Call.Freeze) {
+            freeze(message.toUint64(1), message.toBytes16(9), message.toAddress(25));
+        } else if (call == MessagesLib.Call.Unfreeze) {
+            unfreeze(message.toUint64(1), message.toBytes16(9), message.toAddress(25));
+        } else if (call == MessagesLib.Call.DisallowInvestmentCurrency) {
+            disallowInvestmentCurrency(message.toUint64(1), message.toUint128(9));
+        } else {
+            revert("PoolManager/invalid-message");
+        }
+    }
+
     /// @notice    New pool details from an existing Centrifuge pool are added.
     /// @dev       The function can only be executed by the gateway contract.
     function addPool(uint64 poolId) public auth {

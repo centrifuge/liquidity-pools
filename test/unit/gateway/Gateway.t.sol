@@ -2,6 +2,7 @@
 pragma solidity 0.8.21;
 
 import "test/BaseTest.sol";
+import "test/mocks/MockManager.sol";
 
 contract GatewayTest is BaseTest {
     // Deployment
@@ -36,6 +37,9 @@ contract GatewayTest is BaseTest {
         // fail: unrecognized param
         vm.expectRevert(bytes("Gateway/file-unrecognized-param"));
         gateway.file("random", self);
+
+        vm.expectRevert(bytes("Gateway/file-unrecognized-param"));
+        gateway.file("random", uint8(1), self);
 
         assertEq(address(gateway.poolManager()), address(poolManager));
         assertEq(address(gateway.investmentManager()), address(investmentManager));
@@ -83,5 +87,22 @@ contract GatewayTest is BaseTest {
 
         gateway.file("investmentManager", self);
         gateway.send(abi.encodePacked(uint8(MessagesLib.Call.AddPool), poolId));
+    }
+
+    // --- Dynamic managers ---
+    function testCustomManager() public {
+        MockManager mgr = new MockManager();
+
+        bytes memory message = abi.encodePacked(uint8(40));
+        vm.expectRevert(bytes("Gateway/unregistered-message-id"));
+        gateway.handle(message);
+
+        assertEq(mgr.received(message), 0);
+
+        gateway.file("message", 40, address(mgr));
+        gateway.handle(message);
+
+        assertEq(mgr.received(message), 1);
+        assertEq(mgr.values_bytes("handle_message"), message);
     }
 }
