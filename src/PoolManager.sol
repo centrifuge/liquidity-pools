@@ -21,7 +21,6 @@ interface GatewayLike {
 interface InvestmentManagerLike {
     function liquidityPools(uint64 poolId, bytes16 trancheId, address currency) external returns (address);
     function getTrancheToken(uint64 _poolId, bytes16 _trancheId) external view returns (address);
-    function userEscrow() external view returns (address);
 }
 
 interface EscrowLike {
@@ -407,9 +406,9 @@ contract PoolManager is Auth {
         currencyIdToAddress[currencyId] = currency;
         currencyAddressToId[currency] = currencyId;
 
-        // Give investment manager infinite approval for currency in the escrow
-        // to transfer to the user escrow on redeem, withdraw or transfer
-        escrow.approve(currency, investmentManager.userEscrow(), type(uint256).max);
+        // Give investment manager infinite approval for currency
+        // in the escrow to transfer to the user on redeem or withdraw
+        escrow.approve(currency, address(investmentManager), type(uint256).max);
 
         emit AddCurrency(currencyId, currency);
     }
