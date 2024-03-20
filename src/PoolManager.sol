@@ -42,9 +42,6 @@ struct Pool {
 /// @dev Each Centrifuge pool is associated to 1 or more tranches
 struct Tranche {
     address token;
-    /// @dev Each tranche can have multiple liquidity pools deployed,
-    ///      each linked to a unique investment currency (asset)
-    mapping(address currency => address liquidityPool) liquidityPools;
     /// @dev Each tranche has a price per liquidity pool
     mapping(address liquidityPool => TrancheTokenPrice) prices;
 }
@@ -475,7 +472,7 @@ contract PoolManager is Auth {
         require(tranche.token != address(0), "PoolManager/tranche-does-not-exist");
         require(isAllowedAsInvestmentCurrency(poolId, currency), "PoolManager/currency-not-supported");
 
-        address liquidityPool = tranche.liquidityPools[currency];
+        address liquidityPool = TrancheTokenLike(tranche.token).vault(currency);
         require(liquidityPool == address(0), "PoolManager/liquidity-pool-already-deployed");
 
         // Rely investment manager on liquidity pool so it can mint tokens
@@ -486,11 +483,11 @@ contract PoolManager is Auth {
         liquidityPool = liquidityPoolFactory.newLiquidityPool(
             poolId, trancheId, currency, tranche.token, address(escrow), address(investmentManager), liquidityPoolWards
         );
-        tranche.liquidityPools[currency] = liquidityPool;
 
         // Link liquidity pool to tranche token
         AuthLike(tranche.token).rely(liquidityPool);
         TrancheTokenLike(tranche.token).addTrustedForwarder(liquidityPool);
+        TrancheTokenLike(tranche.token).file("vault", currency, liquidityPool);
 
         // Give liquidity pool infinite approval for tranche tokens
         // in the escrow to burn on executed redemptions
@@ -505,15 +502,14 @@ contract PoolManager is Auth {
         Tranche storage tranche = pools[poolId].tranches[trancheId];
         require(tranche.token != address(0), "PoolManager/tranche-does-not-exist");
 
-        address liquidityPool = tranche.liquidityPools[currency];
+        address liquidityPool = TrancheTokenLike(tranche.token).vault(currency);
         require(liquidityPool != address(0), "PoolManager/liquidity-pool-not-deployed");
-
-        delete tranche.liquidityPools[currency];
 
         liquidityPoolFactory.denyLiquidityPool(liquidityPool, address(investmentManager));
 
         AuthLike(tranche.token).deny(liquidityPool);
         TrancheTokenLike(tranche.token).removeTrustedForwarder(liquidityPool);
+        TrancheTokenLike(tranche.token).file("vault", currency, address(0));
 
         escrow.approve(address(tranche.token), liquidityPool, 0);
 
@@ -527,11 +523,11 @@ contract PoolManager is Auth {
     }
 
     function getLiquidityPool(uint64 poolId, bytes16 trancheId, uint128 currencyId) public view returns (address) {
-        return pools[poolId].tranches[trancheId].liquidityPools[currencyIdToAddress[currencyId]];
+        return TrancheTokenLike(pools[poolId].tranches[trancheId].token).vault(currencyIdToAddress[currencyId]);
     }
 
     function getLiquidityPool(uint64 poolId, bytes16 trancheId, address currency) public view returns (address) {
-        return pools[poolId].tranches[trancheId].liquidityPools[currency];
+        return TrancheTokenLike(pools[poolId].tranches[trancheId].token).vault(currency);
     }
 
     function getTrancheTokenPrice(uint64 poolId, bytes16 trancheId, address currency)
