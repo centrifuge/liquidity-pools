@@ -32,20 +32,33 @@ contract TrancheTokenTest is Test {
 
     // --- Admnistration ---
 
-    function testFile() public {
+    function testFile(address asset, address vault) public {
         // fail: unrecognized param
         vm.expectRevert(bytes("TrancheToken/file-unrecognized-param"));
         token.file("random", self);
+
+        vm.expectRevert(bytes("TrancheToken/file-unrecognized-param"));
+        token.file("random", self, self);
+
+        vm.expectRevert(bytes("TrancheToken/file-unrecognized-param"));
+        token.file("random", self, false);
 
         // success
         token.file("restrictionManager", self);
         assertEq(address(token.restrictionManager()), self);
 
+        token.file("vault", asset, vault);
+        assertEq(address(token.vault(asset)), vault);
+
         // remove self from wards
         token.deny(self);
+
         // auth fail
         vm.expectRevert(bytes("Auth/not-authorized"));
         token.file("restrictionManager", self);
+
+        vm.expectRevert(bytes("Auth/not-authorized"));
+        token.file("vault", asset, vault);
     }
 
     // --- TrustedForwarder ---
