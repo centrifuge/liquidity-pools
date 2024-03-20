@@ -187,11 +187,11 @@ contract RedeemTest is BaseTest {
         centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), self, uint64(block.timestamp));
         vm.warp(block.timestamp + 1);
         vm.expectRevert(bytes("InvestmentManager/transfer-not-allowed"));
-        lPool.cancelRedeemRequest();
+        lPool.cancelRedeemRequest(0, self);
         centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), self, type(uint64).max);
 
         // check message was send out to centchain
-        lPool.cancelRedeemRequest();
+        lPool.cancelRedeemRequest(0, self);
         bytes memory cancelOrderMessage = abi.encodePacked(
             uint8(MessagesLib.Call.CancelRedeemOrder),
             lPool.poolId(),
@@ -205,7 +205,7 @@ contract RedeemTest is BaseTest {
 
         // Cannot cancel twice
         vm.expectRevert(bytes("InvestmentManager/cancellation-is-pending"));
-        lPool.cancelRedeemRequest();
+        lPool.cancelRedeemRequest(0, self);
 
         vm.expectRevert(bytes("InvestmentManager/cancellation-is-pending"));
         lPool.requestRedeem(amount, address(this), address(this), "");
@@ -216,8 +216,7 @@ contract RedeemTest is BaseTest {
 
         assertEq(trancheToken.balanceOf(address(escrow)), amount);
         assertEq(trancheToken.balanceOf(self), amount);
-        assertEq(lPool.maxDeposit(self), amount);
-        assertEq(lPool.maxMint(self), amount);
+        assertEq(lPool.claimableCancelRedeemRequest(0, self), amount);
         assertEq(lPool.pendingCancelRedeemRequest(0, self), false);
 
         // After cancellation is executed, new request can be submitted
@@ -360,7 +359,7 @@ contract RedeemTest is BaseTest {
             poolId, trancheId, bytes32(bytes20(self)), _currencyId, uint128(investmentAmount), trancheTokenPayout, 0
         );
 
-        (, uint256 depositPrice,,,,,,,) = investmentManager.investments(address(lPool), self);
+        (, uint256 depositPrice,,,,,,,,,) = investmentManager.investments(address(lPool), self);
         assertEq(depositPrice, 1000000000000000000);
 
         // assert deposit & mint values adjusted
@@ -391,7 +390,7 @@ contract RedeemTest is BaseTest {
             trancheTokenPayout / 2
         );
 
-        (,,, uint256 redeemPrice,,,,,) = investmentManager.investments(address(lPool), self);
+        (,,, uint256 redeemPrice,,,,,,,) = investmentManager.investments(address(lPool), self);
         assertEq(redeemPrice, 1500000000000000000);
 
         // trigger second executed collectRedeem at a price of 1.0
@@ -402,7 +401,7 @@ contract RedeemTest is BaseTest {
             poolId, trancheId, bytes32(bytes20(self)), _currencyId, currencyPayout, trancheTokenPayout / 2, 0
         );
 
-        (,,, redeemPrice,,,,,) = investmentManager.investments(address(lPool), self);
+        (,,, redeemPrice,,,,,,,) = investmentManager.investments(address(lPool), self);
         assertEq(redeemPrice, 1250000000000000000);
     }
 
@@ -433,7 +432,7 @@ contract RedeemTest is BaseTest {
 
         assertEq(lPool.maxRedeem(self), firstTrancheTokenRedeem);
 
-        (,,, uint256 redeemPrice,,,,,) = investmentManager.investments(address(lPool), self);
+        (,,, uint256 redeemPrice,,,,,,,) = investmentManager.investments(address(lPool), self);
         assertEq(redeemPrice, 1100000000000000000);
 
         // second trigger executed collectRedeem of the second 25 trancheTokens at a price of 1.3
@@ -442,7 +441,7 @@ contract RedeemTest is BaseTest {
             poolId, trancheId, bytes32(bytes20(self)), currencyId, secondCurrencyPayout, secondTrancheTokenRedeem, 0
         );
 
-        (,,, redeemPrice,,,,,) = investmentManager.investments(address(lPool), self);
+        (,,, redeemPrice,,,,,,,) = investmentManager.investments(address(lPool), self);
         assertEq(redeemPrice, 1200000000000000000);
 
         assertApproxEqAbs(lPool.maxWithdraw(self), firstCurrencyPayout + secondCurrencyPayout, 2);
