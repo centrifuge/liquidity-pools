@@ -486,7 +486,7 @@ contract PoolManager is Auth {
 
         // Link liquidity pool to tranche token
         AuthLike(tranche.token).rely(liquidityPool);
-        TrancheTokenLike(tranche.token).addTrustedForwarder(liquidityPool);
+        TrancheTokenLike(tranche.token).file("trustedForwarder", liquidityPool, true);
         TrancheTokenLike(tranche.token).file("vault", currency, liquidityPool);
 
         // Give liquidity pool infinite approval for tranche tokens
@@ -508,7 +508,7 @@ contract PoolManager is Auth {
         liquidityPoolFactory.denyLiquidityPool(liquidityPool, address(investmentManager));
 
         AuthLike(tranche.token).deny(liquidityPool);
-        TrancheTokenLike(tranche.token).removeTrustedForwarder(liquidityPool);
+        TrancheTokenLike(tranche.token).file("trustedForwarder", liquidityPool, false);
         TrancheTokenLike(tranche.token).file("vault", currency, address(0));
 
         escrow.approve(address(tranche.token), liquidityPool, 0);

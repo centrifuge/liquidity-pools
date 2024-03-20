@@ -49,33 +49,37 @@ contract TrancheTokenTest is Test {
     }
 
     // --- TrustedForwarder ---
-    function testAddLiquidityPool() public {
-        assertTrue(!token.isTrustedForwarder(self));
+    function testAddTrustedForwarder(address trustedForwarder) public {
+        vm.assume(trustedForwarder != self);
+
+        assertTrue(!token.isTrustedForwarder(trustedForwarder));
 
         //success
-        token.addTrustedForwarder(self);
-        assertTrue(token.isTrustedForwarder(self));
+        token.file("trustedForwarder", trustedForwarder, true);
+        assertTrue(token.isTrustedForwarder(trustedForwarder));
 
         // remove self from wards
         token.deny(self);
         // auth fail
         vm.expectRevert(bytes("Auth/not-authorized"));
-        token.addTrustedForwarder(self);
+        token.file("trustedForwarder", trustedForwarder, true);
     }
 
-    function testRemoveLiquidityPool() public {
-        token.addTrustedForwarder(self);
-        assertTrue(token.isTrustedForwarder(self));
+    function testRemoveTrustedForwarder(address trustedForwarder) public {
+        vm.assume(trustedForwarder != self);
+
+        token.file("trustedForwarder", trustedForwarder, true);
+        assertTrue(token.isTrustedForwarder(trustedForwarder));
 
         // success
-        token.removeTrustedForwarder(self);
-        assertTrue(!token.isTrustedForwarder(self));
+        token.file("trustedForwarder", trustedForwarder, false);
+        assertTrue(!token.isTrustedForwarder(trustedForwarder));
 
         // remove self from wards
         token.deny(self);
         // auth fail
         vm.expectRevert(bytes("Auth/not-authorized"));
-        token.removeTrustedForwarder(self);
+        token.file("trustedForwarder", trustedForwarder, false);
     }
 
     function testCheckTrustedForwarderWorks(uint256 amount) public {
@@ -83,7 +87,7 @@ contract TrancheTokenTest is Test {
 
         assertTrue(!token.isTrustedForwarder(self));
         // make self trusted forwarder
-        token.addTrustedForwarder(self);
+        token.file("trustedForwarder", self, true);
         assertTrue(token.isTrustedForwarder(self));
         // add self to restrictionManager
         restrictionManager.updateMember(self, validUntil);
