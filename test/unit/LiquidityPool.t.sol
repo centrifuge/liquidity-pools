@@ -96,20 +96,12 @@ contract LiquidityPoolTest is BaseTest {
     function testERC165Support(bytes4 unsupportedInterfaceId) public {
         bytes4 erc165 = 0x01ffc9a7;
         bytes4 erc7575 = 0x2f0a18c5;
-        bytes4 erc7575Minimal = 0x50a526d6;
-        bytes4 erc7575Deposit = 0xc1f329ef;
-        bytes4 erc7575Mint = 0xe1550342;
-        bytes4 erc7575Withdraw = 0x70dec094;
-        bytes4 erc7575Redeem = 0x2fd7d42a;
         bytes4 erc7540Deposit = 0x1683f250;
         bytes4 erc7540Redeem = 0x0899cb0b;
 
         vm.assume(
             unsupportedInterfaceId != erc165 && unsupportedInterfaceId != erc7575
-                && unsupportedInterfaceId != erc7575Minimal && unsupportedInterfaceId != erc7575Deposit
-                && unsupportedInterfaceId != erc7575Mint && unsupportedInterfaceId != erc7575Withdraw
-                && unsupportedInterfaceId != erc7575Redeem && unsupportedInterfaceId != erc7540Deposit
-                && unsupportedInterfaceId != erc7540Redeem
+                && unsupportedInterfaceId != erc7540Deposit && unsupportedInterfaceId != erc7540Redeem
         );
 
         address lPool_ = deploySimplePool();
@@ -117,21 +109,11 @@ contract LiquidityPoolTest is BaseTest {
 
         assertEq(type(IERC165).interfaceId, erc165);
         assertEq(type(IERC7575).interfaceId, erc7575);
-        assertEq(type(IERC7575Minimal).interfaceId, erc7575Minimal);
-        assertEq(type(IERC7575Deposit).interfaceId, erc7575Deposit);
-        assertEq(type(IERC7575Mint).interfaceId, erc7575Mint);
-        assertEq(type(IERC7575Withdraw).interfaceId, erc7575Withdraw);
-        assertEq(type(IERC7575Redeem).interfaceId, erc7575Redeem);
         assertEq(type(IERC7540Deposit).interfaceId, erc7540Deposit);
         assertEq(type(IERC7540Redeem).interfaceId, erc7540Redeem);
 
         assertEq(lPool.supportsInterface(erc165), true);
         assertEq(lPool.supportsInterface(erc7575), true);
-        assertEq(lPool.supportsInterface(erc7575Minimal), true);
-        assertEq(lPool.supportsInterface(erc7575Deposit), true);
-        assertEq(lPool.supportsInterface(erc7575Mint), true);
-        assertEq(lPool.supportsInterface(erc7575Redeem), true);
-        assertEq(lPool.supportsInterface(erc7575Minimal), true);
         assertEq(lPool.supportsInterface(erc7540Deposit), true);
         assertEq(lPool.supportsInterface(erc7540Redeem), true);
 
