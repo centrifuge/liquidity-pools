@@ -4,6 +4,7 @@ pragma solidity 0.8.21;
 import {Auth} from "./Auth.sol";
 import {CastLib} from "./libraries/CastLib.sol";
 import {MathLib} from "./libraries/MathLib.sol";
+import {BitmapLib} from "./libraries/BitmapLib.sol";
 import {SafeTransferLib} from "./libraries/SafeTransferLib.sol";
 import {MessagesLib} from "./libraries/MessagesLib.sol";
 import {BytesLib} from "./libraries/BytesLib.sol";
@@ -54,23 +55,26 @@ interface PoolManagerLike {
 struct InvestmentState {
     /// @dev Tranche tokens that can be claimed using `mint()`
     uint128 maxMint;
-    /// @dev Weighted average price of deposits, used to convert maxMint to maxDeposit
-    uint256 depositPrice;
     /// @dev Currency that can be claimed using `withdraw()`
     uint128 maxWithdraw;
+    /// @dev Weighted average price of deposits, used to convert maxMint to maxDeposit
+    uint256 depositPrice;
     /// @dev Weighted average price of redemptions, used to convert maxWithdraw to maxRedeem
     uint256 redeemPrice;
     /// @dev Remaining invest (deposit) order in currency
     uint128 pendingDepositRequest;
     /// @dev Remaining redeem order in currency
     uint128 pendingRedeemRequest;
-    /// @dev Whether the depositRequest was requested to be cancelled
-    bool pendingCancelDepositRequest;
-    /// @dev Whether the redeemRequest was requested to be cancelled
-    bool pendingCancelRedeemRequest;
-    ///@dev Flag whether this user has ever interacted with this liquidity pool
-    bool exists;
+    /// @dev Stores
+    ///      - Whether the depositRequest was requested to be cancelled
+    ///      - Whether the redeemRequest was requested to be cancelled
+    ///      - Flag whether this user has ever interacted with this liquidity pool
+    uint256 bitmap;
 }
+
+uint256 constant PENDING_CANCEL_DEPOSIT_REQUEST_BIT = 0;
+uint256 constant PENDING_CANCEL_REDEEM_REQUEST_BIT = 1;
+uint256 constant USER_EXISTS_BIT = 2;
 
 /// @title  Investment Manager
 /// @notice This is the main contract LiquidityPools interact with for
@@ -78,6 +82,7 @@ struct InvestmentState {
 contract InvestmentManager is Auth {
     using BytesLib for bytes;
     using MathLib for uint256;
+    using BitmapLib for uint256;
     using CastLib for *;
 
     /// @dev Prices are fixed-point integers with 18 decimals
@@ -140,10 +145,12 @@ contract InvestmentManager is Auth {
         );
 
         InvestmentState storage state = investments[liquidityPool][receiver];
-        require(state.pendingCancelDepositRequest != true, "InvestmentManager/cancellation-is-pending");
+        require(
+            state.bitmap.getBit(PENDING_CANCEL_DEPOSIT_REQUEST_BIT) != true, "InvestmentManager/cancellation-is-pending"
+        );
 
         state.pendingDepositRequest = state.pendingDepositRequest + _currencyAmount;
-        state.exists = true;
+        state.bitmap = state.bitmap.setBit(USER_EXISTS_BIT, true);
 
         gateway.send(
             abi.encodePacked(
@@ -197,10 +204,12 @@ contract InvestmentManager is Auth {
     {
         LiquidityPoolLike lPool = LiquidityPoolLike(liquidityPool);
         InvestmentState storage state = investments[liquidityPool][owner];
-        require(state.pendingCancelRedeemRequest != true, "InvestmentManager/cancellation-is-pending");
+        require(
+            state.bitmap.getBit(PENDING_CANCEL_REDEEM_REQUEST_BIT) != true, "InvestmentManager/cancellation-is-pending"
+        );
 
         state.pendingRedeemRequest = state.pendingRedeemRequest + trancheTokenAmount;
-        state.exists = true;
+        state.bitmap = state.bitmap.setBit(USER_EXISTS_BIT, true);
 
         gateway.send(
             abi.encodePacked(
@@ -220,8 +229,10 @@ contract InvestmentManager is Auth {
         LiquidityPoolLike _liquidityPool = LiquidityPoolLike(liquidityPool);
 
         InvestmentState storage state = investments[liquidityPool][owner];
-        require(state.pendingCancelDepositRequest != true, "InvestmentManager/cancellation-is-pending");
-        state.pendingCancelDepositRequest = true;
+        require(
+            state.bitmap.getBit(PENDING_CANCEL_DEPOSIT_REQUEST_BIT) != true, "InvestmentManager/cancellation-is-pending"
+        );
+        state.bitmap = state.bitmap.setBit(PENDING_CANCEL_DEPOSIT_REQUEST_BIT, true);
 
         gateway.send(
             abi.encodePacked(
@@ -243,8 +254,10 @@ contract InvestmentManager is Auth {
         );
 
         InvestmentState storage state = investments[liquidityPool][owner];
-        require(state.pendingCancelRedeemRequest != true, "InvestmentManager/cancellation-is-pending");
-        state.pendingCancelRedeemRequest = true;
+        require(
+            state.bitmap.getBit(PENDING_CANCEL_REDEEM_REQUEST_BIT) != true, "InvestmentManager/cancellation-is-pending"
+        );
+        state.bitmap = state.bitmap.setBit(PENDING_CANCEL_REDEEM_REQUEST_BIT, true);
 
         gateway.send(
             abi.encodePacked(
@@ -349,7 +362,7 @@ contract InvestmentManager is Auth {
         address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, currencyId);
 
         InvestmentState storage state = investments[liquidityPool][user];
-        require(state.exists == true, "InvestmentManager/non-existent-user");
+        require(state.bitmap.getBit(USER_EXISTS_BIT) == true, "InvestmentManager/non-existent-user");
 
         // Calculate new weighted average redeem price and update order book values
         state.redeemPrice = _calculatePrice(
@@ -378,7 +391,7 @@ contract InvestmentManager is Auth {
         address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, currencyId);
 
         InvestmentState storage state = investments[liquidityPool][user];
-        require(state.exists == true, "InvestmentManager/non-existent-user");
+        require(state.bitmap.getBit(USER_EXISTS_BIT) == true, "InvestmentManager/non-existent-user");
 
         // Calculating the price with both payouts as currencyPayout
         // leads to an effective redeem price of 1.0 and thus the user actually receiving
@@ -394,7 +407,7 @@ contract InvestmentManager is Auth {
         state.maxWithdraw = state.maxWithdraw + currencyPayout;
         state.pendingDepositRequest = remainingInvestOrder;
 
-        if (remainingInvestOrder == 0) state.pendingCancelDepositRequest = false;
+        if (remainingInvestOrder == 0) state.bitmap = state.bitmap.setBit(PENDING_CANCEL_DEPOSIT_REQUEST_BIT, false);
 
         LiquidityPoolLike(liquidityPool).emitRedeemClaimable(user, currencyPayout, currencyPayout);
     }
@@ -427,7 +440,7 @@ contract InvestmentManager is Auth {
         state.maxMint = state.maxMint + trancheTokenPayout;
         state.pendingRedeemRequest = remainingRedeemOrder;
 
-        if (remainingRedeemOrder == 0) state.pendingCancelRedeemRequest = false;
+        if (remainingRedeemOrder == 0) state.bitmap = state.bitmap.setBit(PENDING_CANCEL_REDEEM_REQUEST_BIT, false);
 
         LiquidityPoolLike(liquidityPool).emitRedeemClaimable(user, trancheTokenPayout, trancheTokenPayout);
     }
@@ -528,11 +541,11 @@ contract InvestmentManager is Auth {
     }
 
     function pendingCancelDepositRequest(address liquidityPool, address user) public view returns (bool isPending) {
-        isPending = investments[liquidityPool][user].pendingCancelDepositRequest;
+        isPending = investments[liquidityPool][user].bitmap.getBit(PENDING_CANCEL_DEPOSIT_REQUEST_BIT);
     }
 
     function pendingCancelRedeemRequest(address liquidityPool, address user) public view returns (bool isPending) {
-        isPending = investments[liquidityPool][user].pendingCancelRedeemRequest;
+        isPending = investments[liquidityPool][user].bitmap.getBit(PENDING_CANCEL_REDEEM_REQUEST_BIT);
     }
 
     function exchangeRateLastUpdated(address liquidityPool) public view returns (uint64 lastUpdated) {

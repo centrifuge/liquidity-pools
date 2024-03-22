@@ -155,7 +155,7 @@ contract DepositTest is BaseTest {
             currencyPayout
         );
 
-        (, uint256 depositPrice,,,,,,,) = investmentManager.investments(address(lPool), self);
+        (,, uint256 depositPrice,,,,) = investmentManager.investments(address(lPool), self);
         assertEq(depositPrice, 1400000000000000000);
 
         // second trigger executed collectInvest of the second 50% at a price of 1.2
@@ -164,7 +164,7 @@ contract DepositTest is BaseTest {
             poolId, trancheId, bytes32(bytes20(self)), _currencyId, currencyPayout, secondTrancheTokenPayout, 0
         );
 
-        (, depositPrice,,,,,,,) = investmentManager.investments(address(lPool), self);
+        (,, depositPrice,,,,) = investmentManager.investments(address(lPool), self);
         assertEq(depositPrice, 1292307679384615384);
 
         // assert deposit & mint values adjusted
@@ -478,7 +478,7 @@ contract DepositTest is BaseTest {
         assertEq(lPool.maxMint(self), firstTrancheTokenPayout);
 
         // deposit price should be ~1.2*10**18
-        (, uint256 depositPrice,,,,,,,) = investmentManager.investments(address(lPool), self);
+        (,, uint256 depositPrice,,,,) = investmentManager.investments(address(lPool), self);
         assertEq(depositPrice, 1200000000000000000);
 
         // trigger executed collectInvest of the second 50% at a price of 1.4
@@ -516,7 +516,7 @@ contract DepositTest is BaseTest {
         );
 
         // redeem price should now be ~1.5*10**18.
-        (,,, uint256 redeemPrice,,,,,) = investmentManager.investments(address(lPool), self);
+        (,,, uint256 redeemPrice,,,) = investmentManager.investments(address(lPool), self);
         assertEq(redeemPrice, 1492615384615384615);
     }
 
@@ -563,7 +563,7 @@ contract DepositTest is BaseTest {
         assertEq(lPool.maxMint(self), firstTrancheTokenPayout);
 
         // deposit price should be ~1.2*10**18
-        (, uint256 depositPrice,,,,,,,) = investmentManager.investments(address(lPool), self);
+        (,, uint256 depositPrice,,,,) = investmentManager.investments(address(lPool), self);
         assertEq(depositPrice, 1200000019200000307);
 
         // trigger executed collectInvest of the second 50% at a price of 1.4
@@ -599,7 +599,7 @@ contract DepositTest is BaseTest {
         );
 
         // redeem price should now be ~1.5*10**18.
-        (,,, uint256 redeemPrice,,,,,) = investmentManager.investments(address(lPool), self);
+        (,,, uint256 redeemPrice,,,) = investmentManager.investments(address(lPool), self);
         assertEq(redeemPrice, 1492615411252828877);
 
         // collect the currency
@@ -652,7 +652,7 @@ contract DepositTest is BaseTest {
         assertEq(lPool.maxMint(self), trancheTokenPayout);
 
         // lp price is set to the deposit price
-        (, uint256 depositPrice,,,,,,,) = investmentManager.investments(address(lPool), self);
+        (,, uint256 depositPrice,,,,) = investmentManager.investments(address(lPool), self);
         assertEq(depositPrice, 1200000000000000000);
     }
 
@@ -705,7 +705,7 @@ contract DepositTest is BaseTest {
         assertEq(lPool.maxMint(self), trancheTokenPayout);
 
         // lp price is set to the deposit price
-        (, uint256 depositPrice,,,,,,,) = investmentManager.investments(address(lPool), self);
+        (,, uint256 depositPrice,,,,) = investmentManager.investments(address(lPool), self);
         assertEq(depositPrice, 1200000000000000000);
     }
 
@@ -788,7 +788,7 @@ contract DepositTest is BaseTest {
             currencyPayout
         );
 
-        (, uint256 depositPrice,,,,,,,) = investmentManager.investments(address(lPool), self);
+        (,, uint256 depositPrice,,,,) = investmentManager.investments(address(lPool), self);
         assertEq(depositPrice, 1400000000000000000);
 
         // second trigger executed collectInvest of the second 50% at a price of 1.2
@@ -797,7 +797,7 @@ contract DepositTest is BaseTest {
             poolId, trancheId, bytes32(bytes20(self)), _currencyId, currencyPayout, secondTrancheTokenPayout, 0
         );
 
-        (, depositPrice,,,,,,,) = investmentManager.investments(address(lPool), self);
+        (,, depositPrice,,,,) = investmentManager.investments(address(lPool), self);
         assertEq(depositPrice, 1292307679384615384);
 
         // assert deposit & mint values adjusted
