@@ -632,10 +632,7 @@ contract InvestmentManager is Auth {
         require(currencyAmount != 0, "InvestmentManager/currency-amount-is-zero");
         require(currencyAmount <= state.maxWithdraw, "InvestmentManager/exceeds-redeem-limits");
         state.maxWithdraw = state.maxWithdraw - currencyAmount;
-        require(
-            ERC20Like(lPool.asset()).transferFrom(address(escrow), receiver, currencyAmount),
-            "InvestmentManager/currency-transfer-failed"
-        );
+        SafeTransferLib.safeTransferFrom(lPool.asset(), address(escrow), receiver, currencyAmount);
     }
 
     // --- Helpers ---
