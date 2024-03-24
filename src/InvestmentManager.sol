@@ -626,10 +626,7 @@ contract InvestmentManager is Auth {
         require(currencyAmount != 0, "InvestmentManager/currency-amount-is-zero");
         require(currencyAmount <= state.maxWithdraw, "InvestmentManager/exceeds-redeem-limits");
         state.maxWithdraw = state.maxWithdraw - currencyAmount;
-        require(
-            ERC20Like(lPool.asset()).transferFrom(address(escrow), receiver, currencyAmount),
-            "InvestmentManager/currency-transfer-failed"
-        );
+        SafeTransferLib.safeTransferFrom(lPool.asset(), address(escrow), receiver, currencyAmount);
     }
 
     function claimCancelDepositRequest(address liquidityPool, address receiver, address owner)
@@ -640,9 +637,8 @@ contract InvestmentManager is Auth {
         InvestmentState storage state = investments[liquidityPool][owner];
         currencyAmount = state.claimableCancelDepositRequest;
         state.claimableCancelDepositRequest = 0;
-        require(
-            ERC20Like(LiquidityPoolLike(liquidityPool).asset()).transferFrom(address(escrow), receiver, currencyAmount),
-            "InvestmentManager/currency-transfer-failed"
+        SafeTransferLib.safeTransferFrom(
+            LiquidityPoolLike(liquidityPool).asset(), address(escrow), receiver, currencyAmount
         );
     }
 

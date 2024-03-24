@@ -200,7 +200,9 @@ interface IERC7540CancelDeposit {
      * - MUST set pendingCancelDepositRequest to `false` for the returned requestId after request
      * - MUST set claimableCancelDepositRequest to 0 for the returned requestId after fulfillment
      */
-    function claimCancelDepositRequest(uint256 requestId, address receiver, address owner) external returns (uint256 assets);
+    function claimCancelDepositRequest(uint256 requestId, address receiver, address owner)
+        external
+        returns (uint256 assets);
 }
 
 interface IERC7540CancelRedeem {
@@ -246,7 +248,9 @@ interface IERC7540CancelRedeem {
      * - MUST set pendingCancelRedeemRequest to `false` for the returned requestId after request
      * - MUST set claimableCancelRedeemRequest to 0 for the returned requestId after fulfillment
      */
-    function claimCancelRedeemRequest(uint256 requestId, address receiver, address owner) external returns (uint256 shares);
+    function claimCancelRedeemRequest(uint256 requestId, address receiver, address owner)
+        external
+        returns (uint256 shares);
 }
 
 /**
