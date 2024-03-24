@@ -595,7 +595,7 @@ contract DepositTest is BaseTest {
             _currencyId,
             currencyPayout,
             firstTrancheTokenPayout + secondTrancheTokenPayout,
-            currencyPayout / 2
+            firstTrancheTokenPayout + secondTrancheTokenPayout
         );
 
         // redeem price should now be ~1.5*10**18.
