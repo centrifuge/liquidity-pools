@@ -319,7 +319,7 @@ contract InvestmentManager is Auth {
         uint128 currencyId,
         uint128 currencyPayout,
         uint128 trancheTokenPayout,
-        uint128 fulfilledDepositRequest
+        uint128 fulfilledInvestOrder
     ) public auth {
         address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, currencyId);
 
@@ -328,7 +328,9 @@ contract InvestmentManager is Auth {
             liquidityPool, _maxDeposit(liquidityPool, user) + currencyPayout, state.maxMint + trancheTokenPayout
         );
         state.maxMint = state.maxMint + trancheTokenPayout;
-        state.pendingDepositRequest = state.pendingDepositRequest - fulfilledDepositRequest;
+        state.pendingDepositRequest = state.pendingDepositRequest - fulfilledInvestOrder;
+
+        if (state.pendingDepositRequest == 0) state.pendingCancelDepositRequest = false;
 
         // Mint to escrow. Recipient can claim by calling withdraw / redeem
         ERC20Like trancheToken = ERC20Like(LiquidityPoolLike(liquidityPool).share());
@@ -344,7 +346,7 @@ contract InvestmentManager is Auth {
         uint128 currencyId,
         uint128 currencyPayout,
         uint128 trancheTokenPayout,
-        uint128 fulfilledRedeemRequest
+        uint128 fulfilledRedeemOrder
     ) public auth {
         address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, currencyId);
 
@@ -358,7 +360,9 @@ contract InvestmentManager is Auth {
             ((maxRedeem(liquidityPool, user)) + trancheTokenPayout).toUint128()
         );
         state.maxWithdraw = state.maxWithdraw + currencyPayout;
-        state.pendingRedeemRequest = state.pendingRedeemRequest - fulfilledRedeemRequest;
+        state.pendingRedeemRequest = state.pendingRedeemRequest - fulfilledRedeemOrder;
+
+        if (state.pendingRedeemRequest == 0) state.pendingCancelRedeemRequest = false;
 
         // Burn redeemed tranche tokens from escrow
         ERC20Like trancheToken = ERC20Like(LiquidityPoolLike(liquidityPool).share());
@@ -373,7 +377,7 @@ contract InvestmentManager is Auth {
         address user,
         uint128 currencyId,
         uint128 currencyPayout,
-        uint128 decreasedDepositRequest
+        uint128 decreasedInvestOrder
     ) public auth {
         address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, currencyId);
 
@@ -392,7 +396,7 @@ contract InvestmentManager is Auth {
         );
 
         state.maxWithdraw = state.maxWithdraw + currencyPayout;
-        state.pendingDepositRequest = state.pendingDepositRequest - decreasedDepositRequest;
+        state.pendingDepositRequest = state.pendingDepositRequest - decreasedInvestOrder;
 
         if (state.pendingDepositRequest == 0) state.pendingCancelDepositRequest = false;
 
@@ -427,7 +431,7 @@ contract InvestmentManager is Auth {
         state.maxMint = state.maxMint + trancheTokenPayout;
         state.pendingRedeemRequest = state.pendingRedeemRequest - decreasedRedeemRequest;
 
-        if (remainingRedeemOrder == 0) state.pendingCancelRedeemRequest = false;
+        if (state.pendingRedeemRequest == 0) state.pendingCancelRedeemRequest = false;
 
         LiquidityPoolLike(liquidityPool).emitRedeemClaimable(user, trancheTokenPayout, trancheTokenPayout);
     }
