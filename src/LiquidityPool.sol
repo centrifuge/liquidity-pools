@@ -18,8 +18,8 @@ interface ManagerLike {
     function pendingCancelRedeemRequest(address lp, address owner) external view returns (bool);
     function claimableCancelDepositRequest(address lp, address owner) external view returns (uint256);
     function claimableCancelRedeemRequest(address lp, address owner) external view returns (uint256);
-    function claimCancelDepositRequest(address lp, address owner) external;
-    function claimCancelRedeemRequest(address lp, address owner) external;
+    function claimCancelDepositRequest(address lp, address receiver, address owner) external returns (uint256);
+    function claimCancelRedeemRequest(address lp, address receiver, address owner) external returns (uint256);
     function exchangeRateLastUpdated(address lp) external view returns (uint64);
     function deposit(address lp, uint256 assets, address receiver, address owner) external returns (uint256);
     function mint(address lp, uint256 shares, address receiver, address owner) external returns (uint256);
@@ -191,11 +191,10 @@ contract LiquidityPool is Auth, IERC7540 {
     }
 
     /// @inheritdoc IERC7540CancelDeposit
-    function claimCancelDepositRequest(uint256, address owner) external {
-        // todo: add receiver param
+    function claimCancelDepositRequest(uint256, address receiver, address owner) external returns (uint256 assets) {
         require(msg.sender == owner, "LiquidityPool/not-the-owner");
-        manager.claimCancelDepositRequest(address(this), owner);
-        // todo: add event
+        assets = manager.claimCancelDepositRequest(address(this), receiver, owner);
+        emit ClaimCancelDepositRequest(msg.sender, receiver, owner, assets);
     }
 
     /// @inheritdoc IERC7540CancelRedeem
@@ -216,11 +215,10 @@ contract LiquidityPool is Auth, IERC7540 {
     }
 
     /// @inheritdoc IERC7540CancelRedeem
-    function claimCancelRedeemRequest(uint256, address owner) external {
-        // todo: add receiver param
+    function claimCancelRedeemRequest(uint256, address receiver, address owner) external returns (uint256 shares) {
         require(msg.sender == owner, "LiquidityPool/not-the-owner");
-        manager.claimCancelRedeemRequest(address(this), owner);
-        // todo: add event
+        shares = manager.claimCancelRedeemRequest(address(this), receiver, owner);
+        emit ClaimCancelRedeemRequest(msg.sender, receiver, owner, shares);
     }
 
     // --- ERC165 support ---

@@ -159,6 +159,9 @@ interface IERC7540Redeem {
 
 interface IERC7540CancelDeposit {
     event CancelDepositRequest(address indexed owner, uint256 indexed requestId, address sender);
+    event ClaimCancelDepositRequest(
+        address indexed sender, address indexed receiver, address indexed owner, uint256 assets
+    );
 
     /**
      * @dev Submits a Request for cancelling the pending deposit Request
@@ -197,11 +200,14 @@ interface IERC7540CancelDeposit {
      * - MUST set pendingCancelDepositRequest to `false` for the returned requestId after request
      * - MUST set claimableCancelDepositRequest to 0 for the returned requestId after fulfillment
      */
-    function claimCancelDepositRequest(uint256 requestId, address owner) external;
+    function claimCancelDepositRequest(uint256 requestId, address receiver, address owner) external returns (uint256 assets);
 }
 
 interface IERC7540CancelRedeem {
     event CancelRedeemRequest(address indexed owner, uint256 indexed requestId, address sender);
+    event ClaimCancelRedeemRequest(
+        address indexed sender, address indexed receiver, address indexed owner, uint256 shares
+    );
 
     /**
      * @dev Submits a Request for cancelling the pending redeem Request
@@ -240,7 +246,7 @@ interface IERC7540CancelRedeem {
      * - MUST set pendingCancelRedeemRequest to `false` for the returned requestId after request
      * - MUST set claimableCancelRedeemRequest to 0 for the returned requestId after fulfillment
      */
-    function claimCancelRedeemRequest(uint256 requestId, address owner) external;
+    function claimCancelRedeemRequest(uint256 requestId, address receiver, address owner) external returns (uint256 shares);
 }
 
 /**

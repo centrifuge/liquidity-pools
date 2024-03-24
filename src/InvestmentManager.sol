@@ -632,22 +632,32 @@ contract InvestmentManager is Auth {
         );
     }
 
-    function claimCancelDepositRequest(address liquidityPool, address owner) public auth {
+    function claimCancelDepositRequest(address liquidityPool, address receiver, address owner)
+        public
+        auth
+        returns (uint256 currencyAmount)
+    {
         InvestmentState storage state = investments[liquidityPool][owner];
-        uint256 currencyAmount = state.claimableCancelDepositRequest;
+        currencyAmount = state.claimableCancelDepositRequest;
         state.claimableCancelDepositRequest = 0;
         require(
-            ERC20Like(LiquidityPoolLike(liquidityPool).asset()).transferFrom(address(escrow), owner, currencyAmount),
+            ERC20Like(LiquidityPoolLike(liquidityPool).asset()).transferFrom(address(escrow), receiver, currencyAmount),
             "InvestmentManager/currency-transfer-failed"
         );
     }
 
-    function claimCancelRedeemRequest(address liquidityPool, address owner) public auth {
+    function claimCancelRedeemRequest(address liquidityPool, address receiver, address owner)
+        public
+        auth
+        returns (uint256 trancheTokenAmount)
+    {
         InvestmentState storage state = investments[liquidityPool][owner];
-        uint256 trancheTokenAmount = state.claimableCancelRedeemRequest;
+        trancheTokenAmount = state.claimableCancelRedeemRequest;
         state.claimableCancelRedeemRequest = 0;
         require(
-            ERC20Like(LiquidityPoolLike(liquidityPool).share()).transferFrom(address(escrow), owner, trancheTokenAmount),
+            ERC20Like(LiquidityPoolLike(liquidityPool).share()).transferFrom(
+                address(escrow), receiver, trancheTokenAmount
+            ),
             "InvestmentManager/tranche-tokens-transfer-failed"
         );
     }
