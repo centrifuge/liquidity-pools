@@ -161,7 +161,13 @@ contract DepositTest is BaseTest {
         // second trigger executed collectInvest of the second 50% at a price of 1.2
         uint128 secondTrancheTokenPayout = 41666666666666666666; // 50 * 10**18 / 1.2, rounded down
         centrifugeChain.isExecutedCollectInvest(
-            poolId, trancheId, bytes32(bytes20(self)), _currencyId, currencyPayout, secondTrancheTokenPayout, currencyPayout
+            poolId,
+            trancheId,
+            bytes32(bytes20(self)),
+            _currencyId,
+            currencyPayout,
+            secondTrancheTokenPayout,
+            currencyPayout
         );
 
         (, depositPrice,,,,,,,) = investmentManager.investments(address(lPool), self);
@@ -794,7 +800,13 @@ contract DepositTest is BaseTest {
         // second trigger executed collectInvest of the second 50% at a price of 1.2
         uint128 secondTrancheTokenPayout = 41666666666666666666; // 50 * 10**18 / 1.2, rounded down
         centrifugeChain.isExecutedCollectInvest(
-            poolId, trancheId, bytes32(bytes20(self)), _currencyId, currencyPayout, secondTrancheTokenPayout, currencyPayout
+            poolId,
+            trancheId,
+            bytes32(bytes20(self)),
+            _currencyId,
+            currencyPayout,
+            secondTrancheTokenPayout,
+            currencyPayout
         );
 
         (, depositPrice,,,,,,,) = investmentManager.investments(address(lPool), self);

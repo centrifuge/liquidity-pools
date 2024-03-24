@@ -43,7 +43,13 @@ contract RedeemTest is BaseTest {
         uint128 _currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
         uint128 currencyPayout = uint128((amount * 10 ** 18) / defaultPrice);
         centrifugeChain.isExecutedCollectRedeem(
-            lPool.poolId(), lPool.trancheId(), bytes32(bytes20(self)), _currencyId, currencyPayout, uint128(amount), uint128(amount)
+            lPool.poolId(),
+            lPool.trancheId(),
+            bytes32(bytes20(self)),
+            _currencyId,
+            currencyPayout,
+            uint128(amount),
+            uint128(amount)
         );
 
         // assert withdraw & redeem values adjusted
@@ -96,7 +102,13 @@ contract RedeemTest is BaseTest {
         uint128 _currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
         uint128 currencyPayout = uint128((amount * 10 ** 18) / defaultPrice);
         centrifugeChain.isExecutedCollectRedeem(
-            lPool.poolId(), lPool.trancheId(), bytes32(bytes20(self)), _currencyId, currencyPayout, uint128(amount), uint128(amount)
+            lPool.poolId(),
+            lPool.trancheId(),
+            bytes32(bytes20(self)),
+            _currencyId,
+            currencyPayout,
+            uint128(amount),
+            uint128(amount)
         );
 
         // assert withdraw & redeem values adjusted
@@ -357,7 +369,13 @@ contract RedeemTest is BaseTest {
 
         uint128 trancheTokenPayout = 100000000;
         centrifugeChain.isExecutedCollectInvest(
-            poolId, trancheId, bytes32(bytes20(self)), _currencyId, uint128(investmentAmount), trancheTokenPayout, trancheTokenPayout
+            poolId,
+            trancheId,
+            bytes32(bytes20(self)),
+            _currencyId,
+            uint128(investmentAmount),
+            trancheTokenPayout,
+            trancheTokenPayout
         );
 
         (, uint256 depositPrice,,,,,,,) = investmentManager.investments(address(lPool), self);
@@ -399,7 +417,13 @@ contract RedeemTest is BaseTest {
         currencyPayout = 50000000; // 50*10**6
 
         centrifugeChain.isExecutedCollectRedeem(
-            poolId, trancheId, bytes32(bytes20(self)), _currencyId, currencyPayout, trancheTokenPayout / 2, trancheTokenPayout / 2
+            poolId,
+            trancheId,
+            bytes32(bytes20(self)),
+            _currencyId,
+            currencyPayout,
+            trancheTokenPayout / 2,
+            trancheTokenPayout / 2
         );
 
         (,,, redeemPrice,,,,,) = investmentManager.investments(address(lPool), self);
@@ -439,7 +463,13 @@ contract RedeemTest is BaseTest {
         // second trigger executed collectRedeem of the second 25 trancheTokens at a price of 1.3
         uint128 secondCurrencyPayout = 32500000; // (25000000000000000000/10**18) * 10**6 * 1.3
         centrifugeChain.isExecutedCollectRedeem(
-            poolId, trancheId, bytes32(bytes20(self)), currencyId, secondCurrencyPayout, secondTrancheTokenRedeem, secondTrancheTokenRedeem
+            poolId,
+            trancheId,
+            bytes32(bytes20(self)),
+            currencyId,
+            secondCurrencyPayout,
+            secondTrancheTokenRedeem,
+            secondTrancheTokenRedeem
         );
 
         (,,, redeemPrice,,,,,) = investmentManager.investments(address(lPool), self);
