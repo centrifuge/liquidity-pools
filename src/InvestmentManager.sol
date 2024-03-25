@@ -328,7 +328,8 @@ contract InvestmentManager is Auth {
             liquidityPool, _maxDeposit(liquidityPool, user) + currencyPayout, state.maxMint + trancheTokenPayout
         );
         state.maxMint = state.maxMint + trancheTokenPayout;
-        state.pendingDepositRequest = state.pendingDepositRequest - fulfilledInvestOrder;
+        state.pendingDepositRequest =
+            state.pendingDepositRequest > fulfilledInvestOrder ? state.pendingDepositRequest - fulfilledInvestOrder : 0;
 
         if (state.pendingDepositRequest == 0) state.pendingCancelDepositRequest = false;
 
@@ -360,7 +361,8 @@ contract InvestmentManager is Auth {
             ((maxRedeem(liquidityPool, user)) + trancheTokenPayout).toUint128()
         );
         state.maxWithdraw = state.maxWithdraw + currencyPayout;
-        state.pendingRedeemRequest = state.pendingRedeemRequest - fulfilledRedeemOrder;
+        state.pendingRedeemRequest =
+            state.pendingRedeemRequest > fulfilledRedeemOrder ? state.pendingRedeemRequest - fulfilledRedeemOrder : 0;
 
         if (state.pendingRedeemRequest == 0) state.pendingCancelRedeemRequest = false;
 
@@ -396,7 +398,8 @@ contract InvestmentManager is Auth {
         );
 
         state.maxWithdraw = state.maxWithdraw + currencyPayout;
-        state.pendingDepositRequest = state.pendingDepositRequest - decreasedInvestOrder;
+        state.pendingDepositRequest =
+            state.pendingDepositRequest > decreasedInvestOrder ? state.pendingDepositRequest - decreasedInvestOrder : 0;
 
         if (state.pendingDepositRequest == 0) state.pendingCancelDepositRequest = false;
 
@@ -412,7 +415,7 @@ contract InvestmentManager is Auth {
         address user,
         uint128 currencyId,
         uint128 trancheTokenPayout,
-        uint128 decreasedRedeemRequest
+        uint128 decreasedRedeemOrder
     ) public auth {
         address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, currencyId);
         InvestmentState storage state = investments[liquidityPool][user];
@@ -429,7 +432,8 @@ contract InvestmentManager is Auth {
         );
 
         state.maxMint = state.maxMint + trancheTokenPayout;
-        state.pendingRedeemRequest = state.pendingRedeemRequest - decreasedRedeemRequest;
+        state.pendingRedeemRequest =
+            state.pendingRedeemRequest > decreasedRedeemOrder ? state.pendingRedeemRequest - decreasedRedeemOrder : 0;
 
         if (state.pendingRedeemRequest == 0) state.pendingCancelRedeemRequest = false;
 
