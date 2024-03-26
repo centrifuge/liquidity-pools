@@ -635,7 +635,6 @@ contract InvestmentManager is Auth {
         require(currencyAmount <= state.maxWithdraw, "InvestmentManager/exceeds-redeem-limits");
         state.maxWithdraw = state.maxWithdraw - currencyAmount;
         SafeTransferLib.safeTransferFrom(lPool.asset(), address(escrow), receiver, currencyAmount);
-<<<<<<< HEAD
     }
 
     function claimCancelDepositRequest(address liquidityPool, address receiver, address owner)
@@ -665,8 +664,6 @@ contract InvestmentManager is Auth {
             ),
             "InvestmentManager/tranche-tokens-transfer-failed"
         );
-=======
->>>>>>> 456133e2832685889aa85f5e123bf978acf261d4
     }
 
     // --- Helpers ---
