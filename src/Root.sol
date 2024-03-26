@@ -109,7 +109,8 @@ contract Root is Auth {
         } else if (call == MessagesLib.Call.CancelUpgrade) {
             cancelRely(message.toAddress(1));
         } else if (call == MessagesLib.Call.RecoverTokens) {
-            (address target, address token, address to, uint256 amount) = (message.toAddress(1), message.toAddress(33), message.toAddress(65), message.toUint256(97));
+            (address target, address token, address to, uint256 amount) =
+                (message.toAddress(1), message.toAddress(33), message.toAddress(65), message.toUint256(97));
             RecoverLike(target).recoverTokens(token, to, amount);
         } else {
             revert("Root/invalid-message");
