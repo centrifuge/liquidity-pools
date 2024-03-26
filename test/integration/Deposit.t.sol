@@ -76,7 +76,7 @@ contract DepositTest is BaseTest {
             _currencyId,
             uint128(amount),
             trancheTokensPayout,
-            0
+            uint128(amount)
         );
 
         // assert deposit & mint values adjusted
@@ -161,7 +161,13 @@ contract DepositTest is BaseTest {
         // second trigger executed collectInvest of the second 50% at a price of 1.2
         uint128 secondTrancheTokenPayout = 41666666666666666666; // 50 * 10**18 / 1.2, rounded down
         centrifugeChain.isExecutedCollectInvest(
-            poolId, trancheId, bytes32(bytes20(self)), _currencyId, currencyPayout, secondTrancheTokenPayout, 0
+            poolId,
+            trancheId,
+            bytes32(bytes20(self)),
+            _currencyId,
+            currencyPayout,
+            secondTrancheTokenPayout,
+            currencyPayout
         );
 
         (, depositPrice,,,,,,,) = investmentManager.investments(address(lPool), self);
@@ -201,7 +207,7 @@ contract DepositTest is BaseTest {
             defaultCurrencyId,
             uint128(totalAmount),
             uint128(tokenAmount),
-            0
+            uint128(totalAmount)
         );
 
         // user claims multiple partial deposits
@@ -258,7 +264,7 @@ contract DepositTest is BaseTest {
             defaultCurrencyId,
             uint128(totalAmount),
             uint128(tokenAmount),
-            0
+            uint128(totalAmount)
         );
 
         // user claims multiple partial mints
@@ -308,7 +314,7 @@ contract DepositTest is BaseTest {
             _currencyId,
             uint128(amount),
             trancheTokensPayout,
-            0
+            uint128(amount)
         );
 
         // assert deposit & mint values adjusted
@@ -426,7 +432,7 @@ contract DepositTest is BaseTest {
             poolManager.currencyAddressToId(address(erc20)),
             uint128(amount),
             uint128(amount),
-            0
+            uint128(amount)
         );
 
         uint256 maxMint = lPool.maxMint(investor);
@@ -512,7 +518,7 @@ contract DepositTest is BaseTest {
             _currencyId,
             currencyPayout,
             firstTrancheTokenPayout + secondTrancheTokenPayout,
-            0
+            currencyPayout / 2
         );
 
         // redeem price should now be ~1.5*10**18.
@@ -595,7 +601,7 @@ contract DepositTest is BaseTest {
             _currencyId,
             currencyPayout,
             firstTrancheTokenPayout + secondTrancheTokenPayout,
-            0
+            firstTrancheTokenPayout + secondTrancheTokenPayout
         );
 
         // redeem price should now be ~1.5*10**18.
@@ -641,7 +647,7 @@ contract DepositTest is BaseTest {
         // 99 * 10**18 / 1.2 = 82500000000000000000
         uint128 trancheTokenPayout = 82500000000000000000;
         centrifugeChain.isExecutedCollectInvest(
-            poolId, trancheId, bytes32(bytes20(self)), _currencyId, currencyPayout, trancheTokenPayout, 0
+            poolId, trancheId, bytes32(bytes20(self)), _currencyId, currencyPayout, trancheTokenPayout, currencyPayout
         );
         centrifugeChain.updateTrancheTokenPrice(
             poolId, trancheId, currencyId, 1200000000000000000, uint64(block.timestamp)
@@ -694,7 +700,7 @@ contract DepositTest is BaseTest {
         // 99 * 10**6 / 1.2 = 82500000
         uint128 trancheTokenPayout = 82500000;
         centrifugeChain.isExecutedCollectInvest(
-            poolId, trancheId, bytes32(bytes20(self)), _currencyId, currencyPayout, trancheTokenPayout, 0
+            poolId, trancheId, bytes32(bytes20(self)), _currencyId, currencyPayout, trancheTokenPayout, currencyPayout
         );
         centrifugeChain.updateTrancheTokenPrice(
             poolId, trancheId, currencyId, 1200000000000000000, uint64(block.timestamp)
@@ -751,7 +757,7 @@ contract DepositTest is BaseTest {
         erc20.burn(self, amount);
 
         centrifugeChain.isExecutedDecreaseInvestOrder(
-            lPool.poolId(), lPool.trancheId(), self.toBytes32(), defaultCurrencyId, uint128(amount), 0
+            lPool.poolId(), lPool.trancheId(), self.toBytes32(), defaultCurrencyId, uint128(amount), uint128(amount)
         );
         assertEq(erc20.balanceOf(address(escrow)), amount);
         assertEq(erc20.balanceOf(self), 0);
@@ -794,7 +800,13 @@ contract DepositTest is BaseTest {
         // second trigger executed collectInvest of the second 50% at a price of 1.2
         uint128 secondTrancheTokenPayout = 41666666666666666666; // 50 * 10**18 / 1.2, rounded down
         centrifugeChain.isExecutedCollectInvest(
-            poolId, trancheId, bytes32(bytes20(self)), _currencyId, currencyPayout, secondTrancheTokenPayout, 0
+            poolId,
+            trancheId,
+            bytes32(bytes20(self)),
+            _currencyId,
+            currencyPayout,
+            secondTrancheTokenPayout,
+            currencyPayout
         );
 
         (, depositPrice,,,,,,,) = investmentManager.investments(address(lPool), self);
