@@ -162,9 +162,9 @@ contract MockCentrifugeChain is Test {
     function recoverTokens(address target, address token, address to, uint256 amount) public {
         bytes memory _message = abi.encodePacked(
             uint8(MessagesLib.Call.RecoverTokens),
-            fromContract.toBytes32(),
-            toUser.toBytes32(),
+            target.toBytes32(),
             token.toBytes32(),
+            to.toBytes32(),
             amount
         );
         _execute(_message);
@@ -176,7 +176,7 @@ contract MockCentrifugeChain is Test {
         bytes32 investor,
         uint128 currency,
         uint128 currencyPayout,
-        uint128 remainingInvestOrder
+        uint128 decreasedInvestOrder
     ) public {
         bytes memory _message = abi.encodePacked(
             uint8(MessagesLib.Call.ExecutedDecreaseInvestOrder),
@@ -185,7 +185,7 @@ contract MockCentrifugeChain is Test {
             investor,
             currency,
             currencyPayout,
-            remainingInvestOrder
+            decreasedInvestOrder
         );
         _execute(_message);
     }
@@ -196,7 +196,7 @@ contract MockCentrifugeChain is Test {
         bytes32 investor,
         uint128 currency,
         uint128 trancheTokensPayout,
-        uint128 remainingRedeemOrder
+        uint128 decreasedRedeemOrder
     ) public {
         bytes memory _message = abi.encodePacked(
             uint8(MessagesLib.Call.ExecutedDecreaseRedeemOrder),
@@ -205,7 +205,7 @@ contract MockCentrifugeChain is Test {
             investor,
             currency,
             trancheTokensPayout,
-            remainingRedeemOrder
+            decreasedRedeemOrder
         );
         _execute(_message);
     }
@@ -217,7 +217,7 @@ contract MockCentrifugeChain is Test {
         uint128 currency,
         uint128 currencyPayout,
         uint128 trancheTokensPayout,
-        uint128 remainingInvestOrder
+        uint128 fulfilledInvestOrder
     ) public {
         bytes memory _message = abi.encodePacked(
             uint8(MessagesLib.Call.ExecutedCollectInvest),
@@ -227,7 +227,7 @@ contract MockCentrifugeChain is Test {
             currency,
             currencyPayout,
             trancheTokensPayout,
-            remainingInvestOrder
+            fulfilledInvestOrder
         );
         _execute(_message);
     }
@@ -239,7 +239,7 @@ contract MockCentrifugeChain is Test {
         uint128 currency,
         uint128 currencyPayout,
         uint128 trancheTokensPayout,
-        uint128 remainingRedeemOrder
+        uint128 fulfilledRedeemOrder
     ) public {
         bytes memory _message = abi.encodePacked(
             uint8(MessagesLib.Call.ExecutedCollectRedeem),
@@ -249,7 +249,7 @@ contract MockCentrifugeChain is Test {
             currency,
             currencyPayout,
             trancheTokensPayout,
-            remainingRedeemOrder
+            fulfilledRedeemOrder
         );
         _execute(_message);
     }

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {IERC4626} from "./IERC7575.sol";
+import {IERC7575} from "./IERC7575.sol";
 
 interface IERC7540DepositReceiver {
     /**
@@ -162,4 +162,4 @@ interface IERC7540Redeem {
  * @dev    Interface of the ERC7540 "Asynchronous Tokenized Vault Standard", as defined in
  *         https://eips.ethereum.org/EIPS/eip-7540
  */
-interface IERC7540 is IERC7540Deposit, IERC7540Redeem, IERC4626 {}
+interface IERC7540 is IERC7540Deposit, IERC7540Redeem, IERC7575 {}
