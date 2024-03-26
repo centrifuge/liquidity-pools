@@ -90,7 +90,7 @@ interface RootLike {
     function paused() external returns (bool);
     function scheduleRely(address target) external;
     function cancelRely(address target) external;
-    function recoverTokens(address fromContract, address toUser, address token, uint256 amount) external;
+    function recoverTokens(address target, address token, address to, uint256 amount) external;
 }
 
 /// @title  Gateway
