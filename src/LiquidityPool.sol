@@ -16,6 +16,10 @@ interface ManagerLike {
     function pendingRedeemRequest(address lp, address owner) external view returns (uint256);
     function pendingCancelDepositRequest(address lp, address owner) external view returns (bool);
     function pendingCancelRedeemRequest(address lp, address owner) external view returns (bool);
+    function claimableCancelDepositRequest(address lp, address owner) external view returns (uint256);
+    function claimableCancelRedeemRequest(address lp, address owner) external view returns (uint256);
+    function claimCancelDepositRequest(address lp, address receiver, address owner) external returns (uint256);
+    function claimCancelRedeemRequest(address lp, address receiver, address owner) external returns (uint256);
     function exchangeRateLastUpdated(address lp) external view returns (uint64);
     function deposit(address lp, uint256 assets, address receiver, address owner) external returns (uint256);
     function mint(address lp, uint256 shares, address receiver, address owner) external returns (uint256);
@@ -173,25 +177,52 @@ contract LiquidityPool is Auth, IERC7540 {
     }
 
     // --- Asynchronous cancellation methods ---
-    /// @notice Request cancelling the outstanding deposit orders.
-    function cancelDepositRequest() external {
-        manager.cancelDepositRequest(address(this), msg.sender);
-        emit CancelDepositRequest(msg.sender);
+    /// @inheritdoc IERC7540CancelDeposit
+    function cancelDepositRequest(uint256, address owner) external {
+        require(owner == msg.sender, "LiquidityPool/not-the-owner");
+        manager.cancelDepositRequest(address(this), owner);
+        emit CancelDepositRequest(owner, REQUEST_ID, msg.sender);
     }
 
-    /// @notice Check whether the deposit request is pending cancellation.
+    /// @inheritdoc IERC7540CancelDeposit
     function pendingCancelDepositRequest(uint256, address owner) public view returns (bool isPending) {
         isPending = manager.pendingCancelDepositRequest(address(this), owner);
     }
 
-    /// @notice Request cancelling the outstanding redemption orders.
-    function cancelRedeemRequest() external {
-        manager.cancelRedeemRequest(address(this), msg.sender);
-        emit CancelRedeemRequest(msg.sender);
+    /// @inheritdoc IERC7540CancelDeposit
+    function claimableCancelDepositRequest(uint256, address owner) public view returns (uint256 claimableAssets) {
+        claimableAssets = manager.claimableCancelDepositRequest(address(this), owner);
     }
 
+    /// @inheritdoc IERC7540CancelDeposit
+    function claimCancelDepositRequest(uint256, address receiver, address owner) external returns (uint256 assets) {
+        require(msg.sender == owner, "LiquidityPool/not-the-owner");
+        assets = manager.claimCancelDepositRequest(address(this), receiver, owner);
+        emit ClaimCancelDepositRequest(msg.sender, receiver, owner, assets);
+    }
+
+    /// @inheritdoc IERC7540CancelRedeem
+    function cancelRedeemRequest(uint256, address owner) external {
+        require(msg.sender == owner, "LiquidityPool/not-the-owner");
+        manager.cancelRedeemRequest(address(this), owner);
+        emit CancelRedeemRequest(owner, REQUEST_ID, msg.sender);
+    }
+
+    /// @inheritdoc IERC7540CancelRedeem
     function pendingCancelRedeemRequest(uint256, address owner) public view returns (bool isPending) {
         isPending = manager.pendingCancelRedeemRequest(address(this), owner);
+    }
+
+    /// @inheritdoc IERC7540CancelRedeem
+    function claimableCancelRedeemRequest(uint256, address owner) public view returns (uint256 claimableShares) {
+        claimableShares = manager.claimableCancelRedeemRequest(address(this), owner);
+    }
+
+    /// @inheritdoc IERC7540CancelRedeem
+    function claimCancelRedeemRequest(uint256, address receiver, address owner) external returns (uint256 shares) {
+        require(msg.sender == owner, "LiquidityPool/not-the-owner");
+        shares = manager.claimCancelRedeemRequest(address(this), receiver, owner);
+        emit ClaimCancelRedeemRequest(msg.sender, receiver, owner, shares);
     }
 
     // --- ERC165 support ---

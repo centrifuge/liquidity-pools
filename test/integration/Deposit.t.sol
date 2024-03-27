@@ -155,7 +155,7 @@ contract DepositTest is BaseTest {
             currencyPayout
         );
 
-        (, uint256 depositPrice,,,,,,,) = investmentManager.investments(address(lPool), self);
+        (, uint256 depositPrice,,,,,,,,,) = investmentManager.investments(address(lPool), self);
         assertEq(depositPrice, 1400000000000000000);
 
         // second trigger executed collectInvest of the second 50% at a price of 1.2
@@ -170,7 +170,7 @@ contract DepositTest is BaseTest {
             currencyPayout
         );
 
-        (, depositPrice,,,,,,,) = investmentManager.investments(address(lPool), self);
+        (, depositPrice,,,,,,,,,) = investmentManager.investments(address(lPool), self);
         assertEq(depositPrice, 1292307679384615384);
 
         // assert deposit & mint values adjusted
@@ -484,7 +484,7 @@ contract DepositTest is BaseTest {
         assertEq(lPool.maxMint(self), firstTrancheTokenPayout);
 
         // deposit price should be ~1.2*10**18
-        (, uint256 depositPrice,,,,,,,) = investmentManager.investments(address(lPool), self);
+        (, uint256 depositPrice,,,,,,,,,) = investmentManager.investments(address(lPool), self);
         assertEq(depositPrice, 1200000000000000000);
 
         // trigger executed collectInvest of the second 50% at a price of 1.4
@@ -522,7 +522,7 @@ contract DepositTest is BaseTest {
         );
 
         // redeem price should now be ~1.5*10**18.
-        (,,, uint256 redeemPrice,,,,,) = investmentManager.investments(address(lPool), self);
+        (,,, uint256 redeemPrice,,,,,,,) = investmentManager.investments(address(lPool), self);
         assertEq(redeemPrice, 1492615384615384615);
     }
 
@@ -569,7 +569,7 @@ contract DepositTest is BaseTest {
         assertEq(lPool.maxMint(self), firstTrancheTokenPayout);
 
         // deposit price should be ~1.2*10**18
-        (, uint256 depositPrice,,,,,,,) = investmentManager.investments(address(lPool), self);
+        (, uint256 depositPrice,,,,,,,,,) = investmentManager.investments(address(lPool), self);
         assertEq(depositPrice, 1200000019200000307);
 
         // trigger executed collectInvest of the second 50% at a price of 1.4
@@ -605,7 +605,7 @@ contract DepositTest is BaseTest {
         );
 
         // redeem price should now be ~1.5*10**18.
-        (,,, uint256 redeemPrice,,,,,) = investmentManager.investments(address(lPool), self);
+        (,,, uint256 redeemPrice,,,,,,,) = investmentManager.investments(address(lPool), self);
         assertEq(redeemPrice, 1492615411252828877);
 
         // collect the currency
@@ -658,7 +658,7 @@ contract DepositTest is BaseTest {
         assertEq(lPool.maxMint(self), trancheTokenPayout);
 
         // lp price is set to the deposit price
-        (, uint256 depositPrice,,,,,,,) = investmentManager.investments(address(lPool), self);
+        (, uint256 depositPrice,,,,,,,,,) = investmentManager.investments(address(lPool), self);
         assertEq(depositPrice, 1200000000000000000);
     }
 
@@ -711,7 +711,7 @@ contract DepositTest is BaseTest {
         assertEq(lPool.maxMint(self), trancheTokenPayout);
 
         // lp price is set to the deposit price
-        (, uint256 depositPrice,,,,,,,) = investmentManager.investments(address(lPool), self);
+        (, uint256 depositPrice,,,,,,,,,) = investmentManager.investments(address(lPool), self);
         assertEq(depositPrice, 1200000000000000000);
     }
 
@@ -734,7 +734,7 @@ contract DepositTest is BaseTest {
         assertEq(erc20.balanceOf(address(self)), 0);
 
         // check message was send out to centchain
-        lPool.cancelDepositRequest();
+        lPool.cancelDepositRequest(0, self);
         bytes memory cancelOrderMessage = abi.encodePacked(
             uint8(MessagesLib.Call.CancelInvestOrder),
             lPool.poolId(),
@@ -748,7 +748,7 @@ contract DepositTest is BaseTest {
 
         // Cannot cancel twice
         vm.expectRevert(bytes("InvestmentManager/cancellation-is-pending"));
-        lPool.cancelDepositRequest();
+        lPool.cancelDepositRequest(0, self);
 
         erc20.mint(self, amount);
         erc20.approve(lPool_, amount);
@@ -761,8 +761,7 @@ contract DepositTest is BaseTest {
         );
         assertEq(erc20.balanceOf(address(escrow)), amount);
         assertEq(erc20.balanceOf(self), 0);
-        assertEq(lPool.maxRedeem(self), amount);
-        assertEq(lPool.maxWithdraw(self), amount);
+        assertEq(lPool.claimableCancelDepositRequest(0, self), amount);
         assertEq(lPool.pendingCancelDepositRequest(0, self), false);
 
         // After cancellation is executed, new request can be submitted
@@ -794,7 +793,7 @@ contract DepositTest is BaseTest {
             currencyPayout
         );
 
-        (, uint256 depositPrice,,,,,,,) = investmentManager.investments(address(lPool), self);
+        (, uint256 depositPrice,,,,,,,,,) = investmentManager.investments(address(lPool), self);
         assertEq(depositPrice, 1400000000000000000);
 
         // second trigger executed collectInvest of the second 50% at a price of 1.2
@@ -809,7 +808,7 @@ contract DepositTest is BaseTest {
             currencyPayout
         );
 
-        (, depositPrice,,,,,,,) = investmentManager.investments(address(lPool), self);
+        (, depositPrice,,,,,,,,,) = investmentManager.investments(address(lPool), self);
         assertEq(depositPrice, 1292307679384615384);
 
         // assert deposit & mint values adjusted
