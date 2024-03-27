@@ -64,6 +64,10 @@ struct InvestmentState {
     uint128 pendingDepositRequest;
     /// @dev Remaining redeem order in currency
     uint128 pendingRedeemRequest;
+    /// @dev Currency that can be claimed using `claimCancelDepositRequest()`
+    uint128 claimableCancelDepositRequest;
+    /// @dev Tranche tokens that can be claimed using `claimCancelRedeemRequest()`
+    uint128 claimableCancelRedeemRequest;
     /// @dev Whether the depositRequest was requested to be cancelled
     bool pendingCancelDepositRequest;
     /// @dev Whether the redeemRequest was requested to be cancelled
@@ -386,18 +390,7 @@ contract InvestmentManager is Auth {
         InvestmentState storage state = investments[liquidityPool][user];
         require(state.exists == true, "InvestmentManager/non-existent-user");
 
-        // Calculating the price with both payouts as currencyPayout
-        // leads to an effective redeem price of 1.0 and thus the user actually receiving
-        // exactly currencyPayout on both deposit() and mint()
-        (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getPoolDecimals(liquidityPool);
-        uint256 currencyPayoutInPriceDecimals = _toPriceDecimals(currencyPayout, currencyDecimals);
-        state.redeemPrice = _calculatePrice(
-            _toPriceDecimals(state.maxWithdraw, currencyDecimals) + currencyPayoutInPriceDecimals,
-            _toPriceDecimals(maxRedeem(liquidityPool, user).toUint128(), trancheTokenDecimals)
-                + currencyPayoutInPriceDecimals
-        );
-
-        state.maxWithdraw = state.maxWithdraw + currencyPayout;
+        state.claimableCancelDepositRequest = state.claimableCancelDepositRequest + currencyPayout;
         state.pendingDepositRequest =
             state.pendingDepositRequest > decreasedInvestOrder ? state.pendingDepositRequest - decreasedInvestOrder : 0;
 
@@ -420,18 +413,7 @@ contract InvestmentManager is Auth {
         address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, currencyId);
         InvestmentState storage state = investments[liquidityPool][user];
 
-        // Calculating the price with both payouts as trancheTokenPayout
-        // leads to an effective redeem price of 1.0 and thus the user actually receiving
-        // exactly trancheTokenPayout on both deposit() and mint()
-        (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getPoolDecimals(liquidityPool);
-        uint256 trancheTokenPayoutInPriceDecimals = _toPriceDecimals(trancheTokenPayout, trancheTokenDecimals);
-        state.depositPrice = _calculatePrice(
-            _toPriceDecimals(_maxDeposit(liquidityPool, user), currencyDecimals).toUint128()
-                + trancheTokenPayoutInPriceDecimals,
-            _toPriceDecimals(state.maxMint, trancheTokenDecimals) + trancheTokenPayoutInPriceDecimals
-        );
-
-        state.maxMint = state.maxMint + trancheTokenPayout;
+        state.claimableCancelRedeemRequest = state.claimableCancelRedeemRequest + trancheTokenPayout;
         state.pendingRedeemRequest =
             state.pendingRedeemRequest > decreasedRedeemOrder ? state.pendingRedeemRequest - decreasedRedeemOrder : 0;
 
@@ -543,6 +525,22 @@ contract InvestmentManager is Auth {
         isPending = investments[liquidityPool][user].pendingCancelRedeemRequest;
     }
 
+    function claimableCancelDepositRequest(address liquidityPool, address user)
+        public
+        view
+        returns (uint256 currencyAmount)
+    {
+        currencyAmount = investments[liquidityPool][user].claimableCancelDepositRequest;
+    }
+
+    function claimableCancelRedeemRequest(address liquidityPool, address user)
+        public
+        view
+        returns (uint256 trancheTokenAmount)
+    {
+        trancheTokenAmount = investments[liquidityPool][user].claimableCancelRedeemRequest;
+    }
+
     function exchangeRateLastUpdated(address liquidityPool) public view returns (uint64 lastUpdated) {
         LiquidityPoolLike liquidityPool_ = LiquidityPoolLike(liquidityPool);
         (, lastUpdated) = poolManager.getTrancheTokenPrice(
@@ -637,6 +635,35 @@ contract InvestmentManager is Auth {
         require(currencyAmount <= state.maxWithdraw, "InvestmentManager/exceeds-redeem-limits");
         state.maxWithdraw = state.maxWithdraw - currencyAmount;
         SafeTransferLib.safeTransferFrom(lPool.asset(), address(escrow), receiver, currencyAmount);
+    }
+
+    function claimCancelDepositRequest(address liquidityPool, address receiver, address owner)
+        public
+        auth
+        returns (uint256 currencyAmount)
+    {
+        InvestmentState storage state = investments[liquidityPool][owner];
+        currencyAmount = state.claimableCancelDepositRequest;
+        state.claimableCancelDepositRequest = 0;
+        SafeTransferLib.safeTransferFrom(
+            LiquidityPoolLike(liquidityPool).asset(), address(escrow), receiver, currencyAmount
+        );
+    }
+
+    function claimCancelRedeemRequest(address liquidityPool, address receiver, address owner)
+        public
+        auth
+        returns (uint256 trancheTokenAmount)
+    {
+        InvestmentState storage state = investments[liquidityPool][owner];
+        trancheTokenAmount = state.claimableCancelRedeemRequest;
+        state.claimableCancelRedeemRequest = 0;
+        require(
+            ERC20Like(LiquidityPoolLike(liquidityPool).share()).transferFrom(
+                address(escrow), receiver, trancheTokenAmount
+            ),
+            "InvestmentManager/tranche-tokens-transfer-failed"
+        );
     }
 
     // --- Helpers ---
