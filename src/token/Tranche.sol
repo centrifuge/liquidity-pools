@@ -40,8 +40,6 @@ contract TrancheToken is ERC20 {
     event File(bytes32 indexed what, address data);
     event File(bytes32 indexed what, address data1, address data2);
     event File(bytes32 indexed what, address data1, bool data2);
-    event AddTrustedForwarder(address indexed trustedForwarder);
-    event RemoveTrustedForwarder(address indexed trustedForwarder);
 
     constructor(uint8 decimals_) ERC20(decimals_) {}
 
