@@ -84,17 +84,11 @@ contract Gateway is Auth {
         address manager;
 
         // Hardcoded paths for root + pool & investment managers for gas efficiency
-        if (id >= 1 && id <= 8) {
+        if (id >= 1 && id <= 8 || id >= 23 && id <= 26) {
             manager = poolManager;
-        } else if (id >= 9 && id <= 20) {
+        } else if (id >= 9 && id <= 20 || id == 27) {
             manager = investmentManager;
-        } else if (id >= 21 && id <= 22) {
-            manager = address(root);
-        } else if (id >= 23 && id <= 26) {
-            manager = poolManager;
-        } else if (id == 27) {
-            manager = investmentManager;
-        } else if (id == 31) {
+        } else if (id >= 21 && id <= 22 || id == 31) {
             manager = address(root);
         } else {
             // Dynamic path for other managers, to be able to easily
