@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {Auth} from "./../../../util/Auth.sol";
-
 interface AxelarGatewayLike {
     function callContract(string calldata destinationChain, string calldata contractAddress, bytes calldata payload)
         external;
@@ -15,56 +13,24 @@ interface AxelarGatewayLike {
     ) external returns (bool);
 }
 
-interface GatewayLike {
+interface AggregatorLike {
     function handle(bytes memory message) external;
 }
 
 /// @title  Axelar Router
 /// @notice Routing contract that integrates with an Axelar Gateway
-contract AxelarRouter is Auth {
-    string public constant CENTRIFUGE_CHAIN_ID = "centrifuge";
-    string public constant CENTRIFUGE_CHAIN_ADDRESS = "0x7369626CEF070000000000000000000000000000";
+contract AxelarRouter {
+    string public constant CENTRIFUGE_ID = "centrifuge";
+    bytes32 public constant CENTRIFUGE_ID_HASH = keccak256(bytes("centrifuge"));
+    bytes32 public constant CENTRIFUGE_ADDRESS_HASH = keccak256(bytes("0x7369626CEF070000000000000000000000000000"));
     string public constant CENTRIFUGE_AXELAR_EXECUTABLE = "0xc1757c6A0563E37048869A342dF0651b9F267e41";
 
+    AggregatorLike public immutable aggregator;
     AxelarGatewayLike public immutable axelarGateway;
 
-    GatewayLike public gateway;
-
-    // --- Events ---
-    event File(bytes32 indexed what, address addr);
-
-    constructor(address axelarGateway_) {
+    constructor(address aggregator_, address axelarGateway_) {
+        aggregator = AggregatorLike(aggregator_);
         axelarGateway = AxelarGatewayLike(axelarGateway_);
-
-        wards[msg.sender] = 1;
-        emit Rely(msg.sender);
-    }
-
-    modifier onlyCentrifugeChainOrigin(string calldata sourceChain, string calldata sourceAddress) {
-        require(
-            keccak256(bytes(CENTRIFUGE_CHAIN_ID)) == keccak256(bytes(sourceChain)), "AxelarRouter/invalid-source-chain"
-        );
-        require(
-            keccak256(bytes(CENTRIFUGE_CHAIN_ADDRESS)) == keccak256(bytes(sourceAddress)),
-            "AxelarRouter/invalid-source-address"
-        );
-        _;
-    }
-
-    modifier onlyGateway() {
-        require(msg.sender == address(gateway), "AxelarRouter/only-gateway-allowed-to-call");
-        _;
-    }
-
-    // --- Administration ---
-    function file(bytes32 what, address data) external auth {
-        if (what == "gateway") {
-            gateway = GatewayLike(data);
-        } else {
-            revert("AxelarRouter/file-unrecognized-param");
-        }
-
-        emit File(what, data);
     }
 
     // --- Incoming ---
@@ -73,18 +39,21 @@ contract AxelarRouter is Auth {
         string calldata sourceChain,
         string calldata sourceAddress,
         bytes calldata payload
-    ) public onlyCentrifugeChainOrigin(sourceChain, sourceAddress) {
-        bytes32 payloadHash = keccak256(payload);
+    ) public {
+        require(keccak256(bytes(sourceChain)) == CENTRIFUGE_ID_HASH, "AxelarRouter/invalid-source-chain");
+        require(keccak256(bytes(sourceAddress)) == CENTRIFUGE_ADDRESS_HASH, "AxelarRouter/invalid-source-address");
         require(
-            axelarGateway.validateContractCall(commandId, sourceChain, sourceAddress, payloadHash),
-            "Router/not-approved-by-gateway"
+            axelarGateway.validateContractCall(commandId, sourceChain, sourceAddress, keccak256(payload)),
+            "AxelarRouter/not-approved-by-axelar-gateway"
         );
 
-        gateway.handle(payload);
+        aggregator.handle(payload);
     }
 
     // --- Outgoing ---
-    function send(bytes calldata message) public onlyGateway {
-        axelarGateway.callContract(CENTRIFUGE_CHAIN_ID, CENTRIFUGE_AXELAR_EXECUTABLE, message);
+    function send(bytes calldata payload) public {
+        require(msg.sender == address(aggregator), "AxelarRouter/only-aggregator-allowed-to-call");
+
+        axelarGateway.callContract(CENTRIFUGE_ID, CENTRIFUGE_AXELAR_EXECUTABLE, payload);
     }
 }

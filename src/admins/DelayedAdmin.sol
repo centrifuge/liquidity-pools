@@ -2,11 +2,15 @@
 pragma solidity 0.8.21;
 
 import {Root} from "../Root.sol";
-import {Auth} from "./../util/Auth.sol";
+import {Auth} from "./../Auth.sol";
 
 interface PauseAdminLike {
     function addPauser(address user) external;
     function removePauser(address user) external;
+}
+
+interface RouterAggregatorLike {
+    function disputeMessageRecovery(bytes32 messageHash) external;
 }
 
 /// @title  Delayed Admin
@@ -17,10 +21,12 @@ interface PauseAdminLike {
 contract DelayedAdmin is Auth {
     Root public immutable root;
     PauseAdminLike public immutable pauseAdmin;
+    RouterAggregatorLike public immutable aggregator;
 
-    constructor(address root_, address pauseAdmin_) {
+    constructor(address root_, address pauseAdmin_, address aggregator_) {
         root = Root(root_);
         pauseAdmin = PauseAdminLike(pauseAdmin_);
+        aggregator = RouterAggregatorLike(aggregator_);
 
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
@@ -41,6 +47,10 @@ contract DelayedAdmin is Auth {
 
     function cancelRely(address target) external auth {
         root.cancelRely(target);
+    }
+
+    function disputeMessageRecovery(bytes32 messageHash) external auth {
+        aggregator.disputeMessageRecovery(messageHash);
     }
 
     // --- PauseAdmin management ---

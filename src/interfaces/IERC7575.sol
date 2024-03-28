@@ -20,7 +20,7 @@ interface IERC165 {
     function supportsInterface(bytes4 interfaceId) external view returns (bool);
 }
 
-interface IERC7575Minimal {
+interface IERC7575 is IERC165 {
     event Deposit(address indexed sender, address indexed owner, uint256 assets, uint256 shares);
     event Withdraw(
         address indexed sender, address indexed receiver, address indexed owner, uint256 assets, uint256 shares
@@ -80,9 +80,7 @@ interface IERC7575Minimal {
      * - MUST NOT revert.
      */
     function totalAssets() external view returns (uint256 totalManagedAssets);
-}
 
-interface IERC7575Deposit {
     /**
      * @dev Returns the maximum amount of the underlying asset that can be deposited into the Vault for the receiver,
      * through a deposit call.
@@ -122,9 +120,7 @@ interface IERC7575Deposit {
      * NOTE: most implementations will require pre-approval of the Vault with the Vault’s underlying asset token.
      */
     function deposit(uint256 assets, address receiver) external returns (uint256 shares);
-}
 
-interface IERC7575Mint {
     /**
      * @dev Returns the maximum amount of the Vault shares that can be minted for the receiver, through a mint call.
      * - MUST return a limited value if receiver is subject to some mint limit.
@@ -162,9 +158,7 @@ interface IERC7575Mint {
      * NOTE: most implementations will require pre-approval of the Vault with the Vault’s underlying asset token.
      */
     function mint(uint256 shares, address receiver) external returns (uint256 assets);
-}
 
-interface IERC7575Withdraw {
     /**
      * @dev Returns the maximum amount of the underlying asset that can be withdrawn from the owner balance in the
      * Vault, through a withdraw call.
@@ -205,9 +199,7 @@ interface IERC7575Withdraw {
      * Those methods should be performed separately.
      */
     function withdraw(uint256 assets, address receiver, address owner) external returns (uint256 shares);
-}
 
-interface IERC7575Redeem {
     /**
      * @dev Returns the maximum amount of Vault shares that can be redeemed from the owner balance in the Vault,
      * through a redeem call.
@@ -249,26 +241,3 @@ interface IERC7575Redeem {
      */
     function redeem(uint256 shares, address receiver, address owner) external returns (uint256 assets);
 }
-
-/// @dev Only used for generating the full ERC-7575 interface ID
-interface IERC7575 {
-    function asset() external view returns (address);
-    function share() external view returns (address);
-    function convertToShares(uint256) external view returns (uint256);
-    function convertToAssets(uint256) external view returns (uint256);
-    function totalAssets() external view returns (uint256);
-    function maxDeposit(address) external view returns (uint256);
-    function previewDeposit(uint256) external view returns (uint256);
-    function deposit(uint256, address) external returns (uint256);
-    function maxMint(address) external view returns (uint256);
-    function previewMint(uint256) external view returns (uint256);
-    function mint(uint256, address) external returns (uint256);
-    function maxWithdraw(address) external view returns (uint256);
-    function previewWithdraw(uint256) external view returns (uint256);
-    function withdraw(uint256, address, address) external returns (uint256);
-    function maxRedeem(address) external view returns (uint256);
-    function previewRedeem(uint256) external view returns (uint256);
-    function redeem(uint256, address, address) external returns (uint256);
-}
-
-interface IERC4626 is IERC7575Minimal, IERC7575Deposit, IERC7575Mint, IERC7575Withdraw, IERC7575Redeem, IERC165 {}

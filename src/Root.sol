@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {Auth} from "./util/Auth.sol";
+import {Auth} from "./Auth.sol";
+import {MessagesLib} from "./libraries/MessagesLib.sol";
+import {BytesLib} from "./libraries/BytesLib.sol";
 
 interface AuthLike {
     function rely(address) external;
@@ -13,14 +15,16 @@ interface AuthLike {
 /// @dev    Pausing can happen instantaneously, but relying on other contracts
 ///         is restricted to the timelock set by the delay.
 contract Root is Auth {
+    using BytesLib for bytes;
+
     /// @dev To prevent filing a delay that would block any updates indefinitely
     uint256 internal constant MAX_DELAY = 4 weeks;
 
     address public immutable escrow;
 
-    mapping(address relyTarget => uint256 timestamp) public schedule;
-    uint256 public delay;
     bool public paused;
+    uint256 public delay;
+    mapping(address relyTarget => uint256 timestamp) public schedule;
 
     // --- Events ---
     event File(bytes32 indexed what, uint256 data);
@@ -67,13 +71,13 @@ contract Root is Auth {
 
     /// --- Timelocked ward management ---
     /// @notice Schedule relying a new ward after the delay has passed
-    function scheduleRely(address target) external auth {
+    function scheduleRely(address target) public auth {
         schedule[target] = block.timestamp + delay;
         emit ScheduleRely(target, schedule[target]);
     }
 
     /// @notice Cancel a pending scheduled rely
-    function cancelRely(address target) external auth {
+    function cancelRely(address target) public auth {
         require(schedule[target] != 0, "Root/target-not-scheduled");
         schedule[target] = 0;
         emit CancelRely(target);
@@ -89,6 +93,19 @@ contract Root is Auth {
         emit Rely(target);
 
         schedule[target] = 0;
+    }
+
+    /// --- Incoming message handling ---
+    function handle(bytes calldata message) public auth {
+        MessagesLib.Call call = MessagesLib.messageType(message);
+
+        if (call == MessagesLib.Call.ScheduleUpgrade) {
+            scheduleRely(message.toAddress(1));
+        } else if (call == MessagesLib.Call.CancelUpgrade) {
+            cancelRely(message.toAddress(1));
+        } else {
+            revert("Root/invalid-message");
+        }
     }
 
     /// --- External contract ward management ---

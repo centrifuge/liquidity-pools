@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import "./../TestSetup.t.sol";
+import "./../BaseTest.sol";
 
-contract MintTest is TestSetup {
+contract MintTest is BaseTest {
     function testMint(uint256 amount) public {
         amount = uint128(bound(amount, 2, MAX_UINT128));
 
