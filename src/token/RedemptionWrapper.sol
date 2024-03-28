@@ -2,7 +2,7 @@
 pragma solidity 0.8.21;
 
 import {ERC20} from "src/token/ERC20.sol";
-import {IERC20} from "src/interfaces/IERC20.sol";
+import {IERC20, IERC20Metadata} from "src/interfaces/IERC20.sol";
 import {IERC7540} from "src/interfaces/IERC7540.sol";
 import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 
@@ -11,7 +11,7 @@ contract RedemptionWrapper is ERC20 {
     IERC20 public immutable trancheToken;
     IERC20 public immutable asset;
 
-    constructor(address liquidityPool_, uint8 decimals_) ERC20(decimals_) {
+    constructor(address liquidityPool_) ERC20(IERC20Metadata(IERC7540(liquidityPool_).share()).decimals()) {
         liquidityPool = IERC7540(liquidityPool_);
         trancheToken = IERC20(liquidityPool.share());
         asset = IERC20(liquidityPool.asset());
