@@ -72,7 +72,9 @@ library MessagesLib {
         /// 29 - Initiate Message Recovery
         InitiateMessageRecovery,
         /// 30 - Dispute Message Recovery
-        DisputeMessageRecovery
+        DisputeMessageRecovery,
+        /// 31 - Recover Tokens sent to the wrong contract
+        RecoverTokens
     }
 
     enum Domain {

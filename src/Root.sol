@@ -10,6 +10,10 @@ interface AuthLike {
     function deny(address) external;
 }
 
+interface RecoverLike {
+    function recoverTokens(address, address, uint256) external;
+}
+
 /// @title  Root
 /// @notice Core contract that is a ward on all other deployed contracts.
 /// @dev    Pausing can happen instantaneously, but relying on other contracts
@@ -34,6 +38,7 @@ contract Root is Auth {
     event CancelRely(address indexed target);
     event RelyContract(address indexed target, address indexed user);
     event DenyContract(address indexed target, address indexed user);
+    event RecoverTokens(address indexed target, address indexed token, address indexed to, uint256 amount);
 
     constructor(address _escrow, uint256 _delay, address deployer) {
         require(_delay <= MAX_DELAY, "Root/delay-too-long");
@@ -103,6 +108,10 @@ contract Root is Auth {
             scheduleRely(message.toAddress(1));
         } else if (call == MessagesLib.Call.CancelUpgrade) {
             cancelRely(message.toAddress(1));
+        } else if (call == MessagesLib.Call.RecoverTokens) {
+            (address target, address token, address to, uint256 amount) =
+                (message.toAddress(1), message.toAddress(33), message.toAddress(65), message.toUint256(97));
+            RecoverLike(target).recoverTokens(token, to, amount);
         } else {
             revert("Root/invalid-message");
         }
@@ -119,5 +128,12 @@ contract Root is Auth {
     function denyContract(address target, address user) external auth {
         AuthLike(target).deny(user);
         emit DenyContract(target, user);
+    }
+
+    /// --- Token Recovery ---
+    /// @notice Allows Governance to recover tokens sent to the wrong contract by mistake
+    function recoverTokens(address target, address token, address to, uint256 amount) external auth {
+        RecoverLike(target).recoverTokens(token, to, amount);
+        emit RecoverTokens(target, token, to, amount);
     }
 }
