@@ -29,6 +29,7 @@ contract RedemptionWrapper is ERC20 {
     }
 
     function burn(address from, uint256 value) public override {
+        claim();
         require(asset.balanceOf(address(this)) >= value, "RedemptionWrapper/insufficient-asset-balance");
 
         super.burn(from, value);
