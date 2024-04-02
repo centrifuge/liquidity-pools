@@ -286,8 +286,7 @@ contract InvestmentManager is Auth {
                 message.toAddress(25),
                 message.toUint128(57),
                 message.toUint128(73),
-                message.toUint128(89),
-                message.toUint128(105)
+                message.toUint128(89)
             );
         } else if (call == MessagesLib.Call.ExecutedDecreaseInvestOrder) {
             handleExecutedDecreaseInvestOrder(
@@ -354,8 +353,7 @@ contract InvestmentManager is Auth {
         address user,
         uint128 currencyId,
         uint128 currencyPayout,
-        uint128 trancheTokenPayout,
-        uint128 fulfilledRedeemOrder
+        uint128 trancheTokenPayout
     ) public auth {
         address liquidityPool = poolManager.getLiquidityPool(poolId, trancheId, currencyId);
 
@@ -370,7 +368,7 @@ contract InvestmentManager is Auth {
         );
         state.maxWithdraw = state.maxWithdraw + currencyPayout;
         state.pendingRedeemRequest =
-            state.pendingRedeemRequest > fulfilledRedeemOrder ? state.pendingRedeemRequest - fulfilledRedeemOrder : 0;
+            state.pendingRedeemRequest > trancheTokenPayout ? state.pendingRedeemRequest - trancheTokenPayout : 0;
 
         if (state.pendingRedeemRequest == 0) state.pendingCancelRedeemRequest = false;
 

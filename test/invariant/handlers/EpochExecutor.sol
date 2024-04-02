@@ -91,13 +91,7 @@ contract EpochExecutorHandler is BaseHandler {
             uint128(trancheTokenPayout.mulDiv(fulfillmentPrice, 1 * 10 ** 18, MathLib.Rounding.Down));
 
         centrifugeChain.isExecutedCollectRedeem(
-            poolId,
-            trancheId,
-            bytes32(bytes20(currentInvestor)),
-            currencyId,
-            currencyPayout,
-            trancheTokenPayout,
-            uint128(outstandingRedeemRequest - currencyPayout)
+            poolId, trancheId, bytes32(bytes20(currentInvestor)), currencyId, currencyPayout, trancheTokenPayout
         );
 
         increaseVar(currentInvestor, "totalTrancheTokensPaidOutOnRedeem", trancheTokenPayout);
