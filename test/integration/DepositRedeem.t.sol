@@ -86,13 +86,7 @@ contract DepositRedeem is BaseTest {
         assertEq(firstTrancheTokenRedeem + secondTrancheTokenRedeem, redeemAmount);
         uint128 firstCurrencyPayout = 27500000; // (25000000000000000000/10**18) * 10**6 * 1.1
         centrifugeChain.isExecutedCollectRedeem(
-            poolId,
-            trancheId,
-            bytes32(bytes20(self)),
-            currencyId,
-            firstCurrencyPayout,
-            firstTrancheTokenRedeem,
-            secondTrancheTokenRedeem
+            poolId, trancheId, bytes32(bytes20(self)), currencyId, firstCurrencyPayout, firstTrancheTokenRedeem
         );
 
         assertEq(lPool.maxRedeem(self), firstTrancheTokenRedeem);
@@ -103,7 +97,7 @@ contract DepositRedeem is BaseTest {
         // second trigger executed collectRedeem of the second 25 trancheTokens at a price of 1.3
         uint128 secondCurrencyPayout = 32500000; // (25000000000000000000/10**18) * 10**6 * 1.3
         centrifugeChain.isExecutedCollectRedeem(
-            poolId, trancheId, bytes32(bytes20(self)), currencyId, secondCurrencyPayout, secondTrancheTokenRedeem, 0
+            poolId, trancheId, bytes32(bytes20(self)), currencyId, secondCurrencyPayout, secondTrancheTokenRedeem
         );
 
         (,,, redeemPrice,,,,,,,) = investmentManager.investments(address(lPool), self);

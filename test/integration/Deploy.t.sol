@@ -171,7 +171,7 @@ contract DeployTest is Test, Deployer {
         // Assume a bot calls collectRedeem for this user on cent chain
         vm.prank(address(gateway));
         investmentManager.handleExecutedCollectRedeem(
-            poolId, trancheId, self, _currencyId, currencyPayout, uint128(amount), 0
+            poolId, trancheId, self, _currencyId, currencyPayout, uint128(amount)
         );
 
         assertEq(lPool.maxWithdraw(self), currencyPayout);
