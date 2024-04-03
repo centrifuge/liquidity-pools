@@ -17,9 +17,9 @@ contract AssetShareConversionTest is BaseTest {
         LiquidityPool lPool = LiquidityPool(lPool_);
         TrancheTokenLike trancheToken = TrancheTokenLike(address(LiquidityPool(lPool_).share()));
 
-        assertEq(lPool.exchangeRateLastUpdated(), 0);
+        assertEq(lPool.priceLastUpdated(), 0);
         centrifugeChain.updateTrancheTokenPrice(poolId, trancheId, currencyId, 1000000, uint64(block.timestamp));
-        assertEq(lPool.exchangeRateLastUpdated(), uint64(block.timestamp));
+        assertEq(lPool.priceLastUpdated(), uint64(block.timestamp));
 
         // invest
         uint256 investmentAmount = 100000000; // 100 * 10**6

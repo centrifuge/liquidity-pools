@@ -20,7 +20,7 @@ interface ManagerLike {
     function claimableCancelRedeemRequest(address lp, address owner) external view returns (uint256);
     function claimCancelDepositRequest(address lp, address receiver, address owner) external returns (uint256);
     function claimCancelRedeemRequest(address lp, address receiver, address owner) external returns (uint256);
-    function exchangeRateLastUpdated(address lp) external view returns (uint64);
+    function priceLastUpdated(address lp) external view returns (uint64);
     function deposit(address lp, uint256 assets, address receiver, address owner) external returns (uint256);
     function mint(address lp, uint256 shares, address receiver, address owner) external returns (uint256);
     function withdraw(address lp, uint256 assets, address receiver, address owner) external returns (uint256);
@@ -60,6 +60,7 @@ contract LiquidityPool is Auth, IERC7540 {
     /// @notice The restricted ERC-20 Liquidity Pool share (tranche token).
     ///         Has a ratio (token price) of underlying assets exchanged on deposit/mint/withdraw/redeem.
     address public immutable share;
+    uint8 public immutable shareDecimals;
 
     /// @notice Escrow contract for tokens
     address public immutable escrow;
@@ -80,6 +81,7 @@ contract LiquidityPool is Auth, IERC7540 {
         trancheId = trancheId_;
         asset = asset_;
         share = share_;
+        shareDecimals = IERC20Metadata(share).decimals();
         escrow = escrow_;
         manager = ManagerLike(manager_);
 
@@ -321,8 +323,13 @@ contract LiquidityPool is Auth, IERC7540 {
     }
 
     // --- Helpers ---
-    function exchangeRateLastUpdated() external view returns (uint64) {
-        return manager.exchangeRateLastUpdated(address(this));
+    /// @dev Price of 1 unit of share, quoted in the decimals of the asset
+    function pricePerShare() external view returns (uint256) {
+        return convertToAssets(10 ** shareDecimals);
+    }
+
+    function priceLastUpdated() external view returns (uint64) {
+        return manager.priceLastUpdated(address(this));
     }
 
     function _transferFrom(address from, address to, uint256 value) internal returns (bool) {

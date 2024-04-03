@@ -543,7 +543,7 @@ contract InvestmentManager is Auth {
         trancheTokenAmount = investments[liquidityPool][user].claimableCancelRedeemRequest;
     }
 
-    function exchangeRateLastUpdated(address liquidityPool) public view returns (uint64 lastUpdated) {
+    function priceLastUpdated(address liquidityPool) public view returns (uint64 lastUpdated) {
         LiquidityPoolLike liquidityPool_ = LiquidityPoolLike(liquidityPool);
         (, lastUpdated) = poolManager.getTrancheTokenPrice(
             liquidityPool_.poolId(), liquidityPool_.trancheId(), liquidityPool_.asset()
