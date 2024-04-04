@@ -1,6 +1,7 @@
 cache/
 out/
 broadcast/
+node_modules/
 .env
 .idea/
 .DS_Store

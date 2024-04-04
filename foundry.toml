@@ -2,6 +2,10 @@
 src = 'src'
 out = 'out'
 libs = ['lib']
+# Sphinx options:
+build_info = true
+extra_output = ['storageLayout']
+always_use_create_2_factory = true
 
 solc_version = "0.8.21"
 evm_version = "paris" # to prevent usage of PUSH0, which is not supported on all chains
@@ -10,7 +14,11 @@ optimizer = true
 optimizer_runs = 500
 verbosity = 3
 
-fs_permissions = [{ access = "read", path = "./deployments"}]
+fs_permissions = [
+  { access = "read", path = "./deployments"},
+  { access = "read", path = "./out"},
+  { access = "read-write", path = "./cache"}
+]
 
 [profile.default.fuzz]
 runs = 100
@@ -77,3 +85,5 @@ fail_on_revert = false
 [rpc_endpoints]
 ethereum-mainnet = "https://mainnet.infura.io/v3/${INFURA_API_KEY}"
 polygon-mainnet = "https://polygon-mainnet.infura.io/v3/${INFURA_API_KEY}" 
+sepolia = "https://sepolia.infura.io/v3/${INFURA_API_KEY}"
+polygon_mumbai = "https://polygon-mumbai.infura.io/v3/${INFURA_API_KEY}"

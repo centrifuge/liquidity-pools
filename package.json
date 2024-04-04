@@ -1,0 +1,5 @@
+{
+  "devDependencies": {
+    "@sphinx-labs/plugins": "^0.31.0"
+  }
+}
