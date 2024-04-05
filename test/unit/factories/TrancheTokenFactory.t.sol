@@ -61,7 +61,7 @@ contract FactoryTest is Test {
                     keccak256(
                         abi.encodePacked(
                             bytes1(0xff),
-                            address(this),
+                            CREATE2_FACTORY,
                             salt,
                             keccak256(
                                 abi.encodePacked(
@@ -131,7 +131,7 @@ contract FactoryTest is Test {
                     keccak256(
                         abi.encodePacked(
                             bytes1(0xff),
-                            address(this),
+                            CREATE2_FACTORY,
                             salt,
                             keccak256(
                                 abi.encodePacked(
