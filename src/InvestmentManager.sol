@@ -710,24 +710,13 @@ contract InvestmentManager is Auth {
         view
         returns (uint256 price)
     {
-        (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getPoolDecimals(liquidityPool);
-        price = _calculatePrice(
-            _toPriceDecimals(currencyAmount, currencyDecimals),
-            _toPriceDecimals(trancheTokenAmount, trancheTokenDecimals)
-        );
-    }
-
-    function _calculatePrice(uint256 currencyAmountInPriceDecimals, uint256 trancheTokenAmountInPriceDecimals)
-        internal
-        pure
-        returns (uint256 price)
-    {
-        if (currencyAmountInPriceDecimals == 0 || trancheTokenAmountInPriceDecimals == 0) {
+        if (currencyAmount == 0 || trancheTokenAmount == 0) {
             return 0;
         }
 
-        price = currencyAmountInPriceDecimals.mulDiv(
-            10 ** PRICE_DECIMALS, trancheTokenAmountInPriceDecimals, MathLib.Rounding.Down
+        (uint8 currencyDecimals, uint8 trancheTokenDecimals) = _getPoolDecimals(liquidityPool);
+        price = _toPriceDecimals(currencyAmount, currencyDecimals).mulDiv(
+            10 ** PRICE_DECIMALS, _toPriceDecimals(trancheTokenAmount, trancheTokenDecimals), MathLib.Rounding.Down
         );
     }
 
