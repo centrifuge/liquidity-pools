@@ -12,6 +12,8 @@ import {DelayedAdmin} from "src/admins/DelayedAdmin.sol";
 import {LiquidityPoolFactory} from "src/factories/LiquidityPoolFactory.sol";
 import {RestrictionManagerFactory} from "src/factories/RestrictionManagerFactory.sol";
 import {TrancheTokenFactory} from "src/factories/TrancheTokenFactory.sol";
+import "@sphinx-labs/contracts/SphinxPlugin.sol";
+
 import "forge-std/Script.sol";
 
 interface RouterLike {
@@ -23,7 +25,7 @@ interface AuthLike {
     function deny(address who) external;
 }
 
-contract Deployer is Script {
+contract Deployer is Script, Sphinx {
     uint256 internal constant delay = 48 hours;
 
     address admin;
@@ -41,6 +43,13 @@ contract Deployer is Script {
     address public liquidityPoolFactory;
     address public restrictionManagerFactory;
     address public trancheTokenFactory;
+
+    function configureSphinx() public override {
+        sphinxConfig.owners = [address(0x423420Ae467df6e90291fd0252c0A8a637C1e03f)];
+        sphinxConfig.orgId = "clsypbcrw0001zqwy1arndx1t";
+        sphinxConfig.projectName = "Liquidity_Pools";
+        sphinxConfig.threshold = 1;
+    }
 
     function deploy(address deployer) public {
         // If no salt is provided, a pseudo-random salt is generated,

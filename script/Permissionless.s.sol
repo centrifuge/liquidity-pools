@@ -9,18 +9,17 @@ import {Deployer, RouterLike} from "./Deployer.sol";
 contract PermissionlessScript is Deployer {
     function setUp() public {}
 
-    function run() public {
-        vm.startBroadcast();
+    function run() public sphinx {
+        address deployer = vm.envAddress("ADMIN");
 
-        admin = msg.sender;
-        pausers = [msg.sender];
+        admin = deployer;
+        pausers = [deployer];
 
-        deploy(msg.sender);
+        deploy(deployer);
         PermissionlessRouter router = new PermissionlessRouter(address(aggregator));
         wire(address(router));
 
         giveAdminAccess();
 
-        vm.stopBroadcast();
     }
 }
