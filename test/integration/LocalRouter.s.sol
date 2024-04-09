@@ -26,6 +26,6 @@ contract LocalRouterScript is Deployer {
         router.file("sourceAddress", "0x1111111111111111111111111111111111111111");
 
         giveAdminAccess();
-        removeDeployerAccess(address(router), msg.sender);
+        removeDeployerAccess(msg.sender);
     }
 }

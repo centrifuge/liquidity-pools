@@ -25,6 +25,6 @@ contract AxelarScript is Deployer {
         wire(address(router));
 
         giveAdminAccess();
-        removeDeployerAccess(address(router), deployer);
+        removeDeployerAccess(deployer);
     }
 }

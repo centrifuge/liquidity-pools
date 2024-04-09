@@ -110,7 +110,6 @@ contract Deployer is Script, Sphinx {
         poolManager.rely(address(gateway));
         gateway.rely(address(root));
         aggregator.rely(address(root));
-        AuthLike(router).rely(address(root));
         AuthLike(address(escrow)).rely(address(root));
         AuthLike(address(escrow)).rely(address(poolManager));
     }
@@ -123,8 +122,7 @@ contract Deployer is Script, Sphinx {
         }
     }
 
-    function removeDeployerAccess(address router, address deployer) public {
-        AuthLike(router).deny(deployer);
+    function removeDeployerAccess(address deployer) public {
         AuthLike(liquidityPoolFactory).deny(deployer);
         AuthLike(trancheTokenFactory).deny(deployer);
         AuthLike(restrictionManagerFactory).deny(deployer);

@@ -50,7 +50,7 @@ contract DeployTest is Test, Deployer {
         erc20 = newErc20("Test", "TEST", 6); // TODO: fuzz decimals
         self = address(this);
 
-        removeDeployerAccess(address(router), address(this));
+        removeDeployerAccess(address(this));
     }
 
     function testDeployerHasNoAccess() public {
