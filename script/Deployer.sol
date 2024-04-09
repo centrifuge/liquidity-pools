@@ -49,6 +49,7 @@ contract Deployer is Script, Sphinx {
         sphinxConfig.orgId = "clsypbcrw0001zqwy1arndx1t";
         sphinxConfig.projectName = "Liquidity_Pools";
         sphinxConfig.threshold = 1;
+        sphinxConfig.testnets = ["sepolia", "polygon_mumbai"];
     }
 
     function deploy(address deployer) public {

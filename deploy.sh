@@ -1,26 +1,30 @@
 #!/bin/bash
-
 source .env
 
 if [[ -z "$RPC_URL" ]]; then
-    error_exit "RPC_URL is not defined"
+  error_exit "RPC_URL is not defined"
 fi
 echo "RPC endpoint = $RPC_URL"
 
 if [[ -z "$ROUTER" ]]; then
-    error_exit "ROUTER is not defined"
+  error_exit "ROUTER is not defined"
 fi
 echo "Router = $ROUTER"
 
 if [[ -z "$ADMIN" ]]; then
-    error_exit "ADMIN is not defined"
+  error_exit "ADMIN is not defined"
 fi
 echo "Admin = $ADMIN"
 
 if [[ -z "$PAUSERS" ]]; then
-    error_exit "PAUSERS is not defined"
+  error_exit "PAUSERS is not defined"
 fi
 echo "Pausers = $PAUSERS"
+
+if [[ "$1" == "--sphinx" ]]; then
+  npx sphinx propose script/${ROUTER}.s.sol --networks testnets
+  exit 0
+fi
 
 case "$ROUTER" in
   Permissionless|Axelar|Forwarder)
