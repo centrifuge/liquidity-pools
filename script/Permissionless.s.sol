@@ -20,6 +20,5 @@ contract PermissionlessScript is Deployer {
         wire(address(router));
 
         giveAdminAccess();
-
     }
 }

@@ -17,7 +17,6 @@ contract ForwarderScript is Script, Sphinx {
     }
 
     function run() public sphinx {
-
         address admin = vm.envAddress("ADMIN");
 
         AxelarForwarder router = new AxelarForwarder(address(vm.envAddress("AXELAR_GATEWAY")));
