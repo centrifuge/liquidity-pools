@@ -15,6 +15,14 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      - name: Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+
+      - name: Install dependencies
+        run: yarn install
+
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
 
@@ -98,12 +106,13 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }} # Adds a coverage summary comment to the PR.
 
       - name: Verify minimum coverage
-        if: github.event_name == 'pull_request' 
+        if: github.event_name == 'pull_request'
         uses: zgosalvez/github-actions-report-lcov@v2
         with:
           coverage-files: ./lcov.info
           minimum-coverage: 60 # Set coverage threshold.
-    
+
+
   # slither-analyze:
   #   runs-on: "ubuntu-latest"
   #   permissions:
@@ -129,7 +138,7 @@ jobs:
   #       uses: github/codeql-action/upload-sarif@v2
   #       with:
   #         sarif_file: ${{ steps.slither.outputs.sarif }}
-      
+
   #     - name: "Add Slither summary"
   #       run: |
   #         echo "## Slither result" >> $GITHUB_STEP_SUMMARY
