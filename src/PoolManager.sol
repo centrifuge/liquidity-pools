@@ -47,7 +47,7 @@ struct Tranche {
 }
 
 struct TrancheTokenPrice {
-    uint256 price;
+    uint128 price;
     uint64 computedAt;
 }
 
@@ -104,7 +104,7 @@ contract PoolManager is Auth {
         uint64 indexed poolId, bytes16 indexed trancheId, address indexed currency, address liquidityPool
     );
     event PriceUpdate(
-        uint64 indexed poolId, bytes16 indexed trancheId, address indexed currency, uint256 price, uint64 computedAt
+        uint64 indexed poolId, bytes16 indexed trancheId, address indexed currency, uint128 price, uint64 computedAt
     );
     event TransferCurrency(address indexed currency, bytes32 indexed recipient, uint128 amount);
     event TransferTrancheTokensToCentrifuge(
@@ -537,7 +537,7 @@ contract PoolManager is Auth {
     function getTrancheTokenPrice(uint64 poolId, bytes16 trancheId, address currency)
         public
         view
-        returns (uint256 price, uint64 computedAt)
+        returns (uint128 price, uint64 computedAt)
     {
         TrancheTokenPrice memory value = pools[poolId].tranches[trancheId].prices[currency];
         price = value.price;
