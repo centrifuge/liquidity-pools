@@ -104,6 +104,22 @@ jobs:
           coverage-files: ./lcov.info
           minimum-coverage: 60 # Set coverage threshold.
 
+  sphinx-dry-run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Install Dependencies
+        run: yarn --frozen-lockfile
+
+      - name: Install Sphinx Solidity Library
+        run: yarn sphinx install
+
+      - name: Dry Run
+        run: npx sphinx propose ./deploy.sh --dry-run --networks sepolia
 
   # slither-analyze:
   #   runs-on: "ubuntu-latest"
@@ -134,4 +150,3 @@ jobs:
   #     - name: "Add Slither summary"
   #       run: |
   #         echo "## Slither result" >> $GITHUB_STEP_SUMMARY
-  #         echo "✅ Uploaded to GitHub code scanning" >> $GITHUB_STEP_SUMMARY
