@@ -18,7 +18,7 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 18
+          node-version: 21.2.0
 
       - name: Install dependencies
         run: yarn install
@@ -26,8 +26,20 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
 
+      - name: Print versions
+        run: |
+          echo "Node version: $(node --version)"
+          echo "Yarn version: $(yarn --version)"
+          echo "Foundry version: $(forge --version)"
+          echo "Foundry profile: $FOUNDRY_PROFILE"
+
+      - name: Print debug stuff
+        run: |
+          echo "package.json contents:"; cat package.json
+          echo "Current directory: $(pwd)"; ls -la /src
+
       - name: Run tests
-        run: forge test --no-match-path "test/invariant/**/*.sol"
+        run: forge test --no-match-path "test/invariant/**/*.sol" -vvvv
         env:
           FOUNDRY_PROFILE: ci
           FORK_TESTS: false
