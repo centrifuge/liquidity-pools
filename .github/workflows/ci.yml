@@ -120,6 +120,8 @@ jobs:
 
       - name: Dry Run
         run: npx sphinx propose ./deploy.sh --dry-run --networks sepolia
+        env:
+          SPHINX_API_KEY: ${{ secrets.SPHINX_API_KEY }}
 
   # slither-analyze:
   #   runs-on: "ubuntu-latest"
