@@ -36,7 +36,7 @@ jobs:
       - name: Print debug stuff
         run: |
           echo "Current directory: $(pwd)"; ls -la
-          echo "Current src directory: $(pwd)"; ls -la /src
+          echo "Current src directory: $(pwd)"; ls -la src/
           echo "package.json contents:"; cat package.json
 
       - name: Run tests
