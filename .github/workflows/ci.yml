@@ -26,21 +26,8 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
 
-      - name: Print versions
-        run: |
-          echo "Node version: $(node --version)"
-          echo "Yarn version: $(yarn --version)"
-          echo "Foundry version: $(forge --version)"
-          echo "Foundry profile: $FOUNDRY_PROFILE"
-
-      - name: Print debug stuff
-        run: |
-          echo "Current directory: $(pwd)"; ls -la
-          echo "Current src directory: $(pwd)"; ls -la src/
-          echo "package.json contents:"; cat package.json
-
       - name: Run tests
-        run: forge test --no-match-path "test/invariant/**/*.sol" -vvvv
+        run: forge test --no-match-path "test/invariant/**/*.sol"
         env:
           FOUNDRY_PROFILE: ci
           FORK_TESTS: false
