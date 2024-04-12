@@ -84,6 +84,10 @@ fail_on_revert = false
 
 [rpc_endpoints]
 ethereum-mainnet = "https://mainnet.infura.io/v3/${INFURA_API_KEY}"
-polygon-mainnet = "https://polygon-mainnet.infura.io/v3/${INFURA_API_KEY}" 
-sepolia = "https://sepolia.infura.io/v3/${INFURA_API_KEY}"
-polygon_mumbai = "https://polygon-mumbai.infura.io/v3/${INFURA_API_KEY}"
+arbitrum-mainnet = "https://arbitrum-mainnet.infura.io/v3/${INFURA_API_KEY}"
+celo-mainnet = "https://celo-mainnet.infura.io/v3/${INFURA_API_KEY}"
+base-mainnet = "https://mainnet.base.org"
+ethereum-testnet = "https://sepolia.infura.io/v3/${INFURA_API_KEY}"
+arbitrum-testnet = "https://arbitrum-sepolia.infura.io/v3/${INFURA_API_KEY}"
+celo-testnet = "https://celo-alfajores.infura.io/v3/${INFURA_API_KEY}"
+base-testnet = "https://sepolia.base.org"

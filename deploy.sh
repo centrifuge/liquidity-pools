@@ -1,15 +1,41 @@
 #!/bin/bash
 source .env
 
-if [[ -z "$RPC_URL" ]]; then
-  error_exit "RPC_URL is not defined"
+if [[ -z "$ROUTER" ]]; then
+  ROUTER=""
 fi
-echo "RPC endpoint = $RPC_URL"
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --router|-r)
+      ROUTER="$2"
+      shift 2
+      ;;
+    --networks|-n)
+      networks="$2"
+      shift 2
+      ;;
+    *)
+      echo "Unknown option: $1"
+      exit 1
+      ;;
+  esac
+done
 
 if [[ -z "$ROUTER" ]]; then
-  error_exit "ROUTER is not defined"
+  echo "Please provide the router using the --router or -r flag, or define it in the .env file"
+  exit 1
 fi
-echo "Router = $ROUTER"
+
+case "$ROUTER" in
+  Permissionless|Axelar|Forwarder)
+    echo "Router = $ROUTER"
+    ;;
+  *)
+    echo "Router must be one of Permissionless, Axelar, or Forwarder."
+    exit 1
+    ;;
+esac
 
 if [[ -z "$ADMIN" ]]; then
   error_exit "ADMIN is not defined"
@@ -21,17 +47,9 @@ if [[ -z "$PAUSERS" ]]; then
 fi
 echo "Pausers = $PAUSERS"
 
-if [[ "$1" == "--sphinx" ]]; then
-  npx sphinx propose script/${ROUTER}.s.sol --networks testnets
-  exit 0
+if [[ -z "$networks" ]]; then
+  echo "Please provide 'mainnets', 'testnets', or a network from foundry.toml, using the --networks or -n flag"
+  exit 1
 fi
 
-case "$ROUTER" in
-  Permissionless|Axelar|Forwarder)
-    forge script script/${ROUTER}.s.sol:${ROUTER}Script --optimize --rpc-url $RPC_URL --private-key $PRIVATE_KEY --verify --broadcast --chain-id $CHAIN_ID --etherscan-api-key $ETHERSCAN_KEY $1
-    ;;
-  *)
-    echo "Router should be one of Permissionless, Axelar, Forwarder"
-    exit 1
-    ;;
-esac
+npx sphinx propose script/${ROUTER}.s.sol --networks ${networks} --dry-run

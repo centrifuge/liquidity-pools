@@ -1,0 +1,26 @@
+name: "Release"
+env:
+  SPHINX_API_KEY: ${{ secrets.SPHINX_API_KEY }}
+  INFURA_API_KEY: ${{ secrets.INFURA_API_KEY }}
+
+on:
+  push:
+    tags:
+      - "release-*"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Install dependencies
+        run: yarn --frozen-lockfile
+
+      - name: Install Sphinx Solidity Library
+        run: yarn sphinx install
+      - name: Propose Sphinx Deployment
+        run: npx sphinx propose ./deploy.sh --networks mainnets

@@ -14,13 +14,13 @@ interface PoolManagerLike {
 
 contract FactoryTest is Test {
     uint256 mainnetFork;
-    uint256 polygonFork;
+    uint256 arbitrumFork;
     address root;
 
     function setUp() public {
         if (vm.envOr("FORK_TESTS", false)) {
             mainnetFork = vm.createFork(vm.rpcUrl("ethereum-mainnet"));
-            polygonFork = vm.createFork(vm.rpcUrl("polygon-mainnet"));
+            arbitrumFork = vm.createFork(vm.rpcUrl("arbitrum-mainnet"));
         }
 
         root = address(new Root(address(new Escrow(address(this))), 48 hours, address(this)));
@@ -39,7 +39,7 @@ contract FactoryTest is Test {
                 PoolManagerLike(address(testSetup1.poolManager())).getTrancheToken(poolId, trancheId);
             address root1 = address(testSetup1.root());
 
-            vm.selectFork(polygonFork);
+            vm.selectFork(arbitrumFork);
             BaseTest testSetup2 = new BaseTest{salt: keccak256(abi.encode(vm.envString("DEPLOYMENT_SALT")))}();
             testSetup2.setUp();
             testSetup2.deployLiquidityPool(

@@ -41,7 +41,7 @@ contract ForkTest is Test {
         // Testnet
         // TODO: sepolia currently fails because the admin is missing on the DelayedAdmin
         // Should be redeployed and then re-enabled here
-        // _loadDeployment("testnet", "ethereum-sepolia");
+        // _loadDeployment("testnet", "ethereum-testnet");
     }
 
     function testBaseContractsWiredCorrectly() public {

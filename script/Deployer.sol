@@ -12,7 +12,7 @@ import {DelayedAdmin} from "src/admins/DelayedAdmin.sol";
 import {LiquidityPoolFactory} from "src/factories/LiquidityPoolFactory.sol";
 import {RestrictionManagerFactory} from "src/factories/RestrictionManagerFactory.sol";
 import {TrancheTokenFactory} from "src/factories/TrancheTokenFactory.sol";
-import "@sphinx-labs/contracts/SphinxPlugin.sol";
+import {Sphinx, Network} from "@sphinx-labs/contracts/SphinxPlugin.sol";
 
 import "forge-std/Script.sol";
 
@@ -49,7 +49,8 @@ contract Deployer is Script, Sphinx {
         sphinxConfig.orgId = "clsypbcrw0001zqwy1arndx1t";
         sphinxConfig.projectName = "Liquidity_Pools";
         sphinxConfig.threshold = 1;
-        sphinxConfig.testnets = ["sepolia", "polygon_mumbai"];
+        sphinxConfig.testnets = ["ethereum-testnet", "arbitrum-testnet", "celo-testnet", "base-testnet"];
+        sphinxConfig.mainnets = ["ethereum-mainnet", "arbitrum-mainnet", "celo-mainnet", "base-mainnet"];
     }
 
     function deploy(address deployer) public {
