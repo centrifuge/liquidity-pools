@@ -1,7 +1,7 @@
-name: "Release"
+name: "Deploy"
 env:
   SPHINX_API_KEY: ${{ secrets.SPHINX_API_KEY }}
-  INFURA_API_KEY: ${{ secrets.INFURA_API_KEY }}
+  INFURA_API_KEY: ${{ secrets.ONFINALITY_API_KEY }}
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
       - "release-*"
 
 jobs:
-  release:
+  sphinx-propose:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3

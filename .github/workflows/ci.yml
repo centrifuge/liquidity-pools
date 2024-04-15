@@ -104,7 +104,7 @@ jobs:
           coverage-files: ./lcov.info
           minimum-coverage: 60 # Set coverage threshold.
 
-  sphinx-dry-run:
+  simulate-deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -122,7 +122,7 @@ jobs:
         run: npx sphinx propose script/Axelar.s.sol --dry-run --networks mainnets
         env:
           SPHINX_API_KEY: ${{ secrets.SPHINX_API_KEY }}
-          INFURA_API_KEY: ${{ secrets.INFURA_API_KEY }}
+          INFURA_API_KEY: ${{ secrets.ONFINALITY_API_KEY }}
 
   # slither-analyze:
   #   runs-on: "ubuntu-latest"
