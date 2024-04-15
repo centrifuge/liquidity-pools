@@ -87,4 +87,4 @@ ethereum-mainnet = "https://eth.api.onfinality.io/rpc?apikey=${ONFINALITY_API_KE
 arbitrum-mainnet = "https://arbitrum.api.onfinality.io/rpc?apikey=${ONFINALITY_API_KEY}"
 celo-mainnet = "https://celo.api.onfinality.io/rpc?apikey=${ONFINALITY_API_KEY}"
 base-mainnet = "https://base.api.onfinality.io/rpc?apikey=${ONFINALITY_API_KEY}"
-ethereum-testnet = "https://eth-sepolia.infura.io/v3/${INFURA_API_KEY}"
+ethereum-testnet = "https://eth-sepolia.api.onfinality.io/rpc?apikey=${ONFINALITY_API_KEY}"
