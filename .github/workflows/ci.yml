@@ -122,7 +122,7 @@ jobs:
         run: npx sphinx propose script/Axelar.s.sol --dry-run --networks mainnets
         env:
           SPHINX_API_KEY: ${{ secrets.SPHINX_API_KEY }}
-          INFURA_API_KEY: ${{ secrets.ONFINALITY_API_KEY }}
+          ONFINALITY_API_KEY: ${{ secrets.ONFINALITY_API_KEY }}
 
   # slither-analyze:
   #   runs-on: "ubuntu-latest"
