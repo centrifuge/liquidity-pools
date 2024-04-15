@@ -83,11 +83,8 @@ fail_on_revert = false
   ignore = ["test/*.sol"]
 
 [rpc_endpoints]
-ethereum-mainnet = "https://mainnet.infura.io/v3/${INFURA_API_KEY}"
-arbitrum-mainnet = "https://arbitrum-mainnet.infura.io/v3/${INFURA_API_KEY}"
-celo-mainnet = "https://celo-mainnet.infura.io/v3/${INFURA_API_KEY}"
-base-mainnet = "https://mainnet.base.org"
-ethereum-testnet = "https://sepolia.infura.io/v3/${INFURA_API_KEY}"
-arbitrum-testnet = "https://arbitrum-sepolia.infura.io/v3/${INFURA_API_KEY}"
-celo-testnet = "https://celo-alfajores.infura.io/v3/${INFURA_API_KEY}"
-base-testnet = "https://sepolia.base.org"
+ethereum-mainnet = "https://eth.api.onfinality.io/rpc?apikey=${ONFINALITY_API_KEY}"
+arbitrum-mainnet = "https://arbitrum.api.onfinality.io/rpc?apikey=${ONFINALITY_API_KEY}"
+celo-mainnet = "https://celo.api.onfinality.io/rpc?apikey=${ONFINALITY_API_KEY}"
+base-mainnet = "https://base.api.onfinality.io/rpc?apikey=${ONFINALITY_API_KEY}"
+ethereum-testnet = "https://eth-sepolia.infura.io/v3/${INFURA_API_KEY}"

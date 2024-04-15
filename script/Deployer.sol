@@ -49,7 +49,7 @@ contract Deployer is Script, Sphinx {
         sphinxConfig.orgId = "clsypbcrw0001zqwy1arndx1t";
         sphinxConfig.projectName = "Liquidity_Pools";
         sphinxConfig.threshold = 1;
-        sphinxConfig.testnets = ["ethereum-testnet", "arbitrum-testnet", "celo-testnet", "base-testnet"];
+        sphinxConfig.testnets = ["ethereum-testnet"];
         sphinxConfig.mainnets = ["ethereum-mainnet", "arbitrum-mainnet", "celo-mainnet", "base-mainnet"];
     }
 
