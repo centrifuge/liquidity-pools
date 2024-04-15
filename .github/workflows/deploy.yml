@@ -23,4 +23,4 @@ jobs:
       - name: Install Sphinx Solidity Library
         run: yarn sphinx install
       - name: Propose Sphinx Deployment
-        run: npx sphinx propose ./deploy.sh --networks mainnets
+        run: npx sphinx propose script/Axelar.s.sol --networks mainnets

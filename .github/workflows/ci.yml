@@ -119,7 +119,7 @@ jobs:
         run: yarn sphinx install
 
       - name: Dry Run
-        run: npx sphinx propose ./deploy.sh --dry-run --networks mainnets
+        run: npx sphinx propose script/Axelar.s.sol --dry-run --networks mainnets
         env:
           SPHINX_API_KEY: ${{ secrets.SPHINX_API_KEY }}
           INFURA_API_KEY: ${{ secrets.INFURA_API_KEY }}
