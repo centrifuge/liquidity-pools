@@ -43,7 +43,7 @@ forge test
 
 ## Deploying
 
-#### Configure
+#### Setup
 
 Liquidity Pools uses [Sphinx](https://sphinx.dev/) for crosschain deployments. To deploy the contracts:
 
@@ -58,7 +58,9 @@ yarn install
 yarn sphinx install
 ```
 
-You can configure the deployment in script/Deployer.sol and foundry.toml:
+#### Configure
+
+Cconfigure the deployment in script/Deployer.sol:
 
 ```solidity:script/Deployer.sol
 function configureSphinx() public override {
@@ -71,6 +73,8 @@ function configureSphinx() public override {
 }
 ```
 
+and foundry.toml:
+
 ```toml:foundry.toml
 [rpc_endpoints]
 ethereum-mainnet = "https://eth.api.onfinality.io/rpc?apikey=${ONFINALITY_API_KEY}"
@@ -82,7 +86,7 @@ ethereum-testnet = "https://eth-sepolia.api.onfinality.io/rpc?apikey=${ONFINALIT
 
 #### Propose
 
-Sphinx first proposes deployments, which then need to be approved by a gnosis safe member before they're executed onchain. The safe is automatically generated and assigned to you on account creation at [sphinx.dev](https://sphinx.dev/).
+Sphinx deploys by first proposing deployments, which then need to be approved by a gnosis safe member before they're executed onchain. The safe is automatically generated and assigned to you on account creation at [sphinx.dev](https://sphinx.dev/).
 
 You can propose via CI by pushing a release tag:
 

@@ -156,3 +156,4 @@ jobs:
   #     - name: "Add Slither summary"
   #       run: |
   #         echo "## Slither result" >> $GITHUB_STEP_SUMMARY
+  #         echo "✅ Uploaded to GitHub code scanning" >> $GITHUB_STEP_SUMMARY
