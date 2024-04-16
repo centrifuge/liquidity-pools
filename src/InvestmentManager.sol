@@ -45,7 +45,7 @@ interface PoolManagerLike {
     function getTrancheTokenPrice(uint64 poolId, bytes16 trancheId, address currencyAddress)
         external
         view
-        returns (uint256 price, uint64 computedAt);
+        returns (uint128 price, uint64 computedAt);
     function getLiquidityPool(uint64 poolId, bytes16 trancheId, uint128 currencyId) external view returns (address);
     function isAllowedAsInvestmentCurrency(uint64 poolId, address currencyAddress) external view returns (bool);
 }
@@ -469,7 +469,7 @@ contract InvestmentManager is Auth {
     // --- View functions ---
     function convertToShares(address liquidityPool, uint256 _assets) public view returns (uint256 shares) {
         LiquidityPoolLike liquidityPool_ = LiquidityPoolLike(liquidityPool);
-        (uint256 latestPrice,) = poolManager.getTrancheTokenPrice(
+        (uint128 latestPrice,) = poolManager.getTrancheTokenPrice(
             liquidityPool_.poolId(), liquidityPool_.trancheId(), liquidityPool_.asset()
         );
         shares = uint256(_calculateTrancheTokenAmount(_assets.toUint128(), liquidityPool, latestPrice));
@@ -477,7 +477,7 @@ contract InvestmentManager is Auth {
 
     function convertToAssets(address liquidityPool, uint256 _shares) public view returns (uint256 assets) {
         LiquidityPoolLike liquidityPool_ = LiquidityPoolLike(liquidityPool);
-        (uint256 latestPrice,) = poolManager.getTrancheTokenPrice(
+        (uint128 latestPrice,) = poolManager.getTrancheTokenPrice(
             liquidityPool_.poolId(), liquidityPool_.trancheId(), liquidityPool_.asset()
         );
         assets = uint256(_calculateCurrencyAmount(_shares.toUint128(), liquidityPool, latestPrice));
