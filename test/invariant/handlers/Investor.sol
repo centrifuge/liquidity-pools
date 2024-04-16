@@ -85,7 +85,7 @@ contract InvestorHandler is BaseHandler {
         uint256 amount_ = bound(amount, 0, liquidityPool.maxDeposit(currentInvestor));
         if (amount_ == 0) return;
 
-        liquidityPool.deposit(amount_, currentInvestor);
+        liquidityPool.deposit(amount_, currentInvestor, address(this));
     }
 
     function mint(uint256 investorSeed, uint128 amount) public useRandomInvestor(investorSeed) {

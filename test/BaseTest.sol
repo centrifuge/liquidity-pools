@@ -185,7 +185,7 @@ contract BaseTest is Deployer, Test {
         );
 
         if (claimDeposit) {
-           lPool.deposit(amount, _investor); // claim the trancheTokens
+           lPool.deposit(amount, _investor, self); // claim the trancheTokens
         }
         vm.stopPrank();
     }

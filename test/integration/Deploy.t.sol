@@ -142,7 +142,7 @@ contract DeployTest is Test, Deployer {
         assertEq(erc20.balanceOf(self), 0);
 
         uint256 div = 2;
-        lPool.deposit(amount / div, self);
+        lPool.deposit(amount / div, self, self);
 
         assertEq(trancheToken.balanceOf(self), trancheTokensPayout / div);
         assertEq(trancheToken.balanceOf(address(escrow)), trancheTokensPayout - trancheTokensPayout / div);

@@ -119,7 +119,7 @@ interface IERC7575 is IERC165 {
      *
      * NOTE: most implementations will require pre-approval of the Vault with the Vault’s underlying asset token.
      */
-    function deposit(uint256 assets, address receiver) external returns (uint256 shares);
+    function deposit(uint256 assets, address receiver, address owner) external returns (uint256 shares);
 
     /**
      * @dev Returns the maximum amount of the Vault shares that can be minted for the receiver, through a mint call.

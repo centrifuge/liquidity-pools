@@ -56,6 +56,32 @@ contract LiquidityPoolTest is BaseTest {
         lPool.file("random", self);
     }
 
+    //Endorsements
+    function testEndorseVeto() public {
+        address lPool_ = deploySimplePool();
+        LiquidityPool lPool = LiquidityPool(lPool_);
+
+        // endorse
+        address router = makeAddr("router");
+        vm.expectRevert(bytes("Auth/not-authorized")); // fail no auth permissions
+        lPool.endorse(router);
+
+        root.relyContract(lPool_, self);
+        lPool.endorse(router);
+        assertEq(lPool.endorsements(router), 1);
+        assertEq(lPool.isEndorsed(router), true);
+
+        // veto
+        root.denyContract(lPool_, self);
+        vm.expectRevert(bytes("Auth/not-authorized")); // fail no auth permissions
+        lPool.veto(router);
+
+        root.relyContract(lPool_, self);
+        lPool.veto(router);
+        assertEq(lPool.endorsements(router), 0);
+        assertEq(lPool.isEndorsed(router), false);
+    }
+
     // --- uint128 type checks ---
     // Make sure all function calls would fail when overflow uint128
     function testAssertUint128(uint256 amount) public {
@@ -70,7 +96,7 @@ contract LiquidityPoolTest is BaseTest {
         lPool.convertToAssets(amount);
 
         vm.expectRevert(bytes("MathLib/uint128-overflow"));
-        lPool.deposit(amount, randomUser);
+        lPool.deposit(amount, randomUser, self);
 
         vm.expectRevert(bytes("MathLib/uint128-overflow"));
         lPool.mint(amount, randomUser);

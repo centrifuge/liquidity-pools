@@ -94,9 +94,14 @@ contract DepositTest is BaseTest {
         assertEq(lPool.maxMint(self), 0);
         centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), self, type(uint64).max);
 
+        vm.assume(randomUser != self);
         // deposit 50% of the amount
-        lPool.deposit(amount / 2, self); // mint half the amount
+        vm.startPrank(randomUser); // try to claim deposit on behalt of user and set the wrong user as receiver
+        vm.expectRevert(bytes("LiquidityPool/not-owner-or-endorsed"));
+        lPool.deposit(amount / 2, randomUser, self);
+        vm.stopPrank();
 
+        lPool.deposit(amount / 2, self, self); // deposit half the amount
         // Allow 2 difference because of rounding
         assertApproxEqAbs(trancheToken.balanceOf(self), trancheTokensPayout / 2, 2);
         assertApproxEqAbs(trancheToken.balanceOf(address(escrow)), trancheTokensPayout - trancheTokensPayout / 2, 2);
@@ -113,7 +118,7 @@ contract DepositTest is BaseTest {
         vm.expectRevert(bytes("InvestmentManager/exceeds-deposit-limits"));
         lPool.mint(1, self);
         vm.expectRevert(bytes("InvestmentManager/exceeds-deposit-limits"));
-        lPool.deposit(2, self);
+        lPool.deposit(2, self, self);
 
         // remainder is rounding difference
         assertTrue(lPool.maxDeposit(self) <= amount * 0.01e18);
@@ -216,7 +221,7 @@ contract DepositTest is BaseTest {
         while (lPool.maxDeposit(self) > 0) {
             uint256 randomDeposit = random(lPool.maxDeposit(self), 1);
 
-            try lPool.deposit(randomDeposit, self) {
+            try lPool.deposit(randomDeposit, self, self) {
                 if (lPool.maxDeposit(self) == 0 && lPool.maxMint(self) > 0) {
                     // If you cannot deposit anymore because the 1 wei remaining is rounded down,
                     // you should mint the remainder instead.
@@ -325,7 +330,7 @@ contract DepositTest is BaseTest {
 
         // deposit 1/2 funds to receiver
         vm.expectRevert(bytes("RestrictionManager/destination-not-a-member"));
-        lPool.deposit(amount / 2, receiver); // mint half the amount
+        lPool.deposit(amount / 2, receiver, address(this)); // mint half the amount
 
         vm.expectRevert(bytes("RestrictionManager/destination-not-a-member"));
         lPool.mint(amount / 2, receiver); // mint half the amount
@@ -334,8 +339,70 @@ contract DepositTest is BaseTest {
             // member
 
         // success
-        lPool.deposit(amount / 2, receiver); // mint half the amount
+        lPool.deposit(amount / 2, receiver, address(this)); // mint half the amount
         lPool.mint(lPool.maxMint(self), receiver); // mint half the amount
+
+        assertApproxEqAbs(trancheToken.balanceOf(receiver), trancheTokensPayout, 1);
+        assertApproxEqAbs(trancheToken.balanceOf(receiver), trancheTokensPayout, 1);
+        assertApproxEqAbs(trancheToken.balanceOf(address(escrow)), 0, 1);
+        assertApproxEqAbs(erc20.balanceOf(address(escrow)), amount, 1);
+    }
+
+    function testDepositWithEndorsement(uint256 amount) public {
+        // If lower than 4 or odd, rounding down can lead to not receiving any tokens
+        amount = uint128(bound(amount, 4, MAX_UINT128));
+        vm.assume(amount % 2 == 0);
+
+        uint128 price = 2 * 10 ** 18;
+        address lPool_ = deploySimplePool();
+        address receiver = makeAddr("receiver");
+        LiquidityPool lPool = LiquidityPool(lPool_);
+        TrancheTokenLike trancheToken = TrancheTokenLike(address(lPool.share()));
+
+        centrifugeChain.updateTrancheTokenPrice(
+            lPool.poolId(), lPool.trancheId(), defaultCurrencyId, price, uint64(block.timestamp)
+        );
+
+        erc20.mint(self, amount);
+        centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), self, type(uint64).max); // add user as member
+        erc20.approve(lPool_, amount); // add allowance
+        lPool.requestDeposit(amount, self, self, "");
+
+        // trigger executed collectInvest
+        uint128 _currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
+        uint128 trancheTokensPayout = uint128(amount * 10 ** 18 / price); // trancheTokenPrice = 2$
+        assertApproxEqAbs(trancheTokensPayout, amount / 2, 2);
+        centrifugeChain.isExecutedCollectInvest(
+            lPool.poolId(),
+            lPool.trancheId(),
+            bytes32(bytes20(self)),
+            _currencyId,
+            uint128(amount),
+            trancheTokensPayout,
+            uint128(amount)
+        );
+
+        // assert deposit & mint values adjusted
+        assertEq(lPool.maxMint(self), trancheTokensPayout); // max deposit
+        assertEq(lPool.maxDeposit(self), amount); // max deposit
+        // assert tranche tokens minted
+        assertEq(trancheToken.balanceOf(address(escrow)), trancheTokensPayout);
+
+        centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), receiver, type(uint64).max); // add receiver
+
+        address router = makeAddr("router");
+
+        vm.startPrank(router);
+        vm.expectRevert(bytes("LiquidityPool/not-owner-or-endorsed")); // fail without endorsement
+        lPool.deposit(amount, receiver, address(this));
+        vm.stopPrank();
+
+        // endorse router on LiquidityPool
+        root.relyContract(lPool_, self);
+        lPool.endorse(router);
+        vm.startPrank(router); // try to claim deposit on behalt of user and set the wrong user as receiver
+        lPool.deposit(amount, receiver, address(this));
+        vm.stopPrank();
 
         assertApproxEqAbs(trancheToken.balanceOf(receiver), trancheTokensPayout, 1);
         assertApproxEqAbs(trancheToken.balanceOf(receiver), trancheTokensPayout, 1);
@@ -375,7 +442,7 @@ contract DepositTest is BaseTest {
         lPool.requestDepositWithPermit(amount, vm.addr(0xABCD), "", block.timestamp, v, r, s);
         vm.stopPrank();
 
-        // investor still able to requestDepositWithPermit
+        // investor still able to WithPermit
         vm.prank(vm.addr(0xABCD));
         lPool.requestDepositWithPermit(amount, vm.addr(0xABCD), "", block.timestamp, v, r, s);
 

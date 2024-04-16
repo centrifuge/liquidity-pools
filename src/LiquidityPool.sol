@@ -70,8 +70,13 @@ contract LiquidityPool is Auth, IERC7540 {
     /// @dev    Requests for Centrifuge pool are non-transferable and all have ID = 0
     uint256 constant REQUEST_ID = 0;
 
+    /// @notice Routers that are allowed to claim withdrawels / redemptions on behalf of investors
+    mapping(address => uint256) public endorsements;
+
     // --- Events ---
     event File(bytes32 indexed what, address data);
+    event Endorse(address indexed user);
+    event Veto(address indexed user);
     event CancelDepositRequest(address indexed sender);
     event CancelRedeemRequest(address indexed sender);
 
@@ -92,6 +97,22 @@ contract LiquidityPool is Auth, IERC7540 {
         if (what == "manager") manager = ManagerLike(data);
         else revert("LiquidityPool/file-unrecognized-param");
         emit File(what, data);
+    }
+
+    /// @dev add endorsement
+    function endorse(address user) external auth {
+        endorsements[user] = 1;
+        emit Endorse(user);
+    }
+
+    /// @dev remove endorsement
+    function veto(address user) external auth {
+        endorsements[user] = 0;
+        emit Veto(user);
+    }
+
+    function isEndorsed(address user) public view returns (bool) {
+        return endorsements[user] == 1;
     }
 
     function recoverTokens(address token, address to, uint256 amount) external auth {
@@ -258,9 +279,10 @@ contract LiquidityPool is Auth, IERC7540 {
     }
 
     /// @inheritdoc IERC7575
-    function deposit(uint256 assets, address receiver) external returns (uint256 shares) {
-        shares = manager.deposit(address(this), assets, receiver, msg.sender);
-        emit Deposit(msg.sender, receiver, assets, shares);
+    function deposit(uint256 assets, address receiver, address owner) external returns (uint256 shares) {
+        require(msg.sender == owner || isEndorsed(msg.sender), "LiquidityPool/not-owner-or-endorsed");
+        shares = manager.deposit(address(this), assets, receiver, owner);
+        emit Deposit(owner, receiver, assets, shares);
     }
 
     /// @inheritdoc IERC7575
@@ -295,7 +317,7 @@ contract LiquidityPool is Auth, IERC7540 {
     /// @inheritdoc IERC7575
     /// @notice     DOES NOT support owner != msg.sender since shares are already transferred on requestRedeem
     function redeem(uint256 shares, address receiver, address owner) external returns (uint256 assets) {
-        require(msg.sender == owner, "LiquidityPool/not-the-owner");
+        require(msg.sender == owner || isEndorsed(msg.sender), "LiquidityPool/not-owner-or-endorsed");
         assets = manager.redeem(address(this), shares, receiver, owner);
         emit Withdraw(msg.sender, receiver, owner, assets, shares);
     }
