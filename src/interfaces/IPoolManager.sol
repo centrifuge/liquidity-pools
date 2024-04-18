@@ -35,7 +35,7 @@ struct UndeployedTranche {
     uint8 restrictionSet;
 }
 
-contract IPoolManager {
+interface IPoolManager {
     event File(bytes32 indexed what, address data);
     event AddCurrency(uint128 indexed currencyId, address indexed currency);
     event AddPool(uint64 indexed poolId);
@@ -65,21 +65,6 @@ contract IPoolManager {
     );
 
     /// @notice TODO
-    function MIN_DECIMALS() external view returns (uint8);
-
-    /// @notice TODO
-    function MAX_DECIMALS() external view returns (uint8);
-
-    // /// @notice TODO
-    // mapping(uint64 poolId => Pool) pools;
-    // /// @notice TODO
-    // mapping(uint128 currencyId => address) currencyIdToAddress;
-    // /// @notice TODO
-    // mapping(address => uint128 currencyId) currencyAddressToId;
-    // /// @notice TODO
-    // mapping(uint64 poolId => mapping(bytes16 => UndeployedTranche)) undeployedTranches;
-
-    /// @notice TODO
     function file(bytes32 what, address data) external;
 
     /// @notice TODO
@@ -92,4 +77,103 @@ contract IPoolManager {
         bytes32 destinationAddress,
         uint128 amount
     ) external;
+
+    /// @notice TODO
+    function transferTrancheTokensToEVM(
+        uint64 poolId,
+        bytes16 trancheId,
+        uint64 destinationChainId,
+        address destinationAddress,
+        uint128 amount
+    ) external;
+
+    /// @notice    New pool details from an existing Centrifuge pool are added.
+    /// @dev       The function can only be executed by the gateway contract.
+    function addPool(uint64 poolId) external;
+
+    /// @notice     Centrifuge pools can support multiple currencies for investing. this function adds
+    ///             a new supported currency to the pool details.
+    ///             Adding new currencies allow the creation of new liquidity pools for the underlying Centrifuge pool.
+    /// @dev        The function can only be executed by the gateway contract.
+    function allowInvestmentCurrency(uint64 poolId, uint128 currencyId) external;
+
+    /// @notice TODO
+    function disallowInvestmentCurrency(uint64 poolId, uint128 currencyId) external;
+
+    /// @notice     New tranche details from an existing Centrifuge pool are added.
+    /// @dev        The function can only be executed by the gateway contract.
+    function addTranche(
+        uint64 poolId,
+        bytes16 trancheId,
+        string memory tokenName,
+        string memory tokenSymbol,
+        uint8 decimals,
+        uint8 restrictionSet
+    ) external;
+
+    /// @notice TODO
+    function updateTrancheTokenMetadata(
+        uint64 poolId,
+        bytes16 trancheId,
+        string memory tokenName,
+        string memory tokenSymbol
+    ) external;
+
+    /// @notice TODO
+    function updateTrancheTokenPrice(
+        uint64 poolId,
+        bytes16 trancheId,
+        uint128 currencyId,
+        uint128 price,
+        uint64 computedAt
+    ) external;
+
+    /// @notice TODO
+    function updateMember(uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) external;
+
+    /// @notice TODO
+    function freeze(uint64 poolId, bytes16 trancheId, address user) external;
+
+    /// @notice TODO
+    function unfreeze(uint64 poolId, bytes16 trancheId, address user) external;
+
+    /// @notice A global chain agnostic currency index is maintained on Centrifuge. This function maps
+    ///         a currency from the Centrifuge index to its corresponding address on the evm chain.
+    ///         The chain agnostic currency id has to be used to pass currency information to the Centrifuge.
+    /// @dev    This function can only be executed by the gateway contract.
+    function addCurrency(uint128 currencyId, address currency) external;
+
+    /// @notice TODO
+    function handleTransfer(uint128 currencyId, address recipient, uint128 amount) external;
+
+    /// @notice TODO
+    function handleTransferTrancheTokens(uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 amount)
+        external;
+
+    /// @notice TODO
+    function deployTranche(uint64 poolId, bytes16 trancheId) external returns (address);
+
+    /// @notice TODO
+    function deployLiquidityPool(uint64 poolId, bytes16 trancheId, address currency) external returns (address);
+
+    /// @notice TODO
+    function removeLiquidityPool(uint64 poolId, bytes16 trancheId, address currency) external;
+
+    /// @notice TODO
+    function getTrancheToken(uint64 poolId, bytes16 trancheId) external view returns (address);
+
+    /// @notice TODO
+    function getLiquidityPool(uint64 poolId, bytes16 trancheId, uint128 currencyId) external view returns (address);
+
+    /// @notice TODO
+    function getLiquidityPool(uint64 poolId, bytes16 trancheId, address currency) external view returns (address);
+
+    /// @notice TODO
+    function getTrancheTokenPrice(uint64 poolId, bytes16 trancheId, address currency)
+        external
+        view
+        returns (uint256 price, uint64 computedAt);
+
+    /// @notice TODO
+    function isAllowedAsInvestmentCurrency(uint64 poolId, address currency) external view returns (bool);
 }
