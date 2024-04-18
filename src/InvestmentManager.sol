@@ -397,8 +397,6 @@ contract InvestmentManager is Auth {
             state.pendingDepositRequest > decreasedInvestOrder ? state.pendingDepositRequest - decreasedInvestOrder : 0;
 
         if (state.pendingDepositRequest == 0) state.pendingCancelDepositRequest = false;
-
-        LiquidityPoolLike(liquidityPool).emitRedeemClaimable(user, currencyPayout, currencyPayout);
     }
 
     /// @dev Compared to handleExecutedDecreaseInvestOrder, there is no
@@ -420,8 +418,6 @@ contract InvestmentManager is Auth {
             state.pendingRedeemRequest > decreasedRedeemOrder ? state.pendingRedeemRequest - decreasedRedeemOrder : 0;
 
         if (state.pendingRedeemRequest == 0) state.pendingCancelRedeemRequest = false;
-
-        LiquidityPoolLike(liquidityPool).emitRedeemClaimable(user, trancheTokenPayout, trancheTokenPayout);
     }
 
     function handleTriggerIncreaseRedeemOrder(
