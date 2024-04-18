@@ -43,7 +43,7 @@ contract RedeemTest is BaseTest {
         uint128 _currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
         uint128 currencyPayout = uint128((amount * 10 ** 18) / defaultPrice);
         centrifugeChain.isExecutedCollectRedeem(
-            lPool.poolId(), lPool.trancheId(), bytes32(bytes20(self)), _currencyId, currencyPayout, uint128(amount), 0
+            lPool.poolId(), lPool.trancheId(), bytes32(bytes20(self)), _currencyId, currencyPayout, uint128(amount)
         );
 
         // assert withdraw & redeem values adjusted
@@ -52,27 +52,17 @@ contract RedeemTest is BaseTest {
         assertEq(lPool.pendingRedeemRequest(0, self), 0);
         assertEq(lPool.claimableRedeemRequest(0, self), amount);
         assertEq(trancheToken.balanceOf(address(escrow)), 0);
-        assertEq(erc20.balanceOf(address(userEscrow)), currencyPayout);
+        assertEq(erc20.balanceOf(address(escrow)), currencyPayout);
 
-        // success
+        // can redeem to self
         lPool.redeem(amount / 2, self, self); // redeem half the amount to own wallet
 
-        // fail -> investor has no approval to receive funds
-        vm.expectRevert(bytes("UserEscrow/receiver-has-no-allowance"));
-        lPool.redeem(amount / 2, investor, self); // redeem half the amount to another wallet
-
-        // fail -> receiver needs to have max approval
-        erc20.approve(investor, lPool.maxRedeem(self));
-        vm.expectRevert(bytes("UserEscrow/receiver-has-no-allowance"));
-        lPool.redeem(amount / 2, investor, self); // redeem half the amount to investor wallet
-
-        // success
-        erc20.approve(investor, type(uint256).max);
+        // can also redeem to another user
         lPool.redeem(amount / 2, investor, self); // redeem half the amount to investor wallet
 
         assertEq(trancheToken.balanceOf(self), 0);
         assertTrue(trancheToken.balanceOf(address(escrow)) <= 1);
-        assertTrue(erc20.balanceOf(address(userEscrow)) <= 1);
+        assertTrue(erc20.balanceOf(address(escrow)) <= 1);
 
         assertApproxEqAbs(erc20.balanceOf(self), (amount / 2), 1);
         assertApproxEqAbs(erc20.balanceOf(investor), (amount / 2), 1);
@@ -100,39 +90,29 @@ contract RedeemTest is BaseTest {
 
         lPool.requestRedeem(amount, address(this), address(this), "");
         assertEq(trancheToken.balanceOf(address(escrow)), amount);
-        assertEq(erc20.balanceOf(address(userEscrow)), 0);
         assertGt(lPool.pendingRedeemRequest(0, self), 0);
 
         // trigger executed collectRedeem
         uint128 _currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
         uint128 currencyPayout = uint128((amount * 10 ** 18) / defaultPrice);
         centrifugeChain.isExecutedCollectRedeem(
-            lPool.poolId(), lPool.trancheId(), bytes32(bytes20(self)), _currencyId, currencyPayout, uint128(amount), 0
+            lPool.poolId(), lPool.trancheId(), bytes32(bytes20(self)), _currencyId, currencyPayout, uint128(amount)
         );
 
         // assert withdraw & redeem values adjusted
         assertEq(lPool.maxWithdraw(self), currencyPayout); // max deposit
         assertEq(lPool.maxRedeem(self), amount); // max deposit
         assertEq(trancheToken.balanceOf(address(escrow)), 0);
-        assertEq(erc20.balanceOf(address(userEscrow)), currencyPayout);
+        assertEq(erc20.balanceOf(address(escrow)), currencyPayout);
 
-        lPool.withdraw(amount / 2, self, self); // withdraw half the amount
+        // can redeem to self
+        lPool.withdraw(amount / 2, self, self); // redeem half the amount to own wallet
 
-        // fail -> investor has no approval to receive funds
-        vm.expectRevert(bytes("UserEscrow/receiver-has-no-allowance"));
-        lPool.withdraw(amount / 2, investor, self); // redeem half the amount to another wallet
-
-        // fail -> receiver needs to have max approval
-        erc20.approve(investor, lPool.maxWithdraw(self));
-        vm.expectRevert(bytes("UserEscrow/receiver-has-no-allowance"));
-        lPool.withdraw(amount / 2, investor, self); // redeem half the amount to investor wallet
-
-        // success
-        erc20.approve(investor, type(uint256).max);
+        // can also withdraw to another user
         lPool.withdraw(amount / 2, investor, self); // redeem half the amount to investor wallet
 
         assertTrue(trancheToken.balanceOf(self) <= 1);
-        assertTrue(erc20.balanceOf(address(userEscrow)) <= 1);
+        assertTrue(erc20.balanceOf(address(escrow)) <= 1);
         assertApproxEqAbs(erc20.balanceOf(self), currencyPayout / 2, 1);
         assertApproxEqAbs(erc20.balanceOf(investor), currencyPayout / 2, 1);
         assertTrue(lPool.maxRedeem(self) <= 1);
@@ -162,8 +142,7 @@ contract RedeemTest is BaseTest {
             bytes32(bytes20(investor)),
             defaultCurrencyId,
             uint128(amount),
-            uint128(tokenAmount),
-            0
+            uint128(tokenAmount)
         );
 
         assertEq(lPool.maxRedeem(investor), tokenAmount);
@@ -207,11 +186,11 @@ contract RedeemTest is BaseTest {
         centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), self, uint64(block.timestamp));
         vm.warp(block.timestamp + 1);
         vm.expectRevert(bytes("InvestmentManager/transfer-not-allowed"));
-        lPool.cancelRedeemRequest();
+        lPool.cancelRedeemRequest(0, self);
         centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), self, type(uint64).max);
 
         // check message was send out to centchain
-        lPool.cancelRedeemRequest();
+        lPool.cancelRedeemRequest(0, self);
         bytes memory cancelOrderMessage = abi.encodePacked(
             uint8(MessagesLib.Call.CancelRedeemOrder),
             lPool.poolId(),
@@ -225,19 +204,18 @@ contract RedeemTest is BaseTest {
 
         // Cannot cancel twice
         vm.expectRevert(bytes("InvestmentManager/cancellation-is-pending"));
-        lPool.cancelRedeemRequest();
+        lPool.cancelRedeemRequest(0, self);
 
         vm.expectRevert(bytes("InvestmentManager/cancellation-is-pending"));
         lPool.requestRedeem(amount, address(this), address(this), "");
 
         centrifugeChain.isExecutedDecreaseRedeemOrder(
-            lPool.poolId(), lPool.trancheId(), self.toBytes32(), defaultCurrencyId, uint128(amount), 0
+            lPool.poolId(), lPool.trancheId(), self.toBytes32(), defaultCurrencyId, uint128(amount), uint128(amount)
         );
 
         assertEq(trancheToken.balanceOf(address(escrow)), amount);
         assertEq(trancheToken.balanceOf(self), amount);
-        assertEq(lPool.maxDeposit(self), amount);
-        assertEq(lPool.maxMint(self), amount);
+        assertEq(lPool.claimableCancelRedeemRequest(0, self), amount);
         assertEq(lPool.pendingCancelRedeemRequest(0, self), false);
 
         // After cancellation is executed, new request can be submitted
@@ -289,12 +267,11 @@ contract RedeemTest is BaseTest {
             bytes32(bytes20(investor)),
             defaultCurrencyId,
             uint128(amount),
-            uint128(amount),
             uint128(amount)
         );
 
         assertApproxEqAbs(trancheToken.balanceOf(address(escrow)), 0, 1);
-        assertApproxEqAbs(erc20.balanceOf(address(userEscrow)), amount, 1);
+        assertApproxEqAbs(erc20.balanceOf(address(escrow)), amount, 1);
         vm.prank(investor);
         lPool.redeem(amount, investor, investor);
         assertApproxEqAbs(erc20.balanceOf(investor), investorBalanceBefore + amount, 1);
@@ -341,12 +318,11 @@ contract RedeemTest is BaseTest {
             bytes32(bytes20(investor)),
             defaultCurrencyId,
             uint128(amount),
-            uint128(amount),
             uint128(amount)
         );
 
         assertApproxEqAbs(trancheToken.balanceOf(address(escrow)), 0, 1);
-        assertApproxEqAbs(erc20.balanceOf(address(userEscrow)), amount, 1);
+        assertApproxEqAbs(erc20.balanceOf(address(escrow)), amount, 1);
         vm.prank(investor);
         lPool.redeem(amount, investor, investor);
 
@@ -377,10 +353,16 @@ contract RedeemTest is BaseTest {
 
         uint128 trancheTokenPayout = 100000000;
         centrifugeChain.isExecutedCollectInvest(
-            poolId, trancheId, bytes32(bytes20(self)), _currencyId, uint128(investmentAmount), trancheTokenPayout, 0
+            poolId,
+            trancheId,
+            bytes32(bytes20(self)),
+            _currencyId,
+            uint128(investmentAmount),
+            trancheTokenPayout,
+            trancheTokenPayout
         );
 
-        (, uint256 depositPrice,,,,,,,) = investmentManager.investments(address(lPool), self);
+        (, uint256 depositPrice,,,,,,,,,) = investmentManager.investments(address(lPool), self);
         assertEq(depositPrice, 1000000000000000000);
 
         // assert deposit & mint values adjusted
@@ -402,16 +384,10 @@ contract RedeemTest is BaseTest {
         currency.mint(address(escrow), currencyPayout * 2 - investmentAmount);
 
         centrifugeChain.isExecutedCollectRedeem(
-            poolId,
-            trancheId,
-            bytes32(bytes20(self)),
-            _currencyId,
-            currencyPayout,
-            trancheTokenPayout / 2,
-            trancheTokenPayout / 2
+            poolId, trancheId, bytes32(bytes20(self)), _currencyId, currencyPayout, trancheTokenPayout / 2
         );
 
-        (,,, uint256 redeemPrice,,,,,) = investmentManager.investments(address(lPool), self);
+        (,,, uint256 redeemPrice,,,,,,,) = investmentManager.investments(address(lPool), self);
         assertEq(redeemPrice, 1500000000000000000);
 
         // trigger second executed collectRedeem at a price of 1.0
@@ -419,10 +395,10 @@ contract RedeemTest is BaseTest {
         currencyPayout = 50000000; // 50*10**6
 
         centrifugeChain.isExecutedCollectRedeem(
-            poolId, trancheId, bytes32(bytes20(self)), _currencyId, currencyPayout, trancheTokenPayout / 2, 0
+            poolId, trancheId, bytes32(bytes20(self)), _currencyId, currencyPayout, trancheTokenPayout / 2
         );
 
-        (,,, redeemPrice,,,,,) = investmentManager.investments(address(lPool), self);
+        (,,, redeemPrice,,,,,,,) = investmentManager.investments(address(lPool), self);
         assertEq(redeemPrice, 1250000000000000000);
     }
 
@@ -442,27 +418,21 @@ contract RedeemTest is BaseTest {
         uint128 firstCurrencyPayout = 27500000; // (25000000000000000000/10**18) * 10**6 * 1.1
 
         centrifugeChain.isExecutedCollectRedeem(
-            poolId,
-            trancheId,
-            bytes32(bytes20(self)),
-            currencyId,
-            firstCurrencyPayout,
-            firstTrancheTokenRedeem,
-            secondTrancheTokenRedeem
+            poolId, trancheId, bytes32(bytes20(self)), currencyId, firstCurrencyPayout, firstTrancheTokenRedeem
         );
 
         assertEq(lPool.maxRedeem(self), firstTrancheTokenRedeem);
 
-        (,,, uint256 redeemPrice,,,,,) = investmentManager.investments(address(lPool), self);
+        (,,, uint256 redeemPrice,,,,,,,) = investmentManager.investments(address(lPool), self);
         assertEq(redeemPrice, 1100000000000000000);
 
         // second trigger executed collectRedeem of the second 25 trancheTokens at a price of 1.3
         uint128 secondCurrencyPayout = 32500000; // (25000000000000000000/10**18) * 10**6 * 1.3
         centrifugeChain.isExecutedCollectRedeem(
-            poolId, trancheId, bytes32(bytes20(self)), currencyId, secondCurrencyPayout, secondTrancheTokenRedeem, 0
+            poolId, trancheId, bytes32(bytes20(self)), currencyId, secondCurrencyPayout, secondTrancheTokenRedeem
         );
 
-        (,,, redeemPrice,,,,,) = investmentManager.investments(address(lPool), self);
+        (,,, redeemPrice,,,,,,,) = investmentManager.investments(address(lPool), self);
         assertEq(redeemPrice, 1200000000000000000);
 
         assertApproxEqAbs(lPool.maxWithdraw(self), firstCurrencyPayout + secondCurrencyPayout, 2);

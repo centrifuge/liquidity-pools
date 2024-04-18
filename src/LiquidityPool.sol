@@ -16,6 +16,10 @@ interface ManagerLike {
     function pendingRedeemRequest(address lp, address owner) external view returns (uint256);
     function pendingCancelDepositRequest(address lp, address owner) external view returns (bool);
     function pendingCancelRedeemRequest(address lp, address owner) external view returns (bool);
+    function claimableCancelDepositRequest(address lp, address owner) external view returns (uint256);
+    function claimableCancelRedeemRequest(address lp, address owner) external view returns (uint256);
+    function claimCancelDepositRequest(address lp, address receiver, address owner) external returns (uint256);
+    function claimCancelRedeemRequest(address lp, address receiver, address owner) external returns (uint256);
     function exchangeRateLastUpdated(address lp) external view returns (uint64);
     function deposit(address lp, uint256 assets, address receiver, address owner) external returns (uint256);
     function mint(address lp, uint256 shares, address receiver, address owner) external returns (uint256);
@@ -88,6 +92,10 @@ contract LiquidityPool is Auth, IERC7540 {
         if (what == "manager") manager = ManagerLike(data);
         else revert("LiquidityPool/file-unrecognized-param");
         emit File(what, data);
+    }
+
+    function recoverTokens(address token, address to, uint256 amount) external auth {
+        SafeTransferLib.safeTransfer(token, to, amount);
     }
 
     // --- ERC-7540 methods ---
@@ -169,85 +177,109 @@ contract LiquidityPool is Auth, IERC7540 {
     }
 
     // --- Asynchronous cancellation methods ---
-    /// @notice Request cancelling the outstanding deposit orders.
-    function cancelDepositRequest() external {
-        manager.cancelDepositRequest(address(this), msg.sender);
-        emit CancelDepositRequest(msg.sender);
+    /// @inheritdoc IERC7540CancelDeposit
+    function cancelDepositRequest(uint256, address owner) external {
+        require(owner == msg.sender, "LiquidityPool/not-the-owner");
+        manager.cancelDepositRequest(address(this), owner);
+        emit CancelDepositRequest(owner, REQUEST_ID, msg.sender);
     }
 
-    /// @notice Check whether the deposit request is pending cancellation.
+    /// @inheritdoc IERC7540CancelDeposit
     function pendingCancelDepositRequest(uint256, address owner) public view returns (bool isPending) {
         isPending = manager.pendingCancelDepositRequest(address(this), owner);
     }
 
-    /// @notice Request cancelling the outstanding redemption orders.
-    function cancelRedeemRequest() external {
-        manager.cancelRedeemRequest(address(this), msg.sender);
-        emit CancelRedeemRequest(msg.sender);
+    /// @inheritdoc IERC7540CancelDeposit
+    function claimableCancelDepositRequest(uint256, address owner) public view returns (uint256 claimableAssets) {
+        claimableAssets = manager.claimableCancelDepositRequest(address(this), owner);
     }
 
+    /// @inheritdoc IERC7540CancelDeposit
+    function claimCancelDepositRequest(uint256, address receiver, address owner) external returns (uint256 assets) {
+        require(msg.sender == owner, "LiquidityPool/not-the-owner");
+        assets = manager.claimCancelDepositRequest(address(this), receiver, owner);
+        emit ClaimCancelDepositRequest(msg.sender, receiver, owner, assets);
+    }
+
+    /// @inheritdoc IERC7540CancelRedeem
+    function cancelRedeemRequest(uint256, address owner) external {
+        require(msg.sender == owner, "LiquidityPool/not-the-owner");
+        manager.cancelRedeemRequest(address(this), owner);
+        emit CancelRedeemRequest(owner, REQUEST_ID, msg.sender);
+    }
+
+    /// @inheritdoc IERC7540CancelRedeem
     function pendingCancelRedeemRequest(uint256, address owner) public view returns (bool isPending) {
         isPending = manager.pendingCancelRedeemRequest(address(this), owner);
+    }
+
+    /// @inheritdoc IERC7540CancelRedeem
+    function claimableCancelRedeemRequest(uint256, address owner) public view returns (uint256 claimableShares) {
+        claimableShares = manager.claimableCancelRedeemRequest(address(this), owner);
+    }
+
+    /// @inheritdoc IERC7540CancelRedeem
+    function claimCancelRedeemRequest(uint256, address receiver, address owner) external returns (uint256 shares) {
+        require(msg.sender == owner, "LiquidityPool/not-the-owner");
+        shares = manager.claimCancelRedeemRequest(address(this), receiver, owner);
+        emit ClaimCancelRedeemRequest(msg.sender, receiver, owner, shares);
     }
 
     // --- ERC165 support ---
     /// @inheritdoc IERC165
     function supportsInterface(bytes4 interfaceId) external pure override returns (bool) {
         return interfaceId == type(IERC7540Deposit).interfaceId || interfaceId == type(IERC7540Redeem).interfaceId
-            || interfaceId == type(IERC7575Minimal).interfaceId || interfaceId == type(IERC7575Deposit).interfaceId
-            || interfaceId == type(IERC7575Mint).interfaceId || interfaceId == type(IERC7575Withdraw).interfaceId
-            || interfaceId == type(IERC7575Redeem).interfaceId || interfaceId == type(IERC7575).interfaceId
-            || interfaceId == type(IERC165).interfaceId;
+            || interfaceId == type(IERC7575).interfaceId || interfaceId == type(IERC165).interfaceId;
     }
 
     // --- ERC-4626 methods ---
-    /// @inheritdoc IERC7575Minimal
+    /// @inheritdoc IERC7575
     function totalAssets() external view returns (uint256) {
         return convertToAssets(IERC20Metadata(share).totalSupply());
     }
 
-    /// @inheritdoc IERC7575Minimal
+    /// @inheritdoc IERC7575
     /// @notice     The calculation is based on the token price from the most recent epoch retrieved from Centrifuge.
     ///             The actual conversion MAY change between order submission and execution.
     function convertToShares(uint256 assets) public view returns (uint256 shares) {
         shares = manager.convertToShares(address(this), assets);
     }
 
-    /// @inheritdoc IERC7575Minimal
+    /// @inheritdoc IERC7575
     /// @notice     The calculation is based on the token price from the most recent epoch retrieved from Centrifuge.
     ///             The actual conversion MAY change between order submission and execution.
     function convertToAssets(uint256 shares) public view returns (uint256 assets) {
         assets = manager.convertToAssets(address(this), shares);
     }
 
-    /// @inheritdoc IERC7575Deposit
+    /// @inheritdoc IERC7575
     function maxDeposit(address owner) public view returns (uint256 maxAssets) {
         maxAssets = manager.maxDeposit(address(this), owner);
     }
 
-    /// @inheritdoc IERC7575Deposit
+    /// @inheritdoc IERC7575
     function deposit(uint256 assets, address receiver) external returns (uint256 shares) {
         shares = manager.deposit(address(this), assets, receiver, msg.sender);
         emit Deposit(msg.sender, receiver, assets, shares);
     }
 
-    /// @inheritdoc IERC7575Mint
+    /// @inheritdoc IERC7575
     function maxMint(address owner) public view returns (uint256 maxShares) {
         maxShares = manager.maxMint(address(this), owner);
     }
 
-    /// @inheritdoc IERC7575Mint
+    /// @inheritdoc IERC7575
     function mint(uint256 shares, address receiver) public returns (uint256 assets) {
         assets = manager.mint(address(this), shares, receiver, msg.sender);
         emit Deposit(msg.sender, receiver, assets, shares);
     }
 
-    /// @inheritdoc IERC7575Withdraw
+    /// @inheritdoc IERC7575
     function maxWithdraw(address owner) public view returns (uint256 maxAssets) {
         maxAssets = manager.maxWithdraw(address(this), owner);
     }
 
-    /// @inheritdoc IERC7575Withdraw
+    /// @inheritdoc IERC7575
     /// @notice DOES NOT support owner != msg.sender since shares are already transferred on requestRedeem
     function withdraw(uint256 assets, address receiver, address owner) public returns (uint256 shares) {
         require(msg.sender == owner, "LiquidityPool/not-the-owner");
@@ -255,12 +287,12 @@ contract LiquidityPool is Auth, IERC7540 {
         emit Withdraw(msg.sender, receiver, owner, assets, shares);
     }
 
-    /// @inheritdoc IERC7575Redeem
+    /// @inheritdoc IERC7575
     function maxRedeem(address owner) public view returns (uint256 maxShares) {
         maxShares = manager.maxRedeem(address(this), owner);
     }
 
-    /// @inheritdoc IERC7575Redeem
+    /// @inheritdoc IERC7575
     /// @notice     DOES NOT support owner != msg.sender since shares are already transferred on requestRedeem
     function redeem(uint256 shares, address receiver, address owner) external returns (uint256 assets) {
         require(msg.sender == owner, "LiquidityPool/not-the-owner");

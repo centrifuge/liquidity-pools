@@ -10,7 +10,7 @@ contract PoolManagerTest is BaseTest {
 
     // Deployment
     function testDeployment(address nonWard) public {
-        vm.assume(nonWard != address(root) && nonWard != address(this));
+        vm.assume(nonWard != address(root) && nonWard != address(gateway) && nonWard != address(this));
 
         // values set correctly
         assertEq(address(poolManager.gateway()), address(gateway));
@@ -21,6 +21,7 @@ contract PoolManagerTest is BaseTest {
 
         // permissions set correctly
         assertEq(poolManager.wards(address(root)), 1);
+        assertEq(poolManager.wards(address(gateway)), 1);
         assertEq(escrow.wards(address(poolManager)), 1);
         assertEq(poolManager.wards(nonWard), 0);
     }
@@ -252,11 +253,10 @@ contract PoolManagerTest is BaseTest {
         assertEq(trancheToken.name(), tokenName);
         assertEq(trancheToken.symbol(), tokenSymbol);
         assertEq(trancheToken.decimals(), decimals);
-        assertTrue(
-            RestrictionManagerLike(address(trancheToken.restrictionManager())).hasMember(
-                address(investmentManager.escrow())
-            )
+        (, uint64 actualValidUntil) = RestrictionManagerLike(address(trancheToken.restrictionManager())).restrictions(
+            address(investmentManager.escrow())
         );
+        assertTrue(actualValidUntil >= block.timestamp);
 
         assertTrue(trancheToken.wards(address(poolManager)) == 1);
         assertTrue(trancheToken.wards(lPool_) == 1);

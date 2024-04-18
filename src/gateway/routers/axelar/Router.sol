@@ -51,9 +51,9 @@ contract AxelarRouter {
     }
 
     // --- Outgoing ---
-    function send(bytes calldata message) public {
+    function send(bytes calldata payload) public {
         require(msg.sender == address(aggregator), "AxelarRouter/only-aggregator-allowed-to-call");
 
-        axelarGateway.callContract(CENTRIFUGE_ID, CENTRIFUGE_AXELAR_EXECUTABLE, message);
+        axelarGateway.callContract(CENTRIFUGE_ID, CENTRIFUGE_AXELAR_EXECUTABLE, payload);
     }
 }

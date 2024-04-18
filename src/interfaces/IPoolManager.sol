@@ -19,7 +19,7 @@ struct Tranche {
 }
 
 struct TrancheTokenPrice {
-    uint256 price;
+    uint128 price;
     uint64 computedAt;
 }
 
@@ -144,6 +144,9 @@ interface IPoolManager {
     function addCurrency(uint128 currencyId, address currency) external;
 
     /// @notice TODO
+    function handle(bytes calldata message) external;
+
+    /// @notice TODO
     function handleTransfer(uint128 currencyId, address recipient, uint128 amount) external;
 
     /// @notice TODO
@@ -172,7 +175,7 @@ interface IPoolManager {
     function getTrancheTokenPrice(uint64 poolId, bytes16 trancheId, address currency)
         external
         view
-        returns (uint256 price, uint64 computedAt);
+        returns (uint128 price, uint64 computedAt);
 
     /// @notice TODO
     function isAllowedAsInvestmentCurrency(uint64 poolId, address currency) external view returns (bool);

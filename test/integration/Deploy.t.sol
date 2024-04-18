@@ -60,7 +60,6 @@ contract DeployTest is Test, Deployer {
         assertEq(investmentManager.wards(address(this)), 0);
         assertEq(poolManager.wards(address(this)), 0);
         assertEq(escrow.wards(address(this)), 0);
-        assertEq(userEscrow.wards(address(this)), 0);
         assertEq(gateway.wards(address(this)), 0);
         assertEq(aggregator.wards(address(this)), 0);
         assertEq(pauseAdmin.wards(address(this)), 0);
@@ -172,7 +171,7 @@ contract DeployTest is Test, Deployer {
         // Assume a bot calls collectRedeem for this user on cent chain
         vm.prank(address(gateway));
         investmentManager.handleExecutedCollectRedeem(
-            poolId, trancheId, self, _currencyId, currencyPayout, uint128(amount), 0
+            poolId, trancheId, self, _currencyId, currencyPayout, uint128(amount)
         );
 
         assertEq(lPool.maxWithdraw(self), currencyPayout);

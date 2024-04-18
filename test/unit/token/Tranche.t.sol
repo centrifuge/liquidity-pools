@@ -17,7 +17,7 @@ contract TrancheTokenTest is Test {
     address self;
     address targetUser = makeAddr("targetUser");
     address randomUser = makeAddr("random");
-    uint256 validUntil = block.timestamp + 7 days;
+    uint64 validUntil = uint64(block.timestamp + 7 days);
 
     function setUp() public {
         self = address(this);
@@ -32,50 +32,67 @@ contract TrancheTokenTest is Test {
 
     // --- Admnistration ---
 
-    function testFile() public {
+    function testFile(address asset, address vault) public {
         // fail: unrecognized param
         vm.expectRevert(bytes("TrancheToken/file-unrecognized-param"));
         token.file("random", self);
+
+        vm.expectRevert(bytes("TrancheToken/file-unrecognized-param"));
+        token.file("random", self, self);
+
+        vm.expectRevert(bytes("TrancheToken/file-unrecognized-param"));
+        token.file("random", self, false);
 
         // success
         token.file("restrictionManager", self);
         assertEq(address(token.restrictionManager()), self);
 
+        token.file("vault", asset, vault);
+        assertEq(address(token.vault(asset)), vault);
+
         // remove self from wards
         token.deny(self);
+
         // auth fail
         vm.expectRevert(bytes("Auth/not-authorized"));
         token.file("restrictionManager", self);
+
+        vm.expectRevert(bytes("Auth/not-authorized"));
+        token.file("vault", asset, vault);
     }
 
     // --- TrustedForwarder ---
-    function testAddLiquidityPool() public {
-        assertTrue(!token.isTrustedForwarder(self));
+    function testAddTrustedForwarder(address trustedForwarder) public {
+        vm.assume(trustedForwarder != self);
+
+        assertTrue(!token.isTrustedForwarder(trustedForwarder));
 
         //success
-        token.addTrustedForwarder(self);
-        assertTrue(token.isTrustedForwarder(self));
+        token.file("trustedForwarder", trustedForwarder, true);
+        assertTrue(token.isTrustedForwarder(trustedForwarder));
 
         // remove self from wards
         token.deny(self);
         // auth fail
         vm.expectRevert(bytes("Auth/not-authorized"));
-        token.addTrustedForwarder(self);
+        token.file("trustedForwarder", trustedForwarder, true);
     }
 
-    function testRemoveLiquidityPool() public {
-        token.addTrustedForwarder(self);
-        assertTrue(token.isTrustedForwarder(self));
+    function testRemoveTrustedForwarder(address trustedForwarder) public {
+        vm.assume(trustedForwarder != self);
+
+        token.file("trustedForwarder", trustedForwarder, true);
+        assertTrue(token.isTrustedForwarder(trustedForwarder));
 
         // success
-        token.removeTrustedForwarder(self);
-        assertTrue(!token.isTrustedForwarder(self));
+        token.file("trustedForwarder", trustedForwarder, false);
+        assertTrue(!token.isTrustedForwarder(trustedForwarder));
 
         // remove self from wards
         token.deny(self);
         // auth fail
         vm.expectRevert(bytes("Auth/not-authorized"));
-        token.removeTrustedForwarder(self);
+        token.file("trustedForwarder", trustedForwarder, false);
     }
 
     function testCheckTrustedForwarderWorks(uint256 amount) public {
@@ -83,11 +100,11 @@ contract TrancheTokenTest is Test {
 
         assertTrue(!token.isTrustedForwarder(self));
         // make self trusted forwarder
-        token.addTrustedForwarder(self);
+        token.file("trustedForwarder", self, true);
         assertTrue(token.isTrustedForwarder(self));
         // add self to restrictionManager
-        restrictionManager.updateMember(self, validUntil);
-        restrictionManager.updateMember(randomUser, validUntil);
+        restrictionManager.updateMember(self, uint64(validUntil));
+        restrictionManager.updateMember(randomUser, uint64(validUntil));
 
         bool success;
         // test auth works with trustedForwarder
@@ -127,15 +144,16 @@ contract TrancheTokenTest is Test {
     // --- RestrictionManager ---
     // transferFrom
     function testTransferFrom(uint256 amount) public {
-        restrictionManager.updateMember(self, validUntil);
+        restrictionManager.updateMember(self, uint64(validUntil));
         token.mint(self, amount);
 
         vm.expectRevert(bytes("RestrictionManager/destination-not-a-member"));
         token.transferFrom(self, targetUser, amount);
         assertEq(token.balanceOf(targetUser), 0);
 
-        restrictionManager.updateMember(targetUser, validUntil);
-        assertEq(restrictionManager.members(targetUser), validUntil);
+        restrictionManager.updateMember(targetUser, uint64(validUntil));
+        (, uint64 actualValidUntil) = restrictionManager.restrictions(targetUser);
+        assertEq(actualValidUntil, validUntil);
 
         restrictionManager.freeze(self);
         vm.expectRevert(bytes("RestrictionManager/source-is-frozen"));
@@ -161,10 +179,10 @@ contract TrancheTokenTest is Test {
     function testTransferFromTokensWithApproval(uint256 amount) public {
         vm.assume(amount > 0);
         address sender = makeAddr("sender");
-        restrictionManager.updateMember(sender, validUntil);
+        restrictionManager.updateMember(sender, uint64(validUntil));
         token.mint(sender, amount);
 
-        restrictionManager.updateMember(targetUser, validUntil);
+        restrictionManager.updateMember(targetUser, uint64(validUntil));
 
         vm.expectRevert(bytes("ERC20/insufficient-allowance"));
         token.transferFrom(sender, targetUser, amount);
@@ -179,15 +197,16 @@ contract TrancheTokenTest is Test {
 
     // transfer
     function testTransfer(uint256 amount) public {
-        restrictionManager.updateMember(self, validUntil);
+        restrictionManager.updateMember(self, uint64(validUntil));
         token.mint(self, amount);
 
         vm.expectRevert(bytes("RestrictionManager/destination-not-a-member"));
         token.transfer(targetUser, amount);
         assertEq(token.balanceOf(targetUser), 0);
 
-        restrictionManager.updateMember(targetUser, validUntil);
-        assertEq(restrictionManager.members(targetUser), validUntil);
+        restrictionManager.updateMember(targetUser, uint64(validUntil));
+        (, uint64 actualValidUntil) = restrictionManager.restrictions(targetUser);
+        assertEq(actualValidUntil, validUntil);
 
         restrictionManager.freeze(self);
         vm.expectRevert(bytes("RestrictionManager/source-is-frozen"));
@@ -207,7 +226,7 @@ contract TrancheTokenTest is Test {
     // auth transfer
     function testAuthTransferFrom(uint256 amount) public {
         address sourceUser = makeAddr("sourceUser");
-        restrictionManager.updateMember(sourceUser, validUntil);
+        restrictionManager.updateMember(sourceUser, uint64(validUntil));
         token.mint(sourceUser, amount);
 
         vm.prank(address(2));
@@ -227,8 +246,9 @@ contract TrancheTokenTest is Test {
         vm.expectRevert(bytes("RestrictionManager/destination-not-a-member"));
         token.mint(targetUser, amount);
 
-        restrictionManager.updateMember(targetUser, validUntil);
-        assertEq(restrictionManager.members(targetUser), validUntil);
+        restrictionManager.updateMember(targetUser, uint64(validUntil));
+        (, uint64 actualValidUntil) = restrictionManager.restrictions(targetUser);
+        assertEq(actualValidUntil, validUntil);
 
         restrictionManager.freeze(self);
         vm.expectRevert(bytes("RestrictionManager/source-is-frozen"));
@@ -248,11 +268,12 @@ contract TrancheTokenTest is Test {
 
     function testTransferMintFailsNoPermissionOnRestrictionManager() public {
         uint256 amount = 100;
-        restrictionManager.updateMember(self, validUntil);
+        restrictionManager.updateMember(self, uint64(validUntil));
         token.mint(self, amount);
 
-        restrictionManager.updateMember(targetUser, validUntil);
-        assertEq(restrictionManager.members(targetUser), validUntil);
+        restrictionManager.updateMember(targetUser, uint64(validUntil));
+        (, uint64 actualValidUntil) = restrictionManager.restrictions(targetUser);
+        assertEq(actualValidUntil, validUntil);
 
         restrictionManager.deny(address(token)); // remove permissions on restrictionManager - not able to call after
             // transfer / mint functions

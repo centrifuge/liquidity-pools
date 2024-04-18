@@ -13,6 +13,7 @@ import {MathLib} from "./libraries/MathLib.sol";
 import {MessagesLib} from "src/libraries/MessagesLib.sol";
 import {CastLib} from "src/libraries/CastLib.sol";
 import {Pool, Tranche, TrancheTokenPrice, UndeployedTranche, IPoolManager} from "src/interfaces/IPoolManager.sol";
+import {BytesLib} from "src/libraries/BytesLib.sol";
 
 interface GatewayLike {
     function send(bytes memory message) external;
@@ -21,7 +22,6 @@ interface GatewayLike {
 interface InvestmentManagerLike {
     function liquidityPools(uint64 poolId, bytes16 trancheId, address currency) external returns (address);
     function getTrancheToken(uint64 _poolId, bytes16 _trancheId) external view returns (address);
-    function userEscrow() external view returns (address);
 }
 
 interface EscrowLike {
@@ -37,6 +37,7 @@ interface AuthLike {
 /// @notice This contract manages which pools & tranches exist,
 ///         as well as managing allowed pool currencies, and incoming and outgoing transfers.
 contract PoolManager is Auth, IPoolManager {
+    using BytesLib for bytes;
     using MathLib for uint256;
     using CastLib for *;
 
@@ -81,6 +82,10 @@ contract PoolManager is Auth, IPoolManager {
         else if (what == "restrictionManagerFactory") restrictionManagerFactory = RestrictionManagerFactoryLike(data);
         else revert("PoolManager/file-unrecognized-param");
         emit File(what, data);
+    }
+
+    function recoverTokens(address token, address to, uint256 amount) external auth {
+        SafeTransferLib.safeTransfer(token, to, amount);
     }
 
     // --- Outgoing message handling ---
@@ -149,6 +154,59 @@ contract PoolManager is Auth, IPoolManager {
     }
 
     // --- Incoming message handling ---
+    /// @inheritdoc IPoolManager
+    function handle(bytes calldata message) external auth {
+        MessagesLib.Call call = MessagesLib.messageType(message);
+
+        if (call == MessagesLib.Call.AddCurrency) {
+            addCurrency(message.toUint128(1), message.toAddress(17));
+        } else if (call == MessagesLib.Call.AddPool) {
+            addPool(message.toUint64(1));
+        } else if (call == MessagesLib.Call.AllowInvestmentCurrency) {
+            allowInvestmentCurrency(message.toUint64(1), message.toUint128(9));
+        } else if (call == MessagesLib.Call.AddTranche) {
+            addTranche(
+                message.toUint64(1),
+                message.toBytes16(9),
+                message.slice(25, 128).bytes128ToString(),
+                message.toBytes32(153).toString(),
+                message.toUint8(185),
+                message.toUint8(186)
+            );
+        } else if (call == MessagesLib.Call.UpdateMember) {
+            updateMember(message.toUint64(1), message.toBytes16(9), message.toAddress(25), message.toUint64(57));
+        } else if (call == MessagesLib.Call.UpdateTrancheTokenPrice) {
+            updateTrancheTokenPrice(
+                message.toUint64(1),
+                message.toBytes16(9),
+                message.toUint128(25),
+                message.toUint128(41),
+                message.toUint64(57)
+            );
+        } else if (call == MessagesLib.Call.Transfer) {
+            handleTransfer(message.toUint128(1), message.toAddress(49), message.toUint128(81));
+        } else if (call == MessagesLib.Call.TransferTrancheTokens) {
+            handleTransferTrancheTokens(
+                message.toUint64(1), message.toBytes16(9), message.toAddress(66), message.toUint128(98)
+            );
+        } else if (call == MessagesLib.Call.UpdateTrancheTokenMetadata) {
+            updateTrancheTokenMetadata(
+                message.toUint64(1),
+                message.toBytes16(9),
+                message.slice(25, 128).bytes128ToString(),
+                message.toBytes32(153).toString()
+            );
+        } else if (call == MessagesLib.Call.Freeze) {
+            freeze(message.toUint64(1), message.toBytes16(9), message.toAddress(25));
+        } else if (call == MessagesLib.Call.Unfreeze) {
+            unfreeze(message.toUint64(1), message.toBytes16(9), message.toAddress(25));
+        } else if (call == MessagesLib.Call.DisallowInvestmentCurrency) {
+            disallowInvestmentCurrency(message.toUint64(1), message.toUint128(9));
+        } else {
+            revert("PoolManager/invalid-message");
+        }
+    }
+
     /// @inheritdoc IPoolManager
     function addPool(uint64 poolId) public auth {
         Pool storage pool = pools[poolId];
@@ -289,9 +347,9 @@ contract PoolManager is Auth, IPoolManager {
         currencyIdToAddress[currencyId] = currency;
         currencyAddressToId[currency] = currencyId;
 
-        // Give investment manager infinite approval for currency in the escrow
-        // to transfer to the user escrow on redeem, withdraw or transfer
-        escrow.approve(currency, investmentManager.userEscrow(), type(uint256).max);
+        // Give investment manager infinite approval for currency
+        // in the escrow to transfer to the user on redeem or withdraw
+        escrow.approve(currency, address(investmentManager), type(uint256).max);
 
         emit AddCurrency(currencyId, currency);
     }
@@ -362,7 +420,7 @@ contract PoolManager is Auth, IPoolManager {
         require(tranche.token != address(0), "PoolManager/tranche-does-not-exist");
         require(isAllowedAsInvestmentCurrency(poolId, currency), "PoolManager/currency-not-supported");
 
-        address liquidityPool = tranche.liquidityPools[currency];
+        address liquidityPool = TrancheTokenLike(tranche.token).vault(currency);
         require(liquidityPool == address(0), "PoolManager/liquidity-pool-already-deployed");
 
         // Rely investment manager on liquidity pool so it can mint tokens
@@ -373,11 +431,11 @@ contract PoolManager is Auth, IPoolManager {
         liquidityPool = liquidityPoolFactory.newLiquidityPool(
             poolId, trancheId, currency, tranche.token, address(escrow), address(investmentManager), liquidityPoolWards
         );
-        tranche.liquidityPools[currency] = liquidityPool;
 
         // Link liquidity pool to tranche token
         AuthLike(tranche.token).rely(liquidityPool);
-        TrancheTokenLike(tranche.token).addTrustedForwarder(liquidityPool);
+        TrancheTokenLike(tranche.token).file("trustedForwarder", liquidityPool, true);
+        TrancheTokenLike(tranche.token).file("vault", currency, liquidityPool);
 
         // Give liquidity pool infinite approval for tranche tokens
         // in the escrow to burn on executed redemptions
@@ -393,15 +451,14 @@ contract PoolManager is Auth, IPoolManager {
         Tranche storage tranche = pools[poolId].tranches[trancheId];
         require(tranche.token != address(0), "PoolManager/tranche-does-not-exist");
 
-        address liquidityPool = tranche.liquidityPools[currency];
+        address liquidityPool = TrancheTokenLike(tranche.token).vault(currency);
         require(liquidityPool != address(0), "PoolManager/liquidity-pool-not-deployed");
-
-        delete tranche.liquidityPools[currency];
 
         liquidityPoolFactory.denyLiquidityPool(liquidityPool, address(investmentManager));
 
         AuthLike(tranche.token).deny(liquidityPool);
-        TrancheTokenLike(tranche.token).removeTrustedForwarder(liquidityPool);
+        TrancheTokenLike(tranche.token).file("trustedForwarder", liquidityPool, false);
+        TrancheTokenLike(tranche.token).file("vault", currency, address(0));
 
         escrow.approve(address(tranche.token), liquidityPool, 0);
 
@@ -417,19 +474,19 @@ contract PoolManager is Auth, IPoolManager {
 
     /// @inheritdoc IPoolManager
     function getLiquidityPool(uint64 poolId, bytes16 trancheId, uint128 currencyId) public view returns (address) {
-        return pools[poolId].tranches[trancheId].liquidityPools[currencyIdToAddress[currencyId]];
+        return TrancheTokenLike(pools[poolId].tranches[trancheId].token).vault(currencyIdToAddress[currencyId]);
     }
 
     /// @inheritdoc IPoolManager
     function getLiquidityPool(uint64 poolId, bytes16 trancheId, address currency) public view returns (address) {
-        return pools[poolId].tranches[trancheId].liquidityPools[currency];
+        return TrancheTokenLike(pools[poolId].tranches[trancheId].token).vault(currency);
     }
 
     /// @inheritdoc IPoolManager
     function getTrancheTokenPrice(uint64 poolId, bytes16 trancheId, address currency)
         public
         view
-        returns (uint256 price, uint64 computedAt)
+        returns (uint128 price, uint64 computedAt)
     {
         TrancheTokenPrice memory value = pools[poolId].tranches[trancheId].prices[currency];
         price = value.price;

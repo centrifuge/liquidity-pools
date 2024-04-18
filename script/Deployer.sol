@@ -3,11 +3,10 @@ pragma solidity 0.8.21;
 
 import {Root} from "src/Root.sol";
 import {RouterAggregator} from "src/gateway/routers/RouterAggregator.sol";
-import {Gateway, InvestmentManagerLike} from "src/gateway/Gateway.sol";
+import {Gateway} from "src/gateway/Gateway.sol";
 import {InvestmentManager} from "src/InvestmentManager.sol";
 import {PoolManager} from "src/PoolManager.sol";
 import {Escrow} from "src/Escrow.sol";
-import {UserEscrow} from "src/UserEscrow.sol";
 import {PauseAdmin} from "src/admins/PauseAdmin.sol";
 import {DelayedAdmin} from "src/admins/DelayedAdmin.sol";
 import {LiquidityPoolFactory} from "src/factories/LiquidityPoolFactory.sol";
@@ -35,7 +34,6 @@ contract Deployer is Script {
     InvestmentManager public investmentManager;
     PoolManager public poolManager;
     Escrow public escrow;
-    UserEscrow public userEscrow;
     PauseAdmin public pauseAdmin;
     DelayedAdmin public delayedAdmin;
     Gateway public gateway;
@@ -51,13 +49,12 @@ contract Deployer is Script {
             "DEPLOYMENT_SALT", keccak256(abi.encodePacked(string(abi.encodePacked(blockhash(block.number - 1)))))
         );
         escrow = new Escrow{salt: salt}(deployer);
-        userEscrow = new UserEscrow();
         root = new Root{salt: salt}(address(escrow), delay, deployer);
 
         liquidityPoolFactory = address(new LiquidityPoolFactory(address(root)));
         restrictionManagerFactory = address(new RestrictionManagerFactory(address(root)));
         trancheTokenFactory = address(new TrancheTokenFactory{salt: salt}(address(root), deployer));
-        investmentManager = new InvestmentManager(address(escrow), address(userEscrow));
+        investmentManager = new InvestmentManager(address(escrow));
         poolManager =
             new PoolManager(address(escrow), liquidityPoolFactory, restrictionManagerFactory, trancheTokenFactory);
 
@@ -105,8 +102,6 @@ contract Deployer is Script {
         aggregator.rely(address(root));
         AuthLike(router).rely(address(root));
         AuthLike(address(escrow)).rely(address(root));
-        AuthLike(address(userEscrow)).rely(address(root));
-        AuthLike(address(userEscrow)).rely(address(investmentManager));
         AuthLike(address(escrow)).rely(address(poolManager));
     }
 
@@ -127,7 +122,6 @@ contract Deployer is Script {
         investmentManager.deny(deployer);
         poolManager.deny(deployer);
         escrow.deny(deployer);
-        userEscrow.deny(deployer);
         gateway.deny(deployer);
         aggregator.deny(deployer);
         pauseAdmin.deny(deployer);
