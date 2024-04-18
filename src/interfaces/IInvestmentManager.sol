@@ -144,7 +144,10 @@ interface IInvestmentManager {
     function maxRedeem(address liquidityPool, address user) external view returns (uint256 trancheTokenAmount);
 
     /// @notice TODO
-    function pendingDepositRequest(address liquidityPool, address user) external view returns (uint256 currencyAmount);
+    function pendingDepositRequest(address liquidityPool, address user)
+        external
+        view
+        returns (uint256 currencyAmount);
 
     /// @notice TODO
     function pendingRedeemRequest(address liquidityPool, address user)

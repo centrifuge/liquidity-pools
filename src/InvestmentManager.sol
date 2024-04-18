@@ -543,9 +543,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
         require(trancheTokenAmount <= state.maxMint, "InvestmentManager/exceeds-deposit-limits");
         state.maxMint = state.maxMint - trancheTokenAmount;
         require(
-            IERC20(LiquidityPoolLike(liquidityPool).share()).transferFrom(
-                address(escrow), receiver, trancheTokenAmount
-            ),
+            IERC20(LiquidityPoolLike(liquidityPool).share()).transferFrom(address(escrow), receiver, trancheTokenAmount),
             "InvestmentManager/tranche-tokens-transfer-failed"
         );
     }
@@ -612,9 +610,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
         trancheTokenAmount = state.claimableCancelRedeemRequest;
         state.claimableCancelRedeemRequest = 0;
         require(
-            IERC20(LiquidityPoolLike(liquidityPool).share()).transferFrom(
-                address(escrow), receiver, trancheTokenAmount
-            ),
+            IERC20(LiquidityPoolLike(liquidityPool).share()).transferFrom(address(escrow), receiver, trancheTokenAmount),
             "InvestmentManager/tranche-tokens-transfer-failed"
         );
     }
