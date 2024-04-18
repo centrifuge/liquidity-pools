@@ -56,8 +56,7 @@ contract BaseTest is Deployer, Test {
         router = new MockRouter(address(investmentManager));
         // wire contracts
         wire(address(router));
-        // give admin access
-        giveAdminAccess();
+
         // remove deployer access
         // removeDeployerAccess(address(router)); // need auth permissions in tests
 
@@ -75,8 +74,7 @@ contract BaseTest is Deployer, Test {
         excludeContract(address(router));
         excludeContract(address(escrow));
         excludeContract(address(userEscrow));
-        excludeContract(address(pauseAdmin));
-        excludeContract(address(delayedAdmin));
+        excludeContract(address(guardian));
         excludeContract(address(poolManager.restrictionManagerFactory()));
         excludeContract(address(poolManager.trancheTokenFactory()));
         excludeContract(address(poolManager.liquidityPoolFactory()));

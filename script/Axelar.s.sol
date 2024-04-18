@@ -25,7 +25,6 @@ contract AxelarScript is Deployer {
         wire(address(router));
         router.file("gateway", address(gateway));
 
-        giveAdminAccess();
         removeDeployerAccess(address(router), msg.sender);
 
         vm.stopBroadcast();

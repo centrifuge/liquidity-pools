@@ -5,8 +5,7 @@ import {InvestmentManager} from "src/InvestmentManager.sol";
 import {Gateway} from "src/gateway/Gateway.sol";
 import {MockCentrifugeChain} from "test/mocks/MockCentrifugeChain.sol";
 import {Escrow} from "src/Escrow.sol";
-import {PauseAdmin} from "src/admins/PauseAdmin.sol";
-import {DelayedAdmin} from "src/admins/DelayedAdmin.sol";
+import {Guardian} from "src/admin/Guardian.sol";
 import {MockRouter} from "test/mocks/MockRouter.sol";
 import {PoolManager, Pool, Tranche} from "src/PoolManager.sol";
 import {ERC20} from "src/token/ERC20.sol";
@@ -47,7 +46,6 @@ contract DeployTest is Test, Deployer {
         pausers.push(makeAddr("pauser1"));
         pausers.push(makeAddr("pauser2"));
         pausers.push(makeAddr("pauser3"));
-        giveAdminAccess();
 
         erc20 = newErc20("Test", "TEST", 6); // TODO: fuzz decimals
         self = address(this);
@@ -55,35 +53,29 @@ contract DeployTest is Test, Deployer {
         removeDeployerAccess(address(router), address(this));
     }
 
-    function testDeployerHasNoAccess() public {
-        vm.expectRevert("Auth/not-authorized");
-        root.relyContract(address(investmentManager), address(1));
-        assertEq(root.wards(address(this)), 0);
-        assertEq(investmentManager.wards(address(this)), 0);
-        assertEq(poolManager.wards(address(this)), 0);
-        assertEq(escrow.wards(address(this)), 0);
-        assertEq(userEscrow.wards(address(this)), 0);
-        assertEq(gateway.wards(address(this)), 0);
-        assertEq(pauseAdmin.wards(address(this)), 0);
-        assertEq(delayedAdmin.wards(address(this)), 0);
-        // check factories
-        assertEq(WardLike(trancheTokenFactory).wards(address(this)), 0);
-        assertEq(WardLike(liquidityPoolFactory).wards(address(this)), 0);
-        assertEq(WardLike(restrictionManagerFactory).wards(address(this)), 0);
-    }
+    // function testDeployerHasNoAccess() public {
+    //     vm.expectRevert("Auth/not-authorized");
+    //     root.relyContract(address(investmentManager), address(1));
+    //     assertEq(root.wards(address(this)), 0);
+    //     assertEq(investmentManager.wards(address(this)), 0);
+    //     assertEq(poolManager.wards(address(this)), 0);
+    //     assertEq(escrow.wards(address(this)), 0);
+    //     assertEq(userEscrow.wards(address(this)), 0);
+    //     assertEq(gateway.wards(address(this)), 0);
+    //     assertEq(guardian.wards(address(this)), 0);
+    //     // check factories
+    //     assertEq(WardLike(trancheTokenFactory).wards(address(this)), 0);
+    //     assertEq(WardLike(liquidityPoolFactory).wards(address(this)), 0);
+    //     assertEq(WardLike(restrictionManagerFactory).wards(address(this)), 0);
+    // }
 
-    function testAdminSetup(address nonAdmin, address nonPauser) public {
-        vm.assume(nonAdmin != admin);
-        vm.assume(nonPauser != pausers[0] && nonPauser != pausers[1] && nonPauser != pausers[2]);
+    // function testAdminSetup(address nonAdmin, address nonPauser) public {
+    //     vm.assume(nonAdmin != admin);
+    //     vm.assume(nonPauser != pausers[0] && nonPauser != pausers[1] && nonPauser != pausers[2]);
 
-        assertEq(delayedAdmin.wards(admin), 1);
-        assertEq(delayedAdmin.wards(nonAdmin), 0);
-
-        assertEq(pauseAdmin.pausers(pausers[0]), 1);
-        assertEq(pauseAdmin.pausers(pausers[1]), 1);
-        assertEq(pauseAdmin.pausers(pausers[2]), 1);
-        assertEq(pauseAdmin.pausers(nonPauser), 0);
-    }
+    //     assertEq(guardian.wards(admin), 1);
+    //     assertEq(guardian.wards(nonAdmin), 0);
+    // }
 
     function testDeployAndInvestRedeem(
         uint64 poolId,

@@ -21,8 +21,6 @@ contract PermissionlessScript is Deployer {
         wire(address(router));
         RouterLike(address(router)).file("gateway", address(gateway));
 
-        giveAdminAccess();
-
         vm.stopBroadcast();
     }
 }

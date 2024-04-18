@@ -8,8 +8,7 @@ import {InvestmentManager} from "src/InvestmentManager.sol";
 import {PoolManager} from "src/PoolManager.sol";
 import {Escrow} from "src/Escrow.sol";
 import {UserEscrow} from "src/UserEscrow.sol";
-import {PauseAdmin} from "src/admins/PauseAdmin.sol";
-import {DelayedAdmin} from "src/admins/DelayedAdmin.sol";
+import {Guardian, SafeLike} from "src/admin/Guardian.sol";
 import {LiquidityPoolFactory} from "src/factories/LiquidityPoolFactory.sol";
 import {RestrictionManagerFactory} from "src/factories/RestrictionManagerFactory.sol";
 import {TrancheTokenFactory} from "src/factories/TrancheTokenFactory.sol";
@@ -35,8 +34,8 @@ contract Deployer is Script {
     PoolManager public poolManager;
     Escrow public escrow;
     UserEscrow public userEscrow;
-    PauseAdmin public pauseAdmin;
-    DelayedAdmin public delayedAdmin;
+    SafeLike public guardianSafe;
+    Guardian public guardian;
     Gateway public gateway;
     address public liquidityPoolFactory;
     address public restrictionManagerFactory;
@@ -70,14 +69,11 @@ contract Deployer is Script {
 
     function wire(address router) public {
         // Deploy gateway and admins
-        pauseAdmin = new PauseAdmin(address(root));
-        delayedAdmin = new DelayedAdmin(address(root), address(pauseAdmin));
+        guardian = new Guardian(address(root), address(guardianSafe));
         gateway = new Gateway(address(root), address(investmentManager), address(poolManager), address(router));
 
         // Wire admins
-        pauseAdmin.rely(address(delayedAdmin));
-        root.rely(address(pauseAdmin));
-        root.rely(address(delayedAdmin));
+        root.rely(address(guardian));
         root.rely(address(gateway));
 
         // Wire gateway
@@ -97,14 +93,6 @@ contract Deployer is Script {
         AuthLike(address(escrow)).rely(address(poolManager));
     }
 
-    function giveAdminAccess() public {
-        delayedAdmin.rely(address(admin));
-
-        for (uint256 i = 0; i < pausers.length; i++) {
-            pauseAdmin.addPauser(pausers[i]);
-        }
-    }
-
     function removeDeployerAccess(address router, address deployer) public {
         AuthLike(router).deny(deployer);
         AuthLike(liquidityPoolFactory).deny(deployer);
@@ -116,7 +104,5 @@ contract Deployer is Script {
         escrow.deny(deployer);
         userEscrow.deny(deployer);
         gateway.deny(deployer);
-        pauseAdmin.deny(deployer);
-        delayedAdmin.deny(deployer);
     }
 }

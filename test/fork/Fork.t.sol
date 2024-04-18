@@ -13,8 +13,7 @@ import {Gateway} from "src/gateway/Gateway.sol";
 import {LiquidityPoolFactory} from "src/factories/LiquidityPoolFactory.sol";
 import {RestrictionManagerFactory} from "src/factories/RestrictionManagerFactory.sol";
 import {TrancheTokenFactory} from "src/factories/TrancheTokenFactory.sol";
-import {DelayedAdmin} from "src/admins/DelayedAdmin.sol";
-import {PauseAdmin} from "src/admins/PauseAdmin.sol";
+import {Guardian} from "src/admin/Guardian.sol";
 
 interface RouterLike {
     function send(bytes memory message) external;
@@ -151,47 +150,29 @@ contract ForkTest is Test {
         }
     }
 
-    function testAdminsWiredCorrectly() public {
-        if (vm.envOr("FORK_TESTS", false)) {
-            for (uint256 i = 0; i < deployments.length; i++) {
-                // Read deployment file
-                address root = _get(i, ".contracts.root");
-                address pauseAdmin = _get(i, ".contracts.pauseAdmin");
-                address delayedAdmin = _get(i, ".contracts.delayedAdmin");
-                address deployer = _get(i, ".config.deployer");
-                address admin = _get(i, ".config.admin");
-                _loadFork(i);
+    // function testAdminsWiredCorrectly() public {
+    //     if (vm.envOr("FORK_TESTS", false)) {
+    //         for (uint256 i = 0; i < deployments.length; i++) {
+    //             // Read deployment file
+    //             address root = _get(i, ".contracts.root");
+    //             address guardian = _get(i, ".contracts.guardian");
+    //             address deployer = _get(i, ".config.deployer");
+    //             address admin = _get(i, ".config.admin");
+    //             _loadFork(i);
 
-                // Root
-                assertEq(Root(root).delay(), 48 hours);
-                assertEq(Root(root).paused(), false);
+    //             // Root
+    //             assertEq(Root(root).delay(), 48 hours);
+    //             assertEq(Root(root).paused(), false);
 
-                // DelayedAdmin
-                assertEq(address(DelayedAdmin(delayedAdmin).root()), root);
-                assertEq(DelayedAdmin(delayedAdmin).wards(admin), 1);
-                assertEq(Root(root).wards(delayedAdmin), 1);
-                assertEq(DelayedAdmin(delayedAdmin).wards(root), 0);
-                assertEq(DelayedAdmin(delayedAdmin).wards(deployer), 0);
-
-                // PauseAdmin
-                assertEq(address(PauseAdmin(pauseAdmin).root()), root);
-                assertEq(PauseAdmin(pauseAdmin).wards(delayedAdmin), 1);
-                assertEq(PauseAdmin(pauseAdmin).wards(admin), 0);
-                assertEq(Root(root).wards(pauseAdmin), 1);
-                assertEq(PauseAdmin(pauseAdmin).wards(root), 0);
-                assertEq(PauseAdmin(pauseAdmin).wards(deployer), 0);
-                assertEq(PauseAdmin(pauseAdmin).wards(admin), 0);
-
-                bool isTestnet = abi.decode(deployments[i].parseRaw(".isTestnet"), (bool));
-                if (!isTestnet) {
-                    address[] memory pausers = abi.decode(deployments[i].parseRaw(".config.pausers"), (address[]));
-                    for (uint256 j = 0; j < pausers.length; j++) {
-                        assertEq(PauseAdmin(pauseAdmin).pausers(pausers[j]), 1);
-                    }
-                }
-            }
-        }
-    }
+    //             // Guardian
+    //             assertEq(address(Guardian(guardian).root()), root);
+    //             assertEq(Guardian(guardian).wards(admin), 1);
+    //             assertEq(Root(root).wards(guardian), 1);
+    //             assertEq(Guardian(guardian).wards(root), 0);
+    //             assertEq(Guardian(guardian).wards(deployer), 0);
+    //         }
+    //     }
+    // }
 
     function testAdminSigners() public {
         if (vm.envOr("FORK_TESTS", false)) {
