@@ -346,8 +346,6 @@ contract InvestmentManager is Auth, IInvestmentManager {
             state.pendingDepositRequest > decreasedInvestOrder ? state.pendingDepositRequest - decreasedInvestOrder : 0;
 
         if (state.pendingDepositRequest == 0) state.pendingCancelDepositRequest = false;
-
-        LiquidityPoolLike(liquidityPool).emitRedeemClaimable(user, currencyPayout, currencyPayout);
     }
 
     /// @inheritdoc IInvestmentManager
@@ -367,8 +365,6 @@ contract InvestmentManager is Auth, IInvestmentManager {
             state.pendingRedeemRequest > decreasedRedeemOrder ? state.pendingRedeemRequest - decreasedRedeemOrder : 0;
 
         if (state.pendingRedeemRequest == 0) state.pendingCancelRedeemRequest = false;
-
-        LiquidityPoolLike(liquidityPool).emitRedeemClaimable(user, trancheTokenPayout, trancheTokenPayout);
     }
 
     /// @inheritdoc IInvestmentManager
