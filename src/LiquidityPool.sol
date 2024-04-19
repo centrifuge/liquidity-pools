@@ -3,35 +3,10 @@ pragma solidity 0.8.21;
 
 import {Auth} from "./Auth.sol";
 import {SafeTransferLib} from "./libraries/SafeTransferLib.sol";
+import {IInvestmentManager} from "src/interfaces/IInvestmentManager.sol";
 import "./interfaces/IERC7540.sol";
 import "./interfaces/IERC7575.sol";
 import "./interfaces/IERC20.sol";
-
-interface ManagerLike {
-    function requestDeposit(address lp, uint256 assets, address receiver, address owner) external returns (bool);
-    function requestRedeem(address lp, uint256 shares, address receiver, address owner) external returns (bool);
-    function cancelDepositRequest(address lp, address owner) external;
-    function cancelRedeemRequest(address lp, address owner) external;
-    function pendingDepositRequest(address lp, address owner) external view returns (uint256);
-    function pendingRedeemRequest(address lp, address owner) external view returns (uint256);
-    function pendingCancelDepositRequest(address lp, address owner) external view returns (bool);
-    function pendingCancelRedeemRequest(address lp, address owner) external view returns (bool);
-    function claimableCancelDepositRequest(address lp, address owner) external view returns (uint256);
-    function claimableCancelRedeemRequest(address lp, address owner) external view returns (uint256);
-    function claimCancelDepositRequest(address lp, address receiver, address owner) external returns (uint256);
-    function claimCancelRedeemRequest(address lp, address receiver, address owner) external returns (uint256);
-    function exchangeRateLastUpdated(address lp) external view returns (uint64);
-    function deposit(address lp, uint256 assets, address receiver, address owner) external returns (uint256);
-    function mint(address lp, uint256 shares, address receiver, address owner) external returns (uint256);
-    function withdraw(address lp, uint256 assets, address receiver, address owner) external returns (uint256);
-    function redeem(address lp, uint256 shares, address receiver, address owner) external returns (uint256);
-    function maxDeposit(address lp, address receiver) external view returns (uint256);
-    function maxMint(address lp, address receiver) external view returns (uint256);
-    function maxWithdraw(address lp, address receiver) external view returns (uint256);
-    function maxRedeem(address lp, address receiver) external view returns (uint256);
-    function convertToShares(address lp, uint256 assets) external view returns (uint256);
-    function convertToAssets(address lp, uint256 shares) external view returns (uint256);
-}
 
 /// @title  Liquidity Pool
 /// @notice Liquidity Pool implementation for Centrifuge pools
@@ -65,15 +40,13 @@ contract LiquidityPool is Auth, IERC7540 {
     address public immutable escrow;
 
     /// @notice Liquidity Pool implementation contract
-    ManagerLike public manager;
+    IInvestmentManager public manager;
 
     /// @dev    Requests for Centrifuge pool are non-transferable and all have ID = 0
     uint256 constant REQUEST_ID = 0;
 
     // --- Events ---
     event File(bytes32 indexed what, address data);
-    event CancelDepositRequest(address indexed sender);
-    event CancelRedeemRequest(address indexed sender);
 
     constructor(uint64 poolId_, bytes16 trancheId_, address asset_, address share_, address escrow_, address manager_) {
         poolId = poolId_;
@@ -81,7 +54,7 @@ contract LiquidityPool is Auth, IERC7540 {
         asset = asset_;
         share = share_;
         escrow = escrow_;
-        manager = ManagerLike(manager_);
+        manager = IInvestmentManager(manager_);
 
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
@@ -89,7 +62,7 @@ contract LiquidityPool is Auth, IERC7540 {
 
     // --- Administration ---
     function file(bytes32 what, address data) external auth {
-        if (what == "manager") manager = ManagerLike(data);
+        if (what == "manager") manager = IInvestmentManager(data);
         else revert("LiquidityPool/file-unrecognized-param");
         emit File(what, data);
     }
