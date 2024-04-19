@@ -6,7 +6,6 @@ import "test/BaseTest.sol";
 contract AdminTest is BaseTest {
     function setUp() public override {
         super.setUp();
-        // pauseAdmin.addPauser(address(this));
     }
 
     function testDeployment() public {
@@ -19,112 +18,115 @@ contract AdminTest is BaseTest {
     }
 
     //------ PauseAdmin tests ------//
-    // function testPause() public {
-        // pauseAdmin.removePauser(address(this));
-        // vm.expectRevert("PauseAdmin/not-authorized-to-pause");
-        // pauseAdmin.pause();
+    function testUnauthorizedPauseFails() public {
+        guardianSafe.removeOwner(address(this));
+        vm.expectRevert("Guardian/not-an-owner-of-the-authorized-safe");
+        guardian.pause();
+    }
 
-        // pauseAdmin.addPauser(address(this));
-        // pauseAdmin.pause();
-        // assertEq(root.paused(), true);
-// 
-    //     guardian.unpause();
-    //     assertEq(root.paused(), false);
-    // }
+    function testPauseWorks() public {
+        guardian.pause();
+        assertEq(root.paused(), true);
+    }
 
-    // function testPauseAuth(address user) public {
-    //     vm.assume(user != address(this));
-    //     vm.expectRevert("PauseAdmin/not-authorized-to-pause");
-    //     vm.prank(user);
-    //     pauseAdmin.pause();
-    // }
+    function testUnpauseWorks() public {
+        vm.prank(address(guardianSafe));
+        guardian.unpause();
+        assertEq(root.paused(), false);
+    }
 
-    // function testOutgoingTransferWhilePausedFails(
-    //     string memory tokenName,
-    //     string memory tokenSymbol,
-    //     uint8 decimals,
-    //     uint128 currency,
-    //     address recipient,
-    //     uint128 amount
-    // ) public {
-    //     decimals = uint8(bound(decimals, 1, 18));
-    //     vm.assume(amount > 0);
-    //     vm.assume(currency != 0);
-    //     vm.assume(recipient != address(0));
+    function testUnauthorizedUnpauseFails() public {
+        vm.expectRevert("Guardian/not-an-authorized-safe");
+        guardian.unpause();
+    }
 
-    //     ERC20 erc20 = _newErc20(tokenName, tokenSymbol, decimals);
-    //     centrifugeChain.addCurrency(currency, address(erc20));
+    function testOutgoingTransferWhilePausedFails(
+        string memory tokenName,
+        string memory tokenSymbol,
+        uint8 decimals,
+        uint128 currency,
+        address recipient,
+        uint128 amount
+    ) public {
+        decimals = uint8(bound(decimals, 1, 18));
+        vm.assume(amount > 0);
+        vm.assume(currency != 0);
+        vm.assume(recipient != address(0));
 
-    //     // First, an outgoing transfer must take place which has funds currency of the currency moved to
-    //     // the escrow account, from which funds are moved from into the recipient on an incoming transfer.
-    //     erc20.approve(address(poolManager), type(uint256).max);
-    //     erc20.mint(address(this), amount);
-    //     pauseAdmin.pause();
-    //     vm.expectRevert("Gateway/paused");
-    //     poolManager.transfer(address(erc20), bytes32(bytes20(recipient)), amount);
-    // }
+        ERC20 erc20 = _newErc20(tokenName, tokenSymbol, decimals);
+        centrifugeChain.addCurrency(currency, address(erc20));
 
-    // function testIncomingTransferWhilePausedFails(
-    //     string memory tokenName,
-    //     string memory tokenSymbol,
-    //     uint8 decimals,
-    //     uint128 currency,
-    //     bytes32 sender,
-    //     address recipient,
-    //     uint128 amount
-    // ) public {
-    //     decimals = uint8(bound(decimals, 1, 18));
-    //     vm.assume(amount > 0);
-    //     vm.assume(currency != 0);
-    //     vm.assume(recipient != address(0));
+        // First, an outgoing transfer must take place which has funds currency of the currency moved to
+        // the escrow account, from which funds are moved from into the recipient on an incoming transfer.
+        erc20.approve(address(poolManager), type(uint256).max);
+        erc20.mint(address(this), amount);
+        guardian.pause();
+        vm.expectRevert("Gateway/paused");
+        poolManager.transfer(address(erc20), bytes32(bytes20(recipient)), amount);
+    }
 
-    //     ERC20 erc20 = _newErc20(tokenName, tokenSymbol, decimals);
-    //     centrifugeChain.addCurrency(currency, address(erc20));
+    function testIncomingTransferWhilePausedFails(
+        string memory tokenName,
+        string memory tokenSymbol,
+        uint8 decimals,
+        uint128 currency,
+        bytes32 sender,
+        address recipient,
+        uint128 amount
+    ) public {
+        decimals = uint8(bound(decimals, 1, 18));
+        vm.assume(amount > 0);
+        vm.assume(currency != 0);
+        vm.assume(recipient != address(0));
 
-    //     // First, an outgoing transfer must take place which has funds currency of the currency moved to
-    //     // the escrow account, from which funds are moved from into the recipient on an incoming transfer.
-    //     erc20.approve(address(poolManager), type(uint256).max);
-    //     erc20.mint(address(this), amount);
-    //     poolManager.transfer(address(erc20), bytes32(bytes20(recipient)), amount);
-    //     assertEq(erc20.balanceOf(address(poolManager.escrow())), amount);
+        ERC20 erc20 = _newErc20(tokenName, tokenSymbol, decimals);
+        centrifugeChain.addCurrency(currency, address(erc20));
 
-    //     pauseAdmin.pause();
-    //     vm.expectRevert("Gateway/paused");
-    //     centrifugeChain.incomingTransfer(currency, sender, bytes32(bytes20(recipient)), amount);
-    // }
+        // First, an outgoing transfer must take place which has funds currency of the currency moved to
+        // the escrow account, from which funds are moved from into the recipient on an incoming transfer.
+        erc20.approve(address(poolManager), type(uint256).max);
+        erc20.mint(address(this), amount);
+        poolManager.transfer(address(erc20), bytes32(bytes20(recipient)), amount);
+        assertEq(erc20.balanceOf(address(poolManager.escrow())), amount);
 
-    // function testUnpausingResumesFunctionality(
-    //     string memory tokenName,
-    //     string memory tokenSymbol,
-    //     uint8 decimals,
-    //     uint128 currency,
-    //     bytes32 sender,
-    //     address recipient,
-    //     uint128 amount
-    // ) public {
-    //     decimals = uint8(bound(decimals, 1, 18));
-    //     vm.assume(amount > 0);
-    //     vm.assume(currency != 0);
-    //     vm.assume(recipient != address(investmentManager.escrow()));
-    //     vm.assume(recipient != address(0));
+        guardian.pause();
+        vm.expectRevert("Gateway/paused");
+        centrifugeChain.incomingTransfer(currency, sender, bytes32(bytes20(recipient)), amount);
+    }
 
-    //     ERC20 erc20 = _newErc20(tokenName, tokenSymbol, decimals);
-    //     vm.assume(recipient != address(erc20));
-    //     centrifugeChain.addCurrency(currency, address(erc20));
+    function testUnpausingResumesFunctionality(
+        string memory tokenName,
+        string memory tokenSymbol,
+        uint8 decimals,
+        uint128 currency,
+        bytes32 sender,
+        address recipient,
+        uint128 amount
+    ) public {
+        decimals = uint8(bound(decimals, 1, 18));
+        vm.assume(amount > 0);
+        vm.assume(currency != 0);
+        vm.assume(recipient != address(investmentManager.escrow()));
+        vm.assume(recipient != address(0));
 
-    //     // First, an outgoing transfer must take place which has funds currency of the currency moved to
-    //     // the escrow account, from which funds are moved from into the recipient on an incoming transfer.
-    //     erc20.approve(address(poolManager), type(uint256).max);
-    //     erc20.mint(address(this), amount);
-    //     pauseAdmin.pause();
-    //     guardian.unpause();
-    //     poolManager.transfer(address(erc20), bytes32(bytes20(recipient)), amount);
-    //     assertEq(erc20.balanceOf(address(poolManager.escrow())), amount);
+        ERC20 erc20 = _newErc20(tokenName, tokenSymbol, decimals);
+        vm.assume(recipient != address(erc20));
+        centrifugeChain.addCurrency(currency, address(erc20));
 
-    //     centrifugeChain.incomingTransfer(currency, sender, bytes32(bytes20(recipient)), amount);
-    //     assertEq(erc20.balanceOf(address(poolManager.escrow())), 0);
-    //     assertEq(erc20.balanceOf(recipient), amount);
-    // }
+        // First, an outgoing transfer must take place which has funds currency of the currency moved to
+        // the escrow account, from which funds are moved from into the recipient on an incoming transfer.
+        erc20.approve(address(poolManager), type(uint256).max);
+        erc20.mint(address(this), amount);
+        guardian.pause();
+        vm.prank(address(guardianSafe));
+        guardian.unpause();
+        poolManager.transfer(address(erc20), bytes32(bytes20(recipient)), amount);
+        assertEq(erc20.balanceOf(address(poolManager.escrow())), amount);
+
+        centrifugeChain.incomingTransfer(currency, sender, bytes32(bytes20(recipient)), amount);
+        assertEq(erc20.balanceOf(address(poolManager.escrow())), 0);
+        assertEq(erc20.balanceOf(recipient), amount);
+    }
 
     //------ Delayed admin tests ------///
     function testGuardianPause() public {
@@ -193,29 +195,21 @@ contract AdminTest is BaseTest {
         guardian.cancelRely(spell);
     }
 
-    // function testAddPauser() public {
-    //     address newPauser = vm.addr(0xABCDE);
+    function testAddedSafeOwnerCanPause() public {
+        address newOwner = vm.addr(0xABCDE);
+        guardianSafe.addOwner(newOwner);
+        vm.prank(newOwner);
+        guardian.pause();
+        assertEq(root.paused(), true);
+    }
 
-    //     address badActor = vm.addr(0xBAD);
-    //     vm.prank(badActor);
-    //     vm.expectRevert("Auth/not-authorized");
-    //     guardian.addPauser(badActor);
-
-    //     guardian.addPauser(newPauser);
-    //     assertEq(pauseAdmin.pausers(newPauser), 1);
-    // }
-
-    // function testRemovePauser() public {
-    //     address oldPauser = vm.addr(0xABCDE);
-
-    //     address badActor = vm.addr(0xBAD);
-    //     vm.prank(badActor);
-    //     vm.expectRevert("Auth/not-authorized");
-    //     guardian.removePauser(badActor);
-
-    //     guardian.removePauser(oldPauser);
-    //     assertEq(pauseAdmin.pausers(oldPauser), 0);
-    // }
+    function testRemovedOwnerCannotPause() public {
+        guardianSafe.removeOwner(address(this));
+        assertEq(guardianSafe.isOwner(address(this)), false);
+        vm.expectRevert("Guardian/not-an-owner-of-the-authorized-safe");
+        vm.prank(address(this));
+        guardian.pause();
+    }
 
     function testIncomingScheduleUpgradeMessage() public {
         address spell = vm.addr(1);
