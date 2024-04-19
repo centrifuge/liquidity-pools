@@ -3,7 +3,7 @@ pragma solidity 0.8.21;
 
 import {BytesLib} from "./../libraries/BytesLib.sol";
 import {Auth} from "./../Auth.sol";
-import {IGateway} from "src/interfaces/IGateway.sol";
+import {IGateway} from "src/interfaces/gateway/IGateway.sol";
 
 interface ManagerLike {
     function handle(bytes memory message) external;
