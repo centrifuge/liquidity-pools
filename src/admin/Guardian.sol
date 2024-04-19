@@ -51,8 +51,8 @@ contract Guardian {
     }
 
     // --- Helpers ---
-    function _isSafeOwner(SafeLike guardianSafe, address addr) internal returns (bool) {
-        try guardianSafe.isOwner(addr) returns (bool isOwner) {
+    function _isSafeOwner(SafeLike adminSafe, address addr) internal returns (bool) {
+        try adminSafe.isOwner(addr) returns (bool isOwner) {
             return isOwner;
         } catch {
             return false;
