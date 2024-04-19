@@ -142,8 +142,8 @@ contract RouterAggregator is Auth {
             // Reduce total message confirmation count by 1, by finding the first non-zero value
             state.messages.decreaseFirstNValues(1, 1);
 
-            // Reduce total proof confiration count by quorum
-            state.proofs.decreaseFirstNValues(router.quorum, 1);
+            // Reduce total proof confiration count by quorum - 1
+            state.proofs.decreaseFirstNValues(router.quorum - 1, 1);
 
             if (isMessageProof) {
                 gateway.handle(pendingMessages[messageHash]);
