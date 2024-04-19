@@ -21,7 +21,7 @@ contract Mock is Test {
     mapping(bytes32 => bytes32) public values_bytes32;
     mapping(bytes32 => bytes) public values_bytes;
     mapping(bytes32 => string) public values_string;
-    mapping(bytes32 => mapping(address => uint)) public values_mapping_address_uint;
+    mapping(bytes32 => mapping(address => uint256)) public values_mapping_address_uint;
 
     mapping(bytes32 => bool) method_fail;
 

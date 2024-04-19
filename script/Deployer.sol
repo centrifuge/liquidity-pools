@@ -8,7 +8,8 @@ import {InvestmentManager} from "src/InvestmentManager.sol";
 import {PoolManager} from "src/PoolManager.sol";
 import {Escrow} from "src/Escrow.sol";
 import {UserEscrow} from "src/UserEscrow.sol";
-import {Guardian, SafeLike} from "src/admin/Guardian.sol";
+import {Guardian} from "src/admin/Guardian.sol";
+import {MockSafe} from "test/mocks/MockSafe.sol";
 import {LiquidityPoolFactory} from "src/factories/LiquidityPoolFactory.sol";
 import {RestrictionManagerFactory} from "src/factories/RestrictionManagerFactory.sol";
 import {TrancheTokenFactory} from "src/factories/TrancheTokenFactory.sol";
@@ -34,7 +35,7 @@ contract Deployer is Script {
     PoolManager public poolManager;
     Escrow public escrow;
     UserEscrow public userEscrow;
-    SafeLike public guardianSafe;
+    MockSafe public guardianSafe;
     Guardian public guardian;
     Gateway public gateway;
     address public liquidityPoolFactory;
@@ -68,7 +69,10 @@ contract Deployer is Script {
     }
 
     function wire(address router) public {
-        // Deploy gateway and admins
+        // Deploy gateway and guardian
+        address[] memory safeOwners = new address[](1);
+        safeOwners[0] = address(this);
+        guardianSafe = new MockSafe(safeOwners, 1);
         guardian = new Guardian(address(root), address(guardianSafe));
         gateway = new Gateway(address(root), address(investmentManager), address(poolManager), address(router));
 

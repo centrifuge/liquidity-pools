@@ -3,7 +3,7 @@ pragma solidity 0.8.21;
 
 import "./Mock.sol";
 
-contract SafeMock is Mock {
+contract MockSafe is Mock {
     constructor(address[] memory owners, uint256 threshold) {
         values_uint256["threshold"] = threshold;
         for (uint256 i = 0; i < owners.length; i++) {
