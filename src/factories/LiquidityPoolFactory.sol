@@ -14,6 +14,12 @@ interface LiquidityPoolFactoryLike {
         address investmentManager,
         address[] calldata wards_
     ) external returns (address);
+    function denyLiquidityPool(address liquiditiyPool, address investmentManager) external;
+}
+
+interface AuthLike {
+    function rely(address) external;
+    function deny(address) external;
 }
 
 /// @title  Liquidity Pool Factory
@@ -44,7 +50,14 @@ contract LiquidityPoolFactory is Auth {
         for (uint256 i = 0; i < wards_.length; i++) {
             liquidityPool.rely(wards_[i]);
         }
+
+        AuthLike(investmentManager).rely(address(liquidityPool));
+
         liquidityPool.deny(address(this));
         return address(liquidityPool);
+    }
+
+    function denyLiquidityPool(address liquidityPool, address investmentManager) public auth {
+        AuthLike(investmentManager).deny(address(liquidityPool));
     }
 }

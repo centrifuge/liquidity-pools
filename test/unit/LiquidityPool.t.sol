@@ -14,9 +14,13 @@ contract LiquidityPoolTest is BaseTest {
         string memory tokenName,
         string memory tokenSymbol,
         bytes16 trancheId,
-        uint128 currencyId
+        uint128 currencyId,
+        address nonWard
     ) public {
+        vm.assume(nonWard != address(root) && nonWard != address(this) && nonWard != address(investmentManager));
         vm.assume(currencyId > 0);
+        vm.assume(bytes(tokenName).length <= 128);
+        vm.assume(bytes(tokenSymbol).length <= 32);
 
         address lPool_ = deployLiquidityPool(poolId, erc20.decimals(), tokenName, tokenSymbol, trancheId, currencyId);
         LiquidityPool lPool = LiquidityPool(lPool_);
@@ -28,15 +32,13 @@ contract LiquidityPoolTest is BaseTest {
         assertEq(lPool.trancheId(), trancheId);
         address token = poolManager.getTrancheToken(poolId, trancheId);
         assertEq(address(lPool.share()), token);
-        assertEq(
-            _bytes128ToString(_stringToBytes128(tokenName)), _bytes128ToString(_stringToBytes128(ERC20(token).name()))
-        );
-        assertEq(
-            _bytes32ToString(_stringToBytes32(tokenSymbol)), _bytes32ToString(_stringToBytes32(ERC20(token).symbol()))
-        );
+        assertEq(tokenName, ERC20(token).name());
+        assertEq(tokenSymbol, ERC20(token).symbol());
 
         // permissions set correctly
         assertEq(lPool.wards(address(root)), 1);
+        assertEq(lPool.wards(address(investmentManager)), 1);
+        assertEq(lPool.wards(nonWard), 0);
     }
 
     // --- Administration ---
@@ -89,32 +91,18 @@ contract LiquidityPoolTest is BaseTest {
         trancheToken.mint(address(this), amount);
         vm.expectRevert(bytes("MathLib/uint128-overflow"));
         lPool.requestRedeem(amount, address(this), address(this), "");
-
-        vm.expectRevert(bytes("MathLib/uint128-overflow"));
-        lPool.decreaseDepositRequest(amount);
-
-        vm.expectRevert(bytes("MathLib/uint128-overflow"));
-        lPool.decreaseRedeemRequest(amount);
     }
 
     // --- erc165 checks ---
     function testERC165Support(bytes4 unsupportedInterfaceId) public {
         bytes4 erc165 = 0x01ffc9a7;
         bytes4 erc7575 = 0x2f0a18c5;
-        bytes4 erc7575Minimal = 0x50a526d6;
-        bytes4 erc7575Deposit = 0xc1f329ef;
-        bytes4 erc7575Mint = 0xe1550342;
-        bytes4 erc7575Withdraw = 0x70dec094;
-        bytes4 erc7575Redeem = 0x2fd7d42a;
         bytes4 erc7540Deposit = 0x1683f250;
         bytes4 erc7540Redeem = 0x0899cb0b;
 
         vm.assume(
             unsupportedInterfaceId != erc165 && unsupportedInterfaceId != erc7575
-                && unsupportedInterfaceId != erc7575Minimal && unsupportedInterfaceId != erc7575Deposit
-                && unsupportedInterfaceId != erc7575Mint && unsupportedInterfaceId != erc7575Withdraw
-                && unsupportedInterfaceId != erc7575Redeem && unsupportedInterfaceId != erc7540Deposit
-                && unsupportedInterfaceId != erc7540Redeem
+                && unsupportedInterfaceId != erc7540Deposit && unsupportedInterfaceId != erc7540Redeem
         );
 
         address lPool_ = deploySimplePool();
@@ -122,21 +110,11 @@ contract LiquidityPoolTest is BaseTest {
 
         assertEq(type(IERC165).interfaceId, erc165);
         assertEq(type(IERC7575).interfaceId, erc7575);
-        assertEq(type(IERC7575Minimal).interfaceId, erc7575Minimal);
-        assertEq(type(IERC7575Deposit).interfaceId, erc7575Deposit);
-        assertEq(type(IERC7575Mint).interfaceId, erc7575Mint);
-        assertEq(type(IERC7575Withdraw).interfaceId, erc7575Withdraw);
-        assertEq(type(IERC7575Redeem).interfaceId, erc7575Redeem);
         assertEq(type(IERC7540Deposit).interfaceId, erc7540Deposit);
         assertEq(type(IERC7540Redeem).interfaceId, erc7540Redeem);
 
         assertEq(lPool.supportsInterface(erc165), true);
         assertEq(lPool.supportsInterface(erc7575), true);
-        assertEq(lPool.supportsInterface(erc7575Minimal), true);
-        assertEq(lPool.supportsInterface(erc7575Deposit), true);
-        assertEq(lPool.supportsInterface(erc7575Mint), true);
-        assertEq(lPool.supportsInterface(erc7575Redeem), true);
-        assertEq(lPool.supportsInterface(erc7575Minimal), true);
         assertEq(lPool.supportsInterface(erc7540Deposit), true);
         assertEq(lPool.supportsInterface(erc7540Redeem), true);
 
@@ -166,9 +144,10 @@ contract LiquidityPoolTest is BaseTest {
         assertEq(receiver.values_address("requestDeposit_operator"), self);
         assertEq(receiver.values_address("requestDeposit_owner"), self);
         assertEq(receiver.values_uint256("requestDeposit_requestId"), 0);
+        assertEq(receiver.values_uint256("requestDeposit_assets"), amount);
         assertEq(receiver.values_bytes("requestDeposit_data"), depositData);
 
-        assertTrue(receiver.onERC7540DepositReceived(self, self, 0, depositData) == 0xe74d2a41);
+        assertTrue(receiver.onERC7540DepositReceived(self, self, 0, amount, depositData) == 0x6d7e2da0);
 
         // Claim deposit request
         // Note this is sending it to self, which is technically incorrect, it should be going to the receiver
@@ -191,9 +170,10 @@ contract LiquidityPoolTest is BaseTest {
         assertEq(receiver.values_address("requestRedeem_operator"), self);
         assertEq(receiver.values_address("requestRedeem_owner"), self);
         assertEq(receiver.values_uint256("requestRedeem_requestId"), 0);
+        assertEq(receiver.values_uint256("requestRedeem_shares"), amount);
         assertEq(receiver.values_bytes("requestRedeem_data"), redeemData);
 
-        assertTrue(receiver.onERC7540RedeemReceived(self, self, 0, redeemData) == 0x0102fde4);
+        assertTrue(receiver.onERC7540RedeemReceived(self, self, 0, amount, redeemData) == 0x01a2e97e);
     }
 
     function testSucceedingCallbacksNotCalledWithEmptyData() public {
@@ -214,6 +194,7 @@ contract LiquidityPoolTest is BaseTest {
         assertEq(receiver.values_address("requestDeposit_operator"), address(0));
         assertEq(receiver.values_address("requestDeposit_owner"), address(0));
         assertEq(receiver.values_uint256("requestDeposit_requestId"), 0);
+        assertEq(receiver.values_uint256("requestDeposit_assets"), 0);
         assertEq(receiver.values_bytes("requestDeposit_data"), "");
 
         // Claim deposit request
@@ -237,6 +218,7 @@ contract LiquidityPoolTest is BaseTest {
         assertEq(receiver.values_address("requestRedeem_operator"), address(0));
         assertEq(receiver.values_address("requestRedeem_owner"), address(0));
         assertEq(receiver.values_uint256("requestRedeem_requestId"), 0);
+        assertEq(receiver.values_uint256("requestRedeem_shares"), 0);
         assertEq(receiver.values_bytes("requestRedeem_data"), "");
     }
 
@@ -260,6 +242,7 @@ contract LiquidityPoolTest is BaseTest {
         assertEq(receiver.values_address("requestDeposit_operator"), self);
         assertEq(receiver.values_address("requestDeposit_owner"), self);
         assertEq(receiver.values_uint256("requestDeposit_requestId"), 0);
+        assertEq(receiver.values_uint256("requestDeposit_assets"), amount);
         assertEq(receiver.values_bytes("requestDeposit_data"), depositData);
 
         // Re-submit and claim deposit request
@@ -283,6 +266,7 @@ contract LiquidityPoolTest is BaseTest {
         assertEq(receiver.values_address("requestRedeem_operator"), self);
         assertEq(receiver.values_address("requestRedeem_owner"), self);
         assertEq(receiver.values_uint256("requestRedeem_requestId"), 0);
+        assertEq(receiver.values_uint256("requestDeposit_shares"), amount);
         assertEq(receiver.values_bytes("requestRedeem_data"), redeemData);
     }
 

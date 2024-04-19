@@ -38,10 +38,9 @@ contract DeployTest is Test, Deployer {
     address[] pausers;
 
     function setUp() public {
-        deployInvestmentManager(address(this));
-        PermissionlessRouter router = new PermissionlessRouter();
+        deploy(address(this));
+        PermissionlessRouter router = new PermissionlessRouter(address(aggregator));
         wire(address(router));
-        RouterLike(address(router)).file("gateway", address(gateway));
 
         // overwrite deployed guardian with a new mock safe guardian
         pausers = new address[](3);
@@ -49,7 +48,7 @@ contract DeployTest is Test, Deployer {
         pausers[1] = makeAddr("pauser2");
         pausers[2] = makeAddr("pauser3");
         adminSafe = address(new MockSafe(pausers, 1));
-        guardian = new Guardian(address(root), adminSafe);
+        guardian = new Guardian(address(root), adminSafe, address(aggregator));
         root.rely(address(guardian));
 
         erc20 = newErc20("Test", "TEST", 6);
@@ -65,8 +64,8 @@ contract DeployTest is Test, Deployer {
         assertEq(investmentManager.wards(address(this)), 0);
         assertEq(poolManager.wards(address(this)), 0);
         assertEq(escrow.wards(address(this)), 0);
-        assertEq(userEscrow.wards(address(this)), 0);
         assertEq(gateway.wards(address(this)), 0);
+        assertEq(aggregator.wards(address(this)), 0);
         // check factories
         assertEq(WardLike(trancheTokenFactory).wards(address(this)), 0);
         assertEq(WardLike(liquidityPoolFactory).wards(address(this)), 0);
@@ -170,7 +169,7 @@ contract DeployTest is Test, Deployer {
         // Assume a bot calls collectRedeem for this user on cent chain
         vm.prank(address(gateway));
         investmentManager.handleExecutedCollectRedeem(
-            poolId, trancheId, self, _currencyId, currencyPayout, uint128(amount), 0
+            poolId, trancheId, self, _currencyId, currencyPayout, uint128(amount)
         );
 
         assertEq(lPool.maxWithdraw(self), currencyPayout);

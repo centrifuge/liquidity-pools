@@ -38,7 +38,7 @@ contract MockMultisig is IERC1271 {
     function test() public {}
 }
 
-/// @author Modified from from https://github.com/makerdao/xdomain-dss/blob/master/src/test/Dai.t.sol
+/// @author Modified from https://github.com/makerdao/xdomain-dss/blob/master/src/test/Dai.t.sol
 contract ERC20Test is Test {
     ERC20 token;
 
@@ -50,6 +50,15 @@ contract ERC20Test is Test {
 
     function setUp() public {
         token = new ERC20(18);
+    }
+
+    function testPermissions(address anotherWard) public {
+        vm.assume(anotherWard != address(this));
+
+        token.rely(anotherWard);
+        assertEq(token.wards(anotherWard), 1);
+        token.deny(anotherWard);
+        assertEq(token.wards(anotherWard), 0);
     }
 
     function testFile(string memory newName, string memory newSymbol, address invalidOrigin) public {
@@ -93,6 +102,25 @@ contract ERC20Test is Test {
 
         assertEq(token.totalSupply(), 1e18 - 0.9e18);
         assertEq(token.balanceOf(address(0xBEEF)), 0.1e18);
+    }
+
+    function testBurnWithAllowance() public {
+        address from = address(0xABCD);
+
+        token.mint(address(0xBEEF), 1e18);
+        token.rely(address(from));
+
+        vm.prank(address(from));
+        vm.expectRevert(bytes("ERC20/insufficient-allowance"));
+        token.burn(address(0xBEEF), 0.9e18);
+
+        vm.prank(address(0xBEEF));
+        token.approve(address(from), 1e18);
+
+        vm.expectEmit(true, true, true, true);
+        emit Transfer(address(0xBEEF), address(0), 0.9e18);
+        vm.prank(address(from));
+        token.burn(address(0xBEEF), 0.9e18);
     }
 
     function testApprove() public {

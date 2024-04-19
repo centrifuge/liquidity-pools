@@ -15,9 +15,10 @@ contract AdminTest is BaseTest {
 
         // permissions set correctly
         assertEq(root.wards(address(guardian)), 1);
+        assertEq(aggregator.wards(address(guardian)), 1);
     }
 
-    //------ PauseAdmin tests ------//
+    //------ pause tests ------//
     function testUnauthorizedPauseFails() public {
         MockSafe(adminSafe).removeOwner(address(this));
         vm.expectRevert("Guardian/not-an-owner-of-the-authorized-safe");
@@ -270,5 +271,32 @@ contract AdminTest is BaseTest {
 
         root.relyContract(address(investmentManager), address(this));
         assertEq(investmentManager.wards(address(this)), 1);
+    }
+
+    //------ Token Recovery tests ------///
+    function testRecoverTokens() public {
+        deploySimplePool();
+        address clumsyUser = vm.addr(0x1234);
+        address liquidityPool_ = poolManager.getLiquidityPool(5, bytes16(bytes("1")), defaultCurrencyId);
+        LiquidityPool lp = LiquidityPool(liquidityPool_);
+        address asset_ = lp.asset();
+        ERC20 asset = ERC20(asset_);
+        deal(asset_, clumsyUser, 300);
+        vm.startPrank(clumsyUser);
+        asset.transfer(liquidityPool_, 100);
+        asset.transfer(address(poolManager), 100);
+        asset.transfer(address(investmentManager), 100);
+        vm.stopPrank();
+        assertEq(asset.balanceOf(liquidityPool_), 100);
+        assertEq(asset.balanceOf(address(poolManager)), 100);
+        assertEq(asset.balanceOf(address(investmentManager)), 100);
+        assertEq(asset.balanceOf(clumsyUser), 0);
+        centrifugeChain.recoverTokens(liquidityPool_, asset_, clumsyUser, 100);
+        centrifugeChain.recoverTokens(address(poolManager), asset_, clumsyUser, 100);
+        centrifugeChain.recoverTokens(address(investmentManager), asset_, clumsyUser, 100);
+        assertEq(asset.balanceOf(clumsyUser), 300);
+        assertEq(asset.balanceOf(liquidityPool_), 0);
+        assertEq(asset.balanceOf(address(poolManager)), 0);
+        assertEq(asset.balanceOf(address(investmentManager)), 0);
     }
 }

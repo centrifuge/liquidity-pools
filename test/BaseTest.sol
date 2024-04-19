@@ -7,7 +7,6 @@ import {Root} from "../src/Root.sol";
 import {InvestmentManager} from "../src/InvestmentManager.sol";
 import {PoolManager, Tranche} from "../src/PoolManager.sol";
 import {Escrow} from "../src/Escrow.sol";
-import {UserEscrow} from "../src/UserEscrow.sol";
 import {LiquidityPoolFactory} from "src/factories/LiquidityPoolFactory.sol";
 import {TrancheTokenFactory} from "src/factories/TrancheTokenFactory.sol";
 import {LiquidityPool} from "../src/LiquidityPool.sol";
@@ -29,7 +28,10 @@ import "forge-std/Test.sol";
 
 contract BaseTest is Deployer, Test {
     MockCentrifugeChain centrifugeChain;
-    MockRouter router;
+    MockRouter router1;
+    MockRouter router2;
+    MockRouter router3;
+    address[] testRouters;
     ERC20 public erc20;
 
     address self = address(this);
@@ -54,28 +56,54 @@ contract BaseTest is Deployer, Test {
         adminSafe = address(new MockSafe(pausers, 1));
 
         // deploy core contracts
-        deployInvestmentManager(address(this));
-        // deploy mockRouter
-        router = new MockRouter(address(investmentManager));
+        deploy(address(this));
+
+        // deploy mock routers
+        router1 = new MockRouter(address(aggregator));
+        router2 = new MockRouter(address(aggregator));
+        router3 = new MockRouter(address(aggregator));
+
+        testRouters.push(address(router1));
+        testRouters.push(address(router2));
+        testRouters.push(address(router3));
+
         // wire contracts
-        wire(address(router));
+        wire(address(router1));
+        aggregator.file("routers", testRouters);
         // remove deployer access
         // removeDeployerAccess(address(router)); // need auth permissions in tests
 
-        centrifugeChain = new MockCentrifugeChain(address(router));
+        centrifugeChain = new MockCentrifugeChain(testRouters);
         erc20 = _newErc20("X's Dollar", "USDX", 6);
-        router.file("gateway", address(gateway));
+
+        // Label contracts
+        vm.label(address(root), "Root");
+        vm.label(address(investmentManager), "InvestmentManager");
+        vm.label(address(poolManager), "PoolManager");
+        vm.label(address(gateway), "Gateway");
+        vm.label(address(aggregator), "Aggregator");
+        vm.label(address(router1), "MockRouter1");
+        vm.label(address(router2), "MockRouter2");
+        vm.label(address(router3), "MockRouter3");
+        vm.label(address(erc20), "ERC20");
+        vm.label(address(centrifugeChain), "CentrifugeChain");
+        vm.label(address(escrow), "Escrow");
+        vm.label(address(poolManager.restrictionManagerFactory()), "RestrictionManagerFactory");
+        vm.label(address(poolManager.trancheTokenFactory()), "TrancheTokenFactory");
+        vm.label(address(poolManager.liquidityPoolFactory()), "LiquidityPoolFactory");
 
         // Exclude predeployed contracts from invariant tests by default
         excludeContract(address(root));
         excludeContract(address(investmentManager));
         excludeContract(address(poolManager));
         excludeContract(address(gateway));
+        excludeContract(address(aggregator));
         excludeContract(address(erc20));
         excludeContract(address(centrifugeChain));
-        excludeContract(address(router));
+        excludeContract(address(router1));
+        excludeContract(address(router2));
+        excludeContract(address(router3));
         excludeContract(address(escrow));
-        excludeContract(address(userEscrow));
         excludeContract(address(guardian));
         excludeContract(address(poolManager.restrictionManagerFactory()));
         excludeContract(address(poolManager.trancheTokenFactory()));
@@ -126,7 +154,7 @@ contract BaseTest is Deployer, Test {
     }
 
     function deploySimplePool() public returns (address) {
-        return deployLiquidityPool(5, 6, defaultRestrictionSet, "name", "symbol", _stringToBytes16("1"), defaultCurrencyId, address(erc20));
+        return deployLiquidityPool(5, 6, defaultRestrictionSet, "name", "symbol", bytes16(bytes("1")), defaultCurrencyId, address(erc20));
     }
 
     function deposit(address _lPool, address _investor, uint256 amount) public {
@@ -170,28 +198,6 @@ contract BaseTest is Deployer, Test {
         return currency;
     }
 
-    function _stringToBytes32(string memory source) internal pure returns (bytes32 result) {
-        bytes memory tempEmptyStringTest = bytes(source);
-        if (tempEmptyStringTest.length == 0) {
-            return 0x0;
-        }
-
-        assembly {
-            result := mload(add(source, 32))
-        }
-    }
-
-    function _stringToBytes16(string memory source) internal pure returns (bytes16 result) {
-        bytes memory tempEmptyStringTest = bytes(source);
-        if (tempEmptyStringTest.length == 0) {
-            return 0x0;
-        }
-
-        assembly {
-            result := mload(add(source, 16))
-        }
-    }
-
     function _bytes16ToString(bytes16 _bytes16) public pure returns (string memory) {
         uint8 i = 0;
         while(i < 16 && _bytes16[i] != 0) {
@@ -201,51 +207,6 @@ contract BaseTest is Deployer, Test {
         for (i = 0; i < 16 && _bytes16[i] != 0; i++) {
             bytesArray[i] = _bytes16[i];
         }
-        return string(bytesArray);
-    }
-
-    function _bytes32ToString(bytes32 _bytes32) internal pure returns (string memory) {
-        uint8 i = 0;
-        while (i < 32 && _bytes32[i] != 0) {
-            i++;
-        }
-
-        bytes memory bytesArray = new bytes(i);
-        for (i = 0; i < 32 && _bytes32[i] != 0; i++) {
-            bytesArray[i] = _bytes32[i];
-        }
-        return string(bytesArray);
-    }
-
-    function _stringToBytes128(string memory source) internal pure returns (bytes memory) {
-        bytes memory temp = bytes(source);
-        bytes memory result = new bytes(128);
-
-        for (uint256 i = 0; i < 128; i++) {
-            if (i < temp.length) {
-                result[i] = temp[i];
-            } else {
-                result[i] = 0x00;
-            }
-        }
-
-        return result;
-    }
-
-    function _bytes128ToString(bytes memory _bytes128) internal pure returns (string memory) {
-        require(_bytes128.length == 128, "Input should be 128 bytes");
-
-        uint8 i = 0;
-        while (i < 128 && _bytes128[i] != 0) {
-            i++;
-        }
-
-        bytes memory bytesArray = new bytes(i);
-
-        for (uint8 j = 0; j < i; j++) {
-            bytesArray[j] = _bytes128[j];
-        }
-
         return string(bytesArray);
     }
 

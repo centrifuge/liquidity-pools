@@ -5,9 +5,8 @@ import {Auth} from "./../Auth.sol";
 import {IERC20} from "../interfaces/IERC20.sol";
 
 interface RestrictionManagerLike {
-    function updateMember(address user, uint256 validUntil) external;
-    function members(address user) external view returns (uint256);
-    function hasMember(address user) external view returns (bool);
+    function updateMember(address user, uint64 validUntil) external;
+    function restrictions(address user) external view returns (bool frozen, uint64 validUntil);
     function freeze(address user) external;
     function unfreeze(address user) external;
 }
@@ -28,14 +27,17 @@ contract RestrictionManager is Auth {
 
     IERC20 public immutable token;
 
-    /// @dev Frozen accounts that tokens cannot be transferred from or to
-    mapping(address => uint256 isFrozen) public frozen;
+    struct Restrictions {
+        /// @dev Frozen accounts that tokens cannot be transferred from or to
+        bool frozen;
+        /// @dev Member accounts that tokens can be transferred to, with an end date
+        uint64 validUntil;
+    }
 
-    /// @dev Member accounts that tokens can be transferred to, with an end date
-    mapping(address => uint256 validUntil) public members;
+    mapping(address => Restrictions) public restrictions;
 
     // --- Events ---
-    event UpdateMember(address indexed user, uint256 validUntil);
+    event UpdateMember(address indexed user, uint64 validUntil);
     event Freeze(address indexed user);
     event Unfreeze(address indexed user);
 
@@ -48,15 +50,16 @@ contract RestrictionManager is Auth {
 
     // --- ERC1404 implementation ---
     function detectTransferRestriction(address from, address to, uint256 /* value */ ) public view returns (uint8) {
-        if (frozen[from] == 1) {
+        if (restrictions[from].frozen == true) {
             return SOURCE_IS_FROZEN_CODE;
         }
 
-        if (frozen[to] == 1) {
+        Restrictions memory toRestrictions = restrictions[to];
+        if (toRestrictions.frozen == true) {
             return DESTINATION_IS_FROZEN_CODE;
         }
 
-        if (!hasMember(to)) {
+        if (toRestrictions.validUntil < block.timestamp) {
             return DESTINATION_NOT_A_MEMBER_RESTRICTION_CODE;
         }
 
@@ -82,25 +85,21 @@ contract RestrictionManager is Auth {
     // --- Handling freezes ---
     function freeze(address user) public auth {
         require(user != address(0), "RestrictionManager/cannot-freeze-zero-address");
-        frozen[user] = 1;
+        restrictions[user].frozen = true;
         emit Freeze(user);
     }
 
     function unfreeze(address user) public auth {
-        frozen[user] = 0;
+        restrictions[user].frozen = false;
         emit Unfreeze(user);
     }
 
     // --- Managing members ---
-    function updateMember(address user, uint256 validUntil) public auth {
+    function updateMember(address user, uint64 validUntil) public auth {
         require(block.timestamp <= validUntil, "RestrictionManager/invalid-valid-until");
-        members[user] = validUntil;
+        restrictions[user].validUntil = validUntil;
 
         emit UpdateMember(user, validUntil);
-    }
-
-    function hasMember(address user) public view returns (bool) {
-        return members[user] >= block.timestamp;
     }
 
     // --- Misc ---

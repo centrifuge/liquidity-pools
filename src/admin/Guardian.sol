@@ -9,6 +9,10 @@ interface SafeLike {
     function getThreshold() external view returns (uint256);
 }
 
+interface RouterAggregatorLike {
+    function disputeMessageRecovery(bytes32 messageHash) external;
+}
+
 /// @title  Guardian
 /// @dev    This contract allows a Gnosis Safe to schedule and cancel new relys,
 ///         and unpause the protocol through the timelock of Root. Additionally,
@@ -17,10 +21,12 @@ interface SafeLike {
 contract Guardian {
     Root public immutable root;
     SafeLike public immutable safe;
+    RouterAggregatorLike public immutable aggregator;
 
-    constructor(address root_, address safe_) {
+    constructor(address root_, address safe_, address aggregator_) {
         root = Root(root_);
         safe = SafeLike(safe_);
+        aggregator = RouterAggregatorLike(aggregator_);
     }
 
     modifier onlySafe() {
@@ -48,6 +54,10 @@ contract Guardian {
 
     function cancelRely(address target) external onlySafe {
         root.cancelRely(target);
+    }
+
+    function disputeMessageRecovery(bytes32 messageHash) external onlySafe {
+        aggregator.disputeMessageRecovery(messageHash);
     }
 
     // --- Helpers ---
