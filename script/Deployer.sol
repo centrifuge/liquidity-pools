@@ -27,15 +27,13 @@ interface AuthLike {
 contract Deployer is Script {
     uint256 internal constant delay = 48 hours;
 
-    address admin;
-    address[] pausers;
+    address adminSafe;
 
     Root public root;
     InvestmentManager public investmentManager;
     PoolManager public poolManager;
     Escrow public escrow;
     UserEscrow public userEscrow;
-    MockSafe public guardianSafe;
     Guardian public guardian;
     Gateway public gateway;
     address public liquidityPoolFactory;
@@ -70,17 +68,14 @@ contract Deployer is Script {
 
     function wire(address router) public {
         // Deploy gateway and guardian
-        address[] memory safeOwners = new address[](1);
-        safeOwners[0] = address(this);
-        guardianSafe = new MockSafe(safeOwners, 1);
-        guardian = new Guardian(address(root), address(guardianSafe));
+        guardian = new Guardian(address(root), adminSafe);
         gateway = new Gateway(address(root), address(investmentManager), address(poolManager), address(router));
 
-        // Wire admins
+        // Wire guardian
         root.rely(address(guardian));
-        root.rely(address(gateway));
 
         // Wire gateway
+        root.rely(address(gateway));
         investmentManager.file("poolManager", address(poolManager));
         poolManager.file("investmentManager", address(investmentManager));
         investmentManager.file("gateway", address(gateway));

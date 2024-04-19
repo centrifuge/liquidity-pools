@@ -35,6 +35,7 @@ contract DeployTest is Test, Deployer {
 
     address self;
     ERC20 erc20;
+    address[] pausers;
 
     function setUp() public {
         deployInvestmentManager(address(this));
@@ -42,40 +43,44 @@ contract DeployTest is Test, Deployer {
         wire(address(router));
         RouterLike(address(router)).file("gateway", address(gateway));
 
-        admin = makeAddr("admin");
-        pausers.push(makeAddr("pauser1"));
-        pausers.push(makeAddr("pauser2"));
-        pausers.push(makeAddr("pauser3"));
+        // overwrite deployed guardian with a new mock safe guardian
+        pausers = new address[](3);
+        pausers[0] = makeAddr("pauser1");
+        pausers[1] = makeAddr("pauser2");
+        pausers[2] = makeAddr("pauser3");
+        adminSafe = address(new MockSafe(pausers, 1));
+        guardian = new Guardian(address(root), adminSafe);
+        root.rely(address(guardian));
 
-        erc20 = newErc20("Test", "TEST", 6); // TODO: fuzz decimals
+        erc20 = newErc20("Test", "TEST", 6);
         self = address(this);
 
         removeDeployerAccess(address(router), address(this));
     }
 
-    // function testDeployerHasNoAccess() public {
-    //     vm.expectRevert("Auth/not-authorized");
-    //     root.relyContract(address(investmentManager), address(1));
-    //     assertEq(root.wards(address(this)), 0);
-    //     assertEq(investmentManager.wards(address(this)), 0);
-    //     assertEq(poolManager.wards(address(this)), 0);
-    //     assertEq(escrow.wards(address(this)), 0);
-    //     assertEq(userEscrow.wards(address(this)), 0);
-    //     assertEq(gateway.wards(address(this)), 0);
-    //     assertEq(guardian.wards(address(this)), 0);
-    //     // check factories
-    //     assertEq(WardLike(trancheTokenFactory).wards(address(this)), 0);
-    //     assertEq(WardLike(liquidityPoolFactory).wards(address(this)), 0);
-    //     assertEq(WardLike(restrictionManagerFactory).wards(address(this)), 0);
-    // }
+    function testDeployerHasNoAccess() public {
+        vm.expectRevert("Auth/not-authorized");
+        root.relyContract(address(investmentManager), address(1));
+        assertEq(root.wards(address(this)), 0);
+        assertEq(investmentManager.wards(address(this)), 0);
+        assertEq(poolManager.wards(address(this)), 0);
+        assertEq(escrow.wards(address(this)), 0);
+        assertEq(userEscrow.wards(address(this)), 0);
+        assertEq(gateway.wards(address(this)), 0);
+        // check factories
+        assertEq(WardLike(trancheTokenFactory).wards(address(this)), 0);
+        assertEq(WardLike(liquidityPoolFactory).wards(address(this)), 0);
+        assertEq(WardLike(restrictionManagerFactory).wards(address(this)), 0);
+    }
 
-    // function testAdminSetup(address nonAdmin, address nonPauser) public {
-    //     vm.assume(nonAdmin != admin);
-    //     vm.assume(nonPauser != pausers[0] && nonPauser != pausers[1] && nonPauser != pausers[2]);
+    function testAdminSetup(address nonAdmin, address nonPauser) public {
+        vm.assume(nonAdmin != adminSafe);
+        vm.assume(nonPauser != pausers[0] && nonPauser != pausers[1] && nonPauser != pausers[2]);
 
-    //     assertEq(guardian.wards(admin), 1);
-    //     assertEq(guardian.wards(nonAdmin), 0);
-    // }
+        assertEq(address(guardian.safe()), adminSafe);
+        assertEq(MockSafe(adminSafe).isOwner(pausers[0]), true);
+        assertEq(MockSafe(adminSafe).isOwner(nonPauser), false);
+    }
 
     function testDeployAndInvestRedeem(
         uint64 poolId,

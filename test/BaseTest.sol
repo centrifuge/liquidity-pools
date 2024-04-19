@@ -17,6 +17,7 @@ import {Gateway} from "../src/gateway/Gateway.sol";
 import {RestrictionManagerLike, RestrictionManager} from "../src/token/RestrictionManager.sol";
 import {MessagesLib} from "../src/libraries/MessagesLib.sol";
 import {Deployer} from "../script/Deployer.sol";
+import {MockSafe} from "./mocks/MockSafe.sol";
 import "../src/interfaces/IERC20.sol";
 
 // mocks
@@ -47,8 +48,10 @@ contract BaseTest is Deployer, Test {
     function setUp() public virtual {
         vm.chainId(1);
 
-        // make yourself admin
-        admin = self;
+        // make yourself owner of the adminSafe
+        address[] memory pausers = new address[](1);
+        pausers[0] = self;
+        adminSafe = address(new MockSafe(pausers, 1));
 
         // deploy core contracts
         deployInvestmentManager(address(this));
@@ -56,7 +59,6 @@ contract BaseTest is Deployer, Test {
         router = new MockRouter(address(investmentManager));
         // wire contracts
         wire(address(router));
-
         // remove deployer access
         // removeDeployerAccess(address(router)); // need auth permissions in tests
 

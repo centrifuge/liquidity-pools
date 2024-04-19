@@ -13,17 +13,11 @@ import {Gateway} from "src/gateway/Gateway.sol";
 import {LiquidityPoolFactory} from "src/factories/LiquidityPoolFactory.sol";
 import {RestrictionManagerFactory} from "src/factories/RestrictionManagerFactory.sol";
 import {TrancheTokenFactory} from "src/factories/TrancheTokenFactory.sol";
-import {Guardian} from "src/admin/Guardian.sol";
+import {Guardian, SafeLike} from "src/admin/Guardian.sol";
 
 interface RouterLike {
     function send(bytes memory message) external;
     function wards(address ward) external view returns (uint256);
-}
-
-interface SafeLike {
-    function getOwners() external view returns (address[] memory);
-    function isOwner(address signer) external view returns (bool);
-    function getThreshold() external view returns (uint256);
 }
 
 contract ForkTest is Test {
@@ -150,29 +144,28 @@ contract ForkTest is Test {
         }
     }
 
-    // function testAdminsWiredCorrectly() public {
-    //     if (vm.envOr("FORK_TESTS", false)) {
-    //         for (uint256 i = 0; i < deployments.length; i++) {
-    //             // Read deployment file
-    //             address root = _get(i, ".contracts.root");
-    //             address guardian = _get(i, ".contracts.guardian");
-    //             address deployer = _get(i, ".config.deployer");
-    //             address admin = _get(i, ".config.admin");
-    //             _loadFork(i);
+    function testAdminsWiredCorrectly() public {
+        if (vm.envOr("FORK_TESTS", false)) {
+            for (uint256 i = 0; i < deployments.length; i++) {
+                // Read deployment file
+                address root = _get(i, ".contracts.root");
+                address guardian = _get(i, ".contracts.guardian");
+                address deployer = _get(i, ".config.deployer");
+                address admin = _get(i, ".config.admin");
+                _loadFork(i);
 
-    //             // Root
-    //             assertEq(Root(root).delay(), 48 hours);
-    //             assertEq(Root(root).paused(), false);
+                // Root
+                assertEq(Root(root).delay(), 48 hours);
+                assertEq(Root(root).paused(), false);
 
-    //             // Guardian
-    //             assertEq(address(Guardian(guardian).root()), root);
-    //             assertEq(Guardian(guardian).wards(admin), 1);
-    //             assertEq(Root(root).wards(guardian), 1);
-    //             assertEq(Guardian(guardian).wards(root), 0);
-    //             assertEq(Guardian(guardian).wards(deployer), 0);
-    //         }
-    //     }
-    // }
+                // Guardian
+                assertEq(address(Guardian(guardian).root()), root);
+                SafeLike guardianSafe = Guardian(guardian).safe();
+                assertEq(guardianSafe.isOwner(admin), true);
+                assertEq(Root(root).wards(guardian), 1);
+            }
+        }
+    }
 
     function testAdminSigners() public {
         if (vm.envOr("FORK_TESTS", false)) {

@@ -4,7 +4,9 @@ pragma solidity 0.8.21;
 import {Root} from "src/Root.sol";
 
 interface SafeLike {
+    function getOwners() external view returns (address[] memory);
     function isOwner(address signer) external view returns (bool);
+    function getThreshold() external view returns (uint256);
 }
 
 /// @title  Guardian
@@ -49,12 +51,11 @@ contract Guardian {
     }
 
     // --- Helpers ---
-    function _isSafeOwner(SafeLike safe, address addr) internal returns (bool) {
-        return safe.isOwner(addr);
-        // try safe.isOwner(addr) returns (bool isOwner) {
-        //     return isOwner;
-        // } catch {
-        //     return false;
-        // }
+    function _isSafeOwner(SafeLike guardianSafe, address addr) internal returns (bool) {
+        try guardianSafe.isOwner(addr) returns (bool isOwner) {
+            return isOwner;
+        } catch {
+            return false;
+        }
     }
 }

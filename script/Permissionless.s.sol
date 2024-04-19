@@ -12,8 +12,7 @@ contract PermissionlessScript is Deployer {
     function run() public {
         vm.startBroadcast();
 
-        admin = msg.sender;
-        pausers = [msg.sender];
+        adminSafe = msg.sender;
 
         // Deploy contracts
         deployInvestmentManager(msg.sender);
