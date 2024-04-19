@@ -53,7 +53,7 @@ contract ForkTest is Test {
                 address liquidityPoolFactory = _get(i, ".contracts.liquidityPoolFactory");
                 address restrictionManagerFactory = _get(i, ".contracts.restrictionManagerFactory");
                 address deployer = _get(i, ".config.deployer");
-                address admin = _get(i, ".config.admin");
+                address adminSafe = _get(i, ".config.adminSafe");
                 _loadFork(i);
 
                 // InvestmentManager
@@ -66,7 +66,7 @@ contract ForkTest is Test {
                 assertEq(UserEscrow(userEscrow).wards(investmentManager), 1);
                 assertEq(InvestmentManager(investmentManager).wards(root), 1);
                 assertEq(InvestmentManager(investmentManager).wards(deployer), 0);
-                assertEq(InvestmentManager(investmentManager).wards(admin), 0);
+                assertEq(InvestmentManager(investmentManager).wards(adminSafe), 0);
 
                 // PoolManager
                 assertEq(address(PoolManager(poolManager).gateway()), gateway);
@@ -78,7 +78,7 @@ contract ForkTest is Test {
                 assertEq(Escrow(escrow).wards(poolManager), 1);
                 assertEq(PoolManager(poolManager).wards(root), 1);
                 assertEq(PoolManager(poolManager).wards(deployer), 0);
-                assertEq(PoolManager(poolManager).wards(admin), 0);
+                assertEq(PoolManager(poolManager).wards(adminSafe), 0);
 
                 // Gateway
                 assertEq(address(Gateway(gateway).investmentManager()), investmentManager);
@@ -91,22 +91,22 @@ contract ForkTest is Test {
                 assertEq(Gateway(gateway).wards(root), 1);
                 assertEq(Root(root).wards(gateway), 1);
                 assertEq(Gateway(gateway).wards(deployer), 0);
-                assertEq(Gateway(gateway).wards(admin), 0);
+                assertEq(Gateway(gateway).wards(adminSafe), 0);
 
                 // Escrow
                 assertEq(Escrow(escrow).wards(root), 1);
                 assertEq(Escrow(escrow).wards(deployer), 0);
-                assertEq(Escrow(escrow).wards(admin), 0);
+                assertEq(Escrow(escrow).wards(adminSafe), 0);
 
                 // UserEscrow
                 assertEq(UserEscrow(userEscrow).wards(root), 1);
                 assertEq(UserEscrow(userEscrow).wards(deployer), 0);
-                assertEq(UserEscrow(userEscrow).wards(admin), 0);
+                assertEq(UserEscrow(userEscrow).wards(adminSafe), 0);
 
                 // Router
                 assertEq(RouterLike(router).wards(root), 1);
                 assertEq(RouterLike(router).wards(deployer), 0);
-                assertEq(RouterLike(router).wards(admin), 0);
+                assertEq(RouterLike(router).wards(adminSafe), 0);
             }
         }
     }
@@ -121,25 +121,25 @@ contract ForkTest is Test {
                 address liquidityPoolFactory = _get(i, ".contracts.liquidityPoolFactory");
                 address restrictionManagerFactory = _get(i, ".contracts.restrictionManagerFactory");
                 address deployer = _get(i, ".config.deployer");
-                address admin = _get(i, ".config.admin");
+                address adminSafe = _get(i, ".config.adminSafe");
                 _loadFork(i);
 
                 // TrancheTokenFactory
                 assertEq(TrancheTokenFactory(trancheTokenFactory).wards(root), 1);
                 assertEq(TrancheTokenFactory(trancheTokenFactory).wards(deployer), 0);
-                assertEq(TrancheTokenFactory(trancheTokenFactory).wards(admin), 0);
+                assertEq(TrancheTokenFactory(trancheTokenFactory).wards(adminSafe), 0);
 
                 // LiquidityPoolFactory
                 assertEq(LiquidityPoolFactory(liquidityPoolFactory).root(), root);
                 assertEq(LiquidityPoolFactory(liquidityPoolFactory).wards(root), 1);
                 assertEq(LiquidityPoolFactory(liquidityPoolFactory).wards(poolManager), 1);
                 assertEq(LiquidityPoolFactory(liquidityPoolFactory).wards(deployer), 0);
-                assertEq(LiquidityPoolFactory(liquidityPoolFactory).wards(admin), 0);
+                assertEq(LiquidityPoolFactory(liquidityPoolFactory).wards(adminSafe), 0);
 
                 // RestrictionManagerFactory
                 assertEq(RestrictionManagerFactory(restrictionManagerFactory).wards(root), 1);
                 assertEq(RestrictionManagerFactory(restrictionManagerFactory).wards(deployer), 0);
-                assertEq(RestrictionManagerFactory(restrictionManagerFactory).wards(admin), 0);
+                assertEq(RestrictionManagerFactory(restrictionManagerFactory).wards(adminSafe), 0);
             }
         }
     }
@@ -151,7 +151,7 @@ contract ForkTest is Test {
                 address root = _get(i, ".contracts.root");
                 address guardian = _get(i, ".contracts.guardian");
                 address deployer = _get(i, ".config.deployer");
-                address admin = _get(i, ".config.admin");
+                address adminSafe = _get(i, ".config.adminSafe");
                 _loadFork(i);
 
                 // Root
@@ -160,8 +160,7 @@ contract ForkTest is Test {
 
                 // Guardian
                 assertEq(address(Guardian(guardian).root()), root);
-                SafeLike guardianSafe = Guardian(guardian).safe();
-                assertEq(guardianSafe.isOwner(admin), true);
+                assertEq(address(Guardian(guardian).safe()), adminSafe);
                 assertEq(Root(root).wards(guardian), 1);
             }
         }
@@ -173,13 +172,13 @@ contract ForkTest is Test {
                 bool isTestnet = abi.decode(deployments[i].parseRaw(".isTestnet"), (bool));
                 if (!isTestnet) {
                     // Read deployment file
-                    address admin = _get(i, ".config.admin");
+                    address adminSafe = _get(i, ".config.adminSafe");
                     address[] memory adminSigners =
                         abi.decode(deployments[i].parseRaw(".config.adminSigners"), (address[]));
                     _loadFork(i);
 
                     // Check Safe signers
-                    SafeLike safe = SafeLike(admin);
+                    SafeLike safe = SafeLike(adminSafe);
                     address[] memory signers = safe.getOwners();
                     assertEq(signers.length, adminSigners.length);
                     for (uint256 j = 0; j < adminSigners.length; j++) {
