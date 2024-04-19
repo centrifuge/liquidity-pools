@@ -3,6 +3,7 @@ pragma solidity 0.8.21;
 
 import {BytesLib} from "./../libraries/BytesLib.sol";
 import {Auth} from "./../Auth.sol";
+import {IGateway} from "src/interfaces/IGateway.sol";
 
 interface ManagerLike {
     function handle(bytes memory message) external;
@@ -25,7 +26,7 @@ interface RootLike {
 ///
 ///         If the Root is paused, any messages in and out of this contract
 ///         will not be forwarded
-contract Gateway is Auth {
+contract Gateway is Auth, IGateway {
     using BytesLib for bytes;
 
     RootLike public immutable root;
@@ -35,10 +36,6 @@ contract Gateway is Auth {
     RouterAggregatorLike public aggregator;
 
     mapping(uint8 messageId => address manager) messages;
-
-    // --- Events ---
-    event File(bytes32 indexed what, address data);
-    event File(bytes32 indexed what, uint8 messageId, address manager);
 
     constructor(address root_, address investmentManager_, address poolManager_) {
         root = RootLike(root_);
