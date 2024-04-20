@@ -21,7 +21,7 @@ contract AxelarScript is Deployer {
         pausers = vm.envAddress("PAUSERS", ",");
 
         deploy(msg.sender);
-        AxelarRouter router = new AxelarRouter(address(aggregator), address(vm.envAddress("AXELAR_GATEWAY")));
+        AxelarRouter router = new AxelarRouter(address(aggregator), address(vm.envAddress("AXELAR_GATEWAY")), address(vm.envAddress("AXELAR_GAS_SERVICE")));
         wire(address(router));
 
         giveAdminAccess();

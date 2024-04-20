@@ -10,6 +10,7 @@ import {BytesLib} from "src/libraries/BytesLib.sol";
 
 contract AxelarRouterTest is Test {
     AxelarGatewayMock axelarGateway;
+    address axelarGasService = makeAddr("gas-service");
     GatewayMock gateway;
     AxelarRouter router;
     AxelarForwarder forwarder;
@@ -22,7 +23,7 @@ contract AxelarRouterTest is Test {
         gateway = new GatewayMock();
 
         forwarder = new AxelarForwarder(address(axelarGateway));
-        router = new AxelarRouter(address(gateway), address(axelarGateway));
+        router = new AxelarRouter(address(gateway), address(axelarGateway), axelarGasService);
     }
 
     function testIncomingCalls(

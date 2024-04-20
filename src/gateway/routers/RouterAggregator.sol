@@ -11,6 +11,8 @@ interface GatewayLike {
 
 interface RouterLike {
     function send(bytes memory message) external;
+    function pay(address sender, bytes calldata payload) external payable;
+    function estimate(uint256 baseCost) external returns (uint256);
 }
 
 /// @title  RouterAggregator
@@ -205,12 +207,18 @@ contract RouterAggregator is Auth {
     function send(bytes calldata message) public {
         require(msg.sender == address(gateway), "RouterAggregator/only-gateway-allowed-to-call");
 
+        // TODO
+        address sender = msg.sender;
+
         uint256 numRouters = routers.length;
         require(numRouters > 0, "RouterAggregator/not-initialized");
 
+        // uint256 baseCost = messageGas *
         bytes memory proof = abi.encodePacked(uint8(MessagesLib.Call.MessageProof), keccak256(message));
         for (uint256 i; i < numRouters; ++i) {
-            RouterLike(routers[i]).send(i == PRIMARY_ROUTER_ID - 1 ? message : proof);
+            RouterLike router = RouterLike(routers[i]);
+            router.pay{ value: router.estimate(0) }(sender, i == PRIMARY_ROUTER_ID - 1 ? message : proof);
+            router.send(i == PRIMARY_ROUTER_ID - 1 ? message : proof);
         }
 
         emit SendMessage(message);

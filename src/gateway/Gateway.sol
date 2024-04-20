@@ -9,7 +9,7 @@ interface ManagerLike {
 }
 
 interface RouterAggregatorLike {
-    function send(bytes memory message) external;
+    function send(bytes memory message) external payable;
 }
 
 interface RootLike {
@@ -33,6 +33,8 @@ contract Gateway is Auth {
     address public poolManager;
     address public investmentManager;
     RouterAggregatorLike public aggregator;
+
+    uint256 public gasPriceOracle = 0.5 gwei;
 
     mapping(uint8 messageId => address manager) messages;
 
@@ -70,12 +72,12 @@ contract Gateway is Auth {
     }
 
     // --- Outgoing ---
-    function send(bytes calldata message) public pauseable {
+    function send(bytes calldata message) public payable pauseable {
         require(
             msg.sender == investmentManager || msg.sender == poolManager || msg.sender == messages[message.toUint8(0)],
             "Gateway/invalid-manager"
         );
-        aggregator.send(message);
+        aggregator.send{value: msg.value}(message);
     }
 
     // --- Incoming ---
