@@ -10,9 +10,9 @@ library ArrayLib {
     }
 
     function decreaseFirstNValues(uint16[8] storage arr, uint8 numValues) internal {
-        if (numValues == 0) return;
-        
         for (uint256 i; i < arr.length; ++i) {
+            if (numValues == 0) return;
+        
             if (arr[i] > 0) {
                 arr[i] -= 1;
                 numValues--;
