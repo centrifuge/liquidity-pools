@@ -9,15 +9,17 @@ library ArrayLib {
         }
     }
 
-    function decreaseFirstNValues(uint16[8] storage arr, uint8 numValues, uint16 decrease) internal {
+    function decreaseFirstNValues(uint16[8] storage arr, uint8 numValues) internal {
+        if (numValues == 0) return;
+        
         for (uint256 i; i < arr.length; ++i) {
-            if (numValues == 0) return;
-
             if (arr[i] > 0) {
-                arr[i] -= decrease;
+                arr[i] -= 1;
                 numValues--;
             }
         }
+
+        require(numValues == 0, "ArrayLib/invalid-values");
     }
 
     function isEmpty(uint16[8] memory arr) internal pure returns (bool) {
