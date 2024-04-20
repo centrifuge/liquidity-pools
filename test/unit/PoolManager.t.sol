@@ -505,10 +505,10 @@ contract PoolManagerTest is BaseTest {
         centrifugeChain.addPool(poolId);
 
         centrifugeChain.allowInvestmentCurrency(poolId, currency);
-        assertTrue(poolManager.isAllowedAsInvestmentCurrency(poolId, address(erc20)));
+        assertTrue(poolManager.isAllowedAsset(poolId, address(erc20)));
 
         centrifugeChain.disallowInvestmentCurrency(poolId, currency);
-        assertEq(poolManager.isAllowedAsInvestmentCurrency(poolId, address(erc20)), false);
+        assertEq(poolManager.isAllowedAsset(poolId, address(erc20)), false);
 
         uint128 randomCurrency = 100;
 

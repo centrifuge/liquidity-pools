@@ -137,7 +137,7 @@ contract BaseTest is Deployer, Test {
             poolManager.deployTranche(poolId, trancheId);
         }
 
-        if (!poolManager.isAllowedAsInvestmentCurrency(poolId, currency)) {
+        if (!poolManager.isAllowedAsset(poolId, currency)) {
             centrifugeChain.allowInvestmentCurrency(poolId, currencyId);
         }
 

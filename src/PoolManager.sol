@@ -418,7 +418,7 @@ contract PoolManager is Auth, IPoolManager {
     function deployLiquidityPool(uint64 poolId, bytes16 trancheId, address currency) public returns (address) {
         Tranche storage tranche = pools[poolId].tranches[trancheId];
         require(tranche.token != address(0), "PoolManager/tranche-does-not-exist");
-        require(isAllowedAsInvestmentCurrency(poolId, currency), "PoolManager/currency-not-supported");
+        require(isAllowedAsset(poolId, currency), "PoolManager/currency-not-supported");
 
         address liquidityPool = TrancheTokenLike(tranche.token).vault(currency);
         require(liquidityPool == address(0), "PoolManager/liquidity-pool-already-deployed");
@@ -494,7 +494,7 @@ contract PoolManager is Auth, IPoolManager {
     }
 
     /// @inheritdoc IPoolManager
-    function isAllowedAsInvestmentCurrency(uint64 poolId, address currency) public view returns (bool) {
+    function isAllowedAsset(uint64 poolId, address currency) public view returns (bool) {
         return pools[poolId].allowedCurrencies[currency];
     }
 }

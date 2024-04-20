@@ -184,5 +184,5 @@ interface IPoolManager {
         returns (uint128 price, uint64 computedAt);
 
     /// @notice TODO
-    function isAllowedAsInvestmentCurrency(uint64 poolId, address currency) external view returns (bool);
+    function isAllowedAsset(uint64 poolId, address currency) external view returns (bool);
 }

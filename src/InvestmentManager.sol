@@ -86,11 +86,11 @@ contract InvestmentManager is Auth, IInvestmentManager {
 
         uint64 poolId = lPool.poolId();
         address asset = lPool.asset();
-        require(poolManager.isAllowedAsInvestmentCurrency(poolId, asset), "InvestmentManager/currency-not-allowed");
+        require(poolManager.isAllowedAsset(poolId, asset), "InvestmentManager/currency-not-allowed");
 
-        require(_checkTransferRestriction(vault, address(0), owner, 0), "InvestmentManager/owner-is-restricted");
+        require(_canTransfer(vault, address(0), owner, 0), "InvestmentManager/owner-is-restricted");
         require(
-            _checkTransferRestriction(vault, address(0), receiver, convertToShares(vault, assets)),
+            _canTransfer(vault, address(0), receiver, convertToShares(vault, assets)),
             "InvestmentManager/transfer-not-allowed"
         );
 
@@ -124,14 +124,11 @@ contract InvestmentManager is Auth, IInvestmentManager {
         require(_shares != 0, "InvestmentManager/zero-amount-not-allowed");
         VaultLike lPool = VaultLike(vault);
 
-        // You cannot redeem using a disallowed investment currency, instead another LP will have to be used
-        require(
-            poolManager.isAllowedAsInvestmentCurrency(lPool.poolId(), lPool.asset()),
-            "InvestmentManager/currency-not-allowed"
-        );
+        // You cannot redeem using a disallowed investment asset, instead another LP will have to be used
+        require(poolManager.isAllowedAsset(lPool.poolId(), lPool.asset()), "InvestmentManager/asset-not-allowed");
 
         require(
-            _checkTransferRestriction(vault, receiver, address(escrow), convertToAssets(vault, shares)),
+            _canTransfer(vault, receiver, address(escrow), convertToAssets(vault, shares)),
             "InvestmentManager/transfer-not-allowed"
         );
 
@@ -184,7 +181,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
         VaultLike _vault = VaultLike(vault);
         uint256 approximateTrancheTokensPayout = pendingRedeemRequest(vault, owner);
         require(
-            _checkTransferRestriction(vault, address(0), owner, approximateTrancheTokensPayout),
+            _canTransfer(vault, address(0), owner, approximateTrancheTokensPayout),
             "InvestmentManager/transfer-not-allowed"
         );
 
@@ -209,7 +206,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
         MessagesLib.Call call = MessagesLib.messageType(message);
 
         if (call == MessagesLib.Call.ExecutedCollectInvest) {
-            handleDepositRequestFulfillment(
+            fulfillDepositRequest(
                 message.toUint64(1),
                 message.toBytes16(9),
                 message.toAddress(25),
@@ -219,7 +216,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
                 message.toUint128(105)
             );
         } else if (call == MessagesLib.Call.ExecutedCollectRedeem) {
-            handleRedeemRequestFulfillment(
+            fulfillRedeemRequest(
                 message.toUint64(1),
                 message.toBytes16(9),
                 message.toAddress(25),
@@ -228,7 +225,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
                 message.toUint128(89)
             );
         } else if (call == MessagesLib.Call.ExecutedDecreaseInvestOrder) {
-            handleCancelDepositRequestFulfillment(
+            fulfillCancelDepositRequest(
                 message.toUint64(1),
                 message.toBytes16(9),
                 message.toAddress(25),
@@ -237,7 +234,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
                 message.toUint128(89)
             );
         } else if (call == MessagesLib.Call.ExecutedDecreaseRedeemOrder) {
-            handleCancelRedeemRequestFulfillment(
+            fulfillCancelRedeemRequest(
                 message.toUint64(1),
                 message.toBytes16(9),
                 message.toAddress(25),
@@ -246,7 +243,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
                 message.toUint128(89)
             );
         } else if (call == MessagesLib.Call.TriggerIncreaseRedeemOrder) {
-            handleTriggerRedeemRequest(
+            triggerRedeemRequest(
                 message.toUint64(1),
                 message.toBytes16(9),
                 message.toAddress(25),
@@ -259,7 +256,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
     }
 
     /// @inheritdoc IInvestmentManager
-    function handleDepositRequestFulfillment(
+    function fulfillDepositRequest(
         uint64 poolId,
         bytes16 trancheId,
         address user,
@@ -286,7 +283,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
     }
 
     /// @inheritdoc IInvestmentManager
-    function handleRedeemRequestFulfillment(
+    function fulfillRedeemRequest(
         uint64 poolId,
         bytes16 trancheId,
         address user,
@@ -315,7 +312,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
     }
 
     /// @inheritdoc IInvestmentManager
-    function handleCancelDepositRequestFulfillment(
+    function fulfillCancelDepositRequest(
         uint64 poolId,
         bytes16 trancheId,
         address user,
@@ -336,7 +333,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
     }
 
     /// @inheritdoc IInvestmentManager
-    function handleCancelRedeemRequestFulfillment(
+    function fulfillCancelRedeemRequest(
         uint64 poolId,
         bytes16 trancheId,
         address user,
@@ -355,7 +352,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
     }
 
     /// @inheritdoc IInvestmentManager
-    function handleTriggerRedeemRequest(uint64 poolId, bytes16 trancheId, address user, uint128 assetId, uint128 shares)
+    function triggerRedeemRequest(uint64 poolId, bytes16 trancheId, address user, uint128 assetId, uint128 shares)
         public
         auth
     {
@@ -407,7 +404,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
 
     /// @inheritdoc IInvestmentManager
     function maxDeposit(address vault, address user) public view returns (uint256) {
-        if (!_checkTransferRestriction(vault, address(escrow), user, 0)) return 0;
+        if (!_canTransfer(vault, address(escrow), user, 0)) return 0;
         return uint256(_maxDeposit(vault, user));
     }
 
@@ -418,7 +415,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
 
     /// @inheritdoc IInvestmentManager
     function maxMint(address vault, address user) public view returns (uint256 shares) {
-        if (!_checkTransferRestriction(vault, address(escrow), user, 0)) return 0;
+        if (!_canTransfer(vault, address(escrow), user, 0)) return 0;
         return uint256(investments[vault][user].maxMint);
     }
 
@@ -622,18 +619,14 @@ contract InvestmentManager is Auth, IInvestmentManager {
     function _getPoolDecimals(address vault)
         internal
         view
-        returns (uint8 currencyDecimals, uint8 trancheTokenDecimals)
+        returns (uint8 assetDecimals, uint8 shareDecimals)
     {
-        currencyDecimals = IERC20Metadata(VaultLike(vault).asset()).decimals();
-        trancheTokenDecimals = IERC20Metadata(VaultLike(vault).share()).decimals();
+        assetDecimals = IERC20Metadata(VaultLike(vault).asset()).decimals();
+        shareDecimals = IERC20Metadata(VaultLike(vault).share()).decimals();
     }
 
-    function _checkTransferRestriction(address vault, address from, address to, uint256 value)
-        internal
-        view
-        returns (bool)
-    {
-        TrancheTokenLike trancheToken = TrancheTokenLike(VaultLike(vault).share());
-        return trancheToken.checkTransferRestriction(from, to, value);
+    function _canTransfer(address vault, address from, address to, uint256 value) internal view returns (bool) {
+        TrancheTokenLike share = TrancheTokenLike(VaultLike(vault).share());
+        return share.checkTransferRestriction(from, to, value);
     }
 }
