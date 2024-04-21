@@ -4,6 +4,7 @@ pragma solidity 0.8.21;
 import {Auth} from "src/Auth.sol";
 import {ArrayLib} from "src/libraries/ArrayLib.sol";
 import {MessagesLib} from "src/libraries/MessagesLib.sol";
+import {IRouterAggregator} from "src/interfaces/gateway/IRouterAggregator.sol";
 
 interface GatewayLike {
     function handle(bytes memory message) external;
@@ -19,7 +20,7 @@ interface RouterLike {
 ///
 ///         Supports processing multiple duplicate messages in parallel by
 ///         storing counts of messages and proofs that have been received.
-contract RouterAggregator is Auth {
+contract RouterAggregator is Auth, IRouterAggregator {
     using ArrayLib for uint16[8];
 
     uint8 public constant MAX_ROUTER_COUNT = 8;
@@ -34,39 +35,6 @@ contract RouterAggregator is Auth {
     mapping(bytes32 messageHash => bytes) public pendingMessages;
     mapping(bytes32 messageHash => ConfirmationState) internal _confirmations;
 
-    struct Router {
-        // Starts at 1 and maps to id - 1 as the index on the routers array
-        uint8 id;
-        // Each router struct is packed with the quorum to reduce SLOADs on handle
-        uint8 quorum;
-    }
-
-    struct ConfirmationState {
-        // Counts are stored as integers (instead of boolean values) to accommodate duplicate
-        // messages (e.g. two investments from the same user with the same amount) being
-        // processed in parallel. The entire struct is packed in a single bytes32 slot.
-        // Max uint16 = 65,535 so at most 65,535 duplicate messages can be processed in parallel.
-        uint16[8] messages;
-        uint16[8] proofs;
-    }
-
-    struct Recovery {
-        uint256 timestamp;
-        address router;
-    }
-
-    // --- Events ---
-    event HandleMessage(bytes message, address router);
-    event HandleProof(bytes32 messageHash, address router);
-    event ExecuteMessage(bytes message, address router);
-    event SendMessage(bytes message);
-    event RecoverMessage(address router, bytes message);
-    event RecoverProof(address router, bytes32 messageHash);
-    event InitiateMessageRecovery(bytes32 messageHash, address router);
-    event DisputeMessageRecovery(bytes32 messageHash);
-    event ExecuteMessagRecovery(bytes message);
-    event File(bytes32 indexed what, address[] routers);
-
     constructor(address gateway_) {
         gateway = GatewayLike(gateway_);
 
@@ -75,6 +43,7 @@ contract RouterAggregator is Auth {
     }
 
     // --- Administration ---
+    /// @inheritdoc IRouterAggregator
     function file(bytes32 what, address[] calldata routers_) external auth {
         if (what == "routers") {
             require(routers_.length <= MAX_ROUTER_COUNT, "RouterAggregator/exceeds-max-router-count");
@@ -100,8 +69,7 @@ contract RouterAggregator is Auth {
     }
 
     // --- Incoming ---
-    /// @dev Handle incoming messages, proofs, and recoveries.
-    ///      Assumes routers ensure messages cannot be confirmed more than once.
+    /// @inheritdoc IRouterAggregator
     function handle(bytes calldata payload) public {
         Router memory router = validRouters[msg.sender];
         require(router.id != 0, "RouterAggregator/invalid-router");
@@ -162,12 +130,6 @@ contract RouterAggregator is Auth {
         }
     }
 
-    /// @dev Governance on Centrifuge Chain can initiate message recovery. After the challenge period,
-    ///      the recovery can be executed. If a malign router initiates message recovery, governance on
-    ///      Centrifuge Chain can dispute and immediately cancel the recovery, using any other valid router.
-    ///
-    ///      Only 1 recovery can be outstanding per message hash. If multiple routers fail at the same time,
-    //       these will need to be recovered serially (increasing the challenge period for each failed router).
     function _handleRecovery(bytes memory payload) internal {
         if (MessagesLib.messageType(payload) == MessagesLib.Call.InitiateMessageRecovery) {
             (bytes32 messageHash, address router) = MessagesLib.parseInitiateMessageRecovery(payload);
@@ -180,6 +142,7 @@ contract RouterAggregator is Auth {
         }
     }
 
+    /// @inheritdoc IRouterAggregator
     function disputeMessageRecovery(bytes32 messageHash) public auth {
         _disputeMessageRecovery(messageHash);
     }
@@ -189,6 +152,7 @@ contract RouterAggregator is Auth {
         emit DisputeMessageRecovery(messageHash);
     }
 
+    /// @inheritdoc IRouterAggregator
     function executeMessageRecovery(bytes calldata message) public {
         bytes32 messageHash = keccak256(message);
         Recovery storage recovery = recoveries[messageHash];
@@ -200,8 +164,7 @@ contract RouterAggregator is Auth {
     }
 
     // --- Outgoing ---
-    /// @dev Sends 1 message to the first router with the full message, and n-1 messages to the other routers with
-    ///      proofs (hash of message). This ensures message uniqueness (can only be executed on the destination once).
+    /// @inheritdoc IRouterAggregator
     function send(bytes calldata message) public {
         require(msg.sender == address(gateway), "RouterAggregator/only-gateway-allowed-to-call");
 
@@ -217,11 +180,13 @@ contract RouterAggregator is Auth {
     }
 
     // --- Helpers ---
+    /// @inheritdoc IRouterAggregator
     function quorum() external view returns (uint8) {
         Router memory router = validRouters[routers[0]];
         return router.quorum;
     }
 
+    /// @inheritdoc IRouterAggregator
     function confirmations(bytes32 messageHash)
         external
         view
