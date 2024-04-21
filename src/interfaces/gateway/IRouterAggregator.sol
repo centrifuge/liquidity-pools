@@ -61,8 +61,10 @@ interface IRouterAggregator {
     function send(bytes calldata message) external;
 
     // --- Helpers ---
+    /// @notice TODO
     function quorum() external view returns (uint8);
 
+    /// @notice TODO
     function confirmations(bytes32 messageHash)
         external
         view

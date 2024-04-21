@@ -21,10 +21,11 @@ interface IRestrictionManager {
     /// @notice TODO
     function messageForTransferRestriction(uint8 restrictionCode) external pure returns (string memory);
 
-    /// @notice TODO
     // --- Handling freezes ---
+    /// @notice TODO
     function freeze(address user) external;
 
+    /// @notice TODO
     function unfreeze(address user) external;
 
     // --- Managing members ---
