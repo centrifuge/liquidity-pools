@@ -125,12 +125,14 @@ contract RouterAggregator is Auth {
         bytes32 messageHash;
         ConfirmationState storage state;
         if (isMessageProof) {
+            require(router.id != 1, "RouterAggregator/non-proof-router");
             messageHash = MessagesLib.parseMessageProof(payload);
             state = _confirmations[messageHash];
             state.proofs[router.id - 1]++;
 
             emit HandleProof(messageHash, msg.sender);
         } else {
+            require(router.id == 1, "RouterAggregator/non-message-router");
             messageHash = keccak256(payload);
             state = _confirmations[messageHash];
             state.messages[router.id - 1]++;
