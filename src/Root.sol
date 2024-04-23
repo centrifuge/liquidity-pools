@@ -4,6 +4,7 @@ pragma solidity 0.8.21;
 import {Auth} from "./Auth.sol";
 import {MessagesLib} from "./libraries/MessagesLib.sol";
 import {BytesLib} from "./libraries/BytesLib.sol";
+import {IRoot} from "src/interfaces/IRoot.sol";
 
 interface AuthLike {
     function rely(address) external;
@@ -18,7 +19,7 @@ interface RecoverLike {
 /// @notice Core contract that is a ward on all other deployed contracts.
 /// @dev    Pausing can happen instantaneously, but relying on other contracts
 ///         is restricted to the timelock set by the delay.
-contract Root is Auth {
+contract Root is Auth, IRoot {
     using BytesLib for bytes;
 
     /// @dev To prevent filing a delay that would block any updates indefinitely
@@ -29,16 +30,6 @@ contract Root is Auth {
     bool public paused;
     uint256 public delay;
     mapping(address relyTarget => uint256 timestamp) public schedule;
-
-    // --- Events ---
-    event File(bytes32 indexed what, uint256 data);
-    event Pause();
-    event Unpause();
-    event ScheduleRely(address indexed target, uint256 indexed scheduledTime);
-    event CancelRely(address indexed target);
-    event RelyContract(address indexed target, address indexed user);
-    event DenyContract(address indexed target, address indexed user);
-    event RecoverTokens(address indexed target, address indexed token, address indexed to, uint256 amount);
 
     constructor(address _escrow, uint256 _delay, address deployer) {
         require(_delay <= MAX_DELAY, "Root/delay-too-long");
@@ -51,6 +42,7 @@ contract Root is Auth {
     }
 
     // --- Administration ---
+    /// @inheritdoc IRoot
     function file(bytes32 what, uint256 data) external auth {
         if (what == "delay") {
             require(data <= MAX_DELAY, "Root/delay-too-long");
@@ -62,34 +54,33 @@ contract Root is Auth {
     }
 
     // --- Pause management ---
-    /// @notice Pause any contracts that depend on `Root.paused()`
+    /// @inheritdoc IRoot
     function pause() external auth {
         paused = true;
         emit Pause();
     }
 
-    /// @notice Unpause any contracts that depend on `Root.paused()`
+    /// @inheritdoc IRoot
     function unpause() external auth {
         paused = false;
         emit Unpause();
     }
 
     /// --- Timelocked ward management ---
-    /// @notice Schedule relying a new ward after the delay has passed
+    /// @inheritdoc IRoot
     function scheduleRely(address target) public auth {
         schedule[target] = block.timestamp + delay;
         emit ScheduleRely(target, schedule[target]);
     }
 
-    /// @notice Cancel a pending scheduled rely
+    /// @inheritdoc IRoot
     function cancelRely(address target) public auth {
         require(schedule[target] != 0, "Root/target-not-scheduled");
         schedule[target] = 0;
         emit CancelRely(target);
     }
 
-    /// @notice Execute a scheduled rely
-    /// @dev    Can be triggered by anyone since the scheduling is protected
+    /// @inheritdoc IRoot
     function executeScheduledRely(address target) external {
         require(schedule[target] != 0, "Root/target-not-scheduled");
         require(schedule[target] <= block.timestamp, "Root/target-not-ready");
@@ -101,6 +92,7 @@ contract Root is Auth {
     }
 
     /// --- Incoming message handling ---
+    /// @inheritdoc IRoot
     function handle(bytes calldata message) public auth {
         MessagesLib.Call call = MessagesLib.messageType(message);
 
@@ -118,20 +110,20 @@ contract Root is Auth {
     }
 
     /// --- External contract ward management ---
-    /// @notice Make an address a ward on any contract that Root is a ward on
+    /// @inheritdoc IRoot
     function relyContract(address target, address user) external auth {
         AuthLike(target).rely(user);
         emit RelyContract(target, user);
     }
 
-    /// @notice Removes an address as a ward on any contract that Root is a ward on
+    /// @inheritdoc IRoot
     function denyContract(address target, address user) external auth {
         AuthLike(target).deny(user);
         emit DenyContract(target, user);
     }
 
     /// --- Token Recovery ---
-    /// @notice Allows Governance to recover tokens sent to the wrong contract by mistake
+    /// @inheritdoc IRoot
     function recoverTokens(address target, address token, address to, uint256 amount) external auth {
         RecoverLike(target).recoverTokens(token, to, amount);
         emit RecoverTokens(target, token, to, amount);

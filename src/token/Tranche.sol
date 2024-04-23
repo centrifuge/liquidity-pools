@@ -3,6 +3,7 @@ pragma solidity 0.8.21;
 
 import {ERC20} from "./ERC20.sol";
 import {IERC20Metadata} from "../interfaces/IERC20.sol";
+import {ITrancheToken} from "src/interfaces/token/ITranche.sol";
 
 interface TrancheTokenLike is IERC20Metadata {
     function mint(address user, uint256 value) external;
@@ -28,7 +29,7 @@ interface RestrictionManagerLike {
 /// @notice Extension of ERC20 + ERC1404 for tranche tokens,
 ///         which manages the trusted forwarders for the ERC20 token, and ensures
 ///         the transfer restrictions as defined in the RestrictionManager.
-contract TrancheToken is ERC20 {
+contract TrancheToken is ERC20, ITrancheToken {
     RestrictionManagerLike public restrictionManager;
 
     mapping(address => bool) public trustedForwarders;
