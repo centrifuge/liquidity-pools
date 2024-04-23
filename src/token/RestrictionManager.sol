@@ -3,6 +3,7 @@ pragma solidity 0.8.21;
 
 import {Auth} from "./../Auth.sol";
 import {IERC20} from "../interfaces/IERC20.sol";
+import {IRestrictionManager} from "src/interfaces/token/IRestrictionManager.sol";
 
 interface RestrictionManagerLike {
     function updateMember(address user, uint64 validUntil) external;
@@ -13,7 +14,7 @@ interface RestrictionManagerLike {
 
 /// @title  Restriction Manager
 /// @notice ERC1404 based contract that checks transfer restrictions.
-contract RestrictionManager is Auth {
+contract RestrictionManager is Auth, IRestrictionManager {
     string internal constant SUCCESS_MESSAGE = "RestrictionManager/transfer-allowed";
     string internal constant SOURCE_IS_FROZEN_MESSAGE = "RestrictionManager/source-is-frozen";
     string internal constant DESTINATION_IS_FROZEN_MESSAGE = "RestrictionManager/destination-is-frozen";
@@ -27,19 +28,7 @@ contract RestrictionManager is Auth {
 
     IERC20 public immutable token;
 
-    struct Restrictions {
-        /// @dev Frozen accounts that tokens cannot be transferred from or to
-        bool frozen;
-        /// @dev Member accounts that tokens can be transferred to, with an end date
-        uint64 validUntil;
-    }
-
     mapping(address => Restrictions) public restrictions;
-
-    // --- Events ---
-    event UpdateMember(address indexed user, uint64 validUntil);
-    event Freeze(address indexed user);
-    event Unfreeze(address indexed user);
 
     constructor(address token_) {
         token = IERC20(token_);

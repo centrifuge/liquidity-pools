@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
+import {IERC20Metadata, IERC20Permit} from "src/interfaces/IERC20.sol";
+
 interface IERC1271 {
     function isValidSignature(bytes32, bytes memory) external view returns (bytes4);
 }
@@ -9,7 +11,7 @@ interface IERC1271 {
 /// @notice Standard ERC-20 implementation, with mint/burn functionality and permit logic.
 ///         Includes ERC-2771 context support to allow multiple trusted forwarders
 /// @author Modified from https://github.com/makerdao/xdomain-dss/blob/master/src/Dai.sol
-contract ERC20 {
+contract ERC20 is IERC20Metadata, IERC20Permit {
     mapping(address => uint256) public wards;
 
     string public name;
@@ -33,8 +35,6 @@ contract ERC20 {
     event Rely(address indexed user);
     event Deny(address indexed user);
     event File(bytes32 indexed what, string data);
-    event Approval(address indexed owner, address indexed spender, uint256 value);
-    event Transfer(address indexed from, address indexed to, uint256 value);
 
     constructor(uint8 decimals_) {
         decimals = decimals_;

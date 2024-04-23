@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
+import {IRouter} from "src/interfaces/gateway/IRouter.sol";
+
 interface AxelarGatewayLike {
     function callContract(string calldata destinationChain, string calldata contractAddress, bytes calldata payload)
         external;
@@ -19,7 +21,7 @@ interface AggregatorLike {
 
 /// @title  Axelar Router
 /// @notice Routing contract that integrates with an Axelar Gateway
-contract AxelarRouter {
+contract AxelarRouter is IRouter {
     string public constant CENTRIFUGE_ID = "centrifuge";
     bytes32 public constant CENTRIFUGE_ID_HASH = keccak256(bytes("centrifuge"));
     bytes32 public constant CENTRIFUGE_ADDRESS_HASH = keccak256(bytes("0x7369626CEF070000000000000000000000000000"));
@@ -34,6 +36,7 @@ contract AxelarRouter {
     }
 
     // --- Incoming ---
+    /// @inheritdoc IRouter
     function execute(
         bytes32 commandId,
         string calldata sourceChain,
@@ -51,6 +54,7 @@ contract AxelarRouter {
     }
 
     // --- Outgoing ---
+    /// @inheritdoc IRouter
     function send(bytes calldata payload) public {
         require(msg.sender == address(aggregator), "AxelarRouter/only-aggregator-allowed-to-call");
 
