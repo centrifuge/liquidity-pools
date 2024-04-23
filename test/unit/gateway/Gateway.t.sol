@@ -7,7 +7,10 @@ import "test/mocks/MockManager.sol";
 contract GatewayTest is BaseTest {
     // Deployment
     function testDeployment(address nonWard) public {
-        vm.assume(nonWard != address(root) && nonWard != address(delayedAdmin) && nonWard != address(this));
+        vm.assume(
+            nonWard != address(root) && nonWard != address(delayedAdmin) && nonWard != address(this)
+                && nonWard != address(aggregator)
+        );
 
         // values set correctly
         assertEq(address(gateway.investmentManager()), address(investmentManager));
