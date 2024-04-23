@@ -78,7 +78,6 @@ contract Deployer is Script {
 
         // Deploy gateway and guardian
         guardian = new Guardian(address(root), adminSafe, address(aggregator));
-        gateway = new Gateway(address(root), address(investmentManager), address(poolManager));
 
         // Wire guardian
         root.rely(address(guardian));

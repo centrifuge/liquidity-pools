@@ -88,6 +88,7 @@ contract BaseTest is Deployer, Test {
         vm.label(address(erc20), "ERC20");
         vm.label(address(centrifugeChain), "CentrifugeChain");
         vm.label(address(escrow), "Escrow");
+        vm.label(address(guardian), "Guardian");
         vm.label(address(poolManager.restrictionManagerFactory()), "RestrictionManagerFactory");
         vm.label(address(poolManager.trancheTokenFactory()), "TrancheTokenFactory");
         vm.label(address(poolManager.liquidityPoolFactory()), "LiquidityPoolFactory");
