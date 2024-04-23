@@ -47,7 +47,7 @@ fail_on_revert = false
   ]
 
 [profile.smt.model_checker.contracts]
-  "src/LiquidityPool.sol" = ["LiquidityPool"]
+  "src/ERC7540Vault.sol" = ["LiquidityPool"]
   "src/InvestmentManager.sol" = ["InvestmentManager"]
   "src/PoolManager.sol" = ["PoolManager"]
   "src/Escrow.sol" = ["Escrow"]

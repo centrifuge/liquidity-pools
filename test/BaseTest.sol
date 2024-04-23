@@ -7,9 +7,9 @@ import {Root} from "../src/Root.sol";
 import {InvestmentManager} from "../src/InvestmentManager.sol";
 import {PoolManager, Tranche} from "../src/PoolManager.sol";
 import {Escrow} from "../src/Escrow.sol";
-import {LiquidityPoolFactory} from "src/factories/LiquidityPoolFactory.sol";
+import {ERC7540VaultFactory} from "src/factories/ERC7540VaultFactory.sol";
 import {TrancheTokenFactory} from "src/factories/TrancheTokenFactory.sol";
-import {LiquidityPool} from "../src/LiquidityPool.sol";
+import {ERC7540Vault} from "../src/ERC7540Vault.sol";
 import {TrancheToken, TrancheTokenLike} from "../src/token/Tranche.sol";
 import {ERC20} from "../src/token/ERC20.sol";
 import {Gateway} from "../src/gateway/Gateway.sol";
@@ -93,7 +93,7 @@ contract BaseTest is Deployer, Test {
         vm.label(address(delayedAdmin), "DelayedAdmin");
         vm.label(address(poolManager.restrictionManagerFactory()), "RestrictionManagerFactory");
         vm.label(address(poolManager.trancheTokenFactory()), "TrancheTokenFactory");
-        vm.label(address(poolManager.liquidityPoolFactory()), "LiquidityPoolFactory");
+        vm.label(address(poolManager.vaultFactory()), "ERC7540VaultFactory");
 
         // Exclude predeployed contracts from invariant tests by default
         excludeContract(address(root));
@@ -111,11 +111,11 @@ contract BaseTest is Deployer, Test {
         excludeContract(address(delayedAdmin));
         excludeContract(address(poolManager.restrictionManagerFactory()));
         excludeContract(address(poolManager.trancheTokenFactory()));
-        excludeContract(address(poolManager.liquidityPoolFactory()));
+        excludeContract(address(poolManager.vaultFactory()));
     }
 
     // helpers
-    function deployLiquidityPool(
+    function deployERC7540Vault(
         uint64 poolId,
         uint8 trancheTokenDecimals,
         uint8 restrictionSet,
@@ -141,11 +141,11 @@ contract BaseTest is Deployer, Test {
             centrifugeChain.allowInvestmentCurrency(poolId, currencyId);
         }
 
-        address lPoolAddress = poolManager.deployLiquidityPool(poolId, trancheId, currency);
+        address lPoolAddress = poolManager.deployERC7540Vault(poolId, trancheId, currency);
         return lPoolAddress;
     }
 
-    function deployLiquidityPool(
+    function deployERC7540Vault(
         uint64 poolId,
         uint8 decimals,
         string memory tokenName,
@@ -154,11 +154,11 @@ contract BaseTest is Deployer, Test {
         uint128 currency
     ) public returns (address) {
         uint8 restrictionSet = 2;
-        return deployLiquidityPool(poolId, decimals, restrictionSet, tokenName, tokenSymbol, trancheId, currency, address(erc20));
+        return deployERC7540Vault(poolId, decimals, restrictionSet, tokenName, tokenSymbol, trancheId, currency, address(erc20));
     }
 
     function deploySimplePool() public returns (address) {
-        return deployLiquidityPool(5, 6, defaultRestrictionSet, "name", "symbol", bytes16(bytes("1")), defaultCurrencyId, address(erc20));
+        return deployERC7540Vault(5, 6, defaultRestrictionSet, "name", "symbol", bytes16(bytes("1")), defaultCurrencyId, address(erc20));
     }
 
     function deposit(address _lPool, address _investor, uint256 amount) public {
@@ -166,7 +166,7 @@ contract BaseTest is Deployer, Test {
     }
 
     function deposit(address _lPool, address _investor, uint256 amount, bool claimDeposit) public {
-        LiquidityPool lPool = LiquidityPool(_lPool);
+        ERC7540Vault lPool = ERC7540Vault(_lPool);
         erc20.mint(_investor, amount);
         centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), _investor, type(uint64).max); // add user as member
         vm.startPrank(_investor);

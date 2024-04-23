@@ -616,11 +616,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
     }
 
     /// @dev    Return the currency decimals and the tranche token decimals for a given vault
-    function _getPoolDecimals(address vault)
-        internal
-        view
-        returns (uint8 assetDecimals, uint8 shareDecimals)
-    {
+    function _getPoolDecimals(address vault) internal view returns (uint8 assetDecimals, uint8 shareDecimals) {
         assetDecimals = IERC20Metadata(VaultLike(vault).asset()).decimals();
         shareDecimals = IERC20Metadata(VaultLike(vault).share()).decimals();
     }

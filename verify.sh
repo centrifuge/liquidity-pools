@@ -36,7 +36,7 @@ elif [ "$type" == "liquidityPool" ]; then
     echo "share: $share"
     echo "escrow: $escrow"
     echo "manager: $manager"
-    forge verify-contract --constructor-args $(cast abi-encode "constructor(uint64,bytes16,address,address,address,address)" $poolId $trancheId $asset $share $escrow $manager) --watch --etherscan-api-key $ETHERSCAN_KEY $contract_address src/LiquidityPool.sol:LiquidityPool --verifier-url $VERIFIER_URL --chain $CHAIN_ID
+    forge verify-contract --constructor-args $(cast abi-encode "constructor(uint64,bytes16,address,address,address,address)" $poolId $trancheId $asset $share $escrow $manager) --watch --etherscan-api-key $ETHERSCAN_KEY $contract_address src/ERC7540Vault.sol:LiquidityPool --verifier-url $VERIFIER_URL --chain $CHAIN_ID
 else
     echo "Error: Invalid contract type. Choose from liquidityPool, trancheToken, or restrictionManager."
     exit 1

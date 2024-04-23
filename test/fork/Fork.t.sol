@@ -9,7 +9,7 @@ import {PoolManager} from "src/PoolManager.sol";
 import {Escrow} from "src/Escrow.sol";
 import {TrancheToken} from "src/token/Tranche.sol";
 import {Gateway} from "src/gateway/Gateway.sol";
-import {LiquidityPoolFactory} from "src/factories/LiquidityPoolFactory.sol";
+import {ERC7540VaultFactory} from "src/factories/ERC7540VaultFactory.sol";
 import {RestrictionManagerFactory} from "src/factories/RestrictionManagerFactory.sol";
 import {TrancheTokenFactory} from "src/factories/TrancheTokenFactory.sol";
 import {DelayedAdmin} from "src/admins/DelayedAdmin.sol";
@@ -128,12 +128,12 @@ contract ForkTest is Test {
                 assertEq(TrancheTokenFactory(trancheTokenFactory).wards(deployer), 0);
                 assertEq(TrancheTokenFactory(trancheTokenFactory).wards(admin), 0);
 
-                // LiquidityPoolFactory
-                assertEq(LiquidityPoolFactory(liquidityPoolFactory).root(), root);
-                assertEq(LiquidityPoolFactory(liquidityPoolFactory).wards(root), 1);
-                assertEq(LiquidityPoolFactory(liquidityPoolFactory).wards(poolManager), 1);
-                assertEq(LiquidityPoolFactory(liquidityPoolFactory).wards(deployer), 0);
-                assertEq(LiquidityPoolFactory(liquidityPoolFactory).wards(admin), 0);
+                // ERC7540VaultFactory
+                assertEq(ERC7540VaultFactory(liquidityPoolFactory).root(), root);
+                assertEq(ERC7540VaultFactory(liquidityPoolFactory).wards(root), 1);
+                assertEq(ERC7540VaultFactory(liquidityPoolFactory).wards(poolManager), 1);
+                assertEq(ERC7540VaultFactory(liquidityPoolFactory).wards(deployer), 0);
+                assertEq(ERC7540VaultFactory(liquidityPoolFactory).wards(admin), 0);
 
                 // RestrictionManagerFactory
                 assertEq(RestrictionManagerFactory(restrictionManagerFactory).wards(root), 1);

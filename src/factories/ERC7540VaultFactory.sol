@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {LiquidityPool} from "../LiquidityPool.sol";
+import {ERC7540Vault} from "../ERC7540Vault.sol";
 import {Auth} from "../Auth.sol";
 
-interface LiquidityPoolFactoryLike {
-    function newLiquidityPool(
+interface ERC7540VaultFactoryLike {
+    function newVault(
         uint64 poolId,
         bytes16 trancheId,
         address currency,
@@ -14,7 +14,7 @@ interface LiquidityPoolFactoryLike {
         address investmentManager,
         address[] calldata wards_
     ) external returns (address);
-    function denyLiquidityPool(address liquiditiyPool, address investmentManager) external;
+    function denyVault(address vault, address investmentManager) external;
 }
 
 interface AuthLike {
@@ -22,9 +22,9 @@ interface AuthLike {
     function deny(address) external;
 }
 
-/// @title  Liquidity Pool Factory
+/// @title  ERC7540 Vault Factory
 /// @dev    Utility for deploying new liquidity pool contracts
-contract LiquidityPoolFactory is Auth {
+contract ERC7540VaultFactory is Auth {
     address public immutable root;
 
     constructor(address _root) {
@@ -34,7 +34,7 @@ contract LiquidityPoolFactory is Auth {
         emit Rely(msg.sender);
     }
 
-    function newLiquidityPool(
+    function newVault(
         uint64 poolId,
         bytes16 trancheId,
         address currency,
@@ -43,21 +43,20 @@ contract LiquidityPoolFactory is Auth {
         address investmentManager,
         address[] calldata wards_
     ) public auth returns (address) {
-        LiquidityPool liquidityPool =
-            new LiquidityPool(poolId, trancheId, currency, trancheToken, escrow, investmentManager);
+        ERC7540Vault vault = new ERC7540Vault(poolId, trancheId, currency, trancheToken, escrow, investmentManager);
 
-        liquidityPool.rely(root);
+        vault.rely(root);
         for (uint256 i = 0; i < wards_.length; i++) {
-            liquidityPool.rely(wards_[i]);
+            vault.rely(wards_[i]);
         }
 
-        AuthLike(investmentManager).rely(address(liquidityPool));
+        AuthLike(investmentManager).rely(address(vault));
 
-        liquidityPool.deny(address(this));
-        return address(liquidityPool);
+        vault.deny(address(this));
+        return address(vault);
     }
 
-    function denyLiquidityPool(address liquidityPool, address investmentManager) public auth {
-        AuthLike(investmentManager).deny(address(liquidityPool));
+    function denyVault(address vault, address investmentManager) public auth {
+        AuthLike(investmentManager).deny(address(vault));
     }
 }

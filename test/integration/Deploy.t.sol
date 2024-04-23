@@ -10,10 +10,10 @@ import {DelayedAdmin} from "src/admins/DelayedAdmin.sol";
 import {PoolManager, Pool, Tranche} from "src/PoolManager.sol";
 import {ERC20} from "src/token/ERC20.sol";
 import {TrancheToken} from "src/token/Tranche.sol";
-import {LiquidityPoolTest} from "test/unit/LiquidityPool.t.sol";
+import {ERC7540VaultTest} from "test/unit/ERC7540Vault.t.sol";
 import {PermissionlessRouter} from "test/mocks/PermissionlessRouter.sol";
 import {Root} from "src/Root.sol";
-import {LiquidityPool} from "src/LiquidityPool.sol";
+import {ERC7540Vault} from "src/ERC7540Vault.sol";
 
 import {AxelarScript} from "script/Axelar.s.sol";
 import "script/Deployer.sol";
@@ -66,7 +66,7 @@ contract DeployTest is Test, Deployer {
         assertEq(delayedAdmin.wards(address(this)), 0);
         // check factories
         assertEq(WardLike(trancheTokenFactory).wards(address(this)), 0);
-        assertEq(WardLike(liquidityPoolFactory).wards(address(this)), 0);
+        assertEq(WardLike(vaultFactory).wards(address(this)), 0);
         assertEq(WardLike(restrictionManagerFactory).wards(address(this)), 0);
     }
 
@@ -96,7 +96,7 @@ contract DeployTest is Test, Deployer {
         uint256 amount = 1000 * 10 ** erc20.decimals();
         uint64 validUntil = uint64(block.timestamp + 1000 days);
         address lPool_ = deployPoolAndTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, restrictionSet);
-        LiquidityPool lPool = LiquidityPool(lPool_);
+        ERC7540Vault lPool = ERC7540Vault(lPool_);
 
         deal(address(erc20), self, amount);
 
@@ -110,7 +110,7 @@ contract DeployTest is Test, Deployer {
         redeemWithdraw(poolId, trancheId, price, amount, lPool);
     }
 
-    function depositMint(uint64 poolId, bytes16 trancheId, uint128 price, uint256 amount, LiquidityPool lPool) public {
+    function depositMint(uint64 poolId, bytes16 trancheId, uint128 price, uint256 amount, ERC7540Vault lPool) public {
         erc20.approve(address(lPool), amount); // add allowance
         lPool.requestDeposit(amount, self, self, "");
 
@@ -132,7 +132,7 @@ contract DeployTest is Test, Deployer {
         // Assume a bot calls collectInvest for this user on cent chain
 
         vm.prank(address(gateway));
-        investmentManager.handleExecutedCollectInvest(
+        investmentManager.fulfillDepositRequest(
             poolId, trancheId, self, _currencyId, uint128(amount), trancheTokensPayout, 0
         );
 
@@ -156,7 +156,7 @@ contract DeployTest is Test, Deployer {
         assertTrue(lPool.maxMint(self) <= 1);
     }
 
-    function redeemWithdraw(uint64 poolId, bytes16 trancheId, uint128 price, uint256 amount, LiquidityPool lPool)
+    function redeemWithdraw(uint64 poolId, bytes16 trancheId, uint128 price, uint256 amount, ERC7540Vault lPool)
         public
     {
         lPool.requestRedeem(amount, address(this), address(this), "");
@@ -170,9 +170,7 @@ contract DeployTest is Test, Deployer {
         // Assume an epoch execution happens on cent chain
         // Assume a bot calls collectRedeem for this user on cent chain
         vm.prank(address(gateway));
-        investmentManager.handleExecutedCollectRedeem(
-            poolId, trancheId, self, _currencyId, currencyPayout, uint128(amount)
-        );
+        investmentManager.fulfillRedeemRequest(poolId, trancheId, self, _currencyId, currencyPayout, uint128(amount));
 
         assertEq(lPool.maxWithdraw(self), currencyPayout);
         assertEq(lPool.maxRedeem(self), amount);
@@ -212,7 +210,7 @@ contract DeployTest is Test, Deployer {
         vm.stopPrank();
 
         poolManager.deployTranche(poolId, trancheId);
-        address lPool = poolManager.deployLiquidityPool(poolId, trancheId, address(erc20));
+        address lPool = poolManager.deployERC7540Vault(poolId, trancheId, address(erc20));
         return lPool;
     }
 

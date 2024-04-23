@@ -7,7 +7,7 @@ import "src/interfaces/IERC7540.sol";
 import {SucceedingRequestReceiver} from "test/mocks/SucceedingRequestReceiver.sol";
 import {FailingRequestReceiver} from "test/mocks/FailingRequestReceiver.sol";
 
-contract LiquidityPoolTest is BaseTest {
+contract ERC7540VaultTest is BaseTest {
     // Deployment
     function testDeployment(
         uint64 poolId,
