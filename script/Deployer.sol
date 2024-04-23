@@ -70,7 +70,7 @@ contract Deployer is Script {
 
     function wire(address router) public {
         routers.push(router);
-        
+
         // Wire aggregator
         aggregator.file("routers", routers);
         gateway.file("aggregator", address(aggregator));
