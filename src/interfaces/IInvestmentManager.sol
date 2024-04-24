@@ -11,9 +11,9 @@ struct InvestmentState {
     uint128 maxWithdraw;
     /// @dev Weighted average price of redemptions, used to convert maxWithdraw to maxRedeem
     uint256 redeemPrice;
-    /// @dev Remaining invest (deposit) order in currency
+    /// @dev Remaining invest (deposit) order in assets
     uint128 pendingDepositRequest;
-    /// @dev Remaining redeem order in currency
+    /// @dev Remaining redeem order in assets
     uint128 pendingRedeemRequest;
     /// @dev Currency that can be claimed using `claimCancelDepositRequest()`
     uint128 claimableCancelDepositRequest;
@@ -31,7 +31,7 @@ interface IInvestmentManager {
     // --- Events ---
     event File(bytes32 indexed what, address data);
     event TriggerIncreaseRedeemOrder(
-        uint64 indexed poolId, bytes16 indexed trancheId, address user, address currency, uint128 shares
+        uint64 indexed poolId, bytes16 indexed trancheId, address user, address asset, uint128 shares
     );
 
     /// @notice TODO
@@ -45,17 +45,17 @@ interface IInvestmentManager {
     ///         tranche tokens can be minted. The deposit requests are added to the order book
     ///         on Centrifuge. Once the next epoch is executed on Centrifuge, vaults can
     ///         proceed with tranche token payouts in case their orders got fulfilled.
-    /// @dev    The user currency amount required to fulfill the deposit request have to be locked,
+    /// @dev    The user asset amount required to fulfill the deposit request have to be locked,
     ///         even though the tranche token payout can only happen after epoch execution.
     function requestDeposit(address vault, uint256 assets, address receiver, address owner) external returns (bool);
 
     /// @notice Request tranche token redemption. Liquidity pools have to request redemptions
-    ///         from Centrifuge before actual currency payouts can be done. The redemption
+    ///         from Centrifuge before actual asset payouts can be done. The redemption
     ///         requests are added to the order book on Centrifuge. Once the next epoch is
-    ///         executed on Centrifuge, vaults can proceed with currency payouts
+    ///         executed on Centrifuge, vaults can proceed with asset payouts
     ///         in case their orders got fulfilled.
     /// @dev    The user tranche tokens required to fulfill the redemption request have to be locked,
-    ///         even though the currency payout can only happen after epoch execution.
+    ///         even though the asset payout can only happen after epoch execution.
     function requestRedeem(address vault, uint256 shares, address receiver, address /* owner */ )
         external
         returns (bool);
@@ -102,7 +102,7 @@ interface IInvestmentManager {
     ) external;
 
     /// @dev Compared to handleFulfilledCancelDepositRequest, there is no
-    ///      transfer of currency in this function because they
+    ///      transfer of asset in this function because they
     ///      can stay in the Escrow, ready to be claimed on deposit/mint.
     function fulfillCancelRedeemRequest(
         uint64 poolId,
@@ -158,15 +158,15 @@ interface IInvestmentManager {
     function exchangeRateLastUpdated(address vault) external view returns (uint64 lastUpdated);
 
     // --- Liquidity Pool processing functions ---
-    /// @notice Processes owner's currency deposit / investment after the epoch has been executed on Centrifuge.
-    ///         The currency required to fulfill the invest order is already locked in escrow upon calling
+    /// @notice Processes owner's asset deposit / investment after the epoch has been executed on Centrifuge.
+    ///         The asset required to fulfill the invest order is already locked in escrow upon calling
     ///         requestDeposit.
     function deposit(address vault, uint256 assets, address receiver, address owner)
         external
         returns (uint256 shares);
 
-    /// @notice Processes owner's currency deposit / investment after the epoch has been executed on Centrifuge.
-    ///         The currency required to fulfill the invest order is already locked in escrow upon calling
+    /// @notice Processes owner's asset deposit / investment after the epoch has been executed on Centrifuge.
+    ///         The asset required to fulfill the invest order is already locked in escrow upon calling
     ///         requestDeposit.
     function mint(address vault, uint256 shares, address receiver, address owner) external returns (uint256 assets);
 

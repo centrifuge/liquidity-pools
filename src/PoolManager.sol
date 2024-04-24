@@ -20,7 +20,7 @@ interface GatewayLike {
 }
 
 interface InvestmentManagerLike {
-    function vaults(uint64 poolId, bytes16 trancheId, address currency) external returns (address);
+    function vaults(uint64 poolId, bytes16 trancheId, address asset) external returns (address);
     function getTrancheToken(uint64 _poolId, bytes16 _trancheId) external view returns (address);
 }
 
@@ -90,14 +90,14 @@ contract PoolManager is Auth, IPoolManager {
 
     // --- Outgoing message handling ---
     /// @inheritdoc IPoolManager
-    function transfer(address currency, bytes32 recipient, uint128 amount) external {
-        uint128 assetId = assetToId[currency];
-        require(assetId != 0, "PoolManager/unknown-currency");
+    function transfer(address asset, bytes32 recipient, uint128 amount) external {
+        uint128 assetId = assetToId[asset];
+        require(assetId != 0, "PoolManager/unknown-asset");
 
-        SafeTransferLib.safeTransferFrom(currency, msg.sender, address(escrow), amount);
+        SafeTransferLib.safeTransferFrom(asset, msg.sender, address(escrow), amount);
 
         gateway.send(abi.encodePacked(uint8(MessagesLib.Call.Transfer), assetId, msg.sender, recipient, amount));
-        emit TransferCurrency(currency, recipient, amount);
+        emit TransferCurrency(asset, recipient, amount);
     }
 
     /// @inheritdoc IPoolManager
@@ -159,7 +159,7 @@ contract PoolManager is Auth, IPoolManager {
         MessagesLib.Call call = MessagesLib.messageType(message);
 
         if (call == MessagesLib.Call.AddAsset) {
-            addCurrency(message.toUint128(1), message.toAddress(17));
+            addAsset(message.toUint128(1), message.toAddress(17));
         } else if (call == MessagesLib.Call.AddPool) {
             addPool(message.toUint64(1));
         } else if (call == MessagesLib.Call.AllowInvestmentAsset) {
@@ -200,7 +200,7 @@ contract PoolManager is Auth, IPoolManager {
             freeze(message.toUint64(1), message.toBytes16(9), message.toAddress(25));
         } else if (call == MessagesLib.Call.Unfreeze) {
             unfreeze(message.toUint64(1), message.toBytes16(9), message.toAddress(25));
-        } else if (call == MessagesLib.Call.DisallowInvestmentCurrency) {
+        } else if (call == MessagesLib.Call.DisallowInvestmentAsset) {
             disallowInvestmentCurrency(message.toUint64(1), message.toUint128(9));
         } else {
             revert("PoolManager/invalid-message");
@@ -220,11 +220,11 @@ contract PoolManager is Auth, IPoolManager {
         Pool storage pool = pools[poolId];
         require(pool.createdAt != 0, "PoolManager/invalid-pool");
 
-        address currency = idToAsset[assetId];
-        require(currency != address(0), "PoolManager/unknown-currency");
+        address asset = idToAsset[assetId];
+        require(asset != address(0), "PoolManager/unknown-asset");
 
-        pools[poolId].allowedCurrencies[currency] = true;
-        emit AllowInvestmentAsset(poolId, currency);
+        pools[poolId].allowedCurrencies[asset] = true;
+        emit AllowInvestmentAsset(poolId, asset);
     }
 
     /// @inheritdoc IPoolManager
@@ -232,11 +232,11 @@ contract PoolManager is Auth, IPoolManager {
         Pool storage pool = pools[poolId];
         require(pool.createdAt != 0, "PoolManager/invalid-pool");
 
-        address currency = idToAsset[assetId];
-        require(currency != address(0), "PoolManager/unknown-currency");
+        address asset = idToAsset[assetId];
+        require(asset != address(0), "PoolManager/unknown-asset");
 
-        pools[poolId].allowedCurrencies[currency] = false;
-        emit DisallowInvestmentCurrency(poolId, currency);
+        pools[poolId].allowedCurrencies[asset] = false;
+        emit DisallowInvestmentAsset(poolId, asset);
     }
 
     /// @inheritdoc IPoolManager
@@ -295,11 +295,11 @@ contract PoolManager is Auth, IPoolManager {
         Tranche storage tranche = pools[poolId].tranches[trancheId];
         require(tranche.token != address(0), "PoolManager/tranche-does-not-exist");
 
-        address currency = idToAsset[assetId];
-        require(computedAt >= tranche.prices[currency].computedAt, "PoolManager/cannot-set-older-price");
+        address asset = idToAsset[assetId];
+        require(computedAt >= tranche.prices[asset].computedAt, "PoolManager/cannot-set-older-price");
 
-        tranche.prices[currency] = TrancheTokenPrice(price, computedAt);
-        emit PriceUpdate(poolId, trancheId, currency, price, computedAt);
+        tranche.prices[asset] = TrancheTokenPrice(price, computedAt);
+        emit PriceUpdate(poolId, trancheId, asset, price, computedAt);
     }
 
     /// @inheritdoc IPoolManager
@@ -334,33 +334,33 @@ contract PoolManager is Auth, IPoolManager {
     }
 
     /// @inheritdoc IPoolManager
-    function addCurrency(uint128 assetId, address currency) public auth {
+    function addAsset(uint128 assetId, address asset) public auth {
         // Currency index on the Centrifuge side should start at 1
-        require(assetId != 0, "PoolManager/currency-id-has-to-be-greater-than-0");
-        require(idToAsset[assetId] == address(0), "PoolManager/currency-id-in-use");
-        require(assetToId[currency] == 0, "PoolManager/currency-address-in-use");
+        require(assetId != 0, "PoolManager/asset-id-has-to-be-greater-than-0");
+        require(idToAsset[assetId] == address(0), "PoolManager/asset-id-in-use");
+        require(assetToId[asset] == 0, "PoolManager/asset-address-in-use");
 
-        uint8 currencyDecimals = IERC20Metadata(currency).decimals();
-        require(currencyDecimals >= MIN_DECIMALS, "PoolManager/too-few-currency-decimals");
-        require(currencyDecimals <= MAX_DECIMALS, "PoolManager/too-many-currency-decimals");
+        uint8 assetDecimals = IERC20Metadata(asset).decimals();
+        require(assetDecimals >= MIN_DECIMALS, "PoolManager/too-few-asset-decimals");
+        require(assetDecimals <= MAX_DECIMALS, "PoolManager/too-many-asset-decimals");
 
-        idToAsset[assetId] = currency;
-        assetToId[currency] = assetId;
+        idToAsset[assetId] = asset;
+        assetToId[asset] = assetId;
 
-        // Give investment manager infinite approval for currency
+        // Give investment manager infinite approval for asset
         // in the escrow to transfer to the user on redeem or withdraw
-        escrow.approve(currency, address(investmentManager), type(uint256).max);
+        escrow.approve(asset, address(investmentManager), type(uint256).max);
 
-        emit AddAsset(assetId, currency);
+        emit AddAsset(assetId, asset);
     }
 
     /// @inheritdoc IPoolManager
     function handleTransfer(uint128 assetId, address recipient, uint128 amount) public auth {
-        address currency = idToAsset[assetId];
-        require(currency != address(0), "PoolManager/unknown-currency");
+        address asset = idToAsset[assetId];
+        require(asset != address(0), "PoolManager/unknown-asset");
 
-        escrow.approve(currency, address(this), amount);
-        SafeTransferLib.safeTransferFrom(currency, address(escrow), recipient, amount);
+        escrow.approve(asset, address(this), amount);
+        SafeTransferLib.safeTransferFrom(asset, address(escrow), recipient, amount);
     }
 
     /// @inheritdoc IPoolManager
@@ -415,12 +415,12 @@ contract PoolManager is Auth, IPoolManager {
     // slither-disable-end reentrancy-eth
 
     /// @inheritdoc IPoolManager
-    function deployVault(uint64 poolId, bytes16 trancheId, address currency) public returns (address) {
+    function deployVault(uint64 poolId, bytes16 trancheId, address asset) public returns (address) {
         Tranche storage tranche = pools[poolId].tranches[trancheId];
         require(tranche.token != address(0), "PoolManager/tranche-does-not-exist");
-        require(isAllowedAsset(poolId, currency), "PoolManager/currency-not-supported");
+        require(isAllowedAsset(poolId, asset), "PoolManager/asset-not-supported");
 
-        address vault = TrancheTokenLike(tranche.token).vault(currency);
+        address vault = TrancheTokenLike(tranche.token).vault(asset);
         require(vault == address(0), "PoolManager/vault-already-deployed");
 
         // Rely investment manager on vault so it can mint tokens
@@ -429,40 +429,40 @@ contract PoolManager is Auth, IPoolManager {
 
         // Deploy vault
         vault = vaultFactory.newVault(
-            poolId, trancheId, currency, tranche.token, address(escrow), address(investmentManager), vaultWards
+            poolId, trancheId, asset, tranche.token, address(escrow), address(investmentManager), vaultWards
         );
 
         // Link vault to tranche token
         AuthLike(tranche.token).rely(vault);
         TrancheTokenLike(tranche.token).file("trustedForwarder", vault, true);
-        TrancheTokenLike(tranche.token).file("vault", currency, vault);
+        TrancheTokenLike(tranche.token).file("vault", asset, vault);
 
         // Give vault infinite approval for tranche tokens
         // in the escrow to burn on executed redemptions
         escrow.approve(tranche.token, vault, type(uint256).max);
 
-        emit DeployVault(poolId, trancheId, currency, vault);
+        emit DeployVault(poolId, trancheId, asset, vault);
         return vault;
     }
 
     /// @inheritdoc IPoolManager
-    function removeVault(uint64 poolId, bytes16 trancheId, address currency) public auth {
+    function removeVault(uint64 poolId, bytes16 trancheId, address asset) public auth {
         require(pools[poolId].createdAt != 0, "PoolManager/pool-does-not-exist");
         Tranche storage tranche = pools[poolId].tranches[trancheId];
         require(tranche.token != address(0), "PoolManager/tranche-does-not-exist");
 
-        address vault = TrancheTokenLike(tranche.token).vault(currency);
+        address vault = TrancheTokenLike(tranche.token).vault(asset);
         require(vault != address(0), "PoolManager/vault-not-deployed");
 
         vaultFactory.denyVault(vault, address(investmentManager));
 
         AuthLike(tranche.token).deny(vault);
         TrancheTokenLike(tranche.token).file("trustedForwarder", vault, false);
-        TrancheTokenLike(tranche.token).file("vault", currency, address(0));
+        TrancheTokenLike(tranche.token).file("vault", asset, address(0));
 
         escrow.approve(address(tranche.token), vault, 0);
 
-        emit RemoveVault(poolId, trancheId, currency, vault);
+        emit RemoveVault(poolId, trancheId, asset, vault);
     }
 
     // --- Helpers ---
@@ -478,23 +478,23 @@ contract PoolManager is Auth, IPoolManager {
     }
 
     /// @inheritdoc IPoolManager
-    function getVault(uint64 poolId, bytes16 trancheId, address currency) public view returns (address) {
-        return TrancheTokenLike(pools[poolId].tranches[trancheId].token).vault(currency);
+    function getVault(uint64 poolId, bytes16 trancheId, address asset) public view returns (address) {
+        return TrancheTokenLike(pools[poolId].tranches[trancheId].token).vault(asset);
     }
 
     /// @inheritdoc IPoolManager
-    function getTrancheTokenPrice(uint64 poolId, bytes16 trancheId, address currency)
+    function getTrancheTokenPrice(uint64 poolId, bytes16 trancheId, address asset)
         public
         view
         returns (uint128 price, uint64 computedAt)
     {
-        TrancheTokenPrice memory value = pools[poolId].tranches[trancheId].prices[currency];
+        TrancheTokenPrice memory value = pools[poolId].tranches[trancheId].prices[asset];
         price = value.price;
         computedAt = value.computedAt;
     }
 
     /// @inheritdoc IPoolManager
-    function isAllowedAsset(uint64 poolId, address currency) public view returns (bool) {
-        return pools[poolId].allowedCurrencies[currency];
+    function isAllowedAsset(uint64 poolId, address asset) public view returns (bool) {
+        return pools[poolId].allowedCurrencies[asset];
     }
 }

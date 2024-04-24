@@ -16,20 +16,20 @@ contract RedeemTest is BaseTest {
 
         deposit(vault_, self, amount); // deposit funds first
         centrifugeChain.updateTrancheTokenPrice(
-            vault.poolId(), vault.trancheId(), defaultCurrencyId, defaultPrice, uint64(block.timestamp)
+            vault.poolId(), vault.trancheId(), defaultAssetId, defaultPrice, uint64(block.timestamp)
         );
 
         // will fail - zero deposit not allowed
         vm.expectRevert(bytes("InvestmentManager/zero-amount-not-allowed"));
         vault.requestRedeem(0, self, self, "");
 
-        // will fail - investment currency not allowed
-        centrifugeChain.disallowInvestmentCurrency(vault.poolId(), defaultCurrencyId);
+        // will fail - investment asset not allowed
+        centrifugeChain.disallowInvestmentCurrency(vault.poolId(), defaultAssetId);
         vm.expectRevert(bytes("InvestmentManager/asset-not-allowed"));
         vault.requestRedeem(amount, address(this), address(this), "");
 
         // success
-        centrifugeChain.allowInvestmentCurrency(vault.poolId(), defaultCurrencyId);
+        centrifugeChain.allowInvestmentCurrency(vault.poolId(), defaultAssetId);
         vault.requestRedeem(amount, address(this), address(this), "");
         assertEq(trancheToken.balanceOf(address(escrow)), amount);
         assertEq(vault.pendingRedeemRequest(0, self), amount);
@@ -41,18 +41,18 @@ contract RedeemTest is BaseTest {
 
         // trigger executed collectRedeem
         uint128 _assetId = poolManager.assetToId(address(erc20)); // retrieve assetId
-        uint128 currencyPayout = uint128((amount * 10 ** 18) / defaultPrice);
+        uint128 assets = uint128((amount * 10 ** 18) / defaultPrice);
         centrifugeChain.isFulfilledRedeemRequest(
-            vault.poolId(), vault.trancheId(), bytes32(bytes20(self)), _assetId, currencyPayout, uint128(amount)
+            vault.poolId(), vault.trancheId(), bytes32(bytes20(self)), _assetId, assets, uint128(amount)
         );
 
         // assert withdraw & redeem values adjusted
-        assertEq(vault.maxWithdraw(self), currencyPayout); // max deposit
+        assertEq(vault.maxWithdraw(self), assets); // max deposit
         assertEq(vault.maxRedeem(self), amount); // max deposit
         assertEq(vault.pendingRedeemRequest(0, self), 0);
         assertEq(vault.claimableRedeemRequest(0, self), amount);
         assertEq(trancheToken.balanceOf(address(escrow)), 0);
-        assertEq(erc20.balanceOf(address(escrow)), currencyPayout);
+        assertEq(erc20.balanceOf(address(escrow)), assets);
 
         // can redeem to self
         vault.redeem(amount / 2, self, self); // redeem half the amount to own wallet
@@ -85,7 +85,7 @@ contract RedeemTest is BaseTest {
 
         deposit(vault_, self, amount); // deposit funds first
         centrifugeChain.updateTrancheTokenPrice(
-            vault.poolId(), vault.trancheId(), defaultCurrencyId, defaultPrice, uint64(block.timestamp)
+            vault.poolId(), vault.trancheId(), defaultAssetId, defaultPrice, uint64(block.timestamp)
         );
 
         vault.requestRedeem(amount, address(this), address(this), "");
@@ -94,16 +94,16 @@ contract RedeemTest is BaseTest {
 
         // trigger executed collectRedeem
         uint128 _assetId = poolManager.assetToId(address(erc20)); // retrieve assetId
-        uint128 currencyPayout = uint128((amount * 10 ** 18) / defaultPrice);
+        uint128 assets = uint128((amount * 10 ** 18) / defaultPrice);
         centrifugeChain.isFulfilledRedeemRequest(
-            vault.poolId(), vault.trancheId(), bytes32(bytes20(self)), _assetId, currencyPayout, uint128(amount)
+            vault.poolId(), vault.trancheId(), bytes32(bytes20(self)), _assetId, assets, uint128(amount)
         );
 
         // assert withdraw & redeem values adjusted
-        assertEq(vault.maxWithdraw(self), currencyPayout); // max deposit
+        assertEq(vault.maxWithdraw(self), assets); // max deposit
         assertEq(vault.maxRedeem(self), amount); // max deposit
         assertEq(trancheToken.balanceOf(address(escrow)), 0);
-        assertEq(erc20.balanceOf(address(escrow)), currencyPayout);
+        assertEq(erc20.balanceOf(address(escrow)), assets);
 
         // can redeem to self
         vault.withdraw(amount / 2, self, self); // redeem half the amount to own wallet
@@ -113,8 +113,8 @@ contract RedeemTest is BaseTest {
 
         assertTrue(trancheToken.balanceOf(self) <= 1);
         assertTrue(erc20.balanceOf(address(escrow)) <= 1);
-        assertApproxEqAbs(erc20.balanceOf(self), currencyPayout / 2, 1);
-        assertApproxEqAbs(erc20.balanceOf(investor), currencyPayout / 2, 1);
+        assertApproxEqAbs(erc20.balanceOf(self), assets / 2, 1);
+        assertApproxEqAbs(erc20.balanceOf(investor), assets / 2, 1);
         assertTrue(vault.maxRedeem(self) <= 1);
         assertTrue(vault.maxWithdraw(self) <= 1);
     }
@@ -140,7 +140,7 @@ contract RedeemTest is BaseTest {
             vault.poolId(),
             vault.trancheId(),
             bytes32(bytes20(investor)),
-            defaultCurrencyId,
+            defaultAssetId,
             uint128(amount),
             uint128(tokenAmount)
         );
@@ -196,7 +196,7 @@ contract RedeemTest is BaseTest {
             vault.poolId(),
             vault.trancheId(),
             bytes32(bytes20(self)),
-            defaultCurrencyId
+            defaultAssetId
         );
         assertEq(cancelOrderMessage, router1.values_bytes("send"));
 
@@ -210,7 +210,7 @@ contract RedeemTest is BaseTest {
         vault.requestRedeem(amount, address(this), address(this), "");
 
         centrifugeChain.isFulfilledCancelRedeemRequest(
-            vault.poolId(), vault.trancheId(), self.toBytes32(), defaultCurrencyId, uint128(amount), uint128(amount)
+            vault.poolId(), vault.trancheId(), self.toBytes32(), defaultAssetId, uint128(amount), uint128(amount)
         );
 
         assertEq(trancheToken.balanceOf(address(escrow)), amount);
@@ -243,11 +243,11 @@ contract RedeemTest is BaseTest {
 
         // Fail - Redeem amount too big
         vm.expectRevert(bytes("ERC20/insufficient-balance"));
-        centrifugeChain.triggerIncreaseRedeemOrder(poolId, trancheId, investor, defaultCurrencyId, uint128(amount + 1));
+        centrifugeChain.triggerIncreaseRedeemOrder(poolId, trancheId, investor, defaultAssetId, uint128(amount + 1));
 
         //Fail - Tranche token amount zero
         vm.expectRevert(bytes("InvestmentManager/tranche-token-amount-is-zero"));
-        centrifugeChain.triggerIncreaseRedeemOrder(poolId, trancheId, investor, defaultCurrencyId, 0);
+        centrifugeChain.triggerIncreaseRedeemOrder(poolId, trancheId, investor, defaultAssetId, 0);
 
         // should work even if investor is frozen
         centrifugeChain.freeze(poolId, trancheId, investor); // freeze investor
@@ -255,7 +255,7 @@ contract RedeemTest is BaseTest {
 
         // half of the amount will be trabsferred from the investor's wallet & half of the amount will be taken from
         // escrow
-        centrifugeChain.triggerIncreaseRedeemOrder(poolId, trancheId, investor, defaultCurrencyId, amount);
+        centrifugeChain.triggerIncreaseRedeemOrder(poolId, trancheId, investor, defaultAssetId, amount);
 
         assertApproxEqAbs(trancheToken.balanceOf(investor), 0, 1);
         assertApproxEqAbs(trancheToken.balanceOf(address(escrow)), amount, 1);
@@ -265,7 +265,7 @@ contract RedeemTest is BaseTest {
             vault.poolId(),
             vault.trancheId(),
             bytes32(bytes20(investor)),
-            defaultCurrencyId,
+            defaultAssetId,
             uint128(amount),
             uint128(amount)
         );
@@ -291,7 +291,7 @@ contract RedeemTest is BaseTest {
 
         // Fail - Redeem amount too big
         vm.expectRevert(bytes("ERC20/insufficient-balance"));
-        centrifugeChain.triggerIncreaseRedeemOrder(poolId, trancheId, investor, defaultCurrencyId, uint128(amount + 1));
+        centrifugeChain.triggerIncreaseRedeemOrder(poolId, trancheId, investor, defaultAssetId, uint128(amount + 1));
 
         // should work even if investor is frozen
         centrifugeChain.freeze(poolId, trancheId, investor); // freeze investor
@@ -300,14 +300,14 @@ contract RedeemTest is BaseTest {
         // Test trigger partial redeem (maxMint > redeemAmount), where investor did not mint their tokens - user tokens
         // are still locked in escrow
         uint128 redeemAmount = uint128(amount / 2);
-        centrifugeChain.triggerIncreaseRedeemOrder(poolId, trancheId, investor, defaultCurrencyId, redeemAmount);
+        centrifugeChain.triggerIncreaseRedeemOrder(poolId, trancheId, investor, defaultAssetId, redeemAmount);
         assertApproxEqAbs(trancheToken.balanceOf(address(escrow)), amount, 1);
         assertEq(trancheToken.balanceOf(investor), 0);
 
         // Test trigger full redeem (maxMint = redeemAmount), where investor did not mint their tokens - user tokens are
         // still locked in escrow
         redeemAmount = uint128(amount - redeemAmount);
-        centrifugeChain.triggerIncreaseRedeemOrder(poolId, trancheId, investor, defaultCurrencyId, redeemAmount);
+        centrifugeChain.triggerIncreaseRedeemOrder(poolId, trancheId, investor, defaultAssetId, redeemAmount);
         assertApproxEqAbs(trancheToken.balanceOf(address(escrow)), amount, 1);
         assertEq(trancheToken.balanceOf(investor), 0);
         assertEq(vault.maxMint(investor), 0);
@@ -316,7 +316,7 @@ contract RedeemTest is BaseTest {
             vault.poolId(),
             vault.trancheId(),
             bytes32(bytes20(investor)),
-            defaultCurrencyId,
+            defaultAssetId,
             uint128(amount),
             uint128(amount)
         );
@@ -335,9 +335,9 @@ contract RedeemTest is BaseTest {
         TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
         uint64 poolId = vault.poolId();
         bytes16 trancheId = vault.trancheId();
-        address currency_ = address(vault.asset());
-        ERC20 currency = ERC20(currency_);
-        uint128 assetId = poolManager.assetToId(currency_);
+        address asset_ = address(vault.asset());
+        ERC20 asset = ERC20(asset_);
+        uint128 assetId = poolManager.assetToId(asset_);
         centrifugeChain.updateTrancheTokenPrice(
             poolId, trancheId, assetId, 1000000000000000000, uint64(block.timestamp)
         );
@@ -345,21 +345,15 @@ contract RedeemTest is BaseTest {
         // invest
         uint256 investmentAmount = 100000000; // 100 * 10**6
         centrifugeChain.updateMember(poolId, trancheId, self, type(uint64).max);
-        currency.approve(address(investmentManager), investmentAmount);
-        currency.mint(self, investmentAmount);
+        asset.approve(address(investmentManager), investmentAmount);
+        asset.mint(self, investmentAmount);
         erc20.approve(address(vault), investmentAmount);
         vault.requestDeposit(investmentAmount, self, self, "");
-        uint128 _assetId = poolManager.assetToId(address(currency)); // retrieve assetId
+        uint128 _assetId = poolManager.assetToId(address(asset)); // retrieve assetId
 
-        uint128 trancheTokenPayout = 100000000;
+        uint128 shares = 100000000;
         centrifugeChain.isFulfilledDepositRequest(
-            poolId,
-            trancheId,
-            bytes32(bytes20(self)),
-            _assetId,
-            uint128(investmentAmount),
-            trancheTokenPayout,
-            trancheTokenPayout
+            poolId, trancheId, bytes32(bytes20(self)), _assetId, uint128(investmentAmount), shares, shares
         );
 
         (, uint256 depositPrice,,,,,,,,,) = investmentManager.investments(address(vault), self);
@@ -367,45 +361,45 @@ contract RedeemTest is BaseTest {
 
         // assert deposit & mint values adjusted
         assertApproxEqAbs(vault.maxDeposit(self), investmentAmount, 2);
-        assertEq(vault.maxMint(self), trancheTokenPayout);
+        assertEq(vault.maxMint(self), shares);
 
         // collect the tranche tokens
-        vault.mint(trancheTokenPayout, self);
-        assertEq(trancheToken.balanceOf(self), trancheTokenPayout);
+        vault.mint(shares, self);
+        assertEq(trancheToken.balanceOf(self), shares);
 
         // redeem
-        vault.requestRedeem(trancheTokenPayout, self, self, "");
+        vault.requestRedeem(shares, self, self, "");
 
         // trigger first executed collectRedeem at a price of 1.5
-        // user is able to redeem 50 tranche tokens, at 1.5 price, 75 currency is paid out
-        uint128 currencyPayout = 75000000; // 150*10**6
+        // user is able to redeem 50 tranche tokens, at 1.5 price, 75 asset is paid out
+        uint128 assets = 75000000; // 150*10**6
 
         // mint approximate interest amount into escrow
-        currency.mint(address(escrow), currencyPayout * 2 - investmentAmount);
+        asset.mint(address(escrow), assets * 2 - investmentAmount);
 
         centrifugeChain.isFulfilledRedeemRequest(
-            poolId, trancheId, bytes32(bytes20(self)), _assetId, currencyPayout, trancheTokenPayout / 2
+            poolId, trancheId, bytes32(bytes20(self)), _assetId, assets, shares / 2
         );
 
         (,,, uint256 redeemPrice,,,,,,,) = investmentManager.investments(address(vault), self);
         assertEq(redeemPrice, 1500000000000000000);
 
         // trigger second executed collectRedeem at a price of 1.0
-        // user has 50 tranche tokens left, at 1.0 price, 50 currency is paid out
-        currencyPayout = 50000000; // 50*10**6
+        // user has 50 tranche tokens left, at 1.0 price, 50 asset is paid out
+        assets = 50000000; // 50*10**6
 
         centrifugeChain.isFulfilledRedeemRequest(
-            poolId, trancheId, bytes32(bytes20(self)), _assetId, currencyPayout, trancheTokenPayout / 2
+            poolId, trancheId, bytes32(bytes20(self)), _assetId, assets, shares / 2
         );
 
         (,,, redeemPrice,,,,,,,) = investmentManager.investments(address(vault), self);
         assertEq(redeemPrice, 1250000000000000000);
     }
 
-    function partialRedeem(uint64 poolId, bytes16 trancheId, ERC7540Vault vault, ERC20 currency) public {
+    function partialRedeem(uint64 poolId, bytes16 trancheId, ERC7540Vault vault, ERC20 asset) public {
         TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
 
-        uint128 assetId = poolManager.assetToId(address(currency));
+        uint128 assetId = poolManager.assetToId(address(asset));
         uint256 totalTrancheTokens = trancheToken.balanceOf(self);
         uint256 redeemAmount = 50000000000000000000;
         assertTrue(redeemAmount <= totalTrancheTokens);
@@ -438,9 +432,9 @@ contract RedeemTest is BaseTest {
         assertApproxEqAbs(vault.maxWithdraw(self), firstCurrencyPayout + secondCurrencyPayout, 2);
         assertEq(vault.maxRedeem(self), redeemAmount);
 
-        // collect the currency
+        // collect the asset
         vault.redeem(redeemAmount, self, self);
         assertEq(trancheToken.balanceOf(self), totalTrancheTokens - redeemAmount);
-        assertEq(currency.balanceOf(self), firstCurrencyPayout + secondCurrencyPayout);
+        assertEq(asset.balanceOf(self), firstCurrencyPayout + secondCurrencyPayout);
     }
 }

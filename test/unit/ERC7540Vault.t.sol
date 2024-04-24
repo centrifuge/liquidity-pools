@@ -155,7 +155,7 @@ contract ERC7540VaultTest is BaseTest {
             vault.poolId(),
             vault.trancheId(),
             bytes32(bytes20(self)),
-            defaultCurrencyId,
+            defaultAssetId,
             uint128(amount),
             uint128(amount),
             0
@@ -203,7 +203,7 @@ contract ERC7540VaultTest is BaseTest {
             vault.poolId(),
             vault.trancheId(),
             bytes32(bytes20(self)),
-            defaultCurrencyId,
+            defaultAssetId,
             uint128(amount),
             uint128(amount),
             0
@@ -251,7 +251,7 @@ contract ERC7540VaultTest is BaseTest {
             vault.poolId(),
             vault.trancheId(),
             bytes32(bytes20(self)),
-            defaultCurrencyId,
+            defaultAssetId,
             uint128(amount),
             uint128(amount),
             0

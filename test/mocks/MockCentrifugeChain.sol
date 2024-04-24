@@ -20,7 +20,7 @@ contract MockCentrifugeChain is Test {
         }
     }
 
-    function addCurrency(uint128 assetId, address asset) public {
+    function addAsset(uint128 assetId, address asset) public {
         bytes memory _message = abi.encodePacked(uint8(MessagesLib.Call.AddAsset), assetId, asset);
         _execute(_message);
     }
@@ -36,7 +36,7 @@ contract MockCentrifugeChain is Test {
     }
 
     function disallowInvestmentCurrency(uint64 poolId, uint128 assetId) public {
-        bytes memory _message = abi.encodePacked(uint8(MessagesLib.Call.DisallowInvestmentCurrency), poolId, assetId);
+        bytes memory _message = abi.encodePacked(uint8(MessagesLib.Call.DisallowInvestmentAsset), poolId, assetId);
         _execute(_message);
     }
 

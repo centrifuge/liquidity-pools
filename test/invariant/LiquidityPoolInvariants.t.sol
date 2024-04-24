@@ -50,15 +50,13 @@ contract InvestmentInvariants is BaseTest {
 
         // Generate random investment currencies
         for (uint128 assetId = 1; assetId < NUM_CURRENCIES + 1; ++assetId) {
-            uint8 currencyDecimals = _randomUint8(1, 18);
+            uint8 assetDecimals = _randomUint8(1, 18);
 
-            address currency = address(
-                _newErc20(
-                    string(abi.encode("currency", assetId)), string(abi.encode("currency", assetId)), currencyDecimals
-                )
+            address asset = address(
+                _newErc20(string(abi.encode("asset", assetId)), string(abi.encode("asset", assetId)), assetDecimals)
             );
-            currencies[assetId] = currency;
-            excludeContract(currency);
+            currencies[assetId] = asset;
+            excludeContract(asset);
         }
 
         // Generate random vaults
@@ -87,20 +85,20 @@ contract InvestmentInvariants is BaseTest {
         }
 
         // Set up investor and epoch executor handlers
-        // - For each unique pool and each unique currency, 1 LP.
+        // - For each unique pool and each unique asset, 1 LP.
         // - Just 1 tranche per pool
         // - NUM_INVESTORS per LP.
         for (uint64 vaultId; vaultId < vaults.length; ++vaultId) {
             VaultLike vault = VaultLike(vaults[vaultId]);
 
-            address currency = vault.asset();
+            address asset = vault.asset();
             InvestorHandler handler = new InvestorHandler(
                 vault.poolId(),
                 TRANCHE_ID,
                 CURRENCY_ID,
                 address(vault),
                 address(centrifugeChain),
-                currency,
+                asset,
                 address(escrow),
                 address(this)
             );
@@ -113,7 +111,7 @@ contract InvestmentInvariants is BaseTest {
 
             address share = poolManager.getTrancheToken(vault.poolId(), TRANCHE_ID);
             root.relyContract(share, address(this));
-            ERC20Like(currency).rely(address(handler)); // rely to mint currency
+            ERC20Like(asset).rely(address(handler)); // rely to mint asset
             ERC20Like(share).rely(address(handler)); // rely to mint tokens
 
             targetContract(address(handler));
@@ -121,7 +119,7 @@ contract InvestmentInvariants is BaseTest {
         }
     }
 
-    // Invariant 1: trancheToken.balanceOf[user] <= sum(trancheTokenPayout)
+    // Invariant 1: trancheToken.balanceOf[user] <= sum(shares)
     function invariant_cannotReceiveMoreTrancheTokensThanPayout() external {
         for (uint64 vaultId; vaultId < vaults.length; ++vaultId) {
             VaultLike vault = VaultLike(vaults[vaultId]);
@@ -136,8 +134,8 @@ contract InvestmentInvariants is BaseTest {
         }
     }
 
-    // Invariant 2: currency.balanceOf[user] <= sum(currencyPayout for each redemption)
-    //              + sum(currencyPayout for each decreased investment)
+    // Invariant 2: asset.balanceOf[user] <= sum(assets for each redemption)
+    //              + sum(assets for each decreased investment)
     function invariant_cannotReceiveMoreCurrencyThanPayout() external {
         for (uint64 vaultId; vaultId < vaults.length; ++vaultId) {
             for (uint256 i; i < investors.length; ++i) {

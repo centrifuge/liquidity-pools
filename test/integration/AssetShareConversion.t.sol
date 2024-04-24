@@ -10,9 +10,9 @@ contract AssetShareConversionTest is BaseTest {
         uint8 INVESTMENT_CURRENCY_DECIMALS = 6; // 6, like USDC
         uint8 TRANCHE_TOKEN_DECIMALS = 18; // Like DAI
 
-        ERC20 currency = _newErc20("Currency", "CR", INVESTMENT_CURRENCY_DECIMALS);
+        ERC20 asset = _newErc20("Asset", "A", INVESTMENT_CURRENCY_DECIMALS);
         address vault_ = deployVault(
-            poolId, TRANCHE_TOKEN_DECIMALS, defaultRestrictionSet, "", "", trancheId, assetId, address(currency)
+            poolId, TRANCHE_TOKEN_DECIMALS, defaultRestrictionSet, "", "", trancheId, assetId, address(asset)
         );
         ERC7540Vault vault = ERC7540Vault(vault_);
         TrancheTokenLike trancheToken = TrancheTokenLike(address(ERC7540Vault(vault_).share()));
@@ -24,17 +24,17 @@ contract AssetShareConversionTest is BaseTest {
         // invest
         uint256 investmentAmount = 100000000; // 100 * 10**6
         centrifugeChain.updateMember(poolId, trancheId, self, type(uint64).max);
-        currency.approve(vault_, investmentAmount);
-        currency.mint(self, investmentAmount);
+        asset.approve(vault_, investmentAmount);
+        asset.mint(self, investmentAmount);
         vault.requestDeposit(investmentAmount, self, self, "");
 
         // trigger executed collectInvest at a price of 1.0
-        uint128 _assetId = poolManager.assetToId(address(currency)); // retrieve assetId
-        uint128 trancheTokenPayout = 100000000000000000000; // 100 * 10**18
+        uint128 _assetId = poolManager.assetToId(address(asset)); // retrieve assetId
+        uint128 shares = 100000000000000000000; // 100 * 10**18
         centrifugeChain.isFulfilledDepositRequest(
-            poolId, trancheId, bytes32(bytes20(self)), _assetId, uint128(investmentAmount), trancheTokenPayout, 0
+            poolId, trancheId, bytes32(bytes20(self)), _assetId, uint128(investmentAmount), shares, 0
         );
-        vault.mint(trancheTokenPayout, self);
+        vault.mint(shares, self);
         centrifugeChain.updateTrancheTokenPrice(
             poolId, trancheId, assetId, 1000000000000000000, uint64(block.timestamp)
         );
@@ -63,9 +63,9 @@ contract AssetShareConversionTest is BaseTest {
         uint8 INVESTMENT_CURRENCY_DECIMALS = 18; // 18, like DAI
         uint8 TRANCHE_TOKEN_DECIMALS = 6; // Like USDC
 
-        ERC20 currency = _newErc20("Currency", "CR", INVESTMENT_CURRENCY_DECIMALS);
+        ERC20 asset = _newErc20("Currency", "CR", INVESTMENT_CURRENCY_DECIMALS);
         address vault_ = deployVault(
-            poolId, TRANCHE_TOKEN_DECIMALS, defaultRestrictionSet, "", "", trancheId, assetId, address(currency)
+            poolId, TRANCHE_TOKEN_DECIMALS, defaultRestrictionSet, "", "", trancheId, assetId, address(asset)
         );
         ERC7540Vault vault = ERC7540Vault(vault_);
         TrancheTokenLike trancheToken = TrancheTokenLike(address(ERC7540Vault(vault_).share()));
@@ -74,17 +74,17 @@ contract AssetShareConversionTest is BaseTest {
         // invest
         uint256 investmentAmount = 100000000000000000000; // 100 * 10**18
         centrifugeChain.updateMember(poolId, trancheId, self, type(uint64).max);
-        currency.approve(vault_, investmentAmount);
-        currency.mint(self, investmentAmount);
+        asset.approve(vault_, investmentAmount);
+        asset.mint(self, investmentAmount);
         vault.requestDeposit(investmentAmount, self, self, "");
 
         // trigger executed collectInvest at a price of 1.0
-        uint128 _assetId = poolManager.assetToId(address(currency)); // retrieve assetId
-        uint128 trancheTokenPayout = 100000000; // 100 * 10**6
+        uint128 _assetId = poolManager.assetToId(address(asset)); // retrieve assetId
+        uint128 shares = 100000000; // 100 * 10**6
         centrifugeChain.isFulfilledDepositRequest(
-            poolId, trancheId, bytes32(bytes20(self)), _assetId, uint128(investmentAmount), trancheTokenPayout, 0
+            poolId, trancheId, bytes32(bytes20(self)), _assetId, uint128(investmentAmount), shares, 0
         );
-        vault.mint(trancheTokenPayout, self);
+        vault.mint(shares, self);
         centrifugeChain.updateTrancheTokenPrice(
             poolId, trancheId, assetId, 1000000000000000000, uint64(block.timestamp)
         );

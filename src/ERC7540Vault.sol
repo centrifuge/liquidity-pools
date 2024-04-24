@@ -12,7 +12,7 @@ import "./interfaces/IERC20.sol";
 /// @notice Asynchronous Tokenized Vault standard implementation for Centrifuge pools
 ///
 /// @dev    Each vault issues shares of Centrifuge tranches as restricted ERC-20 tokens
-///         against currency deposits based on the current share price.
+///         against asset deposits based on the current share price.
 ///
 ///         ERC-7540 is an extension of the ERC-4626 standard by 'requestDeposit' & 'requestRedeem' methods, where
 ///         deposit and redeem orders are submitted to the pools to be included in the execution of the following epoch.
@@ -25,9 +25,9 @@ contract ERC7540Vault is Auth, IERC7540 {
     /// @notice Identifier of the tranche of the Centrifuge pool
     bytes16 public immutable trancheId;
 
-    /// @notice The investment currency (asset) for this vault.
+    /// @notice The investment asset for this vault.
     ///         Each tranche of a Centrifuge pool can have multiple vaults.
-    ///         One vault for each supported investment currency.
+    ///         One vault for each supported investment asset.
     ///         Thus tranche shares can be linked to multiple vaults with different currencies.
     address public immutable asset;
 

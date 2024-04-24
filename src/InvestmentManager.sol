@@ -525,7 +525,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
 
     function _processRedeem(InvestmentState storage state, uint128 assets, address vault, address receiver) internal {
         VaultLike vault_ = VaultLike(vault);
-        require(assets != 0, "InvestmentManager/currency-amount-is-zero");
+        require(assets != 0, "InvestmentManager/asset-amount-is-zero");
         require(assets <= state.maxWithdraw, "InvestmentManager/exceeds-redeem-limits");
         state.maxWithdraw = state.maxWithdraw - assets;
         SafeTransferLib.safeTransferFrom(vault_.asset(), address(escrow), receiver, assets);
@@ -602,7 +602,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
         price = assetsInPriceDecimals.mulDiv(10 ** PRICE_DECIMALS, sharesInPriceDecimals, MathLib.Rounding.Down);
     }
 
-    /// @dev    When converting currency to tranche token amounts using the price,
+    /// @dev    When converting asset to tranche token amounts using the price,
     ///         all values are normalized to PRICE_DECIMALS
     function _toPriceDecimals(uint128 _value, uint8 decimals) internal pure returns (uint256 value) {
         if (PRICE_DECIMALS == decimals) return uint256(_value);
@@ -615,7 +615,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
         value = (_value / 10 ** (PRICE_DECIMALS - decimals)).toUint128();
     }
 
-    /// @dev    Return the currency decimals and the tranche token decimals for a given vault
+    /// @dev    Return the asset decimals and the tranche token decimals for a given vault
     function _getPoolDecimals(address vault) internal view returns (uint8 assetDecimals, uint8 shareDecimals) {
         assetDecimals = IERC20Metadata(VaultLike(vault).asset()).decimals();
         shareDecimals = IERC20Metadata(VaultLike(vault).share()).decimals();

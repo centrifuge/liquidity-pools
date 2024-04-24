@@ -13,11 +13,11 @@ library MessagesLib {
     enum Call {
         /// 0 - An invalid message
         Invalid,
-        /// 1 - Add a currency id -> EVM address mapping
+        /// 1 - Add an asset id -> EVM address mapping
         AddAsset,
         /// 2 - Add Pool
         AddPool,
-        /// 3 - Allow a currency to be used as a currency for investing in pools
+        /// 3 - Allow an asset to be used as an asset for investing in pools
         AllowInvestmentAsset,
         /// 4 - Add a Pool's Tranche Token
         AddTranche,
@@ -25,7 +25,7 @@ library MessagesLib {
         UpdateTrancheTokenPrice,
         /// 6 - Update the member list of a tranche token with a new member
         UpdateMember,
-        /// 7 - A transfer of currency
+        /// 7 - A transfer of assets
         Transfer,
         /// 8 - A transfer of tranche tokens
         TransferTrancheTokens,
@@ -59,8 +59,8 @@ library MessagesLib {
         CancelUpgrade,
         /// 23 - Update tranche token metadata
         UpdateTrancheTokenMetadata,
-        /// 24 - Disallow a currency to be used as a currency for investing in pools
-        DisallowInvestmentCurrency,
+        /// 24 - Disallow an asset to be used as an asset for investing in pools
+        DisallowInvestmentAsset,
         /// 25 - Freeze tranche tokens
         Freeze,
         /// 26 - Unfreeze tranche tokens

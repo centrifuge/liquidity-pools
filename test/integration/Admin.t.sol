@@ -56,9 +56,9 @@ contract AdminTest is BaseTest {
         vm.assume(recipient != address(0));
 
         ERC20 erc20 = _newErc20(tokenName, tokenSymbol, decimals);
-        centrifugeChain.addCurrency(assetId, address(erc20));
+        centrifugeChain.addAsset(assetId, address(erc20));
 
-        // First, an outgoing transfer must take place which has funds currency of the currency moved to
+        // First, an outgoing transfer must take place which has funds asset of the asset moved to
         // the escrow account, from which funds are moved from into the recipient on an incoming transfer.
         erc20.approve(address(poolManager), type(uint256).max);
         erc20.mint(address(this), amount);
@@ -82,9 +82,9 @@ contract AdminTest is BaseTest {
         vm.assume(recipient != address(0));
 
         ERC20 erc20 = _newErc20(tokenName, tokenSymbol, decimals);
-        centrifugeChain.addCurrency(assetId, address(erc20));
+        centrifugeChain.addAsset(assetId, address(erc20));
 
-        // First, an outgoing transfer must take place which has funds currency of the currency moved to
+        // First, an outgoing transfer must take place which has funds asset of the asset moved to
         // the escrow account, from which funds are moved from into the recipient on an incoming transfer.
         erc20.approve(address(poolManager), type(uint256).max);
         erc20.mint(address(this), amount);
@@ -113,9 +113,9 @@ contract AdminTest is BaseTest {
 
         ERC20 erc20 = _newErc20(tokenName, tokenSymbol, decimals);
         vm.assume(recipient != address(erc20));
-        centrifugeChain.addCurrency(assetId, address(erc20));
+        centrifugeChain.addAsset(assetId, address(erc20));
 
-        // First, an outgoing transfer must take place which has funds currency of the currency moved to
+        // First, an outgoing transfer must take place which has funds asset of the asset moved to
         // the escrow account, from which funds are moved from into the recipient on an incoming transfer.
         erc20.approve(address(poolManager), type(uint256).max);
         erc20.mint(address(this), amount);
@@ -265,7 +265,7 @@ contract AdminTest is BaseTest {
     function testRecoverTokens() public {
         deploySimpleVault();
         address clumsyUser = vm.addr(0x1234);
-        address vault_ = poolManager.getVault(5, bytes16(bytes("1")), defaultCurrencyId);
+        address vault_ = poolManager.getVault(5, bytes16(bytes("1")), defaultAssetId);
         ERC7540Vault vault = ERC7540Vault(vault_);
         address asset_ = vault.asset();
         ERC20 asset = ERC20(asset_);

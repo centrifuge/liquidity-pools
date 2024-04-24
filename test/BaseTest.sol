@@ -41,7 +41,7 @@ contract BaseTest is Deployer, Test {
     uint128 constant MAX_UINT128 = type(uint128).max;
 
     // default values
-    uint128 public defaultCurrencyId = 1;
+    uint128 public defaultAssetId = 1;
     uint128 public defaultPrice = 1 * 10**18;
     uint8 public defaultRestrictionSet = 2;
     uint8 public defaultDecimals = 8;
@@ -123,10 +123,10 @@ contract BaseTest is Deployer, Test {
         string memory tokenSymbol,
         bytes16 trancheId,
         uint128 assetId,
-        address currency
+        address asset
     ) public returns (address) {
         if (poolManager.idToAsset(assetId) == address(0)) {
-            centrifugeChain.addCurrency(assetId, currency);
+            centrifugeChain.addAsset(assetId, asset);
         }
         
         if (poolManager.getTrancheToken(poolId, trancheId) == address(0)) {
@@ -137,11 +137,11 @@ contract BaseTest is Deployer, Test {
             poolManager.deployTranche(poolId, trancheId);
         }
 
-        if (!poolManager.isAllowedAsset(poolId, currency)) {
+        if (!poolManager.isAllowedAsset(poolId, asset)) {
             centrifugeChain.allowInvestmentCurrency(poolId, assetId);
         }
 
-        address vaultAddress = poolManager.deployVault(poolId, trancheId, currency);
+        address vaultAddress = poolManager.deployVault(poolId, trancheId, asset);
         return vaultAddress;
     }
 
@@ -151,14 +151,14 @@ contract BaseTest is Deployer, Test {
         string memory tokenName,
         string memory tokenSymbol,
         bytes16 trancheId,
-        uint128 currency
+        uint128 asset
     ) public returns (address) {
         uint8 restrictionSet = 2;
-        return deployVault(poolId, decimals, restrictionSet, tokenName, tokenSymbol, trancheId, currency, address(erc20));
+        return deployVault(poolId, decimals, restrictionSet, tokenName, tokenSymbol, trancheId, asset, address(erc20));
     }
 
     function deploySimpleVault() public returns (address) {
-        return deployVault(5, 6, defaultRestrictionSet, "name", "symbol", bytes16(bytes("1")), defaultCurrencyId, address(erc20));
+        return deployVault(5, 6, defaultRestrictionSet, "name", "symbol", bytes16(bytes("1")), defaultAssetId, address(erc20));
     }
 
     function deposit(address _vault, address _investor, uint256 amount) public {
@@ -196,10 +196,10 @@ contract BaseTest is Deployer, Test {
     }
 
     function _newErc20(string memory name, string memory symbol, uint8 decimals) internal returns (ERC20) {
-        ERC20 currency = new ERC20(decimals);
-        currency.file("name", name);
-        currency.file("symbol", symbol);
-        return currency;
+        ERC20 asset = new ERC20(decimals);
+        asset.file("name", name);
+        asset.file("symbol", symbol);
+        return asset;
     }
 
     function _bytes16ToString(bytes16 _bytes16) public pure returns (string memory) {

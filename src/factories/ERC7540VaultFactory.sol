@@ -8,7 +8,7 @@ interface ERC7540VaultFactoryLike {
     function newVault(
         uint64 poolId,
         bytes16 trancheId,
-        address currency,
+        address asset,
         address trancheToken,
         address escrow,
         address investmentManager,
@@ -37,13 +37,13 @@ contract ERC7540VaultFactory is Auth {
     function newVault(
         uint64 poolId,
         bytes16 trancheId,
-        address currency,
+        address asset,
         address trancheToken,
         address escrow,
         address investmentManager,
         address[] calldata wards_
     ) public auth returns (address) {
-        ERC7540Vault vault = new ERC7540Vault(poolId, trancheId, currency, trancheToken, escrow, investmentManager);
+        ERC7540Vault vault = new ERC7540Vault(poolId, trancheId, asset, trancheToken, escrow, investmentManager);
 
         vault.rely(root);
         for (uint256 i = 0; i < wards_.length; i++) {
