@@ -22,7 +22,7 @@ interface PoolManagerLike {
     function getLiquidityPool(uint64 poolId, bytes16 trancheId, address currency) external returns (address);
 }
 
-interface VaultLike {
+interface LiquidityPoolLike {
     function poolId() external returns (uint64);
     function trancheId() external returns (bytes16);
     function asset() external returns (address);
@@ -70,7 +70,7 @@ contract Spell is Addresses {
     }
 
     function migrateLiquidityPool() internal {
-        VaultLike deprectaedLP = VaultLike(DEPRECATED_LIQUIDITY_POOL);
+        LiquidityPoolLike deprectaedLP = LiquidityPoolLike(DEPRECATED_LIQUIDITY_POOL);
         address deprectaedLP_ = PoolManagerLike(poolManager).getLiquidityPool(
             deprectaedLP.poolId(), deprectaedLP.trancheId(), deprectaedLP.asset()
         );
