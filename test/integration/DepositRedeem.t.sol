@@ -37,7 +37,7 @@ contract DepositRedeem is BaseTest {
         vault.requestDeposit(investmentAmount, self, self, "");
 
         // first trigger executed collectInvest of the first 50% at a price of 1.4
-        uint128 _currencyId = poolManager.currencyAddressToId(address(currency)); // retrieve currencyId
+        uint128 _currencyId = poolManager.assetToId(address(currency)); // retrieve currencyId
         uint128 currencyPayout = 50000000; // 50 * 10**6
         uint128 firstTrancheTokenPayout = 35714285714285714285; // 50 * 10**18 / 1.4, rounded down
         centrifugeChain.isExecutedCollectInvest(
@@ -74,7 +74,7 @@ contract DepositRedeem is BaseTest {
     function partialRedeem(uint64 poolId, bytes16 trancheId, ERC7540Vault vault, ERC20 currency) public {
         TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
 
-        uint128 currencyId = poolManager.currencyAddressToId(address(currency));
+        uint128 currencyId = poolManager.assetToId(address(currency));
         uint256 totalTrancheTokens = trancheToken.balanceOf(self);
         uint256 redeemAmount = 50000000000000000000;
         assertTrue(redeemAmount <= totalTrancheTokens);

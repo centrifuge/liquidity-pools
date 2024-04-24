@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-interface IRouterAggregator {
+interface IAggregator {
     struct Router {
         // Starts at 1 and maps to id - 1 as the index on the routers array
         uint8 id;

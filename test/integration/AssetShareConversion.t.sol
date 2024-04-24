@@ -29,7 +29,7 @@ contract AssetShareConversionTest is BaseTest {
         vault.requestDeposit(investmentAmount, self, self, "");
 
         // trigger executed collectInvest at a price of 1.0
-        uint128 _currencyId = poolManager.currencyAddressToId(address(currency)); // retrieve currencyId
+        uint128 _currencyId = poolManager.assetToId(address(currency)); // retrieve currencyId
         uint128 trancheTokenPayout = 100000000000000000000; // 100 * 10**18
         centrifugeChain.isExecutedCollectInvest(
             poolId, trancheId, bytes32(bytes20(self)), _currencyId, uint128(investmentAmount), trancheTokenPayout, 0
@@ -79,7 +79,7 @@ contract AssetShareConversionTest is BaseTest {
         vault.requestDeposit(investmentAmount, self, self, "");
 
         // trigger executed collectInvest at a price of 1.0
-        uint128 _currencyId = poolManager.currencyAddressToId(address(currency)); // retrieve currencyId
+        uint128 _currencyId = poolManager.assetToId(address(currency)); // retrieve currencyId
         uint128 trancheTokenPayout = 100000000; // 100 * 10**6
         centrifugeChain.isExecutedCollectInvest(
             poolId, trancheId, bytes32(bytes20(self)), _currencyId, uint128(investmentAmount), trancheTokenPayout, 0

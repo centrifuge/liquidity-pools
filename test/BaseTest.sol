@@ -173,7 +173,7 @@ contract BaseTest is Deployer, Test {
         erc20.approve(_lPool, amount); // add allowance
         lPool.requestDeposit(amount, _investor, _investor, "");
         // trigger executed collectInvest
-        uint128 currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
+        uint128 currencyId = poolManager.assetToId(address(erc20)); // retrieve currencyId
         centrifugeChain.isExecutedCollectInvest(
             lPool.poolId(),
             lPool.trancheId(),

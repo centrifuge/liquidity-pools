@@ -64,7 +64,7 @@ interface IPoolManager {
     function currencyIdToAddress(uint128 currencyId) external view returns (address currency);
 
     /// @notice TODO
-    function currencyAddressToId(address) external view returns (uint128 currencyId);
+    function assetToId(address) external view returns (uint128 currencyId);
 
     /// @notice TODO
     function file(bytes32 what, address data) external;

@@ -54,7 +54,7 @@ contract PoolManager is Auth, IPoolManager {
 
     mapping(uint64 poolId => Pool) public pools;
     mapping(uint128 currencyId => address) public currencyIdToAddress;
-    mapping(address => uint128 currencyId) public currencyAddressToId;
+    mapping(address => uint128 currencyId) public assetToId;
     mapping(uint64 poolId => mapping(bytes16 => UndeployedTranche)) public undeployedTranches;
 
     constructor(
@@ -91,7 +91,7 @@ contract PoolManager is Auth, IPoolManager {
     // --- Outgoing message handling ---
     /// @inheritdoc IPoolManager
     function transfer(address currency, bytes32 recipient, uint128 amount) external {
-        uint128 currencyId = currencyAddressToId[currency];
+        uint128 currencyId = assetToId[currency];
         require(currencyId != 0, "PoolManager/unknown-currency");
 
         SafeTransferLib.safeTransferFrom(currency, msg.sender, address(escrow), amount);
@@ -338,14 +338,14 @@ contract PoolManager is Auth, IPoolManager {
         // Currency index on the Centrifuge side should start at 1
         require(currencyId != 0, "PoolManager/currency-id-has-to-be-greater-than-0");
         require(currencyIdToAddress[currencyId] == address(0), "PoolManager/currency-id-in-use");
-        require(currencyAddressToId[currency] == 0, "PoolManager/currency-address-in-use");
+        require(assetToId[currency] == 0, "PoolManager/currency-address-in-use");
 
         uint8 currencyDecimals = IERC20Metadata(currency).decimals();
         require(currencyDecimals >= MIN_DECIMALS, "PoolManager/too-few-currency-decimals");
         require(currencyDecimals <= MAX_DECIMALS, "PoolManager/too-many-currency-decimals");
 
         currencyIdToAddress[currencyId] = currency;
-        currencyAddressToId[currency] = currencyId;
+        assetToId[currency] = currencyId;
 
         // Give investment manager infinite approval for currency
         // in the escrow to transfer to the user on redeem or withdraw

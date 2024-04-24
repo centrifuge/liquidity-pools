@@ -25,7 +25,7 @@ contract RedeemTest is BaseTest {
 
         // will fail - investment currency not allowed
         centrifugeChain.disallowInvestmentCurrency(vault.poolId(), defaultCurrencyId);
-        vm.expectRevert(bytes("InvestmentManager/currency-not-allowed"));
+        vm.expectRevert(bytes("InvestmentManager/asset-not-allowed"));
         vault.requestRedeem(amount, address(this), address(this), "");
 
         // success
@@ -40,7 +40,7 @@ contract RedeemTest is BaseTest {
         vault.requestRedeem(amount, address(this), address(this), "");
 
         // trigger executed collectRedeem
-        uint128 _currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
+        uint128 _currencyId = poolManager.assetToId(address(erc20)); // retrieve currencyId
         uint128 currencyPayout = uint128((amount * 10 ** 18) / defaultPrice);
         centrifugeChain.isExecutedCollectRedeem(
             vault.poolId(), vault.trancheId(), bytes32(bytes20(self)), _currencyId, currencyPayout, uint128(amount)
@@ -93,7 +93,7 @@ contract RedeemTest is BaseTest {
         assertGt(vault.pendingRedeemRequest(0, self), 0);
 
         // trigger executed collectRedeem
-        uint128 _currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
+        uint128 _currencyId = poolManager.assetToId(address(erc20)); // retrieve currencyId
         uint128 currencyPayout = uint128((amount * 10 ** 18) / defaultPrice);
         centrifugeChain.isExecutedCollectRedeem(
             vault.poolId(), vault.trancheId(), bytes32(bytes20(self)), _currencyId, currencyPayout, uint128(amount)
@@ -337,7 +337,7 @@ contract RedeemTest is BaseTest {
         bytes16 trancheId = vault.trancheId();
         address currency_ = address(vault.asset());
         ERC20 currency = ERC20(currency_);
-        uint128 currencyId = poolManager.currencyAddressToId(currency_);
+        uint128 currencyId = poolManager.assetToId(currency_);
         centrifugeChain.updateTrancheTokenPrice(
             poolId, trancheId, currencyId, 1000000000000000000, uint64(block.timestamp)
         );
@@ -349,7 +349,7 @@ contract RedeemTest is BaseTest {
         currency.mint(self, investmentAmount);
         erc20.approve(address(vault), investmentAmount);
         vault.requestDeposit(investmentAmount, self, self, "");
-        uint128 _currencyId = poolManager.currencyAddressToId(address(currency)); // retrieve currencyId
+        uint128 _currencyId = poolManager.assetToId(address(currency)); // retrieve currencyId
 
         uint128 trancheTokenPayout = 100000000;
         centrifugeChain.isExecutedCollectInvest(
@@ -405,7 +405,7 @@ contract RedeemTest is BaseTest {
     function partialRedeem(uint64 poolId, bytes16 trancheId, ERC7540Vault vault, ERC20 currency) public {
         TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
 
-        uint128 currencyId = poolManager.currencyAddressToId(address(currency));
+        uint128 currencyId = poolManager.assetToId(address(currency));
         uint256 totalTrancheTokens = trancheToken.balanceOf(self);
         uint256 redeemAmount = 50000000000000000000;
         assertTrue(redeemAmount <= totalTrancheTokens);

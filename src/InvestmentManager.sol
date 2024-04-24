@@ -86,7 +86,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
 
         uint64 poolId = vault_.poolId();
         address asset = vault_.asset();
-        require(poolManager.isAllowedAsset(poolId, asset), "InvestmentManager/currency-not-allowed");
+        require(poolManager.isAllowedAsset(poolId, asset), "InvestmentManager/asset-not-allowed");
 
         require(_canTransfer(vault, address(0), owner, 0), "InvestmentManager/owner-is-restricted");
         require(
@@ -106,7 +106,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
                 poolId,
                 vault_.trancheId(),
                 receiver,
-                poolManager.currencyAddressToId(asset),
+                poolManager.assetToId(asset),
                 _assets
             )
         );
@@ -149,7 +149,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
                 vault_.poolId(),
                 vault_.trancheId(),
                 owner,
-                poolManager.currencyAddressToId(vault_.asset()),
+                poolManager.assetToId(vault_.asset()),
                 shares
             )
         );
@@ -171,7 +171,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
                 _vault.poolId(),
                 _vault.trancheId(),
                 owner.toBytes32(),
-                poolManager.currencyAddressToId(_vault.asset())
+                poolManager.assetToId(_vault.asset())
             )
         );
     }
@@ -195,7 +195,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
                 _vault.poolId(),
                 _vault.trancheId(),
                 owner.toBytes32(),
-                poolManager.currencyAddressToId(_vault.asset())
+                poolManager.assetToId(_vault.asset())
             )
         );
     }

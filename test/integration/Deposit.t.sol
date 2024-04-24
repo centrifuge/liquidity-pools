@@ -47,7 +47,7 @@ contract DepositTest is BaseTest {
 
         // will fail - investment currency not allowed
         centrifugeChain.disallowInvestmentCurrency(vault.poolId(), defaultCurrencyId);
-        vm.expectRevert(bytes("InvestmentManager/currency-not-allowed"));
+        vm.expectRevert(bytes("InvestmentManager/asset-not-allowed"));
         vault.requestDeposit(amount, self, self, "");
 
         // success
@@ -66,7 +66,7 @@ contract DepositTest is BaseTest {
         assertEq(vault.claimableDepositRequest(0, self), 0);
 
         // trigger executed collectInvest
-        uint128 _currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
+        uint128 _currencyId = poolManager.assetToId(address(erc20)); // retrieve currencyId
         uint128 trancheTokensPayout = uint128((amount * 10 ** 18) / price); // trancheTokenPrice = 2$
         assertApproxEqAbs(trancheTokensPayout, amount / 2, 2);
         centrifugeChain.isExecutedCollectInvest(
@@ -140,7 +140,7 @@ contract DepositTest is BaseTest {
         currency.approve(vault_, investmentAmount);
         currency.mint(self, investmentAmount);
         vault.requestDeposit(investmentAmount, self, self, "");
-        uint128 _currencyId = poolManager.currencyAddressToId(address(currency)); // retrieve currencyId
+        uint128 _currencyId = poolManager.assetToId(address(currency)); // retrieve currencyId
 
         // first trigger executed collectInvest of the first 50% at a price of 1.4
         uint128 currencyPayout = 50000000; // 50 * 10**6
@@ -304,7 +304,7 @@ contract DepositTest is BaseTest {
         vault.requestDeposit(amount, self, self, "");
 
         // trigger executed collectInvest
-        uint128 _currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
+        uint128 _currencyId = poolManager.assetToId(address(erc20)); // retrieve currencyId
         uint128 trancheTokensPayout = uint128(amount * 10 ** 18 / price); // trancheTokenPrice = 2$
         assertApproxEqAbs(trancheTokensPayout, amount / 2, 2);
         centrifugeChain.isExecutedCollectInvest(
@@ -429,7 +429,7 @@ contract DepositTest is BaseTest {
             vault.poolId(),
             vault.trancheId(),
             bytes32(bytes20(investor)),
-            poolManager.currencyAddressToId(address(erc20)),
+            poolManager.assetToId(address(erc20)),
             uint128(amount),
             uint128(amount),
             uint128(amount)
@@ -466,7 +466,7 @@ contract DepositTest is BaseTest {
         vault.requestDeposit(investmentAmount, self, self, "");
 
         // trigger executed collectInvest of the first 50% at a price of 1.2
-        uint128 _currencyId = poolManager.currencyAddressToId(address(currency)); // retrieve currencyId
+        uint128 _currencyId = poolManager.assetToId(address(currency)); // retrieve currencyId
         uint128 currencyPayout = 50000000; // 50 * 10**6
         uint128 firstTrancheTokenPayout = 41666666666666666666; // 50 * 10**18 / 1.2, rounded down
         centrifugeChain.isExecutedCollectInvest(
@@ -549,7 +549,7 @@ contract DepositTest is BaseTest {
         vault.requestDeposit(investmentAmount, self, self, "");
 
         // trigger executed collectInvest of the first 50% at a price of 1.2
-        uint128 _currencyId = poolManager.currencyAddressToId(address(currency)); // retrieve currencyId
+        uint128 _currencyId = poolManager.assetToId(address(currency)); // retrieve currencyId
         uint128 currencyPayout = 50000000000000000000; // 50 * 10**18
         uint128 firstTrancheTokenPayout = 41666666; // 50 * 10**6 / 1.2, rounded down
         centrifugeChain.isExecutedCollectInvest(
@@ -636,7 +636,7 @@ contract DepositTest is BaseTest {
         vault.requestDeposit(investmentAmount, self, self, "");
 
         // trigger executed collectInvest at a tranche token price of 1.2
-        uint128 _currencyId = poolManager.currencyAddressToId(address(currency)); // retrieve currencyId
+        uint128 _currencyId = poolManager.assetToId(address(currency)); // retrieve currencyId
         uint128 currencyPayout = 99000000; // 99 * 10**6
 
         // invested amount in dai is 99 * 10**18
@@ -689,7 +689,7 @@ contract DepositTest is BaseTest {
         vault.requestDeposit(investmentAmount, self, self, "");
 
         // trigger executed collectInvest at a tranche token price of 1.2
-        uint128 _currencyId = poolManager.currencyAddressToId(address(currency)); // retrieve currencyId
+        uint128 _currencyId = poolManager.assetToId(address(currency)); // retrieve currencyId
         uint128 currencyPayout = 99000000000000000000; // 99 * 10**18
 
         // invested amount in dai is 99 * 10**18
@@ -775,7 +775,7 @@ contract DepositTest is BaseTest {
         currency.approve(address(vault), investmentAmount);
         currency.mint(self, investmentAmount);
         vault.requestDeposit(investmentAmount, self, self, "");
-        uint128 _currencyId = poolManager.currencyAddressToId(address(currency)); // retrieve currencyId
+        uint128 _currencyId = poolManager.assetToId(address(currency)); // retrieve currencyId
 
         // first trigger executed collectInvest of the first 50% at a price of 1.4
         uint128 currencyPayout = 50000000; // 50 * 10**6

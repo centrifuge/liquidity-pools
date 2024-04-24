@@ -119,7 +119,7 @@ contract DeployTest is Test, Deployer {
         assertEq(erc20.balanceOf(self), 0);
 
         // trigger executed collectInvest
-        uint128 _currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
+        uint128 _currencyId = poolManager.assetToId(address(erc20)); // retrieve currencyId
 
         TrancheToken trancheToken = TrancheToken(address(lPool.share()));
         uint128 trancheTokensPayout = (
@@ -163,7 +163,7 @@ contract DeployTest is Test, Deployer {
 
         // redeem
         TrancheToken trancheToken = TrancheToken(address(lPool.share()));
-        uint128 _currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
+        uint128 _currencyId = poolManager.assetToId(address(erc20)); // retrieve currencyId
         uint128 currencyPayout = (
             amount.mulDiv(price, 10 ** (18 - erc20.decimals() + trancheToken.decimals()), MathLib.Rounding.Down)
         ).toUint128();

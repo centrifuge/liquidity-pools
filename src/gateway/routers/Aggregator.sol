@@ -4,7 +4,7 @@ pragma solidity 0.8.21;
 import {Auth} from "src/Auth.sol";
 import {ArrayLib} from "src/libraries/ArrayLib.sol";
 import {MessagesLib} from "src/libraries/MessagesLib.sol";
-import {IRouterAggregator} from "src/interfaces/gateway/IRouterAggregator.sol";
+import {IAggregator} from "src/interfaces/gateway/IAggregator.sol";
 
 interface GatewayLike {
     function handle(bytes memory message) external;
@@ -14,13 +14,13 @@ interface RouterLike {
     function send(bytes memory message) external;
 }
 
-/// @title  RouterAggregator
+/// @title  Aggregator
 /// @notice Routing contract that forwards to multiple routers (1 full message, n-1 proofs)
 ///         and validates multiple routers have confirmed a message.
 ///
 ///         Supports processing multiple duplicate messages in parallel by
 ///         storing counts of messages and proofs that have been received.
-contract RouterAggregator is Auth, IRouterAggregator {
+contract Aggregator is Auth, IAggregator {
     using ArrayLib for uint16[8];
 
     uint8 public constant MAX_ROUTER_COUNT = 8;
@@ -43,10 +43,10 @@ contract RouterAggregator is Auth, IRouterAggregator {
     }
 
     // --- Administration ---
-    /// @inheritdoc IRouterAggregator
+    /// @inheritdoc IAggregator
     function file(bytes32 what, address[] calldata routers_) external auth {
         if (what == "routers") {
-            require(routers_.length <= MAX_ROUTER_COUNT, "RouterAggregator/exceeds-max-router-count");
+            require(routers_.length <= MAX_ROUTER_COUNT, "Aggregator/exceeds-max-router-count");
 
             // Disable old routers
             for (uint8 i = 0; i < routers.length; ++i) {
@@ -62,23 +62,23 @@ contract RouterAggregator is Auth, IRouterAggregator {
 
             routers = routers_;
         } else {
-            revert("RouterAggregator/file-unrecognized-param");
+            revert("Aggregator/file-unrecognized-param");
         }
 
         emit File(what, routers_);
     }
 
     // --- Incoming ---
-    /// @inheritdoc IRouterAggregator
+    /// @inheritdoc IAggregator
     function handle(bytes calldata payload) public {
         Router memory router = validRouters[msg.sender];
-        require(router.id != 0, "RouterAggregator/invalid-router");
+        require(router.id != 0, "Aggregator/invalid-router");
         _handle(payload, router);
     }
 
     function _handle(bytes calldata payload, Router memory router) internal {
         if (MessagesLib.isRecoveryMessage(payload)) {
-            require(routers.length > 1, "RouterAggregator/no-recovery-with-one-router-allowed");
+            require(routers.length > 1, "Aggregator/no-recovery-with-one-router-allowed");
             return _handleRecovery(payload);
         }
 
@@ -133,7 +133,7 @@ contract RouterAggregator is Auth, IRouterAggregator {
     function _handleRecovery(bytes memory payload) internal {
         if (MessagesLib.messageType(payload) == MessagesLib.Call.InitiateMessageRecovery) {
             (bytes32 messageHash, address router) = MessagesLib.parseInitiateMessageRecovery(payload);
-            require(validRouters[msg.sender].id != 0, "RouterAggregator/invalid-router");
+            require(validRouters[msg.sender].id != 0, "Aggregator/invalid-router");
             recoveries[messageHash] = Recovery(block.timestamp + RECOVERY_CHALLENGE_PERIOD, router);
             emit InitiateMessageRecovery(messageHash, router);
         } else if (MessagesLib.messageType(payload) == MessagesLib.Call.DisputeMessageRecovery) {
@@ -142,7 +142,7 @@ contract RouterAggregator is Auth, IRouterAggregator {
         }
     }
 
-    /// @inheritdoc IRouterAggregator
+    /// @inheritdoc IAggregator
     function disputeMessageRecovery(bytes32 messageHash) public auth {
         _disputeMessageRecovery(messageHash);
     }
@@ -152,24 +152,24 @@ contract RouterAggregator is Auth, IRouterAggregator {
         emit DisputeMessageRecovery(messageHash);
     }
 
-    /// @inheritdoc IRouterAggregator
+    /// @inheritdoc IAggregator
     function executeMessageRecovery(bytes calldata message) public {
         bytes32 messageHash = keccak256(message);
         Recovery storage recovery = recoveries[messageHash];
-        require(recovery.timestamp != 0, "RouterAggregator/message-recovery-not-initiated");
-        require(recovery.timestamp <= block.timestamp, "RouterAggregator/challenge-period-has-not-ended");
+        require(recovery.timestamp != 0, "Aggregator/message-recovery-not-initiated");
+        require(recovery.timestamp <= block.timestamp, "Aggregator/challenge-period-has-not-ended");
 
         _handle(message, validRouters[recovery.router]);
         delete recoveries[messageHash];
     }
 
     // --- Outgoing ---
-    /// @inheritdoc IRouterAggregator
+    /// @inheritdoc IAggregator
     function send(bytes calldata message) public {
-        require(msg.sender == address(gateway), "RouterAggregator/only-gateway-allowed-to-call");
+        require(msg.sender == address(gateway), "Aggregator/only-gateway-allowed-to-call");
 
         uint256 numRouters = routers.length;
-        require(numRouters > 0, "RouterAggregator/not-initialized");
+        require(numRouters > 0, "Aggregator/not-initialized");
 
         bytes memory proof = abi.encodePacked(uint8(MessagesLib.Call.MessageProof), keccak256(message));
         for (uint256 i; i < numRouters; ++i) {
@@ -180,13 +180,13 @@ contract RouterAggregator is Auth, IRouterAggregator {
     }
 
     // --- Helpers ---
-    /// @inheritdoc IRouterAggregator
+    /// @inheritdoc IAggregator
     function quorum() external view returns (uint8) {
         Router memory router = validRouters[routers[0]];
         return router.quorum;
     }
 
-    /// @inheritdoc IRouterAggregator
+    /// @inheritdoc IAggregator
     function confirmations(bytes32 messageHash)
         external
         view

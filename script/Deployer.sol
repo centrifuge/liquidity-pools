@@ -2,7 +2,7 @@
 pragma solidity 0.8.21;
 
 import {Root} from "src/Root.sol";
-import {RouterAggregator} from "src/gateway/routers/RouterAggregator.sol";
+import {Aggregator} from "src/gateway/routers/Aggregator.sol";
 import {Gateway} from "src/gateway/Gateway.sol";
 import {InvestmentManager} from "src/InvestmentManager.sol";
 import {TrancheTokenFactory} from "src/factories/TrancheTokenFactory.sol";
@@ -37,7 +37,7 @@ contract Deployer is Script {
     PauseAdmin public pauseAdmin;
     DelayedAdmin public delayedAdmin;
     Gateway public gateway;
-    RouterAggregator public aggregator;
+    Aggregator public aggregator;
     address public vaultFactory;
     address public restrictionManagerFactory;
     address public trancheTokenFactory;
@@ -66,7 +66,7 @@ contract Deployer is Script {
         AuthLike(restrictionManagerFactory).rely(address(root));
 
         gateway = new Gateway(address(root), address(investmentManager), address(poolManager));
-        aggregator = new RouterAggregator(address(gateway));
+        aggregator = new Aggregator(address(gateway));
 
         pauseAdmin = new PauseAdmin(address(root));
         delayedAdmin = new DelayedAdmin(address(root), address(pauseAdmin), address(aggregator));

@@ -9,7 +9,7 @@ interface ManagerLike {
     function handle(bytes memory message) external;
 }
 
-interface RouterAggregatorLike {
+interface AggregatorLike {
     function send(bytes memory message) external;
 }
 
@@ -33,7 +33,7 @@ contract Gateway is Auth, IGateway {
 
     address public poolManager;
     address public investmentManager;
-    RouterAggregatorLike public aggregator;
+    AggregatorLike public aggregator;
 
     mapping(uint8 messageId => address manager) messages;
 
@@ -54,7 +54,7 @@ contract Gateway is Auth, IGateway {
     // --- Administration ---
     function file(bytes32 what, address data) public auth {
         if (what == "poolManager") poolManager = data;
-        else if (what == "aggregator") aggregator = RouterAggregatorLike(data);
+        else if (what == "aggregator") aggregator = AggregatorLike(data);
         else if (what == "investmentManager") investmentManager = data;
         else revert("Gateway/file-unrecognized-param");
         emit File(what, data);
