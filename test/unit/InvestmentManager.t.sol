@@ -4,7 +4,7 @@ pragma abicoder v2;
 
 import "test/BaseTest.sol";
 
-interface LiquidityPoolLike {
+interface VaultLike {
     function priceComputedAt() external view returns (uint64);
 }
 

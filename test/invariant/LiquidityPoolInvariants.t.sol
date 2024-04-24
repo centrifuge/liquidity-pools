@@ -8,7 +8,7 @@ import {IERC7540} from "src/interfaces/IERC7540.sol";
 import {IERC20} from "src/interfaces/IERC20.sol";
 import "forge-std/Test.sol";
 
-interface LiquidityPoolLike is IERC7540 {
+interface VaultLike is IERC7540 {
     function asset() external view returns (address);
     function share() external view returns (address);
     function poolId() external view returns (uint64);
@@ -71,8 +71,8 @@ contract InvestmentInvariants is BaseTest {
                 );
                 vaults.push(vault);
                 excludeContract(vault);
-                excludeContract(LiquidityPoolLike(vault).share());
-                excludeContract(TrancheTokenLike(LiquidityPoolLike(vault).share()).restrictionManager());
+                excludeContract(VaultLike(vault).share());
+                excludeContract(TrancheTokenLike(VaultLike(vault).share()).restrictionManager());
             }
         }
 
@@ -91,7 +91,7 @@ contract InvestmentInvariants is BaseTest {
         // - Just 1 tranche per pool
         // - NUM_INVESTORS per LP.
         for (uint64 vaultId; vaultId < vaults.length; ++vaultId) {
-            LiquidityPoolLike vault = LiquidityPoolLike(vaults[vaultId]);
+            VaultLike vault = VaultLike(vaults[vaultId]);
 
             address currency = vault.asset();
             InvestorHandler handler = new InvestorHandler(
@@ -124,7 +124,7 @@ contract InvestmentInvariants is BaseTest {
     // Invariant 1: trancheToken.balanceOf[user] <= sum(trancheTokenPayout)
     function invariant_cannotReceiveMoreTrancheTokensThanPayout() external {
         for (uint64 vaultId; vaultId < vaults.length; ++vaultId) {
-            LiquidityPoolLike vault = LiquidityPoolLike(vaults[vaultId]);
+            VaultLike vault = VaultLike(vaults[vaultId]);
 
             for (uint256 i; i < investors.length; ++i) {
                 address investor = investors[i];
@@ -154,7 +154,7 @@ contract InvestmentInvariants is BaseTest {
     // Invariant 3: convertToAssets(totalSupply) == totalAssets
     function invariant_convertToAssetsEquivalence() external {
         for (uint64 vaultId; vaultId < vaults.length; ++vaultId) {
-            LiquidityPoolLike vault = LiquidityPoolLike(vaults[vaultId]);
+            VaultLike vault = VaultLike(vaults[vaultId]);
 
             // Does not hold if the price is 0
             if (vault.convertToAssets(1) == 0) return;
@@ -168,7 +168,7 @@ contract InvestmentInvariants is BaseTest {
     // Invariant 4: convertToShares(totalAssets) == totalSupply
     function invariant_convertToSharesEquivalence() external {
         for (uint64 vaultId; vaultId < vaults.length; ++vaultId) {
-            LiquidityPoolLike vault = LiquidityPoolLike(vaults[vaultId]);
+            VaultLike vault = VaultLike(vaults[vaultId]);
 
             // Does not hold if the price is 0
             if (vault.convertToAssets(1) == 0) return;
@@ -182,7 +182,7 @@ contract InvestmentInvariants is BaseTest {
     // Invariant 5: lp.maxDeposit <= sum(requestDeposit)
     // function invariant_maxDepositLeDepositRequest() external {
     //     for (uint64 vaultId; vaultId < vaults.length; ++vaultId) {
-    //         LiquidityPoolLike vault = LiquidityPoolLike(vaults[vaultId]);
+    //         VaultLike vault = VaultLike(vaults[vaultId]);
     //         InvestorHandler handler = investorHandlers[vaultId];
 
     //         for (uint256 i; i < investors.length; ++i) {
@@ -196,7 +196,7 @@ contract InvestmentInvariants is BaseTest {
     // TODO: handle cancel behaviour
     // function invariant_maxRedeemLeRedeemRequest() external {
     //     for (uint64 vaultId; vaultId < vaults.length; ++vaultId) {
-    //         LiquidityPoolLike vault = LiquidityPoolLike(vaults[vaultId]);
+    //         VaultLike vault = VaultLike(vaults[vaultId]);
     //         InvestorHandler handler = investorHandlers[vaultId];
 
     //         for (uint256 i; i < investors.length; ++i) {
@@ -213,7 +213,7 @@ contract InvestmentInvariants is BaseTest {
     // Invariant 7: lp.depositPrice <= max(fulfillment price)
     // function invariant_depositPriceLtMaxFulfillmentPrice() external {
     //     for (uint64 vaultId; vaultId < vaults.length; ++vaultId) {
-    //         LiquidityPoolLike vault = LiquidityPoolLike(vaults[vaultId]);
+    //         VaultLike vault = VaultLike(vaults[vaultId]);
 
     //         for (uint256 i; i < investors.length; ++i) {
     //             address investor = investors[i];
@@ -227,7 +227,7 @@ contract InvestmentInvariants is BaseTest {
     // Invariant 8: lp.redeemPrice <= max(fulfillment price)
     // function invariant_redeemPriceLtMaxFulfillmentPrice() external {
     //     for (uint64 vaultId; vaultId < vaults.length; ++vaultId) {
-    //         LiquidityPoolLike vault = LiquidityPoolLike(vaults[vaultId]);
+    //         VaultLike vault = VaultLike(vaults[vaultId]);
 
     //         for (uint256 i; i < investors.length; ++i) {
     //             address investor = investors[i];

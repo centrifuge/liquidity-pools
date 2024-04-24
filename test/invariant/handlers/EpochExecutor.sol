@@ -12,7 +12,7 @@ interface ERC20Like {
     function balanceOf(address user) external view returns (uint256);
 }
 
-interface LiquidityPoolLike is IERC7540 {
+interface VaultLike is IERC7540 {
     function share() external view returns (address);
     function manager() external view returns (address);
 }

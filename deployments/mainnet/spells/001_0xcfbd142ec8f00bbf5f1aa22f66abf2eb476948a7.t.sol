@@ -35,8 +35,8 @@ contract SpellTest is RPCTest {
     function testCastSuccessful() public {
         address newLP_ = spell.newLiquidityPool();
         address deprecatedLP_ = spell.DEPRECATED_LIQUIDITY_POOL();
-        LiquidityPoolLike deprecatedLP = LiquidityPoolLike(deprecatedLP_);
-        LiquidityPoolLike newLP = LiquidityPoolLike(newLP_);
+        VaultLike deprecatedLP = VaultLike(deprecatedLP_);
+        VaultLike newLP = VaultLike(newLP_);
 
         assertEq(deprecatedLP.poolId(), newLP.poolId());
         assertEq(deprecatedLP.trancheId(), newLP.trancheId());

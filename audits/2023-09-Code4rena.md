@@ -235,10 +235,10 @@ function testPOCIssue1(
     string memory tokenName,
     string memory tokenSymbol,
     bytes16 trancheId,
-    uint128 assetId,
+    uint128 currencyId,
     uint256 amount
 ) public {
-    vm.assume(assetId > 0);
+    vm.assume(currencyId > 0);
     vm.assume(amount < MAX_UINT128);
     vm.assume(amount > 1);
 
@@ -247,7 +247,7 @@ function testPOCIssue1(
     vm.prank(vm.addr(0xABCD));
 
     LiquidityPool lPool =
-        LiquidityPool(deployLiquidityPool(poolId, erc20.decimals(), tokenName, tokenSymbol, trancheId, assetId));
+        LiquidityPool(deployLiquidityPool(poolId, erc20.decimals(), tokenName, tokenSymbol, trancheId, currencyId));
     erc20.mint(investor, amount);
     homePools.updateMember(poolId, trancheId, investor, type(uint64).max);
 
@@ -278,11 +278,11 @@ function testPOCIssue1(
     assertEq(erc20.balanceOf(investor), 0);
 
     // collect 50% of the tranche tokens
-    homePools.isFulfilledDepositRequest(
+    homePools.isExecutedCollectInvest(
         poolId,
         trancheId,
         bytes32(bytes20(investor)),
-        poolManager.assetToId(address(erc20)),
+        poolManager.currencyAddressToId(address(erc20)),
         uint128(amount),
         uint128(amount)
     );
@@ -320,7 +320,7 @@ function testPOCIssue1(
     // but a different currency
     LiquidityPool newLPool;
     {
-        assert(assetId != 123);
+        assert(currencyId != 123);
         address newErc20 = address(_newErc20("Y's Dollar", "USDY", 6));
         homePools.addCurrency(123, newErc20);
         homePools.allowPoolCurrency(poolId, 123);
@@ -407,17 +407,17 @@ Consider setting the name in the constructor before the cached domain separator 
 ## [[M-04] You can deposit really small amount for other users to DoS them](https://github.com/code-423n4/2023-09-centrifuge-findings/issues/143)
 *Submitted by [0x3b](https://github.com/code-423n4/2023-09-centrifuge-findings/issues/143), also found by [jaraxxus](https://github.com/code-423n4/2023-09-centrifuge-findings/issues/686) and [twicek](https://github.com/code-423n4/2023-09-centrifuge-findings/issues/283)*
 
-Deposit and mint under [**LiquidityPool**](https://github.com/code-423n4/2023-09-centrifuge/blob/main/src/ERC7540Vault.sol#L141-L152) lack access control, which enables any user to **proceed** the  mint/deposit for another user. Attacker can deposit (this does not require tokens) some wai before users TX to DoS the deposit.
+Deposit and mint under [**LiquidityPool**](https://github.com/code-423n4/2023-09-centrifuge/blob/main/src/LiquidityPool.sol#L141-L152) lack access control, which enables any user to **proceed** the  mint/deposit for another user. Attacker can deposit (this does not require tokens) some wai before users TX to DoS the deposit.
 
 ### Proof of Concept
 
-[deposit](https://github.com/code-423n4/2023-09-centrifuge/blob/main/src/ERC7540Vault.sol#L141-L144) and [mint](https://github.com/code-423n4/2023-09-centrifuge/blob/main/src/ERC7540Vault.sol#L148-L152) do [processDeposit](https://github.com/code-423n4/2023-09-centrifuge/blob/main/src/InvestmentManager.sol#L427-L441)/[processMint](https://github.com/code-423n4/2023-09-centrifuge/blob/main/src/InvestmentManager.sol#L451-L465) which are the secondary functions to the requests. These function do not take any value in the form of tokens, but only send shares to the receivers. This means they can be called for free.
+[deposit](https://github.com/code-423n4/2023-09-centrifuge/blob/main/src/LiquidityPool.sol#L141-L144) and [mint](https://github.com/code-423n4/2023-09-centrifuge/blob/main/src/LiquidityPool.sol#L148-L152) do [processDeposit](https://github.com/code-423n4/2023-09-centrifuge/blob/main/src/InvestmentManager.sol#L427-L441)/[processMint](https://github.com/code-423n4/2023-09-centrifuge/blob/main/src/InvestmentManager.sol#L451-L465) which are the secondary functions to the requests. These function do not take any value in the form of tokens, but only send shares to the receivers. This means they can be called for free.
 
-With this an attacker who wants to DoS a user, can wait him to make the request to deposit and on the next epoch front run him by calling  [deposit](https://github.com/code-423n4/2023-09-centrifuge/blob/main/src/ERC7540Vault.sol#L141-L144) with something small like 1 wei. Afterwards when the user calls `deposit`, his TX will inevitable revert, as he will not have enough balance for the full deposit.
+With this an attacker who wants to DoS a user, can wait him to make the request to deposit and on the next epoch front run him by calling  [deposit](https://github.com/code-423n4/2023-09-centrifuge/blob/main/src/LiquidityPool.sol#L141-L144) with something small like 1 wei. Afterwards when the user calls `deposit`, his TX will inevitable revert, as he will not have enough balance for the full deposit.
 
 ### Recommended Mitigation Steps
 
-Have some access control modifiers like [**withApproval**](https://github.com/code-423n4/2023-09-centrifuge/blob/main/src/ERC7540Vault.sol#L97-L100) used also in [redeem](https://github.com/code-423n4/2023-09-centrifuge/blob/main/src/ERC7540Vault.sol#L200-L208).
+Have some access control modifiers like [**withApproval**](https://github.com/code-423n4/2023-09-centrifuge/blob/main/src/LiquidityPool.sol#L97-L100) used also in [redeem](https://github.com/code-423n4/2023-09-centrifuge/blob/main/src/LiquidityPool.sol#L200-L208).
 
 ```diff
 -    function deposit(uint256 assets, address receiver) public returns (uint256 shares)  {
@@ -447,7 +447,7 @@ Access Control
 ## [[M-05] Investors claiming their `maxDeposit` by using the `LiquidityPool.deposit()` will cause other users to be unable to claim their `maxDeposit`/`maxMint`](https://github.com/code-423n4/2023-09-centrifuge-findings/issues/118)
 *Submitted by [0xStalin](https://github.com/code-423n4/2023-09-centrifuge-findings/issues/118), also found by [Aymen0909](https://github.com/code-423n4/2023-09-centrifuge-findings/issues/647), [imtybik](https://github.com/code-423n4/2023-09-centrifuge-findings/issues/532), [HChang26](https://github.com/code-423n4/2023-09-centrifuge-findings/issues/321), and [J4X](https://github.com/code-423n4/2023-09-centrifuge-findings/issues/210)*
 
-Claiming deposits using the [`LiquidityPool.deposit()`](https://github.com/code-423n4/2023-09-centrifuge/blob/main/src/ERC7540Vault.sol#L141-L144) will cause the Escrow contract to not have enough shares to allow other investors to claim their maxDeposit or maxMint values for their deposited assets.
+Claiming deposits using the [`LiquidityPool.deposit()`](https://github.com/code-423n4/2023-09-centrifuge/blob/main/src/LiquidityPool.sol#L141-L144) will cause the Escrow contract to not have enough shares to allow other investors to claim their maxDeposit or maxMint values for their deposited assets.
 
 ### Proof of Concept
 
@@ -457,7 +457,7 @@ Claiming deposits using the [`LiquidityPool.deposit()`](https://github.com/code-
 
 *   When the requestDeposit of the investor is processed in the Centrifuge chain, a number of TrancheShares will be minted based on the price at the moment when the request was processed and the total amount of deposited assets, this TrancheShares will be deposited to the Escrow contract, and the TrancheShares will be waiting for the investors to claim their deposits.
 
-*   When investors decide to claim their deposit they can use the [`LiquidityPool.deposit()`](https://github.com/code-423n4/2023-09-centrifuge/blob/main/src/ERC7540Vault.sol#L141-L144) function, this function receives as arguments the number of assets that are being claimed and the address of the account to claim the deposits for.
+*   When investors decide to claim their deposit they can use the [`LiquidityPool.deposit()`](https://github.com/code-423n4/2023-09-centrifuge/blob/main/src/LiquidityPool.sol#L141-L144) function, this function receives as arguments the number of assets that are being claimed and the address of the account to claim the deposits for.
 
 ```solidity
 function deposit(uint256 assets, address receiver) public returns (uint256 shares) {
@@ -466,14 +466,14 @@ function deposit(uint256 assets, address receiver) public returns (uint256 share
 }
 ```
 
-*   The [`LiquidityPool.deposit()`](https://github.com/code-423n4/2023-09-centrifuge/blob/main/src/ERC7540Vault.sol#L141-L144) function calls the [`InvestmentManager::processDeposit()`](https://github.com/code-423n4/2023-09-centrifuge/blob/main/src/InvestmentManager.sol#L427-L441) which will validate that the amount of assets being claimed doesn't exceed the investor's deposit limits, will compute the deposit price in the [`InvestmentManager::calculateDepositPrice()`](https://github.com/code-423n4/2023-09-centrifuge/blob/main/src/InvestmentManager.sol#L551-L558), which basically computes an average price for all the request deposits that have been accepted in the Centrifuge Chain, each of those request deposits could've been executed at a different price, so, this function, based on the values of maxDeposit and maxMint will estimate an average price for all the unclaimed deposits, later, using this computed price for the deposits will compute the equivalent of TrancheTokens for the CurrencyAmount being claimed, and finally, processDeposit() will transferFrom the escrow to the investor account the computed amount of TranchTokens.
+*   The [`LiquidityPool.deposit()`](https://github.com/code-423n4/2023-09-centrifuge/blob/main/src/LiquidityPool.sol#L141-L144) function calls the [`InvestmentManager::processDeposit()`](https://github.com/code-423n4/2023-09-centrifuge/blob/main/src/InvestmentManager.sol#L427-L441) which will validate that the amount of assets being claimed doesn't exceed the investor's deposit limits, will compute the deposit price in the [`InvestmentManager::calculateDepositPrice()`](https://github.com/code-423n4/2023-09-centrifuge/blob/main/src/InvestmentManager.sol#L551-L558), which basically computes an average price for all the request deposits that have been accepted in the Centrifuge Chain, each of those request deposits could've been executed at a different price, so, this function, based on the values of maxDeposit and maxMint will estimate an average price for all the unclaimed deposits, later, using this computed price for the deposits will compute the equivalent of TrancheTokens for the CurrencyAmount being claimed, and finally, processDeposit() will transferFrom the escrow to the investor account the computed amount of TranchTokens.
 
 ```solidity
 function processDeposit(address user, uint256 currencyAmount) public auth returns (uint256 trancheTokenAmount) {
     address liquidityPool = msg.sender;
     uint128 _currencyAmount = _toUint128(currencyAmount);
     require(
-        //@audit-info => orderbook[][].maxDeposit is updated when the handleFulfilledDepositRequest() was executed!
+        //@audit-info => orderbook[][].maxDeposit is updated when the handleExecutedCollectInvest() was executed!
         //@audit-info => The orderbook keeps track of the number of TrancheToken shares that have been minted to the Escrow contract on the user's behalf!
         (_currencyAmount <= orderbook[user][liquidityPool].maxDeposit && _currencyAmount != 0),
         "InvestmentManager/amount-exceeds-deposit-limits"
@@ -494,14 +494,14 @@ function processDeposit(address user, uint256 currencyAmount) public auth return
 
 **The problem** occurs when an investor hasn't claimed their deposits and has requested multiple deposits on different epochs at different prices. The [`InvestmentManager::calculateDepositPrice()`](https://github.com/code-423n4/2023-09-centrifuge/blob/main/src/InvestmentManager.sol#L551-L558) function will compute an equivalent/average price for all the requestDeposits that haven't been claimed yet. Because of the different prices that the request deposits where processed at, the computed price will compute the most accurate average of the deposit's price, but there is a slight rounding error that causes the computed value of trancheTokenAmount to be slightly different from what it should exactly be.
 
-*   That slight difference will make that the Escrow contract transfers slightly more shares to the investor claiming the deposits by using the [`LiquidityPool.deposit()`](https://github.com/code-423n4/2023-09-centrifuge/blob/main/src/ERC7540Vault.sol#L141-L144)
-*   **As a result**, when another investor tries to claim their [maxDeposit](https://github.com/code-423n4/2023-09-centrifuge/blob/main/src/ERC7540Vault.sol#L129-L132) or [maxMint](https://github.com/code-423n4/2023-09-centrifuge/blob/main/src/ERC7540Vault.sol#L154-L157), now the Escrow contract doesn't have enough shares to make whole the request of the other investor, and as a consequence the other investor transaction will be reverted. That means the second investor won't be able to claim all the shares that it is entitled to claim because the Escrow contract doesn't have all those shares anymore.
+*   That slight difference will make that the Escrow contract transfers slightly more shares to the investor claiming the deposits by using the [`LiquidityPool.deposit()`](https://github.com/code-423n4/2023-09-centrifuge/blob/main/src/LiquidityPool.sol#L141-L144)
+*   **As a result**, when another investor tries to claim their [maxDeposit](https://github.com/code-423n4/2023-09-centrifuge/blob/main/src/LiquidityPool.sol#L129-L132) or [maxMint](https://github.com/code-423n4/2023-09-centrifuge/blob/main/src/LiquidityPool.sol#L154-L157), now the Escrow contract doesn't have enough shares to make whole the request of the other investor, and as a consequence the other investor transaction will be reverted. That means the second investor won't be able to claim all the shares that it is entitled to claim because the Escrow contract doesn't have all those shares anymore.
 
 **Coded PoC**
 
 *   I used the [`LiquidityPool.t.sol`](https://github.com/code-423n4/2023-09-centrifuge/blob/main/test/LiquidityPool.t.sol) test file as the base file for this PoC, please add the below testPoC to the LiquidityPool.t.sol file
 
-*   In this PoC I demonstrate that Alice (A second investor) won't be able to claim her maxDeposit or maxMint amounts after the first investor uses the [`LiquidityPool.deposit()`](https://github.com/code-423n4/2023-09-centrifuge/blob/main/src/ERC7540Vault.sol#L141-L144) function to claim his [maxDeposit() assets](https://github.com/code-423n4/2023-09-centrifuge/blob/main/src/ERC7540Vault.sol#L129-L132). The first investor makes two requestDeposit, each of them at a different epoch and at a different price, Alice on the other hand only does 1 requestDeposit in the second epoch.
+*   In this PoC I demonstrate that Alice (A second investor) won't be able to claim her maxDeposit or maxMint amounts after the first investor uses the [`LiquidityPool.deposit()`](https://github.com/code-423n4/2023-09-centrifuge/blob/main/src/LiquidityPool.sol#L141-L144) function to claim his [maxDeposit() assets](https://github.com/code-423n4/2023-09-centrifuge/blob/main/src/LiquidityPool.sol#L129-L132). The first investor makes two requestDeposit, each of them at a different epoch and at a different price, Alice on the other hand only does 1 requestDeposit in the second epoch.
 
 *   Run this PoC two times, check the comments on the last 4 lines, one time we want to test Alice claiming her deposits using LiquidityPool::deposit(), and the second time using LiquidityPool::mint()
     *   The two executions should fail with the same problem.
@@ -509,17 +509,17 @@ function processDeposit(address user, uint256 currencyAmount) public auth return
 <details>
 
 ```solidity
-    function testDepositAtDifferentPricesPoC(uint64 poolId, bytes16 trancheId, uint128 assetId) public {
-        vm.assume(assetId > 0);
+    function testDepositAtDifferentPricesPoC(uint64 poolId, bytes16 trancheId, uint128 currencyId) public {
+        vm.assume(currencyId > 0);
 
         uint8 TRANCHE_TOKEN_DECIMALS = 18; // Like DAI
         uint8 INVESTMENT_CURRENCY_DECIMALS = 6; // 6, like USDC
 
         ERC20 currency = _newErc20("Currency", "CR", INVESTMENT_CURRENCY_DECIMALS);
         address lPool_ =
-            deployLiquidityPool(poolId, TRANCHE_TOKEN_DECIMALS, "", "", trancheId, assetId, address(currency));
+            deployLiquidityPool(poolId, TRANCHE_TOKEN_DECIMALS, "", "", trancheId, currencyId, address(currency));
         LiquidityPool lPool = LiquidityPool(lPool_);
-        homePools.updateTrancheTokenPrice(poolId, trancheId, assetId, 1000000000000000000);
+        homePools.updateTrancheTokenPrice(poolId, trancheId, currencyId, 1000000000000000000);
 
         //@audit-info => Add Alice as a Member
         address alice = address(0x23232323);
@@ -533,11 +533,11 @@ function processDeposit(address user, uint256 currencyAmount) public auth return
         lPool.requestDeposit(investmentAmount, self);
 
         // trigger executed collectInvest at a price of 1.25
-        uint128 _assetId = poolManager.assetToId(address(currency)); // retrieve assetId
+        uint128 _currencyId = poolManager.currencyAddressToId(address(currency)); // retrieve currencyId
         uint128 currencyPayout = 100000000; // 100 * 10**6                                          
         uint128 firstTrancheTokenPayout = 80000000000000000000; // 100 * 10**18 / 1.25, rounded down
-        homePools.isFulfilledDepositRequest(
-            poolId, trancheId, bytes32(bytes20(self)), _assetId, currencyPayout, firstTrancheTokenPayout
+        homePools.isExecutedCollectInvest(
+            poolId, trancheId, bytes32(bytes20(self)), _currencyId, currencyPayout, firstTrancheTokenPayout
         );
 
         // assert deposit & mint values adjusted
@@ -556,8 +556,8 @@ function processDeposit(address user, uint256 currencyAmount) public auth return
         // trigger executed collectInvest at a price of 2
         currencyPayout = 100000000; // 100 * 10**6
         uint128 secondTrancheTokenPayout = 50000000000000000000; // 100 * 10**18 / 1.4, rounded down
-        homePools.isFulfilledDepositRequest(
-            poolId, trancheId, bytes32(bytes20(self)), _assetId, currencyPayout, secondTrancheTokenPayout
+        homePools.isExecutedCollectInvest(
+            poolId, trancheId, bytes32(bytes20(self)), _currencyId, currencyPayout, secondTrancheTokenPayout
         );
 
         // Alice invests the same amount as the other investor in the second epoch - Price is at 2
@@ -568,8 +568,8 @@ function processDeposit(address user, uint256 currencyAmount) public auth return
         lPool.requestDeposit(investmentAmount, alice);
         vm.stopPrank();
 
-        homePools.isFulfilledDepositRequest(
-            poolId, trancheId, bytes32(bytes20(alice)), _assetId, currencyPayout, secondTrancheTokenPayout
+        homePools.isExecutedCollectInvest(
+            poolId, trancheId, bytes32(bytes20(alice)), _currencyId, currencyPayout, secondTrancheTokenPayout
         );
 
         uint128 AliceTrancheTokenPayout = 50000000000000000000; // 100 * 10**18 / 1.4, rounded down
@@ -1106,7 +1106,7 @@ https://github.com/code-423n4/2023-09-centrifuge/blob/512e7a71ebd9ae76384f837204
 The `require` keyword can be removed in the function `deployLiquidityPool ()`, because the function `isAllowedAsPoolCurrency` revert on failure in case of the currency is not supported  and always return true on success, so if the check fails the function will revert without executing the `require` key word.
 ```
     function isAllowedAsPoolCurrency(uint64 poolId, address currencyAddress) public view returns (bool) {
-        uint128 currency = assetToId[currencyAddress];
+        uint128 currency = currencyAddressToId[currencyAddress];
         require(currency != 0, "PoolManager/unknown-currency"); // Currency index on the Centrifuge side should start at 1
         require(pools[poolId].allowedCurrencies[currencyAddress], "PoolManager/pool-currency-not-allowed");
         return true;
@@ -1558,7 +1558,7 @@ $ forge coverage
 | script/Permissionless.s.sol           | 0.00% (0/20)      | 0.00% (0/21)      | 0.00% (0/2)      | 0.00% (0/2)      |
 | src/Escrow.sol                        | 100.00% (2/2)     | 100.00% (2/2)     | 100.00% (0/0)    | 100.00% (1/1)    |
 | src/InvestmentManager.sol             | 97.37% (185/190)  | 96.47% (246/255)  | 61.11% (55/90)   | 97.62% (41/42)   |
-| src/ERC7540Vault.sol                 | 100.00% (64/64)   | 100.00% (86/86)   | 100.00% (4/4)    | 100.00% (38/38)  |
+| src/LiquidityPool.sol                 | 100.00% (64/64)   | 100.00% (86/86)   | 100.00% (4/4)    | 100.00% (38/38)  |
 | src/PoolManager.sol                   | 95.96% (95/99)    | 94.59% (105/111)  | 74.07% (40/54)   | 94.12% (16/17)   |
 | src/Root.sol                          | 100.00% (22/22)   | 100.00% (22/22)   | 100.00% (8/8)    | 100.00% (8/8)    |
 | src/UserEscrow.sol                    | 100.00% (8/8)     | 100.00% (8/8)     | 100.00% (4/4)    | 100.00% (2/2)    |

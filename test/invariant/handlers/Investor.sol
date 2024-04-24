@@ -14,7 +14,7 @@ interface ERC20Like {
     function balanceOf(address user) external view returns (uint256);
 }
 
-interface LiquidityPoolLike is IERC7540 {
+interface VaultLike is IERC7540 {
     function share() external view returns (address);
     function manager() external view returns (address);
 }
@@ -29,7 +29,7 @@ contract InvestorHandler is BaseHandler {
 
     ERC20Like immutable erc20;
     ERC20Like immutable trancheToken;
-    LiquidityPoolLike immutable vault;
+    VaultLike immutable vault;
     MockCentrifugeChain immutable centrifugeChain;
     address immutable escrow;
     address immutable investmentManager;
@@ -48,7 +48,7 @@ contract InvestorHandler is BaseHandler {
         trancheId = trancheId_;
         assetId = assetId_;
 
-        vault = LiquidityPoolLike(_vault);
+        vault = VaultLike(_vault);
         centrifugeChain = MockCentrifugeChain(mockCentrifugeChain_);
         erc20 = ERC20Like(erc20_);
         trancheToken = ERC20Like(vault.share());
