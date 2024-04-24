@@ -95,24 +95,24 @@ contract DeployTest is Test, Deployer {
         uint128 price = uint128(2 * 10 ** PRICE_DECIMALS); //TODO: fuzz price
         uint256 amount = 1000 * 10 ** erc20.decimals();
         uint64 validUntil = uint64(block.timestamp + 1000 days);
-        address lPool_ = deployPoolAndTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, restrictionSet);
-        ERC7540Vault lPool = ERC7540Vault(lPool_);
+        address vault_ = deployPoolAndTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, restrictionSet);
+        ERC7540Vault vault = ERC7540Vault(vault_);
 
         deal(address(erc20), self, amount);
 
         vm.prank(address(gateway));
         poolManager.updateMember(poolId, trancheId, self, validUntil);
 
-        depositMint(poolId, trancheId, price, amount, lPool);
-        TrancheToken trancheToken = TrancheToken(address(lPool.share()));
+        depositMint(poolId, trancheId, price, amount, vault);
+        TrancheToken trancheToken = TrancheToken(address(vault.share()));
         amount = trancheToken.balanceOf(self);
 
-        redeemWithdraw(poolId, trancheId, price, amount, lPool);
+        redeemWithdraw(poolId, trancheId, price, amount, vault);
     }
 
-    function depositMint(uint64 poolId, bytes16 trancheId, uint128 price, uint256 amount, ERC7540Vault lPool) public {
-        erc20.approve(address(lPool), amount); // add allowance
-        lPool.requestDeposit(amount, self, self, "");
+    function depositMint(uint64 poolId, bytes16 trancheId, uint128 price, uint256 amount, ERC7540Vault vault) public {
+        erc20.approve(address(vault), amount); // add allowance
+        vault.requestDeposit(amount, self, self, "");
 
         // ensure funds are locked in escrow
         assertEq(erc20.balanceOf(address(escrow)), amount);
@@ -121,7 +121,7 @@ contract DeployTest is Test, Deployer {
         // trigger executed collectInvest
         uint128 _currencyId = poolManager.assetToId(address(erc20)); // retrieve currencyId
 
-        TrancheToken trancheToken = TrancheToken(address(lPool.share()));
+        TrancheToken trancheToken = TrancheToken(address(vault.share()));
         uint128 trancheTokensPayout = (
             amount.mulDiv(
                 10 ** (PRICE_DECIMALS - erc20.decimals() + trancheToken.decimals()), price, MathLib.Rounding.Down
@@ -136,33 +136,33 @@ contract DeployTest is Test, Deployer {
             poolId, trancheId, self, _currencyId, uint128(amount), trancheTokensPayout, 0
         );
 
-        assertEq(lPool.maxMint(self), trancheTokensPayout);
-        assertEq(lPool.maxDeposit(self), amount);
+        assertEq(vault.maxMint(self), trancheTokensPayout);
+        assertEq(vault.maxDeposit(self), amount);
         assertEq(trancheToken.balanceOf(address(escrow)), trancheTokensPayout);
         assertEq(erc20.balanceOf(self), 0);
 
         uint256 div = 2;
-        lPool.deposit(amount / div, self);
+        vault.deposit(amount / div, self);
 
         assertEq(trancheToken.balanceOf(self), trancheTokensPayout / div);
         assertEq(trancheToken.balanceOf(address(escrow)), trancheTokensPayout - trancheTokensPayout / div);
-        assertEq(lPool.maxMint(self), trancheTokensPayout - trancheTokensPayout / div);
-        assertEq(lPool.maxDeposit(self), amount - amount / div); // max deposit
+        assertEq(vault.maxMint(self), trancheTokensPayout - trancheTokensPayout / div);
+        assertEq(vault.maxDeposit(self), amount - amount / div); // max deposit
 
-        lPool.mint(lPool.maxMint(self), self);
+        vault.mint(vault.maxMint(self), self);
 
         assertEq(trancheToken.balanceOf(self), trancheTokensPayout);
         assertTrue(trancheToken.balanceOf(address(escrow)) <= 1);
-        assertTrue(lPool.maxMint(self) <= 1);
+        assertTrue(vault.maxMint(self) <= 1);
     }
 
-    function redeemWithdraw(uint64 poolId, bytes16 trancheId, uint128 price, uint256 amount, ERC7540Vault lPool)
+    function redeemWithdraw(uint64 poolId, bytes16 trancheId, uint128 price, uint256 amount, ERC7540Vault vault)
         public
     {
-        lPool.requestRedeem(amount, address(this), address(this), "");
+        vault.requestRedeem(amount, address(this), address(this), "");
 
         // redeem
-        TrancheToken trancheToken = TrancheToken(address(lPool.share()));
+        TrancheToken trancheToken = TrancheToken(address(vault.share()));
         uint128 _currencyId = poolManager.assetToId(address(erc20)); // retrieve currencyId
         uint128 currencyPayout = (
             amount.mulDiv(price, 10 ** (18 - erc20.decimals() + trancheToken.decimals()), MathLib.Rounding.Down)
@@ -172,24 +172,24 @@ contract DeployTest is Test, Deployer {
         vm.prank(address(gateway));
         investmentManager.fulfillRedeemRequest(poolId, trancheId, self, _currencyId, currencyPayout, uint128(amount));
 
-        assertEq(lPool.maxWithdraw(self), currencyPayout);
-        assertEq(lPool.maxRedeem(self), amount);
+        assertEq(vault.maxWithdraw(self), currencyPayout);
+        assertEq(vault.maxRedeem(self), amount);
         assertEq(trancheToken.balanceOf(address(escrow)), 0);
 
         uint128 div = 2;
-        lPool.redeem(amount / div, self, self);
+        vault.redeem(amount / div, self, self);
         assertEq(trancheToken.balanceOf(self), 0);
         assertEq(trancheToken.balanceOf(address(escrow)), 0);
         assertEq(erc20.balanceOf(self), currencyPayout / div);
-        assertEq(lPool.maxWithdraw(self), currencyPayout / div);
-        assertEq(lPool.maxRedeem(self), amount / div);
+        assertEq(vault.maxWithdraw(self), currencyPayout / div);
+        assertEq(vault.maxRedeem(self), amount / div);
 
-        lPool.withdraw(lPool.maxWithdraw(self), self, self);
+        vault.withdraw(vault.maxWithdraw(self), self, self);
         assertEq(trancheToken.balanceOf(self), 0);
         assertEq(trancheToken.balanceOf(address(escrow)), 0);
         assertEq(erc20.balanceOf(self), currencyPayout);
-        assertEq(lPool.maxWithdraw(self), 0);
-        assertEq(lPool.maxRedeem(self), 0);
+        assertEq(vault.maxWithdraw(self), 0);
+        assertEq(vault.maxRedeem(self), 0);
     }
 
     // helpers
@@ -210,8 +210,8 @@ contract DeployTest is Test, Deployer {
         vm.stopPrank();
 
         poolManager.deployTranche(poolId, trancheId);
-        address lPool = poolManager.deployVault(poolId, trancheId, address(erc20));
-        return lPool;
+        address vault = poolManager.deployVault(poolId, trancheId, address(erc20));
+        return vault;
     }
 
     function newErc20(string memory name, string memory symbol, uint8 decimals) internal returns (ERC20) {

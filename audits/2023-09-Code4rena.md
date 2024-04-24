@@ -282,7 +282,7 @@ function testPOCIssue1(
         poolId,
         trancheId,
         bytes32(bytes20(investor)),
-        poolManager.currencyAddressToId(address(erc20)),
+        poolManager.assetToId(address(erc20)),
         uint128(amount),
         uint128(amount)
     );
@@ -533,7 +533,7 @@ function processDeposit(address user, uint256 currencyAmount) public auth return
         lPool.requestDeposit(investmentAmount, self);
 
         // trigger executed collectInvest at a price of 1.25
-        uint128 _currencyId = poolManager.currencyAddressToId(address(currency)); // retrieve currencyId
+        uint128 _currencyId = poolManager.assetToId(address(currency)); // retrieve currencyId
         uint128 currencyPayout = 100000000; // 100 * 10**6                                          
         uint128 firstTrancheTokenPayout = 80000000000000000000; // 100 * 10**18 / 1.25, rounded down
         homePools.isExecutedCollectInvest(
@@ -1106,7 +1106,7 @@ https://github.com/code-423n4/2023-09-centrifuge/blob/512e7a71ebd9ae76384f837204
 The `require` keyword can be removed in the function `deployLiquidityPool ()`, because the function `isAllowedAsPoolCurrency` revert on failure in case of the currency is not supported  and always return true on success, so if the check fails the function will revert without executing the `require` key word.
 ```
     function isAllowedAsPoolCurrency(uint64 poolId, address currencyAddress) public view returns (bool) {
-        uint128 currency = currencyAddressToId[currencyAddress];
+        uint128 currency = assetToId[currencyAddress];
         require(currency != 0, "PoolManager/unknown-currency"); // Currency index on the Centrifuge side should start at 1
         require(pools[poolId].allowedCurrencies[currencyAddress], "PoolManager/pool-currency-not-allowed");
         return true;

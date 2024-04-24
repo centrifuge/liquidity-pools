@@ -141,8 +141,8 @@ contract BaseTest is Deployer, Test {
             centrifugeChain.allowInvestmentCurrency(poolId, currencyId);
         }
 
-        address lPoolAddress = poolManager.deployVault(poolId, trancheId, currency);
-        return lPoolAddress;
+        address vaultAddress = poolManager.deployVault(poolId, trancheId, currency);
+        return vaultAddress;
     }
 
     function deployVault(
@@ -161,22 +161,22 @@ contract BaseTest is Deployer, Test {
         return deployVault(5, 6, defaultRestrictionSet, "name", "symbol", bytes16(bytes("1")), defaultCurrencyId, address(erc20));
     }
 
-    function deposit(address _lPool, address _investor, uint256 amount) public {
-        deposit(_lPool, _investor, amount, true);
+    function deposit(address _vault, address _investor, uint256 amount) public {
+        deposit(_vault, _investor, amount, true);
     }
 
-    function deposit(address _lPool, address _investor, uint256 amount, bool claimDeposit) public {
-        ERC7540Vault lPool = ERC7540Vault(_lPool);
+    function deposit(address _vault, address _investor, uint256 amount, bool claimDeposit) public {
+        ERC7540Vault vault = ERC7540Vault(_vault);
         erc20.mint(_investor, amount);
-        centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), _investor, type(uint64).max); // add user as member
+        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), _investor, type(uint64).max); // add user as member
         vm.startPrank(_investor);
-        erc20.approve(_lPool, amount); // add allowance
-        lPool.requestDeposit(amount, _investor, _investor, "");
+        erc20.approve(_vault, amount); // add allowance
+        vault.requestDeposit(amount, _investor, _investor, "");
         // trigger executed collectInvest
         uint128 currencyId = poolManager.assetToId(address(erc20)); // retrieve currencyId
         centrifugeChain.isExecutedCollectInvest(
-            lPool.poolId(),
-            lPool.trancheId(),
+            vault.poolId(),
+            vault.trancheId(),
             bytes32(bytes20(_investor)),
             currencyId,
             uint128(amount),
@@ -185,7 +185,7 @@ contract BaseTest is Deployer, Test {
         );
 
         if (claimDeposit) {
-           lPool.deposit(amount, _investor); // claim the trancheTokens
+           vault.deposit(amount, _investor); // claim the trancheTokens
         }
         vm.stopPrank();
     }

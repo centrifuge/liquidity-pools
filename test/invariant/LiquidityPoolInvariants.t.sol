@@ -36,7 +36,7 @@ contract InvestmentInvariants is BaseTest {
     uint8 public constant RESTRICTION_SET = 1;
 
     mapping(uint128 => address) public currencies;
-    address[] public liquidityPools;
+    address[] public vaults;
     address[] public investors;
 
     mapping(uint64 poolId => InvestorHandler handler) investorHandlers;
@@ -68,7 +68,7 @@ contract InvestmentInvariants is BaseTest {
         for (uint128 currencyId = 1; currencyId < NUM_CURRENCIES + 1; ++currencyId) {
             for (uint64 poolId; poolId < NUM_POOLS; ++poolId) {
                 uint8 trancheTokenDecimals = _randomUint8(1, 18);
-                address lpool = deployVault(
+                address vault = deployVault(
                     poolId,
                     trancheTokenDecimals,
                     RESTRICTION_SET,
@@ -78,10 +78,10 @@ contract InvestmentInvariants is BaseTest {
                     currencyId,
                     currencies[currencyId]
                 );
-                liquidityPools.push(lpool);
-                excludeContract(lpool);
-                excludeContract(LiquidityPoolLike(lpool).share());
-                excludeContract(TrancheTokenLike(LiquidityPoolLike(lpool).share()).restrictionManager());
+                vaults.push(vault);
+                excludeContract(vault);
+                excludeContract(LiquidityPoolLike(vault).share());
+                excludeContract(TrancheTokenLike(LiquidityPoolLike(vault).share()).restrictionManager());
             }
         }
 
@@ -99,28 +99,28 @@ contract InvestmentInvariants is BaseTest {
         // - For each unique pool and each unique currency, 1 LP.
         // - Just 1 tranche per pool
         // - NUM_INVESTORS per LP.
-        for (uint64 lpoolId; lpoolId < liquidityPools.length; ++lpoolId) {
-            LiquidityPoolLike lpool = LiquidityPoolLike(liquidityPools[lpoolId]);
+        for (uint64 vaultId; vaultId < vaults.length; ++vaultId) {
+            LiquidityPoolLike vault = LiquidityPoolLike(vaults[vaultId]);
 
-            address currency = lpool.asset();
+            address currency = vault.asset();
             InvestorHandler handler = new InvestorHandler(
-                lpool.poolId(),
+                vault.poolId(),
                 TRANCHE_ID,
                 CURRENCY_ID,
-                address(lpool),
+                address(vault),
                 address(centrifugeChain),
                 currency,
                 address(escrow),
                 address(this)
             );
-            investorHandlers[lpoolId] = handler;
+            investorHandlers[vaultId] = handler;
 
             EpochExecutorHandler eeHandler = new EpochExecutorHandler(
-                lpool.poolId(), TRANCHE_ID, CURRENCY_ID, address(centrifugeChain), address(this)
+                vault.poolId(), TRANCHE_ID, CURRENCY_ID, address(centrifugeChain), address(this)
             );
-            epochExecutorHandlers[lpoolId] = eeHandler;
+            epochExecutorHandlers[vaultId] = eeHandler;
 
-            address share = poolManager.getTrancheToken(lpool.poolId(), TRANCHE_ID);
+            address share = poolManager.getTrancheToken(vault.poolId(), TRANCHE_ID);
             root.relyContract(share, address(this));
             ERC20Like(currency).rely(address(handler)); // rely to mint currency
             ERC20Like(share).rely(address(handler)); // rely to mint tokens
@@ -132,13 +132,13 @@ contract InvestmentInvariants is BaseTest {
 
     // Invariant 1: trancheToken.balanceOf[user] <= sum(trancheTokenPayout)
     function invariant_cannotReceiveMoreTrancheTokensThanPayout() external {
-        for (uint64 lpoolId; lpoolId < liquidityPools.length; ++lpoolId) {
-            LiquidityPoolLike lpool = LiquidityPoolLike(liquidityPools[lpoolId]);
+        for (uint64 vaultId; vaultId < vaults.length; ++vaultId) {
+            LiquidityPoolLike vault = LiquidityPoolLike(vaults[vaultId]);
 
             for (uint256 i; i < investors.length; ++i) {
                 address investor = investors[i];
                 assertLe(
-                    IERC20(lpool.share()).balanceOf(investor),
+                    IERC20(vault.share()).balanceOf(investor),
                     getShadowVar(investor, "totalTrancheTokensPaidOutOnInvest")
                 );
             }
@@ -148,7 +148,7 @@ contract InvestmentInvariants is BaseTest {
     // Invariant 2: currency.balanceOf[user] <= sum(currencyPayout for each redemption)
     //              + sum(currencyPayout for each decreased investment)
     function invariant_cannotReceiveMoreCurrencyThanPayout() external {
-        for (uint64 lpoolId; lpoolId < liquidityPools.length; ++lpoolId) {
+        for (uint64 vaultId; vaultId < vaults.length; ++vaultId) {
             for (uint256 i; i < investors.length; ++i) {
                 address investor = investors[i];
                 assertLe(
@@ -162,41 +162,41 @@ contract InvestmentInvariants is BaseTest {
 
     // Invariant 3: convertToAssets(totalSupply) == totalAssets
     function invariant_convertToAssetsEquivalence() external {
-        for (uint64 lpoolId; lpoolId < liquidityPools.length; ++lpoolId) {
-            LiquidityPoolLike lpool = LiquidityPoolLike(liquidityPools[lpoolId]);
+        for (uint64 vaultId; vaultId < vaults.length; ++vaultId) {
+            LiquidityPoolLike vault = LiquidityPoolLike(vaults[vaultId]);
 
             // Does not hold if the price is 0
-            if (lpool.convertToAssets(1) == 0) return;
+            if (vault.convertToAssets(1) == 0) return;
 
-            if (lpool.totalAssets() < type(uint128).max) {
-                assertEq(lpool.convertToAssets(IERC20(lpool.share()).totalSupply()), lpool.totalAssets());
+            if (vault.totalAssets() < type(uint128).max) {
+                assertEq(vault.convertToAssets(IERC20(vault.share()).totalSupply()), vault.totalAssets());
             }
         }
     }
 
     // Invariant 4: convertToShares(totalAssets) == totalSupply
     function invariant_convertToSharesEquivalence() external {
-        for (uint64 lpoolId; lpoolId < liquidityPools.length; ++lpoolId) {
-            LiquidityPoolLike lpool = LiquidityPoolLike(liquidityPools[lpoolId]);
+        for (uint64 vaultId; vaultId < vaults.length; ++vaultId) {
+            LiquidityPoolLike vault = LiquidityPoolLike(vaults[vaultId]);
 
             // Does not hold if the price is 0
-            if (lpool.convertToAssets(1) == 0) return;
+            if (vault.convertToAssets(1) == 0) return;
 
-            if (IERC20(lpool.share()).totalSupply() < type(uint128).max) {
-                assertEq(lpool.convertToShares(lpool.totalAssets()), IERC20(lpool.share()).totalSupply());
+            if (IERC20(vault.share()).totalSupply() < type(uint128).max) {
+                assertEq(vault.convertToShares(vault.totalAssets()), IERC20(vault.share()).totalSupply());
             }
         }
     }
 
     // Invariant 5: lp.maxDeposit <= sum(requestDeposit)
     // function invariant_maxDepositLeDepositRequest() external {
-    //     for (uint64 lpoolId; lpoolId < liquidityPools.length; ++lpoolId) {
-    //         LiquidityPoolLike lpool = LiquidityPoolLike(liquidityPools[lpoolId]);
-    //         InvestorHandler handler = investorHandlers[lpoolId];
+    //     for (uint64 vaultId; vaultId < vaults.length; ++vaultId) {
+    //         LiquidityPoolLike vault = LiquidityPoolLike(vaults[vaultId]);
+    //         InvestorHandler handler = investorHandlers[vaultId];
 
     //         for (uint256 i; i < investors.length; ++i) {
     //             address investor = investors[i];
-    //             assertLe(lpool.maxDeposit(investor), getShadowVar(investor, "totalDepositRequested"));
+    //             assertLe(vault.maxDeposit(investor), getShadowVar(investor, "totalDepositRequested"));
     //         }
     //     }
     // }
@@ -204,14 +204,14 @@ contract InvestmentInvariants is BaseTest {
     // Invariant 6: lp.maxRedeem <= sum(requestRedeem) + sum(decreaseDepositRequest)
     // TODO: handle cancel behaviour
     // function invariant_maxRedeemLeRedeemRequest() external {
-    //     for (uint64 lpoolId; lpoolId < liquidityPools.length; ++lpoolId) {
-    //         LiquidityPoolLike lpool = LiquidityPoolLike(liquidityPools[lpoolId]);
-    //         InvestorHandler handler = investorHandlers[lpoolId];
+    //     for (uint64 vaultId; vaultId < vaults.length; ++vaultId) {
+    //         LiquidityPoolLike vault = LiquidityPoolLike(vaults[vaultId]);
+    //         InvestorHandler handler = investorHandlers[vaultId];
 
     //         for (uint256 i; i < investors.length; ++i) {
     //             address investor = investors[i];
     //             assertLe(
-    //                 lpool.maxRedeem(investor),
+    //                 vault.maxRedeem(investor),
     //                 getShadowVar(investor, "totalRedeemRequested")
     //                     + getShadowVar(investor, "totalDecreaseDepositRequested")
     //             );
@@ -221,12 +221,12 @@ contract InvestmentInvariants is BaseTest {
 
     // Invariant 7: lp.depositPrice <= max(fulfillment price)
     // function invariant_depositPriceLtMaxFulfillmentPrice() external {
-    //     for (uint64 lpoolId; lpoolId < liquidityPools.length; ++lpoolId) {
-    //         LiquidityPoolLike lpool = LiquidityPoolLike(liquidityPools[lpoolId]);
+    //     for (uint64 vaultId; vaultId < vaults.length; ++vaultId) {
+    //         LiquidityPoolLike vault = LiquidityPoolLike(vaults[vaultId]);
 
     //         for (uint256 i; i < investors.length; ++i) {
     //             address investor = investors[i];
-    //             (, uint256 depositPrice,,,,,) = investmentManager.investments(address(lpool), investor);
+    //             (, uint256 depositPrice,,,,,) = investmentManager.investments(address(vault), investor);
 
     //             assertLe(depositPrice, getShadowVar(investor, "maxDepositFulfillmentPrice"));
     //         }
@@ -235,12 +235,12 @@ contract InvestmentInvariants is BaseTest {
 
     // Invariant 8: lp.redeemPrice <= max(fulfillment price)
     // function invariant_redeemPriceLtMaxFulfillmentPrice() external {
-    //     for (uint64 lpoolId; lpoolId < liquidityPools.length; ++lpoolId) {
-    //         LiquidityPoolLike lpool = LiquidityPoolLike(liquidityPools[lpoolId]);
+    //     for (uint64 vaultId; vaultId < vaults.length; ++vaultId) {
+    //         LiquidityPoolLike vault = LiquidityPoolLike(vaults[vaultId]);
 
     //         for (uint256 i; i < investors.length; ++i) {
     //             address investor = investors[i];
-    //             (,,, uint256 redeemPrice,,,) = investmentManager.investments(address(lpool), investor);
+    //             (,,, uint256 redeemPrice,,,) = investmentManager.investments(address(vault), investor);
 
     //             assertLe(redeemPrice, getShadowVar(investor, "maxRedeemFulfillmentPrice"));
     //         }

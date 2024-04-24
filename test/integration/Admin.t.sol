@@ -265,25 +265,25 @@ contract AdminTest is BaseTest {
     function testRecoverTokens() public {
         deploySimpleVault();
         address clumsyUser = vm.addr(0x1234);
-        address liquidityPool_ = poolManager.getVault(5, bytes16(bytes("1")), defaultCurrencyId);
-        ERC7540Vault vault = ERC7540Vault(liquidityPool_);
+        address vault_ = poolManager.getVault(5, bytes16(bytes("1")), defaultCurrencyId);
+        ERC7540Vault vault = ERC7540Vault(vault_);
         address asset_ = vault.asset();
         ERC20 asset = ERC20(asset_);
         deal(asset_, clumsyUser, 300);
         vm.startPrank(clumsyUser);
-        asset.transfer(liquidityPool_, 100);
+        asset.transfer(vault_, 100);
         asset.transfer(address(poolManager), 100);
         asset.transfer(address(investmentManager), 100);
         vm.stopPrank();
-        assertEq(asset.balanceOf(liquidityPool_), 100);
+        assertEq(asset.balanceOf(vault_), 100);
         assertEq(asset.balanceOf(address(poolManager)), 100);
         assertEq(asset.balanceOf(address(investmentManager)), 100);
         assertEq(asset.balanceOf(clumsyUser), 0);
-        centrifugeChain.recoverTokens(liquidityPool_, asset_, clumsyUser, 100);
+        centrifugeChain.recoverTokens(vault_, asset_, clumsyUser, 100);
         centrifugeChain.recoverTokens(address(poolManager), asset_, clumsyUser, 100);
         centrifugeChain.recoverTokens(address(investmentManager), asset_, clumsyUser, 100);
         assertEq(asset.balanceOf(clumsyUser), 300);
-        assertEq(asset.balanceOf(liquidityPool_), 0);
+        assertEq(asset.balanceOf(vault_), 0);
         assertEq(asset.balanceOf(address(poolManager)), 0);
         assertEq(asset.balanceOf(address(investmentManager)), 0);
     }
