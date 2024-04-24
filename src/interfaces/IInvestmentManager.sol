@@ -71,7 +71,7 @@ interface IInvestmentManager {
     function handle(bytes calldata message) external;
 
     /// @notice TODO
-    function handleDepositRequestFulfillment(
+    function fulfillDepositRequest(
         uint64 poolId,
         bytes16 trancheId,
         address user,
@@ -82,7 +82,7 @@ interface IInvestmentManager {
     ) external;
 
     /// @notice TODO
-    function handleRedeemRequestFulfillment(
+    function fulfillRedeemRequest(
         uint64 poolId,
         bytes16 trancheId,
         address user,
@@ -92,7 +92,7 @@ interface IInvestmentManager {
     ) external;
 
     /// @notice TODO
-    function handleCancelDepositRequestFulfillment(
+    function fulfillCancelDepositRequest(
         uint64 poolId,
         bytes16 trancheId,
         address user,
@@ -104,7 +104,7 @@ interface IInvestmentManager {
     /// @dev Compared to handleExecutedDecreaseInvestOrder, there is no
     ///      transfer of currency in this function because they
     ///      can stay in the Escrow, ready to be claimed on deposit/mint.
-    function handleCancelRedeemRequestFulfillment(
+    function fulfillCancelRedeemRequest(
         uint64 poolId,
         bytes16 trancheId,
         address user,
@@ -114,7 +114,7 @@ interface IInvestmentManager {
     ) external;
 
     /// @notice TODO
-    function handleTriggerRedeemRequest(uint64 poolId, bytes16 trancheId, address user, uint128 assetId, uint128 shares)
+    function triggerRedeemRequest(uint64 poolId, bytes16 trancheId, address user, uint128 assetId, uint128 shares)
         external;
 
     // --- View functions ---

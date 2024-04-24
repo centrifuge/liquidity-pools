@@ -115,7 +115,7 @@ contract BaseTest is Deployer, Test {
     }
 
     // helpers
-    function deployERC7540Vault(
+    function deployVault(
         uint64 poolId,
         uint8 trancheTokenDecimals,
         uint8 restrictionSet,
@@ -141,11 +141,11 @@ contract BaseTest is Deployer, Test {
             centrifugeChain.allowInvestmentCurrency(poolId, currencyId);
         }
 
-        address lPoolAddress = poolManager.deployERC7540Vault(poolId, trancheId, currency);
+        address lPoolAddress = poolManager.deployVault(poolId, trancheId, currency);
         return lPoolAddress;
     }
 
-    function deployERC7540Vault(
+    function deployVault(
         uint64 poolId,
         uint8 decimals,
         string memory tokenName,
@@ -154,11 +154,11 @@ contract BaseTest is Deployer, Test {
         uint128 currency
     ) public returns (address) {
         uint8 restrictionSet = 2;
-        return deployERC7540Vault(poolId, decimals, restrictionSet, tokenName, tokenSymbol, trancheId, currency, address(erc20));
+        return deployVault(poolId, decimals, restrictionSet, tokenName, tokenSymbol, trancheId, currency, address(erc20));
     }
 
     function deploySimpleVault() public returns (address) {
-        return deployERC7540Vault(5, 6, defaultRestrictionSet, "name", "symbol", bytes16(bytes("1")), defaultCurrencyId, address(erc20));
+        return deployVault(5, 6, defaultRestrictionSet, "name", "symbol", bytes16(bytes("1")), defaultCurrencyId, address(erc20));
     }
 
     function deposit(address _lPool, address _investor, uint256 amount) public {

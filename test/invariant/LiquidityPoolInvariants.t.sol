@@ -68,7 +68,7 @@ contract InvestmentInvariants is BaseTest {
         for (uint128 currencyId = 1; currencyId < NUM_CURRENCIES + 1; ++currencyId) {
             for (uint64 poolId; poolId < NUM_POOLS; ++poolId) {
                 uint8 trancheTokenDecimals = _randomUint8(1, 18);
-                address lpool = deployERC7540Vault(
+                address lpool = deployVault(
                     poolId,
                     trancheTokenDecimals,
                     RESTRICTION_SET,

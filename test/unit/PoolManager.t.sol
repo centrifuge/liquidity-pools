@@ -229,7 +229,7 @@ contract PoolManagerTest is BaseTest {
         centrifugeChain.allowInvestmentCurrency(poolId, currency);
 
         address vaultAddress = poolManager.deployVault(poolId, trancheId, address(erc20));
-        address vault_ = poolManager.getvault(poolId, trancheId, address(erc20)); // make sure the pool was
+        address vault_ = poolManager.getVault(poolId, trancheId, address(erc20)); // make sure the pool was
             // stored in LP
 
         vm.expectRevert(bytes("PoolManager/vault-already-deployed"));
@@ -578,18 +578,18 @@ contract PoolManagerTest is BaseTest {
 
         poolManager.deny(address(this));
         vm.expectRevert(bytes("Auth/not-authorized"));
-        poolManager.removeLiquidityPool(poolId, trancheId, currency);
+        poolManager.removeVault(poolId, trancheId, currency);
 
         root.relyContract(address(poolManager), address(this));
 
         vm.expectRevert(bytes("PoolManager/pool-does-not-exist"));
-        poolManager.removeLiquidityPool(poolId + 1, trancheId, currency);
+        poolManager.removeVault(poolId + 1, trancheId, currency);
 
         vm.expectRevert(bytes("PoolManager/tranche-does-not-exist"));
-        poolManager.removeLiquidityPool(poolId, bytes16(0), currency);
+        poolManager.removeVault(poolId, bytes16(0), currency);
 
-        poolManager.removeLiquidityPool(poolId, trancheId, currency);
-        assertEq(poolManager.getvault(poolId, trancheId, currency), address(0));
+        poolManager.removeVault(poolId, trancheId, currency);
+        assertEq(poolManager.getVault(poolId, trancheId, currency), address(0));
         assertEq(investmentManager.wards(vault_), 0);
         assertEq(trancheToken.wards(vault_), 0);
         assertEq(trancheToken.isTrustedForwarder(vault_), false);
@@ -628,11 +628,11 @@ contract PoolManagerTest is BaseTest {
 
         // Remove old vault
         poolManager.removeVault(poolId, trancheId, currency);
-        assertEq(poolManager.getvault(poolId, trancheId, currency), address(0));
+        assertEq(poolManager.getVault(poolId, trancheId, currency), address(0));
 
         // Deploy new vault
         address newVault = poolManager.deployVault(poolId, trancheId, currency);
-        assertEq(poolManager.getvault(poolId, trancheId, currency), newVault);
+        assertEq(poolManager.getVault(poolId, trancheId, currency), newVault);
     }
 
     // helpers

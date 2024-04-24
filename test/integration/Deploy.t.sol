@@ -210,7 +210,7 @@ contract DeployTest is Test, Deployer {
         vm.stopPrank();
 
         poolManager.deployTranche(poolId, trancheId);
-        address lPool = poolManager.deployERC7540Vault(poolId, trancheId, address(erc20));
+        address lPool = poolManager.deployVault(poolId, trancheId, address(erc20));
         return lPool;
     }
 

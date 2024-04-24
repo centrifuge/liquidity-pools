@@ -11,7 +11,7 @@ contract AssetShareConversionTest is BaseTest {
         uint8 TRANCHE_TOKEN_DECIMALS = 18; // Like DAI
 
         ERC20 currency = _newErc20("Currency", "CR", INVESTMENT_CURRENCY_DECIMALS);
-        address vault_ = deployERC7540Vault(
+        address vault_ = deployVault(
             poolId, TRANCHE_TOKEN_DECIMALS, defaultRestrictionSet, "", "", trancheId, currencyId, address(currency)
         );
         ERC7540Vault vault = ERC7540Vault(vault_);
@@ -64,7 +64,7 @@ contract AssetShareConversionTest is BaseTest {
         uint8 TRANCHE_TOKEN_DECIMALS = 6; // Like USDC
 
         ERC20 currency = _newErc20("Currency", "CR", INVESTMENT_CURRENCY_DECIMALS);
-        address vault_ = deployERC7540Vault(
+        address vault_ = deployVault(
             poolId, TRANCHE_TOKEN_DECIMALS, defaultRestrictionSet, "", "", trancheId, currencyId, address(currency)
         );
         ERC7540Vault vault = ERC7540Vault(vault_);

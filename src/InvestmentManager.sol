@@ -80,12 +80,12 @@ contract InvestmentManager is Auth, IInvestmentManager {
         auth
         returns (bool)
     {
-        VaultLike lPool = VaultLike(vault);
+        VaultLike vault_ = VaultLike(vault);
         uint128 _assets = assets.toUint128();
         require(_assets != 0, "InvestmentManager/zero-amount-not-allowed");
 
-        uint64 poolId = lPool.poolId();
-        address asset = lPool.asset();
+        uint64 poolId = vault_.poolId();
+        address asset = vault_.asset();
         require(poolManager.isAllowedAsset(poolId, asset), "InvestmentManager/currency-not-allowed");
 
         require(_canTransfer(vault, address(0), owner, 0), "InvestmentManager/owner-is-restricted");
@@ -104,7 +104,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
             abi.encodePacked(
                 uint8(MessagesLib.Call.IncreaseInvestOrder),
                 poolId,
-                lPool.trancheId(),
+                vault_.trancheId(),
                 receiver,
                 poolManager.currencyAddressToId(asset),
                 _assets
@@ -122,10 +122,10 @@ contract InvestmentManager is Auth, IInvestmentManager {
     {
         uint128 _shares = shares.toUint128();
         require(_shares != 0, "InvestmentManager/zero-amount-not-allowed");
-        VaultLike lPool = VaultLike(vault);
+        VaultLike vault_ = VaultLike(vault);
 
         // You cannot redeem using a disallowed investment asset, instead another LP will have to be used
-        require(poolManager.isAllowedAsset(lPool.poolId(), lPool.asset()), "InvestmentManager/asset-not-allowed");
+        require(poolManager.isAllowedAsset(vault_.poolId(), vault_.asset()), "InvestmentManager/asset-not-allowed");
 
         require(
             _canTransfer(vault, receiver, address(escrow), convertToAssets(vault, shares)),
@@ -136,7 +136,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
     }
 
     function _processRedeemRequest(address vault, uint128 shares, address owner) internal returns (bool) {
-        VaultLike lPool = VaultLike(vault);
+        VaultLike vault_ = VaultLike(vault);
         InvestmentState storage state = investments[vault][owner];
         require(state.pendingCancelRedeemRequest != true, "InvestmentManager/cancellation-is-pending");
 
@@ -146,10 +146,10 @@ contract InvestmentManager is Auth, IInvestmentManager {
         gateway.send(
             abi.encodePacked(
                 uint8(MessagesLib.Call.IncreaseRedeemOrder),
-                lPool.poolId(),
-                lPool.trancheId(),
+                vault_.poolId(),
+                vault_.trancheId(),
                 owner,
-                poolManager.currencyAddressToId(lPool.asset()),
+                poolManager.currencyAddressToId(vault_.asset()),
                 shares
             )
         );
@@ -524,11 +524,11 @@ contract InvestmentManager is Auth, IInvestmentManager {
     }
 
     function _processRedeem(InvestmentState storage state, uint128 assets, address vault, address receiver) internal {
-        VaultLike lPool = VaultLike(vault);
+        VaultLike vault_ = VaultLike(vault);
         require(assets != 0, "InvestmentManager/currency-amount-is-zero");
         require(assets <= state.maxWithdraw, "InvestmentManager/exceeds-redeem-limits");
         state.maxWithdraw = state.maxWithdraw - assets;
-        SafeTransferLib.safeTransferFrom(lPool.asset(), address(escrow), receiver, assets);
+        SafeTransferLib.safeTransferFrom(vault_.asset(), address(escrow), receiver, assets);
     }
 
     /// @inheritdoc IInvestmentManager
