@@ -22,75 +22,75 @@ contract ERC7540VaultTest is BaseTest {
         vm.assume(bytes(tokenName).length <= 128);
         vm.assume(bytes(tokenSymbol).length <= 32);
 
-        address lPool_ = deployLiquidityPool(poolId, erc20.decimals(), tokenName, tokenSymbol, trancheId, currencyId);
-        LiquidityPool lPool = LiquidityPool(lPool_);
+        address vault_ = deployERC7540Vault(poolId, erc20.decimals(), tokenName, tokenSymbol, trancheId, currencyId);
+        ERC7540Vault vault = ERC7540Vault(vault_);
 
         // values set correctly
-        assertEq(address(lPool.manager()), address(investmentManager));
-        assertEq(lPool.asset(), address(erc20));
-        assertEq(lPool.poolId(), poolId);
-        assertEq(lPool.trancheId(), trancheId);
+        assertEq(address(vault.manager()), address(investmentManager));
+        assertEq(vault.asset(), address(erc20));
+        assertEq(vault.poolId(), poolId);
+        assertEq(vault.trancheId(), trancheId);
         address token = poolManager.getTrancheToken(poolId, trancheId);
-        assertEq(address(lPool.share()), token);
+        assertEq(address(vault.share()), token);
         assertEq(tokenName, ERC20(token).name());
         assertEq(tokenSymbol, ERC20(token).symbol());
 
         // permissions set correctly
-        assertEq(lPool.wards(address(root)), 1);
-        assertEq(lPool.wards(address(investmentManager)), 1);
-        assertEq(lPool.wards(nonWard), 0);
+        assertEq(vault.wards(address(root)), 1);
+        assertEq(vault.wards(address(investmentManager)), 1);
+        assertEq(vault.wards(nonWard), 0);
     }
 
     // --- Administration ---
     function testFile() public {
-        address lPool_ = deploySimplePool();
-        LiquidityPool lPool = LiquidityPool(lPool_);
+        address vault_ = deploySimpleVault();
+        ERC7540Vault vault = ERC7540Vault(vault_);
 
         vm.expectRevert(bytes("Auth/not-authorized"));
-        lPool.file("manager", self);
+        vault.file("manager", self);
 
-        root.relyContract(lPool_, self);
-        lPool.file("manager", self);
+        root.relyContract(vault_, self);
+        vault.file("manager", self);
 
-        vm.expectRevert(bytes("LiquidityPool/file-unrecognized-param"));
-        lPool.file("random", self);
+        vm.expectRevert(bytes("ERC7540Vault/file-unrecognized-param"));
+        vault.file("random", self);
     }
 
     // --- uint128 type checks ---
     // Make sure all function calls would fail when overflow uint128
     function testAssertUint128(uint256 amount) public {
         vm.assume(amount > MAX_UINT128); // amount has to overflow UINT128
-        address lPool_ = deploySimplePool();
-        LiquidityPool lPool = LiquidityPool(lPool_);
+        address vault_ = deploySimpleVault();
+        ERC7540Vault vault = ERC7540Vault(vault_);
 
         vm.expectRevert(bytes("MathLib/uint128-overflow"));
-        lPool.convertToShares(amount);
+        vault.convertToShares(amount);
 
         vm.expectRevert(bytes("MathLib/uint128-overflow"));
-        lPool.convertToAssets(amount);
+        vault.convertToAssets(amount);
 
         vm.expectRevert(bytes("MathLib/uint128-overflow"));
-        lPool.deposit(amount, randomUser);
+        vault.deposit(amount, randomUser);
 
         vm.expectRevert(bytes("MathLib/uint128-overflow"));
-        lPool.mint(amount, randomUser);
+        vault.mint(amount, randomUser);
 
         vm.expectRevert(bytes("MathLib/uint128-overflow"));
-        lPool.withdraw(amount, randomUser, self);
+        vault.withdraw(amount, randomUser, self);
 
         vm.expectRevert(bytes("MathLib/uint128-overflow"));
-        lPool.redeem(amount, randomUser, self);
+        vault.redeem(amount, randomUser, self);
 
         erc20.mint(address(this), amount);
         vm.expectRevert(bytes("MathLib/uint128-overflow"));
-        lPool.requestDeposit(amount, self, self, "");
+        vault.requestDeposit(amount, self, self, "");
 
-        TrancheTokenLike trancheToken = TrancheTokenLike(address(lPool.share()));
-        centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), self, type(uint64).max);
+        TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
+        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max);
         root.relyContract(address(trancheToken), self);
         trancheToken.mint(address(this), amount);
         vm.expectRevert(bytes("MathLib/uint128-overflow"));
-        lPool.requestRedeem(amount, address(this), address(this), "");
+        vault.requestRedeem(amount, address(this), address(this), "");
     }
 
     // --- erc165 checks ---
@@ -105,20 +105,20 @@ contract ERC7540VaultTest is BaseTest {
                 && unsupportedInterfaceId != erc7540Deposit && unsupportedInterfaceId != erc7540Redeem
         );
 
-        address lPool_ = deploySimplePool();
-        LiquidityPool lPool = LiquidityPool(lPool_);
+        address vault_ = deploySimpleVault();
+        ERC7540Vault vault = ERC7540Vault(vault_);
 
         assertEq(type(IERC165).interfaceId, erc165);
         assertEq(type(IERC7575).interfaceId, erc7575);
         assertEq(type(IERC7540Deposit).interfaceId, erc7540Deposit);
         assertEq(type(IERC7540Redeem).interfaceId, erc7540Redeem);
 
-        assertEq(lPool.supportsInterface(erc165), true);
-        assertEq(lPool.supportsInterface(erc7575), true);
-        assertEq(lPool.supportsInterface(erc7540Deposit), true);
-        assertEq(lPool.supportsInterface(erc7540Redeem), true);
+        assertEq(vault.supportsInterface(erc165), true);
+        assertEq(vault.supportsInterface(erc7575), true);
+        assertEq(vault.supportsInterface(erc7540Deposit), true);
+        assertEq(vault.supportsInterface(erc7540Redeem), true);
 
-        assertEq(lPool.supportsInterface(unsupportedInterfaceId), false);
+        assertEq(vault.supportsInterface(unsupportedInterfaceId), false);
     }
 
     // --- callbacks ---
@@ -126,19 +126,19 @@ contract ERC7540VaultTest is BaseTest {
         vm.assume(depositData.length > 0);
         vm.assume(redeemData.length > 0);
 
-        address lPool_ = deploySimplePool();
-        LiquidityPool lPool = LiquidityPool(lPool_);
+        address vault_ = deploySimpleVault();
+        ERC7540Vault vault = ERC7540Vault(vault_);
         SucceedingRequestReceiver receiver = new SucceedingRequestReceiver();
 
-        centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), address(receiver), type(uint64).max);
-        centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), self, type(uint64).max);
+        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), address(receiver), type(uint64).max);
+        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max);
 
         uint256 amount = 100 * 10 ** 6;
         erc20.mint(self, amount);
-        erc20.approve(lPool_, amount);
+        erc20.approve(vault_, amount);
 
         // Check deposit callback
-        lPool.requestDeposit(amount, address(receiver), self, depositData);
+        vault.requestDeposit(amount, address(receiver), self, depositData);
 
         assertEq(erc20.balanceOf(self), 0);
         assertEq(receiver.values_address("requestDeposit_operator"), self);
@@ -152,20 +152,20 @@ contract ERC7540VaultTest is BaseTest {
         // Claim deposit request
         // Note this is sending it to self, which is technically incorrect, it should be going to the receiver
         centrifugeChain.isExecutedCollectInvest(
-            lPool.poolId(),
-            lPool.trancheId(),
+            vault.poolId(),
+            vault.trancheId(),
             bytes32(bytes20(self)),
             defaultCurrencyId,
             uint128(amount),
             uint128(amount),
             0
         );
-        lPool.mint(lPool.maxMint(self), self);
+        vault.mint(vault.maxMint(self), self);
 
         // Check redeem callback
-        lPool.requestRedeem(amount, address(receiver), self, redeemData);
+        vault.requestRedeem(amount, address(receiver), self, redeemData);
 
-        TrancheToken trancheToken = TrancheToken(address(lPool.share()));
+        TrancheToken trancheToken = TrancheToken(address(vault.share()));
         assertEq(trancheToken.balanceOf(self), 0);
         assertEq(receiver.values_address("requestRedeem_operator"), self);
         assertEq(receiver.values_address("requestRedeem_owner"), self);
@@ -177,19 +177,19 @@ contract ERC7540VaultTest is BaseTest {
     }
 
     function testSucceedingCallbacksNotCalledWithEmptyData() public {
-        address lPool_ = deploySimplePool();
-        LiquidityPool lPool = LiquidityPool(lPool_);
+        address vault_ = deploySimpleVault();
+        ERC7540Vault vault = ERC7540Vault(vault_);
         SucceedingRequestReceiver receiver = new SucceedingRequestReceiver();
 
-        centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), address(receiver), type(uint64).max);
-        centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), self, type(uint64).max);
+        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), address(receiver), type(uint64).max);
+        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max);
 
         uint256 amount = 100 * 10 ** 6;
         erc20.mint(self, amount);
-        erc20.approve(lPool_, amount);
+        erc20.approve(vault_, amount);
 
         // Check deposit callback
-        lPool.requestDeposit(amount, address(receiver), self, "");
+        vault.requestDeposit(amount, address(receiver), self, "");
 
         assertEq(receiver.values_address("requestDeposit_operator"), address(0));
         assertEq(receiver.values_address("requestDeposit_owner"), address(0));
@@ -200,20 +200,20 @@ contract ERC7540VaultTest is BaseTest {
         // Claim deposit request
         // Note this is sending it to self, which is technically incorrect, it should be going to the receiver
         centrifugeChain.isExecutedCollectInvest(
-            lPool.poolId(),
-            lPool.trancheId(),
+            vault.poolId(),
+            vault.trancheId(),
             bytes32(bytes20(self)),
             defaultCurrencyId,
             uint128(amount),
             uint128(amount),
             0
         );
-        lPool.mint(lPool.maxMint(self), self);
+        vault.mint(vault.maxMint(self), self);
 
         // Check redeem callback
-        lPool.requestRedeem(amount, address(receiver), self, "");
+        vault.requestRedeem(amount, address(receiver), self, "");
 
-        TrancheToken trancheToken = TrancheToken(address(lPool.share()));
+        TrancheToken trancheToken = TrancheToken(address(vault.share()));
         assertEq(trancheToken.balanceOf(self), 0);
         assertEq(receiver.values_address("requestRedeem_operator"), address(0));
         assertEq(receiver.values_address("requestRedeem_owner"), address(0));
@@ -223,20 +223,20 @@ contract ERC7540VaultTest is BaseTest {
     }
 
     function testFailingCallbacks(bytes memory depositData, bytes memory redeemData) public {
-        address lPool_ = deploySimplePool();
-        LiquidityPool lPool = LiquidityPool(lPool_);
+        address vault_ = deploySimpleVault();
+        ERC7540Vault vault = ERC7540Vault(vault_);
         FailingRequestReceiver receiver = new FailingRequestReceiver();
 
-        centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), address(receiver), type(uint64).max);
-        centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), self, type(uint64).max);
+        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), address(receiver), type(uint64).max);
+        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max);
 
         uint256 amount = 100 * 10 ** 6;
         erc20.mint(self, amount);
-        erc20.approve(lPool_, amount);
+        erc20.approve(vault_, amount);
 
         // Check deposit callback
-        vm.expectRevert(bytes("LiquidityPool/receiver-failed"));
-        lPool.requestDeposit(amount, address(receiver), self, depositData);
+        vm.expectRevert(bytes("ERC7540Vault/receiver-failed"));
+        vault.requestDeposit(amount, address(receiver), self, depositData);
 
         assertEq(erc20.balanceOf(self), amount);
         assertEq(receiver.values_address("requestDeposit_operator"), self);
@@ -246,21 +246,21 @@ contract ERC7540VaultTest is BaseTest {
         assertEq(receiver.values_bytes("requestDeposit_data"), depositData);
 
         // Re-submit and claim deposit request
-        lPool.requestDeposit(amount, self, self, depositData);
+        vault.requestDeposit(amount, self, self, depositData);
         centrifugeChain.isExecutedCollectInvest(
-            lPool.poolId(),
-            lPool.trancheId(),
+            vault.poolId(),
+            vault.trancheId(),
             bytes32(bytes20(self)),
             defaultCurrencyId,
             uint128(amount),
             uint128(amount),
             0
         );
-        lPool.mint(lPool.maxMint(self), self);
+        vault.mint(vault.maxMint(self), self);
 
         // Check redeem callback
-        vm.expectRevert(bytes("LiquidityPool/receiver-failed"));
-        lPool.requestRedeem(amount, address(receiver), self, redeemData);
+        vm.expectRevert(bytes("ERC7540Vault/receiver-failed"));
+        vault.requestRedeem(amount, address(receiver), self, redeemData);
 
         assertEq(erc20.balanceOf(self), amount);
         assertEq(receiver.values_address("requestRedeem_operator"), self);
@@ -273,19 +273,19 @@ contract ERC7540VaultTest is BaseTest {
     // --- preview checks ---
     function testPreviewReverts(uint256 amount) public {
         vm.assume(amount > MAX_UINT128); // amount has to overflow UINT128
-        address lPool_ = deploySimplePool();
-        LiquidityPool lPool = LiquidityPool(lPool_);
+        address vault_ = deploySimpleVault();
+        ERC7540Vault vault = ERC7540Vault(vault_);
 
         vm.expectRevert(bytes(""));
-        lPool.previewDeposit(amount);
+        vault.previewDeposit(amount);
 
         vm.expectRevert(bytes(""));
-        lPool.previewRedeem(amount);
+        vault.previewRedeem(amount);
 
         vm.expectRevert(bytes(""));
-        lPool.previewMint(amount);
+        vault.previewMint(amount);
 
         vm.expectRevert(bytes(""));
-        lPool.previewWithdraw(amount);
+        vault.previewWithdraw(amount);
     }
 }

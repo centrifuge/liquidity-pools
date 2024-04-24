@@ -13,9 +13,9 @@ struct Tranche {
     address token;
     /// @dev Each tranche can have multiple liquidity pools deployed,
     ///      each linked to a unique investment currency (asset)
-    mapping(address currency => address liquidityPool) liquidityPools;
+    mapping(address currency => address vault) vaults;
     /// @dev Each tranche has a price per liquidity pool
-    mapping(address liquidityPool => TrancheTokenPrice) prices;
+    mapping(address vault => TrancheTokenPrice) prices;
 }
 
 struct TrancheTokenPrice {
@@ -43,12 +43,8 @@ interface IPoolManager {
     event DisallowInvestmentCurrency(uint64 indexed poolId, address indexed currency);
     event AddTranche(uint64 indexed poolId, bytes16 indexed trancheId);
     event DeployTranche(uint64 indexed poolId, bytes16 indexed trancheId, address indexed trancheToken);
-    event DeployLiquidityPool(
-        uint64 indexed poolId, bytes16 indexed trancheId, address indexed currency, address liquidityPool
-    );
-    event RemoveLiquidityPool(
-        uint64 indexed poolId, bytes16 indexed trancheId, address indexed currency, address liquidityPool
-    );
+    event DeployVault(uint64 indexed poolId, bytes16 indexed trancheId, address indexed currency, address vault);
+    event RemoveVault(uint64 indexed poolId, bytes16 indexed trancheId, address indexed currency, address vault);
     event PriceUpdate(
         uint64 indexed poolId, bytes16 indexed trancheId, address indexed currency, uint256 price, uint64 computedAt
     );
@@ -163,19 +159,19 @@ interface IPoolManager {
     function deployTranche(uint64 poolId, bytes16 trancheId) external returns (address);
 
     /// @notice TODO
-    function deployLiquidityPool(uint64 poolId, bytes16 trancheId, address currency) external returns (address);
+    function deployVault(uint64 poolId, bytes16 trancheId, address currency) external returns (address);
 
     /// @notice TODO
-    function removeLiquidityPool(uint64 poolId, bytes16 trancheId, address currency) external;
+    function removeVault(uint64 poolId, bytes16 trancheId, address currency) external;
 
     /// @notice TODO
     function getTrancheToken(uint64 poolId, bytes16 trancheId) external view returns (address);
 
     /// @notice TODO
-    function getLiquidityPool(uint64 poolId, bytes16 trancheId, uint128 currencyId) external view returns (address);
+    function getVault(uint64 poolId, bytes16 trancheId, uint128 currencyId) external view returns (address);
 
     /// @notice TODO
-    function getLiquidityPool(uint64 poolId, bytes16 trancheId, address currency) external view returns (address);
+    function getVault(uint64 poolId, bytes16 trancheId, address currency) external view returns (address);
 
     /// @notice TODO
     function getTrancheTokenPrice(uint64 poolId, bytes16 trancheId, address currency)

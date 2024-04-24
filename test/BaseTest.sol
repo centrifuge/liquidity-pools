@@ -157,7 +157,7 @@ contract BaseTest is Deployer, Test {
         return deployERC7540Vault(poolId, decimals, restrictionSet, tokenName, tokenSymbol, trancheId, currency, address(erc20));
     }
 
-    function deploySimplePool() public returns (address) {
+    function deploySimpleVault() public returns (address) {
         return deployERC7540Vault(5, 6, defaultRestrictionSet, "name", "symbol", bytes16(bytes("1")), defaultCurrencyId, address(erc20));
     }
 

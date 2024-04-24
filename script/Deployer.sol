@@ -5,6 +5,7 @@ import {Root} from "src/Root.sol";
 import {RouterAggregator} from "src/gateway/routers/RouterAggregator.sol";
 import {Gateway} from "src/gateway/Gateway.sol";
 import {InvestmentManager} from "src/InvestmentManager.sol";
+import {TrancheTokenFactory} from "src/factories/TrancheTokenFactory.sol";
 import {PoolManager} from "src/PoolManager.sol";
 import {Escrow} from "src/Escrow.sol";
 import {PauseAdmin} from "src/admins/PauseAdmin.sol";
@@ -35,7 +36,7 @@ contract Deployer is Script {
     DelayedAdmin public delayedAdmin;
     Gateway public gateway;
     RouterAggregator public aggregator;
-    address public liquidityPoolFactory;
+    address public vaultFactory;
     address public restrictionManagerFactory;
     address public trancheTokenFactory;
 
@@ -50,14 +51,13 @@ contract Deployer is Script {
 
         trancheTokenFactory = address(new TrancheTokenFactory{salt: salt}(address(root), deployer));
         investmentManager = new InvestmentManager(address(escrow));
-        poolManager =
-            new PoolManager(address(escrow), liquidityPoolFactory, restrictionManagerFactory, trancheTokenFactory);
+        poolManager = new PoolManager(address(escrow), vaultFactory, restrictionManagerFactory, trancheTokenFactory);
 
-        AuthLike(liquidityPoolFactory).rely(address(poolManager));
+        AuthLike(vaultFactory).rely(address(poolManager));
         AuthLike(trancheTokenFactory).rely(address(poolManager));
         AuthLike(restrictionManagerFactory).rely(address(poolManager));
 
-        AuthLike(liquidityPoolFactory).rely(address(root));
+        AuthLike(vaultFactory).rely(address(root));
         AuthLike(trancheTokenFactory).rely(address(root));
         AuthLike(restrictionManagerFactory).rely(address(root));
 
@@ -90,7 +90,7 @@ contract Deployer is Script {
         poolManager.file("gateway", address(gateway));
         investmentManager.rely(address(root));
         investmentManager.rely(address(gateway));
-        investmentManager.rely(address(liquidityPoolFactory));
+        investmentManager.rely(address(vaultFactory));
         poolManager.rely(address(root));
         poolManager.rely(address(gateway));
         gateway.rely(address(root));
@@ -110,7 +110,7 @@ contract Deployer is Script {
 
     function removeDeployerAccess(address router, address deployer) public {
         AuthLike(router).deny(deployer);
-        AuthLike(liquidityPoolFactory).deny(deployer);
+        AuthLike(vaultFactory).deny(deployer);
         AuthLike(trancheTokenFactory).deny(deployer);
         AuthLike(restrictionManagerFactory).deny(deployer);
         root.deny(deployer);

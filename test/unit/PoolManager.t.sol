@@ -221,25 +221,25 @@ contract PoolManagerTest is BaseTest {
         centrifugeChain.addCurrency(currency, address(erc20));
 
         vm.expectRevert(bytes("PoolManager/tranche-does-not-exist"));
-        poolManager.deployLiquidityPool(poolId, trancheId, address(erc20));
+        poolManager.deployVault(poolId, trancheId, address(erc20));
         address trancheToken_ = poolManager.deployTranche(poolId, trancheId);
 
         vm.expectRevert(bytes("PoolManager/currency-not-supported"));
-        poolManager.deployLiquidityPool(poolId, trancheId, address(erc20));
+        poolManager.deployVault(poolId, trancheId, address(erc20));
         centrifugeChain.allowInvestmentCurrency(poolId, currency);
 
-        address lPoolAddress = poolManager.deployLiquidityPool(poolId, trancheId, address(erc20));
-        address lPool_ = poolManager.getLiquidityPool(poolId, trancheId, address(erc20)); // make sure the pool was
+        address vaultAddress = poolManager.deployVault(poolId, trancheId, address(erc20));
+        address vault_ = poolManager.getvault(poolId, trancheId, address(erc20)); // make sure the pool was
             // stored in LP
 
         vm.expectRevert(bytes("PoolManager/liquidity-pool-already-deployed"));
-        poolManager.deployLiquidityPool(poolId, trancheId, address(erc20));
+        poolManager.deployVault(poolId, trancheId, address(erc20));
 
         // make sure the pool was added to the tranche struct
-        assertEq(lPoolAddress, lPool_);
+        assertEq(vaultAddress, vault_);
 
         // check LiquidityPool state
-        LiquidityPool lPool = LiquidityPool(lPool_);
+        LiquidityPool lPool = LiquidityPool(vault_);
         TrancheToken trancheToken = TrancheToken(trancheToken_);
         assertEq(address(lPool.manager()), address(investmentManager));
         assertEq(lPool.asset(), address(erc20));
@@ -248,7 +248,7 @@ contract PoolManagerTest is BaseTest {
         assertEq(address(lPool.share()), trancheToken_);
         assertTrue(lPool.wards(address(investmentManager)) == 1);
         assertTrue(lPool.wards(address(this)) == 0);
-        assertTrue(investmentManager.wards(lPoolAddress) == 1);
+        assertTrue(investmentManager.wards(vaultAddress) == 1);
 
         assertEq(trancheToken.name(), tokenName);
         assertEq(trancheToken.symbol(), tokenSymbol);
@@ -259,9 +259,9 @@ contract PoolManagerTest is BaseTest {
         assertTrue(actualValidUntil >= block.timestamp);
 
         assertTrue(trancheToken.wards(address(poolManager)) == 1);
-        assertTrue(trancheToken.wards(lPool_) == 1);
+        assertTrue(trancheToken.wards(vault_) == 1);
         assertTrue(trancheToken.wards(address(this)) == 0);
-        assertTrue(trancheToken.isTrustedForwarder(lPool_)); // Lpool is not trusted forwarder on token
+        assertTrue(trancheToken.isTrustedForwarder(vault_)); // Lpool is not trusted forwarder on token
     }
 
     function testIncomingTransfer(uint128 amount) public {
@@ -313,9 +313,9 @@ contract PoolManagerTest is BaseTest {
         vm.assume(amount > 0);
         uint64 validUntil = uint64(block.timestamp + 7 days);
         bytes32 centChainAddress = makeAddr("centChainAddress").toBytes32();
-        address lPool_ = deploySimplePool();
-        LiquidityPool lPool = LiquidityPool(lPool_);
-        TrancheTokenLike trancheToken = TrancheTokenLike(address(LiquidityPool(lPool_).share()));
+        address vault_ = deploySimplePool();
+        LiquidityPool lPool = LiquidityPool(vault_);
+        TrancheTokenLike trancheToken = TrancheTokenLike(address(LiquidityPool(vault_).share()));
 
         // fund this account with amount
         centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), address(this), validUntil);
@@ -352,8 +352,8 @@ contract PoolManagerTest is BaseTest {
         vm.assume(amount > 0);
         uint64 validUntil = uint64(block.timestamp + 7 days);
         address destinationAddress = makeAddr("destinationAddress");
-        address lPool_ = deploySimplePool();
-        LiquidityPool lPool = LiquidityPool(lPool_);
+        address vault_ = deploySimplePool();
+        LiquidityPool lPool = LiquidityPool(vault_);
         uint64 poolId = lPool.poolId();
         bytes16 trancheId = lPool.trancheId();
 
@@ -382,9 +382,9 @@ contract PoolManagerTest is BaseTest {
         address destinationAddress = makeAddr("destinationAddress");
         vm.assume(amount > 0);
 
-        address lPool_ = deploySimplePool();
-        LiquidityPool lPool = LiquidityPool(lPool_);
-        TrancheTokenLike trancheToken = TrancheTokenLike(address(LiquidityPool(lPool_).share()));
+        address vault_ = deploySimplePool();
+        LiquidityPool lPool = LiquidityPool(vault_);
+        TrancheTokenLike trancheToken = TrancheTokenLike(address(LiquidityPool(vault_).share()));
 
         centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), destinationAddress, validUntil);
         centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), address(this), validUntil);
@@ -413,9 +413,9 @@ contract PoolManagerTest is BaseTest {
 
     function testUpdateMember(uint64 validUntil) public {
         validUntil = uint64(bound(validUntil, block.timestamp, type(uint64).max));
-        address lPool_ = deploySimplePool();
-        LiquidityPool lPool = LiquidityPool(lPool_);
-        TrancheTokenLike trancheToken = TrancheTokenLike(address(LiquidityPool(lPool_).share()));
+        address vault_ = deploySimplePool();
+        LiquidityPool lPool = LiquidityPool(vault_);
+        TrancheTokenLike trancheToken = TrancheTokenLike(address(LiquidityPool(vault_).share()));
 
         uint64 poolId = lPool.poolId();
         bytes16 trancheId = lPool.trancheId();
@@ -435,11 +435,11 @@ contract PoolManagerTest is BaseTest {
     }
 
     function testFreezeAndUnfreeze() public {
-        address lPool_ = deploySimplePool();
-        LiquidityPool lPool = LiquidityPool(lPool_);
+        address vault_ = deploySimplePool();
+        LiquidityPool lPool = LiquidityPool(vault_);
         uint64 poolId = lPool.poolId();
         bytes16 trancheId = lPool.trancheId();
-        TrancheTokenLike trancheToken = TrancheTokenLike(address(LiquidityPool(lPool_).share()));
+        TrancheTokenLike trancheToken = TrancheTokenLike(address(LiquidityPool(vault_).share()));
         uint64 validUntil = uint64(block.timestamp + 7 days);
         address secondUser = makeAddr("secondUser");
 
@@ -470,11 +470,11 @@ contract PoolManagerTest is BaseTest {
     }
 
     function testUpdateTokenMetadata() public {
-        address lPool_ = deploySimplePool();
-        LiquidityPool lPool = LiquidityPool(lPool_);
+        address vault_ = deploySimplePool();
+        LiquidityPool lPool = LiquidityPool(vault_);
         uint64 poolId = lPool.poolId();
         bytes16 trancheId = lPool.trancheId();
-        TrancheTokenLike trancheToken = TrancheTokenLike(address(LiquidityPool(lPool_).share()));
+        TrancheTokenLike trancheToken = TrancheTokenLike(address(LiquidityPool(vault_).share()));
 
         string memory updatedTokenName = "newName";
         string memory updatedTokenSymbol = "newSymbol";
@@ -568,8 +568,8 @@ contract PoolManagerTest is BaseTest {
     }
 
     function testRemoveLiquidityPool() public {
-        address lPool_ = deploySimplePool();
-        LiquidityPool lPool = LiquidityPool(lPool_);
+        address vault_ = deploySimplePool();
+        LiquidityPool lPool = LiquidityPool(vault_);
         uint64 poolId = lPool.poolId();
         bytes16 trancheId = lPool.trancheId();
         address currency = address(lPool.asset());
@@ -589,11 +589,11 @@ contract PoolManagerTest is BaseTest {
         poolManager.removeLiquidityPool(poolId, bytes16(0), currency);
 
         poolManager.removeLiquidityPool(poolId, trancheId, currency);
-        assertEq(poolManager.getLiquidityPool(poolId, trancheId, currency), address(0));
-        assertEq(investmentManager.wards(lPool_), 0);
-        assertEq(trancheToken.wards(lPool_), 0);
-        assertEq(trancheToken.isTrustedForwarder(lPool_), false);
-        assertEq(trancheToken.allowance(address(escrow), lPool_), 0);
+        assertEq(poolManager.getvault(poolId, trancheId, currency), address(0));
+        assertEq(investmentManager.wards(vault_), 0);
+        assertEq(trancheToken.wards(vault_), 0);
+        assertEq(trancheToken.isTrustedForwarder(vault_), false);
+        assertEq(trancheToken.allowance(address(escrow), vault_), 0);
     }
 
     function testRemoveLiquidityPoolFailsWhenLiquidityPoolNotDeployed() public {
@@ -628,11 +628,11 @@ contract PoolManagerTest is BaseTest {
 
         // Remove old liquidity pool
         poolManager.removeLiquidityPool(poolId, trancheId, currency);
-        assertEq(poolManager.getLiquidityPool(poolId, trancheId, currency), address(0));
+        assertEq(poolManager.getvault(poolId, trancheId, currency), address(0));
 
         // Deploy new liquidity pool
-        address newLiquidityPool = poolManager.deployLiquidityPool(poolId, trancheId, currency);
-        assertEq(poolManager.getLiquidityPool(poolId, trancheId, currency), newLiquidityPool);
+        address newLiquidityPool = poolManager.deployVault(poolId, trancheId, currency);
+        assertEq(poolManager.getvault(poolId, trancheId, currency), newLiquidityPool);
     }
 
     // helpers

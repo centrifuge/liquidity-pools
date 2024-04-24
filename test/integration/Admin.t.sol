@@ -263,11 +263,11 @@ contract AdminTest is BaseTest {
 
     //------ Token Recovery tests ------///
     function testRecoverTokens() public {
-        deploySimplePool();
+        deploySimpleVault();
         address clumsyUser = vm.addr(0x1234);
-        address liquidityPool_ = poolManager.getLiquidityPool(5, bytes16(bytes("1")), defaultCurrencyId);
-        LiquidityPool lp = LiquidityPool(liquidityPool_);
-        address asset_ = lp.asset();
+        address liquidityPool_ = poolManager.getVault(5, bytes16(bytes("1")), defaultCurrencyId);
+        ERC7540Vault vault = ERC7540Vault(liquidityPool_);
+        address asset_ = vault.asset();
         ERC20 asset = ERC20(asset_);
         deal(asset_, clumsyUser, 300);
         vm.startPrank(clumsyUser);
