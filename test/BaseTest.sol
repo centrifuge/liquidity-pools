@@ -122,23 +122,23 @@ contract BaseTest is Deployer, Test {
         string memory tokenName,
         string memory tokenSymbol,
         bytes16 trancheId,
-        uint128 currencyId,
+        uint128 assetId,
         address currency
     ) public returns (address) {
-        if (poolManager.currencyIdToAddress(currencyId) == address(0)) {
-            centrifugeChain.addCurrency(currencyId, currency);
+        if (poolManager.idToAsset(assetId) == address(0)) {
+            centrifugeChain.addCurrency(assetId, currency);
         }
         
         if (poolManager.getTrancheToken(poolId, trancheId) == address(0)) {
             centrifugeChain.addPool(poolId);
             centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, trancheTokenDecimals, restrictionSet);
 
-            centrifugeChain.allowInvestmentCurrency(poolId, currencyId);
+            centrifugeChain.allowInvestmentCurrency(poolId, assetId);
             poolManager.deployTranche(poolId, trancheId);
         }
 
         if (!poolManager.isAllowedAsset(poolId, currency)) {
-            centrifugeChain.allowInvestmentCurrency(poolId, currencyId);
+            centrifugeChain.allowInvestmentCurrency(poolId, assetId);
         }
 
         address vaultAddress = poolManager.deployVault(poolId, trancheId, currency);
@@ -173,12 +173,12 @@ contract BaseTest is Deployer, Test {
         erc20.approve(_vault, amount); // add allowance
         vault.requestDeposit(amount, _investor, _investor, "");
         // trigger executed collectInvest
-        uint128 currencyId = poolManager.assetToId(address(erc20)); // retrieve currencyId
-        centrifugeChain.isExecutedCollectInvest(
+        uint128 assetId = poolManager.assetToId(address(erc20)); // retrieve assetId
+        centrifugeChain.isFulfilledDepositRequest(
             vault.poolId(),
             vault.trancheId(),
             bytes32(bytes20(_investor)),
-            currencyId,
+            assetId,
             uint128(amount),
             uint128(amount),
             0

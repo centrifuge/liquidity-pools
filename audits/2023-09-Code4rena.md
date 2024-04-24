@@ -235,10 +235,10 @@ function testPOCIssue1(
     string memory tokenName,
     string memory tokenSymbol,
     bytes16 trancheId,
-    uint128 currencyId,
+    uint128 assetId,
     uint256 amount
 ) public {
-    vm.assume(currencyId > 0);
+    vm.assume(assetId > 0);
     vm.assume(amount < MAX_UINT128);
     vm.assume(amount > 1);
 
@@ -247,7 +247,7 @@ function testPOCIssue1(
     vm.prank(vm.addr(0xABCD));
 
     LiquidityPool lPool =
-        LiquidityPool(deployLiquidityPool(poolId, erc20.decimals(), tokenName, tokenSymbol, trancheId, currencyId));
+        LiquidityPool(deployLiquidityPool(poolId, erc20.decimals(), tokenName, tokenSymbol, trancheId, assetId));
     erc20.mint(investor, amount);
     homePools.updateMember(poolId, trancheId, investor, type(uint64).max);
 
@@ -278,7 +278,7 @@ function testPOCIssue1(
     assertEq(erc20.balanceOf(investor), 0);
 
     // collect 50% of the tranche tokens
-    homePools.isExecutedCollectInvest(
+    homePools.isFulfilledDepositRequest(
         poolId,
         trancheId,
         bytes32(bytes20(investor)),
@@ -320,7 +320,7 @@ function testPOCIssue1(
     // but a different currency
     LiquidityPool newLPool;
     {
-        assert(currencyId != 123);
+        assert(assetId != 123);
         address newErc20 = address(_newErc20("Y's Dollar", "USDY", 6));
         homePools.addCurrency(123, newErc20);
         homePools.allowPoolCurrency(poolId, 123);
@@ -473,7 +473,7 @@ function processDeposit(address user, uint256 currencyAmount) public auth return
     address liquidityPool = msg.sender;
     uint128 _currencyAmount = _toUint128(currencyAmount);
     require(
-        //@audit-info => orderbook[][].maxDeposit is updated when the handleExecutedCollectInvest() was executed!
+        //@audit-info => orderbook[][].maxDeposit is updated when the handleFulfilledDepositRequest() was executed!
         //@audit-info => The orderbook keeps track of the number of TrancheToken shares that have been minted to the Escrow contract on the user's behalf!
         (_currencyAmount <= orderbook[user][liquidityPool].maxDeposit && _currencyAmount != 0),
         "InvestmentManager/amount-exceeds-deposit-limits"
@@ -509,17 +509,17 @@ function processDeposit(address user, uint256 currencyAmount) public auth return
 <details>
 
 ```solidity
-    function testDepositAtDifferentPricesPoC(uint64 poolId, bytes16 trancheId, uint128 currencyId) public {
-        vm.assume(currencyId > 0);
+    function testDepositAtDifferentPricesPoC(uint64 poolId, bytes16 trancheId, uint128 assetId) public {
+        vm.assume(assetId > 0);
 
         uint8 TRANCHE_TOKEN_DECIMALS = 18; // Like DAI
         uint8 INVESTMENT_CURRENCY_DECIMALS = 6; // 6, like USDC
 
         ERC20 currency = _newErc20("Currency", "CR", INVESTMENT_CURRENCY_DECIMALS);
         address lPool_ =
-            deployLiquidityPool(poolId, TRANCHE_TOKEN_DECIMALS, "", "", trancheId, currencyId, address(currency));
+            deployLiquidityPool(poolId, TRANCHE_TOKEN_DECIMALS, "", "", trancheId, assetId, address(currency));
         LiquidityPool lPool = LiquidityPool(lPool_);
-        homePools.updateTrancheTokenPrice(poolId, trancheId, currencyId, 1000000000000000000);
+        homePools.updateTrancheTokenPrice(poolId, trancheId, assetId, 1000000000000000000);
 
         //@audit-info => Add Alice as a Member
         address alice = address(0x23232323);
@@ -533,11 +533,11 @@ function processDeposit(address user, uint256 currencyAmount) public auth return
         lPool.requestDeposit(investmentAmount, self);
 
         // trigger executed collectInvest at a price of 1.25
-        uint128 _currencyId = poolManager.assetToId(address(currency)); // retrieve currencyId
+        uint128 _assetId = poolManager.assetToId(address(currency)); // retrieve assetId
         uint128 currencyPayout = 100000000; // 100 * 10**6                                          
         uint128 firstTrancheTokenPayout = 80000000000000000000; // 100 * 10**18 / 1.25, rounded down
-        homePools.isExecutedCollectInvest(
-            poolId, trancheId, bytes32(bytes20(self)), _currencyId, currencyPayout, firstTrancheTokenPayout
+        homePools.isFulfilledDepositRequest(
+            poolId, trancheId, bytes32(bytes20(self)), _assetId, currencyPayout, firstTrancheTokenPayout
         );
 
         // assert deposit & mint values adjusted
@@ -556,8 +556,8 @@ function processDeposit(address user, uint256 currencyAmount) public auth return
         // trigger executed collectInvest at a price of 2
         currencyPayout = 100000000; // 100 * 10**6
         uint128 secondTrancheTokenPayout = 50000000000000000000; // 100 * 10**18 / 1.4, rounded down
-        homePools.isExecutedCollectInvest(
-            poolId, trancheId, bytes32(bytes20(self)), _currencyId, currencyPayout, secondTrancheTokenPayout
+        homePools.isFulfilledDepositRequest(
+            poolId, trancheId, bytes32(bytes20(self)), _assetId, currencyPayout, secondTrancheTokenPayout
         );
 
         // Alice invests the same amount as the other investor in the second epoch - Price is at 2
@@ -568,8 +568,8 @@ function processDeposit(address user, uint256 currencyAmount) public auth return
         lPool.requestDeposit(investmentAmount, alice);
         vm.stopPrank();
 
-        homePools.isExecutedCollectInvest(
-            poolId, trancheId, bytes32(bytes20(alice)), _currencyId, currencyPayout, secondTrancheTokenPayout
+        homePools.isFulfilledDepositRequest(
+            poolId, trancheId, bytes32(bytes20(alice)), _assetId, currencyPayout, secondTrancheTokenPayout
         );
 
         uint128 AliceTrancheTokenPayout = 50000000000000000000; // 100 * 10**18 / 1.4, rounded down

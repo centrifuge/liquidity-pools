@@ -49,34 +49,25 @@ contract InvestmentInvariants is BaseTest {
         super.setUp();
 
         // Generate random investment currencies
-        for (uint128 currencyId = 1; currencyId < NUM_CURRENCIES + 1; ++currencyId) {
+        for (uint128 assetId = 1; assetId < NUM_CURRENCIES + 1; ++assetId) {
             uint8 currencyDecimals = _randomUint8(1, 18);
 
             address currency = address(
                 _newErc20(
-                    string(abi.encode("currency", currencyId)),
-                    string(abi.encode("currency", currencyId)),
-                    currencyDecimals
+                    string(abi.encode("currency", assetId)), string(abi.encode("currency", assetId)), currencyDecimals
                 )
             );
-            currencies[currencyId] = currency;
+            currencies[assetId] = currency;
             excludeContract(currency);
         }
 
         // Generate random vaults
         // TODO: multiple chains and allowing transfers between chains
-        for (uint128 currencyId = 1; currencyId < NUM_CURRENCIES + 1; ++currencyId) {
+        for (uint128 assetId = 1; assetId < NUM_CURRENCIES + 1; ++assetId) {
             for (uint64 poolId; poolId < NUM_POOLS; ++poolId) {
                 uint8 trancheTokenDecimals = _randomUint8(1, 18);
                 address vault = deployVault(
-                    poolId,
-                    trancheTokenDecimals,
-                    RESTRICTION_SET,
-                    "",
-                    "",
-                    TRANCHE_ID,
-                    currencyId,
-                    currencies[currencyId]
+                    poolId, trancheTokenDecimals, RESTRICTION_SET, "", "", TRANCHE_ID, assetId, currencies[assetId]
                 );
                 vaults.push(vault);
                 excludeContract(vault);

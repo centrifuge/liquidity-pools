@@ -23,16 +23,16 @@ contract EpochExecutorHandler is BaseHandler {
 
     uint64 poolId;
     bytes16 trancheId;
-    uint128 currencyId;
+    uint128 assetId;
 
     MockCentrifugeChain immutable centrifugeChain;
 
-    constructor(uint64 poolId_, bytes16 trancheId_, uint128 currencyId_, address mockCentrifugeChain_, address state_)
+    constructor(uint64 poolId_, bytes16 trancheId_, uint128 assetId_, address mockCentrifugeChain_, address state_)
         BaseHandler(state_)
     {
         poolId = poolId_;
         trancheId = trancheId_;
-        currencyId = currencyId_;
+        assetId = assetId_;
 
         centrifugeChain = MockCentrifugeChain(mockCentrifugeChain_);
     }
@@ -56,11 +56,11 @@ contract EpochExecutorHandler is BaseHandler {
         uint128 trancheTokenPayout =
             uint128(currencyPayout.mulDiv(1 * 10 ** 18, fulfillmentPrice, MathLib.Rounding.Down));
 
-        centrifugeChain.isExecutedCollectInvest(
+        centrifugeChain.isFulfilledDepositRequest(
             poolId,
             trancheId,
             bytes32(bytes20(currentInvestor)),
-            currencyId,
+            assetId,
             currencyPayout,
             trancheTokenPayout,
             uint128(outstandingDepositRequest - currencyPayout)
@@ -90,8 +90,8 @@ contract EpochExecutorHandler is BaseHandler {
         uint128 currencyPayout =
             uint128(trancheTokenPayout.mulDiv(fulfillmentPrice, 1 * 10 ** 18, MathLib.Rounding.Down));
 
-        centrifugeChain.isExecutedCollectRedeem(
-            poolId, trancheId, bytes32(bytes20(currentInvestor)), currencyId, currencyPayout, trancheTokenPayout
+        centrifugeChain.isFulfilledRedeemRequest(
+            poolId, trancheId, bytes32(bytes20(currentInvestor)), assetId, currencyPayout, trancheTokenPayout
         );
 
         increaseVar(currentInvestor, "totalTrancheTokensPaidOutOnRedeem", trancheTokenPayout);
@@ -115,11 +115,11 @@ contract EpochExecutorHandler is BaseHandler {
             )
         );
 
-        centrifugeChain.isExecutedDecreaseInvestOrder(
+        centrifugeChain.isFulfilledCancelDepositRequest(
             poolId,
             trancheId,
             bytes32(bytes20(currentInvestor)),
-            currencyId,
+            assetId,
             currencyPayout,
             uint128(getVar(currentInvestor, "outstandingDecreaseDepositRequested") - currencyPayout)
         );

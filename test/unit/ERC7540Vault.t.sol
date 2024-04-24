@@ -14,15 +14,15 @@ contract ERC7540VaultTest is BaseTest {
         string memory tokenName,
         string memory tokenSymbol,
         bytes16 trancheId,
-        uint128 currencyId,
+        uint128 assetId,
         address nonWard
     ) public {
         vm.assume(nonWard != address(root) && nonWard != address(this) && nonWard != address(investmentManager));
-        vm.assume(currencyId > 0);
+        vm.assume(assetId > 0);
         vm.assume(bytes(tokenName).length <= 128);
         vm.assume(bytes(tokenSymbol).length <= 32);
 
-        address vault_ = deployVault(poolId, erc20.decimals(), tokenName, tokenSymbol, trancheId, currencyId);
+        address vault_ = deployVault(poolId, erc20.decimals(), tokenName, tokenSymbol, trancheId, assetId);
         ERC7540Vault vault = ERC7540Vault(vault_);
 
         // values set correctly
@@ -151,7 +151,7 @@ contract ERC7540VaultTest is BaseTest {
 
         // Claim deposit request
         // Note this is sending it to self, which is technically incorrect, it should be going to the receiver
-        centrifugeChain.isExecutedCollectInvest(
+        centrifugeChain.isFulfilledDepositRequest(
             vault.poolId(),
             vault.trancheId(),
             bytes32(bytes20(self)),
@@ -199,7 +199,7 @@ contract ERC7540VaultTest is BaseTest {
 
         // Claim deposit request
         // Note this is sending it to self, which is technically incorrect, it should be going to the receiver
-        centrifugeChain.isExecutedCollectInvest(
+        centrifugeChain.isFulfilledDepositRequest(
             vault.poolId(),
             vault.trancheId(),
             bytes32(bytes20(self)),
@@ -247,7 +247,7 @@ contract ERC7540VaultTest is BaseTest {
 
         // Re-submit and claim deposit request
         vault.requestDeposit(amount, self, self, depositData);
-        centrifugeChain.isExecutedCollectInvest(
+        centrifugeChain.isFulfilledDepositRequest(
             vault.poolId(),
             vault.trancheId(),
             bytes32(bytes20(self)),

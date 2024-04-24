@@ -101,7 +101,7 @@ interface IInvestmentManager {
         uint128 fulfillment
     ) external;
 
-    /// @dev Compared to handleExecutedDecreaseInvestOrder, there is no
+    /// @dev Compared to handleFulfilledCancelDepositRequest, there is no
     ///      transfer of currency in this function because they
     ///      can stay in the Escrow, ready to be claimed on deposit/mint.
     function fulfillCancelRedeemRequest(

@@ -119,7 +119,7 @@ contract DeployTest is Test, Deployer {
         assertEq(erc20.balanceOf(self), 0);
 
         // trigger executed collectInvest
-        uint128 _currencyId = poolManager.assetToId(address(erc20)); // retrieve currencyId
+        uint128 _assetId = poolManager.assetToId(address(erc20)); // retrieve assetId
 
         TrancheToken trancheToken = TrancheToken(address(vault.share()));
         uint128 trancheTokensPayout = (
@@ -133,7 +133,7 @@ contract DeployTest is Test, Deployer {
 
         vm.prank(address(gateway));
         investmentManager.fulfillDepositRequest(
-            poolId, trancheId, self, _currencyId, uint128(amount), trancheTokensPayout, 0
+            poolId, trancheId, self, _assetId, uint128(amount), trancheTokensPayout, 0
         );
 
         assertEq(vault.maxMint(self), trancheTokensPayout);
@@ -163,14 +163,14 @@ contract DeployTest is Test, Deployer {
 
         // redeem
         TrancheToken trancheToken = TrancheToken(address(vault.share()));
-        uint128 _currencyId = poolManager.assetToId(address(erc20)); // retrieve currencyId
+        uint128 _assetId = poolManager.assetToId(address(erc20)); // retrieve assetId
         uint128 currencyPayout = (
             amount.mulDiv(price, 10 ** (18 - erc20.decimals() + trancheToken.decimals()), MathLib.Rounding.Down)
         ).toUint128();
         // Assume an epoch execution happens on cent chain
         // Assume a bot calls collectRedeem for this user on cent chain
         vm.prank(address(gateway));
-        investmentManager.fulfillRedeemRequest(poolId, trancheId, self, _currencyId, currencyPayout, uint128(amount));
+        investmentManager.fulfillRedeemRequest(poolId, trancheId, self, _assetId, currencyPayout, uint128(amount));
 
         assertEq(vault.maxWithdraw(self), currencyPayout);
         assertEq(vault.maxRedeem(self), amount);

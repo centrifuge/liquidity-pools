@@ -25,7 +25,7 @@ contract InvestorHandler is BaseHandler {
 
     uint64 poolId;
     bytes16 trancheId;
-    uint128 currencyId;
+    uint128 assetId;
 
     ERC20Like immutable erc20;
     ERC20Like immutable trancheToken;
@@ -37,7 +37,7 @@ contract InvestorHandler is BaseHandler {
     constructor(
         uint64 poolId_,
         bytes16 trancheId_,
-        uint128 currencyId_,
+        uint128 assetId_,
         address _vault,
         address mockCentrifugeChain_,
         address erc20_,
@@ -46,7 +46,7 @@ contract InvestorHandler is BaseHandler {
     ) BaseHandler(state_) {
         poolId = poolId_;
         trancheId = trancheId_;
-        currencyId = currencyId_;
+        assetId = assetId_;
 
         vault = LiquidityPoolLike(_vault);
         centrifugeChain = MockCentrifugeChain(mockCentrifugeChain_);

@@ -37,9 +37,9 @@ struct UndeployedTranche {
 
 interface IPoolManager {
     event File(bytes32 indexed what, address data);
-    event AddCurrency(uint128 indexed currencyId, address indexed currency);
+    event AddAsset(uint128 indexed assetId, address indexed currency);
     event AddPool(uint64 indexed poolId);
-    event AllowInvestmentCurrency(uint64 indexed poolId, address indexed currency);
+    event AllowInvestmentAsset(uint64 indexed poolId, address indexed currency);
     event DisallowInvestmentCurrency(uint64 indexed poolId, address indexed currency);
     event AddTranche(uint64 indexed poolId, bytes16 indexed trancheId);
     event DeployTranche(uint64 indexed poolId, bytes16 indexed trancheId, address indexed trancheToken);
@@ -61,10 +61,10 @@ interface IPoolManager {
     );
 
     /// @notice TODO
-    function currencyIdToAddress(uint128 currencyId) external view returns (address currency);
+    function idToAsset(uint128 assetId) external view returns (address currency);
 
     /// @notice TODO
-    function assetToId(address) external view returns (uint128 currencyId);
+    function assetToId(address) external view returns (uint128 assetId);
 
     /// @notice TODO
     function file(bytes32 what, address data) external;
@@ -97,10 +97,10 @@ interface IPoolManager {
     ///             a new supported currency to the pool details.
     ///             Adding new currencies allow the creation of new vaults for the underlying Centrifuge pool.
     /// @dev        The function can only be executed by the gateway contract.
-    function allowInvestmentCurrency(uint64 poolId, uint128 currencyId) external;
+    function allowInvestmentCurrency(uint64 poolId, uint128 assetId) external;
 
     /// @notice TODO
-    function disallowInvestmentCurrency(uint64 poolId, uint128 currencyId) external;
+    function disallowInvestmentCurrency(uint64 poolId, uint128 assetId) external;
 
     /// @notice     New tranche details from an existing Centrifuge pool are added.
     /// @dev        The function can only be executed by the gateway contract.
@@ -125,7 +125,7 @@ interface IPoolManager {
     function updateTrancheTokenPrice(
         uint64 poolId,
         bytes16 trancheId,
-        uint128 currencyId,
+        uint128 assetId,
         uint128 price,
         uint64 computedAt
     ) external;
@@ -143,13 +143,13 @@ interface IPoolManager {
     ///         a currency from the Centrifuge index to its corresponding address on the evm chain.
     ///         The chain agnostic currency id has to be used to pass currency information to the Centrifuge.
     /// @dev    This function can only be executed by the gateway contract.
-    function addCurrency(uint128 currencyId, address currency) external;
+    function addCurrency(uint128 assetId, address currency) external;
 
     /// @notice TODO
     function handle(bytes calldata message) external;
 
     /// @notice TODO
-    function handleTransfer(uint128 currencyId, address recipient, uint128 amount) external;
+    function handleTransfer(uint128 assetId, address recipient, uint128 amount) external;
 
     /// @notice TODO
     function handleTransferTrancheTokens(uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 amount)
@@ -168,7 +168,7 @@ interface IPoolManager {
     function getTrancheToken(uint64 poolId, bytes16 trancheId) external view returns (address);
 
     /// @notice TODO
-    function getVault(uint64 poolId, bytes16 trancheId, uint128 currencyId) external view returns (address);
+    function getVault(uint64 poolId, bytes16 trancheId, uint128 assetId) external view returns (address);
 
     /// @notice TODO
     function getVault(uint64 poolId, bytes16 trancheId, address currency) external view returns (address);

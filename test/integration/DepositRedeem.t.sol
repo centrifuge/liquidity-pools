@@ -4,20 +4,20 @@ pragma solidity 0.8.21;
 import "./../BaseTest.sol";
 
 contract DepositRedeem is BaseTest {
-    function testPartialDepositAndRedeemExecutions(uint64 poolId, bytes16 trancheId, uint128 currencyId) public {
-        vm.assume(currencyId > 0);
+    function testPartialDepositAndRedeemExecutions(uint64 poolId, bytes16 trancheId, uint128 assetId) public {
+        vm.assume(assetId > 0);
 
         uint8 TRANCHE_TOKEN_DECIMALS = 18; // Like DAI
         uint8 INVESTMENT_CURRENCY_DECIMALS = 6; // 6, like USDC
 
         ERC20 currency = _newErc20("Currency", "CR", INVESTMENT_CURRENCY_DECIMALS);
         address vault_ = deployVault(
-            poolId, TRANCHE_TOKEN_DECIMALS, defaultRestrictionSet, "", "", trancheId, currencyId, address(currency)
+            poolId, TRANCHE_TOKEN_DECIMALS, defaultRestrictionSet, "", "", trancheId, assetId, address(currency)
         );
         ERC7540Vault vault = ERC7540Vault(vault_);
 
         centrifugeChain.updateTrancheTokenPrice(
-            poolId, trancheId, currencyId, 1000000000000000000, uint64(block.timestamp)
+            poolId, trancheId, assetId, 1000000000000000000, uint64(block.timestamp)
         );
 
         partialDeposit(poolId, trancheId, vault, currency);
@@ -37,17 +37,11 @@ contract DepositRedeem is BaseTest {
         vault.requestDeposit(investmentAmount, self, self, "");
 
         // first trigger executed collectInvest of the first 50% at a price of 1.4
-        uint128 _currencyId = poolManager.assetToId(address(currency)); // retrieve currencyId
+        uint128 _assetId = poolManager.assetToId(address(currency)); // retrieve assetId
         uint128 currencyPayout = 50000000; // 50 * 10**6
         uint128 firstTrancheTokenPayout = 35714285714285714285; // 50 * 10**18 / 1.4, rounded down
-        centrifugeChain.isExecutedCollectInvest(
-            poolId,
-            trancheId,
-            bytes32(bytes20(self)),
-            _currencyId,
-            currencyPayout,
-            firstTrancheTokenPayout,
-            currencyPayout
+        centrifugeChain.isFulfilledDepositRequest(
+            poolId, trancheId, bytes32(bytes20(self)), _assetId, currencyPayout, firstTrancheTokenPayout, currencyPayout
         );
 
         (, uint256 depositPrice,,,,,,,,,) = investmentManager.investments(address(vault), self);
@@ -55,8 +49,8 @@ contract DepositRedeem is BaseTest {
 
         // second trigger executed collectInvest of the second 50% at a price of 1.2
         uint128 secondTrancheTokenPayout = 41666666666666666666; // 50 * 10**18 / 1.2, rounded down
-        centrifugeChain.isExecutedCollectInvest(
-            poolId, trancheId, bytes32(bytes20(self)), _currencyId, currencyPayout, secondTrancheTokenPayout, 0
+        centrifugeChain.isFulfilledDepositRequest(
+            poolId, trancheId, bytes32(bytes20(self)), _assetId, currencyPayout, secondTrancheTokenPayout, 0
         );
 
         (, depositPrice,,,,,,,,,) = investmentManager.investments(address(vault), self);
@@ -74,7 +68,7 @@ contract DepositRedeem is BaseTest {
     function partialRedeem(uint64 poolId, bytes16 trancheId, ERC7540Vault vault, ERC20 currency) public {
         TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
 
-        uint128 currencyId = poolManager.assetToId(address(currency));
+        uint128 assetId = poolManager.assetToId(address(currency));
         uint256 totalTrancheTokens = trancheToken.balanceOf(self);
         uint256 redeemAmount = 50000000000000000000;
         assertTrue(redeemAmount <= totalTrancheTokens);
@@ -85,8 +79,8 @@ contract DepositRedeem is BaseTest {
         uint128 secondTrancheTokenRedeem = 25000000000000000000;
         assertEq(firstTrancheTokenRedeem + secondTrancheTokenRedeem, redeemAmount);
         uint128 firstCurrencyPayout = 27500000; // (25000000000000000000/10**18) * 10**6 * 1.1
-        centrifugeChain.isExecutedCollectRedeem(
-            poolId, trancheId, bytes32(bytes20(self)), currencyId, firstCurrencyPayout, firstTrancheTokenRedeem
+        centrifugeChain.isFulfilledRedeemRequest(
+            poolId, trancheId, bytes32(bytes20(self)), assetId, firstCurrencyPayout, firstTrancheTokenRedeem
         );
 
         assertEq(vault.maxRedeem(self), firstTrancheTokenRedeem);
@@ -96,8 +90,8 @@ contract DepositRedeem is BaseTest {
 
         // second trigger executed collectRedeem of the second 25 trancheTokens at a price of 1.3
         uint128 secondCurrencyPayout = 32500000; // (25000000000000000000/10**18) * 10**6 * 1.3
-        centrifugeChain.isExecutedCollectRedeem(
-            poolId, trancheId, bytes32(bytes20(self)), currencyId, secondCurrencyPayout, secondTrancheTokenRedeem
+        centrifugeChain.isFulfilledRedeemRequest(
+            poolId, trancheId, bytes32(bytes20(self)), assetId, secondCurrencyPayout, secondTrancheTokenRedeem
         );
 
         (,,, redeemPrice,,,,,,,) = investmentManager.investments(address(vault), self);

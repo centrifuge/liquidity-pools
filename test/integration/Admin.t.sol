@@ -46,17 +46,17 @@ contract AdminTest is BaseTest {
         string memory tokenName,
         string memory tokenSymbol,
         uint8 decimals,
-        uint128 currency,
+        uint128 assetId,
         address recipient,
         uint128 amount
     ) public {
         decimals = uint8(bound(decimals, 1, 18));
         vm.assume(amount > 0);
-        vm.assume(currency != 0);
+        vm.assume(assetId != 0);
         vm.assume(recipient != address(0));
 
         ERC20 erc20 = _newErc20(tokenName, tokenSymbol, decimals);
-        centrifugeChain.addCurrency(currency, address(erc20));
+        centrifugeChain.addCurrency(assetId, address(erc20));
 
         // First, an outgoing transfer must take place which has funds currency of the currency moved to
         // the escrow account, from which funds are moved from into the recipient on an incoming transfer.
@@ -71,18 +71,18 @@ contract AdminTest is BaseTest {
         string memory tokenName,
         string memory tokenSymbol,
         uint8 decimals,
-        uint128 currency,
+        uint128 assetId,
         bytes32 sender,
         address recipient,
         uint128 amount
     ) public {
         decimals = uint8(bound(decimals, 1, 18));
         vm.assume(amount > 0);
-        vm.assume(currency != 0);
+        vm.assume(assetId != 0);
         vm.assume(recipient != address(0));
 
         ERC20 erc20 = _newErc20(tokenName, tokenSymbol, decimals);
-        centrifugeChain.addCurrency(currency, address(erc20));
+        centrifugeChain.addCurrency(assetId, address(erc20));
 
         // First, an outgoing transfer must take place which has funds currency of the currency moved to
         // the escrow account, from which funds are moved from into the recipient on an incoming transfer.
@@ -93,27 +93,27 @@ contract AdminTest is BaseTest {
 
         pauseAdmin.pause();
         vm.expectRevert("Gateway/paused");
-        centrifugeChain.incomingTransfer(currency, sender, bytes32(bytes20(recipient)), amount);
+        centrifugeChain.incomingTransfer(assetId, sender, bytes32(bytes20(recipient)), amount);
     }
 
     function testUnpausingResumesFunctionality(
         string memory tokenName,
         string memory tokenSymbol,
         uint8 decimals,
-        uint128 currency,
+        uint128 assetId,
         bytes32 sender,
         address recipient,
         uint128 amount
     ) public {
         decimals = uint8(bound(decimals, 1, 18));
         vm.assume(amount > 0);
-        vm.assume(currency != 0);
+        vm.assume(assetId != 0);
         vm.assume(recipient != address(investmentManager.escrow()));
         vm.assume(recipient != address(0));
 
         ERC20 erc20 = _newErc20(tokenName, tokenSymbol, decimals);
         vm.assume(recipient != address(erc20));
-        centrifugeChain.addCurrency(currency, address(erc20));
+        centrifugeChain.addCurrency(assetId, address(erc20));
 
         // First, an outgoing transfer must take place which has funds currency of the currency moved to
         // the escrow account, from which funds are moved from into the recipient on an incoming transfer.
@@ -124,7 +124,7 @@ contract AdminTest is BaseTest {
         poolManager.transfer(address(erc20), bytes32(bytes20(recipient)), amount);
         assertEq(erc20.balanceOf(address(poolManager.escrow())), amount);
 
-        centrifugeChain.incomingTransfer(currency, sender, bytes32(bytes20(recipient)), amount);
+        centrifugeChain.incomingTransfer(assetId, sender, bytes32(bytes20(recipient)), amount);
         assertEq(erc20.balanceOf(address(poolManager.escrow())), 0);
         assertEq(erc20.balanceOf(recipient), amount);
     }

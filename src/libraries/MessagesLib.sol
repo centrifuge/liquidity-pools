@@ -14,11 +14,11 @@ library MessagesLib {
         /// 0 - An invalid message
         Invalid,
         /// 1 - Add a currency id -> EVM address mapping
-        AddCurrency,
+        AddAsset,
         /// 2 - Add Pool
         AddPool,
         /// 3 - Allow a currency to be used as a currency for investing in pools
-        AllowInvestmentCurrency,
+        AllowInvestmentAsset,
         /// 4 - Add a Pool's Tranche Token
         AddTranche,
         /// 5 - Update the price of a Tranche Token
@@ -42,13 +42,13 @@ library MessagesLib {
         /// 14 - Collect Redeem
         DEPRECATED_CollectRedeem,
         /// 15 - Executed Decrease Invest Order
-        ExecutedDecreaseInvestOrder,
+        FulfilledCancelDepositRequest,
         /// 16 - Executed Decrease Redeem Order
-        ExecutedDecreaseRedeemOrder,
+        FulfilledCancelRedeemRequest,
         /// 17 - Executed Collect Invest
-        ExecutedCollectInvest,
+        FulfilledDepositRequest,
         /// 18 - Executed Collect Redeem
-        ExecutedCollectRedeem,
+        FulfilledRedeemRequest,
         /// 19 - Cancel an investment order
         CancelInvestOrder,
         /// 20 - Cancel a redeem order

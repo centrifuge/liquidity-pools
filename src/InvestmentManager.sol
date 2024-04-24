@@ -205,7 +205,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
     function handle(bytes calldata message) public auth {
         MessagesLib.Call call = MessagesLib.messageType(message);
 
-        if (call == MessagesLib.Call.ExecutedCollectInvest) {
+        if (call == MessagesLib.Call.FulfilledDepositRequest) {
             fulfillDepositRequest(
                 message.toUint64(1),
                 message.toBytes16(9),
@@ -215,7 +215,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
                 message.toUint128(89),
                 message.toUint128(105)
             );
-        } else if (call == MessagesLib.Call.ExecutedCollectRedeem) {
+        } else if (call == MessagesLib.Call.FulfilledRedeemRequest) {
             fulfillRedeemRequest(
                 message.toUint64(1),
                 message.toBytes16(9),
@@ -224,7 +224,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
                 message.toUint128(73),
                 message.toUint128(89)
             );
-        } else if (call == MessagesLib.Call.ExecutedDecreaseInvestOrder) {
+        } else if (call == MessagesLib.Call.FulfilledCancelDepositRequest) {
             fulfillCancelDepositRequest(
                 message.toUint64(1),
                 message.toBytes16(9),
@@ -233,7 +233,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
                 message.toUint128(73),
                 message.toUint128(89)
             );
-        } else if (call == MessagesLib.Call.ExecutedDecreaseRedeemOrder) {
+        } else if (call == MessagesLib.Call.FulfilledCancelRedeemRequest) {
             fulfillCancelRedeemRequest(
                 message.toUint64(1),
                 message.toBytes16(9),
@@ -384,7 +384,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
                 "InvestmentManager/transfer-failed"
             );
         }
-        emit TriggerIncreaseRedeemOrder(poolId, trancheId, user, poolManager.currencyIdToAddress(assetId), shares);
+        emit TriggerIncreaseRedeemOrder(poolId, trancheId, user, poolManager.idToAsset(assetId), shares);
     }
 
     // --- View functions ---

@@ -173,7 +173,7 @@ contract PoolManagerTest is BaseTest {
         assertEq(restrictionManagerFactory.values_uint8("restrictionSet"), restrictionSet);
     }
 
-    function testAddCurrency(uint128 currency) public {
+    function testAddAsset(uint128 currency) public {
         uint128 badCurrency = 2;
         vm.assume(currency > 0);
         vm.assume(currency != badCurrency);
@@ -199,7 +199,7 @@ contract PoolManagerTest is BaseTest {
         vm.expectRevert(bytes("PoolManager/currency-address-in-use"));
         centrifugeChain.addCurrency(badCurrency, address(erc20));
 
-        assertEq(poolManager.currencyIdToAddress(currency), address(erc20));
+        assertEq(poolManager.idToAsset(currency), address(erc20));
     }
 
     function testDeployVault(
@@ -497,7 +497,7 @@ contract PoolManagerTest is BaseTest {
         centrifugeChain.updateTrancheTokenMetadata(poolId, trancheId, updatedTokenName, updatedTokenSymbol);
     }
 
-    function testAllowInvestmentCurrency() public {
+    function testAllowInvestmentAsset() public {
         uint128 currency = defaultCurrencyId;
         uint64 poolId = 1;
 
@@ -529,7 +529,7 @@ contract PoolManagerTest is BaseTest {
         uint64 poolId,
         uint8 decimals,
         uint8 restrictionSet,
-        uint128 currencyId,
+        uint128 assetId,
         string memory tokenName,
         string memory tokenSymbol,
         bytes16 trancheId,
@@ -538,15 +538,15 @@ contract PoolManagerTest is BaseTest {
         decimals = uint8(bound(decimals, 1, 18));
         vm.assume(poolId > 0);
         vm.assume(trancheId > 0);
-        vm.assume(currencyId > 0);
+        vm.assume(assetId > 0);
         centrifugeChain.addPool(poolId);
 
         vm.expectRevert(bytes("PoolManager/tranche-does-not-exist"));
-        centrifugeChain.updateTrancheTokenPrice(poolId, trancheId, currencyId, price, uint64(block.timestamp));
+        centrifugeChain.updateTrancheTokenPrice(poolId, trancheId, assetId, price, uint64(block.timestamp));
 
         centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, restrictionSet);
-        centrifugeChain.addCurrency(currencyId, address(erc20));
-        centrifugeChain.allowInvestmentCurrency(poolId, currencyId);
+        centrifugeChain.addCurrency(assetId, address(erc20));
+        centrifugeChain.allowInvestmentCurrency(poolId, assetId);
 
         poolManager.deployTranche(poolId, trancheId);
 
@@ -555,16 +555,16 @@ contract PoolManagerTest is BaseTest {
 
         vm.expectRevert(bytes("Auth/not-authorized"));
         vm.prank(randomUser);
-        poolManager.updateTrancheTokenPrice(poolId, trancheId, currencyId, price, uint64(block.timestamp));
+        poolManager.updateTrancheTokenPrice(poolId, trancheId, assetId, price, uint64(block.timestamp));
 
-        centrifugeChain.updateTrancheTokenPrice(poolId, trancheId, currencyId, price, uint64(block.timestamp));
+        centrifugeChain.updateTrancheTokenPrice(poolId, trancheId, assetId, price, uint64(block.timestamp));
         (uint256 latestPrice, uint64 priceComputedAt) =
             poolManager.getTrancheTokenPrice(poolId, trancheId, address(erc20));
         assertEq(latestPrice, price);
         assertEq(priceComputedAt, block.timestamp);
 
         vm.expectRevert(bytes("PoolManager/cannot-set-older-price"));
-        centrifugeChain.updateTrancheTokenPrice(poolId, trancheId, currencyId, price, uint64(block.timestamp - 1));
+        centrifugeChain.updateTrancheTokenPrice(poolId, trancheId, assetId, price, uint64(block.timestamp - 1));
     }
 
     function testRemoveLiquidityPool() public {
