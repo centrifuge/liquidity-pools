@@ -265,7 +265,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
         uint128 shares,
         uint128 fulfillment
     ) public auth {
-        address vault = poolManager.getLiquidityPool(poolId, trancheId, assetId);
+        address vault = poolManager.getVault(poolId, trancheId, assetId);
 
         InvestmentState storage state = investments[vault][user];
         state.depositPrice = _calculatePrice(vault, _maxDeposit(vault, user) + assets, state.maxMint + shares);
@@ -291,7 +291,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
         uint128 assets,
         uint128 shares
     ) public auth {
-        address vault = poolManager.getLiquidityPool(poolId, trancheId, assetId);
+        address vault = poolManager.getVault(poolId, trancheId, assetId);
 
         InvestmentState storage state = investments[vault][user];
         require(state.exists == true, "InvestmentManager/non-existent-user");
@@ -320,7 +320,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
         uint128 assets,
         uint128 fulfillment
     ) public auth {
-        address vault = poolManager.getLiquidityPool(poolId, trancheId, assetId);
+        address vault = poolManager.getVault(poolId, trancheId, assetId);
 
         InvestmentState storage state = investments[vault][user];
         require(state.exists == true, "InvestmentManager/non-existent-user");
@@ -341,7 +341,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
         uint128 shares,
         uint128 fulfillment
     ) public auth {
-        address vault = poolManager.getLiquidityPool(poolId, trancheId, assetId);
+        address vault = poolManager.getVault(poolId, trancheId, assetId);
         InvestmentState storage state = investments[vault][user];
 
         state.claimableCancelRedeemRequest = state.claimableCancelRedeemRequest + shares;
@@ -357,7 +357,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
         auth
     {
         require(shares != 0, "InvestmentManager/tranche-token-amount-is-zero");
-        address vault = poolManager.getLiquidityPool(poolId, trancheId, assetId);
+        address vault = poolManager.getVault(poolId, trancheId, assetId);
 
         // If there's any unclaimed deposits, claim those first
         InvestmentState storage state = investments[vault][user];

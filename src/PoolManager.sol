@@ -421,7 +421,7 @@ contract PoolManager is Auth, IPoolManager {
         require(isAllowedAsset(poolId, currency), "PoolManager/currency-not-supported");
 
         address vault = TrancheTokenLike(tranche.token).vault(currency);
-        require(vault == address(0), "PoolManager/liquidity-pool-already-deployed");
+        require(vault == address(0), "PoolManager/vault-already-deployed");
 
         // Rely investment manager on vault so it can mint tokens
         address[] memory vaultWards = new address[](1);
@@ -452,7 +452,7 @@ contract PoolManager is Auth, IPoolManager {
         require(tranche.token != address(0), "PoolManager/tranche-does-not-exist");
 
         address vault = TrancheTokenLike(tranche.token).vault(currency);
-        require(vault != address(0), "PoolManager/liquidity-pool-not-deployed");
+        require(vault != address(0), "PoolManager/vault-not-deployed");
 
         vaultFactory.denyVault(vault, address(investmentManager));
 
