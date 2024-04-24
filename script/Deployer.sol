@@ -6,6 +6,8 @@ import {RouterAggregator} from "src/gateway/routers/RouterAggregator.sol";
 import {Gateway} from "src/gateway/Gateway.sol";
 import {InvestmentManager} from "src/InvestmentManager.sol";
 import {TrancheTokenFactory} from "src/factories/TrancheTokenFactory.sol";
+import {ERC7540VaultFactory} from "src/factories/ERC7540VaultFactory.sol";
+import {RestrictionManagerFactory} from "src/factories/RestrictionManagerFactory.sol";
 import {PoolManager} from "src/PoolManager.sol";
 import {Escrow} from "src/Escrow.sol";
 import {PauseAdmin} from "src/admins/PauseAdmin.sol";
@@ -49,6 +51,8 @@ contract Deployer is Script {
         escrow = new Escrow{salt: salt}(deployer);
         root = new Root{salt: salt}(address(escrow), delay, deployer);
 
+        vaultFactory = address(new ERC7540VaultFactory(address(root)));
+        restrictionManagerFactory = address(new RestrictionManagerFactory(address(root)));
         trancheTokenFactory = address(new TrancheTokenFactory{salt: salt}(address(root), deployer));
         investmentManager = new InvestmentManager(address(escrow));
         poolManager = new PoolManager(address(escrow), vaultFactory, restrictionManagerFactory, trancheTokenFactory);

@@ -534,8 +534,7 @@ contract DepositTest is BaseTest {
         // uint8 INVESTMENT_CURRENCY_DECIMALS = 18; // 18, like USDC
 
         ERC20 currency = _newErc20("Currency", "CR", 18);
-        address vault_ =
-            deployVault(poolId, 6, defaultRestrictionSet, "", "", trancheId, currencyId, address(currency));
+        address vault_ = deployVault(poolId, 6, defaultRestrictionSet, "", "", trancheId, currencyId, address(currency));
         ERC7540Vault vault = ERC7540Vault(vault_);
         TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
         centrifugeChain.updateTrancheTokenPrice(
