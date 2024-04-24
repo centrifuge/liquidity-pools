@@ -11,10 +11,10 @@ struct Pool {
 /// @dev Each Centrifuge pool is associated to 1 or more tranches
 struct Tranche {
     address token;
-    /// @dev Each tranche can have multiple liquidity pools deployed,
+    /// @dev Each tranche can have multiple vaults deployed,
     ///      each linked to a unique investment currency (asset)
     mapping(address currency => address vault) vaults;
-    /// @dev Each tranche has a price per liquidity pool
+    /// @dev Each tranche has a price per vault
     mapping(address vault => TrancheTokenPrice) prices;
 }
 
@@ -95,7 +95,7 @@ interface IPoolManager {
 
     /// @notice     Centrifuge pools can support multiple currencies for investing. this function adds
     ///             a new supported currency to the pool details.
-    ///             Adding new currencies allow the creation of new liquidity pools for the underlying Centrifuge pool.
+    ///             Adding new currencies allow the creation of new vaults for the underlying Centrifuge pool.
     /// @dev        The function can only be executed by the gateway contract.
     function allowInvestmentCurrency(uint64 poolId, uint128 currencyId) external;
 

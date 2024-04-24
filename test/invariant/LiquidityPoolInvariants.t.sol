@@ -63,7 +63,7 @@ contract InvestmentInvariants is BaseTest {
             excludeContract(currency);
         }
 
-        // Generate random liquidity pools
+        // Generate random vaults
         // TODO: multiple chains and allowing transfers between chains
         for (uint128 currencyId = 1; currencyId < NUM_CURRENCIES + 1; ++currencyId) {
             for (uint64 poolId; poolId < NUM_POOLS; ++poolId) {

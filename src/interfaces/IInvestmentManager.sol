@@ -23,7 +23,7 @@ struct InvestmentState {
     bool pendingCancelDepositRequest;
     /// @dev Whether the redeemRequest was requested to be cancelled
     bool pendingCancelRedeemRequest;
-    ///@dev Flag whether this user has ever interacted with this liquidity pool
+    ///@dev Flag whether this user has ever interacted with this vault
     bool exists;
 }
 
@@ -43,7 +43,7 @@ interface IInvestmentManager {
     // --- Outgoing message handling ---
     /// @notice Liquidity pools have to request investments from Centrifuge before
     ///         tranche tokens can be minted. The deposit requests are added to the order book
-    ///         on Centrifuge. Once the next epoch is executed on Centrifuge, liquidity pools can
+    ///         on Centrifuge. Once the next epoch is executed on Centrifuge, vaults can
     ///         proceed with tranche token payouts in case their orders got fulfilled.
     /// @dev    The user currency amount required to fulfill the deposit request have to be locked,
     ///         even though the tranche token payout can only happen after epoch execution.
@@ -52,7 +52,7 @@ interface IInvestmentManager {
     /// @notice Request tranche token redemption. Liquidity pools have to request redemptions
     ///         from Centrifuge before actual currency payouts can be done. The redemption
     ///         requests are added to the order book on Centrifuge. Once the next epoch is
-    ///         executed on Centrifuge, liquidity pools can proceed with currency payouts
+    ///         executed on Centrifuge, vaults can proceed with currency payouts
     ///         in case their orders got fulfilled.
     /// @dev    The user tranche tokens required to fulfill the redemption request have to be locked,
     ///         even though the currency payout can only happen after epoch execution.

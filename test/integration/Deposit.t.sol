@@ -33,7 +33,7 @@ contract DepositTest is BaseTest {
         vm.expectRevert(bytes("InvestmentManager/transfer-not-allowed"));
         vault.requestDeposit(amount, nonMember, self, "");
 
-        // will fail - user did not give currency allowance to liquidity pool
+        // will fail - user did not give currency allowance to vault
         vm.expectRevert(bytes("SafeTransferLib/safe-transfer-from-failed"));
         vault.requestDeposit(amount, self, self, "");
 
