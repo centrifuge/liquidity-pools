@@ -35,7 +35,7 @@ interface AuthTransferLike {
 }
 
 /// @title  Investment Manager
-/// @notice This is the main contract LiquidityPools interact with for
+/// @notice This is the main contract vaults interact with for
 ///         both incoming and outgoing investment transactions.
 contract InvestmentManager is Auth, IInvestmentManager {
     using BytesLib for bytes;

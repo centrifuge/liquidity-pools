@@ -567,7 +567,7 @@ contract PoolManagerTest is BaseTest {
         centrifugeChain.updateTrancheTokenPrice(poolId, trancheId, assetId, price, uint64(block.timestamp - 1));
     }
 
-    function testRemoveLiquidityPool() public {
+    function testRemoveVault() public {
         address vault_ = deploySimpleVault();
         ERC7540Vault vault = ERC7540Vault(vault_);
         uint64 poolId = vault.poolId();
@@ -596,7 +596,7 @@ contract PoolManagerTest is BaseTest {
         assertEq(trancheToken.allowance(address(escrow), vault_), 0);
     }
 
-    function testRemoveLiquidityPoolFailsWhenVaultNotDeployed() public {
+    function testRemoveVaultFailsWhenVaultNotDeployed() public {
         uint64 poolId = 5;
         bytes16 trancheId = bytes16(bytes("1"));
 
