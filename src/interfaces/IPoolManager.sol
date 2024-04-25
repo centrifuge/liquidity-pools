@@ -25,7 +25,7 @@ struct TrancheTokenPrice {
 
 /// @dev Temporary storage that is only present between addTranche and deployTranche
 struct UndeployedTranche {
-    /// @dev The decimals of the leading pool asset. Liquidity Pool shareshave
+    /// @dev The decimals of the leading pool asset. Vault shares have
     ///      to be denomatimated with the same precision.
     uint8 decimals;
     /// @dev Metadata of the to be deployed erc20 token
