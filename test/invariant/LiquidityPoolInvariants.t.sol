@@ -177,7 +177,7 @@ contract InvestmentInvariants is BaseTest {
         }
     }
 
-    // Invariant 5: lp.maxDeposit <= sum(requestDeposit)
+    // Invariant 5: vault.maxDeposit <= sum(requestDeposit)
     // function invariant_maxDepositLeDepositRequest() external {
     //     for (uint64 vaultId; vaultId < vaults.length; ++vaultId) {
     //         VaultLike vault = VaultLike(vaults[vaultId]);
@@ -190,7 +190,7 @@ contract InvestmentInvariants is BaseTest {
     //     }
     // }
 
-    // Invariant 6: lp.maxRedeem <= sum(requestRedeem) + sum(decreaseDepositRequest)
+    // Invariant 6: vault.maxRedeem <= sum(requestRedeem) + sum(decreaseDepositRequest)
     // TODO: handle cancel behaviour
     // function invariant_maxRedeemLeRedeemRequest() external {
     //     for (uint64 vaultId; vaultId < vaults.length; ++vaultId) {
@@ -208,7 +208,7 @@ contract InvestmentInvariants is BaseTest {
     //     }
     // }
 
-    // Invariant 7: lp.depositPrice <= max(fulfillment price)
+    // Invariant 7: vault.depositPrice <= max(fulfillment price)
     // function invariant_depositPriceLtMaxFulfillmentPrice() external {
     //     for (uint64 vaultId; vaultId < vaults.length; ++vaultId) {
     //         VaultLike vault = VaultLike(vaults[vaultId]);
@@ -222,7 +222,7 @@ contract InvestmentInvariants is BaseTest {
     //     }
     // }
 
-    // Invariant 8: lp.redeemPrice <= max(fulfillment price)
+    // Invariant 8: vault.redeemPrice <= max(fulfillment price)
     // function invariant_redeemPriceLtMaxFulfillmentPrice() external {
     //     for (uint64 vaultId; vaultId < vaults.length; ++vaultId) {
     //         VaultLike vault = VaultLike(vaults[vaultId]);
