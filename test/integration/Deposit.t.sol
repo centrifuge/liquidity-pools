@@ -46,7 +46,7 @@ contract DepositTest is BaseTest {
         vault.requestDeposit(amount, self, nonMember, "");
 
         // will fail - investment asset not allowed
-        centrifugeChain.disallowInvestmentCurrency(vault.poolId(), defaultAssetId);
+        centrifugeChain.disallowAsset(vault.poolId(), defaultAssetId);
         vm.expectRevert(bytes("InvestmentManager/asset-not-allowed"));
         vault.requestDeposit(amount, self, self, "");
 

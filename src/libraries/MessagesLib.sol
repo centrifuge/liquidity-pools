@@ -60,7 +60,7 @@ library MessagesLib {
         /// 23 - Update tranche token metadata
         UpdateTrancheTokenMetadata,
         /// 24 - Disallow an asset to be used as an asset for investing in pools
-        DisallowInvestmentAsset,
+        DisallowAsset,
         /// 25 - Freeze tranche tokens
         Freeze,
         /// 26 - Unfreeze tranche tokens

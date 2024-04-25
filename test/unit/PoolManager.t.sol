@@ -229,8 +229,7 @@ contract PoolManagerTest is BaseTest {
         centrifugeChain.allowInvestmentCurrency(poolId, assetId);
 
         address vaultAddress = poolManager.deployVault(poolId, trancheId, address(erc20));
-        address vault_ = poolManager.getVault(poolId, trancheId, address(erc20)); // make sure the pool was
-            // stored in LP
+        address vault_ = poolManager.getVault(poolId, trancheId, address(erc20));
 
         vm.expectRevert(bytes("PoolManager/vault-already-deployed"));
         poolManager.deployVault(poolId, trancheId, address(erc20));
@@ -507,7 +506,7 @@ contract PoolManagerTest is BaseTest {
         centrifugeChain.allowInvestmentCurrency(poolId, assetId);
         assertTrue(poolManager.isAllowedAsset(poolId, address(erc20)));
 
-        centrifugeChain.disallowInvestmentCurrency(poolId, assetId);
+        centrifugeChain.disallowAsset(poolId, assetId);
         assertEq(poolManager.isAllowedAsset(poolId, address(erc20)), false);
 
         uint128 randomCurrency = 100;
@@ -519,10 +518,10 @@ contract PoolManagerTest is BaseTest {
         centrifugeChain.allowInvestmentCurrency(poolId + 1, randomCurrency);
 
         vm.expectRevert(bytes("PoolManager/unknown-asset"));
-        centrifugeChain.disallowInvestmentCurrency(poolId, randomCurrency);
+        centrifugeChain.disallowAsset(poolId, randomCurrency);
 
         vm.expectRevert(bytes("PoolManager/invalid-pool"));
-        centrifugeChain.disallowInvestmentCurrency(poolId + 1, randomCurrency);
+        centrifugeChain.disallowAsset(poolId + 1, randomCurrency);
     }
 
     function testUpdateTokenPriceWorks(

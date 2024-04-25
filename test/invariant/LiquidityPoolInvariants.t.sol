@@ -85,9 +85,9 @@ contract InvestmentInvariants is BaseTest {
         }
 
         // Set up investor and epoch executor handlers
-        // - For each unique pool and each unique asset, 1 LP.
+        // - For each unique pool and each unique asset, 1 vault.
         // - Just 1 tranche per pool
-        // - NUM_INVESTORS per LP.
+        // - NUM_INVESTORS per vault.
         for (uint64 vaultId; vaultId < vaults.length; ++vaultId) {
             VaultLike vault = VaultLike(vaults[vaultId]);
 

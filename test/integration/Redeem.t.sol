@@ -24,7 +24,7 @@ contract RedeemTest is BaseTest {
         vault.requestRedeem(0, self, self, "");
 
         // will fail - investment asset not allowed
-        centrifugeChain.disallowInvestmentCurrency(vault.poolId(), defaultAssetId);
+        centrifugeChain.disallowAsset(vault.poolId(), defaultAssetId);
         vm.expectRevert(bytes("InvestmentManager/asset-not-allowed"));
         vault.requestRedeem(amount, address(this), address(this), "");
 

@@ -40,7 +40,7 @@ interface IPoolManager {
     event AddAsset(uint128 indexed assetId, address indexed asset);
     event AddPool(uint64 indexed poolId);
     event AllowInvestmentAsset(uint64 indexed poolId, address indexed asset);
-    event DisallowInvestmentAsset(uint64 indexed poolId, address indexed asset);
+    event DisallowAsset(uint64 indexed poolId, address indexed asset);
     event AddTranche(uint64 indexed poolId, bytes16 indexed trancheId);
     event DeployTranche(uint64 indexed poolId, bytes16 indexed trancheId, address indexed trancheToken);
     event DeployVault(uint64 indexed poolId, bytes16 indexed trancheId, address indexed asset, address vault);
@@ -100,7 +100,7 @@ interface IPoolManager {
     function allowInvestmentCurrency(uint64 poolId, uint128 assetId) external;
 
     /// @notice TODO
-    function disallowInvestmentCurrency(uint64 poolId, uint128 assetId) external;
+    function disallowAsset(uint64 poolId, uint128 assetId) external;
 
     /// @notice     New tranche details from an existing Centrifuge pool are added.
     /// @dev        The function can only be executed by the gateway contract.
