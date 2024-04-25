@@ -602,7 +602,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
         price = assetsInPriceDecimals.mulDiv(10 ** PRICE_DECIMALS, sharesInPriceDecimals, MathLib.Rounding.Down);
     }
 
-    /// @dev    When converting asset to tranche token amounts using the price,
+    /// @dev    When converting assets to shares using the price,
     ///         all values are normalized to PRICE_DECIMALS
     function _toPriceDecimals(uint128 _value, uint8 decimals) internal pure returns (uint256 value) {
         if (PRICE_DECIMALS == decimals) return uint256(_value);
