@@ -615,7 +615,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
         value = (_value / 10 ** (PRICE_DECIMALS - decimals)).toUint128();
     }
 
-    /// @dev    Return the asset decimals and the tranche token decimals for a given vault
+    /// @dev    Return the asset decimals and the share decimals for a given vault
     function _getPoolDecimals(address vault) internal view returns (uint8 assetDecimals, uint8 shareDecimals) {
         assetDecimals = IERC20Metadata(VaultLike(vault).asset()).decimals();
         shareDecimals = IERC20Metadata(VaultLike(vault).share()).decimals();
