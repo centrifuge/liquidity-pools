@@ -28,7 +28,7 @@ contract ERC7540Vault is Auth, IERC7540 {
     /// @notice The investment asset for this vault.
     ///         Each tranche of a Centrifuge pool can have multiple vaults.
     ///         One vault for each supported investment asset.
-    ///         Thus tranche shares can be linked to multiple vaults with different currencies.
+    ///         Thus tranche shares can be linked to multiple vaults with different assets.
     address public immutable asset;
 
     /// @notice The restricted ERC-20 vault share (tranche token).
