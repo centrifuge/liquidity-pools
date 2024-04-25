@@ -124,7 +124,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
         require(_shares != 0, "InvestmentManager/zero-amount-not-allowed");
         VaultLike vault_ = VaultLike(vault);
 
-        // You cannot redeem using a disallowed investment asset, instead another LP will have to be used
+        // You cannot redeem using a disallowed investment asset, instead another vault will have to be used
         require(poolManager.isAllowedAsset(vault_.poolId(), vault_.asset()), "InvestmentManager/asset-not-allowed");
 
         require(
