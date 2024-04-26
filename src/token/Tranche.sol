@@ -51,18 +51,21 @@ contract TrancheToken is ERC20, ITrancheToken {
     }
 
     // --- Administration ---
+    /// @inheritdoc ITrancheToken
     function file(bytes32 what, address data) external auth {
         if (what == "restrictionManager") restrictionManager = RestrictionManagerLike(data);
         else revert("TrancheToken/file-unrecognized-param");
         emit File(what, data);
     }
 
+    /// @inheritdoc ITrancheToken
     function file(bytes32 what, address data1, address data2) external auth {
         if (what == "vault") vault[data1] = data2;
         else revert("TrancheToken/file-unrecognized-param");
         emit File(what, data1, data2);
     }
 
+    /// @inheritdoc ITrancheToken
     function file(bytes32 what, address data1, bool data2) external auth {
         if (what == "trustedForwarder") trustedForwarders[data1] = data2;
         else revert("TrancheToken/file-unrecognized-param");
@@ -96,32 +99,32 @@ contract TrancheToken is ERC20, ITrancheToken {
     }
 
     // --- ERC1404 implementation ---
+    /// @inheritdoc ITrancheToken
     function detectTransferRestriction(address from, address to, uint256 value) public view returns (uint8) {
         return restrictionManager.detectTransferRestriction(from, to, value);
     }
 
+    /// @inheritdoc ITrancheToken
     function checkTransferRestriction(address from, address to, uint256 value) public view returns (bool) {
         return restrictionManager.detectTransferRestriction(from, to, value) == SUCCESS_CODE();
     }
 
+    /// @inheritdoc ITrancheToken
     function messageForTransferRestriction(uint8 restrictionCode) public view returns (string memory) {
         return restrictionManager.messageForTransferRestriction(restrictionCode);
     }
 
+    /// @inheritdoc ITrancheToken
     function SUCCESS_CODE() public view returns (uint8) {
         return restrictionManager.SUCCESS_CODE();
     }
 
     // --- ERC2771Context ---
-    /// @dev Trusted forwarders can forward custom msg.sender and
-    ///      msg.data to the underlying ERC20 contract
+    /// @inheritdoc ITrancheToken
     function isTrustedForwarder(address forwarder) public view returns (bool) {
         return trustedForwarders[forwarder];
     }
 
-    /// @dev Override for `msg.sender`. Defaults to the original `msg.sender` whenever
-    ///      a call is not performed by the trusted forwarder or the calldata length is less than
-    ///      20 bytes (an address length).
     function _msgSender() internal view virtual override returns (address sender) {
         if (isTrustedForwarder(msg.sender) && msg.data.length >= 20) {
             // The assembly code is more direct than the Solidity version using `abi.decode`.

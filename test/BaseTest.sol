@@ -7,9 +7,9 @@ import {Root} from "../src/Root.sol";
 import {InvestmentManager} from "../src/InvestmentManager.sol";
 import {PoolManager, Tranche} from "../src/PoolManager.sol";
 import {Escrow} from "../src/Escrow.sol";
-import {LiquidityPoolFactory} from "src/factories/LiquidityPoolFactory.sol";
+import {ERC7540VaultFactory} from "src/factories/ERC7540VaultFactory.sol";
 import {TrancheTokenFactory} from "src/factories/TrancheTokenFactory.sol";
-import {LiquidityPool} from "../src/LiquidityPool.sol";
+import {ERC7540Vault} from "../src/ERC7540Vault.sol";
 import {TrancheToken, TrancheTokenLike} from "../src/token/Tranche.sol";
 import {ERC20} from "../src/token/ERC20.sol";
 import {Gateway} from "../src/gateway/Gateway.sol";
@@ -42,7 +42,7 @@ contract BaseTest is Deployer, Test {
     uint128 constant MAX_UINT128 = type(uint128).max;
 
     // default values
-    uint128 public defaultCurrencyId = 1;
+    uint128 public defaultAssetId = 1;
     uint128 public defaultPrice = 1 * 10**18;
     uint8 public defaultRestrictionSet = 2;
     uint8 public defaultDecimals = 8;
@@ -91,7 +91,7 @@ contract BaseTest is Deployer, Test {
         vm.label(address(guardian), "Guardian");
         vm.label(address(poolManager.restrictionManagerFactory()), "RestrictionManagerFactory");
         vm.label(address(poolManager.trancheTokenFactory()), "TrancheTokenFactory");
-        vm.label(address(poolManager.liquidityPoolFactory()), "LiquidityPoolFactory");
+        vm.label(address(poolManager.vaultFactory()), "ERC7540VaultFactory");
 
         // Exclude predeployed contracts from invariant tests by default
         excludeContract(address(root));
@@ -108,81 +108,81 @@ contract BaseTest is Deployer, Test {
         excludeContract(address(guardian));
         excludeContract(address(poolManager.restrictionManagerFactory()));
         excludeContract(address(poolManager.trancheTokenFactory()));
-        excludeContract(address(poolManager.liquidityPoolFactory()));
+        excludeContract(address(poolManager.vaultFactory()));
     }
 
     // helpers
-    function deployLiquidityPool(
+    function deployVault(
         uint64 poolId,
         uint8 trancheTokenDecimals,
         uint8 restrictionSet,
         string memory tokenName,
         string memory tokenSymbol,
         bytes16 trancheId,
-        uint128 currencyId,
-        address currency
+        uint128 assetId,
+        address asset
     ) public returns (address) {
-        if (poolManager.currencyIdToAddress(currencyId) == address(0)) {
-            centrifugeChain.addCurrency(currencyId, currency);
+        if (poolManager.idToAsset(assetId) == address(0)) {
+            centrifugeChain.addAsset(assetId, asset);
         }
         
         if (poolManager.getTrancheToken(poolId, trancheId) == address(0)) {
             centrifugeChain.addPool(poolId);
             centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, trancheTokenDecimals, restrictionSet);
 
-            centrifugeChain.allowInvestmentCurrency(poolId, currencyId);
+            centrifugeChain.allowAsset(poolId, assetId);
             poolManager.deployTranche(poolId, trancheId);
         }
 
-        if (!poolManager.isAllowedAsInvestmentCurrency(poolId, currency)) {
-            centrifugeChain.allowInvestmentCurrency(poolId, currencyId);
+        if (!poolManager.isAllowedAsset(poolId, asset)) {
+            centrifugeChain.allowAsset(poolId, assetId);
         }
 
-        address lPoolAddress = poolManager.deployLiquidityPool(poolId, trancheId, currency);
-        return lPoolAddress;
+        address vaultAddress = poolManager.deployVault(poolId, trancheId, asset);
+        return vaultAddress;
     }
 
-    function deployLiquidityPool(
+    function deployVault(
         uint64 poolId,
         uint8 decimals,
         string memory tokenName,
         string memory tokenSymbol,
         bytes16 trancheId,
-        uint128 currency
+        uint128 asset
     ) public returns (address) {
         uint8 restrictionSet = 2;
-        return deployLiquidityPool(poolId, decimals, restrictionSet, tokenName, tokenSymbol, trancheId, currency, address(erc20));
+        return deployVault(poolId, decimals, restrictionSet, tokenName, tokenSymbol, trancheId, asset, address(erc20));
     }
 
-    function deploySimplePool() public returns (address) {
-        return deployLiquidityPool(5, 6, defaultRestrictionSet, "name", "symbol", bytes16(bytes("1")), defaultCurrencyId, address(erc20));
+    function deploySimpleVault() public returns (address) {
+        return deployVault(5, 6, defaultRestrictionSet, "name", "symbol", bytes16(bytes("1")), defaultAssetId, address(erc20));
     }
 
-    function deposit(address _lPool, address _investor, uint256 amount) public {
-        deposit(_lPool, _investor, amount, true);
+    function deposit(address _vault, address _investor, uint256 amount) public {
+        deposit(_vault, _investor, amount, true);
     }
 
-    function deposit(address _lPool, address _investor, uint256 amount, bool claimDeposit) public {
-        LiquidityPool lPool = LiquidityPool(_lPool);
+    function deposit(address _vault, address _investor, uint256 amount, bool claimDeposit) public {
+        ERC7540Vault vault = ERC7540Vault(_vault);
         erc20.mint(_investor, amount);
-        centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), _investor, type(uint64).max); // add user as member
+        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), _investor, type(uint64).max); // add user as member
         vm.startPrank(_investor);
-        erc20.approve(_lPool, amount); // add allowance
-        lPool.requestDeposit(amount, _investor, _investor, "");
+        erc20.approve(_vault, amount); // add allowance
+        vault.requestDeposit(amount, _investor, _investor, "");
         // trigger executed collectInvest
-        uint128 currencyId = poolManager.currencyAddressToId(address(erc20)); // retrieve currencyId
-        centrifugeChain.isExecutedCollectInvest(
-            lPool.poolId(),
-            lPool.trancheId(),
+        uint128 assetId = poolManager.assetToId(address(erc20)); // retrieve assetId
+        centrifugeChain.isFulfilledDepositRequest(
+            vault.poolId(),
+            vault.trancheId(),
             bytes32(bytes20(_investor)),
-            currencyId,
+            assetId,
             uint128(amount),
             uint128(amount),
             0
         );
 
         if (claimDeposit) {
-           lPool.deposit(amount, _investor); // claim the trancheTokens
+           vault.deposit(amount, _investor); // claim the trancheTokens
         }
         vm.stopPrank();
     }
@@ -193,10 +193,10 @@ contract BaseTest is Deployer, Test {
     }
 
     function _newErc20(string memory name, string memory symbol, uint8 decimals) internal returns (ERC20) {
-        ERC20 currency = new ERC20(decimals);
-        currency.file("name", name);
-        currency.file("symbol", symbol);
-        return currency;
+        ERC20 asset = new ERC20(decimals);
+        asset.file("name", name);
+        asset.file("symbol", symbol);
+        return asset;
     }
 
     function _bytes16ToString(bytes16 _bytes16) public pure returns (string memory) {

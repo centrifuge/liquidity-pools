@@ -6,10 +6,6 @@ import {ERC20} from "src/token/ERC20.sol";
 import {Deployer, RouterLike} from "./Deployer.sol";
 import {AxelarForwarder} from "src/gateway/routers/axelar/Forwarder.sol";
 
-interface LiquidityPoolLike {
-    function requestDeposit(uint256 assets, address owner) external;
-}
-
 // Script to deploy Liquidity Pools with an Axelar router.
 contract AxelarScript is Deployer {
     function setUp() public {}

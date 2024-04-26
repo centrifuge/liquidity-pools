@@ -12,7 +12,7 @@ interface ERC20Like {
     function balanceOf(address user) external view returns (uint256);
 }
 
-interface LiquidityPoolLike is IERC7540 {
+interface VaultLike is IERC7540 {
     function share() external view returns (address);
     function manager() external view returns (address);
 }
@@ -23,16 +23,16 @@ contract EpochExecutorHandler is BaseHandler {
 
     uint64 poolId;
     bytes16 trancheId;
-    uint128 currencyId;
+    uint128 assetId;
 
     MockCentrifugeChain immutable centrifugeChain;
 
-    constructor(uint64 poolId_, bytes16 trancheId_, uint128 currencyId_, address mockCentrifugeChain_, address state_)
+    constructor(uint64 poolId_, bytes16 trancheId_, uint128 assetId_, address mockCentrifugeChain_, address state_)
         BaseHandler(state_)
     {
         poolId = poolId_;
         trancheId = trancheId_;
-        currencyId = currencyId_;
+        assetId = assetId_;
 
         centrifugeChain = MockCentrifugeChain(mockCentrifugeChain_);
     }
@@ -51,23 +51,22 @@ contract EpochExecutorHandler is BaseHandler {
             return;
         }
 
-        uint128 currencyPayout =
+        uint128 assets =
             uint128(outstandingDepositRequest.mulDiv(fulfillmentRatio, 1 * 10 ** 18, MathLib.Rounding.Down));
-        uint128 trancheTokenPayout =
-            uint128(currencyPayout.mulDiv(1 * 10 ** 18, fulfillmentPrice, MathLib.Rounding.Down));
+        uint128 shares = uint128(assets.mulDiv(1 * 10 ** 18, fulfillmentPrice, MathLib.Rounding.Down));
 
-        centrifugeChain.isExecutedCollectInvest(
+        centrifugeChain.isFulfilledDepositRequest(
             poolId,
             trancheId,
             bytes32(bytes20(currentInvestor)),
-            currencyId,
-            currencyPayout,
-            trancheTokenPayout,
-            uint128(outstandingDepositRequest - currencyPayout)
+            assetId,
+            assets,
+            shares,
+            uint128(outstandingDepositRequest - assets)
         );
 
-        increaseVar(currentInvestor, "totalCurrencyPaidOutOnInvest", currencyPayout);
-        increaseVar(currentInvestor, "totalTrancheTokensPaidOutOnInvest", trancheTokenPayout);
+        increaseVar(currentInvestor, "totalCurrencyPaidOutOnInvest", assets);
+        increaseVar(currentInvestor, "totalTrancheTokensPaidOutOnInvest", shares);
         setMaxVar(currentInvestor, "maxDepositFulfillmentPrice", fulfillmentPrice);
     }
 
@@ -85,17 +84,15 @@ contract EpochExecutorHandler is BaseHandler {
             return;
         }
 
-        uint128 trancheTokenPayout =
-            uint128(outstandingRedeemRequest.mulDiv(fulfillmentRatio, 1 * 10 ** 18, MathLib.Rounding.Down));
-        uint128 currencyPayout =
-            uint128(trancheTokenPayout.mulDiv(fulfillmentPrice, 1 * 10 ** 18, MathLib.Rounding.Down));
+        uint128 shares = uint128(outstandingRedeemRequest.mulDiv(fulfillmentRatio, 1 * 10 ** 18, MathLib.Rounding.Down));
+        uint128 assets = uint128(shares.mulDiv(fulfillmentPrice, 1 * 10 ** 18, MathLib.Rounding.Down));
 
-        centrifugeChain.isExecutedCollectRedeem(
-            poolId, trancheId, bytes32(bytes20(currentInvestor)), currencyId, currencyPayout, trancheTokenPayout
+        centrifugeChain.isFulfilledRedeemRequest(
+            poolId, trancheId, bytes32(bytes20(currentInvestor)), assetId, assets, shares
         );
 
-        increaseVar(currentInvestor, "totalTrancheTokensPaidOutOnRedeem", trancheTokenPayout);
-        increaseVar(currentInvestor, "totalCurrencyPaidOutOnRedeem", currencyPayout);
+        increaseVar(currentInvestor, "totalTrancheTokensPaidOutOnRedeem", shares);
+        increaseVar(currentInvestor, "totalCurrencyPaidOutOnRedeem", assets);
         setMaxVar(currentInvestor, "maxRedeemFulfillmentPrice", fulfillmentPrice);
     }
 
@@ -109,23 +106,23 @@ contract EpochExecutorHandler is BaseHandler {
             return;
         }
 
-        uint128 currencyPayout = uint128(
+        uint128 assets = uint128(
             getVar(currentInvestor, "outstandingDecreaseDepositRequested").mulDiv(
                 decreaseRatio, 1 * 10 ** 18, MathLib.Rounding.Down
             )
         );
 
-        centrifugeChain.isExecutedDecreaseInvestOrder(
+        centrifugeChain.isFulfilledCancelDepositRequest(
             poolId,
             trancheId,
             bytes32(bytes20(currentInvestor)),
-            currencyId,
-            currencyPayout,
-            uint128(getVar(currentInvestor, "outstandingDecreaseDepositRequested") - currencyPayout)
+            assetId,
+            assets,
+            uint128(getVar(currentInvestor, "outstandingDecreaseDepositRequested") - assets)
         );
 
-        decreaseVar(currentInvestor, "outstandingDecreaseDepositRequested", currencyPayout);
-        increaseVar(currentInvestor, "totalCurrencyPaidOutOnDecreaseInvest", currencyPayout);
+        decreaseVar(currentInvestor, "outstandingDecreaseDepositRequested", assets);
+        increaseVar(currentInvestor, "totalCurrencyPaidOutOnDecreaseInvest", assets);
 
         // An executed invest decrease indirectly leads to a redeem fulfillment at price 1.0
         setMaxVar(currentInvestor, "maxRedeemFulfillmentPrice", 1 * 10 ** 18);

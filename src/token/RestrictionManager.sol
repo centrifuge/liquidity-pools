@@ -38,6 +38,7 @@ contract RestrictionManager is Auth, IRestrictionManager {
     }
 
     // --- ERC1404 implementation ---
+    /// @inheritdoc IRestrictionManager
     function detectTransferRestriction(address from, address to, uint256 /* value */ ) public view returns (uint8) {
         if (restrictions[from].frozen == true) {
             return SOURCE_IS_FROZEN_CODE;
@@ -55,6 +56,7 @@ contract RestrictionManager is Auth, IRestrictionManager {
         return SUCCESS_CODE;
     }
 
+    /// @inheritdoc IRestrictionManager
     function messageForTransferRestriction(uint8 restrictionCode) public pure returns (string memory) {
         if (restrictionCode == SOURCE_IS_FROZEN_CODE) {
             return SOURCE_IS_FROZEN_MESSAGE;
@@ -72,18 +74,21 @@ contract RestrictionManager is Auth, IRestrictionManager {
     }
 
     // --- Handling freezes ---
+    /// @inheritdoc IRestrictionManager
     function freeze(address user) public auth {
         require(user != address(0), "RestrictionManager/cannot-freeze-zero-address");
         restrictions[user].frozen = true;
         emit Freeze(user);
     }
 
+    /// @inheritdoc IRestrictionManager
     function unfreeze(address user) public auth {
         restrictions[user].frozen = false;
         emit Unfreeze(user);
     }
 
     // --- Managing members ---
+    /// @inheritdoc IRestrictionManager
     function updateMember(address user, uint64 validUntil) public auth {
         require(block.timestamp <= validUntil, "RestrictionManager/invalid-valid-until");
         restrictions[user].validUntil = validUntil;
@@ -92,6 +97,9 @@ contract RestrictionManager is Auth, IRestrictionManager {
     }
 
     // --- Misc ---
+    /// @inheritdoc IRestrictionManager
     function afterTransfer(address, /* from */ address, /* to */ uint256 /* value */ ) public virtual auth {}
+
+    /// @inheritdoc IRestrictionManager
     function afterMint(address, /* to */ uint256 /* value */ ) public virtual auth {}
 }
