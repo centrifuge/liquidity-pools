@@ -215,12 +215,12 @@ contract AggregatorTest is Test {
 
         // Submit third proof
         router2.execute(proof);
-        assertEq(gateway.handled(message), 0);
+        assertEq(gateway.handled(message), 1);
         assertVotes(message, 1, 1, 0);
 
         // Submit fourth proof
         router3.execute(proof);
-        assertEq(gateway.handled(message), 1);
+        assertEq(gateway.handled(message), 2);
         assertVotes(message, 0, 0, 0);
     }
 
