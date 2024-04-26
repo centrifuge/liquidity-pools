@@ -93,11 +93,7 @@ contract Aggregator is Auth, IAggregator {
 
         bytes32 messageHash;
         if (isMessageProof) {
-<<<<<<< HEAD
-            require(router.id != 1, "RouterAggregator/non-proof-router");
-=======
             require(isRecovery || router.id != 1, "RouterAggregator/non-proof-router");
->>>>>>> f414e41650e790ac403f045e6a4d0084d5f21d8c
             messageHash = MessagesLib.parseMessageProof(payload);
             emit HandleProof(messageHash, msg.sender);
         } else {
@@ -184,7 +180,7 @@ contract Aggregator is Auth, IAggregator {
     }
 
     /// @inheritdoc IAggregator
-    function votes(bytes32 messageHash) external view returns (uint16[8] memory votes) {
+    function votes(bytes32 messageHash) external view returns (uint16[8] memory) {
         return messages[messageHash].votes;
     }
 }
