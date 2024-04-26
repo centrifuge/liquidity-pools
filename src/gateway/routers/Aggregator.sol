@@ -150,8 +150,8 @@ contract Aggregator is Auth, IAggregator {
         require(recovery.timestamp <= block.timestamp, "Aggregator/challenge-period-has-not-ended");
         require(validRouters[recovery.router].id != 0, "Aggregator/invalid-router");
 
-        _handle(message, validRouters[recovery.router]);
         delete recoveries[messageHash];
+        _handle(message, validRouters[recovery.router]);
     }
 
     // --- Outgoing ---
