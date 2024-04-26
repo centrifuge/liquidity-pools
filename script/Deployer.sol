@@ -12,9 +12,6 @@ import {PoolManager} from "src/PoolManager.sol";
 import {Escrow} from "src/Escrow.sol";
 import {Guardian} from "src/admin/Guardian.sol";
 import {MockSafe} from "test/mocks/MockSafe.sol";
-import {ERC7540VaultFactory} from "src/factories/ERC7540VaultFactory.sol";
-import {RestrictionManagerFactory} from "src/factories/RestrictionManagerFactory.sol";
-import {TrancheTokenFactory} from "src/factories/TrancheTokenFactory.sol";
 import "forge-std/Script.sol";
 
 interface RouterLike {
