@@ -364,7 +364,8 @@ contract AggregatorTest is Test {
         aggregator.file("routers", threeMockRouters);
 
         bytes memory message = abi.encodePacked(uint8(MessagesLib.Call.DisputeMessageRecovery), keccak256(""));
-        bytes memory proof = _formatMessageProof(abi.encodePacked(uint8(MessagesLib.Call.DisputeMessageRecovery), keccak256("")));
+        bytes memory proof =
+            _formatMessageProof(abi.encodePacked(uint8(MessagesLib.Call.DisputeMessageRecovery), keccak256("")));
 
         router2.execute(proof);
         router3.execute(proof);
