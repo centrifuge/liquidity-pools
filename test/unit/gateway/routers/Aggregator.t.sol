@@ -122,28 +122,28 @@ contract AggregatorTest is Test {
         // Executes after quorum is reached
         router1.execute(firstMessage);
         assertEq(gateway.handled(firstMessage), 0);
-        assertConfirmations(firstMessage, 1, 0, 0, 0, 0, 0);
+        assertVotes(firstMessage, 1, 0, 0);
 
         router2.execute(firstProof);
         assertEq(gateway.handled(firstMessage), 0);
-        assertConfirmations(firstMessage, 1, 0, 0, 0, 1, 0);
+        assertVotes(firstMessage, 1, 1, 0);
 
         router3.execute(firstProof);
         assertEq(gateway.handled(firstMessage), 1);
-        assertConfirmations(firstMessage, 0, 0, 0, 0, 0, 0);
+        assertVotes(firstMessage, 0, 0, 0);
 
         // Resending same message works
         router1.execute(firstMessage);
         assertEq(gateway.handled(firstMessage), 1);
-        assertConfirmations(firstMessage, 1, 0, 0, 0, 0, 0);
+        assertVotes(firstMessage, 1, 0, 0);
 
         router2.execute(firstProof);
         assertEq(gateway.handled(firstMessage), 1);
-        assertConfirmations(firstMessage, 1, 0, 0, 0, 1, 0);
+        assertVotes(firstMessage, 1, 1, 0);
 
         router3.execute(firstProof);
         assertEq(gateway.handled(firstMessage), 2);
-        assertConfirmations(firstMessage, 0, 0, 0, 0, 0, 0);
+        assertVotes(firstMessage, 0, 0, 0);
 
         // Sending another message works
         bytes memory secondMessage = abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(2));
@@ -151,31 +151,31 @@ contract AggregatorTest is Test {
 
         router1.execute(secondMessage);
         assertEq(gateway.handled(secondMessage), 0);
-        assertConfirmations(secondMessage, 1, 0, 0, 0, 0, 0);
+        assertVotes(secondMessage, 1, 0, 0);
 
         router2.execute(secondProof);
         assertEq(gateway.handled(secondMessage), 0);
-        assertConfirmations(secondMessage, 1, 0, 0, 0, 1, 0);
+        assertVotes(secondMessage, 1, 1, 0);
 
         router3.execute(secondProof);
         assertEq(gateway.handled(secondMessage), 1);
-        assertConfirmations(secondMessage, 0, 0, 0, 0, 0, 0);
+        assertVotes(secondMessage, 0, 0, 0);
 
         // Swapping order of message vs proofs works
         bytes memory thirdMessage = abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(3));
         bytes memory thirdProof = _formatMessageProof(abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(3)));
 
-        router1.execute(thirdProof);
-        assertEq(gateway.handled(thirdMessage), 0);
-        assertConfirmations(thirdMessage, 0, 0, 0, 1, 0, 0);
-
         router2.execute(thirdProof);
         assertEq(gateway.handled(thirdMessage), 0);
-        assertConfirmations(thirdMessage, 0, 0, 0, 1, 1, 0);
+        assertVotes(thirdMessage, 0, 1, 0);
 
-        router3.execute(thirdMessage);
+        router3.execute(thirdProof);
+        assertEq(gateway.handled(thirdMessage), 0);
+        assertVotes(thirdMessage, 0, 1, 1);
+
+        router1.execute(thirdMessage);
         assertEq(gateway.handled(thirdMessage), 1);
-        assertConfirmations(thirdMessage, 0, 0, 0, 0, 0, 0);
+        assertVotes(thirdMessage, 0, 0, 0);
     }
 
     function testQuorumOfOne() public {
@@ -199,19 +199,29 @@ contract AggregatorTest is Test {
 
         // Confirm two messages by payload first
         router1.execute(message);
-        router2.execute(message);
+        router1.execute(message);
         assertEq(gateway.handled(message), 0);
-        assertConfirmations(message, 1, 1, 0, 0, 0, 0);
+        assertVotes(message, 2, 0, 0);
 
         // Submit first proof
         router2.execute(proof);
         assertEq(gateway.handled(message), 0);
-        assertConfirmations(message, 1, 1, 0, 0, 1, 0);
+        assertVotes(message, 2, 1, 0);
 
         // Submit second proof
         router3.execute(proof);
         assertEq(gateway.handled(message), 1);
-        assertConfirmations(message, 0, 1, 0, 0, 0, 0);
+        assertVotes(message, 1, 0, 0);
+
+        // Submit third proof
+        router2.execute(proof);
+        assertEq(gateway.handled(message), 0);
+        assertVotes(message, 1, 1, 0);
+
+        // Submit fourth proof
+        router3.execute(proof);
+        assertEq(gateway.handled(message), 1);
+        assertVotes(message, 0, 0, 0);
     }
 
     function testOutgoingAggregatedMessages() public {
@@ -391,25 +401,11 @@ contract AggregatorTest is Test {
         }
     }
 
-    function assertConfirmations(
-        bytes memory message,
-        uint16 router1Messages,
-        uint16 router2Messages,
-        uint16 router3Messages,
-        uint16 router1Proofs,
-        uint16 router2Proofs,
-        uint16 router3Proofs
-    ) internal {
-        (uint16[8] memory messageConfirmations, uint16[8] memory proofConfirmations) =
-            aggregator.confirmations(keccak256(message));
-
-        assertEq(messageConfirmations[0], router1Messages);
-        assertEq(messageConfirmations[1], router2Messages);
-        assertEq(messageConfirmations[2], router3Messages);
-
-        assertEq(proofConfirmations[0], router1Proofs);
-        assertEq(proofConfirmations[1], router2Proofs);
-        assertEq(proofConfirmations[2], router3Proofs);
+    function assertVotes(bytes memory message, uint16 router1, uint16 router2, uint16 router3) internal {
+        uint16[8] memory votes = aggregator.confirmations(keccak256(message));
+        assertEq(votes[0], router1);
+        assertEq(votes[1], router2);
+        assertEq(votes[2], router3);
     }
 
     /// @notice Returns the smallest of two numbers.

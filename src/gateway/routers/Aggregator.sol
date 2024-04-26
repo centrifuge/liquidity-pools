@@ -32,7 +32,6 @@ contract Aggregator is Auth, IAggregator {
     address[] public routers;
     mapping(address router => Router) public validRouters;
     mapping(bytes32 messageHash => Recovery) public recoveries;
-    mapping(bytes32 messageHash => bytes) public pendingMessages;
     mapping(bytes32 messageHash => ConfirmationState) internal _confirmations;
 
     constructor(address gateway_) {
@@ -95,40 +94,29 @@ contract Aggregator is Auth, IAggregator {
         if (isMessageProof) {
             require(router.id != 1, "RouterAggregator/non-proof-router");
             messageHash = MessagesLib.parseMessageProof(payload);
-            state = _confirmations[messageHash];
-            state.proofs[router.id - 1]++;
-
             emit HandleProof(messageHash, msg.sender);
         } else {
             require(router.id == 1, "RouterAggregator/non-message-router");
             messageHash = keccak256(payload);
-            state = _confirmations[messageHash];
-            state.messages[router.id - 1]++;
-
             emit HandleMessage(payload, msg.sender);
         }
 
-        if (state.messages.countNonZeroValues() >= 1 && state.proofs.countNonZeroValues() >= router.quorum - 1) {
-            // Reduce total message confirmation count by 1
-            state.messages.decreaseFirstNValues(1);
+        state = _confirmations[messageHash];
+        state.votes[router.id - 1]++;
 
-            // Reduce total proof confiration count by quorum - 1
-            state.proofs.decreaseFirstNValues(router.quorum - 1);
+        if (state.votes.countNonZeroValues() >= router.quorum) {
+            // Reduce votes by quorum
+            state.votes.decreaseFirstNValues(router.quorum);
 
             if (isMessageProof) {
-                gateway.handle(pendingMessages[messageHash]);
-
-                // Only if there are no more pending messages, remove the pending message
-                if (state.messages.isEmpty() && state.proofs.isEmpty()) {
-                    delete pendingMessages[messageHash];
-                }
+                gateway.handle(state.pendingMessage);
             } else {
                 gateway.handle(payload);
             }
 
             emit ExecuteMessage(payload, msg.sender);
         } else if (!isMessageProof) {
-            pendingMessages[messageHash] = payload;
+            state.pendingMessage = payload;
         }
     }
 
@@ -189,12 +177,8 @@ contract Aggregator is Auth, IAggregator {
     }
 
     /// @inheritdoc IAggregator
-    function confirmations(bytes32 messageHash)
-        external
-        view
-        returns (uint16[8] memory messages, uint16[8] memory proofs)
-    {
+    function confirmations(bytes32 messageHash) external view returns (uint16[8] memory votes) {
         ConfirmationState storage state = _confirmations[messageHash];
-        return (state.messages, state.proofs);
+        return state.votes;
     }
 }
