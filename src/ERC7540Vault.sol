@@ -123,7 +123,7 @@ contract ERC7540Vault is Auth, IERC7540 {
         public
         returns (uint256)
     {
-        require(IERC20Metadata(share).balanceOf(owner) >= shares, "ERC7540Vault/insufficient-balance");
+        require(IERC20(share).balanceOf(owner) >= shares, "ERC7540Vault/insufficient-balance");
         require(manager.requestRedeem(address(this), shares, receiver, owner), "ERC7540Vault/request-redeem-failed");
         require(_transferFrom(owner, address(escrow), shares), "ERC7540Vault/transfer-failed");
 
@@ -207,7 +207,7 @@ contract ERC7540Vault is Auth, IERC7540 {
     // --- ERC-4626 methods ---
     /// @inheritdoc IERC7575
     function totalAssets() external view returns (uint256) {
-        return convertToAssets(IERC20Metadata(share).totalSupply());
+        return convertToAssets(IERC20(share).totalSupply());
     }
 
     /// @inheritdoc IERC7575
