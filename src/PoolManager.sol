@@ -162,8 +162,8 @@ contract PoolManager is Auth, IPoolManager {
             addAsset(message.toUint128(1), message.toAddress(17));
         } else if (call == MessagesLib.Call.AddPool) {
             addPool(message.toUint64(1));
-        } else if (call == MessagesLib.Call.AllowInvestmentAsset) {
-            allowInvestmentCurrency(message.toUint64(1), message.toUint128(9));
+        } else if (call == MessagesLib.Call.AllowAsset) {
+            allowAsset(message.toUint64(1), message.toUint128(9));
         } else if (call == MessagesLib.Call.AddTranche) {
             addTranche(
                 message.toUint64(1),
@@ -216,7 +216,7 @@ contract PoolManager is Auth, IPoolManager {
     }
 
     /// @inheritdoc IPoolManager
-    function allowInvestmentCurrency(uint64 poolId, uint128 assetId) public auth {
+    function allowAsset(uint64 poolId, uint128 assetId) public auth {
         Pool storage pool = pools[poolId];
         require(pool.createdAt != 0, "PoolManager/invalid-pool");
 
@@ -224,7 +224,7 @@ contract PoolManager is Auth, IPoolManager {
         require(asset != address(0), "PoolManager/unknown-asset");
 
         pools[poolId].allowedCurrencies[asset] = true;
-        emit AllowInvestmentAsset(poolId, asset);
+        emit AllowAsset(poolId, asset);
     }
 
     /// @inheritdoc IPoolManager

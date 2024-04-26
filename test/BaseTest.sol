@@ -133,12 +133,12 @@ contract BaseTest is Deployer, Test {
             centrifugeChain.addPool(poolId);
             centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, trancheTokenDecimals, restrictionSet);
 
-            centrifugeChain.allowInvestmentCurrency(poolId, assetId);
+            centrifugeChain.allowAsset(poolId, assetId);
             poolManager.deployTranche(poolId, trancheId);
         }
 
         if (!poolManager.isAllowedAsset(poolId, asset)) {
-            centrifugeChain.allowInvestmentCurrency(poolId, assetId);
+            centrifugeChain.allowAsset(poolId, assetId);
         }
 
         address vaultAddress = poolManager.deployVault(poolId, trancheId, asset);

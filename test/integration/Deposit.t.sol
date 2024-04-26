@@ -51,7 +51,7 @@ contract DepositTest is BaseTest {
         vault.requestDeposit(amount, self, self, "");
 
         // success
-        centrifugeChain.allowInvestmentCurrency(vault.poolId(), defaultAssetId);
+        centrifugeChain.allowAsset(vault.poolId(), defaultAssetId);
         erc20.approve(vault_, amount);
         vault.requestDeposit(amount, self, self, "");
 

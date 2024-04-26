@@ -226,7 +226,7 @@ contract PoolManagerTest is BaseTest {
 
         vm.expectRevert(bytes("PoolManager/asset-not-supported"));
         poolManager.deployVault(poolId, trancheId, address(erc20));
-        centrifugeChain.allowInvestmentCurrency(poolId, assetId);
+        centrifugeChain.allowAsset(poolId, assetId);
 
         address vaultAddress = poolManager.deployVault(poolId, trancheId, address(erc20));
         address vault_ = poolManager.getVault(poolId, trancheId, address(erc20));
@@ -496,14 +496,14 @@ contract PoolManagerTest is BaseTest {
         centrifugeChain.updateTrancheTokenMetadata(poolId, trancheId, updatedTokenName, updatedTokenSymbol);
     }
 
-    function testAllowInvestmentAsset() public {
+    function testAllowAsset() public {
         uint128 assetId = defaultAssetId;
         uint64 poolId = 1;
 
         centrifugeChain.addAsset(assetId, address(erc20));
         centrifugeChain.addPool(poolId);
 
-        centrifugeChain.allowInvestmentCurrency(poolId, assetId);
+        centrifugeChain.allowAsset(poolId, assetId);
         assertTrue(poolManager.isAllowedAsset(poolId, address(erc20)));
 
         centrifugeChain.disallowAsset(poolId, assetId);
@@ -512,10 +512,10 @@ contract PoolManagerTest is BaseTest {
         uint128 randomCurrency = 100;
 
         vm.expectRevert(bytes("PoolManager/unknown-asset"));
-        centrifugeChain.allowInvestmentCurrency(poolId, randomCurrency);
+        centrifugeChain.allowAsset(poolId, randomCurrency);
 
         vm.expectRevert(bytes("PoolManager/invalid-pool"));
-        centrifugeChain.allowInvestmentCurrency(poolId + 1, randomCurrency);
+        centrifugeChain.allowAsset(poolId + 1, randomCurrency);
 
         vm.expectRevert(bytes("PoolManager/unknown-asset"));
         centrifugeChain.disallowAsset(poolId, randomCurrency);
@@ -545,7 +545,7 @@ contract PoolManagerTest is BaseTest {
 
         centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, restrictionSet);
         centrifugeChain.addAsset(assetId, address(erc20));
-        centrifugeChain.allowInvestmentCurrency(poolId, assetId);
+        centrifugeChain.allowAsset(poolId, assetId);
 
         poolManager.deployTranche(poolId, trancheId);
 
@@ -603,7 +603,7 @@ contract PoolManagerTest is BaseTest {
         centrifugeChain.addTranche(poolId, trancheId, "Test Token", "TT", 6, 2); // add tranche
 
         centrifugeChain.addAsset(10, address(erc20));
-        centrifugeChain.allowInvestmentCurrency(poolId, 10);
+        centrifugeChain.allowAsset(poolId, 10);
         poolManager.deployTranche(poolId, trancheId);
 
         vm.expectRevert(bytes("PoolManager/vault-not-deployed"));

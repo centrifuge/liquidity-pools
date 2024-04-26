@@ -18,7 +18,7 @@ library MessagesLib {
         /// 2 - Add Pool
         AddPool,
         /// 3 - Allow an asset to be used as an asset for investing in pools
-        AllowInvestmentAsset,
+        AllowAsset,
         /// 4 - Add a Pool's Tranche Token
         AddTranche,
         /// 5 - Update the price of a Tranche Token

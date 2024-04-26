@@ -29,7 +29,7 @@ contract RedeemTest is BaseTest {
         vault.requestRedeem(amount, address(this), address(this), "");
 
         // success
-        centrifugeChain.allowInvestmentCurrency(vault.poolId(), defaultAssetId);
+        centrifugeChain.allowAsset(vault.poolId(), defaultAssetId);
         vault.requestRedeem(amount, address(this), address(this), "");
         assertEq(trancheToken.balanceOf(address(escrow)), amount);
         assertEq(vault.pendingRedeemRequest(0, self), amount);

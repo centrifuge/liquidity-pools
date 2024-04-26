@@ -204,7 +204,7 @@ contract DeployTest is Test, Deployer {
         poolManager.addPool(poolId);
         poolManager.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, restrictionSet);
         poolManager.addAsset(1, address(erc20));
-        poolManager.allowInvestmentCurrency(poolId, 1);
+        poolManager.allowAsset(poolId, 1);
         vm.stopPrank();
 
         poolManager.deployTranche(poolId, trancheId);

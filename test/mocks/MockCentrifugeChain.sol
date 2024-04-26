@@ -30,8 +30,8 @@ contract MockCentrifugeChain is Test {
         _execute(_message);
     }
 
-    function allowInvestmentCurrency(uint64 poolId, uint128 assetId) public {
-        bytes memory _message = abi.encodePacked(uint8(MessagesLib.Call.AllowInvestmentAsset), poolId, assetId);
+    function allowAsset(uint64 poolId, uint128 assetId) public {
+        bytes memory _message = abi.encodePacked(uint8(MessagesLib.Call.AllowAsset), poolId, assetId);
         _execute(_message);
     }
 

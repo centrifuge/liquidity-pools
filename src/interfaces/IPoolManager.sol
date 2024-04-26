@@ -39,7 +39,7 @@ interface IPoolManager {
     event File(bytes32 indexed what, address data);
     event AddAsset(uint128 indexed assetId, address indexed asset);
     event AddPool(uint64 indexed poolId);
-    event AllowInvestmentAsset(uint64 indexed poolId, address indexed asset);
+    event AllowAsset(uint64 indexed poolId, address indexed asset);
     event DisallowAsset(uint64 indexed poolId, address indexed asset);
     event AddTranche(uint64 indexed poolId, bytes16 indexed trancheId);
     event DeployTranche(uint64 indexed poolId, bytes16 indexed trancheId, address indexed trancheToken);
@@ -97,7 +97,7 @@ interface IPoolManager {
     ///             a new supported asset to the pool details.
     ///             Adding new currencies allow the creation of new vaults for the underlying Centrifuge pool.
     /// @dev        The function can only be executed by the gateway contract.
-    function allowInvestmentCurrency(uint64 poolId, uint128 assetId) external;
+    function allowAsset(uint64 poolId, uint128 assetId) external;
 
     /// @notice TODO
     function disallowAsset(uint64 poolId, uint128 assetId) external;
