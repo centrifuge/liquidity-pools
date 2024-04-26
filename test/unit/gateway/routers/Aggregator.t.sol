@@ -238,7 +238,8 @@ contract AggregatorTest is Test {
         assertEq(router2.sent(proof), 0);
         assertEq(router3.sent(proof), 0);
 
-        vm.expectRevert(bytes("Aggregator/only-gateway-allowed-to-call"));
+        vm.expectRevert(bytes("Auth/not-authorized"));
+        vm.prank(makeAddr("not-gateway"));
         aggregator.send(message);
 
         vm.prank(address(gateway));
