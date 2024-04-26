@@ -93,29 +93,29 @@ contract Aggregator is Auth, IAggregator {
 
         bytes32 messageHash;
         if (isMessageProof) {
-            require(router.id != 1, "RouterAggregator/non-proof-router");
+            require(isRecovery || router.id != 1, "RouterAggregator/non-proof-router");
             messageHash = MessagesLib.parseMessageProof(payload);
             emit HandleProof(messageHash, msg.sender);
         } else {
-            require(router.id == 1, "RouterAggregator/non-message-router");
+            require(isRecovery || router.id == 1, "RouterAggregator/non-message-router");
             messageHash = keccak256(payload);
             emit HandleMessage(payload, msg.sender);
         }
 
         Message storage state = messages[messageHash];
-        state.votes[router.id - 1]++;
+        if (!isRecovery) state.votes[router.id - 1]++;
 
         if (state.votes.countNonZeroValues() >= router.quorum) {
             // Reduce votes by quorum
             state.votes.decreaseFirstNValues(router.quorum);
-
-            // TODO: delete message again?
 
             if (isMessageProof) {
                 gateway.handle(state.pendingMessage);
             } else {
                 gateway.handle(payload);
             }
+
+            // TODO: delete message again?
 
             emit ExecuteMessage(payload, msg.sender);
         } else if (!isMessageProof) {
@@ -160,9 +160,7 @@ contract Aggregator is Auth, IAggregator {
 
     // --- Outgoing ---
     /// @inheritdoc IAggregator
-    function send(bytes calldata message) public {
-        require(msg.sender == address(gateway), "Aggregator/only-gateway-allowed-to-call");
-
+    function send(bytes calldata message) public auth {
         uint256 numRouters = routers.length;
         require(numRouters > 0, "Aggregator/not-initialized");
 
@@ -182,7 +180,7 @@ contract Aggregator is Auth, IAggregator {
     }
 
     /// @inheritdoc IAggregator
-    function votes(bytes32 messageHash) external view returns (uint16[8] memory votes) {
+    function votes(bytes32 messageHash) external view returns (uint16[8] memory) {
         return messages[messageHash].votes;
     }
 }

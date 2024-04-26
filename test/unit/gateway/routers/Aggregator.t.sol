@@ -24,6 +24,7 @@ contract AggregatorTest is Test {
     function setUp() public {
         gateway = new GatewayMock();
         aggregator = new Aggregator(address(gateway));
+        aggregator.rely(address(gateway));
 
         router1 = new MockRouter(address(aggregator));
         vm.label(address(router1), "MockRouter1");
@@ -406,11 +407,11 @@ contract AggregatorTest is Test {
         }
     }
 
-    function assertVotes(bytes memory message, uint16 router1, uint16 router2, uint16 router3) internal {
+    function assertVotes(bytes memory message, uint16 r1, uint16 r2, uint16 r3) internal {
         uint16[8] memory votes = aggregator.votes(keccak256(message));
-        assertEq(votes[0], router1);
-        assertEq(votes[1], router2);
-        assertEq(votes[2], router3);
+        assertEq(votes[0], r1);
+        assertEq(votes[1], r2);
+        assertEq(votes[2], r3);
     }
 
     /// @notice Returns the smallest of two numbers.
