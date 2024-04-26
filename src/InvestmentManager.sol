@@ -7,25 +7,15 @@ import {MathLib} from "./libraries/MathLib.sol";
 import {SafeTransferLib} from "./libraries/SafeTransferLib.sol";
 import {MessagesLib} from "./libraries/MessagesLib.sol";
 import {BytesLib} from "./libraries/BytesLib.sol";
-import {IERC20, IERC20Metadata} from "src/interfaces/IERC20.sol";
+import {IERC20, IERC20Metadata, IERC20Mintable, IERC1404} from "src/interfaces/IERC20.sol";
+import {IERC7540} from "src/interfaces/IERC7540.sol";
 import {IPoolManager} from "src/interfaces/IPoolManager.sol";
+import {IGateway} from "src/interfaces/gateway/IGateway.sol";
 import {IInvestmentManager, InvestmentState} from "src/interfaces/IInvestmentManager.sol";
 
-interface GatewayLike {
-    function send(bytes memory message) external;
-}
-
-interface TrancheTokenLike is IERC20 {
-    function checkTransferRestriction(address from, address to, uint256 value) external view returns (bool);
-    function mint(address user, uint256 value) external;
-    function burn(address user, uint256 value) external;
-}
-
-interface VaultLike is IERC20 {
+interface VaultLike is IERC7540 {
     function poolId() external view returns (uint64);
     function trancheId() external view returns (bytes16);
-    function asset() external view returns (address);
-    function share() external view returns (address);
     function emitDepositClaimable(address owner, uint256 assets, uint256 shares) external;
     function emitRedeemClaimable(address owner, uint256 assets, uint256 shares) external;
 }
@@ -47,7 +37,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
 
     address public immutable escrow;
 
-    GatewayLike public gateway;
+    IGateway public gateway;
     IPoolManager public poolManager;
 
     mapping(address vault => mapping(address investor => InvestmentState)) public investments;
@@ -62,7 +52,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
     // --- Administration ---
     /// @inheritdoc IInvestmentManager
     function file(bytes32 what, address data) external auth {
-        if (what == "gateway") gateway = GatewayLike(data);
+        if (what == "gateway") gateway = IGateway(data);
         else if (what == "poolManager") poolManager = IPoolManager(data);
         else revert("InvestmentManager/file-unrecognized-param");
         emit File(what, data);
@@ -179,11 +169,8 @@ contract InvestmentManager is Auth, IInvestmentManager {
     /// @inheritdoc IInvestmentManager
     function cancelRedeemRequest(address vault, address owner) public auth {
         VaultLike _vault = VaultLike(vault);
-        uint256 approximateTrancheTokensPayout = pendingRedeemRequest(vault, owner);
-        require(
-            _canTransfer(vault, address(0), owner, approximateTrancheTokensPayout),
-            "InvestmentManager/transfer-not-allowed"
-        );
+        uint256 approximateShares = pendingRedeemRequest(vault, owner);
+        require(_canTransfer(vault, address(0), owner, approximateShares), "InvestmentManager/transfer-not-allowed");
 
         InvestmentState storage state = investments[vault][owner];
         require(state.pendingCancelRedeemRequest != true, "InvestmentManager/cancellation-is-pending");
@@ -276,8 +263,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
         if (state.pendingDepositRequest == 0) state.pendingCancelDepositRequest = false;
 
         // Mint to escrow. Recipient can claim by calling withdraw / redeem
-        TrancheTokenLike trancheToken = TrancheTokenLike(VaultLike(vault).share());
-        trancheToken.mint(address(escrow), shares);
+        IERC20Mintable(VaultLike(vault).share()).mint(address(escrow), shares);
 
         VaultLike(vault).emitDepositClaimable(user, assets, shares);
     }
@@ -305,8 +291,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
         if (state.pendingRedeemRequest == 0) state.pendingCancelRedeemRequest = false;
 
         // Burn redeemed tranche tokens from escrow
-        TrancheTokenLike trancheToken = TrancheTokenLike(VaultLike(vault).share());
-        trancheToken.burn(address(escrow), shares);
+        IERC20Mintable(VaultLike(vault).share()).burn(address(escrow), shares);
 
         VaultLike(vault).emitRedeemClaimable(user, assets, shares);
     }
@@ -622,7 +607,6 @@ contract InvestmentManager is Auth, IInvestmentManager {
     }
 
     function _canTransfer(address vault, address from, address to, uint256 value) internal view returns (bool) {
-        TrancheTokenLike share = TrancheTokenLike(VaultLike(vault).share());
-        return share.checkTransferRestriction(from, to, value);
+        return IERC1404(VaultLike(vault).share()).checkTransferRestriction(from, to, value);
     }
 }

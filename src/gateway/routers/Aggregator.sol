@@ -29,9 +29,9 @@ contract Aggregator is Auth, IAggregator {
 
     GatewayLike public immutable gateway;
 
-    address[] public                                routers;
-    mapping(address router => Router) public        validRouters;
-    mapping(bytes32 messageHash => Message) public  messages;
+    address[] public routers;
+    mapping(address router => Router) public validRouters;
+    mapping(bytes32 messageHash => Message) public messages;
     mapping(bytes32 messageHash => Recovery) public recoveries;
 
     constructor(address gateway_) {

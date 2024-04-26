@@ -174,3 +174,12 @@ interface IERC20Permit {
     // solhint-disable-next-line func-name-mixedcase
     function DOMAIN_SEPARATOR() external view returns (bytes32);
 }
+
+interface IERC20Mintable {
+    function mint(address user, uint256 value) external;
+    function burn(address user, uint256 value) external;
+}
+
+interface IERC1404 {
+    function checkTransferRestriction(address from, address to, uint256 value) external view returns (bool);
+}
