@@ -148,6 +148,7 @@ contract Aggregator is Auth, IAggregator {
         Recovery storage recovery = recoveries[messageHash];
         require(recovery.timestamp != 0, "Aggregator/message-recovery-not-initiated");
         require(recovery.timestamp <= block.timestamp, "Aggregator/challenge-period-has-not-ended");
+        require(validRouters[recovery.router].id != 0, "Aggregator/invalid-router");
 
         _handle(message, validRouters[recovery.router]);
         delete recoveries[messageHash];

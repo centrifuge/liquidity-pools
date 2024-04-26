@@ -317,9 +317,14 @@ contract AggregatorTest is Test {
 
         vm.expectRevert(bytes("Aggregator/challenge-period-has-not-ended"));
         aggregator.executeMessageRecovery(proof);
+        vm.warp(block.timestamp + aggregator.RECOVERY_CHALLENGE_PERIOD());
+
+        aggregator.file("routers", oneMockRouter);
+        vm.expectRevert(bytes("Aggregator/invalid-router"));
+        aggregator.executeMessageRecovery(proof);
+        aggregator.file("routers", threeMockRouters);
 
         // Execute recovery
-        vm.warp(block.timestamp + aggregator.RECOVERY_CHALLENGE_PERIOD());
         aggregator.executeMessageRecovery(proof);
         assertEq(gateway.handled(message), 1);
     }
