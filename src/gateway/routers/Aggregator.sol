@@ -114,7 +114,10 @@ contract Aggregator is Auth, IAggregator {
                 gateway.handle(payload);
             }
 
-            // TODO: delete message again?
+            // Only if there are no more pending messages, remove the pending message
+            if (state.votes.isEmpty()) {
+                delete state.pendingMessage;
+            }
 
             emit ExecuteMessage(payload, msg.sender);
         } else if (!isMessageProof) {
