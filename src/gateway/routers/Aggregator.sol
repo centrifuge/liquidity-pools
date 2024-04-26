@@ -77,7 +77,6 @@ contract Aggregator is Auth, IAggregator {
 
     function _handle(bytes calldata payload, Router memory router, bool isRecovery) internal {
         if (MessagesLib.isRecoveryMessage(payload)) {
-            // TODO: add test for this
             require(!isRecovery, "Aggregator/no-recursive-recovery-allowed");
             require(routers.length > 1, "Aggregator/no-recovery-with-one-router-allowed");
             return _handleRecovery(payload);

@@ -360,6 +360,29 @@ contract AggregatorTest is Test {
         assertEq(gateway.handled(message), 0);
     }
 
+    function testRecursiveRecoveryMessageFails() public {
+        aggregator.file("routers", threeMockRouters);
+
+        bytes memory message = abi.encodePacked(uint8(MessagesLib.Call.DisputeMessageRecovery), keccak256(""));
+        bytes memory proof = _formatMessageProof(abi.encodePacked(uint8(MessagesLib.Call.DisputeMessageRecovery), keccak256("")));
+
+        router2.execute(proof);
+        router3.execute(proof);
+        assertEq(gateway.handled(message), 0);
+
+        router2.execute(
+            abi.encodePacked(
+                uint8(MessagesLib.Call.InitiateMessageRecovery), keccak256(message), address(router1).toBytes32()
+            )
+        );
+
+        vm.warp(block.timestamp + aggregator.RECOVERY_CHALLENGE_PERIOD());
+
+        vm.expectRevert(bytes("Aggregator/no-recursive-recovery-allowed"));
+        aggregator.executeMessageRecovery(message);
+        assertEq(gateway.handled(message), 0);
+    }
+
     function testMessagesCannotBeReplayed(uint8 numRouters, uint8 numParallelDuplicateMessages_, uint256 entropy)
         public
     {
