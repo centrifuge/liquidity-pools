@@ -5,17 +5,17 @@ pragma solidity 0.8.21;
 struct Pool {
     uint256 createdAt;
     mapping(bytes16 trancheId => Tranche) tranches;
-    mapping(address currency => bool) allowedCurrencies;
+    mapping(address asset => bool) allowedCurrencies;
 }
 
 /// @dev Each Centrifuge pool is associated to 1 or more tranches
 struct Tranche {
     address token;
-    /// @dev Each tranche can have multiple liquidity pools deployed,
-    ///      each linked to a unique investment currency (asset)
-    mapping(address currency => address liquidityPool) liquidityPools;
-    /// @dev Each tranche has a price per liquidity pool
-    mapping(address liquidityPool => TrancheTokenPrice) prices;
+    /// @dev Each tranche can have multiple vaults deployed,
+    ///      each linked to a unique asset
+    mapping(address asset => address vault) vaults;
+    /// @dev Each tranche has a price per vault
+    mapping(address vault => TrancheTokenPrice) prices;
 }
 
 struct TrancheTokenPrice {
@@ -25,7 +25,7 @@ struct TrancheTokenPrice {
 
 /// @dev Temporary storage that is only present between addTranche and deployTranche
 struct UndeployedTranche {
-    /// @dev The decimals of the leading pool currency. Liquidity Pool shareshave
+    /// @dev The decimals of the leading pool asset. Vault shares have
     ///      to be denomatimated with the same precision.
     uint8 decimals;
     /// @dev Metadata of the to be deployed erc20 token
@@ -37,22 +37,18 @@ struct UndeployedTranche {
 
 interface IPoolManager {
     event File(bytes32 indexed what, address data);
-    event AddCurrency(uint128 indexed currencyId, address indexed currency);
+    event AddAsset(uint128 indexed assetId, address indexed asset);
     event AddPool(uint64 indexed poolId);
-    event AllowInvestmentCurrency(uint64 indexed poolId, address indexed currency);
-    event DisallowInvestmentCurrency(uint64 indexed poolId, address indexed currency);
+    event AllowAsset(uint64 indexed poolId, address indexed asset);
+    event DisallowAsset(uint64 indexed poolId, address indexed asset);
     event AddTranche(uint64 indexed poolId, bytes16 indexed trancheId);
     event DeployTranche(uint64 indexed poolId, bytes16 indexed trancheId, address indexed trancheToken);
-    event DeployLiquidityPool(
-        uint64 indexed poolId, bytes16 indexed trancheId, address indexed currency, address liquidityPool
-    );
-    event RemoveLiquidityPool(
-        uint64 indexed poolId, bytes16 indexed trancheId, address indexed currency, address liquidityPool
-    );
+    event DeployVault(uint64 indexed poolId, bytes16 indexed trancheId, address indexed asset, address vault);
+    event RemoveVault(uint64 indexed poolId, bytes16 indexed trancheId, address indexed asset, address vault);
     event PriceUpdate(
-        uint64 indexed poolId, bytes16 indexed trancheId, address indexed currency, uint256 price, uint64 computedAt
+        uint64 indexed poolId, bytes16 indexed trancheId, address indexed asset, uint256 price, uint64 computedAt
     );
-    event TransferCurrency(address indexed currency, bytes32 indexed recipient, uint128 amount);
+    event TransferCurrency(address indexed asset, bytes32 indexed recipient, uint128 amount);
     event TransferTrancheTokensToCentrifuge(
         uint64 indexed poolId, bytes16 indexed trancheId, bytes32 destinationAddress, uint128 amount
     );
@@ -65,16 +61,16 @@ interface IPoolManager {
     );
 
     /// @notice TODO
-    function currencyIdToAddress(uint128 currencyId) external view returns (address currency);
+    function idToAsset(uint128 assetId) external view returns (address asset);
 
     /// @notice TODO
-    function currencyAddressToId(address) external view returns (uint128 currencyId);
+    function assetToId(address) external view returns (uint128 assetId);
 
     /// @notice TODO
     function file(bytes32 what, address data) external;
 
     /// @notice TODO
-    function transfer(address currency, bytes32 recipient, uint128 amount) external;
+    function transfer(address asset, bytes32 recipient, uint128 amount) external;
 
     /// @notice TODO
     function transferTrancheTokensToCentrifuge(
@@ -98,13 +94,13 @@ interface IPoolManager {
     function addPool(uint64 poolId) external;
 
     /// @notice     Centrifuge pools can support multiple currencies for investing. this function adds
-    ///             a new supported currency to the pool details.
-    ///             Adding new currencies allow the creation of new liquidity pools for the underlying Centrifuge pool.
+    ///             a new supported asset to the pool details.
+    ///             Adding new currencies allow the creation of new vaults for the underlying Centrifuge pool.
     /// @dev        The function can only be executed by the gateway contract.
-    function allowInvestmentCurrency(uint64 poolId, uint128 currencyId) external;
+    function allowAsset(uint64 poolId, uint128 assetId) external;
 
     /// @notice TODO
-    function disallowInvestmentCurrency(uint64 poolId, uint128 currencyId) external;
+    function disallowAsset(uint64 poolId, uint128 assetId) external;
 
     /// @notice     New tranche details from an existing Centrifuge pool are added.
     /// @dev        The function can only be executed by the gateway contract.
@@ -129,7 +125,7 @@ interface IPoolManager {
     function updateTrancheTokenPrice(
         uint64 poolId,
         bytes16 trancheId,
-        uint128 currencyId,
+        uint128 assetId,
         uint128 price,
         uint64 computedAt
     ) external;
@@ -143,17 +139,17 @@ interface IPoolManager {
     /// @notice TODO
     function unfreeze(uint64 poolId, bytes16 trancheId, address user) external;
 
-    /// @notice A global chain agnostic currency index is maintained on Centrifuge. This function maps
-    ///         a currency from the Centrifuge index to its corresponding address on the evm chain.
-    ///         The chain agnostic currency id has to be used to pass currency information to the Centrifuge.
+    /// @notice A global chain agnostic asset index is maintained on Centrifuge. This function maps
+    ///         a asset from the Centrifuge index to its corresponding address on the evm chain.
+    ///         The chain agnostic asset id has to be used to pass asset information to the Centrifuge.
     /// @dev    This function can only be executed by the gateway contract.
-    function addCurrency(uint128 currencyId, address currency) external;
+    function addAsset(uint128 assetId, address asset) external;
 
     /// @notice TODO
     function handle(bytes calldata message) external;
 
     /// @notice TODO
-    function handleTransfer(uint128 currencyId, address recipient, uint128 amount) external;
+    function handleTransfer(uint128 assetId, address recipient, uint128 amount) external;
 
     /// @notice TODO
     function handleTransferTrancheTokens(uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 amount)
@@ -163,26 +159,26 @@ interface IPoolManager {
     function deployTranche(uint64 poolId, bytes16 trancheId) external returns (address);
 
     /// @notice TODO
-    function deployLiquidityPool(uint64 poolId, bytes16 trancheId, address currency) external returns (address);
+    function deployVault(uint64 poolId, bytes16 trancheId, address asset) external returns (address);
 
     /// @notice TODO
-    function removeLiquidityPool(uint64 poolId, bytes16 trancheId, address currency) external;
+    function removeVault(uint64 poolId, bytes16 trancheId, address asset) external;
 
     /// @notice TODO
     function getTrancheToken(uint64 poolId, bytes16 trancheId) external view returns (address);
 
     /// @notice TODO
-    function getLiquidityPool(uint64 poolId, bytes16 trancheId, uint128 currencyId) external view returns (address);
+    function getVault(uint64 poolId, bytes16 trancheId, uint128 assetId) external view returns (address);
 
     /// @notice TODO
-    function getLiquidityPool(uint64 poolId, bytes16 trancheId, address currency) external view returns (address);
+    function getVault(uint64 poolId, bytes16 trancheId, address asset) external view returns (address);
 
     /// @notice TODO
-    function getTrancheTokenPrice(uint64 poolId, bytes16 trancheId, address currency)
+    function getTrancheTokenPrice(uint64 poolId, bytes16 trancheId, address asset)
         external
         view
         returns (uint128 price, uint64 computedAt);
 
     /// @notice TODO
-    function isAllowedAsInvestmentCurrency(uint64 poolId, address currency) external view returns (bool);
+    function isAllowedAsset(uint64 poolId, address asset) external view returns (bool);
 }

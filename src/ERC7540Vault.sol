@@ -8,38 +8,37 @@ import "./interfaces/IERC7540.sol";
 import "./interfaces/IERC7575.sol";
 import "./interfaces/IERC20.sol";
 
-/// @title  Liquidity Pool
-/// @notice Liquidity Pool implementation for Centrifuge pools
-///         following the ERC-7540 Asynchronous Tokenized Vault standard
+/// @title  ERC7540Vault
+/// @notice Asynchronous Tokenized Vault standard implementation for Centrifuge pools
 ///
-/// @dev    Each Liquidity Pool is a tokenized vault issuing shares of Centrifuge tranches as restricted ERC-20 tokens
-///         against currency deposits based on the current share price.
+/// @dev    Each vault issues shares of Centrifuge tranches as restricted ERC-20 tokens
+///         against asset deposits based on the current share price.
 ///
 ///         ERC-7540 is an extension of the ERC-4626 standard by 'requestDeposit' & 'requestRedeem' methods, where
 ///         deposit and redeem orders are submitted to the pools to be included in the execution of the following epoch.
 ///         After execution users can use the deposit, mint, redeem and withdraw functions to get their shares
 ///         and/or assets from the pools.
-contract LiquidityPool is Auth, IERC7540 {
+contract ERC7540Vault is Auth, IERC7540 {
     /// @notice Identifier of the Centrifuge pool
     uint64 public immutable poolId;
 
     /// @notice Identifier of the tranche of the Centrifuge pool
     bytes16 public immutable trancheId;
 
-    /// @notice The investment currency (asset) for this Liquidity Pool.
-    ///         Each tranche of a Centrifuge pool can have multiple Liquidity Pools.
-    ///         One Liquidity Pool for each supported investment currency.
-    ///         Thus tranche shares can be linked to multiple Liquidity Pools with different currencies.
+    /// @notice The investment asset for this vault.
+    ///         Each tranche of a Centrifuge pool can have multiple vaults.
+    ///         One vault for each supported investment asset.
+    ///         Thus tranche shares can be linked to multiple vaults with different assets.
     address public immutable asset;
 
-    /// @notice The restricted ERC-20 Liquidity Pool share (tranche token).
+    /// @notice The restricted ERC-20 vault share (tranche token).
     ///         Has a ratio (token price) of underlying assets exchanged on deposit/mint/withdraw/redeem.
     address public immutable share;
 
     /// @notice Escrow contract for tokens
     address public immutable escrow;
 
-    /// @notice Liquidity Pool implementation contract
+    /// @notice Vault implementation contract
     IInvestmentManager public manager;
 
     /// @dev    Requests for Centrifuge pool are non-transferable and all have ID = 0
@@ -63,7 +62,7 @@ contract LiquidityPool is Auth, IERC7540 {
     // --- Administration ---
     function file(bytes32 what, address data) external auth {
         if (what == "manager") manager = IInvestmentManager(data);
-        else revert("LiquidityPool/file-unrecognized-param");
+        else revert("ERC7540Vault/file-unrecognized-param");
         emit File(what, data);
     }
 
@@ -77,17 +76,17 @@ contract LiquidityPool is Auth, IERC7540 {
         public
         returns (uint256)
     {
-        require(owner == msg.sender, "LiquidityPool/not-msg-sender");
-        require(IERC20(asset).balanceOf(owner) >= assets, "LiquidityPool/insufficient-balance");
+        require(owner == msg.sender, "ERC7540Vault/not-msg-sender");
+        require(IERC20(asset).balanceOf(owner) >= assets, "ERC7540Vault/insufficient-balance");
 
-        require(manager.requestDeposit(address(this), assets, receiver, owner), "LiquidityPool/request-deposit-failed");
+        require(manager.requestDeposit(address(this), assets, receiver, owner), "ERC7540Vault/request-deposit-failed");
         SafeTransferLib.safeTransferFrom(asset, owner, address(escrow), assets);
 
         require(
             data.length == 0 || receiver.code.length == 0
                 || IERC7540DepositReceiver(receiver).onERC7540DepositReceived(msg.sender, owner, REQUEST_ID, assets, data)
                     == IERC7540DepositReceiver.onERC7540DepositReceived.selector,
-            "LiquidityPool/receiver-failed"
+            "ERC7540Vault/receiver-failed"
         );
 
         emit DepositRequest(receiver, owner, REQUEST_ID, msg.sender, assets);
@@ -124,15 +123,15 @@ contract LiquidityPool is Auth, IERC7540 {
         public
         returns (uint256)
     {
-        require(IERC20Metadata(share).balanceOf(owner) >= shares, "LiquidityPool/insufficient-balance");
-        require(manager.requestRedeem(address(this), shares, receiver, owner), "LiquidityPool/request-redeem-failed");
-        require(_transferFrom(owner, address(escrow), shares), "LiquidityPool/transfer-failed");
+        require(IERC20Metadata(share).balanceOf(owner) >= shares, "ERC7540Vault/insufficient-balance");
+        require(manager.requestRedeem(address(this), shares, receiver, owner), "ERC7540Vault/request-redeem-failed");
+        require(_transferFrom(owner, address(escrow), shares), "ERC7540Vault/transfer-failed");
 
         require(
             data.length == 0 || receiver.code.length == 0
                 || IERC7540RedeemReceiver(receiver).onERC7540RedeemReceived(msg.sender, owner, REQUEST_ID, shares, data)
                     == IERC7540RedeemReceiver.onERC7540RedeemReceived.selector,
-            "LiquidityPool/receiver-failed"
+            "ERC7540Vault/receiver-failed"
         );
 
         emit RedeemRequest(receiver, owner, REQUEST_ID, msg.sender, shares);
@@ -152,7 +151,7 @@ contract LiquidityPool is Auth, IERC7540 {
     // --- Asynchronous cancellation methods ---
     /// @inheritdoc IERC7540CancelDeposit
     function cancelDepositRequest(uint256, address owner) external {
-        require(owner == msg.sender, "LiquidityPool/not-the-owner");
+        require(owner == msg.sender, "ERC7540Vault/not-the-owner");
         manager.cancelDepositRequest(address(this), owner);
         emit CancelDepositRequest(owner, REQUEST_ID, msg.sender);
     }
@@ -169,14 +168,14 @@ contract LiquidityPool is Auth, IERC7540 {
 
     /// @inheritdoc IERC7540CancelDeposit
     function claimCancelDepositRequest(uint256, address receiver, address owner) external returns (uint256 assets) {
-        require(msg.sender == owner, "LiquidityPool/not-the-owner");
+        require(msg.sender == owner, "ERC7540Vault/not-the-owner");
         assets = manager.claimCancelDepositRequest(address(this), receiver, owner);
         emit ClaimCancelDepositRequest(msg.sender, receiver, owner, assets);
     }
 
     /// @inheritdoc IERC7540CancelRedeem
     function cancelRedeemRequest(uint256, address owner) external {
-        require(msg.sender == owner, "LiquidityPool/not-the-owner");
+        require(msg.sender == owner, "ERC7540Vault/not-the-owner");
         manager.cancelRedeemRequest(address(this), owner);
         emit CancelRedeemRequest(owner, REQUEST_ID, msg.sender);
     }
@@ -193,7 +192,7 @@ contract LiquidityPool is Auth, IERC7540 {
 
     /// @inheritdoc IERC7540CancelRedeem
     function claimCancelRedeemRequest(uint256, address receiver, address owner) external returns (uint256 shares) {
-        require(msg.sender == owner, "LiquidityPool/not-the-owner");
+        require(msg.sender == owner, "ERC7540Vault/not-the-owner");
         shares = manager.claimCancelRedeemRequest(address(this), receiver, owner);
         emit ClaimCancelRedeemRequest(msg.sender, receiver, owner, shares);
     }
@@ -255,7 +254,7 @@ contract LiquidityPool is Auth, IERC7540 {
     /// @inheritdoc IERC7575
     /// @notice DOES NOT support owner != msg.sender since shares are already transferred on requestRedeem
     function withdraw(uint256 assets, address receiver, address owner) public returns (uint256 shares) {
-        require(msg.sender == owner, "LiquidityPool/not-the-owner");
+        require(msg.sender == owner, "ERC7540Vault/not-the-owner");
         shares = manager.withdraw(address(this), assets, receiver, owner);
         emit Withdraw(msg.sender, receiver, owner, assets, shares);
     }
@@ -268,7 +267,7 @@ contract LiquidityPool is Auth, IERC7540 {
     /// @inheritdoc IERC7575
     /// @notice     DOES NOT support owner != msg.sender since shares are already transferred on requestRedeem
     function redeem(uint256 shares, address receiver, address owner) external returns (uint256 assets) {
-        require(msg.sender == owner, "LiquidityPool/not-the-owner");
+        require(msg.sender == owner, "ERC7540Vault/not-the-owner");
         assets = manager.redeem(address(this), shares, receiver, owner);
         emit Withdraw(msg.sender, receiver, owner, assets, shares);
     }
