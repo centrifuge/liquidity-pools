@@ -54,11 +54,11 @@ contract Aggregator is Auth, IAggregator {
 
             // Enable new routers, setting quorum to number of routers
             uint8 quorum_ = uint8(routers_.length);
+<<<<<<< HEAD
             for (uint8 j; j < quorum_; j++) {
+=======
+            for (uint8 j; j < quorum_; ++j) {
                 // Ids are assigned sequentially starting at 1
-                validRouters[routers_[j]] = Router(j + 1, quorum_);
-            }
-
             routers = routers_;
         } else {
             revert("Aggregator/file-unrecognized-param");
@@ -72,6 +72,7 @@ contract Aggregator is Auth, IAggregator {
     function handle(bytes calldata payload) public {
         Router memory router = validRouters[msg.sender];
         require(router.id != 0, "Aggregator/invalid-router");
+<<<<<<< HEAD
         _handle(payload, router, false);
     }
 
@@ -79,6 +80,13 @@ contract Aggregator is Auth, IAggregator {
         if (MessagesLib.isRecoveryMessage(payload)) {
             // TODO: add test for this
             require(!isRecovery, "Aggregator/no-recursive-recovery-allowed");
+=======
+        _handle(payload, router);
+    }
+
+    function _handle(bytes calldata payload, Router memory router) internal {
+        if (MessagesLib.isRecoveryMessage(payload)) {
+>>>>>>> d9546cd6b8a66d1b02a72a8ede8153805bd743dc
             require(routers.length > 1, "Aggregator/no-recovery-with-one-router-allowed");
             return _handleRecovery(payload);
         }
@@ -92,6 +100,7 @@ contract Aggregator is Auth, IAggregator {
         }
 
         bytes32 messageHash;
+<<<<<<< HEAD
         if (isMessageProof) {
             require(router.id != 1, "RouterAggregator/non-proof-router");
             messageHash = MessagesLib.parseMessageProof(payload);
@@ -113,13 +122,48 @@ contract Aggregator is Auth, IAggregator {
 
             if (isMessageProof) {
                 gateway.handle(state.pendingMessage);
+=======
+        ConfirmationState storage state;
+        if (isMessageProof) {
+            messageHash = MessagesLib.parseMessageProof(payload);
+            state = _confirmations[messageHash];
+            state.proofs[router.id - 1]++;
+
+            emit HandleProof(messageHash, msg.sender);
+        } else {
+            messageHash = keccak256(payload);
+            state = _confirmations[messageHash];
+            state.messages[router.id - 1]++;
+
+            emit HandleMessage(payload, msg.sender);
+        }
+
+        if (state.messages.countNonZeroValues() >= 1 && state.proofs.countNonZeroValues() >= router.quorum - 1) {
+            // Reduce total message confirmation count by 1, by finding the first non-zero value
+            state.messages.decreaseFirstNValues(1, 1);
+
+            // Reduce total proof confiration count by quorum
+            state.proofs.decreaseFirstNValues(router.quorum, 1);
+
+            if (isMessageProof) {
+                gateway.handle(pendingMessages[messageHash]);
+
+                // Only if there are no more pending messages, remove the pending message
+                if (state.messages.isEmpty() && state.proofs.isEmpty()) {
+                    delete pendingMessages[messageHash];
+                }
+>>>>>>> d9546cd6b8a66d1b02a72a8ede8153805bd743dc
             } else {
                 gateway.handle(payload);
             }
 
             emit ExecuteMessage(payload, msg.sender);
         } else if (!isMessageProof) {
+<<<<<<< HEAD
             state.pendingMessage = payload;
+=======
+            pendingMessages[messageHash] = payload;
+>>>>>>> d9546cd6b8a66d1b02a72a8ede8153805bd743dc
         }
     }
 
@@ -149,6 +193,7 @@ contract Aggregator is Auth, IAggregator {
     function executeMessageRecovery(bytes calldata message) public {
         bytes32 messageHash = keccak256(message);
         Recovery storage recovery = recoveries[messageHash];
+<<<<<<< HEAD
 
         require(recovery.timestamp != 0, "Aggregator/message-recovery-not-initiated");
         require(recovery.timestamp <= block.timestamp, "Aggregator/challenge-period-has-not-ended");
@@ -156,6 +201,13 @@ contract Aggregator is Auth, IAggregator {
 
         delete recoveries[messageHash];
         _handle(message, validRouters[recovery.router], true);
+=======
+        require(recovery.timestamp != 0, "Aggregator/message-recovery-not-initiated");
+        require(recovery.timestamp <= block.timestamp, "Aggregator/challenge-period-has-not-ended");
+
+        _handle(message, validRouters[recovery.router]);
+        delete recoveries[messageHash];
+>>>>>>> d9546cd6b8a66d1b02a72a8ede8153805bd743dc
     }
 
     // --- Outgoing ---
@@ -167,7 +219,11 @@ contract Aggregator is Auth, IAggregator {
         require(numRouters > 0, "Aggregator/not-initialized");
 
         bytes memory proof = abi.encodePacked(uint8(MessagesLib.Call.MessageProof), keccak256(message));
+<<<<<<< HEAD
         for (uint256 i; i < numRouters; i++) {
+=======
+        for (uint256 i; i < numRouters; ++i) {
+>>>>>>> d9546cd6b8a66d1b02a72a8ede8153805bd743dc
             RouterLike(routers[i]).send(i == PRIMARY_ROUTER_ID - 1 ? message : proof);
         }
 
@@ -182,7 +238,17 @@ contract Aggregator is Auth, IAggregator {
     }
 
     /// @inheritdoc IAggregator
+<<<<<<< HEAD
     function votes(bytes32 messageHash) external view returns (uint16[8] memory votes) {
         return messages[messageHash].votes;
+=======
+    function confirmations(bytes32 messageHash)
+        external
+        view
+        returns (uint16[8] memory messages, uint16[8] memory proofs)
+    {
+        ConfirmationState storage state = _confirmations[messageHash];
+        return (state.messages, state.proofs);
+>>>>>>> d9546cd6b8a66d1b02a72a8ede8153805bd743dc
     }
 }
