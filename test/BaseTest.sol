@@ -130,10 +130,8 @@ contract BaseTest is Deployer, Test {
         }
         
         if (poolManager.getTrancheToken(poolId, trancheId) == address(0)) {
-            centrifugeChain.addPool(poolId);
+            centrifugeChain.batchAddPoolAllowAsset(poolId, assetId);
             centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, trancheTokenDecimals, restrictionSet);
-
-            centrifugeChain.allowAsset(poolId, assetId);
             poolManager.deployTranche(poolId, trancheId);
         }
 

@@ -77,6 +77,10 @@ contract Gateway is Auth, IGateway {
 
     // --- Incoming ---
     function handle(bytes calldata message) external auth pauseable {
+        _handle(message);
+    }
+
+    function _handle(bytes calldata message) internal {
         uint8 id = message.toUint8(0);
         address manager;
 
@@ -87,6 +91,15 @@ contract Gateway is Auth, IGateway {
             manager = investmentManager;
         } else if (id >= 21 && id <= 22 || id == 31) {
             manager = address(root);
+        } else if (id == 32) {
+            // Handle batch messages
+            uint256 start = 1;
+            while (start < message.length) {
+                uint8 length = message.toUint8(start);
+                _handle(message[start + 1:start + 1 + length]);
+                start += 1 + length;
+            }
+            return;
         } else {
             // Dynamic path for other managers, to be able to easily
             // extend functionality of Liquidity Pools
