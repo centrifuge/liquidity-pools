@@ -9,7 +9,7 @@ contract GatewayTest is BaseTest {
     function testDeployment(address nonWard) public {
         vm.assume(
             nonWard != address(root) && nonWard != address(delayedAdmin) && nonWard != address(this)
-                && nonWard != address(aggregator)
+                && nonWard != address(aggregator) && nonWard != address(gateway)
         );
 
         // values set correctly
@@ -31,6 +31,7 @@ contract GatewayTest is BaseTest {
         assertEq(gateway.wards(address(root)), 1);
         assertEq(aggregator.wards(address(root)), 1);
         assertEq(aggregator.wards(address(delayedAdmin)), 1);
+        assertEq(aggregator.wards(address(gateway)), 1);
         assertEq(gateway.wards(nonWard), 0);
         assertEq(aggregator.wards(nonWard), 0);
     }
