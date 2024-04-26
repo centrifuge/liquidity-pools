@@ -9,7 +9,7 @@ interface IAggregator {
         uint8 quorum;
     }
 
-    struct ConfirmationState {
+    struct Message {
         // Counts are stored as integers (instead of boolean values) to accommodate duplicate
         // messages (e.g. two investments from the same user with the same amount) being
         // processed in parallel. The entire struct is packed in a single bytes32 slot.
@@ -65,5 +65,5 @@ interface IAggregator {
     function quorum() external view returns (uint8);
 
     /// @notice TODO
-    function confirmations(bytes32 messageHash) external view returns (uint16[8] memory votes);
+    function votes(bytes32 messageHash) external view returns (uint16[8] memory votes);
 }

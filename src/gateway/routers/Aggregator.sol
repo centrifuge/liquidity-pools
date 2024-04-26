@@ -29,10 +29,10 @@ contract Aggregator is Auth, IAggregator {
 
     GatewayLike public immutable gateway;
 
-    address[] public routers;
-    mapping(address router => Router) public validRouters;
+    address[] public                                routers;
+    mapping(address router => Router) public        validRouters;
+    mapping(bytes32 messageHash => Message) public  messages;
     mapping(bytes32 messageHash => Recovery) public recoveries;
-    mapping(bytes32 messageHash => ConfirmationState) internal _confirmations;
 
     constructor(address gateway_) {
         gateway = GatewayLike(gateway_);
@@ -48,13 +48,13 @@ contract Aggregator is Auth, IAggregator {
             require(routers_.length <= MAX_ROUTER_COUNT, "Aggregator/exceeds-max-router-count");
 
             // Disable old routers
-            for (uint8 i = 0; i < routers.length; ++i) {
+            for (uint8 i = 0; i < routers.length; i++) {
                 delete validRouters[address(routers[i])];
             }
 
             // Enable new routers, setting quorum to number of routers
             uint8 quorum_ = uint8(routers_.length);
-            for (uint8 j; j < quorum_; ++j) {
+            for (uint8 j; j < quorum_; j++) {
                 // Ids are assigned sequentially starting at 1
                 validRouters[routers_[j]] = Router(j + 1, quorum_);
             }
@@ -72,11 +72,13 @@ contract Aggregator is Auth, IAggregator {
     function handle(bytes calldata payload) public {
         Router memory router = validRouters[msg.sender];
         require(router.id != 0, "Aggregator/invalid-router");
-        _handle(payload, router);
+        _handle(payload, router, false);
     }
 
-    function _handle(bytes calldata payload, Router memory router) internal {
+    function _handle(bytes calldata payload, Router memory router, bool isRecovery) internal {
         if (MessagesLib.isRecoveryMessage(payload)) {
+            // TODO: add test for this
+            require(!isRecovery, "Aggregator/no-recursive-recovery-allowed");
             require(routers.length > 1, "Aggregator/no-recovery-with-one-router-allowed");
             return _handleRecovery(payload);
         }
@@ -90,7 +92,6 @@ contract Aggregator is Auth, IAggregator {
         }
 
         bytes32 messageHash;
-        ConfirmationState storage state;
         if (isMessageProof) {
             require(router.id != 1, "RouterAggregator/non-proof-router");
             messageHash = MessagesLib.parseMessageProof(payload);
@@ -101,12 +102,14 @@ contract Aggregator is Auth, IAggregator {
             emit HandleMessage(payload, msg.sender);
         }
 
-        state = _confirmations[messageHash];
+        Message storage state = messages[messageHash];
         state.votes[router.id - 1]++;
 
         if (state.votes.countNonZeroValues() >= router.quorum) {
             // Reduce votes by quorum
             state.votes.decreaseFirstNValues(router.quorum);
+
+            // TODO: delete message again?
 
             if (isMessageProof) {
                 gateway.handle(state.pendingMessage);
@@ -146,12 +149,13 @@ contract Aggregator is Auth, IAggregator {
     function executeMessageRecovery(bytes calldata message) public {
         bytes32 messageHash = keccak256(message);
         Recovery storage recovery = recoveries[messageHash];
+
         require(recovery.timestamp != 0, "Aggregator/message-recovery-not-initiated");
         require(recovery.timestamp <= block.timestamp, "Aggregator/challenge-period-has-not-ended");
         require(validRouters[recovery.router].id != 0, "Aggregator/invalid-router");
 
         delete recoveries[messageHash];
-        _handle(message, validRouters[recovery.router]);
+        _handle(message, validRouters[recovery.router], true);
     }
 
     // --- Outgoing ---
@@ -163,7 +167,7 @@ contract Aggregator is Auth, IAggregator {
         require(numRouters > 0, "Aggregator/not-initialized");
 
         bytes memory proof = abi.encodePacked(uint8(MessagesLib.Call.MessageProof), keccak256(message));
-        for (uint256 i; i < numRouters; ++i) {
+        for (uint256 i; i < numRouters; i++) {
             RouterLike(routers[i]).send(i == PRIMARY_ROUTER_ID - 1 ? message : proof);
         }
 
@@ -178,8 +182,7 @@ contract Aggregator is Auth, IAggregator {
     }
 
     /// @inheritdoc IAggregator
-    function confirmations(bytes32 messageHash) external view returns (uint16[8] memory votes) {
-        ConfirmationState storage state = _confirmations[messageHash];
-        return state.votes;
+    function votes(bytes32 messageHash) external view returns (uint16[8] memory votes) {
+        return messages[messageHash].votes;
     }
 }

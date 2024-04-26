@@ -407,7 +407,7 @@ contract AggregatorTest is Test {
     }
 
     function assertVotes(bytes memory message, uint16 router1, uint16 router2, uint16 router3) internal {
-        uint16[8] memory votes = aggregator.confirmations(keccak256(message));
+        uint16[8] memory votes = aggregator.votes(keccak256(message));
         assertEq(votes[0], router1);
         assertEq(votes[1], router2);
         assertEq(votes[2], router3);
