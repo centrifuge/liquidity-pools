@@ -322,7 +322,7 @@ function testPOCIssue1(
     {
         assert(currencyId != 123);
         address newErc20 = address(_newErc20("Y's Dollar", "USDY", 6));
-        homePools.addCurrency(123, newErc20);
+        homePools.addAsset(123, newErc20);
         homePools.allowPoolCurrency(poolId, 123);
         newLPool = LiquidityPool(poolManager.deployLiquidityPool(poolId, trancheId, newErc20));
     }
@@ -534,14 +534,14 @@ function processDeposit(address user, uint256 currencyAmount) public auth return
 
         // trigger executed collectInvest at a price of 1.25
         uint128 _currencyId = poolManager.currencyAddressToId(address(currency)); // retrieve currencyId
-        uint128 currencyPayout = 100000000; // 100 * 10**6                                          
+        uint128 assets = 100000000; // 100 * 10**6                                          
         uint128 firstTrancheTokenPayout = 80000000000000000000; // 100 * 10**18 / 1.25, rounded down
         homePools.isExecutedCollectInvest(
-            poolId, trancheId, bytes32(bytes20(self)), _currencyId, currencyPayout, firstTrancheTokenPayout
+            poolId, trancheId, bytes32(bytes20(self)), _currencyId, assets, firstTrancheTokenPayout
         );
 
         // assert deposit & mint values adjusted
-        assertEq(lPool.maxDeposit(self), currencyPayout);
+        assertEq(lPool.maxDeposit(self), assets);
         assertEq(lPool.maxMint(self), firstTrancheTokenPayout);
 
         // deposit price should be ~1.25*10**18 === 1250000000000000000
@@ -554,10 +554,10 @@ function processDeposit(address user, uint256 currencyAmount) public auth return
         lPool.requestDeposit(investmentAmount, self);
 
         // trigger executed collectInvest at a price of 2
-        currencyPayout = 100000000; // 100 * 10**6
+        assets = 100000000; // 100 * 10**6
         uint128 secondTrancheTokenPayout = 50000000000000000000; // 100 * 10**18 / 1.4, rounded down
         homePools.isExecutedCollectInvest(
-            poolId, trancheId, bytes32(bytes20(self)), _currencyId, currencyPayout, secondTrancheTokenPayout
+            poolId, trancheId, bytes32(bytes20(self)), _currencyId, assets, secondTrancheTokenPayout
         );
 
         // Alice invests the same amount as the other investor in the second epoch - Price is at 2
@@ -569,7 +569,7 @@ function processDeposit(address user, uint256 currencyAmount) public auth return
         vm.stopPrank();
 
         homePools.isExecutedCollectInvest(
-            poolId, trancheId, bytes32(bytes20(alice)), _currencyId, currencyPayout, secondTrancheTokenPayout
+            poolId, trancheId, bytes32(bytes20(alice)), _currencyId, assets, secondTrancheTokenPayout
         );
 
         uint128 AliceTrancheTokenPayout = 50000000000000000000; // 100 * 10**18 / 1.4, rounded down
@@ -1107,7 +1107,7 @@ The `require` keyword can be removed in the function `deployLiquidityPool ()`, b
 ```
     function isAllowedAsPoolCurrency(uint64 poolId, address currencyAddress) public view returns (bool) {
         uint128 currency = currencyAddressToId[currencyAddress];
-        require(currency != 0, "PoolManager/unknown-currency"); // Currency index on the Centrifuge side should start at 1
+        require(currency != 0, "PoolManager/unknown-asset"); // Currency index on the Centrifuge side should start at 1
         require(pools[poolId].allowedCurrencies[currencyAddress], "PoolManager/pool-currency-not-allowed");
         return true;
 ```

@@ -4,7 +4,7 @@ pragma abicoder v2;
 
 import "test/BaseTest.sol";
 
-interface LiquidityPoolLike {
+interface VaultLike {
     function priceComputedAt() external view returns (uint64);
 }
 
@@ -12,7 +12,7 @@ contract InvestmentManagerTest is BaseTest {
     // Deployment
     function testDeployment(address nonWard) public {
         vm.assume(
-            nonWard != address(root) && nonWard != address(liquidityPoolFactory) && nonWard != address(gateway)
+            nonWard != address(root) && nonWard != address(vaultFactory) && nonWard != address(gateway)
                 && nonWard != address(this)
         );
 

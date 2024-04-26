@@ -11,9 +11,9 @@ struct InvestmentState {
     uint128 maxWithdraw;
     /// @dev Weighted average price of redemptions, used to convert maxWithdraw to maxRedeem
     uint256 redeemPrice;
-    /// @dev Remaining invest (deposit) order in currency
+    /// @dev Remaining invest (deposit) order in assets
     uint128 pendingDepositRequest;
-    /// @dev Remaining redeem order in currency
+    /// @dev Remaining redeem order in assets
     uint128 pendingRedeemRequest;
     /// @dev Currency that can be claimed using `claimCancelDepositRequest()`
     uint128 claimableCancelDepositRequest;
@@ -23,7 +23,7 @@ struct InvestmentState {
     bool pendingCancelDepositRequest;
     /// @dev Whether the redeemRequest was requested to be cancelled
     bool pendingCancelRedeemRequest;
-    ///@dev Flag whether this user has ever interacted with this liquidity pool
+    ///@dev Flag whether this user has ever interacted with this vault
     bool exists;
 }
 
@@ -31,7 +31,7 @@ interface IInvestmentManager {
     // --- Events ---
     event File(bytes32 indexed what, address data);
     event TriggerIncreaseRedeemOrder(
-        uint64 indexed poolId, bytes16 indexed trancheId, address user, address currency, uint128 trancheTokenAmount
+        uint64 indexed poolId, bytes16 indexed trancheId, address user, address asset, uint128 shares
     );
 
     /// @notice TODO
@@ -43,175 +43,152 @@ interface IInvestmentManager {
     // --- Outgoing message handling ---
     /// @notice Liquidity pools have to request investments from Centrifuge before
     ///         tranche tokens can be minted. The deposit requests are added to the order book
-    ///         on Centrifuge. Once the next epoch is executed on Centrifuge, liquidity pools can
+    ///         on Centrifuge. Once the next epoch is executed on Centrifuge, vaults can
     ///         proceed with tranche token payouts in case their orders got fulfilled.
-    /// @dev    The user currency amount required to fulfill the deposit request have to be locked,
+    /// @dev    The user asset amount required to fulfill the deposit request have to be locked,
     ///         even though the tranche token payout can only happen after epoch execution.
-    function requestDeposit(address liquidityPool, uint256 currencyAmount, address receiver, address owner)
-        external
-        returns (bool);
+    function requestDeposit(address vault, uint256 assets, address receiver, address owner) external returns (bool);
 
     /// @notice Request tranche token redemption. Liquidity pools have to request redemptions
-    ///         from Centrifuge before actual currency payouts can be done. The redemption
+    ///         from Centrifuge before actual asset payouts can be done. The redemption
     ///         requests are added to the order book on Centrifuge. Once the next epoch is
-    ///         executed on Centrifuge, liquidity pools can proceed with currency payouts
+    ///         executed on Centrifuge, vaults can proceed with asset payouts
     ///         in case their orders got fulfilled.
     /// @dev    The user tranche tokens required to fulfill the redemption request have to be locked,
-    ///         even though the currency payout can only happen after epoch execution.
-    function requestRedeem(address liquidityPool, uint256 trancheTokenAmount, address receiver, address /* owner */ )
+    ///         even though the asset payout can only happen after epoch execution.
+    function requestRedeem(address vault, uint256 shares, address receiver, address /* owner */ )
         external
         returns (bool);
 
     /// @notice TODO
-    function cancelDepositRequest(address liquidityPool, address owner) external;
+    function cancelDepositRequest(address vault, address owner) external;
 
     /// @notice TODO
-    function cancelRedeemRequest(address liquidityPool, address owner) external;
+    function cancelRedeemRequest(address vault, address owner) external;
 
     // --- Incoming message handling ---
     /// @notice TODO
     function handle(bytes calldata message) external;
 
     /// @notice TODO
-    function handleExecutedCollectInvest(
+    function fulfillDepositRequest(
         uint64 poolId,
         bytes16 trancheId,
         address user,
-        uint128 currencyId,
-        uint128 currencyPayout,
-        uint128 trancheTokenPayout,
-        uint128 fulfilledInvestOrder
+        uint128 assetId,
+        uint128 assets,
+        uint128 shares,
+        uint128 fulfillment
     ) external;
 
     /// @notice TODO
-    function handleExecutedCollectRedeem(
+    function fulfillRedeemRequest(
         uint64 poolId,
         bytes16 trancheId,
         address user,
-        uint128 currencyId,
-        uint128 currencyPayout,
-        uint128 trancheTokenPayout
+        uint128 assetId,
+        uint128 assets,
+        uint128 shares
     ) external;
 
     /// @notice TODO
-    function handleExecutedDecreaseInvestOrder(
+    function fulfillCancelDepositRequest(
         uint64 poolId,
         bytes16 trancheId,
         address user,
-        uint128 currencyId,
-        uint128 currencyPayout,
-        uint128 decreasedInvestOrder
+        uint128 assetId,
+        uint128 assets,
+        uint128 fulfillment
     ) external;
 
-    /// @dev Compared to handleExecutedDecreaseInvestOrder, there is no
-    ///      transfer of currency in this function because they
+    /// @dev Compared to handleFulfilledCancelDepositRequest, there is no
+    ///      transfer of asset in this function because they
     ///      can stay in the Escrow, ready to be claimed on deposit/mint.
-    function handleExecutedDecreaseRedeemOrder(
+    function fulfillCancelRedeemRequest(
         uint64 poolId,
         bytes16 trancheId,
         address user,
-        uint128 currencyId,
-        uint128 trancheTokenPayout,
-        uint128 decreasedRedeemOrder
+        uint128 assetId,
+        uint128 shares,
+        uint128 fulfillment
     ) external;
 
     /// @notice TODO
-    function handleTriggerIncreaseRedeemOrder(
-        uint64 poolId,
-        bytes16 trancheId,
-        address user,
-        uint128 currencyId,
-        uint128 trancheTokenAmount
-    ) external;
+    function triggerRedeemRequest(uint64 poolId, bytes16 trancheId, address user, uint128 assetId, uint128 shares)
+        external;
 
     // --- View functions ---
     /// @notice TODO
-    function convertToShares(address liquidityPool, uint256 _assets) external view returns (uint256 shares);
+    function convertToShares(address vault, uint256 _assets) external view returns (uint256 shares);
 
     /// @notice TODO
-    function convertToAssets(address liquidityPool, uint256 _shares) external view returns (uint256 assets);
+    function convertToAssets(address vault, uint256 _shares) external view returns (uint256 assets);
 
     /// @notice TODO
-    function maxDeposit(address liquidityPool, address user) external view returns (uint256);
+    function maxDeposit(address vault, address user) external view returns (uint256);
 
     /// @notice TODO
-    function maxMint(address liquidityPool, address user) external view returns (uint256 trancheTokenAmount);
+    function maxMint(address vault, address user) external view returns (uint256 shares);
 
     /// @notice TODO
-    function maxWithdraw(address liquidityPool, address user) external view returns (uint256 currencyAmount);
+    function maxWithdraw(address vault, address user) external view returns (uint256 assets);
 
     /// @notice TODO
-    function maxRedeem(address liquidityPool, address user) external view returns (uint256 trancheTokenAmount);
+    function maxRedeem(address vault, address user) external view returns (uint256 shares);
 
     /// @notice TODO
-    function pendingDepositRequest(address liquidityPool, address user)
-        external
-        view
-        returns (uint256 currencyAmount);
+    function pendingDepositRequest(address vault, address user) external view returns (uint256 assets);
 
     /// @notice TODO
-    function pendingRedeemRequest(address liquidityPool, address user)
-        external
-        view
-        returns (uint256 trancheTokenAmount);
+    function pendingRedeemRequest(address vault, address user) external view returns (uint256 shares);
 
     /// @notice TODO
-    function pendingCancelDepositRequest(address liquidityPool, address user) external view returns (bool isPending);
+    function pendingCancelDepositRequest(address vault, address user) external view returns (bool isPending);
 
     /// @notice TODO
-    function pendingCancelRedeemRequest(address liquidityPool, address user) external view returns (bool isPending);
+    function pendingCancelRedeemRequest(address vault, address user) external view returns (bool isPending);
 
     /// @notice TODO
-    function claimableCancelDepositRequest(address liquidityPool, address user)
-        external
-        view
-        returns (uint256 currencyAmount);
+    function claimableCancelDepositRequest(address vault, address user) external view returns (uint256 assets);
 
     /// @notice TODO
-    function claimableCancelRedeemRequest(address liquidityPool, address user)
-        external
-        view
-        returns (uint256 trancheTokenAmount);
+    function claimableCancelRedeemRequest(address vault, address user) external view returns (uint256 shares);
 
     /// @notice TODO
-    function exchangeRateLastUpdated(address liquidityPool) external view returns (uint64 lastUpdated);
+    function exchangeRateLastUpdated(address vault) external view returns (uint64 lastUpdated);
 
     // --- Liquidity Pool processing functions ---
-    /// @notice Processes owner's currency deposit / investment after the epoch has been executed on Centrifuge.
-    ///         The currency required to fulfill the invest order is already locked in escrow upon calling
+    /// @notice Processes owner's asset deposit / investment after the epoch has been executed on Centrifuge.
+    ///         The asset required to fulfill the invest order is already locked in escrow upon calling
     ///         requestDeposit.
-    function deposit(address liquidityPool, uint256 currencyAmount, address receiver, address owner)
+    function deposit(address vault, uint256 assets, address receiver, address owner)
         external
-        returns (uint256 trancheTokenAmount);
+        returns (uint256 shares);
 
-    /// @notice Processes owner's currency deposit / investment after the epoch has been executed on Centrifuge.
-    ///         The currency required to fulfill the invest order is already locked in escrow upon calling
+    /// @notice Processes owner's asset deposit / investment after the epoch has been executed on Centrifuge.
+    ///         The asset required to fulfill the invest order is already locked in escrow upon calling
     ///         requestDeposit.
-    function mint(address liquidityPool, uint256 trancheTokenAmount, address receiver, address owner)
-        external
-        returns (uint256 currencyAmount);
+    function mint(address vault, uint256 shares, address receiver, address owner) external returns (uint256 assets);
 
     /// @dev    Processes owner's tranche Token redemption after the epoch has been executed on Centrifuge.
-    ///         The trancheTokenAmount required to fulfill the redemption order was already locked in escrow
+    ///         The shares required to fulfill the redemption order was already locked in escrow
     ///         upon calling requestRedeem.
-    function redeem(address liquidityPool, uint256 trancheTokenAmount, address receiver, address owner)
-        external
-        returns (uint256 currencyAmount);
+    function redeem(address vault, uint256 shares, address receiver, address owner) external returns (uint256 assets);
 
     /// @dev    Processes owner's tranche token redemption after the epoch has been executed on Centrifuge.
-    ///         The trancheTokenAmount required to fulfill the redemption order was already locked in escrow
+    ///         The shares required to fulfill the redemption order was already locked in escrow
     ///         upon calling requestRedeem.
-    function withdraw(address liquidityPool, uint256 currencyAmount, address receiver, address owner)
+    function withdraw(address vault, uint256 assets, address receiver, address owner)
         external
-        returns (uint256 trancheTokenAmount);
+        returns (uint256 shares);
 
     /// @notice TODO
-    function claimCancelDepositRequest(address liquidityPool, address receiver, address owner)
+    function claimCancelDepositRequest(address vault, address receiver, address owner)
         external
-        returns (uint256 currencyAmount);
+        returns (uint256 assets);
 
     /// @notice TODO
-    function claimCancelRedeemRequest(address liquidityPool, address receiver, address owner)
+    function claimCancelRedeemRequest(address vault, address receiver, address owner)
         external
-        returns (uint256 trancheTokenAmount);
+        returns (uint256 shares);
 }
