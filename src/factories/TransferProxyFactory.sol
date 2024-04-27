@@ -2,19 +2,16 @@
 pragma solidity 0.8.21;
 
 import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
+import {IPoolManager} from "src/interfaces/IPoolManager.sol";
 import {ITransferProxy, ITransferProxyFactory} from "src/interfaces/factories/ITransferProxy.sol";
 
-interface PoolManagerLike {
-    function transfer(address asset, bytes32 recipient, uint128 amount) external;
-}
-
 contract TransferProxy is ITransferProxy {
-    PoolManagerLike public immutable poolManager;
+    IPoolManager public immutable poolManager;
     bytes32 public immutable destination;
     address public immutable recoverer;
 
     constructor(address poolManager_, bytes32 destination_, address recoverer_) {
-        poolManager = PoolManagerLike(poolManager_);
+        poolManager = IPoolManager(poolManager_);
         destination = destination_;
         recoverer = recoverer_;
     }
