@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
+import {IERC20, IERC20Metadata, IERC20Permit} from "src/interfaces/IERC20.sol";
+
 interface IERC1271 {
     function isValidSignature(bytes32, bytes memory) external view returns (bytes4);
 }
@@ -9,16 +11,23 @@ interface IERC1271 {
 /// @notice Standard ERC-20 implementation, with mint/burn functionality and permit logic.
 ///         Includes ERC-2771 context support to allow multiple trusted forwarders
 /// @author Modified from https://github.com/makerdao/xdomain-dss/blob/master/src/Dai.sol
-contract ERC20 {
+contract ERC20 is IERC20Metadata, IERC20Permit {
     mapping(address => uint256) public wards;
 
+    /// @inheritdoc IERC20Metadata
     string public name;
+    /// @inheritdoc IERC20Metadata
     string public symbol;
+    /// @inheritdoc IERC20Metadata
     uint8 public immutable decimals;
+    /// @inheritdoc IERC20
     uint256 public totalSupply;
 
+    /// @inheritdoc IERC20
     mapping(address => uint256) public balanceOf;
+    /// @inheritdoc IERC20
     mapping(address => mapping(address => uint256)) public allowance;
+    /// @inheritdoc IERC20Permit
     mapping(address => uint256) public nonces;
 
     // --- EIP712 ---
@@ -33,8 +42,6 @@ contract ERC20 {
     event Rely(address indexed user);
     event Deny(address indexed user);
     event File(bytes32 indexed what, string data);
-    event Approval(address indexed owner, address indexed spender, uint256 value);
-    event Transfer(address indexed from, address indexed to, uint256 value);
 
     constructor(uint8 decimals_) {
         decimals = decimals_;
@@ -76,6 +83,7 @@ contract ERC20 {
         );
     }
 
+    /// @inheritdoc IERC20Permit
     function DOMAIN_SEPARATOR() external view returns (bytes32) {
         return block.chainid == deploymentChainId ? _DOMAIN_SEPARATOR : _calculateDomainSeparator(block.chainid);
     }
@@ -88,6 +96,7 @@ contract ERC20 {
     }
 
     // --- ERC20 Mutations ---
+    /// @inheritdoc IERC20
     function transfer(address to, uint256 value) public virtual returns (bool) {
         require(to != address(0) && to != address(this), "ERC20/invalid-address");
         uint256 balance = balanceOf[_msgSender()];
@@ -103,6 +112,7 @@ contract ERC20 {
         return true;
     }
 
+    /// @inheritdoc IERC20
     function transferFrom(address from, address to, uint256 value) public virtual returns (bool) {
         require(to != address(0) && to != address(this), "ERC20/invalid-address");
         uint256 balance = balanceOf[from];
@@ -128,6 +138,7 @@ contract ERC20 {
         return true;
     }
 
+    /// @inheritdoc IERC20
     function approve(address spender, uint256 value) external returns (bool) {
         allowance[_msgSender()][spender] = value;
 
@@ -217,6 +228,7 @@ contract ERC20 {
         emit Approval(owner, spender, value);
     }
 
+    /// @inheritdoc IERC20Permit
     function permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
         external
     {

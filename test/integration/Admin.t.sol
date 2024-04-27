@@ -18,6 +18,7 @@ contract AdminTest is BaseTest {
         assertEq(root.wards(address(delayedAdmin)), 1);
         assertEq(root.wards(address(pauseAdmin)), 1);
         assertEq(pauseAdmin.wards(address(delayedAdmin)), 1);
+        assertEq(aggregator.wards(address(delayedAdmin)), 1);
     }
 
     //------ PauseAdmin tests ------//
@@ -45,19 +46,19 @@ contract AdminTest is BaseTest {
         string memory tokenName,
         string memory tokenSymbol,
         uint8 decimals,
-        uint128 currency,
+        uint128 assetId,
         address recipient,
         uint128 amount
     ) public {
         decimals = uint8(bound(decimals, 1, 18));
         vm.assume(amount > 0);
-        vm.assume(currency != 0);
+        vm.assume(assetId != 0);
         vm.assume(recipient != address(0));
 
         ERC20 erc20 = _newErc20(tokenName, tokenSymbol, decimals);
-        centrifugeChain.addCurrency(currency, address(erc20));
+        centrifugeChain.addAsset(assetId, address(erc20));
 
-        // First, an outgoing transfer must take place which has funds currency of the currency moved to
+        // First, an outgoing transfer must take place which has funds asset of the asset moved to
         // the escrow account, from which funds are moved from into the recipient on an incoming transfer.
         erc20.approve(address(poolManager), type(uint256).max);
         erc20.mint(address(this), amount);
@@ -70,20 +71,20 @@ contract AdminTest is BaseTest {
         string memory tokenName,
         string memory tokenSymbol,
         uint8 decimals,
-        uint128 currency,
+        uint128 assetId,
         bytes32 sender,
         address recipient,
         uint128 amount
     ) public {
         decimals = uint8(bound(decimals, 1, 18));
         vm.assume(amount > 0);
-        vm.assume(currency != 0);
+        vm.assume(assetId != 0);
         vm.assume(recipient != address(0));
 
         ERC20 erc20 = _newErc20(tokenName, tokenSymbol, decimals);
-        centrifugeChain.addCurrency(currency, address(erc20));
+        centrifugeChain.addAsset(assetId, address(erc20));
 
-        // First, an outgoing transfer must take place which has funds currency of the currency moved to
+        // First, an outgoing transfer must take place which has funds asset of the asset moved to
         // the escrow account, from which funds are moved from into the recipient on an incoming transfer.
         erc20.approve(address(poolManager), type(uint256).max);
         erc20.mint(address(this), amount);
@@ -92,29 +93,29 @@ contract AdminTest is BaseTest {
 
         pauseAdmin.pause();
         vm.expectRevert("Gateway/paused");
-        centrifugeChain.incomingTransfer(currency, sender, bytes32(bytes20(recipient)), amount);
+        centrifugeChain.incomingTransfer(assetId, sender, bytes32(bytes20(recipient)), amount);
     }
 
     function testUnpausingResumesFunctionality(
         string memory tokenName,
         string memory tokenSymbol,
         uint8 decimals,
-        uint128 currency,
+        uint128 assetId,
         bytes32 sender,
         address recipient,
         uint128 amount
     ) public {
         decimals = uint8(bound(decimals, 1, 18));
         vm.assume(amount > 0);
-        vm.assume(currency != 0);
+        vm.assume(assetId != 0);
         vm.assume(recipient != address(investmentManager.escrow()));
         vm.assume(recipient != address(0));
 
         ERC20 erc20 = _newErc20(tokenName, tokenSymbol, decimals);
         vm.assume(recipient != address(erc20));
-        centrifugeChain.addCurrency(currency, address(erc20));
+        centrifugeChain.addAsset(assetId, address(erc20));
 
-        // First, an outgoing transfer must take place which has funds currency of the currency moved to
+        // First, an outgoing transfer must take place which has funds asset of the asset moved to
         // the escrow account, from which funds are moved from into the recipient on an incoming transfer.
         erc20.approve(address(poolManager), type(uint256).max);
         erc20.mint(address(this), amount);
@@ -123,7 +124,7 @@ contract AdminTest is BaseTest {
         poolManager.transfer(address(erc20), bytes32(bytes20(recipient)), amount);
         assertEq(erc20.balanceOf(address(poolManager.escrow())), amount);
 
-        centrifugeChain.incomingTransfer(currency, sender, bytes32(bytes20(recipient)), amount);
+        centrifugeChain.incomingTransfer(assetId, sender, bytes32(bytes20(recipient)), amount);
         assertEq(erc20.balanceOf(address(poolManager.escrow())), 0);
         assertEq(erc20.balanceOf(recipient), amount);
     }
@@ -258,5 +259,32 @@ contract AdminTest is BaseTest {
 
         root.relyContract(address(investmentManager), address(this));
         assertEq(investmentManager.wards(address(this)), 1);
+    }
+
+    //------ Token Recovery tests ------///
+    function testRecoverTokens() public {
+        deploySimpleVault();
+        address clumsyUser = vm.addr(0x1234);
+        address vault_ = poolManager.getVault(5, bytes16(bytes("1")), defaultAssetId);
+        ERC7540Vault vault = ERC7540Vault(vault_);
+        address asset_ = vault.asset();
+        ERC20 asset = ERC20(asset_);
+        deal(asset_, clumsyUser, 300);
+        vm.startPrank(clumsyUser);
+        asset.transfer(vault_, 100);
+        asset.transfer(address(poolManager), 100);
+        asset.transfer(address(investmentManager), 100);
+        vm.stopPrank();
+        assertEq(asset.balanceOf(vault_), 100);
+        assertEq(asset.balanceOf(address(poolManager)), 100);
+        assertEq(asset.balanceOf(address(investmentManager)), 100);
+        assertEq(asset.balanceOf(clumsyUser), 0);
+        centrifugeChain.recoverTokens(vault_, asset_, clumsyUser, 100);
+        centrifugeChain.recoverTokens(address(poolManager), asset_, clumsyUser, 100);
+        centrifugeChain.recoverTokens(address(investmentManager), asset_, clumsyUser, 100);
+        assertEq(asset.balanceOf(clumsyUser), 300);
+        assertEq(asset.balanceOf(vault_), 0);
+        assertEq(asset.balanceOf(address(poolManager)), 0);
+        assertEq(asset.balanceOf(address(investmentManager)), 0);
     }
 }

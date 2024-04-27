@@ -2,47 +2,31 @@
 pragma solidity 0.8.21;
 
 import "forge-std/Test.sol";
-import {InvestmentManager} from "src/InvestmentManager.sol";
-import {Gateway} from "src/gateway/Gateway.sol";
 import {Auth} from "src/Auth.sol";
 import "./Mock.sol";
 
+interface AggregatorLike {
+    function handle(bytes memory message) external;
+}
+
 contract MockRouter is Auth, Mock {
-    address public immutable centrifugeChainOrigin;
-    address public gateway;
+    AggregatorLike public immutable aggregator;
 
-    mapping(bytes => bool) public sentMessages;
+    mapping(bytes => uint256) public sent;
 
-    constructor(address centrifugeChainOrigin_) {
-        centrifugeChainOrigin = centrifugeChainOrigin_;
+    constructor(address aggregator_) {
+        aggregator = AggregatorLike(aggregator_);
+
         wards[msg.sender] = 1;
     }
 
-    modifier onlyCentrifugeChainOrigin() {
-        require(msg.sender == address(centrifugeChainOrigin), "MockRouter/invalid-origin");
-        _;
-    }
-
-    modifier onlyGateway() {
-        require(msg.sender == address(gateway), "MockRouter/only-gateway-allowed-to-call");
-        _;
-    }
-
-    function file(bytes32 what, address addr) external {
-        if (what == "gateway") {
-            gateway = addr;
-        } else {
-            revert("MockRouter/file-unrecognized-param");
-        }
-    }
-
     function execute(bytes memory _message) external {
-        Gateway(gateway).handle(_message);
+        AggregatorLike(aggregator).handle(_message);
     }
 
-    function send(bytes memory message) public onlyGateway {
+    function send(bytes memory message) public {
         values_bytes["send"] = message;
-        sentMessages[message] = true;
+        sent[message]++;
     }
 
     // Added to be ignored in coverage report
