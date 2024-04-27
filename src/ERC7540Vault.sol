@@ -295,7 +295,7 @@ contract ERC7540Vault is Auth, IERC7540 {
     }
 
     // --- Helpers ---
-    /// @dev Price of 1 unit of share, quoted in the decimals of the asset
+    /// @notice Price of 1 unit of share, quoted in the decimals of the asset
     function pricePerShare() external view returns (uint256) {
         return convertToAssets(10 ** shareDecimals);
     }
