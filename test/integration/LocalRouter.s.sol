@@ -4,7 +4,7 @@ pragma solidity 0.8.21;
 import {Deployer, RouterLike} from "../../script/Deployer.sol";
 import {LocalRouter} from "./LocalRouter.sol";
 
-interface LiquidityPoolLike {
+interface VaultLike {
     function requestDeposit(uint256 assets, address owner) external;
 }
 
