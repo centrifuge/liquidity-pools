@@ -4,7 +4,7 @@ pragma solidity 0.8.21;
 import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 
 interface PoolManagerLike {
-    function transfer(address currency, bytes32 recipient, uint128 amount) external;
+    function transfer(address asset, bytes32 recipient, uint128 amount) external;
 }
 
 contract TransferProxy {
@@ -18,17 +18,17 @@ contract TransferProxy {
         recoverer = recoverer_;
     }
 
-    // Anyone can transfer tokens.
-    function transfer(address currency, uint128 amount) external {
-        SafeTransferLib.safeApprove(currency, address(poolManager), amount);
-        poolManager.transfer(currency, destination, amount);
+    /// @dev Anyone can transfer tokens.
+    function transfer(address asset, uint128 amount) external {
+        SafeTransferLib.safeApprove(asset, address(poolManager), type(uint256).max);
+        poolManager.transfer(asset, destination, amount);
     }
 
-    // The recoverer can receive tokens back. This is not permissionless as this could lead
-    // to griefing issues, where tokens are recovered before being transferred out.
-    function recover(address currency, uint128 amount) external {
+    /// @dev The recoverer can receive tokens back. This is not permissionless as this could lead
+    ///      to griefing issues, where tokens are recovered before being transferred out.
+    function recover(address asset, uint128 amount) external {
         require(msg.sender == recoverer, "TransferProxy/not-recoverer");
-        SafeTransferLib.safeTransfer(currency, address(recoverer), amount);
+        SafeTransferLib.safeTransfer(asset, address(recoverer), amount);
     }
 }
 
@@ -39,7 +39,7 @@ interface TransferProxyFactoryLike {
 /// @title  Restricted Transfer Proxy Factory
 /// @dev    Utility for deploying contracts that have a fixed destination for transfers
 ///         Users can send tokens to the TransferProxy, from a service that only supports
-///         ERC20 transfers and not full contract calls (such as Circle).
+///         ERC20 transfers and not full contract calls.
 ///         If tokens are incorrectly sent, they can be recovered to the recoverer address.
 contract TransferProxyFactory {
     address public immutable poolManager;
