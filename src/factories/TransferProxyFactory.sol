@@ -20,7 +20,6 @@ contract TransferProxy {
 
     /// @dev Anyone can transfer tokens.
     function transfer(address asset, uint128 amount) external {
-        SafeTransferLib.safeApprove(asset, address(poolManager), type(uint256).max);
         poolManager.transfer(asset, destination, amount);
     }
 
