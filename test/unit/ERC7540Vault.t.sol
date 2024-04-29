@@ -99,8 +99,8 @@ contract ERC7540VaultTest is BaseTest {
         bytes4 erc7575 = 0x2f0a18c5;
         bytes4 erc7540Deposit = 0x1683f250;
         bytes4 erc7540Redeem = 0x0899cb0b;
-        bytes4 erc7540CancelDeposit = 0x1683f250;
-        bytes4 erc7540CancelRedeem = 0x0899cb0b;
+        bytes4 erc7540CancelDeposit = 0x8bf840e3;
+        bytes4 erc7540CancelRedeem = 0xe76cffc7;
 
         vm.assume(
             unsupportedInterfaceId != erc165 && unsupportedInterfaceId != erc7575
