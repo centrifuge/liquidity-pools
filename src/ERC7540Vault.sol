@@ -201,6 +201,7 @@ contract ERC7540Vault is Auth, IERC7540 {
     /// @inheritdoc IERC165
     function supportsInterface(bytes4 interfaceId) external pure override returns (bool) {
         return interfaceId == type(IERC7540Deposit).interfaceId || interfaceId == type(IERC7540Redeem).interfaceId
+            || interfaceId == type(IERC7540CancelDeposit).interfaceId || interfaceId == type(IERC7540CancelRedeem).interfaceId
             || interfaceId == type(IERC7575).interfaceId || interfaceId == type(IERC165).interfaceId;
     }
 
