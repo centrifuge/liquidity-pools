@@ -472,7 +472,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
         (, lastUpdated) = poolManager.getTrancheTokenPrice(vault_.poolId(), vault_.trancheId(), vault_.asset());
     }
 
-    // --- Liquidity Pool processing functions ---
+    // --- Vault claim functions ---
     /// @inheritdoc IInvestmentManager
     function deposit(address vault, uint256 assets, address receiver, address owner)
         public
