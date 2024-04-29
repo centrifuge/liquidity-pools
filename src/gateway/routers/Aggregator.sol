@@ -5,6 +5,7 @@ import {Auth} from "src/Auth.sol";
 import {ArrayLib} from "src/libraries/ArrayLib.sol";
 import {MessagesLib} from "src/libraries/MessagesLib.sol";
 import {IAggregator} from "src/interfaces/gateway/IAggregator.sol";
+import "forge-std/console.sol";
 
 interface GatewayLike {
     function handle(bytes memory message) external;
@@ -102,7 +103,7 @@ contract Aggregator is Auth, IAggregator {
         }
 
         Message storage state = messages[messageHash];
-        if (!isRecovery) state.votes[router.id - 1]++;
+        state.votes[router.id - 1]++;
 
         if (state.votes.countNonZeroValues() >= router.quorum) {
             // Reduce votes by quorum
@@ -151,13 +152,14 @@ contract Aggregator is Auth, IAggregator {
     function executeMessageRecovery(bytes calldata message) public {
         bytes32 messageHash = keccak256(message);
         Recovery storage recovery = recoveries[messageHash];
+        Router storage router = validRouters[recovery.router];
 
         require(recovery.timestamp != 0, "Aggregator/message-recovery-not-initiated");
         require(recovery.timestamp <= block.timestamp, "Aggregator/challenge-period-has-not-ended");
-        require(validRouters[recovery.router].id != 0, "Aggregator/invalid-router");
+        require(router.id != 0, "Aggregator/invalid-router");
 
         delete recoveries[messageHash];
-        _handle(message, validRouters[recovery.router], true);
+        _handle(message, router, true);
     }
 
     // --- Outgoing ---
