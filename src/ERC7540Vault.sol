@@ -9,7 +9,7 @@ import "./interfaces/IERC7575.sol";
 import "./interfaces/IERC20.sol";
 
 interface AuthTransferLike {
-    function authTransferFrom(address from, address to, uint256 amount) external returns (bool);
+    function authTransferFrom(address sender, address from, address to, uint256 amount) external returns (bool);
 }
 
 /// @title  ERC7540Vault
@@ -134,7 +134,8 @@ contract ERC7540Vault is Auth, IERC7540 {
         );
         require(manager.requestRedeem(address(this), shares, receiver, owner), "ERC7540Vault/request-redeem-failed");
         require(
-            AuthTransferLike(share).authTransferFrom(owner, address(escrow), shares), "ERC7540Vault/transfer-failed"
+            AuthTransferLike(share).authTransferFrom(msg.sender, owner, address(escrow), shares),
+            "ERC7540Vault/transfer-failed"
         );
 
         require(

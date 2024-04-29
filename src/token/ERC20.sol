@@ -217,18 +217,18 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
     }
 
     // --- Fail-safe ---
-    function authTransferFrom(address from, address to, uint256 value) public auth returns (bool) {
+    function authTransferFrom(address sender, address from, address to, uint256 value) public auth returns (bool) {
         require(to != address(0) && to != address(this), "ERC20/invalid-address");
         uint256 balance = balanceOf[from];
         require(balance >= value, "ERC20/insufficient-balance");
 
         // Allowance is reduced if sufficient to comply with standard behaviour,
         // but is not required to enable transfers even without allowance
-        if (from != msg.sender) {
-            uint256 allowed = allowance[from][msg.sender];
+        if (sender != address(0)) {
+            uint256 allowed = allowance[from][sender];
             if (allowed != type(uint256).max) {
                 unchecked {
-                    allowance[from][msg.sender] = allowed - value;
+                    allowance[from][sender] = allowed - value;
                 }
             }
         }

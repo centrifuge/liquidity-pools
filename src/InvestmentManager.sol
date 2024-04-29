@@ -31,7 +31,7 @@ interface VaultLike is IERC20 {
 }
 
 interface AuthTransferLike {
-    function authTransferFrom(address from, address to, uint256 amount) external returns (bool);
+    function authTransferFrom(address sender, address from, address to, uint256 amount) external returns (bool);
 }
 
 /// @title  Investment Manager
@@ -379,7 +379,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
         if (tokensToTransfer > 0) {
             require(
                 AuthTransferLike(address(VaultLike(vault).share())).authTransferFrom(
-                    user, address(escrow), tokensToTransfer
+                    address(0), user, address(escrow), tokensToTransfer
                 ),
                 "InvestmentManager/transfer-failed"
             );

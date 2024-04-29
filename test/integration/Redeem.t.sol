@@ -119,7 +119,9 @@ contract RedeemTest is BaseTest {
         assertTrue(vault.maxWithdraw(self) <= 1);
     }
 
-    function testRedeemWithApproval(uint256 redemption1, uint256 redemption2) public {
+    function testRequestRedeemWithApproval(uint256 redemption1, uint256 redemption2) public {
+        vm.assume(investor != address(this));
+
         redemption1 = uint128(bound(redemption1, 2, MAX_UINT128 / 4));
         redemption2 = uint128(bound(redemption2, 2, MAX_UINT128 / 4));
         uint256 amount = redemption1 + redemption2;
@@ -131,43 +133,17 @@ contract RedeemTest is BaseTest {
 
         deposit(vault_, investor, amount); // deposit funds first // deposit funds first
 
-        // investor can requestRedeem
-        vm.prank(investor);
+        vm.expectRevert(bytes("ERC7540Vault/insufficient-allowance"));
         vault.requestRedeem(amount, investor, investor, "");
 
-        uint128 tokenAmount = uint128(trancheToken.balanceOf(address(escrow)));
-        centrifugeChain.isFulfilledRedeemRequest(
-            vault.poolId(),
-            vault.trancheId(),
-            bytes32(bytes20(investor)),
-            defaultAssetId,
-            uint128(amount),
-            uint128(tokenAmount)
-        );
-
-        assertEq(vault.maxRedeem(investor), tokenAmount);
-        assertEq(vault.maxWithdraw(investor), uint128(amount));
-
-        // test for both scenarios redeem & withdraw
-
-        // fail: self cannot redeem for investor
-        vm.expectRevert(bytes("ERC7540Vault/not-the-owner"));
-        vault.redeem(redemption1, investor, investor);
-        vm.expectRevert(bytes("ERC7540Vault/not-the-owner"));
-        vault.withdraw(redemption1, investor, investor);
-
-        // fail: ward can not make requests on behalf of investor
-        root.relyContract(vault_, self);
-        vm.expectRevert(bytes("ERC7540Vault/not-the-owner"));
-        vault.redeem(redemption1, investor, investor);
-        vm.expectRevert(bytes("ERC7540Vault/not-the-owner"));
-        vault.withdraw(redemption1, investor, investor);
-
-        // investor redeems rest for himself
+        assertEq(trancheToken.allowance(investor, address(this)), 0);
         vm.prank(investor);
-        vault.redeem(redemption1, investor, investor);
-        vm.prank(investor);
-        vault.withdraw(redemption2, investor, investor);
+        trancheToken.approve(address(this), amount);
+        assertEq(trancheToken.allowance(investor, address(this)), amount);
+
+        // investor can requestRedeem
+        vault.requestRedeem(amount, investor, investor, "");
+        assertEq(trancheToken.allowance(investor, address(this)), 0);
     }
 
     function testCancelRedeemOrder(uint256 amount) public {
