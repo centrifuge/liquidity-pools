@@ -5,7 +5,6 @@ import {Auth} from "src/Auth.sol";
 import {ArrayLib} from "src/libraries/ArrayLib.sol";
 import {MessagesLib} from "src/libraries/MessagesLib.sol";
 import {IAggregator} from "src/interfaces/gateway/IAggregator.sol";
-import "forge-std/console.sol";
 
 interface GatewayLike {
     function handle(bytes memory message) external;
