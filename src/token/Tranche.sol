@@ -26,8 +26,7 @@ interface RestrictionManagerLike {
 }
 
 /// @title  Tranche Token
-/// @notice Extension of ERC20 + ERC1404 for tranche tokens,
-///         which manages the trusted forwarders for the ERC20 token, and ensures
+/// @notice Extension of ERC20 + ERC1404 for tranche tokens, hat ensures
 ///         the transfer restrictions as defined in the RestrictionManager.
 contract TrancheToken is ERC20, ITrancheToken {
     RestrictionManagerLike public restrictionManager;
