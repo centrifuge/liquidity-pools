@@ -20,6 +20,8 @@ contract TransferProxyFactoryTest is Test {
     }
 
     function testTransferProxy(bytes32 destination, bytes32 otherDestination) public {
+        vm.assume(destination != otherDestination);
+
         TransferProxy proxy = TransferProxy(factory.newTransferProxy(destination, defaultRecoverer));
         assertEq(factory.poolManager(), address(poolManager));
         assertEq(factory.proxies(keccak256(bytes.concat(destination, bytes20(defaultRecoverer)))), address(proxy));
