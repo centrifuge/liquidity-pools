@@ -51,6 +51,8 @@ contract TransferProxyFactoryTest is Test {
 
     function testTransferProxyRecovery(bytes32 destination, address recoverer) public {
         vm.assume(recoverer != address(0));
+        vm.assume(recoverer != address(this));
+        vm.assume(recoverer != address(erc20));
 
         TransferProxy proxy = TransferProxy(factory.newTransferProxy(destination, recoverer));
 
