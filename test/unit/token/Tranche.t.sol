@@ -40,9 +40,6 @@ contract TrancheTokenTest is Test {
         vm.expectRevert(bytes("TrancheToken/file-unrecognized-param"));
         token.file("random", self, self);
 
-        vm.expectRevert(bytes("TrancheToken/file-unrecognized-param"));
-        token.file("random", self, false);
-
         // success
         token.file("restrictionManager", self);
         assertEq(address(token.restrictionManager()), self);
@@ -59,86 +56,6 @@ contract TrancheTokenTest is Test {
 
         vm.expectRevert(bytes("Auth/not-authorized"));
         token.file("vault", asset, vault);
-    }
-
-    // --- TrustedForwarder ---
-    function testAddTrustedForwarder(address trustedForwarder) public {
-        vm.assume(trustedForwarder != self);
-
-        assertTrue(!token.isTrustedForwarder(trustedForwarder));
-
-        //success
-        token.file("trustedForwarder", trustedForwarder, true);
-        assertTrue(token.isTrustedForwarder(trustedForwarder));
-
-        // remove self from wards
-        token.deny(self);
-        // auth fail
-        vm.expectRevert(bytes("Auth/not-authorized"));
-        token.file("trustedForwarder", trustedForwarder, true);
-    }
-
-    function testRemoveTrustedForwarder(address trustedForwarder) public {
-        vm.assume(trustedForwarder != self);
-
-        token.file("trustedForwarder", trustedForwarder, true);
-        assertTrue(token.isTrustedForwarder(trustedForwarder));
-
-        // success
-        token.file("trustedForwarder", trustedForwarder, false);
-        assertTrue(!token.isTrustedForwarder(trustedForwarder));
-
-        // remove self from wards
-        token.deny(self);
-        // auth fail
-        vm.expectRevert(bytes("Auth/not-authorized"));
-        token.file("trustedForwarder", trustedForwarder, false);
-    }
-
-    function testCheckTrustedForwarderWorks(uint256 amount) public {
-        vm.assume(amount > 0);
-
-        assertTrue(!token.isTrustedForwarder(self));
-        // make self trusted forwarder
-        token.file("trustedForwarder", self, true);
-        assertTrue(token.isTrustedForwarder(self));
-        // add self to restrictionManager
-        restrictionManager.updateMember(self, uint64(validUntil));
-        restrictionManager.updateMember(randomUser, uint64(validUntil));
-
-        bool success;
-        // test auth works with trustedForwarder
-        // fail -> randomUser not ward
-        (success,) = address(token).call(
-            abi.encodeWithSelector(bytes4(keccak256(bytes("mint(address,uint256)"))), self, amount, randomUser)
-        );
-        assertTrue(!success);
-        assertEq(token.balanceOf(self), 0);
-
-        // success -> self is ward
-        (success,) = address(token).call(
-            abi.encodeWithSelector(bytes4(keccak256(bytes("mint(address,uint256)"))), self, amount, self)
-        );
-        assertTrue(success);
-        assertEq(token.balanceOf(self), amount);
-
-        // test non auth function works with trusted forwarder
-        // fail -> randomUser has no balance
-        (success,) = address(token).call(
-            abi.encodeWithSelector(bytes4(keccak256(bytes("transfer(address,uint256)"))), self, amount, randomUser)
-        );
-
-        assertTrue(!success);
-        assertEq(token.balanceOf(self), amount);
-
-        // success -> self has enough balance to transfer
-        (success,) = address(token).call(
-            abi.encodeWithSelector(bytes4(keccak256(bytes("transfer(address,uint256)"))), randomUser, amount, self)
-        );
-
-        assertTrue(success);
-        assertEq(token.balanceOf(self), 0);
-        assertEq(token.balanceOf(randomUser), amount);
     }
 
     // --- RestrictionManager ---

@@ -8,6 +8,10 @@ import "./interfaces/IERC7540.sol";
 import "./interfaces/IERC7575.sol";
 import "./interfaces/IERC20.sol";
 
+interface AuthTransferLike {
+    function authTransferFrom(address from, address to, uint256 amount) external returns (bool);
+}
+
 /// @title  ERC7540Vault
 /// @notice Asynchronous Tokenized Vault standard implementation for Centrifuge pools
 ///
@@ -123,9 +127,15 @@ contract ERC7540Vault is Auth, IERC7540 {
         public
         returns (uint256)
     {
-        require(IERC20Metadata(share).balanceOf(owner) >= shares, "ERC7540Vault/insufficient-balance");
+        require(IERC20(share).balanceOf(owner) >= shares, "ERC7540Vault/insufficient-balance");
+        require(
+            owner == msg.sender || IERC20(share).allowance(owner, msg.sender) >= shares,
+            "ERC7540Vault/insufficient-allowance"
+        );
         require(manager.requestRedeem(address(this), shares, receiver, owner), "ERC7540Vault/request-redeem-failed");
-        require(_transferFrom(owner, address(escrow), shares), "ERC7540Vault/transfer-failed");
+        require(
+            AuthTransferLike(share).authTransferFrom(owner, address(escrow), shares), "ERC7540Vault/transfer-failed"
+        );
 
         require(
             data.length == 0 || receiver.code.length == 0

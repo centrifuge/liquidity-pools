@@ -32,15 +32,8 @@ interface RestrictionManagerLike {
 contract TrancheToken is ERC20, ITrancheToken {
     RestrictionManagerLike public restrictionManager;
 
-    mapping(address => bool) public trustedForwarders;
-
     /// @dev Look up vault by the asset (part of ERC7575)
     mapping(address asset => address) public vault;
-
-    // --- Events ---
-    event File(bytes32 indexed what, address data);
-    event File(bytes32 indexed what, address data1, address data2);
-    event File(bytes32 indexed what, address data1, bool data2);
 
     constructor(uint8 decimals_) ERC20(decimals_) {}
 
@@ -65,22 +58,15 @@ contract TrancheToken is ERC20, ITrancheToken {
         emit File(what, data1, data2);
     }
 
-    /// @inheritdoc ITrancheToken
-    function file(bytes32 what, address data1, bool data2) external auth {
-        if (what == "trustedForwarder") trustedForwarders[data1] = data2;
-        else revert("TrancheToken/file-unrecognized-param");
-        emit File(what, data1, data2);
-    }
-
     // --- ERC20 overrides with restrictions ---
     function transfer(address to, uint256 value)
         public
         override
-        restricted(_msgSender(), to, value)
+        restricted(msg.sender, to, value)
         returns (bool success)
     {
         success = super.transfer(to, value);
-        if (success) restrictionManager.afterTransfer(_msgSender(), to, value);
+        if (success) restrictionManager.afterTransfer(msg.sender, to, value);
     }
 
     function transferFrom(address from, address to, uint256 value)
@@ -93,7 +79,7 @@ contract TrancheToken is ERC20, ITrancheToken {
         if (success) restrictionManager.afterTransfer(from, to, value);
     }
 
-    function mint(address to, uint256 value) public override restricted(_msgSender(), to, value) {
+    function mint(address to, uint256 value) public override restricted(msg.sender, to, value) {
         super.mint(to, value);
         restrictionManager.afterMint(to, value);
     }
@@ -117,23 +103,5 @@ contract TrancheToken is ERC20, ITrancheToken {
     /// @inheritdoc ITrancheToken
     function SUCCESS_CODE() public view returns (uint8) {
         return restrictionManager.SUCCESS_CODE();
-    }
-
-    // --- ERC2771Context ---
-    /// @inheritdoc ITrancheToken
-    function isTrustedForwarder(address forwarder) public view returns (bool) {
-        return trustedForwarders[forwarder];
-    }
-
-    function _msgSender() internal view virtual override returns (address sender) {
-        if (isTrustedForwarder(msg.sender) && msg.data.length >= 20) {
-            // The assembly code is more direct than the Solidity version using `abi.decode`.
-            /// @solidity memory-safe-assembly
-            assembly {
-                sender := shr(96, calldataload(sub(calldatasize(), 20)))
-            }
-        } else {
-            return super._msgSender();
-        }
     }
 }
