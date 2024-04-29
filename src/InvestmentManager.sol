@@ -28,6 +28,8 @@ interface VaultLike is IERC20 {
     function share() external view returns (address);
     function emitDepositClaimable(address owner, uint256 assets, uint256 shares) external;
     function emitRedeemClaimable(address owner, uint256 assets, uint256 shares) external;
+    function emitCancelDepositClaimable(address owner, uint256 assets) external;
+    function emitCancelRedeemClaimable(address owner, uint256 shares) external;
 }
 
 interface AuthTransferLike {
@@ -330,6 +332,8 @@ contract InvestmentManager is Auth, IInvestmentManager {
             state.pendingDepositRequest > fulfillment ? state.pendingDepositRequest - fulfillment : 0;
 
         if (state.pendingDepositRequest == 0) state.pendingCancelDepositRequest = false;
+
+        VaultLike(vault).emitCancelDepositClaimable(user, assets);
     }
 
     /// @inheritdoc IInvestmentManager
@@ -349,6 +353,8 @@ contract InvestmentManager is Auth, IInvestmentManager {
             state.pendingRedeemRequest > fulfillment ? state.pendingRedeemRequest - fulfillment : 0;
 
         if (state.pendingRedeemRequest == 0) state.pendingCancelRedeemRequest = false;
+
+        VaultLike(vault).emitCancelRedeemClaimable(user, shares);
     }
 
     /// @inheritdoc IInvestmentManager

@@ -159,8 +159,9 @@ interface IERC7540Redeem {
 
 interface IERC7540CancelDeposit {
     event CancelDepositRequest(address indexed owner, uint256 indexed requestId, address sender);
-    event ClaimCancelDepositRequest(
-        address indexed sender, address indexed receiver, address indexed owner, uint256 assets
+    event CancelDepositClaimable(address indexed owner, uint256 indexed requestId, uint256 assets);
+    event CancelDepositClaim(
+        address indexed receiver, address indexed owner, uint256 indexed requestId, address sender, uint256 assets
     );
 
     /**
@@ -207,8 +208,9 @@ interface IERC7540CancelDeposit {
 
 interface IERC7540CancelRedeem {
     event CancelRedeemRequest(address indexed owner, uint256 indexed requestId, address sender);
-    event ClaimCancelRedeemRequest(
-        address indexed sender, address indexed receiver, address indexed owner, uint256 shares
+    event CancelRedeemClaimable(address indexed owner, uint256 indexed requestId, uint256 assets);
+    event CancelRedeemClaim(
+        address indexed receiver, address indexed owner, uint256 indexed requestId, address sender, uint256 shares
     );
 
     /**
