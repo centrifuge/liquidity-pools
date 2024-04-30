@@ -14,7 +14,6 @@ import {ERC7540VaultTest} from "test/unit/ERC7540Vault.t.sol";
 import {PermissionlessRouter} from "test/mocks/PermissionlessRouter.sol";
 import {Root} from "src/Root.sol";
 import {ERC7540Vault} from "src/ERC7540Vault.sol";
-
 import {AxelarScript} from "script/Axelar.s.sol";
 import "script/Deployer.sol";
 import "src/libraries/MathLib.sol";
