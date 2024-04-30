@@ -2,6 +2,7 @@
 pragma solidity 0.8.21;
 
 import {Root} from "src/Root.sol";
+import {IGuardian} from "src/interfaces/IGuardian.sol";
 
 interface SafeLike {
     function getOwners() external view returns (address[] memory);
@@ -18,12 +19,12 @@ interface RouterAggregatorLike {
 ///         and unpause the protocol through the timelock of Root. Additionally,
 ///         it allows any owners of the safe to instantly pause the protocol.
 
-contract Guardian {
+contract Guardian is IGuardian {
     Root public immutable root;
     SafeLike public immutable safe;
     RouterAggregatorLike public immutable aggregator;
 
-    constructor(address root_, address safe_, address aggregator_) {
+    constructor(address safe_, address root_, address aggregator_) {
         root = Root(root_);
         safe = SafeLike(safe_);
         aggregator = RouterAggregatorLike(aggregator_);
@@ -34,28 +35,33 @@ contract Guardian {
         _;
     }
 
-    modifier onlyOwner() {
-        require(_isSafeOwner(safe, msg.sender), "Guardian/not-an-owner-of-the-authorized-safe");
+    modifier onlySafeOrOwner() {
+        require(msg.sender == address(safe) || _isSafeOwner(safe, msg.sender), "Guardian/not-an-owner-of-the-authorized-safe");
         _;
     }
 
     // --- Admin actions ---
-    function pause() external onlyOwner {
+    /// @inheritdoc IInvestmentManager
+    function pause() external onlySafeOrOwner {
         root.pause();
     }
 
+    /// @inheritdoc IInvestmentManager
     function unpause() external onlySafe {
         root.unpause();
     }
 
+    /// @inheritdoc IInvestmentManager
     function scheduleRely(address target) external onlySafe {
         root.scheduleRely(target);
     }
 
+    /// @inheritdoc IInvestmentManager
     function cancelRely(address target) external onlySafe {
         root.cancelRely(target);
     }
 
+    /// @inheritdoc IInvestmentManager
     function disputeMessageRecovery(bytes32 messageHash) external onlySafe {
         aggregator.disputeMessageRecovery(messageHash);
     }

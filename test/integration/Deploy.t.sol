@@ -77,7 +77,9 @@ contract DeployTest is Test, Deployer {
         vm.assume(nonPauser != pausers[0] && nonPauser != pausers[1] && nonPauser != pausers[2]);
 
         assertEq(address(guardian.safe()), adminSafe);
-        assertEq(MockSafe(adminSafe).isOwner(pausers[0]), true);
+        for (uint256 i = 0; i < pausers.length; i++) {
+            assertEq(MockSafe(adminSafe).isOwner(pausers[i]), true);
+        }
         assertEq(MockSafe(adminSafe).isOwner(nonPauser), false);
     }
 

@@ -65,6 +65,7 @@ contract Deployer is Script {
 
         gateway = new Gateway(address(root), address(investmentManager), address(poolManager));
         aggregator = new Aggregator(address(gateway));
+        guardian = new Guardian(address(root), adminSafe, address(aggregator));
     }
 
     function wire(address router) public {
@@ -74,9 +75,6 @@ contract Deployer is Script {
         aggregator.file("routers", routers);
         gateway.file("aggregator", address(aggregator));
         gateway.rely(address(aggregator));
-
-        // Deploy gateway and guardian
-        guardian = new Guardian(address(root), adminSafe, address(aggregator));
 
         // Wire guardian
         root.rely(address(guardian));
