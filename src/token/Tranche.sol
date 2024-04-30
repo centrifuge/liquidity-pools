@@ -2,7 +2,7 @@
 pragma solidity 0.8.21;
 
 import {ERC20} from "./ERC20.sol";
-import {IERC20Metadata} from "../interfaces/IERC20.sol";
+import {IERC20Metadata, IERC20Callback} from "../interfaces/IERC20.sol";
 import {ITrancheToken} from "src/interfaces/token/ITranche.sol";
 
 interface TrancheTokenLike is IERC20Metadata {
@@ -29,23 +29,17 @@ interface RestrictionManagerLike {
 /// @notice Extension of ERC20 + ERC1404 for tranche tokens, hat ensures
 ///         the transfer restrictions as defined in the RestrictionManager.
 contract TrancheToken is ERC20, ITrancheToken {
-    RestrictionManagerLike public restrictionManager;
+    address public restrictionManager;
 
     /// @dev Look up vault by the asset (part of ERC7575)
     mapping(address asset => address) public vault;
 
     constructor(uint8 decimals_) ERC20(decimals_) {}
 
-    modifier restricted(address from, address to, uint256 value) {
-        uint8 restrictionCode = detectTransferRestriction(from, to, value);
-        require(restrictionCode == SUCCESS_CODE(), messageForTransferRestriction(restrictionCode));
-        _;
-    }
-
     // --- Administration ---
     /// @inheritdoc ITrancheToken
     function file(bytes32 what, address data) external auth {
-        if (what == "restrictionManager") restrictionManager = RestrictionManagerLike(data);
+        if (what == "restrictionManager") restrictionManager = data;
         else revert("TrancheToken/file-unrecognized-param");
         emit File(what, data);
     }
@@ -58,49 +52,51 @@ contract TrancheToken is ERC20, ITrancheToken {
     }
 
     // --- ERC20 overrides with restrictions ---
-    function transfer(address to, uint256 value)
-        public
-        override
-        restricted(msg.sender, to, value)
-        returns (bool success)
-    {
+    function transfer(address to, uint256 value) public override returns (bool success) {
         success = super.transfer(to, value);
-        if (success) restrictionManager.afterTransfer(msg.sender, to, value);
+        require(
+            IERC20Callback(restrictionManager).onERC20Transfer(msg.sender, to, value)
+                == IERC20Callback.onERC20Transfer.selector,
+            "ERC7540Vault/restrictions-failed"
+        );
     }
 
-    function transferFrom(address from, address to, uint256 value)
-        public
-        override
-        restricted(from, to, value)
-        returns (bool success)
-    {
+    function transferFrom(address from, address to, uint256 value) public override returns (bool success) {
         success = super.transferFrom(from, to, value);
-        if (success) restrictionManager.afterTransfer(from, to, value);
+        require(
+            IERC20Callback(restrictionManager).onERC20Transfer(from, to, value)
+                == IERC20Callback.onERC20Transfer.selector,
+            "ERC7540Vault/restrictions-failed"
+        );
     }
 
-    function mint(address to, uint256 value) public override restricted(msg.sender, to, value) {
+    function mint(address to, uint256 value) public override {
         super.mint(to, value);
-        restrictionManager.afterMint(to, value);
+        require(
+            IERC20Callback(restrictionManager).onERC20Transfer(address(0), to, value)
+                == IERC20Callback.onERC20Transfer.selector,
+            "ERC7540Vault/restrictions-failed"
+        );
     }
 
     // --- ERC1404 implementation ---
     /// @inheritdoc ITrancheToken
     function detectTransferRestriction(address from, address to, uint256 value) public view returns (uint8) {
-        return restrictionManager.detectTransferRestriction(from, to, value);
+        return RestrictionManagerLike(restrictionManager).detectTransferRestriction(from, to, value);
     }
 
     /// @inheritdoc ITrancheToken
     function checkTransferRestriction(address from, address to, uint256 value) public view returns (bool) {
-        return restrictionManager.detectTransferRestriction(from, to, value) == SUCCESS_CODE();
+        return RestrictionManagerLike(restrictionManager).detectTransferRestriction(from, to, value) == SUCCESS_CODE();
     }
 
     /// @inheritdoc ITrancheToken
     function messageForTransferRestriction(uint8 restrictionCode) public view returns (string memory) {
-        return restrictionManager.messageForTransferRestriction(restrictionCode);
+        return RestrictionManagerLike(restrictionManager).messageForTransferRestriction(restrictionCode);
     }
 
     /// @inheritdoc ITrancheToken
     function SUCCESS_CODE() public view returns (uint8) {
-        return restrictionManager.SUCCESS_CODE();
+        return RestrictionManagerLike(restrictionManager).SUCCESS_CODE();
     }
 }

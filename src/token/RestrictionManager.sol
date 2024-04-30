@@ -2,7 +2,7 @@
 pragma solidity 0.8.21;
 
 import {Auth} from "./../Auth.sol";
-import {IERC20} from "../interfaces/IERC20.sol";
+import {IERC20, IERC20Callback} from "../interfaces/IERC20.sol";
 import {IRestrictionManager} from "src/interfaces/token/IRestrictionManager.sol";
 
 interface RestrictionManagerLike {
@@ -14,7 +14,7 @@ interface RestrictionManagerLike {
 
 /// @title  Restriction Manager
 /// @notice ERC1404 based contract that checks transfer restrictions.
-contract RestrictionManager is Auth, IRestrictionManager {
+contract RestrictionManager is Auth, IRestrictionManager, IERC20Callback {
     string internal constant SUCCESS_MESSAGE = "RestrictionManager/transfer-allowed";
     string internal constant SOURCE_IS_FROZEN_MESSAGE = "RestrictionManager/source-is-frozen";
     string internal constant DESTINATION_IS_FROZEN_MESSAGE = "RestrictionManager/destination-is-frozen";
@@ -35,6 +35,13 @@ contract RestrictionManager is Auth, IRestrictionManager {
 
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
+    }
+
+    // --- Callback from tranche token ---
+    function onERC20Transfer(address from, address to, uint256 value) external returns (bytes4) {
+        uint8 restrictionCode = detectTransferRestriction(from, to, value);
+        require(restrictionCode == SUCCESS_CODE, messageForTransferRestriction(restrictionCode));
+        return bytes4(keccak256("onERC20Transfer(address,address,uint256)"));
     }
 
     // --- ERC1404 implementation ---

@@ -174,3 +174,7 @@ interface IERC20Permit {
     // solhint-disable-next-line func-name-mixedcase
     function DOMAIN_SEPARATOR() external view returns (bytes32);
 }
+
+interface IERC20Callback {
+    function onERC20Transfer(address from, address to, uint256 value) external returns (bytes4);
+}
