@@ -36,32 +36,35 @@ contract Guardian is IGuardian {
     }
 
     modifier onlySafeOrOwner() {
-        require(msg.sender == address(safe) || _isSafeOwner(safe, msg.sender), "Guardian/not-an-owner-of-the-authorized-safe");
+        require(
+            msg.sender == address(safe) || _isSafeOwner(safe, msg.sender),
+            "Guardian/not-an-owner-of-the-authorized-safe"
+        );
         _;
     }
 
     // --- Admin actions ---
-    /// @inheritdoc IInvestmentManager
+    /// @inheritdoc IGuardian
     function pause() external onlySafeOrOwner {
         root.pause();
     }
 
-    /// @inheritdoc IInvestmentManager
+    /// @inheritdoc IGuardian
     function unpause() external onlySafe {
         root.unpause();
     }
 
-    /// @inheritdoc IInvestmentManager
+    /// @inheritdoc IGuardian
     function scheduleRely(address target) external onlySafe {
         root.scheduleRely(target);
     }
 
-    /// @inheritdoc IInvestmentManager
+    /// @inheritdoc IGuardian
     function cancelRely(address target) external onlySafe {
         root.cancelRely(target);
     }
 
-    /// @inheritdoc IInvestmentManager
+    /// @inheritdoc IGuardian
     function disputeMessageRecovery(bytes32 messageHash) external onlySafe {
         aggregator.disputeMessageRecovery(messageHash);
     }

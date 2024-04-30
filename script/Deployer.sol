@@ -65,7 +65,7 @@ contract Deployer is Script {
 
         gateway = new Gateway(address(root), address(investmentManager), address(poolManager));
         aggregator = new Aggregator(address(gateway));
-        guardian = new Guardian(address(root), adminSafe, address(aggregator));
+        guardian = new Guardian(adminSafe, address(root), address(aggregator));
     }
 
     function wire(address router) public {

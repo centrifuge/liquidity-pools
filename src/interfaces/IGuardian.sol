@@ -2,7 +2,6 @@
 pragma solidity 0.8.21;
 
 interface IGuardian {
-
     /// @notice Pause the protocol
     /// @dev callable by both safe and owners
     function pause() external;

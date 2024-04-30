@@ -48,7 +48,7 @@ contract DeployTest is Test, Deployer {
         pausers[1] = makeAddr("pauser2");
         pausers[2] = makeAddr("pauser3");
         adminSafe = address(new MockSafe(pausers, 1));
-        guardian = new Guardian(address(root), adminSafe, address(aggregator));
+        guardian = new Guardian(adminSafe, address(root), address(aggregator));
         root.rely(address(guardian));
 
         erc20 = newErc20("Test", "TEST", 6);
