@@ -55,7 +55,7 @@ contract TrancheToken is ERC20, ITrancheToken {
         require(
             IERC20Callback(restrictionManager).onERC20Transfer(msg.sender, to, value)
                 == IERC20Callback.onERC20Transfer.selector,
-            "ERC7540Vault/restrictions-failed"
+            "TrancheToken/restrictions-failed"
         );
     }
 
@@ -64,7 +64,7 @@ contract TrancheToken is ERC20, ITrancheToken {
         require(
             IERC20Callback(restrictionManager).onERC20Transfer(from, to, value)
                 == IERC20Callback.onERC20Transfer.selector,
-            "ERC7540Vault/restrictions-failed"
+            "TrancheToken/restrictions-failed"
         );
     }
 
@@ -73,7 +73,7 @@ contract TrancheToken is ERC20, ITrancheToken {
         require(
             IERC20Callback(restrictionManager).onERC20Transfer(address(0), to, value)
                 == IERC20Callback.onERC20Transfer.selector,
-            "ERC7540Vault/restrictions-failed"
+            "TrancheToken/restrictions-failed"
         );
     }
 
