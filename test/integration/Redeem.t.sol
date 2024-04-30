@@ -133,7 +133,7 @@ contract RedeemTest is BaseTest {
 
         deposit(vault_, investor, amount); // deposit funds first // deposit funds first
 
-        vm.expectRevert(bytes("ERC7540Vault/insufficient-allowance"));
+        vm.expectRevert(bytes("ERC20/insufficient-allowance"));
         vault.requestRedeem(amount, investor, investor, "");
 
         assertEq(trancheToken.allowance(investor, address(this)), 0);

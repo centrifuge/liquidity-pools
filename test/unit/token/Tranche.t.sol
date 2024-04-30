@@ -61,8 +61,10 @@ contract TrancheTokenTest is Test {
     // --- RestrictionManager ---
     // transferFrom
     function testTransferFrom(uint256 amount) public {
+        amount = bound(amount, 0, type(uint256).max / 2);
+
         restrictionManager.updateMember(self, uint64(validUntil));
-        token.mint(self, amount);
+        token.mint(self, amount * 2);
 
         vm.expectRevert(bytes("RestrictionManager/destination-not-a-member"));
         token.transferFrom(self, targetUser, amount);
@@ -86,7 +88,6 @@ contract TrancheTokenTest is Test {
         restrictionManager.unfreeze(targetUser);
         token.transferFrom(self, targetUser, amount);
         assertEq(token.balanceOf(targetUser), amount);
-        afterTransferAssumptions(self, targetUser, amount);
 
         vm.warp(validUntil + 1);
         vm.expectRevert(bytes("RestrictionManager/destination-not-a-member"));
@@ -109,13 +110,14 @@ contract TrancheTokenTest is Test {
         token.transferFrom(sender, targetUser, amount);
         assertEq(token.balanceOf(targetUser), amount);
         assertEq(token.balanceOf(sender), 0);
-        afterTransferAssumptions(sender, targetUser, amount);
     }
 
     // transfer
     function testTransfer(uint256 amount) public {
+        amount = bound(amount, 0, type(uint256).max / 2);
+
         restrictionManager.updateMember(self, uint64(validUntil));
-        token.mint(self, amount);
+        token.mint(self, amount * 2);
 
         vm.expectRevert(bytes("RestrictionManager/destination-not-a-member"));
         token.transfer(targetUser, amount);
@@ -133,7 +135,6 @@ contract TrancheTokenTest is Test {
         restrictionManager.unfreeze(self);
         token.transfer(targetUser, amount);
         assertEq(token.balanceOf(targetUser), amount);
-        afterTransferAssumptions(self, targetUser, amount);
 
         vm.warp(validUntil + 1);
         vm.expectRevert(bytes("RestrictionManager/destination-not-a-member"));
@@ -159,6 +160,8 @@ contract TrancheTokenTest is Test {
 
     // mint
     function testMintTokensToMemberWorks(uint256 amount) public {
+        amount = bound(amount, 0, type(uint256).max / 2);
+
         // mint fails -> self not a member
         vm.expectRevert(bytes("RestrictionManager/destination-not-a-member"));
         token.mint(targetUser, amount);
@@ -169,7 +172,6 @@ contract TrancheTokenTest is Test {
 
         token.mint(targetUser, amount);
         assertEq(token.balanceOf(targetUser), amount);
-        afterMintAssumptions(targetUser, amount);
 
         vm.warp(validUntil + 1);
 
@@ -197,16 +199,5 @@ contract TrancheTokenTest is Test {
 
         vm.expectRevert(bytes("Auth/not-authorized"));
         token.mint(targetUser, amount);
-    }
-
-    function afterTransferAssumptions(address from, address to, uint256 amount) internal {
-        assertEq(restrictionManager.values_address("transfer_from"), from);
-        assertEq(restrictionManager.values_address("transfer_to"), to);
-        assertEq(restrictionManager.values_uint256("transfer_amount"), amount);
-    }
-
-    function afterMintAssumptions(address to, uint256 amount) internal {
-        assertEq(restrictionManager.values_address("mint_to"), to);
-        assertEq(restrictionManager.values_uint256("mint_amount"), amount);
     }
 }

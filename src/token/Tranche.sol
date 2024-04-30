@@ -21,8 +21,6 @@ interface RestrictionManagerLike {
     function detectTransferRestriction(address from, address to, uint256 value) external view returns (uint8);
     function messageForTransferRestriction(uint8 restrictionCode) external view returns (string memory);
     function SUCCESS_CODE() external view returns (uint8);
-    function afterTransfer(address from, address to, uint256 value) external;
-    function afterMint(address to, uint256 value) external;
 }
 
 /// @title  Tranche Token

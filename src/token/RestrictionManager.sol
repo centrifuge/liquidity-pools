@@ -38,7 +38,7 @@ contract RestrictionManager is Auth, IRestrictionManager, IERC20Callback {
     }
 
     // --- Callback from tranche token ---
-    function onERC20Transfer(address from, address to, uint256 value) external returns (bytes4) {
+    function onERC20Transfer(address from, address to, uint256 value) public view auth returns (bytes4) {
         uint8 restrictionCode = detectTransferRestriction(from, to, value);
         require(restrictionCode == SUCCESS_CODE, messageForTransferRestriction(restrictionCode));
         return bytes4(keccak256("onERC20Transfer(address,address,uint256)"));
