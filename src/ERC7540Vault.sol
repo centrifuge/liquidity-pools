@@ -128,10 +128,6 @@ contract ERC7540Vault is Auth, IERC7540 {
         returns (uint256)
     {
         require(IERC20(share).balanceOf(owner) >= shares, "ERC7540Vault/insufficient-balance");
-        require(
-            owner == msg.sender || IERC20(share).allowance(owner, msg.sender) >= shares,
-            "ERC7540Vault/insufficient-allowance"
-        );
         require(manager.requestRedeem(address(this), shares, receiver, owner), "ERC7540Vault/request-redeem-failed");
         require(
             AuthTransferLike(share).authTransferFrom(msg.sender, owner, address(escrow), shares),

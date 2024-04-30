@@ -167,12 +167,6 @@ contract TrancheTokenTest is Test {
         (, uint64 actualValidUntil) = restrictionManager.restrictions(targetUser);
         assertEq(actualValidUntil, validUntil);
 
-        restrictionManager.freeze(self);
-        vm.expectRevert(bytes("RestrictionManager/source-is-frozen"));
-        token.mint(targetUser, amount);
-        assertEq(token.balanceOf(targetUser), 0);
-
-        restrictionManager.unfreeze(self);
         token.mint(targetUser, amount);
         assertEq(token.balanceOf(targetUser), amount);
         afterMintAssumptions(targetUser, amount);

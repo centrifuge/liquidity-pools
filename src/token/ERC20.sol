@@ -227,6 +227,7 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
         if (sender != address(0)) {
             uint256 allowed = allowance[from][sender];
             if (allowed != type(uint256).max) {
+                require(allowed >= value, "ERC20/insufficient-allowance");
                 unchecked {
                     allowance[from][sender] = allowed - value;
                 }
