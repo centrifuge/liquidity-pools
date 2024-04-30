@@ -155,7 +155,7 @@ interface IInvestmentManager {
     function claimableCancelRedeemRequest(address vault, address user) external view returns (uint256 shares);
 
     /// @notice TODO
-    function exchangeRateLastUpdated(address vault) external view returns (uint64 lastUpdated);
+    function priceLastUpdated(address vault) external view returns (uint64 lastUpdated);
 
     // --- Liquidity Pool processing functions ---
     /// @notice Processes owner's asset deposit / investment after the epoch has been executed on Centrifuge.
