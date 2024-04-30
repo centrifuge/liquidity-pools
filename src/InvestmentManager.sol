@@ -98,7 +98,6 @@ contract InvestmentManager is Auth, IInvestmentManager {
         require(state.pendingCancelDepositRequest != true, "InvestmentManager/cancellation-is-pending");
 
         state.pendingDepositRequest = state.pendingDepositRequest + _assets;
-        state.exists = true;
 
         gateway.send(
             abi.encodePacked(
@@ -141,7 +140,6 @@ contract InvestmentManager is Auth, IInvestmentManager {
         require(state.pendingCancelRedeemRequest != true, "InvestmentManager/cancellation-is-pending");
 
         state.pendingRedeemRequest = state.pendingRedeemRequest + shares;
-        state.exists = true;
 
         gateway.send(
             abi.encodePacked(
@@ -294,7 +292,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
         address vault = poolManager.getVault(poolId, trancheId, assetId);
 
         InvestmentState storage state = investments[vault][user];
-        require(state.exists == true, "InvestmentManager/non-existent-user");
+        require(state.pendingDepositRequest > 0 || state.pendingRedeemRequest > 0, "InvestmentManager/non-existent-user");
 
         // Calculate new weighted average redeem price and update order book values
         state.redeemPrice =
@@ -323,7 +321,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
         address vault = poolManager.getVault(poolId, trancheId, assetId);
 
         InvestmentState storage state = investments[vault][user];
-        require(state.exists == true, "InvestmentManager/non-existent-user");
+        require(state.pendingDepositRequest > 0 || state.pendingRedeemRequest > 0 == true, "InvestmentManager/non-existent-user");
 
         state.claimableCancelDepositRequest = state.claimableCancelDepositRequest + assets;
         state.pendingDepositRequest =
