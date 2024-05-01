@@ -88,6 +88,7 @@ contract TrancheTokenTest is Test {
         restrictionManager.unfreeze(targetUser);
         token.transferFrom(self, targetUser, amount);
         assertEq(token.balanceOf(targetUser), amount);
+        afterTransferAssumptions(self, targetUser, amount);
 
         vm.warp(validUntil + 1);
         vm.expectRevert(bytes("RestrictionManager/destination-not-a-member"));
@@ -135,6 +136,7 @@ contract TrancheTokenTest is Test {
         restrictionManager.unfreeze(self);
         token.transfer(targetUser, amount);
         assertEq(token.balanceOf(targetUser), amount);
+        afterTransferAssumptions(self, targetUser, amount);
 
         vm.warp(validUntil + 1);
         vm.expectRevert(bytes("RestrictionManager/destination-not-a-member"));
@@ -172,6 +174,7 @@ contract TrancheTokenTest is Test {
 
         token.mint(targetUser, amount);
         assertEq(token.balanceOf(targetUser), amount);
+        afterTransferAssumptions(address(0), targetUser, amount);
 
         vm.warp(validUntil + 1);
 
@@ -199,5 +202,11 @@ contract TrancheTokenTest is Test {
 
         vm.expectRevert(bytes("Auth/not-authorized"));
         token.mint(targetUser, amount);
+    }
+
+    function afterTransferAssumptions(address from, address to, uint256 value) internal {
+        assertEq(restrictionManager.values_address("onERC20Transfer_from"), from);
+        assertEq(restrictionManager.values_address("onERC20Transfer_to"), to);
+        assertEq(restrictionManager.values_uint256("onERC20Transfer_value"), value);
     }
 }
