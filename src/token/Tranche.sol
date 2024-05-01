@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {ERC20} from "./ERC20.sol";
-import {IERC20Metadata, IERC20Callback} from "../interfaces/IERC20.sol";
+import {ERC20} from "src/token/ERC20.sol";
+import {IERC20Metadata, IERC20Callback} from "src/interfaces/IERC20.sol";
+import {IERC7575Share} from "src/interfaces/IERC7575.sol";
 import {ITrancheToken} from "src/interfaces/token/ITranche.sol";
 
 interface TrancheTokenLike is IERC20Metadata {
@@ -26,10 +27,10 @@ interface RestrictionManagerLike {
 /// @title  Tranche Token
 /// @notice Extension of ERC20 + ERC1404 for tranche tokens, hat ensures
 ///         the transfer restrictions as defined in the RestrictionManager.
-contract TrancheToken is ERC20, ITrancheToken {
+contract TrancheToken is ERC20, ITrancheToken, IERC7575Share {
     address public restrictionManager;
 
-    /// @dev Look up vault by the asset (part of ERC7575)
+    /// @inheritdoc IERC7575Share
     mapping(address asset => address) public vault;
 
     constructor(uint8 decimals_) ERC20(decimals_) {}
