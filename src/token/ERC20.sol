@@ -10,7 +10,6 @@ interface IERC1271 {
 
 /// @title  ERC20
 /// @notice Standard ERC-20 implementation, with mint/burn functionality and permit logic.
-///         Includes ERC-2771 context support to allow multiple trusted forwarders
 /// @author Modified from https://github.com/makerdao/xdomain-dss/blob/master/src/Dai.sol
 contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
     /// @inheritdoc IERC20Metadata
