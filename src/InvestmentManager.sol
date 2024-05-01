@@ -467,7 +467,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
     }
 
     /// @inheritdoc IInvestmentManager
-    function exchangeRateLastUpdated(address vault) public view returns (uint64 lastUpdated) {
+    function priceLastUpdated(address vault) public view returns (uint64 lastUpdated) {
         VaultLike vault_ = VaultLike(vault);
         (, lastUpdated) = poolManager.getTrancheTokenPrice(vault_.poolId(), vault_.trancheId(), vault_.asset());
     }
@@ -592,20 +592,14 @@ contract InvestmentManager is Auth, IInvestmentManager {
     }
 
     function _calculatePrice(address vault, uint128 assets, uint128 shares) internal view returns (uint256 price) {
-        (uint8 assetDecimals, uint8 shareDecimals) = _getPoolDecimals(vault);
-        price = _calculatePrice(_toPriceDecimals(assets, assetDecimals), _toPriceDecimals(shares, shareDecimals));
-    }
-
-    function _calculatePrice(uint256 assetsInPriceDecimals, uint256 sharesInPriceDecimals)
-        internal
-        pure
-        returns (uint256 price)
-    {
-        if (assetsInPriceDecimals == 0 || sharesInPriceDecimals == 0) {
+        if (assets == 0 || shares == 0) {
             return 0;
         }
 
-        price = assetsInPriceDecimals.mulDiv(10 ** PRICE_DECIMALS, sharesInPriceDecimals, MathLib.Rounding.Down);
+        (uint8 assetDecimals, uint8 shareDecimals) = _getPoolDecimals(vault);
+        price = _toPriceDecimals(assets, assetDecimals).mulDiv(
+            10 ** PRICE_DECIMALS, _toPriceDecimals(shares, shareDecimals), MathLib.Rounding.Down
+        );
     }
 
     /// @dev    When converting assets to shares using the price,

@@ -34,6 +34,7 @@ contract ERC7540Vault is Auth, IERC7540 {
     /// @notice The restricted ERC-20 vault share (tranche token).
     ///         Has a ratio (token price) of underlying assets exchanged on deposit/mint/withdraw/redeem.
     address public immutable share;
+    uint8 public immutable shareDecimals;
 
     /// @notice Escrow contract for tokens
     address public immutable escrow;
@@ -52,6 +53,7 @@ contract ERC7540Vault is Auth, IERC7540 {
         trancheId = trancheId_;
         asset = asset_;
         share = share_;
+        shareDecimals = IERC20Metadata(share).decimals();
         escrow = escrow_;
         manager = IInvestmentManager(manager_);
 
@@ -312,8 +314,13 @@ contract ERC7540Vault is Auth, IERC7540 {
     }
 
     // --- Helpers ---
-    function exchangeRateLastUpdated() external view returns (uint64) {
-        return manager.exchangeRateLastUpdated(address(this));
+    /// @notice Price of 1 unit of share, quoted in the decimals of the asset
+    function pricePerShare() external view returns (uint256) {
+        return convertToAssets(10 ** shareDecimals);
+    }
+
+    function priceLastUpdated() external view returns (uint64) {
+        return manager.priceLastUpdated(address(this));
     }
 
     function _transferFrom(address from, address to, uint256 value) internal returns (bool) {
