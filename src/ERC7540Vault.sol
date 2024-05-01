@@ -318,15 +318,4 @@ contract ERC7540Vault is Auth, IERC7540 {
     function emitRedeemClaimable(address owner, uint256 assets, uint256 shares) public auth {
         emit RedeemClaimable(owner, REQUEST_ID, assets, shares);
     }
-
-    function _successCheck(bool success) internal pure {
-        if (!success) {
-            assembly {
-                let ptr := mload(0x40)
-                let size := returndatasize()
-                returndatacopy(ptr, 0, size)
-                revert(ptr, size)
-            }
-        }
-    }
 }
