@@ -311,16 +311,6 @@ contract ERC7540Vault is Auth, IERC7540 {
         return manager.priceLastUpdated(address(this));
     }
 
-    function _transferFrom(address from, address to, uint256 value) internal returns (bool) {
-        (bool success, bytes memory data) = address(share).call(
-            bytes.concat(
-                abi.encodeWithSignature("transferFrom(address,address,uint256)", from, to, value), bytes20(msg.sender)
-            )
-        );
-        _successCheck(success);
-        return abi.decode(data, (bool));
-    }
-
     function emitDepositClaimable(address owner, uint256 assets, uint256 shares) public auth {
         emit DepositClaimable(owner, REQUEST_ID, assets, shares);
     }
