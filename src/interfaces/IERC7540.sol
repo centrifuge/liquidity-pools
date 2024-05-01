@@ -258,4 +258,15 @@ interface IERC7540CancelRedeem {
  * @dev    Interface of the ERC7540 "Asynchronous Tokenized Vault Standard", as defined in
  *         https://eips.ethereum.org/EIPS/eip-7540
  */
-interface IERC7540 is IERC7540Deposit, IERC7540Redeem, IERC7540CancelDeposit, IERC7540CancelRedeem, IERC7575 {}
+interface IERC7540 is IERC7540Deposit, IERC7540Redeem, IERC7540CancelDeposit, IERC7540CancelRedeem, IERC7575 {
+    /// @notice The event emitted when an operator is set.
+    /// @param owner The address of the owner.
+    /// @param operator The address of the operator.
+    /// @param approved The approval status.
+    event OperatorSet(address indexed owner, address indexed operator, bool approved);
+
+    /// @notice Sets or removes an operator for the caller.
+    /// @param operator The address of the operator.
+    /// @param approved The approval status.
+    function setOperator(address operator, bool approved) external returns (bool);
+}

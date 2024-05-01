@@ -45,6 +45,8 @@ contract ERC7540Vault is Auth, IERC7540 {
     /// @dev    Requests for Centrifuge pool are non-transferable and all have ID = 0
     uint256 constant REQUEST_ID = 0;
 
+    mapping(address => mapping(address => bool)) public isOperator;
+
     // --- Events ---
     event File(bytes32 indexed what, address data);
 
@@ -78,7 +80,7 @@ contract ERC7540Vault is Auth, IERC7540 {
         public
         returns (uint256)
     {
-        require(owner == msg.sender, "ERC7540Vault/not-msg-sender");
+        require(owner == msg.sender || isOperator[owner][msg.sender], "ERC7540Vault/not-msg-sender");
         require(IERC20(asset).balanceOf(owner) >= assets, "ERC7540Vault/insufficient-balance");
 
         require(manager.requestDeposit(address(this), assets, receiver, owner), "ERC7540Vault/request-deposit-failed");
@@ -153,7 +155,7 @@ contract ERC7540Vault is Auth, IERC7540 {
     // --- Asynchronous cancellation methods ---
     /// @inheritdoc IERC7540CancelDeposit
     function cancelDepositRequest(uint256, address owner) external {
-        require(owner == msg.sender, "ERC7540Vault/not-the-owner");
+        require(owner == msg.sender || isOperator[owner][msg.sender], "ERC7540Vault/not-the-owner");
         manager.cancelDepositRequest(address(this), owner);
         emit CancelDepositRequest(owner, REQUEST_ID, msg.sender);
     }
@@ -170,14 +172,14 @@ contract ERC7540Vault is Auth, IERC7540 {
 
     /// @inheritdoc IERC7540CancelDeposit
     function claimCancelDepositRequest(uint256, address receiver, address owner) external returns (uint256 assets) {
-        require(msg.sender == owner, "ERC7540Vault/not-the-owner");
+        require(msg.sender == owner || isOperator[owner][msg.sender], "ERC7540Vault/not-the-owner");
         assets = manager.claimCancelDepositRequest(address(this), receiver, owner);
         emit ClaimCancelDepositRequest(msg.sender, receiver, owner, assets);
     }
 
     /// @inheritdoc IERC7540CancelRedeem
     function cancelRedeemRequest(uint256, address owner) external {
-        require(msg.sender == owner, "ERC7540Vault/not-the-owner");
+        require(msg.sender == owner || isOperator[owner][msg.sender], "ERC7540Vault/not-the-owner");
         manager.cancelRedeemRequest(address(this), owner);
         emit CancelRedeemRequest(owner, REQUEST_ID, msg.sender);
     }
@@ -194,9 +196,16 @@ contract ERC7540Vault is Auth, IERC7540 {
 
     /// @inheritdoc IERC7540CancelRedeem
     function claimCancelRedeemRequest(uint256, address receiver, address owner) external returns (uint256 shares) {
-        require(msg.sender == owner, "ERC7540Vault/not-the-owner");
+        require(msg.sender == owner || isOperator[owner][msg.sender], "ERC7540Vault/not-the-owner");
         shares = manager.claimCancelRedeemRequest(address(this), receiver, owner);
         emit ClaimCancelRedeemRequest(msg.sender, receiver, owner, shares);
+    }
+
+    /// @inheritdoc IERC7540
+    function setOperator(address operator, bool approved) public virtual returns (bool) {
+        isOperator[msg.sender][operator] = approved;
+        emit OperatorSet(msg.sender, operator, approved);
+        return true;
     }
 
     // --- ERC165 support ---
@@ -231,10 +240,15 @@ contract ERC7540Vault is Auth, IERC7540 {
         maxAssets = manager.maxDeposit(address(this), owner);
     }
 
+    function deposit(uint256 assets, address receiver, address owner) public returns (uint256 shares) {
+        require(msg.sender == owner || isOperator[owner][msg.sender], "ERC7540Vault/not-the-owner");
+        shares = manager.deposit(address(this), assets, receiver, owner);
+        emit Deposit(owner, receiver, assets, shares);
+    }
+
     /// @inheritdoc IERC7575
     function deposit(uint256 assets, address receiver) external returns (uint256 shares) {
-        shares = manager.deposit(address(this), assets, receiver, msg.sender);
-        emit Deposit(msg.sender, receiver, assets, shares);
+        shares = deposit(assets, receiver, msg.sender);
     }
 
     /// @inheritdoc IERC7575
@@ -242,10 +256,15 @@ contract ERC7540Vault is Auth, IERC7540 {
         maxShares = manager.maxMint(address(this), owner);
     }
 
+    function mint(uint256 shares, address receiver, address owner) public returns (uint256 assets) {
+        require(msg.sender == owner || isOperator[owner][msg.sender], "ERC7540Vault/not-the-owner");
+        assets = manager.mint(address(this), shares, receiver, owner);
+        emit Deposit(owner, receiver, assets, shares);
+    }
+
     /// @inheritdoc IERC7575
     function mint(uint256 shares, address receiver) public returns (uint256 assets) {
-        assets = manager.mint(address(this), shares, receiver, msg.sender);
-        emit Deposit(msg.sender, receiver, assets, shares);
+        assets = mint(shares, receiver, msg.sender);
     }
 
     /// @inheritdoc IERC7575
@@ -256,7 +275,7 @@ contract ERC7540Vault is Auth, IERC7540 {
     /// @inheritdoc IERC7575
     /// @notice DOES NOT support owner != msg.sender since shares are already transferred on requestRedeem
     function withdraw(uint256 assets, address receiver, address owner) public returns (uint256 shares) {
-        require(msg.sender == owner, "ERC7540Vault/not-the-owner");
+        require(msg.sender == owner || isOperator[owner][msg.sender], "ERC7540Vault/not-the-owner");
         shares = manager.withdraw(address(this), assets, receiver, owner);
         emit Withdraw(msg.sender, receiver, owner, assets, shares);
     }
@@ -269,7 +288,7 @@ contract ERC7540Vault is Auth, IERC7540 {
     /// @inheritdoc IERC7575
     /// @notice     DOES NOT support owner != msg.sender since shares are already transferred on requestRedeem
     function redeem(uint256 shares, address receiver, address owner) external returns (uint256 assets) {
-        require(msg.sender == owner, "ERC7540Vault/not-the-owner");
+        require(msg.sender == owner || isOperator[owner][msg.sender], "ERC7540Vault/not-the-owner");
         assets = manager.redeem(address(this), shares, receiver, owner);
         emit Withdraw(msg.sender, receiver, owner, assets, shares);
     }
