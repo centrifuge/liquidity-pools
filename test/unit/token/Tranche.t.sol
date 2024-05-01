@@ -149,11 +149,11 @@ contract TrancheTokenTest is Test {
 
         vm.prank(address(2));
         vm.expectRevert(bytes("Auth/not-authorized"));
-        token.authTransferFrom(address(0), sourceUser, self, amount);
+        token.authTransferFrom(sourceUser, sourceUser, self, amount);
         assertEq(token.balanceOf(sourceUser), amount);
         assertEq(token.balanceOf(self), 0);
 
-        token.authTransferFrom(address(0), sourceUser, self, amount);
+        token.authTransferFrom(sourceUser, sourceUser, self, amount);
         assertEq(token.balanceOf(sourceUser), 0);
         assertEq(token.balanceOf(self), amount);
     }

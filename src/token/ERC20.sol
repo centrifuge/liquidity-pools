@@ -222,9 +222,7 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
         uint256 balance = balanceOf[from];
         require(balance >= value, "ERC20/insufficient-balance");
 
-        // Allowance is reduced if sufficient to comply with standard behaviour,
-        // but is not required to enable transfers even without allowance
-        if (sender != address(0) && sender != from) {
+        if (sender != from) {
             uint256 allowed = allowance[from][sender];
             if (allowed != type(uint256).max) {
                 require(allowed >= value, "ERC20/insufficient-allowance");

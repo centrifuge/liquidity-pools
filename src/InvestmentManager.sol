@@ -379,7 +379,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
         if (tokensToTransfer > 0) {
             require(
                 AuthTransferLike(address(VaultLike(vault).share())).authTransferFrom(
-                    address(0), user, address(escrow), tokensToTransfer
+                    user, user, address(escrow), tokensToTransfer
                 ),
                 "InvestmentManager/transfer-failed"
             );
