@@ -164,7 +164,7 @@ contract PoolManagerTest is BaseTest {
     }
 
     function testRestrictionSetIntegration(uint64 poolId, bytes16 trancheId, uint8 restrictionSet) public {
-        RestrictionManagerFactory restrictionManagerFactory = new RestrictionManagerFactory();
+        MockRestrictionManagerFactory restrictionManagerFactory = new MockRestrictionManagerFactory();
         poolManager.file("restrictionManagerFactory", address(restrictionManagerFactory));
         centrifugeChain.addPool(poolId);
         centrifugeChain.addTranche(poolId, trancheId, "", "", defaultDecimals, restrictionSet);
