@@ -266,6 +266,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
         address vault = poolManager.getVault(poolId, trancheId, assetId);
 
         InvestmentState storage state = investments[vault][user];
+        require(state.pendingDepositRequest > 0, "InvestmentManager/no-pending-deposit-request");
         state.depositPrice = _calculatePrice(vault, _maxDeposit(vault, user) + assets, state.maxMint + shares);
         state.maxMint = state.maxMint + shares;
         state.pendingDepositRequest =
@@ -292,9 +293,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
         address vault = poolManager.getVault(poolId, trancheId, assetId);
 
         InvestmentState storage state = investments[vault][user];
-        require(
-            state.pendingDepositRequest > 0 || state.pendingRedeemRequest > 0, "InvestmentManager/non-existent-user"
-        );
+        require(state.pendingRedeemRequest > 0, "InvestmentManager/no-pending-redeem-request");
 
         // Calculate new weighted average redeem price and update order book values
         state.redeemPrice =
@@ -323,10 +322,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
         address vault = poolManager.getVault(poolId, trancheId, assetId);
 
         InvestmentState storage state = investments[vault][user];
-        require(
-            state.pendingDepositRequest > 0 || state.pendingRedeemRequest > 0 == true,
-            "InvestmentManager/non-existent-user"
-        );
+        require(state.pendingCancelDepositRequest == true, "InvestmentManager/no-pending-cancel-deposit-request");
 
         state.claimableCancelDepositRequest = state.claimableCancelDepositRequest + assets;
         state.pendingDepositRequest =
@@ -346,6 +342,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
     ) public auth {
         address vault = poolManager.getVault(poolId, trancheId, assetId);
         InvestmentState storage state = investments[vault][user];
+        require(state.pendingCancelRedeemRequest == true, "InvestmentManager/no-pending-cancel-redeem-request");
 
         state.claimableCancelRedeemRequest = state.claimableCancelRedeemRequest + shares;
         state.pendingRedeemRequest =
