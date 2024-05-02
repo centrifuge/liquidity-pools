@@ -95,9 +95,9 @@ contract Gateway is Auth, IGateway {
             // Handle batch messages
             uint256 start = 1;
             while (start < message.length) {
-                uint8 length = message.toUint8(start);
-                _handle(message[start + 1:start + 1 + length]);
-                start += 1 + length;
+                uint16 length = message.toUint16(start);
+                _handle(message[start + 2:start + 2 + length]);
+                start += 2 + length;
             }
             return;
         } else {
