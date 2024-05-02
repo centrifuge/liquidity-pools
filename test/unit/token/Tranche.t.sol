@@ -3,7 +3,7 @@ pragma solidity 0.8.21;
 
 import {TrancheToken} from "src/token/Tranche.sol";
 import {RestrictionManagerLike} from "src/token/RestrictionManager.sol";
-import {RestrictionManagerMock} from "test/mocks/RestrictionManager.sol";
+import {MockRestrictionManager} from "test/mocks/MockRestrictionManager.sol";
 import "forge-std/Test.sol";
 
 interface ERC20Like {
@@ -12,7 +12,7 @@ interface ERC20Like {
 
 contract TrancheTokenTest is Test {
     TrancheToken token;
-    RestrictionManagerMock restrictionManager;
+    MockRestrictionManager restrictionManager;
 
     address self;
     address targetUser = makeAddr("targetUser");
@@ -25,7 +25,7 @@ contract TrancheTokenTest is Test {
         token.file("name", "Some Token");
         token.file("symbol", "ST");
 
-        restrictionManager = new RestrictionManagerMock(address(token));
+        restrictionManager = new MockRestrictionManager(address(token));
         restrictionManager.rely(address(token));
         token.file("restrictionManager", address(restrictionManager));
     }

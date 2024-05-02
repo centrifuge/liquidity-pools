@@ -2,8 +2,8 @@
 pragma solidity 0.8.21;
 
 import "forge-std/Test.sol";
-import {AxelarPrecompileMock} from "test/mocks/AxelarPrecompileMock.sol";
-import {AxelarGatewayMock} from "test/mocks/AxelarGatewayMock.sol";
+import {MockAxelarPrecompile} from "test/mocks/MockAxelarPrecompile.sol";
+import {MockAxelarGateway} from "test/mocks/MockAxelarGateway.sol";
 import {AxelarForwarder} from "src/gateway/routers/axelar/Forwarder.sol";
 
 contract AxelarForwarderTest is Test {
@@ -11,13 +11,13 @@ contract AxelarForwarderTest is Test {
     // 0x0000000000000000000000000000000000000800 in hex.
     address internal constant PRECOMPILE = 0x0000000000000000000000000000000000000800;
 
-    AxelarPrecompileMock precompile = AxelarPrecompileMock(PRECOMPILE);
-    AxelarGatewayMock axelarGateway;
+    MockAxelarPrecompile precompile = MockAxelarPrecompile(PRECOMPILE);
+    MockAxelarGateway axelarGateway;
     AxelarForwarder forwarder;
 
     function setUp() public {
-        vm.etch(PRECOMPILE, address(new AxelarPrecompileMock()).code);
-        axelarGateway = new AxelarGatewayMock();
+        vm.etch(PRECOMPILE, address(new MockAxelarPrecompile()).code);
+        axelarGateway = new MockAxelarGateway();
         forwarder = new AxelarForwarder(address(axelarGateway));
     }
 

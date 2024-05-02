@@ -3,7 +3,7 @@ pragma solidity 0.8.21;
 
 import "./Mock.sol";
 
-contract RestrictionManagerFactoryMock is Mock {
+contract RestrictionManagerFactory is Mock {
     function newRestrictionManager(
         uint8 restrictionSet,
         address, /* token */
