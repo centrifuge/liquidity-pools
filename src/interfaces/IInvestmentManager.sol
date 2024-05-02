@@ -30,7 +30,7 @@ struct InvestmentState {
 interface IInvestmentManager {
     // --- Events ---
     event File(bytes32 indexed what, address data);
-    event TriggerIncreaseRedeemOrder(
+    event TriggerRedeemRequest(
         uint64 indexed poolId, bytes16 indexed trancheId, address user, address asset, uint128 shares
     );
 

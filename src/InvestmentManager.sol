@@ -244,7 +244,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
                 message.toUint128(73),
                 message.toUint128(89)
             );
-        } else if (call == MessagesLib.Call.TriggerIncreaseRedeemOrder) {
+        } else if (call == MessagesLib.Call.TriggerRedeemRequest) {
             triggerRedeemRequest(
                 message.toUint64(1),
                 message.toBytes16(9),
@@ -390,7 +390,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
                 "InvestmentManager/transfer-failed"
             );
         }
-        emit TriggerIncreaseRedeemOrder(poolId, trancheId, user, poolManager.idToAsset(assetId), shares);
+        emit TriggerRedeemRequest(poolId, trancheId, user, poolManager.idToAsset(assetId), shares);
     }
 
     // --- View functions ---
