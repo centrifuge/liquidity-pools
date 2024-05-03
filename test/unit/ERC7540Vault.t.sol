@@ -69,7 +69,7 @@ contract ERC7540VaultTest is BaseTest {
         root.relyContract(vault_, self);
         vault.endorse(router);
         assertEq(vault.endorsements(router), 1);
-        assertEq(vault.isEndorsed(router), true);
+        assertEq(vault.endorsed(router), true);
 
         // veto
         root.denyContract(vault_, self);
@@ -79,7 +79,7 @@ contract ERC7540VaultTest is BaseTest {
         root.relyContract(vault_, self);
         vault.veto(router);
         assertEq(vault.endorsements(router), 0);
-        assertEq(vault.isEndorsed(router), false);
+        assertEq(vault.endorsed(router), false);
     }
 
     // --- uint128 type checks ---

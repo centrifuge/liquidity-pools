@@ -5,7 +5,7 @@ import "./../BaseTest.sol";
 
 contract LiquidityPoolRouter is BaseTest {
     function testDeposit(uint256 amount) public {
-        // amount = uint128(bound(amount, 4, MAX_UINT128)); 
+        // amount = uint128(bound(amount, 4, MAX_UINT128));
         // vm.assume(amount % 2 == 0);
 
         // address lPool_ = deploySimplePool();
@@ -17,7 +17,8 @@ contract LiquidityPoolRouter is BaseTest {
         // vm.expectRevert(bytes("InvestmentManager/owner-is-restricted"));
         // lPool.requestDeposit(amount, self, self, "");
 
-        // centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), self, type(uint64).max); // add user as member
+        // centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), self, type(uint64).max); // add user as
+        // member
 
         // // will fail - user not member: can not receive trancheToken
         // vm.expectRevert(bytes("InvestmentManager/transfer-not-allowed"));
@@ -138,6 +139,5 @@ contract LiquidityPoolRouter is BaseTest {
         // lPool.withdraw(2, investor, self);
         // vm.expectRevert(bytes("InvestmentManager/exceeds-redeem-limits"));
         // lPool.redeem(2, investor, self);
-
     }
 }

@@ -1,4 +1,3 @@
-
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
@@ -9,5 +8,5 @@ import {SucceedingRequestReceiver} from "test/mocks/SucceedingRequestReceiver.so
 import {FailingRequestReceiver} from "test/mocks/FailingRequestReceiver.sol";
 
 contract LiquidityPoolTest is BaseTest {
-    // test deployment & token recovery
+// test deployment & token recovery
 }

@@ -85,7 +85,7 @@ contract InvestorHandler is BaseHandler {
         uint256 amount_ = bound(amount, 0, vault.maxDeposit(currentInvestor));
         if (amount_ == 0) return;
 
-        vault.deposit(amount_, currentInvestor, address(this));
+        vault.deposit(amount_, currentInvestor);
     }
 
     function mint(uint256 investorSeed, uint128 amount) public useRandomInvestor(investorSeed) {

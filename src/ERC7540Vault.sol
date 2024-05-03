@@ -85,7 +85,7 @@ contract ERC7540Vault is Auth, IERC7540 {
         emit Veto(user);
     }
 
-    function isEndorsed(address user) public view returns (bool) {
+    function endorsed(address user) public view returns (bool) {
         return endorsements[user] == 1;
     }
 
@@ -255,8 +255,17 @@ contract ERC7540Vault is Auth, IERC7540 {
     }
 
     /// @inheritdoc IERC7575
+
+    function deposit(uint256 assets, address receiver) external returns (uint256 shares) {
+        shares = _deposit(assets, receiver, msg.sender);
+    }
+
     function deposit(uint256 assets, address receiver, address owner) external returns (uint256 shares) {
-        require(msg.sender == owner || isEndorsed(msg.sender), "LiquidityPool/not-owner-or-endorsed");
+        require(msg.sender == owner || endorsed(msg.sender), "LiquidityPool/not-owner-or-endorsed");
+        shares = _deposit(assets, receiver, owner);
+    }
+
+    function _deposit(uint256 assets, address receiver, address owner) internal returns (uint256 shares) {
         shares = manager.deposit(address(this), assets, receiver, owner);
         emit Deposit(owner, receiver, assets, shares);
     }
@@ -293,7 +302,7 @@ contract ERC7540Vault is Auth, IERC7540 {
     /// @inheritdoc IERC7575
     /// @notice     DOES NOT support owner != msg.sender since shares are already transferred on requestRedeem
     function redeem(uint256 shares, address receiver, address owner) external returns (uint256 assets) {
-        require(msg.sender == owner || isEndorsed(msg.sender), "LiquidityPool/not-owner-or-endorsed");
+        require(msg.sender == owner || endorsed(msg.sender), "LiquidityPool/not-owner-or-endorsed");
         assets = manager.redeem(address(this), shares, receiver, owner);
         emit Withdraw(msg.sender, receiver, owner, assets, shares);
     }
