@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {IERC7575} from "./IERC7575.sol";
+import {IERC7575} from "src/interfaces/IERC7575.sol";
 
 interface IERC7540DepositReceiver {
     /**
@@ -65,7 +65,6 @@ interface IERC7540Deposit {
     event DepositRequest(
         address indexed receiver, address indexed owner, uint256 indexed requestId, address sender, uint256 assets
     );
-    event DepositClaimable(address indexed owner, uint256 indexed requestId, uint256 assets, uint256 shares);
 
     /**
      * @dev Transfers assets from sender into the Vault and submits a Request for asynchronous deposit.
@@ -115,7 +114,6 @@ interface IERC7540Redeem {
     event RedeemRequest(
         address indexed receiver, address indexed owner, uint256 indexed requestId, address sender, uint256 assets
     );
-    event RedeemClaimable(address indexed owner, uint256 indexed requestId, uint256 assets, uint256 shares);
 
     /**
      * @dev Assumes control of shares from sender into the Vault and submits a Request for asynchronous redeem.
@@ -159,8 +157,8 @@ interface IERC7540Redeem {
 
 interface IERC7540CancelDeposit {
     event CancelDepositRequest(address indexed owner, uint256 indexed requestId, address sender);
-    event ClaimCancelDepositRequest(
-        address indexed sender, address indexed receiver, address indexed owner, uint256 assets
+    event CancelDepositClaim(
+        address indexed receiver, address indexed owner, uint256 indexed requestId, address sender, uint256 assets
     );
 
     /**
@@ -207,8 +205,8 @@ interface IERC7540CancelDeposit {
 
 interface IERC7540CancelRedeem {
     event CancelRedeemRequest(address indexed owner, uint256 indexed requestId, address sender);
-    event ClaimCancelRedeemRequest(
-        address indexed sender, address indexed receiver, address indexed owner, uint256 shares
+    event CancelRedeemClaim(
+        address indexed receiver, address indexed owner, uint256 indexed requestId, address sender, uint256 shares
     );
 
     /**
@@ -257,8 +255,14 @@ interface IERC7540CancelRedeem {
  * @title  IERC7540
  * @dev    Interface of the ERC7540 "Asynchronous Tokenized Vault Standard", as defined in
  *         https://eips.ethereum.org/EIPS/eip-7540
+ * @dev    The claimable events are not included in the standard.
  */
 interface IERC7540 is IERC7540Deposit, IERC7540Redeem, IERC7540CancelDeposit, IERC7540CancelRedeem, IERC7575 {
+    event DepositClaimable(address indexed owner, uint256 indexed requestId, uint256 assets, uint256 shares);
+    event RedeemClaimable(address indexed owner, uint256 indexed requestId, uint256 assets, uint256 shares);
+    event CancelDepositClaimable(address indexed owner, uint256 indexed requestId, uint256 assets);
+    event CancelRedeemClaimable(address indexed owner, uint256 indexed requestId, uint256 shares);
+    
     /// @notice The event emitted when an operator is set.
     /// @param owner The address of the owner.
     /// @param operator The address of the operator.

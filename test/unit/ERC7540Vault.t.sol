@@ -4,7 +4,7 @@ pragma solidity 0.8.21;
 import "test/BaseTest.sol";
 import "src/interfaces/IERC7575.sol";
 import "src/interfaces/IERC7540.sol";
-import {SucceedingRequestReceiver} from "test/mocks/SucceedingRequestReceiver.sol";
+import {MockSucceedingRequestReceiver} from "test/mocks/MockSucceedingRequestReceiver.sol";
 import {FailingRequestReceiver} from "test/mocks/FailingRequestReceiver.sol";
 
 contract ERC7540VaultTest is BaseTest {
@@ -99,10 +99,13 @@ contract ERC7540VaultTest is BaseTest {
         bytes4 erc7575 = 0x2f0a18c5;
         bytes4 erc7540Deposit = 0x1683f250;
         bytes4 erc7540Redeem = 0x0899cb0b;
+        bytes4 erc7540CancelDeposit = 0x8bf840e3;
+        bytes4 erc7540CancelRedeem = 0xe76cffc7;
 
         vm.assume(
             unsupportedInterfaceId != erc165 && unsupportedInterfaceId != erc7575
                 && unsupportedInterfaceId != erc7540Deposit && unsupportedInterfaceId != erc7540Redeem
+                && unsupportedInterfaceId != erc7540CancelDeposit && unsupportedInterfaceId != erc7540CancelRedeem
         );
 
         address vault_ = deploySimpleVault();
@@ -112,11 +115,15 @@ contract ERC7540VaultTest is BaseTest {
         assertEq(type(IERC7575).interfaceId, erc7575);
         assertEq(type(IERC7540Deposit).interfaceId, erc7540Deposit);
         assertEq(type(IERC7540Redeem).interfaceId, erc7540Redeem);
+        assertEq(type(IERC7540CancelDeposit).interfaceId, erc7540CancelDeposit);
+        assertEq(type(IERC7540CancelRedeem).interfaceId, erc7540CancelRedeem);
 
         assertEq(vault.supportsInterface(erc165), true);
         assertEq(vault.supportsInterface(erc7575), true);
         assertEq(vault.supportsInterface(erc7540Deposit), true);
         assertEq(vault.supportsInterface(erc7540Redeem), true);
+        assertEq(vault.supportsInterface(erc7540CancelDeposit), true);
+        assertEq(vault.supportsInterface(erc7540CancelRedeem), true);
 
         assertEq(vault.supportsInterface(unsupportedInterfaceId), false);
     }
@@ -128,7 +135,7 @@ contract ERC7540VaultTest is BaseTest {
 
         address vault_ = deploySimpleVault();
         ERC7540Vault vault = ERC7540Vault(vault_);
-        SucceedingRequestReceiver receiver = new SucceedingRequestReceiver();
+        MockSucceedingRequestReceiver receiver = new MockSucceedingRequestReceiver();
 
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), address(receiver), type(uint64).max);
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max);
@@ -179,7 +186,7 @@ contract ERC7540VaultTest is BaseTest {
     function testSucceedingCallbacksNotCalledWithEmptyData() public {
         address vault_ = deploySimpleVault();
         ERC7540Vault vault = ERC7540Vault(vault_);
-        SucceedingRequestReceiver receiver = new SucceedingRequestReceiver();
+        MockSucceedingRequestReceiver receiver = new MockSucceedingRequestReceiver();
 
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), address(receiver), type(uint64).max);
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max);

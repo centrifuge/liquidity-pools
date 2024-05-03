@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {Auth} from "./Auth.sol";
-import {CastLib} from "./libraries/CastLib.sol";
-import {MathLib} from "./libraries/MathLib.sol";
-import {SafeTransferLib} from "./libraries/SafeTransferLib.sol";
-import {MessagesLib} from "./libraries/MessagesLib.sol";
-import {BytesLib} from "./libraries/BytesLib.sol";
+import {Auth} from "src/Auth.sol";
+import {CastLib} from "src/libraries/CastLib.sol";
+import {MathLib} from "src/libraries/MathLib.sol";
+import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
+import {MessagesLib} from "src/libraries/MessagesLib.sol";
+import {BytesLib} from "src/libraries/BytesLib.sol";
 import {IERC20, IERC20Metadata} from "src/interfaces/IERC20.sol";
 import {IPoolManager} from "src/interfaces/IPoolManager.sol";
 import {IInvestmentManager, InvestmentState} from "src/interfaces/IInvestmentManager.sol";
@@ -28,10 +28,12 @@ interface VaultLike is IERC20 {
     function share() external view returns (address);
     function emitDepositClaimable(address owner, uint256 assets, uint256 shares) external;
     function emitRedeemClaimable(address owner, uint256 assets, uint256 shares) external;
+    function emitCancelDepositClaimable(address owner, uint256 assets) external;
+    function emitCancelRedeemClaimable(address owner, uint256 shares) external;
 }
 
 interface AuthTransferLike {
-    function authTransferFrom(address from, address to, uint256 amount) external returns (bool);
+    function authTransferFrom(address sender, address from, address to, uint256 amount) external returns (bool);
 }
 
 /// @title  Investment Manager
@@ -242,7 +244,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
                 message.toUint128(73),
                 message.toUint128(89)
             );
-        } else if (call == MessagesLib.Call.TriggerIncreaseRedeemOrder) {
+        } else if (call == MessagesLib.Call.TriggerRedeemRequest) {
             triggerRedeemRequest(
                 message.toUint64(1),
                 message.toBytes16(9),
@@ -330,6 +332,8 @@ contract InvestmentManager is Auth, IInvestmentManager {
             state.pendingDepositRequest > fulfillment ? state.pendingDepositRequest - fulfillment : 0;
 
         if (state.pendingDepositRequest == 0) state.pendingCancelDepositRequest = false;
+
+        VaultLike(vault).emitCancelDepositClaimable(user, assets);
     }
 
     /// @inheritdoc IInvestmentManager
@@ -349,6 +353,8 @@ contract InvestmentManager is Auth, IInvestmentManager {
             state.pendingRedeemRequest > fulfillment ? state.pendingRedeemRequest - fulfillment : 0;
 
         if (state.pendingRedeemRequest == 0) state.pendingCancelRedeemRequest = false;
+
+        VaultLike(vault).emitCancelRedeemClaimable(user, shares);
     }
 
     /// @inheritdoc IInvestmentManager
@@ -379,12 +385,12 @@ contract InvestmentManager is Auth, IInvestmentManager {
         if (tokensToTransfer > 0) {
             require(
                 AuthTransferLike(address(VaultLike(vault).share())).authTransferFrom(
-                    user, address(escrow), tokensToTransfer
+                    user, user, address(escrow), tokensToTransfer
                 ),
                 "InvestmentManager/transfer-failed"
             );
         }
-        emit TriggerIncreaseRedeemOrder(poolId, trancheId, user, poolManager.idToAsset(assetId), shares);
+        emit TriggerRedeemRequest(poolId, trancheId, user, poolManager.idToAsset(assetId), shares);
     }
 
     // --- View functions ---
@@ -466,7 +472,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
         (, lastUpdated) = poolManager.getTrancheTokenPrice(vault_.poolId(), vault_.trancheId(), vault_.asset());
     }
 
-    // --- Liquidity Pool processing functions ---
+    // --- Vault claim functions ---
     /// @inheritdoc IInvestmentManager
     function deposit(address vault, uint256 assets, address receiver, address owner)
         public

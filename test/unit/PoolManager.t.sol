@@ -2,7 +2,7 @@
 pragma solidity 0.8.21;
 
 import "test/BaseTest.sol";
-import "test/mocks/RestrictionManagerFactory.sol";
+import "test/mocks/MockRestrictionManagerFactory.sol";
 import {CastLib} from "src/libraries/CastLib.sol";
 
 contract PoolManagerTest is BaseTest {
@@ -164,7 +164,7 @@ contract PoolManagerTest is BaseTest {
     }
 
     function testRestrictionSetIntegration(uint64 poolId, bytes16 trancheId, uint8 restrictionSet) public {
-        RestrictionManagerFactoryMock restrictionManagerFactory = new RestrictionManagerFactoryMock();
+        MockRestrictionManagerFactory restrictionManagerFactory = new MockRestrictionManagerFactory();
         poolManager.file("restrictionManagerFactory", address(restrictionManagerFactory));
         centrifugeChain.addPool(poolId);
         centrifugeChain.addTranche(poolId, trancheId, "", "", defaultDecimals, restrictionSet);
@@ -260,7 +260,6 @@ contract PoolManagerTest is BaseTest {
         assertTrue(trancheToken.wards(address(poolManager)) == 1);
         assertTrue(trancheToken.wards(vault_) == 1);
         assertTrue(trancheToken.wards(address(this)) == 0);
-        assertTrue(trancheToken.isTrustedForwarder(vault_)); // Lpool is not trusted forwarder on token
     }
 
     function testIncomingTransfer(uint128 amount) public {
@@ -591,7 +590,6 @@ contract PoolManagerTest is BaseTest {
         assertEq(poolManager.getVault(poolId, trancheId, asset), address(0));
         assertEq(investmentManager.wards(vault_), 0);
         assertEq(trancheToken.wards(vault_), 0);
-        assertEq(trancheToken.isTrustedForwarder(vault_), false);
         assertEq(trancheToken.allowance(address(escrow), vault_), 0);
     }
 

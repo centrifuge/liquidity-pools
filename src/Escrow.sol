@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {Auth} from "./Auth.sol";
-import {SafeTransferLib} from "./libraries/SafeTransferLib.sol";
+import {Auth} from "src/Auth.sol";
+import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 import {IEscrow} from "src/interfaces/IEscrow.sol";
 
 /// @title  Escrow
