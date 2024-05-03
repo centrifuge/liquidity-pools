@@ -179,7 +179,7 @@ contract ERC7540Vault is Auth, IERC7540 {
     function claimCancelDepositRequest(uint256, address receiver, address owner) external returns (uint256 assets) {
         require(msg.sender == owner, "ERC7540Vault/not-the-owner");
         assets = manager.claimCancelDepositRequest(address(this), receiver, owner);
-        emit ClaimCancelDepositRequest(msg.sender, receiver, owner, assets);
+        emit CancelDepositClaim(receiver, owner, REQUEST_ID, msg.sender, assets);
     }
 
     /// @inheritdoc IERC7540CancelRedeem
@@ -203,14 +203,16 @@ contract ERC7540Vault is Auth, IERC7540 {
     function claimCancelRedeemRequest(uint256, address receiver, address owner) external returns (uint256 shares) {
         require(msg.sender == owner, "ERC7540Vault/not-the-owner");
         shares = manager.claimCancelRedeemRequest(address(this), receiver, owner);
-        emit ClaimCancelRedeemRequest(msg.sender, receiver, owner, shares);
+        emit CancelRedeemClaim(receiver, owner, REQUEST_ID, msg.sender, shares);
     }
 
     // --- ERC165 support ---
     /// @inheritdoc IERC165
     function supportsInterface(bytes4 interfaceId) external pure override returns (bool) {
         return interfaceId == type(IERC7540Deposit).interfaceId || interfaceId == type(IERC7540Redeem).interfaceId
-            || interfaceId == type(IERC7575).interfaceId || interfaceId == type(IERC165).interfaceId;
+            || interfaceId == type(IERC7540CancelDeposit).interfaceId
+            || interfaceId == type(IERC7540CancelRedeem).interfaceId || interfaceId == type(IERC7575).interfaceId
+            || interfaceId == type(IERC165).interfaceId;
     }
 
     // --- ERC-4626 methods ---
@@ -301,6 +303,23 @@ contract ERC7540Vault is Auth, IERC7540 {
         revert();
     }
 
+    // --- Event emitters ---
+    function emitDepositClaimable(address owner, uint256 assets, uint256 shares) public auth {
+        emit DepositClaimable(owner, REQUEST_ID, assets, shares);
+    }
+
+    function emitRedeemClaimable(address owner, uint256 assets, uint256 shares) public auth {
+        emit RedeemClaimable(owner, REQUEST_ID, assets, shares);
+    }
+
+    function emitCancelDepositClaimable(address owner, uint256 assets) public auth {
+        emit CancelDepositClaimable(owner, REQUEST_ID, assets);
+    }
+
+    function emitCancelRedeemClaimable(address owner, uint256 shares) public auth {
+        emit CancelRedeemClaimable(owner, REQUEST_ID, shares);
+    }
+
     // --- Helpers ---
     /// @notice Price of 1 unit of share, quoted in the decimals of the asset
     function pricePerShare() external view returns (uint256) {
@@ -309,13 +328,5 @@ contract ERC7540Vault is Auth, IERC7540 {
 
     function priceLastUpdated() external view returns (uint64) {
         return manager.priceLastUpdated(address(this));
-    }
-
-    function emitDepositClaimable(address owner, uint256 assets, uint256 shares) public auth {
-        emit DepositClaimable(owner, REQUEST_ID, assets, shares);
-    }
-
-    function emitRedeemClaimable(address owner, uint256 assets, uint256 shares) public auth {
-        emit RedeemClaimable(owner, REQUEST_ID, assets, shares);
     }
 }
