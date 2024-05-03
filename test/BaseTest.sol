@@ -3,25 +3,25 @@ pragma solidity 0.8.21;
 pragma abicoder v2;
 
 // core contracts
-import {Root} from "../src/Root.sol";
-import {InvestmentManager} from "../src/InvestmentManager.sol";
-import {PoolManager, Tranche} from "../src/PoolManager.sol";
-import {Escrow} from "../src/Escrow.sol";
+import {Root} from "src/Root.sol";
+import {InvestmentManager} from "src/InvestmentManager.sol";
+import {PoolManager, Tranche} from "src/PoolManager.sol";
+import {Escrow} from "src/Escrow.sol";
 import {ERC7540VaultFactory} from "src/factories/ERC7540VaultFactory.sol";
 import {TrancheTokenFactory} from "src/factories/TrancheTokenFactory.sol";
-import {ERC7540Vault} from "../src/ERC7540Vault.sol";
-import {TrancheToken, TrancheTokenLike} from "../src/token/Tranche.sol";
-import {ERC20} from "../src/token/ERC20.sol";
-import {Gateway} from "../src/gateway/Gateway.sol";
-import {RestrictionManagerLike, RestrictionManager} from "../src/token/RestrictionManager.sol";
-import {MessagesLib} from "../src/libraries/MessagesLib.sol";
-import {Deployer} from "../script/Deployer.sol";
-import {MockSafe} from "./mocks/MockSafe.sol";
-import "../src/interfaces/IERC20.sol";
+import {ERC7540Vault} from "src/ERC7540Vault.sol";
+import {TrancheToken, TrancheTokenLike} from "src/token/Tranche.sol";
+import {ERC20} from "src/token/ERC20.sol";
+import {Gateway} from "src/gateway/Gateway.sol";
+import {RestrictionManagerLike, RestrictionManager} from "src/token/RestrictionManager.sol";
+import {MessagesLib} from "src/libraries/MessagesLib.sol";
+import {Deployer} from "script/Deployer.sol";
+import {MockSafe} from "test/mocks/MockSafe.sol";
+import "src/interfaces/IERC20.sol";
 
 // mocks
-import {MockCentrifugeChain} from "./mocks/MockCentrifugeChain.sol";
-import {MockRouter} from "./mocks/MockRouter.sol";
+import {MockCentrifugeChain} from "test/mocks/MockCentrifugeChain.sol";
+import {MockRouter} from "test/mocks/MockRouter.sol";
 
 // test env
 import "forge-std/Test.sol";

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {ERC20} from "./ERC20.sol";
-import {IERC20Metadata} from "../interfaces/IERC20.sol";
+import {ERC20} from "src/token/ERC20.sol";
+import {IERC20Metadata} from "src/interfaces/IERC20.sol";
 import {ITrancheToken} from "src/interfaces/token/ITranche.sol";
 
 interface TrancheTokenLike is IERC20Metadata {

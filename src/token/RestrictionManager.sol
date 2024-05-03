@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {Auth} from "./../Auth.sol";
-import {IERC20} from "../interfaces/IERC20.sol";
+import {Auth} from "src/Auth.sol";
+import {IERC20} from "src/interfaces/IERC20.sol";
 import {IRestrictionManager} from "src/interfaces/token/IRestrictionManager.sol";
 
 interface RestrictionManagerLike {

@@ -2,7 +2,7 @@
 pragma solidity 0.8.21;
 
 import "forge-std/Test.sol";
-import "./Mock.sol";
+import "test/mocks/Mock.sol";
 
 contract MockManager is Mock {
     mapping(bytes => uint256) public received;
