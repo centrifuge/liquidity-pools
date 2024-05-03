@@ -21,7 +21,7 @@ contract AdminTest is BaseTest {
     //------ pause tests ------//
     function testUnauthorizedPauseFails() public {
         MockSafe(adminSafe).removeOwner(address(this));
-        vm.expectRevert("Guardian/not-an-owner-of-the-authorized-safe");
+        vm.expectRevert("Guardian/not-the-authorized-safe-or-its-owner");
         guardian.pause();
     }
 
@@ -37,7 +37,7 @@ contract AdminTest is BaseTest {
     }
 
     function testUnauthorizedUnpauseFails() public {
-        vm.expectRevert("Guardian/not-an-authorized-safe");
+        vm.expectRevert("Guardian/not-the-authorized-safe");
         guardian.unpause();
     }
 
@@ -144,7 +144,7 @@ contract AdminTest is BaseTest {
 
     function testGuardianPauseAuth(address user) public {
         vm.assume(user != address(this));
-        vm.expectRevert("Guardian/not-an-owner-of-the-authorized-safe");
+        vm.expectRevert("Guardian/not-the-authorized-safe-or-its-owner");
         vm.prank(user);
         guardian.pause();
     }
@@ -191,7 +191,7 @@ contract AdminTest is BaseTest {
         vm.prank(address(adminSafe));
         guardian.scheduleRely(spell);
         address badActor = vm.addr(0xBAD);
-        vm.expectRevert("Guardian/not-an-authorized-safe");
+        vm.expectRevert("Guardian/not-the-authorized-safe");
         vm.prank(badActor);
         guardian.cancelRely(spell);
     }
@@ -207,7 +207,7 @@ contract AdminTest is BaseTest {
     function testRemovedOwnerCannotPause() public {
         MockSafe(adminSafe).removeOwner(address(this));
         assertEq(MockSafe(adminSafe).isOwner(address(this)), false);
-        vm.expectRevert("Guardian/not-an-owner-of-the-authorized-safe");
+        vm.expectRevert("Guardian/not-the-authorized-safe-or-its-owner");
         vm.prank(address(this));
         guardian.pause();
     }

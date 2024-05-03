@@ -10,35 +10,30 @@ interface SafeLike {
     function getThreshold() external view returns (uint256);
 }
 
-interface RouterAggregatorLike {
+interface AggregatorLike {
     function disputeMessageRecovery(bytes32 messageHash) external;
 }
-
-/// @title  Guardian
-/// @dev    This contract allows a Gnosis Safe to schedule and cancel new relys,
-///         and unpause the protocol through the timelock of Root. Additionally,
-///         it allows any owners of the safe to instantly pause the protocol.
 
 contract Guardian is IGuardian {
     Root public immutable root;
     SafeLike public immutable safe;
-    RouterAggregatorLike public immutable aggregator;
+    AggregatorLike public immutable aggregator;
 
     constructor(address safe_, address root_, address aggregator_) {
         root = Root(root_);
         safe = SafeLike(safe_);
-        aggregator = RouterAggregatorLike(aggregator_);
+        aggregator = AggregatorLike(aggregator_);
     }
 
     modifier onlySafe() {
-        require(msg.sender == address(safe), "Guardian/not-an-authorized-safe");
+        require(msg.sender == address(safe), "Guardian/not-the-authorized-safe");
         _;
     }
 
     modifier onlySafeOrOwner() {
         require(
-            msg.sender == address(safe) || _isSafeOwner(safe, msg.sender),
-            "Guardian/not-an-owner-of-the-authorized-safe"
+            msg.sender == address(safe) || _isSafeOwner(msg.sender),
+            "Guardian/not-the-authorized-safe-or-its-owner"
         );
         _;
     }
@@ -70,8 +65,8 @@ contract Guardian is IGuardian {
     }
 
     // --- Helpers ---
-    function _isSafeOwner(SafeLike adminSafe, address addr) internal returns (bool) {
-        try adminSafe.isOwner(addr) returns (bool isOwner) {
+    function _isSafeOwner(address addr) internal returns (bool) {
+        try safe.isOwner(addr) returns (bool isOwner) {
             return isOwner;
         } catch {
             return false;
