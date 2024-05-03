@@ -3,7 +3,7 @@ pragma solidity 0.8.21;
 
 import "test/mocks/Mock.sol";
 
-contract AxelarGatewayMock is Mock {
+contract MockAxelarGateway is Mock {
     constructor() {}
 
     function validateContractCall(bytes32, string calldata, string calldata, bytes32) public view returns (bool) {

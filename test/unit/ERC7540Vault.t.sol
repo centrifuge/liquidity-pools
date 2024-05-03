@@ -4,7 +4,7 @@ pragma solidity 0.8.21;
 import "test/BaseTest.sol";
 import "src/interfaces/IERC7575.sol";
 import "src/interfaces/IERC7540.sol";
-import {SucceedingRequestReceiver} from "test/mocks/SucceedingRequestReceiver.sol";
+import {MockSucceedingRequestReceiver} from "test/mocks/MockSucceedingRequestReceiver.sol";
 import {FailingRequestReceiver} from "test/mocks/FailingRequestReceiver.sol";
 
 contract ERC7540VaultTest is BaseTest {
@@ -135,7 +135,7 @@ contract ERC7540VaultTest is BaseTest {
 
         address vault_ = deploySimpleVault();
         ERC7540Vault vault = ERC7540Vault(vault_);
-        SucceedingRequestReceiver receiver = new SucceedingRequestReceiver();
+        MockSucceedingRequestReceiver receiver = new MockSucceedingRequestReceiver();
 
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), address(receiver), type(uint64).max);
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max);
@@ -186,7 +186,7 @@ contract ERC7540VaultTest is BaseTest {
     function testSucceedingCallbacksNotCalledWithEmptyData() public {
         address vault_ = deploySimpleVault();
         ERC7540Vault vault = ERC7540Vault(vault_);
-        SucceedingRequestReceiver receiver = new SucceedingRequestReceiver();
+        MockSucceedingRequestReceiver receiver = new MockSucceedingRequestReceiver();
 
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), address(receiver), type(uint64).max);
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max);

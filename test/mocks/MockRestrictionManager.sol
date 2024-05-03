@@ -4,7 +4,7 @@ pragma solidity 0.8.21;
 import "test/mocks/Mock.sol";
 import "src/token/RestrictionManager.sol";
 
-contract RestrictionManagerMock is RestrictionManager, Mock {
+contract MockRestrictionManager is RestrictionManager, Mock {
     constructor(address token_) RestrictionManager(token_) {}
 
     // --- Misc ---
