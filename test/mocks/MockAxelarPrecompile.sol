@@ -3,7 +3,7 @@ pragma solidity 0.8.21;
 
 import "./Mock.sol";
 
-contract AxelarPrecompileMock is Mock {
+contract MockAxelarPrecompile is Mock {
     constructor() {}
 
     function execute(
