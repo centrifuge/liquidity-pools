@@ -28,6 +28,8 @@ interface VaultLike is IERC20 {
     function share() external view returns (address);
     function emitDepositClaimable(address owner, uint256 assets, uint256 shares) external;
     function emitRedeemClaimable(address owner, uint256 assets, uint256 shares) external;
+    function emitCancelDepositClaimable(address owner, uint256 assets) external;
+    function emitCancelRedeemClaimable(address owner, uint256 shares) external;
 }
 
 interface AuthTransferLike {
@@ -240,7 +242,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
                 message.toUint128(73),
                 message.toUint128(89)
             );
-        } else if (call == MessagesLib.Call.TriggerIncreaseRedeemOrder) {
+        } else if (call == MessagesLib.Call.TriggerRedeemRequest) {
             triggerRedeemRequest(
                 message.toUint64(1),
                 message.toBytes16(9),
@@ -329,6 +331,8 @@ contract InvestmentManager is Auth, IInvestmentManager {
             state.pendingDepositRequest > fulfillment ? state.pendingDepositRequest - fulfillment : 0;
 
         if (state.pendingDepositRequest == 0) state.pendingCancelDepositRequest = false;
+
+        VaultLike(vault).emitCancelDepositClaimable(user, assets);
     }
 
     /// @inheritdoc IInvestmentManager
@@ -349,6 +353,8 @@ contract InvestmentManager is Auth, IInvestmentManager {
             state.pendingRedeemRequest > fulfillment ? state.pendingRedeemRequest - fulfillment : 0;
 
         if (state.pendingRedeemRequest == 0) state.pendingCancelRedeemRequest = false;
+
+        VaultLike(vault).emitCancelRedeemClaimable(user, shares);
     }
 
     /// @inheritdoc IInvestmentManager
@@ -384,7 +390,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
                 "InvestmentManager/transfer-failed"
             );
         }
-        emit TriggerIncreaseRedeemOrder(poolId, trancheId, user, poolManager.idToAsset(assetId), shares);
+        emit TriggerRedeemRequest(poolId, trancheId, user, poolManager.idToAsset(assetId), shares);
     }
 
     // --- View functions ---
@@ -466,7 +472,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
         (, lastUpdated) = poolManager.getTrancheTokenPrice(vault_.poolId(), vault_.trancheId(), vault_.asset());
     }
 
-    // --- Liquidity Pool processing functions ---
+    // --- Vault claim functions ---
     /// @inheritdoc IInvestmentManager
     function deposit(address vault, uint256 assets, address receiver, address owner)
         public
