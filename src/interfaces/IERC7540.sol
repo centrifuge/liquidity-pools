@@ -261,5 +261,5 @@ interface IERC7540 is IERC7540Deposit, IERC7540Redeem, IERC7540CancelDeposit, IE
     event DepositClaimable(address indexed owner, uint256 indexed requestId, uint256 assets, uint256 shares);
     event RedeemClaimable(address indexed owner, uint256 indexed requestId, uint256 assets, uint256 shares);
     event CancelDepositClaimable(address indexed owner, uint256 indexed requestId, uint256 assets);
-    event CancelRedeemClaimable(address indexed owner, uint256 indexed requestId, uint256 assets);
+    event CancelRedeemClaimable(address indexed owner, uint256 indexed requestId, uint256 shares);
 }
