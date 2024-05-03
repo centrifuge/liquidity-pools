@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-/// @dev Liquidity Pool orders and investment/redemption limits per user
+/// @dev Vault orders and investment/redemption limits per user
 struct InvestmentState {
     /// @dev Tranche tokens that can be claimed using `mint()`
     uint128 maxMint;
@@ -30,7 +30,7 @@ struct InvestmentState {
 interface IInvestmentManager {
     // --- Events ---
     event File(bytes32 indexed what, address data);
-    event TriggerIncreaseRedeemOrder(
+    event TriggerRedeemRequest(
         uint64 indexed poolId, bytes16 indexed trancheId, address user, address asset, uint128 shares
     );
 
@@ -155,9 +155,9 @@ interface IInvestmentManager {
     function claimableCancelRedeemRequest(address vault, address user) external view returns (uint256 shares);
 
     /// @notice TODO
-    function exchangeRateLastUpdated(address vault) external view returns (uint64 lastUpdated);
+    function priceLastUpdated(address vault) external view returns (uint64 lastUpdated);
 
-    // --- Liquidity Pool processing functions ---
+    // --- Vault claim functions ---
     /// @notice Processes owner's asset deposit / investment after the epoch has been executed on Centrifuge.
     ///         The asset required to fulfill the invest order is already locked in escrow upon calling
     ///         requestDeposit.

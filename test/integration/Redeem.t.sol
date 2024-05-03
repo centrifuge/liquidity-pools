@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import "./../BaseTest.sol";
+import "test/BaseTest.sol";
 import {CastLib} from "src/libraries/CastLib.sol";
 
 contract RedeemTest is BaseTest {
@@ -222,7 +222,7 @@ contract RedeemTest is BaseTest {
         vault.requestRedeem(amount, address(this), address(this), "");
     }
 
-    function testTriggerIncreaseRedeemOrderTokens(uint128 amount) public {
+    function testTriggerRedeemRequestTokens(uint128 amount) public {
         amount = uint128(bound(amount, 2, (MAX_UINT128 - 1)));
 
         address vault_ = deploySimpleVault();
@@ -277,7 +277,7 @@ contract RedeemTest is BaseTest {
         assertApproxEqAbs(erc20.balanceOf(investor), investorBalanceBefore + amount, 1);
     }
 
-    function testTriggerIncreaseRedeemOrderTokensUnmitedTokensInEscrow(uint128 amount) public {
+    function testTriggerRedeemRequestTokensUnmintedTokensInEscrow(uint128 amount) public {
         amount = uint128(bound(amount, 2, (MAX_UINT128 - 1)));
 
         address vault_ = deploySimpleVault();

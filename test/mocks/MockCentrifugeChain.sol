@@ -113,7 +113,7 @@ contract MockCentrifugeChain is Test {
         uint128 amount
     ) public {
         bytes memory _message = abi.encodePacked(
-            uint8(MessagesLib.Call.TriggerIncreaseRedeemOrder), poolId, trancheId, investor.toBytes32(), assetId, amount
+            uint8(MessagesLib.Call.TriggerRedeemRequest), poolId, trancheId, investor.toBytes32(), assetId, amount
         );
         _execute(_message);
     }

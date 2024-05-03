@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {Auth} from "./Auth.sol";
-import {SafeTransferLib} from "./libraries/SafeTransferLib.sol";
+import {Auth} from "src/Auth.sol";
+import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 import {IInvestmentManager} from "src/interfaces/IInvestmentManager.sol";
-import "./interfaces/IERC7540.sol";
-import "./interfaces/IERC7575.sol";
-import "./interfaces/IERC20.sol";
+import "src/interfaces/IERC7540.sol";
+import "src/interfaces/IERC7575.sol";
+import "src/interfaces/IERC20.sol";
 
 /// @title  ERC7540Vault
 /// @notice Asynchronous Tokenized Vault standard implementation for Centrifuge pools
@@ -34,6 +34,7 @@ contract ERC7540Vault is Auth, IERC7540 {
     /// @notice The restricted ERC-20 vault share (tranche token).
     ///         Has a ratio (token price) of underlying assets exchanged on deposit/mint/withdraw/redeem.
     address public immutable share;
+    uint8 public immutable shareDecimals;
 
     /// @notice Escrow contract for tokens
     address public immutable escrow;
@@ -52,6 +53,7 @@ contract ERC7540Vault is Auth, IERC7540 {
         trancheId = trancheId_;
         asset = asset_;
         share = share_;
+        shareDecimals = IERC20Metadata(share).decimals();
         escrow = escrow_;
         manager = IInvestmentManager(manager_);
 
@@ -170,7 +172,7 @@ contract ERC7540Vault is Auth, IERC7540 {
     function claimCancelDepositRequest(uint256, address receiver, address owner) external returns (uint256 assets) {
         require(msg.sender == owner, "ERC7540Vault/not-the-owner");
         assets = manager.claimCancelDepositRequest(address(this), receiver, owner);
-        emit ClaimCancelDepositRequest(msg.sender, receiver, owner, assets);
+        emit CancelDepositClaim(receiver, owner, REQUEST_ID, msg.sender, assets);
     }
 
     /// @inheritdoc IERC7540CancelRedeem
@@ -194,14 +196,16 @@ contract ERC7540Vault is Auth, IERC7540 {
     function claimCancelRedeemRequest(uint256, address receiver, address owner) external returns (uint256 shares) {
         require(msg.sender == owner, "ERC7540Vault/not-the-owner");
         shares = manager.claimCancelRedeemRequest(address(this), receiver, owner);
-        emit ClaimCancelRedeemRequest(msg.sender, receiver, owner, shares);
+        emit CancelRedeemClaim(receiver, owner, REQUEST_ID, msg.sender, shares);
     }
 
     // --- ERC165 support ---
     /// @inheritdoc IERC165
     function supportsInterface(bytes4 interfaceId) external pure override returns (bool) {
         return interfaceId == type(IERC7540Deposit).interfaceId || interfaceId == type(IERC7540Redeem).interfaceId
-            || interfaceId == type(IERC7575).interfaceId || interfaceId == type(IERC165).interfaceId;
+            || interfaceId == type(IERC7540CancelDeposit).interfaceId
+            || interfaceId == type(IERC7540CancelRedeem).interfaceId || interfaceId == type(IERC7575).interfaceId
+            || interfaceId == type(IERC165).interfaceId;
     }
 
     // --- ERC-4626 methods ---
@@ -292,9 +296,31 @@ contract ERC7540Vault is Auth, IERC7540 {
         revert();
     }
 
+    // --- Event emitters ---
+    function emitDepositClaimable(address owner, uint256 assets, uint256 shares) public auth {
+        emit DepositClaimable(owner, REQUEST_ID, assets, shares);
+    }
+
+    function emitRedeemClaimable(address owner, uint256 assets, uint256 shares) public auth {
+        emit RedeemClaimable(owner, REQUEST_ID, assets, shares);
+    }
+
+    function emitCancelDepositClaimable(address owner, uint256 assets) public auth {
+        emit CancelDepositClaimable(owner, REQUEST_ID, assets);
+    }
+
+    function emitCancelRedeemClaimable(address owner, uint256 shares) public auth {
+        emit CancelRedeemClaimable(owner, REQUEST_ID, shares);
+    }
+
     // --- Helpers ---
-    function exchangeRateLastUpdated() external view returns (uint64) {
-        return manager.exchangeRateLastUpdated(address(this));
+    /// @notice Price of 1 unit of share, quoted in the decimals of the asset
+    function pricePerShare() external view returns (uint256) {
+        return convertToAssets(10 ** shareDecimals);
+    }
+
+    function priceLastUpdated() external view returns (uint64) {
+        return manager.priceLastUpdated(address(this));
     }
 
     function _transferFrom(address from, address to, uint256 value) internal returns (bool) {
@@ -305,14 +331,6 @@ contract ERC7540Vault is Auth, IERC7540 {
         );
         _successCheck(success);
         return abi.decode(data, (bool));
-    }
-
-    function emitDepositClaimable(address owner, uint256 assets, uint256 shares) public auth {
-        emit DepositClaimable(owner, REQUEST_ID, assets, shares);
-    }
-
-    function emitRedeemClaimable(address owner, uint256 assets, uint256 shares) public auth {
-        emit RedeemClaimable(owner, REQUEST_ID, assets, shares);
     }
 
     function _successCheck(bool success) internal pure {

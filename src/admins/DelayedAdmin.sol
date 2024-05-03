@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {Root} from "../Root.sol";
-import {Auth} from "./../Auth.sol";
+import {Root} from "src/Root.sol";
+import {Auth} from "src/Auth.sol";
 
 interface PauseAdminLike {
     function addPauser(address user) external;

@@ -3,14 +3,14 @@ pragma solidity 0.8.21;
 
 import "forge-std/Test.sol";
 import {AxelarRouter} from "src/gateway/routers/axelar/Router.sol";
-import {AxelarGatewayMock} from "test/mocks/AxelarGatewayMock.sol";
-import {GatewayMock} from "test/mocks/GatewayMock.sol";
+import {MockAxelarGateway} from "test/mocks/MockAxelarGateway.sol";
+import {MockGateway} from "test/mocks/MockGateway.sol";
 import {AxelarForwarder} from "src/gateway/routers/axelar/Forwarder.sol";
 import {BytesLib} from "src/libraries/BytesLib.sol";
 
 contract AxelarRouterTest is Test {
-    AxelarGatewayMock axelarGateway;
-    GatewayMock gateway;
+    MockAxelarGateway axelarGateway;
+    MockGateway gateway;
     AxelarRouter router;
     AxelarForwarder forwarder;
 
@@ -18,8 +18,8 @@ contract AxelarRouterTest is Test {
     string private constant axelarCentrifugeChainAddress = "0x7369626CEF070000000000000000000000000000";
 
     function setUp() public {
-        axelarGateway = new AxelarGatewayMock();
-        gateway = new GatewayMock();
+        axelarGateway = new MockAxelarGateway();
+        gateway = new MockGateway();
 
         forwarder = new AxelarForwarder(address(axelarGateway));
         router = new AxelarRouter(address(gateway), address(axelarGateway));

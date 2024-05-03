@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import "./../BaseTest.sol";
+import "test/BaseTest.sol";
 
 contract AssetShareConversionTest is BaseTest {
     function testAssetShareConversion(uint64 poolId, bytes16 trancheId, uint128 assetId) public {
@@ -17,9 +17,11 @@ contract AssetShareConversionTest is BaseTest {
         ERC7540Vault vault = ERC7540Vault(vault_);
         TrancheTokenLike trancheToken = TrancheTokenLike(address(ERC7540Vault(vault_).share()));
 
-        assertEq(vault.exchangeRateLastUpdated(), 0);
-        centrifugeChain.updateTrancheTokenPrice(poolId, trancheId, assetId, 1000000, uint64(block.timestamp));
-        assertEq(vault.exchangeRateLastUpdated(), uint64(block.timestamp));
+        assertEq(vault.priceLastUpdated(), 0);
+        assertEq(vault.pricePerShare(), 0);
+        centrifugeChain.updateTrancheTokenPrice(poolId, trancheId, assetId, 1e18, uint64(block.timestamp));
+        assertEq(vault.priceLastUpdated(), uint64(block.timestamp));
+        assertEq(vault.pricePerShare(), 1e6);
 
         // invest
         uint256 investmentAmount = 100000000; // 100 * 10**6
@@ -45,6 +47,7 @@ contract AssetShareConversionTest is BaseTest {
         assertEq(vault.convertToShares(100000000), 100000000000000000000); // tranche tokens have 12 more decimals than
             // assets
         assertEq(vault.convertToAssets(vault.convertToShares(100000000000000000000)), 100000000000000000000);
+        assertEq(vault.pricePerShare(), 1e6);
 
         // assert share/asset conversion after price update
         centrifugeChain.updateTrancheTokenPrice(
@@ -55,6 +58,7 @@ contract AssetShareConversionTest is BaseTest {
         assertEq(vault.convertToShares(120000000), 100000000000000000000); // tranche tokens have 12 more decimals than
             // assets
         assertEq(vault.convertToAssets(vault.convertToShares(120000000000000000000)), 120000000000000000000);
+        assertEq(vault.pricePerShare(), 1.2e6);
     }
 
     function testAssetShareConversionWithInverseDecimals(uint64 poolId, bytes16 trancheId, uint128 assetId) public {
@@ -95,6 +99,7 @@ contract AssetShareConversionTest is BaseTest {
         assertEq(vault.convertToShares(100000000000000000000), 100000000); // tranche tokens have 12 less decimals than
             // assets
         assertEq(vault.convertToAssets(vault.convertToShares(100000000000000000000)), 100000000000000000000);
+        assertEq(vault.pricePerShare(), 1e18);
 
         // assert share/asset conversion after price update
         centrifugeChain.updateTrancheTokenPrice(
@@ -105,5 +110,6 @@ contract AssetShareConversionTest is BaseTest {
         assertEq(vault.convertToShares(120000000000000000000), 100000000); // tranche tokens have 12 less decimals than
             // assets
         assertEq(vault.convertToAssets(vault.convertToShares(120000000000000000000)), 120000000000000000000);
+        assertEq(vault.pricePerShare(), 1.2e18);
     }
 }
