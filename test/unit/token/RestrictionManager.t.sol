@@ -18,27 +18,31 @@ contract RestrictionManagerTest is Test {
         vm.assume(validUntil >= block.timestamp);
 
         vm.expectRevert("RestrictionManager/invalid-valid-until");
-        restrictionManager.updateMember(address(this), block.timestamp - 1);
+        restrictionManager.updateMember(address(this), uint64(block.timestamp - 1));
 
         restrictionManager.updateMember(address(this), validUntil);
-        assertEq(restrictionManager.members(address(this)), validUntil);
+        (, uint64 actualValidUntil) = restrictionManager.restrictions(address(this));
+        assertEq(actualValidUntil, validUntil);
     }
 
     function testIsMember(uint64 validUntil) public {
         vm.assume(validUntil >= block.timestamp);
 
         restrictionManager.updateMember(address(this), validUntil);
-        assert(restrictionManager.hasMember(address(this)));
+        (, uint64 actualValidUntil) = restrictionManager.restrictions(address(this));
+        assertTrue(actualValidUntil >= block.timestamp);
     }
 
     function testFreeze() public {
         restrictionManager.freeze(address(this));
-        assertEq(restrictionManager.frozen(address(this)), 1);
+        (bool frozen,) = restrictionManager.restrictions(address(this));
+        assertEq(frozen, true);
     }
 
     function testFreezingZeroAddress() public {
         vm.expectRevert("RestrictionManager/cannot-freeze-zero-address");
         restrictionManager.freeze(address(0));
-        assertEq(restrictionManager.frozen(address(0)), 0);
+        (bool frozen,) = restrictionManager.restrictions(address(0));
+        assertEq(frozen, false);
     }
 }
