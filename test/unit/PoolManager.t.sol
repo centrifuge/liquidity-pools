@@ -2,7 +2,7 @@
 pragma solidity 0.8.21;
 
 import "test/BaseTest.sol";
-import "test/mocks/RestrictionManagerFactory.sol";
+import "test/mocks/MockRestrictionManagerFactory.sol";
 import {CastLib} from "src/libraries/CastLib.sol";
 
 contract PoolManagerTest is BaseTest {
@@ -164,7 +164,7 @@ contract PoolManagerTest is BaseTest {
     }
 
     function testRestrictionSetIntegration(uint64 poolId, bytes16 trancheId, uint8 restrictionSet) public {
-        RestrictionManagerFactoryMock restrictionManagerFactory = new RestrictionManagerFactoryMock();
+        MockRestrictionManagerFactory restrictionManagerFactory = new MockRestrictionManagerFactory();
         poolManager.file("restrictionManagerFactory", address(restrictionManagerFactory));
         centrifugeChain.addPool(poolId);
         centrifugeChain.addTranche(poolId, trancheId, "", "", defaultDecimals, restrictionSet);

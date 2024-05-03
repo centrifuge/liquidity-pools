@@ -4,7 +4,7 @@ pragma solidity 0.8.21;
 import "./Mock.sol";
 import {IERC7540DepositReceiver, IERC7540RedeemReceiver} from "../../src/interfaces/IERC7540.sol";
 
-contract SucceedingRequestReceiver is IERC7540DepositReceiver, IERC7540RedeemReceiver, Mock {
+contract MockSucceedingRequestReceiver is IERC7540DepositReceiver, IERC7540RedeemReceiver, Mock {
     function onERC7540DepositReceived(
         address _operator,
         address _owner,

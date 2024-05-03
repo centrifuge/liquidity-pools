@@ -66,7 +66,7 @@ library MessagesLib {
         /// 26 - Unfreeze tranche tokens
         Unfreeze,
         /// 27 - Request redeem investor
-        TriggerIncreaseRedeemOrder,
+        TriggerRedeemRequest,
         /// 28 - Proof
         MessageProof,
         /// 29 - Initiate Message Recovery
