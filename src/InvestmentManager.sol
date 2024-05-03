@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {Auth} from "./Auth.sol";
-import {CastLib} from "./libraries/CastLib.sol";
-import {MathLib} from "./libraries/MathLib.sol";
-import {SafeTransferLib} from "./libraries/SafeTransferLib.sol";
-import {MessagesLib} from "./libraries/MessagesLib.sol";
-import {BytesLib} from "./libraries/BytesLib.sol";
+import {Auth} from "src/Auth.sol";
+import {CastLib} from "src/libraries/CastLib.sol";
+import {MathLib} from "src/libraries/MathLib.sol";
+import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
+import {MessagesLib} from "src/libraries/MessagesLib.sol";
+import {BytesLib} from "src/libraries/BytesLib.sol";
 import {IERC20, IERC20Metadata} from "src/interfaces/IERC20.sol";
 import {IPoolManager} from "src/interfaces/IPoolManager.sol";
 import {IInvestmentManager, InvestmentState} from "src/interfaces/IInvestmentManager.sol";

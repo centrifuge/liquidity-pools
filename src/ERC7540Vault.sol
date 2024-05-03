@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {Auth} from "./Auth.sol";
-import {SafeTransferLib} from "./libraries/SafeTransferLib.sol";
+import {Auth} from "src/Auth.sol";
+import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 import {IInvestmentManager} from "src/interfaces/IInvestmentManager.sol";
-import "./interfaces/IERC7540.sol";
-import "./interfaces/IERC7575.sol";
-import "./interfaces/IERC20.sol";
+import "src/interfaces/IERC7540.sol";
+import "src/interfaces/IERC7575.sol";
+import "src/interfaces/IERC20.sol";
 
 interface AuthTransferLike {
     function authTransferFrom(address sender, address from, address to, uint256 amount) external returns (bool);
