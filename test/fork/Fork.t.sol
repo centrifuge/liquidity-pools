@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import "forge-std/Test.sol";
-import "forge-std/StdJson.sol";
 import {Root} from "src/Root.sol";
 import {InvestmentManager} from "src/InvestmentManager.sol";
 import {PoolManager} from "src/PoolManager.sol";
@@ -14,6 +12,8 @@ import {RestrictionManagerFactory} from "src/factories/RestrictionManagerFactory
 import {TrancheTokenFactory} from "src/factories/TrancheTokenFactory.sol";
 import {DelayedAdmin} from "src/admins/DelayedAdmin.sol";
 import {PauseAdmin} from "src/admins/PauseAdmin.sol";
+import "forge-std/Test.sol";
+import "forge-std/StdJson.sol";
 
 interface RouterLike {
     function send(bytes memory message) external;

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import "./Mock.sol";
-import {IERC7540DepositReceiver, IERC7540RedeemReceiver} from "../../src/interfaces/IERC7540.sol";
+import "test/mocks/Mock.sol";
+import {IERC7540DepositReceiver, IERC7540RedeemReceiver} from "src/interfaces/IERC7540.sol";
 
 contract MockSucceedingRequestReceiver is IERC7540DepositReceiver, IERC7540RedeemReceiver, Mock {
     function onERC7540DepositReceived(

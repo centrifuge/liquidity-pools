@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import "./../../src/Auth.sol";
+import "src/Auth.sol";
 
 interface GatewayLike {
     function handle(bytes memory message) external;

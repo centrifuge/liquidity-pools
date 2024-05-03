@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {IERC7575} from "./IERC7575.sol";
+import {IERC7575} from "src/interfaces/IERC7575.sol";
 
 interface IERC7540DepositReceiver {
     /**
