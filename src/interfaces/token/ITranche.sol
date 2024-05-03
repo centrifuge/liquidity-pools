@@ -4,15 +4,16 @@ pragma solidity 0.8.21;
 import {IERC20} from "src/interfaces/IERC20.sol";
 
 interface ITrancheToken {
+    // --- Events ---
+    event File(bytes32 indexed what, address data);
+    event File(bytes32 indexed what, address data1, address data2);
+
     // --- Administration ---
     /// @notice TODO
     function file(bytes32 what, address data) external;
 
     /// @notice TODO
     function file(bytes32 what, address data1, address data2) external;
-
-    /// @notice TODO
-    function file(bytes32 what, address data1, bool data2) external;
 
     // --- ERC1404 implementation ---
     /// @notice TODO
@@ -26,9 +27,4 @@ interface ITrancheToken {
 
     /// @notice TODO
     function SUCCESS_CODE() external view returns (uint8);
-
-    // --- ERC2771Context ---
-    /// @dev Trusted forwarders can forward custom msg.sender and
-    ///      msg.data to the underlying ERC20 contract
-    function isTrustedForwarder(address forwarder) external view returns (bool);
 }
