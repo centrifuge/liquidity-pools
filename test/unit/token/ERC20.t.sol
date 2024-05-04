@@ -515,6 +515,27 @@ contract ERC20Test is Test {
         }
     }
 
+    function testExemptions(address from, address to, uint256 amount) public {
+        vm.assume(from != address(this));
+        vm.assume(from != address(token));
+        vm.assume(to != address(0));
+        vm.assume(to != address(token));
+
+        token.mint(from, amount);
+
+        token.exempt(from);
+        vm.expectRevert(bytes("ERC20/exempted-address"));
+        token.authTransferFrom(from, from, to, amount);
+
+        vm.expectRevert(bytes("ERC20/not-msg-sender"));
+        token.subject(from);
+
+        vm.prank(from);
+        token.subject(from);
+
+        assertTrue(token.authTransferFrom(from, from, to, amount));
+    }
+
     function testPermit(uint248 privKey, address to, uint256 amount, uint256 deadline) public {
         uint256 privateKey = privKey;
         if (deadline < block.timestamp) deadline = block.timestamp;

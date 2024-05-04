@@ -28,6 +28,8 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
     /// @inheritdoc IERC20Permit
     mapping(address => uint256) public nonces;
 
+    mapping(address => uint256) public exempted;
+
     // --- EIP712 ---
     bytes32 private immutable nameHash;
     bytes32 private immutable versionHash;
@@ -38,6 +40,8 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
 
     // --- Events ---
     event File(bytes32 indexed what, string data);
+    event Exempt(address indexed user);
+    event Subject(address indexed user);
 
     constructor(uint8 decimals_) {
         decimals = decimals_;
@@ -73,6 +77,17 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
         else if (what == "symbol") symbol = data;
         else revert("ERC20/file-unrecognized-param");
         emit File(what, data);
+    }
+
+    function exempt(address user) external auth {
+        exempted[user] = 1;
+        emit Exempt(user);
+    }
+
+    function subject(address user) external {
+        require(msg.sender == user, "ERC20/not-msg-sender");
+        exempted[user] = 0;
+        emit Subject(user);
     }
 
     // --- ERC20 Mutations ---
@@ -217,7 +232,9 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
 
     // --- Fail-safe ---
     function authTransferFrom(address sender, address from, address to, uint256 value) public auth returns (bool) {
+        require(exempted[from] == 0, "ERC20/exempted-address");
         require(to != address(0) && to != address(this), "ERC20/invalid-address");
+
         uint256 balance = balanceOf[from];
         require(balance >= value, "ERC20/insufficient-balance");
 
