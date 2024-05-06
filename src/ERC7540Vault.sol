@@ -302,7 +302,7 @@ contract ERC7540Vault is Auth, IERC7540 {
     /// @inheritdoc IERC7575
     /// @notice     DOES NOT support owner != msg.sender since shares are already transferred on requestRedeem
     function redeem(uint256 shares, address receiver, address owner) external returns (uint256 assets) {
-        require(msg.sender == owner || endorsed(msg.sender), "ERC7540Vault/not-owner-or-endorsed"); 
+        require(msg.sender == owner || endorsed(msg.sender), "ERC7540Vault/not-owner-or-endorsed");
         assets = manager.redeem(address(this), shares, receiver, owner);
         emit Withdraw(msg.sender, receiver, owner, assets, shares);
     }
