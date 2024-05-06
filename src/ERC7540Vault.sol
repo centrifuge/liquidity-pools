@@ -252,7 +252,7 @@ contract ERC7540Vault is Auth, IERC7540 {
     function deposit(uint256 assets, address receiver, address owner) public returns (uint256 shares) {
         require(msg.sender == owner || isOperator[owner][msg.sender], "ERC7540Vault/not-the-owner");
         shares = manager.deposit(address(this), assets, receiver, owner);
-        emit Deposit(owner, receiver, assets, shares);
+        emit Deposit(receiver, owner, assets, shares);
     }
 
     /// @inheritdoc IERC7575
@@ -268,7 +268,7 @@ contract ERC7540Vault is Auth, IERC7540 {
     function mint(uint256 shares, address receiver, address owner) public returns (uint256 assets) {
         require(msg.sender == owner || isOperator[owner][msg.sender], "ERC7540Vault/not-the-owner");
         assets = manager.mint(address(this), shares, receiver, owner);
-        emit Deposit(owner, receiver, assets, shares);
+        emit Deposit(receiver, owner, assets, shares);
     }
 
     /// @inheritdoc IERC7575

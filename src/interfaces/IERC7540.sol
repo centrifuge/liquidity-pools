@@ -15,7 +15,7 @@ interface IERC7540DepositReceiver {
      *
      * Note: the contract address is always the message sender.
      *
-     * @param _operator The address which called `requestDeposit` function
+     * @param _sender The address which called `requestDeposit` function
      * @param _owner The address which funded the `assets` of the Request (or message sender)
      * @param _requestId The RID identifier of the Request which is being received
      * @param _assets The amount transferred on `requestDeposit`
@@ -24,7 +24,7 @@ interface IERC7540DepositReceiver {
      *  unless throwing
      */
     function onERC7540DepositReceived(
-        address _operator,
+        address _sender,
         address _owner,
         uint256 _requestId,
         uint256 _assets,
@@ -44,7 +44,7 @@ interface IERC7540RedeemReceiver {
      *
      * Note: the contract address is always the message sender.
      *
-     * @param _operator The address which called `requestRedeem` function
+     * @param _sender The address which called `requestRedeem` function
      * @param _owner The address which funded the `shares` of the Request (or message sender)
      * @param _requestId The RID identifier of the Request which is being received
      * @param _shares The amount transferred on `requestDeposit`
@@ -53,7 +53,7 @@ interface IERC7540RedeemReceiver {
      *  unless throwing
      */
     function onERC7540RedeemReceived(
-        address _operator,
+        address _sender,
         address _owner,
         uint256 _requestId,
         uint256 _shares,
