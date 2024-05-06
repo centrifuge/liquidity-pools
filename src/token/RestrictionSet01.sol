@@ -125,10 +125,7 @@ contract RestrictionSet01 is Auth, IRestrictionSet01, IERC20Callback {
     /// @inheritdoc IRestrictionSet01
     function updateMember(address user, uint64 validUntil) public auth {
         require(block.timestamp <= validUntil, "RestrictionSet01/invalid-valid-until");
-        require(
-            user != address(escrow) || validUntil == type(uint256).max,
-            "RestrictionSet01/escrow-member-cannot-be-updated"
-        );
+        require(user != address(escrow), "RestrictionSet01/escrow-member-cannot-be-updated");
 
         restrictions[user].validUntil = validUntil;
         emit UpdateMember(user, validUntil);

@@ -15,7 +15,7 @@ interface VaultLike is IERC7540 {
 }
 
 interface TrancheTokenLike {
-    function restrictionManager() external view returns (address);
+    function restrictionSet() external view returns (address);
 }
 
 interface ERC20Like {
@@ -70,7 +70,7 @@ contract InvestmentInvariants is BaseTest {
                 vaults.push(vault);
                 excludeContract(vault);
                 excludeContract(VaultLike(vault).share());
-                excludeContract(TrancheTokenLike(VaultLike(vault).share()).restrictionManager());
+                excludeContract(TrancheTokenLike(VaultLike(vault).share()).restrictionSet());
             }
         }
 

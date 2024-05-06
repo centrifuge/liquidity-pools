@@ -67,7 +67,7 @@ contract DeployTest is Test, Deployer {
         // check factories
         assertEq(WardLike(trancheTokenFactory).wards(address(this)), 0);
         assertEq(WardLike(vaultFactory).wards(address(this)), 0);
-        assertEq(WardLike(restrictionManagerFactory).wards(address(this)), 0);
+        assertEq(WardLike(restrictionSetFactory).wards(address(this)), 0);
     }
 
     function testAdminSetup(address nonAdmin, address nonPauser) public {

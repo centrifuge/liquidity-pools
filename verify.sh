@@ -8,14 +8,14 @@ if [ -z "$RPC_URL" ] || [ -z "$ETHERSCAN_KEY" ] || [ -z "$VERIFIER_URL" ] || [ -
 fi
 
 if [ "$#" -ne 2 ]; then
-    echo "Usage: $0 {vault|trancheToken|restrictionManager} contract_address"
+    echo "Usage: $0 {vault|trancheToken|restrictionSet} contract_address"
     exit 1
 fi
 
 type=$1
 contract_address=$2
 
-if [ "$type" == "restrictionManager" ]; then
+if [ "$type" == "restrictionSet" ]; then
     token=$(cast call $contract_address 'token()(address)' --rpc-url $RPC_URL)
     echo "token: $token"
     forge verify-contract --constructor-args $(cast abi-encode "constructor(address)" $token) --watch --etherscan-api-key $ETHERSCAN_KEY $contract_address src/token/RestrictionSet01.sol:RestrictionManager --verifier-url $VERIFIER_URL --chain $CHAIN_ID
@@ -38,6 +38,6 @@ elif [ "$type" == "vault" ]; then
     echo "manager: $manager"
     forge verify-contract --constructor-args $(cast abi-encode "constructor(uint64,bytes16,address,address,address,address)" $poolId $trancheId $asset $share $escrow $manager) --watch --etherscan-api-key $ETHERSCAN_KEY $contract_address src/ERC7540Vault.sol:ERC7540Vault --verifier-url $VERIFIER_URL --chain $CHAIN_ID
 else
-    echo "Error: Invalid contract type. Choose from vault, trancheToken, or restrictionManager."
+    echo "Error: Invalid contract type. Choose from vault, trancheToken, or restrictionSet."
     exit 1
 fi

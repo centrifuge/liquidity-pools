@@ -11,7 +11,7 @@ interface TrancheTokenFactoryLike {
         string memory name,
         string memory symbol,
         uint8 decimals,
-        address[] calldata restrictionManagerWards
+        address[] calldata trancheTokenWards
     ) external returns (address);
 }
 
