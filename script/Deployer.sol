@@ -12,6 +12,7 @@ import {PoolManager} from "src/PoolManager.sol";
 import {Escrow} from "src/Escrow.sol";
 import {PauseAdmin} from "src/admins/PauseAdmin.sol";
 import {DelayedAdmin} from "src/admins/DelayedAdmin.sol";
+import {CentrifugeRouter} from "src/CentrifugeRouter.sol";
 import "forge-std/Script.sol";
 
 interface RouterLike {
@@ -38,6 +39,7 @@ contract Deployer is Script {
     DelayedAdmin public delayedAdmin;
     Gateway public gateway;
     Aggregator public aggregator;
+    CentrifugeRouter public cfgRouter;
     address public vaultFactory;
     address public restrictionManagerFactory;
     address public trancheTokenFactory;
@@ -56,6 +58,7 @@ contract Deployer is Script {
         trancheTokenFactory = address(new TrancheTokenFactory{salt: salt}(address(root), deployer));
         investmentManager = new InvestmentManager(address(escrow));
         poolManager = new PoolManager(address(escrow), vaultFactory, restrictionManagerFactory, trancheTokenFactory);
+        cfgRouter = new CentrifugeRouter();
 
         AuthLike(vaultFactory).rely(address(poolManager));
         AuthLike(trancheTokenFactory).rely(address(poolManager));
@@ -90,6 +93,8 @@ contract Deployer is Script {
         // Wire gateway
         investmentManager.file("poolManager", address(poolManager));
         poolManager.file("investmentManager", address(investmentManager));
+        poolManager.file("cfgRouter", address(cfgRouter));
+
         investmentManager.file("gateway", address(gateway));
         poolManager.file("gateway", address(gateway));
         investmentManager.rely(address(root));

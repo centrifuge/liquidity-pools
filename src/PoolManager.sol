@@ -51,6 +51,7 @@ contract PoolManager is Auth, IPoolManager {
     TrancheTokenFactoryLike public trancheTokenFactory;
     ERC7540VaultFactory public vaultFactory;
     RestrictionManagerFactoryLike public restrictionManagerFactory;
+    address public cfgRouter;
 
     mapping(uint64 poolId => Pool) public pools;
     mapping(uint128 assetId => address) public idToAsset;
@@ -80,6 +81,7 @@ contract PoolManager is Auth, IPoolManager {
         else if (what == "trancheTokenFactory") trancheTokenFactory = TrancheTokenFactoryLike(data);
         else if (what == "vaultFactory") vaultFactory = ERC7540VaultFactory(data);
         else if (what == "restrictionManagerFactory") restrictionManagerFactory = RestrictionManagerFactoryLike(data);
+        else if (what == "cfgRouter") cfgRouter = data;
         else revert("PoolManager/file-unrecognized-param");
         emit File(what, data);
     }
@@ -401,6 +403,10 @@ contract PoolManager is Auth, IPoolManager {
         );
         TrancheTokenLike(token).file("restrictionManager", restrictionManager);
 
+        if (cfgRouter != address(0)) {
+            RestrictionManagerLike(restrictionManager).updateMember(cfgRouter, type(uint64).max);
+        }
+
         pools[poolId].tranches[trancheId].token = token;
 
         delete undeployedTranches[poolId][trancheId];
@@ -429,7 +435,7 @@ contract PoolManager is Auth, IPoolManager {
 
         // Deploy vault
         vault = vaultFactory.newVault(
-            poolId, trancheId, asset, tranche.token, address(escrow), address(investmentManager), vaultWards
+            poolId, trancheId, asset, tranche.token, address(escrow), address(investmentManager), vaultWards, cfgRouter
         );
 
         // Link vault to tranche token

@@ -9,6 +9,10 @@ interface IERC7540ExtLike {
     function deposit(uint256 assets, address receiver, address owner) external returns (uint256 shares);
 }
 
+interface IERC20Like {
+    function approve(address spender, uint256 value) external returns (bool);
+}
+
 contract CentrifugeRouter is Auth {
     mapping(address => mapping(address => uint256)) public lockedRequests;
 
@@ -17,6 +21,8 @@ contract CentrifugeRouter is Auth {
     // --- Deposit ---
     function requestDeposit(address vault, uint256 amount) external {
         SafeTransferLib.safeTransferFrom(IERC7540(vault).asset(), msg.sender, address(this), amount);
+        IERC20Like(IERC7540(vault).asset()).approve(vault, amount); // option to add approve function, make poolManager
+            // ward and create global approval on vault deployment
         IERC7540(vault).requestDeposit(amount, msg.sender, address(this), "");
     }
 
