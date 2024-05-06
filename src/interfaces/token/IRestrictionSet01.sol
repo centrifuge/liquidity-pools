@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-interface IRestrictionManager {
+interface IRestrictionSet01 {
     struct Restrictions {
         /// @dev Frozen accounts that tokens cannot be transferred from or to
         bool frozen;
@@ -13,6 +13,10 @@ interface IRestrictionManager {
     event UpdateMember(address indexed user, uint64 validUntil);
     event Freeze(address indexed user);
     event Unfreeze(address indexed user);
+
+    // --- Incoming message handling ---
+    /// @notice TODO
+    function handle(bytes memory update) external;
 
     // --- ERC1404 implementation ---
     /// @notice TODO
@@ -31,11 +35,4 @@ interface IRestrictionManager {
     // --- Managing members ---
     /// @notice TODO
     function updateMember(address user, uint64 validUntil) external;
-
-    // --- Misc ---
-    /// @notice TODO
-    function afterTransfer(address, /* from */ address, /* to */ uint256 /* value */ ) external;
-
-    /// @notice TODO
-    function afterMint(address, /* to */ uint256 /* value */ ) external;
 }

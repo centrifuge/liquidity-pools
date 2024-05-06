@@ -8,7 +8,7 @@ import {Escrow} from "src/Escrow.sol";
 import {TrancheToken} from "src/token/Tranche.sol";
 import {Gateway} from "src/gateway/Gateway.sol";
 import {ERC7540VaultFactory} from "src/factories/ERC7540VaultFactory.sol";
-import {RestrictionManagerFactory} from "src/factories/RestrictionManagerFactory.sol";
+import {RestrictionSetFactory} from "src/factories/RestrictionSetFactory.sol";
 import {TrancheTokenFactory} from "src/factories/TrancheTokenFactory.sol";
 import {DelayedAdmin} from "src/admins/DelayedAdmin.sol";
 import {PauseAdmin} from "src/admins/PauseAdmin.sol";
@@ -56,7 +56,7 @@ contract ForkTest is Test {
                 address router = _get(i, ".contracts.router");
                 address trancheTokenFactory = _get(i, ".contracts.trancheTokenFactory");
                 address vaultFactory = _get(i, ".contracts.vaultFactory");
-                address restrictionManagerFactory = _get(i, ".contracts.restrictionManagerFactory");
+                address restrictionSetFactory = _get(i, ".contracts.restrictionSetFactory");
                 address deployer = _get(i, ".config.deployer");
                 address admin = _get(i, ".config.admin");
                 _loadFork(i);
@@ -77,7 +77,7 @@ contract ForkTest is Test {
                 assertEq(address(PoolManager(poolManager).investmentManager()), investmentManager);
                 assertEq(address(PoolManager(poolManager).trancheTokenFactory()), trancheTokenFactory);
                 assertEq(address(PoolManager(poolManager).vaultFactory()), vaultFactory);
-                assertEq(address(PoolManager(poolManager).restrictionManagerFactory()), restrictionManagerFactory);
+                assertEq(address(PoolManager(poolManager).restrictionSetFactory()), restrictionSetFactory);
                 assertEq(Escrow(escrow).wards(poolManager), 1);
                 assertEq(PoolManager(poolManager).wards(root), 1);
                 assertEq(PoolManager(poolManager).wards(deployer), 0);
@@ -118,7 +118,7 @@ contract ForkTest is Test {
                 address poolManager = _get(i, ".contracts.poolManager");
                 address trancheTokenFactory = _get(i, ".contracts.trancheTokenFactory");
                 address vaultFactory = _get(i, ".contracts.vaultFactory");
-                address restrictionManagerFactory = _get(i, ".contracts.restrictionManagerFactory");
+                address restrictionSetFactory = _get(i, ".contracts.restrictionSetFactory");
                 address deployer = _get(i, ".config.deployer");
                 address admin = _get(i, ".config.admin");
                 _loadFork(i);
@@ -135,10 +135,10 @@ contract ForkTest is Test {
                 assertEq(ERC7540VaultFactory(vaultFactory).wards(deployer), 0);
                 assertEq(ERC7540VaultFactory(vaultFactory).wards(admin), 0);
 
-                // RestrictionManagerFactory
-                assertEq(RestrictionManagerFactory(restrictionManagerFactory).wards(root), 1);
-                assertEq(RestrictionManagerFactory(restrictionManagerFactory).wards(deployer), 0);
-                assertEq(RestrictionManagerFactory(restrictionManagerFactory).wards(admin), 0);
+                // RestrictionSetFactory
+                assertEq(RestrictionSetFactory(restrictionSetFactory).wards(root), 1);
+                assertEq(RestrictionSetFactory(restrictionSetFactory).wards(deployer), 0);
+                assertEq(RestrictionSetFactory(restrictionSetFactory).wards(admin), 0);
             }
         }
     }

@@ -13,12 +13,12 @@ interface TrancheTokenLike is IERC20Metadata {
     function file(bytes32 what, address data) external;
     function file(bytes32 what, address data1, address data2) external;
     function file(bytes32 what, address data1, bool data2) external;
-    function restrictionManager() external view returns (address);
+    function restrictionSet() external view returns (address);
     function checkTransferRestriction(address from, address to, uint256 value) external view returns (bool);
     function vault(address asset) external view returns (address);
 }
 
-interface RestrictionManagerLike {
+interface RestrictionSetLike {
     function detectTransferRestriction(address from, address to, uint256 value) external view returns (uint8);
     function messageForTransferRestriction(uint8 restrictionCode) external view returns (string memory);
     function SUCCESS_CODE() external view returns (uint8);
@@ -28,7 +28,7 @@ interface RestrictionManagerLike {
 /// @notice Extension of ERC20 + ERC1404 for tranche tokens, hat ensures
 ///         the transfer restrictions as defined in the RestrictionManager.
 contract TrancheToken is ERC20, ITrancheToken, IERC7575Share {
-    address public restrictionManager;
+    address public restrictionSet;
 
     /// @inheritdoc IERC7575Share
     mapping(address asset => address) public vault;
@@ -38,7 +38,7 @@ contract TrancheToken is ERC20, ITrancheToken, IERC7575Share {
     // --- Administration ---
     /// @inheritdoc ITrancheToken
     function file(bytes32 what, address data) external auth {
-        if (what == "restrictionManager") restrictionManager = data;
+        if (what == "restrictionSet") restrictionSet = data;
         else revert("TrancheToken/file-unrecognized-param");
         emit File(what, data);
     }
@@ -54,8 +54,9 @@ contract TrancheToken is ERC20, ITrancheToken, IERC7575Share {
     function transfer(address to, uint256 value) public override returns (bool success) {
         success = super.transfer(to, value);
         require(
-            IERC20Callback(restrictionManager).onERC20Transfer(msg.sender, to, value)
-                == IERC20Callback.onERC20Transfer.selector,
+            restrictionSet == address(0)
+                || IERC20Callback(restrictionSet).onERC20Transfer(msg.sender, to, value)
+                    == IERC20Callback.onERC20Transfer.selector,
             "TrancheToken/restrictions-failed"
         );
     }
@@ -63,8 +64,9 @@ contract TrancheToken is ERC20, ITrancheToken, IERC7575Share {
     function transferFrom(address from, address to, uint256 value) public override returns (bool success) {
         success = super.transferFrom(from, to, value);
         require(
-            IERC20Callback(restrictionManager).onERC20Transfer(from, to, value)
-                == IERC20Callback.onERC20Transfer.selector,
+            restrictionSet == address(0)
+                || IERC20Callback(restrictionSet).onERC20Transfer(from, to, value)
+                    == IERC20Callback.onERC20Transfer.selector,
             "TrancheToken/restrictions-failed"
         );
     }
@@ -72,8 +74,9 @@ contract TrancheToken is ERC20, ITrancheToken, IERC7575Share {
     function mint(address to, uint256 value) public override {
         super.mint(to, value);
         require(
-            IERC20Callback(restrictionManager).onERC20Transfer(address(0), to, value)
-                == IERC20Callback.onERC20Transfer.selector,
+            restrictionSet == address(0)
+                || IERC20Callback(restrictionSet).onERC20Transfer(address(0), to, value)
+                    == IERC20Callback.onERC20Transfer.selector,
             "TrancheToken/restrictions-failed"
         );
     }
@@ -81,21 +84,21 @@ contract TrancheToken is ERC20, ITrancheToken, IERC7575Share {
     // --- ERC1404 implementation ---
     /// @inheritdoc ITrancheToken
     function detectTransferRestriction(address from, address to, uint256 value) public view returns (uint8) {
-        return RestrictionManagerLike(restrictionManager).detectTransferRestriction(from, to, value);
+        return RestrictionSetLike(restrictionSet).detectTransferRestriction(from, to, value);
     }
 
     /// @inheritdoc ITrancheToken
     function checkTransferRestriction(address from, address to, uint256 value) public view returns (bool) {
-        return RestrictionManagerLike(restrictionManager).detectTransferRestriction(from, to, value) == SUCCESS_CODE();
+        return RestrictionSetLike(restrictionSet).detectTransferRestriction(from, to, value) == SUCCESS_CODE();
     }
 
     /// @inheritdoc ITrancheToken
     function messageForTransferRestriction(uint8 restrictionCode) public view returns (string memory) {
-        return RestrictionManagerLike(restrictionManager).messageForTransferRestriction(restrictionCode);
+        return RestrictionSetLike(restrictionSet).messageForTransferRestriction(restrictionCode);
     }
 
     /// @inheritdoc ITrancheToken
     function SUCCESS_CODE() public view returns (uint8) {
-        return RestrictionManagerLike(restrictionManager).SUCCESS_CODE();
+        return RestrictionSetLike(restrictionSet).SUCCESS_CODE();
     }
 }

@@ -131,13 +131,7 @@ interface IPoolManager {
     ) external;
 
     /// @notice TODO
-    function updateMember(uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) external;
-
-    /// @notice TODO
-    function freeze(uint64 poolId, bytes16 trancheId, address user) external;
-
-    /// @notice TODO
-    function unfreeze(uint64 poolId, bytes16 trancheId, address user) external;
+    function updateRestriction(uint64 poolId, bytes16 trancheId, bytes memory update) external;
 
     /// @notice A global chain agnostic asset index is maintained on Centrifuge. This function maps
     ///         a asset from the Centrifuge index to its corresponding address on the evm chain.

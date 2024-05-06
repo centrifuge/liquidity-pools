@@ -13,7 +13,7 @@ import {ERC7540Vault} from "src/ERC7540Vault.sol";
 import {TrancheToken, TrancheTokenLike} from "src/token/Tranche.sol";
 import {ERC20} from "src/token/ERC20.sol";
 import {Gateway} from "src/gateway/Gateway.sol";
-import {RestrictionManagerLike, RestrictionManager} from "src/token/RestrictionManager.sol";
+import {RestrictionSetLike} from "src/token/RestrictionSet01.sol";
 import {MessagesLib} from "src/libraries/MessagesLib.sol";
 import {Deployer} from "script/Deployer.sol";
 import "src/interfaces/IERC20.sol";
@@ -91,7 +91,7 @@ contract BaseTest is Deployer, Test {
         vm.label(address(escrow), "Escrow");
         vm.label(address(pauseAdmin), "PauseAdmin");
         vm.label(address(delayedAdmin), "DelayedAdmin");
-        vm.label(address(poolManager.restrictionManagerFactory()), "RestrictionManagerFactory");
+        vm.label(address(poolManager.restrictionSetFactory()), "RestrictionSetFactory");
         vm.label(address(poolManager.trancheTokenFactory()), "TrancheTokenFactory");
         vm.label(address(poolManager.vaultFactory()), "ERC7540VaultFactory");
 
@@ -109,7 +109,7 @@ contract BaseTest is Deployer, Test {
         excludeContract(address(escrow));
         excludeContract(address(pauseAdmin));
         excludeContract(address(delayedAdmin));
-        excludeContract(address(poolManager.restrictionManagerFactory()));
+        excludeContract(address(poolManager.restrictionSetFactory()));
         excludeContract(address(poolManager.trancheTokenFactory()));
         excludeContract(address(poolManager.vaultFactory()));
     }

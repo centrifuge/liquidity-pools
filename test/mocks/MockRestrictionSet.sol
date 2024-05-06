@@ -2,10 +2,10 @@
 pragma solidity 0.8.21;
 
 import "test/mocks/Mock.sol";
-import "src/token/RestrictionManager.sol";
+import "src/token/RestrictionSet01.sol";
 
-contract MockRestrictionManager is RestrictionManager, Mock {
-    constructor(address token_) RestrictionManager(token_) {}
+contract MockRestrictionSet is RestrictionSet01, Mock {
+    constructor(address token_, address escrow_) RestrictionSet01(token_, escrow_) {}
 
     function onERC20Transfer(address from, address to, uint256 value) public override auth returns (bytes4) {
         uint8 restrictionCode = detectTransferRestriction(from, to, value);

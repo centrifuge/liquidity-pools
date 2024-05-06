@@ -8,6 +8,7 @@ import {Escrow} from "src/Escrow.sol";
 import {PauseAdmin} from "src/admins/PauseAdmin.sol";
 import {DelayedAdmin} from "src/admins/DelayedAdmin.sol";
 import {PoolManager, Pool, Tranche} from "src/PoolManager.sol";
+import {RestrictionSetLike} from "src/token/RestrictionSet01.sol";
 import {ERC20} from "src/token/ERC20.sol";
 import {TrancheToken} from "src/token/Tranche.sol";
 import {ERC7540VaultTest} from "test/unit/ERC7540Vault.t.sol";
@@ -88,22 +89,23 @@ contract DeployTest is Test, Deployer {
         string memory tokenSymbol,
         bytes16 trancheId,
         uint8 decimals,
-        uint8 restrictionSet
+        uint8 restrictionSetId
     ) public {
         vm.assume(decimals <= 18 && decimals > 0);
         uint128 price = uint128(2 * 10 ** PRICE_DECIMALS); //TODO: fuzz price
         uint256 amount = 1000 * 10 ** erc20.decimals();
         uint64 validUntil = uint64(block.timestamp + 1000 days);
-        address vault_ = deployPoolAndTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, restrictionSet);
+        address vault_ = deployPoolAndTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, restrictionSetId);
         ERC7540Vault vault = ERC7540Vault(vault_);
+        TrancheToken trancheToken = TrancheToken(address(vault.share()));
+        RestrictionSetLike restrictionSet = RestrictionSetLike(trancheToken.restrictionSet());
 
         deal(address(erc20), self, amount);
 
-        vm.prank(address(gateway));
-        poolManager.updateMember(poolId, trancheId, self, validUntil);
+        vm.prank(address(poolManager));
+        restrictionSet.updateMember(self, validUntil);
 
         depositMint(poolId, trancheId, price, amount, vault);
-        TrancheToken trancheToken = TrancheToken(address(vault.share()));
         amount = trancheToken.balanceOf(self);
 
         redeemWithdraw(poolId, trancheId, price, amount, vault);

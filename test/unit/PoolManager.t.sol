@@ -2,7 +2,7 @@
 pragma solidity 0.8.21;
 
 import "test/BaseTest.sol";
-import "test/mocks/MockRestrictionManagerFactory.sol";
+import "test/mocks/MockRestrictionSetFactory.sol";
 import {CastLib} from "src/libraries/CastLib.sol";
 
 contract PoolManagerTest is BaseTest {
@@ -39,9 +39,9 @@ contract PoolManagerTest is BaseTest {
         poolManager.file("trancheTokenFactory", newTrancheTokenFactory);
         assertEq(address(poolManager.trancheTokenFactory()), newTrancheTokenFactory);
 
-        address newRestrictionManagerFactory = makeAddr("newRestrictionManagerFactory");
-        poolManager.file("restrictionManagerFactory", newRestrictionManagerFactory);
-        assertEq(address(poolManager.restrictionManagerFactory()), newRestrictionManagerFactory);
+        address newRestrictionSetFactory = makeAddr("newRestrictionSetFactory");
+        poolManager.file("restrictionSetFactory", newRestrictionSetFactory);
+        assertEq(address(poolManager.restrictionSetFactory()), newRestrictionSetFactory);
 
         address newVaultFactory = makeAddr("newVaultFactory");
         poolManager.file("vaultFactory", newVaultFactory);
@@ -164,13 +164,13 @@ contract PoolManagerTest is BaseTest {
     }
 
     function testRestrictionSetIntegration(uint64 poolId, bytes16 trancheId, uint8 restrictionSet) public {
-        MockRestrictionManagerFactory restrictionManagerFactory = new MockRestrictionManagerFactory();
-        poolManager.file("restrictionManagerFactory", address(restrictionManagerFactory));
+        MockRestrictionSetFactory restrictionSetFactory = new MockRestrictionSetFactory();
+        poolManager.file("restrictionSetFactory", address(restrictionSetFactory));
         centrifugeChain.addPool(poolId);
         centrifugeChain.addTranche(poolId, trancheId, "", "", defaultDecimals, restrictionSet);
         poolManager.deployTranche(poolId, trancheId);
         // assert restrictionSet info is passed correctly to the factory
-        assertEq(restrictionManagerFactory.values_uint8("restrictionSet"), restrictionSet);
+        assertEq(restrictionSetFactory.values_uint8("restrictionSet"), restrictionSet);
     }
 
     function testAddAsset(uint128 assetId) public {
@@ -252,9 +252,8 @@ contract PoolManagerTest is BaseTest {
         assertEq(trancheToken.name(), tokenName);
         assertEq(trancheToken.symbol(), tokenSymbol);
         assertEq(trancheToken.decimals(), decimals);
-        (, uint64 actualValidUntil) = RestrictionManagerLike(address(trancheToken.restrictionManager())).restrictions(
-            address(investmentManager.escrow())
-        );
+        (, uint64 actualValidUntil) =
+            RestrictionSetLike(address(trancheToken.restrictionSet())).restrictions(address(investmentManager.escrow()));
         assertTrue(actualValidUntil >= block.timestamp);
 
         assertTrue(trancheToken.wards(address(poolManager)) == 1);
@@ -357,7 +356,7 @@ contract PoolManagerTest is BaseTest {
 
         TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
 
-        vm.expectRevert(bytes("RestrictionManager/destination-not-a-member"));
+        vm.expectRevert(bytes("RestrictionSet01/destination-not-a-member"));
         centrifugeChain.incomingTransferTrancheTokens(
             poolId, trancheId, uint64(block.chainid), destinationAddress, amount
         );
@@ -419,7 +418,7 @@ contract PoolManagerTest is BaseTest {
         bytes16 trancheId = vault.trancheId();
         vm.expectRevert(bytes("Auth/not-authorized"));
         vm.prank(randomUser);
-        poolManager.updateMember(poolId, trancheId, randomUser, validUntil);
+        poolManager.updateRestriction(poolId, trancheId, bytes(""));
 
         vm.expectRevert(bytes("PoolManager/unknown-token"));
         centrifugeChain.updateMember(100, bytes16(bytes("100")), randomUser, validUntil); // use random poolId &
@@ -428,7 +427,7 @@ contract PoolManagerTest is BaseTest {
         centrifugeChain.updateMember(poolId, trancheId, randomUser, validUntil);
         assertTrue(trancheToken.checkTransferRestriction(address(0), randomUser, 0));
 
-        vm.expectRevert(bytes("PoolManager/escrow-member-cannot-be-updated"));
+        vm.expectRevert(bytes("RestrictionSet01/escrow-member-cannot-be-updated"));
         centrifugeChain.updateMember(poolId, trancheId, address(escrow), validUntil);
     }
 
@@ -441,7 +440,7 @@ contract PoolManagerTest is BaseTest {
         uint64 validUntil = uint64(block.timestamp + 7 days);
         address secondUser = makeAddr("secondUser");
 
-        vm.expectRevert(bytes("PoolManager/escrow-cannot-be-frozen"));
+        vm.expectRevert(bytes("RestrictionSet01/cannot-freeze-escrow"));
         centrifugeChain.freeze(poolId, trancheId, address(escrow));
 
         vm.expectRevert(bytes("PoolManager/unknown-token"));

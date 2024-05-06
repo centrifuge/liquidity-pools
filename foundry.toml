@@ -54,7 +54,7 @@ fail_on_revert = false
   "src/Root.sol" = ["Root"]
   "src/token/ERC20.sol" = ["ERC20"]
   "src/token/Tranche.sol" = ["TrancheToken"]
-  "src/token/RestrictionManager.sol" = ["RestrictionManager"]
+  "src/token/RestrictionSet01.sol" = ["RestrictionSet01"]
   "src/admins/DelayedAdmin.sol" = ["DelayedAdmin"]
   "src/admins/PauseAdmin.sol" = ["PauseAdmin"]
 
