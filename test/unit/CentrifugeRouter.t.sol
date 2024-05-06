@@ -7,4 +7,4 @@ import "src/interfaces/IERC7540.sol";
 import {SucceedingRequestReceiver} from "test/mocks/SucceedingRequestReceiver.sol";
 import {FailingRequestReceiver} from "test/mocks/FailingRequestReceiver.sol";
 
-contract CentriufgeRoutertest is BaseTest {}
+contract CentrifugeRouterTest is BaseTest {}

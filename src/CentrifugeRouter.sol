@@ -42,7 +42,8 @@ contract CentrifugeRouter is Auth {
         uint256 lockedRequest = lockedRequests[investor][vault];
         require(lockedRequest > 0, "CentrifugeRouter/investor-has-no-balance");
         lockedRequests[investor][vault] = 0;
-        IERC7540(vault).requestDeposit(lockedRequest, msg.sender, address(this), "");
+        IERC20Like(IERC7540(vault).asset()).approve(vault, lockedRequest);
+        IERC7540(vault).requestDeposit(lockedRequest, investor, address(this), "");
     }
 
     function claimDeposit(address vault, address investor) external {

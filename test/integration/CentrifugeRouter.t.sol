@@ -7,7 +7,8 @@ import "src/interfaces/IERC7540.sol";
 import {SucceedingRequestReceiver} from "test/mocks/SucceedingRequestReceiver.sol";
 import {FailingRequestReceiver} from "test/mocks/FailingRequestReceiver.sol";
 
-contract CentriufgeRoutertest is BaseTest {
+contract CentrifugeRouterTest is BaseTest {
+
     function testCFGRouterDeposit(uint256 amount) public {
         // If lower than 4 or odd, rounding down can lead to not receiving any tokens
         amount = uint128(bound(amount, 4, MAX_UINT128));
@@ -15,10 +16,7 @@ contract CentriufgeRoutertest is BaseTest {
 
         address vault_ = deploySimpleVault();
         ERC7540Vault vault = ERC7540Vault(vault_);
-
-        // centrifugeChain.updateTrancheTokenPrice(
-        //         vault.poolId(), vault.trancheId(), defaultAssetId, price, uint64(block.timestamp)
-        // );
+        vm.label(vault_, "vault");
 
         erc20.mint(self, amount);
 
@@ -34,19 +32,7 @@ contract CentriufgeRoutertest is BaseTest {
         cfgRouter.requestDeposit(vault_, amount);
 
         // trigger - deposit order fulfillment
-        uint128 price = 2 * 10 ** 18;
-        uint128 _currencyId = poolManager.assetToId(address(erc20)); // retrieve currencyId
-        uint128 trancheTokensPayout = uint128(amount * 10 ** 18 / price); // trancheTokenPrice = 2$
-        assertApproxEqAbs(trancheTokensPayout, amount / 2, 2);
-        centrifugeChain.isFulfilledDepositRequest(
-            vault.poolId(),
-            vault.trancheId(),
-            bytes32(bytes20(self)),
-            _currencyId,
-            uint128(amount),
-            trancheTokensPayout,
-            uint128(amount)
-        );
+        (uint128 trancheTokensPayout) = fulfillDepositRequest(vault, amount);
 
         assertEq(vault.maxMint(self), trancheTokensPayout); // max deposit
         assertEq(vault.maxDeposit(self), amount); // max deposit
@@ -60,4 +46,65 @@ contract CentriufgeRoutertest is BaseTest {
         assertApproxEqAbs(trancheToken.balanceOf(address(escrow)), 0, 1);
         assertApproxEqAbs(erc20.balanceOf(address(escrow)), amount, 1);
     }
+
+    function testCFGRouterAsyncDeposit(uint256 amount) public {
+        amount = uint128(bound(amount, 4, MAX_UINT128));
+        vm.assume(amount % 2 == 0);
+        
+
+        address vault_ = deploySimpleVault();
+        ERC7540Vault vault = ERC7540Vault(vault_);
+        vm.label(vault_, "vault");
+
+        erc20.mint(self, amount);
+        erc20.approve(address(cfgRouter), amount);
+        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max);
+        cfgRouter.lockDepositRequest(vault_, amount);
+        vm.warp(10 days);
+
+        address randomUser = address(0x123);
+        vm.label(randomUser, "randomUser");
+        vm.prank(randomUser);
+        cfgRouter.executeLockedDepositRequest(vault_, address(this));
+
+        (uint128 trancheTokensPayout) = fulfillDepositRequest(vault, amount);
+
+        assertEq(vault.maxMint(self), trancheTokensPayout);
+        assertEq(vault.maxDeposit(self), amount);
+        TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
+        assertEq(trancheToken.balanceOf(address(escrow)), trancheTokensPayout);
+
+        cfgRouter.claimDeposit(vault_, self);
+        assertApproxEqAbs(trancheToken.balanceOf(self), trancheTokensPayout, 1);
+        assertApproxEqAbs(trancheToken.balanceOf(self), trancheTokensPayout, 1);
+        assertApproxEqAbs(trancheToken.balanceOf(address(escrow)), 0, 1);
+        assertApproxEqAbs(erc20.balanceOf(address(escrow)), amount, 1);
+
+    }
+
+    function testCFGRouterRedeem() public {}
+
+    function testCFGRouterRoundTrip() public {}
+
+    function testCFGRouterDepositIntoMultipleVaults() public {}
+
+    function testCFGRouterRedeemFromMultipleVaults() public {}
+
+    // --- helpers ---
+    function fulfillDepositRequest(ERC7540Vault vault, uint256 amount) public returns (uint128 trancheTokensPayout){
+        uint128 price = 2 * 10 ** 18;
+        uint128 _currencyId = poolManager.assetToId(address(erc20)); // retrieve currencyId
+        trancheTokensPayout = uint128(amount * 10 ** 18 / price); // trancheTokenPrice = 2$
+        assertApproxEqAbs(trancheTokensPayout, amount / 2, 2);
+        centrifugeChain.isFulfilledDepositRequest(
+            vault.poolId(),
+            vault.trancheId(),
+            bytes32(bytes20(self)),
+            _currencyId,
+            uint128(amount),
+            trancheTokensPayout,
+            uint128(amount)
+        );
+    }
+
 }
