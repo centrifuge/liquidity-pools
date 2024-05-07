@@ -215,7 +215,7 @@ contract InvestmentInvariants is BaseTest {
 
     //         for (uint256 i; i < investors.length; ++i) {
     //             address investor = investors[i];
-    //             (, uint256 depositPrice,,,,,) = investmentManager.investments(address(vault), investor);
+    //             (, uint256 depositPrice,,,,,) = investmentManager.requests(address(vault), investor);
 
     //             assertLe(depositPrice, getShadowVar(investor, "maxDepositFulfillmentPrice"));
     //         }
@@ -229,7 +229,7 @@ contract InvestmentInvariants is BaseTest {
 
     //         for (uint256 i; i < investors.length; ++i) {
     //             address investor = investors[i];
-    //             (,,, uint256 redeemPrice,,,) = investmentManager.investments(address(vault), investor);
+    //             (,,, uint256 redeemPrice,,,) = investmentManager.requests(address(vault), investor);
 
     //             assertLe(redeemPrice, getShadowVar(investor, "maxRedeemFulfillmentPrice"));
     //         }

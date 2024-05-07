@@ -332,7 +332,7 @@ contract RedeemTest is BaseTest {
             poolId, trancheId, bytes32(bytes20(self)), _assetId, uint128(investmentAmount), shares, shares
         );
 
-        (, uint256 depositPrice,,,,,,,,,) = investmentManager.investments(address(vault), self);
+        (, uint256 depositPrice,,,,,,,,,) = investmentManager.requests(address(vault), self);
         assertEq(depositPrice, 1000000000000000000);
 
         // assert deposit & mint values adjusted
@@ -357,7 +357,7 @@ contract RedeemTest is BaseTest {
             poolId, trancheId, bytes32(bytes20(self)), _assetId, assets, shares / 2
         );
 
-        (,,, uint256 redeemPrice,,,,,,,) = investmentManager.investments(address(vault), self);
+        (,,, uint256 redeemPrice,,,,,,,) = investmentManager.requests(address(vault), self);
         assertEq(redeemPrice, 1500000000000000000);
 
         // trigger second executed collectRedeem at a price of 1.0
@@ -368,7 +368,7 @@ contract RedeemTest is BaseTest {
             poolId, trancheId, bytes32(bytes20(self)), _assetId, assets, shares / 2
         );
 
-        (,,, redeemPrice,,,,,,,) = investmentManager.investments(address(vault), self);
+        (,,, redeemPrice,,,,,,,) = investmentManager.requests(address(vault), self);
         assertEq(redeemPrice, 1250000000000000000);
     }
 
@@ -393,7 +393,7 @@ contract RedeemTest is BaseTest {
 
         assertEq(vault.maxRedeem(self), firstTrancheTokenRedeem);
 
-        (,,, uint256 redeemPrice,,,,,,,) = investmentManager.investments(address(vault), self);
+        (,,, uint256 redeemPrice,,,,,,,) = investmentManager.requests(address(vault), self);
         assertEq(redeemPrice, 1100000000000000000);
 
         // second trigger executed collectRedeem of the second 25 trancheTokens at a price of 1.3
@@ -402,7 +402,7 @@ contract RedeemTest is BaseTest {
             poolId, trancheId, bytes32(bytes20(self)), assetId, secondCurrencyPayout, secondTrancheTokenRedeem
         );
 
-        (,,, redeemPrice,,,,,,,) = investmentManager.investments(address(vault), self);
+        (,,, redeemPrice,,,,,,,) = investmentManager.requests(address(vault), self);
         assertEq(redeemPrice, 1200000000000000000);
 
         assertApproxEqAbs(vault.maxWithdraw(self), firstCurrencyPayout + secondCurrencyPayout, 2);

@@ -2,7 +2,7 @@
 pragma solidity >=0.5.0;
 
 /// @dev Vault orders and investment/redemption limits per user
-struct InvestmentState {
+struct Request {
     /// @dev Tranche tokens that can be claimed using `mint()`
     uint128 maxMint;
     /// @dev Weighted average price of deposits, used to convert maxMint to maxDeposit
@@ -12,17 +12,17 @@ struct InvestmentState {
     /// @dev Weighted average price of redemptions, used to convert maxWithdraw to maxRedeem
     uint256 redeemPrice;
     /// @dev Remaining invest (deposit) order in assets
-    uint128 pendingDepositRequest;
+    uint128 pendingDeposit;
     /// @dev Remaining redeem order in assets
-    uint128 pendingRedeemRequest;
+    uint128 pendingRedeem;
     /// @dev Currency that can be claimed using `claimCancelDepositRequest()`
-    uint128 claimableCancelDepositRequest;
+    uint128 claimableCancelDeposit;
     /// @dev Tranche tokens that can be claimed using `claimCancelRedeemRequest()`
-    uint128 claimableCancelRedeemRequest;
-    /// @dev Whether the depositRequest was requested to be cancelled
-    bool pendingCancelDepositRequest;
-    /// @dev Whether the redeemRequest was requested to be cancelled
-    bool pendingCancelRedeemRequest;
+    uint128 claimableCancelRedeem;
+    /// @dev Whether the deposit request was requested to be cancelled
+    bool pendingCancelDeposit;
+    /// @dev Whether the redeem request was requested to be cancelled
+    bool pendingCancelRedeem;
     ///@dev Flag whether this user has ever interacted with this vault
     bool exists;
 }
