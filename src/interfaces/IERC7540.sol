@@ -263,14 +263,20 @@ interface IERC7540 is IERC7540Deposit, IERC7540Redeem, IERC7540CancelDeposit, IE
     event CancelDepositClaimable(address indexed owner, uint256 indexed requestId, uint256 assets);
     event CancelRedeemClaimable(address indexed owner, uint256 indexed requestId, uint256 shares);
 
-    /// @notice The event emitted when an operator is set.
-    /// @param owner The address of the owner.
-    /// @param operator The address of the operator.
-    /// @param approved The approval status.
+    /**
+     * @dev The event emitted when an operator is set.
+     *
+     * @param owner The address of the owner.
+     * @param operator The address of the operator.
+     * @param approved The approval status.
+     */
     event OperatorSet(address indexed owner, address indexed operator, bool approved);
 
-    /// @notice Sets or removes an operator for the caller.
-    /// @param operator The address of the operator.
-    /// @param approved The approval status.
+    /**
+     * @dev Sets or removes an operator for the caller.
+     *
+     * @param operator The address of the operator.
+     * @param approved The approval status.
+     */
     function setOperator(address operator, bool approved) external returns (bool);
 }
