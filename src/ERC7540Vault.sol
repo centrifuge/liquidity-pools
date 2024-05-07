@@ -8,6 +8,10 @@ import "src/interfaces/IERC7540.sol";
 import "src/interfaces/IERC7575.sol";
 import "src/interfaces/IERC20.sol";
 
+interface AuthTransferLike {
+    function authTransferFrom(address sender, address from, address to, uint256 amount) external returns (bool);
+}
+
 /// @title  ERC7540Vault
 /// @notice Asynchronous Tokenized Vault standard implementation for Centrifuge pools
 ///
@@ -125,9 +129,12 @@ contract ERC7540Vault is Auth, IERC7540 {
         public
         returns (uint256)
     {
-        require(IERC20Metadata(share).balanceOf(owner) >= shares, "ERC7540Vault/insufficient-balance");
+        require(IERC20(share).balanceOf(owner) >= shares, "ERC7540Vault/insufficient-balance");
         require(manager.requestRedeem(address(this), shares, receiver, owner), "ERC7540Vault/request-redeem-failed");
-        require(_transferFrom(owner, address(escrow), shares), "ERC7540Vault/transfer-failed");
+        require(
+            AuthTransferLike(share).authTransferFrom(msg.sender, owner, address(escrow), shares),
+            "ERC7540Vault/transfer-failed"
+        );
 
         require(
             data.length == 0 || receiver.code.length == 0
@@ -321,26 +328,5 @@ contract ERC7540Vault is Auth, IERC7540 {
 
     function priceLastUpdated() external view returns (uint64) {
         return manager.priceLastUpdated(address(this));
-    }
-
-    function _transferFrom(address from, address to, uint256 value) internal returns (bool) {
-        (bool success, bytes memory data) = address(share).call(
-            bytes.concat(
-                abi.encodeWithSignature("transferFrom(address,address,uint256)", from, to, value), bytes20(msg.sender)
-            )
-        );
-        _successCheck(success);
-        return abi.decode(data, (bool));
-    }
-
-    function _successCheck(bool success) internal pure {
-        if (!success) {
-            assembly {
-                let ptr := mload(0x40)
-                let size := returndatasize()
-                returndatacopy(ptr, 0, size)
-                revert(ptr, size)
-            }
-        }
     }
 }
