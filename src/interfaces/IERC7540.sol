@@ -264,6 +264,22 @@ interface IERC7540 is IERC7540Deposit, IERC7540Redeem, IERC7540CancelDeposit, IE
     event CancelRedeemClaimable(address indexed owner, uint256 indexed requestId, uint256 shares);
 
     /**
+     * @dev Mints shares Vault shares to receiver by claiming the Request of the owner.
+     *
+     * - MUST emit the Deposit event.
+     * - owner MUST equal msg.sender unless the owner has approved the msg.sender as an operator.
+     */
+    function deposit(uint256 assets, address receiver, address owner) external returns (uint256 shares);
+
+    /**
+     * @dev Mints exactly shares Vault shares to receiver by claiming the Request of the owner.
+     *
+     * - MUST emit the Deposit event.
+     * - owner MUST equal msg.sender unless the owner has approved the msg.sender as an operator.
+     */
+    function mint(uint256 shares, address receiver, address owner) external returns (uint256 assets);
+
+    /**
      * @dev The event emitted when an operator is set.
      *
      * @param owner The address of the owner.
