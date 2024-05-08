@@ -2,13 +2,13 @@
 pragma solidity 0.8.21;
 
 import {ERC20} from "src/token/ERC20.sol";
-import {IERC20, IERC20Metadata} from "src/interfaces/IERC20.sol";
+import {IERC20Metadata} from "src/interfaces/IERC20.sol";
 import {IERC7540} from "src/interfaces/IERC7540.sol";
 import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 
 contract RedemptionWrapper is ERC20 {
-    IERC20 public immutable share;
-    IERC20 public immutable asset;
+    IERC20Metadata public immutable share;
+    IERC20Metadata public immutable asset;
 
     IERC7540 public vault;
 
@@ -17,8 +17,8 @@ contract RedemptionWrapper is ERC20 {
 
     constructor(address vault_) ERC20(IERC20Metadata(IERC7540(vault_).share()).decimals()) {
         vault = IERC7540(vault_);
-        share = IERC20(vault.share());
-        asset = IERC20(vault.asset());
+        share = IERC20Metadata(vault.share());
+        asset = IERC20Metadata(vault.asset());
     }
 
     // --- Administration ---
@@ -31,7 +31,7 @@ contract RedemptionWrapper is ERC20 {
     // --- Interactions ---
     function mint(address to, uint256 value) public override {
         require(share.transferFrom(msg.sender, address(this), value), "RedemptionWrapper/failed-transfer");
-        require(vault.requestRedeem(value, address(this), address(this), ""), "RedemptionWrapper/request-redeem-failed");
+        vault.requestRedeem(value, address(this), address(this), "");
 
         super.mint(to, value);
     }
@@ -46,6 +46,15 @@ contract RedemptionWrapper is ERC20 {
 
         super.burn(from, value);
         SafeTransferLib.safeTransferFrom(address(asset), address(this), msg.sender, value);
+    }
+
+    // --- Metadata overrides ---
+    function name() external view override returns (string memory) {
+        return string.concat(share.name(), " Claim");
+    }
+
+    function symbol() external view override returns (string memory) {
+        return string.concat(share.symbol(), "C");
     }
 }
 

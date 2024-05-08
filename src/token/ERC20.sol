@@ -12,10 +12,9 @@ interface IERC1271 {
 /// @notice Standard ERC-20 implementation, with mint/burn functionality and permit logic.
 /// @author Modified from https://github.com/makerdao/xdomain-dss/blob/master/src/Dai.sol
 contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
-    /// @inheritdoc IERC20Metadata
-    string public name;
-    /// @inheritdoc IERC20Metadata
-    string public symbol;
+    string internal _name;
+    string internal _symbol;
+
     /// @inheritdoc IERC20Metadata
     uint8 public immutable decimals;
     /// @inheritdoc IERC20
@@ -69,10 +68,20 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
     }
 
     function file(bytes32 what, string memory data) external auth {
-        if (what == "name") name = data;
-        else if (what == "symbol") symbol = data;
+        if (what == "name") _name = data;
+        else if (what == "symbol") _symbol = data;
         else revert("ERC20/file-unrecognized-param");
         emit File(what, data);
+    }
+
+    /// @inheritdoc IERC20Metadata
+    function name() external view virtual returns (string memory) {
+        return _name;
+    }
+
+    /// @inheritdoc IERC20Metadata
+    function symbol() external view virtual returns (string memory) {
+        return _symbol;
     }
 
     // --- ERC20 Mutations ---
