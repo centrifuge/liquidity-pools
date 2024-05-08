@@ -49,12 +49,14 @@ contract RedemptionWrapper is ERC20 {
     }
 
     // --- Metadata overrides ---
+    /// @dev Sets name to [Share Name] - [Asset Name] Claim
     function name() external view override returns (string memory) {
-        return string.concat(share.name(), " Claim");
+        return string.concat(share.name(), " - ", asset.name(), " Claim");
     }
 
+    /// @dev Sets symbol to c[SHARE_SYMBOL]-[ASSET_SYMBOL]
     function symbol() external view override returns (string memory) {
-        return string.concat(share.symbol(), "C");
+        return string.concat("c", share.symbol(), "-", asset.symbol());
     }
 }
 
