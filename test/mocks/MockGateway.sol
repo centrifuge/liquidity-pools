@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import "./Mock.sol";
+import "test/mocks/Mock.sol";
 
-contract GatewayMock is Mock {
+contract MockGateway is Mock {
     mapping(bytes => uint256) public handled;
 
     constructor() {}
@@ -51,51 +51,51 @@ contract GatewayMock is Mock {
         values_uint128["amount"] = amount;
     }
 
-    function increaseInvestOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount)
+    function increaseInvestOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 assetId, uint128 amount)
         public
     {
         values_uint64["poolId"] = poolId;
         values_bytes16["trancheId"] = trancheId;
         values_address["investor"] = investor;
-        values_uint128["currency"] = currency;
+        values_uint128["assetId"] = assetId;
         values_uint128["amount"] = amount;
     }
 
-    function increaseRedeemOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency, uint128 amount)
+    function increaseRedeemOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 assetId, uint128 amount)
         public
     {
         values_uint64["poolId"] = poolId;
         values_bytes16["trancheId"] = trancheId;
         values_address["investor"] = investor;
-        values_uint128["currency"] = currency;
+        values_uint128["assetId"] = assetId;
         values_uint128["amount"] = amount;
     }
 
-    function collectInvest(uint64 poolId, bytes16 trancheId, address investor, uint128 currency) public {
+    function collectInvest(uint64 poolId, bytes16 trancheId, address investor, uint128 assetId) public {
         values_uint64["poolId"] = poolId;
         values_bytes16["trancheId"] = trancheId;
         values_address["investor"] = investor;
-        values_uint128["currency"] = currency;
+        values_uint128["assetId"] = assetId;
     }
 
-    function collectRedeem(uint64 poolId, bytes16 trancheId, address investor, uint128 currency) public {
+    function collectRedeem(uint64 poolId, bytes16 trancheId, address investor, uint128 assetId) public {
         values_uint64["poolId"] = poolId;
         values_bytes16["trancheId"] = trancheId;
         values_address["investor"] = investor;
-        values_uint128["currency"] = currency;
+        values_uint128["assetId"] = assetId;
     }
 
-    function cancelInvestOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency) public {
+    function cancelInvestOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 assetId) public {
         values_uint64["poolId"] = poolId;
         values_bytes16["trancheId"] = trancheId;
         values_address["investor"] = investor;
-        values_uint128["currency"] = currency;
+        values_uint128["assetId"] = assetId;
     }
 
-    function cancelRedeemOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 currency) public {
+    function cancelRedeemOrder(uint64 poolId, bytes16 trancheId, address investor, uint128 assetId) public {
         values_uint64["poolId"] = poolId;
         values_bytes16["trancheId"] = trancheId;
         values_address["investor"] = investor;
-        values_uint128["currency"] = currency;
+        values_uint128["assetId"] = assetId;
     }
 }

@@ -2,16 +2,16 @@
 pragma solidity 0.8.21;
 
 import "test/BaseTest.sol";
-import {RouterAggregator} from "src/gateway/routers/RouterAggregator.sol";
-import {GatewayMock} from "test/mocks/GatewayMock.sol";
+import {Aggregator} from "src/gateway/routers/Aggregator.sol";
+import {MockGateway} from "test/mocks/MockGateway.sol";
 import {MockRouter} from "test/mocks/MockRouter.sol";
 import {CastLib} from "src/libraries/CastLib.sol";
 
-contract RouterAggregatorTest is Test {
+contract AggregatorTest is Test {
     using CastLib for *;
 
-    RouterAggregator aggregator;
-    GatewayMock gateway;
+    Aggregator aggregator;
+    MockGateway gateway;
     MockRouter router1;
     MockRouter router2;
     MockRouter router3;
@@ -22,8 +22,8 @@ contract RouterAggregatorTest is Test {
     address[] nineMockRouters;
 
     function setUp() public {
-        gateway = new GatewayMock();
-        aggregator = new RouterAggregator(address(gateway));
+        gateway = new MockGateway();
+        aggregator = new Aggregator(address(gateway));
 
         router1 = new MockRouter(address(aggregator));
         vm.label(address(router1), "MockRouter1");
@@ -90,10 +90,10 @@ contract RouterAggregatorTest is Test {
         vm.expectRevert(bytes(""));
         assertEq(aggregator.routers(3), address(0));
 
-        vm.expectRevert(bytes("RouterAggregator/exceeds-max-router-count"));
+        vm.expectRevert(bytes("Aggregator/exceeds-max-router-count"));
         aggregator.file("routers", nineMockRouters);
 
-        vm.expectRevert(bytes("RouterAggregator/file-unrecognized-param"));
+        vm.expectRevert(bytes("Aggregator/file-unrecognized-param"));
         aggregator.file("notRouters", nineMockRouters);
 
         aggregator.deny(address(this));
@@ -102,11 +102,11 @@ contract RouterAggregatorTest is Test {
     }
 
     function testUseBeforeInitialization() public {
-        vm.expectRevert(bytes("RouterAggregator/invalid-router"));
+        vm.expectRevert(bytes("Aggregator/invalid-router"));
         aggregator.handle(abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1)));
 
         vm.prank(address(gateway));
-        vm.expectRevert(bytes("RouterAggregator/not-initialized"));
+        vm.expectRevert(bytes("Aggregator/not-initialized"));
         aggregator.send(abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1)));
     }
 
@@ -116,7 +116,7 @@ contract RouterAggregatorTest is Test {
         bytes memory firstMessage = abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1));
         bytes memory firstProof = _formatMessageProof(abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1)));
 
-        vm.expectRevert(bytes("RouterAggregator/invalid-router"));
+        vm.expectRevert(bytes("Aggregator/invalid-router"));
         aggregator.handle(firstMessage);
 
         // Executes after quorum is reached
@@ -194,7 +194,7 @@ contract RouterAggregatorTest is Test {
         bytes memory message = abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1));
         bytes memory proof = _formatMessageProof(abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1)));
 
-        vm.expectRevert(bytes("RouterAggregator/invalid-router"));
+        vm.expectRevert(bytes("Aggregator/invalid-router"));
         aggregator.handle(message);
 
         // Confirm two messages by payload first
@@ -227,7 +227,7 @@ contract RouterAggregatorTest is Test {
         assertEq(router2.sent(proof), 0);
         assertEq(router3.sent(proof), 0);
 
-        vm.expectRevert(bytes("RouterAggregator/only-gateway-allowed-to-call"));
+        vm.expectRevert(bytes("Aggregator/only-gateway-allowed-to-call"));
         aggregator.send(message);
 
         vm.prank(address(gateway));
@@ -252,7 +252,7 @@ contract RouterAggregatorTest is Test {
         router3.execute(proof);
         assertEq(gateway.handled(message), 0);
 
-        vm.expectRevert(bytes("RouterAggregator/message-recovery-not-initiated"));
+        vm.expectRevert(bytes("Aggregator/message-recovery-not-initiated"));
         aggregator.executeMessageRecovery(message);
 
         // Initiate recovery
@@ -262,7 +262,7 @@ contract RouterAggregatorTest is Test {
             )
         );
 
-        vm.expectRevert(bytes("RouterAggregator/challenge-period-has-not-ended"));
+        vm.expectRevert(bytes("Aggregator/challenge-period-has-not-ended"));
         aggregator.executeMessageRecovery(message);
 
         // Execute recovery
@@ -276,7 +276,7 @@ contract RouterAggregatorTest is Test {
 
         bytes memory message = abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1));
 
-        vm.expectRevert(bytes("RouterAggregator/no-recovery-with-one-router-allowed"));
+        vm.expectRevert(bytes("Aggregator/no-recovery-with-one-router-allowed"));
         router1.execute(
             abi.encodePacked(
                 uint8(MessagesLib.Call.InitiateMessageRecovery), keccak256(message), address(router1).toBytes32()
@@ -295,7 +295,7 @@ contract RouterAggregatorTest is Test {
         router2.execute(proof);
         assertEq(gateway.handled(message), 0);
 
-        vm.expectRevert(bytes("RouterAggregator/message-recovery-not-initiated"));
+        vm.expectRevert(bytes("Aggregator/message-recovery-not-initiated"));
         aggregator.executeMessageRecovery(proof);
 
         // Initiate recovery
@@ -305,7 +305,7 @@ contract RouterAggregatorTest is Test {
             )
         );
 
-        vm.expectRevert(bytes("RouterAggregator/challenge-period-has-not-ended"));
+        vm.expectRevert(bytes("Aggregator/challenge-period-has-not-ended"));
         aggregator.executeMessageRecovery(proof);
 
         // Execute recovery
@@ -332,14 +332,14 @@ contract RouterAggregatorTest is Test {
             )
         );
 
-        vm.expectRevert(bytes("RouterAggregator/challenge-period-has-not-ended"));
+        vm.expectRevert(bytes("Aggregator/challenge-period-has-not-ended"));
         aggregator.executeMessageRecovery(proof);
 
         // Dispute recovery
         router2.execute(abi.encodePacked(uint8(MessagesLib.Call.DisputeMessageRecovery), keccak256(proof)));
 
         // Check that recovery is not possible anymore
-        vm.expectRevert(bytes("RouterAggregator/message-recovery-not-initiated"));
+        vm.expectRevert(bytes("Aggregator/message-recovery-not-initiated"));
         aggregator.executeMessageRecovery(proof);
         assertEq(gateway.handled(message), 0);
     }

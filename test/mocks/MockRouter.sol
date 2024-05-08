@@ -3,7 +3,7 @@ pragma solidity 0.8.21;
 
 import "forge-std/Test.sol";
 import {Auth} from "src/Auth.sol";
-import "./Mock.sol";
+import "test/mocks/Mock.sol";
 
 interface AggregatorLike {
     function handle(bytes memory message) external;

@@ -1,24 +1,31 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
+import {IERC20, IERC20Metadata, IERC20Permit} from "src/interfaces/IERC20.sol";
+import {Auth} from "src/Auth.sol";
+
 interface IERC1271 {
     function isValidSignature(bytes32, bytes memory) external view returns (bytes4);
 }
 
 /// @title  ERC20
 /// @notice Standard ERC-20 implementation, with mint/burn functionality and permit logic.
-///         Includes ERC-2771 context support to allow multiple trusted forwarders
 /// @author Modified from https://github.com/makerdao/xdomain-dss/blob/master/src/Dai.sol
-contract ERC20 {
-    mapping(address => uint256) public wards;
-
+contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
+    /// @inheritdoc IERC20Metadata
     string public name;
+    /// @inheritdoc IERC20Metadata
     string public symbol;
+    /// @inheritdoc IERC20Metadata
     uint8 public immutable decimals;
+    /// @inheritdoc IERC20
     uint256 public totalSupply;
 
+    /// @inheritdoc IERC20
     mapping(address => uint256) public balanceOf;
+    /// @inheritdoc IERC20
     mapping(address => mapping(address => uint256)) public allowance;
+    /// @inheritdoc IERC20Permit
     mapping(address => uint256) public nonces;
 
     // --- EIP712 ---
@@ -30,37 +37,17 @@ contract ERC20 {
         keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
 
     // --- Events ---
-    event Rely(address indexed user);
-    event Deny(address indexed user);
     event File(bytes32 indexed what, string data);
-    event Approval(address indexed owner, address indexed spender, uint256 value);
-    event Transfer(address indexed from, address indexed to, uint256 value);
 
     constructor(uint8 decimals_) {
         decimals = decimals_;
-        wards[_msgSender()] = 1;
-        emit Rely(_msgSender());
+        wards[msg.sender] = 1;
+        emit Rely(msg.sender);
 
         nameHash = keccak256(bytes("Centrifuge"));
         versionHash = keccak256(bytes("1"));
         deploymentChainId = block.chainid;
         _DOMAIN_SEPARATOR = _calculateDomainSeparator(block.chainid);
-    }
-
-    modifier auth() {
-        // Custom auth modifier that uses _msgSender()
-        require(wards[_msgSender()] == 1, "Auth/not-authorized");
-        _;
-    }
-
-    function rely(address user) external auth {
-        wards[user] = 1;
-        emit Rely(user);
-    }
-
-    function deny(address user) external auth {
-        wards[user] = 0;
-        emit Deny(user);
     }
 
     function _calculateDomainSeparator(uint256 chainId) private view returns (bytes32) {
@@ -76,6 +63,7 @@ contract ERC20 {
         );
     }
 
+    /// @inheritdoc IERC20Permit
     function DOMAIN_SEPARATOR() external view returns (bytes32) {
         return block.chainid == deploymentChainId ? _DOMAIN_SEPARATOR : _calculateDomainSeparator(block.chainid);
     }
@@ -88,32 +76,34 @@ contract ERC20 {
     }
 
     // --- ERC20 Mutations ---
+    /// @inheritdoc IERC20
     function transfer(address to, uint256 value) public virtual returns (bool) {
         require(to != address(0) && to != address(this), "ERC20/invalid-address");
-        uint256 balance = balanceOf[_msgSender()];
+        uint256 balance = balanceOf[msg.sender];
         require(balance >= value, "ERC20/insufficient-balance");
 
         unchecked {
-            balanceOf[_msgSender()] = balance - value;
+            balanceOf[msg.sender] = balance - value;
             balanceOf[to] += value;
         }
 
-        emit Transfer(_msgSender(), to, value);
+        emit Transfer(msg.sender, to, value);
 
         return true;
     }
 
+    /// @inheritdoc IERC20
     function transferFrom(address from, address to, uint256 value) public virtual returns (bool) {
         require(to != address(0) && to != address(this), "ERC20/invalid-address");
         uint256 balance = balanceOf[from];
         require(balance >= value, "ERC20/insufficient-balance");
 
-        if (from != _msgSender()) {
-            uint256 allowed = allowance[from][_msgSender()];
+        if (from != msg.sender) {
+            uint256 allowed = allowance[from][msg.sender];
             if (allowed != type(uint256).max) {
                 require(allowed >= value, "ERC20/insufficient-allowance");
                 unchecked {
-                    allowance[from][_msgSender()] = allowed - value;
+                    allowance[from][msg.sender] = allowed - value;
                 }
             }
         }
@@ -128,10 +118,11 @@ contract ERC20 {
         return true;
     }
 
+    /// @inheritdoc IERC20
     function approve(address spender, uint256 value) external returns (bool) {
-        allowance[_msgSender()][spender] = value;
+        allowance[msg.sender][spender] = value;
 
-        emit Approval(_msgSender(), spender, value);
+        emit Approval(msg.sender, spender, value);
 
         return true;
     }
@@ -153,13 +144,13 @@ contract ERC20 {
         uint256 balance = balanceOf[from];
         require(balance >= value, "ERC20/insufficient-balance");
 
-        if (from != _msgSender()) {
-            uint256 allowed = allowance[from][_msgSender()];
+        if (from != msg.sender) {
+            uint256 allowed = allowance[from][msg.sender];
             if (allowed != type(uint256).max) {
                 require(allowed >= value, "ERC20/insufficient-allowance");
 
                 unchecked {
-                    allowance[from][_msgSender()] = allowed - value;
+                    allowance[from][msg.sender] = allowed - value;
                 }
             }
         }
@@ -217,6 +208,7 @@ contract ERC20 {
         emit Approval(owner, spender, value);
     }
 
+    /// @inheritdoc IERC20Permit
     function permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
         external
     {
@@ -224,10 +216,20 @@ contract ERC20 {
     }
 
     // --- Fail-safe ---
-    function authTransferFrom(address from, address to, uint256 value) public auth returns (bool) {
+    function authTransferFrom(address sender, address from, address to, uint256 value) public auth returns (bool) {
         require(to != address(0) && to != address(this), "ERC20/invalid-address");
         uint256 balance = balanceOf[from];
         require(balance >= value, "ERC20/insufficient-balance");
+
+        if (sender != from) {
+            uint256 allowed = allowance[from][sender];
+            if (allowed != type(uint256).max) {
+                require(allowed >= value, "ERC20/insufficient-allowance");
+                unchecked {
+                    allowance[from][sender] = allowed - value;
+                }
+            }
+        }
 
         unchecked {
             balanceOf[from] = balance - value;
@@ -237,10 +239,5 @@ contract ERC20 {
         emit Transfer(from, to, value);
 
         return true;
-    }
-
-    // --- ERC-2771 context ---
-    function _msgSender() internal view virtual returns (address) {
-        return msg.sender;
     }
 }

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {RestrictionManager} from "../token/RestrictionManager.sol";
-import {Auth} from "../Auth.sol";
+import {RestrictionManager} from "src/token/RestrictionManager.sol";
+import {Auth} from "src/Auth.sol";
 
 interface RootLike {
     function escrow() external view returns (address);
@@ -33,7 +33,7 @@ contract RestrictionManagerFactory is Auth {
     {
         RestrictionManager restrictionManager = new RestrictionManager(token);
 
-        restrictionManager.updateMember(RootLike(root).escrow(), type(uint256).max);
+        restrictionManager.updateMember(RootLike(root).escrow(), type(uint64).max);
 
         restrictionManager.rely(root);
         restrictionManager.rely(token);

@@ -2,16 +2,16 @@
 pragma solidity 0.8.21;
 
 import {Root} from "src/Root.sol";
-import {RouterAggregator} from "src/gateway/routers/RouterAggregator.sol";
+import {Aggregator} from "src/gateway/routers/Aggregator.sol";
 import {Gateway} from "src/gateway/Gateway.sol";
 import {InvestmentManager} from "src/InvestmentManager.sol";
+import {TrancheTokenFactory} from "src/factories/TrancheTokenFactory.sol";
+import {ERC7540VaultFactory} from "src/factories/ERC7540VaultFactory.sol";
+import {RestrictionManagerFactory} from "src/factories/RestrictionManagerFactory.sol";
 import {PoolManager} from "src/PoolManager.sol";
 import {Escrow} from "src/Escrow.sol";
 import {PauseAdmin} from "src/admins/PauseAdmin.sol";
 import {DelayedAdmin} from "src/admins/DelayedAdmin.sol";
-import {LiquidityPoolFactory} from "src/factories/LiquidityPoolFactory.sol";
-import {RestrictionManagerFactory} from "src/factories/RestrictionManagerFactory.sol";
-import {TrancheTokenFactory} from "src/factories/TrancheTokenFactory.sol";
 import "forge-std/Script.sol";
 
 interface RouterLike {
@@ -37,8 +37,8 @@ contract Deployer is Script {
     PauseAdmin public pauseAdmin;
     DelayedAdmin public delayedAdmin;
     Gateway public gateway;
-    RouterAggregator public aggregator;
-    address public liquidityPoolFactory;
+    Aggregator public aggregator;
+    address public vaultFactory;
     address public restrictionManagerFactory;
     address public trancheTokenFactory;
 
@@ -51,23 +51,22 @@ contract Deployer is Script {
         escrow = new Escrow{salt: salt}(deployer);
         root = new Root{salt: salt}(address(escrow), delay, deployer);
 
-        liquidityPoolFactory = address(new LiquidityPoolFactory(address(root)));
+        vaultFactory = address(new ERC7540VaultFactory(address(root)));
         restrictionManagerFactory = address(new RestrictionManagerFactory(address(root)));
         trancheTokenFactory = address(new TrancheTokenFactory{salt: salt}(address(root), deployer));
         investmentManager = new InvestmentManager(address(escrow));
-        poolManager =
-            new PoolManager(address(escrow), liquidityPoolFactory, restrictionManagerFactory, trancheTokenFactory);
+        poolManager = new PoolManager(address(escrow), vaultFactory, restrictionManagerFactory, trancheTokenFactory);
 
-        AuthLike(liquidityPoolFactory).rely(address(poolManager));
+        AuthLike(vaultFactory).rely(address(poolManager));
         AuthLike(trancheTokenFactory).rely(address(poolManager));
         AuthLike(restrictionManagerFactory).rely(address(poolManager));
 
-        AuthLike(liquidityPoolFactory).rely(address(root));
+        AuthLike(vaultFactory).rely(address(root));
         AuthLike(trancheTokenFactory).rely(address(root));
         AuthLike(restrictionManagerFactory).rely(address(root));
 
         gateway = new Gateway(address(root), address(investmentManager), address(poolManager));
-        aggregator = new RouterAggregator(address(gateway));
+        aggregator = new Aggregator(address(gateway));
 
         pauseAdmin = new PauseAdmin(address(root));
         delayedAdmin = new DelayedAdmin(address(root), address(pauseAdmin), address(aggregator));
@@ -95,7 +94,7 @@ contract Deployer is Script {
         poolManager.file("gateway", address(gateway));
         investmentManager.rely(address(root));
         investmentManager.rely(address(gateway));
-        investmentManager.rely(address(liquidityPoolFactory));
+        investmentManager.rely(address(vaultFactory));
         poolManager.rely(address(root));
         poolManager.rely(address(gateway));
         gateway.rely(address(root));
@@ -115,7 +114,7 @@ contract Deployer is Script {
 
     function removeDeployerAccess(address router, address deployer) public {
         AuthLike(router).deny(deployer);
-        AuthLike(liquidityPoolFactory).deny(deployer);
+        AuthLike(vaultFactory).deny(deployer);
         AuthLike(trancheTokenFactory).deny(deployer);
         AuthLike(restrictionManagerFactory).deny(deployer);
         root.deny(deployer);

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import "./Mock.sol";
+import "test/mocks/Mock.sol";
 
-contract AxelarGatewayMock is Mock {
+contract MockAxelarGateway is Mock {
     constructor() {}
 
     function validateContractCall(bytes32, string calldata, string calldata, bytes32) public view returns (bool) {

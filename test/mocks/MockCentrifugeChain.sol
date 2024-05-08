@@ -20,8 +20,8 @@ contract MockCentrifugeChain is Test {
         }
     }
 
-    function addCurrency(uint128 currency, address currencyAddress) public {
-        bytes memory _message = abi.encodePacked(uint8(MessagesLib.Call.AddCurrency), currency, currencyAddress);
+    function addAsset(uint128 assetId, address asset) public {
+        bytes memory _message = abi.encodePacked(uint8(MessagesLib.Call.AddAsset), assetId, asset);
         _execute(_message);
     }
 
@@ -30,13 +30,13 @@ contract MockCentrifugeChain is Test {
         _execute(_message);
     }
 
-    function allowInvestmentCurrency(uint64 poolId, uint128 currency) public {
-        bytes memory _message = abi.encodePacked(uint8(MessagesLib.Call.AllowInvestmentCurrency), poolId, currency);
+    function allowAsset(uint64 poolId, uint128 assetId) public {
+        bytes memory _message = abi.encodePacked(uint8(MessagesLib.Call.AllowAsset), poolId, assetId);
         _execute(_message);
     }
 
-    function disallowInvestmentCurrency(uint64 poolId, uint128 currency) public {
-        bytes memory _message = abi.encodePacked(uint8(MessagesLib.Call.DisallowInvestmentCurrency), poolId, currency);
+    function disallowAsset(uint64 poolId, uint128 assetId) public {
+        bytes memory _message = abi.encodePacked(uint8(MessagesLib.Call.DisallowAsset), poolId, assetId);
         _execute(_message);
     }
 
@@ -85,12 +85,12 @@ contract MockCentrifugeChain is Test {
     function updateTrancheTokenPrice(
         uint64 poolId,
         bytes16 trancheId,
-        uint128 currencyId,
+        uint128 assetId,
         uint128 price,
         uint64 computedAt
     ) public {
         bytes memory _message = abi.encodePacked(
-            uint8(MessagesLib.Call.UpdateTrancheTokenPrice), poolId, trancheId, currencyId, price, computedAt
+            uint8(MessagesLib.Call.UpdateTrancheTokenPrice), poolId, trancheId, assetId, price, computedAt
         );
         _execute(_message);
     }
@@ -99,23 +99,18 @@ contract MockCentrifugeChain is Test {
         uint64 poolId,
         bytes16 trancheId,
         address investor,
-        uint128 currencyId,
+        uint128 assetId,
         uint128 amount
     ) public {
         bytes memory _message = abi.encodePacked(
-            uint8(MessagesLib.Call.TriggerIncreaseRedeemOrder),
-            poolId,
-            trancheId,
-            investor.toBytes32(),
-            currencyId,
-            amount
+            uint8(MessagesLib.Call.TriggerRedeemRequest), poolId, trancheId, investor.toBytes32(), assetId, amount
         );
         _execute(_message);
     }
 
     // Trigger an incoming (e.g. Centrifuge Chain -> EVM) transfer of stable coins
-    function incomingTransfer(uint128 currency, bytes32 sender, bytes32 recipient, uint128 amount) public {
-        bytes memory _message = abi.encodePacked(uint8(MessagesLib.Call.Transfer), currency, sender, recipient, amount);
+    function incomingTransfer(uint128 assetId, bytes32 sender, bytes32 recipient, uint128 amount) public {
+        bytes memory _message = abi.encodePacked(uint8(MessagesLib.Call.Transfer), assetId, sender, recipient, amount);
         _execute(_message);
     }
 
@@ -159,86 +154,85 @@ contract MockCentrifugeChain is Test {
         _execute(_message);
     }
 
-    function isExecutedDecreaseInvestOrder(
-        uint64 poolId,
-        bytes16 trancheId,
-        bytes32 investor,
-        uint128 currency,
-        uint128 currencyPayout,
-        uint128 decreasedInvestOrder
-    ) public {
+    function recoverTokens(address target, address token, address to, uint256 amount) public {
         bytes memory _message = abi.encodePacked(
-            uint8(MessagesLib.Call.ExecutedDecreaseInvestOrder),
-            poolId,
-            trancheId,
-            investor,
-            currency,
-            currencyPayout,
-            decreasedInvestOrder
+            uint8(MessagesLib.Call.RecoverTokens), target.toBytes32(), token.toBytes32(), to.toBytes32(), amount
         );
         _execute(_message);
     }
 
-    function isExecutedDecreaseRedeemOrder(
+    function isFulfilledCancelDepositRequest(
         uint64 poolId,
         bytes16 trancheId,
         bytes32 investor,
-        uint128 currency,
-        uint128 trancheTokensPayout,
-        uint128 decreasedRedeemOrder
+        uint128 assetId,
+        uint128 assets,
+        uint128 fulfillment
     ) public {
         bytes memory _message = abi.encodePacked(
-            uint8(MessagesLib.Call.ExecutedDecreaseRedeemOrder),
+            uint8(MessagesLib.Call.FulfilledCancelDepositRequest),
             poolId,
             trancheId,
             investor,
-            currency,
-            trancheTokensPayout,
-            decreasedRedeemOrder
+            assetId,
+            assets,
+            fulfillment
         );
         _execute(_message);
     }
 
-    function isExecutedCollectInvest(
+    function isFulfilledCancelRedeemRequest(
         uint64 poolId,
         bytes16 trancheId,
         bytes32 investor,
-        uint128 currency,
-        uint128 currencyPayout,
-        uint128 trancheTokensPayout,
-        uint128 fulfilledInvestOrder
+        uint128 assetId,
+        uint128 shares,
+        uint128 fulfillment
     ) public {
         bytes memory _message = abi.encodePacked(
-            uint8(MessagesLib.Call.ExecutedCollectInvest),
+            uint8(MessagesLib.Call.FulfilledCancelRedeemRequest),
             poolId,
             trancheId,
             investor,
-            currency,
-            currencyPayout,
-            trancheTokensPayout,
-            fulfilledInvestOrder
+            assetId,
+            shares,
+            fulfillment
         );
         _execute(_message);
     }
 
-    function isExecutedCollectRedeem(
+    function isFulfilledDepositRequest(
         uint64 poolId,
         bytes16 trancheId,
         bytes32 investor,
-        uint128 currency,
-        uint128 currencyPayout,
-        uint128 trancheTokensPayout,
-        uint128 fulfilledRedeemOrder
+        uint128 assetId,
+        uint128 assets,
+        uint128 shares,
+        uint128 fulfillment
     ) public {
         bytes memory _message = abi.encodePacked(
-            uint8(MessagesLib.Call.ExecutedCollectRedeem),
+            uint8(MessagesLib.Call.FulfilledDepositRequest),
             poolId,
             trancheId,
             investor,
-            currency,
-            currencyPayout,
-            trancheTokensPayout,
-            fulfilledRedeemOrder
+            assetId,
+            assets,
+            shares,
+            fulfillment
+        );
+        _execute(_message);
+    }
+
+    function isFulfilledRedeemRequest(
+        uint64 poolId,
+        bytes16 trancheId,
+        bytes32 investor,
+        uint128 assetId,
+        uint128 assets,
+        uint128 shares
+    ) public {
+        bytes memory _message = abi.encodePacked(
+            uint8(MessagesLib.Call.FulfilledRedeemRequest), poolId, trancheId, investor, assetId, assets, shares
         );
         _execute(_message);
     }
