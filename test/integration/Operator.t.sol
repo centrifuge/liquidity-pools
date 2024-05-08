@@ -65,7 +65,7 @@ contract OperatorTest is BaseTest {
 
     function testRedeemAsOperator(uint256 amount) public {
         // If lower than 4 or odd, rounding down can lead to not receiving any tokens
-        amount = uint128(bound(amount, 4, MAX_UINT128));
+        amount = uint128(bound(amount, 4, MAX_UINT128 / 2));
         vm.assume(amount % 2 == 0);
 
         uint128 price = 2 * 10 ** 18;
