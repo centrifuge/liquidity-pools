@@ -133,10 +133,13 @@ contract ERC7540Vault is Auth, IERC7540 {
     {
         require(IERC20(share).balanceOf(owner) >= shares, "ERC7540Vault/insufficient-balance");
         require(manager.requestRedeem(address(this), shares, receiver, owner), "ERC7540Vault/request-redeem-failed");
+
+        // If msg.sender is operator of owner, the transfer is executed as if
+        // the sender is the owner, to bypass the allowance check
+        address sender = isOperator[owner][msg.sender] ? owner : msg.sender;
+
         require(
-            AuthTransferLike(share).authTransferFrom(
-                isOperator[owner][msg.sender] ? owner : msg.sender, owner, address(escrow), shares
-            ),
+            AuthTransferLike(share).authTransferFrom(sender, owner, address(escrow), shares),
             "ERC7540Vault/transfer-failed"
         );
 
