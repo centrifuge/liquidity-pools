@@ -6,19 +6,45 @@ import {IERC20Metadata} from "src/interfaces/IERC20.sol";
 import {IERC7540} from "src/interfaces/IERC7540.sol";
 import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 
+contract ClaimToken is ERC20 {
+    IERC20Metadata public immutable share;
+
+    // --- Events ---
+    event File(bytes32 indexed what, address data);
+
+    constructor(address share_) ERC20(IERC20Metadata(share_).decimals()) {
+        share = IERC20Metadata(share_);
+    }
+
+    // --- Metadata overrides ---
+    /// @dev Sets name to [Share Name] Claim
+    function name() external view override returns (string memory) {
+        return string.concat(share.name(), " Claim");
+    }
+
+    /// @dev Sets symbol to c[SHARE_SYMBOL]
+    function symbol() external view override returns (string memory) {
+        return string.concat("c", share.symbol());
+    }
+}
+
 contract RedemptionWrapper is ERC20 {
     IERC20Metadata public immutable share;
     IERC20Metadata public immutable asset;
+    ERC20 public immutable claimToken;
+    address public immutable user;
 
     IERC7540 public vault;
 
     // --- Events ---
     event File(bytes32 indexed what, address data);
 
-    constructor(address vault_) ERC20(IERC20Metadata(IERC7540(vault_).share()).decimals()) {
+    constructor(address vault_, address claimToken_, address user_) ERC20(IERC20Metadata(IERC7540(vault_).share()).decimals()) {
         vault = IERC7540(vault_);
         share = IERC20Metadata(vault.share());
         asset = IERC20Metadata(vault.asset());
+        claimToken = ERC20(claimToken_);
+        user = user_;
     }
 
     // --- Administration ---
@@ -30,10 +56,11 @@ contract RedemptionWrapper is ERC20 {
 
     // --- Interactions ---
     function mint(address to, uint256 value) public override {
+        require(msg.sender == user, "RedemptionWrapper/invalid-user");
         require(share.transferFrom(msg.sender, address(this), value), "RedemptionWrapper/failed-transfer");
         vault.requestRedeem(value, address(this), address(this), "");
 
-        super.mint(to, value);
+        claimToken.mint(to, value);
     }
 
     function claim() public {
@@ -41,22 +68,11 @@ contract RedemptionWrapper is ERC20 {
     }
 
     function burn(address from, uint256 value) public override {
+        claimToken.burn(msg.sender, value);
+
         claim();
         require(asset.balanceOf(address(this)) >= value, "RedemptionWrapper/insufficient-asset-balance");
-
-        super.burn(from, value);
         SafeTransferLib.safeTransferFrom(address(asset), address(this), msg.sender, value);
-    }
-
-    // --- Metadata overrides ---
-    /// @dev Sets name to [Share Name] - [Asset Name] Claim
-    function name() external view override returns (string memory) {
-        return string.concat(share.name(), " - ", asset.name(), " Claim");
-    }
-
-    /// @dev Sets symbol to c[SHARE_SYMBOL]-[ASSET_SYMBOL]
-    function symbol() external view override returns (string memory) {
-        return string.concat("c", share.symbol(), "-", asset.symbol());
     }
 }
 
@@ -65,16 +81,30 @@ contract RedemptionWrapper is ERC20 {
 contract RedemptionWrapperFactory {
     address public immutable root;
 
+    mapping(address share => ERC20) claimToken;
+
     constructor(address _root) {
         root = _root;
     }
 
-    function newVault(address vault) public returns (address) {
-        bytes32 salt = keccak256(abi.encodePacked(vault));
+    function newWrapper(address vault, address user) public returns (address) {
+        address share = IERC7540(vault).share();
 
-        RedemptionWrapper wrapper = new RedemptionWrapper{salt: salt}(vault);
+        ERC20 token = claimToken[share];
+        if (address(token) == address(0)) {
+            token = new ClaimToken(share);
+            token.rely(root);
+            claimToken[share] = token;
+        }
+
+        bytes32 salt = keccak256(abi.encodePacked(share, IERC7540(vault).asset(), user));
+
+        RedemptionWrapper wrapper = new RedemptionWrapper{salt: salt}(vault, address(token), user);
         wrapper.rely(root);
         wrapper.deny(address(this));
+
+        token.rely(address(wrapper));
+
         return address(wrapper);
     }
 }
