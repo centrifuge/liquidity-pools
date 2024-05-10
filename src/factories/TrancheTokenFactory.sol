@@ -1,8 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {TrancheToken} from "src/token/Tranche.sol";
+import {TrancheToken01} from "src/token/TrancheToken01.sol";
 import {Auth} from "src/Auth.sol";
+
+interface RootLike {
+    function escrow() external view returns (address);
+}
 
 interface TrancheTokenFactoryLike {
     function newTrancheToken(
@@ -11,7 +15,8 @@ interface TrancheTokenFactoryLike {
         string memory name,
         string memory symbol,
         uint8 decimals,
-        address[] calldata trancheTokenWards
+        address[] calldata trancheTokenWards,
+        uint8 trancheType
     ) external returns (address);
 }
 
@@ -34,13 +39,14 @@ contract TrancheTokenFactory is Auth {
         string memory name,
         string memory symbol,
         uint8 decimals,
-        address[] calldata trancheTokenWards
+        address[] calldata trancheTokenWards,
+        uint8 /* trancheType */
     ) public auth returns (address) {
         // Salt is hash(poolId + trancheId)
         // same tranche token address on every evm chain
         bytes32 salt = keccak256(abi.encodePacked(poolId, trancheId));
 
-        TrancheToken token = new TrancheToken{salt: salt}(decimals);
+        TrancheToken01 token = new TrancheToken01{salt: salt}(decimals, RootLike(root).escrow());
 
         token.file("name", name);
         token.file("symbol", symbol);

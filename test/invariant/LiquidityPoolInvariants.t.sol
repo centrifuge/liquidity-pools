@@ -14,10 +14,6 @@ interface VaultLike is IERC7540 {
     function poolId() external view returns (uint64);
 }
 
-interface TrancheTokenLike {
-    function restrictionSet() external view returns (address);
-}
-
 interface ERC20Like {
     function balanceOf(address account) external view returns (uint256);
     function rely(address user) external;
@@ -70,7 +66,6 @@ contract InvestmentInvariants is BaseTest {
                 vaults.push(vault);
                 excludeContract(vault);
                 excludeContract(VaultLike(vault).share());
-                excludeContract(TrancheTokenLike(VaultLike(vault).share()).restrictionSet());
             }
         }
 

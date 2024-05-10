@@ -8,9 +8,8 @@ import {Escrow} from "src/Escrow.sol";
 import {PauseAdmin} from "src/admins/PauseAdmin.sol";
 import {DelayedAdmin} from "src/admins/DelayedAdmin.sol";
 import {PoolManager, Pool, Tranche} from "src/PoolManager.sol";
-import {RestrictionSetLike} from "src/token/RestrictionSet01.sol";
 import {ERC20} from "src/token/ERC20.sol";
-import {TrancheToken} from "src/token/Tranche.sol";
+import {TrancheToken01} from "src/token/TrancheToken01.sol";
 import {ERC7540VaultTest} from "test/unit/ERC7540Vault.t.sol";
 import {PermissionlessRouter} from "test/mocks/PermissionlessRouter.sol";
 import {Root} from "src/Root.sol";
@@ -67,7 +66,6 @@ contract DeployTest is Test, Deployer {
         // check factories
         assertEq(WardLike(trancheTokenFactory).wards(address(this)), 0);
         assertEq(WardLike(vaultFactory).wards(address(this)), 0);
-        assertEq(WardLike(restrictionSetFactory).wards(address(this)), 0);
     }
 
     function testAdminSetup(address nonAdmin, address nonPauser) public {
@@ -89,21 +87,20 @@ contract DeployTest is Test, Deployer {
         string memory tokenSymbol,
         bytes16 trancheId,
         uint8 decimals,
-        uint8 restrictionSetId
+        uint8 trancheType
     ) public {
         vm.assume(decimals <= 18 && decimals > 0);
         uint128 price = uint128(2 * 10 ** PRICE_DECIMALS); //TODO: fuzz price
         uint256 amount = 1000 * 10 ** erc20.decimals();
         uint64 validUntil = uint64(block.timestamp + 1000 days);
-        address vault_ = deployPoolAndTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, restrictionSetId);
+        address vault_ = deployPoolAndTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, trancheType);
         ERC7540Vault vault = ERC7540Vault(vault_);
-        TrancheToken trancheToken = TrancheToken(address(vault.share()));
-        RestrictionSetLike restrictionSet = RestrictionSetLike(trancheToken.restrictionSet());
+        TrancheToken01 trancheToken = TrancheToken01(address(vault.share()));
 
         deal(address(erc20), self, amount);
 
         vm.prank(address(poolManager));
-        restrictionSet.updateMember(self, validUntil);
+        trancheToken.updateMember(self, validUntil);
 
         depositMint(poolId, trancheId, price, amount, vault);
         amount = trancheToken.balanceOf(self);
@@ -122,7 +119,7 @@ contract DeployTest is Test, Deployer {
         // trigger executed collectInvest
         uint128 _assetId = poolManager.assetToId(address(erc20)); // retrieve assetId
 
-        TrancheToken trancheToken = TrancheToken(address(vault.share()));
+        TrancheToken01 trancheToken = TrancheToken01(address(vault.share()));
         uint128 shares = (
             amount.mulDiv(
                 10 ** (PRICE_DECIMALS - erc20.decimals() + trancheToken.decimals()), price, MathLib.Rounding.Down
@@ -161,7 +158,7 @@ contract DeployTest is Test, Deployer {
         vault.requestRedeem(amount, address(this), address(this), "");
 
         // redeem
-        TrancheToken trancheToken = TrancheToken(address(vault.share()));
+        TrancheToken01 trancheToken = TrancheToken01(address(vault.share()));
         uint128 _assetId = poolManager.assetToId(address(erc20)); // retrieve assetId
         uint128 assets = (
             amount.mulDiv(price, 10 ** (18 - erc20.decimals() + trancheToken.decimals()), MathLib.Rounding.Down)
@@ -199,11 +196,11 @@ contract DeployTest is Test, Deployer {
         string memory tokenName,
         string memory tokenSymbol,
         uint8 decimals,
-        uint8 restrictionSet
+        uint8 trancheType
     ) public returns (address) {
         vm.startPrank(address(gateway));
         poolManager.addPool(poolId);
-        poolManager.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, restrictionSet);
+        poolManager.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, trancheType);
         poolManager.addAsset(1, address(erc20));
         poolManager.allowAsset(poolId, 1);
         vm.stopPrank();

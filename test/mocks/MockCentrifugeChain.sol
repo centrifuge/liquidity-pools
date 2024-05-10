@@ -46,7 +46,7 @@ contract MockCentrifugeChain is Test {
         string memory tokenName,
         string memory tokenSymbol,
         uint8 decimals,
-        uint8 restrictionSet
+        uint8 trancheType
     ) public {
         bytes memory _message = abi.encodePacked(
             uint8(MessagesLib.Call.AddTranche),
@@ -55,7 +55,7 @@ contract MockCentrifugeChain is Test {
             tokenName.toBytes128(),
             tokenSymbol.toBytes32(),
             decimals,
-            restrictionSet
+            trancheType
         );
         _execute(_message);
     }

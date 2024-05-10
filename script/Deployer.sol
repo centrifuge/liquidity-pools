@@ -7,7 +7,6 @@ import {Gateway} from "src/gateway/Gateway.sol";
 import {InvestmentManager} from "src/InvestmentManager.sol";
 import {TrancheTokenFactory} from "src/factories/TrancheTokenFactory.sol";
 import {ERC7540VaultFactory} from "src/factories/ERC7540VaultFactory.sol";
-import {RestrictionSetFactory} from "src/factories/RestrictionSetFactory.sol";
 import {PoolManager} from "src/PoolManager.sol";
 import {Escrow} from "src/Escrow.sol";
 import {PauseAdmin} from "src/admins/PauseAdmin.sol";
@@ -40,7 +39,6 @@ contract Deployer is Script {
     Aggregator public aggregator;
     address public vaultFactory;
     address public trancheTokenFactory;
-    address public restrictionSetFactory;
 
     function deploy(address deployer) public {
         // If no salt is provided, a pseudo-random salt is generated,
@@ -52,18 +50,15 @@ contract Deployer is Script {
         root = new Root{salt: salt}(address(escrow), delay, deployer);
 
         vaultFactory = address(new ERC7540VaultFactory(address(root)));
-        restrictionSetFactory = address(new RestrictionSetFactory(address(root)));
         trancheTokenFactory = address(new TrancheTokenFactory{salt: salt}(address(root), deployer));
         investmentManager = new InvestmentManager(address(escrow));
-        poolManager = new PoolManager(address(escrow), vaultFactory, restrictionSetFactory, trancheTokenFactory);
+        poolManager = new PoolManager(address(escrow), vaultFactory, trancheTokenFactory);
 
         AuthLike(vaultFactory).rely(address(poolManager));
         AuthLike(trancheTokenFactory).rely(address(poolManager));
-        AuthLike(restrictionSetFactory).rely(address(poolManager));
 
         AuthLike(vaultFactory).rely(address(root));
         AuthLike(trancheTokenFactory).rely(address(root));
-        AuthLike(restrictionSetFactory).rely(address(root));
 
         gateway = new Gateway(address(root), address(investmentManager), address(poolManager));
         aggregator = new Aggregator(address(gateway));
@@ -116,7 +111,6 @@ contract Deployer is Script {
         AuthLike(router).deny(deployer);
         AuthLike(vaultFactory).deny(deployer);
         AuthLike(trancheTokenFactory).deny(deployer);
-        AuthLike(restrictionSetFactory).deny(deployer);
         root.deny(deployer);
         investmentManager.deny(deployer);
         poolManager.deny(deployer);

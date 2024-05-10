@@ -31,8 +31,8 @@ struct UndeployedTranche {
     /// @dev Metadata of the to be deployed erc20 token
     string tokenName;
     string tokenSymbol;
-    /// @dev Identifier of the restriction set that applies to this tranche token
-    uint8 restrictionSet;
+    /// @dev Identifier of the tranche token implementation
+    uint8 trancheType;
 }
 
 interface IPoolManager {
@@ -110,7 +110,7 @@ interface IPoolManager {
         string memory tokenName,
         string memory tokenSymbol,
         uint8 decimals,
-        uint8 restrictionSet
+        uint8 trancheType
     ) external;
 
     /// @notice TODO

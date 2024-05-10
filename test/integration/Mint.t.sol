@@ -13,13 +13,13 @@ contract MintTest is BaseTest {
         TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
         root.denyContract(address(trancheToken), self);
 
-        vm.expectRevert(bytes("Auth/not-authorized"));
-        trancheToken.mint(investor, amount);
-
-        root.relyContract(address(trancheToken), self); // give self auth permissions
-        vm.expectRevert(bytes("RestrictionSet01/destination-not-a-member"));
+        vm.expectRevert(bytes("TrancheToken01/restrictions-failed"));
         trancheToken.mint(investor, amount);
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), investor, type(uint64).max);
+
+        vm.expectRevert(bytes("Auth/not-authorized"));
+        trancheToken.mint(investor, amount);
+        root.relyContract(address(trancheToken), self); // give self auth permissions
 
         // success
         trancheToken.mint(investor, amount);

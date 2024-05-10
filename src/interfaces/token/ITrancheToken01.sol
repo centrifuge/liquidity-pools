@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-interface IRestrictionSet01 {
+import {IERC20} from "src/interfaces/IERC20.sol";
+
+interface ITrancheToken01 {
     struct Restrictions {
         /// @dev Frozen accounts that tokens cannot be transferred from or to
         bool frozen;
@@ -13,12 +15,21 @@ interface IRestrictionSet01 {
     event UpdateMember(address indexed user, uint64 validUntil);
     event Freeze(address indexed user);
     event Unfreeze(address indexed user);
+    event File(bytes32 indexed what, address data);
+    event File(bytes32 indexed what, address data1, address data2);
+
+    // --- Administration ---
+    /// @notice TODO
+    function file(bytes32 what, address data1, address data2) external;
 
     // --- Incoming message handling ---
     /// @notice TODO
-    function handle(bytes memory update) external;
+    function updateRestriction(bytes memory update) external;
 
     // --- ERC1404 implementation ---
+    /// @notice TODO
+    function checkTransferRestriction(address from, address to, uint256 value) external view returns (bool);
+
     /// @notice TODO
     function detectTransferRestriction(address from, address to, uint256 /* value */ ) external view returns (uint8);
 
