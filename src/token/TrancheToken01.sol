@@ -63,6 +63,11 @@ contract TrancheToken01 is ERC20, ITrancheToken01, IERC7575Share {
         emit File(what, data1, data2);
     }
 
+    function balanceOf(address user) public view override returns (uint256) {
+        // return balance without effect of frozen high bit
+        return balances[user] & ~(uint256(1) << 255);
+    }
+
     // --- ERC20 overrides with restrictions ---
     function transfer(address to, uint256 value) public override returns (bool success) {
         require(checkTransferRestriction(msg.sender, to, value), "TrancheToken01/restrictions-failed");

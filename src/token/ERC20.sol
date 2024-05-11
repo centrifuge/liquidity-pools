@@ -21,7 +21,7 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
     /// @inheritdoc IERC20
     uint256 public totalSupply;
 
-    mapping(address => uint256) internal balanceOfUser;
+    mapping(address => uint256) internal balances;
     /// @inheritdoc IERC20
     mapping(address => mapping(address => uint256)) public allowance;
     /// @inheritdoc IERC20Permit
@@ -51,13 +51,7 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
 
     /// @inheritdoc IERC20
     function balanceOf(address user) public view virtual returns (uint256) {
-        return balanceOfUser[user];
-    }
-
-    function _setBalance(address user, uint256 value) internal virtual {
-        unchecked {
-            balanceOfUser[user] = value;
-        }
+        return balances[user];
     }
 
     function _calculateDomainSeparator(uint256 chainId) private view returns (bytes32) {
@@ -92,8 +86,10 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
         uint256 balance = balanceOf(msg.sender);
         require(balance >= value, "ERC20/insufficient-balance");
 
-        _setBalance(msg.sender, balance - value);
-        _setBalance(to, balance + value);
+        unchecked {
+            balances[msg.sender] = balance - value;
+            balances[to] += value;
+        }
 
         emit Transfer(msg.sender, to, value);
 
@@ -116,8 +112,10 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
             }
         }
 
-        _setBalance(from, balance - value);
-        _setBalance(to, balance + value);
+        unchecked {
+            balances[from] = balance - value;
+            balances[to] += value;
+        }
 
         emit Transfer(from, to, value);
 
@@ -136,7 +134,11 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
     // --- Mint/Burn ---
     function mint(address to, uint256 value) public virtual auth {
         require(to != address(0) && to != address(this), "ERC20/invalid-address");
-        _setBalance(to, balanceOf(to) + value);
+        unchecked {
+            // We don't need an overflow check here b/c balances[to] <= totalSupply
+            // and there is an overflow check below
+            balances[to] = balances[to] + value;
+        }
         totalSupply = totalSupply + value;
 
         emit Transfer(address(0), to, value);
@@ -157,8 +159,9 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
             }
         }
 
-        _setBalance(from, balanceOf(from) - value);
         unchecked {
+            // We don't need overflow checks b/c require(balance >= value) and balance <= totalSupply
+            balances[from] = balance - value;
             totalSupply = totalSupply - value;
         }
 
@@ -232,9 +235,10 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
             }
         }
 
-
-        _setBalance(from, balance - value);
-        _setBalance(to, balance + value);
+        unchecked {
+            balances[from] = balance - value;
+            balances[to] += value;
+        }
 
         emit Transfer(from, to, value);
 
