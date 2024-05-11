@@ -21,8 +21,7 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
     /// @inheritdoc IERC20
     uint256 public totalSupply;
 
-    /// @inheritdoc IERC20
-    mapping(address => uint256) public balanceOf;
+    mapping(address => uint256) internal balanceOfUser;
     /// @inheritdoc IERC20
     mapping(address => mapping(address => uint256)) public allowance;
     /// @inheritdoc IERC20Permit
@@ -48,6 +47,17 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
         versionHash = keccak256(bytes("1"));
         deploymentChainId = block.chainid;
         _DOMAIN_SEPARATOR = _calculateDomainSeparator(block.chainid);
+    }
+
+    /// @inheritdoc IERC20
+    function balanceOf(address user) public view virtual returns (uint256) {
+        return balanceOfUser[user];
+    }
+
+    function _setBalance(address user, uint256 value) internal virtual {
+        unchecked {
+            balanceOfUser[user] = value;
+        }
     }
 
     function _calculateDomainSeparator(uint256 chainId) private view returns (bytes32) {
@@ -79,13 +89,11 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
     /// @inheritdoc IERC20
     function transfer(address to, uint256 value) public virtual returns (bool) {
         require(to != address(0) && to != address(this), "ERC20/invalid-address");
-        uint256 balance = balanceOf[msg.sender];
+        uint256 balance = balanceOf(msg.sender);
         require(balance >= value, "ERC20/insufficient-balance");
 
-        unchecked {
-            balanceOf[msg.sender] = balance - value;
-            balanceOf[to] += value;
-        }
+        _setBalance(msg.sender, balance - value);
+        _setBalance(to, balance + value);
 
         emit Transfer(msg.sender, to, value);
 
@@ -95,7 +103,7 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
     /// @inheritdoc IERC20
     function transferFrom(address from, address to, uint256 value) public virtual returns (bool) {
         require(to != address(0) && to != address(this), "ERC20/invalid-address");
-        uint256 balance = balanceOf[from];
+        uint256 balance = balanceOf(from);
         require(balance >= value, "ERC20/insufficient-balance");
 
         if (from != msg.sender) {
@@ -108,10 +116,8 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
             }
         }
 
-        unchecked {
-            balanceOf[from] = balance - value;
-            balanceOf[to] += value;
-        }
+        _setBalance(from, balance - value);
+        _setBalance(to, balance + value);
 
         emit Transfer(from, to, value);
 
@@ -130,18 +136,14 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
     // --- Mint/Burn ---
     function mint(address to, uint256 value) public virtual auth {
         require(to != address(0) && to != address(this), "ERC20/invalid-address");
-        unchecked {
-            // We don't need an overflow check here b/c balanceOf[to] <= totalSupply
-            // and there is an overflow check below
-            balanceOf[to] = balanceOf[to] + value;
-        }
+        _setBalance(to, balanceOf(to) + value);
         totalSupply = totalSupply + value;
 
         emit Transfer(address(0), to, value);
     }
 
     function burn(address from, uint256 value) external auth {
-        uint256 balance = balanceOf[from];
+        uint256 balance = balanceOf(from);
         require(balance >= value, "ERC20/insufficient-balance");
 
         if (from != msg.sender) {
@@ -155,9 +157,8 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
             }
         }
 
+        _setBalance(from, balanceOf(from) - value);
         unchecked {
-            // We don't need overflow checks b/c require(balance >= value) and balance <= totalSupply
-            balanceOf[from] = balance - value;
             totalSupply = totalSupply - value;
         }
 
@@ -218,7 +219,7 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
     // --- Fail-safe ---
     function authTransferFrom(address sender, address from, address to, uint256 value) public auth returns (bool) {
         require(to != address(0) && to != address(this), "ERC20/invalid-address");
-        uint256 balance = balanceOf[from];
+        uint256 balance = balanceOf(from);
         require(balance >= value, "ERC20/insufficient-balance");
 
         if (sender != from) {
@@ -231,10 +232,9 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
             }
         }
 
-        unchecked {
-            balanceOf[from] = balance - value;
-            balanceOf[to] += value;
-        }
+
+        _setBalance(from, balance - value);
+        _setBalance(to, balance + value);
 
         emit Transfer(from, to, value);
 
