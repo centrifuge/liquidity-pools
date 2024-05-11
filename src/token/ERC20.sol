@@ -54,6 +54,10 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
         return balances[user];
     }
 
+    function _setBalance(address user, uint256 value) internal {
+        balances[user] = value;
+    }
+
     function _calculateDomainSeparator(uint256 chainId) private view returns (bytes32) {
         return keccak256(
             abi.encode(

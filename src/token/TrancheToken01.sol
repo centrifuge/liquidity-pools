@@ -5,8 +5,10 @@ import {ERC20} from "src/token/ERC20.sol";
 import {IERC20Metadata, IERC20Callback} from "src/interfaces/IERC20.sol";
 import {IERC7575Share} from "src/interfaces/IERC7575.sol";
 import {ITrancheToken01} from "src/interfaces/token/ITrancheToken01.sol";
+import {ITrancheToken} from "src/interfaces/token/ITrancheToken.sol";
 import {MessagesLib} from "src/libraries/MessagesLib.sol";
 import {BytesLib} from "src/libraries/BytesLib.sol";
+import {BitmapLib} from "src/libraries/BitmapLib.sol";
 
 interface TrancheTokenLike is IERC20Metadata {
     function mint(address user, uint256 value) external;
@@ -22,6 +24,7 @@ interface TrancheTokenLike is IERC20Metadata {
     function restrictions(address user) external view returns (bool frozen, uint64 validUntil);
     function freeze(address user) external;
     function unfreeze(address user) external;
+    function wards(address user) external view returns (uint256);
 }
 
 /// @title  Tranche Token 01
@@ -30,6 +33,7 @@ interface TrancheTokenLike is IERC20Metadata {
 ///         the source nor destination are frozen.
 contract TrancheToken01 is ERC20, ITrancheToken01, IERC7575Share {
     using BytesLib for bytes;
+    using BitmapLib for uint256;
 
     string internal constant SUCCESS_MESSAGE = "TrancheToken01/transfer-allowed";
     string internal constant SOURCE_IS_FROZEN_MESSAGE = "TrancheToken01/source-is-frozen";
@@ -56,7 +60,7 @@ contract TrancheToken01 is ERC20, ITrancheToken01, IERC7575Share {
     }
 
     // --- Administration ---
-    /// @inheritdoc ITrancheToken01
+    /// @inheritdoc ITrancheToken
     function file(bytes32 what, address data1, address data2) external auth {
         if (what == "vault") vault[data1] = data2;
         else revert("TrancheToken01/file-unrecognized-param");
@@ -85,7 +89,7 @@ contract TrancheToken01 is ERC20, ITrancheToken01, IERC7575Share {
     }
 
     // --- ERC1404 implementation ---
-    /// @inheritdoc ITrancheToken01
+    /// @inheritdoc ITrancheToken
     function checkTransferRestriction(address from, address to, uint256 value) public view returns (bool) {
         return detectTransferRestriction(from, to, value) == SUCCESS_CODE;
     }
@@ -126,7 +130,7 @@ contract TrancheToken01 is ERC20, ITrancheToken01, IERC7575Share {
     }
 
     // --- Incoming message handling ---
-    /// @inheritdoc ITrancheToken01
+    /// @inheritdoc ITrancheToken
     function updateRestriction(bytes memory update) external auth {
         MessagesLib.RestrictionUpdate updateId = MessagesLib.restrictionUpdateType(update);
 
@@ -146,14 +150,18 @@ contract TrancheToken01 is ERC20, ITrancheToken01, IERC7575Share {
     function freeze(address user) public auth {
         require(user != address(0), "TrancheToken01/cannot-freeze-zero-address");
         require(user != address(escrow), "TrancheToken01/cannot-freeze-escrow");
-        restrictions[user].frozen = true;
+        _setBalance(user, balances[user].setBit(0, true));
         emit Freeze(user);
     }
 
     /// @inheritdoc ITrancheToken01
     function unfreeze(address user) public auth {
-        restrictions[user].frozen = false;
+        _setBalance(user, balances[user].setBit(0, false));
         emit Unfreeze(user);
+    }
+
+    function isFrozen(address user) external view returns (bool) {
+        return balances[user].getBit(0);
     }
 
     // --- Managing members ---

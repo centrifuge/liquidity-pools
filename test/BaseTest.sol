@@ -10,12 +10,12 @@ import {Escrow} from "src/Escrow.sol";
 import {ERC7540VaultFactory} from "src/factories/ERC7540VaultFactory.sol";
 import {TrancheTokenFactory} from "src/factories/TrancheTokenFactory.sol";
 import {ERC7540Vault} from "src/ERC7540Vault.sol";
-import {TrancheToken01, TrancheTokenLike} from "src/token/TrancheToken01.sol";
 import {ERC20} from "src/token/ERC20.sol";
 import {Gateway} from "src/gateway/Gateway.sol";
 import {MessagesLib} from "src/libraries/MessagesLib.sol";
 import {Deployer} from "script/Deployer.sol";
 import "src/interfaces/IERC20.sol";
+import {TrancheTokenLike} from "src/token/TrancheToken01.sol";
 
 // mocks
 import {MockCentrifugeChain} from "test/mocks/MockCentrifugeChain.sol";

@@ -96,7 +96,7 @@ contract PoolManagerTest is BaseTest {
 
         poolManager.deployTranche(poolId, trancheId);
 
-        TrancheToken01 trancheToken = TrancheToken01(poolManager.getTrancheToken(poolId, trancheId));
+        TrancheTokenLike trancheToken = TrancheTokenLike(poolManager.getTrancheToken(poolId, trancheId));
 
         assertEq(tokenName, trancheToken.name());
         assertEq(tokenSymbol, trancheToken.symbol());
@@ -124,7 +124,7 @@ contract PoolManagerTest is BaseTest {
         for (uint256 i = 0; i < trancheIds.length; i++) {
             centrifugeChain.addTranche(poolId, trancheIds[i], tokenName, tokenSymbol, decimals, trancheType);
             poolManager.deployTranche(poolId, trancheIds[i]);
-            TrancheToken01 trancheToken = TrancheToken01(poolManager.getTrancheToken(poolId, trancheIds[i]));
+            TrancheTokenLike trancheToken = TrancheTokenLike(poolManager.getTrancheToken(poolId, trancheIds[i]));
             assertEq(tokenName, trancheToken.name());
             assertEq(tokenSymbol, trancheToken.symbol());
             assertEq(decimals, trancheToken.decimals());
@@ -151,7 +151,7 @@ contract PoolManagerTest is BaseTest {
         poolManager.deployTranche(poolId, trancheId);
         centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, trancheType); // add tranche
         address trancheToken_ = poolManager.deployTranche(poolId, trancheId);
-        TrancheToken01 trancheToken = TrancheToken01(trancheToken_);
+        TrancheTokenLike trancheToken = TrancheTokenLike(trancheToken_);
         assertEq(trancheToken.wards(address(root)), 1);
         assertEq(trancheToken.wards(address(investmentManager)), 1);
         assertEq(tokenName, trancheToken.name());
@@ -224,7 +224,7 @@ contract PoolManagerTest is BaseTest {
 
         // check vault state
         ERC7540Vault vault = ERC7540Vault(vault_);
-        TrancheToken01 trancheToken = TrancheToken01(trancheToken_);
+        TrancheTokenLike trancheToken = TrancheTokenLike(trancheToken_);
         assertEq(address(vault.manager()), address(investmentManager));
         assertEq(vault.asset(), address(erc20));
         assertEq(vault.poolId(), poolId);
@@ -340,7 +340,7 @@ contract PoolManagerTest is BaseTest {
 
         TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
 
-        vm.expectRevert(bytes("TrancheToken01/restrictions-failed"));
+        vm.expectRevert(bytes("TrancheTokenLike/restrictions-failed"));
         centrifugeChain.incomingTransferTrancheTokens(
             poolId, trancheId, uint64(block.chainid), destinationAddress, amount
         );
@@ -411,7 +411,7 @@ contract PoolManagerTest is BaseTest {
         centrifugeChain.updateMember(poolId, trancheId, randomUser, validUntil);
         assertTrue(trancheToken.checkTransferRestriction(address(0), randomUser, 0));
 
-        vm.expectRevert(bytes("TrancheToken01/escrow-member-cannot-be-updated"));
+        vm.expectRevert(bytes("TrancheTokenLike/escrow-member-cannot-be-updated"));
         centrifugeChain.updateMember(poolId, trancheId, address(escrow), validUntil);
     }
 
@@ -424,7 +424,7 @@ contract PoolManagerTest is BaseTest {
         uint64 validUntil = uint64(block.timestamp + 7 days);
         address secondUser = makeAddr("secondUser");
 
-        vm.expectRevert(bytes("TrancheToken01/cannot-freeze-escrow"));
+        vm.expectRevert(bytes("TrancheTokenLike/cannot-freeze-escrow"));
         centrifugeChain.freeze(poolId, trancheId, address(escrow));
 
         vm.expectRevert(bytes("PoolManager/unknown-token"));
@@ -555,7 +555,7 @@ contract PoolManagerTest is BaseTest {
         bytes16 trancheId = vault.trancheId();
         address asset = address(vault.asset());
         address trancheToken_ = address(vault.share());
-        TrancheToken01 trancheToken = TrancheToken01(trancheToken_);
+        TrancheTokenLike trancheToken = TrancheTokenLike(trancheToken_);
 
         poolManager.deny(address(this));
         vm.expectRevert(bytes("Auth/not-authorized"));

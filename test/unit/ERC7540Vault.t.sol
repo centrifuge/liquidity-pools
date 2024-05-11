@@ -172,7 +172,7 @@ contract ERC7540VaultTest is BaseTest {
         // Check redeem callback
         vault.requestRedeem(amount, address(receiver), self, redeemData);
 
-        TrancheToken01 trancheToken = TrancheToken01(address(vault.share()));
+        TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
         assertEq(trancheToken.balanceOf(self), 0);
         assertEq(receiver.values_address("requestRedeem_operator"), self);
         assertEq(receiver.values_address("requestRedeem_owner"), self);
@@ -220,7 +220,7 @@ contract ERC7540VaultTest is BaseTest {
         // Check redeem callback
         vault.requestRedeem(amount, address(receiver), self, "");
 
-        TrancheToken01 trancheToken = TrancheToken01(address(vault.share()));
+        TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
         assertEq(trancheToken.balanceOf(self), 0);
         assertEq(receiver.values_address("requestRedeem_operator"), address(0));
         assertEq(receiver.values_address("requestRedeem_owner"), address(0));

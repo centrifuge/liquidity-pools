@@ -3,8 +3,8 @@ pragma solidity 0.8.21;
 
 import {ERC7540VaultFactory} from "src/factories/ERC7540VaultFactory.sol";
 import {TrancheTokenFactoryLike} from "src/factories/TrancheTokenFactory.sol";
-import {TrancheTokenLike} from "src/token/TrancheToken01.sol";
 import {IERC20Metadata} from "src/interfaces/IERC20.sol";
+import {TrancheTokenLike} from "src/token/TrancheToken01.sol";
 import {Auth} from "src/Auth.sol";
 import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 import {MathLib} from "src/libraries/MathLib.sol";
