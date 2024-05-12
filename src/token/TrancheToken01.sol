@@ -10,8 +10,6 @@ import {MessagesLib} from "src/libraries/MessagesLib.sol";
 import {BytesLib} from "src/libraries/BytesLib.sol";
 import {BitmapLib} from "src/libraries/BitmapLib.sol";
 
-import {console} from "forge-std/console.sol";
-
 interface TrancheTokenLike is IERC20Metadata {
     function mint(address user, uint256 value) external;
     function burn(address user, uint256 value) external;
@@ -97,8 +95,6 @@ contract TrancheToken01 is ERC20, ITrancheToken01, IERC7575Share {
 
     /// @inheritdoc ITrancheToken01
     function detectTransferRestriction(address from, address to, uint256 /* value */ ) public view returns (uint8) {
-        // TODO: refactor to reuse balance lookup from ERC20 implementation, somehow
-
         uint256 balanceFrom = balances[from];
         if (balanceFrom.getBit(255) == true) {
             return SOURCE_IS_FROZEN_CODE;
@@ -109,7 +105,6 @@ contract TrancheToken01 is ERC20, ITrancheToken01, IERC7575Share {
             return DESTINATION_IS_FROZEN_CODE;
         }
 
-        console.log("balanceTo.getBit(254)", balanceTo.getBit(254));
         if (balanceTo.getBit(254) == false) {
             return DESTINATION_NOT_A_MEMBER_RESTRICTION_CODE;
         }
