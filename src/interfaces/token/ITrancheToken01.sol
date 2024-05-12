@@ -5,8 +5,6 @@ import {ITrancheToken} from "src/interfaces/token/ITrancheToken.sol";
 
 interface ITrancheToken01 is ITrancheToken {
     struct Restrictions {
-        /// @dev Frozen accounts that tokens cannot be transferred from or to
-        bool frozen;
         /// @dev Member accounts that tokens can be transferred to, with an end date
         uint64 validUntil;
     }

@@ -340,7 +340,7 @@ contract PoolManagerTest is BaseTest {
 
         TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
 
-        vm.expectRevert(bytes("TrancheTokenLike/restrictions-failed"));
+        vm.expectRevert(bytes("TrancheToken01/restrictions-failed"));
         centrifugeChain.incomingTransferTrancheTokens(
             poolId, trancheId, uint64(block.chainid), destinationAddress, amount
         );
@@ -411,7 +411,7 @@ contract PoolManagerTest is BaseTest {
         centrifugeChain.updateMember(poolId, trancheId, randomUser, validUntil);
         assertTrue(trancheToken.checkTransferRestriction(address(0), randomUser, 0));
 
-        vm.expectRevert(bytes("TrancheTokenLike/escrow-member-cannot-be-updated"));
+        vm.expectRevert(bytes("TrancheToken01/escrow-member-cannot-be-updated"));
         centrifugeChain.updateMember(poolId, trancheId, address(escrow), validUntil);
     }
 
@@ -424,7 +424,7 @@ contract PoolManagerTest is BaseTest {
         uint64 validUntil = uint64(block.timestamp + 7 days);
         address secondUser = makeAddr("secondUser");
 
-        vm.expectRevert(bytes("TrancheTokenLike/cannot-freeze-escrow"));
+        vm.expectRevert(bytes("TrancheToken01/cannot-freeze-escrow"));
         centrifugeChain.freeze(poolId, trancheId, address(escrow));
 
         vm.expectRevert(bytes("PoolManager/unknown-token"));

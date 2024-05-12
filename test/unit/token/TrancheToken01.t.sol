@@ -9,6 +9,8 @@ interface ERC20Like {
 }
 
 contract TrancheToken01Test is Test {
+    uint256 constant MAX_TRANCHE_TOKEN_BALANCE = 2 ^ 255 - 1; // ignoring high bit used for freezes
+
     TrancheToken01 token;
 
     address self;
@@ -43,7 +45,7 @@ contract TrancheToken01Test is Test {
     // --- RestrictionManager ---
     // transferFrom
     function testTransferFrom(uint256 amount) public {
-        amount = bound(amount, 0, type(uint256).max / 2);
+        amount = bound(amount, 0, MAX_TRANCHE_TOKEN_BALANCE / 2);
 
         token.updateMember(self, uint64(validUntil));
         token.mint(self, amount * 2);
@@ -53,7 +55,7 @@ contract TrancheToken01Test is Test {
         assertEq(token.balanceOf(targetUser), 0);
 
         token.updateMember(targetUser, uint64(validUntil));
-        (, uint64 actualValidUntil) = token.restrictions(targetUser);
+        (uint64 actualValidUntil) = token.restrictions(targetUser);
         assertEq(actualValidUntil, validUntil);
 
         token.freeze(self);
@@ -72,12 +74,14 @@ contract TrancheToken01Test is Test {
         assertEq(token.balanceOf(targetUser), amount);
 
         vm.warp(validUntil + 1);
+        token.setInvalidMember(self);
         vm.expectRevert(bytes("TrancheToken01/restrictions-failed"));
         token.transferFrom(self, targetUser, amount);
     }
 
     function testTransferFromTokensWithApproval(uint256 amount) public {
-        vm.assume(amount > 0);
+        amount = bound(amount, 1, MAX_TRANCHE_TOKEN_BALANCE);
+
         address sender = makeAddr("sender");
         token.updateMember(sender, uint64(validUntil));
         token.mint(sender, amount);
@@ -96,7 +100,7 @@ contract TrancheToken01Test is Test {
 
     // transfer
     function testTransfer(uint256 amount) public {
-        amount = bound(amount, 0, type(uint256).max / 2);
+        amount = bound(amount, 0, MAX_TRANCHE_TOKEN_BALANCE / 2);
 
         token.updateMember(self, uint64(validUntil));
         token.mint(self, amount * 2);
@@ -106,7 +110,7 @@ contract TrancheToken01Test is Test {
         assertEq(token.balanceOf(targetUser), 0);
 
         token.updateMember(targetUser, uint64(validUntil));
-        (, uint64 actualValidUntil) = token.restrictions(targetUser);
+        (uint64 actualValidUntil) = token.restrictions(targetUser);
         assertEq(actualValidUntil, validUntil);
 
         token.freeze(self);
@@ -119,12 +123,15 @@ contract TrancheToken01Test is Test {
         assertEq(token.balanceOf(targetUser), amount);
 
         vm.warp(validUntil + 1);
+        token.setInvalidMember(self);
         vm.expectRevert(bytes("TrancheToken01/restrictions-failed"));
         token.transfer(targetUser, amount);
     }
 
     // auth transfer
     function testAuthTransferFrom(uint256 amount) public {
+        amount = bound(amount, 0, MAX_TRANCHE_TOKEN_BALANCE);
+
         address sourceUser = makeAddr("sourceUser");
         token.updateMember(sourceUser, uint64(validUntil));
         token.mint(sourceUser, amount);
@@ -142,14 +149,14 @@ contract TrancheToken01Test is Test {
 
     // mint
     function testMintTokensToMemberWorks(uint256 amount) public {
-        amount = bound(amount, 0, type(uint256).max / 2);
+        amount = bound(amount, 0, MAX_TRANCHE_TOKEN_BALANCE / 2);
 
         // mint fails -> self not a member
         vm.expectRevert(bytes("TrancheToken01/restrictions-failed"));
         token.mint(targetUser, amount);
 
         token.updateMember(targetUser, uint64(validUntil));
-        (, uint64 actualValidUntil) = token.restrictions(targetUser);
+        (uint64 actualValidUntil) = token.restrictions(targetUser);
         assertEq(actualValidUntil, validUntil);
 
         token.mint(targetUser, amount);
@@ -157,6 +164,7 @@ contract TrancheToken01Test is Test {
 
         vm.warp(validUntil + 1);
 
+        token.setInvalidMember(targetUser);
         vm.expectRevert(bytes("TrancheToken01/restrictions-failed"));
         token.mint(targetUser, amount);
     }

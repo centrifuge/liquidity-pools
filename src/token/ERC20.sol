@@ -91,7 +91,7 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
         require(balance >= value, "ERC20/insufficient-balance");
 
         unchecked {
-            balances[msg.sender] = balance - value;
+            balances[msg.sender] -= value;
             balances[to] += value;
         }
 
@@ -117,7 +117,7 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
         }
 
         unchecked {
-            balances[from] = balance - value;
+            balances[from] -= value;
             balances[to] += value;
         }
 
@@ -165,7 +165,7 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
 
         unchecked {
             // We don't need overflow checks b/c require(balance >= value) and balance <= totalSupply
-            balances[from] = balance - value;
+            balances[from] -= value;
             totalSupply = totalSupply - value;
         }
 
@@ -240,7 +240,7 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
         }
 
         unchecked {
-            balances[from] = balance - value;
+            balances[from] -= value;
             balances[to] += value;
         }
 

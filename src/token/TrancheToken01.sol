@@ -10,6 +10,8 @@ import {MessagesLib} from "src/libraries/MessagesLib.sol";
 import {BytesLib} from "src/libraries/BytesLib.sol";
 import {BitmapLib} from "src/libraries/BitmapLib.sol";
 
+import {console} from "forge-std/console.sol";
+
 interface TrancheTokenLike is IERC20Metadata {
     function mint(address user, uint256 value) external;
     function burn(address user, uint256 value) external;
@@ -25,6 +27,7 @@ interface TrancheTokenLike is IERC20Metadata {
     function freeze(address user) external;
     function unfreeze(address user) external;
     function wards(address user) external view returns (uint256);
+    function setInvalidMember(address user) external;
 }
 
 /// @title  Tranche Token 01
@@ -53,10 +56,8 @@ contract TrancheToken01 is ERC20, ITrancheToken01, IERC7575Share {
     mapping(address => Restrictions) public restrictions;
 
     constructor(uint8 decimals_, address escrow_) ERC20(decimals_) {
-        // Add escrow as valid member
         escrow = escrow_;
-        restrictions[escrow_].validUntil = type(uint64).max;
-        emit UpdateMember(escrow_, type(uint64).max);
+        _updateMember(escrow_, type(uint64).max);
     }
 
     // --- Administration ---
@@ -68,8 +69,8 @@ contract TrancheToken01 is ERC20, ITrancheToken01, IERC7575Share {
     }
 
     function balanceOf(address user) public view override returns (uint256) {
-        // return balance without effect of frozen high bit
-        return balances[user] & ~(uint256(1) << 255);
+        // return balance without effect of the two high bits
+        return balances[user] & ~(uint256(1) << 254);
     }
 
     // --- ERC20 overrides with restrictions ---
@@ -96,16 +97,20 @@ contract TrancheToken01 is ERC20, ITrancheToken01, IERC7575Share {
 
     /// @inheritdoc ITrancheToken01
     function detectTransferRestriction(address from, address to, uint256 /* value */ ) public view returns (uint8) {
-        if (restrictions[from].frozen == true) {
+        // TODO: refactor to reuse balance lookup from ERC20 implementation, somehow
+
+        uint256 balanceFrom = balances[from];
+        if (balanceFrom.getBit(255) == true) {
             return SOURCE_IS_FROZEN_CODE;
         }
 
-        Restrictions memory toRestrictions = restrictions[to];
-        if (toRestrictions.frozen == true) {
+        uint256 balanceTo = balances[to];
+        if (balanceTo.getBit(255) == true) {
             return DESTINATION_IS_FROZEN_CODE;
         }
 
-        if (toRestrictions.validUntil < block.timestamp) {
+        console.log("balanceTo.getBit(254)", balanceTo.getBit(254));
+        if (balanceTo.getBit(254) == false) {
             return DESTINATION_NOT_A_MEMBER_RESTRICTION_CODE;
         }
 
@@ -150,18 +155,18 @@ contract TrancheToken01 is ERC20, ITrancheToken01, IERC7575Share {
     function freeze(address user) public auth {
         require(user != address(0), "TrancheToken01/cannot-freeze-zero-address");
         require(user != address(escrow), "TrancheToken01/cannot-freeze-escrow");
-        _setBalance(user, balances[user].setBit(0, true));
+        _setBalance(user, balances[user].setBit(255, true));
         emit Freeze(user);
     }
 
     /// @inheritdoc ITrancheToken01
     function unfreeze(address user) public auth {
-        _setBalance(user, balances[user].setBit(0, false));
+        _setBalance(user, balances[user].setBit(255, false));
         emit Unfreeze(user);
     }
 
-    function isFrozen(address user) external view returns (bool) {
-        return balances[user].getBit(0);
+    function isFrozen(address user) public view returns (bool) {
+        return balances[user].getBit(255);
     }
 
     // --- Managing members ---
@@ -169,8 +174,25 @@ contract TrancheToken01 is ERC20, ITrancheToken01, IERC7575Share {
     function updateMember(address user, uint64 validUntil) public auth {
         require(block.timestamp <= validUntil, "TrancheToken01/invalid-valid-until");
         require(user != address(escrow), "TrancheToken01/escrow-member-cannot-be-updated");
+        _updateMember(user, validUntil);
+    }
 
+    function _updateMember(address user, uint64 validUntil) internal {
         restrictions[user].validUntil = validUntil;
+        _setBalance(user, balances[user].setBit(254, true));
         emit UpdateMember(user, validUntil);
     }
+
+    /// @dev Permissionless method that sets the membership bit to false once
+    ///      the valid until date is in the past
+    function setInvalidMember(address user) public {
+        require(block.timestamp > restrictions[user].validUntil, "TrancheToken01/not-invalid-member");
+        _setBalance(user, balances[user].setBit(254, false));
+    }
+
+    function isMember(address user) public view returns (bool) {
+        return balances[user].getBit(254);
+    }
+
+    // TODO: add separate isMember calls for date based vs balance value based?
 }

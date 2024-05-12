@@ -311,10 +311,10 @@ contract DepositTest is BaseTest {
         assertEq(trancheToken.balanceOf(address(escrow)), shares);
 
         // deposit 1/2 funds to receiver
-        vm.expectRevert(bytes("TrancheTokenLike/restrictions-failed"));
+        vm.expectRevert(bytes("TrancheToken01/restrictions-failed"));
         vault.deposit(amount / 2, receiver); // mint half the amount
 
-        vm.expectRevert(bytes("TrancheTokenLike/restrictions-failed"));
+        vm.expectRevert(bytes("TrancheToken01/restrictions-failed"));
         vault.mint(amount / 2, receiver); // mint half the amount
 
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), receiver, type(uint64).max); // add receiver
