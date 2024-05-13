@@ -90,6 +90,7 @@ contract DepositTest is BaseTest {
         // check maxDeposit and maxMint are 0 for non-members
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, uint64(block.timestamp));
         vm.warp(block.timestamp + 1);
+        trancheToken.setInvalidMember(self);
         assertEq(vault.maxDeposit(self), 0);
         assertEq(vault.maxMint(self), 0);
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max);
