@@ -59,7 +59,7 @@ contract ERC7540VaultTest is BaseTest {
     // --- uint128 type checks ---
     // Make sure all function calls would fail when overflow uint128
     function testAssertUint128(uint256 amount) public {
-        vm.assume(amount > MAX_UINT128 && amount < type(uint256).max / 100); // amount has to overflow UINT128
+        vm.assume(amount > MAX_UINT128 && amount < MAX_TRANCHE_TOKEN_BALANCE); // amount has to overflow UINT128
         address vault_ = deploySimpleVault();
         ERC7540Vault vault = ERC7540Vault(vault_);
 

@@ -39,6 +39,9 @@ contract BaseTest is Deployer, Test {
 
     uint128 constant MAX_UINT128 = type(uint128).max;
 
+    // dividing by 100 is equivalent to removing the two high bits
+    uint256 constant MAX_TRANCHE_TOKEN_BALANCE = type(uint256).max / 100;
+
     // default values
     uint128 public defaultAssetId = 1;
     uint128 public defaultPrice = 1 * 10**18;
