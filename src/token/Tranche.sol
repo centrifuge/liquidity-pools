@@ -3,7 +3,7 @@ pragma solidity 0.8.21;
 
 import {ERC20} from "src/token/ERC20.sol";
 import {IERC20Metadata, IERC20Callback} from "src/interfaces/IERC20.sol";
-import {IERC7575Share} from "src/interfaces/IERC7575.sol";
+import {IERC7575Share, IERC165} from "src/interfaces/IERC7575.sol";
 import {ITrancheToken} from "src/interfaces/token/ITranche.sol";
 
 interface TrancheTokenLike is IERC20Metadata {
@@ -11,7 +11,7 @@ interface TrancheTokenLike is IERC20Metadata {
     function burn(address user, uint256 value) external;
     function file(bytes32 what, string memory data) external;
     function file(bytes32 what, address data) external;
-    function file(bytes32 what, address data1, address data2) external;
+    function updateVault(address asset, address vault) external;
     function file(bytes32 what, address data1, bool data2) external;
     function restrictionManager() external view returns (address);
     function checkTransferRestriction(address from, address to, uint256 value) external view returns (bool);
@@ -44,10 +44,9 @@ contract TrancheToken is ERC20, ITrancheToken, IERC7575Share {
     }
 
     /// @inheritdoc ITrancheToken
-    function file(bytes32 what, address data1, address data2) external auth {
-        if (what == "vault") vault[data1] = data2;
-        else revert("TrancheToken/file-unrecognized-param");
-        emit File(what, data1, data2);
+    function updateVault(address asset, address vault_) external auth {
+        vault[asset] = vault_;
+        emit VaultUpdate(asset, vault_);
     }
 
     // --- ERC20 overrides with restrictions ---
@@ -97,5 +96,11 @@ contract TrancheToken is ERC20, ITrancheToken, IERC7575Share {
     /// @inheritdoc ITrancheToken
     function SUCCESS_CODE() public view returns (uint8) {
         return RestrictionManagerLike(restrictionManager).SUCCESS_CODE();
+    }
+
+    // --- ERC165 support ---
+    /// @inheritdoc IERC165
+    function supportsInterface(bytes4 interfaceId) external pure override returns (bool) {
+        return interfaceId == type(IERC7575Share).interfaceId || interfaceId == type(IERC165).interfaceId;
     }
 }
