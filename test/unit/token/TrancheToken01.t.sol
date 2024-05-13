@@ -74,7 +74,7 @@ contract TrancheToken01Test is Test {
         assertEq(token.balanceOf(targetUser), amount);
 
         vm.warp(validUntil + 1);
-        token.setInvalidMember(self);
+        token.setInvalidMember(targetUser);
         vm.expectRevert(bytes("TrancheToken01/restrictions-failed"));
         token.transferFrom(self, targetUser, amount);
     }
@@ -123,7 +123,7 @@ contract TrancheToken01Test is Test {
         assertEq(token.balanceOf(targetUser), amount);
 
         vm.warp(validUntil + 1);
-        token.setInvalidMember(self);
+        token.setInvalidMember(targetUser);
         vm.expectRevert(bytes("TrancheToken01/restrictions-failed"));
         token.transfer(targetUser, amount);
     }

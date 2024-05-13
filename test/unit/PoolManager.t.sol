@@ -237,7 +237,7 @@ contract PoolManagerTest is BaseTest {
         assertEq(trancheToken.name(), tokenName);
         assertEq(trancheToken.symbol(), tokenSymbol);
         assertEq(trancheToken.decimals(), decimals);
-        (, uint64 actualValidUntil) = trancheToken.restrictions(address(investmentManager.escrow()));
+        (uint64 actualValidUntil) = trancheToken.restrictions(address(investmentManager.escrow()));
         assertTrue(actualValidUntil >= block.timestamp);
 
         assertTrue(trancheToken.wards(address(poolManager)) == 1);

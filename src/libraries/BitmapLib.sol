@@ -15,4 +15,8 @@ library BitmapLib {
         uint256 bitAtIndex = bitmap & (1 << index);
         return bitAtIndex > 0;
     }
+
+    function getFirstN(uint256 bitmap, uint256 n) internal pure returns (uint256) {
+        return bitmap & (2 ** n - 1);
+    }
 }

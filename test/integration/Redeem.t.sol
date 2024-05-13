@@ -262,8 +262,10 @@ contract RedeemTest is BaseTest {
         address vault_ = deploySimpleVault();
         ERC7540Vault vault = ERC7540Vault(vault_);
         TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
+        assertEq(trancheToken.balanceOf(investor), 0);
         deposit(vault_, investor, amount, false); // request and execute deposit, but don't claim
         uint256 investorBalanceBefore = erc20.balanceOf(investor);
+        assertEq(trancheToken.balanceOf(investor), 0);
         assertEq(vault.maxMint(investor), amount);
         uint64 poolId = vault.poolId();
         bytes16 trancheId = vault.trancheId();

@@ -21,7 +21,7 @@ interface TrancheTokenLike is IERC20Metadata {
     function vault(address asset) external view returns (address);
     function updateRestriction(bytes memory message) external;
     function updateMember(address user, uint64 validUntil) external;
-    function restrictions(address user) external view returns (bool frozen, uint64 validUntil);
+    function restrictions(address user) external view returns (uint64 validUntil);
     function freeze(address user) external;
     function unfreeze(address user) external;
     function wards(address user) external view returns (uint256);
@@ -68,7 +68,7 @@ contract TrancheToken01 is ERC20, ITrancheToken01, IERC7575Share {
 
     function balanceOf(address user) public view override returns (uint256) {
         // return balance without effect of the two high bits
-        return balances[user] & ~(uint256(1) << 254);
+        return balances[user].getFirstN(254);
     }
 
     // --- ERC20 overrides with restrictions ---
