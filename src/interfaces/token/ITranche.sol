@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.21;
+pragma solidity >=0.5.0;
 
 import {IERC20} from "src/interfaces/IERC20.sol";
 
@@ -13,7 +13,7 @@ interface ITrancheToken {
     function file(bytes32 what, address data) external;
 
     /// @notice TODO
-    function file(bytes32 what, address data1, address data2) external;
+    function updateVault(address asset, address vault_) external;
 
     // --- ERC1404 implementation ---
     /// @notice TODO

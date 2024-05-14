@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
+import "src/interfaces/IERC7575.sol";
+import "src/interfaces/IERC7540.sol";
 import {TrancheToken} from "src/token/Tranche.sol";
 import {RestrictionManagerLike} from "src/token/RestrictionManager.sol";
 import {MockRestrictionManager} from "test/mocks/MockRestrictionManager.sol";
@@ -31,20 +33,16 @@ contract TrancheTokenTest is Test {
     }
 
     // --- Admnistration ---
-
     function testFile(address asset, address vault) public {
         // fail: unrecognized param
         vm.expectRevert(bytes("TrancheToken/file-unrecognized-param"));
         token.file("random", self);
 
-        vm.expectRevert(bytes("TrancheToken/file-unrecognized-param"));
-        token.file("random", self, self);
-
         // success
         token.file("restrictionManager", self);
         assertEq(address(token.restrictionManager()), self);
 
-        token.file("vault", asset, vault);
+        token.updateVault(asset, vault);
         assertEq(address(token.vault(asset)), vault);
 
         // remove self from wards
@@ -55,7 +53,23 @@ contract TrancheTokenTest is Test {
         token.file("restrictionManager", self);
 
         vm.expectRevert(bytes("Auth/not-authorized"));
-        token.file("vault", asset, vault);
+        token.updateVault(asset, vault);
+    }
+
+    // --- erc165 checks ---
+    function testERC165Support(bytes4 unsupportedInterfaceId) public {
+        bytes4 erc165 = 0x01ffc9a7;
+        bytes4 erc7575Share = 0xf815c03d;
+
+        vm.assume(unsupportedInterfaceId != erc165 && unsupportedInterfaceId != erc7575Share);
+
+        assertEq(type(IERC165).interfaceId, erc165);
+        assertEq(type(IERC7575Share).interfaceId, erc7575Share);
+
+        assertEq(token.supportsInterface(erc165), true);
+        assertEq(token.supportsInterface(erc7575Share), true);
+
+        assertEq(token.supportsInterface(unsupportedInterfaceId), false);
     }
 
     // --- RestrictionManager ---
