@@ -163,6 +163,7 @@ contract TrancheToken01 is ERC20, ITrancheToken01, IERC7575Share {
         emit Unfreeze(user);
     }
 
+    /// @inheritdoc ITrancheToken01
     function isFrozen(address user) public view returns (bool) {
         return balances[user].getBit(FREEZE_BIT);
     }
@@ -187,6 +188,7 @@ contract TrancheToken01 is ERC20, ITrancheToken01, IERC7575Share {
         _setBalance(user, balances[user].setBit(MEMBER_BIT, false));
     }
 
+    /// @inheritdoc ITrancheToken01
     function isMember(address user) public view returns (bool) {
         return balances[user].getBit(MEMBER_BIT);
     }
