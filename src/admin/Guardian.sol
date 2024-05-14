@@ -32,8 +32,7 @@ contract Guardian is IGuardian {
 
     modifier onlySafeOrOwner() {
         require(
-            msg.sender == address(safe) || _isSafeOwner(msg.sender),
-            "Guardian/not-the-authorized-safe-or-its-owner"
+            msg.sender == address(safe) || _isSafeOwner(msg.sender), "Guardian/not-the-authorized-safe-or-its-owner"
         );
         _;
     }
