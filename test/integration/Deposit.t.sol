@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import "./../BaseTest.sol";
+import "test/BaseTest.sol";
 import {CastLib} from "src/libraries/CastLib.sol";
 
 contract DepositTest is BaseTest {
@@ -42,7 +42,7 @@ contract DepositTest is BaseTest {
         vault.requestDeposit(0, self, self, "");
 
         // will fail - owner != msg.sender not allowed
-        vm.expectRevert(bytes("ERC7540Vault/not-msg-sender"));
+        vm.expectRevert(bytes("ERC7540Vault/invalid-owner"));
         vault.requestDeposit(amount, self, nonMember, "");
 
         // will fail - investment asset not allowed

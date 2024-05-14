@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {Auth} from "./Auth.sol";
-import {CastLib} from "./libraries/CastLib.sol";
-import {MathLib} from "./libraries/MathLib.sol";
-import {SafeTransferLib} from "./libraries/SafeTransferLib.sol";
-import {MessagesLib} from "./libraries/MessagesLib.sol";
-import {BytesLib} from "./libraries/BytesLib.sol";
+import {Auth} from "src/Auth.sol";
+import {CastLib} from "src/libraries/CastLib.sol";
+import {MathLib} from "src/libraries/MathLib.sol";
+import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
+import {MessagesLib} from "src/libraries/MessagesLib.sol";
+import {BytesLib} from "src/libraries/BytesLib.sol";
 import {IERC20, IERC20Metadata} from "src/interfaces/IERC20.sol";
 import {IPoolManager} from "src/interfaces/IPoolManager.sol";
 import {IInvestmentManager, InvestmentState} from "src/interfaces/IInvestmentManager.sol";
@@ -33,7 +33,7 @@ interface VaultLike is IERC20 {
 }
 
 interface AuthTransferLike {
-    function authTransferFrom(address from, address to, uint256 amount) external returns (bool);
+    function authTransferFrom(address sender, address from, address to, uint256 amount) external returns (bool);
 }
 
 /// @title  Investment Manager
@@ -385,7 +385,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
         if (tokensToTransfer > 0) {
             require(
                 AuthTransferLike(address(VaultLike(vault).share())).authTransferFrom(
-                    user, address(escrow), tokensToTransfer
+                    user, user, address(escrow), tokensToTransfer
                 ),
                 "InvestmentManager/transfer-failed"
             );
