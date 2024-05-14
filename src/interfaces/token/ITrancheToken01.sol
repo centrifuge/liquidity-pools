@@ -28,7 +28,17 @@ interface ITrancheToken01 is ITrancheToken {
     /// @notice TODO
     function unfreeze(address user) external;
 
+    /// @notice TODO
+    function isFrozen(address user) external view returns (bool);
+
     // --- Managing members ---
     /// @notice TODO
     function updateMember(address user, uint64 validUntil) external;
+
+    /// @dev Permissionless method that sets the membership bit to false once
+    ///      the valid until date is in the past
+    function setInvalidMember(address user) external;
+
+    /// @notice TODO
+    function isMember(address user) external view returns (bool);
 }

@@ -41,6 +41,9 @@ contract TrancheToken01 is ERC20, ITrancheToken01, IERC7575Share {
     string internal constant DESTINATION_IS_FROZEN_MESSAGE = "TrancheToken01/destination-is-frozen";
     string internal constant DESTINATION_NOT_A_MEMBER_RESTRICTION_MESSAGE = "TrancheToken01/destination-not-a-member";
 
+    uint8 public constant FREEZE_BIT = 255;
+    uint8 public constant MEMBER_BIT = 254;
+
     uint8 public constant SUCCESS_CODE = 0;
     uint8 public constant SOURCE_IS_FROZEN_CODE = 1;
     uint8 public constant DESTINATION_IS_FROZEN_CODE = 2;
@@ -66,12 +69,12 @@ contract TrancheToken01 is ERC20, ITrancheToken01, IERC7575Share {
         emit File(what, data1, data2);
     }
 
+    // --- ERC20 overrides ---
     function balanceOf(address user) public view override returns (uint256) {
         // return balance without effect of the two high bits
         return balances[user].getFirstN(254);
     }
 
-    // --- ERC20 overrides with restrictions ---
     function transfer(address to, uint256 value) public override returns (bool success) {
         require(checkTransferRestriction(msg.sender, to, value), "TrancheToken01/restrictions-failed");
         success = super.transfer(to, value);
@@ -96,16 +99,16 @@ contract TrancheToken01 is ERC20, ITrancheToken01, IERC7575Share {
     /// @inheritdoc ITrancheToken01
     function detectTransferRestriction(address from, address to, uint256 /* value */ ) public view returns (uint8) {
         uint256 balanceFrom = balances[from];
-        if (balanceFrom.getBit(255) == true) {
+        if (balanceFrom.getBit(FREEZE_BIT) == true) {
             return SOURCE_IS_FROZEN_CODE;
         }
 
         uint256 balanceTo = balances[to];
-        if (balanceTo.getBit(255) == true) {
+        if (balanceTo.getBit(FREEZE_BIT) == true) {
             return DESTINATION_IS_FROZEN_CODE;
         }
 
-        if (balanceTo.getBit(254) == false) {
+        if (balanceTo.getBit(MEMBER_BIT) == false) {
             return DESTINATION_NOT_A_MEMBER_RESTRICTION_CODE;
         }
 
@@ -150,18 +153,18 @@ contract TrancheToken01 is ERC20, ITrancheToken01, IERC7575Share {
     function freeze(address user) public auth {
         require(user != address(0), "TrancheToken01/cannot-freeze-zero-address");
         require(user != address(escrow), "TrancheToken01/cannot-freeze-escrow");
-        _setBalance(user, balances[user].setBit(255, true));
+        _setBalance(user, balances[user].setBit(FREEZE_BIT, true));
         emit Freeze(user);
     }
 
     /// @inheritdoc ITrancheToken01
     function unfreeze(address user) public auth {
-        _setBalance(user, balances[user].setBit(255, false));
+        _setBalance(user, balances[user].setBit(FREEZE_BIT, false));
         emit Unfreeze(user);
     }
 
     function isFrozen(address user) public view returns (bool) {
-        return balances[user].getBit(255);
+        return balances[user].getBit(FREEZE_BIT);
     }
 
     // --- Managing members ---
@@ -174,20 +177,17 @@ contract TrancheToken01 is ERC20, ITrancheToken01, IERC7575Share {
 
     function _updateMember(address user, uint64 validUntil) internal {
         restrictions[user].validUntil = validUntil;
-        _setBalance(user, balances[user].setBit(254, true));
+        _setBalance(user, balances[user].setBit(MEMBER_BIT, true));
         emit UpdateMember(user, validUntil);
     }
 
-    /// @dev Permissionless method that sets the membership bit to false once
-    ///      the valid until date is in the past
+    /// @inheritdoc ITrancheToken01
     function setInvalidMember(address user) public {
         require(block.timestamp > restrictions[user].validUntil, "TrancheToken01/not-invalid-member");
-        _setBalance(user, balances[user].setBit(254, false));
+        _setBalance(user, balances[user].setBit(MEMBER_BIT, false));
     }
 
     function isMember(address user) public view returns (bool) {
-        return balances[user].getBit(254);
+        return balances[user].getBit(MEMBER_BIT);
     }
-
-    // TODO: add separate isMember calls for date based vs balance value based?
 }
