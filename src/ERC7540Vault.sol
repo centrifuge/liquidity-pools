@@ -18,7 +18,7 @@ interface AuthTransferLike {
 }
 
 /// @title  ERC7540Vault
-/// @notice Asynchronous Vault standard implementation for Centrifuge pools
+/// @notice Asynchronous Tokenized Vault standard implementation for Centrifuge pools
 ///
 /// @dev    Each vault issues shares of Centrifuge tranches as restricted ERC-20 tokens
 ///         against asset deposits based on the current share price.
