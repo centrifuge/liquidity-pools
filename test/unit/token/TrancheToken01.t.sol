@@ -29,17 +29,14 @@ contract TrancheToken01Test is Test {
     // --- Admnistration ---
 
     function testFile(address asset, address vault) public {
-        vm.expectRevert(bytes("TrancheToken01/file-unrecognized-param"));
-        token.file("random", self, self);
-
-        token.file("vault", asset, vault);
+        token.updateVault(asset, vault);
         assertEq(address(token.vault(asset)), vault);
 
         // remove self from wards
         token.deny(self);
 
         vm.expectRevert(bytes("Auth/not-authorized"));
-        token.file("vault", asset, vault);
+        token.updateVault(asset, vault);
     }
 
     // --- RestrictionManager ---

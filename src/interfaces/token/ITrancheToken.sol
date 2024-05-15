@@ -8,7 +8,7 @@ interface ITrancheToken {
 
     // --- Administration ---
     /// @notice TODO
-    function file(bytes32 what, address data1, address data2) external;
+    function updateVault(address asset, address vault_) external;
 
     // --- Incoming message handling ---
     /// @notice TODO
