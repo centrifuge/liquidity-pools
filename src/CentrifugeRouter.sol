@@ -20,10 +20,14 @@ contract CentrifugeRouter is Auth {
 
     // --- Deposit ---
     function requestDeposit(address vault, uint256 amount) external {
-        SafeTransferLib.safeTransferFrom(IERC7540(vault).asset(), msg.sender, address(this), amount);
+        requestDeposit(vault, amount, msg.sender);
+    }
+
+    function requestDeposit(address vault, uint256 amount, address investor) public {
+        SafeTransferLib.safeTransferFrom(IERC7540(vault).asset(), investor, address(this), amount);
         IERC20Like(IERC7540(vault).asset()).approve(vault, amount); // option to add approve function, make poolManager
             // ward and create global approval on vault deployment
-        IERC7540(vault).requestDeposit(amount, msg.sender, address(this), "");
+        IERC7540(vault).requestDeposit(amount, investor, address(this), "");
     }
 
     function lockDepositRequest(address vault, uint256 amount) external {
@@ -54,8 +58,12 @@ contract CentrifugeRouter is Auth {
 
     // --- Redeem ---
     function requestRedeem(address vault, uint256 amount) external {
-        SafeTransferLib.safeTransferFrom(IERC7540(vault).share(), msg.sender, address(this), amount);
-        IERC7540(vault).requestRedeem(amount, msg.sender, address(this), "");
+        requestRedeem(vault, amount, msg.sender);
+    }
+
+    function requestRedeem(address vault, uint256 amount, address investor) public {
+        SafeTransferLib.safeTransferFrom(IERC7540(vault).share(), investor, address(this), amount);
+        IERC7540(vault).requestRedeem(amount, investor, address(this), "");
     }
 
     function claimRedeem(address vault, address investor) external {

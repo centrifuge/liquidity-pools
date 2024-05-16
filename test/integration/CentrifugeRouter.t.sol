@@ -6,9 +6,9 @@ import "src/interfaces/IERC7575.sol";
 import "src/interfaces/IERC7540.sol";
 import {SucceedingRequestReceiver} from "test/mocks/SucceedingRequestReceiver.sol";
 import {FailingRequestReceiver} from "test/mocks/FailingRequestReceiver.sol";
+import {MockMulticall, Call} from "test/mocks/MockMulticall.sol";
 
 contract CentrifugeRouterTest is BaseTest {
-
     function testCFGRouterDeposit(uint256 amount) public {
         // If lower than 4 or odd, rounding down can lead to not receiving any tokens
         amount = uint128(bound(amount, 4, MAX_UINT128));
@@ -86,9 +86,10 @@ contract CentrifugeRouterTest is BaseTest {
     }
 
     function testCFGRouterRedeem(uint256 amount) public {
-        // deposit
         amount = uint128(bound(amount, 4, MAX_UINT128));
         vm.assume(amount % 2 == 0);
+
+        // deposit
         address vault_ = deploySimpleVault();
         ERC7540Vault vault = ERC7540Vault(vault_);
         vm.label(vault_, "vault");
@@ -115,7 +116,6 @@ contract CentrifugeRouterTest is BaseTest {
     }
 
     function testCFGRouterDepositIntoMultipleVaults(uint256 amount1, uint256 amount2) public {
-        // If lower than 4 or odd, rounding down can lead to not receiving any tokens
         amount1 = uint128(bound(amount1, 4, MAX_UINT128));
         vm.assume(amount1 % 2 == 0);
         amount2 = uint128(bound(amount2, 4, MAX_UINT128));
@@ -125,8 +125,10 @@ contract CentrifugeRouterTest is BaseTest {
         ERC20 erc20Y = _newErc20("Y's Dollar", "USDY", 6);
         vm.label(address(erc20X), "erc20X");
         vm.label(address(erc20Y), "erc20Y");
-        address vault1_ = deployVault(5, 6, defaultRestrictionSet, "name1", "symbol1", bytes16(bytes("1")), 1, address(erc20X));
-        address vault2_ = deployVault(4, 6, defaultRestrictionSet, "name2", "symbol2", bytes16(bytes("2")), 2, address(erc20Y));
+        address vault1_ =
+            deployVault(5, 6, defaultRestrictionSet, "name1", "symbol1", bytes16(bytes("1")), 1, address(erc20X));
+        address vault2_ =
+            deployVault(4, 6, defaultRestrictionSet, "name2", "symbol2", bytes16(bytes("2")), 2, address(erc20Y));
         ERC7540Vault vault1 = ERC7540Vault(vault1_);
         ERC7540Vault vault2 = ERC7540Vault(vault2_);
         vm.label(vault1_, "vault1");
@@ -169,17 +171,20 @@ contract CentrifugeRouterTest is BaseTest {
     }
 
     function testCFGRouterRedeemFromMultipleVaults(uint256 amount1, uint256 amount2) public {
-        // deposit
         amount1 = uint128(bound(amount1, 4, MAX_UINT128));
         vm.assume(amount1 % 2 == 0);
         amount2 = uint128(bound(amount2, 4, MAX_UINT128));
         vm.assume(amount2 % 2 == 0);
+
+        // deposit
         ERC20 erc20X = _newErc20("X's Dollar", "USDX", 6);
         ERC20 erc20Y = _newErc20("Y's Dollar", "USDY", 6);
         vm.label(address(erc20X), "erc20X");
         vm.label(address(erc20Y), "erc20Y");
-        address vault1_ = deployVault(5, 6, defaultRestrictionSet, "name1", "symbol1", bytes16(bytes("1")), 1, address(erc20X));
-        address vault2_ = deployVault(4, 6, defaultRestrictionSet, "name2", "symbol2", bytes16(bytes("2")), 2, address(erc20Y));
+        address vault1_ =
+            deployVault(5, 6, defaultRestrictionSet, "name1", "symbol1", bytes16(bytes("1")), 1, address(erc20X));
+        address vault2_ =
+            deployVault(4, 6, defaultRestrictionSet, "name2", "symbol2", bytes16(bytes("2")), 2, address(erc20Y));
         ERC7540Vault vault1 = ERC7540Vault(vault1_);
         ERC7540Vault vault2 = ERC7540Vault(vault2_);
         vm.label(vault1_, "vault1");
@@ -200,7 +205,7 @@ contract CentrifugeRouterTest is BaseTest {
         TrancheTokenLike trancheToken2 = TrancheTokenLike(address(vault2.share()));
         cfgRouter.claimDeposit(vault1_, self);
         cfgRouter.claimDeposit(vault2_, self);
-        
+
         // redeem
         trancheToken1.approve(address(cfgRouter), trancheTokensPayout1);
         trancheToken2.approve(address(cfgRouter), trancheTokensPayout2);
@@ -224,12 +229,47 @@ contract CentrifugeRouterTest is BaseTest {
         assertApproxEqAbs(erc20Y.balanceOf(self), assetPayout2, 1);
     }
 
-    function testMulticallingDepositClaimAndRedeem() public {
-        
+    function testMulticallingDepositClaimAndRequestRedeem(uint256 amount) public {
+        amount = uint128(bound(amount, 4, MAX_UINT128));
+        vm.assume(amount % 2 == 0);
+
+        // deposit
+        address vault_ = deploySimpleVault();
+        ERC7540Vault vault = ERC7540Vault(vault_);
+        vm.label(vault_, "vault");
+        erc20.mint(self, amount);
+        erc20.approve(address(cfgRouter), amount);
+        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max); // add user as member
+        cfgRouter.requestDeposit(vault_, amount);
+        uint128 assetId = poolManager.assetToId(address(erc20));
+        (uint128 trancheTokensPayout) = fulfillDepositRequest(vault, assetId, amount);
+        TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
+        trancheToken.approve(address(cfgRouter), trancheTokensPayout);
+
+        // multicall
+        Call[] memory calls = new Call[](2);
+        calls[0] = Call(address(cfgRouter), abi.encodeWithSelector(cfgRouter.claimDeposit.selector, vault_, self));
+        calls[1] = Call(
+            address(cfgRouter),
+            abi.encodeWithSelector(
+                bytes4(keccak256("requestRedeem(address,uint256,address)")), vault_, trancheTokensPayout, self
+            )
+        );
+        MockMulticall multicall = new MockMulticall();
+        multicall.aggregate(calls);
+
+        (uint128 assetPayout) = fulfillRedeemRequest(vault, assetId, trancheTokensPayout);
+        assertApproxEqAbs(trancheToken.balanceOf(self), 0, 1);
+        assertApproxEqAbs(trancheToken.balanceOf(address(escrow)), 0, 1);
+        assertApproxEqAbs(erc20.balanceOf(address(escrow)), assetPayout, 1);
+        assertApproxEqAbs(erc20.balanceOf(self), 0, 1);
     }
 
     // --- helpers ---
-    function fulfillDepositRequest(ERC7540Vault vault, uint128 assetId, uint256 amount) public returns (uint128 trancheTokensPayout){
+    function fulfillDepositRequest(ERC7540Vault vault, uint128 assetId, uint256 amount)
+        public
+        returns (uint128 trancheTokensPayout)
+    {
         uint128 price = 2 * 10 ** 18;
         trancheTokensPayout = uint128(amount * 10 ** 18 / price);
         assertApproxEqAbs(trancheTokensPayout, amount / 2, 2);
@@ -244,18 +284,15 @@ contract CentrifugeRouterTest is BaseTest {
         );
     }
 
-    function fulfillRedeemRequest(ERC7540Vault vault, uint128 assetId, uint256 amount) public returns (uint128 assetPayout){
+    function fulfillRedeemRequest(ERC7540Vault vault, uint128 assetId, uint256 amount)
+        public
+        returns (uint128 assetPayout)
+    {
         uint128 price = 2 * 10 ** 18;
         assetPayout = uint128(amount * price / 10 ** 18);
         assertApproxEqAbs(assetPayout, amount * 2, 2);
         centrifugeChain.isFulfilledRedeemRequest(
-            vault.poolId(),
-            vault.trancheId(),
-            bytes32(bytes20(self)),
-            assetId,
-            assetPayout,
-            uint128(amount)
+            vault.poolId(), vault.trancheId(), bytes32(bytes20(self)), assetId, assetPayout, uint128(amount)
         );
     }
-
 }
