@@ -5,8 +5,8 @@ import {InvestmentManager} from "src/InvestmentManager.sol";
 import {Gateway} from "src/gateway/Gateway.sol";
 import {MockCentrifugeChain} from "test/mocks/MockCentrifugeChain.sol";
 import {Escrow} from "src/Escrow.sol";
-import {PauseAdmin} from "src/admins/PauseAdmin.sol";
-import {DelayedAdmin} from "src/admins/DelayedAdmin.sol";
+import {Guardian} from "src/admin/Guardian.sol";
+import {MockRouter} from "test/mocks/MockRouter.sol";
 import {PoolManager, Pool, Tranche} from "src/PoolManager.sol";
 import {ERC20} from "src/token/ERC20.sol";
 import {TrancheToken} from "src/token/Tranche.sol";
@@ -34,19 +34,23 @@ contract DeployTest is Test, Deployer {
 
     address self;
     ERC20 erc20;
+    address[] pausers;
 
     function setUp() public {
         deploy(address(this));
         PermissionlessRouter router = new PermissionlessRouter(address(aggregator));
         wire(address(router));
 
-        admin = makeAddr("admin");
-        pausers.push(makeAddr("pauser1"));
-        pausers.push(makeAddr("pauser2"));
-        pausers.push(makeAddr("pauser3"));
-        giveAdminAccess();
+        // overwrite deployed guardian with a new mock safe guardian
+        pausers = new address[](3);
+        pausers[0] = makeAddr("pauser1");
+        pausers[1] = makeAddr("pauser2");
+        pausers[2] = makeAddr("pauser3");
+        adminSafe = address(new MockSafe(pausers, 1));
+        guardian = new Guardian(adminSafe, address(root), address(aggregator));
+        root.rely(address(guardian));
 
-        erc20 = newErc20("Test", "TEST", 6); // TODO: fuzz decimals
+        erc20 = newErc20("Test", "TEST", 6);
         self = address(this);
 
         removeDeployerAccess(address(router), address(this));
@@ -61,8 +65,6 @@ contract DeployTest is Test, Deployer {
         assertEq(escrow.wards(address(this)), 0);
         assertEq(gateway.wards(address(this)), 0);
         assertEq(aggregator.wards(address(this)), 0);
-        assertEq(pauseAdmin.wards(address(this)), 0);
-        assertEq(delayedAdmin.wards(address(this)), 0);
         // check factories
         assertEq(WardLike(trancheTokenFactory).wards(address(this)), 0);
         assertEq(WardLike(vaultFactory).wards(address(this)), 0);
@@ -70,16 +72,14 @@ contract DeployTest is Test, Deployer {
     }
 
     function testAdminSetup(address nonAdmin, address nonPauser) public {
-        vm.assume(nonAdmin != admin);
+        vm.assume(nonAdmin != adminSafe);
         vm.assume(nonPauser != pausers[0] && nonPauser != pausers[1] && nonPauser != pausers[2]);
 
-        assertEq(delayedAdmin.wards(admin), 1);
-        assertEq(delayedAdmin.wards(nonAdmin), 0);
-
-        assertEq(pauseAdmin.pausers(pausers[0]), 1);
-        assertEq(pauseAdmin.pausers(pausers[1]), 1);
-        assertEq(pauseAdmin.pausers(pausers[2]), 1);
-        assertEq(pauseAdmin.pausers(nonPauser), 0);
+        assertEq(address(guardian.safe()), adminSafe);
+        for (uint256 i = 0; i < pausers.length; i++) {
+            assertEq(MockSafe(adminSafe).isOwner(pausers[i]), true);
+        }
+        assertEq(MockSafe(adminSafe).isOwner(nonPauser), false);
     }
 
     function testDeployAndInvestRedeem(
