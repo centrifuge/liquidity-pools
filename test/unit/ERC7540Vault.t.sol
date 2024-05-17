@@ -136,6 +136,7 @@ contract ERC7540VaultTest is BaseTest {
         address vault_ = deploySimpleVault();
         ERC7540Vault vault = ERC7540Vault(vault_);
         MockSucceedingRequestReceiver receiver = new MockSucceedingRequestReceiver();
+        vm.label(address(receiver), "Receiver");
 
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), address(receiver), type(uint64).max);
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max);
@@ -157,17 +158,19 @@ contract ERC7540VaultTest is BaseTest {
         assertTrue(receiver.onERC7540DepositReceived(self, self, 0, amount, depositData) == 0x6d7e2da0);
 
         // Claim deposit request
-        // Note this is sending it to self, which is technically incorrect, it should be going to the receiver
         centrifugeChain.isFulfilledDepositRequest(
             vault.poolId(),
             vault.trancheId(),
-            bytes32(bytes20(self)),
+            bytes32(bytes20(address(receiver))),
             defaultAssetId,
             uint128(amount),
             uint128(amount),
             0
         );
-        vault.mint(vault.maxMint(self), self);
+        vm.startPrank(address(receiver));
+        vault.mint(vault.maxMint(address(receiver)), address(receiver));
+        TrancheToken(address(vault.share())).transfer(self, amount);
+        vm.stopPrank();
 
         // Check redeem callback
         vault.requestRedeem(amount, address(receiver), self, redeemData);
@@ -187,6 +190,7 @@ contract ERC7540VaultTest is BaseTest {
         address vault_ = deploySimpleVault();
         ERC7540Vault vault = ERC7540Vault(vault_);
         MockSucceedingRequestReceiver receiver = new MockSucceedingRequestReceiver();
+        vm.label(address(receiver), "Receiver");
 
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), address(receiver), type(uint64).max);
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max);
@@ -209,13 +213,16 @@ contract ERC7540VaultTest is BaseTest {
         centrifugeChain.isFulfilledDepositRequest(
             vault.poolId(),
             vault.trancheId(),
-            bytes32(bytes20(self)),
+            bytes32(bytes20(address(receiver))),
             defaultAssetId,
             uint128(amount),
             uint128(amount),
             0
         );
-        vault.mint(vault.maxMint(self), self);
+        vm.startPrank(address(receiver));
+        vault.mint(vault.maxMint(address(receiver)), address(receiver));
+        TrancheToken(address(vault.share())).transfer(self, amount);
+        vm.stopPrank();
 
         // Check redeem callback
         vault.requestRedeem(amount, address(receiver), self, "");
