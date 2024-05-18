@@ -242,7 +242,9 @@ interface IERC7575 is IERC165 {
     function redeem(uint256 shares, address receiver, address owner) external returns (uint256 assets);
 }
 
-interface IERC7575Share {
+interface IERC7575Share is IERC165 {
+    event VaultUpdate(address indexed asset, address vault);
+
     /**
      * @dev Returns the address of the Vault for the given asset.
      *
