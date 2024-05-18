@@ -233,9 +233,4 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
     {
         permit(owner, spender, value, deadline, abi.encodePacked(r, s, v));
     }
-
-    // --- Fail-safe ---
-    function authTransferFrom(address sender, address from, address to, uint256 value) public auth returns (bool) {
-        return _transferFrom(sender, from, to, value);
-    }
 }

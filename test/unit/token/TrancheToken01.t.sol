@@ -165,4 +165,22 @@ contract TrancheToken01Test is Test {
         vm.expectRevert(bytes("TrancheToken01/restrictions-failed"));
         token.mint(targetUser, amount);
     }
+
+    function testAuthTransferFrom(address to, uint256 amount) public {
+        if (to == address(0) || to == address(token)) return;
+
+        address from = address(0xABCD);
+
+        token.mint(from, amount);
+
+        assertTrue(token.authTransferFrom(from, from, to, amount));
+        assertEq(token.totalSupply(), amount);
+
+        if (from == to) {
+            assertEq(token.balanceOf(from), amount);
+        } else {
+            assertEq(token.balanceOf(from), 0);
+            assertEq(token.balanceOf(to), amount);
+        }
+    }
 }

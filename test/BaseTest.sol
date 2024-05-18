@@ -16,7 +16,7 @@ import {MessagesLib} from "src/libraries/MessagesLib.sol";
 import {Deployer} from "script/Deployer.sol";
 import {MockSafe} from "test/mocks/MockSafe.sol";
 import "src/interfaces/IERC20.sol";
-import {TrancheTokenLike} from "src/token/TrancheToken01.sol";
+import {TrancheTokenLike, TrancheToken01} from "src/token/TrancheToken01.sol";
 
 // mocks
 import {MockCentrifugeChain} from "test/mocks/MockCentrifugeChain.sol";

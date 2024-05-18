@@ -495,26 +495,6 @@ contract ERC20Test is Test {
         }
     }
 
-    function testAuthTransferFrom(address to, uint256 amount) public {
-        if (to == address(0) || to == address(token)) return;
-
-        address from = address(0xABCD);
-
-        token.mint(from, amount);
-
-        vm.expectEmit(true, true, true, true);
-        emit Transfer(from, to, amount);
-        assertTrue(token.authTransferFrom(from, from, to, amount));
-        assertEq(token.totalSupply(), amount);
-
-        if (from == to) {
-            assertEq(token.balanceOf(from), amount);
-        } else {
-            assertEq(token.balanceOf(from), 0);
-            assertEq(token.balanceOf(to), amount);
-        }
-    }
-
     function testPermit(uint248 privKey, address to, uint256 amount, uint256 deadline) public {
         uint256 privateKey = privKey;
         if (deadline < block.timestamp) deadline = block.timestamp;

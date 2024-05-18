@@ -169,7 +169,7 @@ contract ERC7540VaultTest is BaseTest {
         );
         vm.startPrank(address(receiver));
         vault.mint(vault.maxMint(address(receiver)), address(receiver));
-        TrancheToken(address(vault.share())).transfer(self, amount);
+        TrancheToken01(address(vault.share())).transfer(self, amount);
         vm.stopPrank();
 
         // Check redeem callback
@@ -221,7 +221,7 @@ contract ERC7540VaultTest is BaseTest {
         );
         vm.startPrank(address(receiver));
         vault.mint(vault.maxMint(address(receiver)), address(receiver));
-        TrancheToken(address(vault.share())).transfer(self, amount);
+        TrancheToken01(address(vault.share())).transfer(self, amount);
         vm.stopPrank();
 
         // Check redeem callback

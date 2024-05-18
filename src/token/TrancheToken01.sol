@@ -36,6 +36,7 @@ contract TrancheToken01 is ERC20, ITrancheToken01, IERC7575Share {
     using BytesLib for bytes;
     using BitmapLib for uint256;
 
+    uint8 internal constant MAX_DECIMALS = 18;
     string internal constant SUCCESS_MESSAGE = "TrancheToken01/transfer-allowed";
     string internal constant SOURCE_IS_FROZEN_MESSAGE = "TrancheToken01/source-is-frozen";
     string internal constant DESTINATION_IS_FROZEN_MESSAGE = "TrancheToken01/destination-is-frozen";
@@ -57,6 +58,8 @@ contract TrancheToken01 is ERC20, ITrancheToken01, IERC7575Share {
     mapping(address => Restrictions) public restrictions;
 
     constructor(uint8 decimals_, address escrow_) ERC20(decimals_) {
+        require(decimals_ <= MAX_DECIMALS, "ERC20/too-many-decimals");
+
         escrow = escrow_;
         _updateMember(escrow_, type(uint64).max);
     }
@@ -190,6 +193,11 @@ contract TrancheToken01 is ERC20, ITrancheToken01, IERC7575Share {
     /// @inheritdoc ITrancheToken01
     function isMember(address user) public view returns (bool) {
         return balances[user].getBit(MEMBER_BIT);
+    }
+
+    // --- Fail-safe ---
+    function authTransferFrom(address sender, address from, address to, uint256 value) public auth returns (bool) {
+        return _transferFrom(sender, from, to, value);
     }
 
     // --- ERC165 support ---
