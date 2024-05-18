@@ -54,8 +54,9 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
         return balances[user];
     }
 
-    function _setBalance(address user, uint256 value) internal {
-        balances[user] = value;
+    /// @inheritdoc IERC20Permit
+    function DOMAIN_SEPARATOR() external view returns (bytes32) {
+        return block.chainid == deploymentChainId ? _DOMAIN_SEPARATOR : _calculateDomainSeparator(block.chainid);
     }
 
     function _calculateDomainSeparator(uint256 chainId) private view returns (bytes32) {
@@ -71,11 +72,7 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
         );
     }
 
-    /// @inheritdoc IERC20Permit
-    function DOMAIN_SEPARATOR() external view returns (bytes32) {
-        return block.chainid == deploymentChainId ? _DOMAIN_SEPARATOR : _calculateDomainSeparator(block.chainid);
-    }
-
+    // --- Administration ---
     function file(bytes32 what, string memory data) external auth {
         if (what == "name") name = data;
         else if (what == "symbol") symbol = data;
