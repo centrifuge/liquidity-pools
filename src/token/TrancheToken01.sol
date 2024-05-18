@@ -28,6 +28,10 @@ interface TrancheTokenLike is IERC20Metadata {
     function setInvalidMember(address user) external;
 }
 
+interface IAuthTransfer {
+    function authTransferFrom(address sender, address from, address to, uint256 value) external returns (bool);
+}
+
 /// @title  Tranche Token 01
 /// @notice Extension of ERC20 + ERC1404 for tranche tokens, that ensures
 ///         the destination of any transfer is a valid member, and neither
@@ -203,6 +207,7 @@ contract TrancheToken01 is ERC20, ITrancheToken01, IERC7575Share {
     // --- ERC165 support ---
     /// @inheritdoc IERC165
     function supportsInterface(bytes4 interfaceId) external pure override returns (bool) {
-        return interfaceId == type(IERC7575Share).interfaceId || interfaceId == type(IERC165).interfaceId;
+        return interfaceId == type(IERC7575Share).interfaceId || interfaceId == type(IAuthTransfer).interfaceId
+            || interfaceId == type(IERC165).interfaceId;
     }
 }

@@ -4,13 +4,10 @@ pragma solidity 0.8.21;
 import {Auth} from "src/Auth.sol";
 import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 import {IInvestmentManager} from "src/interfaces/IInvestmentManager.sol";
+import {IAuthTransfer} from "src/token/TrancheToken01.sol";
 import "src/interfaces/IERC7540.sol";
 import "src/interfaces/IERC7575.sol";
 import "src/interfaces/IERC20.sol";
-
-interface AuthTransferLike {
-    function authTransferFrom(address sender, address from, address to, uint256 amount) external returns (bool);
-}
 
 /// @title  ERC7540Vault
 /// @notice Asynchronous Tokenized Vault standard implementation for Centrifuge pools
@@ -43,6 +40,9 @@ contract ERC7540Vault is Auth, IERC7540 {
     /// @notice Escrow contract for tokens
     address public immutable escrow;
 
+    /// @notice TODO
+    bool public supportsAuthTransfer;
+
     /// @notice Vault implementation contract
     IInvestmentManager public manager;
 
@@ -62,6 +62,10 @@ contract ERC7540Vault is Auth, IERC7540 {
         shareDecimals = IERC20Metadata(share).decimals();
         escrow = escrow_;
         manager = IInvestmentManager(manager_);
+
+        if (IERC165(share).supportsInterface(type(IAuthTransfer).interfaceId)) {
+            supportsAuthTransfer = true;
+        }
 
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
@@ -127,6 +131,8 @@ contract ERC7540Vault is Auth, IERC7540 {
     }
 
     /// @inheritdoc IERC7540Redeem
+    /// @notice If `supportsAuthTransfer()` returns `false`,
+    ///         then ERC20 approval is required before calling `requestRedeem`
     function requestRedeem(uint256 shares, address receiver, address owner, bytes memory data)
         public
         returns (uint256)
@@ -134,14 +140,18 @@ contract ERC7540Vault is Auth, IERC7540 {
         require(IERC20(share).balanceOf(owner) >= shares, "ERC7540Vault/insufficient-balance");
         require(manager.requestRedeem(address(this), shares, receiver, owner), "ERC7540Vault/request-redeem-failed");
 
-        // If msg.sender is operator of owner, the transfer is executed as if
-        // the sender is the owner, to bypass the allowance check
-        address sender = isOperator[owner][msg.sender] ? owner : msg.sender;
+        if (supportsAuthTransfer) {
+            // If msg.sender is operator of owner, the transfer is executed as if
+            // the sender is the owner, to bypass the allowance check
+            address sender = isOperator[owner][msg.sender] ? owner : msg.sender;
 
-        require(
-            AuthTransferLike(share).authTransferFrom(sender, owner, address(escrow), shares),
-            "ERC7540Vault/transfer-failed"
-        );
+            require(
+                IAuthTransfer(share).authTransferFrom(sender, owner, address(escrow), shares),
+                "ERC7540Vault/transfer-failed"
+            );
+        } else {
+            SafeTransferLib.safeTransferFrom(share, owner, address(escrow), shares);
+        }
 
         require(
             data.length == 0 || receiver.code.length == 0
