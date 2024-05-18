@@ -40,8 +40,10 @@ contract TrancheTokenFactory is Auth {
         string memory symbol,
         uint8 decimals,
         address[] calldata trancheTokenWards,
-        uint8 /* trancheType */
+        uint8 trancheType
     ) public auth returns (address) {
+        require(trancheType == 1, "TrancheTokenFactory/unsupported-tranche-type");
+
         // Salt is hash(poolId + trancheId)
         // same tranche token address on every evm chain
         bytes32 salt = keccak256(abi.encodePacked(poolId, trancheId));

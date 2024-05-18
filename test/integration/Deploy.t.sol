@@ -86,14 +86,14 @@ contract DeployTest is Test, Deployer {
         string memory tokenName,
         string memory tokenSymbol,
         bytes16 trancheId,
-        uint8 decimals,
-        uint8 trancheType
+        uint8 decimals
     ) public {
         vm.assume(decimals <= 18 && decimals > 0);
         uint128 price = uint128(2 * 10 ** PRICE_DECIMALS); //TODO: fuzz price
         uint256 amount = 1000 * 10 ** erc20.decimals();
         uint64 validUntil = uint64(block.timestamp + 1000 days);
-        address vault_ = deployPoolAndTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, trancheType);
+        uint8 defaultTrancheType = 1;
+        address vault_ = deployPoolAndTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, defaultTrancheType);
         ERC7540Vault vault = ERC7540Vault(vault_);
         TrancheToken01 trancheToken = TrancheToken01(address(vault.share()));
 

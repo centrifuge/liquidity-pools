@@ -46,7 +46,7 @@ contract BaseTest is Deployer, Test {
     // default values
     uint128 public defaultAssetId = 1;
     uint128 public defaultPrice = 1 * 10**18;
-    uint8 public defaultTrancheType = 2;
+    uint8 public defaultTrancheType = 1;
     uint8 public defaultDecimals = 8;
 
     function setUp() public virtual {
@@ -150,8 +150,7 @@ contract BaseTest is Deployer, Test {
         bytes16 trancheId,
         uint128 asset
     ) public returns (address) {
-        uint8 trancheType = 2;
-        return deployVault(poolId, decimals, trancheType, tokenName, tokenSymbol, trancheId, asset, address(erc20));
+        return deployVault(poolId, decimals, defaultTrancheType, tokenName, tokenSymbol, trancheId, asset, address(erc20));
     }
 
     function deploySimpleVault() public returns (address) {

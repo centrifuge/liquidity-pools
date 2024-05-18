@@ -87,10 +87,10 @@ contract FactoryTest is Test {
         address poolManager,
         string memory name,
         string memory symbol,
-        uint8 decimals,
-        uint8 trancheType
+        uint8 decimals
     ) public {
         decimals = uint8(bound(decimals, 1, 18));
+        uint8 trancheType = 1;
 
         TrancheTokenFactory trancheTokenFactory = new TrancheTokenFactory{salt: salt}(root, address(this));
 
@@ -133,10 +133,10 @@ contract FactoryTest is Test {
         address poolManager,
         string memory name,
         string memory symbol,
-        uint8 decimals,
-        uint8 trancheType
+        uint8 decimals
     ) public {
         decimals = uint8(bound(decimals, 1, 18));
+        uint8 trancheType = 1;
 
         address predictedAddress = address(
             uint160(
