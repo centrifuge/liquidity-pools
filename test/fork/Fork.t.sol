@@ -9,20 +9,13 @@ import {TrancheToken01} from "src/token/TrancheToken01.sol";
 import {Gateway} from "src/gateway/Gateway.sol";
 import {ERC7540VaultFactory} from "src/factories/ERC7540VaultFactory.sol";
 import {TrancheTokenFactory} from "src/factories/TrancheTokenFactory.sol";
-import {DelayedAdmin} from "src/admins/DelayedAdmin.sol";
-import {PauseAdmin} from "src/admins/PauseAdmin.sol";
+import {Guardian, SafeLike} from "src/admin/Guardian.sol";
 import "forge-std/Test.sol";
 import "forge-std/StdJson.sol";
 
 interface RouterLike {
     function send(bytes memory message) external;
     function wards(address ward) external view returns (uint256);
-}
-
-interface SafeLike {
-    function getOwners() external view returns (address[] memory);
-    function isOwner(address signer) external view returns (bool);
-    function getThreshold() external view returns (uint256);
 }
 
 contract ForkTest is Test {
@@ -56,7 +49,7 @@ contract ForkTest is Test {
                 address trancheTokenFactory = _get(i, ".contracts.trancheTokenFactory");
                 address vaultFactory = _get(i, ".contracts.vaultFactory");
                 address deployer = _get(i, ".config.deployer");
-                address admin = _get(i, ".config.admin");
+                address adminSafe = _get(i, ".config.adminSafe");
                 _loadFork(i);
 
                 // InvestmentManager
@@ -67,7 +60,7 @@ contract ForkTest is Test {
                 assertEq(Escrow(escrow).wards(investmentManager), 1);
                 assertEq(InvestmentManager(investmentManager).wards(root), 1);
                 assertEq(InvestmentManager(investmentManager).wards(deployer), 0);
-                assertEq(InvestmentManager(investmentManager).wards(admin), 0);
+                assertEq(InvestmentManager(investmentManager).wards(adminSafe), 0);
 
                 // PoolManager
                 assertEq(address(PoolManager(poolManager).gateway()), gateway);
@@ -78,7 +71,7 @@ contract ForkTest is Test {
                 assertEq(Escrow(escrow).wards(poolManager), 1);
                 assertEq(PoolManager(poolManager).wards(root), 1);
                 assertEq(PoolManager(poolManager).wards(deployer), 0);
-                assertEq(PoolManager(poolManager).wards(admin), 0);
+                assertEq(PoolManager(poolManager).wards(adminSafe), 0);
 
                 // Gateway
                 assertEq(address(Gateway(gateway).investmentManager()), investmentManager);
@@ -90,19 +83,19 @@ contract ForkTest is Test {
                 assertEq(Gateway(gateway).wards(root), 1);
                 assertEq(Root(root).wards(gateway), 1);
                 assertEq(Gateway(gateway).wards(deployer), 0);
-                assertEq(Gateway(gateway).wards(admin), 0);
+                assertEq(Gateway(gateway).wards(adminSafe), 0);
 
                 // Escrow
                 assertEq(Escrow(escrow).wards(root), 1);
                 assertEq(Escrow(escrow).wards(deployer), 0);
-                assertEq(Escrow(escrow).wards(admin), 0);
+                assertEq(Escrow(escrow).wards(adminSafe), 0);
 
                 // UserEscrow
 
                 // Router
                 assertEq(RouterLike(router).wards(root), 1);
                 assertEq(RouterLike(router).wards(deployer), 0);
-                assertEq(RouterLike(router).wards(admin), 0);
+                assertEq(RouterLike(router).wards(adminSafe), 0);
             }
         }
     }
@@ -116,20 +109,20 @@ contract ForkTest is Test {
                 address trancheTokenFactory = _get(i, ".contracts.trancheTokenFactory");
                 address vaultFactory = _get(i, ".contracts.vaultFactory");
                 address deployer = _get(i, ".config.deployer");
-                address admin = _get(i, ".config.admin");
+                address adminSafe = _get(i, ".config.adminSafe");
                 _loadFork(i);
 
                 // TrancheTokenFactory
                 assertEq(TrancheTokenFactory(trancheTokenFactory).wards(root), 1);
                 assertEq(TrancheTokenFactory(trancheTokenFactory).wards(deployer), 0);
-                assertEq(TrancheTokenFactory(trancheTokenFactory).wards(admin), 0);
+                assertEq(TrancheTokenFactory(trancheTokenFactory).wards(adminSafe), 0);
 
                 // ERC7540VaultFactory
                 assertEq(ERC7540VaultFactory(vaultFactory).root(), root);
                 assertEq(ERC7540VaultFactory(vaultFactory).wards(root), 1);
                 assertEq(ERC7540VaultFactory(vaultFactory).wards(poolManager), 1);
                 assertEq(ERC7540VaultFactory(vaultFactory).wards(deployer), 0);
-                assertEq(ERC7540VaultFactory(vaultFactory).wards(admin), 0);
+                assertEq(ERC7540VaultFactory(vaultFactory).wards(adminSafe), 0);
             }
         }
     }
@@ -139,39 +132,19 @@ contract ForkTest is Test {
             for (uint256 i = 0; i < deployments.length; i++) {
                 // Read deployment file
                 address root = _get(i, ".contracts.root");
-                address pauseAdmin = _get(i, ".contracts.pauseAdmin");
-                address delayedAdmin = _get(i, ".contracts.delayedAdmin");
+                address guardian = _get(i, ".contracts.guardian");
                 address deployer = _get(i, ".config.deployer");
-                address admin = _get(i, ".config.admin");
+                address adminSafe = _get(i, ".config.adminSafe");
                 _loadFork(i);
 
                 // Root
                 assertEq(Root(root).delay(), 48 hours);
                 assertEq(Root(root).paused(), false);
 
-                // DelayedAdmin
-                assertEq(address(DelayedAdmin(delayedAdmin).root()), root);
-                assertEq(DelayedAdmin(delayedAdmin).wards(admin), 1);
-                assertEq(Root(root).wards(delayedAdmin), 1);
-                assertEq(DelayedAdmin(delayedAdmin).wards(root), 0);
-                assertEq(DelayedAdmin(delayedAdmin).wards(deployer), 0);
-
-                // PauseAdmin
-                assertEq(address(PauseAdmin(pauseAdmin).root()), root);
-                assertEq(PauseAdmin(pauseAdmin).wards(delayedAdmin), 1);
-                assertEq(PauseAdmin(pauseAdmin).wards(admin), 0);
-                assertEq(Root(root).wards(pauseAdmin), 1);
-                assertEq(PauseAdmin(pauseAdmin).wards(root), 0);
-                assertEq(PauseAdmin(pauseAdmin).wards(deployer), 0);
-                assertEq(PauseAdmin(pauseAdmin).wards(admin), 0);
-
-                bool isTestnet = abi.decode(deployments[i].parseRaw(".isTestnet"), (bool));
-                if (!isTestnet) {
-                    address[] memory pausers = abi.decode(deployments[i].parseRaw(".config.pausers"), (address[]));
-                    for (uint256 j = 0; j < pausers.length; j++) {
-                        assertEq(PauseAdmin(pauseAdmin).pausers(pausers[j]), 1);
-                    }
-                }
+                // Guardian
+                assertEq(address(Guardian(guardian).root()), root);
+                assertEq(address(Guardian(guardian).safe()), adminSafe);
+                assertEq(Root(root).wards(guardian), 1);
             }
         }
     }
@@ -182,13 +155,13 @@ contract ForkTest is Test {
                 bool isTestnet = abi.decode(deployments[i].parseRaw(".isTestnet"), (bool));
                 if (!isTestnet) {
                     // Read deployment file
-                    address admin = _get(i, ".config.admin");
+                    address adminSafe = _get(i, ".config.adminSafe");
                     address[] memory adminSigners =
                         abi.decode(deployments[i].parseRaw(".config.adminSigners"), (address[]));
                     _loadFork(i);
 
                     // Check Safe signers
-                    SafeLike safe = SafeLike(admin);
+                    SafeLike safe = SafeLike(adminSafe);
                     address[] memory signers = safe.getOwners();
                     assertEq(signers.length, adminSigners.length);
                     for (uint256 j = 0; j < adminSigners.length; j++) {

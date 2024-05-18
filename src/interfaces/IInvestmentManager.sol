@@ -23,8 +23,6 @@ struct InvestmentState {
     bool pendingCancelDepositRequest;
     /// @dev Whether the redeemRequest was requested to be cancelled
     bool pendingCancelRedeemRequest;
-    ///@dev Flag whether this user has ever interacted with this vault
-    bool exists;
 }
 
 interface IInvestmentManager {

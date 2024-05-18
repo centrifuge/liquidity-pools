@@ -54,8 +54,7 @@ fail_on_revert = false
   "src/Root.sol" = ["Root"]
   "src/token/ERC20.sol" = ["ERC20"]
   "src/token/TrancheToken01.sol" = ["TrancheToken"]
-  "src/admins/DelayedAdmin.sol" = ["DelayedAdmin"]
-  "src/admins/PauseAdmin.sol" = ["PauseAdmin"]
+  "src/admin/Guardian.sol" = ["Guardian"]
 
 [doc]
   ignore = ["**/*.t.sol", "**/*.s.sol"]

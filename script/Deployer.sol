@@ -9,8 +9,8 @@ import {TrancheTokenFactory} from "src/factories/TrancheTokenFactory.sol";
 import {ERC7540VaultFactory} from "src/factories/ERC7540VaultFactory.sol";
 import {PoolManager} from "src/PoolManager.sol";
 import {Escrow} from "src/Escrow.sol";
-import {PauseAdmin} from "src/admins/PauseAdmin.sol";
-import {DelayedAdmin} from "src/admins/DelayedAdmin.sol";
+import {Guardian} from "src/admin/Guardian.sol";
+import {MockSafe} from "test/mocks/MockSafe.sol";
 import "forge-std/Script.sol";
 
 interface RouterLike {
@@ -25,16 +25,14 @@ interface AuthLike {
 contract Deployer is Script {
     uint256 internal constant delay = 48 hours;
 
-    address admin;
-    address[] pausers;
+    address adminSafe;
     address[] routers;
 
     Root public root;
     InvestmentManager public investmentManager;
     PoolManager public poolManager;
     Escrow public escrow;
-    PauseAdmin public pauseAdmin;
-    DelayedAdmin public delayedAdmin;
+    Guardian public guardian;
     Gateway public gateway;
     Aggregator public aggregator;
     address public vaultFactory;
@@ -62,9 +60,7 @@ contract Deployer is Script {
 
         gateway = new Gateway(address(root), address(investmentManager), address(poolManager));
         aggregator = new Aggregator(address(gateway));
-
-        pauseAdmin = new PauseAdmin(address(root));
-        delayedAdmin = new DelayedAdmin(address(root), address(pauseAdmin), address(aggregator));
+        guardian = new Guardian(adminSafe, address(root), address(aggregator));
     }
 
     function wire(address router) public {
@@ -75,14 +71,12 @@ contract Deployer is Script {
         gateway.file("aggregator", address(aggregator));
         gateway.rely(address(aggregator));
 
-        // Wire admins
-        pauseAdmin.rely(address(delayedAdmin));
-        root.rely(address(pauseAdmin));
-        root.rely(address(delayedAdmin));
-        root.rely(address(gateway));
-        aggregator.rely(address(delayedAdmin));
+        // Wire guardian
+        root.rely(address(guardian));
+        aggregator.rely(address(guardian));
 
         // Wire gateway
+        root.rely(address(gateway));
         investmentManager.file("poolManager", address(poolManager));
         poolManager.file("investmentManager", address(investmentManager));
         investmentManager.file("gateway", address(gateway));
@@ -99,14 +93,6 @@ contract Deployer is Script {
         AuthLike(address(escrow)).rely(address(poolManager));
     }
 
-    function giveAdminAccess() public {
-        delayedAdmin.rely(address(admin));
-
-        for (uint256 i = 0; i < pausers.length; i++) {
-            pauseAdmin.addPauser(pausers[i]);
-        }
-    }
-
     function removeDeployerAccess(address router, address deployer) public {
         AuthLike(router).deny(deployer);
         AuthLike(vaultFactory).deny(deployer);
@@ -117,7 +103,5 @@ contract Deployer is Script {
         escrow.deny(deployer);
         gateway.deny(deployer);
         aggregator.deny(deployer);
-        pauseAdmin.deny(deployer);
-        delayedAdmin.deny(deployer);
     }
 }
