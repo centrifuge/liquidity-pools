@@ -177,4 +177,5 @@ interface IERC20Permit {
 
 interface IERC20Callback {
     function onERC20Transfer(address from, address to, uint256 value) external returns (bytes4);
+    function onERC20AuthTransfer(address sender, address from, address to, uint256 value) external returns (bytes4);
 }

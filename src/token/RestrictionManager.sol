@@ -102,11 +102,4 @@ contract RestrictionManager is Auth, IRestrictionManager, IERC20Callback {
 
         emit UpdateMember(user, validUntil);
     }
-
-    // --- Misc ---
-    /// @inheritdoc IRestrictionManager
-    function afterTransfer(address, /* from */ address, /* to */ uint256 /* value */ ) public virtual auth {}
-
-    /// @inheritdoc IRestrictionManager
-    function afterMint(address, /* to */ uint256 /* value */ ) public virtual auth {}
 }
