@@ -116,6 +116,12 @@ contract ERC7540Vault is Auth, IERC7540 {
         return REQUEST_ID;
     }
 
+    function requestDeposit(uint256 amount, address receiver) external auth {
+        require(
+            manager.requestDeposit(address(this), amount, receiver, msg.sender), "ERC7540Vault/request-deposit-failed"
+        );
+    }
+
     /// @notice Uses EIP-2612 permit to set approval of asset, then transfers assets from msg.sender
     ///         into the Vault and submits a Request for asynchronous deposit/mint.
     function requestDepositWithPermit(

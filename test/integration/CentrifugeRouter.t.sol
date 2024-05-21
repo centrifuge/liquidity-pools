@@ -21,7 +21,7 @@ contract CentriufgeRoutertest is BaseTest {
         // );
 
         erc20.mint(self, amount);
-
+        root.relyContract(vault_, address(cfgRouter));
         vm.expectRevert(bytes("SafeTransferLib/safe-transfer-from-failed")); // fail: no allowance
         cfgRouter.requestDeposit(vault_, amount);
 
