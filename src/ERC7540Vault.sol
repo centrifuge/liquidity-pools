@@ -49,6 +49,7 @@ contract ERC7540Vault is Auth, IERC7540 {
     /// @dev    Requests for Centrifuge pool are non-transferable and all have ID = 0
     uint256 constant REQUEST_ID = 0;
 
+    /// @inheritdoc IERC7540
     mapping(address => mapping(address => bool)) public isOperator;
 
     // --- Events ---
@@ -80,10 +81,7 @@ contract ERC7540Vault is Auth, IERC7540 {
 
     // --- ERC-7540 methods ---
     /// @inheritdoc IERC7540Deposit
-    function requestDeposit(uint256 assets, address receiver, address owner)
-        public
-        returns (uint256)
-    {
+    function requestDeposit(uint256 assets, address receiver, address owner) public returns (uint256) {
         validateOwner(owner);
         require(IERC20(asset).balanceOf(owner) >= assets, "ERC7540Vault/insufficient-balance");
 
@@ -96,14 +94,9 @@ contract ERC7540Vault is Auth, IERC7540 {
 
     /// @notice Uses EIP-2612 permit to set approval of asset, then transfers assets from msg.sender
     ///         into the Vault and submits a Request for asynchronous deposit/mint.
-    function requestDepositWithPermit(
-        uint256 assets,
-        address receiver,
-        uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external {
+    function requestDepositWithPermit(uint256 assets, address receiver, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
+        external
+    {
         try IERC20Permit(asset).permit(msg.sender, address(this), assets, deadline, v, r, s) {} catch {}
         requestDeposit(assets, receiver, msg.sender);
     }
@@ -119,10 +112,7 @@ contract ERC7540Vault is Auth, IERC7540 {
     }
 
     /// @inheritdoc IERC7540Redeem
-    function requestRedeem(uint256 shares, address receiver, address owner)
-        public
-        returns (uint256)
-    {
+    function requestRedeem(uint256 shares, address receiver, address owner) public returns (uint256) {
         require(IERC20(share).balanceOf(owner) >= shares, "ERC7540Vault/insufficient-balance");
         require(manager.requestRedeem(address(this), shares, receiver, owner), "ERC7540Vault/request-redeem-failed");
 

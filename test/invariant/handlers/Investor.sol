@@ -76,7 +76,7 @@ contract InvestorHandler is BaseHandler {
         erc20.approve(address(vault), amount_);
 
         // TODO: we should also set up tests where currentInvestor != operator
-        vault.requestDeposit(amount_, currentInvestor, currentInvestor, "");
+        vault.requestDeposit(amount_, currentInvestor, currentInvestor);
 
         increaseVar(currentInvestor, "totalDepositRequested", amount);
     }
@@ -112,7 +112,7 @@ contract InvestorHandler is BaseHandler {
         );
         if (amount_ == 0) return;
 
-        vault.requestRedeem(amount_, currentInvestor, currentInvestor, "");
+        vault.requestRedeem(amount_, currentInvestor, currentInvestor);
 
         increaseVar(currentInvestor, "totalRedeemRequested", amount_);
     }
