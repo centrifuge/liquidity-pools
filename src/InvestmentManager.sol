@@ -9,7 +9,7 @@ import {MessagesLib} from "src/libraries/MessagesLib.sol";
 import {BytesLib} from "src/libraries/BytesLib.sol";
 import {IERC20, IERC20Metadata} from "src/interfaces/IERC20.sol";
 import {IPoolManager} from "src/interfaces/IPoolManager.sol";
-import {IInvestmentManager, InvestmentState} from "src/interfaces/IInvestmentManager.sol";
+import {IInvestmentManager, Vault, InvestmentState} from "src/interfaces/IInvestmentManager.sol";
 
 interface GatewayLike {
     function send(bytes memory message) external;
@@ -395,43 +395,43 @@ contract InvestmentManager is Auth, IInvestmentManager {
 
     // --- View functions ---
     /// @inheritdoc IInvestmentManager
-    function convertToShares(address vault, uint256 _assets) public view returns (uint256 shares) {
+    function convertToShares(Vault calldata vault, uint256 _assets) public view returns (uint256 shares) {
         VaultLike vault_ = VaultLike(vault);
         (uint128 latestPrice,) = poolManager.getTrancheTokenPrice(vault_.poolId(), vault_.trancheId(), vault_.asset());
         shares = uint256(_calculateShares(_assets.toUint128(), vault, latestPrice));
     }
 
     /// @inheritdoc IInvestmentManager
-    function convertToAssets(address vault, uint256 _shares) public view returns (uint256 assets) {
+    function convertToAssets(Vault calldata vault, uint256 _shares) public view returns (uint256 assets) {
         VaultLike vault_ = VaultLike(vault);
         (uint128 latestPrice,) = poolManager.getTrancheTokenPrice(vault_.poolId(), vault_.trancheId(), vault_.asset());
         assets = uint256(_calculateAssets(_shares.toUint128(), vault, latestPrice));
     }
 
     /// @inheritdoc IInvestmentManager
-    function maxDeposit(address vault, address user) public view returns (uint256) {
+    function maxDeposit(Vault calldata vault, address user) public view returns (uint256) {
         if (!_canTransfer(vault, address(escrow), user, 0)) return 0;
         return uint256(_maxDeposit(vault, user));
     }
 
-    function _maxDeposit(address vault, address user) internal view returns (uint128) {
+    function _maxDeposit(Vault calldata vault, address user) internal view returns (uint128) {
         InvestmentState memory state = investments[vault][user];
         return _calculateAssets(state.maxMint, vault, state.depositPrice);
     }
 
     /// @inheritdoc IInvestmentManager
-    function maxMint(address vault, address user) public view returns (uint256 shares) {
+    function maxMint(Vault calldata vault, address user) public view returns (uint256 shares) {
         if (!_canTransfer(vault, address(escrow), user, 0)) return 0;
         return uint256(investments[vault][user].maxMint);
     }
 
     /// @inheritdoc IInvestmentManager
-    function maxWithdraw(address vault, address user) public view returns (uint256 assets) {
+    function maxWithdraw(Vault calldata vault, address user) public view returns (uint256 assets) {
         return uint256(investments[vault][user].maxWithdraw);
     }
 
     /// @inheritdoc IInvestmentManager
-    function maxRedeem(address vault, address user) public view returns (uint256 shares) {
+    function maxRedeem(Vault calldata vault, address user) public view returns (uint256 shares) {
         InvestmentState memory state = investments[vault][user];
         return uint256(_calculateShares(state.maxWithdraw, vault, state.redeemPrice));
     }
@@ -474,26 +474,26 @@ contract InvestmentManager is Auth, IInvestmentManager {
 
     // --- Vault claim functions ---
     /// @inheritdoc IInvestmentManager
-    function deposit(address vault, uint256 assets, address receiver, address owner)
+    function deposit(Vault calldata vault, uint256 assets, address receiver, address owner)
         public
         auth
         returns (uint256 shares)
     {
-        InvestmentState storage state = investments[vault][owner];
-        uint128 shares_ = _calculateShares(assets.toUint128(), vault, state.depositPrice);
-        _processDeposit(state, shares_, vault, receiver);
+        InvestmentState storage state = investments[vault.addr][owner];
+        uint128 shares_ = _calculateShares(vault, assets.toUint128(), state.depositPrice);
+        _processDeposit(state, shares_, vault.addr, receiver);
         shares = uint256(shares_);
     }
 
     /// @inheritdoc IInvestmentManager
-    function mint(address vault, uint256 shares, address receiver, address owner)
+    function mint(Vault calldata vault, uint256 shares, address receiver, address owner)
         public
         auth
         returns (uint256 assets)
     {
-        InvestmentState storage state = investments[vault][owner];
-        _processDeposit(state, shares.toUint128(), vault, receiver);
-        assets = uint256(_calculateAssets(shares.toUint128(), vault, state.depositPrice));
+        InvestmentState storage state = investments[vault.addr][owner];
+        _processDeposit(state, shares.toUint128(), vault.addr, receiver);
+        assets = uint256(_calculateAssets(vault, shares.toUint128(), state.depositPrice));
     }
 
     function _processDeposit(InvestmentState storage state, uint128 shares, address vault, address receiver) internal {
@@ -507,26 +507,26 @@ contract InvestmentManager is Auth, IInvestmentManager {
     }
 
     /// @inheritdoc IInvestmentManager
-    function redeem(address vault, uint256 shares, address receiver, address owner)
+    function redeem(Vault calldata vault, uint256 shares, address receiver, address owner)
         public
         auth
         returns (uint256 assets)
     {
-        InvestmentState storage state = investments[vault][owner];
-        uint128 assets_ = _calculateAssets(shares.toUint128(), vault, state.redeemPrice);
-        _processRedeem(state, assets_, vault, receiver);
+        InvestmentState storage state = investments[vault.addr][owner];
+        uint128 assets_ = _calculateAssets(vault, shares.toUint128(), state.redeemPrice);
+        _processRedeem(state, assets_, vault.addr, receiver);
         assets = uint256(assets_);
     }
 
     /// @inheritdoc IInvestmentManager
-    function withdraw(address vault, uint256 assets, address receiver, address owner)
+    function withdraw(Vault calldata vault, uint256 assets, address receiver, address owner)
         public
         auth
         returns (uint256 shares)
     {
-        InvestmentState storage state = investments[vault][owner];
-        _processRedeem(state, assets.toUint128(), vault, receiver);
-        shares = uint256(_calculateShares(assets.toUint128(), vault, state.redeemPrice));
+        InvestmentState storage state = investments[vault.addr][owner];
+        _processRedeem(state, assets.toUint128(), vault.addr, receiver);
+        shares = uint256(_calculateShares(vault, assets.toUint128(), state.redeemPrice));
     }
 
     function _processRedeem(InvestmentState storage state, uint128 assets, address vault, address receiver) internal {
@@ -565,29 +565,25 @@ contract InvestmentManager is Auth, IInvestmentManager {
     }
 
     // --- Helpers ---
-    function _calculateShares(uint128 assets, address vault, uint256 price) internal view returns (uint128 shares) {
+    function _calculateShares(Vault calldata vault, uint128 assets, uint256 price) internal view returns (uint128 shares) {
         if (price == 0 || assets == 0) {
             shares = 0;
         } else {
-            (uint8 assetDecimals, uint8 shareDecimals) = _getPoolDecimals(vault);
-
             uint256 sharesInPriceDecimals =
-                _toPriceDecimals(assets, assetDecimals).mulDiv(10 ** PRICE_DECIMALS, price, MathLib.Rounding.Down);
+                _toPriceDecimals(assets, vault.assetDecimals).mulDiv(10 ** PRICE_DECIMALS, price, MathLib.Rounding.Down);
 
-            shares = _fromPriceDecimals(sharesInPriceDecimals, shareDecimals);
+            shares = _fromPriceDecimals(sharesInPriceDecimals, vault.shareDecimals);
         }
     }
 
-    function _calculateAssets(uint128 shares, address vault, uint256 price) internal view returns (uint128 assets) {
+    function _calculateAssets(Vault calldata vault, uint128 shares, uint256 price) internal view returns (uint128 assets) {
         if (price == 0 || shares == 0) {
             assets = 0;
         } else {
-            (uint8 assetDecimals, uint8 shareDecimals) = _getPoolDecimals(vault);
-
             uint256 assetsInPriceDecimals =
-                _toPriceDecimals(shares, shareDecimals).mulDiv(price, 10 ** PRICE_DECIMALS, MathLib.Rounding.Down);
+                _toPriceDecimals(shares, vault.shareDecimals).mulDiv(price, 10 ** PRICE_DECIMALS, MathLib.Rounding.Down);
 
-            assets = _fromPriceDecimals(assetsInPriceDecimals, assetDecimals);
+            assets = _fromPriceDecimals(assetsInPriceDecimals, vault.assetDecimals);
         }
     }
 

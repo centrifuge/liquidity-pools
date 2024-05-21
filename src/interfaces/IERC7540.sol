@@ -295,4 +295,13 @@ interface IERC7540 is IERC7540Deposit, IERC7540Redeem, IERC7540CancelDeposit, IE
      * @param approved The approval status.
      */
     function setOperator(address operator, bool approved) external returns (bool);
+
+    /**
+     * @dev Returns `true` if the `operator` is approved as an operator for an `owner`.
+     *
+     * @param owner The address of the owner.
+     * @param operator The address of the operator.
+     * @return status The approval status
+     */
+    function isOperator(address owner, address operator) external returns (bool status);
 }

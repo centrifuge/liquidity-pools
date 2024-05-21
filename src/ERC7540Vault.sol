@@ -3,7 +3,7 @@ pragma solidity 0.8.21;
 
 import {Auth} from "src/Auth.sol";
 import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
-import {IInvestmentManager} from "src/interfaces/IInvestmentManager.sol";
+import {IInvestmentManager, Vault} from "src/interfaces/IInvestmentManager.sol";
 import "src/interfaces/IERC7540.sol";
 import "src/interfaces/IERC7575.sol";
 import "src/interfaces/IERC20.sol";
@@ -34,6 +34,7 @@ contract ERC7540Vault is Auth, IERC7540 {
     ///         One vault for each supported investment asset.
     ///         Thus tranche shares can be linked to multiple vaults with different assets.
     address public immutable asset;
+    uint8 public immutable assetDecimals;
 
     /// @notice The restricted ERC-20 vault share (tranche token).
     ///         Has a ratio (token price) of underlying assets exchanged on deposit/mint/withdraw/redeem.
@@ -49,6 +50,7 @@ contract ERC7540Vault is Auth, IERC7540 {
     /// @dev    Requests for Centrifuge pool are non-transferable and all have ID = 0
     uint256 constant REQUEST_ID = 0;
 
+    /// @inheritdoc IERC7540
     mapping(address => mapping(address => bool)) public isOperator;
 
     // --- Events ---
@@ -58,6 +60,7 @@ contract ERC7540Vault is Auth, IERC7540 {
         poolId = poolId_;
         trancheId = trancheId_;
         asset = asset_;
+        assetDecimals = IERC20Metadata(asset).decimals();
         share = share_;
         shareDecimals = IERC20Metadata(share).decimals();
         escrow = escrow_;
@@ -239,25 +242,25 @@ contract ERC7540Vault is Auth, IERC7540 {
     /// @notice     The calculation is based on the token price from the most recent epoch retrieved from Centrifuge.
     ///             The actual conversion MAY change between order submission and execution.
     function convertToShares(uint256 assets) public view returns (uint256 shares) {
-        shares = manager.convertToShares(address(this), assets);
+        shares = manager.convertToShares(_vault(), assets);
     }
 
     /// @inheritdoc IERC7575
     /// @notice     The calculation is based on the token price from the most recent epoch retrieved from Centrifuge.
     ///             The actual conversion MAY change between order submission and execution.
     function convertToAssets(uint256 shares) public view returns (uint256 assets) {
-        assets = manager.convertToAssets(address(this), shares);
+        assets = manager.convertToAssets(_vault(), shares);
     }
 
     /// @inheritdoc IERC7575
     function maxDeposit(address owner) public view returns (uint256 maxAssets) {
-        maxAssets = manager.maxDeposit(address(this), owner);
+        maxAssets = manager.maxDeposit(_vault(), owner);
     }
 
     /// @inheritdoc IERC7540
     function deposit(uint256 assets, address receiver, address owner) public returns (uint256 shares) {
         validateOwner(owner);
-        shares = manager.deposit(address(this), assets, receiver, owner);
+        shares = manager.deposit(_vault(), assets, receiver, owner);
         emit Deposit(receiver, owner, assets, shares);
     }
 
@@ -268,13 +271,13 @@ contract ERC7540Vault is Auth, IERC7540 {
 
     /// @inheritdoc IERC7575
     function maxMint(address owner) public view returns (uint256 maxShares) {
-        maxShares = manager.maxMint(address(this), owner);
+        maxShares = manager.maxMint(_vault(), owner);
     }
 
     /// @inheritdoc IERC7540
     function mint(uint256 shares, address receiver, address owner) public returns (uint256 assets) {
         validateOwner(owner);
-        assets = manager.mint(address(this), shares, receiver, owner);
+        assets = manager.mint(_vault(), shares, receiver, owner);
         emit Deposit(receiver, owner, assets, shares);
     }
 
@@ -285,27 +288,27 @@ contract ERC7540Vault is Auth, IERC7540 {
 
     /// @inheritdoc IERC7575
     function maxWithdraw(address owner) public view returns (uint256 maxAssets) {
-        maxAssets = manager.maxWithdraw(address(this), owner);
+        maxAssets = manager.maxWithdraw(_vault(), owner);
     }
 
     /// @inheritdoc IERC7575
     /// @notice DOES NOT support owner != msg.sender since shares are already transferred on requestRedeem
     function withdraw(uint256 assets, address receiver, address owner) public returns (uint256 shares) {
         validateOwner(owner);
-        shares = manager.withdraw(address(this), assets, receiver, owner);
+        shares = manager.withdraw(_vault(), assets, receiver, owner);
         emit Withdraw(msg.sender, receiver, owner, assets, shares);
     }
 
     /// @inheritdoc IERC7575
     function maxRedeem(address owner) public view returns (uint256 maxShares) {
-        maxShares = manager.maxRedeem(address(this), owner);
+        maxShares = manager.maxRedeem(_vault(), owner);
     }
 
     /// @inheritdoc IERC7575
     /// @notice     DOES NOT support owner != msg.sender since shares are already transferred on requestRedeem
     function redeem(uint256 shares, address receiver, address owner) external returns (uint256 assets) {
         validateOwner(owner);
-        assets = manager.redeem(address(this), shares, receiver, owner);
+        assets = manager.redeem(_vault(), shares, receiver, owner);
         emit Withdraw(msg.sender, receiver, owner, assets, shares);
     }
 
@@ -358,5 +361,9 @@ contract ERC7540Vault is Auth, IERC7540 {
 
     function validateOwner(address owner) internal view returns (bool) {
         require(owner == msg.sender || isOperator[owner][msg.sender], "ERC7540Vault/invalid-owner");
+    }
+
+    function _vault() internal view returns (Vault memory) {
+        return Vault(address(this), address(asset), address(share), shareDecimals, assetDecimals, poolId, trancheId);
     }
 }
