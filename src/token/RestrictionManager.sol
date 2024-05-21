@@ -4,12 +4,18 @@ pragma solidity 0.8.21;
 import {Auth} from "src/Auth.sol";
 import {IERC20, IERC20Callback} from "src/interfaces/IERC20.sol";
 import {IRestrictionManager} from "src/interfaces/token/IRestrictionManager.sol";
+import {MessagesLib} from "src/libraries/MessagesLib.sol";
 
 interface RestrictionManagerLike {
     function updateMember(address user, uint64 validUntil) external;
     function restrictions(address user) external view returns (bool frozen, uint64 validUntil);
     function freeze(address user) external;
     function unfreeze(address user) external;
+}
+
+interface TrancheTokenLike is IERC20 {
+    function hookDataOf(address user) external view returns (uint128);
+    function setHookData(address user, bytes16 hookData) external returns (uint256);
 }
 
 /// @title  Restriction Manager
@@ -26,12 +32,10 @@ contract RestrictionManager is Auth, IRestrictionManager, IERC20Callback {
     uint8 public constant DESTINATION_IS_FROZEN_CODE = 2;
     uint8 public constant DESTINATION_NOT_A_MEMBER_RESTRICTION_CODE = 3;
 
-    IERC20 public immutable token;
+    TrancheTokenLike public immutable token;
 
-    mapping(address => Restrictions) public restrictions;
-
-    constructor(address token_) {
-        token = IERC20(token_);
+    constructor(address token_, address escrow_) {
+        token = TrancheTokenLike(token_);
 
         wards[msg.sender] = 1;
         emit Rely(msg.sender);

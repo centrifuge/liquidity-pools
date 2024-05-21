@@ -76,7 +76,7 @@ contract TrancheToken is ERC20, ITrancheToken, IERC7575Share {
         return balances[user].getLSBits(128);
     }
 
-    function _hookDataOf(address user) internal view returns (uint128) {
+    function hookDataOf(address user) public view returns (uint128) {
         return uint128(balances[user].getMSBits(128));
     }
 
@@ -88,7 +88,7 @@ contract TrancheToken is ERC20, ITrancheToken, IERC7575Share {
         success = super.transfer(to, value);
         require(
             hook == address(0)
-                || IERC20Callback(hook).onERC20Transfer(msg.sender, to, value, _hookDataOf(msg.sender), _hookDataOf(to))
+                || IERC20Callback(hook).onERC20Transfer(msg.sender, to, value, hookDataOf(msg.sender), hookDataOf(to))
                     == IERC20Callback.onERC20Transfer.selector,
             "TrancheToken/restrictions-failed"
         );
@@ -98,7 +98,7 @@ contract TrancheToken is ERC20, ITrancheToken, IERC7575Share {
         success = super.transferFrom(from, to, value);
         require(
             hook == address(0)
-                || IERC20Callback(hook).onERC20Transfer(from, to, value, _hookDataOf(from), _hookDataOf(to))
+                || IERC20Callback(hook).onERC20Transfer(from, to, value, hookDataOf(from), hookDataOf(to))
                     == IERC20Callback.onERC20Transfer.selector,
             "TrancheToken/restrictions-failed"
         );
@@ -108,7 +108,7 @@ contract TrancheToken is ERC20, ITrancheToken, IERC7575Share {
         super.mint(to, value);
         require(
             hook == address(0)
-                || IERC20Callback(hook).onERC20Transfer(address(0), to, value, 0, _hookDataOf(to))
+                || IERC20Callback(hook).onERC20Transfer(address(0), to, value, 0, hookDataOf(to))
                     == IERC20Callback.onERC20Transfer.selector,
             "TrancheToken/restrictions-failed"
         );
@@ -123,7 +123,7 @@ contract TrancheToken is ERC20, ITrancheToken, IERC7575Share {
         require(
             hook == address(0)
                 || IERC20Callback(hook).onERC20AuthTransfer(
-                    sender, from, to, value, _hookDataOf(sender), _hookDataOf(from), _hookDataOf(to)
+                    sender, from, to, value, hookDataOf(sender), hookDataOf(from), hookDataOf(to)
                 ) == IERC20Callback.onERC20Transfer.selector,
             "TrancheToken/restrictions-failed"
         );
