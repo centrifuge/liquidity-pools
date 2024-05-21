@@ -20,4 +20,14 @@ library BitmapLib {
     function getLSBits(uint256 bitmap, uint256 n) internal pure returns (uint256) {
         return bitmap & (2 ** n - 1);
     }
+
+    /// @notice Get n most significant bits from the bitmap
+    function getMSBits(uint256 bitmap, uint256 n) internal pure returns (uint256) {
+        return bitmap >> n;
+    }
+
+    /// @notice Concatenate uint128 values to create a uint256 value
+    function concat(uint128 left, uint128 right) internal pure returns (uint256) {
+        return uint256(uint128(left)) << 128 | uint128(right);
+    }
 }

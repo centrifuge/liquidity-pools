@@ -44,6 +44,17 @@ contract RestrictionManager is Auth, IRestrictionManager, IERC20Callback {
         return bytes4(keccak256("onERC20Transfer(address,address,uint256)"));
     }
 
+    function onERC20AuthTransfer(address sender, address from, address to, uint256 value)
+        public
+        virtual
+        auth
+        returns (bytes4)
+    {
+        uint8 restrictionCode = detectTransferRestriction(from, to, value);
+        require(restrictionCode == SUCCESS_CODE, messageForTransferRestriction(restrictionCode));
+        return bytes4(keccak256("onERC20AuthTransfer(address,address,address,uint256)"));
+    }
+
     // --- ERC1404 implementation ---
     /// @inheritdoc IRestrictionManager
     function detectTransferRestriction(address from, address to, uint256 /* value */ ) public view returns (uint8) {
@@ -80,26 +91,68 @@ contract RestrictionManager is Auth, IRestrictionManager, IERC20Callback {
         return SUCCESS_MESSAGE;
     }
 
-    // --- Handling freezes ---
+    // --- Incoming message handling ---
+    /// @inheritdoc IRestrictionManager
+    function updateRestriction(bytes memory update) external auth {
+        MessagesLib.RestrictionUpdate updateId = MessagesLib.restrictionUpdateType(update);
+
+        if (updateId == MessagesLib.RestrictionUpdate.UpdateMember) {
+            updateMember(update.toAddress(1), update.toUint64(33));
+        } else if (updateId == MessagesLib.RestrictionUpdate.Freeze) {
+            freeze(update.toAddress(1));
+        } else if (updateId == MessagesLib.RestrictionUpdate.Unfreeze) {
+            unfreeze(update.toAddress(1));
+        } else {
+            revert("RestrictionManager/invalid-update");
+        }
+    }
+
     /// @inheritdoc IRestrictionManager
     function freeze(address user) public auth {
-        require(user != address(0), "RestrictionManager/cannot-freeze-zero-address");
-        restrictions[user].frozen = true;
+        require(user != address(0), "TrancheToken01/cannot-freeze-zero-address");
+        require(user != address(escrow), "TrancheToken01/cannot-freeze-escrow");
+        _setBalance(user, balances[user].setBit(FREEZE_BIT, true));
         emit Freeze(user);
     }
 
     /// @inheritdoc IRestrictionManager
     function unfreeze(address user) public auth {
-        restrictions[user].frozen = false;
+        _setBalance(user, balances[user].setBit(FREEZE_BIT, false));
         emit Unfreeze(user);
+    }
+
+    /// @inheritdoc IRestrictionManager
+    function isFrozen(address user) public view returns (bool) {
+        return balances[user].getBit(FREEZE_BIT);
     }
 
     // --- Managing members ---
     /// @inheritdoc IRestrictionManager
     function updateMember(address user, uint64 validUntil) public auth {
-        require(block.timestamp <= validUntil, "RestrictionManager/invalid-valid-until");
-        restrictions[user].validUntil = validUntil;
+        require(block.timestamp <= validUntil, "TrancheToken01/invalid-valid-until");
+        require(user != address(escrow), "TrancheToken01/escrow-member-cannot-be-updated");
+        _updateMember(user, validUntil);
+    }
 
+    function _updateMember(address user, uint64 validUntil) internal {
+        restrictions[user].validUntil = validUntil;
+        _setBalance(user, balances[user].setBit(MEMBER_BIT, true));
         emit UpdateMember(user, validUntil);
+    }
+
+    /// @inheritdoc IRestrictionManager
+    function setInvalidMember(address user) public {
+        require(block.timestamp > restrictions[user].validUntil, "TrancheToken01/not-invalid-member");
+        _setBalance(user, balances[user].setBit(MEMBER_BIT, false));
+    }
+
+    /// @inheritdoc IRestrictionManager
+    function isMember(address user) public view returns (bool) {
+        return balances[user].getBit(MEMBER_BIT);
+    }
+
+    // --- Fail-safe ---
+    function authTransferFrom(address sender, address from, address to, uint256 value) public auth returns (bool) {
+        return _transferFrom(sender, from, to, value);
     }
 }

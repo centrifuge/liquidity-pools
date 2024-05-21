@@ -126,9 +126,8 @@ contract DepositTest is BaseTest {
         uint8 INVESTMENT_CURRENCY_DECIMALS = 6; // 6, like USDC
 
         ERC20 asset = _newErc20("Currency", "CR", INVESTMENT_CURRENCY_DECIMALS);
-        address vault_ = deployVault(
-            poolId, TRANCHE_TOKEN_DECIMALS, defaultRestrictionSet, "", "", trancheId, assetId, address(asset)
-        );
+        address vault_ =
+            deployVault(poolId, TRANCHE_TOKEN_DECIMALS, defaultHook, "", "", trancheId, assetId, address(asset));
         ERC7540Vault vault = ERC7540Vault(vault_);
         centrifugeChain.updateTrancheTokenPrice(
             poolId, trancheId, assetId, 1000000000000000000, uint64(block.timestamp)
@@ -438,9 +437,8 @@ contract DepositTest is BaseTest {
         uint8 INVESTMENT_CURRENCY_DECIMALS = 6; // 6, like USDC
 
         ERC20 asset = _newErc20("Currency", "CR", INVESTMENT_CURRENCY_DECIMALS);
-        address vault_ = deployVault(
-            poolId, TRANCHE_TOKEN_DECIMALS, defaultRestrictionSet, "", "", trancheId, assetId, address(asset)
-        );
+        address vault_ =
+            deployVault(poolId, TRANCHE_TOKEN_DECIMALS, defaultHook, "", "", trancheId, assetId, address(asset));
         ERC7540Vault vault = ERC7540Vault(vault_);
         centrifugeChain.updateTrancheTokenPrice(
             poolId, trancheId, assetId, 1000000000000000000, uint64(block.timestamp)
@@ -516,7 +514,7 @@ contract DepositTest is BaseTest {
         // uint8 INVESTMENT_CURRENCY_DECIMALS = 18; // 18, like USDC
 
         ERC20 asset = _newErc20("Currency", "CR", 18);
-        address vault_ = deployVault(poolId, 6, defaultRestrictionSet, "", "", trancheId, assetId, address(asset));
+        address vault_ = deployVault(poolId, 6, defaultHook, "", "", trancheId, assetId, address(asset));
         ERC7540Vault vault = ERC7540Vault(vault_);
         TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
         centrifugeChain.updateTrancheTokenPrice(
@@ -594,9 +592,8 @@ contract DepositTest is BaseTest {
         uint8 TRANCHE_TOKEN_DECIMALS = 18; // Like DAI
 
         ERC20 asset = _newErc20("Currency", "CR", INVESTMENT_CURRENCY_DECIMALS);
-        address vault_ = deployVault(
-            poolId, TRANCHE_TOKEN_DECIMALS, defaultRestrictionSet, "", "", trancheId, assetId, address(asset)
-        );
+        address vault_ =
+            deployVault(poolId, TRANCHE_TOKEN_DECIMALS, defaultHook, "", "", trancheId, assetId, address(asset));
         ERC7540Vault vault = ERC7540Vault(vault_);
 
         // price = (100*10**18) /  (99 * 10**18) = 101.010101 * 10**18
@@ -647,9 +644,8 @@ contract DepositTest is BaseTest {
         uint8 TRANCHE_TOKEN_DECIMALS = 6; // Like USDC
 
         ERC20 asset = _newErc20("Currency", "CR", INVESTMENT_CURRENCY_DECIMALS);
-        address vault_ = deployVault(
-            poolId, TRANCHE_TOKEN_DECIMALS, defaultRestrictionSet, "", "", trancheId, assetId, address(asset)
-        );
+        address vault_ =
+            deployVault(poolId, TRANCHE_TOKEN_DECIMALS, defaultHook, "", "", trancheId, assetId, address(asset));
         ERC7540Vault vault = ERC7540Vault(vault_);
 
         // price = (100*10**18) /  (99 * 10**18) = 101.010101 * 10**18

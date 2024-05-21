@@ -31,8 +31,8 @@ struct UndeployedTranche {
     /// @dev Metadata of the to be deployed erc20 token
     string tokenName;
     string tokenSymbol;
-    /// @dev Identifier of the restriction set that applies to this tranche token
-    uint8 restrictionSet;
+    /// @dev Address of the hook
+    address hook;
 }
 
 interface IPoolManager {
@@ -110,7 +110,7 @@ interface IPoolManager {
         string memory tokenName,
         string memory tokenSymbol,
         uint8 decimals,
-        uint8 restrictionSet
+        address hook
     ) external;
 
     /// @notice TODO
@@ -131,13 +131,7 @@ interface IPoolManager {
     ) external;
 
     /// @notice TODO
-    function updateMember(uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) external;
-
-    /// @notice TODO
-    function freeze(uint64 poolId, bytes16 trancheId, address user) external;
-
-    /// @notice TODO
-    function unfreeze(uint64 poolId, bytes16 trancheId, address user) external;
+    function updateRestriction(uint64 poolId, bytes16 trancheId, bytes memory update) external;
 
     /// @notice A global chain agnostic asset index is maintained on Centrifuge. This function maps
     ///         a asset from the Centrifuge index to its corresponding address on the evm chain.

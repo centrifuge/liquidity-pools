@@ -33,7 +33,7 @@ contract FactoryTest is Test {
             BaseTest testSetup1 = new BaseTest{salt: keccak256(abi.encode(vm.envString("DEPLOYMENT_SALT")))}();
             testSetup1.setUp();
             testSetup1.deployVault(
-                poolId, 18, testSetup1.defaultRestrictionSet(), "", "", trancheId, 1, address(testSetup1.erc20())
+                poolId, 18, testSetup1.defaultHook(), "", "", trancheId, 1, address(testSetup1.erc20())
             );
             address trancheToken1 =
                 PoolManagerLike(address(testSetup1.poolManager())).getTrancheToken(poolId, trancheId);
@@ -43,7 +43,7 @@ contract FactoryTest is Test {
             BaseTest testSetup2 = new BaseTest{salt: keccak256(abi.encode(vm.envString("DEPLOYMENT_SALT")))}();
             testSetup2.setUp();
             testSetup2.deployVault(
-                poolId, 18, testSetup2.defaultRestrictionSet(), "", "", trancheId, 1, address(testSetup2.erc20())
+                poolId, 18, testSetup2.defaultHook(), "", "", trancheId, 1, address(testSetup2.erc20())
             );
             address trancheToken2 =
                 PoolManagerLike(address(testSetup2.poolManager())).getTrancheToken(poolId, trancheId);

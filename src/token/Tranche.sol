@@ -31,7 +31,7 @@ interface IERC1404 {
 ///
 /// @dev    The user balance is limited to uint128. This is safe because the decimals are limited
 ///         to 18, thus the max balance is 2^128-1 / 10**18 = 3.40e20.
-/// 
+///
 ///         The most significant 128 bits of the uint256 balance value are used
 ///         to store hook data (e.g. restrictions for users).
 contract TrancheToken is ERC20, ITrancheToken, IERC7575Share {
@@ -44,11 +44,12 @@ contract TrancheToken is ERC20, ITrancheToken, IERC7575Share {
     /// @inheritdoc IERC7575Share
     mapping(address asset => address) public vault;
 
-    constructor(uint8 decimals_, address escrow_) ERC20(decimals_) {
+    // , address escrow_
+    constructor(uint8 decimals_) ERC20(decimals_) {
         require(decimals_ <= MAX_DECIMALS, "ERC20/too-many-decimals");
 
-        escrow = escrow_;
-        _updateMember(escrow_, type(uint64).max);
+        // escrow = escrow_;
+        // _updateMember(escrow_, type(uint64).max);
     }
 
     modifier authOrHook() {
@@ -70,20 +71,25 @@ contract TrancheToken is ERC20, ITrancheToken, IERC7575Share {
         emit VaultUpdate(asset, vault_);
     }
 
-    // --- ERC20 overrides with restrictions ---
+    // --- ERC20 overrides ---
     function balanceOf(address user) public view override returns (uint256) {
         return balances[user].getLSBits(128);
     }
 
-    function setHookData(address user, bytes16 data) public override authOrHook returns (uint256) {
-        _setBalance(uint256(uint128(data)) << 128 | uint128(balances[user]));
+    function _hookDataOf(address user) internal view returns (uint128) {
+        return uint128(balances[user].getMSBits(128));
+    }
+
+    function setHookData(address user, bytes16 hookData) public authOrHook returns (uint256) {
+        _setBalance(user, hookData.concat(balances[user]));
     }
 
     function transfer(address to, uint256 value) public override returns (bool success) {
         success = super.transfer(to, value);
         require(
             hook == address(0)
-                || IERC20Callback(hook).onERC20Transfer(msg.sender, to, value) == IERC20Callback.onERC20Transfer.selector,
+                || IERC20Callback(hook).onERC20Transfer(msg.sender, to, value, _hookDataOf(msg.sender), _hookDataOf(to))
+                    == IERC20Callback.onERC20Transfer.selector,
             "TrancheToken/restrictions-failed"
         );
     }
@@ -92,7 +98,8 @@ contract TrancheToken is ERC20, ITrancheToken, IERC7575Share {
         success = super.transferFrom(from, to, value);
         require(
             hook == address(0)
-                || IERC20Callback(hook).onERC20Transfer(from, to, value) == IERC20Callback.onERC20Transfer.selector,
+                || IERC20Callback(hook).onERC20Transfer(from, to, value, _hookDataOf(from), _hookDataOf(to))
+                    == IERC20Callback.onERC20Transfer.selector,
             "TrancheToken/restrictions-failed"
         );
     }
@@ -101,7 +108,8 @@ contract TrancheToken is ERC20, ITrancheToken, IERC7575Share {
         super.mint(to, value);
         require(
             hook == address(0)
-                || IERC20Callback(hook).onERC20Transfer(address(0), to, value) == IERC20Callback.onERC20Transfer.selector,
+                || IERC20Callback(hook).onERC20Transfer(address(0), to, value, 0, _hookDataOf(to))
+                    == IERC20Callback.onERC20Transfer.selector,
             "TrancheToken/restrictions-failed"
         );
     }
@@ -114,8 +122,9 @@ contract TrancheToken is ERC20, ITrancheToken, IERC7575Share {
         success = _transferFrom(sender, from, to, value);
         require(
             hook == address(0)
-                || IERC20Callback(hook).onERC20AuthTransfer(sender, from, to, value)
-                    == IERC20Callback.onERC20Transfer.selector,
+                || IERC20Callback(hook).onERC20AuthTransfer(
+                    sender, from, to, value, _hookDataOf(sender), _hookDataOf(from), _hookDataOf(to)
+                ) == IERC20Callback.onERC20Transfer.selector,
             "TrancheToken/restrictions-failed"
         );
     }

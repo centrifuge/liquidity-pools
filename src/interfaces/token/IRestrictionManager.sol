@@ -31,11 +31,4 @@ interface IRestrictionManager {
     // --- Managing members ---
     /// @notice TODO
     function updateMember(address user, uint64 validUntil) external;
-
-    // --- Misc ---
-    /// @notice TODO
-    function afterTransfer(address, /* from */ address, /* to */ uint256 /* value */ ) external;
-
-    /// @notice TODO
-    function afterMint(address, /* to */ uint256 /* value */ ) external;
 }

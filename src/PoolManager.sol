@@ -171,10 +171,10 @@ contract PoolManager is Auth, IPoolManager {
                 message.slice(25, 128).bytes128ToString(),
                 message.toBytes32(153).toString(),
                 message.toUint8(185),
-                message.toUint8(186)
+                message.toAddress(186)
             );
-        } else if (call == MessagesLib.Call.UpdateMember) {
-            updateMember(message.toUint64(1), message.toBytes16(9), message.toAddress(25), message.toUint64(57));
+        } else if (call == MessagesLib.Call.UpdateRestriction) {
+            updateRestriction(message.toUint64(1), message.toBytes16(9), message.slice(25, message.length - 25));
         } else if (call == MessagesLib.Call.UpdateTrancheTokenPrice) {
             updateTrancheTokenPrice(
                 message.toUint64(1),
@@ -196,10 +196,6 @@ contract PoolManager is Auth, IPoolManager {
                 message.slice(25, 128).bytes128ToString(),
                 message.toBytes32(153).toString()
             );
-        } else if (call == MessagesLib.Call.Freeze) {
-            freeze(message.toUint64(1), message.toBytes16(9), message.toAddress(25));
-        } else if (call == MessagesLib.Call.Unfreeze) {
-            unfreeze(message.toUint64(1), message.toBytes16(9), message.toAddress(25));
         } else if (call == MessagesLib.Call.DisallowAsset) {
             disallowAsset(message.toUint64(1), message.toUint128(9));
         } else {
@@ -246,7 +242,7 @@ contract PoolManager is Auth, IPoolManager {
         string memory name,
         string memory symbol,
         uint8 decimals,
-        uint8 restrictionSet
+        address hook
     ) public auth {
         require(decimals >= MIN_DECIMALS, "PoolManager/too-few-tranche-token-decimals");
         require(decimals <= MAX_DECIMALS, "PoolManager/too-many-tranche-token-decimals");
@@ -261,7 +257,7 @@ contract PoolManager is Auth, IPoolManager {
         undeployedTranche.decimals = decimals;
         undeployedTranche.tokenName = name;
         undeployedTranche.tokenSymbol = symbol;
-        undeployedTranche.restrictionSet = restrictionSet;
+        undeployedTranche.hook = hook;
 
         emit AddTranche(poolId, trancheId);
     }
@@ -303,34 +299,10 @@ contract PoolManager is Auth, IPoolManager {
     }
 
     /// @inheritdoc IPoolManager
-    function updateMember(uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) public auth {
-        require(user != address(escrow), "PoolManager/escrow-member-cannot-be-updated");
-
+    function updateRestriction(uint64 poolId, bytes16 trancheId, bytes memory update) public auth {
         TrancheTokenLike trancheToken = TrancheTokenLike(getTrancheToken(poolId, trancheId));
         require(address(trancheToken) != address(0), "PoolManager/unknown-token");
-
-        RestrictionManagerLike restrictionManager = RestrictionManagerLike(address(trancheToken.restrictionManager()));
-        restrictionManager.updateMember(user, validUntil);
-    }
-
-    /// @inheritdoc IPoolManager
-    function freeze(uint64 poolId, bytes16 trancheId, address user) public auth {
-        require(user != address(escrow), "PoolManager/escrow-cannot-be-frozen");
-
-        TrancheTokenLike trancheToken = TrancheTokenLike(getTrancheToken(poolId, trancheId));
-        require(address(trancheToken) != address(0), "PoolManager/unknown-token");
-
-        RestrictionManagerLike restrictionManager = RestrictionManagerLike(address(trancheToken.restrictionManager()));
-        restrictionManager.freeze(user);
-    }
-
-    /// @inheritdoc IPoolManager
-    function unfreeze(uint64 poolId, bytes16 trancheId, address user) public auth {
-        TrancheTokenLike trancheToken = TrancheTokenLike(getTrancheToken(poolId, trancheId));
-        require(address(trancheToken) != address(0), "PoolManager/unknown-token");
-
-        RestrictionManagerLike restrictionManager = RestrictionManagerLike(address(trancheToken.restrictionManager()));
-        restrictionManager.unfreeze(user);
+        trancheToken.updateRestriction(update);
     }
 
     /// @inheritdoc IPoolManager
@@ -385,9 +357,6 @@ contract PoolManager is Auth, IPoolManager {
         trancheTokenWards[0] = address(investmentManager);
         trancheTokenWards[1] = address(this);
 
-        address[] memory restrictionManagerWards = new address[](1);
-        restrictionManagerWards[0] = address(this);
-
         address token = trancheTokenFactory.newTrancheToken(
             poolId,
             trancheId,
@@ -396,10 +365,7 @@ contract PoolManager is Auth, IPoolManager {
             undeployedTranche.decimals,
             trancheTokenWards
         );
-        address restrictionManager = restrictionManagerFactory.newRestrictionManager(
-            undeployedTranche.restrictionSet, token, restrictionManagerWards
-        );
-        TrancheTokenLike(token).file("restrictionManager", restrictionManager);
+        TrancheTokenLike(token).file("hook", undeployedTranche.hook);
 
         pools[poolId].tranches[trancheId].token = token;
 

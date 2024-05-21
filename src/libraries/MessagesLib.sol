@@ -23,8 +23,8 @@ library MessagesLib {
         AddTranche,
         /// 5 - Update the price of a Tranche Token
         UpdateTrancheTokenPrice,
-        /// 6 - Update the member list of a tranche token with a new member
-        UpdateMember,
+        /// 6 - Set a restriction
+        UpdateRestriction,
         /// 7 - A transfer of assets
         Transfer,
         /// 8 - A transfer of tranche tokens
@@ -62,9 +62,9 @@ library MessagesLib {
         /// 24 - Disallow an asset to be used as an asset for investing in pools
         DisallowAsset,
         /// 25 - Freeze tranche tokens
-        Freeze,
+        DEPRECATED_Freeze,
         /// 26 - Unfreeze tranche tokens
-        Unfreeze,
+        DEPRECATED_Unfreeze,
         /// 27 - Request redeem investor
         TriggerRedeemRequest,
         /// 28 - Proof
@@ -82,8 +82,19 @@ library MessagesLib {
         EVM
     }
 
+    enum RestrictionUpdate {
+        Invalid,
+        UpdateMember,
+        Freeze,
+        Unfreeze
+    }
+
     function messageType(bytes memory _msg) internal pure returns (Call _call) {
         _call = Call(_msg.toUint8(0));
+    }
+
+    function restrictionUpdateType(bytes memory _msg) internal pure returns (RestrictionUpdate _update) {
+        _update = RestrictionUpdate(_msg.toUint8(0));
     }
 
     /**

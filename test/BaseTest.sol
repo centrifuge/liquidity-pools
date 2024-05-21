@@ -44,7 +44,7 @@ contract BaseTest is Deployer, Test {
     // default values
     uint128 public defaultAssetId = 1;
     uint128 public defaultPrice = 1 * 10**18;
-    uint8 public defaultRestrictionSet = 2;
+    address public defaultHook = address(0); // TODO
     uint8 public defaultDecimals = 8;
 
     function setUp() public virtual {
@@ -115,7 +115,7 @@ contract BaseTest is Deployer, Test {
     function deployVault(
         uint64 poolId,
         uint8 trancheTokenDecimals,
-        uint8 restrictionSet,
+        address hook,
         string memory tokenName,
         string memory tokenSymbol,
         bytes16 trancheId,
@@ -128,7 +128,7 @@ contract BaseTest is Deployer, Test {
         
         if (poolManager.getTrancheToken(poolId, trancheId) == address(0)) {
             centrifugeChain.addPool(poolId);
-            centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, trancheTokenDecimals, restrictionSet);
+            centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, trancheTokenDecimals, hook);
 
             centrifugeChain.allowAsset(poolId, assetId);
             poolManager.deployTranche(poolId, trancheId);
@@ -150,12 +150,11 @@ contract BaseTest is Deployer, Test {
         bytes16 trancheId,
         uint128 asset
     ) public returns (address) {
-        uint8 restrictionSet = 2;
-        return deployVault(poolId, decimals, restrictionSet, tokenName, tokenSymbol, trancheId, asset, address(erc20));
+        return deployVault(poolId, decimals, defaultHook, tokenName, tokenSymbol, trancheId, asset, address(erc20));
     }
 
     function deploySimpleVault() public returns (address) {
-        return deployVault(5, 6, defaultRestrictionSet, "name", "symbol", bytes16(bytes("1")), defaultAssetId, address(erc20));
+        return deployVault(5, 6, defaultHook, "name", "symbol", bytes16(bytes("1")), defaultAssetId, address(erc20));
     }
 
     function deposit(address _vault, address _investor, uint256 amount) public {

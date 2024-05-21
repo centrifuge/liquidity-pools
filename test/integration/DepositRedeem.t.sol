@@ -11,9 +11,8 @@ contract DepositRedeem is BaseTest {
         uint8 INVESTMENT_CURRENCY_DECIMALS = 6; // 6, like USDC
 
         ERC20 asset = _newErc20("Currency", "CR", INVESTMENT_CURRENCY_DECIMALS);
-        address vault_ = deployVault(
-            poolId, TRANCHE_TOKEN_DECIMALS, defaultRestrictionSet, "", "", trancheId, assetId, address(asset)
-        );
+        address vault_ =
+            deployVault(poolId, TRANCHE_TOKEN_DECIMALS, defaultHook, "", "", trancheId, assetId, address(asset));
         ERC7540Vault vault = ERC7540Vault(vault_);
 
         centrifugeChain.updateTrancheTokenPrice(
