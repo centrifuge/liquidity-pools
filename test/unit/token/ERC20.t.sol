@@ -504,7 +504,7 @@ contract ERC20Test is Test {
 
         vm.expectEmit(true, true, true, true);
         emit Transfer(from, to, amount);
-        assertTrue(token.authTransferFrom(from, to, amount));
+        assertTrue(token.authTransferFrom(from, from, to, amount));
         assertEq(token.totalSupply(), amount);
 
         if (from == to) {

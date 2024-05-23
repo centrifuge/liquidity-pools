@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import "./../BaseTest.sol";
+import "test/BaseTest.sol";
 
 contract AssetShareConversionTest is BaseTest {
     function testAssetShareConversion(uint64 poolId, bytes16 trancheId, uint128 assetId) public {

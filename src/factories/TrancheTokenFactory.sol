@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {TrancheToken} from "../token/Tranche.sol";
-import {Auth} from "../Auth.sol";
+import {TrancheToken} from "src/token/Tranche.sol";
+import {Auth} from "src/Auth.sol";
 
 interface TrancheTokenFactoryLike {
     function newTrancheToken(

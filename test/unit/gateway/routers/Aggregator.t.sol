@@ -3,7 +3,7 @@ pragma solidity 0.8.21;
 
 import "test/BaseTest.sol";
 import {Aggregator} from "src/gateway/routers/Aggregator.sol";
-import {GatewayMock} from "test/mocks/GatewayMock.sol";
+import {MockGateway} from "test/mocks/MockGateway.sol";
 import {MockRouter} from "test/mocks/MockRouter.sol";
 import {CastLib} from "src/libraries/CastLib.sol";
 
@@ -11,7 +11,7 @@ contract AggregatorTest is Test {
     using CastLib for *;
 
     Aggregator aggregator;
-    GatewayMock gateway;
+    MockGateway gateway;
     MockRouter router1;
     MockRouter router2;
     MockRouter router3;
@@ -22,7 +22,7 @@ contract AggregatorTest is Test {
     address[] nineMockRouters;
 
     function setUp() public {
-        gateway = new GatewayMock();
+        gateway = new MockGateway();
         aggregator = new Aggregator(address(gateway));
 
         router1 = new MockRouter(address(aggregator));

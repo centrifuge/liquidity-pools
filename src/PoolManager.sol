@@ -4,12 +4,12 @@ pragma solidity 0.8.21;
 import {ERC7540VaultFactory} from "src/factories/ERC7540VaultFactory.sol";
 import {RestrictionManagerFactoryLike} from "src/factories/RestrictionManagerFactory.sol";
 import {TrancheTokenFactoryLike} from "src/factories/TrancheTokenFactory.sol";
-import {TrancheTokenLike} from "./token/Tranche.sol";
-import {RestrictionManagerLike} from "./token/RestrictionManager.sol";
-import {IERC20Metadata} from "./interfaces/IERC20.sol";
-import {Auth} from "./Auth.sol";
-import {SafeTransferLib} from "./libraries/SafeTransferLib.sol";
-import {MathLib} from "./libraries/MathLib.sol";
+import {TrancheTokenLike} from "src/token/Tranche.sol";
+import {RestrictionManagerLike} from "src/token/RestrictionManager.sol";
+import {IERC20Metadata} from "src/interfaces/IERC20.sol";
+import {Auth} from "src/Auth.sol";
+import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
+import {MathLib} from "src/libraries/MathLib.sol";
 import {MessagesLib} from "src/libraries/MessagesLib.sol";
 import {CastLib} from "src/libraries/CastLib.sol";
 import {Pool, Tranche, TrancheTokenPrice, UndeployedTranche, IPoolManager} from "src/interfaces/IPoolManager.sol";
@@ -440,8 +440,7 @@ contract PoolManager is Auth, IPoolManager {
 
         // Link vault to tranche token
         AuthLike(tranche.token).rely(vault);
-        TrancheTokenLike(tranche.token).file("trustedForwarder", vault, true);
-        TrancheTokenLike(tranche.token).file("vault", asset, vault);
+        TrancheTokenLike(tranche.token).updateVault(asset, vault);
 
         // Give vault infinite approval for tranche tokens
         // in the escrow to burn on executed redemptions
@@ -463,8 +462,7 @@ contract PoolManager is Auth, IPoolManager {
         vaultFactory.denyVault(vault, address(investmentManager));
 
         AuthLike(tranche.token).deny(vault);
-        TrancheTokenLike(tranche.token).file("trustedForwarder", vault, false);
-        TrancheTokenLike(tranche.token).file("vault", asset, address(0));
+        TrancheTokenLike(tranche.token).updateVault(asset, address(0));
 
         escrow.approve(address(tranche.token), vault, 0);
 
