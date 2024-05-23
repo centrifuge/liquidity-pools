@@ -377,6 +377,8 @@ contract ERC7540Vault is Auth, IERC7540 {
     }
 
     function validateOwner(address owner) internal view returns (bool) {
-        require(owner == msg.sender || isOperator[owner][msg.sender] || endorsed(msg.sender), "ERC7540Vault/invalid-owner");
+        require(
+            owner == msg.sender || isOperator[owner][msg.sender] || endorsed(msg.sender), "ERC7540Vault/invalid-owner"
+        );
     }
 }

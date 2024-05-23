@@ -401,7 +401,7 @@ contract PoolManager is Auth, IPoolManager {
         address restrictionManager = restrictionManagerFactory.newRestrictionManager(
             undeployedTranche.restrictionSet, token, restrictionManagerWards
         );
-        
+
         TrancheTokenLike(token).file("restrictionManager", restrictionManager);
         if (cfgRouter != address(0)) {
             RestrictionManagerLike(restrictionManager).updateMember(cfgRouter, type(uint64).max);

@@ -10,9 +10,8 @@ library MessagesLib {
     using BytesLib for bytes;
     using CastLib for *;
 
-    enum Call
-    /// 0 - An invalid message
-    {
+    enum Call {
+        /// 0 - An invalid message
         Invalid,
         /// 1 - Add an asset id -> EVM address mapping
         AddAsset,

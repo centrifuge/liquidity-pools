@@ -17,7 +17,7 @@ contract ERC7540VaultTest is BaseTest {
         uint128 assetId,
         address nonWard
     ) public {
-       vm.assume(nonWard != address(root) && nonWard != address(this) && nonWard != address(investmentManager));
+        vm.assume(nonWard != address(root) && nonWard != address(this) && nonWard != address(investmentManager));
         vm.assume(assetId > 0);
         vm.assume(bytes(tokenName).length <= 128);
         vm.assume(bytes(tokenSymbol).length <= 32);
