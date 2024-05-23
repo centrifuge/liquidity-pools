@@ -169,8 +169,8 @@ contract PoolManagerTest is BaseTest {
         centrifugeChain.addPool(poolId);
         centrifugeChain.addTranche(poolId, trancheId, "", "", defaultDecimals, restrictionSet);
         poolManager.deployTranche(poolId, trancheId);
-        // // assert restrictionSet info is passed correctly to the factory
-        // assertEq(restrictionManagerFactory.values_uint8("restrictionSet"), restrictionSet);
+        // assert restrictionSet info is passed correctly to the factory
+        assertEq(restrictionManagerFactory.values_uint8("restrictionSet"), restrictionSet);
     }
 
     function testAddAsset(uint128 assetId) public {

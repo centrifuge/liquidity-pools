@@ -17,11 +17,6 @@ if [[ -z "$ADMIN" ]]; then
 fi
 echo "Admin = $ADMIN"
 
-if [[ -z "$PAUSERS" ]]; then
-    error_exit "PAUSERS is not defined"
-fi
-echo "Pausers = $PAUSERS"
-
 case "$ROUTER" in
   Permissionless|Axelar|Forwarder)
     forge script script/${ROUTER}.s.sol:${ROUTER}Script --optimize --rpc-url $RPC_URL --private-key $PRIVATE_KEY --verify --broadcast --chain-id $CHAIN_ID --etherscan-api-key $ETHERSCAN_KEY $1
