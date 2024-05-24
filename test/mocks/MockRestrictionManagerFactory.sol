@@ -2,14 +2,17 @@
 pragma solidity 0.8.21;
 
 import "test/mocks/Mock.sol";
+import "src/token/RestrictionManager.sol";
 
 contract MockRestrictionManagerFactory is Mock {
     function newRestrictionManager(
         uint8 restrictionSet,
-        address, /* token */
+        address token,
         address[] calldata /* restrictionManagerWards */
     ) public returns (address) {
         values_uint8["restrictionSet"] = restrictionSet;
-        return address(0);
+        RestrictionManager restrictionManager = new RestrictionManager(token);
+        restrictionManager.rely(msg.sender);
+        return address(restrictionManager);
     }
 }
