@@ -4,12 +4,9 @@ pragma solidity 0.8.21;
 import "test/BaseTest.sol";
 import "src/interfaces/IERC7575.sol";
 import "src/interfaces/IERC7540.sol";
-<<<<<<< HEAD
 import {SucceedingRequestReceiver} from "test/mocks/SucceedingRequestReceiver.sol";
 import {FailingRequestReceiver} from "test/mocks/FailingRequestReceiver.sol";
 import {MockMulticall, Call} from "test/mocks/MockMulticall.sol";
-=======
->>>>>>> liquidity-pool-router
 
 contract CentrifugeRouterTest is BaseTest {
     function testCFGRouterDeposit(uint256 amount) public {
@@ -19,10 +16,7 @@ contract CentrifugeRouterTest is BaseTest {
 
         address vault_ = deploySimpleVault();
         ERC7540Vault vault = ERC7540Vault(vault_);
-<<<<<<< HEAD
         vm.label(vault_, "vault");
-=======
->>>>>>> liquidity-pool-router
 
         erc20.mint(self, amount);
 
