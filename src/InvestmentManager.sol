@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {Auth} from "./Auth.sol";
-import {CastLib} from "./libraries/CastLib.sol";
-import {MathLib} from "./libraries/MathLib.sol";
-import {SafeTransferLib} from "./libraries/SafeTransferLib.sol";
-import {MessagesLib} from "./libraries/MessagesLib.sol";
-import {BytesLib} from "./libraries/BytesLib.sol";
+import {Auth} from "src/Auth.sol";
+import {CastLib} from "src/libraries/CastLib.sol";
+import {MathLib} from "src/libraries/MathLib.sol";
+import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
+import {MessagesLib} from "src/libraries/MessagesLib.sol";
+import {BytesLib} from "src/libraries/BytesLib.sol";
 import {IERC20, IERC20Metadata} from "src/interfaces/IERC20.sol";
 import {IPoolManager} from "src/interfaces/IPoolManager.sol";
 import {IInvestmentManager, InvestmentState} from "src/interfaces/IInvestmentManager.sol";
@@ -33,7 +33,7 @@ interface VaultLike is IERC20 {
 }
 
 interface AuthTransferLike {
-    function authTransferFrom(address from, address to, uint256 amount) external returns (bool);
+    function authTransferFrom(address sender, address from, address to, uint256 amount) external returns (bool);
 }
 
 /// @title  Investment Manager
@@ -100,7 +100,6 @@ contract InvestmentManager is Auth, IInvestmentManager {
         require(state.pendingCancelDepositRequest != true, "InvestmentManager/cancellation-is-pending");
 
         state.pendingDepositRequest = state.pendingDepositRequest + _assets;
-        state.exists = true;
 
         gateway.send(
             abi.encodePacked(
@@ -143,7 +142,6 @@ contract InvestmentManager is Auth, IInvestmentManager {
         require(state.pendingCancelRedeemRequest != true, "InvestmentManager/cancellation-is-pending");
 
         state.pendingRedeemRequest = state.pendingRedeemRequest + shares;
-        state.exists = true;
 
         gateway.send(
             abi.encodePacked(
@@ -270,6 +268,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
         address vault = poolManager.getVault(poolId, trancheId, assetId);
 
         InvestmentState storage state = investments[vault][user];
+        require(state.pendingDepositRequest > 0, "InvestmentManager/no-pending-deposit-request");
         state.depositPrice = _calculatePrice(vault, _maxDeposit(vault, user) + assets, state.maxMint + shares);
         state.maxMint = state.maxMint + shares;
         state.pendingDepositRequest =
@@ -296,7 +295,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
         address vault = poolManager.getVault(poolId, trancheId, assetId);
 
         InvestmentState storage state = investments[vault][user];
-        require(state.exists == true, "InvestmentManager/non-existent-user");
+        require(state.pendingRedeemRequest > 0, "InvestmentManager/no-pending-redeem-request");
 
         // Calculate new weighted average redeem price and update order book values
         state.redeemPrice =
@@ -325,7 +324,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
         address vault = poolManager.getVault(poolId, trancheId, assetId);
 
         InvestmentState storage state = investments[vault][user];
-        require(state.exists == true, "InvestmentManager/non-existent-user");
+        require(state.pendingCancelDepositRequest == true, "InvestmentManager/no-pending-cancel-deposit-request");
 
         state.claimableCancelDepositRequest = state.claimableCancelDepositRequest + assets;
         state.pendingDepositRequest =
@@ -347,6 +346,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
     ) public auth {
         address vault = poolManager.getVault(poolId, trancheId, assetId);
         InvestmentState storage state = investments[vault][user];
+        require(state.pendingCancelRedeemRequest == true, "InvestmentManager/no-pending-cancel-redeem-request");
 
         state.claimableCancelRedeemRequest = state.claimableCancelRedeemRequest + shares;
         state.pendingRedeemRequest =
@@ -385,7 +385,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
         if (tokensToTransfer > 0) {
             require(
                 AuthTransferLike(address(VaultLike(vault).share())).authTransferFrom(
-                    user, address(escrow), tokensToTransfer
+                    user, user, address(escrow), tokensToTransfer
                 ),
                 "InvestmentManager/transfer-failed"
             );

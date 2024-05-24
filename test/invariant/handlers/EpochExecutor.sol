@@ -4,7 +4,7 @@ pragma solidity ^0.8.18;
 import {MockCentrifugeChain} from "test/mocks/MockCentrifugeChain.sol";
 import {MathLib} from "src/libraries/MathLib.sol";
 import {IERC7540} from "src/interfaces/IERC7540.sol";
-import {BaseHandler} from "./BaseHandler.sol";
+import {BaseHandler} from "test/invariant/handlers/BaseHandler.sol";
 
 interface ERC20Like {
     function mint(address user, uint256 amount) external;

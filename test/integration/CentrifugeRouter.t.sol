@@ -4,8 +4,6 @@ pragma solidity 0.8.21;
 import "test/BaseTest.sol";
 import "src/interfaces/IERC7575.sol";
 import "src/interfaces/IERC7540.sol";
-import {SucceedingRequestReceiver} from "test/mocks/SucceedingRequestReceiver.sol";
-import {FailingRequestReceiver} from "test/mocks/FailingRequestReceiver.sol";
 
 contract CentriufgeRoutertest is BaseTest {
     function testCFGRouterDeposit(uint256 amount) public {
@@ -15,10 +13,6 @@ contract CentriufgeRoutertest is BaseTest {
 
         address vault_ = deploySimpleVault();
         ERC7540Vault vault = ERC7540Vault(vault_);
-
-        // centrifugeChain.updateTrancheTokenPrice(
-        //         vault.poolId(), vault.trancheId(), defaultAssetId, price, uint64(block.timestamp)
-        // );
 
         erc20.mint(self, amount);
 

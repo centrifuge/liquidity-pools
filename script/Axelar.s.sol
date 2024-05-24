@@ -3,7 +3,7 @@ pragma solidity 0.8.21;
 
 import {AxelarRouter} from "src/gateway/routers/axelar/Router.sol";
 import {ERC20} from "src/token/ERC20.sol";
-import {Deployer, RouterLike} from "./Deployer.sol";
+import {Deployer, RouterLike} from "script/Deployer.sol";
 import {AxelarForwarder} from "src/gateway/routers/axelar/Forwarder.sol";
 
 // Script to deploy Liquidity Pools with an Axelar router.
@@ -13,14 +13,12 @@ contract AxelarScript is Deployer {
     function run() public {
         vm.startBroadcast();
 
-        admin = vm.envAddress("ADMIN");
-        pausers = vm.envAddress("PAUSERS", ",");
+        adminSafe = vm.envAddress("ADMIN");
 
         deploy(msg.sender);
         AxelarRouter router = new AxelarRouter(address(aggregator), address(vm.envAddress("AXELAR_GATEWAY")));
         wire(address(router));
 
-        giveAdminAccess();
         removeDeployerAccess(address(router), msg.sender);
 
         vm.stopBroadcast();

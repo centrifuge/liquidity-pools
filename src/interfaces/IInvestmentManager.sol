@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.21;
+pragma solidity >=0.5.0;
 
 /// @dev Vault orders and investment/redemption limits per user
 struct InvestmentState {
@@ -23,8 +23,6 @@ struct InvestmentState {
     bool pendingCancelDepositRequest;
     /// @dev Whether the redeemRequest was requested to be cancelled
     bool pendingCancelRedeemRequest;
-    ///@dev Flag whether this user has ever interacted with this vault
-    bool exists;
 }
 
 interface IInvestmentManager {

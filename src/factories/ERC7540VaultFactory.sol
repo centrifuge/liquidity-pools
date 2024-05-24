@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {ERC7540Vault} from "../ERC7540Vault.sol";
-import {Auth} from "../Auth.sol";
+import {ERC7540Vault} from "src/ERC7540Vault.sol";
+import {Auth} from "src/Auth.sol";
 
 interface ERC7540VaultFactoryLike {
     function newVault(

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {Deployer, RouterLike} from "../../script/Deployer.sol";
-import {LocalRouter} from "./LocalRouter.sol";
+import {Deployer, RouterLike} from "script/Deployer.sol";
+import {LocalRouter} from "test/integration/LocalRouter.sol";
 
 interface VaultLike {
     function requestDeposit(uint256 assets, address owner) external;
@@ -15,8 +15,7 @@ contract LocalRouterScript is Deployer {
     function run() public {
         // NOTE: 0x361c43cd5Fd700923Aae9dED678851a201839fc6 is the H160 of Keyring::Admin in the Centrifuge Chain
         // repository
-        admin = address(0x361c43cd5Fd700923Aae9dED678851a201839fc6);
-        pausers = [address(0x361c43cd5Fd700923Aae9dED678851a201839fc6)];
+        adminSafe = address(0x361c43cd5Fd700923Aae9dED678851a201839fc6);
 
         deploy(msg.sender);
         LocalRouter router = new LocalRouter();
@@ -25,7 +24,6 @@ contract LocalRouterScript is Deployer {
         router.file("sourceChain", "TestDomain");
         router.file("sourceAddress", "0x1111111111111111111111111111111111111111");
 
-        giveAdminAccess();
         removeDeployerAccess(address(router), msg.sender);
     }
 }
