@@ -51,6 +51,7 @@ contract ERC7540Vault is Auth, IERC7540 {
 
     /// @notice Routers that are allowed to claim withdrawels / redemptions on behalf of investors
     mapping(address => uint256) public endorsements;
+
     mapping(address => mapping(address => bool)) public isOperator;
 
     // --- Events ---
@@ -274,16 +275,16 @@ contract ERC7540Vault is Auth, IERC7540 {
         maxAssets = manager.maxDeposit(address(this), owner);
     }
 
-    /// @inheritdoc IERC7575
-    function deposit(uint256 assets, address receiver) external returns (uint256 shares) {
-        shares = deposit(assets, receiver, msg.sender);
-    }
-
     /// @inheritdoc IERC7540
     function deposit(uint256 assets, address receiver, address owner) public returns (uint256 shares) {
         validateOwner(owner);
         shares = manager.deposit(address(this), assets, receiver, owner);
         emit Deposit(receiver, owner, assets, shares);
+    }
+
+    /// @inheritdoc IERC7575
+    function deposit(uint256 assets, address receiver) external returns (uint256 shares) {
+        shares = deposit(assets, receiver, msg.sender);
     }
 
     /// @inheritdoc IERC7575
