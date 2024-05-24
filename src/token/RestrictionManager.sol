@@ -5,6 +5,7 @@ import {Auth} from "src/Auth.sol";
 import {IERC20, IERC20Callback} from "src/interfaces/IERC20.sol";
 import {IRestrictionManager} from "src/interfaces/token/IRestrictionManager.sol";
 import {MessagesLib} from "src/libraries/MessagesLib.sol";
+import {BitmapLib} from "src/libraries/BitmapLib.sol";
 
 interface RestrictionManagerLike {
     function updateMember(address user, uint64 validUntil) external;
@@ -21,21 +22,29 @@ interface TrancheTokenLike is IERC20 {
 /// @title  Restriction Manager
 /// @notice ERC1404 based contract that checks transfer restrictions.
 contract RestrictionManager is Auth, IRestrictionManager, IERC20Callback {
+    using BitmapLib for uint128;
+
     string internal constant SUCCESS_MESSAGE = "RestrictionManager/transfer-allowed";
     string internal constant SOURCE_IS_FROZEN_MESSAGE = "RestrictionManager/source-is-frozen";
     string internal constant DESTINATION_IS_FROZEN_MESSAGE = "RestrictionManager/destination-is-frozen";
     string internal constant DESTINATION_NOT_A_MEMBER_RESTRICTION_MESSAGE =
         "RestrictionManager/destination-not-a-member";
 
+    uint8 public constant FREEZE_BIT = 127;
+    uint8 public constant MEMBER_BIT = 126;
+
     uint8 public constant SUCCESS_CODE = 0;
     uint8 public constant SOURCE_IS_FROZEN_CODE = 1;
     uint8 public constant DESTINATION_IS_FROZEN_CODE = 2;
     uint8 public constant DESTINATION_NOT_A_MEMBER_RESTRICTION_CODE = 3;
 
+    address public immutable escrow;
     TrancheTokenLike public immutable token;
 
     constructor(address token_, address escrow_) {
         token = TrancheTokenLike(token_);
+        escrow = escrow_;
+        _updateMember(escrow_, type(uint64).max);
 
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
@@ -62,18 +71,20 @@ contract RestrictionManager is Auth, IRestrictionManager, IERC20Callback {
     // --- ERC1404 implementation ---
     /// @inheritdoc IRestrictionManager
     function detectTransferRestriction(address from, address to, uint256 /* value */ ) public view returns (uint8) {
-        if (restrictions[from].frozen == true) {
+        uint128 fromData = token.hookDataOf(from);
+
+        if (fromData.getBit(FREEZE_BIT) == true) {
             return SOURCE_IS_FROZEN_CODE;
         }
 
-        Restrictions memory toRestrictions = restrictions[to];
-        if (toRestrictions.frozen == true) {
+        uint128 toData = token.hookDataOf(to);
+        if (toData.getBit(FREEZE_BIT) == true) {
             return DESTINATION_IS_FROZEN_CODE;
         }
 
-        if (toRestrictions.validUntil < block.timestamp) {
-            return DESTINATION_NOT_A_MEMBER_RESTRICTION_CODE;
-        }
+        // if (toRestrictions.validUntil < block.timestamp) {
+        //     return DESTINATION_NOT_A_MEMBER_RESTRICTION_CODE;
+        // }
 
         return SUCCESS_CODE;
     }
@@ -115,19 +126,24 @@ contract RestrictionManager is Auth, IRestrictionManager, IERC20Callback {
     function freeze(address user) public auth {
         require(user != address(0), "TrancheToken01/cannot-freeze-zero-address");
         require(user != address(escrow), "TrancheToken01/cannot-freeze-escrow");
-        _setBalance(user, balances[user].setBit(FREEZE_BIT, true));
+
+        uint128 hookData = token.hookDataOf(user);
+        token.setHookData(hookData.setBit(FREEZE_BIT, true));
+
         emit Freeze(user);
     }
 
     /// @inheritdoc IRestrictionManager
     function unfreeze(address user) public auth {
-        _setBalance(user, balances[user].setBit(FREEZE_BIT, false));
+        uint128 hookData = token.hookDataOf(user);
+        token.setHookData(hookData.setBit(FREEZE_BIT, false));
+        
         emit Unfreeze(user);
     }
 
     /// @inheritdoc IRestrictionManager
     function isFrozen(address user) public view returns (bool) {
-        return balances[user].getBit(FREEZE_BIT);
+        return token.hookDataOf(user).getBit(FREEZE_BIT);
     }
 
     // --- Managing members ---
@@ -139,24 +155,13 @@ contract RestrictionManager is Auth, IRestrictionManager, IERC20Callback {
     }
 
     function _updateMember(address user, uint64 validUntil) internal {
-        restrictions[user].validUntil = validUntil;
-        _setBalance(user, balances[user].setBit(MEMBER_BIT, true));
+        // TODO
         emit UpdateMember(user, validUntil);
     }
 
     /// @inheritdoc IRestrictionManager
-    function setInvalidMember(address user) public {
-        require(block.timestamp > restrictions[user].validUntil, "TrancheToken01/not-invalid-member");
-        _setBalance(user, balances[user].setBit(MEMBER_BIT, false));
-    }
-
-    /// @inheritdoc IRestrictionManager
     function isMember(address user) public view returns (bool) {
-        return balances[user].getBit(MEMBER_BIT);
-    }
-
-    // --- Fail-safe ---
-    function authTransferFrom(address sender, address from, address to, uint256 value) public auth returns (bool) {
-        return _transferFrom(sender, from, to, value);
+        // TODO
+        return true;
     }
 }

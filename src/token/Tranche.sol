@@ -35,7 +35,7 @@ interface IERC1404 {
 ///         The most significant 128 bits of the uint256 balance value are used
 ///         to store hook data (e.g. restrictions for users).
 contract TrancheToken is ERC20, ITrancheToken, IERC7575Share {
-    using BitmapLib for uint256;
+    using BitmapLib for *;
 
     uint8 internal constant MAX_DECIMALS = 18;
 
@@ -47,9 +47,6 @@ contract TrancheToken is ERC20, ITrancheToken, IERC7575Share {
     // , address escrow_
     constructor(uint8 decimals_) ERC20(decimals_) {
         require(decimals_ <= MAX_DECIMALS, "ERC20/too-many-decimals");
-
-        // escrow = escrow_;
-        // _updateMember(escrow_, type(uint64).max);
     }
 
     modifier authOrHook() {
@@ -81,7 +78,7 @@ contract TrancheToken is ERC20, ITrancheToken, IERC7575Share {
     }
 
     function setHookData(address user, bytes16 hookData) public authOrHook returns (uint256) {
-        _setBalance(user, hookData.concat(balances[user]));
+        _setBalance(user, uint128(hookData).concat(uint128(balanceOf(user))));
     }
 
     function transfer(address to, uint256 value) public override returns (bool success) {
