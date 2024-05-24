@@ -77,10 +77,10 @@ contract Gateway is Auth, IGateway {
 
     // --- Incoming ---
     function handle(bytes calldata message) external auth pauseable {
-        _handle(message);
+        _handle(message, false);
     }
 
-    function _handle(bytes calldata message) internal {
+    function _handle(bytes calldata message, bool isBatched) internal {
         uint8 id = message.toUint8(0);
         address manager;
 
@@ -92,13 +92,14 @@ contract Gateway is Auth, IGateway {
         } else if (id >= 21 && id <= 22 || id == 31) {
             manager = address(root);
         } else if (id == 32) {
+            require(!isBatched, "Gateway/batch-not-allowed-within-batch");
             // Handle batch messages
             uint256 start = 1;
             while (start < message.length) {
                 // Each message in the batch is prefixed with
                 // the message length (uint16: 2 bytes)
                 uint16 length = message.toUint16(start);
-                _handle(message[start + 2:start + 2 + length]);
+                _handle(message[start + 2:start + 2 + length], true);
                 start += 2 + length;
             }
             return;
