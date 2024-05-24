@@ -2,7 +2,7 @@
 pragma solidity 0.8.21;
 
 import {Auth} from "src/Auth.sol";
-import {IERC20, IERC20Callback} from "src/interfaces/IERC20.sol";
+import {IERC20, IERC20Callback, HookData} from "src/interfaces/IERC20.sol";
 import {IRestrictionManager} from "src/interfaces/token/IRestrictionManager.sol";
 import {MessagesLib} from "src/libraries/MessagesLib.sol";
 import {BitmapLib} from "src/libraries/BitmapLib.sol";
@@ -51,34 +51,39 @@ contract RestrictionManager is Auth, IRestrictionManager, IERC20Callback {
     }
 
     // --- Callback from tranche token ---
-    function onERC20Transfer(address from, address to, uint256 value) public virtual auth returns (bytes4) {
-        uint8 restrictionCode = detectTransferRestriction(from, to, value);
-        require(restrictionCode == SUCCESS_CODE, messageForTransferRestriction(restrictionCode));
-        return bytes4(keccak256("onERC20Transfer(address,address,uint256)"));
-    }
-
-    function onERC20AuthTransfer(address sender, address from, address to, uint256 value)
+    function onERC20Transfer(address from, address to, uint256 value, HookData calldata hookData)
         public
         virtual
         auth
-        returns (bytes4)
+        returns (HookData calldata)
+    {
+        uint8 restrictionCode = detectTransferRestriction(from, to, value, hookData);
+        require(restrictionCode == SUCCESS_CODE, messageForTransferRestriction(restrictionCode));
+        return hookData;
+    }
+
+    function onERC20AuthTransfer(address sender, address from, address to, uint256 value, HookData calldata hookData)
+        public
+        virtual
+        auth
+        returns (HookData calldata)
     {
         uint8 restrictionCode = detectTransferRestriction(from, to, value);
         require(restrictionCode == SUCCESS_CODE, messageForTransferRestriction(restrictionCode));
-        return bytes4(keccak256("onERC20AuthTransfer(address,address,address,uint256)"));
+        return hookData;
     }
 
     // --- ERC1404 implementation ---
-    /// @inheritdoc IRestrictionManager
-    function detectTransferRestriction(address from, address to, uint256 /* value */ ) public view returns (uint8) {
-        uint128 fromData = token.hookDataOf(from);
-
-        if (fromData.getBit(FREEZE_BIT) == true) {
+    function detectTransferRestriction(address from, address to, uint256, /* value */ HookData calldata hookData)
+        public
+        view
+        returns (uint8)
+    {
+        if (hookData.from.getBit(FREEZE_BIT) == true) {
             return SOURCE_IS_FROZEN_CODE;
         }
 
-        uint128 toData = token.hookDataOf(to);
-        if (toData.getBit(FREEZE_BIT) == true) {
+        if (hookData.to.getBit(FREEZE_BIT) == true) {
             return DESTINATION_IS_FROZEN_CODE;
         }
 
@@ -137,7 +142,7 @@ contract RestrictionManager is Auth, IRestrictionManager, IERC20Callback {
     function unfreeze(address user) public auth {
         uint128 hookData = token.hookDataOf(user);
         token.setHookData(hookData.setBit(FREEZE_BIT, false));
-        
+
         emit Unfreeze(user);
     }
 

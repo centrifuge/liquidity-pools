@@ -2,7 +2,7 @@
 pragma solidity 0.8.21;
 
 import {ERC20} from "src/token/ERC20.sol";
-import {IERC20Metadata, IERC20Callback} from "src/interfaces/IERC20.sol";
+import {IERC20Metadata, IERC20Callback, HookData} from "src/interfaces/IERC20.sol";
 import {IERC7575Share, IERC165} from "src/interfaces/IERC7575.sol";
 import {ITrancheToken} from "src/interfaces/token/ITranche.sol";
 import {BitmapLib} from "src/libraries/BitmapLib.sol";
@@ -30,7 +30,7 @@ interface IERC1404 {
 ///         integrating an external hook optionally for ERC20 callbacks and ERC1404 checks.
 ///
 /// @dev    The user balance is limited to uint128. This is safe because the decimals are limited
-///         to 18, thus the max balance is 2^128-1 / 10**18 = 3.40e20.
+///         to 18, thus the max balance is 2^128-1 / 10**18 = 3.40 * 10**20.
 ///
 ///         The most significant 128 bits of the uint256 balance value are used
 ///         to store hook data (e.g. restrictions for users).
@@ -83,32 +83,24 @@ contract TrancheToken is ERC20, ITrancheToken, IERC7575Share {
 
     function transfer(address to, uint256 value) public override returns (bool success) {
         success = super.transfer(to, value);
-        require(
-            hook == address(0)
-                || IERC20Callback(hook).onERC20Transfer(msg.sender, to, value, hookDataOf(msg.sender), hookDataOf(to))
-                    == IERC20Callback.onERC20Transfer.selector,
-            "TrancheToken/restrictions-failed"
-        );
+        _onTransfer(msg.sender, to, value);
     }
 
     function transferFrom(address from, address to, uint256 value) public override returns (bool success) {
         success = super.transferFrom(from, to, value);
-        require(
-            hook == address(0)
-                || IERC20Callback(hook).onERC20Transfer(from, to, value, hookDataOf(from), hookDataOf(to))
-                    == IERC20Callback.onERC20Transfer.selector,
-            "TrancheToken/restrictions-failed"
-        );
+        _onTransfer(from, to, value);
     }
 
     function mint(address to, uint256 value) public override {
         super.mint(to, value);
-        require(
-            hook == address(0)
-                || IERC20Callback(hook).onERC20Transfer(address(0), to, value, 0, hookDataOf(to))
-                    == IERC20Callback.onERC20Transfer.selector,
-            "TrancheToken/restrictions-failed"
-        );
+        _onTransfer(address(0), to, value);
+    }
+
+    function _onTransfer(address from, address to, uint256 value) internal {
+        if (hook != address(0)) {
+            // TODO: store updated hookData
+            IERC20Callback(hook).onERC20Transfer(from, to, value, HookData(hookDataOffrom), hookDataOf(to));
+        }
     }
 
     function authTransferFrom(address sender, address from, address to, uint256 value)
@@ -117,13 +109,10 @@ contract TrancheToken is ERC20, ITrancheToken, IERC7575Share {
         returns (bool success)
     {
         success = _transferFrom(sender, from, to, value);
-        require(
-            hook == address(0)
-                || IERC20Callback(hook).onERC20AuthTransfer(
-                    sender, from, to, value, hookDataOf(sender), hookDataOf(from), hookDataOf(to)
-                ) == IERC20Callback.onERC20Transfer.selector,
-            "TrancheToken/restrictions-failed"
-        );
+        if (hook != address(0)) {
+            // TODO: store updated hookData
+            IERC20Callback(hook).onERC20AuthTransfer(sender, from, to, value, HookData(hookDataOffrom), hookDataOf(to));
+        }
     }
 
     // --- ERC1404 implementation ---

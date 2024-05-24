@@ -175,7 +175,16 @@ interface IERC20Permit {
     function DOMAIN_SEPARATOR() external view returns (bytes32);
 }
 
+struct HookData {
+    uint128 from;
+    uint128 to;
+}
+
 interface IERC20Callback {
-    function onERC20Transfer(address from, address to, uint256 value) external returns (bytes4);
-    function onERC20AuthTransfer(address sender, address from, address to, uint256 value) external returns (bytes4);
+    function onERC20Transfer(address from, address to, uint256 value, HookData calldata hookdata)
+        external
+        returns (HookData calldata);
+    function onERC20AuthTransfer(address sender, address from, address to, uint256 value, HookData calldata hookdata)
+        external
+        returns (HookData calldata);
 }
