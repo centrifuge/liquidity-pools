@@ -77,7 +77,7 @@ contract TrancheToken is ERC20, ITrancheToken, IERC7575Share {
         return uint128(balances[user].getMSBits(128));
     }
 
-    function setHookData(address user, bytes16 hookData) public authOrHook returns (uint256) {
+    function setHookData(address user, uint128 hookData) public authOrHook returns (uint256) {
         _setBalance(user, uint128(hookData).concat(uint128(balanceOf(user))));
     }
 
@@ -99,7 +99,7 @@ contract TrancheToken is ERC20, ITrancheToken, IERC7575Share {
     function _onTransfer(address from, address to, uint256 value) internal {
         if (hook != address(0)) {
             // TODO: store updated hookData
-            IERC20Callback(hook).onERC20Transfer(from, to, value, HookData(hookDataOffrom), hookDataOf(to));
+            IERC20Callback(hook).onERC20Transfer(from, to, value, HookData(hookDataOf(from), hookDataOf(to)));
         }
     }
 
@@ -111,7 +111,9 @@ contract TrancheToken is ERC20, ITrancheToken, IERC7575Share {
         success = _transferFrom(sender, from, to, value);
         if (hook != address(0)) {
             // TODO: store updated hookData
-            IERC20Callback(hook).onERC20AuthTransfer(sender, from, to, value, HookData(hookDataOffrom), hookDataOf(to));
+            IERC20Callback(hook).onERC20AuthTransfer(
+                sender, from, to, value, HookData(hookDataOf(from), hookDataOf(to))
+            );
         }
     }
 

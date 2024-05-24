@@ -61,8 +61,14 @@ contract MockCentrifugeChain is Test {
     }
 
     function updateMember(uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) public {
-        bytes memory _message =
-            abi.encodePacked(uint8(MessagesLib.Call.UpdateMember), poolId, trancheId, user.toBytes32(), validUntil);
+        bytes memory _message = abi.encodePacked(
+            uint8(MessagesLib.Call.UpdateRestriction),
+            poolId,
+            trancheId,
+            uint8(MessagesLib.RestrictionUpdate.UpdateMember),
+            user.toBytes32(),
+            validUntil
+        );
         _execute(_message);
     }
 
@@ -145,12 +151,24 @@ contract MockCentrifugeChain is Test {
     }
 
     function freeze(uint64 poolId, bytes16 trancheId, address user) public {
-        bytes memory _message = abi.encodePacked(uint8(MessagesLib.Call.Freeze), poolId, trancheId, user.toBytes32());
+        bytes memory _message = abi.encodePacked(
+            uint8(MessagesLib.Call.UpdateRestriction),
+            poolId,
+            trancheId,
+            uint8(MessagesLib.RestrictionUpdate.Freeze),
+            user.toBytes32()
+        );
         _execute(_message);
     }
 
     function unfreeze(uint64 poolId, bytes16 trancheId, address user) public {
-        bytes memory _message = abi.encodePacked(uint8(MessagesLib.Call.Unfreeze), poolId, trancheId, user.toBytes32());
+        bytes memory _message = abi.encodePacked(
+            uint8(MessagesLib.Call.UpdateRestriction),
+            poolId,
+            trancheId,
+            uint8(MessagesLib.RestrictionUpdate.Unfreeze),
+            user.toBytes32()
+        );
         _execute(_message);
     }
 

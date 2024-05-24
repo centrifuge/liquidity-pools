@@ -33,6 +33,10 @@ interface AuthLike {
     function deny(address user) external;
 }
 
+interface HookLike {
+    function updateRestriction(bytes memory update) external;
+}
+
 /// @title  Pool Manager
 /// @notice This contract manages which pools & tranches exist,
 ///         as well as managing allowed pool currencies, and incoming and outgoing transfers.
@@ -302,7 +306,7 @@ contract PoolManager is Auth, IPoolManager {
     function updateRestriction(uint64 poolId, bytes16 trancheId, bytes memory update) public auth {
         TrancheTokenLike trancheToken = TrancheTokenLike(getTrancheToken(poolId, trancheId));
         require(address(trancheToken) != address(0), "PoolManager/unknown-token");
-        trancheToken.updateRestriction(update);
+        HookLike(trancheToken.hook()).updateRestriction(update);
     }
 
     /// @inheritdoc IPoolManager

@@ -6,6 +6,7 @@ import {IERC20, IERC20Callback, HookData} from "src/interfaces/IERC20.sol";
 import {IRestrictionManager} from "src/interfaces/token/IRestrictionManager.sol";
 import {MessagesLib} from "src/libraries/MessagesLib.sol";
 import {BitmapLib} from "src/libraries/BitmapLib.sol";
+import {BytesLib} from "src/libraries/BytesLib.sol";
 
 interface RestrictionManagerLike {
     function updateMember(address user, uint64 validUntil) external;
@@ -16,13 +17,14 @@ interface RestrictionManagerLike {
 
 interface TrancheTokenLike is IERC20 {
     function hookDataOf(address user) external view returns (uint128);
-    function setHookData(address user, bytes16 hookData) external returns (uint256);
+    function setHookData(address user, uint128 hookData) external returns (uint256);
 }
 
 /// @title  Restriction Manager
 /// @notice ERC1404 based contract that checks transfer restrictions.
 contract RestrictionManager is Auth, IRestrictionManager, IERC20Callback {
     using BitmapLib for uint128;
+    using BytesLib for bytes;
 
     string internal constant SUCCESS_MESSAGE = "RestrictionManager/transfer-allowed";
     string internal constant SOURCE_IS_FROZEN_MESSAGE = "RestrictionManager/source-is-frozen";
@@ -68,7 +70,7 @@ contract RestrictionManager is Auth, IRestrictionManager, IERC20Callback {
         auth
         returns (HookData calldata)
     {
-        uint8 restrictionCode = detectTransferRestriction(from, to, value);
+        uint8 restrictionCode = detectTransferRestriction(from, to, value, hookData);
         require(restrictionCode == SUCCESS_CODE, messageForTransferRestriction(restrictionCode));
         return hookData;
     }
@@ -133,7 +135,7 @@ contract RestrictionManager is Auth, IRestrictionManager, IERC20Callback {
         require(user != address(escrow), "TrancheToken01/cannot-freeze-escrow");
 
         uint128 hookData = token.hookDataOf(user);
-        token.setHookData(hookData.setBit(FREEZE_BIT, true));
+        token.setHookData(user, hookData.setBit(FREEZE_BIT, true));
 
         emit Freeze(user);
     }
@@ -141,7 +143,7 @@ contract RestrictionManager is Auth, IRestrictionManager, IERC20Callback {
     /// @inheritdoc IRestrictionManager
     function unfreeze(address user) public auth {
         uint128 hookData = token.hookDataOf(user);
-        token.setHookData(hookData.setBit(FREEZE_BIT, false));
+        token.setHookData(user, hookData.setBit(FREEZE_BIT, false));
 
         emit Unfreeze(user);
     }

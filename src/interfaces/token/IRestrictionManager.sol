@@ -16,7 +16,7 @@ interface IRestrictionManager {
 
     // --- ERC1404 implementation ---
     /// @notice TODO
-    function detectTransferRestriction(address from, address to, uint256 /* value */ ) external view returns (uint8);
+    // function detectTransferRestriction(address from, address to, uint256 /* value */ ) external view returns (uint8);
 
     /// @notice TODO
     function messageForTransferRestriction(uint8 restrictionCode) external pure returns (string memory);

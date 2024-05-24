@@ -10,13 +10,19 @@ import {Gateway} from "src/gateway/Gateway.sol";
 import {ERC7540VaultFactory} from "src/factories/ERC7540VaultFactory.sol";
 import {RestrictionManagerFactory} from "src/factories/RestrictionManagerFactory.sol";
 import {TrancheTokenFactory} from "src/factories/TrancheTokenFactory.sol";
-import {Guardian, SafeLike} from "src/admin/Guardian.sol";
+import {Guardian} from "src/admin/Guardian.sol";
 import "forge-std/Test.sol";
 import "forge-std/StdJson.sol";
 
 interface RouterLike {
     function send(bytes memory message) external;
     function wards(address ward) external view returns (uint256);
+}
+
+interface SafeLike {
+    function getOwners() external view returns (address[] memory);
+    function isOwner(address signer) external view returns (bool);
+    function getThreshold() external view returns (uint256);
 }
 
 contract ForkTest is Test {
