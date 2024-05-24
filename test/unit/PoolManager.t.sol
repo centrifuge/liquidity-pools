@@ -103,8 +103,8 @@ contract PoolManagerTest is BaseTest {
 
         TrancheToken trancheToken = TrancheToken(poolManager.getTrancheToken(poolId, trancheId));
 
-        // assertEq(tokenName, trancheToken.name());
-        // assertEq(tokenSymbol, trancheToken.symbol());
+        assertEq(tokenName, trancheToken.name());
+        assertEq(tokenSymbol, trancheToken.symbol());
         assertEq(decimals, trancheToken.decimals());
 
         vm.expectRevert(bytes("PoolManager/tranche-already-deployed"));
@@ -130,8 +130,8 @@ contract PoolManagerTest is BaseTest {
             centrifugeChain.addTranche(poolId, trancheIds[i], tokenName, tokenSymbol, decimals, restrictionSet);
             poolManager.deployTranche(poolId, trancheIds[i]);
             TrancheToken trancheToken = TrancheToken(poolManager.getTrancheToken(poolId, trancheIds[i]));
-            // assertEq(tokenName, trancheToken.name());
-            // assertEq(tokenSymbol, trancheToken.symbol());
+            assertEq(tokenName, trancheToken.name());
+            assertEq(tokenSymbol, trancheToken.symbol());
             assertEq(decimals, trancheToken.decimals());
         }
     }
@@ -159,8 +159,8 @@ contract PoolManagerTest is BaseTest {
         TrancheToken trancheToken = TrancheToken(trancheToken_);
         assertEq(trancheToken.wards(address(root)), 1);
         assertEq(trancheToken.wards(address(investmentManager)), 1);
-        // assertEq(tokenName, trancheToken.name());
-        // assertEq(tokenSymbol, trancheToken.symbol());
+        assertEq(tokenName, trancheToken.name());
+        assertEq(tokenSymbol, trancheToken.symbol());
     }
 
     function testRestrictionSetIntegration(uint64 poolId, bytes16 trancheId, uint8 restrictionSet) public {
