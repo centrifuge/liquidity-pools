@@ -16,6 +16,7 @@ import {Gateway} from "src/gateway/Gateway.sol";
 import {RestrictionManagerLike, RestrictionManager} from "src/token/RestrictionManager.sol";
 import {MessagesLib} from "src/libraries/MessagesLib.sol";
 import {Deployer} from "script/Deployer.sol";
+import {MockSafe} from "test/mocks/MockSafe.sol";
 import "src/interfaces/IERC20.sol";
 
 // mocks
@@ -49,8 +50,10 @@ contract BaseTest is Deployer, Test {
     function setUp() public virtual {
         vm.chainId(1);
 
-        // make yourself admin
-        admin = self;
+        // make yourself owner of the adminSafe
+        address[] memory pausers = new address[](1);
+        pausers[0] = self;
+        adminSafe = address(new MockSafe(pausers, 1));
 
         // deploy core contracts
         deploy(address(this));
@@ -67,10 +70,6 @@ contract BaseTest is Deployer, Test {
         // wire contracts
         wire(address(router1));
         aggregator.file("routers", testRouters);
-
-        // give admin access
-        giveAdminAccess();
-
         // remove deployer access
         // removeDeployerAccess(address(router)); // need auth permissions in tests
 
@@ -89,8 +88,7 @@ contract BaseTest is Deployer, Test {
         vm.label(address(erc20), "ERC20");
         vm.label(address(centrifugeChain), "CentrifugeChain");
         vm.label(address(escrow), "Escrow");
-        vm.label(address(pauseAdmin), "PauseAdmin");
-        vm.label(address(delayedAdmin), "DelayedAdmin");
+        vm.label(address(guardian), "Guardian");
         vm.label(address(poolManager.restrictionManagerFactory()), "RestrictionManagerFactory");
         vm.label(address(poolManager.trancheTokenFactory()), "TrancheTokenFactory");
         vm.label(address(poolManager.vaultFactory()), "ERC7540VaultFactory");
@@ -107,8 +105,7 @@ contract BaseTest is Deployer, Test {
         excludeContract(address(router2));
         excludeContract(address(router3));
         excludeContract(address(escrow));
-        excludeContract(address(pauseAdmin));
-        excludeContract(address(delayedAdmin));
+        excludeContract(address(guardian));
         excludeContract(address(poolManager.restrictionManagerFactory()));
         excludeContract(address(poolManager.trancheTokenFactory()));
         excludeContract(address(poolManager.vaultFactory()));

@@ -434,8 +434,7 @@ contract PoolManager is Auth, IPoolManager {
 
         // Link vault to tranche token
         AuthLike(tranche.token).rely(vault);
-        TrancheTokenLike(tranche.token).file("trustedForwarder", vault, true);
-        TrancheTokenLike(tranche.token).file("vault", asset, vault);
+        TrancheTokenLike(tranche.token).updateVault(asset, vault);
 
         // Give vault infinite approval for tranche tokens
         // in the escrow to burn on executed redemptions
@@ -457,8 +456,7 @@ contract PoolManager is Auth, IPoolManager {
         vaultFactory.denyVault(vault, address(investmentManager));
 
         AuthLike(tranche.token).deny(vault);
-        TrancheTokenLike(tranche.token).file("trustedForwarder", vault, false);
-        TrancheTokenLike(tranche.token).file("vault", asset, address(0));
+        TrancheTokenLike(tranche.token).updateVault(asset, address(0));
 
         escrow.approve(address(tranche.token), vault, 0);
 
