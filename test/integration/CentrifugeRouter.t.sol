@@ -4,7 +4,7 @@ pragma solidity 0.8.21;
 import "test/BaseTest.sol";
 import "src/interfaces/IERC7575.sol";
 import "src/interfaces/IERC7540.sol";
-import {SucceedingRequestReceiver} from "test/mocks/SucceedingRequestReceiver.sol";
+import {MockSucceedingRequestReceiver} from "test/mocks/MockSucceedingRequestReceiver.sol";
 import {FailingRequestReceiver} from "test/mocks/FailingRequestReceiver.sol";
 import {MockMulticall, Call} from "test/mocks/MockMulticall.sol";
 
