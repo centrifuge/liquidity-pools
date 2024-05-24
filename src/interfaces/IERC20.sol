@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.21;
+pragma solidity >=0.5.0;
 
 /// @title  IERC20
 /// @dev    Interface of the ERC20 standard as defined in the EIP.
@@ -173,4 +173,8 @@ interface IERC20Permit {
      */
     // solhint-disable-next-line func-name-mixedcase
     function DOMAIN_SEPARATOR() external view returns (bytes32);
+}
+
+interface IERC20Callback {
+    function onERC20Transfer(address from, address to, uint256 value) external returns (bytes4);
 }

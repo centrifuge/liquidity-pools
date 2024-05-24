@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import "./../BaseTest.sol";
+import "test/BaseTest.sol";
 import {CastLib} from "src/libraries/CastLib.sol";
 
 contract RedeemTest is BaseTest {
@@ -119,7 +119,9 @@ contract RedeemTest is BaseTest {
         assertTrue(vault.maxWithdraw(self) <= 1);
     }
 
-    function testRedeemWithApproval(uint256 redemption1, uint256 redemption2) public {
+    function testRequestRedeemWithApproval(uint256 redemption1, uint256 redemption2) public {
+        vm.assume(investor != address(this));
+
         redemption1 = uint128(bound(redemption1, 2, MAX_UINT128 / 4));
         redemption2 = uint128(bound(redemption2, 2, MAX_UINT128 / 4));
         uint256 amount = redemption1 + redemption2;
@@ -131,43 +133,17 @@ contract RedeemTest is BaseTest {
 
         deposit(vault_, investor, amount); // deposit funds first // deposit funds first
 
-        // investor can requestRedeem
-        vm.prank(investor);
+        vm.expectRevert(bytes("ERC20/insufficient-allowance"));
         vault.requestRedeem(amount, investor, investor, "");
 
-        uint128 tokenAmount = uint128(trancheToken.balanceOf(address(escrow)));
-        centrifugeChain.isFulfilledRedeemRequest(
-            vault.poolId(),
-            vault.trancheId(),
-            bytes32(bytes20(investor)),
-            defaultAssetId,
-            uint128(amount),
-            uint128(tokenAmount)
-        );
-
-        assertEq(vault.maxRedeem(investor), tokenAmount);
-        assertEq(vault.maxWithdraw(investor), uint128(amount));
-
-        // test for both scenarios redeem & withdraw
-
-        // fail: self cannot redeem for investor
-        vm.expectRevert(bytes("ERC7540Vault/not-the-owner"));
-        vault.redeem(redemption1, investor, investor);
-        vm.expectRevert(bytes("ERC7540Vault/not-the-owner"));
-        vault.withdraw(redemption1, investor, investor);
-
-        // fail: ward can not make requests on behalf of investor
-        root.relyContract(vault_, self);
-        vm.expectRevert(bytes("ERC7540Vault/not-the-owner"));
-        vault.redeem(redemption1, investor, investor);
-        vm.expectRevert(bytes("ERC7540Vault/not-the-owner"));
-        vault.withdraw(redemption1, investor, investor);
-
-        // investor redeems rest for himself
+        assertEq(trancheToken.allowance(investor, address(this)), 0);
         vm.prank(investor);
-        vault.redeem(redemption1, investor, investor);
-        vm.prank(investor);
-        vault.withdraw(redemption2, investor, investor);
+        trancheToken.approve(address(this), amount);
+        assertEq(trancheToken.allowance(investor, address(this)), amount);
+
+        // investor can requestRedeem
+        vault.requestRedeem(amount, investor, investor, "");
+        assertEq(trancheToken.allowance(investor, address(this)), 0);
     }
 
     function testCancelRedeemOrder(uint256 amount) public {
@@ -356,7 +332,7 @@ contract RedeemTest is BaseTest {
             poolId, trancheId, bytes32(bytes20(self)), _assetId, uint128(investmentAmount), shares, shares
         );
 
-        (, uint256 depositPrice,,,,,,,,,) = investmentManager.investments(address(vault), self);
+        (, uint256 depositPrice,,,,,,,,) = investmentManager.investments(address(vault), self);
         assertEq(depositPrice, 1000000000000000000);
 
         // assert deposit & mint values adjusted
@@ -381,7 +357,7 @@ contract RedeemTest is BaseTest {
             poolId, trancheId, bytes32(bytes20(self)), _assetId, assets, shares / 2
         );
 
-        (,,, uint256 redeemPrice,,,,,,,) = investmentManager.investments(address(vault), self);
+        (,,, uint256 redeemPrice,,,,,,) = investmentManager.investments(address(vault), self);
         assertEq(redeemPrice, 1500000000000000000);
 
         // trigger second executed collectRedeem at a price of 1.0
@@ -392,7 +368,7 @@ contract RedeemTest is BaseTest {
             poolId, trancheId, bytes32(bytes20(self)), _assetId, assets, shares / 2
         );
 
-        (,,, redeemPrice,,,,,,,) = investmentManager.investments(address(vault), self);
+        (,,, redeemPrice,,,,,,) = investmentManager.investments(address(vault), self);
         assertEq(redeemPrice, 1250000000000000000);
     }
 
@@ -417,7 +393,7 @@ contract RedeemTest is BaseTest {
 
         assertEq(vault.maxRedeem(self), firstTrancheTokenRedeem);
 
-        (,,, uint256 redeemPrice,,,,,,,) = investmentManager.investments(address(vault), self);
+        (,,, uint256 redeemPrice,,,,,,) = investmentManager.investments(address(vault), self);
         assertEq(redeemPrice, 1100000000000000000);
 
         // second trigger executed collectRedeem of the second 25 trancheTokens at a price of 1.3
@@ -426,7 +402,7 @@ contract RedeemTest is BaseTest {
             poolId, trancheId, bytes32(bytes20(self)), assetId, secondCurrencyPayout, secondTrancheTokenRedeem
         );
 
-        (,,, redeemPrice,,,,,,,) = investmentManager.investments(address(vault), self);
+        (,,, redeemPrice,,,,,,) = investmentManager.investments(address(vault), self);
         assertEq(redeemPrice, 1200000000000000000);
 
         assertApproxEqAbs(vault.maxWithdraw(self), firstCurrencyPayout + secondCurrencyPayout, 2);

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import "./../BaseTest.sol";
+import "test/BaseTest.sol";
 import {CastLib} from "src/libraries/CastLib.sol";
 
 contract DepositTest is BaseTest {
@@ -42,7 +42,7 @@ contract DepositTest is BaseTest {
         vault.requestDeposit(0, self, self, "");
 
         // will fail - owner != msg.sender not allowed
-        vm.expectRevert(bytes("ERC7540Vault/not-msg-sender"));
+        vm.expectRevert(bytes("ERC7540Vault/invalid-owner"));
         vault.requestDeposit(amount, self, nonMember, "");
 
         // will fail - investment asset not allowed
@@ -97,7 +97,7 @@ contract DepositTest is BaseTest {
         vm.assume(randomUser != self);
         // deposit 50% of the amount
         vm.startPrank(randomUser); // try to claim deposit on behalf of user and set the wrong user as receiver
-        vm.expectRevert(bytes("LiquidityPool/not-owner-or-endorsed"));
+        vm.expectRevert(bytes("ERC7540Vault/invalid-owner"));
         vault.deposit(amount / 2, randomUser, self);
         vm.stopPrank();
 
@@ -154,7 +154,7 @@ contract DepositTest is BaseTest {
             poolId, trancheId, bytes32(bytes20(self)), _assetId, assets, firstTrancheTokenPayout, assets
         );
 
-        (, uint256 depositPrice,,,,,,,,,) = investmentManager.investments(address(vault), self);
+        (, uint256 depositPrice,,,,,,,,) = investmentManager.investments(address(vault), self);
         assertEq(depositPrice, 1400000000000000000);
 
         // second trigger executed collectInvest of the second 50% at a price of 1.2
@@ -163,7 +163,7 @@ contract DepositTest is BaseTest {
             poolId, trancheId, bytes32(bytes20(self)), _assetId, assets, secondTrancheTokenPayout, assets
         );
 
-        (, depositPrice,,,,,,,,,) = investmentManager.investments(address(vault), self);
+        (, depositPrice,,,,,,,,) = investmentManager.investments(address(vault), self);
         assertEq(depositPrice, 1292307679384615384);
 
         // assert deposit & mint values adjusted
@@ -381,7 +381,7 @@ contract DepositTest is BaseTest {
         address router = makeAddr("router");
 
         vm.startPrank(router);
-        vm.expectRevert(bytes("LiquidityPool/not-owner-or-endorsed")); // fail without endorsement
+        vm.expectRevert(bytes("ERC7540Vault/invalid-owner")); // fail without endorsement
         vault.deposit(amount, receiver, address(this));
         vm.stopPrank();
 
@@ -533,7 +533,7 @@ contract DepositTest is BaseTest {
         assertEq(vault.maxMint(self), firstTrancheTokenPayout);
 
         // deposit price should be ~1.2*10**18
-        (, uint256 depositPrice,,,,,,,,,) = investmentManager.investments(address(vault), self);
+        (, uint256 depositPrice,,,,,,,,) = investmentManager.investments(address(vault), self);
         assertEq(depositPrice, 1200000000000000000);
 
         // trigger executed collectInvest of the second 50% at a price of 1.4
@@ -570,7 +570,7 @@ contract DepositTest is BaseTest {
         );
 
         // redeem price should now be ~1.5*10**18.
-        (,,, uint256 redeemPrice,,,,,,,) = investmentManager.investments(address(vault), self);
+        (,,, uint256 redeemPrice,,,,,,) = investmentManager.investments(address(vault), self);
         assertEq(redeemPrice, 1492615384615384615);
     }
 
@@ -610,7 +610,7 @@ contract DepositTest is BaseTest {
         assertEq(vault.maxMint(self), firstTrancheTokenPayout);
 
         // deposit price should be ~1.2*10**18
-        (, uint256 depositPrice,,,,,,,,,) = investmentManager.investments(address(vault), self);
+        (, uint256 depositPrice,,,,,,,,) = investmentManager.investments(address(vault), self);
         assertEq(depositPrice, 1200000019200000307);
 
         // trigger executed collectInvest of the second 50% at a price of 1.4
@@ -645,7 +645,7 @@ contract DepositTest is BaseTest {
         );
 
         // redeem price should now be ~1.5*10**18.
-        (,,, uint256 redeemPrice,,,,,,,) = investmentManager.investments(address(vault), self);
+        (,,, uint256 redeemPrice,,,,,,) = investmentManager.investments(address(vault), self);
         assertEq(redeemPrice, 1492615411252828877);
 
         // collect the asset
@@ -698,7 +698,7 @@ contract DepositTest is BaseTest {
         assertEq(vault.maxMint(self), shares);
 
         // lp price is set to the deposit price
-        (, uint256 depositPrice,,,,,,,,,) = investmentManager.investments(address(vault), self);
+        (, uint256 depositPrice,,,,,,,,) = investmentManager.investments(address(vault), self);
         assertEq(depositPrice, 1200000000000000000);
     }
 
@@ -751,7 +751,7 @@ contract DepositTest is BaseTest {
         assertEq(vault.maxMint(self), shares);
 
         // lp price is set to the deposit price
-        (, uint256 depositPrice,,,,,,,,,) = investmentManager.investments(address(vault), self);
+        (, uint256 depositPrice,,,,,,,,) = investmentManager.investments(address(vault), self);
         assertEq(depositPrice, 1200000000000000000);
     }
 
@@ -827,7 +827,7 @@ contract DepositTest is BaseTest {
             poolId, trancheId, bytes32(bytes20(self)), _assetId, assets, firstTrancheTokenPayout, assets
         );
 
-        (, uint256 depositPrice,,,,,,,,,) = investmentManager.investments(address(vault), self);
+        (, uint256 depositPrice,,,,,,,,) = investmentManager.investments(address(vault), self);
         assertEq(depositPrice, 1400000000000000000);
 
         // second trigger executed collectInvest of the second 50% at a price of 1.2
@@ -836,7 +836,7 @@ contract DepositTest is BaseTest {
             poolId, trancheId, bytes32(bytes20(self)), _assetId, assets, secondTrancheTokenPayout, assets
         );
 
-        (, depositPrice,,,,,,,,,) = investmentManager.investments(address(vault), self);
+        (, depositPrice,,,,,,,,) = investmentManager.investments(address(vault), self);
         assertEq(depositPrice, 1292307679384615384);
 
         // assert deposit & mint values adjusted
