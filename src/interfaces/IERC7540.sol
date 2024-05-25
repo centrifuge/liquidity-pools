@@ -181,6 +181,19 @@ interface IERC7540CancelRedeem {
         returns (uint256 shares);
 }
 
+interface IAuthorizeOperator {
+    function authorizeOperator(
+        address owner,
+        address operator,
+        bool approved,
+        uint256 validAfter,
+        uint256 validBefore,
+        bytes32 nonce,
+        bytes memory signature
+    ) external;
+    function DOMAIN_SEPARATOR() external view returns (bytes32);
+}
+
 /**
  * @title  IERC7540
  * @dev    Interface of the ERC7540 "Asynchronous Tokenized Vault Standard", as defined in

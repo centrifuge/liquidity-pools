@@ -220,10 +220,12 @@ contract ERC7540Vault is Auth, IERC7540 {
         );
     }
 
+    /// @inheritdoc IAuthorizeOperator
     function DOMAIN_SEPARATOR() external view returns (bytes32) {
         return block.chainid == deploymentChainId ? _DOMAIN_SEPARATOR : _calculateDomainSeparator(block.chainid);
     }
 
+    /// @inheritdoc IAuthorizeOperator
     function authorizeOperator(
         address owner,
         address operator,
