@@ -103,7 +103,7 @@ contract Root is Auth, IRoot {
         } else if (call == MessagesLib.Call.RecoverTokens) {
             (address target, address token, address to, uint256 amount) =
                 (message.toAddress(1), message.toAddress(33), message.toAddress(65), message.toUint256(97));
-            RecoverLike(target).recoverTokens(token, to, amount);
+            recoverTokens(target, token, to, amount);
         } else {
             revert("Root/invalid-message");
         }
@@ -124,7 +124,7 @@ contract Root is Auth, IRoot {
 
     /// --- Token Recovery ---
     /// @inheritdoc IRoot
-    function recoverTokens(address target, address token, address to, uint256 amount) external auth {
+    function recoverTokens(address target, address token, address to, uint256 amount) public auth {
         RecoverLike(target).recoverTokens(token, to, amount);
         emit RecoverTokens(target, token, to, amount);
     }

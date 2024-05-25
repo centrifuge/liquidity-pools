@@ -107,9 +107,10 @@ contract RestrictionManager is Auth, IRestrictionManager, IERC20Callback {
             return DESTINATION_IS_FROZEN_CODE;
         }
 
-        // if (toRestrictions.validUntil < block.timestamp) {
-        //     return DESTINATION_NOT_A_MEMBER_RESTRICTION_CODE;
-        // }
+
+        if (hookData.to.getBit(MEMBER_BIT) == false) {
+            return DESTINATION_NOT_A_MEMBER_RESTRICTION_CODE;
+        }
 
         return SUCCESS_CODE;
     }
@@ -181,6 +182,9 @@ contract RestrictionManager is Auth, IRestrictionManager, IERC20Callback {
 
     function _updateMember(address user, uint64 validUntil) internal {
         // TODO
+        uint128 hookData = token.hookDataOf(user);
+        token.setHookData(user, hookData.setBit(MEMBER_BIT, true));
+        
         emit UpdateMember(user, validUntil);
     }
 

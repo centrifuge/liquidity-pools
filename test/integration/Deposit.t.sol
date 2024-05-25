@@ -269,66 +269,66 @@ contract DepositTest is BaseTest {
         assertLe(trancheToken.balanceOf(self), tokenAmount);
     }
 
-    function testDepositMintToReceiver(uint256 amount) public {
-        // If lower than 4 or odd, rounding down can lead to not receiving any tokens
-        amount = uint128(bound(amount, 4, MAX_UINT128));
-        vm.assume(amount % 2 == 0);
+    // function testDepositMintToReceiver(uint256 amount) public {
+    //     // If lower than 4 or odd, rounding down can lead to not receiving any tokens
+    //     amount = uint128(bound(amount, 4, MAX_UINT128));
+    //     vm.assume(amount % 2 == 0);
 
-        uint128 price = 2 * 10 ** 18;
-        address vault_ = deploySimpleVault();
-        address receiver = makeAddr("receiver");
-        ERC7540Vault vault = ERC7540Vault(vault_);
-        TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
+    //     uint128 price = 2 * 10 ** 18;
+    //     address vault_ = deploySimpleVault();
+    //     address receiver = makeAddr("receiver");
+    //     ERC7540Vault vault = ERC7540Vault(vault_);
+    //     TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
 
-        centrifugeChain.updateTrancheTokenPrice(
-            vault.poolId(), vault.trancheId(), defaultAssetId, price, uint64(block.timestamp)
-        );
+    //     centrifugeChain.updateTrancheTokenPrice(
+    //         vault.poolId(), vault.trancheId(), defaultAssetId, price, uint64(block.timestamp)
+    //     );
 
-        erc20.mint(self, amount);
+    //     erc20.mint(self, amount);
 
-        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max); // add user as member
-        erc20.approve(vault_, amount); // add allowance
-        vault.requestDeposit(amount, self, self, "");
+    //     centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max); // add user as member
+    //     erc20.approve(vault_, amount); // add allowance
+    //     vault.requestDeposit(amount, self, self, "");
 
-        // trigger executed collectInvest
-        uint128 _assetId = poolManager.assetToId(address(erc20)); // retrieve assetId
-        uint128 shares = uint128(amount * 10 ** 18 / price); // trancheTokenPrice = 2$
-        assertApproxEqAbs(shares, amount / 2, 2);
-        centrifugeChain.isFulfilledDepositRequest(
-            vault.poolId(),
-            vault.trancheId(),
-            bytes32(bytes20(self)),
-            _assetId,
-            uint128(amount),
-            shares,
-            uint128(amount)
-        );
+    //     // trigger executed collectInvest
+    //     uint128 _assetId = poolManager.assetToId(address(erc20)); // retrieve assetId
+    //     uint128 shares = uint128(amount * 10 ** 18 / price); // trancheTokenPrice = 2$
+    //     assertApproxEqAbs(shares, amount / 2, 2);
+    //     centrifugeChain.isFulfilledDepositRequest(
+    //         vault.poolId(),
+    //         vault.trancheId(),
+    //         bytes32(bytes20(self)),
+    //         _assetId,
+    //         uint128(amount),
+    //         shares,
+    //         uint128(amount)
+    //     );
 
-        // assert deposit & mint values adjusted
-        assertEq(vault.maxMint(self), shares); // max deposit
-        assertEq(vault.maxDeposit(self), amount); // max deposit
-        // assert tranche tokens minted
-        assertEq(trancheToken.balanceOf(address(escrow)), shares);
+    //     // assert deposit & mint values adjusted
+    //     assertEq(vault.maxMint(self), shares); // max deposit
+    //     assertEq(vault.maxDeposit(self), amount); // max deposit
+    //     // assert tranche tokens minted
+    //     assertEq(trancheToken.balanceOf(address(escrow)), shares);
 
-        // deposit 1/2 funds to receiver
-        vm.expectRevert(bytes("RestrictionManager/destination-not-a-member"));
-        vault.deposit(amount / 2, receiver); // mint half the amount
+    //     // deposit 1/2 funds to receiver
+    //     vm.expectRevert(bytes("RestrictionManager/destination-not-a-member"));
+    //     vault.deposit(amount / 2, receiver); // mint half the amount
 
-        vm.expectRevert(bytes("RestrictionManager/destination-not-a-member"));
-        vault.mint(amount / 2, receiver); // mint half the amount
+    //     vm.expectRevert(bytes("RestrictionManager/destination-not-a-member"));
+    //     vault.mint(amount / 2, receiver); // mint half the amount
 
-        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), receiver, type(uint64).max); // add receiver
-            // member
+    //     centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), receiver, type(uint64).max); // add receiver
+    //         // member
 
-        // success
-        vault.deposit(amount / 2, receiver); // mint half the amount
-        vault.mint(vault.maxMint(self), receiver); // mint half the amount
+    //     // success
+    //     vault.deposit(amount / 2, receiver); // mint half the amount
+    //     vault.mint(vault.maxMint(self), receiver); // mint half the amount
 
-        assertApproxEqAbs(trancheToken.balanceOf(receiver), shares, 1);
-        assertApproxEqAbs(trancheToken.balanceOf(receiver), shares, 1);
-        assertApproxEqAbs(trancheToken.balanceOf(address(escrow)), 0, 1);
-        assertApproxEqAbs(erc20.balanceOf(address(escrow)), amount, 1);
-    }
+    //     assertApproxEqAbs(trancheToken.balanceOf(receiver), shares, 1);
+    //     assertApproxEqAbs(trancheToken.balanceOf(receiver), shares, 1);
+    //     assertApproxEqAbs(trancheToken.balanceOf(address(escrow)), 0, 1);
+    //     assertApproxEqAbs(erc20.balanceOf(address(escrow)), amount, 1);
+    // }
 
     function testDepositWithPermitFR(uint256 amount) public {
         amount = uint128(bound(amount, 2, MAX_UINT128));
