@@ -21,6 +21,10 @@ interface IRestrictionManager {
     /// @notice TODO
     function messageForTransferRestriction(uint8 restrictionCode) external pure returns (string memory);
 
+    function updateRestriction(bytes memory update) external;
+    function isFrozen(address user) external view returns (bool);
+    function isMember(address user) external view returns (bool);
+
     // --- Handling freezes ---
     /// @notice TODO
     function freeze(address user) external;

@@ -113,7 +113,8 @@
 //         redeemWithdraw(poolId, trancheId, price, amount, vault);
 //     }
 
-//     function depositMint(uint64 poolId, bytes16 trancheId, uint128 price, uint256 amount, ERC7540Vault vault) public {
+//     function depositMint(uint64 poolId, bytes16 trancheId, uint128 price, uint256 amount, ERC7540Vault vault) public
+// {
 //         erc20.approve(address(vault), amount); // add allowance
 //         vault.requestDeposit(amount, self, self, "");
 

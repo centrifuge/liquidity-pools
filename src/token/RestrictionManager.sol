@@ -96,6 +96,24 @@ contract RestrictionManager is Auth, IRestrictionManager, IERC20Callback {
         return SUCCESS_CODE;
     }
 
+    function detectTransferRestriction(address from, address to, uint256) public view returns (uint8) {
+        HookData memory hookData = HookData(token.hookDataOf(from), token.hookDataOf(to));
+        // TODO: refactor
+        if (hookData.from.getBit(FREEZE_BIT) == true) {
+            return SOURCE_IS_FROZEN_CODE;
+        }
+
+        if (hookData.to.getBit(FREEZE_BIT) == true) {
+            return DESTINATION_IS_FROZEN_CODE;
+        }
+
+        // if (toRestrictions.validUntil < block.timestamp) {
+        //     return DESTINATION_NOT_A_MEMBER_RESTRICTION_CODE;
+        // }
+
+        return SUCCESS_CODE;
+    }
+
     /// @inheritdoc IRestrictionManager
     function messageForTransferRestriction(uint8 restrictionCode) public pure returns (string memory) {
         if (restrictionCode == SOURCE_IS_FROZEN_CODE) {

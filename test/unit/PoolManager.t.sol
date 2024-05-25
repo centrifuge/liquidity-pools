@@ -5,6 +5,10 @@ import "test/BaseTest.sol";
 import "test/mocks/MockRestrictionManagerFactory.sol";
 import {CastLib} from "src/libraries/CastLib.sol";
 
+interface HookLike {
+    function updateMember(address user, uint64 validUntil) external;
+}
+
 contract PoolManagerTest is BaseTest {
     using CastLib for *;
 
@@ -252,9 +256,8 @@ contract PoolManagerTest is BaseTest {
         assertEq(trancheToken.name(), tokenName);
         assertEq(trancheToken.symbol(), tokenSymbol);
         assertEq(trancheToken.decimals(), decimals);
-        (, uint64 actualValidUntil) = RestrictionManagerLike(address(trancheToken.restrictionManager())).restrictions(
-            address(investmentManager.escrow())
-        );
+        (, uint64 actualValidUntil) =
+            RestrictionManagerLike(address(trancheToken.hook())).restrictions(address(investmentManager.escrow()));
         assertTrue(actualValidUntil >= block.timestamp);
 
         assertTrue(trancheToken.wards(address(poolManager)) == 1);
@@ -419,7 +422,7 @@ contract PoolManagerTest is BaseTest {
         bytes16 trancheId = vault.trancheId();
         vm.expectRevert(bytes("Auth/not-authorized"));
         vm.prank(randomUser);
-        poolManager.updateMember(poolId, trancheId, randomUser, validUntil);
+        HookLike(trancheToken.hook()).updateMember(randomUser, validUntil);
 
         vm.expectRevert(bytes("PoolManager/unknown-token"));
         centrifugeChain.updateMember(100, bytes16(bytes("100")), randomUser, validUntil); // use random poolId &

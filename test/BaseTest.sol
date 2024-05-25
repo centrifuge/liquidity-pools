@@ -44,7 +44,7 @@ contract BaseTest is Deployer, Test {
     // default values
     uint128 public defaultAssetId = 1;
     uint128 public defaultPrice = 1 * 10**18;
-    address public defaultHook = address(0); // TODO
+    uint8 public defaultHook = 1; // TODO
     uint8 public defaultDecimals = 8;
 
     function setUp() public virtual {
@@ -115,7 +115,7 @@ contract BaseTest is Deployer, Test {
     function deployVault(
         uint64 poolId,
         uint8 trancheTokenDecimals,
-        address hook,
+        uint8 hook,
         string memory tokenName,
         string memory tokenSymbol,
         bytes16 trancheId,

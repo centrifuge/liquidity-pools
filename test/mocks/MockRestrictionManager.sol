@@ -5,13 +5,14 @@ import "test/mocks/Mock.sol";
 import "src/token/RestrictionManager.sol";
 
 contract MockRestrictionManager is RestrictionManager, Mock {
-    constructor(address token_) RestrictionManager(token_) {}
+    constructor(address token_, address escrow_) RestrictionManager(token_, escrow_) {}
 
     function onERC20Transfer(address from, address to, uint256 value, HookData calldata hookData)
         public
         override
-        returns (HookData calldata) {
-        uint8 restrictionCode = detectTransferRestriction(from, to, value);
+        returns (HookData calldata)
+    {
+        uint8 restrictionCode = detectTransferRestriction(from, to, value, hookData);
         require(restrictionCode == SUCCESS_CODE, messageForTransferRestriction(restrictionCode));
 
         values_address["onERC20Transfer_from"] = from;

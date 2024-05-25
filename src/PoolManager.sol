@@ -175,7 +175,7 @@ contract PoolManager is Auth, IPoolManager {
                 message.slice(25, 128).bytes128ToString(),
                 message.toBytes32(153).toString(),
                 message.toUint8(185),
-                message.toAddress(186)
+                message.toUint8(186)
             );
         } else if (call == MessagesLib.Call.UpdateRestriction) {
             updateRestriction(message.toUint64(1), message.toBytes16(9), message.slice(25, message.length - 25));
@@ -246,7 +246,7 @@ contract PoolManager is Auth, IPoolManager {
         string memory name,
         string memory symbol,
         uint8 decimals,
-        address hook
+        uint8 hook
     ) public auth {
         require(decimals >= MIN_DECIMALS, "PoolManager/too-few-tranche-token-decimals");
         require(decimals <= MAX_DECIMALS, "PoolManager/too-many-tranche-token-decimals");
@@ -361,6 +361,9 @@ contract PoolManager is Auth, IPoolManager {
         trancheTokenWards[0] = address(investmentManager);
         trancheTokenWards[1] = address(this);
 
+        address[] memory restrictionManagerWards = new address[](1);
+        restrictionManagerWards[0] = address(this);
+
         address token = trancheTokenFactory.newTrancheToken(
             poolId,
             trancheId,
@@ -369,7 +372,9 @@ contract PoolManager is Auth, IPoolManager {
             undeployedTranche.decimals,
             trancheTokenWards
         );
-        TrancheTokenLike(token).file("hook", undeployedTranche.hook);
+        address restrictionManager =
+            restrictionManagerFactory.newRestrictionManager(undeployedTranche.hook, token, restrictionManagerWards);
+        TrancheTokenLike(token).file("hook", restrictionManager);
 
         pools[poolId].tranches[trancheId].token = token;
 

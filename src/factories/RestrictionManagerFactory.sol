@@ -33,8 +33,6 @@ contract RestrictionManagerFactory is Auth {
     {
         RestrictionManager restrictionManager = new RestrictionManager(token, RootLike(root).escrow());
 
-        restrictionManager.updateMember(RootLike(root).escrow(), type(uint64).max);
-
         restrictionManager.rely(root);
         restrictionManager.rely(token);
         for (uint256 i = 0; i < restrictionManagerWards.length; i++) {
