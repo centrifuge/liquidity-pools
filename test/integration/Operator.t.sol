@@ -63,6 +63,70 @@ contract OperatorTest is BaseTest {
         vault.requestDeposit(amount, investor, investor);
     }
 
+    function testDepositAsAuthorizedOperator(uint256 amount) public {
+        // If lower than 4 or odd, rounding down can lead to not receiving any tokens
+        amount = uint128(bound(amount, 4, MAX_UINT128));
+        vm.assume(amount % 2 == 0);
+
+        uint128 price = 2 * 10 ** 18;
+        address vault_ = deploySimpleVault();
+        (address owner, uint256 ownerPk) = makeAddrAndKey("owner");
+        address operator = makeAddr("operator");
+        ERC7540Vault vault = ERC7540Vault(vault_);
+        TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
+
+        centrifugeChain.updateTrancheTokenPrice(
+            vault.poolId(), vault.trancheId(), defaultAssetId, price, uint64(block.timestamp)
+        );
+
+        erc20.mint(owner, amount);
+
+        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), owner, type(uint64).max);
+        vm.prank(owner);
+        erc20.approve(vault_, amount);
+
+        vm.prank(operator);
+        vm.expectRevert(bytes("ERC7540Vault/invalid-owner"));
+        vault.requestDeposit(amount, owner, owner);
+
+        uint256 validAfter = block.timestamp - 1;
+        uint256 validBefore = type(uint64).max;
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
+            ownerPk,
+            keccak256(
+                abi.encodePacked(
+                    "\x19\x01",
+                    vault.DOMAIN_SEPARATOR(),
+                    keccak256(
+                        abi.encode(
+                            vault.AUTHORIZE_OPERATOR_TYPEHASH(),
+                            owner,
+                            operator,
+                            true,
+                            validAfter,
+                            validBefore,
+                            bytes32("nonce")
+                        )
+                    )
+                )
+            )
+        );
+        bytes memory signature = abi.encodePacked(r, s, v);
+        delete r;
+        delete s;
+        delete v;
+
+        assertEq(vault.isOperator(owner, operator), false);
+        vm.prank(operator);
+        vault.authorizeOperator(owner, operator, true, validAfter, validBefore, bytes32("nonce"), signature);
+        assertEq(vault.isOperator(owner, operator), true);
+
+        vm.prank(operator);
+        vault.requestDeposit(amount, owner, owner);
+        assertEq(vault.pendingDepositRequest(0, owner), amount);
+        assertEq(vault.pendingDepositRequest(0, operator), 0);
+    }
+
     function testRedeemAsOperator(uint256 amount) public {
         // If lower than 4 or odd, rounding down can lead to not receiving any tokens
         amount = uint128(bound(amount, 4, MAX_UINT128 / 2));

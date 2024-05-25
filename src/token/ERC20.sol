@@ -1,12 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {IERC20, IERC20Metadata, IERC20Permit} from "src/interfaces/IERC20.sol";
 import {Auth} from "src/Auth.sol";
-
-interface IERC1271 {
-    function isValidSignature(bytes32, bytes memory) external view returns (bytes4);
-}
+import {SignatureLib} from "src/libraries/SignatureLib.sol";
+import {IERC20, IERC20Metadata, IERC20Permit} from "src/interfaces/IERC20.sol";
 
 /// @title  ERC20
 /// @notice Standard ERC-20 implementation, with mint/burn functionality and permit logic.
@@ -169,33 +166,6 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
     }
 
     // --- Approve by signature ---
-    function _isValidSignature(address signer, bytes32 digest, bytes memory signature)
-        internal
-        view
-        returns (bool valid)
-    {
-        if (signature.length == 65) {
-            bytes32 r;
-            bytes32 s;
-            uint8 v;
-            assembly {
-                r := mload(add(signature, 0x20))
-                s := mload(add(signature, 0x40))
-                v := byte(0, mload(add(signature, 0x60)))
-            }
-            if (signer == ecrecover(digest, v, r, s)) {
-                return true;
-            }
-        }
-
-        if (signer.code.length > 0) {
-            (bool success, bytes memory result) =
-                signer.staticcall(abi.encodeCall(IERC1271.isValidSignature, (digest, signature)));
-            valid =
-                (success && result.length == 32 && abi.decode(result, (bytes4)) == IERC1271.isValidSignature.selector);
-        }
-    }
-
     function permit(address owner, address spender, uint256 value, uint256 deadline, bytes memory signature) public {
         require(block.timestamp <= deadline, "ERC20/permit-expired");
         require(owner != address(0), "ERC20/invalid-owner");
@@ -213,7 +183,7 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
             )
         );
 
-        require(_isValidSignature(owner, digest, signature), "ERC20/invalid-permit");
+        require(SignatureLib.isValidSignature(owner, digest, signature), "ERC20/invalid-permit");
 
         allowance[owner][spender] = value;
         emit Approval(owner, spender, value);

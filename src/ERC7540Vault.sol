@@ -2,6 +2,7 @@
 pragma solidity 0.8.21;
 
 import {Auth} from "src/Auth.sol";
+import {SignatureLib} from "src/libraries/SignatureLib.sol";
 import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 import {IInvestmentManager} from "src/interfaces/IInvestmentManager.sol";
 import "src/interfaces/IERC7540.sol";
@@ -49,6 +50,14 @@ contract ERC7540Vault is Auth, IERC7540 {
     /// @dev    Requests for Centrifuge pool are non-transferable and all have ID = 0
     uint256 constant REQUEST_ID = 0;
 
+    uint256 public immutable deploymentChainId;
+    bytes32 private immutable _DOMAIN_SEPARATOR;
+    bytes32 public constant AUTHORIZE_OPERATOR_TYPEHASH = keccak256(
+        "AuthorizeOperator(address owner,address operator,bool approved,uint256 validAfter,uint256 validBefore,bytes32 nonce)"
+    );
+
+    mapping(address owner => mapping(bytes32 nonce => bool used)) authorizationStates;
+
     /// @inheritdoc IERC7540
     mapping(address => mapping(address => bool)) public isOperator;
 
@@ -63,6 +72,9 @@ contract ERC7540Vault is Auth, IERC7540 {
         shareDecimals = IERC20Metadata(share).decimals();
         escrow = escrow_;
         manager = IInvestmentManager(manager_);
+
+        deploymentChainId = block.chainid;
+        _DOMAIN_SEPARATOR = _calculateDomainSeparator(block.chainid);
 
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
@@ -193,6 +205,54 @@ contract ERC7540Vault is Auth, IERC7540 {
         isOperator[msg.sender][operator] = approved;
         emit OperatorSet(msg.sender, operator, approved);
         return true;
+    }
+
+    function _calculateDomainSeparator(uint256 chainId) private view returns (bytes32) {
+        return keccak256(
+            abi.encode(
+                // keccak256('EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)')
+                0x8b73c3c69bb8fe3d512ecc4cf759cc79239f7b179b0ffacaa9a75d522b39400f,
+                keccak256(bytes("Centrifuge")),
+                keccak256(bytes("1")),
+                chainId,
+                address(this)
+            )
+        );
+    }
+
+    function DOMAIN_SEPARATOR() external view returns (bytes32) {
+        return block.chainid == deploymentChainId ? _DOMAIN_SEPARATOR : _calculateDomainSeparator(block.chainid);
+    }
+
+    function authorizeOperator(
+        address owner,
+        address operator,
+        bool approved,
+        uint256 validAfter,
+        uint256 validBefore,
+        bytes32 nonce,
+        bytes memory signature
+    ) external {
+        require(block.timestamp > validAfter, "ERC7540Vault/authorization-not-yet-valid");
+        require(block.timestamp < validBefore, "ERC7540Vault/authorization-expired");
+        require(!authorizationStates[owner][nonce], "ERC7540Vault/authorization-used");
+
+        authorizationStates[owner][nonce] = true;
+
+        bytes32 digest = keccak256(
+            abi.encodePacked(
+                "\x19\x01",
+                block.chainid == deploymentChainId ? _DOMAIN_SEPARATOR : _calculateDomainSeparator(block.chainid),
+                keccak256(
+                    abi.encode(AUTHORIZE_OPERATOR_TYPEHASH, owner, operator, approved, validAfter, validBefore, nonce)
+                )
+            )
+        );
+
+        require(SignatureLib.isValidSignature(owner, digest, signature), "ERC7540Vault/invalid-authorization");
+
+        isOperator[owner][operator] = approved;
+        emit OperatorSet(owner, operator, approved);
     }
 
     // --- ERC165 support ---
