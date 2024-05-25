@@ -23,7 +23,7 @@ interface AuthTransferLike {
 ///         deposit and redeem orders are submitted to the pools to be included in the execution of the following epoch.
 ///         After execution users can use the deposit, mint, redeem and withdraw functions to get their shares
 ///         and/or assets from the pools.
-contract ERC7540Vault is Auth, IERC7540 {
+contract ERC7540Vault is Auth, IERC7540, IAuthorizeOperator {
     /// @notice Identifier of the Centrifuge pool
     uint64 public immutable poolId;
 
