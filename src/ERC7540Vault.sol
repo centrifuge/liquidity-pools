@@ -50,6 +50,8 @@ contract ERC7540Vault is Auth, IERC7540, IAuthorizeOperator {
     /// @dev    Requests for Centrifuge pool are non-transferable and all have ID = 0
     uint256 constant REQUEST_ID = 0;
 
+    bytes32 private immutable nameHash;
+    bytes32 private immutable versionHash;
     uint256 public immutable deploymentChainId;
     bytes32 private immutable _DOMAIN_SEPARATOR;
     bytes32 public constant AUTHORIZE_OPERATOR_TYPEHASH = keccak256(
@@ -73,6 +75,8 @@ contract ERC7540Vault is Auth, IERC7540, IAuthorizeOperator {
         escrow = escrow_;
         manager = IInvestmentManager(manager_);
 
+        nameHash = keccak256(bytes("Centrifuge"));
+        versionHash = keccak256(bytes("1"));
         deploymentChainId = block.chainid;
         _DOMAIN_SEPARATOR = _calculateDomainSeparator(block.chainid);
 
@@ -212,8 +216,8 @@ contract ERC7540Vault is Auth, IERC7540, IAuthorizeOperator {
             abi.encode(
                 // keccak256('EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)')
                 0x8b73c3c69bb8fe3d512ecc4cf759cc79239f7b179b0ffacaa9a75d522b39400f,
-                keccak256(bytes("Centrifuge")),
-                keccak256(bytes("1")),
+                nameHash,
+                versionHash,
                 chainId,
                 address(this)
             )
