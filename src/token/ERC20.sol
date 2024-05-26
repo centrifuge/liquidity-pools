@@ -47,14 +47,7 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
         deploymentChainId = block.chainid;
         _DOMAIN_SEPARATOR = EIP712Lib.calculateDomainSeparator(nameHash, versionHash);
     }
-
-    /// @inheritdoc IERC20Permit
-    function DOMAIN_SEPARATOR() external view returns (bytes32) {
-        return block.chainid == deploymentChainId
-            ? _DOMAIN_SEPARATOR
-            : EIP712Lib.calculateDomainSeparator(nameHash, versionHash);
-    }
-
+    
     function file(bytes32 what, string memory data) external auth {
         if (what == "name") name = data;
         else if (what == "symbol") symbol = data;
@@ -168,9 +161,7 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
         bytes32 digest = keccak256(
             abi.encodePacked(
                 "\x19\x01",
-                block.chainid == deploymentChainId
-                    ? _DOMAIN_SEPARATOR
-                    : EIP712Lib.calculateDomainSeparator(nameHash, versionHash),
+                DOMAIN_SEPARATOR(),
                 keccak256(abi.encode(PERMIT_TYPEHASH, owner, spender, value, nonce, deadline))
             )
         );

@@ -213,7 +213,7 @@ contract ERC7540Vault is Auth, IERC7540, IAuthorizeOperator {
     }
 
     /// @inheritdoc IAuthorizeOperator
-    function DOMAIN_SEPARATOR() external view returns (bytes32) {
+    function DOMAIN_SEPARATOR() public view returns (bytes32) {
         return block.chainid == deploymentChainId
             ? _DOMAIN_SEPARATOR
             : EIP712Lib.calculateDomainSeparator(nameHash, versionHash);
@@ -237,9 +237,7 @@ contract ERC7540Vault is Auth, IERC7540, IAuthorizeOperator {
         bytes32 digest = keccak256(
             abi.encodePacked(
                 "\x19\x01",
-                block.chainid == deploymentChainId
-                    ? _DOMAIN_SEPARATOR
-                    : EIP712Lib.calculateDomainSeparator(nameHash, versionHash),
+                DOMAIN_SEPARATOR(),
                 keccak256(abi.encode(AUTHORIZE_OPERATOR_TYPEHASH, owner, operator, approved, deadline, nonce))
             )
         );
