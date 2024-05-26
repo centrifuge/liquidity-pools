@@ -2,6 +2,7 @@
 pragma solidity 0.8.21;
 
 import {Auth} from "src/Auth.sol";
+import {EIP712Lib} from "src/libraries/EIP712Lib.sol";
 import {SignatureLib} from "src/libraries/SignatureLib.sol";
 import {IERC20, IERC20Metadata, IERC20Permit} from "src/interfaces/IERC20.sol";
 
@@ -44,25 +45,14 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
         nameHash = keccak256(bytes("Centrifuge"));
         versionHash = keccak256(bytes("1"));
         deploymentChainId = block.chainid;
-        _DOMAIN_SEPARATOR = _calculateDomainSeparator(block.chainid);
-    }
-
-    function _calculateDomainSeparator(uint256 chainId) private view returns (bytes32) {
-        return keccak256(
-            abi.encode(
-                // keccak256('EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)')
-                0x8b73c3c69bb8fe3d512ecc4cf759cc79239f7b179b0ffacaa9a75d522b39400f,
-                nameHash,
-                versionHash,
-                chainId,
-                address(this)
-            )
-        );
+        _DOMAIN_SEPARATOR = EIP712Lib.calculateDomainSeparator(nameHash, versionHash);
     }
 
     /// @inheritdoc IERC20Permit
     function DOMAIN_SEPARATOR() external view returns (bytes32) {
-        return block.chainid == deploymentChainId ? _DOMAIN_SEPARATOR : _calculateDomainSeparator(block.chainid);
+        return block.chainid == deploymentChainId
+            ? _DOMAIN_SEPARATOR
+            : EIP712Lib.calculateDomainSeparator(nameHash, versionHash);
     }
 
     function file(bytes32 what, string memory data) external auth {
@@ -178,7 +168,9 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
         bytes32 digest = keccak256(
             abi.encodePacked(
                 "\x19\x01",
-                block.chainid == deploymentChainId ? _DOMAIN_SEPARATOR : _calculateDomainSeparator(block.chainid),
+                block.chainid == deploymentChainId
+                    ? _DOMAIN_SEPARATOR
+                    : EIP712Lib.calculateDomainSeparator(nameHash, versionHash),
                 keccak256(abi.encode(PERMIT_TYPEHASH, owner, spender, value, nonce, deadline))
             )
         );
