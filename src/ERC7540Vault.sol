@@ -229,6 +229,7 @@ contract ERC7540Vault is Auth, IERC7540, IAuthorizeOperator {
         bytes memory signature
     ) external {
         require(block.timestamp <= deadline, "ERC7540Vault/authorization-expired");
+        require(owner != address(0), "ERC7540Vault/invalid-owner");
         require(!authorizationStates[owner][nonce], "ERC7540Vault/authorization-used");
 
         authorizationStates[owner][nonce] = true;
