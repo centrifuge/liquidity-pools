@@ -17,14 +17,14 @@ contract CentrifugeRoutertest is BaseTest {
         erc20.mint(self, amount);
 
         vm.expectRevert(bytes("InvestmentManager/owner-is-restricted")); // fail: receiver not member
-        cfgRouter.requestDeposit(vault_, amount);
+        centrifugeRouter.requestDeposit(vault_, amount);
 
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max); // add user as member
         vm.expectRevert(bytes("SafeTransferLib/safe-transfer-from-failed")); // fail: no allowance
-        cfgRouter.requestDeposit(vault_, amount);
+        centrifugeRouter.requestDeposit(vault_, amount);
 
         erc20.approve(vault_, amount); // grant approval to cfg router
-        cfgRouter.requestDeposit(vault_, amount);
+        centrifugeRouter.requestDeposit(vault_, amount);
 
         // trigger - deposit order fulfillment
         uint128 price = 2 * 10 ** 18;
@@ -47,7 +47,7 @@ contract CentrifugeRoutertest is BaseTest {
         assertEq(trancheToken.balanceOf(address(escrow)), trancheTokensPayout); // assert tranche tokens minted
 
         // vm.expectRevert(bytes("LiquidityPool/not-owner-or-endorsed"));
-        cfgRouter.claimDeposit(vault_, self); // claim Deposit
+        centrifugeRouter.claimDeposit(vault_, self); // claim Deposit
         assertApproxEqAbs(trancheToken.balanceOf(self), trancheTokensPayout, 1);
         assertApproxEqAbs(trancheToken.balanceOf(self), trancheTokensPayout, 1);
         assertApproxEqAbs(trancheToken.balanceOf(address(escrow)), 0, 1);

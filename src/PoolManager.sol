@@ -403,9 +403,6 @@ contract PoolManager is Auth, IPoolManager {
         );
 
         TrancheTokenLike(token).file("restrictionManager", restrictionManager);
-        if (router != address(0)) {
-            RestrictionManagerLike(restrictionManager).updateMember(router, type(uint64).max);
-        }
 
         pools[poolId].tranches[trancheId].token = token;
 

@@ -2,6 +2,7 @@
 pragma solidity 0.8.21;
 
 import {Auth} from "src/Auth.sol";
+import {IRoot} from "src/interfaces/IRoot.sol";
 import {IERC20, IERC20Callback} from "src/interfaces/IERC20.sol";
 import {IRestrictionManager} from "src/interfaces/token/IRestrictionManager.sol";
 
@@ -26,11 +27,13 @@ contract RestrictionManager is Auth, IRestrictionManager, IERC20Callback {
     uint8 public constant DESTINATION_IS_FROZEN_CODE = 2;
     uint8 public constant DESTINATION_NOT_A_MEMBER_RESTRICTION_CODE = 3;
 
+    IRoot public immutable root;
     IERC20 public immutable token;
 
     mapping(address => Restrictions) public restrictions;
 
-    constructor(address token_) {
+    constructor(address root_, address token_) {
+        root = IRoot(root_);
         token = IERC20(token_);
 
         wards[msg.sender] = 1;
@@ -47,16 +50,17 @@ contract RestrictionManager is Auth, IRestrictionManager, IERC20Callback {
     // --- ERC1404 implementation ---
     /// @inheritdoc IRestrictionManager
     function detectTransferRestriction(address from, address to, uint256 /* value */ ) public view returns (uint8) {
-        if (restrictions[from].frozen == true) {
+        if (restrictions[from].frozen == true && !root.endorsed(from)) {
             return SOURCE_IS_FROZEN_CODE;
         }
 
         Restrictions memory toRestrictions = restrictions[to];
-        if (toRestrictions.frozen == true) {
+        bool toIsEndorsed = root.endorsed(to);
+        if (toRestrictions.frozen == true && !toIsEndorsed) {
             return DESTINATION_IS_FROZEN_CODE;
         }
 
-        if (toRestrictions.validUntil < block.timestamp) {
+        if (toRestrictions.validUntil < block.timestamp && !toIsEndorsed) {
             return DESTINATION_NOT_A_MEMBER_RESTRICTION_CODE;
         }
 

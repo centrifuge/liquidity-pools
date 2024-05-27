@@ -54,9 +54,12 @@ contract Deployer is Script {
         vaultFactory = address(new ERC7540VaultFactory(address(root)));
         restrictionManagerFactory = address(new RestrictionManagerFactory(address(root)));
         trancheTokenFactory = address(new TrancheTokenFactory{salt: salt}(address(root), deployer));
-        investmentManager = new InvestmentManager(address(escrow));
+        investmentManager = new InvestmentManager(address(root), address(escrow));
         poolManager = new PoolManager(address(escrow), vaultFactory, restrictionManagerFactory, trancheTokenFactory);
+
         centrifugeRouter = new CentrifugeRouter();
+        root.endorse(address(centrifugeRouter));
+        root.endorse(address(escrow));
 
         AuthLike(vaultFactory).rely(address(poolManager));
         AuthLike(trancheTokenFactory).rely(address(poolManager));
@@ -88,7 +91,6 @@ contract Deployer is Script {
         investmentManager.file("poolManager", address(poolManager));
         poolManager.file("investmentManager", address(investmentManager));
         poolManager.file("router", address(centrifugeRouter));
-        investmentManager.endorse(address(centrifugeRouter));
 
         investmentManager.file("gateway", address(gateway));
         poolManager.file("gateway", address(gateway));

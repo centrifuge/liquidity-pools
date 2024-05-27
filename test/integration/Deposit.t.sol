@@ -385,9 +385,8 @@ contract DepositTest is BaseTest {
         vault.deposit(amount, receiver, address(this));
         vm.stopPrank();
 
-        // endorse router on LiquidityPool
-        root.relyContract(address(investmentManager), self);
-        investmentManager.endorse(router);
+        // endorse router
+        root.endorse(router);
         vm.startPrank(router); // try to claim deposit on behalt of user and set the wrong user as receiver
         vault.deposit(amount, receiver, address(this));
         vm.stopPrank();

@@ -332,7 +332,7 @@ contract ERC7540Vault is Auth, IERC7540 {
 
     function validateOwner(address owner) internal view {
         require(
-            owner == msg.sender || isOperator[owner][msg.sender] || manager.isEndorsed(msg.sender),
+            owner == msg.sender || isOperator[owner][msg.sender] || manager.isGlobalOperator(address(this), msg.sender),
             "ERC7540Vault/invalid-owner"
         );
     }
