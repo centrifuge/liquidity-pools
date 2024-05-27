@@ -168,7 +168,7 @@ contract BaseTest is Deployer, Test {
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), _investor, type(uint64).max); // add user as member
         vm.startPrank(_investor);
         erc20.approve(_vault, amount); // add allowance
-        vault.requestDeposit(amount, _investor, _investor, "");
+        vault.requestDeposit(amount, _investor, _investor);
         // trigger executed collectInvest
         uint128 assetId = poolManager.assetToId(address(erc20)); // retrieve assetId
         centrifugeChain.isFulfilledDepositRequest(
