@@ -5,7 +5,7 @@ import "test/BaseTest.sol";
 import "src/interfaces/IERC7575.sol";
 import "src/interfaces/IERC7540.sol";
 
-contract CentriufgeRoutertest is BaseTest {
+contract CentrifugeRoutertest is BaseTest {
     function testCFGRouterDeposit(uint256 amount) public {
         // If lower than 4 or odd, rounding down can lead to not receiving any tokens
         amount = uint128(bound(amount, 4, MAX_UINT128));
