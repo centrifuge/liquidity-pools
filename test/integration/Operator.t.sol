@@ -64,8 +64,6 @@ contract OperatorTest is BaseTest {
         vault.requestDeposit(amount, investor, investor);
     }
 
-    event Log(bytes32 codeHash);
-
     function testDepositAsAuthorizedOperator(uint256 amount) public {
         // If lower than 4 or odd, rounding down can lead to not receiving any tokens
         amount = uint128(bound(amount, 4, MAX_UINT128));
@@ -91,8 +89,6 @@ contract OperatorTest is BaseTest {
         vm.prank(operator);
         vm.expectRevert(bytes("ERC7540Vault/invalid-owner"));
         vault.requestDeposit(amount, owner, owner);
-
-        emit Log(keccak256(type(Escrow).creationCode));
 
         uint256 deadline = type(uint64).max;
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(
