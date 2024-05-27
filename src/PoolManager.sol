@@ -435,7 +435,7 @@ contract PoolManager is Auth, IPoolManager {
 
         // Deploy vault
         vault = vaultFactory.newVault(
-            poolId, trancheId, asset, tranche.token, address(escrow), address(investmentManager), vaultWards, cfgRouter
+            poolId, trancheId, asset, tranche.token, address(escrow), address(investmentManager), vaultWards
         );
 
         // Link vault to tranche token

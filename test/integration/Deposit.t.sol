@@ -354,7 +354,7 @@ contract DepositTest is BaseTest {
         erc20.mint(self, amount);
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max); // add user as member
         erc20.approve(vault_, amount); // add allowance
-        vault.requestDeposit(amount, self, self, "");
+        vault.requestDeposit(amount, self, self);
 
         // trigger executed collectInvest
         uint128 _currencyId = poolManager.assetToId(address(erc20)); // retrieve currencyId
@@ -386,8 +386,8 @@ contract DepositTest is BaseTest {
         vm.stopPrank();
 
         // endorse router on LiquidityPool
-        root.relyContract(vault_, self);
-        vault.endorse(router);
+        root.relyContract(address(investmentManager), self);
+        investmentManager.endorse(router);
         vm.startPrank(router); // try to claim deposit on behalt of user and set the wrong user as receiver
         vault.deposit(amount, receiver, address(this));
         vm.stopPrank();

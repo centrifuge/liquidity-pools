@@ -41,8 +41,7 @@ contract ERC7540VaultFactory is Auth {
         address trancheToken,
         address escrow,
         address investmentManager,
-        address[] calldata wards_,
-        address router
+        address[] calldata wards_
     ) public auth returns (address) {
         ERC7540Vault vault = new ERC7540Vault(poolId, trancheId, asset, trancheToken, escrow, investmentManager);
 
@@ -52,7 +51,6 @@ contract ERC7540VaultFactory is Auth {
         }
 
         AuthLike(investmentManager).rely(address(vault));
-        vault.endorse(router);
         vault.deny(address(this));
         return address(vault);
     }

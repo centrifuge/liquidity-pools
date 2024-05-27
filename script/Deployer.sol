@@ -88,6 +88,7 @@ contract Deployer is Script {
         investmentManager.file("poolManager", address(poolManager));
         poolManager.file("investmentManager", address(investmentManager));
         poolManager.file("cfgRouter", address(cfgRouter));
+        investmentManager.endorse(address(cfgRouter));
 
         investmentManager.file("gateway", address(gateway));
         poolManager.file("gateway", address(gateway));
