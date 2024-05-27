@@ -108,4 +108,39 @@ contract GatewayTest is BaseTest {
         assertEq(mgr.received(message), 1);
         assertEq(mgr.values_bytes("handle_message"), message);
     }
+
+    // --- Batched messages ---
+    function testBatchedAddPoolAddAssetAllowAssetMessage() public {
+        uint64 poolId = 1;
+        uint128 assetId = 1;
+        bytes memory _addPool = abi.encodePacked(uint8(MessagesLib.Call.AddPool), poolId);
+        bytes memory _addAsset = abi.encodePacked(uint8(MessagesLib.Call.AddAsset), assetId, address(erc20));
+        bytes memory _allowAsset = abi.encodePacked(uint8(MessagesLib.Call.AllowAsset), poolId, assetId);
+
+        bytes memory _message = abi.encodePacked(
+            uint8(MessagesLib.Call.Batch), uint16(_addPool.length), _addPool, uint16(_addAsset.length), _addAsset, uint16(_allowAsset.length), _allowAsset 
+        );
+        centrifugeChain.execute(_message);
+        assertEq(poolManager.idToAsset(assetId), address(erc20));
+        assertEq(poolManager.isAllowedAsset(poolId, address(erc20)), true);
+    }
+
+    function testBatchedMessagedWithinBatchedMessageFails() public {
+        uint64 poolId = 1;
+        uint128 assetId = 1;
+        bytes memory _addPool = abi.encodePacked(uint8(MessagesLib.Call.AddPool), poolId);
+
+        bytes memory _addAsset = abi.encodePacked(uint8(MessagesLib.Call.AddAsset), assetId, address(erc20));
+        bytes memory _allowAsset = abi.encodePacked(uint8(MessagesLib.Call.AllowAsset), poolId, assetId);
+
+        bytes memory _addAndAllowAssetMessage = abi.encodePacked(
+            uint8(MessagesLib.Call.Batch), uint16(_addAsset.length), _addAsset, uint16(_allowAsset.length), _allowAsset 
+        );
+
+        bytes memory _message = abi.encodePacked(
+            uint8(MessagesLib.Call.Batch), uint16(_addPool.length), _addPool, uint16(_addAndAllowAssetMessage.length), _addAndAllowAssetMessage 
+        );
+        vm.expectRevert(bytes("Gateway/batch-not-allowed-within-batch"));
+        centrifugeChain.execute(_message);
+    }
 }

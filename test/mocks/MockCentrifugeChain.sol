@@ -247,6 +247,10 @@ contract MockCentrifugeChain is Test {
         _execute(_message);
     }
 
+    function execute(bytes memory message) external {
+        _execute(message);
+    }
+
     function _execute(bytes memory message) internal {
         bytes memory proof = abi.encodePacked(uint8(MessagesLib.Call.MessageProof), keccak256(message));
         for (uint256 i = 0; i < routers.length; i++) {
