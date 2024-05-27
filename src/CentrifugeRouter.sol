@@ -11,12 +11,14 @@ import {IPoolManager} from "src/interfaces/IPoolManager.sol";
 
 contract CentrifugeRouter is Auth, Multicall, ICentrifugeRouter {
     address public poolManager;
+    address public gateway;
 
     /// @inheritdoc ICentrifugeRouter
     mapping(address user => mapping(address vault => uint256 amount)) public lockedRequests;
 
-    constructor(address poolManager_) {
+    constructor(address poolManager_, address gateway_) {
         poolManager = poolManager_;
+        gateway = gateway_;
 
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
@@ -31,6 +33,7 @@ contract CentrifugeRouter is Auth, Multicall, ICentrifugeRouter {
     /// @inheritdoc ICentrifugeRouter
     function file(bytes32 what, address data) external auth {
         if (what == "poolManager") poolManager = data;
+        else if (what == "gateway") gateway = data;
         else revert("CentrifugeRouter/file-unrecognized-param");
         emit File(what, data);
     }
@@ -42,8 +45,9 @@ contract CentrifugeRouter is Auth, Multicall, ICentrifugeRouter {
     }
 
     // --- Deposit ---
-    /// @inheritdoc ICentrifugeRouter
-    function requestDeposit(address vault, uint256 amount) external {
+    function requestDeposit(address vault, uint256 amount) external payable {
+        require(msg.value > 0, "CentrifugeRouter/not-enough-funds");
+        payable(gateway).transfer(msg.value);
         IERC7540(vault).requestDeposit(amount, msg.sender, msg.sender);
     }
 

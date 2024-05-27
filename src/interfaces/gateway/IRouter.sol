@@ -14,4 +14,10 @@ interface IRouter {
     // --- Outgoing ---
     /// @notice TODO
     function send(bytes calldata payload) external;
+
+    /// @notice TODO
+    function estimate(bytes calldata payload) external returns (uint256);
+
+    /// @notice TODO
+    function pay(bytes calldata payload, address refund) external payable;
 }

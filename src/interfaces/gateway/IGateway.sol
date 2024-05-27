@@ -15,7 +15,7 @@ interface IGateway {
 
     // --- Outgoing ---
     /// @notice TODO
-    function send(bytes calldata message) external;
+    function send(bytes calldata message) external payable;
 
     // --- Incoming ---
     /// @notice TODO
