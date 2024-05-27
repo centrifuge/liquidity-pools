@@ -111,7 +111,7 @@ contract DeployTest is Test, Deployer {
 
     function depositMint(uint64 poolId, bytes16 trancheId, uint128 price, uint256 amount, ERC7540Vault vault) public {
         erc20.approve(address(vault), amount); // add allowance
-        vault.requestDeposit(amount, self, self, "");
+        vault.requestDeposit(amount, self, self);
 
         // ensure funds are locked in escrow
         assertEq(erc20.balanceOf(address(escrow)), amount);
@@ -156,7 +156,7 @@ contract DeployTest is Test, Deployer {
     function redeemWithdraw(uint64 poolId, bytes16 trancheId, uint128 price, uint256 amount, ERC7540Vault vault)
         public
     {
-        vault.requestRedeem(amount, address(this), address(this), "");
+        vault.requestRedeem(amount, address(this), address(this));
 
         // redeem
         TrancheToken trancheToken = TrancheToken(address(vault.share()));

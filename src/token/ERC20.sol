@@ -84,7 +84,7 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
 
         unchecked {
             balanceOf[msg.sender] = balance - value;
-            balanceOf[to] += value;
+            balanceOf[to] += value; // note: we don't need an overflow check here b/c sum of all balances == totalSupply
         }
 
         emit Transfer(msg.sender, to, value);
@@ -94,23 +94,27 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
 
     /// @inheritdoc IERC20
     function transferFrom(address from, address to, uint256 value) public virtual returns (bool) {
+        return _transferFrom(msg.sender, from, to, value);
+    }
+
+    function _transferFrom(address sender, address from, address to, uint256 value) internal virtual returns (bool) {
         require(to != address(0) && to != address(this), "ERC20/invalid-address");
         uint256 balance = balanceOf[from];
         require(balance >= value, "ERC20/insufficient-balance");
 
-        if (from != msg.sender) {
-            uint256 allowed = allowance[from][msg.sender];
+        if (from != sender) {
+            uint256 allowed = allowance[from][sender];
             if (allowed != type(uint256).max) {
                 require(allowed >= value, "ERC20/insufficient-allowance");
                 unchecked {
-                    allowance[from][msg.sender] = allowed - value;
+                    allowance[from][sender] = allowed - value;
                 }
             }
         }
 
         unchecked {
             balanceOf[from] = balance - value;
-            balanceOf[to] += value;
+            balanceOf[to] += value; // note: we don't need an overflow check here b/c sum of all balances == totalSupply
         }
 
         emit Transfer(from, to, value);
@@ -165,7 +169,11 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
     }
 
     // --- Approve by signature ---
-    function _isValidSignature(address signer, bytes32 digest, bytes memory signature) internal view returns (bool) {
+    function _isValidSignature(address signer, bytes32 digest, bytes memory signature)
+        internal
+        view
+        returns (bool valid)
+    {
         if (signature.length == 65) {
             bytes32 r;
             bytes32 s;
@@ -180,9 +188,12 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
             }
         }
 
-        (bool success, bytes memory result) =
-            signer.staticcall(abi.encodeWithSelector(IERC1271.isValidSignature.selector, digest, signature));
-        return (success && result.length == 32 && abi.decode(result, (bytes4)) == IERC1271.isValidSignature.selector);
+        if (signer.code.length > 0) {
+            (bool success, bytes memory result) =
+                signer.staticcall(abi.encodeCall(IERC1271.isValidSignature, (digest, signature)));
+            valid =
+                (success && result.length == 32 && abi.decode(result, (bytes4)) == IERC1271.isValidSignature.selector);
+        }
     }
 
     function permit(address owner, address spender, uint256 value, uint256 deadline, bytes memory signature) public {
@@ -217,27 +228,6 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
 
     // --- Fail-safe ---
     function authTransferFrom(address sender, address from, address to, uint256 value) public auth returns (bool) {
-        require(to != address(0) && to != address(this), "ERC20/invalid-address");
-        uint256 balance = balanceOf[from];
-        require(balance >= value, "ERC20/insufficient-balance");
-
-        if (sender != from) {
-            uint256 allowed = allowance[from][sender];
-            if (allowed != type(uint256).max) {
-                require(allowed >= value, "ERC20/insufficient-allowance");
-                unchecked {
-                    allowance[from][sender] = allowed - value;
-                }
-            }
-        }
-
-        unchecked {
-            balanceOf[from] = balance - value;
-            balanceOf[to] += value;
-        }
-
-        emit Transfer(from, to, value);
-
-        return true;
+        return _transferFrom(sender, from, to, value);
     }
 }
