@@ -37,7 +37,7 @@ contract Deployer is Script {
     Guardian public guardian;
     Gateway public gateway;
     Aggregator public aggregator;
-    CentrifugeRouter public cfgRouter;
+    CentrifugeRouter public centrifugeRouter; // TODO: rename once routers => adapters rename is in
     address public vaultFactory;
     address public restrictionManagerFactory;
     address public trancheTokenFactory;
@@ -56,7 +56,7 @@ contract Deployer is Script {
         trancheTokenFactory = address(new TrancheTokenFactory{salt: salt}(address(root), deployer));
         investmentManager = new InvestmentManager(address(escrow));
         poolManager = new PoolManager(address(escrow), vaultFactory, restrictionManagerFactory, trancheTokenFactory);
-        cfgRouter = new CentrifugeRouter();
+        centrifugeRouter = new CentrifugeRouter();
 
         AuthLike(vaultFactory).rely(address(poolManager));
         AuthLike(trancheTokenFactory).rely(address(poolManager));
@@ -87,8 +87,8 @@ contract Deployer is Script {
         root.rely(address(gateway));
         investmentManager.file("poolManager", address(poolManager));
         poolManager.file("investmentManager", address(investmentManager));
-        poolManager.file("cfgRouter", address(cfgRouter));
-        investmentManager.endorse(address(cfgRouter));
+        poolManager.file("router", address(centrifugeRouter));
+        investmentManager.endorse(address(centrifugeRouter));
 
         investmentManager.file("gateway", address(gateway));
         poolManager.file("gateway", address(gateway));
