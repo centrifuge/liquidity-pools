@@ -49,6 +49,7 @@ contract ERC7540Vault is Auth, IERC7540 {
     /// @dev    Requests for Centrifuge pool are non-transferable and all have ID = 0
     uint256 constant REQUEST_ID = 0;
 
+    /// @inheritdoc IERC7540
     mapping(address => mapping(address => bool)) public isOperator;
 
     // --- Events ---
@@ -80,22 +81,12 @@ contract ERC7540Vault is Auth, IERC7540 {
 
     // --- ERC-7540 methods ---
     /// @inheritdoc IERC7540Deposit
-    function requestDeposit(uint256 assets, address receiver, address owner, bytes memory data)
-        public
-        returns (uint256)
-    {
+    function requestDeposit(uint256 assets, address receiver, address owner) public returns (uint256) {
         validateOwner(owner);
         require(IERC20(asset).balanceOf(owner) >= assets, "ERC7540Vault/insufficient-balance");
 
         require(manager.requestDeposit(address(this), assets, receiver, owner), "ERC7540Vault/request-deposit-failed");
         SafeTransferLib.safeTransferFrom(asset, owner, address(escrow), assets);
-
-        require(
-            data.length == 0 || receiver.code.length == 0
-                || IERC7540DepositReceiver(receiver).onERC7540DepositReceived(msg.sender, owner, REQUEST_ID, assets, data)
-                    == IERC7540DepositReceiver.onERC7540DepositReceived.selector,
-            "ERC7540Vault/receiver-failed"
-        );
 
         emit DepositRequest(receiver, owner, REQUEST_ID, msg.sender, assets);
         return REQUEST_ID;
@@ -103,17 +94,11 @@ contract ERC7540Vault is Auth, IERC7540 {
 
     /// @notice Uses EIP-2612 permit to set approval of asset, then transfers assets from msg.sender
     ///         into the Vault and submits a Request for asynchronous deposit/mint.
-    function requestDepositWithPermit(
-        uint256 assets,
-        address receiver,
-        bytes memory data,
-        uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external {
+    function requestDepositWithPermit(uint256 assets, address receiver, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
+        external
+    {
         try IERC20Permit(asset).permit(msg.sender, address(this), assets, deadline, v, r, s) {} catch {}
-        requestDeposit(assets, receiver, msg.sender, data);
+        requestDeposit(assets, receiver, msg.sender);
     }
 
     /// @inheritdoc IERC7540Deposit
@@ -127,10 +112,7 @@ contract ERC7540Vault is Auth, IERC7540 {
     }
 
     /// @inheritdoc IERC7540Redeem
-    function requestRedeem(uint256 shares, address receiver, address owner, bytes memory data)
-        public
-        returns (uint256)
-    {
+    function requestRedeem(uint256 shares, address receiver, address owner) public returns (uint256) {
         require(IERC20(share).balanceOf(owner) >= shares, "ERC7540Vault/insufficient-balance");
         require(manager.requestRedeem(address(this), shares, receiver, owner), "ERC7540Vault/request-redeem-failed");
 
@@ -141,13 +123,6 @@ contract ERC7540Vault is Auth, IERC7540 {
         require(
             AuthTransferLike(share).authTransferFrom(sender, owner, address(escrow), shares),
             "ERC7540Vault/transfer-failed"
-        );
-
-        require(
-            data.length == 0 || receiver.code.length == 0
-                || IERC7540RedeemReceiver(receiver).onERC7540RedeemReceived(msg.sender, owner, REQUEST_ID, shares, data)
-                    == IERC7540RedeemReceiver.onERC7540RedeemReceived.selector,
-            "ERC7540Vault/receiver-failed"
         );
 
         emit RedeemRequest(receiver, owner, REQUEST_ID, msg.sender, shares);
@@ -330,19 +305,19 @@ contract ERC7540Vault is Auth, IERC7540 {
     }
 
     // --- Event emitters ---
-    function emitDepositClaimable(address owner, uint256 assets, uint256 shares) public auth {
+    function onDepositClaimable(address owner, uint256 assets, uint256 shares) public auth {
         emit DepositClaimable(owner, REQUEST_ID, assets, shares);
     }
 
-    function emitRedeemClaimable(address owner, uint256 assets, uint256 shares) public auth {
+    function onRedeemClaimable(address owner, uint256 assets, uint256 shares) public auth {
         emit RedeemClaimable(owner, REQUEST_ID, assets, shares);
     }
 
-    function emitCancelDepositClaimable(address owner, uint256 assets) public auth {
+    function onCancelDepositClaimable(address owner, uint256 assets) public auth {
         emit CancelDepositClaimable(owner, REQUEST_ID, assets);
     }
 
-    function emitCancelRedeemClaimable(address owner, uint256 shares) public auth {
+    function onCancelRedeemClaimable(address owner, uint256 shares) public auth {
         emit CancelRedeemClaimable(owner, REQUEST_ID, shares);
     }
 
