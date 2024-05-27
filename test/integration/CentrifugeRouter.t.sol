@@ -16,15 +16,14 @@ contract CentriufgeRoutertest is BaseTest {
 
         erc20.mint(self, amount);
 
-        vm.expectRevert(bytes("SafeTransferLib/safe-transfer-from-failed")); // fail: no allowance
-        cfgRouter.requestDeposit(vault_, amount);
-
-        erc20.approve(address(cfgRouter), amount); // grant approval to cfg router
-
-        vm.expectRevert(bytes("InvestmentManager/transfer-not-allowed")); // fail: receiver not member
+        vm.expectRevert(bytes("InvestmentManager/owner-is-restricted")); // fail: receiver not member
         cfgRouter.requestDeposit(vault_, amount);
 
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max); // add user as member
+        vm.expectRevert(bytes("SafeTransferLib/safe-transfer-from-failed")); // fail: no allowance
+        cfgRouter.requestDeposit(vault_, amount);
+
+        erc20.approve(vault_, amount); // grant approval to cfg router
         cfgRouter.requestDeposit(vault_, amount);
 
         // trigger - deposit order fulfillment
