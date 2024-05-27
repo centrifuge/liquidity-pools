@@ -46,7 +46,6 @@ contract PoolManager is Auth, IPoolManager {
 
     EscrowLike public immutable escrow;
 
-    address public router;
     GatewayLike public gateway;
     ERC7540VaultFactory public vaultFactory;
     InvestmentManagerLike public investmentManager;
@@ -77,7 +76,6 @@ contract PoolManager is Auth, IPoolManager {
     /// @inheritdoc IPoolManager
     function file(bytes32 what, address data) external auth {
         if (what == "gateway") gateway = GatewayLike(data);
-        else if (what == "router") router = data;
         else if (what == "investmentManager") investmentManager = InvestmentManagerLike(data);
         else if (what == "trancheTokenFactory") trancheTokenFactory = TrancheTokenFactoryLike(data);
         else if (what == "vaultFactory") vaultFactory = ERC7540VaultFactory(data);
