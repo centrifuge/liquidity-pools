@@ -46,12 +46,12 @@ contract PoolManager is Auth, IPoolManager {
 
     EscrowLike public immutable escrow;
 
+    address public router;
     GatewayLike public gateway;
+    ERC7540VaultFactory public vaultFactory;
     InvestmentManagerLike public investmentManager;
     TrancheTokenFactoryLike public trancheTokenFactory;
-    ERC7540VaultFactory public vaultFactory;
     RestrictionManagerFactoryLike public restrictionManagerFactory;
-    address public cfgRouter;
 
     mapping(uint64 poolId => Pool) public pools;
     mapping(uint128 assetId => address) public idToAsset;
@@ -77,11 +77,11 @@ contract PoolManager is Auth, IPoolManager {
     /// @inheritdoc IPoolManager
     function file(bytes32 what, address data) external auth {
         if (what == "gateway") gateway = GatewayLike(data);
+        else if (what == "router") router = data;
         else if (what == "investmentManager") investmentManager = InvestmentManagerLike(data);
         else if (what == "trancheTokenFactory") trancheTokenFactory = TrancheTokenFactoryLike(data);
         else if (what == "vaultFactory") vaultFactory = ERC7540VaultFactory(data);
         else if (what == "restrictionManagerFactory") restrictionManagerFactory = RestrictionManagerFactoryLike(data);
-        else if (what == "cfgRouter") cfgRouter = data;
         else revert("PoolManager/file-unrecognized-param");
         emit File(what, data);
     }
@@ -403,8 +403,8 @@ contract PoolManager is Auth, IPoolManager {
         );
 
         TrancheTokenLike(token).file("restrictionManager", restrictionManager);
-        if (cfgRouter != address(0)) {
-            RestrictionManagerLike(restrictionManager).updateMember(cfgRouter, type(uint64).max);
+        if (router != address(0)) {
+            RestrictionManagerLike(restrictionManager).updateMember(router, type(uint64).max);
         }
 
         pools[poolId].tranches[trancheId].token = token;
