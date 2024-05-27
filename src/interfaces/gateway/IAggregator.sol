@@ -58,7 +58,7 @@ interface IAggregator {
     // --- Outgoing ---
     /// @dev Sends 1 message to the first router with the full message, and n-1 messages to the other routers with
     ///      proofs (hash of message). This ensures message uniqueness (can only be executed on the destination once).
-    function send(bytes calldata message) external;
+    function send(bytes calldata message) external payable;
 
     // --- Helpers ---
     /// @notice TODO
@@ -69,4 +69,8 @@ interface IAggregator {
         external
         view
         returns (uint16[8] memory messages, uint16[8] memory proofs);
+
+    // @dev Used to calculate overall cost for bridging a payload on the first router and settling
+    // on the destination chain and  bridging its payload proofs on n-1 router and settling on the destination chain.
+    function estimate(bytes calldata payload) external view returns (uint256 estimated);
 }

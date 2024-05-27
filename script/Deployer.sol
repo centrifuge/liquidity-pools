@@ -56,7 +56,7 @@ contract Deployer is Script {
         trancheTokenFactory = address(new TrancheTokenFactory{salt: salt}(address(root), deployer));
         investmentManager = new InvestmentManager(address(escrow));
         poolManager = new PoolManager(address(escrow), vaultFactory, restrictionManagerFactory, trancheTokenFactory);
-        centrifugeRouter = new CentrifugeRouter();
+        centrifugeRouter = new CentrifugeRouter(payable(address(gateway)));
 
         AuthLike(vaultFactory).rely(address(poolManager));
         AuthLike(trancheTokenFactory).rely(address(poolManager));
