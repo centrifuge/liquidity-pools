@@ -1,16 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {Auth} from "./Auth.sol";
-import {SafeTransferLib} from "./libraries/SafeTransferLib.sol";
-import "./interfaces/IERC7540.sol";
+import {Auth} from "src/Auth.sol";
+import {IERC7540} from "src/interfaces/IERC7540.sol";
+import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
+import {ICentrifugeRouter} from "src/interfaces/ICentrifugeRouter.sol";
 
-contract CentrifugeRouter is Auth {
-    event LockDepositRequest(address indexed vault, address indexed user, uint256 amount);
-    event UnlockDepositRequest(address indexed vault, address indexed user);
-    event ExecuteLockedDepositRequest(address indexed vault, address indexed user);
-
-    mapping(address => mapping(address => uint256)) public lockedRequests;
+contract CentrifugeRouter is Auth, ICentrifugeRouter {
+    mapping(address user => mapping(address vault => uint256 amount)) public lockedRequests;
 
     // --- Administration ---
     function recoverTokens(address token, address to, uint256 amount) external auth {
