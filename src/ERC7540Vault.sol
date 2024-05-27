@@ -49,6 +49,7 @@ contract ERC7540Vault is Auth, IERC7540 {
     /// @dev    Requests for Centrifuge pool are non-transferable and all have ID = 0
     uint256 constant REQUEST_ID = 0;
 
+    /// @inheritdoc IERC7540
     mapping(address => mapping(address => bool)) public isOperator;
 
     // --- Events ---
