@@ -28,7 +28,7 @@ contract OperatorTest is BaseTest {
 
         vm.prank(operator);
         vm.expectRevert(bytes("ERC7540Vault/invalid-owner"));
-        vault.requestDeposit(amount, investor, investor, "");
+        vault.requestDeposit(amount, investor, investor);
 
         assertEq(vault.isOperator(investor, operator), false);
         vm.prank(investor);
@@ -36,7 +36,7 @@ contract OperatorTest is BaseTest {
         assertEq(vault.isOperator(investor, operator), true);
 
         vm.prank(operator);
-        vault.requestDeposit(amount, investor, investor, "");
+        vault.requestDeposit(amount, investor, investor);
         assertEq(vault.pendingDepositRequest(0, investor), amount);
         assertEq(vault.pendingDepositRequest(0, operator), 0);
 
@@ -60,7 +60,7 @@ contract OperatorTest is BaseTest {
 
         vm.prank(operator);
         vm.expectRevert(bytes("ERC7540Vault/invalid-owner"));
-        vault.requestDeposit(amount, investor, investor, "");
+        vault.requestDeposit(amount, investor, investor);
     }
 
     function testRedeemAsOperator(uint256 amount) public {
@@ -82,7 +82,7 @@ contract OperatorTest is BaseTest {
 
         vm.prank(operator);
         vm.expectRevert(bytes("ERC20/insufficient-allowance"));
-        vault.requestRedeem(amount, investor, investor, "");
+        vault.requestRedeem(amount, investor, investor);
 
         assertEq(vault.isOperator(investor, operator), false);
         vm.prank(investor);
@@ -90,7 +90,7 @@ contract OperatorTest is BaseTest {
         assertEq(vault.isOperator(investor, operator), true);
 
         vm.prank(operator);
-        vault.requestRedeem(amount, investor, investor, "");
+        vault.requestRedeem(amount, investor, investor);
         assertEq(vault.pendingRedeemRequest(0, investor), amount);
         assertEq(vault.pendingRedeemRequest(0, operator), 0);
 
@@ -114,6 +114,6 @@ contract OperatorTest is BaseTest {
         deposit(vault_, investor, amount);
         vm.prank(operator);
         vm.expectRevert(bytes("ERC20/insufficient-allowance"));
-        vault.requestRedeem(amount, investor, investor, "");
+        vault.requestRedeem(amount, investor, investor);
     }
 }

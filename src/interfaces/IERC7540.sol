@@ -3,64 +3,6 @@ pragma solidity >=0.5.0;
 
 import {IERC7575} from "src/interfaces/IERC7575.sol";
 
-interface IERC7540DepositReceiver {
-    /**
-     * @dev Handle the receipt of a deposit Request
-     *
-     * The ERC7540 smart contract calls this function on the recipient
-     * after a `requestDeposit`. This function MAY throw to revert and reject the
-     * request. Return of other than the magic value MUST result in the
-     * transaction being reverted.
-     * Inspired by https://eips.ethereum.org/EIPS/eip-721
-     *
-     * Note: the contract address is always the message sender.
-     *
-     * @param _sender The address which called `requestDeposit` function
-     * @param _owner The address which funded the `assets` of the Request (or message sender)
-     * @param _requestId The RID identifier of the Request which is being received
-     * @param _assets The amount transferred on `requestDeposit`
-     * @param _data Additional data with no specified format
-     * @return `bytes4(keccak256("onERC7540DepositReceived(address,address,uint256,bytes)"))`
-     *  unless throwing
-     */
-    function onERC7540DepositReceived(
-        address _sender,
-        address _owner,
-        uint256 _requestId,
-        uint256 _assets,
-        bytes memory _data
-    ) external returns (bytes4);
-}
-
-interface IERC7540RedeemReceiver {
-    /**
-     * @dev Handle the receipt of a redeem Request
-     *
-     * The ERC7540 smart contract calls this function on the recipient
-     * after a `requestRedeem`. This function MAY throw to revert and reject the
-     * request. Return of other than the magic value MUST result in the
-     * transaction being reverted.
-     * Inspired by https://eips.ethereum.org/EIPS/eip-721
-     *
-     * Note: the contract address is always the message sender.
-     *
-     * @param _sender The address which called `requestRedeem` function
-     * @param _owner The address which funded the `shares` of the Request (or message sender)
-     * @param _requestId The RID identifier of the Request which is being received
-     * @param _shares The amount transferred on `requestDeposit`
-     * @param _data Additional data with no specified format
-     * @return `bytes4(keccak256("onERC7540RedeemReceived(address,address,uint256,bytes)"))`
-     *  unless throwing
-     */
-    function onERC7540RedeemReceived(
-        address _sender,
-        address _owner,
-        uint256 _requestId,
-        uint256 _shares,
-        bytes memory _data
-    ) external returns (bytes4);
-}
-
 interface IERC7540Deposit {
     event DepositRequest(
         address indexed receiver, address indexed owner, uint256 indexed requestId, address sender, uint256 assets
@@ -77,16 +19,10 @@ interface IERC7540Deposit {
      * @param assets the amount of deposit assets to transfer from owner
      * @param receiver the receiver of the request who will be able to operate the request
      * @param owner the source of the deposit assets
-     * @param data additional bytes which may be used to approve or call the receiver contract
      *
      * NOTE: most implementations will require pre-approval of the Vault with the Vault's underlying asset token.
-     *
-     * If data is nonzero, attempt to call the receiver onERC7540DepositReceived,
-     * otherwise just send the request to the receiver
      */
-    function requestDeposit(uint256 assets, address receiver, address owner, bytes calldata data)
-        external
-        returns (uint256 requestId);
+    function requestDeposit(uint256 assets, address receiver, address owner) external returns (uint256 requestId);
 
     /**
      * @dev Returns the amount of requested assets in Pending state.
@@ -125,16 +61,10 @@ interface IERC7540Redeem {
      * @param shares the amount of shares to be redeemed to transfer from owner
      * @param receiver the receiver of the request who will be able to operate the request
      * @param owner the source of the shares to be redeemed
-     * @param data additional bytes which may be used to approve or call the receiver contract
      *
      * NOTE: most implementations will require pre-approval of the Vault with the Vault's share token.
-     *
-     * If data is nonzero, attempt to call the receiver onERC7540RedeemReceived,
-     * otherwise just send the request to the receiver
      */
-    function requestRedeem(uint256 shares, address receiver, address owner, bytes calldata data)
-        external
-        returns (uint256 requestId);
+    function requestRedeem(uint256 shares, address receiver, address owner) external returns (uint256 requestId);
 
     /**
      * @dev Returns the amount of requested shares in Pending state.
@@ -295,4 +225,13 @@ interface IERC7540 is IERC7540Deposit, IERC7540Redeem, IERC7540CancelDeposit, IE
      * @param approved The approval status.
      */
     function setOperator(address operator, bool approved) external returns (bool);
+
+    /**
+     * @dev Returns `true` if the `operator` is approved as an operator for an `owner`.
+     *
+     * @param owner The address of the owner.
+     * @param operator The address of the operator.
+     * @return status The approval status
+     */
+    function isOperator(address owner, address operator) external returns (bool status);
 }

@@ -26,10 +26,10 @@ interface VaultLike is IERC20 {
     function trancheId() external view returns (bytes16);
     function asset() external view returns (address);
     function share() external view returns (address);
-    function emitDepositClaimable(address owner, uint256 assets, uint256 shares) external;
-    function emitRedeemClaimable(address owner, uint256 assets, uint256 shares) external;
-    function emitCancelDepositClaimable(address owner, uint256 assets) external;
-    function emitCancelRedeemClaimable(address owner, uint256 shares) external;
+    function onDepositClaimable(address owner, uint256 assets, uint256 shares) external;
+    function onRedeemClaimable(address owner, uint256 assets, uint256 shares) external;
+    function onCancelDepositClaimable(address owner, uint256 assets) external;
+    function onCancelRedeemClaimable(address owner, uint256 shares) external;
 }
 
 interface AuthTransferLike {
@@ -280,7 +280,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
         TrancheTokenLike trancheToken = TrancheTokenLike(VaultLike(vault).share());
         trancheToken.mint(address(escrow), shares);
 
-        VaultLike(vault).emitDepositClaimable(user, assets, shares);
+        VaultLike(vault).onDepositClaimable(user, assets, shares);
     }
 
     /// @inheritdoc IInvestmentManager
@@ -309,7 +309,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
         TrancheTokenLike trancheToken = TrancheTokenLike(VaultLike(vault).share());
         trancheToken.burn(address(escrow), shares);
 
-        VaultLike(vault).emitRedeemClaimable(user, assets, shares);
+        VaultLike(vault).onRedeemClaimable(user, assets, shares);
     }
 
     /// @inheritdoc IInvestmentManager
@@ -332,7 +332,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
 
         if (state.pendingDepositRequest == 0) state.pendingCancelDepositRequest = false;
 
-        VaultLike(vault).emitCancelDepositClaimable(user, assets);
+        VaultLike(vault).onCancelDepositClaimable(user, assets);
     }
 
     /// @inheritdoc IInvestmentManager
@@ -354,7 +354,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
 
         if (state.pendingRedeemRequest == 0) state.pendingCancelRedeemRequest = false;
 
-        VaultLike(vault).emitCancelRedeemClaimable(user, shares);
+        VaultLike(vault).onCancelRedeemClaimable(user, shares);
     }
 
     /// @inheritdoc IInvestmentManager

@@ -25,39 +25,39 @@ contract DepositTest is BaseTest {
 
         // will fail - user not member: can not send funds
         vm.expectRevert(bytes("InvestmentManager/owner-is-restricted"));
-        vault.requestDeposit(amount, self, self, "");
+        vault.requestDeposit(amount, self, self);
 
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max); // add user as member
 
         // will fail - user not member: can not receive trancheToken
         vm.expectRevert(bytes("InvestmentManager/transfer-not-allowed"));
-        vault.requestDeposit(amount, nonMember, self, "");
+        vault.requestDeposit(amount, nonMember, self);
 
         // will fail - user did not give asset allowance to vault
         vm.expectRevert(bytes("SafeTransferLib/safe-transfer-from-failed"));
-        vault.requestDeposit(amount, self, self, "");
+        vault.requestDeposit(amount, self, self);
 
         // will fail - zero deposit not allowed
         vm.expectRevert(bytes("InvestmentManager/zero-amount-not-allowed"));
-        vault.requestDeposit(0, self, self, "");
+        vault.requestDeposit(0, self, self);
 
         // will fail - owner != msg.sender not allowed
         vm.expectRevert(bytes("ERC7540Vault/invalid-owner"));
-        vault.requestDeposit(amount, self, nonMember, "");
+        vault.requestDeposit(amount, self, nonMember);
 
         // will fail - investment asset not allowed
         centrifugeChain.disallowAsset(vault.poolId(), defaultAssetId);
         vm.expectRevert(bytes("InvestmentManager/asset-not-allowed"));
-        vault.requestDeposit(amount, self, self, "");
+        vault.requestDeposit(amount, self, self);
 
         // success
         centrifugeChain.allowAsset(vault.poolId(), defaultAssetId);
         erc20.approve(vault_, amount);
-        vault.requestDeposit(amount, self, self, "");
+        vault.requestDeposit(amount, self, self);
 
         // fail: no asset left
         vm.expectRevert(bytes("ERC7540Vault/insufficient-balance"));
-        vault.requestDeposit(amount, self, self, "");
+        vault.requestDeposit(amount, self, self);
 
         // ensure funds are locked in escrow
         assertEq(erc20.balanceOf(address(escrow)), amount);
@@ -144,7 +144,7 @@ contract DepositTest is BaseTest {
         centrifugeChain.updateMember(poolId, trancheId, self, type(uint64).max);
         asset.approve(vault_, investmentAmount);
         asset.mint(self, investmentAmount);
-        vault.requestDeposit(investmentAmount, self, self, "");
+        vault.requestDeposit(investmentAmount, self, self);
         uint128 _assetId = poolManager.assetToId(address(asset)); // retrieve assetId
 
         // first trigger executed collectInvest of the first 50% at a price of 1.4
@@ -186,7 +186,7 @@ contract DepositTest is BaseTest {
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, uint64(block.timestamp));
         erc20.mint(self, totalAmount);
         erc20.approve(address(vault), totalAmount);
-        vault.requestDeposit(totalAmount, self, self, "");
+        vault.requestDeposit(totalAmount, self, self);
 
         // Ensure funds were locked in escrow
         assertEq(erc20.balanceOf(address(escrow)), totalAmount);
@@ -243,7 +243,7 @@ contract DepositTest is BaseTest {
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, uint64(block.timestamp));
         erc20.mint(self, totalAmount);
         erc20.approve(address(vault), totalAmount);
-        vault.requestDeposit(totalAmount, self, self, "");
+        vault.requestDeposit(totalAmount, self, self);
 
         // Ensure funds were locked in escrow
         assertEq(erc20.balanceOf(address(escrow)), totalAmount);
@@ -294,7 +294,7 @@ contract DepositTest is BaseTest {
 
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max); // add user as member
         erc20.approve(vault_, amount); // add allowance
-        vault.requestDeposit(amount, self, self, "");
+        vault.requestDeposit(amount, self, self);
 
         // trigger executed collectInvest
         uint128 _assetId = poolManager.assetToId(address(erc20)); // retrieve assetId
@@ -427,12 +427,12 @@ contract DepositTest is BaseTest {
         // frontrunnign not possible
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), randomUser, type(uint64).max);
         vm.expectRevert(bytes("ERC7540Vault/insufficient-balance"));
-        vault.requestDepositWithPermit(amount, vm.addr(0xABCD), "", block.timestamp, v, r, s);
+        vault.requestDepositWithPermit(amount, vm.addr(0xABCD), block.timestamp, v, r, s);
         vm.stopPrank();
 
         // investor still able to WithPermit
         vm.prank(vm.addr(0xABCD));
-        vault.requestDepositWithPermit(amount, vm.addr(0xABCD), "", block.timestamp, v, r, s);
+        vault.requestDepositWithPermit(amount, vm.addr(0xABCD), block.timestamp, v, r, s);
 
         // ensure funds are locked in escrow
         assertEq(erc20.balanceOf(address(escrow)), amount);
@@ -466,9 +466,9 @@ contract DepositTest is BaseTest {
 
         // premit functions can only be executed by the owner
         vm.expectRevert(bytes("ERC7540Vault/insufficient-balance"));
-        vault.requestDepositWithPermit(amount, vm.addr(0xABCD), "", block.timestamp, v, r, s);
+        vault.requestDepositWithPermit(amount, vm.addr(0xABCD), block.timestamp, v, r, s);
         vm.prank(vm.addr(0xABCD));
-        vault.requestDepositWithPermit(amount, vm.addr(0xABCD), "", block.timestamp, v, r, s);
+        vault.requestDepositWithPermit(amount, vm.addr(0xABCD), block.timestamp, v, r, s);
 
         // To avoid stack too deep errors
         delete v;
@@ -518,7 +518,7 @@ contract DepositTest is BaseTest {
         centrifugeChain.updateMember(poolId, trancheId, self, type(uint64).max);
         asset.approve(vault_, investmentAmount);
         asset.mint(self, investmentAmount);
-        vault.requestDeposit(investmentAmount, self, self, "");
+        vault.requestDeposit(investmentAmount, self, self);
 
         // trigger executed collectInvest of the first 50% at a price of 1.2
         uint128 _assetId = poolManager.assetToId(address(asset)); // retrieve assetId
@@ -550,7 +550,7 @@ contract DepositTest is BaseTest {
         );
 
         // redeem
-        vault.requestRedeem(firstTrancheTokenPayout + secondTrancheTokenPayout, address(this), address(this), "");
+        vault.requestRedeem(firstTrancheTokenPayout + secondTrancheTokenPayout, address(this), address(this));
 
         // trigger executed collectRedeem at a price of 1.5
         // 50% invested at 1.2 and 50% invested at 1.4 leads to ~77 tranche tokens
@@ -595,7 +595,7 @@ contract DepositTest is BaseTest {
         centrifugeChain.updateMember(poolId, trancheId, self, type(uint64).max);
         asset.approve(vault_, investmentAmount);
         asset.mint(self, investmentAmount);
-        vault.requestDeposit(investmentAmount, self, self, "");
+        vault.requestDeposit(investmentAmount, self, self);
 
         // trigger executed collectInvest of the first 50% at a price of 1.2
         uint128 _assetId = poolManager.assetToId(address(asset)); // retrieve assetId
@@ -625,7 +625,7 @@ contract DepositTest is BaseTest {
         assertEq(trancheToken.balanceOf(self), firstTrancheTokenPayout + secondTrancheTokenPayout);
 
         // redeem
-        vault.requestRedeem(firstTrancheTokenPayout + secondTrancheTokenPayout, address(this), address(this), "");
+        vault.requestRedeem(firstTrancheTokenPayout + secondTrancheTokenPayout, address(this), address(this));
 
         // trigger executed collectRedeem at a price of 1.5
         // 50% invested at 1.2 and 50% invested at 1.4 leads to ~77 tranche tokens
@@ -676,7 +676,7 @@ contract DepositTest is BaseTest {
         centrifugeChain.updateMember(poolId, trancheId, self, type(uint64).max);
         asset.approve(vault_, investmentAmount);
         asset.mint(self, investmentAmount);
-        vault.requestDeposit(investmentAmount, self, self, "");
+        vault.requestDeposit(investmentAmount, self, self);
 
         // trigger executed collectInvest at a tranche token price of 1.2
         uint128 _assetId = poolManager.assetToId(address(asset)); // retrieve assetId
@@ -729,7 +729,7 @@ contract DepositTest is BaseTest {
         centrifugeChain.updateMember(poolId, trancheId, self, type(uint64).max);
         asset.approve(vault_, investmentAmount);
         asset.mint(self, investmentAmount);
-        vault.requestDeposit(investmentAmount, self, self, "");
+        vault.requestDeposit(investmentAmount, self, self);
 
         // trigger executed collectInvest at a tranche token price of 1.2
         uint128 _assetId = poolManager.assetToId(address(asset)); // retrieve assetId
@@ -768,7 +768,7 @@ contract DepositTest is BaseTest {
         erc20.approve(vault_, amount);
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max);
 
-        vault.requestDeposit(amount, self, self, "");
+        vault.requestDeposit(amount, self, self);
 
         assertEq(erc20.balanceOf(address(escrow)), amount);
         assertEq(erc20.balanceOf(address(self)), 0);
@@ -793,7 +793,7 @@ contract DepositTest is BaseTest {
         erc20.mint(self, amount);
         erc20.approve(vault_, amount);
         vm.expectRevert(bytes("InvestmentManager/cancellation-is-pending"));
-        vault.requestDeposit(amount, self, self, "");
+        vault.requestDeposit(amount, self, self);
         erc20.burn(self, amount);
 
         centrifugeChain.isFulfilledCancelDepositRequest(
@@ -807,7 +807,7 @@ contract DepositTest is BaseTest {
         // After cancellation is executed, new request can be submitted
         erc20.mint(self, amount);
         erc20.approve(vault_, amount);
-        vault.requestDeposit(amount, self, self, "");
+        vault.requestDeposit(amount, self, self);
     }
 
     function partialDeposit(uint64 poolId, bytes16 trancheId, ERC7540Vault vault, ERC20 asset) public {
@@ -817,7 +817,7 @@ contract DepositTest is BaseTest {
         centrifugeChain.updateMember(poolId, trancheId, self, type(uint64).max);
         asset.approve(address(vault), investmentAmount);
         asset.mint(self, investmentAmount);
-        vault.requestDeposit(investmentAmount, self, self, "");
+        vault.requestDeposit(investmentAmount, self, self);
         uint128 _assetId = poolManager.assetToId(address(asset)); // retrieve assetId
 
         // first trigger executed collectInvest of the first 50% at a price of 1.4
