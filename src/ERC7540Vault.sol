@@ -384,7 +384,10 @@ contract ERC7540Vault is Auth, IERC7540, IAuthorizeOperator {
         return manager.priceLastUpdated(address(this));
     }
 
-    function validateOwner(address owner) internal view returns (bool) {
-        require(owner == msg.sender || isOperator[owner][msg.sender], "ERC7540Vault/invalid-owner");
+    function validateOwner(address owner) internal view {
+        require(
+            owner == msg.sender || isOperator[owner][msg.sender] || manager.isGlobalOperator(address(this), msg.sender),
+            "ERC7540Vault/invalid-owner"
+        );
     }
 }

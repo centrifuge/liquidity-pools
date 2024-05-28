@@ -47,9 +47,9 @@ contract PoolManager is Auth, IPoolManager {
     EscrowLike public immutable escrow;
 
     GatewayLike public gateway;
+    ERC7540VaultFactory public vaultFactory;
     InvestmentManagerLike public investmentManager;
     TrancheTokenFactoryLike public trancheTokenFactory;
-    ERC7540VaultFactory public vaultFactory;
     RestrictionManagerFactoryLike public restrictionManagerFactory;
 
     mapping(uint64 poolId => Pool) public pools;
@@ -399,6 +399,7 @@ contract PoolManager is Auth, IPoolManager {
         address restrictionManager = restrictionManagerFactory.newRestrictionManager(
             undeployedTranche.restrictionSet, token, restrictionManagerWards
         );
+
         TrancheTokenLike(token).file("restrictionManager", restrictionManager);
 
         pools[poolId].tranches[trancheId].token = token;

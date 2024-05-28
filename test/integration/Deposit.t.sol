@@ -94,9 +94,14 @@ contract DepositTest is BaseTest {
         assertEq(vault.maxMint(self), 0);
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max);
 
+        vm.assume(randomUser != self);
         // deposit 50% of the amount
-        vault.deposit(amount / 2, self); // mint half the amount
+        vm.startPrank(randomUser); // try to claim deposit on behalf of user and set the wrong user as receiver
+        vm.expectRevert(bytes("ERC7540Vault/invalid-owner"));
+        vault.deposit(amount / 2, randomUser, self);
+        vm.stopPrank();
 
+        vault.deposit(amount / 2, self, self); // deposit half the amount
         // Allow 2 difference because of rounding
         assertApproxEqAbs(trancheToken.balanceOf(self), shares / 2, 2);
         assertApproxEqAbs(trancheToken.balanceOf(address(escrow)), shares - shares / 2, 2);
@@ -113,7 +118,7 @@ contract DepositTest is BaseTest {
         vm.expectRevert(bytes("InvestmentManager/exceeds-deposit-limits"));
         vault.mint(1, self);
         vm.expectRevert(bytes("InvestmentManager/exceeds-deposit-limits"));
-        vault.deposit(2, self);
+        vault.deposit(2, self, self);
 
         // remainder is rounding difference
         assertTrue(vault.maxDeposit(self) <= amount * 0.01e18);
@@ -204,7 +209,7 @@ contract DepositTest is BaseTest {
         while (vault.maxDeposit(self) > 0) {
             uint256 randomDeposit = random(vault.maxDeposit(self), 1);
 
-            try vault.deposit(randomDeposit, self) {
+            try vault.deposit(randomDeposit, self, self) {
                 if (vault.maxDeposit(self) == 0 && vault.maxMint(self) > 0) {
                     // If you cannot deposit anymore because the 1 wei remaining is rounded down,
                     // you should mint the remainder instead.
@@ -313,7 +318,7 @@ contract DepositTest is BaseTest {
 
         // deposit 1/2 funds to receiver
         vm.expectRevert(bytes("RestrictionManager/destination-not-a-member"));
-        vault.deposit(amount / 2, receiver); // mint half the amount
+        vault.deposit(amount / 2, receiver, self); // mint half the amount
 
         vm.expectRevert(bytes("RestrictionManager/destination-not-a-member"));
         vault.mint(amount / 2, receiver); // mint half the amount
@@ -322,11 +327,72 @@ contract DepositTest is BaseTest {
             // member
 
         // success
-        vault.deposit(amount / 2, receiver); // mint half the amount
+        vault.deposit(amount / 2, receiver, self); // mint half the amount
         vault.mint(vault.maxMint(self), receiver); // mint half the amount
 
         assertApproxEqAbs(trancheToken.balanceOf(receiver), shares, 1);
         assertApproxEqAbs(trancheToken.balanceOf(receiver), shares, 1);
+        assertApproxEqAbs(trancheToken.balanceOf(address(escrow)), 0, 1);
+        assertApproxEqAbs(erc20.balanceOf(address(escrow)), amount, 1);
+    }
+
+    function testDepositWithEndorsement(uint256 amount) public {
+        // If lower than 4 or odd, rounding down can lead to not receiving any tokens
+        amount = uint128(bound(amount, 4, MAX_UINT128));
+        vm.assume(amount % 2 == 0);
+
+        uint128 price = 2 * 10 ** 18;
+        address vault_ = deploySimpleVault();
+        address receiver = makeAddr("receiver");
+        ERC7540Vault vault = ERC7540Vault(vault_);
+        TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
+
+        centrifugeChain.updateTrancheTokenPrice(
+            vault.poolId(), vault.trancheId(), defaultAssetId, price, uint64(block.timestamp)
+        );
+
+        erc20.mint(self, amount);
+        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max); // add user as member
+        erc20.approve(vault_, amount); // add allowance
+        vault.requestDeposit(amount, self, self);
+
+        // trigger executed collectInvest
+        uint128 _currencyId = poolManager.assetToId(address(erc20)); // retrieve currencyId
+        uint128 trancheTokensPayout = uint128(amount * 10 ** 18 / price); // trancheTokenPrice = 2$
+        assertApproxEqAbs(trancheTokensPayout, amount / 2, 2);
+        centrifugeChain.isFulfilledDepositRequest(
+            vault.poolId(),
+            vault.trancheId(),
+            bytes32(bytes20(self)),
+            _currencyId,
+            uint128(amount),
+            trancheTokensPayout,
+            uint128(amount)
+        );
+
+        // assert deposit & mint values adjusted
+        assertEq(vault.maxMint(self), trancheTokensPayout); // max deposit
+        assertEq(vault.maxDeposit(self), amount); // max deposit
+        // assert tranche tokens minted
+        assertEq(trancheToken.balanceOf(address(escrow)), trancheTokensPayout);
+
+        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), receiver, type(uint64).max); // add receiver
+
+        address router = makeAddr("router");
+
+        vm.startPrank(router);
+        vm.expectRevert(bytes("ERC7540Vault/invalid-owner")); // fail without endorsement
+        vault.deposit(amount, receiver, address(this));
+        vm.stopPrank();
+
+        // endorse router
+        root.endorse(router);
+        vm.startPrank(router); // try to claim deposit on behalf of user and set the wrong user as receiver
+        vault.deposit(amount, receiver, address(this));
+        vm.stopPrank();
+
+        assertApproxEqAbs(trancheToken.balanceOf(receiver), trancheTokensPayout, 1);
+        assertApproxEqAbs(trancheToken.balanceOf(receiver), trancheTokensPayout, 1);
         assertApproxEqAbs(trancheToken.balanceOf(address(escrow)), 0, 1);
         assertApproxEqAbs(erc20.balanceOf(address(escrow)), amount, 1);
     }
@@ -363,7 +429,7 @@ contract DepositTest is BaseTest {
         vault.requestDepositWithPermit(amount, vm.addr(0xABCD), block.timestamp, v, r, s);
         vm.stopPrank();
 
-        // investor still able to requestDepositWithPermit
+        // investor still able to WithPermit
         vm.prank(vm.addr(0xABCD));
         vault.requestDepositWithPermit(amount, vm.addr(0xABCD), block.timestamp, v, r, s);
 
