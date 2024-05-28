@@ -99,11 +99,13 @@ contract ERC7540VaultTest is BaseTest {
         bytes4 erc7540Redeem = 0x620ee8e4;
         bytes4 erc7540CancelDeposit = 0x8bf840e3;
         bytes4 erc7540CancelRedeem = 0xe76cffc7;
+        bytes4 ercAuthorizeOperator = 0x59361fd0;
 
         vm.assume(
             unsupportedInterfaceId != erc165 && unsupportedInterfaceId != erc7575Vault
                 && unsupportedInterfaceId != erc7540Deposit && unsupportedInterfaceId != erc7540Redeem
                 && unsupportedInterfaceId != erc7540CancelDeposit && unsupportedInterfaceId != erc7540CancelRedeem
+                && unsupportedInterfaceId != ercAuthorizeOperator
         );
 
         address vault_ = deploySimpleVault();
@@ -115,6 +117,7 @@ contract ERC7540VaultTest is BaseTest {
         assertEq(type(IERC7540Redeem).interfaceId, erc7540Redeem);
         assertEq(type(IERC7540CancelDeposit).interfaceId, erc7540CancelDeposit);
         assertEq(type(IERC7540CancelRedeem).interfaceId, erc7540CancelRedeem);
+        assertEq(type(IAuthorizeOperator).interfaceId, ercAuthorizeOperator);
 
         assertEq(vault.supportsInterface(erc165), true);
         assertEq(vault.supportsInterface(erc7575Vault), true);
@@ -122,6 +125,7 @@ contract ERC7540VaultTest is BaseTest {
         assertEq(vault.supportsInterface(erc7540Redeem), true);
         assertEq(vault.supportsInterface(erc7540CancelDeposit), true);
         assertEq(vault.supportsInterface(erc7540CancelRedeem), true);
+        assertEq(vault.supportsInterface(ercAuthorizeOperator), true);
 
         assertEq(vault.supportsInterface(unsupportedInterfaceId), false);
     }
