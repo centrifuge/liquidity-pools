@@ -10,6 +10,7 @@ import {ERC7540VaultFactory} from "src/factories/ERC7540VaultFactory.sol";
 import {RestrictionManagerFactory} from "src/factories/RestrictionManagerFactory.sol";
 import {PoolManager} from "src/PoolManager.sol";
 import {Escrow} from "src/Escrow.sol";
+import {CentrifugeRouter} from "src/CentrifugeRouter.sol";
 import {Guardian} from "src/admin/Guardian.sol";
 import {MockSafe} from "test/mocks/MockSafe.sol";
 import "forge-std/Script.sol";
@@ -36,6 +37,7 @@ contract Deployer is Script {
     Guardian public guardian;
     Gateway public gateway;
     Aggregator public aggregator;
+    CentrifugeRouter public centrifugeRouter; // TODO: rename once routers => adapters rename is in
     address public vaultFactory;
     address public restrictionManagerFactory;
     address public trancheTokenFactory;
@@ -52,8 +54,12 @@ contract Deployer is Script {
         vaultFactory = address(new ERC7540VaultFactory(address(root)));
         restrictionManagerFactory = address(new RestrictionManagerFactory(address(root)));
         trancheTokenFactory = address(new TrancheTokenFactory{salt: salt}(address(root), deployer));
-        investmentManager = new InvestmentManager(address(escrow));
+        investmentManager = new InvestmentManager(address(root), address(escrow));
         poolManager = new PoolManager(address(escrow), vaultFactory, restrictionManagerFactory, trancheTokenFactory);
+
+        centrifugeRouter = new CentrifugeRouter();
+        root.endorse(address(centrifugeRouter));
+        root.endorse(address(escrow));
 
         AuthLike(vaultFactory).rely(address(poolManager));
         AuthLike(trancheTokenFactory).rely(address(poolManager));
@@ -85,6 +91,7 @@ contract Deployer is Script {
         root.rely(address(gateway));
         investmentManager.file("poolManager", address(poolManager));
         poolManager.file("investmentManager", address(investmentManager));
+
         investmentManager.file("gateway", address(gateway));
         poolManager.file("gateway", address(gateway));
         investmentManager.rely(address(root));

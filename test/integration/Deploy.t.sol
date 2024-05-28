@@ -139,7 +139,7 @@ contract DeployTest is Test, Deployer {
         assertEq(erc20.balanceOf(self), 0);
 
         uint256 div = 2;
-        vault.deposit(amount / div, self);
+        vault.deposit(amount / div, self, self);
 
         assertEq(trancheToken.balanceOf(self), shares / div);
         assertEq(trancheToken.balanceOf(address(escrow)), shares - shares / div);
