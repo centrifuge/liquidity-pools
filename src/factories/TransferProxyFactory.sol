@@ -8,23 +8,15 @@ import {ITransferProxy, ITransferProxyFactory} from "src/interfaces/factories/IT
 contract TransferProxy is ITransferProxy {
     IPoolManager public immutable poolManager;
     bytes32 public immutable destination;
-    address public immutable recoverer;
 
-    constructor(address poolManager_, bytes32 destination_, address recoverer_) {
+    constructor(address poolManager_, bytes32 destination_) {
         poolManager = IPoolManager(poolManager_);
         destination = destination_;
-        recoverer = recoverer_;
     }
 
     /// @inheritdoc ITransferProxy
     function transfer(address asset, uint128 amount) external {
         poolManager.transfer(asset, destination, amount);
-    }
-
-    /// @inheritdoc ITransferProxy
-    function recover(address asset, uint128 amount) external {
-        require(msg.sender == recoverer, "TransferProxy/not-recoverer");
-        SafeTransferLib.safeTransfer(asset, address(recoverer), amount);
     }
 }
 
@@ -36,7 +28,6 @@ interface TransferProxyFactoryLike {
 /// @dev    Utility for deploying contracts that have a fixed destination for transfers
 ///         Users can send tokens to the TransferProxy, from a service that only supports
 ///         ERC20 transfers and not full contract calls.
-///         If tokens are incorrectly sent, they can be recovered to the recoverer address.
 contract TransferProxyFactory is ITransferProxyFactory {
     address public immutable poolManager;
 
@@ -48,12 +39,11 @@ contract TransferProxyFactory is ITransferProxyFactory {
     }
 
     /// @inheritdoc ITransferProxyFactory
-    function newTransferProxy(bytes32 destination, address recoverer) public returns (address) {
-        bytes32 id = keccak256(bytes.concat(destination, bytes20(recoverer)));
-        require(proxies[id] == address(0), "TransferProxyFactory/proxy-already-deployed");
+    function newTransferProxy(bytes32 destination) public returns (address) {
+        require(proxies[destination] == address(0), "TransferProxyFactory/proxy-already-deployed");
 
-        address proxy = address(new TransferProxy(poolManager, destination, recoverer));
-        proxies[id] = proxy;
+        address proxy = address(new TransferProxy(poolManager, destination));
+        proxies[destination] = proxy;
         return proxy;
     }
 }
