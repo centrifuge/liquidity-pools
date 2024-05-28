@@ -387,7 +387,7 @@ contract DepositTest is BaseTest {
 
         // endorse router
         root.endorse(router);
-        vm.startPrank(router); // try to claim deposit on behalt of user and set the wrong user as receiver
+        vm.startPrank(router); // try to claim deposit on behalf of user and set the wrong user as receiver
         vault.deposit(amount, receiver, address(this));
         vm.stopPrank();
 
