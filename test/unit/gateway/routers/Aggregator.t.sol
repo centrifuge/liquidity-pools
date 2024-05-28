@@ -17,6 +17,7 @@ contract AggregatorTest is Test {
     MockRouter router3;
     MockRouter router4;
     address[] oneMockRouter;
+    address[] twoDuplicateMockRouters;
     address[] threeMockRouters;
     address[] fourMockRouters;
     address[] nineMockRouters;
@@ -40,6 +41,9 @@ contract AggregatorTest is Test {
         threeMockRouters.push(address(router1));
         threeMockRouters.push(address(router2));
         threeMockRouters.push(address(router3));
+
+        twoDuplicateMockRouters.push(address(router1));
+        twoDuplicateMockRouters.push(address(router1));
 
         fourMockRouters.push(address(router1));
         fourMockRouters.push(address(router2));
@@ -96,6 +100,9 @@ contract AggregatorTest is Test {
 
         vm.expectRevert(bytes("Aggregator/file-unrecognized-param"));
         aggregator.file("notRouters", nineMockRouters);
+
+        vm.expectRevert(bytes("Aggregator/no-duplicates-allowed"));
+        aggregator.file("routers", twoDuplicateMockRouters);
 
         aggregator.deny(address(this));
         vm.expectRevert(bytes("Auth/not-authorized"));

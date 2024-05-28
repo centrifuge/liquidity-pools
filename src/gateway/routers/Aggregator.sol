@@ -55,6 +55,8 @@ contract Aggregator is Auth, IAggregator {
             // Enable new routers, setting quorum to number of routers
             uint8 quorum_ = uint8(routers_.length);
             for (uint8 j; j < quorum_; j++) {
+                require(validRouters[routers_[j]].id == 0, "Aggregator/no-duplicates-allowed");
+
                 // Ids are assigned sequentially starting at 1
                 validRouters[routers_[j]] = Router(j + 1, quorum_);
             }
