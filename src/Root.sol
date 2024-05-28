@@ -27,6 +27,9 @@ contract Root is Auth, IRoot {
 
     address public immutable escrow;
 
+    /// @notice Trusted contracts within the system
+    mapping(address => uint256) public endorsements;
+
     bool public paused;
     uint256 public delay;
     mapping(address relyTarget => uint256 timestamp) public schedule;
@@ -51,6 +54,24 @@ contract Root is Auth, IRoot {
             revert("Root/file-unrecognized-param");
         }
         emit File(what, data);
+    }
+
+    /// --- Endorsements ---
+    /// @inheritdoc IRoot
+    function endorse(address user) external auth {
+        endorsements[user] = 1;
+        emit Endorse(user);
+    }
+
+    /// @inheritdoc IRoot
+    function veto(address user) external auth {
+        endorsements[user] = 0;
+        emit Veto(user);
+    }
+
+    /// @inheritdoc IRoot
+    function endorsed(address user) public view returns (bool) {
+        return endorsements[user] == 1;
     }
 
     // --- Pause management ---
