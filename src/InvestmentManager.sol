@@ -476,7 +476,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
     }
 
     /// @inheritdoc IInvestmentManager
-    function isGlobalOperator(address, /* vault */ address user) public view returns (bool) {
+    function isGlobalOperator(address /* vault */, address user) public view returns (bool) {
         return IRoot(root).endorsed(user);
     }
 
