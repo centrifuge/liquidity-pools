@@ -4,7 +4,6 @@ pragma solidity 0.8.21;
 import "test/BaseTest.sol";
 import "src/interfaces/IERC7575.sol";
 import "src/interfaces/IERC7540.sol";
-import {MockMulticall, Call} from "test/mocks/MockMulticall.sol";
 
 contract CentrifugeRoutertest is BaseTest {
     function testRouterDeposit(uint256 amount) public {
@@ -281,16 +280,16 @@ contract CentrifugeRoutertest is BaseTest {
         public
         returns (ERC20 erc20X, ERC20 erc20Y, ERC7540Vault vault1, ERC7540Vault vault2)
     {
-        ERC20 erc20X = _newErc20("X's Dollar", "USDX", 6);
-        ERC20 erc20Y = _newErc20("Y's Dollar", "USDY", 6);
+        erc20X = _newErc20("X's Dollar", "USDX", 6);
+        erc20Y = _newErc20("Y's Dollar", "USDY", 6);
         vm.label(address(erc20X), "erc20X");
         vm.label(address(erc20Y), "erc20Y");
         address vault1_ =
             deployVault(5, 6, defaultRestrictionSet, "name1", "symbol1", bytes16(bytes("1")), 1, address(erc20X));
         address vault2_ =
             deployVault(4, 6, defaultRestrictionSet, "name2", "symbol2", bytes16(bytes("2")), 2, address(erc20Y));
-        ERC7540Vault vault1 = ERC7540Vault(vault1_);
-        ERC7540Vault vault2 = ERC7540Vault(vault2_);
+        vault1 = ERC7540Vault(vault1_);
+        vault2 = ERC7540Vault(vault2_);
         vm.label(vault1_, "vault1");
         vm.label(vault2_, "vault2");
 
@@ -302,6 +301,5 @@ contract CentrifugeRoutertest is BaseTest {
 
         centrifugeChain.updateMember(vault1.poolId(), vault1.trancheId(), self, type(uint64).max);
         centrifugeChain.updateMember(vault2.poolId(), vault2.trancheId(), self, type(uint64).max);
-        return (erc20X, erc20Y, vault1, vault2);
     }
 }
