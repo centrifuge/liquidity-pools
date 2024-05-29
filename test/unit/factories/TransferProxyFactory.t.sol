@@ -11,8 +11,6 @@ contract TransferProxyFactoryTest is Test {
     TransferProxyFactory factory;
     ERC20 erc20;
 
-    address defaultRecoverer = makeAddr("recoverer");
-
     function setUp() public {
         poolManager = new MockPoolManager();
         factory = new TransferProxyFactory(address(poolManager));
@@ -22,15 +20,15 @@ contract TransferProxyFactoryTest is Test {
     function testTransferProxy(bytes32 destination, bytes32 otherDestination) public {
         vm.assume(destination != otherDestination);
 
-        TransferProxy proxy = TransferProxy(factory.newTransferProxy(destination, defaultRecoverer));
+        TransferProxy proxy = TransferProxy(factory.newTransferProxy(destination));
         assertEq(factory.poolManager(), address(poolManager));
-        assertEq(factory.proxies(keccak256(bytes.concat(destination, bytes20(defaultRecoverer)))), address(proxy));
+        assertEq(factory.proxies(destination), address(proxy));
         assertEq(address(proxy.poolManager()), address(poolManager));
         assertEq(proxy.destination(), destination);
 
         // Proxies cannot be deployed twice
         vm.expectRevert(bytes("TransferProxyFactory/proxy-already-deployed"));
-        factory.newTransferProxy(destination, defaultRecoverer);
+        factory.newTransferProxy(destination);
 
         erc20.mint(address(this), 100);
         erc20.transfer(address(proxy), 100);
@@ -46,27 +44,6 @@ contract TransferProxyFactoryTest is Test {
         assertEq(poolManager.values_uint128("amount"), 100);
 
         // Proxies are unique per destination
-        assertTrue(factory.newTransferProxy(otherDestination, defaultRecoverer) != address(proxy));
-    }
-
-    function testTransferProxyRecovery(bytes32 destination, address recoverer) public {
-        vm.assume(recoverer != address(0));
-        vm.assume(recoverer != address(this));
-        vm.assume(recoverer != address(erc20));
-
-        TransferProxy proxy = TransferProxy(factory.newTransferProxy(destination, recoverer));
-
-        erc20.mint(address(this), 100);
-        erc20.transfer(address(proxy), 100);
-        assertEq(erc20.balanceOf(address(this)), 0);
-        assertEq(erc20.balanceOf(address(proxy)), 100);
-
-        vm.expectRevert(bytes("TransferProxy/not-recoverer"));
-        proxy.recover(address(erc20), 100);
-
-        vm.prank(recoverer);
-        proxy.recover(address(erc20), 100);
-        assertEq(erc20.balanceOf(recoverer), 100);
-        assertEq(erc20.balanceOf(address(proxy)), 0);
+        assertTrue(factory.newTransferProxy(otherDestination) != address(proxy));
     }
 }

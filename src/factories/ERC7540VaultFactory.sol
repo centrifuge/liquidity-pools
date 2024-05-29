@@ -52,7 +52,6 @@ contract ERC7540VaultFactory is Auth {
         }
 
         AuthLike(investmentManager).rely(address(vault));
-        vault.endorse(router);
         vault.deny(address(this));
         return address(vault);
     }

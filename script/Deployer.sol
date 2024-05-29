@@ -37,7 +37,7 @@ contract Deployer is Script {
     Guardian public guardian;
     Gateway public gateway;
     Aggregator public aggregator;
-    CentrifugeRouter public cfgRouter;
+    CentrifugeRouter public centrifugeRouter; // TODO: rename once routers => adapters rename is in
     address public vaultFactory;
     address public restrictionManagerFactory;
     address public trancheTokenFactory;
@@ -54,9 +54,12 @@ contract Deployer is Script {
         vaultFactory = address(new ERC7540VaultFactory(address(root)));
         restrictionManagerFactory = address(new RestrictionManagerFactory(address(root)));
         trancheTokenFactory = address(new TrancheTokenFactory{salt: salt}(address(root), deployer));
-        investmentManager = new InvestmentManager(address(escrow));
+        investmentManager = new InvestmentManager(address(root), address(escrow));
         poolManager = new PoolManager(address(escrow), vaultFactory, restrictionManagerFactory, trancheTokenFactory);
-        cfgRouter = new CentrifugeRouter();
+        centrifugeRouter = new CentrifugeRouter();
+
+        root.endorse(address(centrifugeRouter));
+        root.endorse(address(escrow));
 
         AuthLike(vaultFactory).rely(address(poolManager));
         AuthLike(trancheTokenFactory).rely(address(poolManager));
@@ -87,7 +90,7 @@ contract Deployer is Script {
         root.rely(address(gateway));
         investmentManager.file("poolManager", address(poolManager));
         poolManager.file("investmentManager", address(investmentManager));
-        poolManager.file("cfgRouter", address(cfgRouter));
+        poolManager.file("centrifugeRouter", address(centrifugeRouter));
 
         investmentManager.file("gateway", address(gateway));
         poolManager.file("gateway", address(gateway));

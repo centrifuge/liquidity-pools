@@ -11,7 +11,7 @@ contract MockRestrictionManagerFactory is Mock {
         address[] calldata /* restrictionManagerWards */
     ) public returns (address) {
         values_uint8["restrictionSet"] = restrictionSet;
-        RestrictionManager restrictionManager = new RestrictionManager(token);
+        RestrictionManager restrictionManager = new RestrictionManager(address(0), token);
         restrictionManager.rely(msg.sender);
         return address(restrictionManager);
     }

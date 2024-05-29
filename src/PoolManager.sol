@@ -47,11 +47,11 @@ contract PoolManager is Auth, IPoolManager {
     EscrowLike public immutable escrow;
 
     GatewayLike public gateway;
+    ERC7540VaultFactory public vaultFactory;
     InvestmentManagerLike public investmentManager;
     TrancheTokenFactoryLike public trancheTokenFactory;
-    ERC7540VaultFactory public vaultFactory;
     RestrictionManagerFactoryLike public restrictionManagerFactory;
-    address public cfgRouter;
+    address public centrifugeRouter;
 
     mapping(uint64 poolId => Pool) public pools;
     mapping(uint128 assetId => address) public idToAsset;
@@ -81,7 +81,7 @@ contract PoolManager is Auth, IPoolManager {
         else if (what == "trancheTokenFactory") trancheTokenFactory = TrancheTokenFactoryLike(data);
         else if (what == "vaultFactory") vaultFactory = ERC7540VaultFactory(data);
         else if (what == "restrictionManagerFactory") restrictionManagerFactory = RestrictionManagerFactoryLike(data);
-        else if (what == "cfgRouter") cfgRouter = data;
+        else if (what == "centrifugeRouter") centrifugeRouter = data;
         else revert("PoolManager/file-unrecognized-param");
         emit File(what, data);
     }
@@ -403,8 +403,8 @@ contract PoolManager is Auth, IPoolManager {
         );
 
         TrancheTokenLike(token).file("restrictionManager", restrictionManager);
-        if (cfgRouter != address(0)) {
-            RestrictionManagerLike(restrictionManager).updateMember(cfgRouter, type(uint64).max);
+        if (centrifugeRouter != address(0)) {
+            RestrictionManagerLike(restrictionManager).updateMember(centrifugeRouter, type(uint64).max);
         }
 
         pools[poolId].tranches[trancheId].token = token;
@@ -435,7 +435,14 @@ contract PoolManager is Auth, IPoolManager {
 
         // Deploy vault
         vault = vaultFactory.newVault(
-            poolId, trancheId, asset, tranche.token, address(escrow), address(investmentManager), vaultWards, cfgRouter
+            poolId,
+            trancheId,
+            asset,
+            tranche.token,
+            address(escrow),
+            address(investmentManager),
+            vaultWards,
+            centrifugeRouter
         );
 
         // Link vault to tranche token

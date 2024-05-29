@@ -4,11 +4,9 @@ pragma solidity 0.8.21;
 import "test/BaseTest.sol";
 import "src/interfaces/IERC7575.sol";
 import "src/interfaces/IERC7540.sol";
-import {MockSucceedingRequestReceiver} from "test/mocks/MockSucceedingRequestReceiver.sol";
-import {FailingRequestReceiver} from "test/mocks/FailingRequestReceiver.sol";
 import {MockMulticall, Call} from "test/mocks/MockMulticall.sol";
 
-contract CentrifugeRouterTest is BaseTest {
+contract CentrifugeRoutertest is BaseTest {
     function testCFGRouterDeposit(uint256 amount) public {
         // If lower than 4 or odd, rounding down can lead to not receiving any tokens
         amount = uint128(bound(amount, 4, MAX_UINT128));
@@ -21,15 +19,14 @@ contract CentrifugeRouterTest is BaseTest {
         erc20.mint(self, amount);
 
         vm.expectRevert(bytes("SafeTransferLib/safe-transfer-from-failed")); // fail: no allowance
-        cfgRouter.requestDeposit(vault_, amount);
-
-        erc20.approve(address(cfgRouter), amount); // grant approval to cfg router
+        centrifugeRouter.requestDeposit(vault_, amount);
+        erc20.approve(address(centrifugeRouter), amount); // grant approval to cfg router
 
         vm.expectRevert(bytes("InvestmentManager/transfer-not-allowed")); // fail: receiver not member
-        cfgRouter.requestDeposit(vault_, amount);
-
+        centrifugeRouter.requestDeposit(vault_, amount);
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max); // add user as member
-        cfgRouter.requestDeposit(vault_, amount);
+
+        centrifugeRouter.requestDeposit(vault_, amount);
 
         // trigger - deposit order fulfillment
         uint128 assetId = poolManager.assetToId(address(erc20));
@@ -41,7 +38,8 @@ contract CentrifugeRouterTest is BaseTest {
         assertEq(trancheToken.balanceOf(address(escrow)), trancheTokensPayout); // assert tranche tokens minted
 
         // vm.expectRevert(bytes("LiquidityPool/not-owner-or-endorsed"));
-        cfgRouter.claimDeposit(vault_, self); // claim Deposit
+        centrifugeRouter.claimDeposit(vault_, self); // claim Deposit
+        assertApproxEqAbs(trancheToken.balanceOf(self), trancheTokensPayout, 1);
         assertApproxEqAbs(trancheToken.balanceOf(self), trancheTokensPayout, 1);
         assertApproxEqAbs(trancheToken.balanceOf(address(escrow)), 0, 1);
         assertApproxEqAbs(erc20.balanceOf(address(escrow)), amount, 1);
@@ -56,18 +54,15 @@ contract CentrifugeRouterTest is BaseTest {
         vm.label(vault_, "vault");
 
         erc20.mint(self, amount);
-        erc20.approve(address(cfgRouter), amount);
+        erc20.approve(address(centrifugeRouter), amount);
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max);
-        cfgRouter.lockDepositRequest(vault_, amount);
-
-        // Warp to simulate real-world async behavior
-        vm.warp(10 days);
+        centrifugeRouter.lockDepositRequest(vault_, amount);
 
         // Any address should be able to call executeLockedDepositRequest for an investor
-        address randomUser = address(0x123);
-        vm.label(randomUser, "randomUser");
-        vm.prank(randomUser);
-        cfgRouter.executeLockedDepositRequest(vault_, address(this));
+        address randomAddress = address(0x123);
+        vm.label(randomAddress, "randomAddress");
+        vm.prank(randomAddress);
+        centrifugeRouter.executeLockedDepositRequest(vault_, address(this));
 
         uint128 assetId = poolManager.assetToId(address(erc20));
         (uint128 trancheTokensPayout) = fulfillDepositRequest(vault, assetId, amount);
@@ -79,7 +74,7 @@ contract CentrifugeRouterTest is BaseTest {
 
         // Any address should be able to call claimDeposit for an investor
         vm.prank(randomUser);
-        cfgRouter.claimDeposit(vault_, self);
+        centrifugeRouter.claimDeposit(vault_, self);
         assertApproxEqAbs(trancheToken.balanceOf(self), trancheTokensPayout, 1);
         assertApproxEqAbs(trancheToken.balanceOf(address(escrow)), 0, 1);
         assertApproxEqAbs(erc20.balanceOf(address(escrow)), amount, 1);
@@ -94,23 +89,23 @@ contract CentrifugeRouterTest is BaseTest {
         ERC7540Vault vault = ERC7540Vault(vault_);
         vm.label(vault_, "vault");
         erc20.mint(self, amount);
-        erc20.approve(address(cfgRouter), amount);
+        erc20.approve(address(centrifugeRouter), amount);
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max); // add user as member
-        cfgRouter.requestDeposit(vault_, amount);
+        centrifugeRouter.requestDeposit(vault_, amount);
         uint128 assetId = poolManager.assetToId(address(erc20));
         (uint128 trancheTokensPayout) = fulfillDepositRequest(vault, assetId, amount);
         TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
-        cfgRouter.claimDeposit(vault_, self);
+        centrifugeRouter.claimDeposit(vault_, self);
 
         // redeem
-        trancheToken.approve(address(cfgRouter), trancheTokensPayout);
-        cfgRouter.requestRedeem(vault_, trancheTokensPayout);
+        trancheToken.approve(address(centrifugeRouter), trancheTokensPayout);
+        centrifugeRouter.requestRedeem(vault_, trancheTokensPayout);
         (uint128 assetPayout) = fulfillRedeemRequest(vault, assetId, trancheTokensPayout);
         assertApproxEqAbs(trancheToken.balanceOf(self), 0, 1);
         assertApproxEqAbs(trancheToken.balanceOf(address(escrow)), 0, 1);
         assertApproxEqAbs(erc20.balanceOf(address(escrow)), assetPayout, 1);
         assertApproxEqAbs(erc20.balanceOf(self), 0, 1);
-        cfgRouter.claimRedeem(vault_, self);
+        centrifugeRouter.claimRedeem(vault_, self);
         assertApproxEqAbs(erc20.balanceOf(address(escrow)), 0, 1);
         assertApproxEqAbs(erc20.balanceOf(self), assetPayout, 1);
     }
@@ -137,13 +132,13 @@ contract CentrifugeRouterTest is BaseTest {
         erc20X.mint(self, amount1);
         erc20Y.mint(self, amount2);
 
-        erc20X.approve(address(cfgRouter), amount1);
-        erc20Y.approve(address(cfgRouter), amount2);
+        erc20X.approve(address(centrifugeRouter), amount1);
+        erc20Y.approve(address(centrifugeRouter), amount2);
 
         centrifugeChain.updateMember(vault1.poolId(), vault1.trancheId(), self, type(uint64).max);
         centrifugeChain.updateMember(vault2.poolId(), vault2.trancheId(), self, type(uint64).max);
-        cfgRouter.requestDeposit(vault1_, amount1);
-        cfgRouter.requestDeposit(vault2_, amount2);
+        centrifugeRouter.requestDeposit(vault1_, amount1);
+        centrifugeRouter.requestDeposit(vault2_, amount2);
 
         // trigger - deposit order fulfillment
         uint128 assetId1 = poolManager.assetToId(address(erc20X));
@@ -160,8 +155,8 @@ contract CentrifugeRouterTest is BaseTest {
         assertEq(trancheToken1.balanceOf(address(escrow)), trancheTokensPayout1);
         assertEq(trancheToken2.balanceOf(address(escrow)), trancheTokensPayout2);
 
-        cfgRouter.claimDeposit(vault1_, self);
-        cfgRouter.claimDeposit(vault2_, self);
+        centrifugeRouter.claimDeposit(vault1_, self);
+        centrifugeRouter.claimDeposit(vault2_, self);
         assertApproxEqAbs(trancheToken1.balanceOf(self), trancheTokensPayout1, 1);
         assertApproxEqAbs(trancheToken2.balanceOf(self), trancheTokensPayout2, 1);
         assertApproxEqAbs(trancheToken1.balanceOf(address(escrow)), 0, 1);
@@ -191,26 +186,26 @@ contract CentrifugeRouterTest is BaseTest {
         vm.label(vault2_, "vault2");
         erc20X.mint(self, amount1);
         erc20Y.mint(self, amount2);
-        erc20X.approve(address(cfgRouter), amount1);
-        erc20Y.approve(address(cfgRouter), amount2);
+        erc20X.approve(address(centrifugeRouter), amount1);
+        erc20Y.approve(address(centrifugeRouter), amount2);
         centrifugeChain.updateMember(vault1.poolId(), vault1.trancheId(), self, type(uint64).max);
         centrifugeChain.updateMember(vault2.poolId(), vault2.trancheId(), self, type(uint64).max);
-        cfgRouter.requestDeposit(vault1_, amount1);
-        cfgRouter.requestDeposit(vault2_, amount2);
+        centrifugeRouter.requestDeposit(vault1_, amount1);
+        centrifugeRouter.requestDeposit(vault2_, amount2);
         uint128 assetId1 = poolManager.assetToId(address(erc20X));
         uint128 assetId2 = poolManager.assetToId(address(erc20Y));
         (uint128 trancheTokensPayout1) = fulfillDepositRequest(vault1, assetId1, amount1);
         (uint128 trancheTokensPayout2) = fulfillDepositRequest(vault2, assetId2, amount2);
         TrancheTokenLike trancheToken1 = TrancheTokenLike(address(vault1.share()));
         TrancheTokenLike trancheToken2 = TrancheTokenLike(address(vault2.share()));
-        cfgRouter.claimDeposit(vault1_, self);
-        cfgRouter.claimDeposit(vault2_, self);
+        centrifugeRouter.claimDeposit(vault1_, self);
+        centrifugeRouter.claimDeposit(vault2_, self);
 
         // redeem
-        trancheToken1.approve(address(cfgRouter), trancheTokensPayout1);
-        trancheToken2.approve(address(cfgRouter), trancheTokensPayout2);
-        cfgRouter.requestRedeem(vault1_, trancheTokensPayout1);
-        cfgRouter.requestRedeem(vault2_, trancheTokensPayout2);
+        trancheToken1.approve(address(centrifugeRouter), trancheTokensPayout1);
+        trancheToken2.approve(address(centrifugeRouter), trancheTokensPayout2);
+        centrifugeRouter.requestRedeem(vault1_, trancheTokensPayout1);
+        centrifugeRouter.requestRedeem(vault2_, trancheTokensPayout2);
         (uint128 assetPayout1) = fulfillRedeemRequest(vault1, assetId1, trancheTokensPayout1);
         (uint128 assetPayout2) = fulfillRedeemRequest(vault2, assetId2, trancheTokensPayout2);
         assertApproxEqAbs(trancheToken1.balanceOf(self), 0, 1);
@@ -221,8 +216,8 @@ contract CentrifugeRouterTest is BaseTest {
         assertApproxEqAbs(erc20Y.balanceOf(address(escrow)), assetPayout2, 1);
         assertApproxEqAbs(erc20X.balanceOf(self), 0, 1);
         assertApproxEqAbs(erc20Y.balanceOf(self), 0, 1);
-        cfgRouter.claimRedeem(vault1_, self);
-        cfgRouter.claimRedeem(vault2_, self);
+        centrifugeRouter.claimRedeem(vault1_, self);
+        centrifugeRouter.claimRedeem(vault2_, self);
         assertApproxEqAbs(erc20X.balanceOf(address(escrow)), 0, 1);
         assertApproxEqAbs(erc20Y.balanceOf(address(escrow)), 0, 1);
         assertApproxEqAbs(erc20X.balanceOf(self), assetPayout1, 1);
@@ -238,19 +233,21 @@ contract CentrifugeRouterTest is BaseTest {
         ERC7540Vault vault = ERC7540Vault(vault_);
         vm.label(vault_, "vault");
         erc20.mint(self, amount);
-        erc20.approve(address(cfgRouter), amount);
+        erc20.approve(address(centrifugeRouter), amount);
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max); // add user as member
-        cfgRouter.requestDeposit(vault_, amount);
+        centrifugeRouter.requestDeposit(vault_, amount);
         uint128 assetId = poolManager.assetToId(address(erc20));
         (uint128 trancheTokensPayout) = fulfillDepositRequest(vault, assetId, amount);
         TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
-        trancheToken.approve(address(cfgRouter), trancheTokensPayout);
+        trancheToken.approve(address(centrifugeRouter), trancheTokensPayout);
 
         // multicall
         Call[] memory calls = new Call[](2);
-        calls[0] = Call(address(cfgRouter), abi.encodeWithSelector(cfgRouter.claimDeposit.selector, vault_, self));
+        calls[0] = Call(
+            address(centrifugeRouter), abi.encodeWithSelector(centrifugeRouter.claimDeposit.selector, vault_, self)
+        );
         calls[1] = Call(
-            address(cfgRouter),
+            address(centrifugeRouter),
             abi.encodeWithSelector(
                 bytes4(keccak256("requestRedeem(address,uint256,address)")), vault_, trancheTokensPayout, self
             )
