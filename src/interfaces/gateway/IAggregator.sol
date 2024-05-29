@@ -32,7 +32,7 @@ interface IAggregator {
     event RecoverProof(address router, bytes32 messageHash);
     event InitiateMessageRecovery(bytes32 messageHash, address router);
     event DisputeMessageRecovery(bytes32 messageHash);
-    event ExecuteMessagRecovery(bytes message);
+    event ExecuteMessageRecovery(bytes message);
     event File(bytes32 indexed what, address[] routers);
 
     // --- Administration ---

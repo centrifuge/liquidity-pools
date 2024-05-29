@@ -74,10 +74,10 @@ contract Aggregator is Auth, IAggregator {
     function handle(bytes calldata payload) public {
         Router memory router = validRouters[msg.sender];
         require(router.id != 0, "Aggregator/invalid-router");
-        _handle(payload, router, false);
+        _handle(payload, msg.sender, router, false);
     }
 
-    function _handle(bytes calldata payload, Router memory router, bool isRecovery) internal {
+    function _handle(bytes calldata payload, address routerAddr, Router memory router, bool isRecovery) internal {
         if (MessagesLib.isRecoveryMessage(payload)) {
             require(!isRecovery, "Aggregator/no-recursive-recovery-allowed");
             require(routers.length > 1, "Aggregator/no-recovery-with-one-router-allowed");
@@ -88,7 +88,7 @@ contract Aggregator is Auth, IAggregator {
         if (router.quorum == 1 && !isMessageProof) {
             // Special case for gas efficiency
             gateway.handle(payload);
-            emit ExecuteMessage(payload, msg.sender);
+            emit ExecuteMessage(payload, routerAddr);
             return;
         }
 
@@ -96,11 +96,11 @@ contract Aggregator is Auth, IAggregator {
         if (isMessageProof) {
             require(isRecovery || router.id != 1, "RouterAggregator/non-proof-router");
             messageHash = MessagesLib.parseMessageProof(payload);
-            emit HandleProof(messageHash, msg.sender);
+            emit HandleProof(messageHash, routerAddr);
         } else {
             require(isRecovery || router.id == 1, "RouterAggregator/non-message-router");
             messageHash = keccak256(payload);
-            emit HandleMessage(payload, msg.sender);
+            emit HandleMessage(payload, routerAddr);
         }
 
         Message storage state = messages[messageHash];
@@ -161,7 +161,8 @@ contract Aggregator is Auth, IAggregator {
         require(router.id != 0, "Aggregator/invalid-router");
 
         delete recoveries[messageHash];
-        _handle(message, router, true);
+        _handle(message, recovery.router, router, true);
+        emit ExecuteMessageRecovery(message);
     }
 
     // --- Outgoing ---
