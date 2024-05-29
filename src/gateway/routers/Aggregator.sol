@@ -130,7 +130,8 @@ contract Aggregator is Auth, IAggregator {
     function _handleRecovery(bytes memory payload) internal {
         if (MessagesLib.messageType(payload) == MessagesLib.Call.InitiateMessageRecovery) {
             (bytes32 messageHash, address router) = MessagesLib.parseInitiateMessageRecovery(payload);
-            require(validRouters[msg.sender].id != 0, "Aggregator/invalid-router");
+            require(validRouters[msg.sender].id != 0, "Aggregator/invalid-sender");
+            require(validRouters[router].id != 0, "Aggregator/invalid-router");
             recoveries[messageHash] = Recovery(block.timestamp + RECOVERY_CHALLENGE_PERIOD, router);
             emit InitiateMessageRecovery(messageHash, router);
         } else if (MessagesLib.messageType(payload) == MessagesLib.Call.DisputeMessageRecovery) {
