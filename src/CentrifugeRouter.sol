@@ -8,7 +8,7 @@ import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 import {ICentrifugeRouter} from "src/interfaces/ICentrifugeRouter.sol";
 import {Multicall} from "src/Multicall.sol";
 
-contract CentrifugeRouter is Auth, ICentrifugeRouter, Multicall {
+contract CentrifugeRouter is Auth, Multicall, ICentrifugeRouter {
     /// @inheritdoc ICentrifugeRouter
     mapping(address user => mapping(address vault => uint256 amount)) public lockedRequests;
 
@@ -21,21 +21,21 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter, Multicall {
     // --- Deposit ---
 
     /// @inheritdoc ICentrifugeRouter
-    function requestDeposit(address vault, uint256 amount) public {
+    function requestDeposit(address vault, uint256 amount) external {
         SafeTransferLib.safeTransferFrom(IERC7540(vault).asset(), msg.sender, address(this), amount);
         IERC20(IERC7540(vault).asset()).approve(vault, amount);
-        IERC7540(vault).requestDeposit(amount, msg.sender, address(this));
+        IERC7540(vault).requestDeposit(amount, msg.sender, msg.sender);
     }
 
     /// @inheritdoc ICentrifugeRouter
-    function lockDepositRequest(address vault, uint256 amount) public {
+    function lockDepositRequest(address vault, uint256 amount) external {
         SafeTransferLib.safeTransferFrom(IERC7540(vault).asset(), msg.sender, address(this), amount);
         lockedRequests[msg.sender][vault] += amount;
         emit LockDepositRequest(vault, msg.sender, amount);
     }
 
     /// @inheritdoc ICentrifugeRouter
-    function unlockDepositRequest(address vault) public {
+    function unlockDepositRequest(address vault) external {
         uint256 lockedRequest = lockedRequests[msg.sender][vault];
         require(lockedRequest > 0, "CentrifugeRouter/user-has-no-locked-balance");
         lockedRequests[msg.sender][vault] = 0;
@@ -62,7 +62,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter, Multicall {
 
     // --- Redeem ---
     /// @inheritdoc ICentrifugeRouter
-    function requestRedeem(address vault, uint256 amount) public {
+    function requestRedeem(address vault, uint256 amount) external {
         IERC7540(vault).requestRedeem(amount, msg.sender, msg.sender);
     }
 
