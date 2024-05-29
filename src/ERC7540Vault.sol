@@ -59,7 +59,7 @@ contract ERC7540Vault is Auth, IERC7540, IAuthorizeOperator {
         "AuthorizeOperator(address owner,address operator,bool approved,uint256 validAfter,uint256 validBefore,bytes32 nonce)"
     );
 
-    mapping(address owner => mapping(bytes32 nonce => bool used)) authorizationStates;
+    mapping(address owner => mapping(bytes32 nonce => bool used)) authorizations;
 
     /// @inheritdoc IERC7540
     mapping(address => mapping(address => bool)) public isOperator;
