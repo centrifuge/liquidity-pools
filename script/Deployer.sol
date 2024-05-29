@@ -56,8 +56,8 @@ contract Deployer is Script {
         trancheTokenFactory = address(new TrancheTokenFactory{salt: salt}(address(root), deployer));
         investmentManager = new InvestmentManager(address(root), address(escrow));
         poolManager = new PoolManager(address(escrow), vaultFactory, restrictionManagerFactory, trancheTokenFactory);
-        centrifugeRouter = new CentrifugeRouter();
 
+        centrifugeRouter = new CentrifugeRouter();
         root.endorse(address(centrifugeRouter));
         root.endorse(address(escrow));
 
@@ -90,7 +90,6 @@ contract Deployer is Script {
         root.rely(address(gateway));
         investmentManager.file("poolManager", address(poolManager));
         poolManager.file("investmentManager", address(investmentManager));
-        poolManager.file("centrifugeRouter", address(centrifugeRouter));
 
         investmentManager.file("gateway", address(gateway));
         poolManager.file("gateway", address(gateway));

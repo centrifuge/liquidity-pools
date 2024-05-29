@@ -30,8 +30,8 @@ contract ERC7540VaultTest is BaseTest {
         assertEq(vault.trancheId(), trancheId);
         address token = poolManager.getTrancheToken(poolId, trancheId);
         assertEq(address(vault.share()), token);
-        // assertEq(tokenName, ERC20(token).name());
-        // assertEq(tokenSymbol, ERC20(token).symbol());
+        assertEq(tokenName, ERC20(token).name());
+        assertEq(tokenSymbol, ERC20(token).symbol());
 
         // permissions set correctly
         assertEq(vault.wards(address(root)), 1);
@@ -52,32 +52,6 @@ contract ERC7540VaultTest is BaseTest {
 
         vm.expectRevert(bytes("ERC7540Vault/file-unrecognized-param"));
         vault.file("random", self);
-    }
-
-    //Endorsements
-    function testEndorseVeto() public {
-        address vault_ = deploySimpleVault();
-        ERC7540Vault vault = ERC7540Vault(vault_);
-
-        // endorse
-        address router = makeAddr("router");
-        vm.expectRevert(bytes("Auth/not-authorized")); // fail no auth permissions
-        vault.endorse(router);
-
-        root.relyContract(vault_, self);
-        vault.endorse(router);
-        assertEq(vault.endorsements(router), 1);
-        assertEq(vault.endorsed(router), true);
-
-        // veto
-        root.denyContract(vault_, self);
-        vm.expectRevert(bytes("Auth/not-authorized")); // fail no auth permissions
-        vault.veto(router);
-
-        root.relyContract(vault_, self);
-        vault.veto(router);
-        assertEq(vault.endorsements(router), 0);
-        assertEq(vault.endorsed(router), false);
     }
 
     // --- uint128 type checks ---

@@ -51,7 +51,6 @@ contract PoolManager is Auth, IPoolManager {
     InvestmentManagerLike public investmentManager;
     TrancheTokenFactoryLike public trancheTokenFactory;
     RestrictionManagerFactoryLike public restrictionManagerFactory;
-    address public centrifugeRouter;
 
     mapping(uint64 poolId => Pool) public pools;
     mapping(uint128 assetId => address) public idToAsset;
@@ -81,7 +80,6 @@ contract PoolManager is Auth, IPoolManager {
         else if (what == "trancheTokenFactory") trancheTokenFactory = TrancheTokenFactoryLike(data);
         else if (what == "vaultFactory") vaultFactory = ERC7540VaultFactory(data);
         else if (what == "restrictionManagerFactory") restrictionManagerFactory = RestrictionManagerFactoryLike(data);
-        else if (what == "centrifugeRouter") centrifugeRouter = data;
         else revert("PoolManager/file-unrecognized-param");
         emit File(what, data);
     }
@@ -403,9 +401,6 @@ contract PoolManager is Auth, IPoolManager {
         );
 
         TrancheTokenLike(token).file("restrictionManager", restrictionManager);
-        if (centrifugeRouter != address(0)) {
-            RestrictionManagerLike(restrictionManager).updateMember(centrifugeRouter, type(uint64).max);
-        }
 
         pools[poolId].tranches[trancheId].token = token;
 
@@ -435,14 +430,7 @@ contract PoolManager is Auth, IPoolManager {
 
         // Deploy vault
         vault = vaultFactory.newVault(
-            poolId,
-            trancheId,
-            asset,
-            tranche.token,
-            address(escrow),
-            address(investmentManager),
-            vaultWards,
-            centrifugeRouter
+            poolId, trancheId, asset, tranche.token, address(escrow), address(investmentManager), vaultWards
         );
 
         // Link vault to tranche token

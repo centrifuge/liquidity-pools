@@ -49,16 +49,11 @@ contract ERC7540Vault is Auth, IERC7540 {
     /// @dev    Requests for Centrifuge pool are non-transferable and all have ID = 0
     uint256 constant REQUEST_ID = 0;
 
-    /// @notice Routers that are allowed to claim withdrawels / redemptions on behalf of investors
-    mapping(address => uint256) public endorsements;
-
     /// @inheritdoc IERC7540
     mapping(address => mapping(address => bool)) public isOperator;
 
     // --- Events ---
     event File(bytes32 indexed what, address data);
-    event Endorse(address indexed user);
-    event Veto(address indexed user);
 
     constructor(uint64 poolId_, bytes16 trancheId_, address asset_, address share_, address escrow_, address manager_) {
         poolId = poolId_;
@@ -78,22 +73,6 @@ contract ERC7540Vault is Auth, IERC7540 {
         if (what == "manager") manager = IInvestmentManager(data);
         else revert("ERC7540Vault/file-unrecognized-param");
         emit File(what, data);
-    }
-
-    /// @dev add endorsement
-    function endorse(address user) external auth {
-        endorsements[user] = 1;
-        emit Endorse(user);
-    }
-
-    /// @dev remove endorsement
-    function veto(address user) external auth {
-        endorsements[user] = 0;
-        emit Veto(user);
-    }
-
-    function endorsed(address user) public view returns (bool) {
-        return endorsements[user] == 1;
     }
 
     function recoverTokens(address token, address to, uint256 amount) external auth {
