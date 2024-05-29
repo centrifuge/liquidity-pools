@@ -76,7 +76,7 @@ contract Gateway is Auth, IGateway {
     }
 
     // --- Outgoing ---
-    function send(bytes calldata message) public payable pauseable {
+    function send(bytes calldata message) public pauseable {
         require(
             msg.sender == investmentManager || msg.sender == poolManager || msg.sender == messages[message.toUint8(0)],
             "Gateway/invalid-manager"
