@@ -19,12 +19,11 @@ contract CentrifugeRouter is Auth, Multicall, ICentrifugeRouter {
     }
 
     // --- Deposit ---
-
     /// @inheritdoc ICentrifugeRouter
     function requestDeposit(address vault, uint256 amount) external {
         SafeTransferLib.safeTransferFrom(IERC7540(vault).asset(), msg.sender, address(this), amount);
         IERC20(IERC7540(vault).asset()).approve(vault, amount);
-        IERC7540(vault).requestDeposit(amount, msg.sender, msg.sender);
+        IERC7540(vault).requestDeposit(amount, msg.sender, address(this));
     }
 
     /// @inheritdoc ICentrifugeRouter
