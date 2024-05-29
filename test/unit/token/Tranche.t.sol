@@ -5,6 +5,7 @@ import "src/interfaces/IERC7575.sol";
 import "src/interfaces/IERC7540.sol";
 import {TrancheToken} from "src/token/Tranche.sol";
 import {RestrictionManagerLike} from "src/token/RestrictionManager.sol";
+import {MockRoot} from "test/mocks/MockRoot.sol";
 import {MockRestrictionManager} from "test/mocks/MockRestrictionManager.sol";
 import "forge-std/Test.sol";
 
@@ -27,7 +28,7 @@ contract TrancheTokenTest is Test {
         token.file("name", "Some Token");
         token.file("symbol", "ST");
 
-        restrictionManager = new MockRestrictionManager(address(token));
+        restrictionManager = new MockRestrictionManager(address(new MockRoot()), address(token));
         restrictionManager.rely(address(token));
         token.file("restrictionManager", address(restrictionManager));
     }

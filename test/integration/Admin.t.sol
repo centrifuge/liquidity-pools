@@ -299,4 +299,30 @@ contract AdminTest is BaseTest {
         assertEq(asset.balanceOf(address(poolManager)), 0);
         assertEq(asset.balanceOf(address(investmentManager)), 0);
     }
+
+    //Endorsements
+    function testEndorseVeto() public {
+        address endorser = makeAddr("endorser");
+
+        // endorse
+        address router = makeAddr("router");
+
+        root.rely(endorser);
+        vm.prank(endorser);
+        root.endorse(router);
+        assertEq(root.endorsements(router), 1);
+        assertEq(root.endorsed(router), true);
+
+        // veto
+        root.deny(endorser);
+        vm.expectRevert(bytes("Auth/not-authorized")); // fail no auth permissions
+        vm.prank(endorser);
+        root.veto(router);
+
+        root.rely(endorser);
+        vm.prank(endorser);
+        root.veto(router);
+        assertEq(root.endorsements(router), 0);
+        assertEq(root.endorsed(router), false);
+    }
 }

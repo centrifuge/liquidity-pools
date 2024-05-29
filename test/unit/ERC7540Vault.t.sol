@@ -68,7 +68,7 @@ contract ERC7540VaultTest is BaseTest {
         vault.convertToAssets(amount);
 
         vm.expectRevert(bytes("MathLib/uint128-overflow"));
-        vault.deposit(amount, randomUser);
+        vault.deposit(amount, randomUser, self);
 
         vm.expectRevert(bytes("MathLib/uint128-overflow"));
         vault.mint(amount, randomUser);
