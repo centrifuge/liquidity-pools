@@ -6,8 +6,9 @@ import {IERC7540} from "src/interfaces/IERC7540.sol";
 import {IERC20} from "src/interfaces/IERC20.sol";
 import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 import {ICentrifugeRouter} from "src/interfaces/ICentrifugeRouter.sol";
+import {Multicall} from "src/Multicall.sol";
 
-contract CentrifugeRouter is Auth, ICentrifugeRouter {
+contract CentrifugeRouter is Auth, ICentrifugeRouter, Multicall {
     /// @inheritdoc ICentrifugeRouter
     mapping(address user => mapping(address vault => uint256 amount)) public lockedRequests;
 
@@ -18,42 +19,28 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     }
 
     // --- Deposit ---
-    /// @inheritdoc ICentrifugeRouter
-    function requestDeposit(address vault, uint256 amount) external {
-        requestDeposit(vault, amount, msg.sender);
-    }
 
     /// @inheritdoc ICentrifugeRouter
-    function requestDeposit(address vault, uint256 amount, address user) public {
-        SafeTransferLib.safeTransferFrom(IERC7540(vault).asset(), user, address(this), amount);
+    function requestDeposit(address vault, uint256 amount) public {
+        SafeTransferLib.safeTransferFrom(IERC7540(vault).asset(), msg.sender, address(this), amount);
         IERC20(IERC7540(vault).asset()).approve(vault, amount);
-        IERC7540(vault).requestDeposit(amount, user, address(this));
+        IERC7540(vault).requestDeposit(amount, msg.sender, address(this));
     }
 
     /// @inheritdoc ICentrifugeRouter
-    function lockDepositRequest(address vault, uint256 amount) external {
-        lockDepositRequest(vault, amount, msg.sender);
+    function lockDepositRequest(address vault, uint256 amount) public {
+        SafeTransferLib.safeTransferFrom(IERC7540(vault).asset(), msg.sender, address(this), amount);
+        lockedRequests[msg.sender][vault] += amount;
+        emit LockDepositRequest(vault, msg.sender, amount);
     }
 
     /// @inheritdoc ICentrifugeRouter
-    function lockDepositRequest(address vault, uint256 amount, address user) public {
-        SafeTransferLib.safeTransferFrom(IERC7540(vault).asset(), user, address(this), amount);
-        lockedRequests[user][vault] += amount;
-        emit LockDepositRequest(vault, user, amount);
-    }
-
-    /// @inheritdoc ICentrifugeRouter
-    function unlockDepositRequest(address vault) external {
-        unlockDepositRequest(vault, msg.sender);
-    }
-
-    /// @inheritdoc ICentrifugeRouter
-    function unlockDepositRequest(address vault, address user) public {
-        uint256 lockedRequest = lockedRequests[user][vault];
+    function unlockDepositRequest(address vault) public {
+        uint256 lockedRequest = lockedRequests[msg.sender][vault];
         require(lockedRequest > 0, "CentrifugeRouter/user-has-no-locked-balance");
-        lockedRequests[user][vault] = 0;
-        SafeTransferLib.safeTransfer(IERC7540(vault).asset(), user, lockedRequest);
-        emit UnlockDepositRequest(vault, user);
+        lockedRequests[msg.sender][vault] = 0;
+        SafeTransferLib.safeTransfer(IERC7540(vault).asset(), msg.sender, lockedRequest);
+        emit UnlockDepositRequest(vault, msg.sender);
     }
 
     /// @inheritdoc ICentrifugeRouter
@@ -75,13 +62,8 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
 
     // --- Redeem ---
     /// @inheritdoc ICentrifugeRouter
-    function requestRedeem(address vault, uint256 amount) external {
-        requestRedeem(vault, amount, msg.sender);
-    }
-    /// @inheritdoc ICentrifugeRouter
-
-    function requestRedeem(address vault, uint256 amount, address user) public {
-        IERC7540(vault).requestRedeem(amount, user, user);
+    function requestRedeem(address vault, uint256 amount) public {
+        IERC7540(vault).requestRedeem(amount, msg.sender, msg.sender);
     }
 
     /// @inheritdoc ICentrifugeRouter

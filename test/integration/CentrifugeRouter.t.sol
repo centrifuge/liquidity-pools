@@ -242,18 +242,10 @@ contract CentrifugeRoutertest is BaseTest {
         trancheToken.approve(address(centrifugeRouter), trancheTokensPayout);
 
         // multicall
-        Call[] memory calls = new Call[](2);
-        calls[0] = Call(
-            address(centrifugeRouter), abi.encodeWithSelector(centrifugeRouter.claimDeposit.selector, vault_, self)
-        );
-        calls[1] = Call(
-            address(centrifugeRouter),
-            abi.encodeWithSelector(
-                bytes4(keccak256("requestRedeem(address,uint256,address)")), vault_, trancheTokensPayout, self
-            )
-        );
-        MockMulticall multicall = new MockMulticall();
-        multicall.aggregate(calls);
+        bytes[] memory calls = new bytes[](2);
+        calls[0] = abi.encodeWithSelector(centrifugeRouter.claimDeposit.selector, vault_, self);
+        calls[1] = abi.encodeWithSelector(centrifugeRouter.requestRedeem.selector, vault_, trancheTokensPayout);
+        centrifugeRouter.multicall(calls);
 
         (uint128 assetPayout) = fulfillRedeemRequest(vault, assetId, trancheTokensPayout);
         assertApproxEqAbs(trancheToken.balanceOf(self), 0, 1);

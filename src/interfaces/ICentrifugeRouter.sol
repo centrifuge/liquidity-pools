@@ -19,19 +19,10 @@ interface ICentrifugeRouter {
     function requestDeposit(address vault, uint256 amount) external;
 
     /// @notice TODO
-    function requestDeposit(address vault, uint256 amount, address user) external;
-
-    /// @notice TODO
     function lockDepositRequest(address vault, uint256 amount) external;
 
     /// @notice TODO
-    function lockDepositRequest(address vault, uint256 amount, address user) external;
-
-    /// @notice TODO
     function unlockDepositRequest(address vault) external;
-
-    /// @notice TODO
-    function unlockDepositRequest(address vault, address user) external;
 
     /// @notice TODO
     function executeLockedDepositRequest(address vault, address user) external;
@@ -42,9 +33,6 @@ interface ICentrifugeRouter {
     // --- Redeem ---
     /// @notice TODO
     function requestRedeem(address vault, uint256 amount) external;
-
-    /// @notice TODO
-    function requestRedeem(address vault, uint256 amount, address user) external;
 
     /// @notice TODO
     function claimRedeem(address vault, address user) external;
