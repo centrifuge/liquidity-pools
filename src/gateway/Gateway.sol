@@ -2,6 +2,7 @@
 pragma solidity 0.8.21;
 
 import {BytesLib} from "src/libraries/BytesLib.sol";
+import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 import {Auth} from "src/Auth.sol";
 import {IGateway} from "src/interfaces/gateway/IGateway.sol";
 
@@ -52,7 +53,7 @@ contract Gateway is Auth, IGateway {
     }
 
     event Received(address indexed sender, uint256 amount);
-    
+
     // TODO Do we want to have a method that can withdraw the funds from the contract?
     // I've seen some similar methods around contract but for ERC20
     receive() external payable {
@@ -106,5 +107,14 @@ contract Gateway is Auth, IGateway {
         }
 
         ManagerLike(manager).handle(message);
+    }
+
+    function recoverTokens(address token, address receiver, uint256 amount) external auth {
+        require(receiver != address(0), "Gateway/cannot-send-to-receiver");
+        if (token == address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)) {
+            payable(receiver).transfer(amount);
+        } else {
+            SafeTransferLib.safeTransfer(token, receiver, amount);
+        }
     }
 }
