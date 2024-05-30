@@ -4,6 +4,7 @@ pragma solidity 0.8.21;
 import "test/BaseTest.sol";
 import "src/interfaces/IERC7575.sol";
 import "src/interfaces/IERC7540.sol";
+import "src/interfaces/IERC20.sol";
 
 contract CentrifugeRoutertest is BaseTest {
     function testRouterDeposit(uint256 amount) public {
@@ -17,13 +18,13 @@ contract CentrifugeRoutertest is BaseTest {
 
         erc20.mint(self, amount);
 
-        vm.expectRevert(bytes("SafeTransferLib/safe-transfer-from-failed")); // fail: no allowance
+        vm.expectRevert(bytes("InvestmentManager/owner-is-restricted"));
         centrifugeRouter.requestDeposit(vault_, amount);
-        erc20.approve(address(centrifugeRouter), amount); // grant approval to centrifuge router
+        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max);
 
-        vm.expectRevert(bytes("InvestmentManager/transfer-not-allowed")); // fail: receiver not member
+        vm.expectRevert(bytes("SafeTransferLib/safe-transfer-from-failed"));
         centrifugeRouter.requestDeposit(vault_, amount);
-        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max); // add user as member
+        erc20.approve(vault_, amount);
 
         centrifugeRouter.requestDeposit(vault_, amount);
 
@@ -31,13 +32,12 @@ contract CentrifugeRoutertest is BaseTest {
         uint128 assetId = poolManager.assetToId(address(erc20));
         (uint128 trancheTokensPayout) = fulfillDepositRequest(vault, assetId, amount);
 
-        assertEq(vault.maxMint(self), trancheTokensPayout); // max deposit
-        assertEq(vault.maxDeposit(self), amount); // max deposit
+        assertEq(vault.maxMint(self), trancheTokensPayout);
+        assertEq(vault.maxDeposit(self), amount);
         TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
-        assertEq(trancheToken.balanceOf(address(escrow)), trancheTokensPayout); // assert tranche tokens minted
+        assertEq(trancheToken.balanceOf(address(escrow)), trancheTokensPayout);
 
-        // vm.expectRevert(bytes("LiquidityPool/not-owner-or-endorsed"));
-        centrifugeRouter.claimDeposit(vault_, self); // claim Deposit
+        centrifugeRouter.claimDeposit(vault_, self);
         assertApproxEqAbs(trancheToken.balanceOf(self), trancheTokensPayout, 1);
         assertApproxEqAbs(trancheToken.balanceOf(self), trancheTokensPayout, 1);
         assertApproxEqAbs(trancheToken.balanceOf(address(escrow)), 0, 1);
@@ -88,8 +88,8 @@ contract CentrifugeRoutertest is BaseTest {
         ERC7540Vault vault = ERC7540Vault(vault_);
         vm.label(vault_, "vault");
         erc20.mint(self, amount);
-        erc20.approve(address(centrifugeRouter), amount);
-        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max); // add user as member
+        erc20.approve(vault_, amount);
+        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max);
         centrifugeRouter.requestDeposit(vault_, amount);
         uint128 assetId = poolManager.assetToId(address(erc20));
         (uint128 trancheTokensPayout) = fulfillDepositRequest(vault, assetId, amount);
@@ -195,8 +195,8 @@ contract CentrifugeRoutertest is BaseTest {
         ERC7540Vault vault = ERC7540Vault(vault_);
         vm.label(vault_, "vault");
         erc20.mint(self, amount);
-        erc20.approve(address(centrifugeRouter), amount);
-        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max); // add user as member
+        erc20.approve(vault_, amount);
+        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max);
         centrifugeRouter.requestDeposit(vault_, amount);
         uint128 assetId = poolManager.assetToId(address(erc20));
         (uint128 trancheTokensPayout) = fulfillDepositRequest(vault, assetId, amount);
@@ -296,8 +296,8 @@ contract CentrifugeRoutertest is BaseTest {
         erc20X.mint(self, amount1);
         erc20Y.mint(self, amount2);
 
-        erc20X.approve(address(centrifugeRouter), amount1);
-        erc20Y.approve(address(centrifugeRouter), amount2);
+        erc20X.approve(address(vault1_), amount1);
+        erc20Y.approve(address(vault2_), amount2);
 
         centrifugeChain.updateMember(vault1.poolId(), vault1.trancheId(), self, type(uint64).max);
         centrifugeChain.updateMember(vault2.poolId(), vault2.trancheId(), self, type(uint64).max);
