@@ -60,8 +60,10 @@ contract CentrifugeRoutertest is BaseTest {
         // Any address should be able to call executeLockedDepositRequest for an investor
         address randomAddress = address(0x123);
         vm.label(randomAddress, "randomAddress");
-        vm.prank(randomAddress);
+        vm.startPrank(randomAddress);
+        centrifugeRouter.approveVault(vault_);
         centrifugeRouter.executeLockedDepositRequest(vault_, address(this));
+        vm.stopPrank();
 
         uint128 assetId = poolManager.assetToId(address(erc20));
         (uint128 trancheTokensPayout) = fulfillDepositRequest(vault, assetId, amount);

@@ -18,6 +18,11 @@ contract CentrifugeRouter is Auth, Multicall, ICentrifugeRouter {
         SafeTransferLib.safeTransfer(token, to, amount);
     }
 
+    // --- Approval ---
+    function approveVault(address vault) external {
+        IERC20(IERC7540(vault).asset()).approve(vault, type(uint256).max);
+    }
+
     // --- Deposit ---
     /// @inheritdoc ICentrifugeRouter
     function requestDeposit(address vault, uint256 amount) external {
@@ -45,7 +50,6 @@ contract CentrifugeRouter is Auth, Multicall, ICentrifugeRouter {
         uint256 lockedRequest = lockedRequests[user][vault];
         require(lockedRequest > 0, "CentrifugeRouter/user-has-no-balance");
         lockedRequests[user][vault] = 0;
-        IERC20(IERC7540(vault).asset()).approve(vault, lockedRequest);
         IERC7540(vault).requestDeposit(lockedRequest, user, address(this));
         emit ExecuteLockedDepositRequest(vault, user);
     }
