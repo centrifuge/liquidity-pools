@@ -14,6 +14,9 @@ interface ICentrifugeRouter {
     /// @notice TODO
     function recoverTokens(address token, address to, uint256 amount) external;
 
+    /// @notice TODO
+    function file(bytes32 what, address data) external;
+
     // --- Approval ---
     /// @notice TODO
     function approveVault(address vault) external;

@@ -10,18 +10,31 @@ import {ICentrifugeRouter} from "src/interfaces/ICentrifugeRouter.sol";
 import {IPoolManager} from "src/interfaces/IPoolManager.sol";
 
 contract CentrifugeRouter is Auth, Multicall, ICentrifugeRouter {
+    address public poolManager;
+
     /// @inheritdoc ICentrifugeRouter
     mapping(address user => mapping(address vault => uint256 amount)) public lockedRequests;
-    address public immutable poolManager;
 
     constructor(address poolManager_) {
         poolManager = poolManager_;
+
+        wards[msg.sender] = 1;
+        emit Rely(msg.sender);
     }
 
     // --- Administration ---
     /// @inheritdoc ICentrifugeRouter
     function recoverTokens(address token, address to, uint256 amount) external auth {
         SafeTransferLib.safeTransfer(token, to, amount);
+    }
+
+    /// @inheritdoc ICentrifugeRouter
+    function file(bytes32 what, address data) external auth {
+        if (what == "poolManager") {
+            poolManager = data;
+        } else {
+            revert("CentrifugeRouter/file-unrecognized-param");
+        }
     }
 
     // --- Approval ---
