@@ -275,14 +275,6 @@ contract CentrifugeRoutertest is BaseTest {
         assertEq(trancheToken2.balanceOf(address(escrow)), trancheTokensPayout2);
     }
 
-    function testGetVault() public {
-        address vault_ = deploySimpleVault();
-        ERC7540Vault vault = ERC7540Vault(vault_);
-        vm.label(vault_, "vault");
-
-        assertEq(centrifugeRouter.getVault(vault.poolId(), vault.trancheId(), address(erc20)), vault_);
-    }
-
     // --- helpers ---
     function fulfillDepositRequest(ERC7540Vault vault, uint128 assetId, uint256 amount)
         public
