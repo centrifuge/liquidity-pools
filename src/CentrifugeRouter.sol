@@ -57,7 +57,6 @@ contract CentrifugeRouter is Auth, Multicall, ICentrifugeRouter {
     /// @inheritdoc ICentrifugeRouter
     function claimDeposit(address vault, address user) external {
         uint256 maxDeposit = IERC7540(vault).maxDeposit(user);
-        require(maxDeposit > 0, "CentrifugeRouter/user-has-no-balance-to-claim");
         IERC7540(vault).deposit(maxDeposit, user, user);
     }
 
@@ -70,7 +69,6 @@ contract CentrifugeRouter is Auth, Multicall, ICentrifugeRouter {
     /// @inheritdoc ICentrifugeRouter
     function claimRedeem(address vault, address user) external {
         uint256 maxRedeem = IERC7540(vault).maxRedeem(user);
-        require(maxRedeem > 0, "CentrifugeRouter/user-has-no-balance-to-claim");
         IERC7540(vault).redeem(maxRedeem, user, user);
     }
 }
