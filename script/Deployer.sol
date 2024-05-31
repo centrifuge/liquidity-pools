@@ -57,7 +57,7 @@ contract Deployer is Script {
         investmentManager = new InvestmentManager(address(root), address(escrow));
         poolManager = new PoolManager(address(escrow), vaultFactory, restrictionManagerFactory, trancheTokenFactory);
 
-        centrifugeRouter = new CentrifugeRouter();
+        centrifugeRouter = new CentrifugeRouter(address(poolManager));
         root.endorse(address(centrifugeRouter));
         root.endorse(address(escrow));
 

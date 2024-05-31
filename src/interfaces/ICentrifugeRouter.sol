@@ -14,6 +14,10 @@ interface ICentrifugeRouter {
     /// @notice TODO
     function recoverTokens(address token, address to, uint256 amount) external;
 
+    // --- Approval ---
+    /// @notice TODO
+    function approveVault(address vault) external;
+
     // --- Deposit ---
     /// @notice TODO
     function requestDeposit(address vault, uint256 amount) external;
@@ -36,4 +40,8 @@ interface ICentrifugeRouter {
 
     /// @notice TODO
     function claimRedeem(address vault, address user) external;
+
+    // --- View Methods ---
+    /// @notice TODO
+    function getVault(uint64 poolId, bytes16 trancheId, address asset) external view returns (address);
 }

@@ -2,15 +2,21 @@
 pragma solidity 0.8.21;
 
 import {Auth} from "src/Auth.sol";
+import {Multicall} from "src/Multicall.sol";
+import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 import {IERC7540} from "src/interfaces/IERC7540.sol";
 import {IERC20} from "src/interfaces/IERC20.sol";
-import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 import {ICentrifugeRouter} from "src/interfaces/ICentrifugeRouter.sol";
-import {Multicall} from "src/Multicall.sol";
+import {IPoolManager} from "src/interfaces/IPoolManager.sol";
 
 contract CentrifugeRouter is Auth, Multicall, ICentrifugeRouter {
     /// @inheritdoc ICentrifugeRouter
     mapping(address user => mapping(address vault => uint256 amount)) public lockedRequests;
+    address public immutable poolManager;
+
+    constructor(address poolManager_) {
+        poolManager = poolManager_;
+    }
 
     // --- Administration ---
     /// @inheritdoc ICentrifugeRouter
@@ -19,6 +25,7 @@ contract CentrifugeRouter is Auth, Multicall, ICentrifugeRouter {
     }
 
     // --- Approval ---
+    /// @inheritdoc ICentrifugeRouter
     function approveVault(address vault) external {
         IERC20(IERC7540(vault).asset()).approve(vault, type(uint256).max);
     }
@@ -70,5 +77,11 @@ contract CentrifugeRouter is Auth, Multicall, ICentrifugeRouter {
     function claimRedeem(address vault, address user) external {
         uint256 maxRedeem = IERC7540(vault).maxRedeem(user);
         IERC7540(vault).redeem(maxRedeem, user, user);
+    }
+
+    // --- View Methods ---
+    /// @inheritdoc ICentrifugeRouter
+    function getVault(uint64 poolId, bytes16 trancheId, address asset) external view returns (address) {
+        return IPoolManager(poolManager).getVault(poolId, trancheId, asset);
     }
 }
