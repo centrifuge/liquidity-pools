@@ -89,13 +89,13 @@ contract AggregatorTest is Test {
         assertEq(validRouter4Id, 4);
         assertEq(validRouter4Quorum, 4);
         assertEq(aggregator.routers(3), address(router4));
-        assertEq(aggregator.activeSessionId(), 1);
+        assertEq(aggregator.activeSessionId(), 0);
 
         aggregator.file("routers", threeMockRouters);
         (invalidRouter4Id, invalidRouter4Quorum,) = aggregator.validRouters(address(router4));
         assertEq(invalidRouter4Id, 0);
         assertEq(invalidRouter4Quorum, 0);
-        assertEq(aggregator.activeSessionId(), 2);
+        assertEq(aggregator.activeSessionId(), 1);
         vm.expectRevert(bytes(""));
         assertEq(aggregator.routers(3), address(0));
 

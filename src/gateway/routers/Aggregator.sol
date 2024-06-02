@@ -53,9 +53,9 @@ contract Aggregator is Auth, IAggregator {
 
             uint64 sessionId = 0;
             if (routers.length > 0) {
-                // Increment session id if it is not the initial router setup and the quorum changed
+                // Increment session id if it is not the initial router setup and the quorum was decreased
                 Router memory prevRouter = validRouters[address(routers[0])];
-                sessionId = prevRouter.quorum != quorum_ ? prevRouter.activeSessionId + 1 : prevRouter.activeSessionId;
+                sessionId = quorum_ < prevRouter.quorum ? prevRouter.activeSessionId + 1 : prevRouter.activeSessionId;
             }
 
             // Disable old routers
