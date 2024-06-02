@@ -3,6 +3,7 @@ pragma solidity 0.8.21;
 
 import {Auth} from "src/Auth.sol";
 import {ArrayLib} from "src/libraries/ArrayLib.sol";
+import {BytesLib} from "src/libraries/BytesLib.sol";
 import {MessagesLib} from "src/libraries/MessagesLib.sol";
 import {IAggregator} from "src/interfaces/gateway/IAggregator.sol";
 
@@ -22,6 +23,7 @@ interface RouterLike {
 ///         storing counts of messages and proofs that have been received.
 contract Aggregator is Auth, IAggregator {
     using ArrayLib for uint16[8];
+    using BytesLib for bytes;
 
     uint8 public constant MAX_ROUTER_COUNT = 8;
     uint8 public constant PRIMARY_ROUTER_ID = 1;
@@ -86,13 +88,14 @@ contract Aggregator is Auth, IAggregator {
     }
 
     function _handle(bytes calldata payload, address routerAddr, Router memory router, bool isRecovery) internal {
-        if (MessagesLib.isRecoveryMessage(payload)) {
+        MessagesLib.Call call = MessagesLib.messageType(payload);
+        if (call == MessagesLib.Call.InitiateMessageRecovery || call == MessagesLib.Call.DisputeMessageRecovery) {
             require(!isRecovery, "Aggregator/no-recursive-recovery-allowed");
             require(routers.length > 1, "Aggregator/no-recovery-with-one-router-allowed");
             return _handleRecovery(payload);
         }
 
-        bool isMessageProof = MessagesLib.messageType(payload) == MessagesLib.Call.MessageProof;
+        bool isMessageProof = call == MessagesLib.Call.MessageProof;
         if (router.quorum == 1 && !isMessageProof) {
             // Special case for gas efficiency
             gateway.handle(payload);
@@ -104,7 +107,7 @@ contract Aggregator is Auth, IAggregator {
         bytes32 messageHash;
         if (isMessageProof) {
             require(isRecovery || router.id != 1, "RouterAggregator/non-proof-router");
-            messageHash = MessagesLib.parseMessageProof(payload);
+            messageHash = payload.toBytes32(1);
             emit HandleProof(messageHash, routerAddr);
         } else {
             require(isRecovery || router.id == 1, "RouterAggregator/non-message-router");
@@ -147,13 +150,14 @@ contract Aggregator is Auth, IAggregator {
 
     function _handleRecovery(bytes memory payload) internal {
         if (MessagesLib.messageType(payload) == MessagesLib.Call.InitiateMessageRecovery) {
-            (bytes32 messageHash, address router) = MessagesLib.parseInitiateMessageRecovery(payload);
+            bytes32 messageHash = payload.toBytes32(1);
+            address router = payload.toAddress(33);
             require(validRouters[msg.sender].id != 0, "Aggregator/invalid-sender");
             require(validRouters[router].id != 0, "Aggregator/invalid-router");
             recoveries[messageHash] = Recovery(block.timestamp + RECOVERY_CHALLENGE_PERIOD, router);
             emit InitiateMessageRecovery(messageHash, router);
         } else if (MessagesLib.messageType(payload) == MessagesLib.Call.DisputeMessageRecovery) {
-            bytes32 messageHash = MessagesLib.parseDisputeMessageRecovery(payload);
+            bytes32 messageHash = payload.toBytes32(1);
             return _disputeMessageRecovery(messageHash);
         }
     }
