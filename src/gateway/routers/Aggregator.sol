@@ -81,7 +81,7 @@ contract Aggregator is Auth, IAggregator {
 
     // --- Incoming ---
     /// @inheritdoc IAggregator
-    function handle(bytes calldata payload) public {
+    function handle(bytes calldata payload) external {
         Router memory router = validRouters[msg.sender];
         require(router.id != 0, "Aggregator/invalid-router");
         _handle(payload, msg.sender, router, false);
@@ -163,7 +163,7 @@ contract Aggregator is Auth, IAggregator {
     }
 
     /// @inheritdoc IAggregator
-    function disputeMessageRecovery(bytes32 messageHash) public auth {
+    function disputeMessageRecovery(bytes32 messageHash) external auth {
         _disputeMessageRecovery(messageHash);
     }
 
@@ -173,7 +173,7 @@ contract Aggregator is Auth, IAggregator {
     }
 
     /// @inheritdoc IAggregator
-    function executeMessageRecovery(bytes calldata message) public {
+    function executeMessageRecovery(bytes calldata message) external {
         bytes32 messageHash = keccak256(message);
         Recovery storage recovery = recoveries[messageHash];
         Router storage router = validRouters[recovery.router];
@@ -189,7 +189,7 @@ contract Aggregator is Auth, IAggregator {
 
     // --- Outgoing ---
     /// @inheritdoc IAggregator
-    function send(bytes calldata message) public auth {
+    function send(bytes calldata message) external auth {
         uint256 numRouters = routers.length;
         require(numRouters > 0, "Aggregator/not-initialized");
 
