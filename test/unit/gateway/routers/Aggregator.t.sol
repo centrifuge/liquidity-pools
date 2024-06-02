@@ -66,32 +66,36 @@ contract AggregatorTest is Test {
         assertEq(aggregator.routers(0), address(router1));
         assertEq(aggregator.routers(1), address(router2));
         assertEq(aggregator.routers(2), address(router3));
+        assertEq(aggregator.activeSessionId(), 0);
+
         vm.expectRevert(bytes(""));
         assertEq(aggregator.routers(3), address(0));
 
-        (uint8 validRouter1Id, uint8 validRouter1Quorum) = aggregator.validRouters(address(router1));
+        (uint8 validRouter1Id, uint8 validRouter1Quorum,) = aggregator.validRouters(address(router1));
         assertEq(validRouter1Id, 1);
         assertEq(validRouter1Quorum, 3);
-        (uint8 validRouter2Id, uint8 validRouter2Quorum) = aggregator.validRouters(address(router2));
+        (uint8 validRouter2Id, uint8 validRouter2Quorum,) = aggregator.validRouters(address(router2));
         assertEq(validRouter2Id, 2);
         assertEq(validRouter2Quorum, 3);
-        (uint8 validRouter3Id, uint8 validRouter3Quorum) = aggregator.validRouters(address(router3));
+        (uint8 validRouter3Id, uint8 validRouter3Quorum,) = aggregator.validRouters(address(router3));
         assertEq(validRouter3Id, 3);
         assertEq(validRouter3Quorum, 3);
-        (uint8 invalidRouter4Id, uint8 invalidRouter4Quorum) = aggregator.validRouters(address(router4));
+        (uint8 invalidRouter4Id, uint8 invalidRouter4Quorum,) = aggregator.validRouters(address(router4));
         assertEq(invalidRouter4Id, 0);
         assertEq(invalidRouter4Quorum, 0);
 
         aggregator.file("routers", fourMockRouters);
-        (uint8 validRouter4Id, uint8 validRouter4Quorum) = aggregator.validRouters(address(router4));
+        (uint8 validRouter4Id, uint8 validRouter4Quorum,) = aggregator.validRouters(address(router4));
         assertEq(validRouter4Id, 4);
         assertEq(validRouter4Quorum, 4);
         assertEq(aggregator.routers(3), address(router4));
+        assertEq(aggregator.activeSessionId(), 1);
 
         aggregator.file("routers", threeMockRouters);
-        (invalidRouter4Id, invalidRouter4Quorum) = aggregator.validRouters(address(router4));
+        (invalidRouter4Id, invalidRouter4Quorum,) = aggregator.validRouters(address(router4));
         assertEq(invalidRouter4Id, 0);
         assertEq(invalidRouter4Quorum, 0);
+        assertEq(aggregator.activeSessionId(), 2);
         vm.expectRevert(bytes(""));
         assertEq(aggregator.routers(3), address(0));
 
@@ -232,6 +236,24 @@ contract AggregatorTest is Test {
         assertVotes(message, 0, 0, 0);
     }
 
+    function testVotesExpireAfterSession() public {
+        aggregator.file("routers", fourMockRouters);
+
+        bytes memory message = abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1));
+        bytes memory proof = _formatMessageProof(abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1)));
+
+        router1.execute(message);
+        router2.execute(proof);
+        assertEq(gateway.handled(message), 0);
+        assertVotes(message, 1, 1, 0);
+
+        aggregator.file("routers", threeMockRouters);
+
+        router3.execute(proof);
+        assertEq(gateway.handled(message), 0);
+        assertVotes(message, 0, 0, 1);
+    }
+
     function testOutgoingAggregatedMessages() public {
         aggregator.file("routers", threeMockRouters);
 
@@ -328,14 +350,35 @@ contract AggregatorTest is Test {
         aggregator.executeMessageRecovery(proof);
         vm.warp(block.timestamp + aggregator.RECOVERY_CHALLENGE_PERIOD());
 
+        // Execute recovery
+        aggregator.executeMessageRecovery(proof);
+        assertEq(gateway.handled(message), 1);
+    }
+
+    function testCannotRecoverInvalidRouter() public {
+        aggregator.file("routers", threeMockRouters);
+
+        bytes memory message = abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1));
+        bytes memory proof = _formatMessageProof(abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1)));
+
+        // Only send through 2 out of 3 routers
+        router1.execute(message);
+        router2.execute(proof);
+        assertEq(gateway.handled(message), 0);
+
+        // Initiate recovery
+        router1.execute(
+            abi.encodePacked(
+                uint8(MessagesLib.Call.InitiateMessageRecovery), keccak256(proof), address(router3).toBytes32()
+            )
+        );
+
+        vm.warp(block.timestamp + aggregator.RECOVERY_CHALLENGE_PERIOD());
+
         aggregator.file("routers", oneMockRouter);
         vm.expectRevert(bytes("Aggregator/invalid-router"));
         aggregator.executeMessageRecovery(proof);
         aggregator.file("routers", threeMockRouters);
-
-        // Execute recovery
-        aggregator.executeMessageRecovery(proof);
-        assertEq(gateway.handled(message), 1);
     }
 
     function testDisputeRecovery() public {

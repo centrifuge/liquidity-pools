@@ -45,7 +45,16 @@ contract Aggregator is Auth, IAggregator {
     /// @inheritdoc IAggregator
     function file(bytes32 what, address[] calldata routers_) external auth {
         if (what == "routers") {
-            require(routers_.length <= MAX_ROUTER_COUNT, "Aggregator/exceeds-max-router-count");
+            uint8 quorum_ = uint8(routers_.length);
+            require(quorum_ > 0, "Aggregator/empty-router-set");
+            require(quorum_ <= MAX_ROUTER_COUNT, "Aggregator/exceeds-max-router-count");
+
+            uint64 sessionId = 0;
+            if (routers.length > 0) {
+                // Increment session id if it is not the initial router setup and the quorum changed
+                Router memory prevRouter = validRouters[address(routers[0])];
+                sessionId = prevRouter.quorum != quorum_ ? prevRouter.activeSessionId + 1 : prevRouter.activeSessionId;
+            }
 
             // Disable old routers
             for (uint8 i = 0; i < routers.length; i++) {
@@ -53,12 +62,11 @@ contract Aggregator is Auth, IAggregator {
             }
 
             // Enable new routers, setting quorum to number of routers
-            uint8 quorum_ = uint8(routers_.length);
             for (uint8 j; j < quorum_; j++) {
                 require(validRouters[routers_[j]].id == 0, "Aggregator/no-duplicates-allowed");
 
                 // Ids are assigned sequentially starting at 1
-                validRouters[routers_[j]] = Router(j + 1, quorum_);
+                validRouters[routers_[j]] = Router(j + 1, quorum_, sessionId);
             }
 
             routers = routers_;
@@ -92,6 +100,7 @@ contract Aggregator is Auth, IAggregator {
             return;
         }
 
+        // Verify router and parse message hash
         bytes32 messageHash;
         if (isMessageProof) {
             require(isRecovery || router.id != 1, "RouterAggregator/non-proof-router");
@@ -104,12 +113,21 @@ contract Aggregator is Auth, IAggregator {
         }
 
         Message storage state = messages[messageHash];
+
+        if (router.activeSessionId != state.sessionId) {
+            // Clear votes from previous session
+            delete state.votes;
+            state.sessionId = router.activeSessionId;
+        }
+
+        // Increase vote
         state.votes[router.id - 1]++;
 
         if (state.votes.countNonZeroValues() >= router.quorum) {
             // Reduce votes by quorum
             state.votes.decreaseFirstNValues(router.quorum);
 
+            // Handle message
             if (isMessageProof) {
                 gateway.handle(state.pendingMessage);
             } else {
@@ -184,6 +202,12 @@ contract Aggregator is Auth, IAggregator {
     function quorum() external view returns (uint8) {
         Router memory router = validRouters[routers[0]];
         return router.quorum;
+    }
+
+    /// @inheritdoc IAggregator
+    function activeSessionId() external view returns (uint64) {
+        Router memory router = validRouters[routers[0]];
+        return router.activeSessionId;
     }
 
     /// @inheritdoc IAggregator

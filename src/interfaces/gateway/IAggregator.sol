@@ -2,19 +2,24 @@
 pragma solidity >=0.5.0;
 
 interface IAggregator {
+    /// @dev Each router struct is packed with the quorum to reduce SLOADs on handle
     struct Router {
-        // Starts at 1 and maps to id - 1 as the index on the routers array
+        /// @notice Starts at 1 and maps to id - 1 as the index on the routers array
         uint8 id;
-        // Each router struct is packed with the quorum to reduce SLOADs on handle
+        /// @notice Number of votes required for a message to be executed
         uint8 quorum;
+        /// @notice Each time routers are updated, a new session starts which invalidates old votes
+        uint64 activeSessionId;
     }
 
     struct Message {
-        // Counts are stored as integers (instead of boolean values) to accommodate duplicate
-        // messages (e.g. two investments from the same user with the same amount) being
-        // processed in parallel. The entire struct is packed in a single bytes32 slot.
-        // Max uint16 = 65,535 so at most 65,535 duplicate messages can be processed in parallel.
+        /// @dev Counts are stored as integers (instead of boolean values) to accommodate duplicate
+        ///      messages (e.g. two investments from the same user with the same amount) being
+        ///      processed in parallel. The entire struct is packed in a single bytes32 slot.
+        ///      Max uint16 = 65,535 so at most 65,535 duplicate messages can be processed in parallel.
         uint16[8] votes;
+        /// @notice Each time routers are updated, a new session starts which invalidates old votes
+        uint64 sessionId;
         bytes pendingMessage;
     }
 
@@ -63,6 +68,9 @@ interface IAggregator {
     // --- Helpers ---
     /// @notice TODO
     function quorum() external view returns (uint8);
+
+    /// @notice TODO
+    function activeSessionId() external view returns (uint64);
 
     /// @notice TODO
     function votes(bytes32 messageHash) external view returns (uint16[8] memory votes);
