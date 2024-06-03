@@ -106,7 +106,7 @@ contract Aggregator is Auth, IAggregator {
         // Verify router and parse message hash
         bytes32 messageHash;
         if (isMessageProof) {
-            require(isRecovery || router.id != 1, "RouterAggregator/non-proof-router");
+            require(isRecovery || router.id !=PRIMARY_ROUTER_ID, "RouterAggregator/non-proof-router");
             messageHash = payload.toBytes32(1);
             emit HandleProof(messageHash, routerAddr);
         } else {
