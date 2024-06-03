@@ -71,28 +71,28 @@ contract AggregatorTest is Test {
         vm.expectRevert(bytes(""));
         assertEq(aggregator.routers(3), address(0));
 
-        (uint8 validRouter1Id, uint8 validRouter1Quorum,) = aggregator.validRouters(address(router1));
+        (uint8 validRouter1Id, uint8 validRouter1Quorum,) = aggregator.activeRouters(address(router1));
         assertEq(validRouter1Id, 1);
         assertEq(validRouter1Quorum, 3);
-        (uint8 validRouter2Id, uint8 validRouter2Quorum,) = aggregator.validRouters(address(router2));
+        (uint8 validRouter2Id, uint8 validRouter2Quorum,) = aggregator.activeRouters(address(router2));
         assertEq(validRouter2Id, 2);
         assertEq(validRouter2Quorum, 3);
-        (uint8 validRouter3Id, uint8 validRouter3Quorum,) = aggregator.validRouters(address(router3));
+        (uint8 validRouter3Id, uint8 validRouter3Quorum,) = aggregator.activeRouters(address(router3));
         assertEq(validRouter3Id, 3);
         assertEq(validRouter3Quorum, 3);
-        (uint8 invalidRouter4Id, uint8 invalidRouter4Quorum,) = aggregator.validRouters(address(router4));
+        (uint8 invalidRouter4Id, uint8 invalidRouter4Quorum,) = aggregator.activeRouters(address(router4));
         assertEq(invalidRouter4Id, 0);
         assertEq(invalidRouter4Quorum, 0);
 
         aggregator.file("routers", fourMockRouters);
-        (uint8 validRouter4Id, uint8 validRouter4Quorum,) = aggregator.validRouters(address(router4));
+        (uint8 validRouter4Id, uint8 validRouter4Quorum,) = aggregator.activeRouters(address(router4));
         assertEq(validRouter4Id, 4);
         assertEq(validRouter4Quorum, 4);
         assertEq(aggregator.routers(3), address(router4));
         assertEq(aggregator.activeSessionId(), 0);
 
         aggregator.file("routers", threeMockRouters);
-        (invalidRouter4Id, invalidRouter4Quorum,) = aggregator.validRouters(address(router4));
+        (invalidRouter4Id, invalidRouter4Quorum,) = aggregator.activeRouters(address(router4));
         assertEq(invalidRouter4Id, 0);
         assertEq(invalidRouter4Quorum, 0);
         assertEq(aggregator.activeSessionId(), 1);

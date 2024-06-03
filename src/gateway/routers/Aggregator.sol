@@ -32,7 +32,7 @@ contract Aggregator is Auth, IAggregator {
     GatewayLike public immutable gateway;
 
     address[] public routers;
-    mapping(address router => Router) public validRouters;
+    mapping(address router => Router) public activeRouters;
     mapping(bytes32 messageHash => Message) public messages;
     mapping(bytes32 messageHash => Recovery) public recoveries;
 
@@ -54,21 +54,21 @@ contract Aggregator is Auth, IAggregator {
             uint64 sessionId = 0;
             if (routers.length > 0) {
                 // Increment session id if it is not the initial router setup and the quorum was decreased
-                Router memory prevRouter = validRouters[address(routers[0])];
+                Router memory prevRouter = activeRouters[routers[0]];
                 sessionId = quorum_ < prevRouter.quorum ? prevRouter.activeSessionId + 1 : prevRouter.activeSessionId;
             }
 
             // Disable old routers
             for (uint8 i = 0; i < routers.length; i++) {
-                delete validRouters[address(routers[i])];
+                delete activeRouters[routers[i]];
             }
 
             // Enable new routers, setting quorum to number of routers
             for (uint8 j; j < quorum_; j++) {
-                require(validRouters[routers_[j]].id == 0, "Aggregator/no-duplicates-allowed");
+                require(activeRouters[routers_[j]].id == 0, "Aggregator/no-duplicates-allowed");
 
                 // Ids are assigned sequentially starting at 1
-                validRouters[routers_[j]] = Router(j + 1, quorum_, sessionId);
+                activeRouters[routers_[j]] = Router(j + 1, quorum_, sessionId);
             }
 
             routers = routers_;
@@ -82,7 +82,7 @@ contract Aggregator is Auth, IAggregator {
     // --- Incoming ---
     /// @inheritdoc IAggregator
     function handle(bytes calldata payload) external {
-        Router memory router = validRouters[msg.sender];
+        Router memory router = activeRouters[msg.sender];
         require(router.id != 0, "Aggregator/invalid-router");
         _handle(payload, msg.sender, router, false);
     }
@@ -152,8 +152,8 @@ contract Aggregator is Auth, IAggregator {
         if (MessagesLib.messageType(payload) == MessagesLib.Call.InitiateMessageRecovery) {
             bytes32 messageHash = payload.toBytes32(1);
             address router = payload.toAddress(33);
-            require(validRouters[msg.sender].id != 0, "Aggregator/invalid-sender");
-            require(validRouters[router].id != 0, "Aggregator/invalid-router");
+            require(activeRouters[msg.sender].id != 0, "Aggregator/invalid-sender");
+            require(activeRouters[router].id != 0, "Aggregator/invalid-router");
             recoveries[messageHash] = Recovery(block.timestamp + RECOVERY_CHALLENGE_PERIOD, router);
             emit InitiateMessageRecovery(messageHash, router);
         } else if (MessagesLib.messageType(payload) == MessagesLib.Call.DisputeMessageRecovery) {
@@ -176,7 +176,7 @@ contract Aggregator is Auth, IAggregator {
     function executeMessageRecovery(bytes calldata message) external {
         bytes32 messageHash = keccak256(message);
         Recovery storage recovery = recoveries[messageHash];
-        Router storage router = validRouters[recovery.router];
+        Router storage router = activeRouters[recovery.router];
 
         require(recovery.timestamp != 0, "Aggregator/message-recovery-not-initiated");
         require(recovery.timestamp <= block.timestamp, "Aggregator/challenge-period-has-not-ended");
@@ -204,13 +204,13 @@ contract Aggregator is Auth, IAggregator {
     // --- Helpers ---
     /// @inheritdoc IAggregator
     function quorum() external view returns (uint8) {
-        Router memory router = validRouters[routers[0]];
+        Router memory router = activeRouters[routers[0]];
         return router.quorum;
     }
 
     /// @inheritdoc IAggregator
     function activeSessionId() external view returns (uint64) {
-        Router memory router = validRouters[routers[0]];
+        Router memory router = activeRouters[routers[0]];
         return router.activeSessionId;
     }
 
