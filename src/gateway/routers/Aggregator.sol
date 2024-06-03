@@ -110,7 +110,7 @@ contract Aggregator is Auth, IAggregator {
             messageHash = payload.toBytes32(1);
             emit HandleProof(messageHash, routerAddr);
         } else {
-            require(isRecovery || router.id == 1, "RouterAggregator/non-message-router");
+            require(isRecovery || router.id == PRIMARY_ROUTER_ID, "RouterAggregator/non-message-router");
             messageHash = keccak256(payload);
             emit HandleMessage(payload, routerAddr);
         }
