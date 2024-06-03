@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity >=0.5.0;
 
+uint8 constant MAX_ROUTER_COUNT = 8;
+
 interface IAggregator {
     /// @dev Each router struct is packed with the quorum to reduce SLOADs on handle
     struct Router {
@@ -17,7 +19,7 @@ interface IAggregator {
         ///      messages (e.g. two investments from the same user with the same amount) being
         ///      processed in parallel. The entire struct is packed in a single bytes32 slot.
         ///      Max uint16 = 65,535 so at most 65,535 duplicate messages can be processed in parallel.
-        uint16[8] votes;
+        uint16[MAX_ROUTER_COUNT] votes;
         /// @notice Each time routers are updated, a new session starts which invalidates old votes
         uint64 sessionId;
         bytes pendingMessage;
@@ -73,5 +75,5 @@ interface IAggregator {
     function activeSessionId() external view returns (uint64);
 
     /// @notice TODO
-    function votes(bytes32 messageHash) external view returns (uint16[8] memory votes);
+    function votes(bytes32 messageHash) external view returns (uint16[MAX_ROUTER_COUNT] memory votes);
 }

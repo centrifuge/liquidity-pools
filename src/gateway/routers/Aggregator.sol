@@ -22,7 +22,7 @@ interface RouterLike {
 ///         Supports processing multiple duplicate messages in parallel by
 ///         storing counts of messages and proofs that have been received.
 contract Aggregator is Auth, IAggregator {
-    using ArrayLib for uint16[8];
+    using ArrayLib for uint16[MAX_ROUTER_COUNT];
     using BytesLib for bytes;
 
     uint8 public constant MAX_ROUTER_COUNT = 8;
@@ -106,7 +106,7 @@ contract Aggregator is Auth, IAggregator {
         // Verify router and parse message hash
         bytes32 messageHash;
         if (isMessageProof) {
-            require(isRecovery || router.id !=PRIMARY_ROUTER_ID, "RouterAggregator/non-proof-router");
+            require(isRecovery || router.id != PRIMARY_ROUTER_ID, "RouterAggregator/non-proof-router");
             messageHash = payload.toBytes32(1);
             emit HandleProof(messageHash, routerAddr);
         } else {
