@@ -212,7 +212,6 @@ contract ERC7540Vault is Auth, IERC7540, IAuthorizeOperator {
         return true;
     }
 
-    /// @inheritdoc IAuthorizeOperator
     function DOMAIN_SEPARATOR() public view returns (bytes32) {
         return block.chainid == deploymentChainId
             ? _DOMAIN_SEPARATOR
@@ -227,7 +226,7 @@ contract ERC7540Vault is Auth, IERC7540, IAuthorizeOperator {
         uint256 deadline,
         bytes32 nonce,
         bytes memory signature
-    ) external {
+    ) external returns (bool) {
         require(block.timestamp <= deadline, "ERC7540Vault/authorization-expired");
         require(owner != address(0), "ERC7540Vault/invalid-owner");
         require(!authorizations[owner][nonce], "ERC7540Vault/authorization-used");
@@ -246,6 +245,8 @@ contract ERC7540Vault is Auth, IERC7540, IAuthorizeOperator {
 
         isOperator[owner][operator] = approved;
         emit OperatorSet(owner, operator, approved);
+
+        return true;
     }
 
     // --- ERC165 support ---

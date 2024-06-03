@@ -189,8 +189,7 @@ interface IAuthorizeOperator {
         uint256 deadline,
         bytes32 nonce,
         bytes memory signature
-    ) external;
-    function DOMAIN_SEPARATOR() external view returns (bytes32);
+    ) external returns (bool);
 }
 
 /**
