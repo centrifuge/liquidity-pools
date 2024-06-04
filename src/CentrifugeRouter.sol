@@ -15,6 +15,9 @@ contract CentrifugeRouter is Auth, Multicall, ICentrifugeRouter {
     /// @inheritdoc ICentrifugeRouter
     mapping(address user => mapping(address vault => uint256 amount)) public lockedRequests;
 
+    // --- Events ---
+    event File(bytes32 indexed what, address data);
+
     constructor(address poolManager_) {
         poolManager = poolManager_;
 
@@ -30,11 +33,9 @@ contract CentrifugeRouter is Auth, Multicall, ICentrifugeRouter {
 
     /// @inheritdoc ICentrifugeRouter
     function file(bytes32 what, address data) external auth {
-        if (what == "poolManager") {
-            poolManager = data;
-        } else {
-            revert("CentrifugeRouter/file-unrecognized-param");
-        }
+        if (what == "poolManager") poolManager = data;
+        else revert("CentrifugeRouter/file-unrecognized-param");
+        emit File(what, data);
     }
 
     // --- Approval ---
