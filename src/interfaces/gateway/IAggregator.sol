@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity >=0.5.0;
 
+uint8 constant MAX_ROUTER_COUNT = 8;
+
 interface IAggregator {
     struct Router {
         // Starts at 1 and maps to id - 1 as the index on the routers array
@@ -14,8 +16,8 @@ interface IAggregator {
         // messages (e.g. two investments from the same user with the same amount) being
         // processed in parallel. The entire struct is packed in a single bytes32 slot.
         // Max uint16 = 65,535 so at most 65,535 duplicate messages can be processed in parallel.
-        uint16[8] messages;
-        uint16[8] proofs;
+        uint16[MAX_ROUTER_COUNT] messages;
+        uint16[MAX_ROUTER_COUNT] proofs;
     }
 
     struct Recovery {
@@ -68,5 +70,5 @@ interface IAggregator {
     function confirmations(bytes32 messageHash)
         external
         view
-        returns (uint16[8] memory messages, uint16[8] memory proofs);
+        returns (uint16[MAX_ROUTER_COUNT] memory messages, uint16[MAX_ROUTER_COUNT] memory proofs);
 }
