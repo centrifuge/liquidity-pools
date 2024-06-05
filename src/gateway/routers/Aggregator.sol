@@ -190,7 +190,7 @@ contract Aggregator is Auth, IAggregator {
     function confirmations(bytes32 messageHash)
         external
         view
-        returns (uint16[8] memory messages, uint16[8] memory proofs)
+        returns (uint16[MAX_ROUTER_COUNT] memory messages, uint16[MAX_ROUTER_COUNT] memory proofs)
     {
         ConfirmationState storage state = _confirmations[messageHash];
         return (state.messages, state.proofs);
