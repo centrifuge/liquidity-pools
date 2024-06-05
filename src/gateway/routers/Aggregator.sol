@@ -22,7 +22,7 @@ interface RouterLike {
 ///         Supports processing multiple duplicate messages in parallel by
 ///         storing counts of messages and proofs that have been received.
 contract Aggregator is Auth, IAggregator {
-    using ArrayLib for uint16[MAX_ROUTER_COUNT];
+    using ArrayLib for uint16[8];
     using BytesLib for bytes;
 
     uint8 public constant MAX_ROUTER_COUNT = 8;
