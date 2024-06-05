@@ -4,20 +4,25 @@ pragma solidity >=0.5.0;
 uint8 constant MAX_ROUTER_COUNT = 8;
 
 interface IAggregator {
+    /// @dev Each router struct is packed with the quorum to reduce SLOADs on handle
     struct Router {
-        // Starts at 1 and maps to id - 1 as the index on the routers array
+        /// @notice Starts at 1 and maps to id - 1 as the index on the routers array
         uint8 id;
-        // Each router struct is packed with the quorum to reduce SLOADs on handle
+        /// @notice Number of votes required for a message to be executed
         uint8 quorum;
+        /// @notice Each time the quorum is decreased, a new session starts which invalidates old votes
+        uint64 activeSessionId;
     }
 
-    struct ConfirmationState {
-        // Counts are stored as integers (instead of boolean values) to accommodate duplicate
-        // messages (e.g. two investments from the same user with the same amount) being
-        // processed in parallel. The entire struct is packed in a single bytes32 slot.
-        // Max uint16 = 65,535 so at most 65,535 duplicate messages can be processed in parallel.
-        uint16[MAX_ROUTER_COUNT] messages;
-        uint16[MAX_ROUTER_COUNT] proofs;
+    struct Message {
+        /// @dev Counts are stored as integers (instead of boolean values) to accommodate duplicate
+        ///      messages (e.g. two investments from the same user with the same amount) being
+        ///      processed in parallel. The entire struct is packed in a single bytes32 slot.
+        ///      Max uint16 = 65,535 so at most 65,535 duplicate messages can be processed in parallel.
+        uint16[MAX_ROUTER_COUNT] votes;
+        /// @notice Each time routers are updated, a new session starts which invalidates old votes
+        uint64 sessionId;
+        bytes pendingMessage;
     }
 
     struct Recovery {
@@ -34,7 +39,7 @@ interface IAggregator {
     event RecoverProof(address router, bytes32 messageHash);
     event InitiateMessageRecovery(bytes32 messageHash, address router);
     event DisputeMessageRecovery(bytes32 messageHash);
-    event ExecuteMessagRecovery(bytes message);
+    event ExecuteMessageRecovery(bytes message);
     event File(bytes32 indexed what, address[] routers);
 
     // --- Administration ---
@@ -67,8 +72,8 @@ interface IAggregator {
     function quorum() external view returns (uint8);
 
     /// @notice TODO
-    function confirmations(bytes32 messageHash)
-        external
-        view
-        returns (uint16[MAX_ROUTER_COUNT] memory messages, uint16[MAX_ROUTER_COUNT] memory proofs);
+    function activeSessionId() external view returns (uint64);
+
+    /// @notice TODO
+    function votes(bytes32 messageHash) external view returns (uint16[MAX_ROUTER_COUNT] memory votes);
 }
