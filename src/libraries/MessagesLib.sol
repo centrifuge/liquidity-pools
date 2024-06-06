@@ -88,61 +88,6 @@ library MessagesLib {
         _call = Call(_msg.toUint8(0));
     }
 
-    /**
-     * 0: call type (uint8 = 1 byte)
-     * 1-32: The keccak message proof (bytes32)
-     */
-    function parseMessageProof(bytes memory _msg) internal pure returns (bytes32 proof) {
-        return (_msg.toBytes32(1));
-    }
-
-    /**
-     * Initiate Message Recovery
-     *
-     * 0: call type (uint8 = 1 byte)
-     * 1-32: The message hash (32 bytes)
-     * 33-52: The router address (32 bytes)
-     */
-    function parseInitiateMessageRecovery(bytes memory _msg)
-        internal
-        pure
-        returns (bytes32 messageHash, address router)
-    {
-        return (_msg.toBytes32(1), _msg.toAddress(33));
-    }
-
-    /**
-     * Dispute Message Recovery
-     *
-     * 0: call type (uint8 = 1 byte)
-     * 1-32: Message hash (32 bytes)
-     */
-    function parseDisputeMessageRecovery(bytes memory _msg) internal pure returns (bytes32 messageHash) {
-        return (_msg.toBytes32(1));
-    }
-
-    function isRecoveryMessage(bytes memory _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.InitiateMessageRecovery || messageType(_msg) == Call.DisputeMessageRecovery;
-    }
-
-    /**
-     * Message Proof
-     *
-     * 0: call type (uint8 = 1 byte)
-     * 1-32: The keccak message proof (bytes32)
-     */
-    function formatMessageProof(bytes memory message) internal pure returns (bytes memory) {
-        return abi.encodePacked(uint8(Call.MessageProof), keccak256(message));
-    }
-
-    function formatMessageProof(bytes32 messageHash) internal pure returns (bytes memory) {
-        return abi.encodePacked(uint8(Call.MessageProof), messageHash);
-    }
-
-    function isMessageProof(bytes memory _msg) internal pure returns (bool) {
-        return messageType(_msg) == Call.MessageProof;
-    }
-
     // Utils
     function formatDomain(Domain domain) internal pure returns (bytes9) {
         return bytes9(bytes1(uint8(domain)));

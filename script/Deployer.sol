@@ -79,6 +79,7 @@ contract Deployer is Script {
 
         // Wire aggregator
         aggregator.file("routers", routers);
+        aggregator.rely(address(gateway));
         gateway.file("aggregator", address(aggregator));
         gateway.rely(address(aggregator));
 
