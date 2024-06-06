@@ -207,14 +207,16 @@ contract Aggregator is Auth, IAggregator {
 
     // --- Outgoing ---
     /// @inheritdoc IAggregator
-    function send(bytes calldata message) external payable {
-        require(msg.sender == address(gateway), "Aggregator/only-gateway-allowed-to-call");
-
+    function send(bytes calldata message) external payable auth {
         uint256 numRouters = routers.length;
         require(numRouters > 0, "Aggregator/not-initialized");
 
         uint256 fuel = msg.value;
-        uint256 centrifugeCost = centrifugeGasService.estimate(message);
+        uint256 centrifugeCost;
+
+        if (fuel > 0) {
+            centrifugeCost = centrifugeGasService.estimate(message);
+        }
 
         bytes memory proof = abi.encodePacked(uint8(MessagesLib.Call.MessageProof), keccak256(message));
         for (uint256 i; i < numRouters; i++) {
