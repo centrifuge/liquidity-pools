@@ -15,9 +15,6 @@ contract CentrifugeRouter is Auth, Multicall, ICentrifugeRouter {
     /// @inheritdoc ICentrifugeRouter
     mapping(address user => mapping(address vault => uint256 amount)) public lockedRequests;
 
-    // --- Events ---
-    event File(bytes32 indexed what, address data);
-
     constructor(address poolManager_) {
         poolManager = poolManager_;
 
