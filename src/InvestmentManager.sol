@@ -80,7 +80,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
 
     // --- Outgoing message handling ---
     /// @inheritdoc IInvestmentManager
-    function requestDeposit(address vault, uint256 assets, address receiver, address owner)
+    function requestDeposit(address vault, uint256 assets, address receiver, address owner, address source)
         public
         auth
         returns (bool)
@@ -103,7 +103,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
         require(state.pendingCancelDepositRequest != true, "InvestmentManager/cancellation-is-pending");
 
         state.pendingDepositRequest = state.pendingDepositRequest + _assets;
-
+        gateway.send(abi.encodePacked(uint8(MessagesLib.Call.EntryPoint), source));
         gateway.send(
             abi.encodePacked(
                 uint8(MessagesLib.Call.IncreaseInvestOrder),
@@ -111,7 +111,8 @@ contract InvestmentManager is Auth, IInvestmentManager {
                 vault_.trancheId(),
                 receiver,
                 poolManager.assetToId(asset),
-                _assets
+                _assets,
+                source
             )
         );
 
@@ -119,7 +120,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
     }
 
     /// @inheritdoc IInvestmentManager
-    function requestRedeem(address vault, uint256 shares, address receiver, address /* owner */ )
+    function requestRedeem(address vault, uint256 shares, address receiver, /* owner */ address, address source)
         public
         auth
         returns (bool)
@@ -135,7 +136,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
             _canTransfer(vault, receiver, address(escrow), convertToAssets(vault, shares)),
             "InvestmentManager/transfer-not-allowed"
         );
-
+        gateway.send(abi.encodePacked(uint8(MessagesLib.Call.EntryPoint), source));
         return _processRedeemRequest(vault, _shares, receiver);
     }
 

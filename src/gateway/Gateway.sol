@@ -2,6 +2,7 @@
 pragma solidity 0.8.21;
 
 import {BytesLib} from "src/libraries/BytesLib.sol";
+import {MessagesLib} from "src/libraries/MessagesLib.sol";
 import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 import {Auth} from "src/Auth.sol";
 import {IGateway} from "src/interfaces/gateway/IGateway.sol";
@@ -32,6 +33,7 @@ contract Gateway is Auth, IGateway {
 
     RootLike public immutable root;
 
+    address entryPoint;
     address public poolManager;
     address public investmentManager;
     AggregatorLike public aggregator;
@@ -54,8 +56,6 @@ contract Gateway is Auth, IGateway {
 
     event Received(address indexed sender, uint256 amount);
 
-    // TODO Do we want to have a method that can withdraw the funds from the contract?
-    // I've seen some similar methods around contract but for ERC20
     receive() external payable {
         emit Received(msg.sender, msg.value);
     }
@@ -81,10 +81,17 @@ contract Gateway is Auth, IGateway {
             msg.sender == investmentManager || msg.sender == poolManager || msg.sender == messages[message.toUint8(0)],
             "Gateway/invalid-manager"
         );
-        //TODO a discussion whether we would like to send the whole balance or
-        // actually pass some calculated value ( how much each router is going to cost )
-        // and only use that value. Refer: TODO Aggregator.send;
+
+        if (MessagesLib.messageType(message) == MessagesLib.Call.EntryPoint) {
+            entryPoint = message.toAddress(1);
+            return;
+        }
+
         aggregator.send{value: address(this).balance}(message);
+
+        if (entryPoint != address(0)) {
+            delete entryPoint;
+        }
     }
 
     // --- Incoming ---
@@ -101,7 +108,7 @@ contract Gateway is Auth, IGateway {
             manager = address(root);
         } else {
             // Dynamic path for other managers, to be able to easily
-            // extend functionality of Liquidity Pools
+            // extend functionality of Liquidity Poolsif(msg.sender == address(mana))
             manager = messages[id];
             require(manager != address(0), "Gateway/unregistered-message-id");
         }
@@ -116,5 +123,10 @@ contract Gateway is Auth, IGateway {
         } else {
             SafeTransferLib.safeTransfer(token, receiver, amount);
         }
+    }
+
+    function markEntryPoint(address entryPoint_) external {
+        require(msg.sender == address(investmentManager), "Gateway/unauthorized-caller");
+        entryPoint = entryPoint_;
     }
 }

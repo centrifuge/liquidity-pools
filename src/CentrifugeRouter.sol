@@ -46,7 +46,7 @@ contract CentrifugeRouter is Auth, Multicall, ICentrifugeRouter {
 
     // --- Deposit ---
     function requestDeposit(address vault, uint256 amount) external payable {
-        require(msg.value > 0, "CentrifugeRouter/not-enough-funds");
+        require(msg.value > 0, "CentrifugeRouter/not-enough-gas-funds");
         payable(gateway).transfer(msg.value);
         IERC7540(vault).requestDeposit(amount, msg.sender, msg.sender);
     }
@@ -67,6 +67,7 @@ contract CentrifugeRouter is Auth, Multicall, ICentrifugeRouter {
         emit UnlockDepositRequest(vault, msg.sender);
     }
 
+    // TODO This should be also payable.
     /// @inheritdoc ICentrifugeRouter
     function executeLockedDepositRequest(address vault, address user) external {
         uint256 lockedRequest = lockedRequests[user][vault];
@@ -83,6 +84,7 @@ contract CentrifugeRouter is Auth, Multicall, ICentrifugeRouter {
     }
 
     // --- Redeem ---
+    // TODO this should be payable
     /// @inheritdoc ICentrifugeRouter
     function requestRedeem(address vault, uint256 amount) external {
         IERC7540(vault).requestRedeem(amount, msg.sender, msg.sender);

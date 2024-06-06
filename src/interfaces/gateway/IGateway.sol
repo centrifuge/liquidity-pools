@@ -21,9 +21,11 @@ interface IGateway {
     /// @notice TODO
     function handle(bytes calldata message) external;
 
-    // Used to recover any ERC-20 token.
-    // Following this spec https://eips.ethereum.org/EIPS/eip-7528
-    // the token address could be 0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
-    // to recover locked native ETH.
+    /// Used to recover any ERC-20 token.
+    /// @dev - This method is called only by authorized entities
+    /// @param token - the token address could be 0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
+    /// to recover locked native ETH or any ERC20 compatible token.
+    /// @param to - address  that will receive the funds
+    /// @param amount - amount to be sent to the @param to
     function recoverTokens(address token, address to, uint256 amount) external;
 }

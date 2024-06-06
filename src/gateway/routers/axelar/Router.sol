@@ -95,7 +95,7 @@ contract AxelarRouter is IRouter, Auth {
 
     // Currently the payload ( message ) is not take into consideration when estimating cost
     // A predefined axelarCost value is used.
-    function estimate(bytes calldata payload) public view returns (uint256) {
+    function estimate(bytes calldata) public view returns (uint256) {
         return axelarCost;
     }
 }

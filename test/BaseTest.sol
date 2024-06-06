@@ -21,6 +21,7 @@ import "src/interfaces/IERC20.sol";
 
 // mocks
 import {MockCentrifugeChain} from "test/mocks/MockCentrifugeChain.sol";
+import {MockCentrifugeGasService} from "test/mocks/MockCentrifugeGasService.sol";
 import {MockRouter} from "test/mocks/MockRouter.sol";
 
 // test env
@@ -28,6 +29,7 @@ import "forge-std/Test.sol";
 
 contract BaseTest is Deployer, Test {
     MockCentrifugeChain centrifugeChain;
+    MockCentrifugeGasService mockedGasService;
     MockRouter router1;
     MockRouter router2;
     MockRouter router3;
@@ -43,7 +45,7 @@ contract BaseTest is Deployer, Test {
 
     // default values
     uint128 public defaultAssetId = 1;
-    uint128 public defaultPrice = 1 * 10**18;
+    uint128 public defaultPrice = 1 * 10 ** 18;
     uint8 public defaultRestrictionSet = 2;
     uint8 public defaultDecimals = 8;
 
@@ -63,6 +65,10 @@ contract BaseTest is Deployer, Test {
         router2 = new MockRouter(address(aggregator));
         router3 = new MockRouter(address(aggregator));
 
+        router1.setReturn("estimate", uint256(1 gwei));
+        router2.setReturn("estimate", uint256(1.25 gwei));
+        router3.setReturn("estimate", uint256(1.75 gwei));
+
         testRouters.push(address(router1));
         testRouters.push(address(router2));
         testRouters.push(address(router3));
@@ -74,7 +80,11 @@ contract BaseTest is Deployer, Test {
         // removeDeployerAccess(address(router)); // need auth permissions in tests
 
         centrifugeChain = new MockCentrifugeChain(testRouters);
+        mockedGasService = new MockCentrifugeGasService();
         erc20 = _newErc20("X's Dollar", "USDX", 6);
+
+        mockedGasService.setReturn("estimate", uint256(0.5 gwei));
+        aggregator.file("centrifugeGasService", address(mockedGasService));
 
         // Label contracts
         vm.label(address(root), "Root");
@@ -87,6 +97,9 @@ contract BaseTest is Deployer, Test {
         vm.label(address(router3), "MockRouter3");
         vm.label(address(erc20), "ERC20");
         vm.label(address(centrifugeChain), "CentrifugeChain");
+        vm.label(address(centrifugeRouter), "CentrifugeRouter");
+        vm.label(address(centrifugeGasService), "CentrifugeGasService");
+        vm.label(address(mockedGasService), "MockCentrifugeGasService");
         vm.label(address(escrow), "Escrow");
         vm.label(address(guardian), "Guardian");
         vm.label(address(poolManager.restrictionManagerFactory()), "RestrictionManagerFactory");
@@ -101,6 +114,7 @@ contract BaseTest is Deployer, Test {
         excludeContract(address(aggregator));
         excludeContract(address(erc20));
         excludeContract(address(centrifugeChain));
+        excludeContract(address(centrifugeRouter));
         excludeContract(address(router1));
         excludeContract(address(router2));
         excludeContract(address(router3));
@@ -125,7 +139,7 @@ contract BaseTest is Deployer, Test {
         if (poolManager.idToAsset(assetId) == address(0)) {
             centrifugeChain.addAsset(assetId, asset);
         }
-        
+
         if (poolManager.getTrancheToken(poolId, trancheId) == address(0)) {
             centrifugeChain.addPool(poolId);
             centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, trancheTokenDecimals, restrictionSet);
@@ -155,7 +169,9 @@ contract BaseTest is Deployer, Test {
     }
 
     function deploySimpleVault() public returns (address) {
-        return deployVault(5, 6, defaultRestrictionSet, "name", "symbol", bytes16(bytes("1")), defaultAssetId, address(erc20));
+        return deployVault(
+            5, 6, defaultRestrictionSet, "name", "symbol", bytes16(bytes("1")), defaultAssetId, address(erc20)
+        );
     }
 
     function deposit(address _vault, address _investor, uint256 amount) public {
@@ -165,24 +181,19 @@ contract BaseTest is Deployer, Test {
     function deposit(address _vault, address _investor, uint256 amount, bool claimDeposit) public {
         ERC7540Vault vault = ERC7540Vault(_vault);
         erc20.mint(_investor, amount);
-        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), _investor, type(uint64).max); // add user as member
+        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), _investor, type(uint64).max); // add user as
+            // member
         vm.startPrank(_investor);
         erc20.approve(_vault, amount); // add allowance
         vault.requestDeposit(amount, _investor, _investor);
         // trigger executed collectInvest
         uint128 assetId = poolManager.assetToId(address(erc20)); // retrieve assetId
         centrifugeChain.isFulfilledDepositRequest(
-            vault.poolId(),
-            vault.trancheId(),
-            bytes32(bytes20(_investor)),
-            assetId,
-            uint128(amount),
-            uint128(amount),
-            0
+            vault.poolId(), vault.trancheId(), bytes32(bytes20(_investor)), assetId, uint128(amount), uint128(amount), 0
         );
 
         if (claimDeposit) {
-           vault.deposit(amount, _investor); // claim the trancheTokens
+            vault.deposit(amount, _investor); // claim the trancheTokens
         }
         vm.stopPrank();
     }
@@ -201,7 +212,7 @@ contract BaseTest is Deployer, Test {
 
     function _bytes16ToString(bytes16 _bytes16) public pure returns (string memory) {
         uint8 i = 0;
-        while(i < 16 && _bytes16[i] != 0) {
+        while (i < 16 && _bytes16[i] != 0) {
             i++;
         }
         bytes memory bytesArray = new bytes(i);
@@ -211,27 +222,27 @@ contract BaseTest is Deployer, Test {
         return string(bytesArray);
     }
 
-    function _uint256ToString(uint _i) internal pure returns (string memory _uintAsString) {
-            if (_i == 0) {
-                return "0";
-            }
-            uint j = _i;
-            uint len;
-            while (j != 0) {
-                len++;
-                j /= 10;
-            }
-            bytes memory bstr = new bytes(len);
-            uint k = len;
-            while (_i != 0) {
-                k = k-1;
-                uint8 temp = (48 + uint8(_i - _i / 10 * 10));
-                bytes1 b1 = bytes1(temp);
-                bstr[k] = b1;
-                _i /= 10;
-            }
-            return string(bstr);
+    function _uint256ToString(uint256 _i) internal pure returns (string memory _uintAsString) {
+        if (_i == 0) {
+            return "0";
         }
+        uint256 j = _i;
+        uint256 len;
+        while (j != 0) {
+            len++;
+            j /= 10;
+        }
+        bytes memory bstr = new bytes(len);
+        uint256 k = len;
+        while (_i != 0) {
+            k = k - 1;
+            uint8 temp = (48 + uint8(_i - _i / 10 * 10));
+            bytes1 b1 = bytes1(temp);
+            bstr[k] = b1;
+            _i /= 10;
+        }
+        return string(bstr);
+    }
 
     function random(uint256 maxValue, uint256 nonce) internal view returns (uint256) {
         if (maxValue == 1) {

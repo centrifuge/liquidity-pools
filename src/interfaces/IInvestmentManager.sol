@@ -45,7 +45,9 @@ interface IInvestmentManager {
     ///         proceed with tranche token payouts in case their orders got fulfilled.
     /// @dev    The user asset amount required to fulfill the deposit request have to be locked,
     ///         even though the tranche token payout can only happen after epoch execution.
-    function requestDeposit(address vault, uint256 assets, address receiver, address owner) external returns (bool);
+    function requestDeposit(address vault, uint256 assets, address receiver, address owner, address souce)
+        external
+        returns (bool);
 
     /// @notice Request tranche token redemption. Liquidity pools have to request redemptions
     ///         from Centrifuge before actual asset payouts can be done. The redemption
@@ -54,7 +56,7 @@ interface IInvestmentManager {
     ///         in case their orders got fulfilled.
     /// @dev    The user tranche tokens required to fulfill the redemption request have to be locked,
     ///         even though the asset payout can only happen after epoch execution.
-    function requestRedeem(address vault, uint256 shares, address receiver, address /* owner */ )
+    function requestRedeem(address vault, uint256 shares, address receiver, address, /* owner */ address source)
         external
         returns (bool);
 

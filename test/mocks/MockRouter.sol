@@ -24,11 +24,19 @@ contract MockRouter is Auth, Mock {
         AggregatorLike(aggregator).handle(_message);
     }
 
-    function send(bytes memory message) public {
+    function send(bytes calldata message) public {
         values_bytes["send"] = message;
         sent[message]++;
     }
 
+    function estimate(bytes calldata) public view returns (uint256 estimation) {
+        estimation = values_uint256_return["estimate"];
+    }
+
+    function pay(bytes calldata, address) external payable {
+        callWithValue("pay", msg.value);
+    }
     // Added to be ignored in coverage report
+
     function test() public {}
 }

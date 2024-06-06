@@ -18,15 +18,38 @@ contract CentrifugeRoutertest is BaseTest {
 
         erc20.mint(self, amount);
 
-        vm.expectRevert(bytes("InvestmentManager/owner-is-restricted"));
+        console.log("Vault address: ", vault_);
+        console.log("CRouter address: ", address(centrifugeRouter));
+
+        vm.expectRevert(bytes("CentrifugeRouter/not-enough-gas-funds"));
         centrifugeRouter.requestDeposit(vault_, amount);
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max);
 
-        vm.expectRevert(bytes("SafeTransferLib/safe-transfer-from-failed"));
-        centrifugeRouter.requestDeposit(vault_, amount);
-        erc20.approve(vault_, amount);
+        vm.expectRevert(bytes("InvestmentManager/owner-is-restricted")); // fail: receiver not member
+        centrifugeRouter.requestDeposit{value: 1 wei}(vault_, amount);
 
-        centrifugeRouter.requestDeposit(vault_, amount);
+        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max); // add user as member
+
+        vm.expectRevert(bytes("Aggregator/not-enough-gas-funds"));
+        centrifugeRouter.requestDeposit{value: 1 wei}(vault_, amount);
+
+        uint256 gasBuffer = 10 gwei;
+        uint256 gas = aggregator.estimate("not_relevant_really") + gasBuffer;
+
+        vm.expectRevert(bytes("SafeTransferLib/safe-transfer-from-failed")); // fail: no allowance
+        centrifugeRouter.requestDeposit{value: gas}(vault_, amount);
+
+        erc20.approve(vault_, amount); // grant approval to cfg router
+        centrifugeRouter.requestDeposit{value: gas}(vault_, amount);
+
+        assertEq(address(gateway).balance, gasBuffer);
+
+        for (uint8 i; i < testRouters.length; i++) {
+            MockRouter router = MockRouter(testRouters[i]);
+            uint256[] memory payCalls = router.callsWithValue("pay");
+            assertEq(payCalls.length, 1);
+            assertEq(payCalls[0], router.estimate("") + mockedGasService.estimate(""));
+        }
 
         // trigger - deposit order fulfillment
         uint128 assetId = poolManager.assetToId(address(erc20));

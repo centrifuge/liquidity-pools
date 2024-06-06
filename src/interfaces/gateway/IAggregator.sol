@@ -41,6 +41,7 @@ interface IAggregator {
     event DisputeMessageRecovery(bytes32 messageHash);
     event ExecuteMessageRecovery(bytes message);
     event File(bytes32 indexed what, address[] routers);
+    event File(bytes32 indexed what, address instance);
 
     // --- Administration ---
     /// @notice TODO

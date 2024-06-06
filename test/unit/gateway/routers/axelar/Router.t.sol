@@ -5,12 +5,14 @@ import "forge-std/Test.sol";
 import {AxelarRouter} from "src/gateway/routers/axelar/Router.sol";
 import {MockAxelarGateway} from "test/mocks/MockAxelarGateway.sol";
 import {MockGateway} from "test/mocks/MockGateway.sol";
+import {MockAxelarGasService} from "test/mocks/MockAxelarGasService.sol";
 import {AxelarForwarder} from "src/gateway/routers/axelar/Forwarder.sol";
 import {BytesLib} from "src/libraries/BytesLib.sol";
 
 contract AxelarRouterTest is Test {
     MockAxelarGateway axelarGateway;
     MockGateway gateway;
+    MockAxelarGasService axelarGasService;
     AxelarRouter router;
     AxelarForwarder forwarder;
 
@@ -20,9 +22,9 @@ contract AxelarRouterTest is Test {
     function setUp() public {
         axelarGateway = new MockAxelarGateway();
         gateway = new MockGateway();
-
+        axelarGasService = new MockAxelarGasService();
         forwarder = new AxelarForwarder(address(axelarGateway));
-        router = new AxelarRouter(address(gateway), address(axelarGateway));
+        router = new AxelarRouter(address(gateway), address(axelarGateway), address(axelarGasService));
     }
 
     function testIncomingCalls(

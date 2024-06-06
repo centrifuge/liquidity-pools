@@ -36,7 +36,7 @@ contract Aggregator is Auth, IAggregator {
     uint256 public constant RECOVERY_CHALLENGE_PERIOD = 7 days;
 
     GatewayLike public immutable gateway;
-    CentrifugeGasServiceLike public immutable centrifugeGasService;
+    CentrifugeGasServiceLike public centrifugeGasService;
 
     address[] public routers;
     mapping(address router => Router) public activeRouters;
@@ -85,6 +85,16 @@ contract Aggregator is Auth, IAggregator {
         }
 
         emit File(what, routers_);
+    }
+
+    function file(bytes32 what, address instance) external auth {
+        if (what == "centrifugeGasService") {
+            centrifugeGasService = CentrifugeGasServiceLike(instance);
+        } else {
+            revert("Aggregator/file-unrecognized-param");
+        }
+
+        emit File(what, instance);
     }
 
     // --- Incoming ---
@@ -228,13 +238,19 @@ contract Aggregator is Auth, IAggregator {
 
             if (fuel > 0) {
                 uint256 txCost = currentRouter.estimate(payload) + centrifugeCost;
-                require(fuel - txCost > 0, "Aggregator/not-enough-gas-funds");
-                fuel--;
+                uint256 remaining;
+                unchecked {
+                    remaining = fuel - txCost;
+                }
+                require(remaining < fuel, "Aggregator/not-enough-gas-funds");
+                fuel = remaining;
                 currentRouter.pay{value: txCost}(payload, address(gateway));
             }
 
             currentRouter.send(i == PRIMARY_ROUTER_ID - 1 ? message : proof);
         }
+
+        if (fuel > 0) payable(address(gateway)).transfer(fuel);
 
         emit SendMessage(message);
     }

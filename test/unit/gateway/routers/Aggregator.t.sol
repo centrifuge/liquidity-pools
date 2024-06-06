@@ -5,6 +5,7 @@ import "test/BaseTest.sol";
 import {Aggregator} from "src/gateway/routers/Aggregator.sol";
 import {MockGateway} from "test/mocks/MockGateway.sol";
 import {MockRouter} from "test/mocks/MockRouter.sol";
+import {MockAxelarGasService} from "test/mocks/MockAxelarGasService.sol";
 import {CastLib} from "src/libraries/CastLib.sol";
 
 contract AggregatorTest is Test {
@@ -12,6 +13,7 @@ contract AggregatorTest is Test {
 
     Aggregator aggregator;
     MockGateway gateway;
+    MockAxelarGasService gasService;
     MockRouter router1;
     MockRouter router2;
     MockRouter router3;
@@ -24,7 +26,9 @@ contract AggregatorTest is Test {
 
     function setUp() public {
         gateway = new MockGateway();
-        aggregator = new Aggregator(address(gateway));
+
+        gasService = new MockAxelarGasService();
+        aggregator = new Aggregator(address(gateway), address(gasService));
         aggregator.rely(address(gateway));
 
         router1 = new MockRouter(address(aggregator));
