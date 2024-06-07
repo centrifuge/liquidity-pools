@@ -30,20 +30,16 @@ contract GasService is IAggregatorV3, Auth {
     }
 
     function file(bytes32 what, uint256 value) external auth {
-        if (what == "messageCost") {
-            messageCost = value;
-        }
-        if (what == "proofCost") {
-            proofCost = value;
-        }
-        if (what == "price") {
-            price = value;
-            roundId++;
-            updatedTime = block.timestamp;
-        } else {
-            revert("CentrifugeGasService/file-unrecognized-param");
-        }
+        if (what == "messageCost") messageCost = value;
+        if (what == "proofCost") proofCost = value;
+        else revert("CentrifugeGasService/file-unrecognized-param");
         emit File(what, value);
+    }
+
+    function updatePrice(uint256 value) external auth {
+        price = value;
+        roundId++;
+        updatedTime = block.timestamp;
     }
 
     function estimate(bytes calldata payload) public view returns (uint256) {
