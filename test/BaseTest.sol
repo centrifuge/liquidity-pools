@@ -21,7 +21,7 @@ import "src/interfaces/IERC20.sol";
 
 // mocks
 import {MockCentrifugeChain} from "test/mocks/MockCentrifugeChain.sol";
-import {MockCentrifugeGasService} from "test/mocks/MockCentrifugeGasService.sol";
+import {MockGasService} from "test/mocks/MockGasService.sol";
 import {MockRouter} from "test/mocks/MockRouter.sol";
 
 // test env
@@ -29,7 +29,7 @@ import "forge-std/Test.sol";
 
 contract BaseTest is Deployer, Test {
     MockCentrifugeChain centrifugeChain;
-    MockCentrifugeGasService mockedGasService;
+    MockGasService mockedGasService;
     MockRouter router1;
     MockRouter router2;
     MockRouter router3;
@@ -80,11 +80,11 @@ contract BaseTest is Deployer, Test {
         // removeDeployerAccess(address(router)); // need auth permissions in tests
 
         centrifugeChain = new MockCentrifugeChain(testRouters);
-        mockedGasService = new MockCentrifugeGasService();
+        mockedGasService = new MockGasService();
         erc20 = _newErc20("X's Dollar", "USDX", 6);
 
         mockedGasService.setReturn("estimate", uint256(0.5 gwei));
-        aggregator.file("centrifugeGasService", address(mockedGasService));
+        aggregator.file("gasService", address(mockedGasService));
 
         // Label contracts
         vm.label(address(root), "Root");
@@ -98,8 +98,8 @@ contract BaseTest is Deployer, Test {
         vm.label(address(erc20), "ERC20");
         vm.label(address(centrifugeChain), "CentrifugeChain");
         vm.label(address(centrifugeRouter), "CentrifugeRouter");
-        vm.label(address(centrifugeGasService), "CentrifugeGasService");
-        vm.label(address(mockedGasService), "MockCentrifugeGasService");
+        vm.label(address(gasService), "GasService");
+        vm.label(address(mockedGasService), "MockGasService");
         vm.label(address(escrow), "Escrow");
         vm.label(address(guardian), "Guardian");
         vm.label(address(poolManager.restrictionManagerFactory()), "RestrictionManagerFactory");

@@ -3,7 +3,7 @@ pragma solidity 0.8.21;
 
 import "test/mocks/Mock.sol";
 
-contract MockCentrifugeGasService is Mock {
+contract MockGasService is Mock {
     function estimate(bytes calldata) public view returns (uint256) {
         return values_uint256_return["estimate"];
     }

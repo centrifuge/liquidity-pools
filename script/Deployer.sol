@@ -4,7 +4,7 @@ pragma solidity 0.8.21;
 import {Root} from "src/Root.sol";
 import {Aggregator} from "src/gateway/routers/Aggregator.sol";
 import {Gateway} from "src/gateway/Gateway.sol";
-import {CentrifugeGasService} from "src/CentrifugeGasService.sol";
+import {GasService} from "src/gateway/GasService.sol";
 import {InvestmentManager} from "src/InvestmentManager.sol";
 import {TrancheTokenFactory} from "src/factories/TrancheTokenFactory.sol";
 import {ERC7540VaultFactory} from "src/factories/ERC7540VaultFactory.sol";
@@ -37,7 +37,7 @@ contract Deployer is Script {
     Guardian public guardian;
     Gateway public gateway;
     Aggregator public aggregator;
-    CentrifugeGasService public centrifugeGasService;
+    GasService public gasService;
     CentrifugeRouter public centrifugeRouter; // TODO: rename once routers => adapters rename is in
     address public vaultFactory;
     address public restrictionManagerFactory;
@@ -57,7 +57,7 @@ contract Deployer is Script {
         trancheTokenFactory = address(new TrancheTokenFactory{salt: salt}(address(root), deployer));
         investmentManager = new InvestmentManager(address(root), address(escrow));
         poolManager = new PoolManager(address(escrow), vaultFactory, restrictionManagerFactory, trancheTokenFactory);
-        centrifugeGasService = new CentrifugeGasService(50000000000000000, 178947400000000);
+        gasService = new GasService(50000000000000000, 178947400000000);
 
         centrifugeRouter = new CentrifugeRouter(address(poolManager), payable(address(gateway)));
         root.endorse(address(centrifugeRouter));
@@ -72,7 +72,7 @@ contract Deployer is Script {
         AuthLike(restrictionManagerFactory).rely(address(root));
 
         gateway = new Gateway(address(root), address(investmentManager), address(poolManager));
-        aggregator = new Aggregator(address(gateway), address(centrifugeGasService));
+        aggregator = new Aggregator(address(gateway), address(gasService));
         guardian = new Guardian(adminSafe, address(root), address(aggregator));
 
         centrifugeRouter = new CentrifugeRouter(address(gateway));

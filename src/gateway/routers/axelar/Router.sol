@@ -46,8 +46,6 @@ contract AxelarRouter is IRouter, Auth {
     // This value is in AXELAR fees in ETH ( wei )
     uint256 axelarCost = 58039058122843;
 
-    event File(bytes32 what, uint256 value);
-
     constructor(address aggregator_, address axelarGateway_, address axelarGasService_) {
         aggregator = AggregatorLike(aggregator_);
         axelarGateway = AxelarGatewayLike(axelarGateway_);
@@ -57,7 +55,7 @@ contract AxelarRouter is IRouter, Auth {
     // --- Administrative ---
     function file(bytes32 what, uint256 value) external auth {
         if (what == "axelarCost") axelarCost = value;
-        else revert("CentrifugeGasService/file-unrecognized-param");
+        else revert("AxelarRouterfile-unrecognized-param");
         emit File(what, value);
     }
     // --- Incoming ---

@@ -11,7 +11,7 @@ interface GatewayLike {
     function handle(bytes memory message) external;
 }
 
-interface CentrifugeGasServiceLike {
+interface GasServiceLike {
     function estimate(bytes calldata payload) external view returns (uint256);
 }
 
@@ -36,16 +36,16 @@ contract Aggregator is Auth, IAggregator {
     uint256 public constant RECOVERY_CHALLENGE_PERIOD = 7 days;
 
     GatewayLike public immutable gateway;
-    CentrifugeGasServiceLike public centrifugeGasService;
+    GasServiceLike public gasService;
 
     address[] public routers;
     mapping(address router => Router) public activeRouters;
     mapping(bytes32 messageHash => Message) public messages;
     mapping(bytes32 messageHash => Recovery) public recoveries;
 
-    constructor(address gateway_, address centrifugeGasService_) {
+    constructor(address gateway_, address gasService_) {
         gateway = GatewayLike(gateway_);
-        centrifugeGasService = CentrifugeGasServiceLike(centrifugeGasService_);
+        gasService = GasServiceLike(gasService_);
 
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
@@ -88,8 +88,8 @@ contract Aggregator is Auth, IAggregator {
     }
 
     function file(bytes32 what, address instance) external auth {
-        if (what == "centrifugeGasService") {
-            centrifugeGasService = CentrifugeGasServiceLike(instance);
+        if (what == "gasService") {
+            gasService = GasServiceLike(instance);
         } else {
             revert("Aggregator/file-unrecognized-param");
         }
@@ -215,7 +215,7 @@ contract Aggregator is Auth, IAggregator {
         uint256 centrifugeCost;
 
         if (fuel > 0) {
-            centrifugeCost = centrifugeGasService.estimate(message);
+            centrifugeCost = gasService.estimate(message);
         }
 
         bytes memory proof = abi.encodePacked(uint8(MessagesLib.Call.MessageProof), keccak256(message));
@@ -278,11 +278,9 @@ contract Aggregator is Auth, IAggregator {
     /// @inheritdoc IAggregator
     function estimate(bytes calldata payload) external view returns (uint256 estimated) {
         bytes memory proof = abi.encodePacked(uint8(MessagesLib.Call.MessageProof), keccak256(payload));
-        uint256 centrifugeExecutionCost = centrifugeGasService.estimate(payload);
-        uint256 numRouters = routers.length;
-        require(numRouters > 0, "Aggregator/not-initialized");
+        uint256 centrifugeExecutionCost = gasService.estimate(payload);
 
-        for (uint256 i; i < numRouters; ++i) {
+        for (uint256 i; i < routers.length; i++) {
             estimated = estimated + RouterLike(routers[i]).estimate(i == PRIMARY_ROUTER_ID - 1 ? payload : proof)
                 + centrifugeExecutionCost;
         }

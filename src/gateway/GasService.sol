@@ -4,31 +4,31 @@ pragma solidity 0.8.21;
 import {Auth} from "src/Auth.sol";
 import {IAggregatorV3} from "src/interfaces/IAggregatorV3.sol";
 
-contract CentrifugeGasService is IAggregatorV3, Auth {
+contract GasService is IAggregatorV3, Auth {
     uint8 public constant decimals = 18;
     string public constant description = "CFG/ETH price feed";
     uint256 public constant version = 1;
 
     uint80 roundId;
     uint256 updatedTime;
-    uint256 centrifugePrice; // decide  in what denomination
-    uint256 centrifugeCost;
+    uint256 price;
+    uint256 cost;
 
     event File(bytes32 what, uint256 value);
 
-    constructor(uint256 centrifugeCost_, uint256 centrifugePrice_) {
-        centrifugeCost = centrifugeCost_;
-        centrifugePrice = centrifugePrice_;
+    constructor(uint256 cost_, uint256 price_) {
+        cost = cost_;
+        price = price_;
         updatedTime = block.timestamp;
         roundId = 1;
     }
 
     function file(bytes32 what, uint256 value) external auth {
-        if (what == "centrifugeCost") {
-            centrifugeCost = value;
+        if (what == "cost") {
+            cost = value;
         }
-        if (what == "centrifugePrice") {
-            centrifugePrice = value;
+        if (what == "price") {
+            price = value;
             roundId++;
             updatedTime = block.timestamp;
         } else {
@@ -38,16 +38,16 @@ contract CentrifugeGasService is IAggregatorV3, Auth {
     }
 
     function estimate(bytes calldata) public view returns (uint256) {
-        // TODO Actual calculation based on the  centrifugePrice anbd centrifugeCost
+        // TODO Actual calculation based on the  price anbd cost
         // This is basically the `wmul` from ds-math. Do we want to integrate their math lib?
         // Or do we want to extend our math lib?
-        return ((centrifugeCost * centrifugePrice) + (10 ** 18 / 2)) / 10 ** 18;
+        return ((cost * price) + (10 ** 18 / 2)) / 10 ** 18;
     }
 
     function getRoundData(uint80) public view returns (uint80, int256, uint256, uint256) {
         // TODO Not sure if we need this check at all. Further investigate how casting works ..
-        require(centrifugePrice < uint256(type(int256).max), "cannot-cast");
-        return (roundId, int256(centrifugePrice), updatedTime, updatedTime);
+        require(price < uint256(type(int256).max), "cannot-cast");
+        return (roundId, int256(price), updatedTime, updatedTime);
     }
 
     function latestRoundData() public view returns (uint80, int256, uint256, uint256) {
