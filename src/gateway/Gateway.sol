@@ -115,7 +115,6 @@ contract Gateway is Auth, IGateway {
     }
 
     function recoverTokens(address token, address receiver, uint256 amount) external auth {
-        require(receiver != address(0), "Gateway/cannot-send-to-receiver");
         if (token == address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)) {
             payable(receiver).transfer(amount);
         } else {
