@@ -212,13 +212,17 @@ contract Aggregator is Auth, IAggregator {
         require(numRouters > 0, "Aggregator/not-initialized");
 
         uint256 fuel = msg.value;
-        uint256 destChainCost;
 
-        if (fuel > 0) {
-            destChainCost = gasService.estimate(message);
-        }
+        uint256 destChainMsgCost;
+        uint256 destChainProofCost;
 
         bytes memory proof = abi.encodePacked(uint8(MessagesLib.Call.MessageProof), keccak256(message));
+
+        if (fuel > 0) {
+            destChainMsgCost = gasService.estimate(message);
+            destChainProofCost = gasService.estimate(proof);
+        }
+
         for (uint256 i; i < numRouters; i++) {
             RouterLike currentRouter = RouterLike(routers[i]);
             bytes memory payload = i == PRIMARY_ROUTER_ID - 1 ? message : proof;
@@ -238,7 +242,8 @@ contract Aggregator is Auth, IAggregator {
             // got updated
 
             if (fuel > 0) {
-                uint256 txCost = currentRouter.estimate(payload, destChainCost);
+                uint256 txCost =
+                    currentRouter.estimate(payload, i == PRIMARY_ROUTER_ID - 1 ? destChainMsgCost : destChainProofCost);
                 uint256 remaining;
                 unchecked {
                     remaining = fuel - txCost;
@@ -248,7 +253,7 @@ contract Aggregator is Auth, IAggregator {
                 currentRouter.pay{value: txCost}(payload, address(gateway));
             }
 
-            currentRouter.send(i == PRIMARY_ROUTER_ID - 1 ? message : proof);
+            currentRouter.send(payload);
         }
 
         if (fuel > 0) payable(address(gateway)).transfer(fuel);
