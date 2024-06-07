@@ -54,13 +54,11 @@ contract Gateway is Auth, IGateway {
         _;
     }
 
-    event Received(address indexed sender, uint256 amount);
-
     receive() external payable {
         emit Received(msg.sender, msg.value);
     }
-    // --- Administration ---
 
+    // --- Administration ---
     function file(bytes32 what, address data) public auth {
         if (what == "poolManager") poolManager = data;
         else if (what == "aggregator") aggregator = AggregatorLike(data);

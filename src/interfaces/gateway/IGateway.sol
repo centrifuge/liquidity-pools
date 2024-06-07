@@ -5,6 +5,7 @@ interface IGateway {
     // --- Events ---
     event File(bytes32 indexed what, address data);
     event File(bytes32 indexed what, uint8 messageId, address manager);
+    event Received(address indexed sender, uint256 amount);
 
     // --- Administration ---
     /// @notice TODO
