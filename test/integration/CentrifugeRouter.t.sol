@@ -6,8 +6,12 @@ import "src/interfaces/IERC7575.sol";
 import "src/interfaces/IERC7540.sol";
 import "src/interfaces/IERC20.sol";
 
-contract CentrifugeRoutertest is BaseTest {
-    function testRouterDeposit(uint256 amount) public {
+contract CentrifugeRouterTest is BaseTest {
+    uint256 constant GAS_BUFFER = 10 gwei;
+    /// @dev Payload is not taken into account during gas estimation
+    bytes constant PAYLOAD_FOR_GAS_ESTIMATION = "irrelevant_value";
+
+    function testCFGRouterDeposit(uint256 amount) public {
         // If lower than 4 or odd, rounding down can lead to not receiving any tokens
         amount = uint128(bound(amount, 4, MAX_UINT128));
         vm.assume(amount % 2 == 0);
@@ -17,9 +21,6 @@ contract CentrifugeRoutertest is BaseTest {
         vm.label(vault_, "vault");
 
         erc20.mint(self, amount);
-
-        console.log("Vault address: ", vault_);
-        console.log("CRouter address: ", address(centrifugeRouter));
 
         vm.expectRevert(bytes("CentrifugeRouter/not-enough-gas-funds"));
         centrifugeRouter.requestDeposit(vault_, amount);
@@ -33,8 +34,7 @@ contract CentrifugeRoutertest is BaseTest {
         vm.expectRevert(bytes("Aggregator/not-enough-gas-funds"));
         centrifugeRouter.requestDeposit{value: 1 wei}(vault_, amount);
 
-        uint256 gasBuffer = 10 gwei;
-        uint256 gas = aggregator.estimate("not_relevant_really") + gasBuffer;
+        uint256 gas = aggregator.estimate(PAYLOAD_FOR_GAS_ESTIMATION) + GAS_BUFFER;
 
         vm.expectRevert(bytes("SafeTransferLib/safe-transfer-from-failed")); // fail: no allowance
         centrifugeRouter.requestDeposit{value: gas}(vault_, amount);
@@ -42,13 +42,16 @@ contract CentrifugeRoutertest is BaseTest {
         erc20.approve(vault_, amount); // grant approval to cfg router
         centrifugeRouter.requestDeposit{value: gas}(vault_, amount);
 
-        assertEq(address(gateway).balance, gasBuffer);
+        assertEq(address(gateway).balance, GAS_BUFFER);
 
         for (uint8 i; i < testRouters.length; i++) {
             MockRouter router = MockRouter(testRouters[i]);
             uint256[] memory payCalls = router.callsWithValue("pay");
             assertEq(payCalls.length, 1);
-            assertEq(payCalls[0], router.estimate("") + mockedGasService.estimate(""));
+            assertEq(
+                payCalls[0],
+                router.estimate(PAYLOAD_FOR_GAS_ESTIMATION, mockedGasService.estimate(PAYLOAD_FOR_GAS_ESTIMATION))
+            );
         }
 
         // trigger - deposit order fulfillment

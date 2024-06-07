@@ -18,7 +18,7 @@ interface GasServiceLike {
 interface RouterLike {
     function send(bytes memory message) external;
     function pay(bytes calldata payload, address refund) external payable;
-    function estimate(bytes calldata payload) external view returns (uint256);
+    function estimate(bytes calldata payload, uint256 destChainCost) external view returns (uint256);
 }
 
 /// @title  Aggregator
@@ -212,10 +212,10 @@ contract Aggregator is Auth, IAggregator {
         require(numRouters > 0, "Aggregator/not-initialized");
 
         uint256 fuel = msg.value;
-        uint256 centrifugeCost;
+        uint256 destChainCost;
 
         if (fuel > 0) {
-            centrifugeCost = gasService.estimate(message);
+            destChainCost = gasService.estimate(message);
         }
 
         bytes memory proof = abi.encodePacked(uint8(MessagesLib.Call.MessageProof), keccak256(message));
@@ -233,13 +233,12 @@ contract Aggregator is Auth, IAggregator {
             // Resolution 2: During the TX runtime, we get latest updated value in all our contract for all the fee
             // and make calculation based on that. If the provide value "fuel" turns out to be not enough, we receive
             // a faster feedback and we don't have to submit the tx on axelar or any other bridge and wait for a
-            // feedback that
-            // the tx will end up underpaid
+            // feedback that the tx will end up being underpaid
             // Resolution 3: Resolution 2 applies - we get the latest updated costs on centra and axelar assuming they
             // got updated
 
             if (fuel > 0) {
-                uint256 txCost = currentRouter.estimate(payload) + centrifugeCost;
+                uint256 txCost = currentRouter.estimate(payload, destChainCost);
                 uint256 remaining;
                 unchecked {
                     remaining = fuel - txCost;
@@ -278,11 +277,10 @@ contract Aggregator is Auth, IAggregator {
     /// @inheritdoc IAggregator
     function estimate(bytes calldata payload) external view returns (uint256 estimated) {
         bytes memory proof = abi.encodePacked(uint8(MessagesLib.Call.MessageProof), keccak256(payload));
-        uint256 centrifugeExecutionCost = gasService.estimate(payload);
+        uint256 destChainCost = gasService.estimate(payload);
 
         for (uint256 i; i < routers.length; i++) {
-            estimated = estimated + RouterLike(routers[i]).estimate(i == PRIMARY_ROUTER_ID - 1 ? payload : proof)
-                + centrifugeExecutionCost;
+            estimated += RouterLike(routers[i]).estimate(i == PRIMARY_ROUTER_ID - 1 ? payload : proof, destChainCost);
         }
     }
 }

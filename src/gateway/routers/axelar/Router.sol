@@ -43,7 +43,7 @@ contract AxelarRouter is IRouter, Auth {
     AxelarGatewayLike public immutable axelarGateway;
     AxelarGasServiceLike public immutable axelarGasService;
 
-    // This value is in AXELAR fees in ETH ( wei )
+    /// @dev This value is in AXELAR fees in ETH ( wei )
     uint256 axelarCost = 58039058122843;
 
     constructor(address aggregator_, address axelarGateway_, address axelarGasService_) {
@@ -91,9 +91,9 @@ contract AxelarRouter is IRouter, Auth {
         );
     }
 
-    // Currently the payload ( message ) is not take into consideration when estimating cost
-    // A predefined axelarCost value is used.
-    function estimate(bytes calldata) public view returns (uint256) {
-        return axelarCost;
+    /// @dev Currently the payload ( message ) is not taken into consideration during cost estimation
+    /// A predefined `axelarCost` value is used.
+    function estimate(bytes calldata, uint256 destChainCost) public view returns (uint256) {
+        return axelarCost + destChainCost;
     }
 }

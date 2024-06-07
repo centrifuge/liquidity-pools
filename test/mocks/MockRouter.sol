@@ -29,7 +29,7 @@ contract MockRouter is Auth, Mock {
         sent[message]++;
     }
 
-    function estimate(bytes calldata) public view returns (uint256 estimation) {
+    function estimate(bytes calldata, uint256) public view returns (uint256 estimation) {
         estimation = values_uint256_return["estimate"];
     }
 
