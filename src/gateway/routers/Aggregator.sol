@@ -88,11 +88,8 @@ contract Aggregator is Auth, IAggregator {
     }
 
     function file(bytes32 what, address instance) external auth {
-        if (what == "gasService") {
-            gasService = GasServiceLike(instance);
-        } else {
-            revert("Aggregator/file-unrecognized-param");
-        }
+        if (what == "gasService") gasService = GasServiceLike(instance);
+        else revert("Aggregator/file-unrecognized-param");
 
         emit File(what, instance);
     }
