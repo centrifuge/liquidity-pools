@@ -9,8 +9,6 @@ import {IERC20} from "src/interfaces/IERC20.sol";
 import {ICentrifugeRouter} from "src/interfaces/ICentrifugeRouter.sol";
 import {IPoolManager} from "src/interfaces/IPoolManager.sol";
 
-import "forge-std/console.sol";
-
 contract CentrifugeRouter is Auth, Multicall, ICentrifugeRouter {
     address public poolManager;
     address public gateway;
@@ -48,8 +46,8 @@ contract CentrifugeRouter is Auth, Multicall, ICentrifugeRouter {
 
     // --- Deposit ---
     function requestDeposit(address vault, uint256 amount) external payable {
-        console.log("Funds sent: ", msg.value);
         require(msg.value > 0, "CentrifugeRouter/not-enough-gas-funds");
+        // Due to the multicall nature of this contract, there are issues calling `transfer` multiple times. Investigate further.
         payable(gateway).call{value: msg.value}("");
         IERC7540(vault).requestDeposit(amount, msg.sender, msg.sender);
     }
