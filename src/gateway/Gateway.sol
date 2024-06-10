@@ -33,7 +33,6 @@ contract Gateway is Auth, IGateway {
 
     RootLike public immutable root;
 
-    address entryPoint;
     address public poolManager;
     address public investmentManager;
     AggregatorLike public aggregator;
@@ -74,22 +73,14 @@ contract Gateway is Auth, IGateway {
     }
 
     // --- Outgoing ---
-    function send(bytes calldata message) public pauseable {
+    function send(bytes calldata message, bool isPrepaid) public pauseable {
         require(
             msg.sender == investmentManager || msg.sender == poolManager || msg.sender == messages[message.toUint8(0)],
             "Gateway/invalid-manager"
         );
 
-        if (MessagesLib.messageType(message) == MessagesLib.Call.EntryPoint) {
-            entryPoint = message.toAddress(1);
-            return;
-        }
-
-        aggregator.send{value: address(this).balance}(message);
-
-        if (entryPoint != address(0)) {
-            delete entryPoint;
-        }
+        uint256 gasFunds = isPrepaid ? address(this).balance : 0;
+        aggregator.send{value: gasFunds}(message);
     }
 
     // --- Incoming ---
@@ -120,10 +111,5 @@ contract Gateway is Auth, IGateway {
         } else {
             SafeTransferLib.safeTransfer(token, receiver, amount);
         }
-    }
-
-    function markEntryPoint(address entryPoint_) external {
-        require(msg.sender == address(investmentManager), "Gateway/unauthorized-caller");
-        entryPoint = entryPoint_;
     }
 }

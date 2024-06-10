@@ -16,7 +16,7 @@ import {Pool, Tranche, TrancheTokenPrice, UndeployedTranche, IPoolManager} from 
 import {BytesLib} from "src/libraries/BytesLib.sol";
 
 interface GatewayLike {
-    function send(bytes memory message) external;
+    function send(bytes memory message, bool isPrepaid) external;
 }
 
 interface InvestmentManagerLike {
@@ -103,7 +103,7 @@ contract PoolManager is Auth, IPoolManager {
 
         SafeTransferLib.safeTransferFrom(asset, msg.sender, address(escrow), amount);
 
-        gateway.send(abi.encodePacked(uint8(MessagesLib.Call.Transfer), assetId, msg.sender, recipient, amount));
+        gateway.send(abi.encodePacked(uint8(MessagesLib.Call.Transfer), assetId, msg.sender, recipient, amount), false);
         emit TransferCurrency(asset, recipient, amount);
     }
 
@@ -127,7 +127,8 @@ contract PoolManager is Auth, IPoolManager {
                 MessagesLib.formatDomain(MessagesLib.Domain.Centrifuge),
                 destinationAddress,
                 amount
-            )
+            ),
+            false
         );
 
         emit TransferTrancheTokensToCentrifuge(poolId, trancheId, destinationAddress, amount);
@@ -154,7 +155,8 @@ contract PoolManager is Auth, IPoolManager {
                 MessagesLib.formatDomain(MessagesLib.Domain.EVM, destinationChainId),
                 destinationAddress.toBytes32(),
                 amount
-            )
+            ),
+            false
         );
 
         emit TransferTrancheTokensToEVM(poolId, trancheId, destinationChainId, destinationAddress, amount);

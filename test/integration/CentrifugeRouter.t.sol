@@ -8,7 +8,7 @@ import "src/interfaces/IERC20.sol";
 
 contract CentrifugeRouterTest is BaseTest {
     uint256 constant GAS_BUFFER = 10 gwei;
-    /// @dev Payload is not taken into account during gas estimation
+    // Payload is not taken into account during gas estimation
     bytes constant PAYLOAD_FOR_GAS_ESTIMATION = "irrelevant_value";
 
     function testCFGRouterDeposit(uint256 amount) public {

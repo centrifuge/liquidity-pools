@@ -16,7 +16,7 @@ interface IGateway {
 
     // --- Outgoing ---
     /// @notice TODO
-    function send(bytes calldata message) external;
+    function send(bytes calldata message, bool isPrepaid) external;
 
     // --- Incoming ---
     /// @notice TODO

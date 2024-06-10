@@ -80,17 +80,17 @@ contract GatewayTest is BaseTest {
 
     function testOnlyManagersCanCall(uint64 poolId) public {
         vm.expectRevert(bytes("Gateway/invalid-manager"));
-        gateway.send(abi.encodePacked(uint8(MessagesLib.Call.AddPool), poolId));
+        gateway.send(abi.encodePacked(uint8(MessagesLib.Call.AddPool), poolId), false);
 
         gateway.file("poolManager", self);
-        gateway.send(abi.encodePacked(uint8(MessagesLib.Call.AddPool), poolId));
+        gateway.send(abi.encodePacked(uint8(MessagesLib.Call.AddPool), poolId), false);
 
         gateway.file("poolManager", address(poolManager));
         vm.expectRevert(bytes("Gateway/invalid-manager"));
-        gateway.send(abi.encodePacked(uint8(MessagesLib.Call.AddPool), poolId));
+        gateway.send(abi.encodePacked(uint8(MessagesLib.Call.AddPool), poolId), false);
 
         gateway.file("investmentManager", self);
-        gateway.send(abi.encodePacked(uint8(MessagesLib.Call.AddPool), poolId));
+        gateway.send(abi.encodePacked(uint8(MessagesLib.Call.AddPool), poolId), false);
     }
 
     // --- Dynamic managers ---

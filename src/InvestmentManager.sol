@@ -13,7 +13,7 @@ import {IPoolManager} from "src/interfaces/IPoolManager.sol";
 import {IInvestmentManager, InvestmentState} from "src/interfaces/IInvestmentManager.sol";
 
 interface GatewayLike {
-    function send(bytes memory message) external;
+    function send(bytes memory message, bool isPrepaid) external;
 }
 
 interface TrancheTokenLike is IERC20 {
@@ -103,7 +103,6 @@ contract InvestmentManager is Auth, IInvestmentManager {
         require(state.pendingCancelDepositRequest != true, "InvestmentManager/cancellation-is-pending");
 
         state.pendingDepositRequest = state.pendingDepositRequest + _assets;
-        gateway.send(abi.encodePacked(uint8(MessagesLib.Call.EntryPoint), source));
         gateway.send(
             abi.encodePacked(
                 uint8(MessagesLib.Call.IncreaseInvestOrder),
@@ -111,16 +110,16 @@ contract InvestmentManager is Auth, IInvestmentManager {
                 vault_.trancheId(),
                 receiver,
                 poolManager.assetToId(asset),
-                _assets,
-                source
-            )
+                _assets
+            ),
+            isGlobalOperator(vault, source)
         );
 
         return true;
     }
 
     /// @inheritdoc IInvestmentManager
-    function requestRedeem(address vault, uint256 shares, address receiver, /* owner */ address, address source)
+    function requestRedeem(address vault, uint256 shares, address receiver, /*owner*/ address, address source)
         public
         auth
         returns (bool)
@@ -136,11 +135,13 @@ contract InvestmentManager is Auth, IInvestmentManager {
             _canTransfer(vault, receiver, address(escrow), convertToAssets(vault, shares)),
             "InvestmentManager/transfer-not-allowed"
         );
-        gateway.send(abi.encodePacked(uint8(MessagesLib.Call.EntryPoint), source));
-        return _processRedeemRequest(vault, _shares, receiver);
+        return _processRedeemRequest(vault, _shares, receiver, isGlobalOperator(vault, source));
     }
 
-    function _processRedeemRequest(address vault, uint128 shares, address owner) internal returns (bool) {
+    function _processRedeemRequest(address vault, uint128 shares, address owner, bool isPrepaid)
+        internal
+        returns (bool)
+    {
         VaultLike vault_ = VaultLike(vault);
         InvestmentState storage state = investments[vault][owner];
         require(state.pendingCancelRedeemRequest != true, "InvestmentManager/cancellation-is-pending");
@@ -155,14 +156,15 @@ contract InvestmentManager is Auth, IInvestmentManager {
                 owner,
                 poolManager.assetToId(vault_.asset()),
                 shares
-            )
+            ),
+            isPrepaid
         );
 
         return true;
     }
 
     /// @inheritdoc IInvestmentManager
-    function cancelDepositRequest(address vault, address owner) public auth {
+    function cancelDepositRequest(address vault, address owner, address source) public auth {
         VaultLike _vault = VaultLike(vault);
 
         InvestmentState storage state = investments[vault][owner];
@@ -176,12 +178,13 @@ contract InvestmentManager is Auth, IInvestmentManager {
                 _vault.trancheId(),
                 owner.toBytes32(),
                 poolManager.assetToId(_vault.asset())
-            )
+            ),
+            isGlobalOperator(vault, source)
         );
     }
 
     /// @inheritdoc IInvestmentManager
-    function cancelRedeemRequest(address vault, address owner) public auth {
+    function cancelRedeemRequest(address vault, address owner, address source) public auth {
         VaultLike _vault = VaultLike(vault);
         uint256 approximateTrancheTokensPayout = pendingRedeemRequest(vault, owner);
         require(
@@ -200,7 +203,8 @@ contract InvestmentManager is Auth, IInvestmentManager {
                 _vault.trancheId(),
                 owner.toBytes32(),
                 poolManager.assetToId(_vault.asset())
-            )
+            ),
+            isGlobalOperator(vault, source)
         );
     }
 
@@ -382,7 +386,10 @@ contract InvestmentManager is Auth, IInvestmentManager {
             state.maxMint = 0;
         }
 
-        require(_processRedeemRequest(vault, shares, user), "InvestmentManager/failed-redeem-request");
+        require(
+            _processRedeemRequest(vault, shares, user, isGlobalOperator(vault, msg.sender)),
+            "InvestmentManager/failed-redeem-request"
+        );
 
         // Transfer the tranche token amount that was not covered by tokens still in escrow for claims,
         // from user to escrow (lock tranche tokens in escrow)
