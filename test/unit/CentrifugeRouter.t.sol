@@ -5,4 +5,26 @@ import "test/BaseTest.sol";
 import "src/interfaces/IERC7575.sol";
 import "src/interfaces/IERC7540.sol";
 
-contract CentrifugeRoutertest is BaseTest {}
+contract CentrifugeRouterTest is BaseTest {
+    function testGetVault() public {
+        address vault_ = deploySimpleVault();
+        ERC7540Vault vault = ERC7540Vault(vault_);
+        vm.label(vault_, "vault");
+
+        assertEq(centrifugeRouter.getVault(vault.poolId(), vault.trancheId(), address(erc20)), vault_);
+    }
+
+    function testFile() public {
+        vm.prank(address(root));
+        centrifugeRouter.file("poolManager", address(0x1));
+        assertEq(centrifugeRouter.poolManager(), address(0x1));
+    }
+
+    function testRecoverTokens() public {
+        uint256 amount = 100;
+        erc20.mint(address(centrifugeRouter), amount);
+        vm.prank(address(root));
+        centrifugeRouter.recoverTokens(address(erc20), address(this), amount);
+        assertEq(erc20.balanceOf(address(this)), amount);
+    }
+}
