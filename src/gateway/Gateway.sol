@@ -106,7 +106,7 @@ contract Gateway is Auth, IGateway {
             manager = address(root);
         } else {
             // Dynamic path for other managers, to be able to easily
-            // extend functionality of Liquidity Poolsif(msg.sender == address(mana))
+            // extend functionality of Liquidity Pools
             manager = messages[id];
             require(manager != address(0), "Gateway/unregistered-message-id");
         }

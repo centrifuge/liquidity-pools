@@ -44,9 +44,9 @@ contract GasService is IAggregatorV3, Auth {
 
     function estimate(bytes calldata payload) public view returns (uint256) {
         if (MessagesLib.messageType(payload) == MessagesLib.Call.MessageProof) {
-            return proofCost.mulDiv(price, 10 ** 18);
+            return proofCost.mulDiv(price, 10 ** 18, MathLib.Rounding.Up);
         }
-        return messageCost.mulDiv(price, 10 ** 18);
+        return messageCost.mulDiv(price, 10 ** 18, MathLib.Rounding.Up);
     }
 
     function getRoundData(uint80) public view returns (uint80, int256, uint256, uint256) {
