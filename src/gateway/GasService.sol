@@ -2,12 +2,11 @@
 pragma solidity 0.8.21;
 
 import {Auth} from "src/Auth.sol";
-import {IAggregatorV3} from "src/interfaces/gateway/IAggregatorV3.sol";
 import {IGasService} from "src/interfaces/gateway/IGasService.sol";
 import {MathLib} from "src/libraries/MathLib.sol";
 import {MessagesLib} from "src/libraries/MessagesLib.sol";
 
-contract GasService is IGasService, IAggregatorV3, Auth {
+contract GasService is IGasService, Auth {
     using MathLib for uint256;
 
     uint8 public constant decimals = 18;
@@ -52,16 +51,5 @@ contract GasService is IGasService, IAggregatorV3, Auth {
             return proofCost.mulDiv(price, 10 ** 18, MathLib.Rounding.Up);
         }
         return messageCost.mulDiv(price, 10 ** 18, MathLib.Rounding.Up);
-    }
-
-    /// @inheritdoc IAggregatorV3
-    function getRoundData(uint80) public view returns (uint80, int256, uint256, uint256) {
-        return (roundId, int256(price), updatedTime, updatedTime);
-    }
-
-    /// @inheritdoc IAggregatorV3
-    function latestRoundData() public view returns (uint80, int256, uint256, uint256) {
-        // Current version doesn't suport different rounds id lookup
-        return getRoundData(0);
     }
 }
