@@ -20,6 +20,9 @@ contract GasService is IGasService, Auth {
         messageCost = messageCost_;
         proofCost = proofCost_;
         price = price_;
+
+        wards[msg.sender] = 1;
+        emit Rely(msg.sender);
     }
     /// @inheritdoc IGasService
 

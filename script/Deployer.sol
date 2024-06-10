@@ -58,6 +58,7 @@ contract Deployer is Script {
         investmentManager = new InvestmentManager(address(root), address(escrow));
         poolManager = new PoolManager(address(escrow), vaultFactory, restrictionManagerFactory, trancheTokenFactory);
         gasService = new GasService(50000000000000000, 50000000000000000, 178947400000000);
+        gasService.rely(address(root));
 
         AuthLike(vaultFactory).rely(address(poolManager));
         AuthLike(trancheTokenFactory).rely(address(poolManager));
@@ -93,6 +94,7 @@ contract Deployer is Script {
         root.rely(address(gateway));
         investmentManager.file("poolManager", address(poolManager));
         poolManager.file("investmentManager", address(investmentManager));
+        poolManager.file("gasService", address(gasService));
 
         centrifugeRouter.rely(address(root));
         investmentManager.file("gateway", address(gateway));
@@ -107,7 +109,6 @@ contract Deployer is Script {
         AuthLike(router).rely(address(root));
         AuthLike(address(escrow)).rely(address(root));
         AuthLike(address(escrow)).rely(address(poolManager));
-        gasService.rely(address(root));
     }
 
     function removeDeployerAccess(address router, address deployer) public {
