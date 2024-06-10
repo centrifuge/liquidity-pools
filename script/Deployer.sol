@@ -107,6 +107,7 @@ contract Deployer is Script {
         AuthLike(router).rely(address(root));
         AuthLike(address(escrow)).rely(address(root));
         AuthLike(address(escrow)).rely(address(poolManager));
+        gasService.rely(address(root));
     }
 
     function removeDeployerAccess(address router, address deployer) public {
@@ -121,5 +122,6 @@ contract Deployer is Script {
         gateway.deny(deployer);
         aggregator.deny(deployer);
         centrifugeRouter.deny(deployer);
+        gasService.deny(deployer);
     }
 }
