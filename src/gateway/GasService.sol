@@ -9,10 +9,6 @@ import {MessagesLib} from "src/libraries/MessagesLib.sol";
 contract GasService is IGasService, Auth {
     using MathLib for uint256;
 
-    uint8 public constant decimals = 18;
-    string public constant description = "CFG/ETH price feed";
-    uint256 public constant version = 1;
-
     uint80 roundId;
     uint256 updatedTime;
     /// @inheritdoc IGasService
