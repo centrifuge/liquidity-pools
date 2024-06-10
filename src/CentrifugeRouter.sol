@@ -47,7 +47,8 @@ contract CentrifugeRouter is Auth, Multicall, ICentrifugeRouter {
     // --- Deposit ---
     function requestDeposit(address vault, uint256 amount) external payable {
         require(msg.value > 0, "CentrifugeRouter/not-enough-gas-funds");
-        // Due to the multicall nature of this contract, there are issues calling `transfer` multiple times. Investigate further.
+        // Due to the multicall nature of this contract, there are issues calling `transfer` multiple times.
+        // Investigate further.
         payable(gateway).call{value: msg.value}("");
         IERC7540(vault).requestDeposit(amount, msg.sender, msg.sender);
     }

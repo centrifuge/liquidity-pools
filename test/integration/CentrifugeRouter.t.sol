@@ -284,7 +284,8 @@ contract CentrifugeRouterTest is BaseTest {
         calls[0] = abi.encodeWithSelector(centrifugeRouter.requestDeposit.selector, vault1, amount1);
         calls[1] = abi.encodeWithSelector(centrifugeRouter.requestDeposit.selector, vault2, amount2);
         // TODO Figure out why does this work... There will be 2 calls on requestDeposit so how come it works like that?
-        // It will send once the estimated gas to the gateway and when it will try to request second deposit there should be any funds :S
+        // It will send once the estimated gas to the gateway and
+        // when it will try to request second deposit there should be any funds :S
         centrifugeRouter.multicall{value: estimateGas()}(calls);
 
         // trigger - deposit order fulfillment
