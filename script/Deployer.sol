@@ -59,10 +59,6 @@ contract Deployer is Script {
         poolManager = new PoolManager(address(escrow), vaultFactory, restrictionManagerFactory, trancheTokenFactory);
         gasService = new GasService(50000000000000000, 50000000000000000, 178947400000000);
 
-        centrifugeRouter = new CentrifugeRouter(address(poolManager), payable(address(gateway)));
-        root.endorse(address(centrifugeRouter));
-        root.endorse(address(escrow));
-
         AuthLike(vaultFactory).rely(address(poolManager));
         AuthLike(trancheTokenFactory).rely(address(poolManager));
         AuthLike(restrictionManagerFactory).rely(address(poolManager));
@@ -75,8 +71,9 @@ contract Deployer is Script {
         aggregator = new Aggregator(address(gateway), address(gasService));
         guardian = new Guardian(adminSafe, address(root), address(aggregator));
 
-        centrifugeRouter = new CentrifugeRouter(address(gateway));
+        centrifugeRouter = new CentrifugeRouter(address(poolManager), payable(address(gateway)));
         root.endorse(address(centrifugeRouter));
+        root.endorse(address(escrow));
     }
 
     function wire(address router) public {

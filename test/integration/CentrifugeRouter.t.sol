@@ -24,11 +24,9 @@ contract CentrifugeRouterTest is BaseTest {
 
         vm.expectRevert(bytes("CentrifugeRouter/not-enough-gas-funds"));
         centrifugeRouter.requestDeposit(vault_, amount);
-        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max);
 
         vm.expectRevert(bytes("InvestmentManager/owner-is-restricted")); // fail: receiver not member
         centrifugeRouter.requestDeposit{value: 1 wei}(vault_, amount);
-
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max); // add user as member
 
         vm.expectRevert(bytes("Aggregator/not-enough-gas-funds"));
@@ -118,7 +116,7 @@ contract CentrifugeRouterTest is BaseTest {
         erc20.mint(self, amount);
         erc20.approve(vault_, amount);
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max);
-        centrifugeRouter.requestDeposit(vault_, amount);
+        centrifugeRouter.requestDeposit{value: estimateGas()}(vault_, amount);
         uint128 assetId = poolManager.assetToId(address(erc20));
         (uint128 trancheTokensPayout) = fulfillDepositRequest(vault, assetId, amount);
         TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
@@ -143,9 +141,10 @@ contract CentrifugeRouterTest is BaseTest {
         amount2 = uint128(bound(amount2, 4, MAX_UINT128));
         vm.assume(amount2 % 2 == 0);
 
+        uint256 gas = estimateGas();
         (ERC20 erc20X, ERC20 erc20Y, ERC7540Vault vault1, ERC7540Vault vault2) = setUpMultipleVaults(amount1, amount2);
-        centrifugeRouter.requestDeposit(address(vault1), amount1);
-        centrifugeRouter.requestDeposit(address(vault2), amount2);
+        centrifugeRouter.requestDeposit{value: gas}(address(vault1), amount1);
+        centrifugeRouter.requestDeposit{value: gas}(address(vault2), amount2);
 
         // trigger - deposit order fulfillment
         uint128 assetId1 = poolManager.assetToId(address(erc20X));
@@ -178,10 +177,11 @@ contract CentrifugeRouterTest is BaseTest {
         amount2 = uint128(bound(amount2, 4, MAX_UINT128));
         vm.assume(amount2 % 2 == 0);
 
+        uint256 gas = estimateGas();
         // deposit
         (ERC20 erc20X, ERC20 erc20Y, ERC7540Vault vault1, ERC7540Vault vault2) = setUpMultipleVaults(amount1, amount2);
-        centrifugeRouter.requestDeposit(address(vault1), amount1);
-        centrifugeRouter.requestDeposit(address(vault2), amount2);
+        centrifugeRouter.requestDeposit{value: gas}(address(vault1), amount1);
+        centrifugeRouter.requestDeposit{value: gas}(address(vault2), amount2);
         uint128 assetId1 = poolManager.assetToId(address(erc20X));
         uint128 assetId2 = poolManager.assetToId(address(erc20Y));
         (uint128 trancheTokensPayout1) = fulfillDepositRequest(vault1, assetId1, amount1);
@@ -253,7 +253,7 @@ contract CentrifugeRouterTest is BaseTest {
         erc20.mint(self, amount);
         erc20.approve(vault_, amount);
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max);
-        centrifugeRouter.requestDeposit(vault_, amount);
+        centrifugeRouter.requestDeposit{value: estimateGas()}(vault_, amount);
         uint128 assetId = poolManager.assetToId(address(erc20));
         (uint128 trancheTokensPayout) = fulfillDepositRequest(vault, assetId, amount);
         TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
@@ -283,7 +283,9 @@ contract CentrifugeRouterTest is BaseTest {
         bytes[] memory calls = new bytes[](2);
         calls[0] = abi.encodeWithSelector(centrifugeRouter.requestDeposit.selector, vault1, amount1);
         calls[1] = abi.encodeWithSelector(centrifugeRouter.requestDeposit.selector, vault2, amount2);
-        centrifugeRouter.multicall(calls);
+        // TODO Figure out why does this work... There will be 2 calls on requestDeposit so how come it works like that?
+        // It will send once the estimated gas to the gateway and when it will try to request second deposit there should be any funds :S
+        centrifugeRouter.multicall{value: estimateGas()}(calls);
 
         // trigger - deposit order fulfillment
         uint128 assetId1 = poolManager.assetToId(address(erc20X));
@@ -357,5 +359,9 @@ contract CentrifugeRouterTest is BaseTest {
 
         centrifugeChain.updateMember(vault1.poolId(), vault1.trancheId(), self, type(uint64).max);
         centrifugeChain.updateMember(vault2.poolId(), vault2.trancheId(), self, type(uint64).max);
+    }
+
+    function estimateGas() internal view returns (uint256) {
+        return aggregator.estimate(PAYLOAD_FOR_GAS_ESTIMATION) + GAS_BUFFER;
     }
 }
