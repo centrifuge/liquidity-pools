@@ -9,8 +9,6 @@ import {MessagesLib} from "src/libraries/MessagesLib.sol";
 contract GasService is IGasService, Auth {
     using MathLib for uint256;
 
-    uint80 roundId;
-    uint256 updatedTime;
     /// @inheritdoc IGasService
     uint256 public price;
     /// @inheritdoc IGasService
@@ -22,8 +20,6 @@ contract GasService is IGasService, Auth {
         messageCost = messageCost_;
         proofCost = proofCost_;
         price = price_;
-        updatedTime = block.timestamp;
-        roundId = 1;
     }
 
     /// @inheritdoc IGasService
@@ -37,8 +33,7 @@ contract GasService is IGasService, Auth {
     /// @inheritdoc IGasService
     function updatePrice(uint256 value) external auth {
         price = value;
-        roundId++;
-        updatedTime = block.timestamp;
+        
     }
 
     /// @inheritdoc IGasService

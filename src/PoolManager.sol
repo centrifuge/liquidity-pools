@@ -33,6 +33,11 @@ interface AuthLike {
     function deny(address user) external;
 }
 
+interface GasServiceLike {
+    function updatePrice(uint256 value) external;
+    function price
+}
+
 /// @title  Pool Manager
 /// @notice This contract manages which pools & tranches exist,
 ///         as well as managing allowed pool currencies, and incoming and outgoing transfers.
@@ -51,6 +56,7 @@ contract PoolManager is Auth, IPoolManager {
     InvestmentManagerLike public investmentManager;
     TrancheTokenFactoryLike public trancheTokenFactory;
     RestrictionManagerFactoryLike public restrictionManagerFactory;
+    GasServiceLike public gasService;
 
     mapping(uint64 poolId => Pool) public pools;
     mapping(uint128 assetId => address) public idToAsset;
@@ -80,6 +86,7 @@ contract PoolManager is Auth, IPoolManager {
         else if (what == "trancheTokenFactory") trancheTokenFactory = TrancheTokenFactoryLike(data);
         else if (what == "vaultFactory") vaultFactory = ERC7540VaultFactory(data);
         else if (what == "restrictionManagerFactory") restrictionManagerFactory = RestrictionManagerFactoryLike(data);
+        else if (what == "gasService") gasService = GasServiceLike(data);
         else revert("PoolManager/file-unrecognized-param");
         emit File(what, data);
     }
@@ -202,6 +209,8 @@ contract PoolManager is Auth, IPoolManager {
             unfreeze(message.toUint64(1), message.toBytes16(9), message.toAddress(25));
         } else if (call == MessagesLib.Call.DisallowAsset) {
             disallowAsset(message.toUint64(1), message.toUint128(9));
+        } else if (call == MessagesLib.Call.UpdateDestChainTokenPrice) {
+            updateDestChainTokenPrice();
         } else {
             revert("PoolManager/invalid-message");
         }
@@ -462,6 +471,11 @@ contract PoolManager is Auth, IPoolManager {
         escrow.approve(address(tranche.token), vault, 0);
 
         emit RemoveVault(poolId, trancheId, asset, vault);
+    }
+
+    function updateDestChainTokenPrice(uint256 price) public auth {
+        require(gasService.price() != price, "PoolManager/same-price-already-set");
+        gasService.updatePrice(price);
     }
 
     // --- Helpers ---
