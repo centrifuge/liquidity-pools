@@ -6,6 +6,7 @@ interface ICentrifugeRouter {
     event LockDepositRequest(address indexed vault, address indexed user, uint256 amount);
     event UnlockDepositRequest(address indexed vault, address indexed user);
     event ExecuteLockedDepositRequest(address indexed vault, address indexed user);
+    event File(bytes32 indexed what, address data);
 
     /// @notice TODO
     function lockedRequests(address user, address vault) external view returns (uint256 amount);
@@ -13,6 +14,13 @@ interface ICentrifugeRouter {
     // --- Administration ---
     /// @notice TODO
     function recoverTokens(address token, address to, uint256 amount) external;
+
+    /// @notice TODO
+    function file(bytes32 what, address data) external;
+
+    // --- Approval ---
+    /// @notice TODO
+    function approveVault(address vault) external;
 
     // --- Deposit ---
     /// @notice TODO
@@ -36,4 +44,8 @@ interface ICentrifugeRouter {
 
     /// @notice TODO
     function claimRedeem(address vault, address user) external;
+
+    // --- View Methods ---
+    /// @notice TODO
+    function getVault(uint64 poolId, bytes16 trancheId, address asset) external view returns (address);
 }

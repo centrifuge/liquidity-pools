@@ -2,18 +2,43 @@
 pragma solidity 0.8.21;
 
 import {Auth} from "src/Auth.sol";
-import {IERC7540} from "src/interfaces/IERC7540.sol";
+import {Multicall} from "src/Multicall.sol";
 import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
+import {IERC7540} from "src/interfaces/IERC7540.sol";
+import {IERC20} from "src/interfaces/IERC20.sol";
 import {ICentrifugeRouter} from "src/interfaces/ICentrifugeRouter.sol";
+import {IPoolManager} from "src/interfaces/IPoolManager.sol";
 
-contract CentrifugeRouter is Auth, ICentrifugeRouter {
+contract CentrifugeRouter is Auth, Multicall, ICentrifugeRouter {
+    address public poolManager;
+
     /// @inheritdoc ICentrifugeRouter
     mapping(address user => mapping(address vault => uint256 amount)) public lockedRequests;
+
+    constructor(address poolManager_) {
+        poolManager = poolManager_;
+
+        wards[msg.sender] = 1;
+        emit Rely(msg.sender);
+    }
 
     // --- Administration ---
     /// @inheritdoc ICentrifugeRouter
     function recoverTokens(address token, address to, uint256 amount) external auth {
         SafeTransferLib.safeTransfer(token, to, amount);
+    }
+
+    /// @inheritdoc ICentrifugeRouter
+    function file(bytes32 what, address data) external auth {
+        if (what == "poolManager") poolManager = data;
+        else revert("CentrifugeRouter/file-unrecognized-param");
+        emit File(what, data);
+    }
+
+    // --- Approval ---
+    /// @inheritdoc ICentrifugeRouter
+    function approveVault(address vault) external {
+        IERC20(IERC7540(vault).asset()).approve(vault, type(uint256).max);
     }
 
     // --- Deposit ---
@@ -43,14 +68,13 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         uint256 lockedRequest = lockedRequests[user][vault];
         require(lockedRequest > 0, "CentrifugeRouter/user-has-no-balance");
         lockedRequests[user][vault] = 0;
-        IERC7540(vault).requestDeposit(lockedRequest, msg.sender, address(this));
+        IERC7540(vault).requestDeposit(lockedRequest, user, address(this));
         emit ExecuteLockedDepositRequest(vault, user);
     }
 
     /// @inheritdoc ICentrifugeRouter
     function claimDeposit(address vault, address user) external {
         uint256 maxDeposit = IERC7540(vault).maxDeposit(user);
-        require(maxDeposit > 0, "CentrifugeRouter/user-has-no-balance-to-claim");
         IERC7540(vault).deposit(maxDeposit, user, user);
     }
 
@@ -63,7 +87,12 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     /// @inheritdoc ICentrifugeRouter
     function claimRedeem(address vault, address user) external {
         uint256 maxRedeem = IERC7540(vault).maxRedeem(user);
-        require(maxRedeem > 0, "CentrifugeRouter/user-has-no-balance-to-claim");
         IERC7540(vault).redeem(maxRedeem, user, user);
+    }
+
+    // --- View Methods ---
+    /// @inheritdoc ICentrifugeRouter
+    function getVault(uint64 poolId, bytes16 trancheId, address asset) external view returns (address) {
+        return IPoolManager(poolManager).getVault(poolId, trancheId, asset);
     }
 }

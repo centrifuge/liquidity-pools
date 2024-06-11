@@ -57,7 +57,7 @@ contract Deployer is Script {
         investmentManager = new InvestmentManager(address(root), address(escrow));
         poolManager = new PoolManager(address(escrow), vaultFactory, restrictionManagerFactory, trancheTokenFactory);
 
-        centrifugeRouter = new CentrifugeRouter();
+        centrifugeRouter = new CentrifugeRouter(address(poolManager));
         root.endorse(address(centrifugeRouter));
         root.endorse(address(escrow));
 
@@ -92,6 +92,7 @@ contract Deployer is Script {
         investmentManager.file("poolManager", address(poolManager));
         poolManager.file("investmentManager", address(investmentManager));
 
+        centrifugeRouter.rely(address(root));
         investmentManager.file("gateway", address(gateway));
         poolManager.file("gateway", address(gateway));
         investmentManager.rely(address(root));
@@ -117,5 +118,6 @@ contract Deployer is Script {
         escrow.deny(deployer);
         gateway.deny(deployer);
         aggregator.deny(deployer);
+        centrifugeRouter.deny(deployer);
     }
 }
