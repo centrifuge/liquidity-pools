@@ -29,4 +29,6 @@ interface IGateway {
     /// @param to - address  that will receive the funds
     /// @param amount - amount to be sent to the @param to
     function recoverTokens(address token, address to, uint256 amount) external;
+
+    function shouldPay() external payable;
 }

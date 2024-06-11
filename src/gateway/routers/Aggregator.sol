@@ -207,7 +207,6 @@ contract Aggregator is Auth, IAggregator {
     function send(bytes calldata message) external payable auth {
         uint256 numRouters = routers.length;
         require(numRouters > 0, "Aggregator/not-initialized");
-
         uint256 fuel = msg.value;
 
         uint256 destChainMsgCost;

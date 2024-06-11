@@ -9,6 +9,10 @@ import {IERC20} from "src/interfaces/IERC20.sol";
 import {ICentrifugeRouter} from "src/interfaces/ICentrifugeRouter.sol";
 import {IPoolManager} from "src/interfaces/IPoolManager.sol";
 
+interface GatewayLike {
+    function shouldPay() external payable;
+}
+
 contract CentrifugeRouter is Auth, Multicall, ICentrifugeRouter {
     address public poolManager;
     address public gateway;
@@ -47,9 +51,11 @@ contract CentrifugeRouter is Auth, Multicall, ICentrifugeRouter {
     // --- Deposit ---
     function requestDeposit(address vault, uint256 amount) external payable {
         require(msg.value > 0, "CentrifugeRouter/not-enough-gas-funds");
-        // Due to the multicall nature of this contract, there are issues calling `transfer` multiple times.
-        // Investigate further.
-        payable(gateway).call{value: msg.value}("");
+        // In a multicall with let's say 2 deposits,
+        // During the first deposit execution, all of the balance will be sent to the gateway
+        // During second deposit execution, msg.value is the same  as in the first call but the balance
+        // is long gone so we have nothing to send
+        GatewayLike(gateway).shouldPay{value: msg.value <= address(this).balance ? msg.value : 0}();
         IERC7540(vault).requestDeposit(amount, msg.sender, msg.sender);
     }
 
