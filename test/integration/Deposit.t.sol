@@ -42,7 +42,7 @@ contract DepositTest is BaseTest {
         vault.requestDeposit(0, self, self);
 
         // will fail - owner != msg.sender not allowed
-        vm.expectRevert(bytes("ERC7540Vault/invalid-controller"));
+        vm.expectRevert(bytes("ERC7540Vault/invalid-owner"));
         vault.requestDeposit(amount, self, nonMember);
 
         // will fail - investment asset not allowed
