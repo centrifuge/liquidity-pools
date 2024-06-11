@@ -27,7 +27,7 @@ contract OperatorTest is BaseTest {
         erc20.approve(vault_, amount);
 
         vm.prank(operator);
-        vm.expectRevert(bytes("ERC7540Vault/invalid-owner"));
+        vm.expectRevert(bytes("ERC7540Vault/invalid-controller"));
         vault.requestDeposit(amount, investor, investor);
 
         assertEq(vault.isOperator(investor, operator), false);
@@ -59,7 +59,7 @@ contract OperatorTest is BaseTest {
         vault.setOperator(operator, false);
 
         vm.prank(operator);
-        vm.expectRevert(bytes("ERC7540Vault/invalid-owner"));
+        vm.expectRevert(bytes("ERC7540Vault/invalid-controller"));
         vault.requestDeposit(amount, investor, investor);
     }
 
@@ -86,7 +86,7 @@ contract OperatorTest is BaseTest {
         erc20.approve(vault_, amount);
 
         vm.prank(operator);
-        vm.expectRevert(bytes("ERC7540Vault/invalid-owner"));
+        vm.expectRevert(bytes("ERC7540Vault/invalid-controller"));
         vault.requestDeposit(amount, owner, owner);
 
         uint256 deadline = type(uint64).max;
