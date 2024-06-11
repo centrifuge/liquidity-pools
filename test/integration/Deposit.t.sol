@@ -381,7 +381,7 @@ contract DepositTest is BaseTest {
         address router = makeAddr("router");
 
         vm.startPrank(router);
-        vm.expectRevert(bytes("ERC7540Vault/invalid-controller")); // fail without endorsement
+        vm.expectRevert(bytes("ERC7540Vault/invalid-owner")); // fail without endorsement
         vault.deposit(amount, receiver, address(this));
         vm.stopPrank();
 
