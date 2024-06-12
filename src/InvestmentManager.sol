@@ -12,6 +12,8 @@ import {IERC20, IERC20Metadata} from "src/interfaces/IERC20.sol";
 import {IPoolManager} from "src/interfaces/IPoolManager.sol";
 import {IInvestmentManager, InvestmentState} from "src/interfaces/IInvestmentManager.sol";
 
+import "forge-std/console.sol";
+
 interface GatewayLike {
     function send(bytes memory message) external;
 }
@@ -80,7 +82,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
 
     // --- Outgoing message handling ---
     /// @inheritdoc IInvestmentManager
-    function requestDeposit(address vault, uint256 assets, address receiver, address owner, address source)
+    function requestDeposit(address vault, uint256 assets, address receiver, address owner)
         public
         auth
         returns (bool)
@@ -103,7 +105,8 @@ contract InvestmentManager is Auth, IInvestmentManager {
         require(state.pendingCancelDepositRequest != true, "InvestmentManager/cancellation-is-pending");
 
         state.pendingDepositRequest = state.pendingDepositRequest + _assets;
-        gateway.send(abi.encodePacked(uint8(MessagesLib.Call.EntryPoint), source));
+        console.log("IM/sending...");
+        console.log("GW address: ", address(gateway));
         gateway.send(
             abi.encodePacked(
                 uint8(MessagesLib.Call.IncreaseInvestOrder),
@@ -111,8 +114,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
                 vault_.trancheId(),
                 receiver,
                 poolManager.assetToId(asset),
-                _assets,
-                source
+                _assets
             )
         );
 
@@ -120,7 +122,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
     }
 
     /// @inheritdoc IInvestmentManager
-    function requestRedeem(address vault, uint256 shares, address receiver, /* owner */ address, address source)
+    function requestRedeem(address vault, uint256 shares, address receiver, /* owner */ address)
         public
         auth
         returns (bool)
@@ -136,7 +138,6 @@ contract InvestmentManager is Auth, IInvestmentManager {
             _canTransfer(vault, receiver, address(escrow), convertToAssets(vault, shares)),
             "InvestmentManager/transfer-not-allowed"
         );
-        gateway.send(abi.encodePacked(uint8(MessagesLib.Call.EntryPoint), source));
         return _processRedeemRequest(vault, _shares, receiver);
     }
 

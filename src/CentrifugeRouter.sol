@@ -9,6 +9,11 @@ import {IERC20} from "src/interfaces/IERC20.sol";
 import {ICentrifugeRouter} from "src/interfaces/ICentrifugeRouter.sol";
 import {IPoolManager} from "src/interfaces/IPoolManager.sol";
 
+interface GatewayLike {
+    function topUp() external payable;
+    function estimate(bytes calldata payload) external returns (uint256[] memory tranches, uint256 total);
+}
+
 contract CentrifugeRouter is Auth, Multicall, ICentrifugeRouter {
     address public poolManager;
     address public gateway;
@@ -45,11 +50,13 @@ contract CentrifugeRouter is Auth, Multicall, ICentrifugeRouter {
     }
 
     // --- Deposit ---
-    function requestDeposit(address vault, uint256 amount) external payable {
-        require(msg.value > 0, "CentrifugeRouter/not-enough-gas-funds");
-        // Due to the multicall nature of this contract, there are issues calling `transfer` multiple times.
-        // Investigate further.
-        payable(gateway).call{value: msg.value}("");
+    function requestDeposit(address vault, uint256 amount, uint256 topUpAmount) external payable {
+        // Assumption: This contract won't hold any ETH
+        require(topUpAmount <= msg.value, "CentrifugeRouter/must-pay-for-tx-costs");
+        // In a situation where we have multiple calls ( as in multicall ) the msg.value remains the same
+        // but with each call the balance will get reduced by `topUp`
+        require(topUpAmount <= address(this).balance, "CentrifugeRouter/insufficient-funds-to-topup");
+        GatewayLike(gateway).topUp{value: topUpAmount}();
         IERC7540(vault).requestDeposit(amount, msg.sender, msg.sender);
     }
 
@@ -102,5 +109,9 @@ contract CentrifugeRouter is Auth, Multicall, ICentrifugeRouter {
     /// @inheritdoc ICentrifugeRouter
     function getVault(uint64 poolId, bytes16 trancheId, address asset) external view returns (address) {
         return IPoolManager(poolManager).getVault(poolId, trancheId, asset);
+    }
+
+    function estimate(bytes calldata payload) external returns (uint256 amount) {
+        (, amount) = GatewayLike(gateway).estimate(payload);
     }
 }
