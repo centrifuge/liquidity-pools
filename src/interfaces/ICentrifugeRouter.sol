@@ -20,7 +20,7 @@ interface ICentrifugeRouter {
 
     // --- Approval ---
     /// @notice TODO
-    function approveVault(address vault) external;
+    function approveMax(address token, address spender) external;
 
     // --- Deposit ---
     /// @notice TODO

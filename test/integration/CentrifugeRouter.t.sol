@@ -61,7 +61,7 @@ contract CentrifugeRoutertest is BaseTest {
         address randomAddress = address(0x123);
         vm.label(randomAddress, "randomAddress");
         vm.startPrank(randomAddress);
-        centrifugeRouter.approveVault(vault_);
+        centrifugeRouter.approveMax(address(erc20), vault_);
         centrifugeRouter.executeLockedDepositRequest(vault_, address(this));
         vm.stopPrank();
 
@@ -203,7 +203,7 @@ contract CentrifugeRoutertest is BaseTest {
 
         // multicall
         bytes[] memory calls = new bytes[](2);
-        calls[0] = abi.encodeWithSelector(centrifugeRouter.approveVault.selector, vault_);
+        calls[0] = abi.encodeWithSelector(centrifugeRouter.approveMax.selector, vault_);
         calls[1] = abi.encodeWithSelector(centrifugeRouter.executeLockedDepositRequest.selector, vault_, self);
         centrifugeRouter.multicall(calls);
 
