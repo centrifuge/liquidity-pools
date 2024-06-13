@@ -102,7 +102,6 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
 
     // --- ERC20 wrapping ---
     /// @dev requires calling approveMax(underlying, wrapper) before
-    /// TODO: consider addign separate transferFrom method in the CentrifugeRouter
     function wrap(address wrapper, uint256 amount, address receiver) external {
         address underlying = IERC20Wrapper(wrapper).underlying();
 
@@ -110,7 +109,6 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         require(amount != 0, "CentrifugeRouter/zero-balance");
         SafeTransferLib.safeTransferFrom(underlying, msg.sender, address(this), amount);
 
-        // TODO: should account be msg.sender here, and should we require another transferFrom back to the Router?
         require(IERC20Wrapper(wrapper).depositFor(receiver, amount), "CentrifugeRouter/deposit-for-failed");
     }
 
