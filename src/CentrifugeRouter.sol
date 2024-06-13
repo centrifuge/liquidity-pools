@@ -64,7 +64,10 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     function executeLockedDepositRequest(address vault, address controller) external {
         uint256 lockedRequest = lockedRequests[controller][vault];
         require(lockedRequest > 0, "CentrifugeRouter/controller-has-no-balance");
+
+        SafeTransferLib.safeApprove(IERC7540(vault).asset(), address(this), lockedRequest);
         lockedRequests[controller][vault] = 0;
+
         IERC7540(vault).requestDeposit(lockedRequest, controller, address(this));
         emit ExecuteLockedDepositRequest(vault, controller);
     }
@@ -87,14 +90,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         IERC7540(vault).redeem(maxRedeem, receiver, controller);
     }
 
-    // --- ERC20 approval ---
-    /// @inheritdoc ICentrifugeRouter
-    function approveMax(address token, address spender) external {
-        if (IERC20(token).allowance(address(this), spender) == 0) {
-            SafeTransferLib.safeApprove(token, spender, type(uint256).max);
-        }
-    }
-
+    // --- ERC20 permits ---
     /// @inheritdoc ICentrifugeRouter
     function permit(address asset, uint256 assets, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external {
         try IERC20Permit(asset).permit(msg.sender, address(this), assets, deadline, v, r, s) {} catch {}
@@ -109,6 +105,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         require(amount != 0, "CentrifugeRouter/zero-balance");
         SafeTransferLib.safeTransferFrom(underlying, msg.sender, address(this), amount);
 
+        SafeTransferLib.safeApprove(underlying, wrapper, amount);
         require(IERC20Wrapper(wrapper).depositFor(receiver, amount), "CentrifugeRouter/deposit-for-failed");
     }
 

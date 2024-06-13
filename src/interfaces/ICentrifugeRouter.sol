@@ -43,10 +43,7 @@ interface ICentrifugeRouter is IMulticall {
     /// @notice TODO
     function claimRedeem(address vault, address receiver, address controller) external;
 
-    // --- ERC20 approval ---
-    /// @notice TODO
-    function approveMax(address token, address spender) external;
-
+    // --- ERC20 permit ---
     /// @notice TODO
     function permit(address asset, uint256 assets, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external;
 
