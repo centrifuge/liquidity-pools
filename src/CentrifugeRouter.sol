@@ -5,7 +5,7 @@ import {Auth} from "src/Auth.sol";
 import {MathLib} from "src/libraries/MathLib.sol";
 import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 import {IERC7540} from "src/interfaces/IERC7540.sol";
-import {IERC20, IERC20Permit} from "src/interfaces/IERC20.sol";
+import {IERC20, IERC20Permit, IERC20Wrapper} from "src/interfaces/IERC20.sol";
 import {IMulticall} from "src/interfaces/IMulticall.sol";
 import {ICentrifugeRouter} from "src/interfaces/ICentrifugeRouter.sol";
 import {IPoolManager} from "src/interfaces/IPoolManager.sol";
@@ -14,7 +14,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     address public poolManager;
 
     /// @inheritdoc ICentrifugeRouter
-    mapping(address user => mapping(address vault => uint256 amount)) public lockedRequests;
+    mapping(address controller => mapping(address vault => uint256 amount)) public lockedRequests;
 
     constructor(address poolManager_) {
         poolManager = poolManager_;
@@ -38,15 +38,16 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
 
     // --- Deposit ---
     /// @inheritdoc ICentrifugeRouter
-    function requestDeposit(address vault, uint256 amount, address controller, address owner) external {
+    function requestDeposit(address vault, uint256 amount, address controller, address owner) public {
         IERC7540(vault).requestDeposit(amount, controller, owner);
     }
 
     /// @inheritdoc ICentrifugeRouter
-    function lockDepositRequest(address vault, uint256 amount) external {
-        SafeTransferLib.safeTransferFrom(IERC7540(vault).asset(), msg.sender, address(this), amount);
-        lockedRequests[msg.sender][vault] += amount;
-        emit LockDepositRequest(vault, msg.sender, amount);
+    function lockDepositRequest(address vault, uint256 amount, address controller, address owner) external {
+        require(owner == msg.sender || owner == address(this), "CentrifugeRouter/invalid-owner");
+        SafeTransferLib.safeTransferFrom(IERC7540(vault).asset(), owner, address(this), amount);
+        lockedRequests[controller][vault] += amount;
+        emit LockDepositRequest(vault, controller, amount);
     }
 
     /// @inheritdoc ICentrifugeRouter
@@ -60,12 +61,12 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
 
     /// @inheritdoc ICentrifugeRouter
     /// @dev requires calling approveMax(asset, vault) before
-    function executeLockedDepositRequest(address vault, address user) external {
-        uint256 lockedRequest = lockedRequests[user][vault];
-        require(lockedRequest > 0, "CentrifugeRouter/user-has-no-balance");
-        lockedRequests[user][vault] = 0;
-        IERC7540(vault).requestDeposit(lockedRequest, user, address(this));
-        emit ExecuteLockedDepositRequest(vault, user);
+    function executeLockedDepositRequest(address vault, address controller) external {
+        uint256 lockedRequest = lockedRequests[controller][vault];
+        require(lockedRequest > 0, "CentrifugeRouter/controller-has-no-balance");
+        lockedRequests[controller][vault] = 0;
+        IERC7540(vault).requestDeposit(lockedRequest, controller, address(this));
+        emit ExecuteLockedDepositRequest(vault, controller);
     }
 
     /// @inheritdoc ICentrifugeRouter
@@ -94,29 +95,36 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         }
     }
 
+    /// @inheritdoc ICentrifugeRouter
     function permit(address asset, uint256 assets, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external {
         try IERC20Permit(asset).permit(msg.sender, address(this), assets, deadline, v, r, s) {} catch {}
     }
 
     // --- ERC20 wrapping ---
     /// @dev requires calling approveMax(underlying, wrapper) before
-    function wrap(address wrapper, uint256 amount) external {
-        address underlying = address(IERC20Wrapper(wrapper).underlying());
-        amount = MathLib.min(amount, IERC20(underlying).balanceOf(address(this)));
+    /// TODO: consider addign separate transferFrom method in the CentrifugeRouter
+    function wrap(address wrapper, uint256 amount, address receiver) external {
+        address underlying = IERC20Wrapper(wrapper).underlying();
+
+        amount = MathLib.min(amount, IERC20(underlying).balanceOf(msg.sender));
         require(amount != 0, "CentrifugeRouter/zero-balance");
-        require(IERC20Wrapper(wrapper).depositFor(msg.sender, amount), "CentrifugeRouter/deposit-for-failed");
+        SafeTransferLib.safeTransferFrom(underlying, msg.sender, address(this), amount);
+
+        // TODO: should account be msg.sender here, and should we require another transferFrom back to the Router?
+        require(IERC20Wrapper(wrapper).depositFor(receiver, amount), "CentrifugeRouter/deposit-for-failed");
     }
 
-    function unwrap(address wrapper, address user, uint256 amount) external {
-        require(user != address(0), "CentrifugeRouter/zero-address");
+    function unwrap(address wrapper, uint256 amount, address receiver) external {
+        require(receiver != address(0), "CentrifugeRouter/zero-address");
         amount = MathLib.min(amount, IERC20(wrapper).balanceOf(address(this)));
         require(amount != 0, "CentrifugeRouter/zero-balance");
-        require(IERC20Wrapper(wrapper).withdrawTo(user, amount), "CentrifugeRouter/withdraw-to-failed");
+
+        require(IERC20Wrapper(wrapper).withdrawTo(receiver, amount), "CentrifugeRouter/withdraw-to-failed");
     }
 
     // --- Batching ---
     /// @inheritdoc IMulticall
-    function multicall(bytes[] calldata data) public payable override returns (bytes[] memory results) {
+    function multicall(bytes[] calldata data) public payable returns (bytes[] memory results) {
         results = new bytes[](data.length);
         for (uint256 i = 0; i < data.length; i++) {
             (bool success, bytes memory result) = address(this).delegatecall(data[i]);
@@ -139,7 +147,6 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
             results[i] = result;
         }
     }
-}
 
     // --- View Methods ---
     /// @inheritdoc ICentrifugeRouter

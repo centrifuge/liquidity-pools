@@ -144,7 +144,7 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
         emit Transfer(address(0), to, value);
     }
 
-    function burn(address from, uint256 value) external auth {
+    function burn(address from, uint256 value) public auth {
         uint256 balance = balanceOf[from];
         require(balance >= value, "ERC20/insufficient-balance");
 
