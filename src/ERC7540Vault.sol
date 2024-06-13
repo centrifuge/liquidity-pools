@@ -24,7 +24,7 @@ interface AuthTransferLike {
 ///         deposit and redeem orders are submitted to the pools to be included in the execution of the following epoch.
 ///         After execution users can use the deposit, mint, redeem and withdraw functions to get their shares
 ///         and/or assets from the pools.
-contract ERC7540Vault is Auth, IERC7540, IAuthorizeOperator {
+contract ERC7540Vault is Auth, IERC7540Vault {
     /// @notice Identifier of the Centrifuge pool
     uint64 public immutable poolId;
 
@@ -55,13 +55,12 @@ contract ERC7540Vault is Auth, IERC7540, IAuthorizeOperator {
     bytes32 private immutable versionHash;
     uint256 public immutable deploymentChainId;
     bytes32 private immutable _DOMAIN_SEPARATOR;
-    bytes32 public constant AUTHORIZE_OPERATOR_TYPEHASH = keccak256(
-        "AuthorizeOperator(address controller,address operator,bool approved,uint256 validAfter,uint256 validBefore,bytes32 nonce)"
-    );
+    bytes32 public constant AUTHORIZE_OPERATOR_TYPEHASH =
+        keccak256("AuthorizeOperator(address controller,address operator,bool approved,uint256 deadline,bytes32 nonce)");
 
     mapping(address controller => mapping(bytes32 nonce => bool used)) authorizations;
 
-    /// @inheritdoc IERC7540
+    /// @inheritdoc IERC7540Operator
     mapping(address => mapping(address => bool)) public isOperator;
 
     // --- Events ---
@@ -219,7 +218,7 @@ contract ERC7540Vault is Auth, IERC7540, IAuthorizeOperator {
         emit CancelRedeemClaim(receiver, controller, REQUEST_ID, msg.sender, shares);
     }
 
-    /// @inheritdoc IERC7540
+    /// @inheritdoc IERC7540Operator
     function setOperator(address operator, bool approved) public virtual returns (bool) {
         isOperator[msg.sender][operator] = approved;
         emit OperatorSet(msg.sender, operator, approved);
@@ -267,7 +266,7 @@ contract ERC7540Vault is Auth, IERC7540, IAuthorizeOperator {
     /// @inheritdoc IERC165
     function supportsInterface(bytes4 interfaceId) external pure override returns (bool) {
         return interfaceId == type(IERC7540Deposit).interfaceId || interfaceId == type(IERC7540Redeem).interfaceId
-            || interfaceId == type(IERC7540CancelDeposit).interfaceId
+            || interfaceId == type(IERC7540Operator).interfaceId || interfaceId == type(IERC7540CancelDeposit).interfaceId
             || interfaceId == type(IERC7540CancelRedeem).interfaceId || interfaceId == type(IERC7575).interfaceId
             || interfaceId == type(IAuthorizeOperator).interfaceId || interfaceId == type(IERC165).interfaceId;
     }
@@ -297,7 +296,7 @@ contract ERC7540Vault is Auth, IERC7540, IAuthorizeOperator {
         maxAssets = manager.maxDeposit(address(this), controller);
     }
 
-    /// @inheritdoc IERC7540
+    /// @inheritdoc IERC7540Deposit
     function deposit(uint256 assets, address receiver, address controller) public returns (uint256 shares) {
         validateController(controller);
         shares = manager.deposit(address(this), assets, receiver, controller);
@@ -314,7 +313,7 @@ contract ERC7540Vault is Auth, IERC7540, IAuthorizeOperator {
         maxShares = manager.maxMint(address(this), controller);
     }
 
-    /// @inheritdoc IERC7540
+    /// @inheritdoc IERC7540Deposit
     function mint(uint256 shares, address receiver, address controller) public returns (uint256 assets) {
         validateController(controller);
         assets = manager.mint(address(this), shares, receiver, controller);

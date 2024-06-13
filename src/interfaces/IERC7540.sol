@@ -3,11 +3,31 @@ pragma solidity >=0.5.0;
 
 import {IERC7575} from "src/interfaces/IERC7575.sol";
 
-interface IERC7540Deposit {
+interface IERC7540Operator {
+    event OperatorSet(address indexed controller, address indexed operator, bool approved);
+
+    /**
+     * @dev Sets or removes an operator for the caller.
+     *
+     * @param operator The address of the operator.
+     * @param approved The approval status.
+     */
+    function setOperator(address operator, bool approved) external returns (bool);
+
+    /**
+     * @dev Returns `true` if the `operator` is approved as an operator for an `controller`.
+     *
+     * @param controller The address of the controller.
+     * @param operator The address of the operator.
+     * @return status The approval status
+     */
+    function isOperator(address controller, address operator) external returns (bool status);
+}
+
+interface IERC7540Deposit is IERC7540Operator {
     event DepositRequest(
         address indexed controller, address indexed owner, uint256 indexed requestId, address sender, uint256 assets
     );
-
     /**
      * @dev Transfers assets from sender into the Vault and submits a Request for asynchronous deposit.
      *
@@ -22,6 +42,7 @@ interface IERC7540Deposit {
      *
      * NOTE: most implementations will require pre-approval of the Vault with the Vault's underlying asset token.
      */
+
     function requestDeposit(uint256 assets, address controller, address owner) external returns (uint256 requestId);
 
     /**
@@ -47,9 +68,25 @@ interface IERC7540Deposit {
         external
         view
         returns (uint256 claimableAssets);
+
+    /**
+     * @dev Mints shares Vault shares to receiver by claiming the Request of the controller.
+     *
+     * - MUST emit the Deposit event.
+     * - controller MUST equal msg.sender unless the controller has approved the msg.sender as an operator.
+     */
+    function deposit(uint256 assets, address receiver, address controller) external returns (uint256 shares);
+
+    /**
+     * @dev Mints exactly shares Vault shares to receiver by claiming the Request of the controller.
+     *
+     * - MUST emit the Deposit event.
+     * - controller MUST equal msg.sender unless the controller has approved the msg.sender as an operator.
+     */
+    function mint(uint256 shares, address receiver, address controller) external returns (uint256 assets);
 }
 
-interface IERC7540Redeem {
+interface IERC7540Redeem is IERC7540Operator {
     event RedeemRequest(
         address indexed controller, address indexed owner, uint256 indexed requestId, address sender, uint256 assets
     );
@@ -205,56 +242,20 @@ interface IAuthorizeOperator {
 }
 
 /**
- * @title  IERC7540
- * @dev    Interface of the ERC7540 "Asynchronous Tokenized Vault Standard", as defined in
- *         https://eips.ethereum.org/EIPS/eip-7540
- * @dev    The claimable events are not included in the standard.
+ * @title  IERC7540Vault
+ * @dev    This is the specific set of interfaces used by the Centrifuge impelmentation of ERC7540,
+ *         as a fully asynchronous Vault, with cancelation support, and authorize operator signature support.
  */
-interface IERC7540 is IERC7540Deposit, IERC7540Redeem, IERC7540CancelDeposit, IERC7540CancelRedeem, IERC7575 {
+interface IERC7540Vault is
+    IERC7540Deposit,
+    IERC7540Redeem,
+    IERC7540CancelDeposit,
+    IERC7540CancelRedeem,
+    IERC7575,
+    IAuthorizeOperator
+{
     event DepositClaimable(address indexed controller, uint256 indexed requestId, uint256 assets, uint256 shares);
     event RedeemClaimable(address indexed controller, uint256 indexed requestId, uint256 assets, uint256 shares);
     event CancelDepositClaimable(address indexed controller, uint256 indexed requestId, uint256 assets);
     event CancelRedeemClaimable(address indexed controller, uint256 indexed requestId, uint256 shares);
-
-    /**
-     * @dev Mints shares Vault shares to receiver by claiming the Request of the controller.
-     *
-     * - MUST emit the Deposit event.
-     * - controller MUST equal msg.sender unless the controller has approved the msg.sender as an operator.
-     */
-    function deposit(uint256 assets, address receiver, address controller) external returns (uint256 shares);
-
-    /**
-     * @dev Mints exactly shares Vault shares to receiver by claiming the Request of the controller.
-     *
-     * - MUST emit the Deposit event.
-     * - controller MUST equal msg.sender unless the controller has approved the msg.sender as an operator.
-     */
-    function mint(uint256 shares, address receiver, address controller) external returns (uint256 assets);
-
-    /**
-     * @dev The event emitted when an operator is set.
-     *
-     * @param controller The address of the controller.
-     * @param operator The address of the operator.
-     * @param approved The approval status.
-     */
-    event OperatorSet(address indexed controller, address indexed operator, bool approved);
-
-    /**
-     * @dev Sets or removes an operator for the caller.
-     *
-     * @param operator The address of the operator.
-     * @param approved The approval status.
-     */
-    function setOperator(address operator, bool approved) external returns (bool);
-
-    /**
-     * @dev Returns `true` if the `operator` is approved as an operator for an `controller`.
-     *
-     * @param controller The address of the controller.
-     * @param operator The address of the operator.
-     * @return status The approval status
-     */
-    function isOperator(address controller, address operator) external returns (bool status);
 }

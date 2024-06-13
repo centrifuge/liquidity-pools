@@ -95,15 +95,15 @@ contract ERC7540VaultTest is BaseTest {
     function testERC165Support(bytes4 unsupportedInterfaceId) public {
         bytes4 erc165 = 0x01ffc9a7;
         bytes4 erc7575Vault = 0x2f0a18c5;
-        bytes4 erc7540Deposit = 0x3a2f2433;
+        bytes4 erc7540Operator = 0xe3bc4e65;
+        bytes4 erc7540Deposit = 0xce3bbe50;
         bytes4 erc7540Redeem = 0x620ee8e4;
         bytes4 erc7540CancelDeposit = 0x8bf840e3;
         bytes4 erc7540CancelRedeem = 0xe76cffc7;
         bytes4 ercAuthorizeOperator = 0x6f72fac5;
 
         vm.assume(
-            unsupportedInterfaceId != erc165 && unsupportedInterfaceId != erc7575Vault
-                && unsupportedInterfaceId != erc7540Deposit && unsupportedInterfaceId != erc7540Redeem
+            unsupportedInterfaceId != erc165 && unsupportedInterfaceId != erc7575Vault && unsupportedInterfaceId != erc7540Operator && unsupportedInterfaceId != erc7540Deposit && unsupportedInterfaceId != erc7540Redeem
                 && unsupportedInterfaceId != erc7540CancelDeposit && unsupportedInterfaceId != erc7540CancelRedeem
                 && unsupportedInterfaceId != ercAuthorizeOperator
         );
@@ -113,6 +113,7 @@ contract ERC7540VaultTest is BaseTest {
 
         assertEq(type(IERC165).interfaceId, erc165);
         assertEq(type(IERC7575).interfaceId, erc7575Vault);
+        assertEq(type(IERC7540Operator).interfaceId, erc7540Operator);
         assertEq(type(IERC7540Deposit).interfaceId, erc7540Deposit);
         assertEq(type(IERC7540Redeem).interfaceId, erc7540Redeem);
         assertEq(type(IERC7540CancelDeposit).interfaceId, erc7540CancelDeposit);
@@ -121,6 +122,7 @@ contract ERC7540VaultTest is BaseTest {
 
         assertEq(vault.supportsInterface(erc165), true);
         assertEq(vault.supportsInterface(erc7575Vault), true);
+        assertEq(vault.supportsInterface(erc7540Operator), true);
         assertEq(vault.supportsInterface(erc7540Deposit), true);
         assertEq(vault.supportsInterface(erc7540Redeem), true);
         assertEq(vault.supportsInterface(erc7540CancelDeposit), true);
