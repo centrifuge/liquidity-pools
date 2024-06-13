@@ -5,6 +5,7 @@ import "test/BaseTest.sol";
 import "src/interfaces/IERC7575.sol";
 import "src/interfaces/IERC7540.sol";
 import "src/interfaces/IERC20.sol";
+import {SimpleERC20Wrapper} from "test/mocks/SimpleERC20Wrapper.sol";
 
 contract CentrifugeRoutertest is BaseTest {
     function testRouterDeposit(uint256 amount) public {
@@ -273,6 +274,34 @@ contract CentrifugeRoutertest is BaseTest {
         TrancheTokenLike trancheToken2 = TrancheTokenLike(address(vault2.share()));
         assertEq(trancheToken1.balanceOf(address(escrow)), trancheTokensPayout1);
         assertEq(trancheToken2.balanceOf(address(escrow)), trancheTokensPayout2);
+    }
+
+    function testMulticallingWithERC20Wrapper(uint256 amount) public {
+        amount = uint128(bound(amount, 4, MAX_UINT128));
+        vm.assume(amount % 2 == 0);
+
+        address vault_ = deploySimpleVault();
+        ERC7540Vault vault = ERC7540Vault(vault_);
+        vm.label(vault_, "vault");
+
+        // erc20.mint(self, amount);
+        // erc20.approve(address(centrifugeRouter), amount);
+        // centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max);
+        // centrifugeRouter.lockDepositRequest(vault_, amount);
+
+        // // multicall
+        // bytes[] memory calls = new bytes[](2);
+        // calls[0] = abi.encodeWithSelector(centrifugeRouter.approveMax.selector, vault_);
+        // calls[1] = abi.encodeWithSelector(centrifugeRouter.executeLockedDepositRequest.selector, vault_, self);
+        // centrifugeRouter.multicall(calls);
+
+        // uint128 assetId = poolManager.assetToId(address(erc20));
+        // (uint128 trancheTokensPayout) = fulfillDepositRequest(vault, assetId, amount);
+
+        // assertEq(vault.maxMint(self), trancheTokensPayout);
+        // assertEq(vault.maxDeposit(self), amount);
+        // TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
+        // assertEq(trancheToken.balanceOf(address(escrow)), trancheTokensPayout);
     }
 
     // --- helpers ---
