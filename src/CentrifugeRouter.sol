@@ -10,12 +10,6 @@ import {IMulticall} from "src/interfaces/IMulticall.sol";
 import {ICentrifugeRouter} from "src/interfaces/ICentrifugeRouter.sol";
 import {IPoolManager} from "src/interfaces/IPoolManager.sol";
 
-interface IERC20Wrapper {
-    function underlying() external view returns (address);
-    function depositFor(address account, uint256 value) external returns (bool);
-    function withdrawTo(address account, uint256 value) external returns (bool);
-}
-
 contract CentrifugeRouter is Auth, ICentrifugeRouter {
     address public poolManager;
 
@@ -128,6 +122,12 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
             (bool success, bytes memory result) = address(this).delegatecall(data[i]);
 
             if (!success) {
+                // Handle custom errors
+                if (result.length == 4) {
+                    assembly {
+                        revert(add(result, 0x20), mload(result))
+                    }
+                }
                 // Next 5 lines from https://ethereum.stackexchange.com/a/83577
                 if (result.length < 68) revert();
                 assembly {
@@ -139,6 +139,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
             results[i] = result;
         }
     }
+}
 
     // --- View Methods ---
     /// @inheritdoc ICentrifugeRouter
