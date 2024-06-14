@@ -19,6 +19,7 @@ contract CentrifugeRouterTest is BaseTest {
         gatewayV2.file("routers", testRouters);
         gatewayV2.rely(address(investmentManager));
         gateway.rely(address(root));
+        mockedGasService.setReturn("shouldRefuel", true);
         payable(address(gatewayV2)).transfer(GATEWAY_TOPUP_VALUE);
 
         root.relyContract(address(investmentManager), address(this));
