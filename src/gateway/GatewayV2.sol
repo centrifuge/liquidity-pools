@@ -241,8 +241,7 @@ contract GatewayV2 is Auth, IGatewayV2 {
     // --- Outgoing ---
 
     /// @inheritdoc IGatewayV2
-    function send(bytes calldata data) public payable auth {
-        (address source, bytes memory message) = abi.decode(data, (address, bytes));
+    function send(bytes calldata message, address source) public payable auth {
         bytes memory proof = abi.encodePacked(uint8(MessagesLib.Call.MessageProof), keccak256(message));
 
         uint256 numRouters = routers.length;

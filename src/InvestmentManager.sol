@@ -15,7 +15,7 @@ import {IInvestmentManager, InvestmentState} from "src/interfaces/IInvestmentMan
 import "forge-std/console.sol";
 
 interface GatewayLike {
-    function send(bytes memory message) external;
+    function send(bytes memory message, address source) external;
 }
 
 interface TrancheTokenLike is IERC20 {
@@ -105,8 +105,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
         require(state.pendingCancelDepositRequest != true, "InvestmentManager/cancellation-is-pending");
 
         state.pendingDepositRequest = state.pendingDepositRequest + _assets;
-        _send(
-            source,
+        gateway.send(
             abi.encodePacked(
                 uint8(MessagesLib.Call.IncreaseInvestOrder),
                 poolId,
@@ -114,7 +113,8 @@ contract InvestmentManager is Auth, IInvestmentManager {
                 receiver,
                 poolManager.assetToId(asset),
                 _assets
-            )
+            ),
+            source
         );
 
         return true;
@@ -150,8 +150,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
 
         state.pendingRedeemRequest = state.pendingRedeemRequest + shares;
 
-        _send(
-            source,
+        gateway.send(
             abi.encodePacked(
                 uint8(MessagesLib.Call.IncreaseRedeemOrder),
                 vault_.poolId(),
@@ -159,7 +158,8 @@ contract InvestmentManager is Auth, IInvestmentManager {
                 owner,
                 poolManager.assetToId(vault_.asset()),
                 shares
-            )
+            ),
+            source
         );
 
         return true;
@@ -173,15 +173,15 @@ contract InvestmentManager is Auth, IInvestmentManager {
         require(state.pendingCancelDepositRequest != true, "InvestmentManager/cancellation-is-pending");
         state.pendingCancelDepositRequest = true;
 
-        _send(
-            source,
+        gateway.send(
             abi.encodePacked(
                 uint8(MessagesLib.Call.CancelInvestOrder),
                 _vault.poolId(),
                 _vault.trancheId(),
                 owner.toBytes32(),
                 poolManager.assetToId(_vault.asset())
-            )
+            ),
+            source
         );
     }
 
@@ -198,15 +198,15 @@ contract InvestmentManager is Auth, IInvestmentManager {
         require(state.pendingCancelRedeemRequest != true, "InvestmentManager/cancellation-is-pending");
         state.pendingCancelRedeemRequest = true;
 
-        _send(
-            source,
+        gateway.send(
             abi.encodePacked(
                 uint8(MessagesLib.Call.CancelRedeemOrder),
                 _vault.poolId(),
                 _vault.trancheId(),
                 owner.toBytes32(),
                 poolManager.assetToId(_vault.asset())
-            )
+            ),
+            source
         );
     }
 
@@ -639,9 +639,5 @@ contract InvestmentManager is Auth, IInvestmentManager {
     function _canTransfer(address vault, address from, address to, uint256 value) internal view returns (bool) {
         TrancheTokenLike share = TrancheTokenLike(VaultLike(vault).share());
         return share.checkTransferRestriction(from, to, value);
-    }
-
-    function _send(address source, bytes memory payload) internal {
-        gateway.send(abi.encode(source, payload));
     }
 }

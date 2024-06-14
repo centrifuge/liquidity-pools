@@ -82,7 +82,7 @@ interface IGatewayV2 {
     // --- Outgoing ---
     /// @dev Sends 1 message to the first router with the full message, and n-1 messages to the other routers with
     ///      proofs (hash of message). This ensures message uniqueness (can only be executed on the destination once).
-    function send(bytes calldata message) external payable;
+    function send(bytes calldata message, address source) external payable;
 
     // --- Helpers ---
     /// @notice TODO
