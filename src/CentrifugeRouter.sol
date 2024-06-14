@@ -11,12 +11,15 @@ import {ICentrifugeRouter} from "src/interfaces/ICentrifugeRouter.sol";
 import {IPoolManager} from "src/interfaces/IPoolManager.sol";
 
 contract CentrifugeRouter is Auth, ICentrifugeRouter {
+    address public immutable escrow;
+
     address public poolManager;
 
     /// @inheritdoc ICentrifugeRouter
     mapping(address controller => mapping(address vault => uint256 amount)) public lockedRequests;
 
-    constructor(address poolManager_) {
+    constructor(address escrow_, address poolManager_) {
+        escrow = escrow_
         poolManager = poolManager_;
 
         wards[msg.sender] = 1;
@@ -45,7 +48,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     /// @inheritdoc ICentrifugeRouter
     function lockDepositRequest(address vault, uint256 amount, address controller, address owner) external {
         require(owner == msg.sender || owner == address(this), "CentrifugeRouter/invalid-owner");
-        SafeTransferLib.safeTransferFrom(IERC7540(vault).asset(), owner, address(this), amount);
+        SafeTransferLib.safeTransferFrom(IERC7540(vault).asset(), owner, escrow, amount);
         lockedRequests[controller][vault] += amount;
         emit LockDepositRequest(vault, controller, amount);
     }
@@ -55,7 +58,10 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         uint256 lockedRequest = lockedRequests[msg.sender][vault];
         require(lockedRequest > 0, "CentrifugeRouter/user-has-no-locked-balance");
         lockedRequests[msg.sender][vault] = 0;
-        SafeTransferLib.safeTransfer(IERC7540(vault).asset(), msg.sender, lockedRequest);
+
+        escrow.approve(asset, address(investmentManager), type(uint256).max);
+        SafeTransferLib.safeTransferFrom(IERC7540(vault).asset(), msg.sender, lockedRequest);
+        
         emit UnlockDepositRequest(vault, msg.sender);
     }
 
