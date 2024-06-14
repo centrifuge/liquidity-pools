@@ -97,7 +97,7 @@ contract DepositTest is BaseTest {
         vm.assume(randomUser != self);
         // deposit 50% of the amount
         vm.startPrank(randomUser); // try to claim deposit on behalf of user and set the wrong user as receiver
-        vm.expectRevert(bytes("ERC7540Vault/invalid-owner"));
+        vm.expectRevert(bytes("ERC7540Vault/invalid-controller"));
         vault.deposit(amount / 2, randomUser, self);
         vm.stopPrank();
 
@@ -381,7 +381,7 @@ contract DepositTest is BaseTest {
         address router = makeAddr("router");
 
         vm.startPrank(router);
-        vm.expectRevert(bytes("ERC7540Vault/invalid-owner")); // fail without endorsement
+        vm.expectRevert(bytes("ERC7540Vault/invalid-controller")); // fail without endorsement
         vault.deposit(amount, receiver, address(this));
         vm.stopPrank();
 
@@ -396,7 +396,7 @@ contract DepositTest is BaseTest {
         assertApproxEqAbs(trancheToken.balanceOf(address(escrow)), 0, 1);
         assertApproxEqAbs(erc20.balanceOf(address(escrow)), amount, 1);
     }
-    
+
     function testDepositAndRedeemPrecision(uint64 poolId, bytes16 trancheId, uint128 assetId) public {
         vm.assume(assetId > 0);
 

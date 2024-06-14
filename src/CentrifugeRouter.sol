@@ -4,9 +4,9 @@ pragma solidity 0.8.21;
 import {Auth} from "src/Auth.sol";
 import {MathLib} from "src/libraries/MathLib.sol";
 import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
-import {IERC7540} from "src/interfaces/IERC7540.sol";
 import {IERC20, IERC20Permit, IERC20Wrapper} from "src/interfaces/IERC20.sol";
 import {IMulticall} from "src/interfaces/IMulticall.sol";
+import {IERC7540Vault} from "src/interfaces/IERC7540.sol";
 import {ICentrifugeRouter} from "src/interfaces/ICentrifugeRouter.sol";
 import {IPoolManager} from "src/interfaces/IPoolManager.sol";
 
@@ -19,7 +19,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     mapping(address controller => mapping(address vault => uint256 amount)) public lockedRequests;
 
     constructor(address escrow_, address poolManager_) {
-        escrow = escrow_
+        escrow = escrow_;
         poolManager = poolManager_;
 
         wards[msg.sender] = 1;
@@ -42,13 +42,13 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     // --- Deposit ---
     /// @inheritdoc ICentrifugeRouter
     function requestDeposit(address vault, uint256 amount, address controller, address owner) public {
-        IERC7540(vault).requestDeposit(amount, controller, owner);
+        IERC7540Vault(vault).requestDeposit(amount, controller, owner);
     }
 
     /// @inheritdoc ICentrifugeRouter
     function lockDepositRequest(address vault, uint256 amount, address controller, address owner) external {
         require(owner == msg.sender || owner == address(this), "CentrifugeRouter/invalid-owner");
-        SafeTransferLib.safeTransferFrom(IERC7540(vault).asset(), owner, escrow, amount);
+        SafeTransferLib.safeTransferFrom(IERC7540Vault(vault).asset(), owner, address(this), amount);
         lockedRequests[controller][vault] += amount;
         emit LockDepositRequest(vault, controller, amount);
     }
@@ -58,10 +58,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         uint256 lockedRequest = lockedRequests[msg.sender][vault];
         require(lockedRequest > 0, "CentrifugeRouter/user-has-no-locked-balance");
         lockedRequests[msg.sender][vault] = 0;
-
-        escrow.approve(asset, address(investmentManager), type(uint256).max);
-        SafeTransferLib.safeTransferFrom(IERC7540(vault).asset(), msg.sender, lockedRequest);
-        
+        SafeTransferLib.safeTransfer(IERC7540Vault(vault).asset(), msg.sender, lockedRequest);
         emit UnlockDepositRequest(vault, msg.sender);
     }
 
@@ -71,29 +68,29 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         uint256 lockedRequest = lockedRequests[controller][vault];
         require(lockedRequest > 0, "CentrifugeRouter/controller-has-no-balance");
 
-        SafeTransferLib.safeApprove(IERC7540(vault).asset(), vault, lockedRequest);
+        SafeTransferLib.safeApprove(IERC7540Vault(vault).asset(), vault, lockedRequest);
         lockedRequests[controller][vault] = 0;
 
-        IERC7540(vault).requestDeposit(lockedRequest, controller, address(this));
+        IERC7540Vault(vault).requestDeposit(lockedRequest, controller, address(this));
         emit ExecuteLockedDepositRequest(vault, controller);
     }
 
     /// @inheritdoc ICentrifugeRouter
     function claimDeposit(address vault, address receiver, address controller) external {
-        uint256 maxDeposit = IERC7540(vault).maxDeposit(controller);
-        IERC7540(vault).deposit(maxDeposit, receiver, controller);
+        uint256 maxDeposit = IERC7540Vault(vault).maxDeposit(controller);
+        IERC7540Vault(vault).deposit(maxDeposit, receiver, controller);
     }
 
     // --- Redeem ---
     /// @inheritdoc ICentrifugeRouter
     function requestRedeem(address vault, uint256 amount, address controller, address owner) external {
-        IERC7540(vault).requestRedeem(amount, controller, owner);
+        IERC7540Vault(vault).requestRedeem(amount, controller, owner);
     }
 
     /// @inheritdoc ICentrifugeRouter
     function claimRedeem(address vault, address receiver, address controller) external {
-        uint256 maxRedeem = IERC7540(vault).maxRedeem(controller);
-        IERC7540(vault).redeem(maxRedeem, receiver, controller);
+        uint256 maxRedeem = IERC7540Vault(vault).maxRedeem(controller);
+        IERC7540Vault(vault).redeem(maxRedeem, receiver, controller);
     }
 
     // --- ERC20 permits ---
