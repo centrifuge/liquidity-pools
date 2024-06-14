@@ -45,4 +45,9 @@ contract GasService is IGasService, Auth {
         }
         return messageCost.mulDiv(price, 10 ** 18, MathLib.Rounding.Up);
     }
+
+    /// @inheritdoc IGasService
+    function shouldRefuel(address, bytes calldata) public view returns (bool) {
+        return true;
+    }
 }

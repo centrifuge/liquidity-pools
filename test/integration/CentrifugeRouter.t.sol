@@ -10,6 +10,7 @@ import {CentrifugeRouter} from "src/CentrifugeRouter.sol";
 
 contract CentrifugeRouterTest is BaseTest {
     GatewayV2 gatewayV2;
+    uint256 constant GATEWAY_TOPUP_VALUE = 1 ether;
 
     function setUp() public override {
         super.setUp();
@@ -18,6 +19,7 @@ contract CentrifugeRouterTest is BaseTest {
         gatewayV2.file("routers", testRouters);
         gatewayV2.rely(address(investmentManager));
         gateway.rely(address(root));
+        payable(address(gatewayV2)).transfer(GATEWAY_TOPUP_VALUE);
 
         root.relyContract(address(investmentManager), address(this));
         investmentManager.file("gateway", address(gatewayV2));
@@ -55,7 +57,7 @@ contract CentrifugeRouterTest is BaseTest {
         erc20.approve(vault_, amount); // grant approval to cfg router
         centrifugeRouter.requestDeposit{value: gas}(vault_, amount, gas);
 
-        assertEq(address(gatewayV2).balance, GAS_BUFFER);
+        assertEq(address(gatewayV2).balance, GATEWAY_TOPUP_VALUE + GAS_BUFFER);
 
         for (uint8 i; i < testRouters.length; i++) {
             MockRouter router = MockRouter(testRouters[i]);

@@ -774,12 +774,15 @@ contract DepositTest is BaseTest {
 
         // check message was send out to centchain
         vault.cancelDepositRequest(0, self);
-        bytes memory cancelOrderMessage = abi.encodePacked(
-            uint8(MessagesLib.Call.CancelInvestOrder),
-            vault.poolId(),
-            vault.trancheId(),
-            bytes32(bytes20(self)),
-            defaultAssetId
+        bytes memory cancelOrderMessage = abi.encode(
+            address(this),
+            abi.encodePacked(
+                uint8(MessagesLib.Call.CancelInvestOrder),
+                vault.poolId(),
+                vault.trancheId(),
+                bytes32(bytes20(self)),
+                defaultAssetId
+            )
         );
         assertEq(cancelOrderMessage, router1.values_bytes("send"));
 

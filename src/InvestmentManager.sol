@@ -82,7 +82,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
 
     // --- Outgoing message handling ---
     /// @inheritdoc IInvestmentManager
-    function requestDeposit(address vault, uint256 assets, address receiver, address owner)
+    function requestDeposit(address vault, uint256 assets, address receiver, address owner, address source)
         public
         auth
         returns (bool)
@@ -105,16 +105,17 @@ contract InvestmentManager is Auth, IInvestmentManager {
         require(state.pendingCancelDepositRequest != true, "InvestmentManager/cancellation-is-pending");
 
         state.pendingDepositRequest = state.pendingDepositRequest + _assets;
-        console.log("IM/sending...");
-        console.log("GW address: ", address(gateway));
         gateway.send(
-            abi.encodePacked(
-                uint8(MessagesLib.Call.IncreaseInvestOrder),
-                poolId,
-                vault_.trancheId(),
-                receiver,
-                poolManager.assetToId(asset),
-                _assets
+            abi.encode(
+                source,
+                abi.encodePacked(
+                    uint8(MessagesLib.Call.IncreaseInvestOrder),
+                    poolId,
+                    vault_.trancheId(),
+                    receiver,
+                    poolManager.assetToId(asset),
+                    _assets
+                )
             )
         );
 
@@ -122,7 +123,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
     }
 
     /// @inheritdoc IInvestmentManager
-    function requestRedeem(address vault, uint256 shares, address receiver, /* owner */ address)
+    function requestRedeem(address vault, uint256 shares, address receiver, /* owner */ address, address source)
         public
         auth
         returns (bool)
@@ -138,10 +139,13 @@ contract InvestmentManager is Auth, IInvestmentManager {
             _canTransfer(vault, receiver, address(escrow), convertToAssets(vault, shares)),
             "InvestmentManager/transfer-not-allowed"
         );
-        return _processRedeemRequest(vault, _shares, receiver);
+        return _processRedeemRequest(vault, _shares, receiver, source);
     }
 
-    function _processRedeemRequest(address vault, uint128 shares, address owner) internal returns (bool) {
+    function _processRedeemRequest(address vault, uint128 shares, address owner, address source)
+        internal
+        returns (bool)
+    {
         VaultLike vault_ = VaultLike(vault);
         InvestmentState storage state = investments[vault][owner];
         require(state.pendingCancelRedeemRequest != true, "InvestmentManager/cancellation-is-pending");
@@ -149,13 +153,16 @@ contract InvestmentManager is Auth, IInvestmentManager {
         state.pendingRedeemRequest = state.pendingRedeemRequest + shares;
 
         gateway.send(
-            abi.encodePacked(
-                uint8(MessagesLib.Call.IncreaseRedeemOrder),
-                vault_.poolId(),
-                vault_.trancheId(),
-                owner,
-                poolManager.assetToId(vault_.asset()),
-                shares
+            abi.encode(
+                source,
+                abi.encodePacked(
+                    uint8(MessagesLib.Call.IncreaseRedeemOrder),
+                    vault_.poolId(),
+                    vault_.trancheId(),
+                    owner,
+                    poolManager.assetToId(vault_.asset()),
+                    shares
+                )
             )
         );
 
@@ -163,7 +170,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
     }
 
     /// @inheritdoc IInvestmentManager
-    function cancelDepositRequest(address vault, address owner) public auth {
+    function cancelDepositRequest(address vault, address owner, address source) public auth {
         VaultLike _vault = VaultLike(vault);
 
         InvestmentState storage state = investments[vault][owner];
@@ -171,18 +178,21 @@ contract InvestmentManager is Auth, IInvestmentManager {
         state.pendingCancelDepositRequest = true;
 
         gateway.send(
-            abi.encodePacked(
-                uint8(MessagesLib.Call.CancelInvestOrder),
-                _vault.poolId(),
-                _vault.trancheId(),
-                owner.toBytes32(),
-                poolManager.assetToId(_vault.asset())
+            abi.encode(
+                source,
+                abi.encodePacked(
+                    uint8(MessagesLib.Call.CancelInvestOrder),
+                    _vault.poolId(),
+                    _vault.trancheId(),
+                    owner.toBytes32(),
+                    poolManager.assetToId(_vault.asset())
+                )
             )
         );
     }
 
     /// @inheritdoc IInvestmentManager
-    function cancelRedeemRequest(address vault, address owner) public auth {
+    function cancelRedeemRequest(address vault, address owner, address source) public auth {
         VaultLike _vault = VaultLike(vault);
         uint256 approximateTrancheTokensPayout = pendingRedeemRequest(vault, owner);
         require(
@@ -195,12 +205,15 @@ contract InvestmentManager is Auth, IInvestmentManager {
         state.pendingCancelRedeemRequest = true;
 
         gateway.send(
-            abi.encodePacked(
-                uint8(MessagesLib.Call.CancelRedeemOrder),
-                _vault.poolId(),
-                _vault.trancheId(),
-                owner.toBytes32(),
-                poolManager.assetToId(_vault.asset())
+            abi.encode(
+                source,
+                abi.encodePacked(
+                    uint8(MessagesLib.Call.CancelRedeemOrder),
+                    _vault.poolId(),
+                    _vault.trancheId(),
+                    owner.toBytes32(),
+                    poolManager.assetToId(_vault.asset())
+                )
             )
         );
     }
@@ -383,7 +396,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
             state.maxMint = 0;
         }
 
-        require(_processRedeemRequest(vault, shares, user), "InvestmentManager/failed-redeem-request");
+        require(_processRedeemRequest(vault, shares, user, msg.sender), "InvestmentManager/failed-redeem-request");
 
         // Transfer the tranche token amount that was not covered by tokens still in escrow for claims,
         // from user to escrow (lock tranche tokens in escrow)

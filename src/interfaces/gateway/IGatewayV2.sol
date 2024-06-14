@@ -33,6 +33,15 @@ interface IGatewayV2 {
         address router;
     }
 
+    struct Metadata {
+        address source;
+    }
+
+    struct Transaction {
+        address source;
+        bytes message;
+    }
+
     // --- Events ---
     event HandleMessage(bytes message, address router);
     event HandleProof(bytes32 messageHash, address router);
