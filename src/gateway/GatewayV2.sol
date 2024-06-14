@@ -148,7 +148,7 @@ contract GatewayV2 is Auth, IGatewayV2 {
         bool isMessageProof = call == MessagesLib.Call.MessageProof;
         if (router.quorum == 1 && !isMessageProof) {
             // Special case for gas efficiency
-            dispatch(payload);
+            _dispatch(payload);
             emit ExecuteMessage(payload, routerAddr);
             return;
         }
@@ -182,9 +182,9 @@ contract GatewayV2 is Auth, IGatewayV2 {
 
             // Handle message
             if (isMessageProof) {
-                dispatch(state.pendingMessage);
+                _dispatch(state.pendingMessage);
             } else {
-                dispatch(payload);
+                _dispatch(payload);
             }
 
             // Only if there are no more pending messages, remove the pending message
@@ -321,7 +321,7 @@ contract GatewayV2 is Auth, IGatewayV2 {
         }
     }
 
-    function dispatch(bytes memory message) internal {
+    function _dispatch(bytes memory message) internal {
         uint8 id = message.toUint8(0);
         address manager;
 
