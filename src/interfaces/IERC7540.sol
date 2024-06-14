@@ -4,7 +4,7 @@ pragma solidity >=0.5.0;
 import {IERC7575} from "src/interfaces/IERC7575.sol";
 
 interface IERC7540Operator {
-     /**
+    /**
      * @dev The event emitted when an operator is set.
      *
      * @param controller The address of the controller.

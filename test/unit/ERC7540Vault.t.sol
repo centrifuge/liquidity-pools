@@ -103,9 +103,10 @@ contract ERC7540VaultTest is BaseTest {
         bytes4 ercAuthorizeOperator = 0x6f72fac5;
 
         vm.assume(
-            unsupportedInterfaceId != erc165 && unsupportedInterfaceId != erc7575Vault && unsupportedInterfaceId != erc7540Operator && unsupportedInterfaceId != erc7540Deposit && unsupportedInterfaceId != erc7540Redeem
-                && unsupportedInterfaceId != erc7540CancelDeposit && unsupportedInterfaceId != erc7540CancelRedeem
-                && unsupportedInterfaceId != ercAuthorizeOperator
+            unsupportedInterfaceId != erc165 && unsupportedInterfaceId != erc7575Vault
+                && unsupportedInterfaceId != erc7540Operator && unsupportedInterfaceId != erc7540Deposit
+                && unsupportedInterfaceId != erc7540Redeem && unsupportedInterfaceId != erc7540CancelDeposit
+                && unsupportedInterfaceId != erc7540CancelRedeem && unsupportedInterfaceId != ercAuthorizeOperator
         );
 
         address vault_ = deploySimpleVault();
