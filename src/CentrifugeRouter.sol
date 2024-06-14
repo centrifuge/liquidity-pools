@@ -65,7 +65,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         uint256 lockedRequest = lockedRequests[controller][vault];
         require(lockedRequest > 0, "CentrifugeRouter/controller-has-no-balance");
 
-        SafeTransferLib.safeApprove(IERC7540(vault).asset(), address(this), lockedRequest);
+        SafeTransferLib.safeApprove(IERC7540(vault).asset(), vault, lockedRequest);
         lockedRequests[controller][vault] = 0;
 
         IERC7540(vault).requestDeposit(lockedRequest, controller, address(this));
