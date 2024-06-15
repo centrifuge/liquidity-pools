@@ -10,6 +10,10 @@ import {IERC7540Vault} from "src/interfaces/IERC7540.sol";
 import {ICentrifugeRouter} from "src/interfaces/ICentrifugeRouter.sol";
 import {IPoolManager} from "src/interfaces/IPoolManager.sol";
 
+interface EscrowLike {
+    function approve(address token, address spender, uint256 value) external;
+}
+
 contract CentrifugeRouter is Auth, ICentrifugeRouter {
     address public immutable escrow;
 
@@ -48,7 +52,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     /// @inheritdoc ICentrifugeRouter
     function lockDepositRequest(address vault, uint256 amount, address controller, address owner) external {
         require(owner == msg.sender || owner == address(this), "CentrifugeRouter/invalid-owner");
-        SafeTransferLib.safeTransferFrom(IERC7540Vault(vault).asset(), owner, address(this), amount);
+        SafeTransferLib.safeTransferFrom(IERC7540Vault(vault).asset(), owner, escrow, amount);
         lockedRequests[controller][vault] += amount;
         emit LockDepositRequest(vault, controller, amount);
     }
@@ -58,7 +62,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         uint256 lockedRequest = lockedRequests[msg.sender][vault];
         require(lockedRequest > 0, "CentrifugeRouter/user-has-no-locked-balance");
         lockedRequests[msg.sender][vault] = 0;
-        SafeTransferLib.safeTransfer(IERC7540Vault(vault).asset(), msg.sender, lockedRequest);
+        SafeTransferLib.safeTransferFrom(IERC7540Vault(vault).asset(), escrow, msg.sender, lockedRequest);
         emit UnlockDepositRequest(vault, msg.sender);
     }
 
@@ -68,10 +72,10 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         uint256 lockedRequest = lockedRequests[controller][vault];
         require(lockedRequest > 0, "CentrifugeRouter/controller-has-no-balance");
 
-        SafeTransferLib.safeApprove(IERC7540Vault(vault).asset(), vault, lockedRequest);
+        EscrowLike(escrow).approve(IERC7540Vault(vault).asset(), vault, lockedRequest);
         lockedRequests[controller][vault] = 0;
 
-        IERC7540Vault(vault).requestDeposit(lockedRequest, controller, address(this));
+        IERC7540Vault(vault).requestDeposit(lockedRequest, controller, escrow);
         emit ExecuteLockedDepositRequest(vault, controller);
     }
 
@@ -91,6 +95,14 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     function claimRedeem(address vault, address receiver, address controller) external {
         uint256 maxRedeem = IERC7540Vault(vault).maxRedeem(controller);
         IERC7540Vault(vault).redeem(maxRedeem, receiver, controller);
+    }
+
+    // --- ERC20 approval ---
+    /// @inheritdoc ICentrifugeRouter
+    function approveMax(address token, address spender) external {
+        if (IERC20(token).allowance(address(this), spender) == 0) {
+            SafeTransferLib.safeApprove(token, spender, type(uint256).max);
+        }
     }
 
     // --- ERC20 permits ---

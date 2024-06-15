@@ -62,6 +62,7 @@ contract CentrifugeRoutertest is BaseTest {
         address randomAddress = address(0x123);
         vm.label(randomAddress, "randomAddress");
         vm.startPrank(randomAddress);
+        centrifugeRouter.approveMax(address(erc20), vault_);
         centrifugeRouter.executeLockedDepositRequest(vault_, address(this));
         vm.stopPrank();
 
@@ -202,8 +203,9 @@ contract CentrifugeRoutertest is BaseTest {
         centrifugeRouter.lockDepositRequest(vault_, amount, self, self);
 
         // multicall
-        bytes[] memory calls = new bytes[](1);
-        calls[0] = abi.encodeWithSelector(centrifugeRouter.executeLockedDepositRequest.selector, vault_, self);
+        bytes[] memory calls = new bytes[](2);
+        calls[0] = abi.encodeWithSelector(centrifugeRouter.approveMax.selector, address(erc20), vault_);
+        calls[1] = abi.encodeWithSelector(centrifugeRouter.executeLockedDepositRequest.selector, vault_, self);
         centrifugeRouter.multicall(calls);
 
         uint128 assetId = poolManager.assetToId(address(erc20));
@@ -294,10 +296,11 @@ contract CentrifugeRoutertest is BaseTest {
         erc20.approve(address(centrifugeRouter), amount);
 
         // multicall
-        bytes[] memory calls = new bytes[](2);
-        calls[0] =
+        bytes[] memory calls = new bytes[](3);
+        calls[0] = abi.encodeWithSelector(centrifugeRouter.approveMax.selector, address(erc20), address(wrapper));
+        calls[1] =
             abi.encodeWithSelector(centrifugeRouter.wrap.selector, address(wrapper), amount, address(centrifugeRouter));
-        calls[1] = abi.encodeWithSelector(
+        calls[2] = abi.encodeWithSelector(
             centrifugeRouter.requestDeposit.selector, vault_, amount, investor, address(centrifugeRouter)
         );
         centrifugeRouter.multicall(calls);
@@ -330,13 +333,14 @@ contract CentrifugeRoutertest is BaseTest {
         erc20.approve(address(centrifugeRouter), amount);
 
         // multicall
-        bytes[] memory calls = new bytes[](3);
-        calls[0] =
+        bytes[] memory calls = new bytes[](4);
+        calls[0] = abi.encodeWithSelector(centrifugeRouter.approveMax.selector, address(erc20), address(wrapper));
+        calls[1] =
             abi.encodeWithSelector(centrifugeRouter.wrap.selector, address(wrapper), amount, address(centrifugeRouter));
-        calls[1] = abi.encodeWithSelector(
+        calls[2] = abi.encodeWithSelector(
             centrifugeRouter.lockDepositRequest.selector, vault_, amount, investor, address(centrifugeRouter)
         );
-        calls[2] = abi.encodeWithSelector(centrifugeRouter.executeLockedDepositRequest.selector, vault_, investor);
+        calls[3] = abi.encodeWithSelector(centrifugeRouter.executeLockedDepositRequest.selector, vault_, investor);
         centrifugeRouter.multicall(calls);
 
         uint128 assetId = poolManager.assetToId(address(wrapper));

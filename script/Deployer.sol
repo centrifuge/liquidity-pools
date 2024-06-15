@@ -60,6 +60,7 @@ contract Deployer is Script {
 
         routerEscrow = new Escrow(deployer);
         centrifugeRouter = new CentrifugeRouter(address(routerEscrow), address(poolManager));
+        AuthLike(address(routerEscrow)).rely(address(centrifugeRouter));
         root.endorse(address(centrifugeRouter));
         root.endorse(address(escrow));
 
@@ -106,6 +107,7 @@ contract Deployer is Script {
         aggregator.rely(address(root));
         AuthLike(router).rely(address(root));
         AuthLike(address(escrow)).rely(address(root));
+        AuthLike(address(routerEscrow)).rely(address(root));
         AuthLike(address(escrow)).rely(address(poolManager));
     }
 
@@ -118,6 +120,7 @@ contract Deployer is Script {
         investmentManager.deny(deployer);
         poolManager.deny(deployer);
         escrow.deny(deployer);
+        routerEscrow.deny(deployer);
         gateway.deny(deployer);
         aggregator.deny(deployer);
         centrifugeRouter.deny(deployer);
