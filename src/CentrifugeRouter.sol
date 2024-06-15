@@ -46,6 +46,10 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     // --- Deposit ---
     /// @inheritdoc ICentrifugeRouter
     function requestDeposit(address vault, uint256 amount, address controller, address owner) public {
+        if (owner == address(this)) {
+            _approveMax(IERC7540Vault(vault).asset(), vault);
+        }
+
         IERC7540Vault(vault).requestDeposit(amount, controller, owner);
     }
 
@@ -67,15 +71,20 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     }
 
     /// @inheritdoc ICentrifugeRouter
-    /// @dev requires calling approveMax(asset, vault) before
     function executeLockedDepositRequest(address vault, address controller) external {
         uint256 lockedRequest = lockedRequests[controller][vault];
         require(lockedRequest > 0, "CentrifugeRouter/controller-has-no-balance");
-
-        EscrowLike(escrow).approve(IERC7540Vault(vault).asset(), vault, lockedRequest);
         lockedRequests[controller][vault] = 0;
 
-        IERC7540Vault(vault).requestDeposit(lockedRequest, controller, escrow);
+        address asset = IERC7540Vault(vault).asset();
+        EscrowLike(escrow).approve(asset, address(this), lockedRequest);
+
+        // TODO: we can either keep this, or remove it and call requestDeposit with owner=routerEscrow,
+        // but then routerEscrow needs to be endorsed as well
+        SafeTransferLib.safeTransferFrom(asset, escrow, address(this), lockedRequest);
+
+        _approveMax(asset, vault);
+        IERC7540Vault(vault).requestDeposit(lockedRequest, controller, address(this));
         emit ExecuteLockedDepositRequest(vault, controller);
     }
 
@@ -97,14 +106,6 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         IERC7540Vault(vault).redeem(maxRedeem, receiver, controller);
     }
 
-    // --- ERC20 approval ---
-    /// @inheritdoc ICentrifugeRouter
-    function approveMax(address token, address spender) external {
-        if (IERC20(token).allowance(address(this), spender) == 0) {
-            SafeTransferLib.safeApprove(token, spender, type(uint256).max);
-        }
-    }
-
     // --- ERC20 permits ---
     /// @inheritdoc ICentrifugeRouter
     function permit(address asset, uint256 assets, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external {
@@ -112,7 +113,6 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     }
 
     // --- ERC20 wrapping ---
-    /// @dev requires calling approveMax(underlying, wrapper) before
     function wrap(address wrapper, uint256 amount, address receiver) external {
         address underlying = IERC20Wrapper(wrapper).underlying();
 
@@ -120,7 +120,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         require(amount != 0, "CentrifugeRouter/zero-balance");
         SafeTransferLib.safeTransferFrom(underlying, msg.sender, address(this), amount);
 
-        SafeTransferLib.safeApprove(underlying, wrapper, amount);
+        _approveMax(underlying, wrapper);
         require(IERC20Wrapper(wrapper).depositFor(receiver, amount), "CentrifugeRouter/deposit-for-failed");
     }
 
@@ -162,5 +162,12 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     /// @inheritdoc ICentrifugeRouter
     function getVault(uint64 poolId, bytes16 trancheId, address asset) external view returns (address) {
         return IPoolManager(poolManager).getVault(poolId, trancheId, asset);
+    }
+
+    // --- Helpers ---
+    function _approveMax(address token, address spender) internal {
+        if (IERC20(token).allowance(address(this), spender) == 0) {
+            SafeTransferLib.safeApprove(token, spender, type(uint256).max);
+        }
     }
 }
