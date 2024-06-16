@@ -45,7 +45,8 @@ interface ICentrifugeRouter is IMulticall {
 
     // --- ERC20 permit ---
     /// @notice TODO
-    function permit(address asset, address spender, uint256 assets, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external;
+    function permit(address asset, address spender, uint256 assets, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
+        external;
 
     // --- ERC20 wrapping ---
     /// @notice TODO
