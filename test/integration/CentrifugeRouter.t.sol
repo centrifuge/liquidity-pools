@@ -291,6 +291,7 @@ contract CentrifugeRoutertest is BaseTest {
 
         erc20.mint(investor, amount);
         vm.startPrank(investor);
+        // TODO: use permit instead of approve, to show this is also possible
         erc20.approve(address(centrifugeRouter), amount);
 
         // multicall

@@ -108,8 +108,10 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
 
     // --- ERC20 permits ---
     /// @inheritdoc ICentrifugeRouter
-    function permit(address asset, uint256 assets, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external {
-        try IERC20Permit(asset).permit(msg.sender, address(this), assets, deadline, v, r, s) {} catch {}
+    function permit(address asset, address spender, uint256 assets, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
+        external
+    {
+        try IERC20Permit(asset).permit(msg.sender, spender, assets, deadline, v, r, s) {} catch {}
     }
 
     // --- ERC20 wrapping ---
