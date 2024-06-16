@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity >=0.5.0;
 
-import {IMulticall} from "src/interfaces/IMulticall.sol";
-
-interface ICentrifugeRouter is IMulticall {
+interface ICentrifugeRouter {
     // --- Events ---
     event LockDepositRequest(address indexed vault, address indexed user, uint256 amount);
     event UnlockDepositRequest(address indexed vault, address indexed user);
@@ -54,6 +52,10 @@ interface ICentrifugeRouter is IMulticall {
 
     /// @notice TODO
     function unwrap(address wrapper, uint256 amount, address receiver) external;
+
+    // --- Batching ---
+    /// @notice TODO
+    function multicall(bytes[] memory data) external payable;
 
     // --- View Methods ---
     /// @notice TODO

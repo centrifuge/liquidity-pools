@@ -5,7 +5,6 @@ import {Auth} from "src/Auth.sol";
 import {MathLib} from "src/libraries/MathLib.sol";
 import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 import {IERC20, IERC20Permit, IERC20Wrapper} from "src/interfaces/IERC20.sol";
-import {IMulticall} from "src/interfaces/IMulticall.sol";
 import {IERC7540Vault} from "src/interfaces/IERC7540.sol";
 import {ICentrifugeRouter} from "src/interfaces/ICentrifugeRouter.sol";
 import {IPoolManager} from "src/interfaces/IPoolManager.sol";
@@ -19,6 +18,9 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
 
     address public poolManager;
 
+    address constant UNSET_INITIATOR = address(1);
+    address internal _initiator = UNSET_INITIATOR;
+
     /// @inheritdoc ICentrifugeRouter
     mapping(address controller => mapping(address vault => uint256 amount)) public lockedRequests;
 
@@ -28,6 +30,12 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
 
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
+    }
+
+    modifier protected() {
+        require(_initiator != UNSET_INITIATOR, "CentrifugeRouter/uninitiated");
+        require(msg.sender == _initiator, "CentrifugeRouter/unauthorized-sender");
+        _;
     }
 
     // --- Administration ---
@@ -55,7 +63,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
 
     /// @inheritdoc ICentrifugeRouter
     function lockDepositRequest(address vault, uint256 amount, address controller, address owner) external {
-        require(owner == msg.sender || owner == address(this), "CentrifugeRouter/invalid-owner");
+        require(owner == _initiator || owner == address(this), "CentrifugeRouter/invalid-owner");
         SafeTransferLib.safeTransferFrom(IERC7540Vault(vault).asset(), owner, escrow, amount);
         lockedRequests[controller][vault] += amount;
         emit LockDepositRequest(vault, controller, amount);
@@ -63,11 +71,11 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
 
     /// @inheritdoc ICentrifugeRouter
     function unlockDepositRequest(address vault) external {
-        uint256 lockedRequest = lockedRequests[msg.sender][vault];
+        uint256 lockedRequest = lockedRequests[_initiator][vault];
         require(lockedRequest > 0, "CentrifugeRouter/user-has-no-locked-balance");
-        lockedRequests[msg.sender][vault] = 0;
-        SafeTransferLib.safeTransferFrom(IERC7540Vault(vault).asset(), escrow, msg.sender, lockedRequest);
-        emit UnlockDepositRequest(vault, msg.sender);
+        lockedRequests[_initiator][vault] = 0;
+        SafeTransferLib.safeTransferFrom(IERC7540Vault(vault).asset(), escrow, _initiator, lockedRequest);
+        emit UnlockDepositRequest(vault, _initiator);
     }
 
     /// @inheritdoc ICentrifugeRouter
@@ -111,16 +119,16 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     function permit(address asset, address spender, uint256 assets, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
         external
     {
-        try IERC20Permit(asset).permit(msg.sender, spender, assets, deadline, v, r, s) {} catch {}
+        try IERC20Permit(asset).permit(_initiator, spender, assets, deadline, v, r, s) {} catch {}
     }
 
     // --- ERC20 wrapping ---
     function wrap(address wrapper, uint256 amount, address receiver) external {
         address underlying = IERC20Wrapper(wrapper).underlying();
 
-        amount = MathLib.min(amount, IERC20(underlying).balanceOf(msg.sender));
+        amount = MathLib.min(amount, IERC20(underlying).balanceOf(_initiator));
         require(amount != 0, "CentrifugeRouter/zero-balance");
-        SafeTransferLib.safeTransferFrom(underlying, msg.sender, address(this), amount);
+        SafeTransferLib.safeTransferFrom(underlying, _initiator, address(this), amount);
 
         _approveMax(underlying, wrapper);
         require(IERC20Wrapper(wrapper).depositFor(receiver, amount), "CentrifugeRouter/deposit-for-failed");
@@ -135,29 +143,23 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     }
 
     // --- Batching ---
-    /// @inheritdoc IMulticall
-    function multicall(bytes[] calldata data) public payable returns (bytes[] memory results) {
-        results = new bytes[](data.length);
-        for (uint256 i = 0; i < data.length; i++) {
-            (bool success, bytes memory result) = address(this).delegatecall(data[i]);
+    /// @inheritdoc ICentrifugeRouter
+    function multicall(bytes[] memory data) external payable {
+        require(_initiator == UNSET_INITIATOR, "CentrifugeRouter/already-initiated");
 
+        _initiator = msg.sender;
+        for (uint256 i; i < data.length; ++i) {
+            (bool success, bytes memory returnData) = address(this).delegatecall(data[i]);
             if (!success) {
-                // Handle custom errors
-                if (result.length == 4) {
-                    assembly {
-                        revert(add(result, 0x20), mload(result))
-                    }
-                }
-                // Next 5 lines from https://ethereum.stackexchange.com/a/83577
-                if (result.length < 68) revert();
-                assembly {
-                    result := add(result, 0x04)
-                }
-                revert(abi.decode(result, (string)));
-            }
+                uint256 length = returnData.length;
+                require(length > 0, "CentrifugeRouter/call-failed");
 
-            results[i] = result;
+                assembly ("memory-safe") {
+                    revert(add(32, returnData), length)
+                }
+            }
         }
+        _initiator = UNSET_INITIATOR;
     }
 
     // --- View Methods ---
@@ -167,6 +169,8 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     }
 
     // --- Helpers ---
+    /// @dev Gives the max approval to `to` to spend the given `asset` if not already approved.
+    /// @dev Assumes that `type(uint256).max` is large enough to never have to increase the allowance again.
     function _approveMax(address token, address spender) internal {
         if (IERC20(token).allowance(address(this), spender) == 0) {
             SafeTransferLib.safeApprove(token, spender, type(uint256).max);
