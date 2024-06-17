@@ -45,7 +45,7 @@ interface IInvestmentManager {
     ///         proceed with tranche token payouts in case their orders got fulfilled.
     /// @dev    The user asset amount required to fulfill the deposit request have to be locked,
     ///         even though the tranche token payout can only happen after epoch execution.
-    function requestDeposit(address vault, uint256 assets, address receiver, address owner, address souce)
+    function requestDeposit(address vault, uint256 assets, address receiver, address owner, address source)
         external
         returns (bool);
 
@@ -61,10 +61,10 @@ interface IInvestmentManager {
         returns (bool);
 
     /// @notice TODO
-    function cancelDepositRequest(address vault, address owner) external;
+    function cancelDepositRequest(address vault, address owner, address source) external;
 
     /// @notice TODO
-    function cancelRedeemRequest(address vault, address owner) external;
+    function cancelRedeemRequest(address vault, address owner, address source) external;
 
     // --- Incoming message handling ---
     /// @notice TODO

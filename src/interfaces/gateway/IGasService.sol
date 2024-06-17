@@ -31,4 +31,10 @@ interface IGasService {
     /// @param payload - Estimates the execution cost based on the payload.abi
     /// @return Estimated cost in WEI units
     function estimate(bytes calldata payload) external returns (uint256);
+
+    /// Used to verify if given user for a given message can take advantage of
+    /// transaction cost prepayment.
+    /// @param source Source that triggered the transaction
+    /// @param payload The message that is going to be send
+    function shouldRefuel(address source, bytes calldata payload) external view returns (bool);
 }

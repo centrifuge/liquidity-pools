@@ -149,7 +149,7 @@ contract ERC7540Vault is Auth, IERC7540 {
     /// @inheritdoc IERC7540CancelDeposit
     function cancelDepositRequest(uint256, address owner) external {
         validateOwner(owner);
-        manager.cancelDepositRequest(address(this), owner);
+        manager.cancelDepositRequest(address(this), owner, msg.sender);
         emit CancelDepositRequest(owner, REQUEST_ID, msg.sender);
     }
 
@@ -173,7 +173,7 @@ contract ERC7540Vault is Auth, IERC7540 {
     /// @inheritdoc IERC7540CancelRedeem
     function cancelRedeemRequest(uint256, address owner) external {
         validateOwner(owner);
-        manager.cancelRedeemRequest(address(this), owner);
+        manager.cancelRedeemRequest(address(this), owner, msg.sender);
         emit CancelRedeemRequest(owner, REQUEST_ID, msg.sender);
     }
 

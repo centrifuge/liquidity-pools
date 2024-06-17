@@ -24,7 +24,7 @@ interface ICentrifugeRouter {
 
     // --- Deposit ---
     /// @notice TODO
-    function requestDeposit(address vault, uint256 amount) external payable;
+    function requestDeposit(address vault, uint256 amount, uint256 topUp) external payable;
 
     /// @notice TODO
     function lockDepositRequest(address vault, uint256 amount) external;
