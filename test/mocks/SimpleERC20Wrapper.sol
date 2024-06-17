@@ -4,7 +4,6 @@ pragma solidity 0.8.21;
 import {ERC20} from "src/token/ERC20.sol";
 import {IERC20Wrapper, IERC20Metadata} from "src/interfaces/IERC20.sol";
 import "forge-std/Test.sol";
-import {console} from "forge-std/console.sol";
 
 contract SimpleERC20Wrapper is ERC20, IERC20Wrapper {
     address public underlying;
