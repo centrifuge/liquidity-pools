@@ -53,6 +53,10 @@ interface ICentrifugeRouter {
     /// @notice TODO
     function unwrap(address wrapper, uint256 amount, address receiver) external;
 
+    // --- Vault setup ---
+    /// @notice TODO
+    function registerVault(uint64 poolId, bytes16 trancheId, address asset) external;
+
     // --- Batching ---
     /// @notice TODO
     function multicall(bytes[] memory data) external payable;
