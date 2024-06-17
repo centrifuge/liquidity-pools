@@ -33,9 +33,16 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     }
 
     modifier protected() {
-        require(_initiator != UNSET_INITIATOR, "CentrifugeRouter/uninitiated");
-        require(msg.sender == _initiator, "CentrifugeRouter/unauthorized-sender");
-        _;
+        if (_initiator == UNSET_INITIATOR) {
+            // Single call re-entrancy lock
+            _initiator = msg.sender;
+            _;
+            _initiator = UNSET_INITIATOR;
+        } else {
+            // Multicall re-entrancy lock
+            require(msg.sender == _initiator, "CentrifugeRouter/unauthorized-sender");
+            _;
+        }
     }
 
     // --- Administration ---
@@ -53,7 +60,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
 
     // --- Deposit ---
     /// @inheritdoc ICentrifugeRouter
-    function requestDeposit(address vault, uint256 amount, address controller, address owner) public {
+    function requestDeposit(address vault, uint256 amount, address controller, address owner) external protected {
         if (owner == address(this)) {
             _approveMax(IERC7540Vault(vault).asset(), vault);
         }
@@ -62,7 +69,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     }
 
     /// @inheritdoc ICentrifugeRouter
-    function lockDepositRequest(address vault, uint256 amount, address controller, address owner) external {
+    function lockDepositRequest(address vault, uint256 amount, address controller, address owner) external protected {
         require(owner == _initiator || owner == address(this), "CentrifugeRouter/invalid-owner");
         SafeTransferLib.safeTransferFrom(IERC7540Vault(vault).asset(), owner, escrow, amount);
         lockedRequests[controller][vault] += amount;
@@ -70,7 +77,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     }
 
     /// @inheritdoc ICentrifugeRouter
-    function unlockDepositRequest(address vault) external {
+    function unlockDepositRequest(address vault) external protected {
         uint256 lockedRequest = lockedRequests[_initiator][vault];
         require(lockedRequest > 0, "CentrifugeRouter/user-has-no-locked-balance");
         lockedRequests[_initiator][vault] = 0;
@@ -79,7 +86,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     }
 
     /// @inheritdoc ICentrifugeRouter
-    function executeLockedDepositRequest(address vault, address controller) external {
+    function executeLockedDepositRequest(address vault, address controller) external protected {
         uint256 lockedRequest = lockedRequests[controller][vault];
         require(lockedRequest > 0, "CentrifugeRouter/controller-has-no-balance");
         lockedRequests[controller][vault] = 0;
@@ -97,19 +104,19 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     }
 
     /// @inheritdoc ICentrifugeRouter
-    function claimDeposit(address vault, address receiver, address controller) external {
+    function claimDeposit(address vault, address receiver, address controller) external protected {
         uint256 maxDeposit = IERC7540Vault(vault).maxDeposit(controller);
         IERC7540Vault(vault).deposit(maxDeposit, receiver, controller);
     }
 
     // --- Redeem ---
     /// @inheritdoc ICentrifugeRouter
-    function requestRedeem(address vault, uint256 amount, address controller, address owner) external {
+    function requestRedeem(address vault, uint256 amount, address controller, address owner) external protected {
         IERC7540Vault(vault).requestRedeem(amount, controller, owner);
     }
 
     /// @inheritdoc ICentrifugeRouter
-    function claimRedeem(address vault, address receiver, address controller) external {
+    function claimRedeem(address vault, address receiver, address controller) external protected {
         uint256 maxRedeem = IERC7540Vault(vault).maxRedeem(controller);
         IERC7540Vault(vault).redeem(maxRedeem, receiver, controller);
     }
@@ -118,12 +125,13 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     /// @inheritdoc ICentrifugeRouter
     function permit(address asset, address spender, uint256 assets, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
         external
+        protected
     {
         try IERC20Permit(asset).permit(_initiator, spender, assets, deadline, v, r, s) {} catch {}
     }
 
     // --- ERC20 wrapping ---
-    function wrap(address wrapper, uint256 amount, address receiver) external {
+    function wrap(address wrapper, uint256 amount, address receiver) external protected {
         address underlying = IERC20Wrapper(wrapper).underlying();
 
         amount = MathLib.min(amount, IERC20(underlying).balanceOf(_initiator));
@@ -134,7 +142,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         require(IERC20Wrapper(wrapper).depositFor(receiver, amount), "CentrifugeRouter/deposit-for-failed");
     }
 
-    function unwrap(address wrapper, uint256 amount, address receiver) external {
+    function unwrap(address wrapper, uint256 amount, address receiver) external protected {
         require(receiver != address(0), "CentrifugeRouter/zero-address");
         amount = MathLib.min(amount, IERC20(wrapper).balanceOf(address(this)));
         require(amount != 0, "CentrifugeRouter/zero-balance");
