@@ -3,7 +3,7 @@ pragma solidity ^0.8.18;
 
 import {MockCentrifugeChain} from "test/mocks/MockCentrifugeChain.sol";
 import {MathLib} from "src/libraries/MathLib.sol";
-import {IERC7540} from "src/interfaces/IERC7540.sol";
+import {IERC7540Vault} from "src/interfaces/IERC7540.sol";
 import {BaseHandler} from "test/invariant/handlers/BaseHandler.sol";
 
 interface ERC20Like {
@@ -12,7 +12,7 @@ interface ERC20Like {
     function balanceOf(address user) external view returns (uint256);
 }
 
-interface VaultLike is IERC7540 {
+interface VaultLike is IERC7540Vault {
     function share() external view returns (address);
     function manager() external view returns (address);
 }

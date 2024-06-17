@@ -4,11 +4,11 @@ pragma solidity 0.8.21;
 import {BaseTest} from "test/BaseTest.sol";
 import {InvestorHandler} from "test/invariant/handlers/Investor.sol";
 import {EpochExecutorHandler} from "test/invariant/handlers/EpochExecutor.sol";
-import {IERC7540} from "src/interfaces/IERC7540.sol";
+import {IERC7540Vault} from "src/interfaces/IERC7540.sol";
 import {IERC20} from "src/interfaces/IERC20.sol";
 import "forge-std/Test.sol";
 
-interface VaultLike is IERC7540 {
+interface VaultLike is IERC7540Vault {
     function asset() external view returns (address);
     function share() external view returns (address);
     function poolId() external view returns (uint64);
