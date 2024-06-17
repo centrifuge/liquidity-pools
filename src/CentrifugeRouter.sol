@@ -85,7 +85,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         address asset = IERC7540Vault(vault).asset();
         EscrowLike(escrow).approve(asset, address(this), lockedRequest);
 
-        SafeTransferLib.safeTransferFrom(IERC7540Vault(vault).asset(), escrow, _initiator, lockedRequest);
+        SafeTransferLib.safeTransferFrom(asset, escrow, _initiator, lockedRequest);
         emit UnlockDepositRequest(vault, _initiator);
     }
 
