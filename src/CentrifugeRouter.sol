@@ -97,9 +97,6 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
 
         address asset = IERC7540Vault(vault).asset();
         EscrowLike(escrow).approve(asset, address(this), lockedRequest);
-
-        // TODO: we can either keep this, or remove it and call requestDeposit with owner=routerEscrow,
-        // but then routerEscrow needs to be endorsed as well
         SafeTransferLib.safeTransferFrom(asset, escrow, address(this), lockedRequest);
 
         _approveMax(asset, vault);
