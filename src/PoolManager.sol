@@ -209,8 +209,8 @@ contract PoolManager is Auth, IPoolManager {
             unfreeze(message.toUint64(1), message.toBytes16(9), message.toAddress(25));
         } else if (call == MessagesLib.Call.DisallowAsset) {
             disallowAsset(message.toUint64(1), message.toUint128(9));
-        } else if (call == MessagesLib.Call.UpdateDestChainTokenPrice) {
-            updateDestChainTokenPrice(message.toUint256(1));
+        } else if (call == MessagesLib.Call.UpdateCentrifugeTokenPrice) {
+            updateCentrifugeTokenPrice(message.toUint256(1));
         } else {
             revert("PoolManager/invalid-message");
         }
@@ -473,7 +473,7 @@ contract PoolManager is Auth, IPoolManager {
         emit RemoveVault(poolId, trancheId, asset, vault);
     }
 
-    function updateDestChainTokenPrice(uint256 price) public auth {
+    function updateCentrifugeTokenPrice(uint256 price) public auth {
         require(price > 0, "PoolManager/price-cannot-be-zero");
         require(gasService.price() != price, "PoolManager/same-price-already-set");
         gasService.updatePrice(price);

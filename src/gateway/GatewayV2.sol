@@ -56,7 +56,7 @@ contract GatewayV2 is Auth, IGatewayV2 {
     mapping(bytes32 messageHash => Recovery) public recoveries;
     mapping(uint8 messageId => address manager) messageHandlers;
 
-    uint256 allowance;
+    uint256 quota;
 
     constructor(address root_, address investmentManager_, address poolManager_, address gasService_) {
         root = RootLike(root_);
@@ -239,25 +239,24 @@ contract GatewayV2 is Auth, IGatewayV2 {
     }
 
     // --- Outgoing ---
-
     /// @inheritdoc IGatewayV2
     function send(bytes calldata message, address source) public payable auth {
         bytes memory proof = abi.encodePacked(uint8(MessagesLib.Call.MessageProof), keccak256(message));
 
         uint256 numRouters = routers.length;
         require(numRouters > 0, "Gateway/routers-not-initialized");
-        uint256 fuel = allowance;
+        uint256 fuel = quota;
         uint256 tank = fuel > 0 ? fuel : gasService.shouldRefuel(source, message) ? address(this).balance : 0;
 
-        uint256 destChainMsgCost = gasService.estimate(message);
-        uint256 destChainProofCost = gasService.estimate(proof);
+        uint256 messageCost = gasService.estimate(message);
+        uint256 proofCost = gasService.estimate(proof);
 
         for (uint256 i; i < numRouters; i++) {
             RouterLike currentRouter = RouterLike(routers[i]);
             bool isPrimaryRouter = i == PRIMARY_ROUTER_ID - 1;
             bytes memory payload = isPrimaryRouter ? message : proof;
 
-            uint256 consumed = currentRouter.estimate(payload, isPrimaryRouter ? destChainMsgCost : destChainProofCost);
+            uint256 consumed = currentRouter.estimate(payload, isPrimaryRouter ? messageCost : proofCost);
             uint256 remaining;
             unchecked {
                 remaining = tank - consumed;
@@ -269,7 +268,7 @@ contract GatewayV2 is Auth, IGatewayV2 {
             currentRouter.send(payload);
         }
 
-        if (fuel > 0 && tank > 0) allowance = 0;
+        if (fuel > 0 && tank > 0) quota = 0;
 
         emit SendMessage(message);
     }
@@ -277,7 +276,7 @@ contract GatewayV2 is Auth, IGatewayV2 {
     function topUp() external payable {
         require(RootLike(root).endorsed(msg.sender), "Gateway/only-endorsed-can-topup");
         require(msg.value > 0, "Gateway/cannot-topup-with-nothing");
-        allowance = msg.value;
+        quota = msg.value;
     }
 
     // --- Helpers ---

@@ -12,11 +12,11 @@ contract GasService is IGasService, Auth {
     /// @inheritdoc IGasService
     uint256 public price;
     /// @inheritdoc IGasService
-    uint256 public messageCost;
-    /// @inheritdoc IGasService
     uint256 public proofCost;
+    /// @inheritdoc IGasService
+    uint256 public messageCost;
 
-    constructor(uint256 messageCost_, uint256 proofCost_, uint256 price_) {
+    constructor(uint256 price_, uint256 proofCost_, uint256 messageCost_) {
         messageCost = messageCost_;
         proofCost = proofCost_;
         price = price_;
@@ -24,8 +24,8 @@ contract GasService is IGasService, Auth {
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
     }
-    /// @inheritdoc IGasService
 
+    /// @inheritdoc IGasService
     function file(bytes32 what, uint256 value) external auth {
         if (what == "messageCost") messageCost = value;
         if (what == "proofCost") proofCost = value;
