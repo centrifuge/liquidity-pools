@@ -5,7 +5,7 @@ import "test/BaseTest.sol";
 import "src/interfaces/IERC7575.sol";
 import "src/interfaces/IERC7540.sol";
 import "src/interfaces/IERC20.sol";
-import {SimpleERC20Wrapper} from "test/mocks/SimpleERC20Wrapper.sol";
+import {MockERC20Wrapper} from "test/mocks/MockERC20Wrapper.sol";
 
 contract CentrifugeRoutertest is BaseTest {
     function testRouterDeposit(uint256 amount) public {
@@ -279,7 +279,7 @@ contract CentrifugeRoutertest is BaseTest {
         amount = uint128(bound(amount, 4, MAX_UINT128));
         vm.assume(amount % 2 == 0);
 
-        SimpleERC20Wrapper wrapper = new SimpleERC20Wrapper(address(erc20));
+        MockERC20Wrapper wrapper = new MockERC20Wrapper(address(erc20));
         address vault_ = deployVault(
             5, 6, defaultRestrictionSet, "name", "symbol", bytes16(bytes("1")), defaultAssetId, address(wrapper)
         );
@@ -316,7 +316,7 @@ contract CentrifugeRoutertest is BaseTest {
         amount = uint128(bound(amount, 4, MAX_UINT128));
         vm.assume(amount % 2 == 0);
 
-        SimpleERC20Wrapper wrapper = new SimpleERC20Wrapper(address(erc20));
+        MockERC20Wrapper wrapper = new MockERC20Wrapper(address(erc20));
         address vault_ = deployVault(
             5, 6, defaultRestrictionSet, "name", "symbol", bytes16(bytes("1")), defaultAssetId, address(wrapper)
         );

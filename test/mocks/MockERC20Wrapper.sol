@@ -5,7 +5,7 @@ import {ERC20} from "src/token/ERC20.sol";
 import {IERC20Wrapper, IERC20Metadata} from "src/interfaces/IERC20.sol";
 import "forge-std/Test.sol";
 
-contract SimpleERC20Wrapper is ERC20, IERC20Wrapper {
+contract MockERC20Wrapper is ERC20, IERC20Wrapper {
     address public underlying;
 
     constructor(address underlying_) ERC20(IERC20Metadata(underlying_).decimals()) {
@@ -15,7 +15,7 @@ contract SimpleERC20Wrapper is ERC20, IERC20Wrapper {
     function depositFor(address account, uint256 value) external returns (bool) {
         require(
             IERC20Metadata(underlying).transferFrom(msg.sender, address(this), value),
-            "SimpleERC20Wrapper/failed-transfer"
+            "MockERC20Wrapper/failed-transfer"
         );
 
         // Obviously unsafe, just for testing purposes

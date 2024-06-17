@@ -81,6 +81,10 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         uint256 lockedRequest = lockedRequests[_initiator][vault];
         require(lockedRequest > 0, "CentrifugeRouter/user-has-no-locked-balance");
         lockedRequests[_initiator][vault] = 0;
+
+        address asset = IERC7540Vault(vault).asset();
+        EscrowLike(escrow).approve(asset, _initiator, lockedRequest);
+
         SafeTransferLib.safeTransferFrom(IERC7540Vault(vault).asset(), escrow, _initiator, lockedRequest);
         emit UnlockDepositRequest(vault, _initiator);
     }
