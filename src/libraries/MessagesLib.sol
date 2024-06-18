@@ -75,8 +75,8 @@ library MessagesLib {
         DisputeMessageRecovery,
         /// 31 - Recover Tokens sent to the wrong contract
         RecoverTokens,
-        /// 32 - Update Destination Chain Token Price
-        UpdateCentrifugeTokenPrice,
+        /// 32 - Update Centrifuge Gas Price
+        UpdateCentrifugeGasPrice,
         /// 33 - Mark Entrypoint
         EntryPoint
     }

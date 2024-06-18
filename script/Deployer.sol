@@ -57,7 +57,8 @@ contract Deployer is Script {
         trancheTokenFactory = address(new TrancheTokenFactory{salt: salt}(address(root), deployer));
         investmentManager = new InvestmentManager(address(root), address(escrow));
         poolManager = new PoolManager(address(escrow), vaultFactory, restrictionManagerFactory, trancheTokenFactory);
-        gasService = new GasService(178947400000000, 50000000000000000, 50000000000000000);
+        // TODO THESE VALUES NEEDS TO BE CHECKED
+        gasService = new GasService(20000000000000000, 20000000000000000, 2500000000000000000, 178947400000000);
         gasService.rely(address(root));
 
         AuthLike(vaultFactory).rely(address(poolManager));

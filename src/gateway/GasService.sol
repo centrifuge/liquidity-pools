@@ -7,47 +7,61 @@ import {MathLib} from "src/libraries/MathLib.sol";
 import {MessagesLib} from "src/libraries/MessagesLib.sol";
 
 contract GasService is IGasService, Auth {
+    using MathLib for uint64;
     using MathLib for uint256;
 
     /// @inheritdoc IGasService
-    uint256 public price;
+    uint64 public proofCost;
     /// @inheritdoc IGasService
-    uint256 public proofCost;
+    uint64 public messageCost;
     /// @inheritdoc IGasService
-    uint256 public messageCost;
+    uint64 public gasPrice;
+    /// @inheritdoc IGasService
+    uint256 public tokenPrice;
 
-    constructor(uint256 price_, uint256 proofCost_, uint256 messageCost_) {
+    constructor(uint64 proofCost_, uint64 messageCost_, uint64 gasPrice_, uint256 tokenPrice_) {
         messageCost = messageCost_;
         proofCost = proofCost_;
-        price = price_;
+        gasPrice = gasPrice_;
+        tokenPrice = tokenPrice_;
 
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
     }
 
     /// @inheritdoc IGasService
-    function file(bytes32 what, uint256 value) external auth {
+    function file(bytes32 what, uint64 value) external auth {
         if (what == "messageCost") messageCost = value;
         if (what == "proofCost") proofCost = value;
         else revert("CentrifugeGasService/file-unrecognized-param");
         emit File(what, value);
     }
 
+    function updateGasPrice(uint64 value) external auth {
+        gasPrice = value;
+    }
+
     /// @inheritdoc IGasService
-    function updatePrice(uint256 value) external auth {
-        price = value;
+    function updateTokenPrice(uint256 value) external auth {
+        tokenPrice = value;
     }
 
     /// @inheritdoc IGasService
     function estimate(bytes calldata payload) public view returns (uint256) {
+        uint256 denominator = 10 ** 18;
+        uint256 totalCost;
+
         if (MessagesLib.messageType(payload) == MessagesLib.Call.MessageProof) {
-            return proofCost.mulDiv(price, 10 ** 18, MathLib.Rounding.Up);
+            totalCost = proofCost.mulDiv(gasPrice, denominator, MathLib.Rounding.Up);
+        } else {
+            totalCost = messageCost.mulDiv(gasPrice, denominator, MathLib.Rounding.Up);
         }
-        return messageCost.mulDiv(price, 10 ** 18, MathLib.Rounding.Up);
+
+        return totalCost.mulDiv(tokenPrice, denominator, MathLib.Rounding.Up);
     }
 
     /// @inheritdoc IGasService
-    function shouldRefuel(address, bytes calldata) public view returns (bool) {
+    function shouldRefuel(address, bytes calldata) public pure returns (bool) {
         return true;
     }
 }

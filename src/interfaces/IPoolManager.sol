@@ -165,7 +165,7 @@ interface IPoolManager {
     function removeVault(uint64 poolId, bytes16 trancheId, address asset) external;
 
     /// @notice TODO
-    function updateCentrifugeTokenPrice(uint256 price) external;
+    function updateCentrifugeGasPrice(uint256 price) external;
 
     /// @notice TODO
     function getTrancheToken(uint64 poolId, bytes16 trancheId) external view returns (address);
