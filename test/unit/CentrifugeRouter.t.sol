@@ -17,7 +17,7 @@ contract CentrifugeRouterTest is BaseTest {
     function testFile() public {
         vm.prank(address(root));
         centrifugeRouter.file("poolManager", address(0x1));
-        assertEq(centrifugeRouter.poolManager(), address(0x1));
+        assertEq(address(centrifugeRouter.poolManager()), address(0x1));
     }
 
     function testRecoverTokens() public {

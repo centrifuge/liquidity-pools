@@ -43,7 +43,7 @@ contract BaseTest is Deployer, Test {
 
     // default values
     uint128 public defaultAssetId = 1;
-    uint128 public defaultPrice = 1 * 10**18;
+    uint128 public defaultPrice = 1 * 10 ** 18;
     uint8 public defaultRestrictionSet = 2;
     uint8 public defaultDecimals = 8;
 
@@ -125,7 +125,7 @@ contract BaseTest is Deployer, Test {
         if (poolManager.idToAsset(assetId) == address(0)) {
             centrifugeChain.addAsset(assetId, asset);
         }
-        
+
         if (poolManager.getTrancheToken(poolId, trancheId) == address(0)) {
             centrifugeChain.addPool(poolId);
             centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, trancheTokenDecimals, restrictionSet);
@@ -139,7 +139,6 @@ contract BaseTest is Deployer, Test {
         }
 
         address vaultAddress = poolManager.deployVault(poolId, trancheId, asset);
-        centrifugeRouter.registerVault(poolId, trancheId, asset);
 
         return vaultAddress;
     }
@@ -157,7 +156,9 @@ contract BaseTest is Deployer, Test {
     }
 
     function deploySimpleVault() public returns (address) {
-        return deployVault(5, 6, defaultRestrictionSet, "name", "symbol", bytes16(bytes("1")), defaultAssetId, address(erc20));
+        return deployVault(
+            5, 6, defaultRestrictionSet, "name", "symbol", bytes16(bytes("1")), defaultAssetId, address(erc20)
+        );
     }
 
     function deposit(address _vault, address _investor, uint256 amount) public {
@@ -167,24 +168,19 @@ contract BaseTest is Deployer, Test {
     function deposit(address _vault, address _investor, uint256 amount, bool claimDeposit) public {
         ERC7540Vault vault = ERC7540Vault(_vault);
         erc20.mint(_investor, amount);
-        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), _investor, type(uint64).max); // add user as member
+        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), _investor, type(uint64).max); // add user as
+            // member
         vm.startPrank(_investor);
         erc20.approve(_vault, amount); // add allowance
         vault.requestDeposit(amount, _investor, _investor);
         // trigger executed collectInvest
         uint128 assetId = poolManager.assetToId(address(erc20)); // retrieve assetId
         centrifugeChain.isFulfilledDepositRequest(
-            vault.poolId(),
-            vault.trancheId(),
-            bytes32(bytes20(_investor)),
-            assetId,
-            uint128(amount),
-            uint128(amount),
-            0
+            vault.poolId(), vault.trancheId(), bytes32(bytes20(_investor)), assetId, uint128(amount), uint128(amount), 0
         );
 
         if (claimDeposit) {
-           vault.deposit(amount, _investor); // claim the trancheTokens
+            vault.deposit(amount, _investor); // claim the trancheTokens
         }
         vm.stopPrank();
     }
@@ -203,7 +199,7 @@ contract BaseTest is Deployer, Test {
 
     function _bytes16ToString(bytes16 _bytes16) public pure returns (string memory) {
         uint8 i = 0;
-        while(i < 16 && _bytes16[i] != 0) {
+        while (i < 16 && _bytes16[i] != 0) {
             i++;
         }
         bytes memory bytesArray = new bytes(i);
@@ -213,27 +209,27 @@ contract BaseTest is Deployer, Test {
         return string(bytesArray);
     }
 
-    function _uint256ToString(uint _i) internal pure returns (string memory _uintAsString) {
-            if (_i == 0) {
-                return "0";
-            }
-            uint j = _i;
-            uint len;
-            while (j != 0) {
-                len++;
-                j /= 10;
-            }
-            bytes memory bstr = new bytes(len);
-            uint k = len;
-            while (_i != 0) {
-                k = k-1;
-                uint8 temp = (48 + uint8(_i - _i / 10 * 10));
-                bytes1 b1 = bytes1(temp);
-                bstr[k] = b1;
-                _i /= 10;
-            }
-            return string(bstr);
+    function _uint256ToString(uint256 _i) internal pure returns (string memory _uintAsString) {
+        if (_i == 0) {
+            return "0";
         }
+        uint256 j = _i;
+        uint256 len;
+        while (j != 0) {
+            len++;
+            j /= 10;
+        }
+        bytes memory bstr = new bytes(len);
+        uint256 k = len;
+        while (_i != 0) {
+            k = k - 1;
+            uint8 temp = (48 + uint8(_i - _i / 10 * 10));
+            bytes1 b1 = bytes1(temp);
+            bstr[k] = b1;
+            _i /= 10;
+        }
+        return string(bstr);
+    }
 
     function random(uint256 maxValue, uint256 nonce) internal view returns (uint256) {
         if (maxValue == 1) {

@@ -56,6 +56,7 @@ contract PoolManager is Auth, IPoolManager {
     mapping(uint128 assetId => address) public idToAsset;
     mapping(address => uint128 assetId) public assetToId;
     mapping(uint64 poolId => mapping(bytes16 => UndeployedTranche)) public undeployedTranches;
+    mapping(address vault => VaultRegistryEntry) public vaults;
 
     constructor(
         address escrow_,
@@ -432,6 +433,8 @@ contract PoolManager is Auth, IPoolManager {
         vault = vaultFactory.newVault(
             poolId, trancheId, asset, tranche.token, address(escrow), address(investmentManager), vaultWards
         );
+
+        vaults[vault] = VaultRegistryEntry(poolId, trancheId, asset);
 
         // Link vault to tranche token
         AuthLike(tranche.token).rely(vault);
