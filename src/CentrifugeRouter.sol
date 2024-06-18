@@ -79,7 +79,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         SafeTransferLib.safeTransferFrom(asset, owner, escrow, amount);
 
         lockedRequests[controller][vault] += amount;
-        emit LockDepositRequest(vault, controller, amount);
+        emit LockDepositRequest(vault, controller, owner, _initiator, amount);
     }
 
     /// @inheritdoc ICentrifugeRouter
@@ -111,7 +111,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
 
         _approveMax(asset, vault);
         IERC7540Vault(vault).requestDeposit(lockedRequest, controller, address(this));
-        emit ExecuteLockedDepositRequest(vault, controller);
+        emit ExecuteLockedDepositRequest(vault, controller, _initiator);
     }
 
     /// @inheritdoc ICentrifugeRouter

@@ -3,9 +3,11 @@ pragma solidity >=0.5.0;
 
 interface ICentrifugeRouter {
     // --- Events ---
-    event LockDepositRequest(address indexed vault, address indexed user, uint256 amount);
-    event UnlockDepositRequest(address indexed vault, address indexed user);
-    event ExecuteLockedDepositRequest(address indexed vault, address indexed user);
+    event LockDepositRequest(
+        address indexed vault, address indexed controller, address indexed owner, address sender, uint256 amount
+    );
+    event UnlockDepositRequest(address indexed vault, address indexed controller);
+    event ExecuteLockedDepositRequest(address indexed vault, address indexed controller, address sender);
     event File(bytes32 indexed what, address data);
 
     /// @notice TODO
