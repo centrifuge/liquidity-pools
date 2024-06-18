@@ -31,11 +31,8 @@ contract CentrifugeRouterTest is BaseTest {
     function testLockDepositRequests() public {
         address vault_ = deploySimpleVault();
         vm.label(vault_, "vault");
-        ERC7540Vault vault = ERC7540Vault(vault_);
 
-        uint256 balance = 1000 * 10 ** 18;
         uint256 amount = 100 * 10 ** 18;
-
         assertEq(erc20.balanceOf(address(routerEscrow)), 0);
 
         erc20.mint(self, amount);
