@@ -154,7 +154,6 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     }
 
     function unwrap(address wrapper, uint256 amount, address receiver) external protected {
-        require(receiver != address(0), "CentrifugeRouter/zero-address");
         amount = MathLib.min(amount, IERC20(wrapper).balanceOf(address(this)));
         require(amount != 0, "CentrifugeRouter/zero-balance");
 
