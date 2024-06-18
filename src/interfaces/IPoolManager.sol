@@ -36,6 +36,12 @@ struct UndeployedTranche {
 }
 
 interface IPoolManager {
+    struct VaultRegistryEntry {
+        uint64 poolId;
+        bytes16 trancheId;
+        address asset;
+    }
+
     event File(bytes32 indexed what, address data);
     event AddAsset(uint128 indexed assetId, address indexed asset);
     event AddPool(uint64 indexed poolId);
@@ -65,6 +71,9 @@ interface IPoolManager {
 
     /// @notice TODO
     function assetToId(address) external view returns (uint128 assetId);
+
+    /// @notice TODO
+    function vaults(address) external view returns (uint64 poolId, bytes16 trancheId, address asset);
 
     /// @notice TODO
     function file(bytes32 what, address data) external;
