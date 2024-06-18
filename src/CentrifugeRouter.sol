@@ -62,7 +62,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     /// @inheritdoc ICentrifugeRouter
     function requestDeposit(address vault, uint256 amount, address controller, address owner) external protected {
         if (owner == address(this)) {
-            (,, address asset) = poolManager.vaults(vault);
+            address asset = poolManager.vaultToAsset(vault);
             require(asset != address(0), "CentrifugeRouter/unknown-vault");
             _approveMax(asset, vault);
         }
@@ -74,7 +74,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     function lockDepositRequest(address vault, uint256 amount, address controller, address owner) external protected {
         require(owner == _initiator || owner == address(this), "CentrifugeRouter/invalid-owner");
 
-        (,, address asset) = poolManager.vaults(vault);
+        address asset = poolManager.vaultToAsset(vault);
         require(asset != address(0), "CentrifugeRouter/unknown-vault");
         SafeTransferLib.safeTransferFrom(asset, owner, escrow, amount);
 
@@ -88,7 +88,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         require(lockedRequest > 0, "CentrifugeRouter/user-has-no-locked-balance");
         lockedRequests[_initiator][vault] = 0;
 
-        (,, address asset) = poolManager.vaults(vault);
+        address asset = poolManager.vaultToAsset(vault);
 
         require(asset != address(0), "CentrifugeRouter/unknown-vault");
         EscrowLike(escrow).approve(asset, address(this), lockedRequest);
@@ -103,7 +103,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         require(lockedRequest > 0, "CentrifugeRouter/controller-has-no-balance");
         lockedRequests[controller][vault] = 0;
 
-        (,, address asset) = poolManager.vaults(vault);
+        address asset = poolManager.vaultToAsset(vault);
 
         require(asset != address(0), "CentrifugeRouter/unknown-vault");
         EscrowLike(escrow).approve(asset, address(this), lockedRequest);
