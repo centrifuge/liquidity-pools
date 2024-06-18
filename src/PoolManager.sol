@@ -53,9 +53,9 @@ contract PoolManager is Auth, IPoolManager {
     RestrictionManagerFactoryLike public restrictionManagerFactory;
 
     mapping(uint64 poolId => Pool) public pools;
+    mapping(address => address) public vaultToAsset;
     mapping(uint128 assetId => address) public idToAsset;
     mapping(address => uint128 assetId) public assetToId;
-    mapping(address vault => address asset) public vaultToAsset;
     mapping(uint64 poolId => mapping(bytes16 => UndeployedTranche)) public undeployedTranches;
 
     constructor(
