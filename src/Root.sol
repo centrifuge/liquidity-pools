@@ -143,7 +143,7 @@ contract Root is Auth, IRoot {
         emit DenyContract(target, user);
     }
 
-    /// --- Token Recovery ---
+    /// --- Token recovery ---
     /// @inheritdoc IRoot
     function recoverTokens(address target, address token, address to, uint256 amount) external auth {
         RecoverLike(target).recoverTokens(token, to, amount);
