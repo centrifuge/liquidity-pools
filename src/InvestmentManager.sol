@@ -12,8 +12,6 @@ import {IERC20, IERC20Metadata} from "src/interfaces/IERC20.sol";
 import {IPoolManager} from "src/interfaces/IPoolManager.sol";
 import {IInvestmentManager, InvestmentState} from "src/interfaces/IInvestmentManager.sol";
 
-import "forge-std/console.sol";
-
 interface GatewayLike {
     function send(bytes memory message, address source) external;
 }
