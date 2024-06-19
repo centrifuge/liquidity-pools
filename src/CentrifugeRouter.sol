@@ -116,6 +116,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
 
     /// @inheritdoc ICentrifugeRouter
     function claimDeposit(address vault, address receiver, address controller) external protected {
+        require(controller == _initiator || controller == receiver, "CentrifugeRouter/invalid-sender");
         uint256 maxDeposit = IERC7540Vault(vault).maxDeposit(controller);
         IERC7540Vault(vault).deposit(maxDeposit, receiver, controller);
     }
@@ -128,6 +129,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
 
     /// @inheritdoc ICentrifugeRouter
     function claimRedeem(address vault, address receiver, address controller) external protected {
+        require(controller == _initiator || controller == receiver, "CentrifugeRouter/invalid-sender");
         uint256 maxRedeem = IERC7540Vault(vault).maxRedeem(controller);
         IERC7540Vault(vault).redeem(maxRedeem, receiver, controller);
     }
