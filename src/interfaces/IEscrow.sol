@@ -7,5 +7,8 @@ interface IEscrow {
 
     // --- Token approvals ---
     /// @notice TODO
-    function approve(address token, address spender, uint256 value) external;
+    function approveMax(address token, address spender) external;
+
+    /// @notice TODO
+    function unapprove(address token, address spender) external;
 }
