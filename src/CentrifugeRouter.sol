@@ -65,9 +65,9 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
 
         address asset = poolManager.vaultToAsset(vault);
         require(asset != address(0), "CentrifugeRouter/unknown-vault");
-        SafeTransferLib.safeTransferFrom(asset, owner, address(escrow), amount);
 
         lockedRequests[controller][vault] += amount;
+        SafeTransferLib.safeTransferFrom(asset, owner, address(escrow), amount);
         emit LockDepositRequest(vault, controller, owner, _initiator, amount);
     }
 
@@ -78,10 +78,9 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         lockedRequests[_initiator][vault] = 0;
 
         address asset = poolManager.vaultToAsset(vault);
-
         require(asset != address(0), "CentrifugeRouter/unknown-vault");
-        escrow.approveMax(asset, address(this));
 
+        escrow.approveMax(asset, address(this));
         SafeTransferLib.safeTransferFrom(asset, address(escrow), _initiator, lockedRequest);
         emit UnlockDepositRequest(vault, _initiator);
     }
@@ -93,8 +92,8 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         lockedRequests[controller][vault] = 0;
 
         address asset = poolManager.vaultToAsset(vault);
-
         require(asset != address(0), "CentrifugeRouter/unknown-vault");
+
         escrow.approveMax(asset, address(this));
         SafeTransferLib.safeTransferFrom(asset, address(escrow), address(this), lockedRequest);
 
