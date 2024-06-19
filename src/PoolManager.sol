@@ -31,7 +31,7 @@ interface AuthLike {
 }
 
 interface GasServiceLike {
-    function updatePrice(uint256 value) external;
+    function updateGasPrice(uint256 value) external;
     function price() external returns (uint256);
 }
 
@@ -479,7 +479,7 @@ contract PoolManager is Auth, IPoolManager {
     function updateCentrifugeGasPrice(uint256 price) public auth {
         require(price > 0, "PoolManager/price-cannot-be-zero");
         require(gasService.price() != price, "PoolManager/same-price-already-set");
-        gasService.updatePrice(price);
+        gasService.updateGasPrice(price);
     }
 
     // --- Helpers ---
