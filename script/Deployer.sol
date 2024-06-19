@@ -34,6 +34,7 @@ contract Deployer is Script {
     InvestmentManager public investmentManager;
     PoolManager public poolManager;
     Escrow public escrow;
+    Escrow public routerEscrow;
     Guardian public guardian;
     Gateway public gateway;
     Aggregator public aggregator;
@@ -60,6 +61,12 @@ contract Deployer is Script {
         // TODO THESE VALUES NEEDS TO BE CHECKED
         gasService = new GasService(20000000000000000, 20000000000000000, 2500000000000000000, 178947400000000);
         gasService.rely(address(root));
+
+        routerEscrow = new Escrow(deployer);
+        centrifugeRouter = new CentrifugeRouter(address(routerEscrow), address(poolManager));
+        AuthLike(address(routerEscrow)).rely(address(centrifugeRouter));
+        root.endorse(address(centrifugeRouter));
+        root.endorse(address(escrow));
 
         AuthLike(vaultFactory).rely(address(poolManager));
         AuthLike(trancheTokenFactory).rely(address(poolManager));
@@ -109,6 +116,7 @@ contract Deployer is Script {
         aggregator.rely(address(root));
         AuthLike(router).rely(address(root));
         AuthLike(address(escrow)).rely(address(root));
+        AuthLike(address(routerEscrow)).rely(address(root));
         AuthLike(address(escrow)).rely(address(poolManager));
     }
 
@@ -121,6 +129,7 @@ contract Deployer is Script {
         investmentManager.deny(deployer);
         poolManager.deny(deployer);
         escrow.deny(deployer);
+        routerEscrow.deny(deployer);
         gateway.deny(deployer);
         aggregator.deny(deployer);
         centrifugeRouter.deny(deployer);

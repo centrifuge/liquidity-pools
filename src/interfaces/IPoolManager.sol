@@ -67,6 +67,9 @@ interface IPoolManager {
     function assetToId(address) external view returns (uint128 assetId);
 
     /// @notice TODO
+    function vaultToAsset(address) external view returns (address asset);
+
+    /// @notice TODO
     function file(bytes32 what, address data) external;
 
     /// @notice TODO

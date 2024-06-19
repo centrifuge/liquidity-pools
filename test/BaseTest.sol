@@ -154,6 +154,7 @@ contract BaseTest is Deployer, Test {
         }
 
         address vaultAddress = poolManager.deployVault(poolId, trancheId, asset);
+
         return vaultAddress;
     }
 

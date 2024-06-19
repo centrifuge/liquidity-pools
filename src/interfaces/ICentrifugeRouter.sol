@@ -1,51 +1,59 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity >=0.5.0;
 
-import {IMulticall} from "src/interfaces/IMulticall.sol";
-
-interface ICentrifugeRouter is IMulticall {
+interface ICentrifugeRouter {
     // --- Events ---
-    event LockDepositRequest(address indexed vault, address indexed user, uint256 amount);
-    event UnlockDepositRequest(address indexed vault, address indexed user);
-    event ExecuteLockedDepositRequest(address indexed vault, address indexed user);
-    event File(bytes32 indexed what, address data);
+    event LockDepositRequest(
+        address indexed vault, address indexed controller, address indexed owner, address sender, uint256 amount
+    );
+    event UnlockDepositRequest(address indexed vault, address indexed controller);
+    event ExecuteLockedDepositRequest(address indexed vault, address indexed controller, address sender);
 
     /// @notice TODO
-    function lockedRequests(address user, address vault) external view returns (uint256 amount);
+    function lockedRequests(address controller, address vault) external view returns (uint256 amount);
 
     // --- Administration ---
     /// @notice TODO
     function recoverTokens(address token, address to, uint256 amount) external;
 
-    /// @notice TODO
-    function file(bytes32 what, address data) external;
-
-    // --- Approval ---
-    /// @notice TODO
-    function approveVault(address vault) external;
-
     // --- Deposit ---
     /// @notice TODO
-    function requestDeposit(address vault, uint256 amount, uint256 topUp) external payable;
+    function requestDeposit(address vault, uint256 amount, address controller, address owner, uint256 topUp) external;
 
     /// @notice TODO
-    function lockDepositRequest(address vault, uint256 amount) external;
+    function lockDepositRequest(address vault, uint256 amount, address controller, address owner) external;
 
     /// @notice TODO
     function unlockDepositRequest(address vault) external;
 
     /// @notice TODO
-    function executeLockedDepositRequest(address vault, address user) external;
+    function executeLockedDepositRequest(address vault, address controller) external;
 
     /// @notice TODO
-    function claimDeposit(address vault, address user) external;
+    function claimDeposit(address vault, address receiver, address controller) external;
 
     // --- Redeem ---
     /// @notice TODO
-    function requestRedeem(address vault, uint256 amount) external;
+    function requestRedeem(address vault, uint256 amount, address controller, address owner) external;
 
     /// @notice TODO
-    function claimRedeem(address vault, address user) external;
+    function claimRedeem(address vault, address receiver, address controller) external;
+
+    // --- ERC20 permit ---
+    /// @notice TODO
+    function permit(address asset, address spender, uint256 assets, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
+        external;
+
+    // --- ERC20 wrapping ---
+    /// @notice TODO
+    function wrap(address wrapper, uint256 amount) external;
+
+    /// @notice TODO
+    function unwrap(address wrapper, uint256 amount, address receiver) external;
+
+    // --- Batching ---
+    /// @notice TODO
+    function multicall(bytes[] memory data) external payable;
 
     // --- View Methods ---
     /// @notice TODO

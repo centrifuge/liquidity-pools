@@ -14,17 +14,29 @@ contract CentrifugeRouterTest is BaseTest {
         assertEq(centrifugeRouter.getVault(vault.poolId(), vault.trancheId(), address(erc20)), vault_);
     }
 
-    function testFile() public {
-        vm.prank(address(root));
-        centrifugeRouter.file("poolManager", address(0x1));
-        assertEq(centrifugeRouter.poolManager(), address(0x1));
-    }
-
     function testRecoverTokens() public {
         uint256 amount = 100;
         erc20.mint(address(centrifugeRouter), amount);
         vm.prank(address(root));
         centrifugeRouter.recoverTokens(address(erc20), address(this), amount);
         assertEq(erc20.balanceOf(address(this)), amount);
+    }
+
+    function testLockDepositRequests() public {
+        address vault_ = deploySimpleVault();
+        vm.label(vault_, "vault");
+
+        uint256 amount = 100 * 10 ** 18;
+        assertEq(erc20.balanceOf(address(routerEscrow)), 0);
+
+        erc20.mint(self, amount);
+        erc20.approve(address(centrifugeRouter), amount);
+
+        vm.expectRevert("CentrifugeRouter/unknown-vault");
+        centrifugeRouter.lockDepositRequest(makeAddr("maliciousVault"), amount, self, self);
+
+        centrifugeRouter.lockDepositRequest(vault_, amount, self, self);
+
+        assertEq(erc20.balanceOf(address(routerEscrow)), amount);
     }
 }
