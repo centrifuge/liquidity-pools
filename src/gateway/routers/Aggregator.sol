@@ -41,7 +41,7 @@ contract Aggregator is Auth, IAggregator {
     address[] public routers;
     mapping(address router => Router) public activeRouters;
     mapping(bytes32 messageHash => Message) public messages;
-    mapping(bytes32 messageHash => Recovery) public recoveries;
+    mapping(address router => mapping(bytes32 messageHash => uint256 timestamp)) public recoveries;
 
     constructor(address gateway_, address gasService_) {
         gateway = GatewayLike(gateway_);
@@ -97,12 +97,13 @@ contract Aggregator is Auth, IAggregator {
     // --- Incoming ---
     /// @inheritdoc IAggregator
     function handle(bytes calldata payload) external {
-        Router memory router = activeRouters[msg.sender];
-        require(router.id != 0, "Aggregator/invalid-router");
-        _handle(payload, msg.sender, router, false);
+        _handle(payload, msg.sender, false);
     }
 
-    function _handle(bytes calldata payload, address routerAddr, Router memory router, bool isRecovery) internal {
+    function _handle(bytes calldata payload, address router_, bool isRecovery) internal {
+        Router memory router = activeRouters[router_];
+        require(router.id != 0, "Aggregator/invalid-router");
+
         MessagesLib.Call call = MessagesLib.messageType(payload);
         if (call == MessagesLib.Call.InitiateMessageRecovery || call == MessagesLib.Call.DisputeMessageRecovery) {
             require(!isRecovery, "Aggregator/no-recursive-recovery-allowed");
@@ -114,7 +115,7 @@ contract Aggregator is Auth, IAggregator {
         if (router.quorum == 1 && !isMessageProof) {
             // Special case for gas efficiency
             gateway.handle(payload);
-            emit ExecuteMessage(payload, routerAddr);
+            emit ExecuteMessage(payload, router_);
             return;
         }
 
@@ -123,11 +124,11 @@ contract Aggregator is Auth, IAggregator {
         if (isMessageProof) {
             require(isRecovery || router.id != PRIMARY_ROUTER_ID, "RouterAggregator/non-proof-router");
             messageHash = payload.toBytes32(1);
-            emit HandleProof(messageHash, routerAddr);
+            emit HandleProof(messageHash, router_);
         } else {
             require(isRecovery || router.id == PRIMARY_ROUTER_ID, "RouterAggregator/non-message-router");
             messageHash = keccak256(payload);
-            emit HandleMessage(payload, routerAddr);
+            emit HandleMessage(payload, router_);
         }
 
         Message storage state = messages[messageHash];
@@ -169,37 +170,36 @@ contract Aggregator is Auth, IAggregator {
             address router = payload.toAddress(33);
             require(activeRouters[msg.sender].id != 0, "Aggregator/invalid-sender");
             require(activeRouters[router].id != 0, "Aggregator/invalid-router");
-            recoveries[messageHash] = Recovery(block.timestamp + RECOVERY_CHALLENGE_PERIOD, router);
+            recoveries[router][messageHash] = block.timestamp + RECOVERY_CHALLENGE_PERIOD;
             emit InitiateMessageRecovery(messageHash, router);
         } else if (MessagesLib.messageType(payload) == MessagesLib.Call.DisputeMessageRecovery) {
             bytes32 messageHash = payload.toBytes32(1);
-            return _disputeMessageRecovery(messageHash);
+            address router = payload.toAddress(33);
+            return _disputeMessageRecovery(router, messageHash);
         }
     }
 
     /// @inheritdoc IAggregator
-    function disputeMessageRecovery(bytes32 messageHash) external auth {
-        _disputeMessageRecovery(messageHash);
+    function disputeMessageRecovery(address router, bytes32 messageHash) external auth {
+        _disputeMessageRecovery(router, messageHash);
     }
 
-    function _disputeMessageRecovery(bytes32 messageHash) internal {
-        delete recoveries[messageHash];
-        emit DisputeMessageRecovery(messageHash);
+    function _disputeMessageRecovery(address router, bytes32 messageHash) internal {
+        delete recoveries[router][messageHash];
+        emit DisputeMessageRecovery(messageHash, router);
     }
 
     /// @inheritdoc IAggregator
-    function executeMessageRecovery(bytes calldata message) external {
+    function executeMessageRecovery(address router_, bytes calldata message) external {
         bytes32 messageHash = keccak256(message);
-        Recovery storage recovery = recoveries[messageHash];
-        Router storage router = activeRouters[recovery.router];
+        uint256 recovery = recoveries[router_][messageHash];
 
-        require(recovery.timestamp != 0, "Aggregator/message-recovery-not-initiated");
-        require(recovery.timestamp <= block.timestamp, "Aggregator/challenge-period-has-not-ended");
-        require(router.id != 0, "Aggregator/invalid-router");
+        require(recovery != 0, "Aggregator/message-recovery-not-initiated");
+        require(recovery <= block.timestamp, "Aggregator/challenge-period-has-not-ended");
 
-        delete recoveries[messageHash];
-        _handle(message, recovery.router, router, true);
-        emit ExecuteMessageRecovery(message);
+        delete recoveries[router_][messageHash];
+        _handle(message, router_, true);
+        emit ExecuteMessageRecovery(message, router_);
     }
 
     // --- Outgoing ---

@@ -298,7 +298,7 @@ contract AggregatorTest is Test {
         assertEq(gateway.handled(message), 0);
 
         vm.expectRevert(bytes("Aggregator/message-recovery-not-initiated"));
-        aggregator.executeMessageRecovery(message);
+        aggregator.executeMessageRecovery(address(router1), message);
 
         // Initiate recovery
         router2.execute(
@@ -308,11 +308,11 @@ contract AggregatorTest is Test {
         );
 
         vm.expectRevert(bytes("Aggregator/challenge-period-has-not-ended"));
-        aggregator.executeMessageRecovery(message);
+        aggregator.executeMessageRecovery(address(router1), message);
 
         // Execute recovery
         vm.warp(block.timestamp + aggregator.RECOVERY_CHALLENGE_PERIOD());
-        aggregator.executeMessageRecovery(message);
+        aggregator.executeMessageRecovery(address(router1), message);
         assertEq(gateway.handled(message), 1);
     }
 
@@ -341,7 +341,7 @@ contract AggregatorTest is Test {
         assertEq(gateway.handled(message), 0);
 
         vm.expectRevert(bytes("Aggregator/message-recovery-not-initiated"));
-        aggregator.executeMessageRecovery(proof);
+        aggregator.executeMessageRecovery(address(router3), proof);
 
         // Initiate recovery
         router1.execute(
@@ -351,11 +351,11 @@ contract AggregatorTest is Test {
         );
 
         vm.expectRevert(bytes("Aggregator/challenge-period-has-not-ended"));
-        aggregator.executeMessageRecovery(proof);
+        aggregator.executeMessageRecovery(address(router3), proof);
         vm.warp(block.timestamp + aggregator.RECOVERY_CHALLENGE_PERIOD());
 
         // Execute recovery
-        aggregator.executeMessageRecovery(proof);
+        aggregator.executeMessageRecovery(address(router3), proof);
         assertEq(gateway.handled(message), 1);
     }
 
@@ -381,7 +381,7 @@ contract AggregatorTest is Test {
 
         aggregator.file("routers", oneMockRouter);
         vm.expectRevert(bytes("Aggregator/invalid-router"));
-        aggregator.executeMessageRecovery(proof);
+        aggregator.executeMessageRecovery(address(router3), proof);
         aggregator.file("routers", threeMockRouters);
     }
 
@@ -404,14 +404,18 @@ contract AggregatorTest is Test {
         );
 
         vm.expectRevert(bytes("Aggregator/challenge-period-has-not-ended"));
-        aggregator.executeMessageRecovery(proof);
+        aggregator.executeMessageRecovery(address(router3), proof);
 
         // Dispute recovery
-        router2.execute(abi.encodePacked(uint8(MessagesLib.Call.DisputeMessageRecovery), keccak256(proof)));
+        router2.execute(
+            abi.encodePacked(
+                uint8(MessagesLib.Call.DisputeMessageRecovery), keccak256(proof), address(router3).toBytes32()
+            )
+        );
 
         // Check that recovery is not possible anymore
         vm.expectRevert(bytes("Aggregator/message-recovery-not-initiated"));
-        aggregator.executeMessageRecovery(proof);
+        aggregator.executeMessageRecovery(address(router3), proof);
         assertEq(gateway.handled(message), 0);
     }
 
@@ -435,7 +439,7 @@ contract AggregatorTest is Test {
         vm.warp(block.timestamp + aggregator.RECOVERY_CHALLENGE_PERIOD());
 
         vm.expectRevert(bytes("Aggregator/no-recursive-recovery-allowed"));
-        aggregator.executeMessageRecovery(message);
+        aggregator.executeMessageRecovery(address(router1), message);
         assertEq(gateway.handled(message), 0);
     }
 
