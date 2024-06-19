@@ -349,6 +349,36 @@ contract CentrifugeRoutertest is BaseTest {
         assertEq(trancheToken.balanceOf(address(escrow)), trancheTokensPayout);
     }
 
+    function testWrapAndUnwrap(uint256 amount) public {
+        amount = uint128(bound(amount, 4, MAX_UINT128));
+        vm.assume(amount % 2 == 0);
+
+        MockERC20Wrapper wrapper = new MockERC20Wrapper(address(erc20));
+        address vault_ = deployVault(
+            5, 6, defaultRestrictionSet, "name", "symbol", bytes16(bytes("1")), defaultAssetId, address(wrapper)
+        );
+        ERC7540Vault vault = ERC7540Vault(vault_);
+        vm.label(vault_, "vault");
+
+        address investor = makeAddr("investor");
+        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), investor, type(uint64).max);
+
+        erc20.mint(investor, amount);
+        vm.startPrank(investor);
+        erc20.approve(address(centrifugeRouter), amount);
+
+        assertEq(erc20.balanceOf(investor), amount);
+
+        // multicall
+        bytes[] memory calls = new bytes[](2);
+        calls[0] =
+            abi.encodeWithSelector(centrifugeRouter.wrap.selector, address(wrapper), amount, address(centrifugeRouter));
+        calls[1] = abi.encodeWithSelector(centrifugeRouter.unwrap.selector, address(wrapper), amount, investor);
+        centrifugeRouter.multicall(calls);
+
+        assertEq(erc20.balanceOf(investor), amount);
+    }
+
     // --- helpers ---
     function fulfillDepositRequest(ERC7540Vault vault, uint128 assetId, uint256 amount, address user)
         public
