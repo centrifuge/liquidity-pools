@@ -143,7 +143,7 @@ contract AdminTest is BaseTest {
     }
 
     function testGuardianPauseAuth(address user) public {
-        vm.assume(user != address(this));
+        vm.assume(user != address(this) && user != adminSafe);
         vm.expectRevert("Guardian/not-the-authorized-safe-or-its-owner");
         vm.prank(user);
         guardian.pause();

@@ -64,7 +64,7 @@ contract Guardian is IGuardian {
     }
 
     // --- Helpers ---
-    function _isSafeOwner(address addr) internal returns (bool) {
+    function _isSafeOwner(address addr) internal view returns (bool) {
         try safe.isOwner(addr) returns (bool isOwner) {
             return isOwner;
         } catch {

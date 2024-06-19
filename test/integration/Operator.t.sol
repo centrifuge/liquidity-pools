@@ -73,7 +73,6 @@ contract OperatorTest is BaseTest {
         (address owner, uint256 ownerPk) = makeAddrAndKey("owner");
         address operator = makeAddr("operator");
         ERC7540Vault vault = ERC7540Vault(vault_);
-        TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
 
         centrifugeChain.updateTrancheTokenPrice(
             vault.poolId(), vault.trancheId(), defaultAssetId, price, uint64(block.timestamp)
@@ -125,12 +124,10 @@ contract OperatorTest is BaseTest {
         amount = uint128(bound(amount, 4, MAX_UINT128 / 2));
         vm.assume(amount % 2 == 0);
 
-        uint128 price = 2 * 10 ** 18;
         address vault_ = deploySimpleVault();
         address investor = makeAddr("investor");
         address operator = makeAddr("operator");
         ERC7540Vault vault = ERC7540Vault(vault_);
-        TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
 
         deposit(vault_, investor, amount); // deposit funds first
         centrifugeChain.updateTrancheTokenPrice(

@@ -111,20 +111,6 @@ contract ERC7540Vault is Auth, IERC7540Vault {
         return REQUEST_ID;
     }
 
-    /// @notice Uses EIP-2612 permit to set approval of asset, then transfers assets from msg.sender
-    ///         into the Vault and submits a Request for asynchronous deposit/mint.
-    function requestDepositWithPermit(
-        uint256 assets,
-        address controller,
-        uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external {
-        try IERC20Permit(asset).permit(msg.sender, address(this), assets, deadline, v, r, s) {} catch {}
-        requestDeposit(assets, controller, msg.sender);
-    }
-
     /// @inheritdoc IERC7540Deposit
     function pendingDepositRequest(uint256, address controller) public view returns (uint256 pendingAssets) {
         pendingAssets = manager.pendingDepositRequest(address(this), controller);

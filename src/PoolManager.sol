@@ -14,6 +14,7 @@ import {MessagesLib} from "src/libraries/MessagesLib.sol";
 import {CastLib} from "src/libraries/CastLib.sol";
 import {Pool, Tranche, TrancheTokenPrice, UndeployedTranche, IPoolManager} from "src/interfaces/IPoolManager.sol";
 import {BytesLib} from "src/libraries/BytesLib.sol";
+import {IEscrow} from "src/interfaces/IEscrow.sol";
 
 interface GatewayLike {
     function send(bytes memory message) external;
@@ -22,10 +23,6 @@ interface GatewayLike {
 interface InvestmentManagerLike {
     function vaults(uint64 poolId, bytes16 trancheId, address asset) external returns (address);
     function getTrancheToken(uint64 _poolId, bytes16 _trancheId) external view returns (address);
-}
-
-interface EscrowLike {
-    function approve(address token, address spender, uint256 value) external;
 }
 
 interface AuthLike {
@@ -44,7 +41,7 @@ contract PoolManager is Auth, IPoolManager {
     uint8 internal constant MIN_DECIMALS = 1;
     uint8 internal constant MAX_DECIMALS = 18;
 
-    EscrowLike public immutable escrow;
+    IEscrow public immutable escrow;
 
     GatewayLike public gateway;
     ERC7540VaultFactory public vaultFactory;
@@ -53,6 +50,7 @@ contract PoolManager is Auth, IPoolManager {
     RestrictionManagerFactoryLike public restrictionManagerFactory;
 
     mapping(uint64 poolId => Pool) public pools;
+    mapping(address => address) public vaultToAsset;
     mapping(uint128 assetId => address) public idToAsset;
     mapping(address => uint128 assetId) public assetToId;
     mapping(uint64 poolId => mapping(bytes16 => UndeployedTranche)) public undeployedTranches;
@@ -63,7 +61,7 @@ contract PoolManager is Auth, IPoolManager {
         address restrictionManagerFactory_,
         address trancheTokenFactory_
     ) {
-        escrow = EscrowLike(escrow_);
+        escrow = IEscrow(escrow_);
         vaultFactory = ERC7540VaultFactory(vaultFactory_);
         restrictionManagerFactory = RestrictionManagerFactoryLike(restrictionManagerFactory_);
         trancheTokenFactory = TrancheTokenFactoryLike(trancheTokenFactory_);
@@ -349,7 +347,7 @@ contract PoolManager is Auth, IPoolManager {
 
         // Give investment manager infinite approval for asset
         // in the escrow to transfer to the user on redeem or withdraw
-        escrow.approve(asset, address(investmentManager), type(uint256).max);
+        escrow.approveMax(asset, address(investmentManager));
 
         emit AddAsset(assetId, asset);
     }
@@ -359,7 +357,7 @@ contract PoolManager is Auth, IPoolManager {
         address asset = idToAsset[assetId];
         require(asset != address(0), "PoolManager/unknown-asset");
 
-        escrow.approve(asset, address(this), amount);
+        escrow.approveMax(asset, address(this));
         SafeTransferLib.safeTransferFrom(asset, address(escrow), recipient, amount);
     }
 
@@ -408,7 +406,7 @@ contract PoolManager is Auth, IPoolManager {
 
         // Give investment manager infinite approval for tranche tokens
         // in the escrow to transfer to the user on deposit or mint
-        escrow.approve(token, address(investmentManager), type(uint256).max);
+        escrow.approveMax(token, address(investmentManager));
 
         emit DeployTranche(poolId, trancheId, token);
         return token;
@@ -432,6 +430,7 @@ contract PoolManager is Auth, IPoolManager {
         vault = vaultFactory.newVault(
             poolId, trancheId, asset, tranche.token, address(escrow), address(investmentManager), vaultWards
         );
+        vaultToAsset[vault] = asset;
 
         // Link vault to tranche token
         AuthLike(tranche.token).rely(vault);
@@ -439,7 +438,7 @@ contract PoolManager is Auth, IPoolManager {
 
         // Give vault infinite approval for tranche tokens
         // in the escrow to burn on executed redemptions
-        escrow.approve(tranche.token, vault, type(uint256).max);
+        escrow.approveMax(tranche.token, vault);
 
         emit DeployVault(poolId, trancheId, asset, vault);
         return vault;
@@ -459,7 +458,7 @@ contract PoolManager is Auth, IPoolManager {
         AuthLike(tranche.token).deny(vault);
         TrancheTokenLike(tranche.token).updateVault(asset, address(0));
 
-        escrow.approve(address(tranche.token), vault, 0);
+        escrow.unapprove(address(tranche.token), vault);
 
         emit RemoveVault(poolId, trancheId, asset, vault);
     }
