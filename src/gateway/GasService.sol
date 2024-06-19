@@ -15,15 +15,18 @@ contract GasService is IGasService, Auth {
     /// @inheritdoc IGasService
     uint64 public messageCost;
     /// @inheritdoc IGasService
-    uint64 public gasPrice;
+    uint128 public gasPrice;
+    /// @inheritdoc IGasService
+    uint256 public lastUpdatedAt;
     /// @inheritdoc IGasService
     uint256 public tokenPrice;
 
-    constructor(uint64 proofCost_, uint64 messageCost_, uint64 gasPrice_, uint256 tokenPrice_) {
+    constructor(uint64 proofCost_, uint64 messageCost_, uint128 gasPrice_, uint256 tokenPrice_) {
         messageCost = messageCost_;
         proofCost = proofCost_;
         gasPrice = gasPrice_;
         tokenPrice = tokenPrice_;
+        lastUpdatedAt = block.timestamp;
 
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
@@ -37,8 +40,11 @@ contract GasService is IGasService, Auth {
         emit File(what, value);
     }
 
-    function updateGasPrice(uint64 value) external auth {
+    /// @inheritdoc IGasService
+    function updateGasPrice(uint128 value, uint256 computedAt) external auth {
+        require(lastUpdatedAt < computedAt, "GasService/cannot-update-price-with-backdate");
         gasPrice = value;
+        lastUpdatedAt = computedAt;
     }
 
     /// @inheritdoc IGasService

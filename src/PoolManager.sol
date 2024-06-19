@@ -31,7 +31,7 @@ interface AuthLike {
 }
 
 interface GasServiceLike {
-    function updateGasPrice(uint256 value) external;
+    function updateGasPrice(uint256 value, uint256 computedAt) external;
     function price() external returns (uint256);
 }
 
@@ -212,7 +212,7 @@ contract PoolManager is Auth, IPoolManager {
         } else if (call == MessagesLib.Call.DisallowAsset) {
             disallowAsset(message.toUint64(1), message.toUint128(9));
         } else if (call == MessagesLib.Call.UpdateCentrifugeGasPrice) {
-            updateCentrifugeGasPrice(message.toUint256(1));
+            updateCentrifugeGasPrice(message.toUint128(1), message.toUint256(17));
         } else {
             revert("PoolManager/invalid-message");
         }
@@ -476,10 +476,10 @@ contract PoolManager is Auth, IPoolManager {
         emit RemoveVault(poolId, trancheId, asset, vault);
     }
 
-    function updateCentrifugeGasPrice(uint256 price) public auth {
+    function updateCentrifugeGasPrice(uint256 price, uint256 computedAt) public auth {
         require(price > 0, "PoolManager/price-cannot-be-zero");
         require(gasService.price() != price, "PoolManager/same-price-already-set");
-        gasService.updateGasPrice(price);
+        gasService.updateGasPrice(price, computedAt);
     }
 
     // --- Helpers ---

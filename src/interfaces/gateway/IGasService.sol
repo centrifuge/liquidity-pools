@@ -21,7 +21,12 @@ interface IGasService {
     /// Weigth Gas Price from Centrifuge Chain
     /// @dev This is a getter method
     /// @return The current gas price on Centrifuge chain
-    function gasPrice() external returns (uint64);
+    function gasPrice() external returns (uint128);
+
+    /// Keeps track what the last time was when the gas price was updated
+    /// @dev This is a getter method
+    /// @return Timestamp when the gas price was last updated
+    function lastUpdatedAt() external returns (uint256);
 
     /// CFG/ETH price
     /// @dev This is a getter method
@@ -30,7 +35,7 @@ interface IGasService {
 
     /// Called to update the  gas price
     /// @param value New price in Centrifuge Chain base unit
-    function updateGasPrice(uint64 value) external;
+    function updateGasPrice(uint128 value, uint256 computedAt) external;
 
     /// Called to update the  CFG/ETH price
     /// @param value New price in wei
