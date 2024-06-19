@@ -42,6 +42,7 @@ contract BaseTest is Deployer, Test {
     address randomUser = makeAddr("randomUser");
 
     uint128 constant MAX_UINT128 = type(uint128).max;
+    uint256 constant GATEWAY_INITIAL_BALACE = 10 ether;
 
     // default values
     uint128 public defaultAssetId = 1;
@@ -61,10 +62,10 @@ contract BaseTest is Deployer, Test {
         deploy(address(this));
 
         // deploy mock routers
-        
-        router1 = new MockRouter(address(aggregator));
-        router2 = new MockRouter(address(aggregator));
-        router3 = new MockRouter(address(aggregator));
+
+        router1 = new MockRouter(address(gateway));
+        router2 = new MockRouter(address(gateway));
+        router3 = new MockRouter(address(gateway));
 
         router1.setReturn("estimate", uint256(1 gwei));
         router2.setReturn("estimate", uint256(1.25 gwei));
@@ -76,7 +77,6 @@ contract BaseTest is Deployer, Test {
 
         // wire contracts
         wire(address(router1));
-        aggregator.file("routers", testRouters);
         // remove deployer access
         // removeDeployerAccess(address(router)); // need auth permissions in tests
 
@@ -84,15 +84,18 @@ contract BaseTest is Deployer, Test {
         mockedGasService = new MockGasService();
         erc20 = _newErc20("X's Dollar", "USDX", 6);
 
+        gateway.file("routers", testRouters);
+        gateway.file("gasService", address(mockedGasService));
+        vm.deal(address(gateway), GATEWAY_INITIAL_BALACE);
+
         mockedGasService.setReturn("estimate", uint256(0.5 gwei));
-        aggregator.file("gasService", address(mockedGasService));
+        mockedGasService.setReturn("shouldRefuel", true);
 
         // Label contracts
         vm.label(address(root), "Root");
         vm.label(address(investmentManager), "InvestmentManager");
         vm.label(address(poolManager), "PoolManager");
         vm.label(address(gateway), "Gateway");
-        vm.label(address(aggregator), "Aggregator");
         vm.label(address(router1), "MockRouter1");
         vm.label(address(router2), "MockRouter2");
         vm.label(address(router3), "MockRouter3");
@@ -112,7 +115,6 @@ contract BaseTest is Deployer, Test {
         excludeContract(address(investmentManager));
         excludeContract(address(poolManager));
         excludeContract(address(gateway));
-        excludeContract(address(aggregator));
         excludeContract(address(erc20));
         excludeContract(address(centrifugeChain));
         excludeContract(address(centrifugeRouter));

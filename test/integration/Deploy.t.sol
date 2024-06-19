@@ -38,7 +38,7 @@ contract DeployTest is Test, Deployer {
 
     function setUp() public {
         deploy(address(this));
-        PermissionlessRouter router = new PermissionlessRouter(address(aggregator));
+        PermissionlessRouter router = new PermissionlessRouter(address(gateway));
         wire(address(router));
 
         // overwrite deployed guardian with a new mock safe guardian
@@ -47,7 +47,7 @@ contract DeployTest is Test, Deployer {
         pausers[1] = makeAddr("pauser2");
         pausers[2] = makeAddr("pauser3");
         adminSafe = address(new MockSafe(pausers, 1));
-        guardian = new Guardian(adminSafe, address(root), address(aggregator));
+        guardian = new Guardian(adminSafe, address(root), address(gateway));
         root.rely(address(guardian));
 
         erc20 = newErc20("Test", "TEST", 6);
@@ -64,7 +64,6 @@ contract DeployTest is Test, Deployer {
         assertEq(poolManager.wards(address(this)), 0);
         assertEq(escrow.wards(address(this)), 0);
         assertEq(gateway.wards(address(this)), 0);
-        assertEq(aggregator.wards(address(this)), 0);
         // check factories
         assertEq(WardLike(trancheTokenFactory).wards(address(this)), 0);
         assertEq(WardLike(vaultFactory).wards(address(this)), 0);
@@ -98,6 +97,7 @@ contract DeployTest is Test, Deployer {
         ERC7540Vault vault = ERC7540Vault(vault_);
 
         deal(address(erc20), self, amount);
+        deal(address(gateway), 10 ether);
 
         vm.prank(address(gateway));
         poolManager.updateMember(poolId, trancheId, self, validUntil);

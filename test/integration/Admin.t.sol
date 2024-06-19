@@ -15,7 +15,7 @@ contract AdminTest is BaseTest {
 
         // permissions set correctly
         assertEq(root.wards(address(guardian)), 1);
-        assertEq(aggregator.wards(address(guardian)), 1);
+        assertEq(gateway.wards(address(guardian)), 1);
     }
 
     //------ pause tests ------//

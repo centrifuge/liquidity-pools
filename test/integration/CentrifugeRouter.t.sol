@@ -5,34 +5,10 @@ import "test/BaseTest.sol";
 import "src/interfaces/IERC7575.sol";
 import "src/interfaces/IERC7540.sol";
 import "src/interfaces/IERC20.sol";
-import {GatewayV2} from "src/gateway/GatewayV2.sol";
 import {CentrifugeRouter} from "src/CentrifugeRouter.sol";
 import {MockERC20Wrapper} from "test/mocks/MockERC20Wrapper.sol";
-//TODO-REMOVE once Gateway is replaced with GatewayV2
-import {AuthLike} from "script/Deployer.sol";
 
 contract CentrifugeRouterTest is BaseTest {
-    GatewayV2 gatewayV2;
-    uint256 constant GATEWAY_TOPUP_VALUE = 1 ether;
-
-    //TODO-REFACTOR once Gateway is replaced with GatewayV2
-    function setUp() public override {
-        super.setUp();
-        gatewayV2 =
-            new GatewayV2(address(root), address(investmentManager), address(poolManager), address(mockedGasService));
-        gatewayV2.file("routers", testRouters);
-        gatewayV2.rely(address(investmentManager));
-        gatewayV2.rely(address(root));
-        mockedGasService.setReturn("shouldRefuel", true);
-        payable(address(gatewayV2)).transfer(GATEWAY_TOPUP_VALUE);
-
-        root.relyContract(address(investmentManager), address(this));
-        investmentManager.file("gateway", address(gatewayV2));
-        centrifugeRouter = new CentrifugeRouter(address(routerEscrow), address(poolManager), address(gatewayV2));
-        root.endorse(address(centrifugeRouter));
-        AuthLike(address(routerEscrow)).rely(address(centrifugeRouter));
-    }
-
     uint256 constant GAS_BUFFER = 10 gwei;
     /// @dev Payload is not taken into account during gas estimation
     bytes constant PAYLOAD_FOR_GAS_ESTIMATION = "irrelevant_value";
@@ -63,7 +39,7 @@ contract CentrifugeRouterTest is BaseTest {
 
         centrifugeRouter.requestDeposit{value: gas}(vault_, amount, self, self, gas);
 
-        assertEq(address(gatewayV2).balance, GATEWAY_TOPUP_VALUE + GAS_BUFFER);
+        assertEq(address(gateway).balance, GATEWAY_INITIAL_BALACE + GAS_BUFFER);
         for (uint8 i; i < testRouters.length; i++) {
             MockRouter router = MockRouter(testRouters[i]);
             uint256[] memory payCalls = router.callsWithValue("pay");
@@ -491,6 +467,6 @@ contract CentrifugeRouterTest is BaseTest {
     }
 
     function estimateGas() internal view returns (uint256 total) {
-        (, total) = gatewayV2.estimate(PAYLOAD_FOR_GAS_ESTIMATION);
+        (, total) = gateway.estimate(PAYLOAD_FOR_GAS_ESTIMATION);
     }
 }

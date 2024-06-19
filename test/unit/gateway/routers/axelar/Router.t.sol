@@ -63,7 +63,7 @@ contract AxelarRouterTest is Test {
     function testOutgoingCalls(bytes calldata message, address invalidOrigin) public {
         vm.assume(invalidOrigin != address(gateway));
 
-        vm.expectRevert(bytes("AxelarRouter/only-aggregator-allowed-to-call"));
+        vm.expectRevert(bytes("AxelarRouter/only-gateway-allowed-to-call"));
         router.send(message);
 
         vm.prank(address(gateway));

@@ -17,7 +17,7 @@ import {BytesLib} from "src/libraries/BytesLib.sol";
 import {IEscrow} from "src/interfaces/IEscrow.sol";
 
 interface GatewayLike {
-    function send(bytes memory message) external;
+    function send(bytes memory message, address source) external;
 }
 
 interface InvestmentManagerLike {
@@ -101,7 +101,9 @@ contract PoolManager is Auth, IPoolManager {
 
         SafeTransferLib.safeTransferFrom(asset, msg.sender, address(escrow), amount);
 
-        gateway.send(abi.encodePacked(uint8(MessagesLib.Call.Transfer), assetId, msg.sender, recipient, amount));
+        gateway.send(
+            abi.encodePacked(uint8(MessagesLib.Call.Transfer), assetId, msg.sender, recipient, amount), address(this)
+        );
         emit TransferCurrency(asset, recipient, amount);
     }
 
@@ -125,7 +127,8 @@ contract PoolManager is Auth, IPoolManager {
                 MessagesLib.formatDomain(MessagesLib.Domain.Centrifuge),
                 destinationAddress,
                 amount
-            )
+            ),
+            address(this)
         );
 
         emit TransferTrancheTokensToCentrifuge(poolId, trancheId, destinationAddress, amount);
@@ -152,7 +155,8 @@ contract PoolManager is Auth, IPoolManager {
                 MessagesLib.formatDomain(MessagesLib.Domain.EVM, destinationChainId),
                 destinationAddress.toBytes32(),
                 amount
-            )
+            ),
+            address(this)
         );
 
         emit TransferTrancheTokensToEVM(poolId, trancheId, destinationChainId, destinationAddress, amount);

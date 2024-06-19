@@ -2,7 +2,6 @@
 pragma solidity 0.8.21;
 
 import {Root} from "src/Root.sol";
-import {Aggregator} from "src/gateway/routers/Aggregator.sol";
 import {Gateway} from "src/gateway/Gateway.sol";
 import {GasService} from "src/gateway/GasService.sol";
 import {InvestmentManager} from "src/InvestmentManager.sol";
@@ -37,7 +36,6 @@ contract Deployer is Script {
     Escrow public routerEscrow;
     Guardian public guardian;
     Gateway public gateway;
-    Aggregator public aggregator;
     GasService public gasService;
     CentrifugeRouter public centrifugeRouter; // TODO: rename once routers => adapters rename is in
     address public vaultFactory;
@@ -58,10 +56,12 @@ contract Deployer is Script {
         trancheTokenFactory = address(new TrancheTokenFactory{salt: salt}(address(root), deployer));
         investmentManager = new InvestmentManager(address(root), address(escrow));
         poolManager = new PoolManager(address(escrow), vaultFactory, restrictionManagerFactory, trancheTokenFactory);
+
         // TODO THESE VALUES NEEDS TO BE CHECKED
         gasService = new GasService(20000000000000000, 20000000000000000, 2500000000000000000, 178947400000000);
         gasService.rely(address(root));
 
+        gateway = new Gateway(address(root), address(investmentManager), address(poolManager), address(gasService));
         routerEscrow = new Escrow(deployer);
         centrifugeRouter = new CentrifugeRouter(address(routerEscrow), address(poolManager), address(gateway));
         AuthLike(address(routerEscrow)).rely(address(centrifugeRouter));
@@ -76,25 +76,18 @@ contract Deployer is Script {
         AuthLike(trancheTokenFactory).rely(address(root));
         AuthLike(restrictionManagerFactory).rely(address(root));
 
-        gateway = new Gateway(address(root), address(investmentManager), address(poolManager));
-        aggregator = new Aggregator(address(gateway), address(gasService));
-        guardian = new Guardian(adminSafe, address(root), address(aggregator));
+        guardian = new Guardian(adminSafe, address(root), address(gateway));
     }
 
     function wire(address router) public {
         routers.push(router);
 
-        // Wire aggregator
-        aggregator.file("routers", routers);
-        aggregator.rely(address(gateway));
-        gateway.file("aggregator", address(aggregator));
-        gateway.rely(address(aggregator));
-
         // Wire guardian
         root.rely(address(guardian));
-        aggregator.rely(address(guardian));
+        gateway.rely(address(guardian));
 
         // Wire gateway
+        gateway.file("routers", routers);
         root.rely(address(gateway));
         investmentManager.file("poolManager", address(poolManager));
         poolManager.file("investmentManager", address(investmentManager));
@@ -109,7 +102,6 @@ contract Deployer is Script {
         poolManager.rely(address(root));
         poolManager.rely(address(gateway));
         gateway.rely(address(root));
-        aggregator.rely(address(root));
         AuthLike(router).rely(address(root));
         AuthLike(address(escrow)).rely(address(root));
         AuthLike(address(routerEscrow)).rely(address(root));
@@ -127,7 +119,6 @@ contract Deployer is Script {
         escrow.deny(deployer);
         routerEscrow.deny(deployer);
         gateway.deny(deployer);
-        aggregator.deny(deployer);
         centrifugeRouter.deny(deployer);
         gasService.deny(deployer);
     }

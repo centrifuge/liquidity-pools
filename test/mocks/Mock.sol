@@ -36,10 +36,6 @@ contract Mock is Test {
     }
 
     function callsWithValue(bytes32 key) public view returns (uint256[] memory) {
-        console.log("adddress:", address(this));
-        console.log("key:");
-        console.logBytes32(key);
-        console.log("calls:", calls_with_value[key].length);
         return calls_with_value[key];
     }
 
