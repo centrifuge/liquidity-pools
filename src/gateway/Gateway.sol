@@ -308,12 +308,14 @@ contract Gateway is Auth, IGateway {
     /// @inheritdoc IGateway
     function estimate(bytes calldata payload) external view returns (uint256[] memory tranches, uint256 total) {
         bytes memory proof = abi.encodePacked(uint8(MessagesLib.Call.MessageProof), keccak256(payload));
-        uint256 destChainCost = gasService.estimate(payload);
+        uint256 proofCost = gasService.estimate(payload);
+        uint256 messageCost = gasService.estimate(proof);
         tranches = new uint256[](routers.length);
 
         for (uint256 i; i < routers.length; i++) {
-            uint256 estimated =
-                RouterLike(routers[i]).estimate(i == PRIMARY_ROUTER_ID - 1 ? payload : proof, destChainCost);
+            uint256 centrifugeCost = i == PRIMARY_ROUTER_ID - 1 ? messageCost : proofCost;
+            bytes memory message = i == PRIMARY_ROUTER_ID - 1 ? payload : proof;
+            uint256 estimated = RouterLike(routers[i]).estimate(message, centrifugeCost);
             tranches[i] = estimated;
             total += estimated;
         }
