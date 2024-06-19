@@ -98,7 +98,7 @@ contract GatewayTest is BaseTest {
         MockManager mgr = new MockManager();
 
         bytes memory message = abi.encodePacked(messageId);
-        vm.expectRevert(stdError.enumConversionError);
+        vm.expectRevert(bytes("Gateway/unregistered-message-id"));
         vm.prank(address(router1));
         gateway.handle(message);
 

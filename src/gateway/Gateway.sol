@@ -134,24 +134,21 @@ contract Gateway is Auth, IGateway {
     function handle(bytes calldata message) external pauseable {
         Router memory router = activeRouters[msg.sender];
         require(router.id != 0, "Gateway/invalid-router");
-        uint8 id = message.toUint8(0);
-        address manager = messageHandlers[id];
-        if (manager != address(0)) {
-            ManagerLike(manager).handle(message);
-        } else {
-            _handle(message, msg.sender, router, false);
-        }
+        _handle(message, msg.sender, router, false);
     }
 
     function _handle(bytes calldata payload, address routerAddr, Router memory router, bool isRecovery) internal {
-        MessagesLib.Call call = MessagesLib.messageType(payload);
-        if (call == MessagesLib.Call.InitiateMessageRecovery || call == MessagesLib.Call.DisputeMessageRecovery) {
+        uint8 call = payload.toUint8(0);
+        if (
+            call == uint8(MessagesLib.Call.InitiateMessageRecovery)
+                || call == uint8(MessagesLib.Call.DisputeMessageRecovery)
+        ) {
             require(!isRecovery, "Gateway/no-recursive-recovery-allowed");
             require(routers.length > 1, "Gateway/no-recovery-with-one-router-allowed");
             return _handleRecovery(payload);
         }
 
-        bool isMessageProof = call == MessagesLib.Call.MessageProof;
+        bool isMessageProof = call == uint8(MessagesLib.Call.MessageProof);
         if (router.quorum == 1 && !isMessageProof) {
             // Special case for gas efficiency
             _dispatch(payload);
@@ -341,7 +338,10 @@ contract Gateway is Auth, IGateway {
         } else if (id >= 21 && id <= 22 || id == 31) {
             manager = address(root);
         } else {
-            revert("Gateway/unsupported-message-id");
+            // Dynamic path for other managers, to be able to easily
+            // extend functionality of Liquidity Pools
+            manager = messageHandlers[id];
+            require(manager != address(0), "Gateway/unregistered-message-id");
         }
 
         ManagerLike(manager).handle(message);
