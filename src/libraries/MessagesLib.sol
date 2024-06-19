@@ -76,9 +76,7 @@ library MessagesLib {
         /// 31 - Recover Tokens sent to the wrong contract
         RecoverTokens,
         /// 32 - Update Centrifuge Gas Price
-        UpdateCentrifugeGasPrice,
-        /// 33 - Mark Entrypoint
-        EntryPoint
+        UpdateCentrifugeGasPrice
     }
 
     enum Domain {
