@@ -133,7 +133,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     }
 
     // --- ERC20 wrapping ---
-    function wrap(address wrapper, uint256 amount, address receiver) external protected {
+    function wrap(address wrapper, uint256 amount) external protected {
         address underlying = IERC20Wrapper(wrapper).underlying();
 
         amount = MathLib.min(amount, IERC20(underlying).balanceOf(_initiator));
@@ -141,7 +141,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         SafeTransferLib.safeTransferFrom(underlying, _initiator, address(this), amount);
 
         _approveMax(underlying, wrapper);
-        require(IERC20Wrapper(wrapper).depositFor(receiver, amount), "CentrifugeRouter/deposit-for-failed");
+        require(IERC20Wrapper(wrapper).depositFor(address(this), amount), "CentrifugeRouter/deposit-for-failed");
     }
 
     function unwrap(address wrapper, uint256 amount, address receiver) external protected {

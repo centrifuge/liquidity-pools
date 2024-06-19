@@ -46,7 +46,7 @@ interface ICentrifugeRouter {
 
     // --- ERC20 wrapping ---
     /// @notice TODO
-    function wrap(address wrapper, uint256 amount, address receiver) external;
+    function wrap(address wrapper, uint256 amount) external;
 
     /// @notice TODO
     function unwrap(address wrapper, uint256 amount, address receiver) external;

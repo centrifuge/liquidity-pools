@@ -296,8 +296,7 @@ contract CentrifugeRoutertest is BaseTest {
 
         // multicall
         bytes[] memory calls = new bytes[](2);
-        calls[0] =
-            abi.encodeWithSelector(centrifugeRouter.wrap.selector, address(wrapper), amount, address(centrifugeRouter));
+        calls[0] = abi.encodeWithSelector(centrifugeRouter.wrap.selector, address(wrapper), amount);
         calls[1] = abi.encodeWithSelector(
             centrifugeRouter.requestDeposit.selector, vault_, amount, investor, address(centrifugeRouter)
         );
@@ -332,8 +331,7 @@ contract CentrifugeRoutertest is BaseTest {
 
         // multicall
         bytes[] memory calls = new bytes[](3);
-        calls[0] =
-            abi.encodeWithSelector(centrifugeRouter.wrap.selector, address(wrapper), amount, address(centrifugeRouter));
+        calls[0] = abi.encodeWithSelector(centrifugeRouter.wrap.selector, address(wrapper), amount);
         calls[1] = abi.encodeWithSelector(
             centrifugeRouter.lockDepositRequest.selector, vault_, amount, investor, address(centrifugeRouter)
         );
@@ -371,8 +369,7 @@ contract CentrifugeRoutertest is BaseTest {
 
         // multicall
         bytes[] memory calls = new bytes[](2);
-        calls[0] =
-            abi.encodeWithSelector(centrifugeRouter.wrap.selector, address(wrapper), amount, address(centrifugeRouter));
+        calls[0] = abi.encodeWithSelector(centrifugeRouter.wrap.selector, address(wrapper), amount);
         calls[1] = abi.encodeWithSelector(centrifugeRouter.unwrap.selector, address(wrapper), amount, investor);
         centrifugeRouter.multicall(calls);
 
