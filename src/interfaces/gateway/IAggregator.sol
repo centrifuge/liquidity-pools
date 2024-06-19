@@ -25,11 +25,6 @@ interface IAggregator {
         bytes pendingMessage;
     }
 
-    struct Recovery {
-        uint256 timestamp;
-        address router;
-    }
-
     // --- Events ---
     event HandleMessage(bytes message, address router);
     event HandleProof(bytes32 messageHash, address router);
@@ -38,8 +33,8 @@ interface IAggregator {
     event RecoverMessage(address router, bytes message);
     event RecoverProof(address router, bytes32 messageHash);
     event InitiateMessageRecovery(bytes32 messageHash, address router);
-    event DisputeMessageRecovery(bytes32 messageHash);
-    event ExecuteMessageRecovery(bytes message);
+    event DisputeMessageRecovery(bytes32 messageHash, address router);
+    event ExecuteMessageRecovery(bytes message, address router);
     event File(bytes32 indexed what, address[] routers);
 
     // --- Administration ---
@@ -52,7 +47,7 @@ interface IAggregator {
     function handle(bytes calldata payload) external;
 
     /// @notice TODO
-    function disputeMessageRecovery(bytes32 messageHash) external;
+    function disputeMessageRecovery(address router, bytes32 messageHash) external;
 
     /// @dev Governance on Centrifuge Chain can initiate message recovery. After the challenge period,
     ///      the recovery can be executed. If a malign router initiates message recovery, governance on
@@ -60,7 +55,7 @@ interface IAggregator {
     ///
     ///      Only 1 recovery can be outstanding per message hash. If multiple routers fail at the same time,
     //       these will need to be recovered serially (increasing the challenge period for each failed router).
-    function executeMessageRecovery(bytes calldata message) external;
+    function executeMessageRecovery(address router, bytes calldata message) external;
 
     // --- Outgoing ---
     /// @dev Sends 1 message to the first router with the full message, and n-1 messages to the other routers with
