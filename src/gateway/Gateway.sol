@@ -269,12 +269,8 @@ contract Gateway is Auth, IGateway {
             bytes memory payload = isPrimaryRouter ? message : proof;
 
             uint256 consumed = currentRouter.estimate(payload, isPrimaryRouter ? messageCost : proofCost);
-            uint256 remaining;
-            unchecked {
-                remaining = tank - consumed;
-            }
-            require(remaining < tank, "Gateway/not-enough-gas-funds");
-            tank = remaining;
+            require(consumed <= tank, "Gateway/not-enough-gas-funds");
+            tank -= consumed;
 
             currentRouter.pay{value: consumed}(payload, address(this));
             currentRouter.send(payload);
