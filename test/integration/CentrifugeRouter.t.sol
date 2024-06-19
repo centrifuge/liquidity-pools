@@ -408,6 +408,46 @@ contract CentrifugeRouterTest is BaseTest {
         assertEq(erc20.balanceOf(investor), amount);
     }
 
+    function testMultipleTopUpScenarios(uint256 amount) public {
+        amount = uint128(bound(amount, 4, MAX_UINT128));
+        vm.assume(amount % 2 == 0);
+
+        address vault_ = deploySimpleVault();
+        ERC7540Vault vault = ERC7540Vault(vault_);
+        vm.label(vault_, "vault");
+
+        erc20.mint(self, amount);
+
+        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max);
+        erc20.approve(vault_, amount);
+
+        uint256 gasLimit = estimateGas();
+        uint256 lessGas = gasLimit - 1;
+
+        vm.expectRevert("Gateway/cannot-topup-with-nothing");
+        centrifugeRouter.requestDeposit(vault_, amount, self, self, 0);
+
+        vm.expectRevert("CentrifugeRouter/insufficient-funds-to-topup");
+        centrifugeRouter.requestDeposit{value: lessGas}(vault_, amount, self, self, gasLimit);
+
+        vm.expectRevert("Gateway/not-enough-gas-funds");
+        centrifugeRouter.requestDeposit{value: lessGas}(vault_, amount, self, self, lessGas);
+
+        bytes[] memory calls = new bytes[](2);
+        calls[0] =
+            abi.encodeWithSelector(centrifugeRouter.requestDeposit.selector, vault_, amount / 2, self, self, gasLimit);
+        calls[1] =
+            abi.encodeWithSelector(centrifugeRouter.requestDeposit.selector, vault_, amount / 2, self, self, gasLimit);
+
+        vm.expectRevert("CentrifugeRouter/insufficient-funds-to-topup");
+        centrifugeRouter.multicall{value: gasLimit}(calls);
+
+        uint256 coverMoreThanItIsNeeded = gasLimit * calls.length + 1;
+        assertEq(address(centrifugeRouter).balance, 0);
+        centrifugeRouter.multicall{value: coverMoreThanItIsNeeded}(calls);
+        assertEq(address(centrifugeRouter).balance, 1);
+    }
+
     // --- helpers ---
     function fulfillDepositRequest(ERC7540Vault vault, uint128 assetId, uint256 amount, address user)
         public

@@ -61,7 +61,6 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         payable
         protected
     {
-        require(topUpAmount <= msg.value, "CentrifugeRouter/must-pay-for-tx-costs");
         require(topUpAmount <= address(this).balance, "CentrifugeRouter/insufficient-funds-to-topup");
 
         if (owner == address(this)) {
