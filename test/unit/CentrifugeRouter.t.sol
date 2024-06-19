@@ -14,12 +14,6 @@ contract CentrifugeRouterTest is BaseTest {
         assertEq(centrifugeRouter.getVault(vault.poolId(), vault.trancheId(), address(erc20)), vault_);
     }
 
-    function testFile() public {
-        vm.prank(address(root));
-        centrifugeRouter.file("poolManager", address(0x1));
-        assertEq(address(centrifugeRouter.poolManager()), address(0x1));
-    }
-
     function testRecoverTokens() public {
         uint256 amount = 100;
         erc20.mint(address(centrifugeRouter), amount);

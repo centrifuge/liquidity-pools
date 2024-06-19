@@ -8,24 +8,20 @@ import {IERC20, IERC20Permit, IERC20Wrapper} from "src/interfaces/IERC20.sol";
 import {IERC7540Vault} from "src/interfaces/IERC7540.sol";
 import {ICentrifugeRouter} from "src/interfaces/ICentrifugeRouter.sol";
 import {IPoolManager} from "src/interfaces/IPoolManager.sol";
-
-interface EscrowLike {
-    function approve(address token, address spender, uint256 value) external;
-}
+import {IEscrow} from "src/interfaces/IEscrow.sol";
 
 contract CentrifugeRouter is Auth, ICentrifugeRouter {
-    address public immutable escrow;
+    IEscrow public immutable escrow;
+    IPoolManager public immutable poolManager;
 
     address constant UNSET_INITIATOR = address(1);
     address internal _initiator = UNSET_INITIATOR;
-
-    IPoolManager public poolManager;
 
     /// @inheritdoc ICentrifugeRouter
     mapping(address controller => mapping(address vault => uint256 amount)) public lockedRequests;
 
     constructor(address escrow_, address poolManager_) {
-        escrow = escrow_;
+        escrow = IEscrow(escrow_);
         poolManager = IPoolManager(poolManager_);
 
         wards[msg.sender] = 1;
@@ -46,13 +42,6 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     }
 
     // --- Administration ---
-    /// @inheritdoc ICentrifugeRouter
-    function file(bytes32 what, address data) external auth {
-        if (what == "poolManager") poolManager = IPoolManager(data);
-        else revert("CentrifugeRouter/file-unrecognized-param");
-        emit File(what, data);
-    }
-
     /// @inheritdoc ICentrifugeRouter
     function recoverTokens(address token, address to, uint256 amount) external auth {
         SafeTransferLib.safeTransfer(token, to, amount);
@@ -76,7 +65,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
 
         address asset = poolManager.vaultToAsset(vault);
         require(asset != address(0), "CentrifugeRouter/unknown-vault");
-        SafeTransferLib.safeTransferFrom(asset, owner, escrow, amount);
+        SafeTransferLib.safeTransferFrom(asset, owner, address(escrow), amount);
 
         lockedRequests[controller][vault] += amount;
         emit LockDepositRequest(vault, controller, owner, _initiator, amount);
@@ -91,9 +80,9 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         address asset = poolManager.vaultToAsset(vault);
 
         require(asset != address(0), "CentrifugeRouter/unknown-vault");
-        EscrowLike(escrow).approve(asset, address(this), lockedRequest);
+        escrow.approveMax(asset, address(this));
 
-        SafeTransferLib.safeTransferFrom(asset, escrow, _initiator, lockedRequest);
+        SafeTransferLib.safeTransferFrom(asset, address(escrow), _initiator, lockedRequest);
         emit UnlockDepositRequest(vault, _initiator);
     }
 
@@ -106,8 +95,8 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         address asset = poolManager.vaultToAsset(vault);
 
         require(asset != address(0), "CentrifugeRouter/unknown-vault");
-        EscrowLike(escrow).approve(asset, address(this), lockedRequest);
-        SafeTransferLib.safeTransferFrom(asset, escrow, address(this), lockedRequest);
+        escrow.approveMax(asset, address(this));
+        SafeTransferLib.safeTransferFrom(asset, address(escrow), address(this), lockedRequest);
 
         _approveMax(asset, vault);
         IERC7540Vault(vault).requestDeposit(lockedRequest, controller, address(this));

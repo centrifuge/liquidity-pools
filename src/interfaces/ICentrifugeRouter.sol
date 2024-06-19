@@ -8,15 +8,11 @@ interface ICentrifugeRouter {
     );
     event UnlockDepositRequest(address indexed vault, address indexed controller);
     event ExecuteLockedDepositRequest(address indexed vault, address indexed controller, address sender);
-    event File(bytes32 indexed what, address data);
 
     /// @notice TODO
     function lockedRequests(address controller, address vault) external view returns (uint256 amount);
 
     // --- Administration ---
-    /// @notice TODO
-    function file(bytes32 what, address data) external;
-
     /// @notice TODO
     function recoverTokens(address token, address to, uint256 amount) external;
 
