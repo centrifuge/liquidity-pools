@@ -63,7 +63,7 @@ contract Deployer is Script {
         gasService.rely(address(root));
 
         routerEscrow = new Escrow(deployer);
-        centrifugeRouter = new CentrifugeRouter(address(routerEscrow), address(poolManager));
+        centrifugeRouter = new CentrifugeRouter(address(routerEscrow), address(poolManager), address(gateway));
         AuthLike(address(routerEscrow)).rely(address(centrifugeRouter));
         root.endorse(address(centrifugeRouter));
         root.endorse(address(escrow));
@@ -79,10 +79,6 @@ contract Deployer is Script {
         gateway = new Gateway(address(root), address(investmentManager), address(poolManager));
         aggregator = new Aggregator(address(gateway), address(gasService));
         guardian = new Guardian(adminSafe, address(root), address(aggregator));
-
-        centrifugeRouter = new CentrifugeRouter(address(poolManager), payable(address(gateway)));
-        root.endorse(address(centrifugeRouter));
-        root.endorse(address(escrow));
     }
 
     function wire(address router) public {

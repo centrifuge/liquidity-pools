@@ -8,25 +8,29 @@ import "src/interfaces/IERC20.sol";
 import {GatewayV2} from "src/gateway/GatewayV2.sol";
 import {CentrifugeRouter} from "src/CentrifugeRouter.sol";
 import {MockERC20Wrapper} from "test/mocks/MockERC20Wrapper.sol";
+//TODO-REMOVE once Gateway is replaced with GatewayV2
+import {AuthLike} from "script/Deployer.sol";
 
 contract CentrifugeRouterTest is BaseTest {
     GatewayV2 gatewayV2;
     uint256 constant GATEWAY_TOPUP_VALUE = 1 ether;
 
+    //TODO-REFACTOR once Gateway is replaced with GatewayV2
     function setUp() public override {
         super.setUp();
         gatewayV2 =
             new GatewayV2(address(root), address(investmentManager), address(poolManager), address(mockedGasService));
         gatewayV2.file("routers", testRouters);
         gatewayV2.rely(address(investmentManager));
-        gateway.rely(address(root));
+        gatewayV2.rely(address(root));
         mockedGasService.setReturn("shouldRefuel", true);
         payable(address(gatewayV2)).transfer(GATEWAY_TOPUP_VALUE);
 
         root.relyContract(address(investmentManager), address(this));
         investmentManager.file("gateway", address(gatewayV2));
-        centrifugeRouter = new CentrifugeRouter(address(poolManager), address(gatewayV2));
+        centrifugeRouter = new CentrifugeRouter(address(routerEscrow), address(poolManager), address(gatewayV2));
         root.endorse(address(centrifugeRouter));
+        AuthLike(address(routerEscrow)).rely(address(centrifugeRouter));
     }
 
     uint256 constant GAS_BUFFER = 10 gwei;
@@ -45,22 +49,21 @@ contract CentrifugeRouterTest is BaseTest {
         erc20.mint(self, amount);
 
         vm.expectRevert(bytes("Gateway/cannot-topup-with-nothing"));
-        centrifugeRouter.requestDeposit(vault_, amount, 0);
+        centrifugeRouter.requestDeposit(vault_, amount, self, self, 0);
 
-        vm.expectRevert(bytes("InvestmentManager/owner-is-restricted")); // fail: receiver not member
-        centrifugeRouter.requestDeposit{value: 1 wei}(vault_, amount, 1 wei);
-        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max); // add user as member
+        vm.expectRevert(bytes("InvestmentManager/owner-is-restricted"));
+        centrifugeRouter.requestDeposit{value: 1 wei}(vault_, amount, self, self, 1 wei);
+        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max);
 
         uint256 gas = estimateGas() + GAS_BUFFER;
 
-        vm.expectRevert(bytes("SafeTransferLib/safe-transfer-from-failed")); // fail: no allowance
-        centrifugeRouter.requestDeposit{value: gas}(vault_, amount, gas);
+        vm.expectRevert(bytes("SafeTransferLib/safe-transfer-from-failed"));
+        centrifugeRouter.requestDeposit{value: gas}(vault_, amount, self, self, gas);
+        erc20.approve(vault_, amount);
 
-        erc20.approve(vault_, amount); // grant approval to cfg router
-        centrifugeRouter.requestDeposit{value: gas}(vault_, amount, gas);
+        centrifugeRouter.requestDeposit{value: gas}(vault_, amount, self, self, gas);
 
         assertEq(address(gatewayV2).balance, GATEWAY_TOPUP_VALUE + GAS_BUFFER);
-
         for (uint8 i; i < testRouters.length; i++) {
             MockRouter router = MockRouter(testRouters[i]);
             uint256[] memory payCalls = router.callsWithValue("pay");
@@ -70,16 +73,6 @@ contract CentrifugeRouterTest is BaseTest {
                 router.estimate(PAYLOAD_FOR_GAS_ESTIMATION, mockedGasService.estimate(PAYLOAD_FOR_GAS_ESTIMATION))
             );
         }
-
-        vm.expectRevert(bytes("InvestmentManager/owner-is-restricted"));
-        centrifugeRouter.requestDeposit(vault_, amount, self, self);
-        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max);
-
-        vm.expectRevert(bytes("SafeTransferLib/safe-transfer-from-failed"));
-        centrifugeRouter.requestDeposit(vault_, amount, self, self);
-        erc20.approve(vault_, amount);
-
-        centrifugeRouter.requestDeposit(vault_, amount, self, self);
 
         // trigger - deposit order fulfillment
         uint128 assetId = poolManager.assetToId(address(erc20));
@@ -313,10 +306,11 @@ contract CentrifugeRouterTest is BaseTest {
 
         (ERC20 erc20X, ERC20 erc20Y, ERC7540Vault vault1, ERC7540Vault vault2) = setUpMultipleVaults(amount1, amount2);
 
-        uint256 fuel = estimateGas();
+        uint256 gas = estimateGas();
         bytes[] memory calls = new bytes[](2);
-        calls[0] = abi.encodeWithSelector(centrifugeRouter.requestDeposit.selector, vault1, amount1, self, self, fuel);
-        calls[1] = abi.encodeWithSelector(centrifugeRouter.requestDeposit.selector, vault2, amount2, self, self, fuel);
+        calls[0] = abi.encodeWithSelector(centrifugeRouter.requestDeposit.selector, vault1, amount1, self, self, gas);
+        calls[1] = abi.encodeWithSelector(centrifugeRouter.requestDeposit.selector, vault2, amount2, self, self, gas);
+        centrifugeRouter.multicall{value: gas * calls.length}(calls);
 
         // trigger - deposit order fulfillment
         uint128 assetId1 = poolManager.assetToId(address(erc20X));
@@ -346,6 +340,7 @@ contract CentrifugeRouterTest is BaseTest {
         vm.label(vault_, "vault");
 
         address investor = makeAddr("investor");
+        vm.deal(investor, 10 ether);
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), investor, type(uint64).max);
 
         erc20.mint(investor, amount);
@@ -353,13 +348,15 @@ contract CentrifugeRouterTest is BaseTest {
         // TODO: use permit instead of approve, to show this is also possible
         erc20.approve(address(centrifugeRouter), amount);
 
+        uint256 gas = estimateGas();
+
         // multicall
         bytes[] memory calls = new bytes[](2);
         calls[0] = abi.encodeWithSelector(centrifugeRouter.wrap.selector, address(wrapper), amount);
         calls[1] = abi.encodeWithSelector(
-            centrifugeRouter.requestDeposit.selector, vault_, amount, investor, address(centrifugeRouter)
+            centrifugeRouter.requestDeposit.selector, vault_, amount, investor, address(centrifugeRouter), gas
         );
-        centrifugeRouter.multicall(calls);
+        centrifugeRouter.multicall{value: gas}(calls);
 
         uint128 assetId = poolManager.assetToId(address(wrapper));
         (uint128 trancheTokensPayout) = fulfillDepositRequest(vault, assetId, amount, investor);
