@@ -37,7 +37,6 @@ contract GatewayExtensionTest is Test {
         gasService.setReturn("shouldRefuel", true);
         vm.deal(address(gateway), 1 ether);
 
-
         router1 = new MockRouter(address(gateway));
         vm.label(address(router1), "MockRouter1");
         router2 = new MockRouter(address(gateway));
