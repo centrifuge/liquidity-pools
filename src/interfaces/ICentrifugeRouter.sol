@@ -26,6 +26,9 @@ interface ICentrifugeRouter {
     /// @notice TODO
     function lockDepositRequest(address vault, uint256 amount, address controller, address owner) external;
 
+    /// @notice Helper method to lock a deposit request, and enable permissionless claiming of that vault in 1 call
+    function openLockDepositRequest(address vault, uint256 amount, address controller, address owner) external;
+
     /// @notice TODO
     function unlockDepositRequest(address vault) external;
 
@@ -41,6 +44,13 @@ interface ICentrifugeRouter {
 
     /// @notice TODO
     function claimRedeem(address vault, address receiver, address controller) external;
+
+    // --- Manage permissionless claiming ---
+    /// @notice Allow permissionless claiming
+    function open(address vault) external;
+
+    /// @notice Disallow permissionless claiming
+    function close(address vault) external;
 
     // --- ERC20 permit ---
     /// @notice TODO

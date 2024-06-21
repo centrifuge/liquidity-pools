@@ -18,10 +18,10 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     address internal _initiator = UNSET_INITIATOR;
 
     /// @inheritdoc ICentrifugeRouter
-    mapping(address controller => mapping(address vault => uint256 amount)) public lockedRequests;
+    mapping(address controller => mapping(address vault => bool)) public opened;
 
     /// @inheritdoc ICentrifugeRouter
-    mapping(address controller => mapping(address vault => bool)) public opened;
+    mapping(address controller => mapping(address vault => uint256 amount)) public lockedRequests;
 
     constructor(address escrow_, address poolManager_) {
         escrow = IEscrow(escrow_);
@@ -63,7 +63,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     }
 
     /// @inheritdoc ICentrifugeRouter
-    function lockDepositRequest(address vault, uint256 amount, address controller, address owner) external protected {
+    function lockDepositRequest(address vault, uint256 amount, address controller, address owner) public protected {
         require(owner == _initiator || owner == address(this), "CentrifugeRouter/invalid-owner");
 
         address asset = poolManager.vaultToAsset(vault);
@@ -72,6 +72,15 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         lockedRequests[controller][vault] += amount;
         SafeTransferLib.safeTransferFrom(asset, owner, address(escrow), amount);
         emit LockDepositRequest(vault, controller, owner, _initiator, amount);
+    }
+
+    /// @inheritdoc ICentrifugeRouter
+    function openLockDepositRequest(address vault, uint256 amount, address controller, address owner)
+        external
+        protected
+    {
+        open(vault);
+        lockDepositRequest(vault, amount, controller, owner);
     }
 
     /// @inheritdoc ICentrifugeRouter
@@ -132,7 +141,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     }
 
     // --- Manage permissionless claiming ---
-    function open(address vault) external protected {
+    function open(address vault) public protected {
         opened[_initiator][vault] = true;
     }
 
