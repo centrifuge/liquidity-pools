@@ -32,8 +32,7 @@ interface AxelarGasServiceLike {
 
 /// @title  Axelar Router
 /// @notice Routing contract that integrates with an Axelar Gateway
-
-contract AxelarRouter is IRouter, Auth {
+contract AxelarRouter is Auth, IRouter {
     string public constant CENTRIFUGE_ID = "centrifuge";
     bytes32 public constant CENTRIFUGE_ID_HASH = keccak256(bytes("centrifuge"));
     bytes32 public constant CENTRIFUGE_ADDRESS_HASH = keccak256(bytes("0x7369626CEF070000000000000000000000000000"));
@@ -50,6 +49,9 @@ contract AxelarRouter is IRouter, Auth {
         gateway = GatewayLike(gateway_);
         axelarGateway = AxelarGatewayLike(axelarGateway_);
         axelarGasService = AxelarGasServiceLike(axelarGasService_);
+
+        wards[msg.sender] = 1;
+        emit Rely(msg.sender);
     }
 
     // --- Administrative ---
