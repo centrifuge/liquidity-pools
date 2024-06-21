@@ -36,7 +36,7 @@ interface AxelarGasServiceLike {
 contract AxelarRouter is IRouter, Auth {
     string public constant CENTRIFUGE_ID = "centrifuge-2";
     bytes32 public constant CENTRIFUGE_ID_HASH = keccak256(bytes("centrifuge-2"));
-    bytes32 public constant CENTRIFUGE_ADDRESS_HASH =keccak256(bytes("0x7369626CEF070000000000000000000000000000"));
+    bytes32 public constant CENTRIFUGE_ADDRESS_HASH = keccak256(bytes("0x7369626CEF070000000000000000000000000000"));
     string public constant CENTRIFUGE_AXELAR_EXECUTABLE = "0x1940aafa3b20d9bfc49dc8f983ba2fe9fa958eaa";
 
     GatewayLike public immutable gateway;
