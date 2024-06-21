@@ -20,6 +20,9 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     /// @inheritdoc ICentrifugeRouter
     mapping(address controller => mapping(address vault => uint256 amount)) public lockedRequests;
 
+    /// @inheritdoc ICentrifugeRouter
+    mapping(address controller => mapping(address vault => bool)) public opened;
+
     constructor(address escrow_, address poolManager_) {
         escrow = IEscrow(escrow_);
         poolManager = IPoolManager(poolManager_);
@@ -104,7 +107,10 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
 
     /// @inheritdoc ICentrifugeRouter
     function claimDeposit(address vault, address receiver, address controller) external protected {
-        require(controller == _initiator || controller == receiver, "CentrifugeRouter/invalid-sender");
+        require(
+            controller == _initiator || (controller == receiver && opened[controller][vault] == true),
+            "CentrifugeRouter/invalid-sender"
+        );
         uint256 maxDeposit = IERC7540Vault(vault).maxDeposit(controller);
         IERC7540Vault(vault).deposit(maxDeposit, receiver, controller);
     }
@@ -117,9 +123,21 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
 
     /// @inheritdoc ICentrifugeRouter
     function claimRedeem(address vault, address receiver, address controller) external protected {
-        require(controller == _initiator || controller == receiver, "CentrifugeRouter/invalid-sender");
+        require(
+            controller == _initiator || (controller == receiver && opened[controller][vault] == true),
+            "CentrifugeRouter/invalid-sender"
+        );
         uint256 maxRedeem = IERC7540Vault(vault).maxRedeem(controller);
         IERC7540Vault(vault).redeem(maxRedeem, receiver, controller);
+    }
+
+    // --- Manage permissionless claiming ---
+    function open(address vault) external protected {
+        opened[_initiator][vault] = true;
+    }
+
+    function close(address vault) external protected {
+        opened[_initiator][vault] = false;
     }
 
     // --- ERC20 permits ---
