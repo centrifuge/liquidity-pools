@@ -7,8 +7,10 @@ solc_version = "0.8.21"
 evm_version = "paris" # to prevent usage of PUSH0, which is not supported on all chains
 
 optimizer = true
-optimizer_runs = 1_000
+optimizer_runs = 500
 verbosity = 3
+
+fs_permissions = [{ access = "read", path = "./deployments"}]
 
 [profile.default.fuzz]
 runs = 100
@@ -45,17 +47,15 @@ fail_on_revert = false
   ]
 
 [profile.smt.model_checker.contracts]
-  "src/LiquidityPool.sol" = ["LiquidityPool"]
+  "src/ERC7540Vault.sol" = ["ERC7540Vault"]
   "src/InvestmentManager.sol" = ["InvestmentManager"]
   "src/PoolManager.sol" = ["PoolManager"]
   "src/Escrow.sol" = ["Escrow"]
-  "src/UserEscrow.sol" = ["UserEscrow"]
   "src/Root.sol" = ["Root"]
   "src/token/ERC20.sol" = ["ERC20"]
   "src/token/Tranche.sol" = ["TrancheToken"]
   "src/token/RestrictionManager.sol" = ["RestrictionManager"]
-  "src/admins/DelayedAdmin.sol" = ["DelayedAdmin"]
-  "src/admins/PauseAdmin.sol" = ["PauseAdmin"]
+  "src/admin/Guardian.sol" = ["Guardian"]
 
 [doc]
   ignore = ["**/*.t.sol", "**/*.s.sol"]
@@ -72,3 +72,7 @@ fail_on_revert = false
   number_underscore = "preserve"
   wrap_comments = true
   ignore = ["test/*.sol"]
+
+[rpc_endpoints]
+ethereum-mainnet = "https://mainnet.infura.io/v3/${INFURA_API_KEY}"
+polygon-mainnet = "https://polygon-mainnet.infura.io/v3/${INFURA_API_KEY}" 

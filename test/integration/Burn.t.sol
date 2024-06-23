@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import "./../TestSetup.t.sol";
+import "test/BaseTest.sol";
 
-contract BurnTest is TestSetup {
+contract BurnTest is BaseTest {
     function testBurn(uint256 amount) public {
         amount = uint128(bound(amount, 2, MAX_UINT128));
 
-        address lPool_ = deploySimplePool();
-        LiquidityPool lPool = LiquidityPool(lPool_);
+        address vault_ = deploySimpleVault();
+        ERC7540Vault vault = ERC7540Vault(vault_);
 
-        TrancheTokenLike trancheToken = TrancheTokenLike(address(lPool.share()));
+        TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
         root.relyContract(address(trancheToken), self); // give self auth permissions
-        centrifugeChain.updateMember(lPool.poolId(), lPool.trancheId(), investor, type(uint64).max); // add investor as
+        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), investor, type(uint64).max); // add investor as
             // member
 
         trancheToken.mint(investor, amount);

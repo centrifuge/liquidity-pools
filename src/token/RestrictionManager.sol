@@ -1,20 +1,21 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {Auth} from "./../util/Auth.sol";
-import {IERC20} from "../interfaces/IERC20.sol";
+import {Auth} from "src/Auth.sol";
+import {IRoot} from "src/interfaces/IRoot.sol";
+import {IERC20, IERC20Callback} from "src/interfaces/IERC20.sol";
+import {IRestrictionManager} from "src/interfaces/token/IRestrictionManager.sol";
 
 interface RestrictionManagerLike {
-    function updateMember(address user, uint256 validUntil) external;
-    function members(address user) external view returns (uint256);
-    function hasMember(address user) external view returns (bool);
+    function updateMember(address user, uint64 validUntil) external;
+    function restrictions(address user) external view returns (bool frozen, uint64 validUntil);
     function freeze(address user) external;
     function unfreeze(address user) external;
 }
 
 /// @title  Restriction Manager
 /// @notice ERC1404 based contract that checks transfer restrictions.
-contract RestrictionManager is Auth {
+contract RestrictionManager is Auth, IRestrictionManager, IERC20Callback {
     string internal constant SUCCESS_MESSAGE = "RestrictionManager/transfer-allowed";
     string internal constant SOURCE_IS_FROZEN_MESSAGE = "RestrictionManager/source-is-frozen";
     string internal constant DESTINATION_IS_FROZEN_MESSAGE = "RestrictionManager/destination-is-frozen";
@@ -26,43 +27,47 @@ contract RestrictionManager is Auth {
     uint8 public constant DESTINATION_IS_FROZEN_CODE = 2;
     uint8 public constant DESTINATION_NOT_A_MEMBER_RESTRICTION_CODE = 3;
 
+    IRoot public immutable root;
     IERC20 public immutable token;
 
-    /// @dev Frozen accounts that tokens cannot be transferred from or to
-    mapping(address => uint256 isFrozen) public frozen;
+    mapping(address => Restrictions) public restrictions;
 
-    /// @dev Member accounts that tokens can be transferred to, with an end date
-    mapping(address => uint256 validUntil) public members;
-
-    // --- Events ---
-    event UpdateMember(address indexed user, uint256 validUntil);
-    event Freeze(address indexed user);
-    event Unfreeze(address indexed user);
-
-    constructor(address token_) {
+    constructor(address root_, address token_) {
+        root = IRoot(root_);
         token = IERC20(token_);
 
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
     }
 
+    // --- Callback from tranche token ---
+    function onERC20Transfer(address from, address to, uint256 value) public virtual auth returns (bytes4) {
+        uint8 restrictionCode = detectTransferRestriction(from, to, value);
+        require(restrictionCode == SUCCESS_CODE, messageForTransferRestriction(restrictionCode));
+        return bytes4(keccak256("onERC20Transfer(address,address,uint256)"));
+    }
+
     // --- ERC1404 implementation ---
+    /// @inheritdoc IRestrictionManager
     function detectTransferRestriction(address from, address to, uint256 /* value */ ) public view returns (uint8) {
-        if (frozen[from] == 1) {
+        if (restrictions[from].frozen == true && !root.endorsed(from)) {
             return SOURCE_IS_FROZEN_CODE;
         }
 
-        if (frozen[to] == 1) {
+        Restrictions memory toRestrictions = restrictions[to];
+        bool toIsEndorsed = root.endorsed(to);
+        if (toRestrictions.frozen == true && !toIsEndorsed) {
             return DESTINATION_IS_FROZEN_CODE;
         }
 
-        if (!hasMember(to)) {
+        if (toRestrictions.validUntil < block.timestamp && !toIsEndorsed) {
             return DESTINATION_NOT_A_MEMBER_RESTRICTION_CODE;
         }
 
         return SUCCESS_CODE;
     }
 
+    /// @inheritdoc IRestrictionManager
     function messageForTransferRestriction(uint8 restrictionCode) public pure returns (string memory) {
         if (restrictionCode == SOURCE_IS_FROZEN_CODE) {
             return SOURCE_IS_FROZEN_MESSAGE;
@@ -80,30 +85,32 @@ contract RestrictionManager is Auth {
     }
 
     // --- Handling freezes ---
+    /// @inheritdoc IRestrictionManager
     function freeze(address user) public auth {
         require(user != address(0), "RestrictionManager/cannot-freeze-zero-address");
-        frozen[user] = 1;
+        restrictions[user].frozen = true;
         emit Freeze(user);
     }
 
+    /// @inheritdoc IRestrictionManager
     function unfreeze(address user) public auth {
-        frozen[user] = 0;
+        restrictions[user].frozen = false;
         emit Unfreeze(user);
     }
 
     // --- Managing members ---
-    function updateMember(address user, uint256 validUntil) public auth {
+    /// @inheritdoc IRestrictionManager
+    function updateMember(address user, uint64 validUntil) public auth {
         require(block.timestamp <= validUntil, "RestrictionManager/invalid-valid-until");
-        members[user] = validUntil;
+        restrictions[user].validUntil = validUntil;
 
         emit UpdateMember(user, validUntil);
     }
 
-    function hasMember(address user) public view returns (bool) {
-        return members[user] >= block.timestamp;
-    }
-
     // --- Misc ---
+    /// @inheritdoc IRestrictionManager
     function afterTransfer(address, /* from */ address, /* to */ uint256 /* value */ ) public virtual auth {}
+
+    /// @inheritdoc IRestrictionManager
     function afterMint(address, /* to */ uint256 /* value */ ) public virtual auth {}
 }
