@@ -36,14 +36,19 @@ pragma solidity 0.8.21;
 
 //     uint8 constant PRICE_DECIMALS = 18;
 
-//     address self;
-//     ERC20 erc20;
-//     address[] pausers;
+// function setUp() public {
+//     deploy(address(this));
+//     PermissionlessRouter router = new PermissionlessRouter(address(gateway));
+//     wire(address(router));
 
-//     function setUp() public {
-//         deploy(address(this));
-//         PermissionlessRouter router = new PermissionlessRouter(address(aggregator));
-//         wire(address(router));
+//     // overwrite deployed guardian with a new mock safe guardian
+//     pausers = new address[](3);
+//     pausers[0] = makeAddr("pauser1");
+//     pausers[1] = makeAddr("pauser2");
+//     pausers[2] = makeAddr("pauser3");
+//     adminSafe = address(new MockSafe(pausers, 1));
+//     guardian = new Guardian(adminSafe, address(root), address(gateway));
+//     root.rely(address(guardian));
 
 //         // overwrite deployed guardian with a new mock safe guardian
 //         pausers = new address[](3);
@@ -57,8 +62,19 @@ pragma solidity 0.8.21;
 //         erc20 = newErc20("Test", "TEST", 6);
 //         self = address(this);
 
-//         removeDeployerAccess(address(router), address(this));
-//     }
+// function testDeployerHasNoAccess() public {
+//     vm.expectRevert("Auth/not-authorized");
+//     root.relyContract(address(investmentManager), address(1));
+//     assertEq(root.wards(address(this)), 0);
+//     assertEq(investmentManager.wards(address(this)), 0);
+//     assertEq(poolManager.wards(address(this)), 0);
+//     assertEq(escrow.wards(address(this)), 0);
+//     assertEq(gateway.wards(address(this)), 0);
+//     // check factories
+//     assertEq(WardLike(trancheTokenFactory).wards(address(this)), 0);
+//     assertEq(WardLike(vaultFactory).wards(address(this)), 0);
+//     assertEq(WardLike(restrictionManagerFactory).wards(address(this)), 0);
+// }
 
 //     function testDeployerHasNoAccess() public {
 //         vm.expectRevert("Auth/not-authorized");
@@ -86,21 +102,8 @@ pragma solidity 0.8.21;
 //         assertEq(MockSafe(adminSafe).isOwner(nonPauser), false);
 //     }
 
-//     function testDeployAndInvestRedeem(
-//         uint64 poolId,
-//         string memory tokenName,
-//         string memory tokenSymbol,
-//         bytes16 trancheId,
-//         uint8 decimals,
-//         uint8 restrictionSet
-//     ) public {
-//         vm.assume(decimals <= 18 && decimals > 0);
-//         uint128 price = uint128(2 * 10 ** PRICE_DECIMALS); //TODO: fuzz price
-//         uint256 amount = 1000 * 10 ** erc20.decimals();
-//         uint64 validUntil = uint64(block.timestamp + 1000 days);
-//         address vault_ = deployPoolAndTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, restrictionSet);
-//         ERC7540Vault vault = ERC7540Vault(vault_);
-//         TrancheToken trancheToken = TrancheToken(address(vault.share()));
+// deal(address(erc20), self, amount);
+// deal(address(gateway), 10 ether);
 
 //         deal(address(erc20), self, amount);
 

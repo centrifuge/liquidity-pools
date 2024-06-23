@@ -74,7 +74,9 @@ library MessagesLib {
         /// 30 - Dispute Message Recovery
         DisputeMessageRecovery,
         /// 31 - Recover Tokens sent to the wrong contract
-        RecoverTokens
+        RecoverTokens,
+        /// 32 - Update Centrifuge Gas Price
+        UpdateCentrifugeGasPrice
     }
 
     enum Domain {

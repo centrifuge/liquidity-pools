@@ -16,7 +16,9 @@ contract AxelarScript is Deployer {
         adminSafe = vm.envAddress("ADMIN");
 
         deploy(msg.sender);
-        AxelarRouter router = new AxelarRouter(address(aggregator), address(vm.envAddress("AXELAR_GATEWAY")));
+        AxelarRouter router = new AxelarRouter(
+            address(gateway), address(vm.envAddress("AXELAR_GATEWAY")), address(vm.envAddress("AXELAR_GAS_SERVICE"))
+        );
         wire(address(router));
 
         removeDeployerAccess(address(router), msg.sender);

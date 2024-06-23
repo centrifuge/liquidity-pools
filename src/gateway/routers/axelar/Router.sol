@@ -16,7 +16,7 @@ interface AxelarGatewayLike {
     ) external returns (bool);
 }
 
-interface AggregatorLike {
+interface GatewayLike {
     function handle(bytes memory message) external;
 }
 
@@ -32,32 +32,32 @@ interface AxelarGasServiceLike {
 
 /// @title  Axelar Router
 /// @notice Routing contract that integrates with an Axelar Gateway
-
-contract AxelarRouter is IRouter, Auth {
+contract AxelarRouter is Auth, IRouter {
     string public constant CENTRIFUGE_ID = "centrifuge";
     bytes32 public constant CENTRIFUGE_ID_HASH = keccak256(bytes("centrifuge"));
     bytes32 public constant CENTRIFUGE_ADDRESS_HASH = keccak256(bytes("0x7369626CEF070000000000000000000000000000"));
     string public constant CENTRIFUGE_AXELAR_EXECUTABLE = "0xc1757c6A0563E37048869A342dF0651b9F267e41";
 
-    AggregatorLike public immutable aggregator;
+    GatewayLike public immutable gateway;
     AxelarGatewayLike public immutable axelarGateway;
     AxelarGasServiceLike public immutable axelarGasService;
 
-    // This value is in AXELAR fees in ETH ( wei )
+    /// @dev This value is in AXELAR fees in ETH ( wei )
     uint256 axelarCost = 58039058122843;
 
-    event File(bytes32 what, uint256 value);
-
-    constructor(address aggregator_, address axelarGateway_, address axelarGasService_) {
-        aggregator = AggregatorLike(aggregator_);
+    constructor(address gateway_, address axelarGateway_, address axelarGasService_) {
+        gateway = GatewayLike(gateway_);
         axelarGateway = AxelarGatewayLike(axelarGateway_);
         axelarGasService = AxelarGasServiceLike(axelarGasService_);
+
+        wards[msg.sender] = 1;
+        emit Rely(msg.sender);
     }
 
     // --- Administrative ---
     function file(bytes32 what, uint256 value) external auth {
         if (what == "axelarCost") axelarCost = value;
-        else revert("CentrifugeGasService/file-unrecognized-param");
+        else revert("AxelarRouterfile-unrecognized-param");
         emit File(what, value);
     }
     // --- Incoming ---
@@ -76,13 +76,13 @@ contract AxelarRouter is IRouter, Auth {
             "AxelarRouter/not-approved-by-axelar-gateway"
         );
 
-        aggregator.handle(payload);
+        gateway.handle(payload);
     }
 
     // --- Outgoing ---
     /// @inheritdoc IRouter
     function send(bytes calldata payload) public {
-        require(msg.sender == address(aggregator), "AxelarRouter/only-aggregator-allowed-to-call");
+        require(msg.sender == address(gateway), "AxelarRouter/only-gateway-allowed-to-call");
 
         axelarGateway.callContract(CENTRIFUGE_ID, CENTRIFUGE_AXELAR_EXECUTABLE, payload);
     }
@@ -93,9 +93,9 @@ contract AxelarRouter is IRouter, Auth {
         );
     }
 
-    // Currently the payload ( message ) is not take into consideration when estimating cost
-    // A predefined axelarCost value is used.
-    function estimate(bytes calldata payload) public view returns (uint256) {
-        return axelarCost;
+    /// @dev Currently the payload ( message ) is not taken into consideration during cost estimation
+    /// A predefined `axelarCost` value is used.
+    function estimate(bytes calldata, uint256 gasLimit) public view returns (uint256) {
+        return axelarCost + gasLimit;
     }
 }

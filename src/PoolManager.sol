@@ -17,7 +17,7 @@ import {BytesLib} from "src/libraries/BytesLib.sol";
 import {IEscrow} from "src/interfaces/IEscrow.sol";
 
 interface GatewayLike {
-    function send(bytes memory message) external;
+    function send(bytes memory message, address source) external;
 }
 
 interface InvestmentManagerLike {
@@ -32,6 +32,11 @@ interface AuthLike {
 
 interface HookLike {
     function updateRestriction(bytes memory update) external;
+}
+
+interface GasServiceLike {
+    function updateGasPrice(uint256 value, uint256 computedAt) external;
+    function price() external returns (uint256);
 }
 
 /// @title  Pool Manager
@@ -53,6 +58,7 @@ contract PoolManager is Auth, IPoolManager {
     InvestmentManagerLike public investmentManager;
     TrancheTokenFactoryLike public trancheTokenFactory;
     RestrictionManagerFactoryLike public restrictionManagerFactory;
+    GasServiceLike public gasService;
 
     mapping(uint64 poolId => Pool) public pools;
     mapping(address => address) public vaultToAsset;
@@ -84,6 +90,7 @@ contract PoolManager is Auth, IPoolManager {
         else if (what == "trancheTokenFactory") trancheTokenFactory = TrancheTokenFactoryLike(data);
         else if (what == "vaultFactory") vaultFactory = ERC7540VaultFactory(data);
         else if (what == "restrictionManagerFactory") restrictionManagerFactory = RestrictionManagerFactoryLike(data);
+        else if (what == "gasService") gasService = GasServiceLike(data);
         else revert("PoolManager/file-unrecognized-param");
         emit File(what, data);
     }
@@ -100,7 +107,9 @@ contract PoolManager is Auth, IPoolManager {
 
         SafeTransferLib.safeTransferFrom(asset, msg.sender, address(escrow), amount);
 
-        gateway.send(abi.encodePacked(uint8(MessagesLib.Call.Transfer), assetId, msg.sender, recipient, amount));
+        gateway.send(
+            abi.encodePacked(uint8(MessagesLib.Call.Transfer), assetId, msg.sender, recipient, amount), address(this)
+        );
         emit TransferCurrency(asset, recipient, amount);
     }
 
@@ -124,7 +133,8 @@ contract PoolManager is Auth, IPoolManager {
                 MessagesLib.formatDomain(MessagesLib.Domain.Centrifuge),
                 destinationAddress,
                 amount
-            )
+            ),
+            address(this)
         );
 
         emit TransferTrancheTokensToCentrifuge(poolId, trancheId, destinationAddress, amount);
@@ -151,7 +161,8 @@ contract PoolManager is Auth, IPoolManager {
                 MessagesLib.formatDomain(MessagesLib.Domain.EVM, destinationChainId),
                 destinationAddress.toBytes32(),
                 amount
-            )
+            ),
+            address(this)
         );
 
         emit TransferTrancheTokensToEVM(poolId, trancheId, destinationChainId, destinationAddress, amount);
@@ -202,6 +213,8 @@ contract PoolManager is Auth, IPoolManager {
             );
         } else if (call == MessagesLib.Call.DisallowAsset) {
             disallowAsset(message.toUint64(1), message.toUint128(9));
+        } else if (call == MessagesLib.Call.UpdateCentrifugeGasPrice) {
+            updateCentrifugeGasPrice(message.toUint128(1), message.toUint256(17));
         } else {
             revert("PoolManager/invalid-message");
         }
@@ -437,6 +450,12 @@ contract PoolManager is Auth, IPoolManager {
         escrow.unapprove(address(tranche.token), vault);
 
         emit RemoveVault(poolId, trancheId, asset, vault);
+    }
+
+    function updateCentrifugeGasPrice(uint256 price, uint256 computedAt) public auth {
+        require(price > 0, "PoolManager/price-cannot-be-zero");
+        require(gasService.price() != price, "PoolManager/same-price-already-set");
+        gasService.updateGasPrice(price, computedAt);
     }
 
     // --- Helpers ---

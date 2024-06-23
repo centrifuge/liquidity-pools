@@ -88,7 +88,6 @@ contract ForkTest is Test {
                 assertEq(address(Gateway(gateway).root()), root);
                 assertEq(address(InvestmentManager(investmentManager).gateway()), gateway);
                 assertEq(address(PoolManager(poolManager).gateway()), gateway);
-                // assertEq(address(Gateway(gateway).aggregator()), aggregator);
                 assertEq(Gateway(gateway).wards(root), 1);
                 assertEq(Root(root).wards(gateway), 1);
                 assertEq(Gateway(gateway).wards(deployer), 0);

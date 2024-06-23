@@ -18,38 +18,41 @@ interface ICentrifugeRouter {
 
     // --- Deposit ---
     /// @notice TODO
-    function requestDeposit(address vault, uint256 amount, address controller, address owner) external;
+    function requestDeposit(address vault, uint256 amount, address controller, address owner, uint256 topUp)
+        external
+        payable;
 
     /// @notice TODO
-    function lockDepositRequest(address vault, uint256 amount, address controller, address owner) external;
+    function lockDepositRequest(address vault, uint256 amount, address controller, address owner) external payable;
 
     /// @notice TODO
-    function unlockDepositRequest(address vault) external;
+    function unlockDepositRequest(address vault) external payable;
 
     /// @notice TODO
-    function executeLockedDepositRequest(address vault, address controller) external;
+    function executeLockedDepositRequest(address vault, address controller) external payable;
 
     /// @notice TODO
-    function claimDeposit(address vault, address receiver, address controller) external;
+    function claimDeposit(address vault, address receiver, address controller) external payable;
 
     // --- Redeem ---
     /// @notice TODO
-    function requestRedeem(address vault, uint256 amount, address controller, address owner) external;
+    function requestRedeem(address vault, uint256 amount, address controller, address owner) external payable;
 
     /// @notice TODO
-    function claimRedeem(address vault, address receiver, address controller) external;
+    function claimRedeem(address vault, address receiver, address controller) external payable;
 
     // --- ERC20 permit ---
     /// @notice TODO
     function permit(address asset, address spender, uint256 assets, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
-        external;
+        external
+        payable;
 
     // --- ERC20 wrapping ---
     /// @notice TODO
-    function wrap(address wrapper, uint256 amount) external;
+    function wrap(address wrapper, uint256 amount) external payable;
 
     /// @notice TODO
-    function unwrap(address wrapper, uint256 amount, address receiver) external;
+    function unwrap(address wrapper, uint256 amount, address receiver) external payable;
 
     // --- Batching ---
     /// @notice TODO

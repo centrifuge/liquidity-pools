@@ -3,6 +3,7 @@ pragma solidity 0.8.21;
 
 import {Root} from "src/Root.sol";
 import {Gateway} from "src/gateway/Gateway.sol";
+import {GasService} from "src/gateway/GasService.sol";
 import {InvestmentManager} from "src/InvestmentManager.sol";
 import {TrancheTokenFactory} from "src/factories/TrancheTokenFactory.sol";
 import {ERC7540VaultFactory} from "src/factories/ERC7540VaultFactory.sol";
@@ -25,7 +26,6 @@ interface AuthLike {
 
 contract Deployer is Script {
     uint256 internal constant delay = 48 hours;
-
     address adminSafe;
     address[] routers;
 
@@ -36,6 +36,7 @@ contract Deployer is Script {
     Escrow public routerEscrow;
     Guardian public guardian;
     Gateway public gateway;
+    GasService public gasService;
     CentrifugeRouter public centrifugeRouter; // TODO: rename once routers => adapters rename is in
     address public vaultFactory;
     address public restrictionManagerFactory;
@@ -55,10 +56,14 @@ contract Deployer is Script {
         trancheTokenFactory = address(new TrancheTokenFactory{salt: salt}(address(root), deployer));
         investmentManager = new InvestmentManager(address(root), address(escrow));
         poolManager = new PoolManager(address(escrow), vaultFactory, restrictionManagerFactory, trancheTokenFactory);
-        centrifugeRouter = new CentrifugeRouter(payable(address(gateway)));
 
+        // TODO THESE VALUES NEEDS TO BE CHECKED
+        gasService = new GasService(20000000000000000, 20000000000000000, 2500000000000000000, 178947400000000);
+        gasService.rely(address(root));
+
+        gateway = new Gateway(address(root), address(investmentManager), address(poolManager), address(gasService));
         routerEscrow = new Escrow(deployer);
-        centrifugeRouter = new CentrifugeRouter(address(routerEscrow), address(poolManager));
+        centrifugeRouter = new CentrifugeRouter(address(routerEscrow), address(poolManager), address(gateway));
         AuthLike(address(routerEscrow)).rely(address(centrifugeRouter));
         root.endorse(address(centrifugeRouter));
         root.endorse(address(escrow));
@@ -71,27 +76,22 @@ contract Deployer is Script {
         AuthLike(trancheTokenFactory).rely(address(root));
         AuthLike(restrictionManagerFactory).rely(address(root));
 
-        gateway = new Gateway(address(root), address(investmentManager), address(poolManager));
-        guardian = new Guardian(adminSafe, address(root), address(aggregator));
+        guardian = new Guardian(adminSafe, address(root), address(gateway));
     }
 
     function wire(address router) public {
         routers.push(router);
 
-        // Wire aggregator
-        aggregator.file("routers", routers);
-        aggregator.rely(address(gateway));
-        gateway.file("aggregator", address(aggregator));
-        gateway.rely(address(aggregator));
-
         // Wire guardian
         root.rely(address(guardian));
-        aggregator.rely(address(guardian));
+        gateway.rely(address(guardian));
 
         // Wire gateway
+        gateway.file("routers", routers);
         root.rely(address(gateway));
         investmentManager.file("poolManager", address(poolManager));
         poolManager.file("investmentManager", address(investmentManager));
+        poolManager.file("gasService", address(gasService));
 
         centrifugeRouter.rely(address(root));
         investmentManager.file("gateway", address(gateway));
@@ -102,7 +102,6 @@ contract Deployer is Script {
         poolManager.rely(address(root));
         poolManager.rely(address(gateway));
         gateway.rely(address(root));
-        aggregator.rely(address(root));
         AuthLike(router).rely(address(root));
         AuthLike(address(escrow)).rely(address(root));
         AuthLike(address(routerEscrow)).rely(address(root));
@@ -120,7 +119,7 @@ contract Deployer is Script {
         escrow.deny(deployer);
         routerEscrow.deny(deployer);
         gateway.deny(deployer);
-        aggregator.deny(deployer);
         centrifugeRouter.deny(deployer);
+        gasService.deny(deployer);
     }
 }
