@@ -27,8 +27,6 @@ struct InvestmentState {
 
 interface IInvestmentManager {
     // --- Events ---
-    event Endorse(address indexed user);
-    event Veto(address indexed user);
     event File(bytes32 indexed what, address data);
     event TriggerRedeemRequest(
         uint64 indexed poolId, bytes16 indexed trancheId, address user, address asset, uint128 shares
@@ -36,15 +34,6 @@ interface IInvestmentManager {
 
     /// @notice TODO
     function file(bytes32 what, address data) external;
-
-    /// @notice TODO
-    function endorse(address user) external;
-
-    /// @notice TODO
-    function veto(address user) external;
-
-    /// @notice TODO
-    function isEndorsed(address user) external view returns (bool);
 
     /// @notice TODO
     function recoverTokens(address token, address to, uint256 amount) external;
