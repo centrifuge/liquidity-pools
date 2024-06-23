@@ -11,10 +11,22 @@ interface IRoot {
     event RelyContract(address indexed target, address indexed user);
     event DenyContract(address indexed target, address indexed user);
     event RecoverTokens(address indexed target, address indexed token, address indexed to, uint256 amount);
+    event Endorse(address indexed user);
+    event Veto(address indexed user);
 
     // --- Administration ---
     /// @notice TODO
     function file(bytes32 what, uint256 data) external;
+
+    /// --- Endorsements ---
+    /// @notice TODO
+    function endorse(address user) external;
+
+    /// @notice TODO
+    function veto(address user) external;
+
+    /// @notice TODO
+    function endorsed(address user) external view returns (bool);
 
     // --- Pause management ---
     /// @notice Pause any contracts that depend on `Root.paused()`

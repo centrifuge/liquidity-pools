@@ -6,13 +6,13 @@ import {RestrictionManagerLike, RestrictionManager} from "src/token/RestrictionM
 import "forge-std/Test.sol";
 
 contract RestrictionManagerTest is Test {
-    address escrow = makeAddr("escrow");
+    address root = makeAddr("root");
     TrancheToken token;
     RestrictionManager restrictionManager;
 
     function setUp() public {
         token = new TrancheToken(18);
-        restrictionManager = new RestrictionManager(address(token), escrow);
+        restrictionManager = new RestrictionManager(root, address(token));
     }
 
     // TODO: re-add

@@ -3,6 +3,7 @@ pragma solidity 0.8.21;
 
 import {Auth} from "src/Auth.sol";
 import {IERC20, IERC20Callback, HookData} from "src/interfaces/IERC20.sol";
+import {IRoot} from "src/interfaces/IRoot.sol";
 import {IRestrictionManager} from "src/interfaces/token/IRestrictionManager.sol";
 import {MessagesLib} from "src/libraries/MessagesLib.sol";
 import {BitmapLib} from "src/libraries/BitmapLib.sol";
@@ -40,13 +41,13 @@ contract RestrictionManager is Auth, IRestrictionManager, IERC20Callback {
     uint8 public constant DESTINATION_IS_FROZEN_CODE = 2;
     uint8 public constant DESTINATION_NOT_A_MEMBER_RESTRICTION_CODE = 3;
 
+    IRoot public immutable root;
     address public immutable escrow;
     TrancheTokenLike public immutable token;
 
-    constructor(address token_, address escrow_) {
+    constructor(address root_, address token_) {
+        root = IRoot(root_);
         token = TrancheTokenLike(token_);
-        escrow = escrow_;
-        _updateMember(escrow_, type(uint64).max);
 
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
@@ -81,15 +82,16 @@ contract RestrictionManager is Auth, IRestrictionManager, IERC20Callback {
         view
         returns (uint8)
     {
-        if (hookData.from.getBit(FREEZE_BIT) == true) {
+        if (hookData.from.getBit(FREEZE_BIT) == true && !root.endorsed(from)) {
             return SOURCE_IS_FROZEN_CODE;
         }
 
-        if (hookData.to.getBit(FREEZE_BIT) == true) {
+        bool toIsEndorsed = root.endorsed(to);
+        if (hookData.to.getBit(FREEZE_BIT) == true && !toIsEndorsed) {
             return DESTINATION_IS_FROZEN_CODE;
         }
 
-        // if (toRestrictions.validUntil < block.timestamp) {
+        // if (toRestrictions.validUntil < block.timestamp && !toIsEndorsed) {
         //     return DESTINATION_NOT_A_MEMBER_RESTRICTION_CODE;
         // }
 
@@ -106,7 +108,6 @@ contract RestrictionManager is Auth, IRestrictionManager, IERC20Callback {
         if (hookData.to.getBit(FREEZE_BIT) == true) {
             return DESTINATION_IS_FROZEN_CODE;
         }
-
 
         if (hookData.to.getBit(MEMBER_BIT) == false) {
             return DESTINATION_NOT_A_MEMBER_RESTRICTION_CODE;
@@ -184,7 +185,7 @@ contract RestrictionManager is Auth, IRestrictionManager, IERC20Callback {
         // TODO
         uint128 hookData = token.hookDataOf(user);
         token.setHookData(user, hookData.setBit(MEMBER_BIT, true));
-        
+
         emit UpdateMember(user, validUntil);
     }
 

@@ -10,6 +10,7 @@ import {ERC7540VaultFactory} from "src/factories/ERC7540VaultFactory.sol";
 import {RestrictionManagerFactory} from "src/factories/RestrictionManagerFactory.sol";
 import {PoolManager} from "src/PoolManager.sol";
 import {Escrow} from "src/Escrow.sol";
+import {CentrifugeRouter} from "src/CentrifugeRouter.sol";
 import {Guardian} from "src/admin/Guardian.sol";
 import {MockSafe} from "test/mocks/MockSafe.sol";
 import "forge-std/Script.sol";
@@ -33,9 +34,11 @@ contract Deployer is Script {
     InvestmentManager public investmentManager;
     PoolManager public poolManager;
     Escrow public escrow;
+    Escrow public routerEscrow;
     Guardian public guardian;
     Gateway public gateway;
     Aggregator public aggregator;
+    CentrifugeRouter public centrifugeRouter; // TODO: rename once routers => adapters rename is in
     address public vaultFactory;
     address public restrictionManagerFactory;
     address public trancheTokenFactory;
@@ -52,8 +55,14 @@ contract Deployer is Script {
         vaultFactory = address(new ERC7540VaultFactory(address(root)));
         restrictionManagerFactory = address(new RestrictionManagerFactory(address(root)));
         trancheTokenFactory = address(new TrancheTokenFactory{salt: salt}(address(root), deployer));
-        investmentManager = new InvestmentManager(address(escrow));
+        investmentManager = new InvestmentManager(address(root), address(escrow));
         poolManager = new PoolManager(address(escrow), vaultFactory, restrictionManagerFactory, trancheTokenFactory);
+
+        routerEscrow = new Escrow(deployer);
+        centrifugeRouter = new CentrifugeRouter(address(routerEscrow), address(poolManager));
+        AuthLike(address(routerEscrow)).rely(address(centrifugeRouter));
+        root.endorse(address(centrifugeRouter));
+        root.endorse(address(escrow));
 
         AuthLike(vaultFactory).rely(address(poolManager));
         AuthLike(trancheTokenFactory).rely(address(poolManager));
@@ -73,6 +82,7 @@ contract Deployer is Script {
 
         // Wire aggregator
         aggregator.file("routers", routers);
+        aggregator.rely(address(gateway));
         gateway.file("aggregator", address(aggregator));
         gateway.rely(address(aggregator));
 
@@ -84,6 +94,8 @@ contract Deployer is Script {
         root.rely(address(gateway));
         investmentManager.file("poolManager", address(poolManager));
         poolManager.file("investmentManager", address(investmentManager));
+
+        centrifugeRouter.rely(address(root));
         investmentManager.file("gateway", address(gateway));
         poolManager.file("gateway", address(gateway));
         investmentManager.rely(address(root));
@@ -95,6 +107,7 @@ contract Deployer is Script {
         aggregator.rely(address(root));
         AuthLike(router).rely(address(root));
         AuthLike(address(escrow)).rely(address(root));
+        AuthLike(address(routerEscrow)).rely(address(root));
         AuthLike(address(escrow)).rely(address(poolManager));
     }
 
@@ -107,7 +120,9 @@ contract Deployer is Script {
         investmentManager.deny(deployer);
         poolManager.deny(deployer);
         escrow.deny(deployer);
+        routerEscrow.deny(deployer);
         gateway.deny(deployer);
         aggregator.deny(deployer);
+        centrifugeRouter.deny(deployer);
     }
 }

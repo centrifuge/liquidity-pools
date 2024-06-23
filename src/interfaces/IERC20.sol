@@ -188,3 +188,9 @@ interface IERC20Callback {
         external
         returns (HookData calldata);
 }
+
+interface IERC20Wrapper {
+    function underlying() external view returns (address);
+    function depositFor(address account, uint256 value) external returns (bool);
+    function withdrawTo(address account, uint256 value) external returns (bool);
+}

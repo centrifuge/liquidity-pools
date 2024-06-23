@@ -2,7 +2,7 @@
 pragma solidity 0.8.21;
 
 import "test/BaseTest.sol";
-import "test/mocks/MockRestrictionManagerFactory.sol";
+import {MockRestrictionManagerFactory} from "test/mocks/MockRestrictionManagerFactory.sol";
 import {CastLib} from "src/libraries/CastLib.sol";
 
 interface HookLike {

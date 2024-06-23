@@ -33,7 +33,7 @@ contract DepositRedeem is BaseTest {
         centrifugeChain.updateMember(poolId, trancheId, self, type(uint64).max);
         asset.approve(address(vault), investmentAmount);
         asset.mint(self, investmentAmount);
-        vault.requestDeposit(investmentAmount, self, self, "");
+        vault.requestDeposit(investmentAmount, self, self);
 
         // first trigger executed collectInvest of the first 50% at a price of 1.4
         uint128 _assetId = poolManager.assetToId(address(asset)); // retrieve assetId
@@ -71,7 +71,7 @@ contract DepositRedeem is BaseTest {
         uint256 totalTrancheTokens = trancheToken.balanceOf(self);
         uint256 redeemAmount = 50000000000000000000;
         assertTrue(redeemAmount <= totalTrancheTokens);
-        vault.requestRedeem(redeemAmount, self, self, "");
+        vault.requestRedeem(redeemAmount, self, self);
 
         // first trigger executed collectRedeem of the first 25 trancheTokens at a price of 1.1
         uint128 firstTrancheTokenRedeem = 25000000000000000000;

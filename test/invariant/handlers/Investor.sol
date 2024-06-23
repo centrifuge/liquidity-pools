@@ -2,7 +2,7 @@
 pragma solidity ^0.8.18;
 
 import {MockCentrifugeChain} from "test/mocks/MockCentrifugeChain.sol";
-import {IERC7540} from "src/interfaces/IERC7540.sol";
+import {IERC7540Vault} from "src/interfaces/IERC7540.sol";
 import {BaseHandler} from "test/invariant/handlers/BaseHandler.sol";
 import {MathLib} from "src/libraries/MathLib.sol";
 
@@ -14,8 +14,7 @@ interface ERC20Like {
     function balanceOf(address user) external view returns (uint256);
 }
 
-interface VaultLike is IERC7540 {
-    function share() external view returns (address);
+interface VaultLike is IERC7540Vault {
     function manager() external view returns (address);
 }
 
@@ -76,7 +75,7 @@ contract InvestorHandler is BaseHandler {
         erc20.approve(address(vault), amount_);
 
         // TODO: we should also set up tests where currentInvestor != operator
-        vault.requestDeposit(amount_, currentInvestor, currentInvestor, "");
+        vault.requestDeposit(amount_, currentInvestor, currentInvestor);
 
         increaseVar(currentInvestor, "totalDepositRequested", amount);
     }
@@ -112,7 +111,7 @@ contract InvestorHandler is BaseHandler {
         );
         if (amount_ == 0) return;
 
-        vault.requestRedeem(amount_, currentInvestor, currentInvestor, "");
+        vault.requestRedeem(amount_, currentInvestor, currentInvestor);
 
         increaseVar(currentInvestor, "totalRedeemRequested", amount_);
     }

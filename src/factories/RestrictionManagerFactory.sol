@@ -31,7 +31,7 @@ contract RestrictionManagerFactory is Auth {
         auth
         returns (address)
     {
-        RestrictionManager restrictionManager = new RestrictionManager(token, RootLike(root).escrow());
+        RestrictionManager restrictionManager = new RestrictionManager(root, token);
 
         restrictionManager.rely(root);
         restrictionManager.rely(token);

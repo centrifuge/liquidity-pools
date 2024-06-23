@@ -1,26 +1,28 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity >=0.5.0;
 
+uint8 constant MAX_ROUTER_COUNT = 8;
+
 interface IAggregator {
+    /// @dev Each router struct is packed with the quorum to reduce SLOADs on handle
     struct Router {
-        // Starts at 1 and maps to id - 1 as the index on the routers array
+        /// @notice Starts at 1 and maps to id - 1 as the index on the routers array
         uint8 id;
-        // Each router struct is packed with the quorum to reduce SLOADs on handle
+        /// @notice Number of votes required for a message to be executed
         uint8 quorum;
+        /// @notice Each time the quorum is decreased, a new session starts which invalidates old votes
+        uint64 activeSessionId;
     }
 
-    struct ConfirmationState {
-        // Counts are stored as integers (instead of boolean values) to accommodate duplicate
-        // messages (e.g. two investments from the same user with the same amount) being
-        // processed in parallel. The entire struct is packed in a single bytes32 slot.
-        // Max uint16 = 65,535 so at most 65,535 duplicate messages can be processed in parallel.
-        uint16[8] messages;
-        uint16[8] proofs;
-    }
-
-    struct Recovery {
-        uint256 timestamp;
-        address router;
+    struct Message {
+        /// @dev Counts are stored as integers (instead of boolean values) to accommodate duplicate
+        ///      messages (e.g. two investments from the same user with the same amount) being
+        ///      processed in parallel. The entire struct is packed in a single bytes32 slot.
+        ///      Max uint16 = 65,535 so at most 65,535 duplicate messages can be processed in parallel.
+        uint16[MAX_ROUTER_COUNT] votes;
+        /// @notice Each time routers are updated, a new session starts which invalidates old votes
+        uint64 sessionId;
+        bytes pendingMessage;
     }
 
     // --- Events ---
@@ -31,8 +33,8 @@ interface IAggregator {
     event RecoverMessage(address router, bytes message);
     event RecoverProof(address router, bytes32 messageHash);
     event InitiateMessageRecovery(bytes32 messageHash, address router);
-    event DisputeMessageRecovery(bytes32 messageHash);
-    event ExecuteMessagRecovery(bytes message);
+    event DisputeMessageRecovery(bytes32 messageHash, address router);
+    event ExecuteMessageRecovery(bytes message, address router);
     event File(bytes32 indexed what, address[] routers);
 
     // --- Administration ---
@@ -45,7 +47,7 @@ interface IAggregator {
     function handle(bytes calldata payload) external;
 
     /// @notice TODO
-    function disputeMessageRecovery(bytes32 messageHash) external;
+    function disputeMessageRecovery(address router, bytes32 messageHash) external;
 
     /// @dev Governance on Centrifuge Chain can initiate message recovery. After the challenge period,
     ///      the recovery can be executed. If a malign router initiates message recovery, governance on
@@ -53,7 +55,7 @@ interface IAggregator {
     ///
     ///      Only 1 recovery can be outstanding per message hash. If multiple routers fail at the same time,
     //       these will need to be recovered serially (increasing the challenge period for each failed router).
-    function executeMessageRecovery(bytes calldata message) external;
+    function executeMessageRecovery(address router, bytes calldata message) external;
 
     // --- Outgoing ---
     /// @dev Sends 1 message to the first router with the full message, and n-1 messages to the other routers with
@@ -65,8 +67,8 @@ interface IAggregator {
     function quorum() external view returns (uint8);
 
     /// @notice TODO
-    function confirmations(bytes32 messageHash)
-        external
-        view
-        returns (uint16[8] memory messages, uint16[8] memory proofs);
+    function activeSessionId() external view returns (uint64);
+
+    /// @notice TODO
+    function votes(bytes32 messageHash) external view returns (uint16[MAX_ROUTER_COUNT] memory votes);
 }
