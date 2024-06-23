@@ -25,9 +25,8 @@ contract PassthroughRouter is Auth {
 
     GatewayLike public gateway;
 
-    event RouteToDomain(string destinationChain, string destinationContractAddress, bytes payload);
-    event RouteToCentrifuge(string sourceChain, string sourceAddress, bytes payload);
-    event ExecuteOnDomain(string destinationChain, string destinationContractAddress, bytes payload);
+    event Route(string destinationChain, string destinationContractAddress, bytes payload);
+    event ExecuteOnDomain(string sourceChain, string sourceAddress, bytes payload);
     event ExecuteOnCentrifuge(string sourceChain, string sourceAddress, bytes payload);
 
     event File(bytes32 indexed what, address addr);
@@ -49,13 +48,13 @@ contract PassthroughRouter is Auth {
         string calldata destinationContractAddress,
         bytes calldata payload
     ) public {
-        emit RouteToDomain(destinationChain, destinationContractAddress, payload);
+        emit Route(destinationChain, destinationContractAddress, payload);
     }
 
     /// @notice From other domain to Centrifuge. Just emits an event.
     ///         Just used on EVM domains.
     function send(bytes calldata message) public {
-        emit RouteToCentrifuge("LP-EVM-Domain", "Passthrough-Contract", message);
+        emit Route("LP-EVM-Domain", "Passthrough-Contract", message);
     }
 
     /// @notice Execute message on centrifuge
@@ -69,13 +68,13 @@ contract PassthroughRouter is Auth {
     }
 
     /// @notice Execute message on other domain
-    function executeOnOtherDomain(
-        string calldata destinationChain,
-        string calldata destinationContractAddress,
+    function executeOnDomain(
+        string calldata sourceChain,
+        string calldata sourceAddress,
         bytes calldata payload
     ) external {
         gateway.handle(payload);
-        emit ExecuteOnDomain(destinationChain, destinationContractAddress, payload);
+        emit ExecuteOnDomain(sourceChain, sourceAddress, payload);
     }
 
     // Added to be ignored in coverage report
