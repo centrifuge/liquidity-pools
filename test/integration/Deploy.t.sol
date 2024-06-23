@@ -138,10 +138,8 @@ pragma solidity 0.8.21;
 //         vm.prank(address(gateway));
 //         investmentManager.fulfillDepositRequest(poolId, trancheId, self, _assetId, uint128(amount), shares, 0);
 
-//         assertEq(vault.maxMint(self), shares);
-//         assertEq(vault.maxDeposit(self), amount);
-//         assertEq(trancheToken.balanceOf(address(escrow)), shares);
-//         assertEq(erc20.balanceOf(self), 0);
+// uint256 div = 2;
+// vault.deposit(amount / div, self, self);
 
 //         uint256 div = 2;
 //         vault.deposit(amount / div, self);

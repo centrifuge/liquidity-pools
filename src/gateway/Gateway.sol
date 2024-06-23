@@ -10,7 +10,7 @@ interface ManagerLike {
 }
 
 interface AggregatorLike {
-    function send(bytes memory message) external;
+    function send(bytes memory message) external payable;
 }
 
 interface RootLike {
@@ -51,7 +51,15 @@ contract Gateway is Auth, IGateway {
         _;
     }
 
+    event Received(address indexed sender, uint256 amount);
+
+    // TODO Do we want to have a method that can withdraw the funds from the contract?
+    // I've seen some similar methods around contract but for ERC20
+    receive() external payable {
+        emit Received(msg.sender, msg.value);
+    }
     // --- Administration ---
+
     function file(bytes32 what, address data) public auth {
         if (what == "poolManager") poolManager = data;
         else if (what == "aggregator") aggregator = AggregatorLike(data);
@@ -67,12 +75,15 @@ contract Gateway is Auth, IGateway {
     }
 
     // --- Outgoing ---
-    function send(bytes calldata message) public pauseable {
+    function send(bytes calldata message) public payable pauseable {
         require(
             msg.sender == investmentManager || msg.sender == poolManager || msg.sender == messages[message.toUint8(0)],
             "Gateway/invalid-manager"
         );
-        aggregator.send(message);
+        //TODO a discussion whether we would like to send the whole balance or
+        // actually pass some calculated value ( how much each router is going to cost )
+        // and only use that value. Refer: TODO Aggregator.send;
+        aggregator.send{value: address(this).balance}(message);
     }
 
     // --- Incoming ---

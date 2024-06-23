@@ -2,7 +2,6 @@
 pragma solidity 0.8.21;
 
 import {Root} from "src/Root.sol";
-import {Aggregator} from "src/gateway/routers/Aggregator.sol";
 import {Gateway} from "src/gateway/Gateway.sol";
 import {InvestmentManager} from "src/InvestmentManager.sol";
 import {TrancheTokenFactory} from "src/factories/TrancheTokenFactory.sol";
@@ -37,7 +36,6 @@ contract Deployer is Script {
     Escrow public routerEscrow;
     Guardian public guardian;
     Gateway public gateway;
-    Aggregator public aggregator;
     CentrifugeRouter public centrifugeRouter; // TODO: rename once routers => adapters rename is in
     address public vaultFactory;
     address public restrictionManagerFactory;
@@ -57,6 +55,7 @@ contract Deployer is Script {
         trancheTokenFactory = address(new TrancheTokenFactory{salt: salt}(address(root), deployer));
         investmentManager = new InvestmentManager(address(root), address(escrow));
         poolManager = new PoolManager(address(escrow), vaultFactory, restrictionManagerFactory, trancheTokenFactory);
+        centrifugeRouter = new CentrifugeRouter(payable(address(gateway)));
 
         routerEscrow = new Escrow(deployer);
         centrifugeRouter = new CentrifugeRouter(address(routerEscrow), address(poolManager));
@@ -73,7 +72,6 @@ contract Deployer is Script {
         AuthLike(restrictionManagerFactory).rely(address(root));
 
         gateway = new Gateway(address(root), address(investmentManager), address(poolManager));
-        aggregator = new Aggregator(address(gateway));
         guardian = new Guardian(adminSafe, address(root), address(aggregator));
     }
 
