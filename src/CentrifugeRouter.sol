@@ -75,10 +75,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     }
 
     /// @inheritdoc ICentrifugeRouter
-    function openLockDepositRequest(address vault, uint256 amount)
-        external
-        protected
-    {
+    function openLockDepositRequest(address vault, uint256 amount) external protected {
         open(vault);
         lockDepositRequest(vault, amount, _initiator, _initiator);
     }

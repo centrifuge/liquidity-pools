@@ -27,7 +27,7 @@ interface ICentrifugeRouter {
     function lockDepositRequest(address vault, uint256 amount, address controller, address owner) external;
 
     /// @notice Helper method to lock a deposit request, and enable permissionless claiming of that vault in 1 call
-    function openLockDepositRequest(address vault, uint256 amount, address controller, address owner) external;
+    function openLockDepositRequest(address vault, uint256 amount) external;
 
     /// @notice TODO
     function unlockDepositRequest(address vault) external;
