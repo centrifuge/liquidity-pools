@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {BytesLib} from "src/util/BytesLib.sol";
+import {BytesLib} from "src/libraries/BytesLib.sol";
 
 /// @title  Messages
 /// @dev    Library for encoding and decoding messages.
