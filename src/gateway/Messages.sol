@@ -6,9 +6,8 @@ import {BytesLib} from "src/util/BytesLib.sol";
 /// @title  Messages
 /// @dev    Library for encoding and decoding messages.
 library Messages {
-    enum Call
-    /// 0 - An invalid message
-    {
+    enum Call {
+        /// 0 - An invalid message
         Invalid,
         /// 1 - Add a currency id -> EVM address mapping
         AddCurrency,
