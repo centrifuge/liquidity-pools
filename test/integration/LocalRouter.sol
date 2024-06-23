@@ -72,4 +72,7 @@ contract LocalRouter is Auth {
 
         emit RouteToCentrifuge(FAKE_COMMAND_ID, sourceChain, sourceAddress, message);
     }
+
+    // Added to be ignored in coverage report
+    function test() public {}
 }
