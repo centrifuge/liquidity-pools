@@ -63,19 +63,6 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
             : EIP712Lib.calculateDomainSeparator(nameHash, versionHash);
     }
 
-    function _calculateDomainSeparator(uint256 chainId) private view returns (bytes32) {
-        return keccak256(
-            abi.encode(
-                // keccak256('EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)')
-                0x8b73c3c69bb8fe3d512ecc4cf759cc79239f7b179b0ffacaa9a75d522b39400f,
-                nameHash,
-                versionHash,
-                chainId,
-                address(this)
-            )
-        );
-    }
-
     // --- Administration ---
     function file(bytes32 what, string memory data) external auth {
         if (what == "name") name = data;
