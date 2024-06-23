@@ -54,9 +54,6 @@ contract InvestmentManager is Auth, IInvestmentManager {
     GatewayLike public gateway;
     IPoolManager public poolManager;
 
-    /// @notice Accounts that are allowed to manage requests for other accounts
-    mapping(address => uint256) public endorsements;
-
     mapping(address vault => mapping(address investor => InvestmentState)) public investments;
 
     constructor(address root_, address escrow_) {
@@ -74,23 +71,6 @@ contract InvestmentManager is Auth, IInvestmentManager {
         else if (what == "poolManager") poolManager = IPoolManager(data);
         else revert("InvestmentManager/file-unrecognized-param");
         emit File(what, data);
-    }
-
-    /// @inheritdoc IInvestmentManager
-    function endorse(address user) external auth {
-        endorsements[user] = 1;
-        emit Endorse(user);
-    }
-
-    /// @inheritdoc IInvestmentManager
-    function veto(address user) external auth {
-        endorsements[user] = 0;
-        emit Veto(user);
-    }
-
-    /// @inheritdoc IInvestmentManager
-    function isEndorsed(address user) public view returns (bool) {
-        return endorsements[user] == 1;
     }
 
     /// @inheritdoc IInvestmentManager
