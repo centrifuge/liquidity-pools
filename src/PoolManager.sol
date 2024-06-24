@@ -511,6 +511,12 @@ contract PoolManager is Auth, IPoolManager {
     }
 
     /// @inheritdoc IPoolManager
+    function getVaultAsset(address vault) public view override returns (address asset) {
+        asset = vaultToAsset[vault];
+        require(asset != address(0), "PoolManager/unknown-vault");
+    }
+
+    /// @inheritdoc IPoolManager
     function isAllowedAsset(uint64 poolId, address asset) public view returns (bool) {
         return pools[poolId].allowedCurrencies[asset];
     }
