@@ -273,7 +273,7 @@ contract Gateway is Auth, IGateway {
             currentRouter.send(payload);
         }
 
-        if (fuel > 0 && tank > 0) quota = 0;
+        if (fuel > 0) quota = 0;
 
         emit SendMessage(message);
     }
