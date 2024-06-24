@@ -186,10 +186,10 @@ interface IPoolManager {
         returns (uint128 price, uint64 computedAt);
 
     /// @notice Function to get the vault's underlying asset
-    /// @dev function vaultToAsset which is a state variable getter could be used
-    /// but in that case each caller MUST make sure they handle the case
-    /// where a 0 address is returned. Using this method, that handling is done
-    /// on the behalf the caller.
+    /// @dev    Function vaultToAsset which is a state variable getter could be used
+    ///         but in that case each caller MUST make sure they handle the case
+    ///         where a 0 address is returned. Using this method, that handling is done
+    ///         on the behalf the caller.
     function getVaultAsset(address vault) external view returns (address);
 
     /// @notice TODO
