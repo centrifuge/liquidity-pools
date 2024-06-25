@@ -30,6 +30,16 @@ contract MockCentrifugeChain is Test {
         _execute(_message);
     }
 
+    function batchAddPoolAllowAsset(uint64 poolId, uint128 assetId) public {
+        bytes memory _addPool = abi.encodePacked(uint8(MessagesLib.Call.AddPool), poolId);
+        bytes memory _allowAsset = abi.encodePacked(uint8(MessagesLib.Call.AllowAsset), poolId, assetId);
+
+        bytes memory _message = abi.encodePacked(
+            uint8(MessagesLib.Call.Batch), uint16(_addPool.length), _addPool, uint16(_allowAsset.length), _allowAsset
+        );
+        _execute(_message);
+    }
+
     function allowAsset(uint64 poolId, uint128 assetId) public {
         bytes memory _message = abi.encodePacked(uint8(MessagesLib.Call.AllowAsset), poolId, assetId);
         _execute(_message);
@@ -235,6 +245,10 @@ contract MockCentrifugeChain is Test {
             uint8(MessagesLib.Call.FulfilledRedeemRequest), poolId, trancheId, investor, assetId, assets, shares
         );
         _execute(_message);
+    }
+
+    function execute(bytes memory message) external {
+        _execute(message);
     }
 
     function _execute(bytes memory message) internal {
