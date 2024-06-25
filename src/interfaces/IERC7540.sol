@@ -239,7 +239,7 @@ interface IERC7540CancelRedeem {
 
 interface IAuthorizeOperator {
     function DOMAIN_SEPARATOR() external view returns (bytes32);
-    
+
     function authorizeOperator(
         address controller,
         address operator,
