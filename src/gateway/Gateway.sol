@@ -14,7 +14,7 @@ interface ManagerLike {
 
 interface GasServiceLike {
     function estimate(bytes calldata payload) external view returns (uint256);
-    function shouldRefuel(address source, bytes calldata payload) external view returns (bool);
+    function shouldRefuel(address source, bytes calldata payload) external returns (bool);
 }
 
 interface RouterLike {
@@ -254,26 +254,47 @@ contract Gateway is Auth, IGateway {
 
         uint256 numRouters = routers.length;
         require(numRouters > 0, "Gateway/routers-not-initialized");
-        uint256 fuel = quota;
-        uint256 tank = fuel > 0 ? fuel : gasService.shouldRefuel(source, message) ? address(this).balance : 0;
 
+        uint256 fuel = quota;
         uint256 messageCost = gasService.estimate(message);
         uint256 proofCost = gasService.estimate(proof);
 
-        for (uint256 i; i < numRouters; i++) {
-            RouterLike currentRouter = RouterLike(routers[i]);
-            bool isPrimaryRouter = i == PRIMARY_ROUTER_ID - 1;
-            bytes memory payload = isPrimaryRouter ? message : proof;
+        if (fuel > 0) {
+            uint256 tank = fuel;
+            for (uint256 i; i < numRouters; i++) {
+                RouterLike currentRouter = RouterLike(routers[i]);
+                bool isPrimaryRouter = i == PRIMARY_ROUTER_ID - 1;
+                bytes memory payload = isPrimaryRouter ? message : proof;
 
-            uint256 consumed = currentRouter.estimate(payload, isPrimaryRouter ? messageCost : proofCost);
-            require(consumed <= tank, "Gateway/not-enough-gas-funds");
-            tank -= consumed;
+                uint256 consumed = currentRouter.estimate(payload, isPrimaryRouter ? messageCost : proofCost);
 
-            currentRouter.pay{value: consumed}(payload, address(this));
-            currentRouter.send(payload);
+                require(consumed <= tank, "Gateway/not-enough-gas-funds");
+                tank -= consumed;
+
+                currentRouter.pay{value: consumed}(payload, address(this));
+
+                currentRouter.send(payload);
+            }
+            quota = 0;
+        } else if (gasService.shouldRefuel(source, message)) {
+            uint256 tank = address(this).balance;
+            for (uint256 i; i < numRouters; i++) {
+                RouterLike currentRouter = RouterLike(routers[i]);
+                bool isPrimaryRouter = i == PRIMARY_ROUTER_ID - 1;
+                bytes memory payload = isPrimaryRouter ? message : proof;
+
+                uint256 consumed = currentRouter.estimate(payload, isPrimaryRouter ? messageCost : proofCost);
+
+                if (consumed <= tank) {
+                    tank -= consumed;
+                    currentRouter.pay{value: consumed}(payload, address(this));
+                }
+
+                currentRouter.send(payload);
+            }
+        } else {
+            revert("Gateway/not-enough-gas-funds");
         }
-
-        if (fuel > 0) quota = 0;
 
         emit SendMessage(message);
     }
