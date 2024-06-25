@@ -63,8 +63,10 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     {
         require(topUpAmount <= address(this).balance, "CentrifugeRouter/insufficient-funds-to-topup");
 
+        address asset = poolManager.getVaultAsset(vault);
+
         if (owner == address(this)) {
-            _approveMax(poolManager.getVaultAsset(vault), vault);
+            _approveMax(asset, vault);
         }
 
         gateway.topUp{value: topUpAmount}();
