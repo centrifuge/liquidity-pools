@@ -433,6 +433,11 @@ contract CentrifugeRouterTest is BaseTest {
         vm.expectRevert("Gateway/not-enough-gas-funds");
         centrifugeRouter.requestDeposit{value: lessGas}(vault_, amount, self, self, lessGas);
 
+        vm.expectRevert("PoolManager/unknown-vault");
+        centrifugeRouter.requestDeposit{value: lessGas}(
+            makeAddr("maliciousVault"), amount, self, makeAddr("owner"), lessGas
+        );
+
         bytes[] memory calls = new bytes[](2);
         calls[0] =
             abi.encodeWithSelector(centrifugeRouter.requestDeposit.selector, vault_, amount / 2, self, self, gasLimit);
