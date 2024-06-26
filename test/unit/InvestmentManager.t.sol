@@ -49,25 +49,4 @@ contract InvestmentManagerTest is BaseTest {
         vm.expectRevert(bytes("Auth/not-authorized"));
         investmentManager.file("poolManager", randomUser);
     }
-
-    //Endorsements
-    function testEndorseVeto() public {
-        // endorse
-        address router = makeAddr("router");
-
-        root.relyContract(address(investmentManager), self);
-        investmentManager.endorse(router);
-        assertEq(investmentManager.endorsements(router), 1);
-        assertEq(investmentManager.isEndorsed(router), true);
-
-        // veto
-        root.denyContract(address(investmentManager), self);
-        vm.expectRevert(bytes("Auth/not-authorized")); // fail no auth permissions
-        investmentManager.veto(router);
-
-        root.relyContract(address(investmentManager), self);
-        investmentManager.veto(router);
-        assertEq(investmentManager.endorsements(router), 0);
-        assertEq(investmentManager.isEndorsed(router), false);
-    }
 }

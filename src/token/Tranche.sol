@@ -93,6 +93,7 @@ contract TrancheToken is ERC20, ITrancheToken, IERC7575Share {
 
     function mint(address to, uint256 value) public override {
         super.mint(to, value);
+        require(totalSupply <= type(uint128).max, "Tranche/exceeds-max-supply");
         _onTransfer(address(0), to, value);
     }
 
