@@ -28,8 +28,12 @@ contract PassthroughRouter is Auth {
     event Route(string destinationChain, string destinationContractAddress, bytes payload);
     event ExecuteOnDomain(string sourceChain, string sourceAddress, bytes payload);
     event ExecuteOnCentrifuge(string sourceChain, string sourceAddress, bytes payload);
-
     event File(bytes32 indexed what, address addr);
+
+    constructor() {
+        wards[msg.sender] = 1;
+        emit Rely(msg.sender);
+    }
 
     function file(bytes32 what, address addr) external {
         if (what == "gateway") {

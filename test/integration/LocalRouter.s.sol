@@ -9,6 +9,8 @@ contract LocalRouterScript is Deployer {
     function setUp() public {}
 
     function run() public {
+        vm.startBroadcast();
+
         // NOTE: 0x361c43cd5Fd700923Aae9dED678851a201839fc6 is the H160 of Keyring::Admin in the Centrifuge Chain
         // repository
         admin = address(0x361c43cd5Fd700923Aae9dED678851a201839fc6);
@@ -23,5 +25,7 @@ contract LocalRouterScript is Deployer {
 
         giveAdminAccess();
         removeDeployerAccess(address(router), msg.sender);
+
+        vm.stopBroadcast();
     }
 }

@@ -27,7 +27,7 @@ case "$ROUTER" in
     forge script script/${ROUTER}.s.sol:${ROUTER}Script --optimize --rpc-url $RPC_URL --private-key $PRIVATE_KEY --verify --broadcast --chain-id $CHAIN_ID --etherscan-api-key $ETHERSCAN_KEY $1
     ;;
   Passthrough)
-    forge script test/integration/PassthroughRouter.s.sol:PassthroughScript --optimize --rpc-url $RPC_URL --private-key $PRIVATE_KEY --verify --broadcast --chain-id $CHAIN_ID --etherscan-api-key $ETHERSCAN_KEY $1
+    forge script test/integration/PassthroughRouter.s.sol:PassthroughRouterScript --optimize --rpc-url $RPC_URL --private-key $PRIVATE_KEY --verify --broadcast --chain-id $CHAIN_ID --etherscan-api-key $ETHERSCAN_KEY $1
     ;;
   *)
     echo "Router should be one of Passthrough, Permissionless, Axelar, Forwarder"

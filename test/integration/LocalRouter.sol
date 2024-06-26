@@ -33,6 +33,11 @@ contract LocalRouter is Auth {
     event File(bytes32 indexed what, address addr);
     event File(bytes32 indexed what, string data);
 
+    constructor() {
+        wards[msg.sender] = 1;
+        emit Rely(msg.sender);
+    }
+
     function file(bytes32 what, address data) external {
         if (what == "gateway") {
             gateway = GatewayLike(data);
