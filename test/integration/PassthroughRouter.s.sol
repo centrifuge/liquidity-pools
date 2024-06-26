@@ -8,9 +8,11 @@ contract PassthroughRouterScript is Deployer {
     function setUp() public {}
 
     function run() public {
+        vm.startBroadcast();
         deploy(msg.sender);
-        PassthroughRouter router = new PassthroughRouter();
+        PassthroughRouter router = new PassthroughRouter(msg.sender);
+        adminSafe = vm.envAddress("ADMIN");
         wire(address(router));
-        router.file("gateway", address(gateway));
+        vm.stopBroadcast();
     }
 }

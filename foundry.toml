@@ -10,7 +10,7 @@ optimizer = true
 optimizer_runs = 500
 verbosity = 3
 
-fs_permissions = [{ access = "read", path = "./deployments"}]
+fs_permissions = [{ access = "read", path = "./"}]
 
 [profile.default.fuzz]
 runs = 100

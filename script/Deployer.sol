@@ -24,6 +24,10 @@ interface AuthLike {
     function deny(address who) external;
 }
 
+interface Create2Deployer {
+    function deploy(uint256 amount, bytes32 salt, bytes memory bytecode) external payable returns (address addr);
+}
+
 contract Deployer is Script {
     uint256 internal constant delay = 48 hours;
 
@@ -46,20 +50,36 @@ contract Deployer is Script {
     function deploy(address deployer) public {
         // If no salt is provided, a pseudo-random salt is generated,
         // thus effectively making the deployment non-deterministic
+        Create2Deployer c2deployer = Create2Deployer(0xe8e75cfBDDe41277A8B75Bd66EDA43CfC8bdDaDF);
         bytes32 salt = vm.envOr(
             "DEPLOYMENT_SALT", keccak256(abi.encodePacked(string(abi.encodePacked(blockhash(block.number - 1)))))
         );
-        escrow = new Escrow{salt: salt}(deployer);
-        root = new Root{salt: salt}(address(escrow), delay, deployer);
+
+        bytes memory escrowArgs = abi.encode(deployer);
+        bytes memory escrowBytecode = abi.encodePacked(vm.getCode("Escrow.sol:Escrow"), escrowArgs);
+        escrow = Escrow(c2deployer.deploy(0, salt, escrowBytecode));
+
+        bytes memory rootArgs = abi.encode(address(escrow), delay, deployer);
+        bytes memory rootBytecode = abi.encodePacked(vm.getCode("Root.sol:Root"), rootArgs);
+        root = Root(c2deployer.deploy(0, salt, rootBytecode));
+
+        bytes memory ttfARgs = abi.encode(address(root), deployer);
+        bytes memory ttfBytecode =
+            abi.encodePacked(vm.getCode("src/factories/TrancheTokenFactory.sol:TrancheTokenFactory"), ttfARgs);
+        trancheTokenFactory = c2deployer.deploy(0, salt, ttfBytecode);
 
         vaultFactory = address(new ERC7540VaultFactory(address(root)));
         restrictionManagerFactory = address(new RestrictionManagerFactory(address(root)));
-        trancheTokenFactory = address(new TrancheTokenFactory{salt: salt}(address(root), deployer));
         investmentManager = new InvestmentManager(address(root), address(escrow));
         poolManager = new PoolManager(address(escrow), vaultFactory, restrictionManagerFactory, trancheTokenFactory);
 
         routerEscrow = new Escrow(deployer);
         centrifugeRouter = new CentrifugeRouter(address(routerEscrow), address(poolManager));
+
+        gateway = new Gateway(address(root), address(investmentManager), address(poolManager));
+        aggregator = new Aggregator(address(gateway));
+        guardian = new Guardian(adminSafe, address(root), address(aggregator));
+
         AuthLike(address(routerEscrow)).rely(address(centrifugeRouter));
         root.endorse(address(centrifugeRouter));
         root.endorse(address(escrow));
@@ -71,15 +91,12 @@ contract Deployer is Script {
         AuthLike(vaultFactory).rely(address(root));
         AuthLike(trancheTokenFactory).rely(address(root));
         AuthLike(restrictionManagerFactory).rely(address(root));
-
-        gateway = new Gateway(address(root), address(investmentManager), address(poolManager));
-        aggregator = new Aggregator(address(gateway));
-        guardian = new Guardian(adminSafe, address(root), address(aggregator));
     }
 
     function wire(address router) public {
         routers.push(router);
 
+        RouterLike(router).file("gateway", address(gateway));
         // Wire aggregator
         aggregator.file("routers", routers);
         aggregator.rely(address(gateway));

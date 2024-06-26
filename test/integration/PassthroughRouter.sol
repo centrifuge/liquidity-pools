@@ -32,6 +32,11 @@ contract PassthroughRouter is Auth {
 
     event File(bytes32 indexed what, address addr);
 
+    constructor(address deployer) {
+        wards[deployer] = 1;
+        emit Rely(deployer);
+    }
+
     function file(bytes32 what, address addr) external {
         if (what == "gateway") {
             gateway = GatewayLike(addr);
