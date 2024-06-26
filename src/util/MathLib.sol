@@ -9,6 +9,7 @@ library MathLib {
         Down, // Toward negative infinity
         Up, // Toward infinity
         Zero // Toward zero
+
     }
 
     /// @notice Calculates floor(x * y / denominator) with full precision. Throws if result overflows a uint256 or

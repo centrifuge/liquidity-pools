@@ -6,9 +6,8 @@ import {BytesLib} from "src/util/BytesLib.sol";
 /// @title  Messages
 /// @dev    Library for encoding and decoding messages.
 library Messages {
-    enum Call
-    /// 0 - An invalid message
-    {
+    enum Call {
+        /// 0 - An invalid message
         Invalid,
         /// 1 - Add a currency id -> EVM address mapping
         AddCurrency,
@@ -955,11 +954,11 @@ library Messages {
     }
 
     // Utils
-    function formatDomain(Domain domain) public pure returns (bytes9) {
+    function formatDomain(Domain domain) internal pure returns (bytes9) {
         return bytes9(bytes1(uint8(domain)));
     }
 
-    function formatDomain(Domain domain, uint64 chainId) public pure returns (bytes9) {
+    function formatDomain(Domain domain, uint64 chainId) internal pure returns (bytes9) {
         return bytes9(BytesLib.slice(abi.encodePacked(uint8(domain), chainId), 0, 9));
     }
 
