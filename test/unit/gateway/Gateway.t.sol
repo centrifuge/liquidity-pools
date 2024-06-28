@@ -21,9 +21,9 @@ contract GatewayTest is BaseTest {
 
         // gateway setup
         assertEq(gateway.quorum(), 3);
-        assertEq(gateway.routers(0), address(router1));
-        assertEq(gateway.routers(1), address(router2));
-        assertEq(gateway.routers(2), address(router3));
+        assertEq(gateway.adapters(0), address(adapter1));
+        assertEq(gateway.adapters(1), address(adapter2));
+        assertEq(gateway.adapters(2), address(adapter3));
 
         // permissions set correctly
         assertEq(gateway.wards(address(root)), 1);
@@ -60,15 +60,15 @@ contract GatewayTest is BaseTest {
     }
 
     // --- Permissions ---
-    function testOnlyRoutersCanCall() public {
+    function testOnlyAdaptersCanCall() public {
         bytes memory message = hex"020000000000bce1a4";
 
-        vm.expectRevert(bytes("Gateway/invalid-router"));
+        vm.expectRevert(bytes("Gateway/invalid-adapter"));
         vm.prank(randomUser);
         gateway.handle(message);
 
         //success
-        vm.prank(address(router1));
+        vm.prank(address(adapter1));
         gateway.handle(message);
     }
 
@@ -90,22 +90,22 @@ contract GatewayTest is BaseTest {
     // --- Dynamic managers ---
     function testCustomManager() public {
         uint8 messageId = 40;
-        address[] memory routers = new address[](1);
-        routers[0] = address(router1);
+        address[] memory adapters = new address[](1);
+        adapters[0] = address(adapter1);
 
-        gateway.file("routers", routers);
+        gateway.file("adapters", adapters);
 
         MockManager mgr = new MockManager();
 
         bytes memory message = abi.encodePacked(messageId);
         vm.expectRevert(bytes("Gateway/unregistered-message-id"));
-        vm.prank(address(router1));
+        vm.prank(address(adapter1));
         gateway.handle(message);
 
         assertEq(mgr.received(message), 0);
 
         gateway.file("message", messageId, address(mgr));
-        vm.prank(address(router1));
+        vm.prank(address(adapter1));
         gateway.handle(message);
 
         assertEq(mgr.received(message), 1);

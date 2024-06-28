@@ -14,7 +14,7 @@ import {Guardian} from "src/admin/Guardian.sol";
 import "forge-std/Test.sol";
 import "forge-std/StdJson.sol";
 
-interface RouterLike {
+interface AdapterLike {
     function send(bytes memory message) external;
     function wards(address ward) external view returns (uint256);
 }
@@ -52,7 +52,7 @@ contract ForkTest is Test {
                 address poolManager = _get(i, ".contracts.poolManager");
                 address payable gateway = payable(_get(i, ".contracts.gateway"));
                 address escrow = _get(i, ".contracts.escrow");
-                address router = _get(i, ".contracts.router");
+                address adapter = _get(i, ".contracts.adapter");
                 address trancheTokenFactory = _get(i, ".contracts.trancheTokenFactory");
                 address vaultFactory = _get(i, ".contracts.vaultFactory");
                 address restrictionManagerFactory = _get(i, ".contracts.restrictionManagerFactory");
@@ -100,10 +100,10 @@ contract ForkTest is Test {
 
                 // UserEscrow
 
-                // Router
-                assertEq(RouterLike(router).wards(root), 1);
-                assertEq(RouterLike(router).wards(deployer), 0);
-                assertEq(RouterLike(router).wards(adminSafe), 0);
+                // Adapter
+                assertEq(AdapterLike(adapter).wards(root), 1);
+                assertEq(AdapterLike(adapter).wards(deployer), 0);
+                assertEq(AdapterLike(adapter).wards(adminSafe), 0);
             }
         }
     }

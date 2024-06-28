@@ -22,7 +22,7 @@ import "src/interfaces/IERC20.sol";
 // mocks
 import {MockCentrifugeChain} from "test/mocks/MockCentrifugeChain.sol";
 import {MockGasService} from "test/mocks/MockGasService.sol";
-import {MockRouter} from "test/mocks/MockRouter.sol";
+import {MockAdapter} from "test/mocks/MockAdapter.sol";
 
 // test env
 import "forge-std/Test.sol";
@@ -30,10 +30,10 @@ import "forge-std/Test.sol";
 contract BaseTest is Deployer, Test {
     MockCentrifugeChain centrifugeChain;
     MockGasService mockedGasService;
-    MockRouter router1;
-    MockRouter router2;
-    MockRouter router3;
-    address[] testRouters;
+    MockAdapter adapter1;
+    MockAdapter adapter2;
+    MockAdapter adapter3;
+    address[] testAdapters;
     ERC20 public erc20;
 
     address self = address(this);
@@ -61,30 +61,30 @@ contract BaseTest is Deployer, Test {
         // deploy core contracts
         deploy(address(this));
 
-        // deploy mock routers
+        // deploy mock adapters
 
-        router1 = new MockRouter(address(gateway));
-        router2 = new MockRouter(address(gateway));
-        router3 = new MockRouter(address(gateway));
+        adapter1 = new MockAdapter(address(gateway));
+        adapter2 = new MockAdapter(address(gateway));
+        adapter3 = new MockAdapter(address(gateway));
 
-        router1.setReturn("estimate", uint256(1 gwei));
-        router2.setReturn("estimate", uint256(1.25 gwei));
-        router3.setReturn("estimate", uint256(1.75 gwei));
+        adapter1.setReturn("estimate", uint256(1 gwei));
+        adapter2.setReturn("estimate", uint256(1.25 gwei));
+        adapter3.setReturn("estimate", uint256(1.75 gwei));
 
-        testRouters.push(address(router1));
-        testRouters.push(address(router2));
-        testRouters.push(address(router3));
+        testAdapters.push(address(adapter1));
+        testAdapters.push(address(adapter2));
+        testAdapters.push(address(adapter3));
 
         // wire contracts
-        wire(address(router1));
+        wire(address(adapter1));
         // remove deployer access
-        // removeDeployerAccess(address(router)); // need auth permissions in tests
+        // removeDeployerAccess(address(adapter)); // need auth permissions in tests
 
-        centrifugeChain = new MockCentrifugeChain(testRouters);
+        centrifugeChain = new MockCentrifugeChain(testAdapters);
         mockedGasService = new MockGasService();
         erc20 = _newErc20("X's Dollar", "USDX", 6);
 
-        gateway.file("routers", testRouters);
+        gateway.file("adapters", testAdapters);
         gateway.file("gasService", address(mockedGasService));
         vm.deal(address(gateway), GATEWAY_INITIAL_BALACE);
 
@@ -96,9 +96,9 @@ contract BaseTest is Deployer, Test {
         vm.label(address(investmentManager), "InvestmentManager");
         vm.label(address(poolManager), "PoolManager");
         vm.label(address(gateway), "Gateway");
-        vm.label(address(router1), "MockRouter1");
-        vm.label(address(router2), "MockRouter2");
-        vm.label(address(router3), "MockRouter3");
+        vm.label(address(adapter1), "MockAdapter1");
+        vm.label(address(adapter2), "MockAdapter2");
+        vm.label(address(adapter3), "MockAdapter3");
         vm.label(address(erc20), "ERC20");
         vm.label(address(centrifugeChain), "CentrifugeChain");
         vm.label(address(centrifugeRouter), "CentrifugeRouter");
@@ -118,9 +118,9 @@ contract BaseTest is Deployer, Test {
         excludeContract(address(erc20));
         excludeContract(address(centrifugeChain));
         excludeContract(address(centrifugeRouter));
-        excludeContract(address(router1));
-        excludeContract(address(router2));
-        excludeContract(address(router3));
+        excludeContract(address(adapter1));
+        excludeContract(address(adapter2));
+        excludeContract(address(adapter3));
         excludeContract(address(escrow));
         excludeContract(address(guardian));
         excludeContract(address(poolManager.restrictionManagerFactory()));
