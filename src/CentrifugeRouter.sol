@@ -109,6 +109,15 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         IERC7540Vault(vault).deposit(maxDeposit, receiver, controller);
     }
 
+    function cancelDepositRequest(address vault, uint256 requestId, address controller) external protected {
+        IERC7540Vault(vault).cancelDeposit(requestId, controller);
+    }
+
+    function claimCancelDepositRequest(address vault, uint256 requestId, address receiver, address controller) external protected {
+        IERC7540Vault(vault).claimCancelDepositRequest(requestId, receiver, controller);
+
+    }
+
     // --- Redeem ---
     /// @inheritdoc ICentrifugeRouter
     function requestRedeem(address vault, uint256 amount, address controller, address owner) external protected {
