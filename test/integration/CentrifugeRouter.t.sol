@@ -25,19 +25,19 @@ contract CentrifugeRouterTest is BaseTest {
         erc20.mint(self, amount);
 
         vm.expectRevert(bytes("Gateway/cannot-topup-with-nothing"));
-        centrifugeRouter.requestDeposit(vault_, amount, self, self, 0);
+        router.requestDeposit(vault_, amount, self, self, 0);
 
         vm.expectRevert(bytes("InvestmentManager/owner-is-restricted"));
-        centrifugeRouter.requestDeposit{value: 1 wei}(vault_, amount, self, self, 1 wei);
+        router.requestDeposit{value: 1 wei}(vault_, amount, self, self, 1 wei);
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max);
 
         uint256 gas = estimateGas() + GAS_BUFFER;
 
         vm.expectRevert(bytes("SafeTransferLib/safe-transfer-from-failed"));
-        centrifugeRouter.requestDeposit{value: gas}(vault_, amount, self, self, gas);
+        router.requestDeposit{value: gas}(vault_, amount, self, self, gas);
         erc20.approve(vault_, amount);
 
-        centrifugeRouter.requestDeposit{value: gas}(vault_, amount, self, self, gas);
+        router.requestDeposit{value: gas}(vault_, amount, self, self, gas);
 
         assertEq(address(gateway).balance, GATEWAY_INITIAL_BALACE + GAS_BUFFER);
         for (uint8 i; i < testAdapters.length; i++) {
@@ -59,7 +59,7 @@ contract CentrifugeRouterTest is BaseTest {
         TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
         assertEq(trancheToken.balanceOf(address(escrow)), trancheTokensPayout);
 
-        centrifugeRouter.claimDeposit(vault_, self, self);
+        router.claimDeposit(vault_, self, self);
         assertApproxEqAbs(trancheToken.balanceOf(self), trancheTokensPayout, 1);
         assertApproxEqAbs(trancheToken.balanceOf(self), trancheTokensPayout, 1);
         assertApproxEqAbs(trancheToken.balanceOf(address(escrow)), 0, 1);
@@ -75,15 +75,15 @@ contract CentrifugeRouterTest is BaseTest {
         vm.label(vault_, "vault");
 
         erc20.mint(self, amount);
-        erc20.approve(address(centrifugeRouter), amount);
+        erc20.approve(address(router), amount);
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max);
-        centrifugeRouter.lockDepositRequest(vault_, amount, self, self);
+        router.lockDepositRequest(vault_, amount, self, self);
 
         // Any address should be able to call executeLockedDepositRequest for an investor
         address randomAddress = address(0x123);
         vm.label(randomAddress, "randomAddress");
         vm.startPrank(randomAddress);
-        centrifugeRouter.executeLockedDepositRequest(vault_, address(this));
+        router.executeLockedDepositRequest(vault_, address(this));
         vm.stopPrank();
 
         uint128 assetId = poolManager.assetToId(address(erc20));
@@ -96,7 +96,7 @@ contract CentrifugeRouterTest is BaseTest {
 
         // Any address should be able to call claimDeposit for an investor
         vm.prank(randomUser);
-        centrifugeRouter.claimDeposit(vault_, self, self);
+        router.claimDeposit(vault_, self, self);
         assertApproxEqAbs(trancheToken.balanceOf(self), trancheTokensPayout, 1);
         assertApproxEqAbs(trancheToken.balanceOf(address(escrow)), 0, 1);
         assertApproxEqAbs(erc20.balanceOf(address(escrow)), amount, 1);
@@ -114,22 +114,22 @@ contract CentrifugeRouterTest is BaseTest {
         erc20.approve(vault_, amount);
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max);
         uint256 fuel = estimateGas();
-        centrifugeRouter.requestDeposit{value: fuel}(vault_, amount, self, self, fuel);
+        router.requestDeposit{value: fuel}(vault_, amount, self, self, fuel);
 
         uint128 assetId = poolManager.assetToId(address(erc20));
         (uint128 trancheTokensPayout) = fulfillDepositRequest(vault, assetId, amount, self);
         TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
-        centrifugeRouter.claimDeposit(vault_, self, self);
+        router.claimDeposit(vault_, self, self);
 
         // redeem
-        trancheToken.approve(address(centrifugeRouter), trancheTokensPayout);
-        centrifugeRouter.requestRedeem(vault_, trancheTokensPayout, self, self);
+        trancheToken.approve(address(router), trancheTokensPayout);
+        router.requestRedeem(vault_, trancheTokensPayout, self, self);
         (uint128 assetPayout) = fulfillRedeemRequest(vault, assetId, trancheTokensPayout, self);
         assertApproxEqAbs(trancheToken.balanceOf(self), 0, 1);
         assertApproxEqAbs(trancheToken.balanceOf(address(escrow)), 0, 1);
         assertApproxEqAbs(erc20.balanceOf(address(escrow)), assetPayout, 1);
         assertApproxEqAbs(erc20.balanceOf(self), 0, 1);
-        centrifugeRouter.claimRedeem(vault_, self, self);
+        router.claimRedeem(vault_, self, self);
         assertApproxEqAbs(erc20.balanceOf(address(escrow)), 0, 1);
         assertApproxEqAbs(erc20.balanceOf(self), assetPayout, 1);
     }
@@ -142,8 +142,8 @@ contract CentrifugeRouterTest is BaseTest {
 
         uint256 fuel = estimateGas();
         (ERC20 erc20X, ERC20 erc20Y, ERC7540Vault vault1, ERC7540Vault vault2) = setUpMultipleVaults(amount1, amount2);
-        centrifugeRouter.requestDeposit{value: fuel}(address(vault1), amount1, self, self, fuel);
-        centrifugeRouter.requestDeposit{value: fuel}(address(vault2), amount2, self, self, fuel);
+        router.requestDeposit{value: fuel}(address(vault1), amount1, self, self, fuel);
+        router.requestDeposit{value: fuel}(address(vault2), amount2, self, self, fuel);
 
         // trigger - deposit order fulfillment
         uint128 assetId1 = poolManager.assetToId(address(erc20X));
@@ -160,8 +160,8 @@ contract CentrifugeRouterTest is BaseTest {
         assertEq(trancheToken1.balanceOf(address(escrow)), trancheTokensPayout1);
         assertEq(trancheToken2.balanceOf(address(escrow)), trancheTokensPayout2);
 
-        centrifugeRouter.claimDeposit(address(vault1), self, self);
-        centrifugeRouter.claimDeposit(address(vault2), self, self);
+        router.claimDeposit(address(vault1), self, self);
+        router.claimDeposit(address(vault2), self, self);
         assertApproxEqAbs(trancheToken1.balanceOf(self), trancheTokensPayout1, 1);
         assertApproxEqAbs(trancheToken2.balanceOf(self), trancheTokensPayout2, 1);
         assertApproxEqAbs(trancheToken1.balanceOf(address(escrow)), 0, 1);
@@ -179,8 +179,8 @@ contract CentrifugeRouterTest is BaseTest {
         uint256 fuel = estimateGas();
         // deposit
         (ERC20 erc20X, ERC20 erc20Y, ERC7540Vault vault1, ERC7540Vault vault2) = setUpMultipleVaults(amount1, amount2);
-        centrifugeRouter.requestDeposit{value: fuel}(address(vault1), amount1, self, self, fuel);
-        centrifugeRouter.requestDeposit{value: fuel}(address(vault2), amount2, self, self, fuel);
+        router.requestDeposit{value: fuel}(address(vault1), amount1, self, self, fuel);
+        router.requestDeposit{value: fuel}(address(vault2), amount2, self, self, fuel);
 
         uint128 assetId1 = poolManager.assetToId(address(erc20X));
         uint128 assetId2 = poolManager.assetToId(address(erc20Y));
@@ -188,14 +188,14 @@ contract CentrifugeRouterTest is BaseTest {
         (uint128 trancheTokensPayout2) = fulfillDepositRequest(vault2, assetId2, amount2, self);
         TrancheTokenLike trancheToken1 = TrancheTokenLike(address(vault1.share()));
         TrancheTokenLike trancheToken2 = TrancheTokenLike(address(vault2.share()));
-        centrifugeRouter.claimDeposit(address(vault1), self, self);
-        centrifugeRouter.claimDeposit(address(vault2), self, self);
+        router.claimDeposit(address(vault1), self, self);
+        router.claimDeposit(address(vault2), self, self);
 
         // redeem
-        trancheToken1.approve(address(centrifugeRouter), trancheTokensPayout1);
-        trancheToken2.approve(address(centrifugeRouter), trancheTokensPayout2);
-        centrifugeRouter.requestRedeem(address(vault1), trancheTokensPayout1, self, self);
-        centrifugeRouter.requestRedeem(address(vault2), trancheTokensPayout2, self, self);
+        trancheToken1.approve(address(router), trancheTokensPayout1);
+        trancheToken2.approve(address(router), trancheTokensPayout2);
+        router.requestRedeem(address(vault1), trancheTokensPayout1, self, self);
+        router.requestRedeem(address(vault2), trancheTokensPayout2, self, self);
         (uint128 assetPayout1) = fulfillRedeemRequest(vault1, assetId1, trancheTokensPayout1, self);
         (uint128 assetPayout2) = fulfillRedeemRequest(vault2, assetId2, trancheTokensPayout2, self);
         assertApproxEqAbs(trancheToken1.balanceOf(self), 0, 1);
@@ -206,8 +206,8 @@ contract CentrifugeRouterTest is BaseTest {
         assertApproxEqAbs(erc20Y.balanceOf(address(escrow)), assetPayout2, 1);
         assertApproxEqAbs(erc20X.balanceOf(self), 0, 1);
         assertApproxEqAbs(erc20Y.balanceOf(self), 0, 1);
-        centrifugeRouter.claimRedeem(address(vault1), self, self);
-        centrifugeRouter.claimRedeem(address(vault2), self, self);
+        router.claimRedeem(address(vault1), self, self);
+        router.claimRedeem(address(vault2), self, self);
         assertApproxEqAbs(erc20X.balanceOf(address(escrow)), 0, 1);
         assertApproxEqAbs(erc20Y.balanceOf(address(escrow)), 0, 1);
         assertApproxEqAbs(erc20X.balanceOf(self), assetPayout1, 1);
@@ -223,14 +223,14 @@ contract CentrifugeRouterTest is BaseTest {
         vm.label(vault_, "vault");
 
         erc20.mint(self, amount);
-        erc20.approve(address(centrifugeRouter), amount);
+        erc20.approve(address(router), amount);
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max);
-        centrifugeRouter.lockDepositRequest(vault_, amount, self, self);
+        router.lockDepositRequest(vault_, amount, self, self);
 
         // multicall
         bytes[] memory calls = new bytes[](1);
-        calls[0] = abi.encodeWithSelector(centrifugeRouter.executeLockedDepositRequest.selector, vault_, self);
-        centrifugeRouter.multicall(calls);
+        calls[0] = abi.encodeWithSelector(router.executeLockedDepositRequest.selector, vault_, self);
+        router.multicall(calls);
 
         uint128 assetId = poolManager.assetToId(address(erc20));
         (uint128 trancheTokensPayout) = fulfillDepositRequest(vault, assetId, amount, self);
@@ -253,19 +253,19 @@ contract CentrifugeRouterTest is BaseTest {
         erc20.approve(vault_, amount);
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max);
         uint256 fuel = estimateGas();
-        centrifugeRouter.requestDeposit{value: fuel}(vault_, amount, self, self, fuel);
+        router.requestDeposit{value: fuel}(vault_, amount, self, self, fuel);
 
         uint128 assetId = poolManager.assetToId(address(erc20));
         (uint128 trancheTokensPayout) = fulfillDepositRequest(vault, assetId, amount, self);
         TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
-        trancheToken.approve(address(centrifugeRouter), trancheTokensPayout);
+        trancheToken.approve(address(router), trancheTokensPayout);
 
         // multicall
         bytes[] memory calls = new bytes[](2);
-        calls[0] = abi.encodeWithSelector(centrifugeRouter.claimDeposit.selector, vault_, self, self);
+        calls[0] = abi.encodeWithSelector(router.claimDeposit.selector, vault_, self, self);
         calls[1] =
-            abi.encodeWithSelector(centrifugeRouter.requestRedeem.selector, vault_, trancheTokensPayout, self, self);
-        centrifugeRouter.multicall(calls);
+            abi.encodeWithSelector(router.requestRedeem.selector, vault_, trancheTokensPayout, self, self);
+        router.multicall(calls);
 
         (uint128 assetPayout) = fulfillRedeemRequest(vault, assetId, trancheTokensPayout, self);
         assertApproxEqAbs(trancheToken.balanceOf(self), 0, 1);
@@ -284,9 +284,9 @@ contract CentrifugeRouterTest is BaseTest {
 
         uint256 gas = estimateGas();
         bytes[] memory calls = new bytes[](2);
-        calls[0] = abi.encodeWithSelector(centrifugeRouter.requestDeposit.selector, vault1, amount1, self, self, gas);
-        calls[1] = abi.encodeWithSelector(centrifugeRouter.requestDeposit.selector, vault2, amount2, self, self, gas);
-        centrifugeRouter.multicall{value: gas * calls.length}(calls);
+        calls[0] = abi.encodeWithSelector(router.requestDeposit.selector, vault1, amount1, self, self, gas);
+        calls[1] = abi.encodeWithSelector(router.requestDeposit.selector, vault2, amount2, self, self, gas);
+        router.multicall{value: gas * calls.length}(calls);
 
         // trigger - deposit order fulfillment
         uint128 assetId1 = poolManager.assetToId(address(erc20X));
@@ -322,17 +322,17 @@ contract CentrifugeRouterTest is BaseTest {
         erc20.mint(investor, amount);
         vm.startPrank(investor);
         // TODO: use permit instead of approve, to show this is also possible
-        erc20.approve(address(centrifugeRouter), amount);
+        erc20.approve(address(router), amount);
 
         uint256 gas = estimateGas();
 
         // multicall
         bytes[] memory calls = new bytes[](2);
-        calls[0] = abi.encodeWithSelector(centrifugeRouter.wrap.selector, address(wrapper), amount);
+        calls[0] = abi.encodeWithSelector(router.wrap.selector, address(wrapper), amount);
         calls[1] = abi.encodeWithSelector(
-            centrifugeRouter.requestDeposit.selector, vault_, amount, investor, address(centrifugeRouter), gas
+            router.requestDeposit.selector, vault_, amount, investor, address(router), gas
         );
-        centrifugeRouter.multicall{value: gas}(calls);
+        router.multicall{value: gas}(calls);
 
         uint128 assetId = poolManager.assetToId(address(wrapper));
         (uint128 trancheTokensPayout) = fulfillDepositRequest(vault, assetId, amount, investor);
@@ -359,16 +359,16 @@ contract CentrifugeRouterTest is BaseTest {
 
         erc20.mint(investor, amount);
         vm.startPrank(investor);
-        erc20.approve(address(centrifugeRouter), amount);
+        erc20.approve(address(router), amount);
 
         // multicall
         bytes[] memory calls = new bytes[](3);
-        calls[0] = abi.encodeWithSelector(centrifugeRouter.wrap.selector, address(wrapper), amount);
+        calls[0] = abi.encodeWithSelector(router.wrap.selector, address(wrapper), amount);
         calls[1] = abi.encodeWithSelector(
-            centrifugeRouter.lockDepositRequest.selector, vault_, amount, investor, address(centrifugeRouter)
+            router.lockDepositRequest.selector, vault_, amount, investor, address(router)
         );
-        calls[2] = abi.encodeWithSelector(centrifugeRouter.executeLockedDepositRequest.selector, vault_, investor);
-        centrifugeRouter.multicall(calls);
+        calls[2] = abi.encodeWithSelector(router.executeLockedDepositRequest.selector, vault_, investor);
+        router.multicall(calls);
 
         uint128 assetId = poolManager.assetToId(address(wrapper));
         (uint128 trancheTokensPayout) = fulfillDepositRequest(vault, assetId, amount, investor);
@@ -395,15 +395,15 @@ contract CentrifugeRouterTest is BaseTest {
 
         erc20.mint(investor, amount);
         vm.startPrank(investor);
-        erc20.approve(address(centrifugeRouter), amount);
+        erc20.approve(address(router), amount);
 
         assertEq(erc20.balanceOf(investor), amount);
 
         // multicall
         bytes[] memory calls = new bytes[](2);
-        calls[0] = abi.encodeWithSelector(centrifugeRouter.wrap.selector, address(wrapper), amount);
-        calls[1] = abi.encodeWithSelector(centrifugeRouter.unwrap.selector, address(wrapper), amount, investor);
-        centrifugeRouter.multicall(calls);
+        calls[0] = abi.encodeWithSelector(router.wrap.selector, address(wrapper), amount);
+        calls[1] = abi.encodeWithSelector(router.unwrap.selector, address(wrapper), amount, investor);
+        router.multicall(calls);
 
         assertEq(erc20.balanceOf(investor), amount);
     }
@@ -425,35 +425,35 @@ contract CentrifugeRouterTest is BaseTest {
         uint256 lessGas = gasLimit - 1;
 
         vm.expectRevert("Gateway/cannot-topup-with-nothing");
-        centrifugeRouter.requestDeposit(vault_, amount, self, self, 0);
+        router.requestDeposit(vault_, amount, self, self, 0);
 
         vm.expectRevert("CentrifugeRouter/insufficient-funds-to-topup");
-        centrifugeRouter.requestDeposit{value: lessGas}(vault_, amount, self, self, gasLimit);
+        router.requestDeposit{value: lessGas}(vault_, amount, self, self, gasLimit);
 
         vm.expectRevert("Gateway/not-enough-gas-funds");
-        centrifugeRouter.requestDeposit{value: lessGas}(vault_, amount, self, self, lessGas);
+        router.requestDeposit{value: lessGas}(vault_, amount, self, self, lessGas);
 
         vm.expectRevert("PoolManager/unknown-vault");
-        centrifugeRouter.requestDeposit{value: lessGas}(
+        router.requestDeposit{value: lessGas}(
             makeAddr("maliciousVault"), amount, self, makeAddr("owner"), lessGas
         );
 
         vm.expectRevert("PoolManager/unknown-vault");
-        centrifugeRouter.requestDeposit{value: lessGas}(makeAddr("maliciousVault"), amount, self, self, lessGas);
+        router.requestDeposit{value: lessGas}(makeAddr("maliciousVault"), amount, self, self, lessGas);
 
         bytes[] memory calls = new bytes[](2);
         calls[0] =
-            abi.encodeWithSelector(centrifugeRouter.requestDeposit.selector, vault_, amount / 2, self, self, gasLimit);
+            abi.encodeWithSelector(router.requestDeposit.selector, vault_, amount / 2, self, self, gasLimit);
         calls[1] =
-            abi.encodeWithSelector(centrifugeRouter.requestDeposit.selector, vault_, amount / 2, self, self, gasLimit);
+            abi.encodeWithSelector(router.requestDeposit.selector, vault_, amount / 2, self, self, gasLimit);
 
         vm.expectRevert("CentrifugeRouter/insufficient-funds-to-topup");
-        centrifugeRouter.multicall{value: gasLimit}(calls);
+        router.multicall{value: gasLimit}(calls);
 
         uint256 coverMoreThanItIsNeeded = gasLimit * calls.length + 1;
-        assertEq(address(centrifugeRouter).balance, 0);
-        centrifugeRouter.multicall{value: coverMoreThanItIsNeeded}(calls);
-        assertEq(address(centrifugeRouter).balance, 1);
+        assertEq(address(router).balance, 0);
+        router.multicall{value: coverMoreThanItIsNeeded}(calls);
+        assertEq(address(router).balance, 1);
     }
 
     // --- helpers ---

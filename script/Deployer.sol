@@ -37,7 +37,7 @@ contract Deployer is Script {
     Guardian public guardian;
     Gateway public gateway;
     GasService public gasService;
-    CentrifugeRouter public centrifugeRouter; // TODO: rename once adapters => adapters rename is in
+    CentrifugeRouter public router;
     address public vaultFactory;
     address public restrictionManager;
     address public trancheTokenFactory;
@@ -63,9 +63,9 @@ contract Deployer is Script {
 
         gateway = new Gateway(address(root), address(investmentManager), address(poolManager), address(gasService));
         routerEscrow = new Escrow(deployer);
-        centrifugeRouter = new CentrifugeRouter(address(routerEscrow), address(poolManager), address(gateway));
-        AuthLike(address(routerEscrow)).rely(address(centrifugeRouter));
-        root.endorse(address(centrifugeRouter));
+        router = new CentrifugeRouter(address(routerEscrow), address(poolManager), address(gateway));
+        AuthLike(address(routerEscrow)).rely(address(router));
+        root.endorse(address(router));
         root.endorse(address(escrow));
 
         AuthLike(vaultFactory).rely(address(poolManager));
@@ -93,7 +93,7 @@ contract Deployer is Script {
         poolManager.file("investmentManager", address(investmentManager));
         poolManager.file("gasService", address(gasService));
 
-        centrifugeRouter.rely(address(root));
+        router.rely(address(root));
         investmentManager.file("gateway", address(gateway));
         poolManager.file("gateway", address(gateway));
         investmentManager.rely(address(root));
@@ -119,7 +119,7 @@ contract Deployer is Script {
         escrow.deny(deployer);
         routerEscrow.deny(deployer);
         gateway.deny(deployer);
-        centrifugeRouter.deny(deployer);
+        router.deny(deployer);
         gasService.deny(deployer);
     }
 }
