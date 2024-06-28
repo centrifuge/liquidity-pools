@@ -5,18 +5,18 @@ import {MessagesLib} from "src/libraries/MessagesLib.sol";
 import {CastLib} from "src/libraries/CastLib.sol";
 import "forge-std/Test.sol";
 
-interface RouterLike {
+interface AdapterLike {
     function execute(bytes memory _message) external;
 }
 
 contract MockCentrifugeChain is Test {
     using CastLib for *;
 
-    address[] public routers;
+    address[] public adapters;
 
-    constructor(address[] memory routers_) {
-        for (uint256 i = 0; i < routers_.length; i++) {
-            routers.push(routers_[i]);
+    constructor(address[] memory adapters_) {
+        for (uint256 i = 0; i < adapters_.length; i++) {
+            adapters.push(adapters_[i]);
         }
     }
 
@@ -239,8 +239,8 @@ contract MockCentrifugeChain is Test {
 
     function _execute(bytes memory message) internal {
         bytes memory proof = abi.encodePacked(uint8(MessagesLib.Call.MessageProof), keccak256(message));
-        for (uint256 i = 0; i < routers.length; i++) {
-            RouterLike(routers[i]).execute(i == 0 ? message : proof);
+        for (uint256 i = 0; i < adapters.length; i++) {
+            AdapterLike(adapters[i]).execute(i == 0 ? message : proof);
         }
     }
 

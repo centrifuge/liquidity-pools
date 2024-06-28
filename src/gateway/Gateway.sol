@@ -17,7 +17,7 @@ interface GasServiceLike {
     function shouldRefuel(address source, bytes calldata payload) external view returns (bool);
 }
 
-interface RouterLike {
+interface AdapterLike {
     function send(bytes memory message) external;
     function pay(bytes calldata payload, address refund) external payable;
     function estimate(bytes calldata payload, uint256 destChainCost) external view returns (uint256);
@@ -32,8 +32,8 @@ interface RootLike {
 }
 
 /// @title  Gateway
-/// @notice Routing contract that forwards to multiple routers (1 full message, n-1 proofs)
-///         and validates multiple routers have confirmed a message.
+/// @notice Routing contract that forwards to multiple adapters (1 full message, n-1 proofs)
+///         and validates multiple adapters have confirmed a message.
 ///
 ///         Supports processing multiple duplicate messages in parallel by
 ///         storing counts of messages and proofs that have been received.
@@ -41,8 +41,8 @@ contract Gateway is Auth, IGateway {
     using ArrayLib for uint16[8];
     using BytesLib for bytes;
 
-    uint8 public constant MAX_ROUTER_COUNT = 8;
-    uint8 public constant PRIMARY_ROUTER_ID = 1;
+    uint8 public constant MAX_ADAPTER_COUNT = 8;
+    uint8 public constant PRIMARY_ADAPTER_ID = 1;
     uint256 public constant RECOVERY_CHALLENGE_PERIOD = 7 days;
     RootLike public immutable root;
 
@@ -50,8 +50,8 @@ contract Gateway is Auth, IGateway {
     address public poolManager;
     GasServiceLike public gasService;
 
-    address[] public routers;
-    mapping(address router => Router) public activeRouters;
+    address[] public adapters;
+    mapping(address adapter => Adapter) public activeAdapters;
     mapping(bytes32 messageHash => Message) public messages;
     mapping(bytes32 messageHash => Recovery) public recoveries;
     mapping(uint8 messageId => address manager) messageHandlers;
@@ -79,37 +79,37 @@ contract Gateway is Auth, IGateway {
 
     // --- Administration ---
     /// @inheritdoc IGateway
-    function file(bytes32 what, address[] calldata routers_) external auth {
-        if (what == "routers") {
-            uint8 quorum_ = uint8(routers_.length);
-            require(quorum_ > 0, "Gateway/empty-router-set");
-            require(quorum_ <= MAX_ROUTER_COUNT, "Gateway/exceeds-max-router-count");
+    function file(bytes32 what, address[] calldata adapters_) external auth {
+        if (what == "adapters") {
+            uint8 quorum_ = uint8(adapters_.length);
+            require(quorum_ > 0, "Gateway/empty-adapter-set");
+            require(quorum_ <= MAX_ADAPTER_COUNT, "Gateway/exceeds-max-adapter-count");
 
             uint64 sessionId = 0;
-            if (routers.length > 0) {
-                // Increment session id if it is not the initial router setup and the quorum was decreased
-                Router memory prevRouter = activeRouters[routers[0]];
-                sessionId = quorum_ < prevRouter.quorum ? prevRouter.activeSessionId + 1 : prevRouter.activeSessionId;
+            if (adapters.length > 0) {
+                // Increment session id if it is not the initial adapter setup and the quorum was decreased
+                Adapter memory prevAdapter = activeAdapters[adapters[0]];
+                sessionId = quorum_ < prevAdapter.quorum ? prevAdapter.activeSessionId + 1 : prevAdapter.activeSessionId;
             }
-            // Disable old routers
-            for (uint8 i = 0; i < routers.length; i++) {
-                delete activeRouters[routers[i]];
+            // Disable old adapters
+            for (uint8 i = 0; i < adapters.length; i++) {
+                delete activeAdapters[adapters[i]];
             }
 
-            // Enable new routers, setting quorum to number of routers
+            // Enable new adapters, setting quorum to number of adapters
             for (uint8 j; j < quorum_; j++) {
-                require(activeRouters[routers_[j]].id == 0, "Gateway/no-duplicates-allowed");
+                require(activeAdapters[adapters_[j]].id == 0, "Gateway/no-duplicates-allowed");
 
                 // Ids are assigned sequentially starting at 1
-                activeRouters[routers_[j]] = Router(j + 1, quorum_, sessionId);
+                activeAdapters[adapters_[j]] = Adapter(j + 1, quorum_, sessionId);
             }
 
-            routers = routers_;
+            adapters = adapters_;
         } else {
             revert("Gateway/file-unrecognized-param");
         }
 
-        emit File(what, routers_);
+        emit File(what, adapters_);
     }
 
     /// @inheritdoc IGateway
@@ -132,56 +132,56 @@ contract Gateway is Auth, IGateway {
     // --- Incoming ---
     /// @inheritdoc IGateway
     function handle(bytes calldata message) external pauseable {
-        Router memory router = activeRouters[msg.sender];
-        require(router.id != 0, "Gateway/invalid-router");
-        _handle(message, msg.sender, router, false);
+        Adapter memory adapter = activeAdapters[msg.sender];
+        require(adapter.id != 0, "Gateway/invalid-adapter");
+        _handle(message, msg.sender, adapter, false);
     }
 
-    function _handle(bytes calldata payload, address routerAddr, Router memory router, bool isRecovery) internal {
+    function _handle(bytes calldata payload, address adapterAddr, Adapter memory adapter, bool isRecovery) internal {
         uint8 call = payload.toUint8(0);
         if (
             call == uint8(MessagesLib.Call.InitiateMessageRecovery)
                 || call == uint8(MessagesLib.Call.DisputeMessageRecovery)
         ) {
             require(!isRecovery, "Gateway/no-recursive-recovery-allowed");
-            require(routers.length > 1, "Gateway/no-recovery-with-one-router-allowed");
+            require(adapters.length > 1, "Gateway/no-recovery-with-one-adapter-allowed");
             return _handleRecovery(payload);
         }
 
         bool isMessageProof = call == uint8(MessagesLib.Call.MessageProof);
-        if (router.quorum == 1 && !isMessageProof) {
+        if (adapter.quorum == 1 && !isMessageProof) {
             // Special case for gas efficiency
             _dispatch(payload);
-            emit ExecuteMessage(payload, routerAddr);
+            emit ExecuteMessage(payload, adapterAddr);
             return;
         }
 
-        // Verify router and parse message hash
+        // Verify adapter and parse message hash
         bytes32 messageHash;
         if (isMessageProof) {
-            require(isRecovery || router.id != PRIMARY_ROUTER_ID, "Gateway/non-proof-router");
+            require(isRecovery || adapter.id != PRIMARY_ADAPTER_ID, "Gateway/non-proof-adapter");
             messageHash = payload.toBytes32(1);
-            emit HandleProof(messageHash, routerAddr);
+            emit HandleProof(messageHash, adapterAddr);
         } else {
-            require(isRecovery || router.id == PRIMARY_ROUTER_ID, "Gateway/non-message-router");
+            require(isRecovery || adapter.id == PRIMARY_ADAPTER_ID, "Gateway/non-message-adapter");
             messageHash = keccak256(payload);
-            emit HandleMessage(payload, routerAddr);
+            emit HandleMessage(payload, adapterAddr);
         }
 
         Message storage state = messages[messageHash];
 
-        if (router.activeSessionId != state.sessionId) {
+        if (adapter.activeSessionId != state.sessionId) {
             // Clear votes from previous session
             delete state.votes;
-            state.sessionId = router.activeSessionId;
+            state.sessionId = adapter.activeSessionId;
         }
 
         // Increase vote
-        state.votes[router.id - 1]++;
+        state.votes[adapter.id - 1]++;
 
-        if (state.votes.countNonZeroValues() >= router.quorum) {
+        if (state.votes.countNonZeroValues() >= adapter.quorum) {
             // Reduce votes by quorum
-            state.votes.decreaseFirstNValues(router.quorum);
+            state.votes.decreaseFirstNValues(adapter.quorum);
 
             // Handle message
             if (isMessageProof) {
@@ -204,11 +204,11 @@ contract Gateway is Auth, IGateway {
     function _handleRecovery(bytes memory payload) internal {
         if (MessagesLib.messageType(payload) == MessagesLib.Call.InitiateMessageRecovery) {
             bytes32 messageHash = payload.toBytes32(1);
-            address router = payload.toAddress(33);
-            require(activeRouters[msg.sender].id != 0, "Gateway/invalid-sender");
-            require(activeRouters[router].id != 0, "Gateway/invalid-router");
-            recoveries[messageHash] = Recovery(block.timestamp + RECOVERY_CHALLENGE_PERIOD, router);
-            emit InitiateMessageRecovery(messageHash, router);
+            address adapter = payload.toAddress(33);
+            require(activeAdapters[msg.sender].id != 0, "Gateway/invalid-sender");
+            require(activeAdapters[adapter].id != 0, "Gateway/invalid-adapter");
+            recoveries[messageHash] = Recovery(block.timestamp + RECOVERY_CHALLENGE_PERIOD, adapter);
+            emit InitiateMessageRecovery(messageHash, adapter);
         } else if (MessagesLib.messageType(payload) == MessagesLib.Call.DisputeMessageRecovery) {
             bytes32 messageHash = payload.toBytes32(1);
             return _disputeMessageRecovery(messageHash);
@@ -230,14 +230,14 @@ contract Gateway is Auth, IGateway {
         bytes32 messageHash = keccak256(message);
         // wouldn't it better to mark these as memory?
         Recovery storage recovery = recoveries[messageHash];
-        Router storage router = activeRouters[recovery.router];
+        Adapter storage adapter = activeAdapters[recovery.adapter];
 
         require(recovery.timestamp != 0, "Gateway/message-recovery-not-initiated");
         require(recovery.timestamp <= block.timestamp, "Gateway/challenge-period-has-not-ended");
-        require(router.id != 0, "Gateway/invalid-router");
+        require(adapter.id != 0, "Gateway/invalid-adapter");
 
         delete recoveries[messageHash];
-        _handle(message, recovery.router, router, true);
+        _handle(message, recovery.adapter, adapter, true);
         emit ExecuteMessageRecovery(message);
     }
 
@@ -252,25 +252,25 @@ contract Gateway is Auth, IGateway {
 
         bytes memory proof = abi.encodePacked(uint8(MessagesLib.Call.MessageProof), keccak256(message));
 
-        uint256 numRouters = routers.length;
-        require(numRouters > 0, "Gateway/routers-not-initialized");
+        uint256 numAdapters = adapters.length;
+        require(numAdapters > 0, "Gateway/adapters-not-initialized");
         uint256 fuel = quota;
         uint256 tank = fuel > 0 ? fuel : gasService.shouldRefuel(source, message) ? address(this).balance : 0;
 
         uint256 messageCost = gasService.estimate(message);
         uint256 proofCost = gasService.estimate(proof);
 
-        for (uint256 i; i < numRouters; i++) {
-            RouterLike currentRouter = RouterLike(routers[i]);
-            bool isPrimaryRouter = i == PRIMARY_ROUTER_ID - 1;
-            bytes memory payload = isPrimaryRouter ? message : proof;
+        for (uint256 i; i < numAdapters; i++) {
+            AdapterLike currentAdapter = AdapterLike(adapters[i]);
+            bool isPrimaryAdapter = i == PRIMARY_ADAPTER_ID - 1;
+            bytes memory payload = isPrimaryAdapter ? message : proof;
 
-            uint256 consumed = currentRouter.estimate(payload, isPrimaryRouter ? messageCost : proofCost);
+            uint256 consumed = currentAdapter.estimate(payload, isPrimaryAdapter ? messageCost : proofCost);
             require(consumed <= tank, "Gateway/not-enough-gas-funds");
             tank -= consumed;
 
-            currentRouter.pay{value: consumed}(payload, address(this));
-            currentRouter.send(payload);
+            currentAdapter.pay{value: consumed}(payload, address(this));
+            currentAdapter.send(payload);
         }
 
         if (fuel > 0) quota = 0;
@@ -287,14 +287,14 @@ contract Gateway is Auth, IGateway {
     // --- Helpers ---
     /// @inheritdoc IGateway
     function quorum() external view returns (uint8) {
-        Router memory router = activeRouters[routers[0]];
-        return router.quorum;
+        Adapter memory adapter = activeAdapters[adapters[0]];
+        return adapter.quorum;
     }
 
     /// @inheritdoc IGateway
     function activeSessionId() external view returns (uint64) {
-        Router memory router = activeRouters[routers[0]];
-        return router.activeSessionId;
+        Adapter memory adapter = activeAdapters[adapters[0]];
+        return adapter.activeSessionId;
     }
 
     /// @inheritdoc IGateway
@@ -307,12 +307,12 @@ contract Gateway is Auth, IGateway {
         bytes memory proof = abi.encodePacked(uint8(MessagesLib.Call.MessageProof), keccak256(payload));
         uint256 proofCost = gasService.estimate(payload);
         uint256 messageCost = gasService.estimate(proof);
-        tranches = new uint256[](routers.length);
+        tranches = new uint256[](adapters.length);
 
-        for (uint256 i; i < routers.length; i++) {
-            uint256 centrifugeCost = i == PRIMARY_ROUTER_ID - 1 ? messageCost : proofCost;
-            bytes memory message = i == PRIMARY_ROUTER_ID - 1 ? payload : proof;
-            uint256 estimated = RouterLike(routers[i]).estimate(message, centrifugeCost);
+        for (uint256 i; i < adapters.length; i++) {
+            uint256 centrifugeCost = i == PRIMARY_ADAPTER_ID - 1 ? messageCost : proofCost;
+            bytes memory message = i == PRIMARY_ADAPTER_ID - 1 ? payload : proof;
+            uint256 estimated = AdapterLike(adapters[i]).estimate(message, centrifugeCost);
             tranches[i] = estimated;
             total += estimated;
         }

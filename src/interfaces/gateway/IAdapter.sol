@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity >=0.5.0;
 
-interface IRouter {
+interface IAdapter {
     event File(bytes32 what, uint256 value);
 
     // --- Incoming ---
