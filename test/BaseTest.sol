@@ -47,7 +47,6 @@ contract BaseTest is Deployer, Test {
     // default values
     uint128 public defaultAssetId = 1;
     uint128 public defaultPrice = 1 * 10**18;
-    uint8 public defaultHook = 1; // TODO
     uint8 public defaultDecimals = 8;
 
     function setUp() public virtual {
@@ -106,7 +105,6 @@ contract BaseTest is Deployer, Test {
         vm.label(address(mockedGasService), "MockGasService");
         vm.label(address(escrow), "Escrow");
         vm.label(address(guardian), "Guardian");
-        vm.label(address(poolManager.restrictionManagerFactory()), "RestrictionManagerFactory");
         vm.label(address(poolManager.trancheTokenFactory()), "TrancheTokenFactory");
         vm.label(address(poolManager.vaultFactory()), "ERC7540VaultFactory");
 
@@ -123,7 +121,6 @@ contract BaseTest is Deployer, Test {
         excludeContract(address(adapter3));
         excludeContract(address(escrow));
         excludeContract(address(guardian));
-        excludeContract(address(poolManager.restrictionManagerFactory()));
         excludeContract(address(poolManager.trancheTokenFactory()));
         excludeContract(address(poolManager.vaultFactory()));
     }
@@ -132,7 +129,7 @@ contract BaseTest is Deployer, Test {
     function deployVault(
         uint64 poolId,
         uint8 trancheTokenDecimals,
-        uint8 hook,
+        address hook,
         string memory tokenName,
         string memory tokenSymbol,
         bytes16 trancheId,
@@ -168,11 +165,11 @@ contract BaseTest is Deployer, Test {
         bytes16 trancheId,
         uint128 asset
     ) public returns (address) {
-        return deployVault(poolId, decimals, defaultHook, tokenName, tokenSymbol, trancheId, asset, address(erc20));
+        return deployVault(poolId, decimals, restrictionManager, tokenName, tokenSymbol, trancheId, asset, address(erc20));
     }
 
     function deploySimpleVault() public returns (address) {
-        return deployVault(5, 6, defaultHook, "name", "symbol", bytes16(bytes("1")), defaultAssetId, address(erc20));
+        return deployVault(5, 6, restrictionManager, "name", "symbol", bytes16(bytes("1")), defaultAssetId, address(erc20));
     }
 
     function deposit(address _vault, address _investor, uint256 amount) public {

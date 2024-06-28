@@ -2,7 +2,6 @@
 pragma solidity 0.8.21;
 
 import {ERC7540VaultFactory} from "src/factories/ERC7540VaultFactory.sol";
-import {RestrictionManagerFactoryLike} from "src/factories/RestrictionManagerFactory.sol";
 import {TrancheTokenFactoryLike} from "src/factories/TrancheTokenFactory.sol";
 import {TrancheTokenLike} from "src/token/Tranche.sol";
 import {RestrictionManagerLike} from "src/token/RestrictionManager.sol";
@@ -31,7 +30,7 @@ interface AuthLike {
 }
 
 interface HookLike {
-    function updateRestriction(bytes memory update) external;
+    function updateRestriction(address token, bytes memory update) external;
 }
 
 interface GasServiceLike {
@@ -56,7 +55,6 @@ contract PoolManager is Auth, IPoolManager {
     ERC7540VaultFactory public vaultFactory;
     InvestmentManagerLike public investmentManager;
     TrancheTokenFactoryLike public trancheTokenFactory;
-    RestrictionManagerFactoryLike public restrictionManagerFactory;
     GasServiceLike public gasService;
 
     mapping(uint64 poolId => Pool) public pools;
@@ -68,12 +66,10 @@ contract PoolManager is Auth, IPoolManager {
     constructor(
         address escrow_,
         address vaultFactory_,
-        address restrictionManagerFactory_,
         address trancheTokenFactory_
     ) {
         escrow = IEscrow(escrow_);
         vaultFactory = ERC7540VaultFactory(vaultFactory_);
-        restrictionManagerFactory = RestrictionManagerFactoryLike(restrictionManagerFactory_);
         trancheTokenFactory = TrancheTokenFactoryLike(trancheTokenFactory_);
 
         wards[msg.sender] = 1;
@@ -87,7 +83,6 @@ contract PoolManager is Auth, IPoolManager {
         else if (what == "investmentManager") investmentManager = InvestmentManagerLike(data);
         else if (what == "trancheTokenFactory") trancheTokenFactory = TrancheTokenFactoryLike(data);
         else if (what == "vaultFactory") vaultFactory = ERC7540VaultFactory(data);
-        else if (what == "restrictionManagerFactory") restrictionManagerFactory = RestrictionManagerFactoryLike(data);
         else if (what == "gasService") gasService = GasServiceLike(data);
         else revert("PoolManager/file-unrecognized-param");
         emit File(what, data);
@@ -184,7 +179,7 @@ contract PoolManager is Auth, IPoolManager {
                 message.slice(25, 128).bytes128ToString(),
                 message.toBytes32(153).toString(),
                 message.toUint8(185),
-                message.toUint8(186)
+                message.toAddress(186)
             );
         } else if (call == MessagesLib.Call.UpdateRestriction) {
             updateRestriction(message.toUint64(1), message.toBytes16(9), message.slice(25, message.length - 25));
@@ -257,7 +252,7 @@ contract PoolManager is Auth, IPoolManager {
         string memory name,
         string memory symbol,
         uint8 decimals,
-        uint8 hook
+        address hook
     ) public auth {
         require(decimals >= MIN_DECIMALS, "PoolManager/too-few-tranche-token-decimals");
         require(decimals <= MAX_DECIMALS, "PoolManager/too-many-tranche-token-decimals");
@@ -317,7 +312,7 @@ contract PoolManager is Auth, IPoolManager {
     function updateRestriction(uint64 poolId, bytes16 trancheId, bytes memory update) public auth {
         TrancheTokenLike trancheToken = TrancheTokenLike(getTrancheToken(poolId, trancheId));
         require(address(trancheToken) != address(0), "PoolManager/unknown-token");
-        HookLike(trancheToken.hook()).updateRestriction(update);
+        HookLike(trancheToken.hook()).updateRestriction(address(trancheToken), update);
     }
 
     /// @inheritdoc IPoolManager
@@ -372,9 +367,6 @@ contract PoolManager is Auth, IPoolManager {
         trancheTokenWards[0] = address(investmentManager);
         trancheTokenWards[1] = address(this);
 
-        address[] memory restrictionManagerWards = new address[](1);
-        restrictionManagerWards[0] = address(this);
-
         address token = trancheTokenFactory.newTrancheToken(
             poolId,
             trancheId,
@@ -383,9 +375,7 @@ contract PoolManager is Auth, IPoolManager {
             undeployedTranche.decimals,
             trancheTokenWards
         );
-        address restrictionManager =
-            restrictionManagerFactory.newRestrictionManager(undeployedTranche.hook, token, restrictionManagerWards);
-        TrancheTokenLike(token).file("hook", restrictionManager);
+        TrancheTokenLike(token).file("hook", undeployedTranche.hook);
 
         pools[poolId].tranches[trancheId].token = token;
 

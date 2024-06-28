@@ -32,7 +32,7 @@ struct UndeployedTranche {
     string tokenName;
     string tokenSymbol;
     /// @dev Address of the hook
-    uint8 hook;
+    address hook;
 }
 
 interface IPoolManager {
@@ -113,7 +113,7 @@ interface IPoolManager {
         string memory tokenName,
         string memory tokenSymbol,
         uint8 decimals,
-        uint8 hook
+        address hook
     ) external;
 
     /// @notice TODO

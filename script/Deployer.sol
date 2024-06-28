@@ -7,7 +7,7 @@ import {GasService} from "src/gateway/GasService.sol";
 import {InvestmentManager} from "src/InvestmentManager.sol";
 import {TrancheTokenFactory} from "src/factories/TrancheTokenFactory.sol";
 import {ERC7540VaultFactory} from "src/factories/ERC7540VaultFactory.sol";
-import {RestrictionManagerFactory} from "src/factories/RestrictionManagerFactory.sol";
+import {RestrictionManager} from "src/token/RestrictionManager.sol";
 import {PoolManager} from "src/PoolManager.sol";
 import {Escrow} from "src/Escrow.sol";
 import {CentrifugeRouter} from "src/CentrifugeRouter.sol";
@@ -39,7 +39,7 @@ contract Deployer is Script {
     GasService public gasService;
     CentrifugeRouter public centrifugeRouter; // TODO: rename once adapters => adapters rename is in
     address public vaultFactory;
-    address public restrictionManagerFactory;
+    address public restrictionManager;
     address public trancheTokenFactory;
 
     function deploy(address deployer) public {
@@ -52,10 +52,10 @@ contract Deployer is Script {
         root = new Root{salt: salt}(address(escrow), delay, deployer);
 
         vaultFactory = address(new ERC7540VaultFactory(address(root)));
-        restrictionManagerFactory = address(new RestrictionManagerFactory(address(root)));
+        restrictionManager = address(new RestrictionManager(address(root)));
         trancheTokenFactory = address(new TrancheTokenFactory{salt: salt}(address(root), deployer));
         investmentManager = new InvestmentManager(address(root), address(escrow));
-        poolManager = new PoolManager(address(escrow), vaultFactory, restrictionManagerFactory, trancheTokenFactory);
+        poolManager = new PoolManager(address(escrow), vaultFactory, trancheTokenFactory);
 
         // TODO THESE VALUES NEEDS TO BE CHECKED
         gasService = new GasService(20000000000000000, 20000000000000000, 2500000000000000000, 178947400000000);
@@ -70,11 +70,11 @@ contract Deployer is Script {
 
         AuthLike(vaultFactory).rely(address(poolManager));
         AuthLike(trancheTokenFactory).rely(address(poolManager));
-        AuthLike(restrictionManagerFactory).rely(address(poolManager));
+        AuthLike(restrictionManager).rely(address(poolManager));
 
         AuthLike(vaultFactory).rely(address(root));
         AuthLike(trancheTokenFactory).rely(address(root));
-        AuthLike(restrictionManagerFactory).rely(address(root));
+        AuthLike(restrictionManager).rely(address(root));
 
         guardian = new Guardian(adminSafe, address(root), address(gateway));
     }
@@ -112,7 +112,7 @@ contract Deployer is Script {
         AuthLike(adapter).deny(deployer);
         AuthLike(vaultFactory).deny(deployer);
         AuthLike(trancheTokenFactory).deny(deployer);
-        AuthLike(restrictionManagerFactory).deny(deployer);
+        AuthLike(restrictionManager).deny(deployer);
         root.deny(deployer);
         investmentManager.deny(deployer);
         poolManager.deny(deployer);

@@ -25,6 +25,10 @@ interface IERC1404 {
     function SUCCESS_CODE() external view returns (uint8);
 }
 
+interface IHook {
+    function detectTransferRestriction(address from, address to, uint256 value, HookData calldata hookdata) external view returns (uint8);
+}
+
 /// @title  Tranche Token
 /// @notice Extension of ERC20 + ERC1404 for tranche tokens,
 ///         integrating an external hook optionally for ERC20 callbacks and ERC1404 checks.
@@ -34,7 +38,7 @@ interface IERC1404 {
 ///
 ///         The most significant 128 bits of the uint256 balance value are used
 ///         to store hook data (e.g. restrictions for users).
-contract TrancheToken is ERC20, ITrancheToken, IERC7575Share {
+contract TrancheToken is ERC20, ITrancheToken, IERC7575Share, IERC1404 {
     using BitmapLib for *;
 
     uint8 internal constant MAX_DECIMALS = 18;
@@ -44,7 +48,6 @@ contract TrancheToken is ERC20, ITrancheToken, IERC7575Share {
     /// @inheritdoc IERC7575Share
     mapping(address asset => address) public vault;
 
-    // , address escrow_
     constructor(uint8 decimals_) ERC20(decimals_) {
         require(decimals_ <= MAX_DECIMALS, "ERC20/too-many-decimals");
     }
@@ -125,24 +128,24 @@ contract TrancheToken is ERC20, ITrancheToken, IERC7575Share {
 
     // --- ERC1404 implementation ---
     /// @inheritdoc ITrancheToken
-    function detectTransferRestriction(address from, address to, uint256 value) public view returns (uint8) {
-        if (hook == address(0)) return 0;
-        return IERC1404(hook).detectTransferRestriction(from, to, value);
-    }
-
-    /// @inheritdoc ITrancheToken
     function checkTransferRestriction(address from, address to, uint256 value) public view returns (bool) {
         if (hook == address(0)) return true;
-        return IERC1404(hook).detectTransferRestriction(from, to, value) == SUCCESS_CODE();
+        return detectTransferRestriction(from, to, value) == SUCCESS_CODE();
     }
 
-    /// @inheritdoc ITrancheToken
+    /// @inheritdoc IERC1404
+    function detectTransferRestriction(address from, address to, uint256 value) public view returns (uint8) {
+        if (hook == address(0)) return 0;
+        return IHook(hook).detectTransferRestriction(from, to, value, HookData(hookDataOf(from), hookDataOf(to)));
+    }
+
+    /// @inheritdoc IERC1404
     function messageForTransferRestriction(uint8 restrictionCode) public view returns (string memory) {
         if (hook == address(0)) return "";
         return IERC1404(hook).messageForTransferRestriction(restrictionCode);
     }
 
-    /// @inheritdoc ITrancheToken
+    /// @inheritdoc IERC1404
     function SUCCESS_CODE() public view returns (uint8) {
         if (hook == address(0)) return 0;
         return IERC1404(hook).SUCCESS_CODE();

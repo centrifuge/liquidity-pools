@@ -8,7 +8,6 @@ import {Escrow} from "src/Escrow.sol";
 import {TrancheToken} from "src/token/Tranche.sol";
 import {Gateway} from "src/gateway/Gateway.sol";
 import {ERC7540VaultFactory} from "src/factories/ERC7540VaultFactory.sol";
-import {RestrictionManagerFactory} from "src/factories/RestrictionManagerFactory.sol";
 import {TrancheTokenFactory} from "src/factories/TrancheTokenFactory.sol";
 import {Guardian} from "src/admin/Guardian.sol";
 import "forge-std/Test.sol";
@@ -55,7 +54,6 @@ contract ForkTest is Test {
                 address adapter = _get(i, ".contracts.adapter");
                 address trancheTokenFactory = _get(i, ".contracts.trancheTokenFactory");
                 address vaultFactory = _get(i, ".contracts.vaultFactory");
-                address restrictionManagerFactory = _get(i, ".contracts.restrictionManagerFactory");
                 address deployer = _get(i, ".config.deployer");
                 address adminSafe = _get(i, ".config.adminSafe");
                 _loadFork(i);
@@ -76,7 +74,6 @@ contract ForkTest is Test {
                 assertEq(address(PoolManager(poolManager).investmentManager()), investmentManager);
                 assertEq(address(PoolManager(poolManager).trancheTokenFactory()), trancheTokenFactory);
                 assertEq(address(PoolManager(poolManager).vaultFactory()), vaultFactory);
-                assertEq(address(PoolManager(poolManager).restrictionManagerFactory()), restrictionManagerFactory);
                 assertEq(Escrow(escrow).wards(poolManager), 1);
                 assertEq(PoolManager(poolManager).wards(root), 1);
                 assertEq(PoolManager(poolManager).wards(deployer), 0);
@@ -116,7 +113,6 @@ contract ForkTest is Test {
                 address poolManager = _get(i, ".contracts.poolManager");
                 address trancheTokenFactory = _get(i, ".contracts.trancheTokenFactory");
                 address vaultFactory = _get(i, ".contracts.vaultFactory");
-                address restrictionManagerFactory = _get(i, ".contracts.restrictionManagerFactory");
                 address deployer = _get(i, ".config.deployer");
                 address adminSafe = _get(i, ".config.adminSafe");
                 _loadFork(i);
@@ -132,11 +128,6 @@ contract ForkTest is Test {
                 assertEq(ERC7540VaultFactory(vaultFactory).wards(poolManager), 1);
                 assertEq(ERC7540VaultFactory(vaultFactory).wards(deployer), 0);
                 assertEq(ERC7540VaultFactory(vaultFactory).wards(adminSafe), 0);
-
-                // RestrictionManagerFactory
-                assertEq(RestrictionManagerFactory(restrictionManagerFactory).wards(root), 1);
-                assertEq(RestrictionManagerFactory(restrictionManagerFactory).wards(deployer), 0);
-                assertEq(RestrictionManagerFactory(restrictionManagerFactory).wards(adminSafe), 0);
             }
         }
     }

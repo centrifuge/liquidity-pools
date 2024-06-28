@@ -14,7 +14,7 @@ contract RestrictionManagerTest is Test {
     function setUp() public {
         root = new MockRoot();
         token = new TrancheToken(18);
-        restrictionManager = new RestrictionManager(address(root), address(token));
+        restrictionManager = new RestrictionManager(address(root));
     }
 
     // TODO: re-add
@@ -38,13 +38,13 @@ contract RestrictionManagerTest is Test {
     // }
 
     function testFreeze() public {
-        restrictionManager.freeze(address(this));
-        assertEq(restrictionManager.isFrozen(address(this)), true);
+        restrictionManager.freeze(address(token), address(this));
+        assertEq(restrictionManager.isFrozen(address(token), address(this)), true);
     }
 
     function testFreezingZeroAddress() public {
         vm.expectRevert("RestrictionManager/cannot-freeze-zero-address");
-        restrictionManager.freeze(address(0));
-        assertEq(restrictionManager.isFrozen(address(0)), false);
+        restrictionManager.freeze(address(token), address(0));
+        assertEq(restrictionManager.isFrozen(address(token), address(0)), false);
     }
 }

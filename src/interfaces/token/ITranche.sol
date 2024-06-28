@@ -15,16 +15,6 @@ interface ITrancheToken {
     /// @notice TODO
     function updateVault(address asset, address vault_) external;
 
-    // --- ERC1404 implementation ---
-    /// @notice TODO
-    function detectTransferRestriction(address from, address to, uint256 value) external view returns (uint8);
-
     /// @notice TODO
     function checkTransferRestriction(address from, address to, uint256 value) external view returns (bool);
-
-    /// @notice TODO
-    function messageForTransferRestriction(uint8 restrictionCode) external view returns (string memory);
-
-    /// @notice TODO
-    function SUCCESS_CODE() external view returns (uint8);
 }

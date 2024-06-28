@@ -29,7 +29,7 @@ contract TrancheTokenTest is Test {
         token.file("name", "Some Token");
         token.file("symbol", "ST");
 
-        restrictionManager = new MockRestrictionManager(address(new MockRoot()), address(token));
+        restrictionManager = new MockRestrictionManager(address(new MockRoot()));
         restrictionManager.rely(address(token));
         token.file("hook", address(restrictionManager));
     }

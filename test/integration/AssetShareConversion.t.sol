@@ -12,7 +12,7 @@ contract AssetShareConversionTest is BaseTest {
 
         ERC20 asset = _newErc20("Asset", "A", INVESTMENT_CURRENCY_DECIMALS);
         address vault_ =
-            deployVault(poolId, TRANCHE_TOKEN_DECIMALS, defaultHook, "", "", trancheId, assetId, address(asset));
+            deployVault(poolId, TRANCHE_TOKEN_DECIMALS, restrictionManager, "", "", trancheId, assetId, address(asset));
         ERC7540Vault vault = ERC7540Vault(vault_);
         TrancheTokenLike trancheToken = TrancheTokenLike(address(ERC7540Vault(vault_).share()));
 
@@ -68,7 +68,7 @@ contract AssetShareConversionTest is BaseTest {
 
         ERC20 asset = _newErc20("Currency", "CR", INVESTMENT_CURRENCY_DECIMALS);
         address vault_ =
-            deployVault(poolId, TRANCHE_TOKEN_DECIMALS, defaultHook, "", "", trancheId, assetId, address(asset));
+            deployVault(poolId, TRANCHE_TOKEN_DECIMALS, restrictionManager, "", "", trancheId, assetId, address(asset));
         ERC7540Vault vault = ERC7540Vault(vault_);
         TrancheTokenLike trancheToken = TrancheTokenLike(address(ERC7540Vault(vault_).share()));
         centrifugeChain.updateTrancheTokenPrice(poolId, trancheId, assetId, 1000000, uint64(block.timestamp));

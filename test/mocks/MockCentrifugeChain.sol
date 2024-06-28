@@ -46,7 +46,7 @@ contract MockCentrifugeChain is Test {
         string memory tokenName,
         string memory tokenSymbol,
         uint8 decimals,
-        uint8 hook
+        address hook
     ) public {
         bytes memory _message = abi.encodePacked(
             uint8(MessagesLib.Call.AddTranche),

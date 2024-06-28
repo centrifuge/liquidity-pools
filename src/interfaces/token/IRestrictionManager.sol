@@ -2,17 +2,10 @@
 pragma solidity >=0.5.0;
 
 interface IRestrictionManager {
-    struct Restrictions {
-        /// @dev Frozen accounts that tokens cannot be transferred from or to
-        bool frozen;
-        /// @dev Member accounts that tokens can be transferred to, with an end date
-        uint64 validUntil;
-    }
-
     // --- Events ---
-    event UpdateMember(address indexed user, uint64 validUntil);
-    event Freeze(address indexed user);
-    event Unfreeze(address indexed user);
+    event UpdateMember(address indexed token, address indexed user, uint64 validUntil);
+    event Freeze(address indexed token, address indexed user);
+    event Unfreeze(address indexed token, address indexed user);
 
     // --- ERC1404 implementation ---
     /// @notice TODO
@@ -21,18 +14,18 @@ interface IRestrictionManager {
     /// @notice TODO
     function messageForTransferRestriction(uint8 restrictionCode) external pure returns (string memory);
 
-    function updateRestriction(bytes memory update) external;
-    function isFrozen(address user) external view returns (bool);
-    function isMember(address user) external view returns (bool);
+    function updateRestriction(address token, bytes memory update) external;
+    function isFrozen(address token, address user) external view returns (bool);
+    function isMember(address token, address user) external view returns (bool);
 
     // --- Handling freezes ---
     /// @notice TODO
-    function freeze(address user) external;
+    function freeze(address token, address user) external;
 
     /// @notice TODO
-    function unfreeze(address user) external;
+    function unfreeze(address token, address user) external;
 
     // --- Managing members ---
     /// @notice TODO
-    function updateMember(address user, uint64 validUntil) external;
+    function updateMember(address token, address user, uint64 validUntil) external;
 }
