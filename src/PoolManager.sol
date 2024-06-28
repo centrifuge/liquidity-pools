@@ -63,11 +63,7 @@ contract PoolManager is Auth, IPoolManager {
     mapping(address => uint128 assetId) public assetToId;
     mapping(uint64 poolId => mapping(bytes16 => UndeployedTranche)) public undeployedTranches;
 
-    constructor(
-        address escrow_,
-        address vaultFactory_,
-        address trancheTokenFactory_
-    ) {
+    constructor(address escrow_, address vaultFactory_, address trancheTokenFactory_) {
         escrow = IEscrow(escrow_);
         vaultFactory = ERC7540VaultFactory(vaultFactory_);
         trancheTokenFactory = TrancheTokenFactoryLike(trancheTokenFactory_);

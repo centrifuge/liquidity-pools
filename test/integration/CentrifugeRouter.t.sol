@@ -309,8 +309,9 @@ contract CentrifugeRouterTest is BaseTest {
         vm.assume(amount % 2 == 0);
 
         MockERC20Wrapper wrapper = new MockERC20Wrapper(address(erc20));
-        address vault_ =
-            deployVault(5, 6, restrictionManager, "name", "symbol", bytes16(bytes("1")), defaultAssetId, address(wrapper));
+        address vault_ = deployVault(
+            5, 6, restrictionManager, "name", "symbol", bytes16(bytes("1")), defaultAssetId, address(wrapper)
+        );
         ERC7540Vault vault = ERC7540Vault(vault_);
         vm.label(vault_, "vault");
 
@@ -347,8 +348,9 @@ contract CentrifugeRouterTest is BaseTest {
         vm.assume(amount % 2 == 0);
 
         MockERC20Wrapper wrapper = new MockERC20Wrapper(address(erc20));
-        address vault_ =
-            deployVault(5, 6, restrictionManager, "name", "symbol", bytes16(bytes("1")), defaultAssetId, address(wrapper));
+        address vault_ = deployVault(
+            5, 6, restrictionManager, "name", "symbol", bytes16(bytes("1")), defaultAssetId, address(wrapper)
+        );
         ERC7540Vault vault = ERC7540Vault(vault_);
         vm.label(vault_, "vault");
 
@@ -382,8 +384,9 @@ contract CentrifugeRouterTest is BaseTest {
         vm.assume(amount % 2 == 0);
 
         MockERC20Wrapper wrapper = new MockERC20Wrapper(address(erc20));
-        address vault_ =
-            deployVault(5, 6, restrictionManager, "name", "symbol", bytes16(bytes("1")), defaultAssetId, address(wrapper));
+        address vault_ = deployVault(
+            5, 6, restrictionManager, "name", "symbol", bytes16(bytes("1")), defaultAssetId, address(wrapper)
+        );
         ERC7540Vault vault = ERC7540Vault(vault_);
         vm.label(vault_, "vault");
 
@@ -492,8 +495,10 @@ contract CentrifugeRouterTest is BaseTest {
         erc20Y = _newErc20("Y's Dollar", "USDY", 6);
         vm.label(address(erc20X), "erc20X");
         vm.label(address(erc20Y), "erc20Y");
-        address vault1_ = deployVault(5, 6, restrictionManager, "name1", "symbol1", bytes16(bytes("1")), 1, address(erc20X));
-        address vault2_ = deployVault(4, 6, restrictionManager, "name2", "symbol2", bytes16(bytes("2")), 2, address(erc20Y));
+        address vault1_ =
+            deployVault(5, 6, restrictionManager, "name1", "symbol1", bytes16(bytes("1")), 1, address(erc20X));
+        address vault2_ =
+            deployVault(4, 6, restrictionManager, "name2", "symbol2", bytes16(bytes("2")), 2, address(erc20Y));
         vault1 = ERC7540Vault(vault1_);
         vault2 = ERC7540Vault(vault2_);
         vm.label(vault1_, "vault1");

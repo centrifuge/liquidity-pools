@@ -52,9 +52,8 @@ contract RestrictionManager is Auth, IRestrictionManager, IERC20Callback {
 
     // --- Callback from tranche token ---
     function onERC20Transfer(address from, address to, uint256 value, HookData calldata hookData)
-        public
+        external
         virtual
-        auth
         returns (bytes4)
     {
         uint8 restrictionCode = detectTransferRestriction(from, to, value, hookData);
@@ -68,7 +67,7 @@ contract RestrictionManager is Auth, IRestrictionManager, IERC20Callback {
         address, /* to */
         uint256, /* value */
         HookData calldata /* hookData */
-    ) public virtual auth returns (bytes4) {
+    ) external returns (bytes4) {
         return bytes4(keccak256("onERC20AuthTransfer(address,address,address,uint256,(bytes16,bytes16))"));
     }
 

@@ -26,7 +26,10 @@ interface IERC1404 {
 }
 
 interface IHook {
-    function detectTransferRestriction(address from, address to, uint256 value, HookData calldata hookdata) external view returns (uint8);
+    function detectTransferRestriction(address from, address to, uint256 value, HookData calldata hookdata)
+        external
+        view
+        returns (uint8);
 }
 
 /// @title  Tranche Token
