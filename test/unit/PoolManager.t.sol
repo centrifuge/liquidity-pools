@@ -420,9 +420,10 @@ contract PoolManagerTest is BaseTest {
 
         uint64 poolId = vault.poolId();
         bytes16 trancheId = vault.trancheId();
+        HookLike hook = HookLike(trancheToken.hook());
         vm.expectRevert(bytes("Auth/not-authorized"));
         vm.prank(randomUser);
-        HookLike(trancheToken.hook()).updateMember(randomUser, validUntil);
+        hook.updateMember(randomUser, validUntil);
 
         vm.expectRevert(bytes("PoolManager/unknown-token"));
         centrifugeChain.updateMember(100, bytes16(bytes("100")), randomUser, validUntil); // use random poolId &
@@ -431,7 +432,7 @@ contract PoolManagerTest is BaseTest {
         centrifugeChain.updateMember(poolId, trancheId, randomUser, validUntil);
         assertTrue(trancheToken.checkTransferRestriction(address(0), randomUser, 0));
 
-        vm.expectRevert(bytes("PoolManager/escrow-member-cannot-be-updated"));
+        vm.expectRevert(bytes("RestrictionManager/endorsed-user-cannot-be-updated"));
         centrifugeChain.updateMember(poolId, trancheId, address(escrow), validUntil);
     }
 
@@ -444,7 +445,7 @@ contract PoolManagerTest is BaseTest {
         uint64 validUntil = uint64(block.timestamp + 7 days);
         address secondUser = makeAddr("secondUser");
 
-        vm.expectRevert(bytes("PoolManager/escrow-cannot-be-frozen"));
+        vm.expectRevert(bytes("RestrictionManager/endorsed-user-cannot-be-frozen"));
         centrifugeChain.freeze(poolId, trancheId, address(escrow));
 
         vm.expectRevert(bytes("PoolManager/unknown-token"));

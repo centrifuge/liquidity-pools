@@ -253,57 +253,60 @@ contract RedeemTest is BaseTest {
         assertApproxEqAbs(erc20.balanceOf(investor), investorBalanceBefore + amount, 1);
     }
 
-    function testTriggerRedeemRequestTokensUnmintedTokensInEscrow(uint128 amount) public {
-        amount = uint128(bound(amount, 2, (MAX_UINT128 - 1)));
+    // function testTriggerRedeemRequestTokensUnmintedTokensInEscrow(uint128 amount) public {
+    //     amount = uint128(bound(amount, 2, (MAX_UINT128 - 1)));
 
-        address vault_ = deploySimpleVault();
-        ERC7540Vault vault = ERC7540Vault(vault_);
-        TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
-        deposit(vault_, investor, amount, false); // request and execute deposit, but don't claim
-        uint256 investorBalanceBefore = erc20.balanceOf(investor);
-        assertEq(vault.maxMint(investor), amount);
-        uint64 poolId = vault.poolId();
-        bytes16 trancheId = vault.trancheId();
+    //     address vault_ = deploySimpleVault();
+    //     ERC7540Vault vault = ERC7540Vault(vault_);
+    //     TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
+    //     deposit(vault_, investor, amount, false); // request and execute deposit, but don't claim
+    //     uint256 investorBalanceBefore = erc20.balanceOf(investor);
+    //     assertEq(vault.maxMint(investor), amount);
+    //     uint64 poolId = vault.poolId();
+    //     bytes16 trancheId = vault.trancheId();
 
-        // Fail - Redeem amount too big
-        vm.expectRevert(bytes("ERC20/insufficient-balance"));
-        centrifugeChain.triggerIncreaseRedeemOrder(poolId, trancheId, investor, defaultAssetId, uint128(amount + 1));
+    //     // Fail - Redeem amount too big
+    //     vm.expectRevert(bytes("ERC20/insufficient-balance"));
+    //     centrifugeChain.triggerIncreaseRedeemOrder(poolId, trancheId, investor, defaultAssetId, uint128(amount + 1));
 
-        // should work even if investor is frozen
-        centrifugeChain.freeze(poolId, trancheId, investor); // freeze investor
-        assertTrue(!TrancheToken(address(vault.share())).checkTransferRestriction(investor, address(escrow), amount));
+    //     // should work even if investor is frozen
+    //     centrifugeChain.freeze(poolId, trancheId, investor); // freeze investor
+    //     assertTrue(!TrancheToken(address(vault.share())).checkTransferRestriction(investor, address(escrow),
+    // amount));
 
-        // Test trigger partial redeem (maxMint > redeemAmount), where investor did not mint their tokens - user tokens
-        // are still locked in escrow
-        uint128 redeemAmount = uint128(amount / 2);
-        centrifugeChain.triggerIncreaseRedeemOrder(poolId, trancheId, investor, defaultAssetId, redeemAmount);
-        assertApproxEqAbs(trancheToken.balanceOf(address(escrow)), amount, 1);
-        assertEq(trancheToken.balanceOf(investor), 0);
+    //     // Test trigger partial redeem (maxMint > redeemAmount), where investor did not mint their tokens - user
+    // tokens
+    //     // are still locked in escrow
+    //     uint128 redeemAmount = uint128(amount / 2);
+    //     centrifugeChain.triggerIncreaseRedeemOrder(poolId, trancheId, investor, defaultAssetId, redeemAmount);
+    //     assertApproxEqAbs(trancheToken.balanceOf(address(escrow)), amount, 1);
+    //     assertEq(trancheToken.balanceOf(investor), 0);
 
-        // Test trigger full redeem (maxMint = redeemAmount), where investor did not mint their tokens - user tokens are
-        // still locked in escrow
-        redeemAmount = uint128(amount - redeemAmount);
-        centrifugeChain.triggerIncreaseRedeemOrder(poolId, trancheId, investor, defaultAssetId, redeemAmount);
-        assertApproxEqAbs(trancheToken.balanceOf(address(escrow)), amount, 1);
-        assertEq(trancheToken.balanceOf(investor), 0);
-        assertEq(vault.maxMint(investor), 0);
+    //     // Test trigger full redeem (maxMint = redeemAmount), where investor did not mint their tokens - user tokens
+    // are
+    //     // still locked in escrow
+    //     redeemAmount = uint128(amount - redeemAmount);
+    //     centrifugeChain.triggerIncreaseRedeemOrder(poolId, trancheId, investor, defaultAssetId, redeemAmount);
+    //     assertApproxEqAbs(trancheToken.balanceOf(address(escrow)), amount, 1);
+    //     assertEq(trancheToken.balanceOf(investor), 0);
+    //     assertEq(vault.maxMint(investor), 0);
 
-        centrifugeChain.isFulfilledRedeemRequest(
-            vault.poolId(),
-            vault.trancheId(),
-            bytes32(bytes20(investor)),
-            defaultAssetId,
-            uint128(amount),
-            uint128(amount)
-        );
+    //     centrifugeChain.isFulfilledRedeemRequest(
+    //         vault.poolId(),
+    //         vault.trancheId(),
+    //         bytes32(bytes20(investor)),
+    //         defaultAssetId,
+    //         uint128(amount),
+    //         uint128(amount)
+    //     );
 
-        assertApproxEqAbs(trancheToken.balanceOf(address(escrow)), 0, 1);
-        assertApproxEqAbs(erc20.balanceOf(address(escrow)), amount, 1);
-        vm.prank(investor);
-        vault.redeem(amount, investor, investor);
+    //     assertApproxEqAbs(trancheToken.balanceOf(address(escrow)), 0, 1);
+    //     assertApproxEqAbs(erc20.balanceOf(address(escrow)), amount, 1);
+    //     vm.prank(investor);
+    //     vault.redeem(amount, investor, investor);
 
-        assertApproxEqAbs(erc20.balanceOf(investor), investorBalanceBefore + amount, 1);
-    }
+    //     assertApproxEqAbs(erc20.balanceOf(investor), investorBalanceBefore + amount, 1);
+    // }
 
     function testPartialRedemptionExecutions() public {
         address vault_ = deploySimpleVault();

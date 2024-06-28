@@ -87,6 +87,7 @@ contract FactoryTest is Test {
         string memory symbol,
         uint8 decimals
     ) public {
+        decimals = uint8(bound(decimals, 0, 18));
         TrancheTokenFactory trancheTokenFactory = new TrancheTokenFactory{salt: salt}(root, address(this));
 
         bytes32 hashedSalt = keccak256(abi.encodePacked(poolId, trancheId));
@@ -125,6 +126,7 @@ contract FactoryTest is Test {
         string memory symbol,
         uint8 decimals
     ) public {
+        decimals = uint8(bound(decimals, 0, 18));
         address predictedAddress = address(
             uint160(
                 uint256(

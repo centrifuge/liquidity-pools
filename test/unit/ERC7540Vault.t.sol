@@ -55,7 +55,8 @@ contract ERC7540VaultTest is BaseTest {
     }
 
     // --- uint128 type checks ---
-    // Make sure all function calls would fail when overflow uint128
+    /// @dev Make sure all function calls would fail when overflow uint128
+    /// @dev requestRedeem is not checked because the tranche token supply is already capped at uint128
     function testAssertUint128(uint256 amount) public {
         vm.assume(amount > MAX_UINT128); // amount has to overflow UINT128
         address vault_ = deploySimpleVault();
@@ -82,13 +83,6 @@ contract ERC7540VaultTest is BaseTest {
         erc20.mint(address(this), amount);
         vm.expectRevert(bytes("MathLib/uint128-overflow"));
         vault.requestDeposit(amount, self, self);
-
-        TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
-        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max);
-        root.relyContract(address(trancheToken), self);
-        trancheToken.mint(address(this), amount);
-        vm.expectRevert(bytes("MathLib/uint128-overflow"));
-        vault.requestRedeem(amount, address(this), address(this));
     }
 
     // --- erc165 checks ---

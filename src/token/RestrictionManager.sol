@@ -42,7 +42,6 @@ contract RestrictionManager is Auth, IRestrictionManager, IERC20Callback {
     uint8 public constant DESTINATION_NOT_A_MEMBER_RESTRICTION_CODE = 3;
 
     IRoot public immutable root;
-    address public immutable escrow;
     TrancheTokenLike public immutable token;
 
     constructor(address root_, address token_) {
@@ -65,14 +64,13 @@ contract RestrictionManager is Auth, IRestrictionManager, IERC20Callback {
         return bytes4(keccak256("onERC20Transfer(address,address,uint256,(bytes16,bytes16))"));
     }
 
-    function onERC20AuthTransfer(address sender, address from, address to, uint256 value, HookData calldata hookData)
-        public
-        virtual
-        auth
-        returns (bytes4)
-    {
-        uint8 restrictionCode = detectTransferRestriction(from, to, value, hookData);
-        require(restrictionCode == SUCCESS_CODE, messageForTransferRestriction(restrictionCode));
+    function onERC20AuthTransfer(
+        address, /* sender */
+        address, /* from */
+        address, /* to */
+        uint256, /* value */
+        HookData calldata /* hookData */
+    ) public virtual auth returns (bytes4) {
         return bytes4(keccak256("onERC20AuthTransfer(address,address,address,uint256,(bytes16,bytes16))"));
     }
 
@@ -153,8 +151,8 @@ contract RestrictionManager is Auth, IRestrictionManager, IERC20Callback {
 
     /// @inheritdoc IRestrictionManager
     function freeze(address user) public auth {
-        require(user != address(0), "TrancheToken01/cannot-freeze-zero-address");
-        require(user != address(escrow), "TrancheToken01/cannot-freeze-escrow");
+        require(user != address(0), "RestrictionManager/cannot-freeze-zero-address");
+        require(!root.endorsed(user), "RestrictionManager/endorsed-user-cannot-be-frozen");
 
         uint128 hookData = uint128(token.hookDataOf(user));
         token.setHookData(user, bytes16(hookData.setBit(FREEZE_BIT, true)));
@@ -178,8 +176,8 @@ contract RestrictionManager is Auth, IRestrictionManager, IERC20Callback {
     // --- Managing members ---
     /// @inheritdoc IRestrictionManager
     function updateMember(address user, uint64 validUntil) public auth {
-        require(block.timestamp <= validUntil, "TrancheToken01/invalid-valid-until");
-        require(user != address(escrow), "TrancheToken01/escrow-member-cannot-be-updated");
+        require(block.timestamp <= validUntil, "RestrictionManager/invalid-valid-until");
+        require(!root.endorsed(user), "RestrictionManager/endorsed-user-cannot-be-updated");
         _updateMember(user, validUntil);
     }
 
