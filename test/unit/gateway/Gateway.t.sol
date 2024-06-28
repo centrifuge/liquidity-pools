@@ -3,7 +3,7 @@ pragma solidity 0.8.21;
 
 import "test/BaseTest.sol";
 import {MockGateway} from "test/mocks/MockGateway.sol";
-import {MockRouter} from "test/mocks/MockRouter.sol";
+import {MockAdapter} from "test/mocks/MockAdapter.sol";
 import {MockRoot} from "test/mocks/MockRoot.sol";
 import {MockManager} from "test/mocks/MockManager.sol";
 import {MockAxelarGasService} from "test/mocks/MockAxelarGasService.sol";
@@ -18,15 +18,15 @@ contract GatewayTest is Test {
     MockManager investmentManager;
     MockManager poolManager;
     MockGasService gasService;
-    MockRouter router1;
-    MockRouter router2;
-    MockRouter router3;
-    MockRouter router4;
-    address[] oneMockRouter;
-    address[] twoDuplicateMockRouters;
-    address[] threeMockRouters;
-    address[] fourMockRouters;
-    address[] nineMockRouters;
+    MockAdapter adapter1;
+    MockAdapter adapter2;
+    MockAdapter adapter3;
+    MockAdapter adapter4;
+    address[] oneMockAdapter;
+    address[] twoDuplicateMockAdapters;
+    address[] threeMockAdapters;
+    address[] fourMockAdapters;
+    address[] nineMockAdapters;
     Gateway gateway;
 
     function setUp() public {
@@ -39,44 +39,44 @@ contract GatewayTest is Test {
         gasService.setReturn("shouldRefuel", true);
         vm.deal(address(gateway), 1 ether);
 
-        router1 = new MockRouter(address(gateway));
-        vm.label(address(router1), "MockRouter1");
-        router2 = new MockRouter(address(gateway));
-        vm.label(address(router2), "MockRouter2");
-        router3 = new MockRouter(address(gateway));
-        vm.label(address(router3), "MockRouter3");
-        router4 = new MockRouter(address(gateway));
-        vm.label(address(router4), "MockRouter4");
+        adapter1 = new MockAdapter(address(gateway));
+        vm.label(address(adapter1), "MockAdapter1");
+        adapter2 = new MockAdapter(address(gateway));
+        vm.label(address(adapter2), "MockAdapter2");
+        adapter3 = new MockAdapter(address(gateway));
+        vm.label(address(adapter3), "MockAdapter3");
+        adapter4 = new MockAdapter(address(gateway));
+        vm.label(address(adapter4), "MockAdapter4");
 
-        router1.setReturn("estimate", uint256(1.5 gwei));
-        router2.setReturn("estimate", uint256(1.25 gwei));
-        router3.setReturn("estimate", uint256(0.75 gwei));
+        adapter1.setReturn("estimate", uint256(1.5 gwei));
+        adapter2.setReturn("estimate", uint256(1.25 gwei));
+        adapter3.setReturn("estimate", uint256(0.75 gwei));
 
         gasService.setReturn("estimate", uint256(0.5 gwei));
 
-        oneMockRouter.push(address(router1));
+        oneMockAdapter.push(address(adapter1));
 
-        threeMockRouters.push(address(router1));
-        threeMockRouters.push(address(router2));
-        threeMockRouters.push(address(router3));
+        threeMockAdapters.push(address(adapter1));
+        threeMockAdapters.push(address(adapter2));
+        threeMockAdapters.push(address(adapter3));
 
-        twoDuplicateMockRouters.push(address(router1));
-        twoDuplicateMockRouters.push(address(router1));
+        twoDuplicateMockAdapters.push(address(adapter1));
+        twoDuplicateMockAdapters.push(address(adapter1));
 
-        fourMockRouters.push(address(router1));
-        fourMockRouters.push(address(router2));
-        fourMockRouters.push(address(router3));
-        fourMockRouters.push(address(router4));
+        fourMockAdapters.push(address(adapter1));
+        fourMockAdapters.push(address(adapter2));
+        fourMockAdapters.push(address(adapter3));
+        fourMockAdapters.push(address(adapter4));
 
-        nineMockRouters.push(address(router1));
-        nineMockRouters.push(address(router1));
-        nineMockRouters.push(address(router1));
-        nineMockRouters.push(address(router1));
-        nineMockRouters.push(address(router1));
-        nineMockRouters.push(address(router1));
-        nineMockRouters.push(address(router1));
-        nineMockRouters.push(address(router1));
-        nineMockRouters.push(address(router1));
+        nineMockAdapters.push(address(adapter1));
+        nineMockAdapters.push(address(adapter1));
+        nineMockAdapters.push(address(adapter1));
+        nineMockAdapters.push(address(adapter1));
+        nineMockAdapters.push(address(adapter1));
+        nineMockAdapters.push(address(adapter1));
+        nineMockAdapters.push(address(adapter1));
+        nineMockAdapters.push(address(adapter1));
+        nineMockAdapters.push(address(adapter1));
 
         self = address(this);
     }
@@ -110,22 +110,22 @@ contract GatewayTest is Test {
     }
 
     // --- Permissions ---
-    function testOnlyRoutersCanCall() public {
-        gateway.file("routers", threeMockRouters);
+    function testOnlyAdaptersCanCall() public {
+        gateway.file("adapters", threeMockAdapters);
 
         bytes memory message = hex"020000000000bce1a4";
 
-        vm.expectRevert(bytes("Gateway/invalid-router"));
+        vm.expectRevert(bytes("Gateway/invalid-adapter"));
         vm.prank(makeAddr("randomUser"));
         gateway.handle(message);
 
         //success
-        vm.prank(address(router1));
+        vm.prank(address(adapter1));
         gateway.handle(message);
     }
 
     function testOnlyManagersCanCall(uint64 poolId) public {
-        gateway.file("routers", threeMockRouters);
+        gateway.file("adapters", threeMockAdapters);
 
         vm.expectRevert(bytes("Gateway/invalid-manager"));
         gateway.send(abi.encodePacked(uint8(MessagesLib.Call.AddPool), poolId), self);
@@ -144,82 +144,82 @@ contract GatewayTest is Test {
     // --- Dynamic managers ---
     function testCustomManager() public {
         uint8 messageId = 40;
-        address[] memory routers = new address[](1);
-        routers[0] = address(router1);
+        address[] memory adapters = new address[](1);
+        adapters[0] = address(adapter1);
 
-        gateway.file("routers", routers);
+        gateway.file("adapters", adapters);
 
         MockManager mgr = new MockManager();
 
         bytes memory message = abi.encodePacked(messageId);
         vm.expectRevert(bytes("Gateway/unregistered-message-id"));
-        vm.prank(address(router1));
+        vm.prank(address(adapter1));
         gateway.handle(message);
 
         assertEq(mgr.received(message), 0);
 
         gateway.file("message", messageId, address(mgr));
-        vm.prank(address(router1));
+        vm.prank(address(adapter1));
         gateway.handle(message);
 
         assertEq(mgr.received(message), 1);
         assertEq(mgr.values_bytes("handle_message"), message);
     }
 
-    function testFileRouters() public {
-        gateway.file("routers", threeMockRouters);
-        assertEq(gateway.routers(0), address(router1));
-        assertEq(gateway.routers(1), address(router2));
-        assertEq(gateway.routers(2), address(router3));
+    function testFileAdapters() public {
+        gateway.file("adapters", threeMockAdapters);
+        assertEq(gateway.adapters(0), address(adapter1));
+        assertEq(gateway.adapters(1), address(adapter2));
+        assertEq(gateway.adapters(2), address(adapter3));
         assertEq(gateway.activeSessionId(), 0);
 
         vm.expectRevert(bytes(""));
-        assertEq(gateway.routers(3), address(0));
+        assertEq(gateway.adapters(3), address(0));
 
-        (uint8 validRouter1Id, uint8 validRouter1Quorum,) = gateway.activeRouters(address(router1));
-        assertEq(validRouter1Id, 1);
-        assertEq(validRouter1Quorum, 3);
-        (uint8 validRouter2Id, uint8 validRouter2Quorum,) = gateway.activeRouters(address(router2));
-        assertEq(validRouter2Id, 2);
-        assertEq(validRouter2Quorum, 3);
-        (uint8 validRouter3Id, uint8 validRouter3Quorum,) = gateway.activeRouters(address(router3));
-        assertEq(validRouter3Id, 3);
-        assertEq(validRouter3Quorum, 3);
-        (uint8 invalidRouter4Id, uint8 invalidRouter4Quorum,) = gateway.activeRouters(address(router4));
-        assertEq(invalidRouter4Id, 0);
-        assertEq(invalidRouter4Quorum, 0);
+        (uint8 validadapter1Id, uint8 validadapter1Quorum,) = gateway.activeAdapters(address(adapter1));
+        assertEq(validadapter1Id, 1);
+        assertEq(validadapter1Quorum, 3);
+        (uint8 validadapter2Id, uint8 validadapter2Quorum,) = gateway.activeAdapters(address(adapter2));
+        assertEq(validadapter2Id, 2);
+        assertEq(validadapter2Quorum, 3);
+        (uint8 validadapter3Id, uint8 validadapter3Quorum,) = gateway.activeAdapters(address(adapter3));
+        assertEq(validadapter3Id, 3);
+        assertEq(validadapter3Quorum, 3);
+        (uint8 invalidadapter4Id, uint8 invalidadapter4Quorum,) = gateway.activeAdapters(address(adapter4));
+        assertEq(invalidadapter4Id, 0);
+        assertEq(invalidadapter4Quorum, 0);
 
-        gateway.file("routers", fourMockRouters);
-        (uint8 validRouter4Id, uint8 validRouter4Quorum,) = gateway.activeRouters(address(router4));
-        assertEq(validRouter4Id, 4);
-        assertEq(validRouter4Quorum, 4);
-        assertEq(gateway.routers(3), address(router4));
+        gateway.file("adapters", fourMockAdapters);
+        (uint8 validadapter4Id, uint8 validadapter4Quorum,) = gateway.activeAdapters(address(adapter4));
+        assertEq(validadapter4Id, 4);
+        assertEq(validadapter4Quorum, 4);
+        assertEq(gateway.adapters(3), address(adapter4));
         assertEq(gateway.activeSessionId(), 0);
 
-        gateway.file("routers", threeMockRouters);
-        (invalidRouter4Id, invalidRouter4Quorum,) = gateway.activeRouters(address(router4));
-        assertEq(invalidRouter4Id, 0);
-        assertEq(invalidRouter4Quorum, 0);
+        gateway.file("adapters", threeMockAdapters);
+        (invalidadapter4Id, invalidadapter4Quorum,) = gateway.activeAdapters(address(adapter4));
+        assertEq(invalidadapter4Id, 0);
+        assertEq(invalidadapter4Quorum, 0);
         assertEq(gateway.activeSessionId(), 1);
         vm.expectRevert(bytes(""));
-        assertEq(gateway.routers(3), address(0));
+        assertEq(gateway.adapters(3), address(0));
 
-        vm.expectRevert(bytes("Gateway/exceeds-max-router-count"));
-        gateway.file("routers", nineMockRouters);
+        vm.expectRevert(bytes("Gateway/exceeds-max-adapter-count"));
+        gateway.file("adapters", nineMockAdapters);
 
         vm.expectRevert(bytes("Gateway/file-unrecognized-param"));
-        gateway.file("notRouters", nineMockRouters);
+        gateway.file("notAdapters", nineMockAdapters);
 
         vm.expectRevert(bytes("Gateway/no-duplicates-allowed"));
-        gateway.file("routers", twoDuplicateMockRouters);
+        gateway.file("adapters", twoDuplicateMockAdapters);
 
         gateway.deny(address(this));
         vm.expectRevert(bytes("Auth/not-authorized"));
-        gateway.file("routers", threeMockRouters);
+        gateway.file("adapters", threeMockAdapters);
     }
 
     function testUseBeforeInitialization() public {
-        vm.expectRevert(bytes("Gateway/invalid-router"));
+        vm.expectRevert(bytes("Gateway/invalid-adapter"));
         gateway.handle(abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1)));
 
         vm.expectRevert(bytes("Gateway/invalid-manager"));
@@ -227,37 +227,37 @@ contract GatewayTest is Test {
     }
 
     function testIncomingAggregatedMessages() public {
-        gateway.file("routers", threeMockRouters);
+        gateway.file("adapters", threeMockAdapters);
 
         bytes memory firstMessage = abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1));
         bytes memory firstProof = _formatMessageProof(abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1)));
 
-        vm.expectRevert(bytes("Gateway/invalid-router"));
+        vm.expectRevert(bytes("Gateway/invalid-adapter"));
         gateway.handle(firstMessage);
 
         // Executes after quorum is reached
-        _send(router1, firstMessage);
+        _send(adapter1, firstMessage);
         assertEq(poolManager.received(firstMessage), 0);
         assertVotes(firstMessage, 1, 0, 0);
 
-        _send(router2, firstProof);
+        _send(adapter2, firstProof);
         assertEq(poolManager.received(firstMessage), 0);
         assertVotes(firstMessage, 1, 1, 0);
 
-        _send(router3, firstProof);
+        _send(adapter3, firstProof);
         assertEq(poolManager.received(firstMessage), 1);
         assertVotes(firstMessage, 0, 0, 0);
 
         // Resending same message works
-        _send(router1, firstMessage);
+        _send(adapter1, firstMessage);
         assertEq(poolManager.received(firstMessage), 1);
         assertVotes(firstMessage, 1, 0, 0);
 
-        _send(router2, firstProof);
+        _send(adapter2, firstProof);
         assertEq(poolManager.received(firstMessage), 1);
         assertVotes(firstMessage, 1, 1, 0);
 
-        _send(router3, firstProof);
+        _send(adapter3, firstProof);
         assertEq(poolManager.received(firstMessage), 2);
         assertVotes(firstMessage, 0, 0, 0);
 
@@ -265,15 +265,15 @@ contract GatewayTest is Test {
         bytes memory secondMessage = abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(2));
         bytes memory secondProof = _formatMessageProof(abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(2)));
 
-        _send(router1, secondMessage);
+        _send(adapter1, secondMessage);
         assertEq(poolManager.received(secondMessage), 0);
         assertVotes(secondMessage, 1, 0, 0);
 
-        _send(router2, secondProof);
+        _send(adapter2, secondProof);
         assertEq(poolManager.received(secondMessage), 0);
         assertVotes(secondMessage, 1, 1, 0);
 
-        _send(router3, secondProof);
+        _send(adapter3, secondProof);
         assertEq(poolManager.received(secondMessage), 1);
         assertVotes(secondMessage, 0, 0, 0);
 
@@ -281,107 +281,107 @@ contract GatewayTest is Test {
         bytes memory thirdMessage = abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(3));
         bytes memory thirdProof = _formatMessageProof(abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(3)));
 
-        _send(router2, thirdProof);
+        _send(adapter2, thirdProof);
         assertEq(poolManager.received(thirdMessage), 0);
         assertVotes(thirdMessage, 0, 1, 0);
 
-        _send(router3, thirdProof);
+        _send(adapter3, thirdProof);
         assertEq(poolManager.received(thirdMessage), 0);
         assertVotes(thirdMessage, 0, 1, 1);
 
-        _send(router1, thirdMessage);
+        _send(adapter1, thirdMessage);
         assertEq(poolManager.received(thirdMessage), 1);
         assertVotes(thirdMessage, 0, 0, 0);
     }
 
     function testQuorumOfOne() public {
-        gateway.file("routers", oneMockRouter);
+        gateway.file("adapters", oneMockAdapter);
 
         bytes memory message = abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1));
 
         // Executes immediately
-        _send(router1, message);
+        _send(adapter1, message);
         assertEq(poolManager.received(message), 1);
     }
 
-    function testOneFasterPayloadRouter() public {
-        gateway.file("routers", threeMockRouters);
+    function testOneFasterPayloadAdapter() public {
+        gateway.file("adapters", threeMockAdapters);
 
         bytes memory message = abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1));
         bytes memory proof = _formatMessageProof(abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1)));
 
-        vm.expectRevert(bytes("Gateway/invalid-router"));
+        vm.expectRevert(bytes("Gateway/invalid-adapter"));
         gateway.handle(message);
 
         // Confirm two messages by payload first
-        _send(router1, message);
-        _send(router1, message);
+        _send(adapter1, message);
+        _send(adapter1, message);
         assertEq(poolManager.received(message), 0);
         assertVotes(message, 2, 0, 0);
 
         // Submit first proof
-        _send(router2, proof);
+        _send(adapter2, proof);
         assertEq(poolManager.received(message), 0);
         assertVotes(message, 2, 1, 0);
 
         // Submit second proof
-        _send(router3, proof);
+        _send(adapter3, proof);
         assertEq(poolManager.received(message), 1);
         assertVotes(message, 1, 0, 0);
 
         // Submit third proof
-        _send(router2, proof);
+        _send(adapter2, proof);
         assertEq(poolManager.received(message), 1);
         assertVotes(message, 1, 1, 0);
 
         // Submit fourth proof
-        _send(router3, proof);
+        _send(adapter3, proof);
         assertEq(poolManager.received(message), 2);
         assertVotes(message, 0, 0, 0);
     }
 
     function testVotesExpireAfterSession() public {
-        gateway.file("routers", fourMockRouters);
+        gateway.file("adapters", fourMockAdapters);
 
         bytes memory message = abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1));
         bytes memory proof = _formatMessageProof(abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1)));
 
-        _send(router1, message);
-        _send(router2, proof);
+        _send(adapter1, message);
+        _send(adapter2, proof);
         assertEq(investmentManager.received(message), 0);
         assertVotes(message, 1, 1, 0);
 
-        gateway.file("routers", threeMockRouters);
+        gateway.file("adapters", threeMockAdapters);
 
-        router3.execute(proof);
+        adapter3.execute(proof);
         assertEq(investmentManager.received(message), 0);
         assertVotes(message, 0, 0, 1);
     }
 
     function testOutgoingAggregatedMessages() public {
-        gateway.file("routers", threeMockRouters);
+        gateway.file("adapters", threeMockAdapters);
 
         bytes memory message = abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1));
         bytes memory proof = _formatMessageProof(abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1)));
 
-        assertEq(router1.sent(message), 0);
-        assertEq(router2.sent(message), 0);
-        assertEq(router3.sent(message), 0);
-        assertEq(router1.sent(proof), 0);
-        assertEq(router2.sent(proof), 0);
-        assertEq(router3.sent(proof), 0);
+        assertEq(adapter1.sent(message), 0);
+        assertEq(adapter2.sent(message), 0);
+        assertEq(adapter3.sent(message), 0);
+        assertEq(adapter1.sent(proof), 0);
+        assertEq(adapter2.sent(proof), 0);
+        assertEq(adapter3.sent(proof), 0);
         vm.expectRevert(bytes("Gateway/invalid-manager"));
         gateway.send(message, address(this));
 
         vm.prank(address(investmentManager));
         gateway.send(message, address(this));
 
-        assertEq(router1.sent(message), 1);
-        assertEq(router2.sent(message), 0);
-        assertEq(router3.sent(message), 0);
-        assertEq(router1.sent(proof), 0);
-        assertEq(router2.sent(proof), 1);
-        assertEq(router3.sent(proof), 1);
+        assertEq(adapter1.sent(message), 1);
+        assertEq(adapter2.sent(message), 0);
+        assertEq(adapter3.sent(message), 0);
+        assertEq(adapter1.sent(proof), 0);
+        assertEq(adapter2.sent(proof), 1);
+        assertEq(adapter3.sent(proof), 1);
     }
 
     function testPrepayment() public {
@@ -401,7 +401,7 @@ contract GatewayTest is Test {
     }
 
     function testOutgoingMessagingWithNotEnoughPrepayment() public {
-        gateway.file("routers", threeMockRouters);
+        gateway.file("adapters", threeMockAdapters);
 
         bytes memory message = abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1));
         bytes memory proof = _formatMessageProof(message);
@@ -418,19 +418,19 @@ contract GatewayTest is Test {
 
         assertEq(gasService.calls("shouldRefuel"), 0);
 
-        assertEq(router1.calls("pay"), 0);
-        assertEq(router2.calls("pay"), 0);
-        assertEq(router3.calls("pay"), 0);
+        assertEq(adapter1.calls("pay"), 0);
+        assertEq(adapter2.calls("pay"), 0);
+        assertEq(adapter3.calls("pay"), 0);
 
-        assertEq(router1.sent(message), 0);
-        assertEq(router2.sent(proof), 0);
-        assertEq(router3.sent(proof), 0);
+        assertEq(adapter1.sent(message), 0);
+        assertEq(adapter2.sent(proof), 0);
+        assertEq(adapter3.sent(proof), 0);
 
         assertEq(address(gateway).balance, balanceBeforeTx + topUpAmount);
     }
 
     function testOutgoingMessagingWithPrepayment() public {
-        gateway.file("routers", threeMockRouters);
+        gateway.file("adapters", threeMockAdapters);
 
         bytes memory message = abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1));
         bytes memory proof = _formatMessageProof(message);
@@ -447,13 +447,13 @@ contract GatewayTest is Test {
 
         assertEq(gasService.calls("shouldRefuel"), 0);
 
-        for (uint256 i; i < threeMockRouters.length; i++) {
-            MockRouter currentRouter = MockRouter(threeMockRouters[i]);
-            uint256[] memory metadata = currentRouter.callsWithValue("pay");
+        for (uint256 i; i < threeMockAdapters.length; i++) {
+            MockAdapter currentAdapter = MockAdapter(threeMockAdapters[i]);
+            uint256[] memory metadata = currentAdapter.callsWithValue("pay");
             assertEq(metadata.length, 1);
             assertEq(metadata[0], tranches[i]);
 
-            assertEq(currentRouter.sent(i == 0 ? message : proof), 1);
+            assertEq(currentAdapter.sent(i == 0 ? message : proof), 1);
         }
         assertEq(address(gateway).balance, balanceBeforeTx);
 
@@ -462,7 +462,7 @@ contract GatewayTest is Test {
     }
 
     function testOutgoingMessagingWithExtraPrepayment() public {
-        gateway.file("routers", threeMockRouters);
+        gateway.file("adapters", threeMockAdapters);
 
         bytes memory message = abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1));
         bytes memory proof = _formatMessageProof(message);
@@ -481,13 +481,13 @@ contract GatewayTest is Test {
 
         assertEq(gasService.calls("shouldRefuel"), 0);
 
-        for (uint256 i; i < threeMockRouters.length; i++) {
-            MockRouter currentRouter = MockRouter(threeMockRouters[i]);
-            uint256[] memory metadata = currentRouter.callsWithValue("pay");
+        for (uint256 i; i < threeMockAdapters.length; i++) {
+            MockAdapter currentAdapter = MockAdapter(threeMockAdapters[i]);
+            uint256[] memory metadata = currentAdapter.callsWithValue("pay");
             assertEq(metadata.length, 1);
             assertEq(metadata[0], tranches[i]);
 
-            assertEq(currentRouter.sent(i == 0 ? message : proof), 1);
+            assertEq(currentAdapter.sent(i == 0 ? message : proof), 1);
         }
         assertEq(address(gateway).balance, balanceBeforeTx + extra);
         uint256 fuel = uint256(vm.load(address(gateway), bytes32(0x0)));
@@ -495,7 +495,7 @@ contract GatewayTest is Test {
     }
 
     function testingOutgoingMessagingWithCoveredPayment() public {
-        gateway.file("routers", threeMockRouters);
+        gateway.file("adapters", threeMockAdapters);
 
         bytes memory message = abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1));
         bytes memory proof = _formatMessageProof(message);
@@ -511,31 +511,31 @@ contract GatewayTest is Test {
 
         assertEq(gasService.calls("shouldRefuel"), 1);
 
-        for (uint256 i; i < threeMockRouters.length; i++) {
-            MockRouter currentRouter = MockRouter(threeMockRouters[i]);
-            uint256[] memory metadata = currentRouter.callsWithValue("pay");
+        for (uint256 i; i < threeMockAdapters.length; i++) {
+            MockAdapter currentAdapter = MockAdapter(threeMockAdapters[i]);
+            uint256[] memory metadata = currentAdapter.callsWithValue("pay");
             assertEq(metadata.length, 1);
             assertEq(metadata[0], tranches[i]);
 
-            assertEq(currentRouter.sent(i == 0 ? message : proof), 1);
+            assertEq(currentAdapter.sent(i == 0 ? message : proof), 1);
         }
         assertEq(address(gateway).balance, balanceBeforeTx - total);
         assertEq(_quota(), 0);
     }
 
     function testingOutgoingMessagingWithPartiallyCoveredPayment() public {
-        gateway.file("routers", threeMockRouters);
+        gateway.file("adapters", threeMockAdapters);
 
         bytes memory message = abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1));
         bytes memory proof = _formatMessageProof(message);
 
         (uint256[] memory tranches,) = gateway.estimate(message);
 
-        uint256 fundsToCoverTwoRoutersOnly = tranches[0] + tranches[1];
-        vm.deal(address(gateway), fundsToCoverTwoRoutersOnly);
+        uint256 fundsToCoverTwoAdaptersOnly = tranches[0] + tranches[1];
+        vm.deal(address(gateway), fundsToCoverTwoAdaptersOnly);
         uint256 balanceBeforeTx = address(gateway).balance;
 
-        assertEq(balanceBeforeTx, fundsToCoverTwoRoutersOnly);
+        assertEq(balanceBeforeTx, fundsToCoverTwoAdaptersOnly);
         assertEq(_quota(), 0);
 
         vm.prank(address(investmentManager));
@@ -543,26 +543,26 @@ contract GatewayTest is Test {
 
         assertEq(gasService.calls("shouldRefuel"), 1);
 
-        uint256[] memory r1Metadata = router1.callsWithValue("pay");
+        uint256[] memory r1Metadata = adapter1.callsWithValue("pay");
         assertEq(r1Metadata.length, 1);
         assertEq(r1Metadata[0], tranches[0]);
-        assertEq(router1.sent(message), 1);
+        assertEq(adapter1.sent(message), 1);
 
-        uint256[] memory r2Metadata = router2.callsWithValue("pay");
+        uint256[] memory r2Metadata = adapter2.callsWithValue("pay");
         assertEq(r2Metadata.length, 1);
         assertEq(r2Metadata[0], tranches[1]);
-        assertEq(router2.sent(proof), 1);
+        assertEq(adapter2.sent(proof), 1);
 
-        uint256[] memory r3Metadata = router3.callsWithValue("pay");
+        uint256[] memory r3Metadata = adapter3.callsWithValue("pay");
         assertEq(r3Metadata.length, 0);
-        assertEq(router3.sent(proof), 1);
+        assertEq(adapter3.sent(proof), 1);
 
-        assertEq(address(gateway).balance, balanceBeforeTx - fundsToCoverTwoRoutersOnly);
+        assertEq(address(gateway).balance, balanceBeforeTx - fundsToCoverTwoAdaptersOnly);
         assertEq(_quota(), 0);
     }
 
     function testingOutgoingMessagingWithoutBeingCovered() public {
-        gateway.file("routers", threeMockRouters);
+        gateway.file("adapters", threeMockAdapters);
 
         bytes memory message = abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1));
         bytes memory proof = _formatMessageProof(message);
@@ -576,23 +576,23 @@ contract GatewayTest is Test {
 
         assertEq(gasService.calls("shouldRefuel"), 1);
 
-        uint256[] memory r1Metadata = router1.callsWithValue("pay");
+        uint256[] memory r1Metadata = adapter1.callsWithValue("pay");
         assertEq(r1Metadata.length, 0);
-        assertEq(router1.sent(message), 1);
+        assertEq(adapter1.sent(message), 1);
 
-        uint256[] memory r2Metadata = router2.callsWithValue("pay");
+        uint256[] memory r2Metadata = adapter2.callsWithValue("pay");
         assertEq(r2Metadata.length, 0);
-        assertEq(router2.sent(proof), 1);
+        assertEq(adapter2.sent(proof), 1);
 
-        uint256[] memory r3Metadata = router3.callsWithValue("pay");
+        uint256[] memory r3Metadata = adapter3.callsWithValue("pay");
         assertEq(r3Metadata.length, 0);
-        assertEq(router3.sent(proof), 1);
+        assertEq(adapter3.sent(proof), 1);
 
         assertEq(_quota(), 0);
     }
 
     function testingOutgoingMessagingWherePaymentCoverIsNotAllowed() public {
-        gateway.file("routers", threeMockRouters);
+        gateway.file("adapters", threeMockAdapters);
 
         bytes memory message = abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1));
 
@@ -611,14 +611,14 @@ contract GatewayTest is Test {
     }
 
     function testRecoverFailedMessage() public {
-        gateway.file("routers", threeMockRouters);
+        gateway.file("adapters", threeMockAdapters);
 
         bytes memory message = abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1));
         bytes memory proof = _formatMessageProof(abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1)));
 
-        // Only send through 2 out of 3 routers
-        router2.execute(proof);
-        router3.execute(proof);
+        // Only send through 2 out of 3 adapters
+        adapter2.execute(proof);
+        adapter3.execute(proof);
         assertEq(poolManager.received(message), 0);
 
         vm.expectRevert(bytes("Gateway/message-recovery-not-initiated"));
@@ -626,9 +626,9 @@ contract GatewayTest is Test {
 
         // Initiate recovery
         _send(
-            router2,
+            adapter2,
             abi.encodePacked(
-                uint8(MessagesLib.Call.InitiateMessageRecovery), keccak256(message), address(router1).toBytes32()
+                uint8(MessagesLib.Call.InitiateMessageRecovery), keccak256(message), address(adapter1).toBytes32()
             )
         );
 
@@ -641,31 +641,31 @@ contract GatewayTest is Test {
         assertEq(poolManager.received(message), 1);
     }
 
-    function testCannotRecoverWithOneRouter() public {
-        gateway.file("routers", oneMockRouter);
+    function testCannotRecoverWithOneAdapter() public {
+        gateway.file("adapters", oneMockAdapter);
 
         bytes memory message = abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1));
 
-        vm.expectRevert(bytes("Gateway/no-recovery-with-one-router-allowed"));
+        vm.expectRevert(bytes("Gateway/no-recovery-with-one-adapter-allowed"));
         _send(
-            router1,
+            adapter1,
             abi.encodePacked(
-                uint8(MessagesLib.Call.InitiateMessageRecovery), keccak256(message), address(router1).toBytes32()
+                uint8(MessagesLib.Call.InitiateMessageRecovery), keccak256(message), address(adapter1).toBytes32()
             )
         );
     }
 
     function testRecoverFailedProof() public {
-        gateway.file("routers", threeMockRouters);
+        gateway.file("adapters", threeMockAdapters);
 
         bytes memory message = abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1));
         bytes memory proof = _formatMessageProof(abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1)));
 
-        // Only send through 2 out of 3 routers
-        router1.execute(message);
-        router2.execute(proof);
-        _send(router1, message);
-        _send(router2, proof);
+        // Only send through 2 out of 3 adapters
+        adapter1.execute(message);
+        adapter2.execute(proof);
+        _send(adapter1, message);
+        _send(adapter2, proof);
         assertEq(investmentManager.received(message), 0);
 
         vm.expectRevert(bytes("Gateway/message-recovery-not-initiated"));
@@ -673,9 +673,9 @@ contract GatewayTest is Test {
 
         // Initiate recovery
         _send(
-            router1,
+            adapter1,
             abi.encodePacked(
-                uint8(MessagesLib.Call.InitiateMessageRecovery), keccak256(proof), address(router3).toBytes32()
+                uint8(MessagesLib.Call.InitiateMessageRecovery), keccak256(proof), address(adapter3).toBytes32()
             )
         );
 
@@ -688,49 +688,49 @@ contract GatewayTest is Test {
         assertEq(poolManager.received(message), 1);
     }
 
-    function testCannotRecoverInvalidRouter() public {
-        gateway.file("routers", threeMockRouters);
+    function testCannotRecoverInvalidAdapter() public {
+        gateway.file("adapters", threeMockAdapters);
 
         bytes memory message = abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1));
         bytes memory proof = _formatMessageProof(abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1)));
 
-        // Only send through 2 out of 3 routers
-        _send(router1, message);
-        _send(router2, proof);
+        // Only send through 2 out of 3 adapters
+        _send(adapter1, message);
+        _send(adapter2, proof);
         assertEq(poolManager.received(message), 0);
 
         // Initiate recovery
         _send(
-            router1,
+            adapter1,
             abi.encodePacked(
-                uint8(MessagesLib.Call.InitiateMessageRecovery), keccak256(proof), address(router3).toBytes32()
+                uint8(MessagesLib.Call.InitiateMessageRecovery), keccak256(proof), address(adapter3).toBytes32()
             )
         );
 
         vm.warp(block.timestamp + gateway.RECOVERY_CHALLENGE_PERIOD());
 
-        gateway.file("routers", oneMockRouter);
-        vm.expectRevert(bytes("Gateway/invalid-router"));
+        gateway.file("adapters", oneMockAdapter);
+        vm.expectRevert(bytes("Gateway/invalid-adapter"));
         gateway.executeMessageRecovery(proof);
-        gateway.file("routers", threeMockRouters);
+        gateway.file("adapters", threeMockAdapters);
     }
 
     function testDisputeRecovery() public {
-        gateway.file("routers", threeMockRouters);
+        gateway.file("adapters", threeMockAdapters);
 
         bytes memory message = abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1));
         bytes memory proof = _formatMessageProof(abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1)));
 
-        // Only send through 2 out of 3 routers
-        _send(router1, message);
-        _send(router2, proof);
+        // Only send through 2 out of 3 adapters
+        _send(adapter1, message);
+        _send(adapter2, proof);
         assertEq(poolManager.received(message), 0);
 
         // Initiate recovery
         _send(
-            router1,
+            adapter1,
             abi.encodePacked(
-                uint8(MessagesLib.Call.InitiateMessageRecovery), keccak256(proof), address(router3).toBytes32()
+                uint8(MessagesLib.Call.InitiateMessageRecovery), keccak256(proof), address(adapter3).toBytes32()
             )
         );
 
@@ -739,9 +739,9 @@ contract GatewayTest is Test {
 
         // Dispute recovery
         _send(
-            router2,
+            adapter2,
             abi.encodePacked(
-                uint8(MessagesLib.Call.DisputeMessageRecovery), keccak256(proof), address(router3).toBytes32()
+                uint8(MessagesLib.Call.DisputeMessageRecovery), keccak256(proof), address(adapter3).toBytes32()
             )
         );
 
@@ -752,20 +752,20 @@ contract GatewayTest is Test {
     }
 
     function testRecursiveRecoveryMessageFails() public {
-        gateway.file("routers", threeMockRouters);
+        gateway.file("adapters", threeMockAdapters);
 
         bytes memory message = abi.encodePacked(uint8(MessagesLib.Call.DisputeMessageRecovery), keccak256(""));
         bytes memory proof =
             _formatMessageProof(abi.encodePacked(uint8(MessagesLib.Call.DisputeMessageRecovery), keccak256("")));
 
-        _send(router2, proof);
-        _send(router3, proof);
+        _send(adapter2, proof);
+        _send(adapter3, proof);
         assertEq(poolManager.received(message), 0);
 
         _send(
-            router2,
+            adapter2,
             abi.encodePacked(
-                uint8(MessagesLib.Call.InitiateMessageRecovery), keccak256(message), address(router1).toBytes32()
+                uint8(MessagesLib.Call.InitiateMessageRecovery), keccak256(message), address(adapter1).toBytes32()
             )
         );
 
@@ -776,45 +776,45 @@ contract GatewayTest is Test {
         assertEq(poolManager.received(message), 0);
     }
 
-    function testMessagesCannotBeReplayed(uint8 numRouters, uint8 numParallelDuplicateMessages_, uint256 entropy)
+    function testMessagesCannotBeReplayed(uint8 numAdapters, uint8 numParallelDuplicateMessages_, uint256 entropy)
         public
     {
-        numRouters = uint8(bound(numRouters, 1, gateway.MAX_ROUTER_COUNT()));
+        numAdapters = uint8(bound(numAdapters, 1, gateway.MAX_ADAPTER_COUNT()));
         uint16 numParallelDuplicateMessages = uint16(bound(numParallelDuplicateMessages_, 1, 255));
 
         bytes memory message = abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1));
         bytes memory proof = _formatMessageProof(abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1)));
 
-        // Setup random set of routers
-        address[] memory testRouters = new address[](numRouters);
-        for (uint256 i = 0; i < numRouters; i++) {
-            testRouters[i] = address(new MockRouter(address(gateway)));
+        // Setup random set of adapters
+        address[] memory testAdapters = new address[](numAdapters);
+        for (uint256 i = 0; i < numAdapters; i++) {
+            testAdapters[i] = address(new MockAdapter(address(gateway)));
         }
-        gateway.file("routers", testRouters);
+        gateway.file("adapters", testAdapters);
 
         // Generate random sequence of confirming messages and proofs
         uint256 it = 0;
         uint256 totalSent = 0;
-        uint256[] memory sentPerRouter = new uint256[](numRouters);
-        while (totalSent < numParallelDuplicateMessages * numRouters) {
+        uint256[] memory sentPerAdapter = new uint256[](numAdapters);
+        while (totalSent < numParallelDuplicateMessages * numAdapters) {
             it++;
-            uint8 randomRouterId =
-                numRouters > 1 ? uint8(uint256(keccak256(abi.encodePacked(entropy, it)))) % numRouters : 0;
+            uint8 randomAdapterId =
+                numAdapters > 1 ? uint8(uint256(keccak256(abi.encodePacked(entropy, it)))) % numAdapters : 0;
 
-            if (sentPerRouter[randomRouterId] == numParallelDuplicateMessages) {
+            if (sentPerAdapter[randomAdapterId] == numParallelDuplicateMessages) {
                 // Already confirmed all the messages
                 continue;
             }
 
             // Send the message or proof
-            if (randomRouterId == 0) {
-                _send(MockRouter(testRouters[randomRouterId]), message);
+            if (randomAdapterId == 0) {
+                _send(MockAdapter(testAdapters[randomAdapterId]), message);
             } else {
-                _send(MockRouter(testRouters[randomRouterId]), proof);
+                _send(MockAdapter(testAdapters[randomAdapterId]), proof);
             }
 
             totalSent++;
-            sentPerRouter[randomRouterId]++;
+            sentPerAdapter[randomAdapterId]++;
         }
 
         // Check that each message was confirmed exactly numParallelDuplicateMessages times
@@ -849,9 +849,9 @@ contract GatewayTest is Test {
         return abi.encodePacked(uint8(MessagesLib.Call.MessageProof), messageHash);
     }
 
-    /// @dev Use to simulate incoming message to the gateway sent by a router.
-    function _send(MockRouter router, bytes memory message) internal {
-        vm.prank(address(router));
+    /// @dev Use to simulate incoming message to the gateway sent by a adapter.
+    function _send(MockAdapter adapter, bytes memory message) internal {
+        vm.prank(address(adapter));
         gateway.handle(message);
     }
 

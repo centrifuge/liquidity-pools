@@ -40,13 +40,13 @@ contract CentrifugeRouterTest is BaseTest {
         centrifugeRouter.requestDeposit{value: gas}(vault_, amount, self, self, gas);
 
         assertEq(address(gateway).balance, GATEWAY_INITIAL_BALACE + GAS_BUFFER);
-        for (uint8 i; i < testRouters.length; i++) {
-            MockRouter router = MockRouter(testRouters[i]);
-            uint256[] memory payCalls = router.callsWithValue("pay");
+        for (uint8 i; i < testAdapters.length; i++) {
+            MockAdapter adapter = MockAdapter(testAdapters[i]);
+            uint256[] memory payCalls = adapter.callsWithValue("pay");
             assertEq(payCalls.length, 1);
             assertEq(
                 payCalls[0],
-                router.estimate(PAYLOAD_FOR_GAS_ESTIMATION, mockedGasService.estimate(PAYLOAD_FOR_GAS_ESTIMATION))
+                adapter.estimate(PAYLOAD_FOR_GAS_ESTIMATION, mockedGasService.estimate(PAYLOAD_FOR_GAS_ESTIMATION))
             );
         }
 
@@ -432,6 +432,14 @@ contract CentrifugeRouterTest is BaseTest {
 
         vm.expectRevert("Gateway/not-enough-gas-funds");
         centrifugeRouter.requestDeposit{value: lessGas}(vault_, amount, self, self, lessGas);
+
+        vm.expectRevert("PoolManager/unknown-vault");
+        centrifugeRouter.requestDeposit{value: lessGas}(
+            makeAddr("maliciousVault"), amount, self, makeAddr("owner"), lessGas
+        );
+
+        vm.expectRevert("PoolManager/unknown-vault");
+        centrifugeRouter.requestDeposit{value: lessGas}(makeAddr("maliciousVault"), amount, self, self, lessGas);
 
         bytes[] memory calls = new bytes[](2);
         calls[0] =

@@ -20,9 +20,9 @@ contract GatewayTest is BaseTest {
 
         // gateway setup
         assertEq(gateway.quorum(), 3);
-        assertEq(gateway.routers(0), address(router1));
-        assertEq(gateway.routers(1), address(router2));
-        assertEq(gateway.routers(2), address(router3));
+        assertEq(gateway.adapters(0), address(adapter1));
+        assertEq(gateway.adapters(1), address(adapter2));
+        assertEq(gateway.adapters(2), address(adapter3));
 
         // permissions set correctly
         assertEq(gateway.wards(address(root)), 1);

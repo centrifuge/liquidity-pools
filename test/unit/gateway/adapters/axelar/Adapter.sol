@@ -2,18 +2,18 @@
 pragma solidity 0.8.21;
 
 import "forge-std/Test.sol";
-import {AxelarRouter} from "src/gateway/routers/axelar/Router.sol";
+import {AxelarAdapter} from "src/gateway/adapters/axelar/Adapter.sol";
 import {MockAxelarGateway} from "test/mocks/MockAxelarGateway.sol";
 import {MockGateway} from "test/mocks/MockGateway.sol";
 import {MockAxelarGasService} from "test/mocks/MockAxelarGasService.sol";
-import {AxelarForwarder} from "src/gateway/routers/axelar/Forwarder.sol";
+import {AxelarForwarder} from "src/gateway/adapters/axelar/Forwarder.sol";
 import {BytesLib} from "src/libraries/BytesLib.sol";
 
-contract AxelarRouterTest is Test {
+contract AxelarAdapterTest is Test {
     MockAxelarGateway axelarGateway;
     MockGateway gateway;
     MockAxelarGasService axelarGasService;
-    AxelarRouter router;
+    AxelarAdapter adapter;
     AxelarForwarder forwarder;
 
     string private constant axelarCentrifugeChainId = "centrifuge";
@@ -24,7 +24,7 @@ contract AxelarRouterTest is Test {
         gateway = new MockGateway();
         axelarGasService = new MockAxelarGasService();
         forwarder = new AxelarForwarder(address(axelarGateway));
-        router = new AxelarRouter(address(gateway), address(axelarGateway), address(axelarGasService));
+        adapter = new AxelarAdapter(address(gateway), address(axelarGateway), address(axelarGasService));
     }
 
     function testIncomingCalls(
@@ -43,34 +43,34 @@ contract AxelarRouterTest is Test {
         vm.assume(relayer.code.length == 0);
 
         vm.prank(address(relayer));
-        vm.expectRevert(bytes("AxelarRouter/invalid-source-chain"));
-        router.execute(commandId, sourceChain, axelarCentrifugeChainAddress, payload);
+        vm.expectRevert(bytes("AxelarAdapter/invalid-source-chain"));
+        adapter.execute(commandId, sourceChain, axelarCentrifugeChainAddress, payload);
 
         vm.prank(address(relayer));
-        vm.expectRevert(bytes("AxelarRouter/invalid-source-address"));
-        router.execute(commandId, axelarCentrifugeChainId, sourceAddress, payload);
+        vm.expectRevert(bytes("AxelarAdapter/invalid-source-address"));
+        adapter.execute(commandId, axelarCentrifugeChainId, sourceAddress, payload);
 
         axelarGateway.setReturn("validateContractCall", false);
         vm.prank(address(relayer));
-        vm.expectRevert(bytes("AxelarRouter/not-approved-by-axelar-gateway"));
-        router.execute(commandId, axelarCentrifugeChainId, axelarCentrifugeChainAddress, payload);
+        vm.expectRevert(bytes("AxelarAdapter/not-approved-by-axelar-gateway"));
+        adapter.execute(commandId, axelarCentrifugeChainId, axelarCentrifugeChainAddress, payload);
 
         axelarGateway.setReturn("validateContractCall", true);
         vm.prank(address(relayer));
-        router.execute(commandId, axelarCentrifugeChainId, axelarCentrifugeChainAddress, payload);
+        adapter.execute(commandId, axelarCentrifugeChainId, axelarCentrifugeChainAddress, payload);
     }
 
     function testOutgoingCalls(bytes calldata message, address invalidOrigin) public {
         vm.assume(invalidOrigin != address(gateway));
 
-        vm.expectRevert(bytes("AxelarRouter/only-gateway-allowed-to-call"));
-        router.send(message);
+        vm.expectRevert(bytes("AxelarAdapter/only-gateway-allowed-to-call"));
+        adapter.send(message);
 
         vm.prank(address(gateway));
-        router.send(message);
+        adapter.send(message);
 
         assertEq(axelarGateway.values_string("destinationChain"), axelarCentrifugeChainId);
-        assertEq(axelarGateway.values_string("contractAddress"), router.CENTRIFUGE_AXELAR_EXECUTABLE());
+        assertEq(axelarGateway.values_string("contractAddress"), adapter.CENTRIFUGE_AXELAR_EXECUTABLE());
         assertEq(axelarGateway.values_bytes("payload"), message);
     }
 }

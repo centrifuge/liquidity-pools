@@ -681,7 +681,7 @@ contract DepositTest is BaseTest {
             bytes32(bytes20(self)),
             defaultAssetId
         );
-        assertEq(cancelOrderMessage, router1.values_bytes("send"));
+        assertEq(cancelOrderMessage, adapter1.values_bytes("send"));
 
         assertEq(vault.pendingCancelDepositRequest(0, self), true);
 

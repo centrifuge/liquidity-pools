@@ -16,10 +16,10 @@ interface GatewayLike {
     function handle(bytes memory message) external;
 }
 
-/// @title  Local Router
+/// @title  Local Adapter
 /// @notice Routing contract that routes from Substrate to EVM and back.
 ///         I.e. for testing LP in a local Centrifuge Chain deployment.
-contract LocalRouter is Auth {
+contract LocalAdapter is Auth {
     address internal constant PRECOMPILE = 0x0000000000000000000000000000000000000800;
     bytes32 internal constant FAKE_COMMAND_ID = keccak256("FAKE_COMMAND_ID");
 
@@ -37,7 +37,7 @@ contract LocalRouter is Auth {
         if (what == "gateway") {
             gateway = GatewayLike(data);
         } else {
-            revert("LocalRouter/file-unrecognized-param");
+            revert("LocalAdapter/file-unrecognized-param");
         }
 
         emit File(what, data);
@@ -49,7 +49,7 @@ contract LocalRouter is Auth {
         } else if (what == "sourceAddress") {
             sourceAddress = data;
         } else {
-            revert("LocalRouter/file-unrecognized-param");
+            revert("LocalAdapter/file-unrecognized-param");
         }
 
         emit File(what, data);

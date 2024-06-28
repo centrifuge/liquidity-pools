@@ -9,7 +9,7 @@ interface GatewayLike {
     function handle(bytes memory message) external;
 }
 
-contract MockRouter is Auth, Mock {
+contract MockAdapter is Auth, Mock {
     GatewayLike public immutable gateway;
 
     mapping(bytes => uint256) public sent;
