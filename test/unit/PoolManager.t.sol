@@ -5,7 +5,7 @@ import "test/BaseTest.sol";
 import {CastLib} from "src/libraries/CastLib.sol";
 
 interface HookLike {
-    function updateMember(address user, uint64 validUntil) external;
+    function updateMember(address token, address user, uint64 validUntil) external;
 }
 
 contract PoolManagerTest is BaseTest {
@@ -405,7 +405,7 @@ contract PoolManagerTest is BaseTest {
         HookLike hook = HookLike(trancheToken.hook());
         vm.expectRevert(bytes("Auth/not-authorized"));
         vm.prank(randomUser);
-        hook.updateMember(randomUser, validUntil);
+        hook.updateMember(address(trancheToken), randomUser, validUntil);
 
         vm.expectRevert(bytes("PoolManager/unknown-token"));
         centrifugeChain.updateMember(100, bytes16(bytes("100")), randomUser, validUntil); // use random poolId &

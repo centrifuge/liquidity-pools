@@ -167,6 +167,6 @@ contract RestrictionManager is Auth, IRestrictionManager, IERC20Callback {
 
     /// @inheritdoc IRestrictionManager
     function isMember(address token, address user) public view returns (bool) {
-        return abi.encodePacked(TrancheTokenLike(token).hookDataOf(user)).toUint64(0) < block.timestamp;
+        return abi.encodePacked(TrancheTokenLike(token).hookDataOf(user)).toUint64(0) >= block.timestamp;
     }
 }

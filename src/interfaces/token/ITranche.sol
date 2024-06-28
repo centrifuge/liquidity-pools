@@ -7,6 +7,7 @@ interface ITrancheToken {
     // --- Events ---
     event File(bytes32 indexed what, address data);
     event File(bytes32 indexed what, address data1, address data2);
+    event SetHookData(address indexed user, bytes16 data);
 
     // --- Administration ---
     /// @notice TODO
