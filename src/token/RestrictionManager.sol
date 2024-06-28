@@ -17,14 +17,14 @@ interface RestrictionManagerLike {
 }
 
 interface TrancheTokenLike is IERC20 {
-    function hookDataOf(address user) external view returns (uint128);
-    function setHookData(address user, uint128 hookData) external returns (uint256);
+    function hookDataOf(address user) external view returns (bytes16);
+    function setHookData(address user, bytes16 hookData) external returns (uint256);
 }
 
 /// @title  Restriction Manager
 /// @notice ERC1404 based contract that checks transfer restrictions.
 contract RestrictionManager is Auth, IRestrictionManager, IERC20Callback {
-    using BitmapLib for uint128;
+    using BitmapLib for *;
     using BytesLib for bytes;
 
     string internal constant SUCCESS_MESSAGE = "RestrictionManager/transfer-allowed";
@@ -58,22 +58,22 @@ contract RestrictionManager is Auth, IRestrictionManager, IERC20Callback {
         public
         virtual
         auth
-        returns (HookData calldata)
+        returns (bytes4)
     {
         uint8 restrictionCode = detectTransferRestriction(from, to, value, hookData);
         require(restrictionCode == SUCCESS_CODE, messageForTransferRestriction(restrictionCode));
-        return hookData;
+        return bytes4(keccak256("onERC20Transfer(address,address,uint256,HookData)"));
     }
 
     function onERC20AuthTransfer(address sender, address from, address to, uint256 value, HookData calldata hookData)
         public
         virtual
         auth
-        returns (HookData calldata)
+        returns (bytes4)
     {
         uint8 restrictionCode = detectTransferRestriction(from, to, value, hookData);
         require(restrictionCode == SUCCESS_CODE, messageForTransferRestriction(restrictionCode));
-        return hookData;
+        return bytes4(keccak256("onERC20AuthTransfer(address,address,address,uint256,HookData)"));
     }
 
     // --- ERC1404 implementation ---
@@ -82,39 +82,25 @@ contract RestrictionManager is Auth, IRestrictionManager, IERC20Callback {
         view
         returns (uint8)
     {
-        if (hookData.from.getBit(FREEZE_BIT) == true && !root.endorsed(from)) {
+        if (uint128(hookData.from).getBit(FREEZE_BIT) == true && !root.endorsed(from)) {
             return SOURCE_IS_FROZEN_CODE;
         }
 
         bool toIsEndorsed = root.endorsed(to);
-        if (hookData.to.getBit(FREEZE_BIT) == true && !toIsEndorsed) {
+        if (uint128(hookData.to).getBit(FREEZE_BIT) == true && !toIsEndorsed) {
             return DESTINATION_IS_FROZEN_CODE;
         }
 
-        // if (toRestrictions.validUntil < block.timestamp && !toIsEndorsed) {
-        //     return DESTINATION_NOT_A_MEMBER_RESTRICTION_CODE;
-        // }
-
-        return SUCCESS_CODE;
-    }
-
-    function detectTransferRestriction(address from, address to, uint256) public view returns (uint8) {
-        HookData memory hookData = HookData(token.hookDataOf(from), token.hookDataOf(to));
-        // TODO: refactor
-        if (hookData.from.getBit(FREEZE_BIT) == true) {
-            return SOURCE_IS_FROZEN_CODE;
-        }
-
-        if (hookData.to.getBit(FREEZE_BIT) == true) {
-            return DESTINATION_IS_FROZEN_CODE;
-        }
-
-        if (hookData.to.getBit(MEMBER_BIT) == false) {
+        if (abi.encodePacked(hookData.to).toUint64(0) < block.timestamp && !toIsEndorsed) {
             return DESTINATION_NOT_A_MEMBER_RESTRICTION_CODE;
         }
 
         return SUCCESS_CODE;
     }
+
+    // function detectTransferRestriction(address from, address to, uint256 amount) public view returns (uint8) {
+    //     return detectTransferRestriction(from, to, amount, HookData(token.hookDataOf(from), token.hookDataOf(to)));
+    // }
 
     /// @inheritdoc IRestrictionManager
     function messageForTransferRestriction(uint8 restrictionCode) public pure returns (string memory) {
@@ -154,23 +140,23 @@ contract RestrictionManager is Auth, IRestrictionManager, IERC20Callback {
         require(user != address(0), "TrancheToken01/cannot-freeze-zero-address");
         require(user != address(escrow), "TrancheToken01/cannot-freeze-escrow");
 
-        uint128 hookData = token.hookDataOf(user);
-        token.setHookData(user, hookData.setBit(FREEZE_BIT, true));
+        uint128 hookData = uint128(token.hookDataOf(user));
+        token.setHookData(user, bytes16(hookData.setBit(FREEZE_BIT, true)));
 
         emit Freeze(user);
     }
 
     /// @inheritdoc IRestrictionManager
     function unfreeze(address user) public auth {
-        uint128 hookData = token.hookDataOf(user);
-        token.setHookData(user, hookData.setBit(FREEZE_BIT, false));
+        uint128 hookData = uint128(token.hookDataOf(user));
+        token.setHookData(user, bytes16(hookData.setBit(FREEZE_BIT, false)));
 
         emit Unfreeze(user);
     }
 
     /// @inheritdoc IRestrictionManager
     function isFrozen(address user) public view returns (bool) {
-        return token.hookDataOf(user).getBit(FREEZE_BIT);
+        return uint128(token.hookDataOf(user)).getBit(FREEZE_BIT);
     }
 
     // --- Managing members ---
@@ -182,16 +168,14 @@ contract RestrictionManager is Auth, IRestrictionManager, IERC20Callback {
     }
 
     function _updateMember(address user, uint64 validUntil) internal {
-        // TODO
-        uint128 hookData = token.hookDataOf(user);
-        token.setHookData(user, hookData.setBit(MEMBER_BIT, true));
+        uint128 hookData = validUntil.shiftLeft(64).setBit(FREEZE_BIT, isFrozen(user));
+        token.setHookData(user, bytes16(hookData));
 
         emit UpdateMember(user, validUntil);
     }
 
     /// @inheritdoc IRestrictionManager
     function isMember(address user) public view returns (bool) {
-        // TODO
-        return true;
+        return abi.encodePacked(token.hookDataOf(user)).toUint64(0) < block.timestamp;
     }
 }

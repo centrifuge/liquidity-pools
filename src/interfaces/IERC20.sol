@@ -176,17 +176,17 @@ interface IERC20Permit {
 }
 
 struct HookData {
-    uint128 from;
-    uint128 to;
+    bytes16 from;
+    bytes16 to;
 }
 
 interface IERC20Callback {
     function onERC20Transfer(address from, address to, uint256 value, HookData calldata hookdata)
         external
-        returns (HookData calldata);
+        returns (bytes4);
     function onERC20AuthTransfer(address sender, address from, address to, uint256 value, HookData calldata hookdata)
         external
-        returns (HookData calldata);
+        returns (bytes4);
 }
 
 interface IERC20Wrapper {

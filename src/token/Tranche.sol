@@ -73,11 +73,11 @@ contract TrancheToken is ERC20, ITrancheToken, IERC7575Share {
         return balances[user].getLSBits(128);
     }
 
-    function hookDataOf(address user) public view returns (uint128) {
-        return uint128(balances[user].getMSBits(128));
+    function hookDataOf(address user) public view returns (bytes16) {
+        return bytes16(uint128(balances[user].getMSBits(128)));
     }
 
-    function setHookData(address user, uint128 hookData) public authOrHook returns (uint256) {
+    function setHookData(address user, bytes16 hookData) public authOrHook returns (uint256) {
         _setBalance(user, uint128(hookData).concat(uint128(balanceOf(user))));
     }
 
@@ -99,8 +99,11 @@ contract TrancheToken is ERC20, ITrancheToken, IERC7575Share {
 
     function _onTransfer(address from, address to, uint256 value) internal {
         if (hook != address(0)) {
-            // TODO: store updated hookData
-            IERC20Callback(hook).onERC20Transfer(from, to, value, HookData(hookDataOf(from), hookDataOf(to)));
+            require(
+                IERC20Callback(hook).onERC20Transfer(from, to, value, HookData(hookDataOf(from), hookDataOf(to)))
+                    == IERC20Callback.onERC20Transfer.selector,
+                "TrancheToken/restrictions-failed"
+            );
         }
     }
 
@@ -111,9 +114,11 @@ contract TrancheToken is ERC20, ITrancheToken, IERC7575Share {
     {
         success = _transferFrom(sender, from, to, value);
         if (hook != address(0)) {
-            // TODO: store updated hookData
-            IERC20Callback(hook).onERC20AuthTransfer(
-                sender, from, to, value, HookData(hookDataOf(from), hookDataOf(to))
+            require(
+                IERC20Callback(hook).onERC20AuthTransfer(
+                    sender, from, to, value, HookData(hookDataOf(from), hookDataOf(to))
+                ) == IERC20Callback.onERC20AuthTransfer.selector,
+                "TrancheToken/restrictions-failed"
             );
         }
     }

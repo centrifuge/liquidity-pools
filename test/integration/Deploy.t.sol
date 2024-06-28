@@ -36,10 +36,10 @@ pragma solidity 0.8.21;
 
 //     uint8 constant PRICE_DECIMALS = 18;
 
-    // function setUp() public {
-    //     deploy(address(this));
-    //     PermissionlessAdapter adapter = new PermissionlessAdapter(address(gateway));
-    //     wire(address(adapter));
+// function setUp() public {
+//     deploy(address(this));
+//     PermissionlessAdapter adapter = new PermissionlessAdapter(address(gateway));
+//     wire(address(adapter));
 
 //     // overwrite deployed guardian with a new mock safe guardian
 //     pausers = new address[](3);
@@ -59,8 +59,8 @@ pragma solidity 0.8.21;
 //         guardian = new Guardian(adminSafe, address(root), address(aggregator));
 //         root.rely(address(guardian));
 
-    //     removeDeployerAccess(address(adapter), address(this));
-    // }
+//     removeDeployerAccess(address(adapter), address(this));
+// }
 
 // function testDeployerHasNoAccess() public {
 //     vm.expectRevert("Auth/not-authorized");
