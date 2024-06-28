@@ -133,21 +133,27 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     }
 
     /// @inheritdoc ICentrifugeRouter
-    function cancelRedeemRequest(address vault, address controller) {
+    function cancelRedeemRequest(address vault, address controller) external protected {
         IERC7540Vault(vault).cancelRedeemRequest(0, controller);
     }
 
     /// @inheritdoc ICentrifugeRouter
-    function claimCancelRedeemRequest(address vault, address receiver, address controller) {
+    function claimCancelRedeemRequest(address vault, address receiver, address controller) external protected {
         IERC7540Vault(vault).claimCancelRedeemRequest(0, receiver, controller);
     }
 
     // --- Transfer ---
     /// @inheritdoc ICentrifugeRouter
-    function transfer(address vault, address to, uint256 amount, address controller) external protected {
-        IERC7540Vault(vault).transfer(amount, to, controller);
+    function transfer(address asset, bytes32 recipient, uint128 amount) external protected {
+        IPoolManager(poolManager).transfer(asset, recipient, amount);
     }
 
+    /// @inheritdoc ICentrifugeRouter
+    function transferTrancheToken(address vault, bytes32 destinationAddress, uint128 amount) external protected {
+        IPoolManager(poolManager).transfer(
+            IERC7540Vault(vault).poolId(), IERC7540Vault(vault).trancheId(), destinationAddress, amount
+        );
+    }
 
     // --- ERC20 permits ---
     /// @inheritdoc ICentrifugeRouter
