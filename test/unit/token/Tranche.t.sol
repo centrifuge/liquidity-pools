@@ -36,13 +36,15 @@ contract TrancheTokenTest is Test {
 
     // --- Admnistration ---
     function testFile(address asset, address vault) public {
+        address hook = makeAddr("hook");
+
         // fail: unrecognized param
         vm.expectRevert(bytes("TrancheToken/file-unrecognized-param"));
-        token.file("random", self);
+        token.file("random", hook);
 
         // success
-        token.file("hook", self);
-        assertEq(address(token.hook()), self);
+        token.file("hook", hook);
+        assertEq(address(token.hook()), hook);
 
         token.updateVault(asset, vault);
         assertEq(address(token.vault(asset)), vault);
@@ -52,7 +54,7 @@ contract TrancheTokenTest is Test {
 
         // auth fail
         vm.expectRevert(bytes("Auth/not-authorized"));
-        token.file("hook", self);
+        token.file("hook", hook);
 
         vm.expectRevert(bytes("Auth/not-authorized"));
         token.updateVault(asset, vault);
