@@ -142,6 +142,13 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         IERC7540Vault(vault).claimCancelRedeemRequest(0, receiver, controller);
     }
 
+    // --- Transfer ---
+    /// @inheritdoc ICentrifugeRouter
+    function transfer(address vault, address to, uint256 amount, address controller) external protected {
+        IERC7540Vault(vault).transfer(amount, to, controller);
+    }
+
+
     // --- ERC20 permits ---
     /// @inheritdoc ICentrifugeRouter
     function permit(address asset, address spender, uint256 assets, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
