@@ -15,27 +15,25 @@ contract RestrictionManagerTest is Test {
         root = new MockRoot();
         token = new TrancheToken(18);
         restrictionManager = new RestrictionManager(address(root));
+        token.file("hook", address(restrictionManager));
     }
 
-    // TODO: re-add
-    // function testAddMember(uint64 validUntil) public {
-    //     vm.assume(validUntil >= block.timestamp);
+    function testAddMember(uint64 validUntil) public {
+        vm.assume(validUntil >= block.timestamp);
 
-    //     vm.expectRevert("RestrictionManager/invalid-valid-until");
-    //     restrictionManager.updateMember(address(this), uint64(block.timestamp - 1));
+        vm.expectRevert("RestrictionManager/invalid-valid-until");
+        restrictionManager.updateMember(address(token), address(this), uint64(block.timestamp - 1));
 
-    //     restrictionManager.updateMember(address(this), validUntil);
-    //     (, uint64 actualValidUntil) = restrictionManager.restrictions(address(this));
-    //     assertEq(actualValidUntil, validUntil);
-    // }
+        restrictionManager.updateMember(address(token), address(this), validUntil);
+        assertTrue(restrictionManager.isMember(address(token), address(this)));
+    }
 
-    // function testIsMember(uint64 validUntil) public {
-    //     vm.assume(validUntil >= block.timestamp);
+    function testIsMember(uint64 validUntil) public {
+        vm.assume(validUntil >= block.timestamp);
 
-    //     restrictionManager.updateMember(address(this), validUntil);
-    //     (, uint64 actualValidUntil) = restrictionManager.restrictions(address(this));
-    //     assertTrue(actualValidUntil >= block.timestamp);
-    // }
+        restrictionManager.updateMember(address(token), address(this), validUntil);
+        assertTrue(restrictionManager.isMember(address(token), address(this)));
+    }
 
     function testFreeze() public {
         restrictionManager.freeze(address(token), address(this));
