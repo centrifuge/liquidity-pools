@@ -31,7 +31,7 @@ contract TrancheTokenTest is Test {
 
         restrictionManager = new MockRestrictionManager(address(new MockRoot()), address(token));
         restrictionManager.rely(address(token));
-        token.file("restrictionManager", address(restrictionManager));
+        token.file("hook", address(restrictionManager));
     }
 
     // --- Admnistration ---
@@ -41,7 +41,7 @@ contract TrancheTokenTest is Test {
         token.file("random", self);
 
         // success
-        token.file("restrictionManager", self);
+        token.file("hook", self);
         assertEq(address(token.hook()), self);
 
         token.updateVault(asset, vault);
@@ -52,7 +52,7 @@ contract TrancheTokenTest is Test {
 
         // auth fail
         vm.expectRevert(bytes("Auth/not-authorized"));
-        token.file("restrictionManager", self);
+        token.file("hook", self);
 
         vm.expectRevert(bytes("Auth/not-authorized"));
         token.updateVault(asset, vault);
