@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {IRouter} from "src/interfaces/gateway/IRouter.sol";
+import {IAdapter} from "src/interfaces/gateway/IAdapter.sol";
 import {Auth} from "src/Auth.sol";
 
 interface AxelarGatewayLike {
@@ -30,9 +30,9 @@ interface AxelarGasServiceLike {
     ) external payable;
 }
 
-/// @title  Axelar Router
+/// @title  Axelar Adapter
 /// @notice Routing contract that integrates with an Axelar Gateway
-contract AxelarRouter is Auth, IRouter {
+contract AxelarAdapter is Auth, IAdapter {
     string public constant CENTRIFUGE_ID = "centrifuge";
     bytes32 public constant CENTRIFUGE_ID_HASH = keccak256(bytes("centrifuge"));
     bytes32 public constant CENTRIFUGE_ADDRESS_HASH = keccak256(bytes("0x7369626CEF070000000000000000000000000000"));
@@ -57,11 +57,11 @@ contract AxelarRouter is Auth, IRouter {
     // --- Administrative ---
     function file(bytes32 what, uint256 value) external auth {
         if (what == "axelarCost") axelarCost = value;
-        else revert("AxelarRouterfile-unrecognized-param");
+        else revert("AxelarAdapterfile-unrecognized-param");
         emit File(what, value);
     }
     // --- Incoming ---
-    /// @inheritdoc IRouter
+    /// @inheritdoc IAdapter
 
     function execute(
         bytes32 commandId,
@@ -69,20 +69,20 @@ contract AxelarRouter is Auth, IRouter {
         string calldata sourceAddress,
         bytes calldata payload
     ) public {
-        require(keccak256(bytes(sourceChain)) == CENTRIFUGE_ID_HASH, "AxelarRouter/invalid-source-chain");
-        require(keccak256(bytes(sourceAddress)) == CENTRIFUGE_ADDRESS_HASH, "AxelarRouter/invalid-source-address");
+        require(keccak256(bytes(sourceChain)) == CENTRIFUGE_ID_HASH, "AxelarAdapter/invalid-source-chain");
+        require(keccak256(bytes(sourceAddress)) == CENTRIFUGE_ADDRESS_HASH, "AxelarAdapter/invalid-source-address");
         require(
             axelarGateway.validateContractCall(commandId, sourceChain, sourceAddress, keccak256(payload)),
-            "AxelarRouter/not-approved-by-axelar-gateway"
+            "AxelarAdapter/not-approved-by-axelar-gateway"
         );
 
         gateway.handle(payload);
     }
 
     // --- Outgoing ---
-    /// @inheritdoc IRouter
+    /// @inheritdoc IAdapter
     function send(bytes calldata payload) public {
-        require(msg.sender == address(gateway), "AxelarRouter/only-gateway-allowed-to-call");
+        require(msg.sender == address(gateway), "AxelarAdapter/only-gateway-allowed-to-call");
 
         axelarGateway.callContract(CENTRIFUGE_ID, CENTRIFUGE_AXELAR_EXECUTABLE, payload);
     }

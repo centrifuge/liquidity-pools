@@ -174,7 +174,7 @@ contract RedeemTest is BaseTest {
             bytes32(bytes20(self)),
             defaultAssetId
         );
-        assertEq(cancelOrderMessage, router1.values_bytes("send"));
+        assertEq(cancelOrderMessage, adapter1.values_bytes("send"));
 
         assertEq(vault.pendingCancelRedeemRequest(0, self), true);
 

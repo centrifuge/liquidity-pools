@@ -15,7 +15,7 @@ import {Guardian} from "src/admin/Guardian.sol";
 import {MockSafe} from "test/mocks/MockSafe.sol";
 import "forge-std/Script.sol";
 
-interface RouterLike {
+interface AdapterLike {
     function file(bytes32 what, address data) external;
 }
 
@@ -27,7 +27,7 @@ interface AuthLike {
 contract Deployer is Script {
     uint256 internal constant delay = 48 hours;
     address adminSafe;
-    address[] routers;
+    address[] adapters;
 
     Root public root;
     InvestmentManager public investmentManager;
@@ -37,7 +37,7 @@ contract Deployer is Script {
     Guardian public guardian;
     Gateway public gateway;
     GasService public gasService;
-    CentrifugeRouter public centrifugeRouter; // TODO: rename once routers => adapters rename is in
+    CentrifugeRouter public centrifugeRouter; // TODO: rename once adapters => adapters rename is in
     address public vaultFactory;
     address public restrictionManagerFactory;
     address public trancheTokenFactory;
@@ -79,15 +79,15 @@ contract Deployer is Script {
         guardian = new Guardian(adminSafe, address(root), address(gateway));
     }
 
-    function wire(address router) public {
-        routers.push(router);
+    function wire(address adapter) public {
+        adapters.push(adapter);
 
         // Wire guardian
         root.rely(address(guardian));
         gateway.rely(address(guardian));
 
         // Wire gateway
-        gateway.file("routers", routers);
+        gateway.file("adapters", adapters);
         root.rely(address(gateway));
         investmentManager.file("poolManager", address(poolManager));
         poolManager.file("investmentManager", address(investmentManager));
@@ -102,14 +102,14 @@ contract Deployer is Script {
         poolManager.rely(address(root));
         poolManager.rely(address(gateway));
         gateway.rely(address(root));
-        AuthLike(router).rely(address(root));
+        AuthLike(adapter).rely(address(root));
         AuthLike(address(escrow)).rely(address(root));
         AuthLike(address(routerEscrow)).rely(address(root));
         AuthLike(address(escrow)).rely(address(poolManager));
     }
 
-    function removeDeployerAccess(address router, address deployer) public {
-        AuthLike(router).deny(deployer);
+    function removeDeployerAccess(address adapter, address deployer) public {
+        AuthLike(adapter).deny(deployer);
         AuthLike(vaultFactory).deny(deployer);
         AuthLike(trancheTokenFactory).deny(deployer);
         AuthLike(restrictionManagerFactory).deny(deployer);
