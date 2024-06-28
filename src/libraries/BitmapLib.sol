@@ -26,8 +26,8 @@ library BitmapLib {
         return bitmap >> n;
     }
 
-    function shiftLeft(uint64 value, uint256 shift) internal pure returns (uint128) {
-        return uint128(uint64(value)) << shift;
+    function shiftLeft(uint64 value, uint128 shift) internal pure returns (uint128) {
+        return uint128(value) << shift;
     }
 
     /// @notice Concatenate uint64 values to create a uint128 value

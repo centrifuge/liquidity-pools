@@ -62,7 +62,7 @@ contract RestrictionManager is Auth, IRestrictionManager, IERC20Callback {
     {
         uint8 restrictionCode = detectTransferRestriction(from, to, value, hookData);
         require(restrictionCode == SUCCESS_CODE, messageForTransferRestriction(restrictionCode));
-        return bytes4(keccak256("onERC20Transfer(address,address,uint256,HookData)"));
+        return bytes4(keccak256("onERC20Transfer(address,address,uint256,(bytes16,bytes16))"));
     }
 
     function onERC20AuthTransfer(address sender, address from, address to, uint256 value, HookData calldata hookData)
@@ -73,7 +73,7 @@ contract RestrictionManager is Auth, IRestrictionManager, IERC20Callback {
     {
         uint8 restrictionCode = detectTransferRestriction(from, to, value, hookData);
         require(restrictionCode == SUCCESS_CODE, messageForTransferRestriction(restrictionCode));
-        return bytes4(keccak256("onERC20AuthTransfer(address,address,address,uint256,HookData)"));
+        return bytes4(keccak256("onERC20AuthTransfer(address,address,address,uint256,(bytes16,bytes16))"));
     }
 
     // --- ERC1404 implementation ---
@@ -98,9 +98,25 @@ contract RestrictionManager is Auth, IRestrictionManager, IERC20Callback {
         return SUCCESS_CODE;
     }
 
-    // function detectTransferRestriction(address from, address to, uint256 amount) public view returns (uint8) {
-    //     return detectTransferRestriction(from, to, amount, HookData(token.hookDataOf(from), token.hookDataOf(to)));
-    // }
+    function detectTransferRestriction(address from, address to, uint256 amount) public view returns (uint8) {
+        HookData memory hookData = HookData(token.hookDataOf(from), token.hookDataOf(to));
+
+        // TODO: refactor to use other detectTransferRestriction implementation
+        if (uint128(hookData.from).getBit(FREEZE_BIT) == true && !root.endorsed(from)) {
+            return SOURCE_IS_FROZEN_CODE;
+        }
+
+        bool toIsEndorsed = root.endorsed(to);
+        if (uint128(hookData.to).getBit(FREEZE_BIT) == true && !toIsEndorsed) {
+            return DESTINATION_IS_FROZEN_CODE;
+        }
+
+        if (abi.encodePacked(hookData.to).toUint64(0) < block.timestamp && !toIsEndorsed) {
+            return DESTINATION_NOT_A_MEMBER_RESTRICTION_CODE;
+        }
+
+        return SUCCESS_CODE;
+    }
 
     /// @inheritdoc IRestrictionManager
     function messageForTransferRestriction(uint8 restrictionCode) public pure returns (string memory) {
