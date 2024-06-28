@@ -136,7 +136,7 @@ contract ERC7540Vault is Auth, IERC7540Vault {
         // the sender is the owner, to bypass the allowance check
         address sender = isOperator[owner][msg.sender] ? owner : msg.sender;
 
-        try AuthTransferLike(share).authTransferFrom(sender, owner, address(escrow), shares) returns (bool success) {}
+        try AuthTransferLike(share).authTransferFrom(sender, owner, address(escrow), shares) returns (bool) {}
         catch {
             require(IERC20(share).transferFrom(owner, address(escrow), shares), "ERC7540Vault/transfer-from-failed");
         }
