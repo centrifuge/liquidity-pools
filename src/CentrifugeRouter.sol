@@ -109,13 +109,14 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         IERC7540Vault(vault).deposit(maxDeposit, receiver, controller);
     }
 
-    function cancelDepositRequest(address vault, uint256 requestId, address controller) external protected {
-        IERC7540Vault(vault).cancelDeposit(requestId, controller);
+    /// @inheritdoc ICentrifugeRouter
+    function cancelDepositRequest(address vault, address controller) external protected {
+        IERC7540Vault(vault).cancelDeposit(0, controller);
     }
 
-    function claimCancelDepositRequest(address vault, uint256 requestId, address receiver, address controller) external protected {
-        IERC7540Vault(vault).claimCancelDepositRequest(requestId, receiver, controller);
-
+    /// @inheritdoc ICentrifugeRouter
+    function claimCancelDepositRequest(address vault, address receiver, address controller) external protected {
+        IERC7540Vault(vault).claimCancelDepositRequest(0, receiver, controller);
     }
 
     // --- Redeem ---
@@ -129,6 +130,16 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         require(controller == _initiator || controller == receiver, "CentrifugeRouter/invalid-sender");
         uint256 maxRedeem = IERC7540Vault(vault).maxRedeem(controller);
         IERC7540Vault(vault).redeem(maxRedeem, receiver, controller);
+    }
+
+    /// @inheritdoc ICentrifugeRouter
+    function cancelRedeemRequest(address vault, address controller) {
+        IERC7540Vault(vault).cancelRedeemRequest(0, controller);
+    }
+
+    /// @inheritdoc ICentrifugeRouter
+    function claimCancelRedeemRequest(address vault, address receiver, address controller) {
+        IERC7540Vault(vault).claimCancelRedeemRequest(0, receiver, controller);
     }
 
     // --- ERC20 permits ---
