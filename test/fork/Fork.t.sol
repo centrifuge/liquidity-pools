@@ -138,7 +138,6 @@ contract ForkTest is Test {
                 // Read deployment file
                 address root = _get(i, ".contracts.root");
                 address guardian = _get(i, ".contracts.guardian");
-                address deployer = _get(i, ".config.deployer");
                 address adminSafe = _get(i, ".config.adminSafe");
                 _loadFork(i);
 

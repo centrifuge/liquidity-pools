@@ -18,7 +18,7 @@ interface RestrictionManagerLike {
 
 interface TrancheTokenLike is IERC20 {
     function hookDataOf(address user) external view returns (bytes16);
-    function setHookData(address user, bytes16 hookData) external returns (uint256);
+    function setHookData(address user, bytes16 hookData) external;
 }
 
 /// @title  Restriction Manager
@@ -67,7 +67,7 @@ contract RestrictionManager is Auth, IRestrictionManager, IERC20Callback {
         address, /* to */
         uint256, /* value */
         HookData calldata /* hookData */
-    ) external returns (bytes4) {
+    ) external pure returns (bytes4) {
         return bytes4(keccak256("onERC20AuthTransfer(address,address,address,uint256,(bytes16,bytes16))"));
     }
 
