@@ -52,7 +52,7 @@ contract Deployer is Script {
         root = new Root{salt: salt}(address(escrow), delay, deployer);
 
         vaultFactory = address(new ERC7540VaultFactory(address(root)));
-        restrictionManager = address(new RestrictionManager(address(root)));
+        restrictionManager = address(new RestrictionManager{salt: salt}(address(root)));
         trancheTokenFactory = address(new TrancheTokenFactory{salt: salt}(address(root), deployer));
         investmentManager = new InvestmentManager(address(root), address(escrow));
         poolManager = new PoolManager(address(escrow), vaultFactory, trancheTokenFactory);
