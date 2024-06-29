@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.5.0;
 
+import {IERC165} from "src/interfaces/IERC7575.sol";
+
 struct HookData {
     bytes16 from;
     bytes16 to;
 }
 
-interface IHook {
+interface IHook is IERC165 {
     /// @notice TODO
     function onERC20Transfer(address from, address to, uint256 value, HookData calldata hookdata)
         external

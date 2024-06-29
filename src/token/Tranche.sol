@@ -80,6 +80,7 @@ contract TrancheToken is ERC20, ITrancheToken, IERC7575Share, IERC1404 {
 
     /// @inheritdoc ITrancheToken
     function setHookData(address user, bytes16 hookData) public authOrHook {
+        /// Balance values are [uint128(hookData) + uint128(balance)]
         _setBalance(user, uint128(hookData).concat(uint128(balanceOf(user))));
         emit SetHookData(user, hookData);
     }

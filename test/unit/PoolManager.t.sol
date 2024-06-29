@@ -4,6 +4,7 @@ pragma solidity 0.8.21;
 import "test/BaseTest.sol";
 import {CastLib} from "src/libraries/CastLib.sol";
 import {IRestrictionManager} from "src/interfaces/token/IRestrictionManager.sol";
+import {MockHook} from "test/mocks/MockHook.sol";
 
 contract PoolManagerTest is BaseTest {
     using CastLib for *;
@@ -66,12 +67,13 @@ contract PoolManagerTest is BaseTest {
         bytes16 trancheId,
         string memory tokenName,
         string memory tokenSymbol,
-        uint8 decimals,
-        address hook
+        uint8 decimals
     ) public {
         decimals = uint8(bound(decimals, 1, 18));
         vm.assume(bytes(tokenName).length <= 128);
         vm.assume(bytes(tokenSymbol).length <= 32);
+
+        address hook = address(new MockHook());
 
         vm.expectRevert(bytes("PoolManager/invalid-pool"));
         centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, hook);
@@ -112,8 +114,7 @@ contract PoolManagerTest is BaseTest {
         bytes16[4] calldata trancheIds,
         string memory tokenName,
         string memory tokenSymbol,
-        uint8 decimals,
-        address hook
+        uint8 decimals
     ) public {
         decimals = uint8(bound(decimals, 1, 18));
         vm.assume(!hasDuplicates(trancheIds));
@@ -121,6 +122,8 @@ contract PoolManagerTest is BaseTest {
         vm.assume(bytes(tokenSymbol).length <= 32);
 
         centrifugeChain.addPool(poolId);
+
+        address hook = address(new MockHook());
 
         for (uint256 i = 0; i < trancheIds.length; i++) {
             centrifugeChain.addTranche(poolId, trancheIds[i], tokenName, tokenSymbol, decimals, hook);
@@ -135,7 +138,6 @@ contract PoolManagerTest is BaseTest {
     function testDeployTranche(
         uint64 poolId,
         uint8 decimals,
-        address hook,
         string memory tokenName,
         string memory tokenSymbol,
         bytes16 trancheId,
@@ -145,6 +147,8 @@ contract PoolManagerTest is BaseTest {
         decimals = uint8(bound(decimals, 1, 18));
         vm.assume(bytes(tokenName).length <= 128);
         vm.assume(bytes(tokenSymbol).length <= 32);
+
+        address hook = address(new MockHook());
 
         centrifugeChain.addPool(poolId); // add pool
 
@@ -191,7 +195,6 @@ contract PoolManagerTest is BaseTest {
     function testDeployVault(
         uint64 poolId,
         uint8 decimals,
-        address hook,
         string memory tokenName,
         string memory tokenSymbol,
         bytes16 trancheId,
@@ -201,6 +204,8 @@ contract PoolManagerTest is BaseTest {
         vm.assume(assetId > 0);
         vm.assume(bytes(tokenName).length <= 128);
         vm.assume(bytes(tokenSymbol).length <= 32);
+
+        address hook = address(new MockHook());
 
         centrifugeChain.addPool(poolId); // add pool
         centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, hook); // add tranche
@@ -509,7 +514,6 @@ contract PoolManagerTest is BaseTest {
     function testUpdateTokenPriceWorks(
         uint64 poolId,
         uint8 decimals,
-        address hook,
         uint128 assetId,
         string memory tokenName,
         string memory tokenSymbol,
@@ -521,6 +525,8 @@ contract PoolManagerTest is BaseTest {
         vm.assume(trancheId > 0);
         vm.assume(assetId > 0);
         centrifugeChain.addPool(poolId);
+
+        address hook = address(new MockHook());
 
         vm.expectRevert(bytes("PoolManager/tranche-does-not-exist"));
         centrifugeChain.updateTrancheTokenPrice(poolId, trancheId, assetId, price, uint64(block.timestamp));
@@ -580,8 +586,10 @@ contract PoolManagerTest is BaseTest {
         uint64 poolId = 5;
         bytes16 trancheId = bytes16(bytes("1"));
 
+        address hook = address(new MockHook());
+
         centrifugeChain.addPool(poolId); // add pool
-        centrifugeChain.addTranche(poolId, trancheId, "Test Token", "TT", 6, makeAddr("hook")); // add tranche
+        centrifugeChain.addTranche(poolId, trancheId, "Test Token", "TT", 6, hook); // add tranche
 
         centrifugeChain.addAsset(10, address(erc20));
         centrifugeChain.allowAsset(poolId, 10);

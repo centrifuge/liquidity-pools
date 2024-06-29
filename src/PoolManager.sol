@@ -249,6 +249,8 @@ contract PoolManager is Auth, IPoolManager {
         require(undeployedTranche.decimals == 0, "PoolManager/tranche-already-exists");
         require(getTrancheToken(poolId, trancheId) == address(0), "PoolManager/tranche-already-deployed");
 
+        require(IHook(hook).supportsInterface(type(IHook).interfaceId) == true, "PoolManager/invalid-hook");
+
         undeployedTranche.decimals = decimals;
         undeployedTranche.tokenName = name;
         undeployedTranche.tokenSymbol = symbol;

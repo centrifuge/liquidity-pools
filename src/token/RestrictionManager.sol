@@ -10,6 +10,7 @@ import {IRestrictionManager} from "src/interfaces/token/IRestrictionManager.sol"
 import {MessagesLib} from "src/libraries/MessagesLib.sol";
 import {BitmapLib} from "src/libraries/BitmapLib.sol";
 import {BytesLib} from "src/libraries/BytesLib.sol";
+import {IERC165} from "src/interfaces/IERC7575.sol";
 
 /// @title  Restriction Manager
 /// @notice ERC1404 based contract that checks transfer restrictions.
@@ -161,5 +162,11 @@ contract RestrictionManager is Auth, IRestrictionManager, IHook {
     /// @inheritdoc IRestrictionManager
     function isMember(address token, address user) public view returns (bool) {
         return abi.encodePacked(ITrancheToken(token).hookDataOf(user)).toUint64(0) >= block.timestamp;
+    }
+
+    // --- ERC165 support ---
+    /// @inheritdoc IERC165
+    function supportsInterface(bytes4 interfaceId) external pure override returns (bool) {
+        return interfaceId == type(IHook).interfaceId || interfaceId == type(IERC165).interfaceId;
     }
 }
