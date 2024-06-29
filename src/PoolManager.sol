@@ -14,10 +14,8 @@ import {CastLib} from "src/libraries/CastLib.sol";
 import {Pool, Tranche, TrancheTokenPrice, UndeployedTranche, IPoolManager} from "src/interfaces/IPoolManager.sol";
 import {BytesLib} from "src/libraries/BytesLib.sol";
 import {IEscrow} from "src/interfaces/IEscrow.sol";
-
-interface GatewayLike {
-    function send(bytes memory message, address source) external;
-}
+import {IGateway} from "src/interfaces/gateway/IGateway.sol";
+import {IGasService} from "src/interfaces/gateway/IGasService.sol";
 
 interface InvestmentManagerLike {
     function vaults(uint64 poolId, bytes16 trancheId, address asset) external returns (address);
@@ -27,11 +25,6 @@ interface InvestmentManagerLike {
 interface AuthLike {
     function rely(address user) external;
     function deny(address user) external;
-}
-
-interface GasServiceLike {
-    function updateGasPrice(uint256 value, uint256 computedAt) external;
-    function price() external returns (uint256);
 }
 
 /// @title  Pool Manager
@@ -47,11 +40,11 @@ contract PoolManager is Auth, IPoolManager {
 
     IEscrow public immutable escrow;
 
-    GatewayLike public gateway;
+    IGateway public gateway;
     ERC7540VaultFactory public vaultFactory;
     InvestmentManagerLike public investmentManager;
     TrancheTokenFactoryLike public trancheTokenFactory;
-    GasServiceLike public gasService;
+    IGasService public gasService;
 
     mapping(uint64 poolId => Pool) public pools;
     mapping(address => address) public vaultToAsset;
@@ -71,11 +64,11 @@ contract PoolManager is Auth, IPoolManager {
     // --- Administration ---
     /// @inheritdoc IPoolManager
     function file(bytes32 what, address data) external auth {
-        if (what == "gateway") gateway = GatewayLike(data);
+        if (what == "gateway") gateway = IGateway(data);
         else if (what == "investmentManager") investmentManager = InvestmentManagerLike(data);
         else if (what == "trancheTokenFactory") trancheTokenFactory = TrancheTokenFactoryLike(data);
         else if (what == "vaultFactory") vaultFactory = ERC7540VaultFactory(data);
-        else if (what == "gasService") gasService = GasServiceLike(data);
+        else if (what == "gasService") gasService = IGasService(data);
         else revert("PoolManager/file-unrecognized-param");
         emit File(what, data);
     }
@@ -432,9 +425,10 @@ contract PoolManager is Auth, IPoolManager {
         emit RemoveVault(poolId, trancheId, asset, vault);
     }
 
-    function updateCentrifugeGasPrice(uint256 price, uint256 computedAt) public auth {
+    /// @inheritdoc IPoolManager
+    function updateCentrifugeGasPrice(uint128 price, uint256 computedAt) public auth {
         require(price > 0, "PoolManager/price-cannot-be-zero");
-        require(gasService.price() != price, "PoolManager/same-price-already-set");
+        require(gasService.gasPrice() != price, "PoolManager/same-price-already-set");
         gasService.updateGasPrice(price, computedAt);
     }
 
