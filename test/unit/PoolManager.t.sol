@@ -3,10 +3,7 @@ pragma solidity 0.8.21;
 
 import "test/BaseTest.sol";
 import {CastLib} from "src/libraries/CastLib.sol";
-
-interface HookLike {
-    function updateMember(address token, address user, uint64 validUntil) external;
-}
+import {IRestrictionManager} from "src/interfaces/token/IRestrictionManager.sol";
 
 contract PoolManagerTest is BaseTest {
     using CastLib for *;
@@ -402,7 +399,7 @@ contract PoolManagerTest is BaseTest {
 
         uint64 poolId = vault.poolId();
         bytes16 trancheId = vault.trancheId();
-        HookLike hook = HookLike(trancheToken.hook());
+        IRestrictionManager hook = IRestrictionManager(trancheToken.hook());
         vm.expectRevert(bytes("Auth/not-authorized"));
         vm.prank(randomUser);
         hook.updateMember(address(trancheToken), randomUser, validUntil);

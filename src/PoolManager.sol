@@ -5,6 +5,7 @@ import {ERC7540VaultFactory} from "src/factories/ERC7540VaultFactory.sol";
 import {TrancheTokenFactoryLike} from "src/factories/TrancheTokenFactory.sol";
 import {TrancheTokenLike} from "src/token/Tranche.sol";
 import {RestrictionManagerLike} from "src/token/RestrictionManager.sol";
+import {IHook} from "src/interfaces/token/IHook.sol";
 import {IERC20Metadata} from "src/interfaces/IERC20.sol";
 import {Auth} from "src/Auth.sol";
 import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
@@ -27,10 +28,6 @@ interface InvestmentManagerLike {
 interface AuthLike {
     function rely(address user) external;
     function deny(address user) external;
-}
-
-interface HookLike {
-    function updateRestriction(address token, bytes memory update) external;
 }
 
 interface GasServiceLike {
@@ -308,7 +305,7 @@ contract PoolManager is Auth, IPoolManager {
     function updateRestriction(uint64 poolId, bytes16 trancheId, bytes memory update) public auth {
         TrancheTokenLike trancheToken = TrancheTokenLike(getTrancheToken(poolId, trancheId));
         require(address(trancheToken) != address(0), "PoolManager/unknown-token");
-        HookLike(trancheToken.hook()).updateRestriction(address(trancheToken), update);
+        IHook(trancheToken.hook()).updateRestriction(address(trancheToken), update);
     }
 
     /// @inheritdoc IPoolManager

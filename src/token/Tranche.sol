@@ -2,7 +2,8 @@
 pragma solidity 0.8.21;
 
 import {ERC20} from "src/token/ERC20.sol";
-import {IERC20Metadata, IERC20Callback, HookData} from "src/interfaces/IERC20.sol";
+import {IERC20Metadata} from "src/interfaces/IERC20.sol";
+import {IHook, HookData} from "src/interfaces/token/IHook.sol";
 import {IERC7575Share, IERC165} from "src/interfaces/IERC7575.sol";
 import {ITrancheToken} from "src/interfaces/token/ITranche.sol";
 import {BitmapLib} from "src/libraries/BitmapLib.sol";
@@ -23,13 +24,6 @@ interface IERC1404 {
     function detectTransferRestriction(address from, address to, uint256 value) external view returns (uint8);
     function messageForTransferRestriction(uint8 restrictionCode) external view returns (string memory);
     function SUCCESS_CODE() external view returns (uint8);
-}
-
-interface IHook {
-    function detectTransferRestriction(address from, address to, uint256 value, HookData calldata hookdata)
-        external
-        view
-        returns (uint8);
 }
 
 /// @title  Tranche Token
@@ -107,8 +101,8 @@ contract TrancheToken is ERC20, ITrancheToken, IERC7575Share, IERC1404 {
     function _onTransfer(address from, address to, uint256 value) internal {
         if (hook != address(0)) {
             require(
-                IERC20Callback(hook).onERC20Transfer(from, to, value, HookData(hookDataOf(from), hookDataOf(to)))
-                    == IERC20Callback.onERC20Transfer.selector,
+                IHook(hook).onERC20Transfer(from, to, value, HookData(hookDataOf(from), hookDataOf(to)))
+                    == IHook.onERC20Transfer.selector,
                 "TrancheToken/restrictions-failed"
             );
         }
@@ -122,9 +116,8 @@ contract TrancheToken is ERC20, ITrancheToken, IERC7575Share, IERC1404 {
         success = _transferFrom(sender, from, to, value);
         if (hook != address(0)) {
             require(
-                IERC20Callback(hook).onERC20AuthTransfer(
-                    sender, from, to, value, HookData(hookDataOf(from), hookDataOf(to))
-                ) == IERC20Callback.onERC20AuthTransfer.selector,
+                IHook(hook).onERC20AuthTransfer(sender, from, to, value, HookData(hookDataOf(from), hookDataOf(to)))
+                    == IHook.onERC20AuthTransfer.selector,
                 "TrancheToken/restrictions-failed"
             );
         }
@@ -146,13 +139,13 @@ contract TrancheToken is ERC20, ITrancheToken, IERC7575Share, IERC1404 {
     /// @inheritdoc IERC1404
     function messageForTransferRestriction(uint8 restrictionCode) public view returns (string memory) {
         if (hook == address(0)) return "";
-        return IERC1404(hook).messageForTransferRestriction(restrictionCode);
+        return IHook(hook).messageForTransferRestriction(restrictionCode);
     }
 
     /// @inheritdoc IERC1404
     function SUCCESS_CODE() public view returns (uint8) {
         if (hook == address(0)) return 0;
-        return IERC1404(hook).SUCCESS_CODE();
+        return IHook(hook).SUCCESS_CODE();
     }
 
     // --- ERC165 support ---

@@ -2,8 +2,9 @@
 pragma solidity 0.8.21;
 
 import {Auth} from "src/Auth.sol";
-import {IERC20, IERC20Callback, HookData} from "src/interfaces/IERC20.sol";
+import {IERC20} from "src/interfaces/IERC20.sol";
 import {IRoot} from "src/interfaces/IRoot.sol";
+import {IHook, HookData} from "src/interfaces/token/IHook.sol";
 import {IRestrictionManager} from "src/interfaces/token/IRestrictionManager.sol";
 import {MessagesLib} from "src/libraries/MessagesLib.sol";
 import {BitmapLib} from "src/libraries/BitmapLib.sol";
@@ -23,7 +24,7 @@ interface TrancheTokenLike is IERC20 {
 
 /// @title  Restriction Manager
 /// @notice ERC1404 based contract that checks transfer restrictions.
-contract RestrictionManager is Auth, IRestrictionManager, IERC20Callback {
+contract RestrictionManager is Auth, IRestrictionManager, IHook {
     using BitmapLib for *;
     using BytesLib for bytes;
 
@@ -51,6 +52,7 @@ contract RestrictionManager is Auth, IRestrictionManager, IERC20Callback {
     }
 
     // --- Callback from tranche token ---
+    /// @inheritdoc IHook
     function onERC20Transfer(address from, address to, uint256 value, HookData calldata hookData)
         external
         virtual
@@ -61,6 +63,7 @@ contract RestrictionManager is Auth, IRestrictionManager, IERC20Callback {
         return bytes4(keccak256("onERC20Transfer(address,address,uint256,(bytes16,bytes16))"));
     }
 
+    /// @inheritdoc IHook
     function onERC20AuthTransfer(
         address, /* sender */
         address, /* from */
@@ -72,6 +75,7 @@ contract RestrictionManager is Auth, IRestrictionManager, IERC20Callback {
     }
 
     // --- ERC1404 implementation ---
+    /// @inheritdoc IHook
     function detectTransferRestriction(address from, address to, uint256, /* value */ HookData calldata hookData)
         public
         view
@@ -93,7 +97,7 @@ contract RestrictionManager is Auth, IRestrictionManager, IERC20Callback {
         return SUCCESS_CODE;
     }
 
-    /// @inheritdoc IRestrictionManager
+    /// @inheritdoc IHook
     function messageForTransferRestriction(uint8 restrictionCode) public pure returns (string memory) {
         if (restrictionCode == SOURCE_IS_FROZEN_CODE) {
             return SOURCE_IS_FROZEN_MESSAGE;
@@ -111,7 +115,7 @@ contract RestrictionManager is Auth, IRestrictionManager, IERC20Callback {
     }
 
     // --- Incoming message handling ---
-    /// @inheritdoc IRestrictionManager
+    /// @inheritdoc IHook
     function updateRestriction(address token, bytes memory update) external auth {
         MessagesLib.RestrictionUpdate updateId = MessagesLib.restrictionUpdateType(update);
 
