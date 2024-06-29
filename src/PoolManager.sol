@@ -249,7 +249,11 @@ contract PoolManager is Auth, IPoolManager {
         require(undeployedTranche.decimals == 0, "PoolManager/tranche-already-exists");
         require(getTrancheToken(poolId, trancheId) == address(0), "PoolManager/tranche-already-deployed");
 
-        require(IHook(hook).supportsInterface(type(IHook).interfaceId) == true, "PoolManager/invalid-hook");
+        // Hook can be address zero if the tranche token is fully permissionless and has no custom logic
+        require(
+            hook == address(0) || IHook(hook).supportsInterface(type(IHook).interfaceId) == true,
+            "PoolManager/invalid-hook"
+        );
 
         undeployedTranche.decimals = decimals;
         undeployedTranche.tokenName = name;

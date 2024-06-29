@@ -5,32 +5,18 @@ import {Auth} from "src/Auth.sol";
 import {IERC20} from "src/interfaces/IERC20.sol";
 import {IRoot} from "src/interfaces/IRoot.sol";
 import {ITrancheToken} from "src/interfaces/token/ITranche.sol";
-import {IHook, HookData} from "src/interfaces/token/IHook.sol";
-import {IRestrictionManager} from "src/interfaces/token/IRestrictionManager.sol";
+import {IHook, HookData, SUCCESS_CODE, SUCCESS_MESSAGE} from "src/interfaces/token/IHook.sol";
 import {MessagesLib} from "src/libraries/MessagesLib.sol";
 import {BitmapLib} from "src/libraries/BitmapLib.sol";
 import {BytesLib} from "src/libraries/BytesLib.sol";
 import {IERC165} from "src/interfaces/IERC7575.sol";
+import "src/interfaces/token/IRestrictionManager.sol";
 
 /// @title  Restriction Manager
 /// @notice ERC1404 based contract that checks transfer restrictions.
 contract RestrictionManager is Auth, IRestrictionManager, IHook {
     using BitmapLib for *;
     using BytesLib for bytes;
-
-    string internal constant SUCCESS_MESSAGE = "RestrictionManager/transfer-allowed";
-    string internal constant SOURCE_IS_FROZEN_MESSAGE = "RestrictionManager/source-is-frozen";
-    string internal constant DESTINATION_IS_FROZEN_MESSAGE = "RestrictionManager/destination-is-frozen";
-    string internal constant DESTINATION_NOT_A_MEMBER_RESTRICTION_MESSAGE =
-        "RestrictionManager/destination-not-a-member";
-
-    uint8 public constant FREEZE_BIT = 127;
-    uint8 public constant MEMBER_BIT = 126;
-
-    uint8 public constant SUCCESS_CODE = 0;
-    uint8 public constant SOURCE_IS_FROZEN_CODE = 1;
-    uint8 public constant DESTINATION_IS_FROZEN_CODE = 2;
-    uint8 public constant DESTINATION_NOT_A_MEMBER_RESTRICTION_CODE = 3;
 
     IRoot public immutable root;
 

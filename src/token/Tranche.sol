@@ -3,7 +3,7 @@ pragma solidity 0.8.21;
 
 import {ERC20} from "src/token/ERC20.sol";
 import {IERC20Metadata} from "src/interfaces/IERC20.sol";
-import {IHook, HookData} from "src/interfaces/token/IHook.sol";
+import {IHook, HookData, SUCCESS_CODE as SUCCESS_CODE_ID} from "src/interfaces/token/IHook.sol";
 import {IERC7575Share, IERC165} from "src/interfaces/IERC7575.sol";
 import {ITrancheToken} from "src/interfaces/token/ITranche.sol";
 import {BitmapLib} from "src/libraries/BitmapLib.sol";
@@ -137,12 +137,12 @@ contract TrancheToken is ERC20, ITrancheToken, IERC7575Share, IERC1404 {
     /// @inheritdoc ITrancheToken
     function checkTransferRestriction(address from, address to, uint256 value) public view returns (bool) {
         if (hook == address(0)) return true;
-        return detectTransferRestriction(from, to, value) == SUCCESS_CODE();
+        return detectTransferRestriction(from, to, value) == SUCCESS_CODE_ID;
     }
 
     /// @inheritdoc IERC1404
     function detectTransferRestriction(address from, address to, uint256 value) public view returns (uint8) {
-        if (hook == address(0)) return 0;
+        if (hook == address(0)) return SUCCESS_CODE_ID;
         return IHook(hook).detectTransferRestriction(from, to, value, HookData(hookDataOf(from), hookDataOf(to)));
     }
 
@@ -154,8 +154,7 @@ contract TrancheToken is ERC20, ITrancheToken, IERC7575Share, IERC1404 {
 
     /// @inheritdoc IERC1404
     function SUCCESS_CODE() public view returns (uint8) {
-        if (hook == address(0)) return 0;
-        return IHook(hook).SUCCESS_CODE();
+        return SUCCESS_CODE_ID;
     }
 
     // --- ERC165 support ---

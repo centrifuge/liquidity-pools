@@ -51,7 +51,7 @@ contract RestrictionManagerTest is Test {
     // --- erc165 checks ---
     function testERC165Support(bytes4 unsupportedInterfaceId) public {
         bytes4 erc165 = 0x01ffc9a7;
-        bytes4 hook = 0x0048bc65;
+        bytes4 hook = 0x0ede2660;
 
         vm.assume(unsupportedInterfaceId != erc165 && unsupportedInterfaceId != hook);
 

@@ -344,7 +344,7 @@ contract PoolManagerTest is BaseTest {
 
         TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
 
-        vm.expectRevert(bytes("RestrictionManager/destination-not-a-member"));
+        vm.expectRevert(bytes("destination-not-a-member"));
         centrifugeChain.incomingTransferTrancheTokens(
             poolId, trancheId, uint64(block.chainid), destinationAddress, amount
         );
