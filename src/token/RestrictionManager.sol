@@ -13,7 +13,13 @@ import {IERC165} from "src/interfaces/IERC7575.sol";
 import "src/interfaces/token/IRestrictionManager.sol";
 
 /// @title  Restriction Manager
-/// @notice ERC1404 based contract that checks transfer restrictions.
+/// @notice Hook implementation that:
+///         * Requires adding accounts to the memberlist before they can receive tokens
+///         * Supports freezing accounts which blocks transfers both to and from them
+///         * Allows authTransferFrom calls
+///         
+/// @dev    The first 8 bytes of hookData is used for the memberlist valid until date,
+///         the last bit is used to denote whether the account is frozen.
 contract RestrictionManager is Auth, IRestrictionManager, IHook {
     using BitmapLib for *;
     using BytesLib for bytes;
