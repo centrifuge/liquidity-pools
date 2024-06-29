@@ -73,10 +73,12 @@ contract TrancheToken is ERC20, ITrancheToken, IERC7575Share, IERC1404 {
         return balances[user].getLSBits(128);
     }
 
+    /// @inheritdoc ITrancheToken
     function hookDataOf(address user) public view returns (bytes16) {
         return bytes16(uint128(balances[user].getMSBits(128)));
     }
 
+    /// @inheritdoc ITrancheToken
     function setHookData(address user, bytes16 hookData) public authOrHook {
         _setBalance(user, uint128(hookData).concat(uint128(balanceOf(user))));
         emit SetHookData(user, hookData);
@@ -92,10 +94,16 @@ contract TrancheToken is ERC20, ITrancheToken, IERC7575Share, IERC1404 {
         _onTransfer(from, to, value);
     }
 
-    function mint(address to, uint256 value) public override {
+    /// @inheritdoc ITrancheToken
+    function mint(address to, uint256 value) public override(ERC20, ITrancheToken) {
         super.mint(to, value);
         require(totalSupply <= type(uint128).max, "Tranche/exceeds-max-supply");
         _onTransfer(address(0), to, value);
+    }
+
+    /// @inheritdoc ITrancheToken
+    function burn(address from, uint256 value) public override(ERC20, ITrancheToken) {
+        super.burn(from, value);
     }
 
     function _onTransfer(address from, address to, uint256 value) internal {
@@ -108,6 +116,7 @@ contract TrancheToken is ERC20, ITrancheToken, IERC7575Share, IERC1404 {
         }
     }
 
+    /// @inheritdoc ITrancheToken
     function authTransferFrom(address sender, address from, address to, uint256 value)
         public
         auth

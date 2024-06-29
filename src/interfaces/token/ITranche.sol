@@ -17,5 +17,20 @@ interface ITrancheToken {
     function updateVault(address asset, address vault_) external;
 
     /// @notice TODO
+    function hookDataOf(address user) external view returns (bytes16);
+
+    /// @notice TODO
+    function setHookData(address user, bytes16 hookData) external;
+
+    /// @notice TODO
+    function mint(address user, uint256 value) external;
+
+    /// @notice TODO
+    function burn(address user, uint256 value) external;
+
+    /// @notice TODO
     function checkTransferRestriction(address from, address to, uint256 value) external view returns (bool);
+
+    /// @notice TODO
+    function authTransferFrom(address sender, address from, address to, uint256 amount) external returns (bool);
 }

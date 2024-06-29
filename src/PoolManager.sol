@@ -4,7 +4,6 @@ pragma solidity 0.8.21;
 import {ERC7540VaultFactory} from "src/factories/ERC7540VaultFactory.sol";
 import {TrancheTokenFactoryLike} from "src/factories/TrancheTokenFactory.sol";
 import {TrancheTokenLike} from "src/token/Tranche.sol";
-import {RestrictionManagerLike} from "src/token/RestrictionManager.sol";
 import {IHook} from "src/interfaces/token/IHook.sol";
 import {IERC20Metadata} from "src/interfaces/IERC20.sol";
 import {Auth} from "src/Auth.sol";

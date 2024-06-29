@@ -13,7 +13,7 @@ import {ERC7540Vault} from "src/ERC7540Vault.sol";
 import {TrancheToken, TrancheTokenLike} from "src/token/Tranche.sol";
 import {ERC20} from "src/token/ERC20.sol";
 import {Gateway} from "src/gateway/Gateway.sol";
-import {RestrictionManagerLike, RestrictionManager} from "src/token/RestrictionManager.sol";
+import {RestrictionManager} from "src/token/RestrictionManager.sol";
 import {MessagesLib} from "src/libraries/MessagesLib.sol";
 import {Deployer} from "script/Deployer.sol";
 import {MockSafe} from "test/mocks/MockSafe.sol";

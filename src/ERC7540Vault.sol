@@ -25,20 +25,16 @@ interface AuthTransferLike {
 ///         After execution users can use the deposit, mint, redeem and withdraw functions to get their shares
 ///         and/or assets from the pools.
 contract ERC7540Vault is Auth, IERC7540Vault {
-    /// @notice Identifier of the Centrifuge pool
+    /// @inheritdoc IERC7540Vault
     uint64 public immutable poolId;
 
-    /// @notice Identifier of the tranche of the Centrifuge pool
+    /// @inheritdoc IERC7540Vault
     bytes16 public immutable trancheId;
 
-    /// @notice The investment asset for this vault.
-    ///         Each tranche of a Centrifuge pool can have multiple vaults.
-    ///         One vault for each supported investment asset.
-    ///         Thus tranche shares can be linked to multiple vaults with different assets.
+    /// @inheritdoc IERC7575
     address public immutable asset;
 
-    /// @notice The restricted ERC-20 vault share (tranche token).
-    ///         Has a ratio (token price) of underlying assets exchanged on deposit/mint/withdraw/redeem.
+    /// @inheritdoc IERC7575
     address public immutable share;
     uint8 public immutable shareDecimals;
 
