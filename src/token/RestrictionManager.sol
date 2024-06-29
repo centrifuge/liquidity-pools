@@ -10,7 +10,7 @@ import {MessagesLib} from "src/libraries/MessagesLib.sol";
 import {BitmapLib} from "src/libraries/BitmapLib.sol";
 import {BytesLib} from "src/libraries/BytesLib.sol";
 import {IERC165} from "src/interfaces/IERC7575.sol";
-import "src/interfaces/token/IRestrictionManager.sol";
+import {RestrictionUpdate, IRestrictionManager} from "src/interfaces/token/IRestrictionManager.sol";
 
 /// @title  Restriction Manager
 /// @notice Hook implementation that:
@@ -23,6 +23,17 @@ import "src/interfaces/token/IRestrictionManager.sol";
 contract RestrictionManager is Auth, IRestrictionManager, IHook {
     using BitmapLib for *;
     using BytesLib for bytes;
+
+    string internal constant SOURCE_IS_FROZEN_MESSAGE = "source-is-frozen";
+    string internal constant DESTINATION_IS_FROZEN_MESSAGE = "destination-is-frozen";
+    string internal constant DESTINATION_NOT_A_MEMBER_RESTRICTION_MESSAGE = "destination-not-a-member";
+
+    uint8 public constant FREEZE_BIT = 127;
+    uint8 public constant MEMBER_BIT = 126;
+
+    uint8 public constant SOURCE_IS_FROZEN_CODE = 1;
+    uint8 public constant DESTINATION_IS_FROZEN_CODE = 2;
+    uint8 public constant DESTINATION_NOT_A_MEMBER_RESTRICTION_CODE = 3;
 
     IRoot public immutable root;
 
@@ -99,17 +110,12 @@ contract RestrictionManager is Auth, IRestrictionManager, IHook {
     // --- Incoming message handling ---
     /// @inheritdoc IHook
     function updateRestriction(address token, bytes memory update) external auth {
-        MessagesLib.RestrictionUpdate updateId = MessagesLib.restrictionUpdateType(update);
+        RestrictionUpdate updateId = RestrictionUpdate(update.toUint8(0));
 
-        if (updateId == MessagesLib.RestrictionUpdate.UpdateMember) {
-            updateMember(token, update.toAddress(1), update.toUint64(33));
-        } else if (updateId == MessagesLib.RestrictionUpdate.Freeze) {
-            freeze(token, update.toAddress(1));
-        } else if (updateId == MessagesLib.RestrictionUpdate.Unfreeze) {
-            unfreeze(token, update.toAddress(1));
-        } else {
-            revert("RestrictionManager/invalid-update");
-        }
+        if (updateId == RestrictionUpdate.UpdateMember) updateMember(token, update.toAddress(1), update.toUint64(33));
+        else if (updateId == RestrictionUpdate.Freeze) freeze(token, update.toAddress(1));
+        else if (updateId == RestrictionUpdate.Unfreeze) unfreeze(token, update.toAddress(1));
+        else revert("RestrictionManager/invalid-update");
     }
 
     /// @inheritdoc IRestrictionManager

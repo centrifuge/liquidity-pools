@@ -84,19 +84,8 @@ library MessagesLib {
         EVM
     }
 
-    enum RestrictionUpdate {
-        Invalid,
-        UpdateMember,
-        Freeze,
-        Unfreeze
-    }
-
     function messageType(bytes memory _msg) internal pure returns (Call _call) {
         _call = Call(_msg.toUint8(0));
-    }
-
-    function restrictionUpdateType(bytes memory _msg) internal pure returns (RestrictionUpdate _update) {
-        _update = RestrictionUpdate(_msg.toUint8(0));
     }
 
     // Utils

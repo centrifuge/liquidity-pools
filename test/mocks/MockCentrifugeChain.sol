@@ -3,6 +3,7 @@ pragma solidity 0.8.21;
 
 import {MessagesLib} from "src/libraries/MessagesLib.sol";
 import {CastLib} from "src/libraries/CastLib.sol";
+import {RestrictionUpdate} from "src/interfaces/token/IRestrictionManager.sol";
 import "forge-std/Test.sol";
 
 interface AdapterLike {
@@ -65,7 +66,7 @@ contract MockCentrifugeChain is Test {
             uint8(MessagesLib.Call.UpdateRestriction),
             poolId,
             trancheId,
-            uint8(MessagesLib.RestrictionUpdate.UpdateMember),
+            uint8(RestrictionUpdate.UpdateMember),
             user.toBytes32(),
             validUntil
         );
@@ -155,7 +156,7 @@ contract MockCentrifugeChain is Test {
             uint8(MessagesLib.Call.UpdateRestriction),
             poolId,
             trancheId,
-            uint8(MessagesLib.RestrictionUpdate.Freeze),
+            uint8(RestrictionUpdate.Freeze),
             user.toBytes32()
         );
         _execute(_message);
@@ -166,7 +167,7 @@ contract MockCentrifugeChain is Test {
             uint8(MessagesLib.Call.UpdateRestriction),
             poolId,
             trancheId,
-            uint8(MessagesLib.RestrictionUpdate.Unfreeze),
+            uint8(RestrictionUpdate.Unfreeze),
             user.toBytes32()
         );
         _execute(_message);

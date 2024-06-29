@@ -12,6 +12,13 @@ uint8 constant SOURCE_IS_FROZEN_CODE = 1;
 uint8 constant DESTINATION_IS_FROZEN_CODE = 2;
 uint8 constant DESTINATION_NOT_A_MEMBER_RESTRICTION_CODE = 3;
 
+enum RestrictionUpdate {
+    Invalid,
+    UpdateMember,
+    Freeze,
+    Unfreeze
+}
+
 interface IRestrictionManager {
     // --- Events ---
     event UpdateMember(address indexed token, address indexed user, uint64 validUntil);
