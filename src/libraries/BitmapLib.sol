@@ -26,6 +26,7 @@ library BitmapLib {
         return bitmap >> n;
     }
 
+    /// @notice Shift the value left
     function shiftLeft(uint64 value, uint128 shift) internal pure returns (uint128) {
         return uint128(value) << shift;
     }
