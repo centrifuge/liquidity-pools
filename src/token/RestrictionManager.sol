@@ -28,8 +28,7 @@ contract RestrictionManager is Auth, IRestrictionManager, IHook {
     string internal constant DESTINATION_IS_FROZEN_MESSAGE = "destination-is-frozen";
     string internal constant DESTINATION_NOT_A_MEMBER_RESTRICTION_MESSAGE = "destination-not-a-member";
 
-    uint8 public constant FREEZE_BIT = 127;
-    uint8 public constant MEMBER_BIT = 126;
+    uint8 public constant FREEZE_BIT = 128 - 1;
 
     uint8 public constant SOURCE_IS_FROZEN_CODE = 1;
     uint8 public constant DESTINATION_IS_FROZEN_CODE = 2;
