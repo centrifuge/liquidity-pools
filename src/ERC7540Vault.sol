@@ -134,6 +134,7 @@ contract ERC7540Vault is Auth, IERC7540Vault {
 
         try AuthTransferLike(share).authTransferFrom(sender, owner, address(escrow), shares) returns (bool) {}
         catch {
+            // Support tranche tokens that block authTransferFrom. In this case ERC20 approval needs to be set
             require(IERC20(share).transferFrom(owner, address(escrow), shares), "ERC7540Vault/transfer-from-failed");
         }
 
