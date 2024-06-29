@@ -263,8 +263,7 @@ contract CentrifugeRouterTest is BaseTest {
         // multicall
         bytes[] memory calls = new bytes[](2);
         calls[0] = abi.encodeWithSelector(router.claimDeposit.selector, vault_, self, self);
-        calls[1] =
-            abi.encodeWithSelector(router.requestRedeem.selector, vault_, trancheTokensPayout, self, self);
+        calls[1] = abi.encodeWithSelector(router.requestRedeem.selector, vault_, trancheTokensPayout, self, self);
         router.multicall(calls);
 
         (uint128 assetPayout) = fulfillRedeemRequest(vault, assetId, trancheTokensPayout, self);
@@ -329,9 +328,8 @@ contract CentrifugeRouterTest is BaseTest {
         // multicall
         bytes[] memory calls = new bytes[](2);
         calls[0] = abi.encodeWithSelector(router.wrap.selector, address(wrapper), amount);
-        calls[1] = abi.encodeWithSelector(
-            router.requestDeposit.selector, vault_, amount, investor, address(router), gas
-        );
+        calls[1] =
+            abi.encodeWithSelector(router.requestDeposit.selector, vault_, amount, investor, address(router), gas);
         router.multicall{value: gas}(calls);
 
         uint128 assetId = poolManager.assetToId(address(wrapper));
@@ -364,9 +362,7 @@ contract CentrifugeRouterTest is BaseTest {
         // multicall
         bytes[] memory calls = new bytes[](3);
         calls[0] = abi.encodeWithSelector(router.wrap.selector, address(wrapper), amount);
-        calls[1] = abi.encodeWithSelector(
-            router.lockDepositRequest.selector, vault_, amount, investor, address(router)
-        );
+        calls[1] = abi.encodeWithSelector(router.lockDepositRequest.selector, vault_, amount, investor, address(router));
         calls[2] = abi.encodeWithSelector(router.executeLockedDepositRequest.selector, vault_, investor);
         router.multicall(calls);
 
@@ -434,18 +430,14 @@ contract CentrifugeRouterTest is BaseTest {
         router.requestDeposit{value: lessGas}(vault_, amount, self, self, lessGas);
 
         vm.expectRevert("PoolManager/unknown-vault");
-        router.requestDeposit{value: lessGas}(
-            makeAddr("maliciousVault"), amount, self, makeAddr("owner"), lessGas
-        );
+        router.requestDeposit{value: lessGas}(makeAddr("maliciousVault"), amount, self, makeAddr("owner"), lessGas);
 
         vm.expectRevert("PoolManager/unknown-vault");
         router.requestDeposit{value: lessGas}(makeAddr("maliciousVault"), amount, self, self, lessGas);
 
         bytes[] memory calls = new bytes[](2);
-        calls[0] =
-            abi.encodeWithSelector(router.requestDeposit.selector, vault_, amount / 2, self, self, gasLimit);
-        calls[1] =
-            abi.encodeWithSelector(router.requestDeposit.selector, vault_, amount / 2, self, self, gasLimit);
+        calls[0] = abi.encodeWithSelector(router.requestDeposit.selector, vault_, amount / 2, self, self, gasLimit);
+        calls[1] = abi.encodeWithSelector(router.requestDeposit.selector, vault_, amount / 2, self, self, gasLimit);
 
         vm.expectRevert("CentrifugeRouter/insufficient-funds-to-topup");
         router.multicall{value: gasLimit}(calls);

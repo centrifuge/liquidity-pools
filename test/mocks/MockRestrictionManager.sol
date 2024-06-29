@@ -19,6 +19,6 @@ contract MockRestrictionManager is RestrictionManager, Mock {
         values_address["onERC20Transfer_to"] = to;
         values_uint256["onERC20Transfer_value"] = value;
 
-        return bytes4(keccak256("onERC20Transfer(address,address,uint256,HookData)"));
+        return bytes4(keccak256("onERC20Transfer(address,address,uint256,(bytes16,bytes16))"));
     }
 }

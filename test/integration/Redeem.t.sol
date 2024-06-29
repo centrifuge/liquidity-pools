@@ -271,8 +271,7 @@ contract RedeemTest is BaseTest {
 
         // should work even if investor is frozen
         centrifugeChain.freeze(poolId, trancheId, investor); // freeze investor
-        assertTrue(!TrancheToken(address(vault.share())).checkTransferRestriction(investor, address(escrow),
-    amount));
+        assertTrue(!TrancheToken(address(vault.share())).checkTransferRestriction(investor, address(escrow), amount));
 
         // Test trigger partial redeem (maxMint > redeemAmount), where investor did not mint their tokens - user tokens
         // are still locked in escrow
