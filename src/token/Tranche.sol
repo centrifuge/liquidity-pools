@@ -30,8 +30,8 @@ interface IERC1404 {
 /// @notice Extension of ERC20 + ERC1404 for tranche tokens,
 ///         integrating an external hook optionally for ERC20 callbacks and ERC1404 checks.
 ///
-/// @dev    The user balance is limited to uint128. This is safe because the decimals are limited
-///         to 18, thus the max balance is 2^128-1 / 10**18 = 3.40 * 10**20.
+/// @dev    The user balance is limited to uint128. This is safe because the decimals are limited to 18,
+///         thus the max balance is 2^128-1 / 10**18 = 3.40 * 10**20. This is also enforced on mint.
 ///
 ///         The most significant 128 bits of the uint256 balance value are used
 ///         to store hook data (e.g. restrictions for users).
