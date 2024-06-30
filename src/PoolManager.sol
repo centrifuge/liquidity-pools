@@ -81,7 +81,8 @@ contract PoolManager is Auth, IPoolManager {
         SafeTransferLib.safeTransferFrom(asset, msg.sender, address(escrow), amount);
 
         gateway.send(
-            abi.encodePacked(uint8(MessagesLib.Call.Transfer), assetId, msg.sender, recipient, amount), address(this)
+            abi.encodePacked(uint8(MessagesLib.Call.Transfer), assetId, msg.sender.toBytes32(), recipient, amount),
+            address(this)
         );
         emit TransferCurrency(asset, recipient, amount);
     }
@@ -130,7 +131,7 @@ contract PoolManager is Auth, IPoolManager {
                 uint8(MessagesLib.Call.TransferTrancheTokens),
                 poolId,
                 trancheId,
-                msg.sender,
+                msg.sender.toBytes32(),
                 MessagesLib.formatDomain(MessagesLib.Domain.EVM, destinationChainId),
                 destinationAddress.toBytes32(),
                 amount
