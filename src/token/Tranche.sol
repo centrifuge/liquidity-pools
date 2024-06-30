@@ -76,7 +76,11 @@ contract TrancheToken is ERC20, ITrancheToken {
         _onTransfer(msg.sender, to, value);
     }
 
-    function transferFrom(address from, address to, uint256 value) public override(ERC20, IERC20) returns (bool success) {
+    function transferFrom(address from, address to, uint256 value)
+        public
+        override(ERC20, IERC20)
+        returns (bool success)
+    {
         success = super.transferFrom(from, to, value);
         _onTransfer(from, to, value);
     }
