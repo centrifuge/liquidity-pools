@@ -210,7 +210,7 @@ contract PoolManager is Auth, IPoolManager {
         address asset = idToAsset[assetId];
         require(asset != address(0), "PoolManager/unknown-asset");
 
-        pools[poolId].allowedCurrencies[asset] = true;
+        pools[poolId].allowedAssets[asset] = true;
         emit AllowAsset(poolId, asset);
     }
 
@@ -222,7 +222,7 @@ contract PoolManager is Auth, IPoolManager {
         address asset = idToAsset[assetId];
         require(asset != address(0), "PoolManager/unknown-asset");
 
-        pools[poolId].allowedCurrencies[asset] = false;
+        pools[poolId].allowedAssets[asset] = false;
         emit DisallowAsset(poolId, asset);
     }
 
@@ -439,16 +439,6 @@ contract PoolManager is Auth, IPoolManager {
     }
 
     /// @inheritdoc IPoolManager
-    function getVault(uint64 poolId, bytes16 trancheId, uint128 assetId) public view returns (address) {
-        return ITrancheToken(pools[poolId].tranches[trancheId].token).vault(idToAsset[assetId]);
-    }
-
-    /// @inheritdoc IPoolManager
-    function getVault(uint64 poolId, bytes16 trancheId, address asset) public view returns (address) {
-        return ITrancheToken(pools[poolId].tranches[trancheId].token).vault(asset);
-    }
-
-    /// @inheritdoc IPoolManager
     function getTrancheTokenPrice(uint64 poolId, bytes16 trancheId, address asset)
         public
         view
@@ -460,6 +450,16 @@ contract PoolManager is Auth, IPoolManager {
     }
 
     /// @inheritdoc IPoolManager
+    function getVault(uint64 poolId, bytes16 trancheId, uint128 assetId) public view returns (address) {
+        return ITrancheToken(pools[poolId].tranches[trancheId].token).vault(idToAsset[assetId]);
+    }
+
+    /// @inheritdoc IPoolManager
+    function getVault(uint64 poolId, bytes16 trancheId, address asset) public view returns (address) {
+        return ITrancheToken(pools[poolId].tranches[trancheId].token).vault(asset);
+    }
+
+    /// @inheritdoc IPoolManager
     function getVaultAsset(address vault) public view override returns (address asset) {
         asset = vaultToAsset[vault];
         require(asset != address(0), "PoolManager/unknown-vault");
@@ -467,6 +467,6 @@ contract PoolManager is Auth, IPoolManager {
 
     /// @inheritdoc IPoolManager
     function isAllowedAsset(uint64 poolId, address asset) public view returns (bool) {
-        return pools[poolId].allowedCurrencies[asset];
+        return pools[poolId].allowedAssets[asset];
     }
 }

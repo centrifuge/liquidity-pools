@@ -5,7 +5,7 @@ pragma solidity >=0.5.0;
 struct Pool {
     uint256 createdAt;
     mapping(bytes16 trancheId => Tranche) tranches;
-    mapping(address asset => bool) allowedCurrencies;
+    mapping(address asset => bool) allowedAssets;
 }
 
 /// @dev Each Centrifuge pool is associated to 1 or more tranches
