@@ -324,6 +324,10 @@ contract PoolManager is Auth, IPoolManager {
         // in the escrow to transfer to the user on redeem or withdraw
         escrow.approveMax(asset, address(investmentManager));
 
+        // Give pool manager infinite approval for asset
+        // in the escrow to transfer to the user on transfer
+        escrow.approveMax(asset, address(this));
+
         emit AddAsset(assetId, asset);
     }
 
@@ -332,7 +336,6 @@ contract PoolManager is Auth, IPoolManager {
         address asset = idToAsset[assetId];
         require(asset != address(0), "PoolManager/unknown-asset");
 
-        escrow.approveMax(asset, address(this));
         SafeTransferLib.safeTransferFrom(asset, address(escrow), recipient, amount);
     }
 
