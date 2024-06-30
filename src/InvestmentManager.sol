@@ -86,7 +86,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
                 uint8(MessagesLib.Call.IncreaseInvestOrder),
                 poolId,
                 vault_.trancheId(),
-                receiver,
+                receiver.toBytes32(),
                 poolManager.assetToId(asset),
                 _assets
             ),
@@ -131,7 +131,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
                 uint8(MessagesLib.Call.IncreaseRedeemOrder),
                 vault_.poolId(),
                 vault_.trancheId(),
-                owner,
+                owner.toBytes32(),
                 poolManager.assetToId(vault_.asset()),
                 shares
             ),
