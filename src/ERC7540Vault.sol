@@ -6,13 +6,10 @@ import {EIP712Lib} from "src/libraries/EIP712Lib.sol";
 import {SignatureLib} from "src/libraries/SignatureLib.sol";
 import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 import {IInvestmentManager} from "src/interfaces/IInvestmentManager.sol";
+import {ITrancheToken} from "src/interfaces/token/ITranche.sol";
 import "src/interfaces/IERC7540.sol";
 import "src/interfaces/IERC7575.sol";
 import "src/interfaces/IERC20.sol";
-
-interface AuthTransferLike {
-    function authTransferFrom(address sender, address from, address to, uint256 amount) external returns (bool);
-}
 
 /// @title  ERC7540Vault
 /// @notice Asynchronous Tokenized Vault standard implementation for Centrifuge pools
@@ -122,7 +119,7 @@ contract ERC7540Vault is Auth, IERC7540Vault {
 
     /// @inheritdoc IERC7540Redeem
     function requestRedeem(uint256 shares, address controller, address owner) public returns (uint256) {
-        require(IERC20(share).balanceOf(owner) >= shares, "ERC7540Vault/insufficient-balance");
+        require(ITrancheToken(share).balanceOf(owner) >= shares, "ERC7540Vault/insufficient-balance");
         require(
             manager.requestRedeem(address(this), shares, controller, owner, msg.sender),
             "ERC7540Vault/request-redeem-failed"
@@ -132,10 +129,12 @@ contract ERC7540Vault is Auth, IERC7540Vault {
         // the sender is the owner, to bypass the allowance check
         address sender = isOperator[owner][msg.sender] ? owner : msg.sender;
 
-        try AuthTransferLike(share).authTransferFrom(sender, owner, address(escrow), shares) returns (bool) {}
+        try ITrancheToken(share).authTransferFrom(sender, owner, address(escrow), shares) returns (bool) {}
         catch {
             // Support tranche tokens that block authTransferFrom. In this case ERC20 approval needs to be set
-            require(IERC20(share).transferFrom(owner, address(escrow), shares), "ERC7540Vault/transfer-from-failed");
+            require(
+                ITrancheToken(share).transferFrom(owner, address(escrow), shares), "ERC7540Vault/transfer-from-failed"
+            );
         }
 
         emit RedeemRequest(controller, owner, REQUEST_ID, msg.sender, shares);

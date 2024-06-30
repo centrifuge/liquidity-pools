@@ -17,11 +17,6 @@ import {IEscrow} from "src/interfaces/IEscrow.sol";
 import {IGateway} from "src/interfaces/gateway/IGateway.sol";
 import {IGasService} from "src/interfaces/gateway/IGasService.sol";
 
-interface InvestmentManagerLike {
-    function vaults(uint64 poolId, bytes16 trancheId, address asset) external returns (address);
-    function getTrancheToken(uint64 _poolId, bytes16 _trancheId) external view returns (address);
-}
-
 interface AuthLike {
     function rely(address user) external;
     function deny(address user) external;
@@ -41,8 +36,8 @@ contract PoolManager is Auth, IPoolManager {
     IEscrow public immutable escrow;
 
     IGateway public gateway;
+    address public investmentManager;
     ERC7540VaultFactory public vaultFactory;
-    InvestmentManagerLike public investmentManager;
     TrancheTokenFactoryLike public trancheTokenFactory;
     IGasService public gasService;
 
@@ -65,7 +60,7 @@ contract PoolManager is Auth, IPoolManager {
     /// @inheritdoc IPoolManager
     function file(bytes32 what, address data) external auth {
         if (what == "gateway") gateway = IGateway(data);
-        else if (what == "investmentManager") investmentManager = InvestmentManagerLike(data);
+        else if (what == "investmentManager") investmentManager = data;
         else if (what == "trancheTokenFactory") trancheTokenFactory = TrancheTokenFactoryLike(data);
         else if (what == "vaultFactory") vaultFactory = ERC7540VaultFactory(data);
         else if (what == "gasService") gasService = IGasService(data);
@@ -322,7 +317,7 @@ contract PoolManager is Auth, IPoolManager {
 
         // Give investment manager infinite approval for asset
         // in the escrow to transfer to the user on redeem or withdraw
-        escrow.approveMax(asset, address(investmentManager));
+        escrow.approveMax(asset, investmentManager);
 
         // Give pool manager infinite approval for asset
         // in the escrow to transfer to the user on transfer
@@ -365,7 +360,7 @@ contract PoolManager is Auth, IPoolManager {
         require(undeployedTranche.decimals != 0, "PoolManager/tranche-not-added");
 
         address[] memory trancheTokenWards = new address[](2);
-        trancheTokenWards[0] = address(investmentManager);
+        trancheTokenWards[0] = investmentManager;
         trancheTokenWards[1] = address(this);
 
         address token = trancheTokenFactory.newTrancheToken(
@@ -384,7 +379,7 @@ contract PoolManager is Auth, IPoolManager {
 
         // Give investment manager infinite approval for tranche tokens
         // in the escrow to transfer to the user on deposit or mint
-        escrow.approveMax(token, address(investmentManager));
+        escrow.approveMax(token, investmentManager);
 
         emit DeployTranche(poolId, trancheId, token);
         return token;
@@ -402,11 +397,11 @@ contract PoolManager is Auth, IPoolManager {
 
         // Rely investment manager on vault so it can mint tokens
         address[] memory vaultWards = new address[](1);
-        vaultWards[0] = address(investmentManager);
+        vaultWards[0] = investmentManager;
 
         // Deploy vault
         vault = vaultFactory.newVault(
-            poolId, trancheId, asset, tranche.token, address(escrow), address(investmentManager), vaultWards
+            poolId, trancheId, asset, tranche.token, address(escrow), investmentManager, vaultWards
         );
         vaultToAsset[vault] = asset;
 
@@ -427,7 +422,7 @@ contract PoolManager is Auth, IPoolManager {
         address vault = ITrancheToken(tranche.token).vault(asset);
         require(vault != address(0), "PoolManager/vault-not-deployed");
 
-        vaultFactory.denyVault(vault, address(investmentManager));
+        vaultFactory.denyVault(vault, investmentManager);
 
         AuthLike(tranche.token).deny(vault);
         ITrancheToken(tranche.token).updateVault(asset, address(0));

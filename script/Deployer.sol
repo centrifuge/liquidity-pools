@@ -63,7 +63,7 @@ contract Deployer is Script {
 
         gateway = new Gateway(address(root), address(investmentManager), address(poolManager), address(gasService));
         routerEscrow = new Escrow(deployer);
-        router = new CentrifugeRouter(address(routerEscrow), address(poolManager), address(gateway));
+        router = new CentrifugeRouter(address(routerEscrow), address(gateway), address(poolManager));
         AuthLike(address(routerEscrow)).rely(address(router));
         root.endorse(address(router));
         root.endorse(address(escrow));

@@ -9,16 +9,12 @@ import {IERC7540Vault} from "src/interfaces/IERC7540.sol";
 import {ICentrifugeRouter} from "src/interfaces/ICentrifugeRouter.sol";
 import {IPoolManager} from "src/interfaces/IPoolManager.sol";
 import {IEscrow} from "src/interfaces/IEscrow.sol";
-
-interface GatewayLike {
-    function topUp() external payable;
-    function estimate(bytes calldata payload) external returns (uint256[] memory tranches, uint256 total);
-}
+import {IGateway} from "src/interfaces/gateway/IGateway.sol";
 
 contract CentrifugeRouter is Auth, ICentrifugeRouter {
     IEscrow public immutable escrow;
+    IGateway public immutable gateway;
     IPoolManager public immutable poolManager;
-    GatewayLike public immutable gateway;
 
     address constant UNSET_INITIATOR = address(1);
     address internal _initiator = UNSET_INITIATOR;
@@ -26,10 +22,10 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     /// @inheritdoc ICentrifugeRouter
     mapping(address controller => mapping(address vault => uint256 amount)) public lockedRequests;
 
-    constructor(address escrow_, address poolManager_, address gateway_) {
+    constructor(address escrow_, address gateway_, address poolManager_) {
         escrow = IEscrow(escrow_);
+        gateway = IGateway(gateway_);
         poolManager = IPoolManager(poolManager_);
-        gateway = GatewayLike(gateway_);
 
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
@@ -197,7 +193,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     }
 
     function estimate(bytes calldata payload) external returns (uint256 amount) {
-        (, amount) = GatewayLike(gateway).estimate(payload);
+        (, amount) = IGateway(gateway).estimate(payload);
     }
 
     // --- Helpers ---

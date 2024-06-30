@@ -129,6 +129,14 @@ contract Gateway is Auth, IGateway {
         emit File(what, data1, data2);
     }
 
+    function recoverTokens(address token, address receiver, uint256 amount) external auth {
+        if (token == address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)) {
+            payable(receiver).transfer(amount);
+        } else {
+            SafeTransferLib.safeTransfer(token, receiver, amount);
+        }
+    }
+
     // --- Incoming ---
     /// @inheritdoc IGateway
     function handle(bytes calldata message) external pauseable {
@@ -199,6 +207,27 @@ contract Gateway is Auth, IGateway {
         } else if (!isMessageProof) {
             state.pendingMessage = payload;
         }
+    }
+
+    function _dispatch(bytes memory message) internal {
+        uint8 id = message.toUint8(0);
+        address manager;
+
+        // Hardcoded paths for root + pool & investment managers for gas efficiency
+        if (id >= 1 && id <= 8 || id >= 23 && id <= 26 || id == 32) {
+            manager = poolManager;
+        } else if (id >= 9 && id <= 20 || id == 27) {
+            manager = investmentManager;
+        } else if (id >= 21 && id <= 22 || id == 31) {
+            manager = address(root);
+        } else {
+            // Dynamic path for other managers, to be able to easily
+            // extend functionality of Liquidity Pools
+            manager = messageHandlers[id];
+            require(manager != address(0), "Gateway/unregistered-message-id");
+        }
+
+        ManagerLike(manager).handle(message);
     }
 
     function _handleRecovery(bytes memory payload) internal {
@@ -278,6 +307,7 @@ contract Gateway is Auth, IGateway {
         emit SendMessage(message);
     }
 
+    /// @inheritdoc IGateway
     function topUp() external payable {
         require(RootLike(root).endorsed(msg.sender), "Gateway/only-endorsed-can-topup");
         require(msg.value > 0, "Gateway/cannot-topup-with-nothing");
@@ -285,23 +315,6 @@ contract Gateway is Auth, IGateway {
     }
 
     // --- Helpers ---
-    /// @inheritdoc IGateway
-    function quorum() external view returns (uint8) {
-        Adapter memory adapter = activeAdapters[adapters[0]];
-        return adapter.quorum;
-    }
-
-    /// @inheritdoc IGateway
-    function activeSessionId() external view returns (uint64) {
-        Adapter memory adapter = activeAdapters[adapters[0]];
-        return adapter.activeSessionId;
-    }
-
-    /// @inheritdoc IGateway
-    function votes(bytes32 messageHash) external view returns (uint16[8] memory) {
-        return messages[messageHash].votes;
-    }
-
     /// @inheritdoc IGateway
     function estimate(bytes calldata payload) external view returns (uint256[] memory tranches, uint256 total) {
         bytes memory proof = abi.encodePacked(uint8(MessagesLib.Call.MessageProof), keccak256(payload));
@@ -318,32 +331,20 @@ contract Gateway is Auth, IGateway {
         }
     }
 
-    function recoverTokens(address token, address receiver, uint256 amount) external auth {
-        if (token == address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)) {
-            payable(receiver).transfer(amount);
-        } else {
-            SafeTransferLib.safeTransfer(token, receiver, amount);
-        }
+    /// @inheritdoc IGateway
+    function quorum() external view returns (uint8) {
+        Adapter memory adapter = activeAdapters[adapters[0]];
+        return adapter.quorum;
     }
 
-    function _dispatch(bytes memory message) internal {
-        uint8 id = message.toUint8(0);
-        address manager;
+    /// @inheritdoc IGateway
+    function activeSessionId() external view returns (uint64) {
+        Adapter memory adapter = activeAdapters[adapters[0]];
+        return adapter.activeSessionId;
+    }
 
-        // Hardcoded paths for root + pool & investment managers for gas efficiency
-        if (id >= 1 && id <= 8 || id >= 23 && id <= 26 || id == 32) {
-            manager = poolManager;
-        } else if (id >= 9 && id <= 20 || id == 27) {
-            manager = investmentManager;
-        } else if (id >= 21 && id <= 22 || id == 31) {
-            manager = address(root);
-        } else {
-            // Dynamic path for other managers, to be able to easily
-            // extend functionality of Liquidity Pools
-            manager = messageHandlers[id];
-            require(manager != address(0), "Gateway/unregistered-message-id");
-        }
-
-        ManagerLike(manager).handle(message);
+    /// @inheritdoc IGateway
+    function votes(bytes32 messageHash) external view returns (uint16[8] memory) {
+        return messages[messageHash].votes;
     }
 }
