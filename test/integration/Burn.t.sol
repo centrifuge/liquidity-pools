@@ -10,7 +10,7 @@ contract BurnTest is BaseTest {
         address vault_ = deploySimpleVault();
         ERC7540Vault vault = ERC7540Vault(vault_);
 
-        TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
+        ITrancheToken trancheToken = ITrancheToken(address(vault.share()));
         root.relyContract(address(trancheToken), self); // give self auth permissions
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), investor, type(uint64).max); // add investor as
             // member

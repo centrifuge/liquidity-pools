@@ -14,7 +14,7 @@ pragma solidity 0.8.21;
 //     function poolId() external view returns (uint64);
 // }
 
-// interface TrancheTokenLike {
+// interface ITrancheToken {
 //     function restrictionManager() external view returns (address);
 // }
 
@@ -70,7 +70,7 @@ pragma solidity 0.8.21;
 //                 vaults.push(vault);
 //                 excludeContract(vault);
 //                 excludeContract(VaultLike(vault).share());
-//                 excludeContract(TrancheTokenLike(VaultLike(vault).share()).restrictionManager());
+//                 excludeContract(ITrancheToken(VaultLike(vault).share()).restrictionManager());
 //             }
 //         }
 

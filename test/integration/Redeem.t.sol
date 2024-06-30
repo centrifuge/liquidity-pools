@@ -12,7 +12,7 @@ contract RedeemTest is BaseTest {
 
         address vault_ = deploySimpleVault();
         ERC7540Vault vault = ERC7540Vault(vault_);
-        TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
+        ITrancheToken trancheToken = ITrancheToken(address(vault.share()));
 
         deposit(vault_, self, amount); // deposit funds first
         centrifugeChain.updateTrancheTokenPrice(
@@ -81,7 +81,7 @@ contract RedeemTest is BaseTest {
 
         address vault_ = deploySimpleVault();
         ERC7540Vault vault = ERC7540Vault(vault_);
-        TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
+        ITrancheToken trancheToken = ITrancheToken(address(vault.share()));
 
         deposit(vault_, self, amount); // deposit funds first
         centrifugeChain.updateTrancheTokenPrice(
@@ -129,7 +129,7 @@ contract RedeemTest is BaseTest {
 
         address vault_ = deploySimpleVault();
         ERC7540Vault vault = ERC7540Vault(vault_);
-        TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
+        ITrancheToken trancheToken = ITrancheToken(address(vault.share()));
 
         deposit(vault_, investor, amount); // deposit funds first // deposit funds first
 
@@ -151,7 +151,7 @@ contract RedeemTest is BaseTest {
 
         address vault_ = deploySimpleVault();
         ERC7540Vault vault = ERC7540Vault(vault_);
-        TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
+        ITrancheToken trancheToken = ITrancheToken(address(vault.share()));
         deposit(vault_, self, amount * 2); // deposit funds first
 
         vault.requestRedeem(amount, address(this), address(this));
@@ -203,7 +203,7 @@ contract RedeemTest is BaseTest {
 
         address vault_ = deploySimpleVault();
         ERC7540Vault vault = ERC7540Vault(vault_);
-        TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
+        ITrancheToken trancheToken = ITrancheToken(address(vault.share()));
         deposit(vault_, investor, amount, false); // request and execute deposit, but don't claim
         uint256 investorBalanceBefore = erc20.balanceOf(investor);
         assertEq(vault.maxMint(investor), amount);
@@ -258,7 +258,7 @@ contract RedeemTest is BaseTest {
 
         address vault_ = deploySimpleVault();
         ERC7540Vault vault = ERC7540Vault(vault_);
-        TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
+        ITrancheToken trancheToken = ITrancheToken(address(vault.share()));
         deposit(vault_, investor, amount, false); // request and execute deposit, but don't claim
         uint256 investorBalanceBefore = erc20.balanceOf(investor);
         assertEq(vault.maxMint(investor), amount);
@@ -308,7 +308,7 @@ contract RedeemTest is BaseTest {
     function testPartialRedemptionExecutions() public {
         address vault_ = deploySimpleVault();
         ERC7540Vault vault = ERC7540Vault(vault_);
-        TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
+        ITrancheToken trancheToken = ITrancheToken(address(vault.share()));
         uint64 poolId = vault.poolId();
         bytes16 trancheId = vault.trancheId();
         address asset_ = address(vault.asset());
@@ -373,7 +373,7 @@ contract RedeemTest is BaseTest {
     }
 
     function partialRedeem(uint64 poolId, bytes16 trancheId, ERC7540Vault vault, ERC20 asset) public {
-        TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
+        ITrancheToken trancheToken = ITrancheToken(address(vault.share()));
 
         uint128 assetId = poolManager.assetToId(address(asset));
         uint256 totalTrancheTokens = trancheToken.balanceOf(self);

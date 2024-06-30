@@ -56,7 +56,7 @@ contract CentrifugeRouterTest is BaseTest {
 
         assertEq(vault.maxMint(self), trancheTokensPayout);
         assertEq(vault.maxDeposit(self), amount);
-        TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
+        ITrancheToken trancheToken = ITrancheToken(address(vault.share()));
         assertEq(trancheToken.balanceOf(address(escrow)), trancheTokensPayout);
 
         router.claimDeposit(vault_, self, self);
@@ -91,7 +91,7 @@ contract CentrifugeRouterTest is BaseTest {
 
         assertEq(vault.maxMint(self), trancheTokensPayout);
         assertEq(vault.maxDeposit(self), amount);
-        TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
+        ITrancheToken trancheToken = ITrancheToken(address(vault.share()));
         assertEq(trancheToken.balanceOf(address(escrow)), trancheTokensPayout);
 
         // Any address should be able to call claimDeposit for an investor
@@ -118,7 +118,7 @@ contract CentrifugeRouterTest is BaseTest {
 
         uint128 assetId = poolManager.assetToId(address(erc20));
         (uint128 trancheTokensPayout) = fulfillDepositRequest(vault, assetId, amount, self);
-        TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
+        ITrancheToken trancheToken = ITrancheToken(address(vault.share()));
         router.claimDeposit(vault_, self, self);
 
         // redeem
@@ -155,8 +155,8 @@ contract CentrifugeRouterTest is BaseTest {
         assertEq(vault2.maxMint(self), trancheTokensPayout2);
         assertEq(vault1.maxDeposit(self), amount1);
         assertEq(vault2.maxDeposit(self), amount2);
-        TrancheTokenLike trancheToken1 = TrancheTokenLike(address(vault1.share()));
-        TrancheTokenLike trancheToken2 = TrancheTokenLike(address(vault2.share()));
+        ITrancheToken trancheToken1 = ITrancheToken(address(vault1.share()));
+        ITrancheToken trancheToken2 = ITrancheToken(address(vault2.share()));
         assertEq(trancheToken1.balanceOf(address(escrow)), trancheTokensPayout1);
         assertEq(trancheToken2.balanceOf(address(escrow)), trancheTokensPayout2);
 
@@ -186,8 +186,8 @@ contract CentrifugeRouterTest is BaseTest {
         uint128 assetId2 = poolManager.assetToId(address(erc20Y));
         (uint128 trancheTokensPayout1) = fulfillDepositRequest(vault1, assetId1, amount1, self);
         (uint128 trancheTokensPayout2) = fulfillDepositRequest(vault2, assetId2, amount2, self);
-        TrancheTokenLike trancheToken1 = TrancheTokenLike(address(vault1.share()));
-        TrancheTokenLike trancheToken2 = TrancheTokenLike(address(vault2.share()));
+        ITrancheToken trancheToken1 = ITrancheToken(address(vault1.share()));
+        ITrancheToken trancheToken2 = ITrancheToken(address(vault2.share()));
         router.claimDeposit(address(vault1), self, self);
         router.claimDeposit(address(vault2), self, self);
 
@@ -237,7 +237,7 @@ contract CentrifugeRouterTest is BaseTest {
 
         assertEq(vault.maxMint(self), trancheTokensPayout);
         assertEq(vault.maxDeposit(self), amount);
-        TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
+        ITrancheToken trancheToken = ITrancheToken(address(vault.share()));
         assertEq(trancheToken.balanceOf(address(escrow)), trancheTokensPayout);
     }
 
@@ -257,7 +257,7 @@ contract CentrifugeRouterTest is BaseTest {
 
         uint128 assetId = poolManager.assetToId(address(erc20));
         (uint128 trancheTokensPayout) = fulfillDepositRequest(vault, assetId, amount, self);
-        TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
+        ITrancheToken trancheToken = ITrancheToken(address(vault.share()));
         trancheToken.approve(address(router), trancheTokensPayout);
 
         // multicall
@@ -297,8 +297,8 @@ contract CentrifugeRouterTest is BaseTest {
         assertEq(vault2.maxMint(self), trancheTokensPayout2);
         assertEq(vault1.maxDeposit(self), amount1);
         assertEq(vault2.maxDeposit(self), amount2);
-        TrancheTokenLike trancheToken1 = TrancheTokenLike(address(vault1.share()));
-        TrancheTokenLike trancheToken2 = TrancheTokenLike(address(vault2.share()));
+        ITrancheToken trancheToken1 = ITrancheToken(address(vault1.share()));
+        ITrancheToken trancheToken2 = ITrancheToken(address(vault2.share()));
         assertEq(trancheToken1.balanceOf(address(escrow)), trancheTokensPayout1);
         assertEq(trancheToken2.balanceOf(address(escrow)), trancheTokensPayout2);
     }
@@ -337,7 +337,7 @@ contract CentrifugeRouterTest is BaseTest {
 
         assertEq(vault.maxMint(investor), trancheTokensPayout);
         assertEq(vault.maxDeposit(investor), amount);
-        TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
+        ITrancheToken trancheToken = ITrancheToken(address(vault.share()));
         assertEq(trancheToken.balanceOf(address(escrow)), trancheTokensPayout);
     }
 
@@ -371,7 +371,7 @@ contract CentrifugeRouterTest is BaseTest {
 
         assertEq(vault.maxMint(investor), trancheTokensPayout);
         assertEq(vault.maxDeposit(investor), amount);
-        TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
+        ITrancheToken trancheToken = ITrancheToken(address(vault.share()));
         assertEq(trancheToken.balanceOf(address(escrow)), trancheTokensPayout);
     }
 

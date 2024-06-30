@@ -2,29 +2,11 @@
 pragma solidity 0.8.21;
 
 import {ERC20} from "src/token/ERC20.sol";
-import {IERC20Metadata} from "src/interfaces/IERC20.sol";
+import {IERC20, IERC20Metadata} from "src/interfaces/IERC20.sol";
 import {IHook, HookData, SUCCESS_CODE as SUCCESS_CODE_ID} from "src/interfaces/token/IHook.sol";
 import {IERC7575Share, IERC165} from "src/interfaces/IERC7575.sol";
-import {ITrancheToken} from "src/interfaces/token/ITranche.sol";
+import {ITrancheToken, IERC1404} from "src/interfaces/token/ITranche.sol";
 import {BitmapLib} from "src/libraries/BitmapLib.sol";
-
-interface TrancheTokenLike is IERC20Metadata {
-    function mint(address user, uint256 value) external;
-    function burn(address user, uint256 value) external;
-    function file(bytes32 what, string memory data) external;
-    function file(bytes32 what, address data) external;
-    function updateVault(address asset, address vault) external;
-    function file(bytes32 what, address data1, bool data2) external;
-    function hook() external view returns (address);
-    function checkTransferRestriction(address from, address to, uint256 value) external view returns (bool);
-    function vault(address asset) external view returns (address);
-}
-
-interface IERC1404 {
-    function detectTransferRestriction(address from, address to, uint256 value) external view returns (uint8);
-    function messageForTransferRestriction(uint8 restrictionCode) external view returns (string memory);
-    function SUCCESS_CODE() external view returns (uint8);
-}
 
 /// @title  Tranche Token
 /// @notice Extension of ERC20 + ERC1404 for tranche tokens,
@@ -35,7 +17,7 @@ interface IERC1404 {
 ///
 ///         The most significant 128 bits of the uint256 balance value are used
 ///         to store hook data (e.g. restrictions for users).
-contract TrancheToken is ERC20, ITrancheToken, IERC7575Share, IERC1404 {
+contract TrancheToken is ERC20, ITrancheToken {
     using BitmapLib for *;
 
     uint8 internal constant MAX_DECIMALS = 18;
@@ -62,6 +44,10 @@ contract TrancheToken is ERC20, ITrancheToken, IERC7575Share, IERC1404 {
         emit File(what, data);
     }
 
+    function file(bytes32 what, string memory data) public override(ERC20, ITrancheToken) auth {
+        super.file(what, data);
+    }
+
     /// @inheritdoc ITrancheToken
     function updateVault(address asset, address vault_) external auth {
         vault[asset] = vault_;
@@ -69,7 +55,7 @@ contract TrancheToken is ERC20, ITrancheToken, IERC7575Share, IERC1404 {
     }
 
     // --- ERC20 overrides ---
-    function balanceOf(address user) public view override returns (uint256) {
+    function balanceOf(address user) public view override(ERC20, IERC20) returns (uint256) {
         return balances[user].getLSBits(128);
     }
 
@@ -85,12 +71,12 @@ contract TrancheToken is ERC20, ITrancheToken, IERC7575Share, IERC1404 {
         emit SetHookData(user, hookData);
     }
 
-    function transfer(address to, uint256 value) public override returns (bool success) {
+    function transfer(address to, uint256 value) public override(ERC20, IERC20) returns (bool success) {
         success = super.transfer(to, value);
         _onTransfer(msg.sender, to, value);
     }
 
-    function transferFrom(address from, address to, uint256 value) public override returns (bool success) {
+    function transferFrom(address from, address to, uint256 value) public override(ERC20, IERC20) returns (bool success) {
         success = super.transferFrom(from, to, value);
         _onTransfer(from, to, value);
     }

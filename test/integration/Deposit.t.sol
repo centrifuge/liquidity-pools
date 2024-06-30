@@ -16,7 +16,7 @@ contract DepositTest is BaseTest {
 
         address vault_ = deploySimpleVault();
         ERC7540Vault vault = ERC7540Vault(vault_);
-        TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
+        ITrancheToken trancheToken = ITrancheToken(address(vault.share()));
         centrifugeChain.updateTrancheTokenPrice(
             vault.poolId(), vault.trancheId(), defaultAssetId, price, uint64(block.timestamp)
         );
@@ -176,7 +176,7 @@ contract DepositTest is BaseTest {
 
     //     //Deploy a pool
     //     ERC7540Vault vault = ERC7540Vault(deploySimpleVault());
-    //     TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
+    //     ITrancheToken trancheToken = ITrancheToken(address(vault.share()));
 
     //     root.relyContract(address(trancheToken), self);
     //     trancheToken.mint(address(escrow), type(uint128).max); // mint buffer to the escrow. Mock funds from other
@@ -237,7 +237,7 @@ contract DepositTest is BaseTest {
 
     //     //Deploy a pool
     //     ERC7540Vault vault = ERC7540Vault(deploySimpleVault());
-    //     TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
+    //     ITrancheToken trancheToken = ITrancheToken(address(vault.share()));
 
     //     root.relyContract(address(trancheToken), self);
     //     trancheToken.mint(address(escrow), type(uint128).max); // mint buffer to the escrow. Mock funds from other
@@ -288,7 +288,7 @@ contract DepositTest is BaseTest {
         address vault_ = deploySimpleVault();
         address receiver = makeAddr("receiver");
         ERC7540Vault vault = ERC7540Vault(vault_);
-        TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
+        ITrancheToken trancheToken = ITrancheToken(address(vault.share()));
 
         centrifugeChain.updateTrancheTokenPrice(
             vault.poolId(), vault.trancheId(), defaultAssetId, price, uint64(block.timestamp)
@@ -349,7 +349,7 @@ contract DepositTest is BaseTest {
         address vault_ = deploySimpleVault();
         address receiver = makeAddr("receiver");
         ERC7540Vault vault = ERC7540Vault(vault_);
-        TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
+        ITrancheToken trancheToken = ITrancheToken(address(vault.share()));
 
         centrifugeChain.updateTrancheTokenPrice(
             vault.poolId(), vault.trancheId(), defaultAssetId, price, uint64(block.timestamp)
@@ -448,7 +448,7 @@ contract DepositTest is BaseTest {
         // collect the tranche tokens
         vault.mint(firstTrancheTokenPayout + secondTrancheTokenPayout, self);
         assertEq(
-            TrancheTokenLike(address(vault.share())).balanceOf(self), firstTrancheTokenPayout + secondTrancheTokenPayout
+            ITrancheToken(address(vault.share())).balanceOf(self), firstTrancheTokenPayout + secondTrancheTokenPayout
         );
 
         // redeem
@@ -487,7 +487,7 @@ contract DepositTest is BaseTest {
         ERC20 asset = _newErc20("Currency", "CR", 18);
         address vault_ = deployVault(poolId, 6, restrictionManager, "", "", trancheId, assetId, address(asset));
         ERC7540Vault vault = ERC7540Vault(vault_);
-        TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
+        ITrancheToken trancheToken = ITrancheToken(address(vault.share()));
         centrifugeChain.updateTrancheTokenPrice(
             poolId, trancheId, assetId, 1000000000000000000000000000, uint64(block.timestamp)
         );
@@ -711,7 +711,7 @@ contract DepositTest is BaseTest {
     }
 
     function partialDeposit(uint64 poolId, bytes16 trancheId, ERC7540Vault vault, ERC20 asset) public {
-        TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
+        ITrancheToken trancheToken = ITrancheToken(address(vault.share()));
 
         uint256 investmentAmount = 100000000; // 100 * 10**6
         centrifugeChain.updateMember(poolId, trancheId, self, type(uint64).max);

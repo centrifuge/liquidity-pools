@@ -14,7 +14,7 @@ contract AssetShareConversionTest is BaseTest {
         address vault_ =
             deployVault(poolId, TRANCHE_TOKEN_DECIMALS, restrictionManager, "", "", trancheId, assetId, address(asset));
         ERC7540Vault vault = ERC7540Vault(vault_);
-        TrancheTokenLike trancheToken = TrancheTokenLike(address(ERC7540Vault(vault_).share()));
+        ITrancheToken trancheToken = ITrancheToken(address(ERC7540Vault(vault_).share()));
 
         assertEq(vault.priceLastUpdated(), 0);
         assertEq(vault.pricePerShare(), 0);
@@ -70,7 +70,7 @@ contract AssetShareConversionTest is BaseTest {
         address vault_ =
             deployVault(poolId, TRANCHE_TOKEN_DECIMALS, restrictionManager, "", "", trancheId, assetId, address(asset));
         ERC7540Vault vault = ERC7540Vault(vault_);
-        TrancheTokenLike trancheToken = TrancheTokenLike(address(ERC7540Vault(vault_).share()));
+        ITrancheToken trancheToken = ITrancheToken(address(ERC7540Vault(vault_).share()));
         centrifugeChain.updateTrancheTokenPrice(poolId, trancheId, assetId, 1000000, uint64(block.timestamp));
 
         // invest

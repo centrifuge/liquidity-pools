@@ -14,7 +14,7 @@ contract OperatorTest is BaseTest {
         address investor = makeAddr("investor");
         address operator = makeAddr("operator");
         ERC7540Vault vault = ERC7540Vault(vault_);
-        TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
+        ITrancheToken trancheToken = ITrancheToken(address(vault.share()));
 
         centrifugeChain.updateTrancheTokenPrice(
             vault.poolId(), vault.trancheId(), defaultAssetId, price, uint64(block.timestamp)

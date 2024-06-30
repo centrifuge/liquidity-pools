@@ -64,7 +64,7 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
     }
 
     // --- Administration ---
-    function file(bytes32 what, string memory data) external auth {
+    function file(bytes32 what, string memory data) public virtual auth {
         if (what == "name") name = data;
         else if (what == "symbol") symbol = data;
         else revert("ERC20/file-unrecognized-param");

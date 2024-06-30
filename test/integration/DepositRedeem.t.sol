@@ -27,7 +27,7 @@ contract DepositRedeem is BaseTest {
     // Helpers
 
     function partialDeposit(uint64 poolId, bytes16 trancheId, ERC7540Vault vault, ERC20 asset) public {
-        TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
+        ITrancheToken trancheToken = ITrancheToken(address(vault.share()));
 
         uint256 investmentAmount = 100000000; // 100 * 10**6
         centrifugeChain.updateMember(poolId, trancheId, self, type(uint64).max);
@@ -65,7 +65,7 @@ contract DepositRedeem is BaseTest {
     }
 
     function partialRedeem(uint64 poolId, bytes16 trancheId, ERC7540Vault vault, ERC20 asset) public {
-        TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
+        ITrancheToken trancheToken = ITrancheToken(address(vault.share()));
 
         uint128 assetId = poolManager.assetToId(address(asset));
         uint256 totalTrancheTokens = trancheToken.balanceOf(self);

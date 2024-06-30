@@ -10,7 +10,7 @@ contract MintTest is BaseTest {
         address vault_ = deploySimpleVault();
         ERC7540Vault vault = ERC7540Vault(vault_);
 
-        TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
+        ITrancheToken trancheToken = ITrancheToken(address(vault.share()));
         root.denyContract(address(trancheToken), self);
 
         vm.expectRevert(bytes("Auth/not-authorized"));

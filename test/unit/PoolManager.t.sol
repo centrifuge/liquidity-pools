@@ -300,7 +300,7 @@ contract PoolManagerTest is BaseTest {
         bytes32 centChainAddress = makeAddr("centChainAddress").toBytes32();
         address vault_ = deploySimpleVault();
         ERC7540Vault vault = ERC7540Vault(vault_);
-        TrancheTokenLike trancheToken = TrancheTokenLike(address(ERC7540Vault(vault_).share()));
+        ITrancheToken trancheToken = ITrancheToken(address(ERC7540Vault(vault_).share()));
 
         // fund this account with amount
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), address(this), validUntil);
@@ -342,7 +342,7 @@ contract PoolManagerTest is BaseTest {
         uint64 poolId = vault.poolId();
         bytes16 trancheId = vault.trancheId();
 
-        TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
+        ITrancheToken trancheToken = ITrancheToken(address(vault.share()));
 
         vm.expectRevert(bytes("destination-not-a-member"));
         centrifugeChain.incomingTransferTrancheTokens(
@@ -369,7 +369,7 @@ contract PoolManagerTest is BaseTest {
 
         address vault_ = deploySimpleVault();
         ERC7540Vault vault = ERC7540Vault(vault_);
-        TrancheTokenLike trancheToken = TrancheTokenLike(address(ERC7540Vault(vault_).share()));
+        ITrancheToken trancheToken = ITrancheToken(address(ERC7540Vault(vault_).share()));
 
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), destinationAddress, validUntil);
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), address(this), validUntil);
@@ -400,7 +400,7 @@ contract PoolManagerTest is BaseTest {
         validUntil = uint64(bound(validUntil, block.timestamp, type(uint64).max));
         address vault_ = deploySimpleVault();
         ERC7540Vault vault = ERC7540Vault(vault_);
-        TrancheTokenLike trancheToken = TrancheTokenLike(address(ERC7540Vault(vault_).share()));
+        ITrancheToken trancheToken = ITrancheToken(address(ERC7540Vault(vault_).share()));
 
         uint64 poolId = vault.poolId();
         bytes16 trancheId = vault.trancheId();
@@ -425,7 +425,7 @@ contract PoolManagerTest is BaseTest {
         ERC7540Vault vault = ERC7540Vault(vault_);
         uint64 poolId = vault.poolId();
         bytes16 trancheId = vault.trancheId();
-        TrancheTokenLike trancheToken = TrancheTokenLike(address(ERC7540Vault(vault_).share()));
+        ITrancheToken trancheToken = ITrancheToken(address(ERC7540Vault(vault_).share()));
         uint64 validUntil = uint64(block.timestamp + 7 days);
         address secondUser = makeAddr("secondUser");
 
@@ -460,7 +460,7 @@ contract PoolManagerTest is BaseTest {
         ERC7540Vault vault = ERC7540Vault(vault_);
         uint64 poolId = vault.poolId();
         bytes16 trancheId = vault.trancheId();
-        TrancheTokenLike trancheToken = TrancheTokenLike(address(ERC7540Vault(vault_).share()));
+        ITrancheToken trancheToken = ITrancheToken(address(ERC7540Vault(vault_).share()));
 
         string memory updatedTokenName = "newName";
         string memory updatedTokenSymbol = "newSymbol";

@@ -3,7 +3,7 @@ pragma solidity 0.8.21;
 
 import {ERC7540VaultFactory} from "src/factories/ERC7540VaultFactory.sol";
 import {TrancheTokenFactoryLike} from "src/factories/TrancheTokenFactory.sol";
-import {TrancheTokenLike} from "src/token/Tranche.sol";
+import {ITrancheToken} from "src/interfaces/token/ITranche.sol";
 import {IHook} from "src/interfaces/token/IHook.sol";
 import {IERC20Metadata} from "src/interfaces/IERC20.sol";
 import {Auth} from "src/Auth.sol";
@@ -98,7 +98,7 @@ contract PoolManager is Auth, IPoolManager {
         bytes32 destinationAddress,
         uint128 amount
     ) external {
-        TrancheTokenLike trancheToken = TrancheTokenLike(getTrancheToken(poolId, trancheId));
+        ITrancheToken trancheToken = ITrancheToken(getTrancheToken(poolId, trancheId));
         require(address(trancheToken) != address(0), "PoolManager/unknown-token");
 
         trancheToken.burn(msg.sender, amount);
@@ -126,7 +126,7 @@ contract PoolManager is Auth, IPoolManager {
         address destinationAddress,
         uint128 amount
     ) external {
-        TrancheTokenLike trancheToken = TrancheTokenLike(getTrancheToken(poolId, trancheId));
+        ITrancheToken trancheToken = ITrancheToken(getTrancheToken(poolId, trancheId));
         require(address(trancheToken) != address(0), "PoolManager/unknown-token");
 
         trancheToken.burn(msg.sender, amount);
@@ -268,7 +268,7 @@ contract PoolManager is Auth, IPoolManager {
         public
         auth
     {
-        TrancheTokenLike trancheToken = TrancheTokenLike(getTrancheToken(poolId, trancheId));
+        ITrancheToken trancheToken = ITrancheToken(getTrancheToken(poolId, trancheId));
         require(address(trancheToken) != address(0), "PoolManager/unknown-token");
 
         require(
@@ -301,7 +301,7 @@ contract PoolManager is Auth, IPoolManager {
 
     /// @inheritdoc IPoolManager
     function updateRestriction(uint64 poolId, bytes16 trancheId, bytes memory update) public auth {
-        TrancheTokenLike trancheToken = TrancheTokenLike(getTrancheToken(poolId, trancheId));
+        ITrancheToken trancheToken = ITrancheToken(getTrancheToken(poolId, trancheId));
         require(address(trancheToken) != address(0), "PoolManager/unknown-token");
         IHook(trancheToken.hook()).updateRestriction(address(trancheToken), update);
     }
@@ -341,7 +341,7 @@ contract PoolManager is Auth, IPoolManager {
         public
         auth
     {
-        TrancheTokenLike trancheToken = TrancheTokenLike(getTrancheToken(poolId, trancheId));
+        ITrancheToken trancheToken = ITrancheToken(getTrancheToken(poolId, trancheId));
         require(address(trancheToken) != address(0), "PoolManager/unknown-token");
 
         trancheToken.mint(destinationAddress, amount);
@@ -366,7 +366,7 @@ contract PoolManager is Auth, IPoolManager {
             undeployedTranche.decimals,
             trancheTokenWards
         );
-        TrancheTokenLike(token).file("hook", undeployedTranche.hook);
+        ITrancheToken(token).file("hook", undeployedTranche.hook);
 
         pools[poolId].tranches[trancheId].token = token;
 
@@ -387,7 +387,7 @@ contract PoolManager is Auth, IPoolManager {
         require(tranche.token != address(0), "PoolManager/tranche-does-not-exist");
         require(isAllowedAsset(poolId, asset), "PoolManager/asset-not-supported");
 
-        address vault = TrancheTokenLike(tranche.token).vault(asset);
+        address vault = ITrancheToken(tranche.token).vault(asset);
         require(vault == address(0), "PoolManager/vault-already-deployed");
 
         // Rely investment manager on vault so it can mint tokens
@@ -402,7 +402,7 @@ contract PoolManager is Auth, IPoolManager {
 
         // Link vault to tranche token
         AuthLike(tranche.token).rely(vault);
-        TrancheTokenLike(tranche.token).updateVault(asset, vault);
+        ITrancheToken(tranche.token).updateVault(asset, vault);
 
         // Give vault infinite approval for tranche tokens
         // in the escrow to burn on executed redemptions
@@ -418,13 +418,13 @@ contract PoolManager is Auth, IPoolManager {
         Tranche storage tranche = pools[poolId].tranches[trancheId];
         require(tranche.token != address(0), "PoolManager/tranche-does-not-exist");
 
-        address vault = TrancheTokenLike(tranche.token).vault(asset);
+        address vault = ITrancheToken(tranche.token).vault(asset);
         require(vault != address(0), "PoolManager/vault-not-deployed");
 
         vaultFactory.denyVault(vault, address(investmentManager));
 
         AuthLike(tranche.token).deny(vault);
-        TrancheTokenLike(tranche.token).updateVault(asset, address(0));
+        ITrancheToken(tranche.token).updateVault(asset, address(0));
 
         escrow.unapprove(address(tranche.token), vault);
 
@@ -447,12 +447,12 @@ contract PoolManager is Auth, IPoolManager {
 
     /// @inheritdoc IPoolManager
     function getVault(uint64 poolId, bytes16 trancheId, uint128 assetId) public view returns (address) {
-        return TrancheTokenLike(pools[poolId].tranches[trancheId].token).vault(idToAsset[assetId]);
+        return ITrancheToken(pools[poolId].tranches[trancheId].token).vault(idToAsset[assetId]);
     }
 
     /// @inheritdoc IPoolManager
     function getVault(uint64 poolId, bytes16 trancheId, address asset) public view returns (address) {
-        return TrancheTokenLike(pools[poolId].tranches[trancheId].token).vault(asset);
+        return ITrancheToken(pools[poolId].tranches[trancheId].token).vault(asset);
     }
 
     /// @inheritdoc IPoolManager
