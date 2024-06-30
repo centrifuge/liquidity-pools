@@ -28,11 +28,11 @@ contract TrancheToken is ERC20, ITrancheToken {
     mapping(address asset => address) public vault;
 
     constructor(uint8 decimals_) ERC20(decimals_) {
-        require(decimals_ <= MAX_DECIMALS, "ERC20/too-many-decimals");
+        require(decimals_ <= MAX_DECIMALS, "TrancheToken/too-many-decimals");
     }
 
     modifier authOrHook() {
-        require(wards[msg.sender] == 1 || msg.sender == hook, "Auth/not-authorized");
+        require(wards[msg.sender] == 1 || msg.sender == hook, "TrancheToken/not-authorized");
         _;
     }
 
@@ -88,7 +88,7 @@ contract TrancheToken is ERC20, ITrancheToken {
     /// @inheritdoc ITrancheToken
     function mint(address to, uint256 value) public override(ERC20, ITrancheToken) {
         super.mint(to, value);
-        require(totalSupply <= type(uint128).max, "Tranche/exceeds-max-supply");
+        require(totalSupply <= type(uint128).max, "TrancheToken/exceeds-max-supply");
         _onTransfer(address(0), to, value);
     }
 

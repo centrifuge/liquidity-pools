@@ -51,7 +51,7 @@ contract TrancheTokenTest is Test {
         token.deny(self);
 
         // auth fail
-        vm.expectRevert(bytes("Auth/not-authorized"));
+        vm.expectRevert(bytes("TrancheToken/not-authorized"));
         token.file("hook", hook);
 
         vm.expectRevert(bytes("Auth/not-authorized"));
