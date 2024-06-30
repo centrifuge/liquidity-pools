@@ -347,6 +347,13 @@ contract PoolManager is Auth, IPoolManager {
         trancheToken.mint(destinationAddress, amount);
     }
 
+    /// @inheritdoc IPoolManager
+    function updateCentrifugeGasPrice(uint128 price, uint256 computedAt) public auth {
+        require(price > 0, "PoolManager/price-cannot-be-zero");
+        require(gasService.gasPrice() != price, "PoolManager/same-price-already-set");
+        gasService.updateGasPrice(price, computedAt);
+    }
+
     // --- Public functions ---
     // slither-disable-start reentrancy-eth
     /// @inheritdoc IPoolManager
@@ -404,10 +411,6 @@ contract PoolManager is Auth, IPoolManager {
         AuthLike(tranche.token).rely(vault);
         ITrancheToken(tranche.token).updateVault(asset, vault);
 
-        // Give vault infinite approval for tranche tokens
-        // in the escrow to burn on executed redemptions
-        escrow.approveMax(tranche.token, vault);
-
         emit DeployVault(poolId, trancheId, asset, vault);
         return vault;
     }
@@ -426,16 +429,7 @@ contract PoolManager is Auth, IPoolManager {
         AuthLike(tranche.token).deny(vault);
         ITrancheToken(tranche.token).updateVault(asset, address(0));
 
-        escrow.unapprove(address(tranche.token), vault);
-
         emit RemoveVault(poolId, trancheId, asset, vault);
-    }
-
-    /// @inheritdoc IPoolManager
-    function updateCentrifugeGasPrice(uint128 price, uint256 computedAt) public auth {
-        require(price > 0, "PoolManager/price-cannot-be-zero");
-        require(gasService.gasPrice() != price, "PoolManager/same-price-already-set");
-        gasService.updateGasPrice(price, computedAt);
     }
 
     // --- Helpers ---
