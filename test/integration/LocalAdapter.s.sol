@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {Deployer, AdapterLike} from "script/Deployer.sol";
+import {Deployer} from "script/Deployer.sol";
 import {LocalAdapter} from "test/integration/LocalAdapter.sol";
 
 interface VaultLike {

@@ -16,11 +16,7 @@ import {BytesLib} from "src/libraries/BytesLib.sol";
 import {IEscrow} from "src/interfaces/IEscrow.sol";
 import {IGateway} from "src/interfaces/gateway/IGateway.sol";
 import {IGasService} from "src/interfaces/gateway/IGasService.sol";
-
-interface AuthLike {
-    function rely(address user) external;
-    function deny(address user) external;
-}
+import {IAuth} from "src/interfaces/IAuth.sol";
 
 /// @title  Pool Manager
 /// @notice This contract manages which pools & tranches exist,
@@ -407,7 +403,7 @@ contract PoolManager is Auth, IPoolManager {
         vaultToAsset[vault] = asset;
 
         // Link vault to tranche token
-        AuthLike(tranche.token).rely(vault);
+        IAuth(tranche.token).rely(vault);
         ITrancheToken(tranche.token).updateVault(asset, vault);
 
         emit DeployVault(poolId, trancheId, asset, vault);
@@ -425,7 +421,7 @@ contract PoolManager is Auth, IPoolManager {
 
         vaultFactory.denyVault(vault, investmentManager);
 
-        AuthLike(tranche.token).deny(vault);
+        IAuth(tranche.token).deny(vault);
         ITrancheToken(tranche.token).updateVault(asset, address(0));
 
         emit RemoveVault(poolId, trancheId, asset, vault);

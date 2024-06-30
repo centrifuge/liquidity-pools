@@ -3,7 +3,7 @@ pragma solidity 0.8.21;
 
 import {PermissionlessAdapter} from "test/mocks/PermissionlessAdapter.sol";
 import {InvestmentManager} from "src/InvestmentManager.sol";
-import {Deployer, AdapterLike} from "script/Deployer.sol";
+import {Deployer} from "script/Deployer.sol";
 
 // Script to deploy Liquidity Pools with a permissionless adapter for testing.
 contract PermissionlessScript is Deployer {

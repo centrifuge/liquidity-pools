@@ -5,11 +5,7 @@ import {Auth} from "src/Auth.sol";
 import {MessagesLib} from "src/libraries/MessagesLib.sol";
 import {BytesLib} from "src/libraries/BytesLib.sol";
 import {IRoot} from "src/interfaces/IRoot.sol";
-
-interface AuthLike {
-    function rely(address) external;
-    function deny(address) external;
-}
+import {IAuth} from "src/interfaces/IAuth.sol";
 
 interface RecoverLike {
     function recoverTokens(address, address, uint256) external;
@@ -133,13 +129,13 @@ contract Root is Auth, IRoot {
     /// --- External contract ward management ---
     /// @inheritdoc IRoot
     function relyContract(address target, address user) external auth {
-        AuthLike(target).rely(user);
+        IAuth(target).rely(user);
         emit RelyContract(target, user);
     }
 
     /// @inheritdoc IRoot
     function denyContract(address target, address user) external auth {
-        AuthLike(target).deny(user);
+        IAuth(target).deny(user);
         emit DenyContract(target, user);
     }
 
