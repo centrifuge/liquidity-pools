@@ -62,14 +62,20 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     {
         require(topUpAmount <= address(this).balance, "CentrifugeRouter/insufficient-funds-to-topup");
 
-        (address asset,) = poolManager.getVaultAsset(vault);
+        (address asset, bool erc20Wrapper) = poolManager.getVaultAsset(vault);
 
         if (owner == address(this)) {
             _approveMax(asset, vault);
         }
 
         gateway.topUp{value: topUpAmount}();
-        IERC7540Vault(vault).requestDeposit(amount, controller, owner);
+        if (erc20Wrapper) {
+            SafeTransferLib.safeTransferFrom(IERC20Wrapper(asset).underlying(), owner, address(this), amount);
+            wrap(asset, amount, address(this), address(this));
+            IERC7540Vault(vault).requestDeposit(amount, controller, address(this));
+        } else {
+            IERC7540Vault(vault).requestDeposit(amount, controller, owner);
+        }
     }
 
     /// @inheritdoc ICentrifugeRouter
@@ -81,8 +87,15 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         require(owner == _initiator || owner == address(this), "CentrifugeRouter/invalid-owner");
 
         lockedRequests[controller][vault] += amount;
-        (address asset,) = poolManager.getVaultAsset(vault);
-        SafeTransferLib.safeTransferFrom(asset, owner, address(escrow), amount);
+        (address asset, bool erc20Wrapper) = poolManager.getVaultAsset(vault);
+
+        if (erc20Wrapper) {
+            SafeTransferLib.safeTransferFrom(IERC20Wrapper(asset).underlying(), owner, address(this), amount);
+            wrap(asset, amount, address(escrow), address(this));
+        } else {
+            SafeTransferLib.safeTransferFrom(asset, owner, address(escrow), amount);
+        }
+
         emit LockDepositRequest(vault, controller, owner, _initiator, amount);
     }
 
@@ -98,10 +111,17 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         require(lockedRequest > 0, "CentrifugeRouter/user-has-no-locked-balance");
         lockedRequests[_initiator][vault] = 0;
 
-        (address asset,) = poolManager.getVaultAsset(vault);
+        (address asset, bool erc20Wrapper) = poolManager.getVaultAsset(vault);
 
         escrow.approveMax(asset, address(this));
-        SafeTransferLib.safeTransferFrom(asset, address(escrow), _initiator, lockedRequest);
+
+        if (erc20Wrapper) {
+            SafeTransferLib.safeTransferFrom(asset, address(escrow), address(this), lockedRequest);
+            unwrap(asset, lockedRequest, _initiator);
+        } else {
+            SafeTransferLib.safeTransferFrom(asset, address(escrow), _initiator, lockedRequest);
+        }
+
         emit UnlockDepositRequest(vault, _initiator);
     }
 
@@ -180,15 +200,16 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     }
 
     // --- ERC20 wrapping ---
-    function wrap(address wrapper, uint256 amount) external payable protected {
+    function wrap(address wrapper, uint256 amount, address receiver, address owner) public payable protected {
+        require(owner == _initiator || owner == address(this), "CentrifugeRouter/invalid-owner");
         address underlying = IERC20Wrapper(wrapper).underlying();
 
-        amount = MathLib.min(amount, IERC20(underlying).balanceOf(_initiator));
+        amount = MathLib.min(amount, IERC20(underlying).balanceOf(owner));
         require(amount != 0, "CentrifugeRouter/zero-balance");
-        SafeTransferLib.safeTransferFrom(underlying, _initiator, address(this), amount);
+        SafeTransferLib.safeTransferFrom(underlying, owner, address(this), amount);
 
         _approveMax(underlying, wrapper);
-        require(IERC20Wrapper(wrapper).depositFor(address(this), amount), "CentrifugeRouter/deposit-for-failed");
+        require(IERC20Wrapper(wrapper).depositFor(receiver, amount), "CentrifugeRouter/deposit-for-failed");
     }
 
     function unwrap(address wrapper, uint256 amount, address receiver) public payable protected {
@@ -224,7 +245,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         return IPoolManager(poolManager).getVault(poolId, trancheId, asset);
     }
 
-    function estimate(bytes calldata payload) external returns (uint256 amount) {
+    function estimate(bytes calldata payload) external view returns (uint256 amount) {
         (, amount) = IGateway(gateway).estimate(payload);
     }
 
