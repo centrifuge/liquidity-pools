@@ -368,7 +368,10 @@ contract PoolManager is Auth, IPoolManager {
             undeployedTranche.decimals,
             trancheTokenWards
         );
-        ITrancheToken(token).file("hook", undeployedTranche.hook);
+
+        if (undeployedTranche.hook != address(0)) {
+            ITrancheToken(token).file("hook", undeployedTranche.hook);
+        }
 
         pools[poolId].tranches[trancheId].token = token;
 
