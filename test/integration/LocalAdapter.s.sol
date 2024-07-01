@@ -9,7 +9,7 @@ interface VaultLike {
 }
 
 // Script to deploy Liquidity Pools with an Axelar adapter.
-contract LocalRouterScript is Deployer {
+contract LocalAdapterScript is Deployer {
     function setUp() public {}
 
     function run() public {
