@@ -77,7 +77,7 @@ contract CentrifugeRouterTest is BaseTest {
         erc20.mint(self, amount);
         erc20.approve(address(router), amount);
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max);
-        router.lockDepositRequest(vault_, amount, self, self);
+        router.openLockDepositRequest(vault_, amount);
 
         // Any address should be able to call executeLockedDepositRequest for an investor
         address randomAddress = address(0x123);

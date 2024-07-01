@@ -4,10 +4,6 @@ pragma solidity 0.8.21;
 import {Deployer} from "script/Deployer.sol";
 import {LocalAdapter} from "test/integration/LocalAdapter.sol";
 
-interface VaultLike {
-    function requestDeposit(uint256 assets, address owner) external;
-}
-
 // Script to deploy Liquidity Pools with an Axelar adapter.
 contract LocalAdapterScript is Deployer {
     function setUp() public {}

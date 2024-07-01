@@ -214,6 +214,7 @@ contract ERC7540Vault is Auth, IERC7540Vault {
         return true;
     }
 
+    /// @inheritdoc IAuthorizeOperator
     function DOMAIN_SEPARATOR() public view returns (bytes32) {
         return block.chainid == deploymentChainId
             ? _DOMAIN_SEPARATOR
