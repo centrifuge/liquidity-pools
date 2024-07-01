@@ -21,8 +21,11 @@ case "$ADAPTER" in
   Permissionless|Axelar|Forwarder)
     forge script script/${Adapter}.s.sol:${ADAPTER}Script --optimize --rpc-url $RPC_URL --private-key $PRIVATE_KEY --verify --broadcast --chain-id $CHAIN_ID --etherscan-api-key $ETHERSCAN_KEY $1
     ;;
+  Passthrough)
+    forge script test/integration/PassthroughAdapter.s.sol:PassthroughAdapterScript --optimize --rpc-url $RPC_URL --private-key $PRIVATE_KEY --verify --broadcast --chain-id $CHAIN_ID --etherscan-api-key $ETHERSCAN_KEY $1
+    ;;
   *)
-    echo "Adapter should be one of Permissionless, Axelar, Forwarder"
+    echo "Adapter should be one of Passthrough, Permissionless, Axelar, Forwarder"
     exit 1
     ;;
 esac

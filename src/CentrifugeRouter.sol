@@ -24,6 +24,9 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     address internal _initiator = UNSET_INITIATOR;
 
     /// @inheritdoc ICentrifugeRouter
+    mapping(address controller => mapping(address vault => bool)) public opened;
+
+    /// @inheritdoc ICentrifugeRouter
     mapping(address controller => mapping(address vault => uint256 amount)) public lockedRequests;
 
     constructor(address escrow_, address poolManager_, address gateway_) {
@@ -75,7 +78,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
 
     /// @inheritdoc ICentrifugeRouter
     function lockDepositRequest(address vault, uint256 amount, address controller, address owner)
-        external
+        public
         payable
         protected
     {
@@ -84,6 +87,12 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         lockedRequests[controller][vault] += amount;
         SafeTransferLib.safeTransferFrom(poolManager.getVaultAsset(vault), owner, address(escrow), amount);
         emit LockDepositRequest(vault, controller, owner, _initiator, amount);
+    }
+
+    /// @inheritdoc ICentrifugeRouter
+    function openLockDepositRequest(address vault, uint256 amount) external payable protected {
+        open(vault);
+        lockDepositRequest(vault, amount, _initiator, _initiator);
     }
 
     /// @inheritdoc ICentrifugeRouter
@@ -118,7 +127,10 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
 
     /// @inheritdoc ICentrifugeRouter
     function claimDeposit(address vault, address receiver, address controller) external payable protected {
-        require(controller == _initiator || controller == receiver, "CentrifugeRouter/invalid-sender");
+        require(
+            controller == _initiator || (controller == receiver && opened[controller][vault] == true),
+            "CentrifugeRouter/invalid-sender"
+        );
         uint256 maxDeposit = IERC7540Vault(vault).maxDeposit(controller);
         IERC7540Vault(vault).deposit(maxDeposit, receiver, controller);
     }
@@ -136,9 +148,21 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
 
     /// @inheritdoc ICentrifugeRouter
     function claimRedeem(address vault, address receiver, address controller) external payable protected {
-        require(controller == _initiator || controller == receiver, "CentrifugeRouter/invalid-sender");
+        require(
+            controller == _initiator || (controller == receiver && opened[controller][vault] == true),
+            "CentrifugeRouter/invalid-sender"
+        );
         uint256 maxRedeem = IERC7540Vault(vault).maxRedeem(controller);
         IERC7540Vault(vault).redeem(maxRedeem, receiver, controller);
+    }
+
+    // --- Manage permissionless claiming ---
+    function open(address vault) public protected {
+        opened[_initiator][vault] = true;
+    }
+
+    function close(address vault) external protected {
+        opened[_initiator][vault] = false;
     }
 
     // --- ERC20 permits ---
