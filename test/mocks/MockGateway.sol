@@ -14,7 +14,7 @@ contract MockGateway is Mock {
     }
 
     // --- Outgoing ---
-    function transferTrancheTokensToCentrifuge(
+    function transferTranchesToCentrifuge(
         uint64 poolId,
         bytes16 trancheId,
         address sender,
@@ -28,7 +28,7 @@ contract MockGateway is Mock {
         values_uint128["amount"] = amount;
     }
 
-    function transferTrancheTokensToEVM(
+    function transferTranchesToEVM(
         uint64 poolId,
         bytes16 trancheId,
         address sender,

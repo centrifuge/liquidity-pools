@@ -11,7 +11,7 @@ import {IRoot} from "src/interfaces/IRoot.sol";
 import {IERC20, IERC20Metadata} from "src/interfaces/IERC20.sol";
 import {IPoolManager} from "src/interfaces/IPoolManager.sol";
 import {IInvestmentManager, InvestmentState} from "src/interfaces/IInvestmentManager.sol";
-import {ITrancheToken} from "src/interfaces/token/ITranche.sol";
+import {ITranche} from "src/interfaces/token/ITranche.sol";
 import {IERC7540Vault} from "src/interfaces/IERC7540.sol";
 import {IGateway} from "src/interfaces/gateway/IGateway.sol";
 
@@ -164,10 +164,9 @@ contract InvestmentManager is Auth, IInvestmentManager {
     /// @inheritdoc IInvestmentManager
     function cancelRedeemRequest(address vault, address owner, address source) public auth {
         IERC7540Vault _vault = IERC7540Vault(vault);
-        uint256 approximateTrancheTokensPayout = pendingRedeemRequest(vault, owner);
+        uint256 approximateTranchesPayout = pendingRedeemRequest(vault, owner);
         require(
-            _canTransfer(vault, address(0), owner, approximateTrancheTokensPayout),
-            "InvestmentManager/transfer-not-allowed"
+            _canTransfer(vault, address(0), owner, approximateTranchesPayout), "InvestmentManager/transfer-not-allowed"
         );
 
         InvestmentState storage state = investments[vault][owner];
@@ -263,8 +262,8 @@ contract InvestmentManager is Auth, IInvestmentManager {
         if (state.pendingDepositRequest == 0) state.pendingCancelDepositRequest = false;
 
         // Mint to escrow. Recipient can claim by calling withdraw / redeem
-        ITrancheToken trancheToken = ITrancheToken(IERC7540Vault(vault).share());
-        trancheToken.mint(address(escrow), shares);
+        ITranche tranche = ITranche(IERC7540Vault(vault).share());
+        tranche.mint(address(escrow), shares);
 
         IERC7540Vault(vault).onDepositClaimable(user, assets, shares);
     }
@@ -292,8 +291,8 @@ contract InvestmentManager is Auth, IInvestmentManager {
         if (state.pendingRedeemRequest == 0) state.pendingCancelRedeemRequest = false;
 
         // Burn redeemed tranche tokens from escrow
-        ITrancheToken trancheToken = ITrancheToken(IERC7540Vault(vault).share());
-        trancheToken.burn(address(escrow), shares);
+        ITranche tranche = ITranche(IERC7540Vault(vault).share());
+        tranche.burn(address(escrow), shares);
 
         IERC7540Vault(vault).onRedeemClaimable(user, assets, shares);
     }
@@ -370,7 +369,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
         // from user to escrow (lock tranche tokens in escrow)
         if (tokensToTransfer > 0) {
             require(
-                ITrancheToken(address(IERC7540Vault(vault).share())).authTransferFrom(
+                ITranche(address(IERC7540Vault(vault).share())).authTransferFrom(
                     user, user, address(escrow), tokensToTransfer
                 ),
                 "InvestmentManager/transfer-failed"
@@ -383,14 +382,14 @@ contract InvestmentManager is Auth, IInvestmentManager {
     /// @inheritdoc IInvestmentManager
     function convertToShares(address vault, uint256 _assets) public view returns (uint256 shares) {
         IERC7540Vault vault_ = IERC7540Vault(vault);
-        (uint128 latestPrice,) = poolManager.getTrancheTokenPrice(vault_.poolId(), vault_.trancheId(), vault_.asset());
+        (uint128 latestPrice,) = poolManager.getTranchePrice(vault_.poolId(), vault_.trancheId(), vault_.asset());
         shares = uint256(_calculateShares(_assets.toUint128(), vault, latestPrice));
     }
 
     /// @inheritdoc IInvestmentManager
     function convertToAssets(address vault, uint256 _shares) public view returns (uint256 assets) {
         IERC7540Vault vault_ = IERC7540Vault(vault);
-        (uint128 latestPrice,) = poolManager.getTrancheTokenPrice(vault_.poolId(), vault_.trancheId(), vault_.asset());
+        (uint128 latestPrice,) = poolManager.getTranchePrice(vault_.poolId(), vault_.trancheId(), vault_.asset());
         assets = uint256(_calculateAssets(_shares.toUint128(), vault, latestPrice));
     }
 
@@ -455,7 +454,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
     /// @inheritdoc IInvestmentManager
     function priceLastUpdated(address vault) public view returns (uint64 lastUpdated) {
         IERC7540Vault vault_ = IERC7540Vault(vault);
-        (, lastUpdated) = poolManager.getTrancheTokenPrice(vault_.poolId(), vault_.trancheId(), vault_.asset());
+        (, lastUpdated) = poolManager.getTranchePrice(vault_.poolId(), vault_.trancheId(), vault_.asset());
     }
 
     /// @inheritdoc IInvestmentManager
@@ -613,7 +612,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
     }
 
     function _canTransfer(address vault, address from, address to, uint256 value) internal view returns (bool) {
-        ITrancheToken share = ITrancheToken(IERC7540Vault(vault).share());
+        ITranche share = ITranche(IERC7540Vault(vault).share());
         return share.checkTransferRestriction(from, to, value);
     }
 }

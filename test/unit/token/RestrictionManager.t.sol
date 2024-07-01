@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {TrancheToken} from "src/token/Tranche.sol";
+import {Tranche} from "src/token/Tranche.sol";
 import {MockRoot} from "test/mocks/MockRoot.sol";
 import {IHook} from "src/interfaces/token/IHook.sol";
 import {RestrictionManager} from "src/token/RestrictionManager.sol";
@@ -10,12 +10,12 @@ import "forge-std/Test.sol";
 
 contract RestrictionManagerTest is Test {
     MockRoot root;
-    TrancheToken token;
+    Tranche token;
     RestrictionManager restrictionManager;
 
     function setUp() public {
         root = new MockRoot();
-        token = new TrancheToken(18);
+        token = new Tranche(18);
         restrictionManager = new RestrictionManager(address(root));
         token.file("hook", address(restrictionManager));
     }

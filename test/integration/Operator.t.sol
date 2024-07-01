@@ -14,9 +14,9 @@ contract OperatorTest is BaseTest {
         address investor = makeAddr("investor");
         address operator = makeAddr("operator");
         ERC7540Vault vault = ERC7540Vault(vault_);
-        ITrancheToken trancheToken = ITrancheToken(address(vault.share()));
+        ITranche tranche = ITranche(address(vault.share()));
 
-        centrifugeChain.updateTrancheTokenPrice(
+        centrifugeChain.updateTranchePrice(
             vault.poolId(), vault.trancheId(), defaultAssetId, price, uint64(block.timestamp)
         );
 
@@ -53,7 +53,7 @@ contract OperatorTest is BaseTest {
         vm.prank(operator);
         vault.deposit(amount, investor, investor);
         assertEq(vault.pendingDepositRequest(0, investor), 0);
-        assertEq(trancheToken.balanceOf(investor), amount);
+        assertEq(tranche.balanceOf(investor), amount);
 
         vm.prank(investor);
         vault.setOperator(operator, false);
@@ -74,7 +74,7 @@ contract OperatorTest is BaseTest {
         address operator = makeAddr("operator");
         ERC7540Vault vault = ERC7540Vault(vault_);
 
-        centrifugeChain.updateTrancheTokenPrice(
+        centrifugeChain.updateTranchePrice(
             vault.poolId(), vault.trancheId(), defaultAssetId, price, uint64(block.timestamp)
         );
 
@@ -130,7 +130,7 @@ contract OperatorTest is BaseTest {
         ERC7540Vault vault = ERC7540Vault(vault_);
 
         deposit(vault_, investor, amount); // deposit funds first
-        centrifugeChain.updateTrancheTokenPrice(
+        centrifugeChain.updateTranchePrice(
             vault.poolId(), vault.trancheId(), defaultAssetId, defaultPrice, uint64(block.timestamp)
         );
 

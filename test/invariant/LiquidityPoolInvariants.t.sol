@@ -14,7 +14,7 @@ pragma solidity 0.8.21;
 //     function poolId() external view returns (uint64);
 // }
 
-// interface ITrancheToken {
+// interface ITranche {
 //     function restrictionManager() external view returns (address);
 // }
 
@@ -63,14 +63,14 @@ pragma solidity 0.8.21;
 //         // TODO: multiple chains and allowing transfers between chains
 //         for (uint128 assetId = 1; assetId < NUM_CURRENCIES + 1; ++assetId) {
 //             for (uint64 poolId; poolId < NUM_POOLS; ++poolId) {
-//                 uint8 trancheTokenDecimals = _randomUint8(1, 18);
+//                 uint8 trancheDecimals = _randomUint8(1, 18);
 //                 address vault = deployVault(
-//                     poolId, trancheTokenDecimals, RESTRICTION_SET, "", "", TRANCHE_ID, assetId, currencies[assetId]
+//                     poolId, trancheDecimals, RESTRICTION_SET, "", "", TRANCHE_ID, assetId, currencies[assetId]
 //                 );
 //                 vaults.push(vault);
 //                 excludeContract(vault);
 //                 excludeContract(VaultLike(vault).share());
-//                 excludeContract(ITrancheToken(VaultLike(vault).share()).restrictionManager());
+//                 excludeContract(ITranche(VaultLike(vault).share()).restrictionManager());
 //             }
 //         }
 
@@ -109,7 +109,7 @@ pragma solidity 0.8.21;
 //             );
 //             epochExecutorHandlers[vaultId] = eeHandler;
 
-//             address share = poolManager.getTrancheToken(vault.poolId(), TRANCHE_ID);
+//             address share = poolManager.getTranche(vault.poolId(), TRANCHE_ID);
 //             root.relyContract(share, address(this));
 //             ERC20Like(asset).rely(address(handler)); // rely to mint asset
 //             ERC20Like(share).rely(address(handler)); // rely to mint tokens
@@ -119,8 +119,8 @@ pragma solidity 0.8.21;
 //         }
 //     }
 
-//     // Invariant 1: trancheToken.balanceOf[user] <= sum(shares)
-//     function invariant_cannotReceiveMoreTrancheTokensThanPayout() external {
+//     // Invariant 1: tranche.balanceOf[user] <= sum(shares)
+//     function invariant_cannotReceiveMoreTranchesThanPayout() external {
 //         for (uint64 vaultId; vaultId < vaults.length; ++vaultId) {
 //             VaultLike vault = VaultLike(vaults[vaultId]);
 
@@ -128,7 +128,7 @@ pragma solidity 0.8.21;
 //                 address investor = investors[i];
 //                 assertLe(
 //                     IERC20(vault.share()).balanceOf(investor),
-//                     getShadowVar(investor, "totalTrancheTokensPaidOutOnInvest")
+//                     getShadowVar(investor, "totalTranchesPaidOutOnInvest")
 //                 );
 //             }
 //         }

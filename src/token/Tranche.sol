@@ -5,7 +5,7 @@ import {ERC20} from "src/token/ERC20.sol";
 import {IERC20, IERC20Metadata} from "src/interfaces/IERC20.sol";
 import {IHook, HookData, SUCCESS_CODE as SUCCESS_CODE_ID} from "src/interfaces/token/IHook.sol";
 import {IERC7575Share, IERC165} from "src/interfaces/IERC7575.sol";
-import {ITrancheToken, IERC1404} from "src/interfaces/token/ITranche.sol";
+import {ITranche, IERC1404} from "src/interfaces/token/ITranche.sol";
 import {BitmapLib} from "src/libraries/BitmapLib.sol";
 
 /// @title  Tranche Token
@@ -17,7 +17,7 @@ import {BitmapLib} from "src/libraries/BitmapLib.sol";
 ///
 ///         The most significant 128 bits of the uint256 balance value are used
 ///         to store hook data (e.g. restrictions for users).
-contract TrancheToken is ERC20, ITrancheToken {
+contract Tranche is ERC20, ITranche {
     using BitmapLib for *;
 
     uint8 internal constant MAX_DECIMALS = 18;
@@ -28,27 +28,27 @@ contract TrancheToken is ERC20, ITrancheToken {
     mapping(address asset => address) public vault;
 
     constructor(uint8 decimals_) ERC20(decimals_) {
-        require(decimals_ <= MAX_DECIMALS, "TrancheToken/too-many-decimals");
+        require(decimals_ <= MAX_DECIMALS, "Tranche/too-many-decimals");
     }
 
     modifier authOrHook() {
-        require(wards[msg.sender] == 1 || msg.sender == hook, "TrancheToken/not-authorized");
+        require(wards[msg.sender] == 1 || msg.sender == hook, "Tranche/not-authorized");
         _;
     }
 
     // --- Administration ---
-    /// @inheritdoc ITrancheToken
+    /// @inheritdoc ITranche
     function file(bytes32 what, address data) external authOrHook {
         if (what == "hook") hook = data;
-        else revert("TrancheToken/file-unrecognized-param");
+        else revert("Tranche/file-unrecognized-param");
         emit File(what, data);
     }
 
-    function file(bytes32 what, string memory data) public override(ERC20, ITrancheToken) auth {
+    function file(bytes32 what, string memory data) public override(ERC20, ITranche) auth {
         super.file(what, data);
     }
 
-    /// @inheritdoc ITrancheToken
+    /// @inheritdoc ITranche
     function updateVault(address asset, address vault_) external auth {
         vault[asset] = vault_;
         emit VaultUpdate(asset, vault_);
@@ -59,12 +59,12 @@ contract TrancheToken is ERC20, ITrancheToken {
         return balances[user].getLSBits(128);
     }
 
-    /// @inheritdoc ITrancheToken
+    /// @inheritdoc ITranche
     function hookDataOf(address user) public view returns (bytes16) {
         return bytes16(uint128(balances[user].getMSBits(128)));
     }
 
-    /// @inheritdoc ITrancheToken
+    /// @inheritdoc ITranche
     function setHookData(address user, bytes16 hookData) public authOrHook {
         /// Balance values are [uint128(hookData) + uint128(balance)]
         _setBalance(user, uint128(hookData).concat(uint128(balanceOf(user))));
@@ -85,15 +85,15 @@ contract TrancheToken is ERC20, ITrancheToken {
         _onTransfer(from, to, value);
     }
 
-    /// @inheritdoc ITrancheToken
-    function mint(address to, uint256 value) public override(ERC20, ITrancheToken) {
+    /// @inheritdoc ITranche
+    function mint(address to, uint256 value) public override(ERC20, ITranche) {
         super.mint(to, value);
-        require(totalSupply <= type(uint128).max, "TrancheToken/exceeds-max-supply");
+        require(totalSupply <= type(uint128).max, "Tranche/exceeds-max-supply");
         _onTransfer(address(0), to, value);
     }
 
-    /// @inheritdoc ITrancheToken
-    function burn(address from, uint256 value) public override(ERC20, ITrancheToken) {
+    /// @inheritdoc ITranche
+    function burn(address from, uint256 value) public override(ERC20, ITranche) {
         super.burn(from, value);
     }
 
@@ -102,12 +102,12 @@ contract TrancheToken is ERC20, ITrancheToken {
             require(
                 IHook(hook).onERC20Transfer(from, to, value, HookData(hookDataOf(from), hookDataOf(to)))
                     == IHook.onERC20Transfer.selector,
-                "TrancheToken/restrictions-failed"
+                "Tranche/restrictions-failed"
             );
         }
     }
 
-    /// @inheritdoc ITrancheToken
+    /// @inheritdoc ITranche
     function authTransferFrom(address sender, address from, address to, uint256 value)
         public
         auth
@@ -118,13 +118,13 @@ contract TrancheToken is ERC20, ITrancheToken {
             require(
                 IHook(hook).onERC20AuthTransfer(sender, from, to, value, HookData(hookDataOf(from), hookDataOf(to)))
                     == IHook.onERC20AuthTransfer.selector,
-                "TrancheToken/restrictions-failed"
+                "Tranche/restrictions-failed"
             );
         }
     }
 
     // --- ERC1404 implementation ---
-    /// @inheritdoc ITrancheToken
+    /// @inheritdoc ITranche
     function checkTransferRestriction(address from, address to, uint256 value) public view returns (bool) {
         if (hook == address(0)) return true;
         return detectTransferRestriction(from, to, value) == SUCCESS_CODE_ID;

@@ -16,8 +16,8 @@ contract DepositTest is BaseTest {
 
         address vault_ = deploySimpleVault();
         ERC7540Vault vault = ERC7540Vault(vault_);
-        ITrancheToken trancheToken = ITrancheToken(address(vault.share()));
-        centrifugeChain.updateTrancheTokenPrice(
+        ITranche tranche = ITranche(address(vault.share()));
+        centrifugeChain.updateTranchePrice(
             vault.poolId(), vault.trancheId(), defaultAssetId, price, uint64(block.timestamp)
         );
 
@@ -29,7 +29,7 @@ contract DepositTest is BaseTest {
 
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max); // add user as member
 
-        // will fail - user not member: can not receive trancheToken
+        // will fail - user not member: can not receive tranche
         vm.expectRevert(bytes("InvestmentManager/transfer-not-allowed"));
         vault.requestDeposit(amount, nonMember, self);
 
@@ -67,7 +67,7 @@ contract DepositTest is BaseTest {
 
         // trigger executed collectInvest
         uint128 _assetId = poolManager.assetToId(address(erc20)); // retrieve assetId
-        uint128 shares = uint128((amount * 10 ** 18) / price); // trancheTokenPrice = 2$
+        uint128 shares = uint128((amount * 10 ** 18) / price); // tranchePrice = 2$
         assertApproxEqAbs(shares, amount / 2, 2);
         centrifugeChain.isFulfilledDepositRequest(
             vault.poolId(),
@@ -85,7 +85,7 @@ contract DepositTest is BaseTest {
         assertEq(vault.pendingDepositRequest(0, self), 0);
         assertEq(vault.claimableDepositRequest(0, self), amount);
         // assert tranche tokens minted
-        assertEq(trancheToken.balanceOf(address(escrow)), shares);
+        assertEq(tranche.balanceOf(address(escrow)), shares);
 
         // check maxDeposit and maxMint are 0 for non-members
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, uint64(block.timestamp));
@@ -103,15 +103,15 @@ contract DepositTest is BaseTest {
 
         vault.deposit(amount / 2, self, self); // deposit half the amount
         // Allow 2 difference because of rounding
-        assertApproxEqAbs(trancheToken.balanceOf(self), shares / 2, 2);
-        assertApproxEqAbs(trancheToken.balanceOf(address(escrow)), shares - shares / 2, 2);
+        assertApproxEqAbs(tranche.balanceOf(self), shares / 2, 2);
+        assertApproxEqAbs(tranche.balanceOf(address(escrow)), shares - shares / 2, 2);
         assertApproxEqAbs(vault.maxMint(self), shares - shares / 2, 2);
         assertApproxEqAbs(vault.maxDeposit(self), amount - amount / 2, 2);
 
         // mint the rest
         vault.mint(vault.maxMint(self), self);
-        assertEq(trancheToken.balanceOf(self), shares - vault.maxMint(self));
-        assertTrue(trancheToken.balanceOf(address(escrow)) <= 1);
+        assertEq(tranche.balanceOf(self), shares - vault.maxMint(self));
+        assertTrue(tranche.balanceOf(address(escrow)) <= 1);
         assertTrue(vault.maxMint(self) <= 1);
 
         // minting or depositing more should revert
@@ -134,9 +134,7 @@ contract DepositTest is BaseTest {
         address vault_ =
             deployVault(poolId, TRANCHE_TOKEN_DECIMALS, restrictionManager, "", "", trancheId, assetId, address(asset));
         ERC7540Vault vault = ERC7540Vault(vault_);
-        centrifugeChain.updateTrancheTokenPrice(
-            poolId, trancheId, assetId, 1000000000000000000, uint64(block.timestamp)
-        );
+        centrifugeChain.updateTranchePrice(poolId, trancheId, assetId, 1000000000000000000, uint64(block.timestamp));
 
         // invest
         uint256 investmentAmount = 100000000; // 100 * 10**6
@@ -148,18 +146,18 @@ contract DepositTest is BaseTest {
 
         // first trigger executed collectInvest of the first 50% at a price of 1.4
         uint128 assets = 50000000; // 50 * 10**6
-        uint128 firstTrancheTokenPayout = 35714285714285714285; // 50 * 10**18 / 1.4, rounded down
+        uint128 firstTranchePayout = 35714285714285714285; // 50 * 10**18 / 1.4, rounded down
         centrifugeChain.isFulfilledDepositRequest(
-            poolId, trancheId, bytes32(bytes20(self)), _assetId, assets, firstTrancheTokenPayout, assets
+            poolId, trancheId, bytes32(bytes20(self)), _assetId, assets, firstTranchePayout, assets
         );
 
         (, uint256 depositPrice,,,,,,,,) = investmentManager.investments(address(vault), self);
         assertEq(depositPrice, 1400000000000000000);
 
         // second trigger executed collectInvest of the second 50% at a price of 1.2
-        uint128 secondTrancheTokenPayout = 41666666666666666666; // 50 * 10**18 / 1.2, rounded down
+        uint128 secondTranchePayout = 41666666666666666666; // 50 * 10**18 / 1.2, rounded down
         centrifugeChain.isFulfilledDepositRequest(
-            poolId, trancheId, bytes32(bytes20(self)), _assetId, assets, secondTrancheTokenPayout, assets
+            poolId, trancheId, bytes32(bytes20(self)), _assetId, assets, secondTranchePayout, assets
         );
 
         (, depositPrice,,,,,,,,) = investmentManager.investments(address(vault), self);
@@ -167,7 +165,7 @@ contract DepositTest is BaseTest {
 
         // assert deposit & mint values adjusted
         assertApproxEqAbs(vault.maxDeposit(self), assets * 2, 2);
-        assertEq(vault.maxMint(self), firstTrancheTokenPayout + secondTrancheTokenPayout);
+        assertEq(vault.maxMint(self), firstTranchePayout + secondTranchePayout);
     }
 
     // function testDepositFairRounding(uint256 totalAmount, uint256 tokenAmount) public {
@@ -176,10 +174,10 @@ contract DepositTest is BaseTest {
 
     //     //Deploy a pool
     //     ERC7540Vault vault = ERC7540Vault(deploySimpleVault());
-    //     ITrancheToken trancheToken = ITrancheToken(address(vault.share()));
+    //     ITranche tranche = ITranche(address(vault.share()));
 
-    //     root.relyContract(address(trancheToken), self);
-    //     trancheToken.mint(address(escrow), type(uint128).max); // mint buffer to the escrow. Mock funds from other
+    //     root.relyContract(address(tranche), self);
+    //     tranche.mint(address(escrow), type(uint128).max); // mint buffer to the escrow. Mock funds from other
     // users
 
     //     // fund user & request deposit
@@ -228,7 +226,7 @@ contract DepositTest is BaseTest {
     //     }
 
     //     assertEq(vault.maxDeposit(self), 0);
-    //     assertApproxEqAbs(trancheToken.balanceOf(self), tokenAmount, 1);
+    //     assertApproxEqAbs(tranche.balanceOf(self), tokenAmount, 1);
     // }
 
     // function testMintFairRounding(uint256 totalAmount, uint256 tokenAmount) public {
@@ -237,10 +235,10 @@ contract DepositTest is BaseTest {
 
     //     //Deploy a pool
     //     ERC7540Vault vault = ERC7540Vault(deploySimpleVault());
-    //     ITrancheToken trancheToken = ITrancheToken(address(vault.share()));
+    //     ITranche tranche = ITranche(address(vault.share()));
 
-    //     root.relyContract(address(trancheToken), self);
-    //     trancheToken.mint(address(escrow), type(uint128).max); // mint buffer to the escrow. Mock funds from other
+    //     root.relyContract(address(tranche), self);
+    //     tranche.mint(address(escrow), type(uint128).max); // mint buffer to the escrow. Mock funds from other
     // users
 
     //     // fund user & request deposit
@@ -276,7 +274,7 @@ contract DepositTest is BaseTest {
     //     }
 
     //     assertEq(vault.maxMint(self), 0);
-    //     assertLe(trancheToken.balanceOf(self), tokenAmount);
+    //     assertLe(tranche.balanceOf(self), tokenAmount);
     // }
 
     function testDepositMintToReceiver(uint256 amount) public {
@@ -288,9 +286,9 @@ contract DepositTest is BaseTest {
         address vault_ = deploySimpleVault();
         address receiver = makeAddr("receiver");
         ERC7540Vault vault = ERC7540Vault(vault_);
-        ITrancheToken trancheToken = ITrancheToken(address(vault.share()));
+        ITranche tranche = ITranche(address(vault.share()));
 
-        centrifugeChain.updateTrancheTokenPrice(
+        centrifugeChain.updateTranchePrice(
             vault.poolId(), vault.trancheId(), defaultAssetId, price, uint64(block.timestamp)
         );
 
@@ -302,7 +300,7 @@ contract DepositTest is BaseTest {
 
         // trigger executed collectInvest
         uint128 _assetId = poolManager.assetToId(address(erc20)); // retrieve assetId
-        uint128 shares = uint128(amount * 10 ** 18 / price); // trancheTokenPrice = 2$
+        uint128 shares = uint128(amount * 10 ** 18 / price); // tranchePrice = 2$
         assertApproxEqAbs(shares, amount / 2, 2);
         centrifugeChain.isFulfilledDepositRequest(
             vault.poolId(),
@@ -318,7 +316,7 @@ contract DepositTest is BaseTest {
         assertEq(vault.maxMint(self), shares); // max deposit
         assertEq(vault.maxDeposit(self), amount); // max deposit
         // assert tranche tokens minted
-        assertEq(trancheToken.balanceOf(address(escrow)), shares);
+        assertEq(tranche.balanceOf(address(escrow)), shares);
 
         // deposit 1/2 funds to receiver
         vm.expectRevert(bytes("destination-not-a-member"));
@@ -334,9 +332,9 @@ contract DepositTest is BaseTest {
         vault.deposit(amount / 2, receiver, self); // mint half the amount
         vault.mint(vault.maxMint(self), receiver); // mint half the amount
 
-        assertApproxEqAbs(trancheToken.balanceOf(receiver), shares, 1);
-        assertApproxEqAbs(trancheToken.balanceOf(receiver), shares, 1);
-        assertApproxEqAbs(trancheToken.balanceOf(address(escrow)), 0, 1);
+        assertApproxEqAbs(tranche.balanceOf(receiver), shares, 1);
+        assertApproxEqAbs(tranche.balanceOf(receiver), shares, 1);
+        assertApproxEqAbs(tranche.balanceOf(address(escrow)), 0, 1);
         assertApproxEqAbs(erc20.balanceOf(address(escrow)), amount, 1);
     }
 
@@ -349,9 +347,9 @@ contract DepositTest is BaseTest {
         address vault_ = deploySimpleVault();
         address receiver = makeAddr("receiver");
         ERC7540Vault vault = ERC7540Vault(vault_);
-        ITrancheToken trancheToken = ITrancheToken(address(vault.share()));
+        ITranche tranche = ITranche(address(vault.share()));
 
-        centrifugeChain.updateTrancheTokenPrice(
+        centrifugeChain.updateTranchePrice(
             vault.poolId(), vault.trancheId(), defaultAssetId, price, uint64(block.timestamp)
         );
 
@@ -362,23 +360,23 @@ contract DepositTest is BaseTest {
 
         // trigger executed collectInvest
         uint128 _currencyId = poolManager.assetToId(address(erc20)); // retrieve currencyId
-        uint128 trancheTokensPayout = uint128(amount * 10 ** 18 / price); // trancheTokenPrice = 2$
-        assertApproxEqAbs(trancheTokensPayout, amount / 2, 2);
+        uint128 tranchesPayout = uint128(amount * 10 ** 18 / price); // tranchePrice = 2$
+        assertApproxEqAbs(tranchesPayout, amount / 2, 2);
         centrifugeChain.isFulfilledDepositRequest(
             vault.poolId(),
             vault.trancheId(),
             bytes32(bytes20(self)),
             _currencyId,
             uint128(amount),
-            trancheTokensPayout,
+            tranchesPayout,
             uint128(amount)
         );
 
         // assert deposit & mint values adjusted
-        assertEq(vault.maxMint(self), trancheTokensPayout); // max deposit
+        assertEq(vault.maxMint(self), tranchesPayout); // max deposit
         assertEq(vault.maxDeposit(self), amount); // max deposit
         // assert tranche tokens minted
-        assertEq(trancheToken.balanceOf(address(escrow)), trancheTokensPayout);
+        assertEq(tranche.balanceOf(address(escrow)), tranchesPayout);
 
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), receiver, type(uint64).max); // add receiver
 
@@ -395,9 +393,9 @@ contract DepositTest is BaseTest {
         vault.deposit(amount, receiver, address(this));
         vm.stopPrank();
 
-        assertApproxEqAbs(trancheToken.balanceOf(receiver), trancheTokensPayout, 1);
-        assertApproxEqAbs(trancheToken.balanceOf(receiver), trancheTokensPayout, 1);
-        assertApproxEqAbs(trancheToken.balanceOf(address(escrow)), 0, 1);
+        assertApproxEqAbs(tranche.balanceOf(receiver), tranchesPayout, 1);
+        assertApproxEqAbs(tranche.balanceOf(receiver), tranchesPayout, 1);
+        assertApproxEqAbs(tranche.balanceOf(address(escrow)), 0, 1);
         assertApproxEqAbs(erc20.balanceOf(address(escrow)), amount, 1);
     }
 
@@ -411,9 +409,7 @@ contract DepositTest is BaseTest {
         address vault_ =
             deployVault(poolId, TRANCHE_TOKEN_DECIMALS, restrictionManager, "", "", trancheId, assetId, address(asset));
         ERC7540Vault vault = ERC7540Vault(vault_);
-        centrifugeChain.updateTrancheTokenPrice(
-            poolId, trancheId, assetId, 1000000000000000000, uint64(block.timestamp)
-        );
+        centrifugeChain.updateTranchePrice(poolId, trancheId, assetId, 1000000000000000000, uint64(block.timestamp));
 
         // invest
         uint256 investmentAmount = 100000000; // 100 * 10**6
@@ -425,14 +421,14 @@ contract DepositTest is BaseTest {
         // trigger executed collectInvest of the first 50% at a price of 1.2
         uint128 _assetId = poolManager.assetToId(address(asset)); // retrieve assetId
         uint128 assets = 50000000; // 50 * 10**6
-        uint128 firstTrancheTokenPayout = 41666666666666666666; // 50 * 10**18 / 1.2, rounded down
+        uint128 firstTranchePayout = 41666666666666666666; // 50 * 10**18 / 1.2, rounded down
         centrifugeChain.isFulfilledDepositRequest(
-            poolId, trancheId, bytes32(bytes20(self)), _assetId, assets, firstTrancheTokenPayout, assets / 2
+            poolId, trancheId, bytes32(bytes20(self)), _assetId, assets, firstTranchePayout, assets / 2
         );
 
         // assert deposit & mint values adjusted
         assertApproxEqAbs(vault.maxDeposit(self), assets, 1);
-        assertEq(vault.maxMint(self), firstTrancheTokenPayout);
+        assertEq(vault.maxMint(self), firstTranchePayout);
 
         // deposit price should be ~1.2*10**18
         (, uint256 depositPrice,,,,,,,,) = investmentManager.investments(address(vault), self);
@@ -440,19 +436,17 @@ contract DepositTest is BaseTest {
 
         // trigger executed collectInvest of the second 50% at a price of 1.4
         assets = 50000000; // 50 * 10**6
-        uint128 secondTrancheTokenPayout = 35714285714285714285; // 50 * 10**18 / 1.4, rounded down
+        uint128 secondTranchePayout = 35714285714285714285; // 50 * 10**18 / 1.4, rounded down
         centrifugeChain.isFulfilledDepositRequest(
-            poolId, trancheId, bytes32(bytes20(self)), _assetId, assets, secondTrancheTokenPayout, 0
+            poolId, trancheId, bytes32(bytes20(self)), _assetId, assets, secondTranchePayout, 0
         );
 
         // collect the tranche tokens
-        vault.mint(firstTrancheTokenPayout + secondTrancheTokenPayout, self);
-        assertEq(
-            ITrancheToken(address(vault.share())).balanceOf(self), firstTrancheTokenPayout + secondTrancheTokenPayout
-        );
+        vault.mint(firstTranchePayout + secondTranchePayout, self);
+        assertEq(ITranche(address(vault.share())).balanceOf(self), firstTranchePayout + secondTranchePayout);
 
         // redeem
-        vault.requestRedeem(firstTrancheTokenPayout + secondTrancheTokenPayout, address(this), address(this));
+        vault.requestRedeem(firstTranchePayout + secondTranchePayout, address(this), address(this));
 
         // trigger executed collectRedeem at a price of 1.5
         // 50% invested at 1.2 and 50% invested at 1.4 leads to ~77 tranche tokens
@@ -463,12 +457,7 @@ contract DepositTest is BaseTest {
         asset.mint(address(escrow), assets - investmentAmount);
 
         centrifugeChain.isFulfilledRedeemRequest(
-            poolId,
-            trancheId,
-            bytes32(bytes20(self)),
-            _assetId,
-            assets,
-            firstTrancheTokenPayout + secondTrancheTokenPayout
+            poolId, trancheId, bytes32(bytes20(self)), _assetId, assets, firstTranchePayout + secondTranchePayout
         );
 
         // redeem price should now be ~1.5*10**18.
@@ -487,8 +476,8 @@ contract DepositTest is BaseTest {
         ERC20 asset = _newErc20("Currency", "CR", 18);
         address vault_ = deployVault(poolId, 6, restrictionManager, "", "", trancheId, assetId, address(asset));
         ERC7540Vault vault = ERC7540Vault(vault_);
-        ITrancheToken trancheToken = ITrancheToken(address(vault.share()));
-        centrifugeChain.updateTrancheTokenPrice(
+        ITranche tranche = ITranche(address(vault.share()));
+        centrifugeChain.updateTranchePrice(
             poolId, trancheId, assetId, 1000000000000000000000000000, uint64(block.timestamp)
         );
 
@@ -502,14 +491,14 @@ contract DepositTest is BaseTest {
         // trigger executed collectInvest of the first 50% at a price of 1.2
         uint128 _assetId = poolManager.assetToId(address(asset)); // retrieve assetId
         uint128 assets = 50000000000000000000; // 50 * 10**18
-        uint128 firstTrancheTokenPayout = 41666666; // 50 * 10**6 / 1.2, rounded down
+        uint128 firstTranchePayout = 41666666; // 50 * 10**6 / 1.2, rounded down
         centrifugeChain.isFulfilledDepositRequest(
-            poolId, trancheId, bytes32(bytes20(self)), _assetId, assets, firstTrancheTokenPayout, assets / 2
+            poolId, trancheId, bytes32(bytes20(self)), _assetId, assets, firstTranchePayout, assets / 2
         );
 
         // assert deposit & mint values adjusted
         assertApproxEqAbs(vault.maxDeposit(self), assets, 10);
-        assertEq(vault.maxMint(self), firstTrancheTokenPayout);
+        assertEq(vault.maxMint(self), firstTranchePayout);
 
         // deposit price should be ~1.2*10**18
         (, uint256 depositPrice,,,,,,,,) = investmentManager.investments(address(vault), self);
@@ -517,17 +506,17 @@ contract DepositTest is BaseTest {
 
         // trigger executed collectInvest of the second 50% at a price of 1.4
         assets = 50000000000000000000; // 50 * 10**18
-        uint128 secondTrancheTokenPayout = 35714285; // 50 * 10**6 / 1.4, rounded down
+        uint128 secondTranchePayout = 35714285; // 50 * 10**6 / 1.4, rounded down
         centrifugeChain.isFulfilledDepositRequest(
-            poolId, trancheId, bytes32(bytes20(self)), _assetId, assets, secondTrancheTokenPayout, 0
+            poolId, trancheId, bytes32(bytes20(self)), _assetId, assets, secondTranchePayout, 0
         );
 
         // collect the tranche tokens
-        vault.mint(firstTrancheTokenPayout + secondTrancheTokenPayout, self);
-        assertEq(trancheToken.balanceOf(self), firstTrancheTokenPayout + secondTrancheTokenPayout);
+        vault.mint(firstTranchePayout + secondTranchePayout, self);
+        assertEq(tranche.balanceOf(self), firstTranchePayout + secondTranchePayout);
 
         // redeem
-        vault.requestRedeem(firstTrancheTokenPayout + secondTrancheTokenPayout, address(this), address(this));
+        vault.requestRedeem(firstTranchePayout + secondTranchePayout, address(this), address(this));
 
         // trigger executed collectRedeem at a price of 1.5
         // 50% invested at 1.2 and 50% invested at 1.4 leads to ~77 tranche tokens
@@ -538,12 +527,7 @@ contract DepositTest is BaseTest {
         asset.mint(address(escrow), assets - investmentAmount);
 
         centrifugeChain.isFulfilledRedeemRequest(
-            poolId,
-            trancheId,
-            bytes32(bytes20(self)),
-            _assetId,
-            assets,
-            firstTrancheTokenPayout + secondTrancheTokenPayout
+            poolId, trancheId, bytes32(bytes20(self)), _assetId, assets, firstTranchePayout + secondTranchePayout
         );
 
         // redeem price should now be ~1.5*10**18.
@@ -568,9 +552,7 @@ contract DepositTest is BaseTest {
         ERC7540Vault vault = ERC7540Vault(vault_);
 
         // price = (100*10**18) /  (99 * 10**18) = 101.010101 * 10**18
-        centrifugeChain.updateTrancheTokenPrice(
-            poolId, trancheId, assetId, 1010101010101010101, uint64(block.timestamp)
-        );
+        centrifugeChain.updateTranchePrice(poolId, trancheId, assetId, 1010101010101010101, uint64(block.timestamp));
 
         // invest
         uint256 investmentAmount = 100000000; // 100 * 10**6
@@ -590,9 +572,7 @@ contract DepositTest is BaseTest {
         centrifugeChain.isFulfilledDepositRequest(
             poolId, trancheId, bytes32(bytes20(self)), _assetId, assets, shares, assets
         );
-        centrifugeChain.updateTrancheTokenPrice(
-            poolId, trancheId, assetId, 1200000000000000000, uint64(block.timestamp)
-        );
+        centrifugeChain.updateTranchePrice(poolId, trancheId, assetId, 1200000000000000000, uint64(block.timestamp));
 
         // assert deposit & mint values adjusted
         assertEq(vault.maxDeposit(self), assets);
@@ -620,9 +600,7 @@ contract DepositTest is BaseTest {
         ERC7540Vault vault = ERC7540Vault(vault_);
 
         // price = (100*10**18) /  (99 * 10**18) = 101.010101 * 10**18
-        centrifugeChain.updateTrancheTokenPrice(
-            poolId, trancheId, assetId, 1010101010101010101, uint64(block.timestamp)
-        );
+        centrifugeChain.updateTranchePrice(poolId, trancheId, assetId, 1010101010101010101, uint64(block.timestamp));
 
         // invest
         uint256 investmentAmount = 100000000000000000000; // 100 * 10**18
@@ -642,9 +620,7 @@ contract DepositTest is BaseTest {
         centrifugeChain.isFulfilledDepositRequest(
             poolId, trancheId, bytes32(bytes20(self)), _assetId, assets, shares, assets
         );
-        centrifugeChain.updateTrancheTokenPrice(
-            poolId, trancheId, assetId, 1200000000000000000, uint64(block.timestamp)
-        );
+        centrifugeChain.updateTranchePrice(poolId, trancheId, assetId, 1200000000000000000, uint64(block.timestamp));
 
         // assert deposit & mint values adjusted
         assertEq(vault.maxDeposit(self), assets);
@@ -661,7 +637,7 @@ contract DepositTest is BaseTest {
         uint128 price = 2 * 10 ** 18;
         address vault_ = deploySimpleVault();
         ERC7540Vault vault = ERC7540Vault(vault_);
-        centrifugeChain.updateTrancheTokenPrice(
+        centrifugeChain.updateTranchePrice(
             vault.poolId(), vault.trancheId(), defaultAssetId, price, uint64(block.timestamp)
         );
         erc20.mint(self, amount);
@@ -711,7 +687,7 @@ contract DepositTest is BaseTest {
     }
 
     function partialDeposit(uint64 poolId, bytes16 trancheId, ERC7540Vault vault, ERC20 asset) public {
-        ITrancheToken trancheToken = ITrancheToken(address(vault.share()));
+        ITranche tranche = ITranche(address(vault.share()));
 
         uint256 investmentAmount = 100000000; // 100 * 10**6
         centrifugeChain.updateMember(poolId, trancheId, self, type(uint64).max);
@@ -722,18 +698,18 @@ contract DepositTest is BaseTest {
 
         // first trigger executed collectInvest of the first 50% at a price of 1.4
         uint128 assets = 50000000; // 50 * 10**6
-        uint128 firstTrancheTokenPayout = 35714285714285714285; // 50 * 10**18 / 1.4, rounded down
+        uint128 firstTranchePayout = 35714285714285714285; // 50 * 10**18 / 1.4, rounded down
         centrifugeChain.isFulfilledDepositRequest(
-            poolId, trancheId, bytes32(bytes20(self)), _assetId, assets, firstTrancheTokenPayout, assets
+            poolId, trancheId, bytes32(bytes20(self)), _assetId, assets, firstTranchePayout, assets
         );
 
         (, uint256 depositPrice,,,,,,,,) = investmentManager.investments(address(vault), self);
         assertEq(depositPrice, 1400000000000000000);
 
         // second trigger executed collectInvest of the second 50% at a price of 1.2
-        uint128 secondTrancheTokenPayout = 41666666666666666666; // 50 * 10**18 / 1.2, rounded down
+        uint128 secondTranchePayout = 41666666666666666666; // 50 * 10**18 / 1.2, rounded down
         centrifugeChain.isFulfilledDepositRequest(
-            poolId, trancheId, bytes32(bytes20(self)), _assetId, assets, secondTrancheTokenPayout, assets
+            poolId, trancheId, bytes32(bytes20(self)), _assetId, assets, secondTranchePayout, assets
         );
 
         (, depositPrice,,,,,,,,) = investmentManager.investments(address(vault), self);
@@ -741,10 +717,10 @@ contract DepositTest is BaseTest {
 
         // assert deposit & mint values adjusted
         assertApproxEqAbs(vault.maxDeposit(self), assets * 2, 2);
-        assertEq(vault.maxMint(self), firstTrancheTokenPayout + secondTrancheTokenPayout);
+        assertEq(vault.maxMint(self), firstTranchePayout + secondTranchePayout);
 
         // collect the tranche tokens
-        vault.mint(firstTrancheTokenPayout + secondTrancheTokenPayout, self);
-        assertEq(trancheToken.balanceOf(self), firstTrancheTokenPayout + secondTrancheTokenPayout);
+        vault.mint(firstTranchePayout + secondTranchePayout, self);
+        assertEq(tranche.balanceOf(self), firstTranchePayout + secondTranchePayout);
     }
 }

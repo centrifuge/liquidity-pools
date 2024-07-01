@@ -6,7 +6,7 @@ import {EIP712Lib} from "src/libraries/EIP712Lib.sol";
 import {SignatureLib} from "src/libraries/SignatureLib.sol";
 import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 import {IInvestmentManager} from "src/interfaces/IInvestmentManager.sol";
-import {ITrancheToken} from "src/interfaces/token/ITranche.sol";
+import {ITranche} from "src/interfaces/token/ITranche.sol";
 import "src/interfaces/IERC7540.sol";
 import "src/interfaces/IERC7575.sol";
 import "src/interfaces/IERC20.sol";
@@ -119,7 +119,7 @@ contract ERC7540Vault is Auth, IERC7540Vault {
 
     /// @inheritdoc IERC7540Redeem
     function requestRedeem(uint256 shares, address controller, address owner) public returns (uint256) {
-        require(ITrancheToken(share).balanceOf(owner) >= shares, "ERC7540Vault/insufficient-balance");
+        require(ITranche(share).balanceOf(owner) >= shares, "ERC7540Vault/insufficient-balance");
 
         // If msg.sender is operator of owner, the transfer is executed as if
         // the sender is the owner, to bypass the allowance check
@@ -130,12 +130,10 @@ contract ERC7540Vault is Auth, IERC7540Vault {
             "ERC7540Vault/request-redeem-failed"
         );
 
-        try ITrancheToken(share).authTransferFrom(sender, owner, address(escrow), shares) returns (bool) {}
+        try ITranche(share).authTransferFrom(sender, owner, address(escrow), shares) returns (bool) {}
         catch {
             // Support tranche tokens that block authTransferFrom. In this case ERC20 approval needs to be set
-            require(
-                ITrancheToken(share).transferFrom(owner, address(escrow), shares), "ERC7540Vault/transfer-from-failed"
-            );
+            require(ITranche(share).transferFrom(owner, address(escrow), shares), "ERC7540Vault/transfer-from-failed");
         }
 
         emit RedeemRequest(controller, owner, REQUEST_ID, msg.sender, shares);

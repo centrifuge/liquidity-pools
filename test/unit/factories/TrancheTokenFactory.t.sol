@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {TrancheTokenFactory} from "src/factories/TrancheTokenFactory.sol";
-import {TrancheToken} from "src/token/Tranche.sol";
+import {TrancheFactory} from "src/factories/TrancheFactory.sol";
+import {Tranche} from "src/token/Tranche.sol";
 import {Root} from "src/Root.sol";
 import {Escrow} from "src/Escrow.sol";
 import {BaseTest} from "test/BaseTest.sol";
 import "forge-std/Test.sol";
 
 interface PoolManagerLike {
-    function getTrancheToken(uint64 poolId, bytes16 trancheId) external view returns (address);
+    function getTranche(uint64 poolId, bytes16 trancheId) external view returns (address);
 }
 
 contract FactoryTest is Test {
@@ -26,7 +26,7 @@ contract FactoryTest is Test {
         root = address(new Root(address(new Escrow(address(this))), 48 hours, address(this)));
     }
 
-    function testTrancheTokenFactoryIsDeterministicAcrossChains(uint64 poolId, bytes16 trancheId) public {
+    function testTrancheFactoryIsDeterministicAcrossChains(uint64 poolId, bytes16 trancheId) public {
         if (vm.envOr("FORK_TESTS", false)) {
             vm.setEnv("DEPLOYMENT_SALT", "0x290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563");
             vm.selectFork(mainnetFork);
@@ -35,8 +35,7 @@ contract FactoryTest is Test {
             testSetup1.deployVault(
                 poolId, 18, testSetup1.restrictionManager(), "", "", trancheId, 1, address(testSetup1.erc20())
             );
-            address trancheToken1 =
-                PoolManagerLike(address(testSetup1.poolManager())).getTrancheToken(poolId, trancheId);
+            address tranche1 = PoolManagerLike(address(testSetup1.poolManager())).getTranche(poolId, trancheId);
             address root1 = address(testSetup1.root());
 
             vm.selectFork(polygonFork);
@@ -45,16 +44,15 @@ contract FactoryTest is Test {
             testSetup2.deployVault(
                 poolId, 18, testSetup2.restrictionManager(), "", "", trancheId, 1, address(testSetup2.erc20())
             );
-            address trancheToken2 =
-                PoolManagerLike(address(testSetup2.poolManager())).getTrancheToken(poolId, trancheId);
+            address tranche2 = PoolManagerLike(address(testSetup2.poolManager())).getTranche(poolId, trancheId);
             address root2 = address(testSetup2.root());
 
             assertEq(address(root1), address(root2));
-            assertEq(trancheToken1, trancheToken2);
+            assertEq(tranche1, tranche2);
         }
     }
 
-    function testTrancheTokenFactoryShouldBeDeterministic(bytes32 salt) public {
+    function testTrancheFactoryShouldBeDeterministic(bytes32 salt) public {
         address predictedAddress = address(
             uint160(
                 uint256(
@@ -65,7 +63,7 @@ contract FactoryTest is Test {
                             salt,
                             keccak256(
                                 abi.encodePacked(
-                                    type(TrancheTokenFactory).creationCode, abi.encode(root), abi.encode(address(this))
+                                    type(TrancheFactory).creationCode, abi.encode(root), abi.encode(address(this))
                                 )
                             )
                         )
@@ -73,11 +71,11 @@ contract FactoryTest is Test {
                 )
             )
         );
-        TrancheTokenFactory trancheTokenFactory = new TrancheTokenFactory{salt: salt}(root, address(this));
-        assertEq(address(trancheTokenFactory), predictedAddress);
+        TrancheFactory trancheFactory = new TrancheFactory{salt: salt}(root, address(this));
+        assertEq(address(trancheFactory), predictedAddress);
     }
 
-    function testTrancheTokenShouldBeDeterministic(
+    function testTrancheShouldBeDeterministic(
         bytes32 salt,
         uint64 poolId,
         bytes16 trancheId,
@@ -88,7 +86,7 @@ contract FactoryTest is Test {
         uint8 decimals
     ) public {
         decimals = uint8(bound(decimals, 0, 18));
-        TrancheTokenFactory trancheTokenFactory = new TrancheTokenFactory{salt: salt}(root, address(this));
+        TrancheFactory trancheFactory = new TrancheFactory{salt: salt}(root, address(this));
 
         bytes32 hashedSalt = keccak256(abi.encodePacked(poolId, trancheId));
         address predictedAddress = address(
@@ -97,21 +95,20 @@ contract FactoryTest is Test {
                     keccak256(
                         abi.encodePacked(
                             bytes1(0xff),
-                            address(trancheTokenFactory),
+                            address(trancheFactory),
                             hashedSalt,
-                            keccak256(abi.encodePacked(type(TrancheToken).creationCode, abi.encode(decimals)))
+                            keccak256(abi.encodePacked(type(Tranche).creationCode, abi.encode(decimals)))
                         )
                     )
                 )
             )
         );
 
-        address[] memory trancheTokenWards = new address[](2);
-        trancheTokenWards[0] = address(investmentManager);
-        trancheTokenWards[1] = address(poolManager);
+        address[] memory trancheWards = new address[](2);
+        trancheWards[0] = address(investmentManager);
+        trancheWards[1] = address(poolManager);
 
-        address token =
-            trancheTokenFactory.newTrancheToken(poolId, trancheId, name, symbol, decimals, trancheTokenWards);
+        address token = trancheFactory.newTranche(poolId, trancheId, name, symbol, decimals, trancheWards);
 
         assertEq(address(token), predictedAddress);
     }
@@ -137,7 +134,7 @@ contract FactoryTest is Test {
                             salt,
                             keccak256(
                                 abi.encodePacked(
-                                    type(TrancheTokenFactory).creationCode, abi.encode(root), abi.encode(address(this))
+                                    type(TrancheFactory).creationCode, abi.encode(root), abi.encode(address(this))
                                 )
                             )
                         )
@@ -146,16 +143,16 @@ contract FactoryTest is Test {
             )
         );
 
-        address[] memory trancheTokenWards = new address[](2);
-        trancheTokenWards[0] = address(investmentManager);
-        trancheTokenWards[1] = address(poolManager);
+        address[] memory trancheWards = new address[](2);
+        trancheWards[0] = address(investmentManager);
+        trancheWards[1] = address(poolManager);
 
-        TrancheTokenFactory trancheTokenFactory = new TrancheTokenFactory{salt: salt}(root, address(this));
-        assertEq(address(trancheTokenFactory), predictedAddress);
+        TrancheFactory trancheFactory = new TrancheFactory{salt: salt}(root, address(this));
+        assertEq(address(trancheFactory), predictedAddress);
 
-        trancheTokenFactory.newTrancheToken(poolId, trancheId, name, symbol, decimals, trancheTokenWards);
+        trancheFactory.newTranche(poolId, trancheId, name, symbol, decimals, trancheWards);
         vm.expectRevert();
-        trancheTokenFactory.newTrancheToken(poolId, trancheId, name, symbol, decimals, trancheTokenWards);
+        trancheFactory.newTranche(poolId, trancheId, name, symbol, decimals, trancheWards);
     }
 
     function _stringToBytes32(string memory source) internal pure returns (bytes32 result) {

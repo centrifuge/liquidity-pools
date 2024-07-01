@@ -22,13 +22,13 @@ library MessagesLib {
         /// 4 - Add a Pool's Tranche Token
         AddTranche,
         /// 5 - Update the price of a Tranche Token
-        UpdateTrancheTokenPrice,
+        UpdateTranchePrice,
         /// 6 - Set a restriction
         UpdateRestriction,
         /// 7 - A transfer of assets
         Transfer,
         /// 8 - A transfer of tranche tokens
-        TransferTrancheTokens,
+        TransferTranches,
         /// 9 - Increase an investment order by a given amount
         IncreaseInvestOrder,
         /// 10 - Decrease an investment order by a given amount
@@ -58,7 +58,7 @@ library MessagesLib {
         /// 22 - Cancel a previously scheduled upgrade
         CancelUpgrade,
         /// 23 - Update tranche token metadata
-        UpdateTrancheTokenMetadata,
+        UpdateTrancheMetadata,
         /// 24 - Disallow an asset to be used as an asset for investing in pools
         DisallowAsset,
         /// 25 - Freeze tranche tokens

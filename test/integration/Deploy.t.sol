@@ -9,7 +9,7 @@ pragma solidity 0.8.21;
 // import {MockAdapter} from "test/mocks/MockAdapter.sol";
 // import {PoolManager, Pool, Tranche} from "src/PoolManager.sol";
 // import {ERC20} from "src/token/ERC20.sol";
-// import {TrancheToken} from "src/token/Tranche.sol";
+// import {Tranche} from "src/token/Tranche.sol";
 // import {ERC7540VaultTest} from "test/unit/ERC7540Vault.t.sol";
 // import {PermissionlessAdapter} from "test/mocks/PermissionlessAdapter.sol";
 // import {Root} from "src/Root.sol";
@@ -71,7 +71,7 @@ pragma solidity 0.8.21;
 //     assertEq(escrow.wards(address(this)), 0);
 //     assertEq(gateway.wards(address(this)), 0);
 //     // check factories
-//     assertEq(WardLike(trancheTokenFactory).wards(address(this)), 0);
+//     assertEq(WardLike(trancheFactory).wards(address(this)), 0);
 //     assertEq(WardLike(vaultFactory).wards(address(this)), 0);
 //     assertEq(WardLike(restrictionManagerFactory).wards(address(this)), 0);
 // }
@@ -86,7 +86,7 @@ pragma solidity 0.8.21;
 //         assertEq(gateway.wards(address(this)), 0);
 //         assertEq(aggregator.wards(address(this)), 0);
 //         // check factories
-//         assertEq(WardLike(trancheTokenFactory).wards(address(this)), 0);
+//         assertEq(WardLike(trancheFactory).wards(address(this)), 0);
 //         assertEq(WardLike(vaultFactory).wards(address(this)), 0);
 //         assertEq(WardLike(restrictionManagerFactory).wards(address(this)), 0);
 //     }
@@ -108,10 +108,10 @@ pragma solidity 0.8.21;
 //         deal(address(erc20), self, amount);
 
 //         vm.prank(address(gateway));
-//         HookLike(trancheToken.hook()).updateMember(self, validUntil);
+//         HookLike(tranche.hook()).updateMember(self, validUntil);
 
 //         depositMint(poolId, trancheId, price, amount, vault);
-//         amount = trancheToken.balanceOf(self);
+//         amount = tranche.balanceOf(self);
 
 //         redeemWithdraw(poolId, trancheId, price, amount, vault);
 //     }
@@ -128,10 +128,10 @@ pragma solidity 0.8.21;
 //         // trigger executed collectInvest
 //         uint128 _assetId = poolManager.assetToId(address(erc20)); // retrieve assetId
 
-//         TrancheToken trancheToken = TrancheToken(address(vault.share()));
+//         Tranche tranche = Tranche(address(vault.share()));
 //         uint128 shares = (
 //             amount.mulDiv(
-//                 10 ** (PRICE_DECIMALS - erc20.decimals() + trancheToken.decimals()), price, MathLib.Rounding.Down
+//                 10 ** (PRICE_DECIMALS - erc20.decimals() + tranche.decimals()), price, MathLib.Rounding.Down
 //             )
 //         ).toUint128();
 
@@ -147,15 +147,15 @@ pragma solidity 0.8.21;
 //         uint256 div = 2;
 //         vault.deposit(amount / div, self);
 
-//         assertEq(trancheToken.balanceOf(self), shares / div);
-//         assertEq(trancheToken.balanceOf(address(escrow)), shares - shares / div);
+//         assertEq(tranche.balanceOf(self), shares / div);
+//         assertEq(tranche.balanceOf(address(escrow)), shares - shares / div);
 //         assertEq(vault.maxMint(self), shares - shares / div);
 //         assertEq(vault.maxDeposit(self), amount - amount / div); // max deposit
 
 //         vault.mint(vault.maxMint(self), self);
 
-//         assertEq(trancheToken.balanceOf(self), shares);
-//         assertTrue(trancheToken.balanceOf(address(escrow)) <= 1);
+//         assertEq(tranche.balanceOf(self), shares);
+//         assertTrue(tranche.balanceOf(address(escrow)) <= 1);
 //         assertTrue(vault.maxMint(self) <= 1);
 //     }
 
@@ -165,10 +165,10 @@ pragma solidity 0.8.21;
 //         vault.requestRedeem(amount, address(this), address(this), "");
 
 //         // redeem
-//         TrancheToken trancheToken = TrancheToken(address(vault.share()));
+//         Tranche tranche = Tranche(address(vault.share()));
 //         uint128 _assetId = poolManager.assetToId(address(erc20)); // retrieve assetId
 //         uint128 assets = (
-//             amount.mulDiv(price, 10 ** (18 - erc20.decimals() + trancheToken.decimals()), MathLib.Rounding.Down)
+//             amount.mulDiv(price, 10 ** (18 - erc20.decimals() + tranche.decimals()), MathLib.Rounding.Down)
 //         ).toUint128();
 //         // Assume an epoch execution happens on cent chain
 //         // Assume a bot calls collectRedeem for this user on cent chain
@@ -177,19 +177,19 @@ pragma solidity 0.8.21;
 
 //         assertEq(vault.maxWithdraw(self), assets);
 //         assertEq(vault.maxRedeem(self), amount);
-//         assertEq(trancheToken.balanceOf(address(escrow)), 0);
+//         assertEq(tranche.balanceOf(address(escrow)), 0);
 
 //         uint128 div = 2;
 //         vault.redeem(amount / div, self, self);
-//         assertEq(trancheToken.balanceOf(self), 0);
-//         assertEq(trancheToken.balanceOf(address(escrow)), 0);
+//         assertEq(tranche.balanceOf(self), 0);
+//         assertEq(tranche.balanceOf(address(escrow)), 0);
 //         assertEq(erc20.balanceOf(self), assets / div);
 //         assertEq(vault.maxWithdraw(self), assets / div);
 //         assertEq(vault.maxRedeem(self), amount / div);
 
 //         vault.withdraw(vault.maxWithdraw(self), self, self);
-//         assertEq(trancheToken.balanceOf(self), 0);
-//         assertEq(trancheToken.balanceOf(address(escrow)), 0);
+//         assertEq(tranche.balanceOf(self), 0);
+//         assertEq(tranche.balanceOf(address(escrow)), 0);
 //         assertEq(erc20.balanceOf(self), assets);
 //         assertEq(vault.maxWithdraw(self), 0);
 //         assertEq(vault.maxRedeem(self), 0);

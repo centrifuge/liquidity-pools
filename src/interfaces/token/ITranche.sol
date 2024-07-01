@@ -10,7 +10,7 @@ interface IERC1404 {
     function SUCCESS_CODE() external view returns (uint8);
 }
 
-interface ITrancheToken is IERC20Metadata, IERC7575Share, IERC1404 {
+interface ITranche is IERC20Metadata, IERC7575Share, IERC1404 {
     // --- Events ---
     event File(bytes32 indexed what, address data);
     event File(bytes32 indexed what, address data1, address data2);

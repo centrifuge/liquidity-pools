@@ -5,10 +5,10 @@ import {Root} from "src/Root.sol";
 import {InvestmentManager} from "src/InvestmentManager.sol";
 import {PoolManager} from "src/PoolManager.sol";
 import {Escrow} from "src/Escrow.sol";
-import {TrancheToken} from "src/token/Tranche.sol";
+import {Tranche} from "src/token/Tranche.sol";
 import {Gateway} from "src/gateway/Gateway.sol";
 import {ERC7540VaultFactory} from "src/factories/ERC7540VaultFactory.sol";
-import {TrancheTokenFactory} from "src/factories/TrancheTokenFactory.sol";
+import {TrancheFactory} from "src/factories/TrancheFactory.sol";
 import {Guardian} from "src/admin/Guardian.sol";
 import "forge-std/Test.sol";
 import "forge-std/StdJson.sol";
@@ -52,7 +52,7 @@ contract ForkTest is Test {
                 address payable gateway = payable(_get(i, ".contracts.gateway"));
                 address escrow = _get(i, ".contracts.escrow");
                 address adapter = _get(i, ".contracts.adapter");
-                address trancheTokenFactory = _get(i, ".contracts.trancheTokenFactory");
+                address trancheFactory = _get(i, ".contracts.trancheFactory");
                 address vaultFactory = _get(i, ".contracts.vaultFactory");
                 address deployer = _get(i, ".config.deployer");
                 address adminSafe = _get(i, ".config.adminSafe");
@@ -72,7 +72,7 @@ contract ForkTest is Test {
                 assertEq(address(PoolManager(poolManager).gateway()), gateway);
                 assertEq(address(PoolManager(poolManager).escrow()), escrow);
                 assertEq(address(PoolManager(poolManager).investmentManager()), investmentManager);
-                assertEq(address(PoolManager(poolManager).trancheTokenFactory()), trancheTokenFactory);
+                assertEq(address(PoolManager(poolManager).trancheFactory()), trancheFactory);
                 assertEq(address(PoolManager(poolManager).vaultFactory()), vaultFactory);
                 assertEq(Escrow(escrow).wards(poolManager), 1);
                 assertEq(PoolManager(poolManager).wards(root), 1);
@@ -111,16 +111,16 @@ contract ForkTest is Test {
                 // Read deployment file
                 address root = _get(i, ".contracts.root");
                 address poolManager = _get(i, ".contracts.poolManager");
-                address trancheTokenFactory = _get(i, ".contracts.trancheTokenFactory");
+                address trancheFactory = _get(i, ".contracts.trancheFactory");
                 address vaultFactory = _get(i, ".contracts.vaultFactory");
                 address deployer = _get(i, ".config.deployer");
                 address adminSafe = _get(i, ".config.adminSafe");
                 _loadFork(i);
 
-                // TrancheTokenFactory
-                assertEq(TrancheTokenFactory(trancheTokenFactory).wards(root), 1);
-                assertEq(TrancheTokenFactory(trancheTokenFactory).wards(deployer), 0);
-                assertEq(TrancheTokenFactory(trancheTokenFactory).wards(adminSafe), 0);
+                // TrancheFactory
+                assertEq(TrancheFactory(trancheFactory).wards(root), 1);
+                assertEq(TrancheFactory(trancheFactory).wards(deployer), 0);
+                assertEq(TrancheFactory(trancheFactory).wards(adminSafe), 0);
 
                 // ERC7540VaultFactory
                 assertEq(ERC7540VaultFactory(vaultFactory).root(), root);
@@ -194,19 +194,19 @@ contract ForkTest is Test {
                     // Read deployment file
                     address root = _get(i, ".contracts.root");
                     address escrow = _get(i, ".contracts.escrow");
-                    address trancheTokenFactory = _get(i, ".contracts.trancheTokenFactory");
+                    address trancheFactory = _get(i, ".contracts.trancheFactory");
                     _loadFork(i);
 
                     // Check address
                     assertEq(root, 0x498016d30Cd5f0db50d7ACE329C07313a0420502);
                     assertEq(escrow, 0xd595E1483c507E74E2E6A3dE8e7D08d8f6F74936);
-                    assertEq(trancheTokenFactory, 0x2d60cd1527073419423B14666E2D43C1Cf28B152);
+                    assertEq(trancheFactory, 0x2d60cd1527073419423B14666E2D43C1Cf28B152);
 
                     // Check bytecode
                     assertEq(keccak256(root.code), 0x47102707d876a808849bf1be9c8af0e58d889c65918ee3af3a95dd54fa389070);
                     assertEq(keccak256(escrow.code), 0xf54c8ad5a295c7d20a91165917fb20fbcd2952c625696710f8f9a012fcc8e042);
                     assertEq(
-                        keccak256(trancheTokenFactory.code),
+                        keccak256(trancheFactory.code),
                         0x0f2863a7a7ffa6f3db8a3aab70ded9e170752a36734eca4a0ff19dc52ec5e97b
                     );
                 }

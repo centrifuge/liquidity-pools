@@ -4,7 +4,7 @@ pragma solidity 0.8.21;
 import {Auth} from "src/Auth.sol";
 import {IERC20} from "src/interfaces/IERC20.sol";
 import {IRoot} from "src/interfaces/IRoot.sol";
-import {ITrancheToken} from "src/interfaces/token/ITranche.sol";
+import {ITranche} from "src/interfaces/token/ITranche.sol";
 import {IHook, HookData, SUCCESS_CODE, SUCCESS_MESSAGE} from "src/interfaces/token/IHook.sol";
 import {MessagesLib} from "src/libraries/MessagesLib.sol";
 import {BitmapLib} from "src/libraries/BitmapLib.sol";
@@ -122,23 +122,23 @@ contract RestrictionManager is Auth, IRestrictionManager, IHook {
         require(user != address(0), "RestrictionManager/cannot-freeze-zero-address");
         require(!root.endorsed(user), "RestrictionManager/endorsed-user-cannot-be-frozen");
 
-        uint128 hookData = uint128(ITrancheToken(token).hookDataOf(user));
-        ITrancheToken(token).setHookData(user, bytes16(hookData.setBit(FREEZE_BIT, true)));
+        uint128 hookData = uint128(ITranche(token).hookDataOf(user));
+        ITranche(token).setHookData(user, bytes16(hookData.setBit(FREEZE_BIT, true)));
 
         emit Freeze(token, user);
     }
 
     /// @inheritdoc IRestrictionManager
     function unfreeze(address token, address user) public auth {
-        uint128 hookData = uint128(ITrancheToken(token).hookDataOf(user));
-        ITrancheToken(token).setHookData(user, bytes16(hookData.setBit(FREEZE_BIT, false)));
+        uint128 hookData = uint128(ITranche(token).hookDataOf(user));
+        ITranche(token).setHookData(user, bytes16(hookData.setBit(FREEZE_BIT, false)));
 
         emit Unfreeze(token, user);
     }
 
     /// @inheritdoc IRestrictionManager
     function isFrozen(address token, address user) public view returns (bool) {
-        return uint128(ITrancheToken(token).hookDataOf(user)).getBit(FREEZE_BIT);
+        return uint128(ITranche(token).hookDataOf(user)).getBit(FREEZE_BIT);
     }
 
     // --- Managing members ---
@@ -148,14 +148,14 @@ contract RestrictionManager is Auth, IRestrictionManager, IHook {
         require(!root.endorsed(user), "RestrictionManager/endorsed-user-cannot-be-updated");
 
         uint128 hookData = validUntil.shiftLeft(64).setBit(FREEZE_BIT, isFrozen(token, user));
-        ITrancheToken(token).setHookData(user, bytes16(hookData));
+        ITranche(token).setHookData(user, bytes16(hookData));
 
         emit UpdateMember(token, user, validUntil);
     }
 
     /// @inheritdoc IRestrictionManager
     function isMember(address token, address user) public view returns (bool) {
-        return abi.encodePacked(ITrancheToken(token).hookDataOf(user)).toUint64(0) >= block.timestamp;
+        return abi.encodePacked(ITranche(token).hookDataOf(user)).toUint64(0) >= block.timestamp;
     }
 
     // --- ERC165 support ---

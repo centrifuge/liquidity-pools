@@ -5,13 +5,13 @@ pragma abicoder v2;
 // core contracts
 import {Root} from "src/Root.sol";
 import {InvestmentManager} from "src/InvestmentManager.sol";
-import {PoolManager, Tranche} from "src/PoolManager.sol";
+import {PoolManager} from "src/PoolManager.sol";
 import {Escrow} from "src/Escrow.sol";
 import {ERC7540VaultFactory} from "src/factories/ERC7540VaultFactory.sol";
-import {TrancheTokenFactory} from "src/factories/TrancheTokenFactory.sol";
+import {TrancheFactory} from "src/factories/TrancheFactory.sol";
 import {ERC7540Vault} from "src/ERC7540Vault.sol";
-import {TrancheToken} from "src/token/Tranche.sol";
-import {ITrancheToken} from "src/interfaces/token/ITranche.sol";
+import {Tranche} from "src/token/Tranche.sol";
+import {ITranche} from "src/interfaces/token/ITranche.sol";
 import {ERC20} from "src/token/ERC20.sol";
 import {Gateway} from "src/gateway/Gateway.sol";
 import {RestrictionManager} from "src/token/RestrictionManager.sol";
@@ -106,7 +106,7 @@ contract BaseTest is Deployer, Test {
         vm.label(address(mockedGasService), "MockGasService");
         vm.label(address(escrow), "Escrow");
         vm.label(address(guardian), "Guardian");
-        vm.label(address(poolManager.trancheTokenFactory()), "TrancheTokenFactory");
+        vm.label(address(poolManager.trancheFactory()), "TrancheFactory");
         vm.label(address(poolManager.vaultFactory()), "ERC7540VaultFactory");
 
         // Exclude predeployed contracts from invariant tests by default
@@ -122,14 +122,14 @@ contract BaseTest is Deployer, Test {
         excludeContract(address(adapter3));
         excludeContract(address(escrow));
         excludeContract(address(guardian));
-        excludeContract(address(poolManager.trancheTokenFactory()));
+        excludeContract(address(poolManager.trancheFactory()));
         excludeContract(address(poolManager.vaultFactory()));
     }
 
     // helpers
     function deployVault(
         uint64 poolId,
-        uint8 trancheTokenDecimals,
+        uint8 trancheDecimals,
         address hook,
         string memory tokenName,
         string memory tokenSymbol,
@@ -141,9 +141,9 @@ contract BaseTest is Deployer, Test {
             centrifugeChain.addAsset(assetId, asset);
         }
 
-        if (poolManager.getTrancheToken(poolId, trancheId) == address(0)) {
+        if (poolManager.getTranche(poolId, trancheId) == address(0)) {
             centrifugeChain.addPool(poolId);
-            centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, trancheTokenDecimals, hook);
+            centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, trancheDecimals, hook);
 
             centrifugeChain.allowAsset(poolId, assetId);
             poolManager.deployTranche(poolId, trancheId);
@@ -192,7 +192,7 @@ contract BaseTest is Deployer, Test {
         );
 
         if (claimDeposit) {
-            vault.deposit(amount, _investor); // claim the trancheTokens
+            vault.deposit(amount, _investor); // claim the tranches
         }
         vm.stopPrank();
     }

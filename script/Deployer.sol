@@ -5,7 +5,7 @@ import {Root} from "src/Root.sol";
 import {Gateway} from "src/gateway/Gateway.sol";
 import {GasService} from "src/gateway/GasService.sol";
 import {InvestmentManager} from "src/InvestmentManager.sol";
-import {TrancheTokenFactory} from "src/factories/TrancheTokenFactory.sol";
+import {TrancheFactory} from "src/factories/TrancheFactory.sol";
 import {ERC7540VaultFactory} from "src/factories/ERC7540VaultFactory.sol";
 import {RestrictionManager} from "src/token/RestrictionManager.sol";
 import {TransferProxyFactory} from "src/factories/TransferProxyFactory.sol";
@@ -33,7 +33,7 @@ contract Deployer is Script {
     CentrifugeRouter public router;
     address public vaultFactory;
     address public restrictionManager;
-    address public trancheTokenFactory;
+    address public trancheFactory;
     address public transferProxyFactory;
 
     function deploy(address deployer) public {
@@ -47,9 +47,9 @@ contract Deployer is Script {
 
         vaultFactory = address(new ERC7540VaultFactory(address(root)));
         restrictionManager = address(new RestrictionManager{salt: salt}(address(root)));
-        trancheTokenFactory = address(new TrancheTokenFactory{salt: salt}(address(root), deployer));
+        trancheFactory = address(new TrancheFactory{salt: salt}(address(root), deployer));
         investmentManager = new InvestmentManager(address(root), address(escrow));
-        poolManager = new PoolManager(address(escrow), vaultFactory, trancheTokenFactory);
+        poolManager = new PoolManager(address(escrow), vaultFactory, trancheFactory);
         transferProxyFactory = address(new TransferProxyFactory{salt: salt}(address(poolManager)));
 
         // TODO THESE VALUES NEEDS TO BE CHECKED
@@ -64,11 +64,11 @@ contract Deployer is Script {
         root.endorse(address(escrow));
 
         IAuth(vaultFactory).rely(address(poolManager));
-        IAuth(trancheTokenFactory).rely(address(poolManager));
+        IAuth(trancheFactory).rely(address(poolManager));
         IAuth(restrictionManager).rely(address(poolManager));
 
         IAuth(vaultFactory).rely(address(root));
-        IAuth(trancheTokenFactory).rely(address(root));
+        IAuth(trancheFactory).rely(address(root));
         IAuth(restrictionManager).rely(address(root));
 
         guardian = new Guardian(adminSafe, address(root), address(gateway));
@@ -106,7 +106,7 @@ contract Deployer is Script {
     function removeDeployerAccess(address adapter, address deployer) public {
         IAuth(adapter).deny(deployer);
         IAuth(vaultFactory).deny(deployer);
-        IAuth(trancheTokenFactory).deny(deployer);
+        IAuth(trancheFactory).deny(deployer);
         IAuth(restrictionManager).deny(deployer);
         root.deny(deployer);
         investmentManager.deny(deployer);

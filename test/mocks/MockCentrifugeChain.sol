@@ -73,14 +73,11 @@ contract MockCentrifugeChain is Test {
         _execute(_message);
     }
 
-    function updateTrancheTokenMetadata(
-        uint64 poolId,
-        bytes16 trancheId,
-        string memory tokenName,
-        string memory tokenSymbol
-    ) public {
+    function updateTrancheMetadata(uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol)
+        public
+    {
         bytes memory _message = abi.encodePacked(
-            uint8(MessagesLib.Call.UpdateTrancheTokenMetadata),
+            uint8(MessagesLib.Call.UpdateTrancheMetadata),
             poolId,
             trancheId,
             tokenName.toBytes128(),
@@ -89,16 +86,11 @@ contract MockCentrifugeChain is Test {
         _execute(_message);
     }
 
-    function updateTrancheTokenPrice(
-        uint64 poolId,
-        bytes16 trancheId,
-        uint128 assetId,
-        uint128 price,
-        uint64 computedAt
-    ) public {
-        bytes memory _message = abi.encodePacked(
-            uint8(MessagesLib.Call.UpdateTrancheTokenPrice), poolId, trancheId, assetId, price, computedAt
-        );
+    function updateTranchePrice(uint64 poolId, bytes16 trancheId, uint128 assetId, uint128 price, uint64 computedAt)
+        public
+    {
+        bytes memory _message =
+            abi.encodePacked(uint8(MessagesLib.Call.UpdateTranchePrice), poolId, trancheId, assetId, price, computedAt);
         _execute(_message);
     }
 
@@ -122,7 +114,7 @@ contract MockCentrifugeChain is Test {
     }
 
     // Trigger an incoming (e.g. Centrifuge Chain -> EVM) transfer of tranche tokens
-    function incomingTransferTrancheTokens(
+    function incomingTransferTranches(
         uint64 poolId,
         bytes16 trancheId,
         uint64 destinationChainId,
@@ -130,7 +122,7 @@ contract MockCentrifugeChain is Test {
         uint128 amount
     ) public {
         bytes memory _message = abi.encodePacked(
-            uint8(MessagesLib.Call.TransferTrancheTokens),
+            uint8(MessagesLib.Call.TransferTranches),
             poolId,
             trancheId,
             msg.sender.toBytes32(),

@@ -36,7 +36,7 @@
         "escrow": "0xd595E1483c507E74E2E6A3dE8e7D08d8f6F74936",
         "userEscrow": "0x9fc3A3bcEdc1CaB14EfC1B7ef45dFBDd3d17c9d7",
         "adapter": "0x8174D5f12Ce682459864D8C081f9635012Ab51c2",
-        "trancheTokenFactory": "0x4aEFE6CeFEd5D0A30679E41C0B3Fee6cbAa6ADf6",
+        "trancheFactory": "0x4aEFE6CeFEd5D0A30679E41C0B3Fee6cbAa6ADf6",
         "liquidityPoolFactory": "0x7f93eDB11d5Dc23F04C4E9382aa0d3F31E95BF2C",
         "restrictionManagerFactory": "0xf4D7F6919eF0B495a2551F7299324961F29aE7aC",
         "pauseAdmin": "0xce86472007Ea37a5d0208f8C1559A37530c8067C",

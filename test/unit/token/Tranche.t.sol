@@ -3,7 +3,7 @@ pragma solidity 0.8.21;
 
 import "src/interfaces/IERC7575.sol";
 import "src/interfaces/IERC7540.sol";
-import {TrancheToken} from "src/token/Tranche.sol";
+import {Tranche} from "src/token/Tranche.sol";
 import {MockRoot} from "test/mocks/MockRoot.sol";
 import {MockRestrictionManager} from "test/mocks/MockRestrictionManager.sol";
 import "forge-std/Test.sol";
@@ -12,8 +12,8 @@ interface ERC20Like {
     function balanceOf(address) external view returns (uint256);
 }
 
-contract TrancheTokenTest is Test {
-    TrancheToken token;
+contract TrancheTest is Test {
+    Tranche token;
     MockRestrictionManager restrictionManager;
 
     address self;
@@ -24,7 +24,7 @@ contract TrancheTokenTest is Test {
 
     function setUp() public {
         self = address(this);
-        token = new TrancheToken(18);
+        token = new Tranche(18);
         token.file("name", "Some Token");
         token.file("symbol", "ST");
 
@@ -37,7 +37,7 @@ contract TrancheTokenTest is Test {
         address hook = makeAddr("hook");
 
         // fail: unrecognized param
-        vm.expectRevert(bytes("TrancheToken/file-unrecognized-param"));
+        vm.expectRevert(bytes("Tranche/file-unrecognized-param"));
         token.file("random", hook);
 
         // success
@@ -51,7 +51,7 @@ contract TrancheTokenTest is Test {
         token.deny(self);
 
         // auth fail
-        vm.expectRevert(bytes("TrancheToken/not-authorized"));
+        vm.expectRevert(bytes("Tranche/not-authorized"));
         token.file("hook", hook);
 
         vm.expectRevert(bytes("Auth/not-authorized"));
