@@ -62,7 +62,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     {
         require(topUpAmount <= address(this).balance, "CentrifugeRouter/insufficient-funds-to-topup");
 
-        address asset = poolManager.getVaultAsset(vault);
+        (address asset,) = poolManager.getVaultAsset(vault);
 
         if (owner == address(this)) {
             _approveMax(asset, vault);
@@ -81,7 +81,8 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         require(owner == _initiator || owner == address(this), "CentrifugeRouter/invalid-owner");
 
         lockedRequests[controller][vault] += amount;
-        SafeTransferLib.safeTransferFrom(poolManager.getVaultAsset(vault), owner, address(escrow), amount);
+        (address asset,) = poolManager.getVaultAsset(vault);
+        SafeTransferLib.safeTransferFrom(asset, owner, address(escrow), amount);
         emit LockDepositRequest(vault, controller, owner, _initiator, amount);
     }
 
@@ -97,7 +98,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         require(lockedRequest > 0, "CentrifugeRouter/user-has-no-locked-balance");
         lockedRequests[_initiator][vault] = 0;
 
-        address asset = poolManager.getVaultAsset(vault);
+        (address asset,) = poolManager.getVaultAsset(vault);
 
         escrow.approveMax(asset, address(this));
         SafeTransferLib.safeTransferFrom(asset, address(escrow), _initiator, lockedRequest);
@@ -111,7 +112,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         require(lockedRequest > 0, "CentrifugeRouter/controller-has-no-balance");
         lockedRequests[controller][vault] = 0;
 
-        address asset = poolManager.getVaultAsset(vault);
+        (address asset,) = poolManager.getVaultAsset(vault);
 
         escrow.approveMax(asset, address(this));
         SafeTransferLib.safeTransferFrom(asset, address(escrow), address(this), lockedRequest);
@@ -149,7 +150,14 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
             "CentrifugeRouter/invalid-sender"
         );
         uint256 maxRedeem = IERC7540Vault(vault).maxRedeem(controller);
-        IERC7540Vault(vault).redeem(maxRedeem, receiver, controller);
+
+        (address asset, bool erc20Wrapper) = poolManager.getVaultAsset(vault);
+        if (erc20Wrapper) {
+            uint256 assets = IERC7540Vault(vault).redeem(maxRedeem, address(this), controller);
+            unwrap(asset, assets, receiver);
+        } else {
+            IERC7540Vault(vault).redeem(maxRedeem, receiver, controller);
+        }
     }
 
     // --- Manage permissionless claiming ---
@@ -183,7 +191,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         require(IERC20Wrapper(wrapper).depositFor(address(this), amount), "CentrifugeRouter/deposit-for-failed");
     }
 
-    function unwrap(address wrapper, uint256 amount, address receiver) external payable protected {
+    function unwrap(address wrapper, uint256 amount, address receiver) public payable protected {
         amount = MathLib.min(amount, IERC20(wrapper).balanceOf(address(this)));
         require(amount != 0, "CentrifugeRouter/zero-balance");
 
