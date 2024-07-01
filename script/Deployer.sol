@@ -8,6 +8,7 @@ import {InvestmentManager} from "src/InvestmentManager.sol";
 import {TrancheTokenFactory} from "src/factories/TrancheTokenFactory.sol";
 import {ERC7540VaultFactory} from "src/factories/ERC7540VaultFactory.sol";
 import {RestrictionManagerFactory} from "src/factories/RestrictionManagerFactory.sol";
+import {TransferProxyFactory} from "src/factories/TransferProxyFactory.sol";
 import {PoolManager} from "src/PoolManager.sol";
 import {Escrow} from "src/Escrow.sol";
 import {CentrifugeRouter} from "src/CentrifugeRouter.sol";
@@ -42,6 +43,7 @@ contract Deployer is Script {
     address public vaultFactory;
     address public restrictionManagerFactory;
     address public trancheTokenFactory;
+    address public transferProxyFactory;
 
     function deploy(address deployer) public {
         // If no salt is provided, a pseudo-random salt is generated,
@@ -57,6 +59,7 @@ contract Deployer is Script {
         trancheTokenFactory = address(new TrancheTokenFactory{salt: salt}(address(root), deployer));
         investmentManager = new InvestmentManager(address(root), address(escrow));
         poolManager = new PoolManager(address(escrow), vaultFactory, restrictionManagerFactory, trancheTokenFactory);
+        transferProxyFactory = address(new TransferProxyFactory{salt: salt}(address(poolManager)));
 
         routerEscrow = new Escrow(deployer);
         centrifugeRouter = new CentrifugeRouter(address(routerEscrow), address(poolManager));
