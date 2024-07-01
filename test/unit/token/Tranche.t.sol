@@ -128,7 +128,7 @@ contract TrancheTokenTest is Test {
         assertEq(token.balanceOf(sender), 0);
     }
 
-    // // transfer
+    // transfer
     function testTransfer(uint256 amount) public {
         amount = bound(amount, 0, type(uint128).max / 2);
 
@@ -157,7 +157,7 @@ contract TrancheTokenTest is Test {
         token.transfer(targetUser, amount);
     }
 
-    // // auth transfer
+    // auth transfer
     function testAuthTransferFrom(uint256 amount) public {
         amount = bound(amount, 0, type(uint128).max);
         address sourceUser = makeAddr("sourceUser");
@@ -175,7 +175,7 @@ contract TrancheTokenTest is Test {
         assertEq(token.balanceOf(self), amount);
     }
 
-    // // mint
+    // mint
     function testMintTokensToMemberWorks(uint256 amount) public {
         amount = bound(amount, 0, type(uint128).max / 2);
 

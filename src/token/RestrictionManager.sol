@@ -146,10 +146,7 @@ contract RestrictionManager is Auth, IRestrictionManager, IHook {
     function updateMember(address token, address user, uint64 validUntil) public auth {
         require(block.timestamp <= validUntil, "RestrictionManager/invalid-valid-until");
         require(!root.endorsed(user), "RestrictionManager/endorsed-user-cannot-be-updated");
-        _updateMember(token, user, validUntil);
-    }
 
-    function _updateMember(address token, address user, uint64 validUntil) internal {
         uint128 hookData = validUntil.shiftLeft(64).setBit(FREEZE_BIT, isFrozen(token, user));
         ITrancheToken(token).setHookData(user, bytes16(hookData));
 
