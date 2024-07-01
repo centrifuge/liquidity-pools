@@ -13,7 +13,7 @@ struct InvestmentState {
     uint256 redeemPrice;
     /// @dev Remaining invest (deposit) order in assets
     uint128 pendingDepositRequest;
-    /// @dev Remaining redeem order in assets
+    /// @dev Remaining redeem order in tranche tokens
     uint128 pendingRedeemRequest;
     /// @dev Currency that can be claimed using `claimCancelDepositRequest()`
     uint128 claimableCancelDepositRequest;
