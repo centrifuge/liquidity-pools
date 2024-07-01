@@ -8,7 +8,8 @@ contract MockGasService is Mock {
         return values_uint256_return["estimate"];
     }
 
-    function shouldRefuel(address, bytes calldata) public view returns (bool) {
+    function shouldRefuel(address, bytes calldata) public returns (bool) {
+        call("shouldRefuel");
         return values_bool_return["shouldRefuel"];
     }
 }
