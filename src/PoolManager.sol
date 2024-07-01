@@ -87,7 +87,7 @@ contract PoolManager is Auth, IPoolManager {
             abi.encodePacked(uint8(MessagesLib.Call.Transfer), assetId, msg.sender.toBytes32(), recipient, amount),
             address(this)
         );
-        emit TransferCurrency(asset, recipient, amount);
+        emit TransferCurrency(asset, msg.sender, recipient, amount);
     }
 
     /// @inheritdoc IPoolManager
@@ -111,7 +111,7 @@ contract PoolManager is Auth, IPoolManager {
             address(this)
         );
 
-        emit TransferTranchesToCentrifuge(poolId, trancheId, destinationAddress, amount);
+        emit TransferTranchesToCentrifuge(poolId, trancheId, msg.sender, destinationAddress, amount);
     }
 
     /// @inheritdoc IPoolManager
@@ -139,7 +139,7 @@ contract PoolManager is Auth, IPoolManager {
             address(this)
         );
 
-        emit TransferTranchesToEVM(poolId, trancheId, destinationChainId, destinationAddress, amount);
+        emit TransferTranchesToEVM(poolId, trancheId, msg.sender, destinationChainId, destinationAddress, amount);
     }
 
     // --- Incoming message handling ---

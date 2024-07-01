@@ -55,14 +55,19 @@ interface IPoolManager {
     event PriceUpdate(
         uint64 indexed poolId, bytes16 indexed trancheId, address indexed asset, uint256 price, uint64 computedAt
     );
-    event TransferCurrency(address indexed asset, bytes32 indexed recipient, uint128 amount);
+    event TransferCurrency(address indexed asset, address indexed sender, bytes32 indexed recipient, uint128 amount);
     event TransferTranchesToCentrifuge(
-        uint64 indexed poolId, bytes16 indexed trancheId, bytes32 destinationAddress, uint128 amount
+        uint64 indexed poolId,
+        bytes16 indexed trancheId,
+        address indexed sender,
+        bytes32 destinationAddress,
+        uint128 amount
     );
     event TransferTranchesToEVM(
         uint64 indexed poolId,
         bytes16 indexed trancheId,
-        uint64 indexed destinationChainId,
+        address indexed sender,
+        uint64 destinationChainId,
         address destinationAddress,
         uint128 amount
     );

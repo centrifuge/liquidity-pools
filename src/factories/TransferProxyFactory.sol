@@ -44,6 +44,8 @@ contract TransferProxyFactory is ITransferProxyFactory {
 
         address proxy = address(new TransferProxy(poolManager, destination));
         proxies[destination] = proxy;
+
+        emit DeployTransferProxy(destination, proxy);
         return proxy;
     }
 }
