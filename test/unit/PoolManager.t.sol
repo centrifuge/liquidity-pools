@@ -329,7 +329,7 @@ contract PoolManagerTest is BaseTest {
         poolManager.transferTrancheTokensToCentrifuge(poolId, trancheId, centChainAddress, amount);
         assertEq(trancheToken.balanceOf(address(this)), 0);
 
-        // Finally, verify the connector called `router.send`
+        // Finally, verify the connector called `adapter.send`
         bytes memory message = abi.encodePacked(
             uint8(MessagesLib.Call.TransferTrancheTokens),
             poolId,
@@ -339,7 +339,7 @@ contract PoolManagerTest is BaseTest {
             centChainAddress,
             amount
         );
-        assertEq(router1.sent(message), 1);
+        assertEq(adapter1.sent(message), 1);
     }
 
     function testTransferTrancheTokensFromCentrifuge(uint128 amount) public {

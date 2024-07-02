@@ -14,7 +14,7 @@ import {Guardian, SafeLike} from "src/admin/Guardian.sol";
 import "forge-std/Test.sol";
 import "forge-std/StdJson.sol";
 
-interface RouterLike {
+interface AdapterLike {
     function send(bytes memory message) external;
     function wards(address ward) external view returns (uint256);
 }
@@ -44,9 +44,9 @@ contract ForkTest is Test {
                 address root = _get(i, ".contracts.root");
                 address investmentManager = _get(i, ".contracts.investmentManager");
                 address poolManager = _get(i, ".contracts.poolManager");
-                address gateway = _get(i, ".contracts.gateway");
+                address payable gateway = payable(_get(i, ".contracts.gateway"));
                 address escrow = _get(i, ".contracts.escrow");
-                address router = _get(i, ".contracts.router");
+                address adapter = _get(i, ".contracts.adapter");
                 address trancheTokenFactory = _get(i, ".contracts.trancheTokenFactory");
                 address vaultFactory = _get(i, ".contracts.vaultFactory");
                 address restrictionManagerFactory = _get(i, ".contracts.restrictionManagerFactory");
@@ -82,7 +82,6 @@ contract ForkTest is Test {
                 assertEq(address(Gateway(gateway).root()), root);
                 assertEq(address(InvestmentManager(investmentManager).gateway()), gateway);
                 assertEq(address(PoolManager(poolManager).gateway()), gateway);
-                // assertEq(address(Gateway(gateway).aggregator()), aggregator);
                 assertEq(Gateway(gateway).wards(root), 1);
                 assertEq(Root(root).wards(gateway), 1);
                 assertEq(Gateway(gateway).wards(deployer), 0);
@@ -95,10 +94,10 @@ contract ForkTest is Test {
 
                 // UserEscrow
 
-                // Router
-                assertEq(RouterLike(router).wards(root), 1);
-                assertEq(RouterLike(router).wards(deployer), 0);
-                assertEq(RouterLike(router).wards(adminSafe), 0);
+                // Adapter
+                assertEq(AdapterLike(adapter).wards(root), 1);
+                assertEq(AdapterLike(adapter).wards(deployer), 0);
+                assertEq(AdapterLike(adapter).wards(adminSafe), 0);
             }
         }
     }

@@ -104,7 +104,10 @@ contract ERC7540Vault is Auth, IERC7540Vault {
         );
         require(IERC20(asset).balanceOf(owner) >= assets, "ERC7540Vault/insufficient-balance");
 
-        require(manager.requestDeposit(address(this), assets, controller, owner), "ERC7540Vault/request-deposit-failed");
+        require(
+            manager.requestDeposit(address(this), assets, controller, owner, msg.sender),
+            "ERC7540Vault/request-deposit-failed"
+        );
         SafeTransferLib.safeTransferFrom(asset, owner, address(escrow), assets);
 
         emit DepositRequest(controller, owner, REQUEST_ID, msg.sender, assets);
@@ -124,7 +127,10 @@ contract ERC7540Vault is Auth, IERC7540Vault {
     /// @inheritdoc IERC7540Redeem
     function requestRedeem(uint256 shares, address controller, address owner) public returns (uint256) {
         require(IERC20(share).balanceOf(owner) >= shares, "ERC7540Vault/insufficient-balance");
-        require(manager.requestRedeem(address(this), shares, controller, owner), "ERC7540Vault/request-redeem-failed");
+        require(
+            manager.requestRedeem(address(this), shares, controller, owner, msg.sender),
+            "ERC7540Vault/request-redeem-failed"
+        );
 
         // If msg.sender is operator of owner, the transfer is executed as if
         // the sender is the owner, to bypass the allowance check
@@ -153,7 +159,7 @@ contract ERC7540Vault is Auth, IERC7540Vault {
     /// @inheritdoc IERC7540CancelDeposit
     function cancelDepositRequest(uint256, address controller) external {
         validateController(controller);
-        manager.cancelDepositRequest(address(this), controller);
+        manager.cancelDepositRequest(address(this), controller, msg.sender);
         emit CancelDepositRequest(controller, REQUEST_ID, msg.sender);
     }
 
@@ -180,7 +186,7 @@ contract ERC7540Vault is Auth, IERC7540Vault {
     /// @inheritdoc IERC7540CancelRedeem
     function cancelRedeemRequest(uint256, address controller) external {
         validateController(controller);
-        manager.cancelRedeemRequest(address(this), controller);
+        manager.cancelRedeemRequest(address(this), controller, msg.sender);
         emit CancelRedeemRequest(controller, REQUEST_ID, msg.sender);
     }
 

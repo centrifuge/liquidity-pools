@@ -6,12 +6,12 @@ import {Gateway} from "src/gateway/Gateway.sol";
 import {MockCentrifugeChain} from "test/mocks/MockCentrifugeChain.sol";
 import {Escrow} from "src/Escrow.sol";
 import {Guardian} from "src/admin/Guardian.sol";
-import {MockRouter} from "test/mocks/MockRouter.sol";
+import {MockAdapter} from "test/mocks/MockAdapter.sol";
 import {PoolManager, Pool, Tranche} from "src/PoolManager.sol";
 import {ERC20} from "src/token/ERC20.sol";
 import {TrancheToken} from "src/token/Tranche.sol";
 import {ERC7540VaultTest} from "test/unit/ERC7540Vault.t.sol";
-import {PermissionlessRouter} from "test/mocks/PermissionlessRouter.sol";
+import {PermissionlessAdapter} from "test/mocks/PermissionlessAdapter.sol";
 import {Root} from "src/Root.sol";
 import {ERC7540Vault} from "src/ERC7540Vault.sol";
 import {AxelarScript} from "script/Axelar.s.sol";
@@ -38,8 +38,8 @@ contract DeployTest is Test, Deployer {
 
     function setUp() public {
         deploy(address(this));
-        PermissionlessRouter router = new PermissionlessRouter(address(aggregator));
-        wire(address(router));
+        PermissionlessAdapter adapter = new PermissionlessAdapter(address(gateway));
+        wire(address(adapter));
 
         // overwrite deployed guardian with a new mock safe guardian
         pausers = new address[](3);
@@ -47,13 +47,13 @@ contract DeployTest is Test, Deployer {
         pausers[1] = makeAddr("pauser2");
         pausers[2] = makeAddr("pauser3");
         adminSafe = address(new MockSafe(pausers, 1));
-        guardian = new Guardian(adminSafe, address(root), address(aggregator));
+        guardian = new Guardian(adminSafe, address(root), address(gateway));
         root.rely(address(guardian));
 
         erc20 = newErc20("Test", "TEST", 6);
         self = address(this);
 
-        removeDeployerAccess(address(router), address(this));
+        removeDeployerAccess(address(adapter), address(this));
     }
 
     function testDeployerHasNoAccess() public {
@@ -64,7 +64,6 @@ contract DeployTest is Test, Deployer {
         assertEq(poolManager.wards(address(this)), 0);
         assertEq(escrow.wards(address(this)), 0);
         assertEq(gateway.wards(address(this)), 0);
-        assertEq(aggregator.wards(address(this)), 0);
         // check factories
         assertEq(WardLike(trancheTokenFactory).wards(address(this)), 0);
         assertEq(WardLike(vaultFactory).wards(address(this)), 0);
@@ -98,6 +97,7 @@ contract DeployTest is Test, Deployer {
         ERC7540Vault vault = ERC7540Vault(vault_);
 
         deal(address(erc20), self, amount);
+        deal(address(gateway), 10 ether);
 
         vm.prank(address(gateway));
         poolManager.updateMember(poolId, trancheId, self, validUntil);

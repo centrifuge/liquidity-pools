@@ -18,7 +18,7 @@ interface IGuardian {
     /// @dev callable by safe only
     function cancelRely(address target) external;
 
-    /// @notice Dispute an aggregator message recovery
+    /// @notice Dispute an gateway message recovery
     /// @dev callable by safe only
     function disputeMessageRecovery(bytes32 messageHash) external;
 }

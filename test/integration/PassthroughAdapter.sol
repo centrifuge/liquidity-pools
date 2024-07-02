@@ -16,10 +16,10 @@ interface GatewayLike {
     function handle(bytes memory message) external;
 }
 
-/// @title  PassthroughRouter
+/// @title  PassthroughAdapter
 /// @notice Routing contract that accepts any incomming messages and forwards them
 ///         to the gateway and solely emits an event for outgoing messages.
-contract PassthroughRouter is Auth {
+contract PassthroughAdapter is Auth {
     address internal constant PRECOMPILE = 0x0000000000000000000000000000000000000800;
     bytes32 internal constant FAKE_COMMAND_ID = keccak256("FAKE_COMMAND_ID");
 
@@ -36,7 +36,7 @@ contract PassthroughRouter is Auth {
         if (what == "gateway") {
             gateway = GatewayLike(addr);
         } else {
-            revert("LocalRouter/file-unrecognized-param");
+            revert("PassthroughAdapter/file-unrecognized-param");
         }
 
         emit File(what, addr);

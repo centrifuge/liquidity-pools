@@ -32,7 +32,7 @@ contract CentrifugeRouterTest is BaseTest {
         erc20.mint(self, amount);
         erc20.approve(address(centrifugeRouter), amount);
 
-        vm.expectRevert("CentrifugeRouter/unknown-vault");
+        vm.expectRevert("PoolManager/unknown-vault");
         centrifugeRouter.lockDepositRequest(makeAddr("maliciousVault"), amount, self, self);
 
         centrifugeRouter.lockDepositRequest(vault_, amount, self, self);

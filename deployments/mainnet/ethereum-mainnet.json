@@ -21,7 +21,7 @@
             "0x2F1724cc5005F376411747dFE24fb7412f5955B1",
             "0x3cE760441A4E9BD2c40A69d39A472052Ac14e0D9"
         ],
-        "router": {
+        "adapter": {
             "name": "Axelar",
             "axelarGateway": "0x4F4495243837681061C4743b74B3eEdf548D56A5"
         },
@@ -35,7 +35,7 @@
         "gateway": "0x634F036fE66579E901c7bA34e33DF422E37A0037",
         "escrow": "0xd595E1483c507E74E2E6A3dE8e7D08d8f6F74936",
         "userEscrow": "0x9fc3A3bcEdc1CaB14EfC1B7ef45dFBDd3d17c9d7",
-        "router": "0x8174D5f12Ce682459864D8C081f9635012Ab51c2",
+        "adapter": "0x8174D5f12Ce682459864D8C081f9635012Ab51c2",
         "trancheTokenFactory": "0x4aEFE6CeFEd5D0A30679E41C0B3Fee6cbAa6ADf6",
         "liquidityPoolFactory": "0x7f93eDB11d5Dc23F04C4E9382aa0d3F31E95BF2C",
         "restrictionManagerFactory": "0xf4D7F6919eF0B495a2551F7299324961F29aE7aC",
