@@ -35,6 +35,13 @@ struct UndeployedTranche {
     address hook;
 }
 
+struct VaultAsset {
+    /// @dev Address of the asset
+    address asset;
+    /// @dev Whether this wrapper conforms to the IERC20Wrapper interface
+    bool erc20Wrapper;
+}
+
 interface IPoolManager {
     event File(bytes32 indexed what, address data);
     event AddAsset(uint128 indexed assetId, address indexed asset);
@@ -48,14 +55,19 @@ interface IPoolManager {
     event PriceUpdate(
         uint64 indexed poolId, bytes16 indexed trancheId, address indexed asset, uint256 price, uint64 computedAt
     );
-    event TransferCurrency(address indexed asset, bytes32 indexed recipient, uint128 amount);
+    event TransferCurrency(address indexed asset, address indexed sender, bytes32 indexed recipient, uint128 amount);
     event TransferTranchesToCentrifuge(
-        uint64 indexed poolId, bytes16 indexed trancheId, bytes32 destinationAddress, uint128 amount
+        uint64 indexed poolId,
+        bytes16 indexed trancheId,
+        address indexed sender,
+        bytes32 destinationAddress,
+        uint128 amount
     );
     event TransferTranchesToEVM(
         uint64 indexed poolId,
         bytes16 indexed trancheId,
-        uint64 indexed destinationChainId,
+        address indexed sender,
+        uint64 destinationChainId,
         address destinationAddress,
         uint128 amount
     );
@@ -67,7 +79,7 @@ interface IPoolManager {
     function assetToId(address) external view returns (uint128 assetId);
 
     /// @notice TODO
-    function vaultToAsset(address) external view returns (address asset);
+    function vaultToAsset(address) external view returns (address asset, bool erc20Wrapper);
 
     /// @notice TODO
     function file(bytes32 what, address data) external;
@@ -171,7 +183,7 @@ interface IPoolManager {
     ///         but in that case each caller MUST make sure they handle the case
     ///         where a 0 address is returned. Using this method, that handling is done
     ///         on the behalf the caller.
-    function getVaultAsset(address vault) external view returns (address);
+    function getVaultAsset(address vault) external view returns (address asset, bool erc20Wrapper);
 
     /// @notice TODO
     function isAllowedAsset(uint64 poolId, address asset) external view returns (bool);

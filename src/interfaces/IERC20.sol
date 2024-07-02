@@ -176,7 +176,18 @@ interface IERC20Permit {
 }
 
 interface IERC20Wrapper {
+    /**
+     * @dev Returns the address of the underlying ERC-20 token that is being wrapped.
+     */
     function underlying() external view returns (address);
+
+    /**
+     * @dev Allow a user to deposit underlying tokens and mint the corresponding number of wrapped tokens.
+     */
     function depositFor(address account, uint256 value) external returns (bool);
+
+    /**
+     * @dev Allow a user to burn a number of wrapped tokens and withdraw the corresponding number of underlying tokens.
+     */
     function withdrawTo(address account, uint256 value) external returns (bool);
 }
