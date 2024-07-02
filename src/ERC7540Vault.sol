@@ -6,13 +6,10 @@ import {EIP712Lib} from "src/libraries/EIP712Lib.sol";
 import {SignatureLib} from "src/libraries/SignatureLib.sol";
 import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 import {IInvestmentManager} from "src/interfaces/IInvestmentManager.sol";
+import {ITranche} from "src/interfaces/token/ITranche.sol";
 import "src/interfaces/IERC7540.sol";
 import "src/interfaces/IERC7575.sol";
 import "src/interfaces/IERC20.sol";
-
-interface AuthTransferLike {
-    function authTransferFrom(address sender, address from, address to, uint256 amount) external returns (bool);
-}
 
 /// @title  ERC7540Vault
 /// @notice Asynchronous Tokenized Vault standard implementation for Centrifuge pools
@@ -25,20 +22,16 @@ interface AuthTransferLike {
 ///         After execution users can use the deposit, mint, redeem and withdraw functions to get their shares
 ///         and/or assets from the pools.
 contract ERC7540Vault is Auth, IERC7540Vault {
-    /// @notice Identifier of the Centrifuge pool
+    /// @inheritdoc IERC7540Vault
     uint64 public immutable poolId;
 
-    /// @notice Identifier of the tranche of the Centrifuge pool
+    /// @inheritdoc IERC7540Vault
     bytes16 public immutable trancheId;
 
-    /// @notice The investment asset for this vault.
-    ///         Each tranche of a Centrifuge pool can have multiple vaults.
-    ///         One vault for each supported investment asset.
-    ///         Thus tranche shares can be linked to multiple vaults with different assets.
+    /// @inheritdoc IERC7575
     address public immutable asset;
 
-    /// @notice The restricted ERC-20 vault share (tranche token).
-    ///         Has a ratio (token price) of underlying assets exchanged on deposit/mint/withdraw/redeem.
+    /// @inheritdoc IERC7575
     address public immutable share;
     uint8 public immutable shareDecimals;
 
@@ -126,20 +119,22 @@ contract ERC7540Vault is Auth, IERC7540Vault {
 
     /// @inheritdoc IERC7540Redeem
     function requestRedeem(uint256 shares, address controller, address owner) public returns (uint256) {
-        require(IERC20(share).balanceOf(owner) >= shares, "ERC7540Vault/insufficient-balance");
-        require(
-            manager.requestRedeem(address(this), shares, controller, owner, msg.sender),
-            "ERC7540Vault/request-redeem-failed"
-        );
+        require(ITranche(share).balanceOf(owner) >= shares, "ERC7540Vault/insufficient-balance");
 
         // If msg.sender is operator of owner, the transfer is executed as if
         // the sender is the owner, to bypass the allowance check
         address sender = isOperator[owner][msg.sender] ? owner : msg.sender;
 
         require(
-            AuthTransferLike(share).authTransferFrom(sender, owner, address(escrow), shares),
-            "ERC7540Vault/transfer-failed"
+            manager.requestRedeem(address(this), shares, controller, owner, sender),
+            "ERC7540Vault/request-redeem-failed"
         );
+
+        try ITranche(share).authTransferFrom(sender, owner, address(escrow), shares) returns (bool) {}
+        catch {
+            // Support tranche tokens that block authTransferFrom. In this case ERC20 approval needs to be set
+            require(ITranche(share).transferFrom(owner, address(escrow), shares), "ERC7540Vault/transfer-from-failed");
+        }
 
         emit RedeemRequest(controller, owner, REQUEST_ID, msg.sender, shares);
         return REQUEST_ID;

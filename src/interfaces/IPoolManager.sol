@@ -4,21 +4,21 @@ pragma solidity >=0.5.0;
 /// @dev Centrifuge pools
 struct Pool {
     uint256 createdAt;
-    mapping(bytes16 trancheId => Tranche) tranches;
-    mapping(address asset => bool) allowedCurrencies;
+    mapping(bytes16 trancheId => TrancheDetails) tranches;
+    mapping(address asset => bool) allowedAssets;
 }
 
 /// @dev Each Centrifuge pool is associated to 1 or more tranches
-struct Tranche {
+struct TrancheDetails {
     address token;
     /// @dev Each tranche can have multiple vaults deployed,
     ///      each linked to a unique asset
     mapping(address asset => address vault) vaults;
     /// @dev Each tranche has a price per vault
-    mapping(address vault => TrancheTokenPrice) prices;
+    mapping(address vault => TranchePrice) prices;
 }
 
-struct TrancheTokenPrice {
+struct TranchePrice {
     uint128 price;
     uint64 computedAt;
 }
@@ -31,8 +31,8 @@ struct UndeployedTranche {
     /// @dev Metadata of the to be deployed erc20 token
     string tokenName;
     string tokenSymbol;
-    /// @dev Identifier of the restriction set that applies to this tranche token
-    uint8 restrictionSet;
+    /// @dev Address of the hook
+    address hook;
 }
 
 interface IPoolManager {
@@ -42,17 +42,17 @@ interface IPoolManager {
     event AllowAsset(uint64 indexed poolId, address indexed asset);
     event DisallowAsset(uint64 indexed poolId, address indexed asset);
     event AddTranche(uint64 indexed poolId, bytes16 indexed trancheId);
-    event DeployTranche(uint64 indexed poolId, bytes16 indexed trancheId, address indexed trancheToken);
+    event DeployTranche(uint64 indexed poolId, bytes16 indexed trancheId, address indexed tranche);
     event DeployVault(uint64 indexed poolId, bytes16 indexed trancheId, address indexed asset, address vault);
     event RemoveVault(uint64 indexed poolId, bytes16 indexed trancheId, address indexed asset, address vault);
     event PriceUpdate(
         uint64 indexed poolId, bytes16 indexed trancheId, address indexed asset, uint256 price, uint64 computedAt
     );
     event TransferCurrency(address indexed asset, bytes32 indexed recipient, uint128 amount);
-    event TransferTrancheTokensToCentrifuge(
+    event TransferTranchesToCentrifuge(
         uint64 indexed poolId, bytes16 indexed trancheId, bytes32 destinationAddress, uint128 amount
     );
-    event TransferTrancheTokensToEVM(
+    event TransferTranchesToEVM(
         uint64 indexed poolId,
         bytes16 indexed trancheId,
         uint64 indexed destinationChainId,
@@ -76,15 +76,11 @@ interface IPoolManager {
     function transfer(address asset, bytes32 recipient, uint128 amount) external;
 
     /// @notice TODO
-    function transferTrancheTokensToCentrifuge(
-        uint64 poolId,
-        bytes16 trancheId,
-        bytes32 destinationAddress,
-        uint128 amount
-    ) external;
+    function transferTranchesToCentrifuge(uint64 poolId, bytes16 trancheId, bytes32 destinationAddress, uint128 amount)
+        external;
 
     /// @notice TODO
-    function transferTrancheTokensToEVM(
+    function transferTranchesToEVM(
         uint64 poolId,
         bytes16 trancheId,
         uint64 destinationChainId,
@@ -113,34 +109,19 @@ interface IPoolManager {
         string memory tokenName,
         string memory tokenSymbol,
         uint8 decimals,
-        uint8 restrictionSet
+        address hook
     ) external;
 
     /// @notice TODO
-    function updateTrancheTokenMetadata(
-        uint64 poolId,
-        bytes16 trancheId,
-        string memory tokenName,
-        string memory tokenSymbol
-    ) external;
+    function updateTrancheMetadata(uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol)
+        external;
 
     /// @notice TODO
-    function updateTrancheTokenPrice(
-        uint64 poolId,
-        bytes16 trancheId,
-        uint128 assetId,
-        uint128 price,
-        uint64 computedAt
-    ) external;
+    function updateTranchePrice(uint64 poolId, bytes16 trancheId, uint128 assetId, uint128 price, uint64 computedAt)
+        external;
 
     /// @notice TODO
-    function updateMember(uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) external;
-
-    /// @notice TODO
-    function freeze(uint64 poolId, bytes16 trancheId, address user) external;
-
-    /// @notice TODO
-    function unfreeze(uint64 poolId, bytes16 trancheId, address user) external;
+    function updateRestriction(uint64 poolId, bytes16 trancheId, bytes memory update) external;
 
     /// @notice A global chain agnostic asset index is maintained on Centrifuge. This function maps
     ///         a asset from the Centrifuge index to its corresponding address on the evm chain.
@@ -155,7 +136,7 @@ interface IPoolManager {
     function handleTransfer(uint128 assetId, address recipient, uint128 amount) external;
 
     /// @notice TODO
-    function handleTransferTrancheTokens(uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 amount)
+    function handleTransferTranches(uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 amount)
         external;
 
     /// @notice TODO
@@ -168,10 +149,10 @@ interface IPoolManager {
     function removeVault(uint64 poolId, bytes16 trancheId, address asset) external;
 
     /// @notice TODO
-    function updateCentrifugeGasPrice(uint256 price, uint256 computedAt) external;
+    function updateCentrifugeGasPrice(uint128 price, uint256 computedAt) external;
 
     /// @notice TODO
-    function getTrancheToken(uint64 poolId, bytes16 trancheId) external view returns (address);
+    function getTranche(uint64 poolId, bytes16 trancheId) external view returns (address);
 
     /// @notice TODO
     function getVault(uint64 poolId, bytes16 trancheId, uint128 assetId) external view returns (address);
@@ -180,7 +161,7 @@ interface IPoolManager {
     function getVault(uint64 poolId, bytes16 trancheId, address asset) external view returns (address);
 
     /// @notice TODO
-    function getTrancheTokenPrice(uint64 poolId, bytes16 trancheId, address asset)
+    function getTranchePrice(uint64 poolId, bytes16 trancheId, address asset)
         external
         view
         returns (uint128 price, uint64 computedAt);

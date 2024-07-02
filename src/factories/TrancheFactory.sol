@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {TrancheToken} from "src/token/Tranche.sol";
+import {Tranche} from "src/token/Tranche.sol";
 import {Auth} from "src/Auth.sol";
 
-interface TrancheTokenFactoryLike {
-    function newTrancheToken(
+interface TrancheFactoryLike {
+    function newTranche(
         uint64 poolId,
         bytes16 trancheId,
         string memory name,
@@ -19,7 +19,7 @@ interface TrancheTokenFactoryLike {
 /// @dev    Utility for deploying new tranche token contracts
 ///         Ensures the addresses are deployed at a deterministic address
 ///         based on the pool id and tranche id.
-contract TrancheTokenFactory is Auth {
+contract TrancheFactory is Auth {
     address public immutable root;
 
     constructor(address _root, address deployer) {
@@ -28,26 +28,26 @@ contract TrancheTokenFactory is Auth {
         emit Rely(deployer);
     }
 
-    function newTrancheToken(
+    function newTranche(
         uint64 poolId,
         bytes16 trancheId,
         string memory name,
         string memory symbol,
         uint8 decimals,
-        address[] calldata trancheTokenWards
+        address[] calldata trancheWards
     ) public auth returns (address) {
         // Salt is hash(poolId + trancheId)
         // same tranche token address on every evm chain
         bytes32 salt = keccak256(abi.encodePacked(poolId, trancheId));
 
-        TrancheToken token = new TrancheToken{salt: salt}(decimals);
+        Tranche token = new Tranche{salt: salt}(decimals);
 
         token.file("name", name);
         token.file("symbol", symbol);
 
         token.rely(root);
-        for (uint256 i = 0; i < trancheTokenWards.length; i++) {
-            token.rely(trancheTokenWards[i]);
+        for (uint256 i = 0; i < trancheWards.length; i++) {
+            token.rely(trancheWards[i]);
         }
         token.deny(address(this));
 

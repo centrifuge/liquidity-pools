@@ -5,15 +5,16 @@ pragma abicoder v2;
 // core contracts
 import {Root} from "src/Root.sol";
 import {InvestmentManager} from "src/InvestmentManager.sol";
-import {PoolManager, Tranche} from "src/PoolManager.sol";
+import {PoolManager} from "src/PoolManager.sol";
 import {Escrow} from "src/Escrow.sol";
 import {ERC7540VaultFactory} from "src/factories/ERC7540VaultFactory.sol";
-import {TrancheTokenFactory} from "src/factories/TrancheTokenFactory.sol";
+import {TrancheFactory} from "src/factories/TrancheFactory.sol";
 import {ERC7540Vault} from "src/ERC7540Vault.sol";
-import {TrancheToken, TrancheTokenLike} from "src/token/Tranche.sol";
+import {Tranche} from "src/token/Tranche.sol";
+import {ITranche} from "src/interfaces/token/ITranche.sol";
 import {ERC20} from "src/token/ERC20.sol";
 import {Gateway} from "src/gateway/Gateway.sol";
-import {RestrictionManagerLike, RestrictionManager} from "src/token/RestrictionManager.sol";
+import {RestrictionManager} from "src/token/RestrictionManager.sol";
 import {MessagesLib} from "src/libraries/MessagesLib.sol";
 import {Deployer} from "script/Deployer.sol";
 import {MockSafe} from "test/mocks/MockSafe.sol";
@@ -46,8 +47,7 @@ contract BaseTest is Deployer, Test {
 
     // default values
     uint128 public defaultAssetId = 1;
-    uint128 public defaultPrice = 1 * 10 ** 18;
-    uint8 public defaultRestrictionSet = 2;
+    uint128 public defaultPrice = 1 * 10**18;
     uint8 public defaultDecimals = 8;
 
     function setUp() public virtual {
@@ -101,13 +101,12 @@ contract BaseTest is Deployer, Test {
         vm.label(address(adapter3), "MockAdapter3");
         vm.label(address(erc20), "ERC20");
         vm.label(address(centrifugeChain), "CentrifugeChain");
-        vm.label(address(centrifugeRouter), "CentrifugeRouter");
+        vm.label(address(router), "CentrifugeRouter");
         vm.label(address(gasService), "GasService");
         vm.label(address(mockedGasService), "MockGasService");
         vm.label(address(escrow), "Escrow");
         vm.label(address(guardian), "Guardian");
-        vm.label(address(poolManager.restrictionManagerFactory()), "RestrictionManagerFactory");
-        vm.label(address(poolManager.trancheTokenFactory()), "TrancheTokenFactory");
+        vm.label(address(poolManager.trancheFactory()), "TrancheFactory");
         vm.label(address(poolManager.vaultFactory()), "ERC7540VaultFactory");
 
         // Exclude predeployed contracts from invariant tests by default
@@ -117,22 +116,21 @@ contract BaseTest is Deployer, Test {
         excludeContract(address(gateway));
         excludeContract(address(erc20));
         excludeContract(address(centrifugeChain));
-        excludeContract(address(centrifugeRouter));
+        excludeContract(address(router));
         excludeContract(address(adapter1));
         excludeContract(address(adapter2));
         excludeContract(address(adapter3));
         excludeContract(address(escrow));
         excludeContract(address(guardian));
-        excludeContract(address(poolManager.restrictionManagerFactory()));
-        excludeContract(address(poolManager.trancheTokenFactory()));
+        excludeContract(address(poolManager.trancheFactory()));
         excludeContract(address(poolManager.vaultFactory()));
     }
 
     // helpers
     function deployVault(
         uint64 poolId,
-        uint8 trancheTokenDecimals,
-        uint8 restrictionSet,
+        uint8 trancheDecimals,
+        address hook,
         string memory tokenName,
         string memory tokenSymbol,
         bytes16 trancheId,
@@ -143,9 +141,9 @@ contract BaseTest is Deployer, Test {
             centrifugeChain.addAsset(assetId, asset);
         }
 
-        if (poolManager.getTrancheToken(poolId, trancheId) == address(0)) {
+        if (poolManager.getTranche(poolId, trancheId) == address(0)) {
             centrifugeChain.addPool(poolId);
-            centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, trancheTokenDecimals, restrictionSet);
+            centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, trancheDecimals, hook);
 
             centrifugeChain.allowAsset(poolId, assetId);
             poolManager.deployTranche(poolId, trancheId);
@@ -168,14 +166,11 @@ contract BaseTest is Deployer, Test {
         bytes16 trancheId,
         uint128 asset
     ) public returns (address) {
-        uint8 restrictionSet = 2;
-        return deployVault(poolId, decimals, restrictionSet, tokenName, tokenSymbol, trancheId, asset, address(erc20));
+        return deployVault(poolId, decimals, restrictionManager, tokenName, tokenSymbol, trancheId, asset, address(erc20));
     }
 
     function deploySimpleVault() public returns (address) {
-        return deployVault(
-            5, 6, defaultRestrictionSet, "name", "symbol", bytes16(bytes("1")), defaultAssetId, address(erc20)
-        );
+        return deployVault(5, 6, restrictionManager, "name", "symbol", bytes16(bytes("1")), defaultAssetId, address(erc20));
     }
 
     function deposit(address _vault, address _investor, uint256 amount) public {
@@ -197,7 +192,7 @@ contract BaseTest is Deployer, Test {
         );
 
         if (claimDeposit) {
-            vault.deposit(amount, _investor); // claim the trancheTokens
+            vault.deposit(amount, _investor); // claim the tranches
         }
         vm.stopPrank();
     }

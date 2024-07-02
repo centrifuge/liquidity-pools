@@ -5,11 +5,7 @@ import {Auth} from "src/Auth.sol";
 import {MessagesLib} from "src/libraries/MessagesLib.sol";
 import {BytesLib} from "src/libraries/BytesLib.sol";
 import {IRoot} from "src/interfaces/IRoot.sol";
-
-interface AuthLike {
-    function rely(address) external;
-    function deny(address) external;
-}
+import {IAuth} from "src/interfaces/IAuth.sol";
 
 interface RecoverLike {
     function recoverTokens(address, address, uint256) external;
@@ -124,7 +120,7 @@ contract Root is Auth, IRoot {
         } else if (call == MessagesLib.Call.RecoverTokens) {
             (address target, address token, address to, uint256 amount) =
                 (message.toAddress(1), message.toAddress(33), message.toAddress(65), message.toUint256(97));
-            RecoverLike(target).recoverTokens(token, to, amount);
+            recoverTokens(target, token, to, amount);
         } else {
             revert("Root/invalid-message");
         }
@@ -133,19 +129,19 @@ contract Root is Auth, IRoot {
     /// --- External contract ward management ---
     /// @inheritdoc IRoot
     function relyContract(address target, address user) external auth {
-        AuthLike(target).rely(user);
+        IAuth(target).rely(user);
         emit RelyContract(target, user);
     }
 
     /// @inheritdoc IRoot
     function denyContract(address target, address user) external auth {
-        AuthLike(target).deny(user);
+        IAuth(target).deny(user);
         emit DenyContract(target, user);
     }
 
     /// --- Token recovery ---
     /// @inheritdoc IRoot
-    function recoverTokens(address target, address token, address to, uint256 amount) external auth {
+    function recoverTokens(address target, address token, address to, uint256 amount) public auth {
         RecoverLike(target).recoverTokens(token, to, amount);
         emit RecoverTokens(target, token, to, amount);
     }

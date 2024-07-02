@@ -5,25 +5,17 @@ import {Root} from "src/Root.sol";
 import {Gateway} from "src/gateway/Gateway.sol";
 import {GasService} from "src/gateway/GasService.sol";
 import {InvestmentManager} from "src/InvestmentManager.sol";
-import {TrancheTokenFactory} from "src/factories/TrancheTokenFactory.sol";
+import {TrancheFactory} from "src/factories/TrancheFactory.sol";
 import {ERC7540VaultFactory} from "src/factories/ERC7540VaultFactory.sol";
-import {RestrictionManagerFactory} from "src/factories/RestrictionManagerFactory.sol";
+import {RestrictionManager} from "src/token/RestrictionManager.sol";
 import {TransferProxyFactory} from "src/factories/TransferProxyFactory.sol";
 import {PoolManager} from "src/PoolManager.sol";
 import {Escrow} from "src/Escrow.sol";
 import {CentrifugeRouter} from "src/CentrifugeRouter.sol";
 import {Guardian} from "src/admin/Guardian.sol";
 import {MockSafe} from "test/mocks/MockSafe.sol";
+import {IAuth} from "src/interfaces/IAuth.sol";
 import "forge-std/Script.sol";
-
-interface AdapterLike {
-    function file(bytes32 what, address data) external;
-}
-
-interface AuthLike {
-    function rely(address who) external;
-    function deny(address who) external;
-}
 
 contract Deployer is Script {
     uint256 internal constant delay = 48 hours;
@@ -38,10 +30,10 @@ contract Deployer is Script {
     Guardian public guardian;
     Gateway public gateway;
     GasService public gasService;
-    CentrifugeRouter public centrifugeRouter; // TODO: rename once adapters => adapters rename is in
+    CentrifugeRouter public router;
     address public vaultFactory;
-    address public restrictionManagerFactory;
-    address public trancheTokenFactory;
+    address public restrictionManager;
+    address public trancheFactory;
     address public transferProxyFactory;
 
     function deploy(address deployer) public {
@@ -54,10 +46,10 @@ contract Deployer is Script {
         root = new Root{salt: salt}(address(escrow), delay, deployer);
 
         vaultFactory = address(new ERC7540VaultFactory(address(root)));
-        restrictionManagerFactory = address(new RestrictionManagerFactory(address(root)));
-        trancheTokenFactory = address(new TrancheTokenFactory{salt: salt}(address(root), deployer));
+        restrictionManager = address(new RestrictionManager{salt: salt}(address(root)));
+        trancheFactory = address(new TrancheFactory{salt: salt}(address(root), deployer));
         investmentManager = new InvestmentManager(address(root), address(escrow));
-        poolManager = new PoolManager(address(escrow), vaultFactory, restrictionManagerFactory, trancheTokenFactory);
+        poolManager = new PoolManager(address(escrow), vaultFactory, trancheFactory);
         transferProxyFactory = address(new TransferProxyFactory{salt: salt}(address(poolManager)));
 
         // TODO THESE VALUES NEEDS TO BE CHECKED
@@ -66,18 +58,18 @@ contract Deployer is Script {
 
         gateway = new Gateway(address(root), address(investmentManager), address(poolManager), address(gasService));
         routerEscrow = new Escrow(deployer);
-        centrifugeRouter = new CentrifugeRouter(address(routerEscrow), address(poolManager), address(gateway));
-        AuthLike(address(routerEscrow)).rely(address(centrifugeRouter));
-        root.endorse(address(centrifugeRouter));
+        router = new CentrifugeRouter(address(routerEscrow), address(gateway), address(poolManager));
+        IAuth(address(routerEscrow)).rely(address(router));
+        root.endorse(address(router));
         root.endorse(address(escrow));
 
-        AuthLike(vaultFactory).rely(address(poolManager));
-        AuthLike(trancheTokenFactory).rely(address(poolManager));
-        AuthLike(restrictionManagerFactory).rely(address(poolManager));
+        IAuth(vaultFactory).rely(address(poolManager));
+        IAuth(trancheFactory).rely(address(poolManager));
+        IAuth(restrictionManager).rely(address(poolManager));
 
-        AuthLike(vaultFactory).rely(address(root));
-        AuthLike(trancheTokenFactory).rely(address(root));
-        AuthLike(restrictionManagerFactory).rely(address(root));
+        IAuth(vaultFactory).rely(address(root));
+        IAuth(trancheFactory).rely(address(root));
+        IAuth(restrictionManager).rely(address(root));
 
         guardian = new Guardian(adminSafe, address(root), address(gateway));
     }
@@ -96,7 +88,7 @@ contract Deployer is Script {
         poolManager.file("investmentManager", address(investmentManager));
         poolManager.file("gasService", address(gasService));
 
-        centrifugeRouter.rely(address(root));
+        router.rely(address(root));
         investmentManager.file("gateway", address(gateway));
         poolManager.file("gateway", address(gateway));
         investmentManager.rely(address(root));
@@ -105,24 +97,24 @@ contract Deployer is Script {
         poolManager.rely(address(root));
         poolManager.rely(address(gateway));
         gateway.rely(address(root));
-        AuthLike(adapter).rely(address(root));
-        AuthLike(address(escrow)).rely(address(root));
-        AuthLike(address(routerEscrow)).rely(address(root));
-        AuthLike(address(escrow)).rely(address(poolManager));
+        IAuth(adapter).rely(address(root));
+        IAuth(address(escrow)).rely(address(root));
+        IAuth(address(routerEscrow)).rely(address(root));
+        IAuth(address(escrow)).rely(address(poolManager));
     }
 
     function removeDeployerAccess(address adapter, address deployer) public {
-        AuthLike(adapter).deny(deployer);
-        AuthLike(vaultFactory).deny(deployer);
-        AuthLike(trancheTokenFactory).deny(deployer);
-        AuthLike(restrictionManagerFactory).deny(deployer);
+        IAuth(adapter).deny(deployer);
+        IAuth(vaultFactory).deny(deployer);
+        IAuth(trancheFactory).deny(deployer);
+        IAuth(restrictionManager).deny(deployer);
         root.deny(deployer);
         investmentManager.deny(deployer);
         poolManager.deny(deployer);
         escrow.deny(deployer);
         routerEscrow.deny(deployer);
         gateway.deny(deployer);
-        centrifugeRouter.deny(deployer);
+        router.deny(deployer);
         gasService.deny(deployer);
     }
 }

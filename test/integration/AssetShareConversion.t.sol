@@ -11,15 +11,14 @@ contract AssetShareConversionTest is BaseTest {
         uint8 TRANCHE_TOKEN_DECIMALS = 18; // Like DAI
 
         ERC20 asset = _newErc20("Asset", "A", INVESTMENT_CURRENCY_DECIMALS);
-        address vault_ = deployVault(
-            poolId, TRANCHE_TOKEN_DECIMALS, defaultRestrictionSet, "", "", trancheId, assetId, address(asset)
-        );
+        address vault_ =
+            deployVault(poolId, TRANCHE_TOKEN_DECIMALS, restrictionManager, "", "", trancheId, assetId, address(asset));
         ERC7540Vault vault = ERC7540Vault(vault_);
-        TrancheTokenLike trancheToken = TrancheTokenLike(address(ERC7540Vault(vault_).share()));
+        ITranche tranche = ITranche(address(ERC7540Vault(vault_).share()));
 
         assertEq(vault.priceLastUpdated(), 0);
         assertEq(vault.pricePerShare(), 0);
-        centrifugeChain.updateTrancheTokenPrice(poolId, trancheId, assetId, 1e18, uint64(block.timestamp));
+        centrifugeChain.updateTranchePrice(poolId, trancheId, assetId, 1e18, uint64(block.timestamp));
         assertEq(vault.priceLastUpdated(), uint64(block.timestamp));
         assertEq(vault.pricePerShare(), 1e6);
 
@@ -37,12 +36,10 @@ contract AssetShareConversionTest is BaseTest {
             poolId, trancheId, bytes32(bytes20(self)), _assetId, uint128(investmentAmount), shares, 0
         );
         vault.mint(shares, self);
-        centrifugeChain.updateTrancheTokenPrice(
-            poolId, trancheId, assetId, 1000000000000000000, uint64(block.timestamp)
-        );
+        centrifugeChain.updateTranchePrice(poolId, trancheId, assetId, 1000000000000000000, uint64(block.timestamp));
 
         // assert share/asset conversion
-        assertEq(trancheToken.totalSupply(), 100000000000000000000);
+        assertEq(tranche.totalSupply(), 100000000000000000000);
         assertEq(vault.totalAssets(), 100000000);
         assertEq(vault.convertToShares(100000000), 100000000000000000000); // tranche tokens have 12 more decimals than
             // assets
@@ -50,9 +47,7 @@ contract AssetShareConversionTest is BaseTest {
         assertEq(vault.pricePerShare(), 1e6);
 
         // assert share/asset conversion after price update
-        centrifugeChain.updateTrancheTokenPrice(
-            poolId, trancheId, assetId, 1200000000000000000, uint64(block.timestamp)
-        );
+        centrifugeChain.updateTranchePrice(poolId, trancheId, assetId, 1200000000000000000, uint64(block.timestamp));
 
         assertEq(vault.totalAssets(), 120000000);
         assertEq(vault.convertToShares(120000000), 100000000000000000000); // tranche tokens have 12 more decimals than
@@ -68,12 +63,11 @@ contract AssetShareConversionTest is BaseTest {
         uint8 TRANCHE_TOKEN_DECIMALS = 6; // Like USDC
 
         ERC20 asset = _newErc20("Currency", "CR", INVESTMENT_CURRENCY_DECIMALS);
-        address vault_ = deployVault(
-            poolId, TRANCHE_TOKEN_DECIMALS, defaultRestrictionSet, "", "", trancheId, assetId, address(asset)
-        );
+        address vault_ =
+            deployVault(poolId, TRANCHE_TOKEN_DECIMALS, restrictionManager, "", "", trancheId, assetId, address(asset));
         ERC7540Vault vault = ERC7540Vault(vault_);
-        TrancheTokenLike trancheToken = TrancheTokenLike(address(ERC7540Vault(vault_).share()));
-        centrifugeChain.updateTrancheTokenPrice(poolId, trancheId, assetId, 1000000, uint64(block.timestamp));
+        ITranche tranche = ITranche(address(ERC7540Vault(vault_).share()));
+        centrifugeChain.updateTranchePrice(poolId, trancheId, assetId, 1000000, uint64(block.timestamp));
 
         // invest
         uint256 investmentAmount = 100000000000000000000; // 100 * 10**18
@@ -89,12 +83,10 @@ contract AssetShareConversionTest is BaseTest {
             poolId, trancheId, bytes32(bytes20(self)), _assetId, uint128(investmentAmount), shares, 0
         );
         vault.mint(shares, self);
-        centrifugeChain.updateTrancheTokenPrice(
-            poolId, trancheId, assetId, 1000000000000000000, uint64(block.timestamp)
-        );
+        centrifugeChain.updateTranchePrice(poolId, trancheId, assetId, 1000000000000000000, uint64(block.timestamp));
 
         // assert share/asset conversion
-        assertEq(trancheToken.totalSupply(), 100000000);
+        assertEq(tranche.totalSupply(), 100000000);
         assertEq(vault.totalAssets(), 100000000000000000000);
         assertEq(vault.convertToShares(100000000000000000000), 100000000); // tranche tokens have 12 less decimals than
             // assets
@@ -102,9 +94,7 @@ contract AssetShareConversionTest is BaseTest {
         assertEq(vault.pricePerShare(), 1e18);
 
         // assert share/asset conversion after price update
-        centrifugeChain.updateTrancheTokenPrice(
-            poolId, trancheId, assetId, 1200000000000000000, uint64(block.timestamp)
-        );
+        centrifugeChain.updateTranchePrice(poolId, trancheId, assetId, 1200000000000000000, uint64(block.timestamp));
 
         assertEq(vault.totalAssets(), 120000000000000000000);
         assertEq(vault.convertToShares(120000000000000000000), 100000000); // tranche tokens have 12 less decimals than

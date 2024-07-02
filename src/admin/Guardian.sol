@@ -5,9 +5,7 @@ import {Root} from "src/Root.sol";
 import {IGuardian} from "src/interfaces/IGuardian.sol";
 
 interface SafeLike {
-    function getOwners() external view returns (address[] memory);
     function isOwner(address signer) external view returns (bool);
-    function getThreshold() external view returns (uint256);
 }
 
 interface GatewayLike {
