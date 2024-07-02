@@ -82,7 +82,7 @@ contract PoolManager is Auth, IPoolManager {
         SafeTransferLib.safeTransferFrom(asset, msg.sender, address(escrow), amount);
 
         gateway.send(
-            abi.encodePacked(uint8(MessagesLib.Call.Transfer), assetId, msg.sender.toBytes32(), recipient, amount),
+            abi.encodePacked(uint8(MessagesLib.Call.TransferAssets), assetId, msg.sender.toBytes32(), recipient, amount),
             address(this)
         );
         emit TransferCurrency(asset, recipient, amount);
@@ -98,7 +98,7 @@ contract PoolManager is Auth, IPoolManager {
         tranche.burn(msg.sender, amount);
         gateway.send(
             abi.encodePacked(
-                uint8(MessagesLib.Call.TransferTranches),
+                uint8(MessagesLib.Call.TransferTrancheTokens),
                 poolId,
                 trancheId,
                 msg.sender.toBytes32(),
@@ -126,7 +126,7 @@ contract PoolManager is Auth, IPoolManager {
         tranche.burn(msg.sender, amount);
         gateway.send(
             abi.encodePacked(
-                uint8(MessagesLib.Call.TransferTranches),
+                uint8(MessagesLib.Call.TransferTrancheTokens),
                 poolId,
                 trancheId,
                 msg.sender.toBytes32(),
@@ -170,9 +170,9 @@ contract PoolManager is Auth, IPoolManager {
                 message.toUint128(41),
                 message.toUint64(57)
             );
-        } else if (call == MessagesLib.Call.Transfer) {
+        } else if (call == MessagesLib.Call.TransferAssets) {
             handleTransfer(message.toUint128(1), message.toAddress(49), message.toUint128(81));
-        } else if (call == MessagesLib.Call.TransferTranches) {
+        } else if (call == MessagesLib.Call.TransferTrancheTokens) {
             handleTransferTranches(
                 message.toUint64(1), message.toBytes16(9), message.toAddress(66), message.toUint128(98)
             );

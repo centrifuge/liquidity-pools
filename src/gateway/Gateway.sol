@@ -214,12 +214,12 @@ contract Gateway is Auth, IGateway {
         address manager;
 
         // Hardcoded paths for root + pool & investment managers for gas efficiency
-        if (id >= 1 && id <= 8 || id >= 23 && id <= 26 || id == 32) {
-            manager = poolManager;
-        } else if (id >= 9 && id <= 20 || id == 27) {
-            manager = investmentManager;
-        } else if (id >= 21 && id <= 22 || id == 31) {
+        if (id >= 5 && id <= 7) {
             manager = address(root);
+        } else if (id >= 9 && id <= 20) {
+            manager = poolManager;
+        } else if (id >= 21 && id <= 29) {
+            manager = investmentManager;
         } else {
             // Dynamic path for other managers, to be able to easily
             // extend functionality of Liquidity Pools

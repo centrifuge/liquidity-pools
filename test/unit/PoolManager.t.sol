@@ -322,7 +322,7 @@ contract PoolManagerTest is BaseTest {
 
         // Finally, verify the connector called `adapter.send`
         bytes memory message = abi.encodePacked(
-            uint8(MessagesLib.Call.TransferTranches),
+            uint8(MessagesLib.Call.TransferTrancheTokens),
             poolId,
             trancheId,
             bytes32(bytes20(address(this))),
