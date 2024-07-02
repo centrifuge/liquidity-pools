@@ -265,4 +265,7 @@ interface IERC7540Vault is
     event RedeemClaimable(address indexed controller, uint256 indexed requestId, uint256 assets, uint256 shares);
     event CancelDepositClaimable(address indexed controller, uint256 indexed requestId, uint256 assets);
     event CancelRedeemClaimable(address indexed controller, uint256 indexed requestId, uint256 shares);
+
+    function poolId() external view returns (uint64);
+    function trancheId() external view returns (bytes16);
 }

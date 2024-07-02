@@ -56,7 +56,15 @@ interface ICentrifugeRouter {
     function transfer(address asset, bytes32 recipient, uint128 amount) external;
 
     /// @notice TODO
-    function transferTrancheToken(address vault, bytes32 destinationAddress, uint128 amount) external;
+    function transferTrancheTokensToEVM(
+        address vault,
+        uint64 destinationChainId,
+        address destinationAddress,
+        uint128 amount
+    ) external;
+
+    /// @notice TODO
+    function transferTrancheTokensToCentrifuge(address vault, bytes32 destinationAddress, uint128 amount) external;
 
     // --- ERC20 permit ---
     /// @notice TODO
@@ -72,7 +80,8 @@ interface ICentrifugeRouter {
 
     // --- ERC20 auth transfer ---
     /// @notice TODO
-    function authTransferFrom(address vault, address sender, address owner, address recipient, uint256 amount) external;
+    function authTransferFrom(address vault, address sender, address owner, address recipient, uint256 amount)
+        external;
 
     // --- Batching ---
     /// @notice TODO

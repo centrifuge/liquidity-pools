@@ -10,6 +10,10 @@ import {ICentrifugeRouter} from "src/interfaces/ICentrifugeRouter.sol";
 import {IPoolManager} from "src/interfaces/IPoolManager.sol";
 import {IEscrow} from "src/interfaces/IEscrow.sol";
 
+interface AuthTransferLike {
+    function authTransferFrom(address sender, address owner, address recipient, uint256 amount) external;
+}
+
 contract CentrifugeRouter is Auth, ICentrifugeRouter {
     IEscrow public immutable escrow;
     IPoolManager public immutable poolManager;
@@ -111,7 +115,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
 
     /// @inheritdoc ICentrifugeRouter
     function cancelDepositRequest(address vault, address controller) external protected {
-        IERC7540Vault(vault).cancelDeposit(0, controller);
+        IERC7540Vault(vault).cancelDepositRequest(0, controller);
     }
 
     /// @inheritdoc ICentrifugeRouter
@@ -149,8 +153,24 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     }
 
     /// @inheritdoc ICentrifugeRouter
-    function transferTrancheToken(address vault, bytes32 destinationAddress, uint128 amount) external protected {
-        IPoolManager(poolManager).transfer(
+    function transferTrancheTokensToEVM(
+        address vault,
+        uint64 destinationChainId,
+        address destinationAddress,
+        uint128 amount
+    ) external protected {
+        IPoolManager(poolManager).transferTrancheTokensToEVM(
+            IERC7540Vault(vault).poolId(),
+            IERC7540Vault(vault).trancheId(),
+            destinationChainId,
+            destinationAddress,
+            amount
+        );
+    }
+
+    /// @inheritdoc ICentrifugeRouter
+    function transferTrancheTokensToCentrifuge(address vault, bytes32 destinationAddress, uint128 amount) external {
+        IPoolManager(poolManager).transferTrancheTokensToCentrifuge(
             IERC7540Vault(vault).poolId(), IERC7540Vault(vault).trancheId(), destinationAddress, amount
         );
     }
@@ -185,8 +205,11 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
 
     // --- ERC20 auth transfer ---
     /// @inheritdoc ICentrifugeRouter
-    function authTransferFrom(address vault, address sender, address owner, address recipient, uint256 amount) external protected {
-        AuthTransferLike(VaultLike(vault.share()).authTransferFrom(sender, owner, recipient, amount));
+    function authTransferFrom(address vault, address sender, address owner, address recipient, uint256 amount)
+        external
+        protected
+    {
+        AuthTransferLike(IERC7540Vault(vault).share()).authTransferFrom(sender, owner, recipient, amount);
     }
 
     // --- Batching ---
