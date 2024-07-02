@@ -11,10 +11,16 @@ import {IPoolManager} from "src/interfaces/IPoolManager.sol";
 import {IEscrow} from "src/interfaces/IEscrow.sol";
 import {IGateway} from "src/interfaces/gateway/IGateway.sol";
 
+interface GatewayLike {
+    function topUp() external payable;
+    function estimate(bytes calldata payload) external returns (uint256[] memory tranches, uint256 total);
+}
+
 contract CentrifugeRouter is Auth, ICentrifugeRouter {
     IEscrow public immutable escrow;
     IGateway public immutable gateway;
     IPoolManager public immutable poolManager;
+    GatewayLike public immutable gateway;
 
     address constant UNSET_INITIATOR = address(1);
     address internal _initiator = UNSET_INITIATOR;
@@ -29,6 +35,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         escrow = IEscrow(escrow_);
         gateway = IGateway(gateway_);
         poolManager = IPoolManager(poolManager_);
+        gateway = GatewayLike(gateway_);
 
         wards[msg.sender] = 1;
         emit Rely(msg.sender);

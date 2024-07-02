@@ -18,6 +18,11 @@ import {IGateway} from "src/interfaces/gateway/IGateway.sol";
 import {IGasService} from "src/interfaces/gateway/IGasService.sol";
 import {IAuth} from "src/interfaces/IAuth.sol";
 
+interface GasServiceLike {
+    function updateGasPrice(uint256 value, uint256 computedAt) external;
+    function price() external returns (uint256);
+}
+
 /// @title  Pool Manager
 /// @notice This contract manages which pools & tranches exist,
 ///         as well as managing allowed pool currencies, and incoming and outgoing transfers.
@@ -422,6 +427,12 @@ contract PoolManager is Auth, IPoolManager {
         ITranche(tranche.token).updateVault(asset, address(0));
 
         emit RemoveVault(poolId, trancheId, asset, vault);
+    }
+
+    function updateCentrifugeGasPrice(uint256 price, uint256 computedAt) public auth {
+        require(price > 0, "PoolManager/price-cannot-be-zero");
+        require(gasService.price() != price, "PoolManager/same-price-already-set");
+        gasService.updateGasPrice(price, computedAt);
     }
 
     // --- Helpers ---
