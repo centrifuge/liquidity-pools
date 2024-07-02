@@ -315,6 +315,7 @@ contract CentrifugeRouterTest is BaseTest {
         vm.label(vault_, "vault");
 
         address investor = makeAddr("investor");
+        vm.deal(investor, 10 ether);
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), investor, type(uint64).max);
 
         erc20.mint(investor, amount);
