@@ -183,6 +183,12 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         require(IERC20Wrapper(wrapper).withdrawTo(receiver, amount), "CentrifugeRouter/withdraw-to-failed");
     }
 
+    // --- ERC20 auth transfer ---
+    /// @inheritdoc ICentrifugeRouter
+    function authTransferFrom(address vault, address sender, address owner, address recipient, uint256 amount) external protected {
+        AuthTransferLike(VaultLike(vault.share()).authTransferFrom(sender, owner, recipient, amount));
+    }
+
     // --- Batching ---
     /// @inheritdoc ICentrifugeRouter
     function multicall(bytes[] memory data) external payable {

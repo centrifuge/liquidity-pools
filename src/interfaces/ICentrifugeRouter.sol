@@ -32,12 +32,31 @@ interface ICentrifugeRouter {
     /// @notice TODO
     function claimDeposit(address vault, address receiver, address controller) external;
 
+    /// @notice TODO
+    function cancelDepositRequest(address vault, address controller) external;
+
+    /// @notice TODO
+    function claimCancelDepositRequest(address vault, address receiver, address controller) external;
+
     // --- Redeem ---
     /// @notice TODO
     function requestRedeem(address vault, uint256 amount, address controller, address owner) external;
 
     /// @notice TODO
     function claimRedeem(address vault, address receiver, address controller) external;
+
+    /// @notice TODO
+    function cancelRedeemRequest(address vault, address controller) external;
+
+    /// @notice TODO
+    function claimCancelRedeemRequest(address vault, address receiver, address controller) external;
+
+    // --- Transfer ---
+    /// @notice TODO
+    function transfer(address asset, bytes32 recipient, uint128 amount) external;
+
+    /// @notice TODO
+    function transferTrancheToken(address vault, bytes32 destinationAddress, uint128 amount) external;
 
     // --- ERC20 permit ---
     /// @notice TODO
@@ -50,6 +69,10 @@ interface ICentrifugeRouter {
 
     /// @notice TODO
     function unwrap(address wrapper, uint256 amount, address receiver) external;
+
+    // --- ERC20 auth transfer ---
+    /// @notice TODO
+    function authTransferFrom(address vault, address sender, address owner, address recipient, uint256 amount) external;
 
     // --- Batching ---
     /// @notice TODO
