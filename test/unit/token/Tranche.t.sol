@@ -87,7 +87,9 @@ contract TrancheTest is Test {
         assertEq(token.balanceOf(targetUser), 0);
 
         restrictionManager.updateMember(address(token), targetUser, uint64(validUntil));
-        assertTrue(restrictionManager.isMember(address(token), targetUser));
+        (bool _isMember, uint64 _validUntil) = restrictionManager.isMember(address(token), targetUser);
+        assertTrue(_isMember);
+        assertEq(_validUntil, validUntil);
 
         restrictionManager.freeze(address(token), self);
         vm.expectRevert(bytes("source-is-frozen"));
@@ -140,7 +142,9 @@ contract TrancheTest is Test {
         assertEq(token.balanceOf(targetUser), 0);
 
         restrictionManager.updateMember(address(token), targetUser, uint64(validUntil));
-        assertTrue(restrictionManager.isMember(address(token), targetUser));
+        (bool _isMember, uint64 _validUntil) = restrictionManager.isMember(address(token), targetUser);
+        assertTrue(_isMember);
+        assertEq(_validUntil, validUntil);
 
         restrictionManager.freeze(address(token), self);
         vm.expectRevert(bytes("source-is-frozen"));
@@ -184,7 +188,9 @@ contract TrancheTest is Test {
         token.mint(targetUser, amount);
 
         restrictionManager.updateMember(address(token), targetUser, uint64(validUntil));
-        assertTrue(restrictionManager.isMember(address(token), targetUser));
+        (bool _isMember, uint64 _validUntil) = restrictionManager.isMember(address(token), targetUser);
+        assertTrue(_isMember);
+        assertEq(_validUntil, validUntil);
 
         token.mint(targetUser, amount);
         assertEq(token.balanceOf(targetUser), amount);

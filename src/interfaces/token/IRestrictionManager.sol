@@ -37,5 +37,5 @@ interface IRestrictionManager {
     function updateMember(address token, address user, uint64 validUntil) external;
 
     /// @notice TODO
-    function isMember(address token, address user) external view returns (bool);
+    function isMember(address token, address user) external view returns (bool isValid, uint64 validUntil);
 }
