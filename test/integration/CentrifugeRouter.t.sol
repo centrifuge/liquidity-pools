@@ -325,8 +325,6 @@ contract CentrifugeRouterTest is BaseTest {
 
         uint256 gas = estimateGas();
 
-        uint256 gas = estimateGas();
-
         // multicall
         bytes[] memory calls = new bytes[](2);
         calls[0] = abi.encodeWithSelector(router.wrap.selector, address(wrapper), amount);

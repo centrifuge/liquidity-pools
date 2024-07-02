@@ -429,12 +429,6 @@ contract PoolManager is Auth, IPoolManager {
         emit RemoveVault(poolId, trancheId, asset, vault);
     }
 
-    function updateCentrifugeGasPrice(uint256 price, uint256 computedAt) public auth {
-        require(price > 0, "PoolManager/price-cannot-be-zero");
-        require(gasService.price() != price, "PoolManager/same-price-already-set");
-        gasService.updateGasPrice(price, computedAt);
-    }
-
     // --- Helpers ---
     /// @inheritdoc IPoolManager
     function getTranche(uint64 poolId, bytes16 trancheId) public view returns (address) {

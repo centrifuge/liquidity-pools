@@ -10,7 +10,7 @@ import {MessagesLib} from "src/libraries/MessagesLib.sol";
 import {BitmapLib} from "src/libraries/BitmapLib.sol";
 import {BytesLib} from "src/libraries/BytesLib.sol";
 import {IERC165} from "src/interfaces/IERC7575.sol";
-import {RestrictionUpdate, IRestrictionManager} from "src/interfaces/token/IRestrictionManager.sol";
+import "src/interfaces/token/IRestrictionManager.sol";
 
 /// @title  Restriction Manager
 /// @notice Hook implementation that:
@@ -24,15 +24,7 @@ contract RestrictionManager is Auth, IRestrictionManager, IHook {
     using BitmapLib for *;
     using BytesLib for bytes;
 
-    string internal constant SOURCE_IS_FROZEN_MESSAGE = "source-is-frozen";
-    string internal constant DESTINATION_IS_FROZEN_MESSAGE = "destination-is-frozen";
-    string internal constant DESTINATION_NOT_A_MEMBER_RESTRICTION_MESSAGE = "destination-not-a-member";
-
     uint8 public constant FREEZE_BIT = 128 - 1;
-
-    uint8 public constant SOURCE_IS_FROZEN_CODE = 1;
-    uint8 public constant DESTINATION_IS_FROZEN_CODE = 2;
-    uint8 public constant DESTINATION_NOT_A_MEMBER_RESTRICTION_CODE = 3;
 
     IRoot public immutable root;
 

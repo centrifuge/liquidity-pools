@@ -11,6 +11,9 @@ struct HookData {
 uint8 constant SUCCESS_CODE = 0;
 string constant SUCCESS_MESSAGE = "transfer-allowed";
 
+uint8 constant ERROR_CODE = 0;
+string constant ERROR_MESSAGE = "transfer-blocked";
+
 interface IHook is IERC165 {
     /// @notice TODO
     function onERC20Transfer(address from, address to, uint256 value, HookData calldata hookdata)
