@@ -5,7 +5,7 @@ import {Auth} from "src/Auth.sol";
 import {IERC20} from "src/interfaces/IERC20.sol";
 import {IRoot} from "src/interfaces/IRoot.sol";
 import {ITranche} from "src/interfaces/token/ITranche.sol";
-import {IHook, HookData, SUCCESS_CODE, SUCCESS_MESSAGE} from "src/interfaces/token/IHook.sol";
+import {IHook, HookData} from "src/interfaces/token/IHook.sol";
 import {MessagesLib} from "src/libraries/MessagesLib.sol";
 import {BitmapLib} from "src/libraries/BitmapLib.sol";
 import {BytesLib} from "src/libraries/BytesLib.sol";
@@ -50,8 +50,7 @@ contract RestrictionManager is Auth, IRestrictionManager, IHook {
         virtual
         returns (bytes4)
     {
-        uint8 restrictionCode = detectTransferRestriction(from, to, value, hookData);
-        require(restrictionCode == SUCCESS_CODE, messageForTransferRestriction(restrictionCode));
+        require(checkERC20Transfer(from, to, value, hookData), "RestrictionManager/transfer-blocked");
         return bytes4(keccak256("onERC20Transfer(address,address,uint256,(bytes16,bytes16))"));
     }
 
@@ -68,42 +67,25 @@ contract RestrictionManager is Auth, IRestrictionManager, IHook {
 
     // --- ERC1404 implementation ---
     /// @inheritdoc IHook
-    function detectTransferRestriction(address from, address to, uint256, /* value */ HookData calldata hookData)
+    function checkERC20Transfer(address from, address to, uint256, /* value */ HookData calldata hookData)
         public
         view
-        returns (uint8)
+        returns (bool)
     {
         if (uint128(hookData.from).getBit(FREEZE_BIT) == true && !root.endorsed(from)) {
-            return SOURCE_IS_FROZEN_CODE;
+            return false;
         }
 
         bool toIsEndorsed = root.endorsed(to);
         if (uint128(hookData.to).getBit(FREEZE_BIT) == true && !toIsEndorsed) {
-            return DESTINATION_IS_FROZEN_CODE;
+            return false;
         }
 
         if (abi.encodePacked(hookData.to).toUint64(0) < block.timestamp && !toIsEndorsed) {
-            return DESTINATION_NOT_A_MEMBER_RESTRICTION_CODE;
+            return false;
         }
 
-        return SUCCESS_CODE;
-    }
-
-    /// @inheritdoc IHook
-    function messageForTransferRestriction(uint8 restrictionCode) public pure returns (string memory) {
-        if (restrictionCode == SOURCE_IS_FROZEN_CODE) {
-            return SOURCE_IS_FROZEN_MESSAGE;
-        }
-
-        if (restrictionCode == DESTINATION_IS_FROZEN_CODE) {
-            return DESTINATION_IS_FROZEN_MESSAGE;
-        }
-
-        if (restrictionCode == DESTINATION_NOT_A_MEMBER_RESTRICTION_CODE) {
-            return DESTINATION_NOT_A_MEMBER_RESTRICTION_MESSAGE;
-        }
-
-        return SUCCESS_MESSAGE;
+        return true;
     }
 
     // --- Incoming message handling ---
