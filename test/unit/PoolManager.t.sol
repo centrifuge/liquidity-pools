@@ -344,7 +344,7 @@ contract PoolManagerTest is BaseTest {
 
         ITranche tranche = ITranche(address(vault.share()));
 
-        vm.expectRevert(bytes("destination-not-a-member"));
+        vm.expectRevert(bytes("RestrictionManager/transfer-blocked"));
         centrifugeChain.incomingTransferTranches(poolId, trancheId, uint64(block.chainid), destinationAddress, amount);
         centrifugeChain.updateMember(poolId, trancheId, destinationAddress, validUntil);
 

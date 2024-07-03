@@ -8,10 +8,10 @@ struct HookData {
     bytes16 to;
 }
 
-uint8 constant SUCCESS_CODE = 0;
+uint8 constant SUCCESS_CODE_ID = 0;
 string constant SUCCESS_MESSAGE = "transfer-allowed";
 
-uint8 constant ERROR_CODE = 0;
+uint8 constant ERROR_CODE_ID = 1;
 string constant ERROR_MESSAGE = "transfer-blocked";
 
 interface IHook is IERC165 {
@@ -26,13 +26,10 @@ interface IHook is IERC165 {
         returns (bytes4);
 
     /// @notice TODO
-    function detectTransferRestriction(address from, address to, uint256, /* value */ HookData calldata hookData)
+    function checkERC20Transfer(address from, address to, uint256, /* value */ HookData calldata hookData)
         external
         view
-        returns (uint8);
-
-    /// @notice TODO
-    function messageForTransferRestriction(uint8 restrictionCode) external view returns (string memory);
+        returns (bool);
 
     /// @notice TODO
     function updateRestriction(address token, bytes memory update) external;

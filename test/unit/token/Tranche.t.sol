@@ -82,7 +82,7 @@ contract TrancheTest is Test {
         restrictionManager.updateMember(address(token), self, uint64(validUntil));
         token.mint(self, amount * 2);
 
-        vm.expectRevert(bytes("destination-not-a-member"));
+        vm.expectRevert(bytes("RestrictionManager/transfer-blocked"));
         token.transferFrom(self, targetUser, amount);
         assertEq(token.balanceOf(targetUser), 0);
 
@@ -90,13 +90,13 @@ contract TrancheTest is Test {
         assertTrue(restrictionManager.isMember(address(token), targetUser));
 
         restrictionManager.freeze(address(token), self);
-        vm.expectRevert(bytes("source-is-frozen"));
+        vm.expectRevert(bytes("RestrictionManager/transfer-blocked"));
         token.transferFrom(self, targetUser, amount);
         assertEq(token.balanceOf(targetUser), 0);
 
         restrictionManager.unfreeze(address(token), self);
         restrictionManager.freeze(address(token), targetUser);
-        vm.expectRevert(bytes("destination-is-frozen"));
+        vm.expectRevert(bytes("RestrictionManager/transfer-blocked"));
         token.transferFrom(self, targetUser, amount);
         assertEq(token.balanceOf(targetUser), 0);
 
@@ -106,7 +106,7 @@ contract TrancheTest is Test {
         afterTransferAssumptions(self, targetUser, amount);
 
         vm.warp(validUntil + 1);
-        vm.expectRevert(bytes("destination-not-a-member"));
+        vm.expectRevert(bytes("RestrictionManager/transfer-blocked"));
         token.transferFrom(self, targetUser, amount);
     }
 
@@ -135,7 +135,7 @@ contract TrancheTest is Test {
         restrictionManager.updateMember(address(token), self, uint64(validUntil));
         token.mint(self, amount * 2);
 
-        vm.expectRevert(bytes("destination-not-a-member"));
+        vm.expectRevert(bytes("RestrictionManager/transfer-blocked"));
         token.transfer(targetUser, amount);
         assertEq(token.balanceOf(targetUser), 0);
 
@@ -143,7 +143,7 @@ contract TrancheTest is Test {
         assertTrue(restrictionManager.isMember(address(token), targetUser));
 
         restrictionManager.freeze(address(token), self);
-        vm.expectRevert(bytes("source-is-frozen"));
+        vm.expectRevert(bytes("RestrictionManager/transfer-blocked"));
         token.transfer(targetUser, amount);
         assertEq(token.balanceOf(targetUser), 0);
 
@@ -153,7 +153,7 @@ contract TrancheTest is Test {
         afterTransferAssumptions(self, targetUser, amount);
 
         vm.warp(validUntil + 1);
-        vm.expectRevert(bytes("destination-not-a-member"));
+        vm.expectRevert(bytes("RestrictionManager/transfer-blocked"));
         token.transfer(targetUser, amount);
     }
 
@@ -180,7 +180,7 @@ contract TrancheTest is Test {
         amount = bound(amount, 0, type(uint128).max / 2);
 
         // mint fails -> self not a member
-        vm.expectRevert(bytes("destination-not-a-member"));
+        vm.expectRevert(bytes("RestrictionManager/transfer-blocked"));
         token.mint(targetUser, amount);
 
         restrictionManager.updateMember(address(token), targetUser, uint64(validUntil));
@@ -192,7 +192,7 @@ contract TrancheTest is Test {
 
         vm.warp(validUntil + 1);
 
-        vm.expectRevert(bytes("destination-not-a-member"));
+        vm.expectRevert(bytes("RestrictionManager/transfer-blocked"));
         token.mint(targetUser, amount);
     }
 
