@@ -323,9 +323,10 @@ contract CentrifugeRouterTest is BaseTest {
         erc20.approve(address(router), amount);
 
         // multicall
-        bytes[] memory calls = new bytes[](2);
-        calls[0] = abi.encodeWithSelector(router.lockDepositRequest.selector, vault_, amount, investor, investor);
-        calls[1] = abi.encodeWithSelector(router.executeLockedDepositRequest.selector, vault_, investor);
+        bytes[] memory calls = new bytes[](3);
+        calls[0] = abi.encodeWithSelector(router.wrap.selector, wrapper, amount, address(router), investor);
+        calls[1] = abi.encodeWithSelector(router.lockDepositRequest.selector, vault_, amount, investor, address(router));
+        calls[2] = abi.encodeWithSelector(router.executeLockedDepositRequest.selector, vault_, investor);
         router.multicall(calls);
 
         uint128 assetId = poolManager.assetToId(address(wrapper));
