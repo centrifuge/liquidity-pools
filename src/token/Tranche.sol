@@ -3,7 +3,14 @@ pragma solidity 0.8.21;
 
 import {ERC20} from "src/token/ERC20.sol";
 import {IERC20, IERC20Metadata} from "src/interfaces/IERC20.sol";
-import {IHook, HookData, SUCCESS_CODE as SUCCESS_CODE_ID} from "src/interfaces/token/IHook.sol";
+import {
+    IHook,
+    HookData,
+    SUCCESS_CODE_ID,
+    SUCCESS_MESSAGE,
+    ERROR_CODE_ID,
+    ERROR_MESSAGE
+} from "src/interfaces/token/IHook.sol";
 import {IERC7575Share, IERC165} from "src/interfaces/IERC7575.sol";
 import {ITranche, IERC1404} from "src/interfaces/token/ITranche.sol";
 import {BitmapLib} from "src/libraries/BitmapLib.sol";
@@ -126,24 +133,24 @@ contract Tranche is ERC20, ITranche {
     // --- ERC1404 implementation ---
     /// @inheritdoc ITranche
     function checkTransferRestriction(address from, address to, uint256 value) public view returns (bool) {
-        if (hook == address(0)) return true;
         return detectTransferRestriction(from, to, value) == SUCCESS_CODE_ID;
     }
 
     /// @inheritdoc IERC1404
     function detectTransferRestriction(address from, address to, uint256 value) public view returns (uint8) {
         if (hook == address(0)) return SUCCESS_CODE_ID;
-        return IHook(hook).detectTransferRestriction(from, to, value, HookData(hookDataOf(from), hookDataOf(to)));
+        return IHook(hook).checkERC20Transfer(from, to, value, HookData(hookDataOf(from), hookDataOf(to)))
+            ? SUCCESS_CODE_ID
+            : ERROR_CODE_ID;
     }
 
     /// @inheritdoc IERC1404
-    function messageForTransferRestriction(uint8 restrictionCode) public view returns (string memory) {
-        if (hook == address(0)) return "";
-        return IHook(hook).messageForTransferRestriction(restrictionCode);
+    function messageForTransferRestriction(uint8 restrictionCode) public pure returns (string memory) {
+        return restrictionCode == SUCCESS_CODE_ID ? SUCCESS_MESSAGE : ERROR_MESSAGE;
     }
 
     /// @inheritdoc IERC1404
-    function SUCCESS_CODE() public view returns (uint8) {
+    function SUCCESS_CODE() public pure returns (uint8) {
         return SUCCESS_CODE_ID;
     }
 
