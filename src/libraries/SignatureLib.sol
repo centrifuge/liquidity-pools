@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.21;
+pragma solidity 0.8.26;
 
 interface IERC1271 {
     function isValidSignature(bytes32, bytes memory) external view returns (bytes4);
