@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.21;
+pragma solidity 0.8.26;
 
 import "forge-std/Test.sol";
 import {Auth} from "src/Auth.sol";

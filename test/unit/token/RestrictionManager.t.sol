@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.21;
+pragma solidity 0.8.26;
 
 import {Tranche} from "src/token/Tranche.sol";
 import {MockRoot} from "test/mocks/MockRoot.sol";
