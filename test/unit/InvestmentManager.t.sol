@@ -1,4 +1,4 @@
-pragma solidity 0.8.21;
+pragma solidity 0.8.26;
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma abicoder v2;
 
