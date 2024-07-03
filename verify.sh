@@ -17,8 +17,9 @@ contract_address=$2
 
 if [ "$type" == "restrictionManager" ]; then
     token=$(cast call $contract_address 'token()(address)' --rpc-url $RPC_URL)
+    root=$(cast call $contract_address 'root()(address)' --rpc-url $RPC_URL)
     echo "token: $token"
-    forge verify-contract --constructor-args $(cast abi-encode "constructor(address)" $token) --watch --etherscan-api-key $ETHERSCAN_KEY $contract_address src/token/RestrictionManager.sol:RestrictionManager --verifier-url $VERIFIER_URL --chain $CHAIN_ID
+    forge verify-contract --constructor-args $(cast abi-encode "constructor(address, address)" $root $token) --watch --etherscan-api-key $ETHERSCAN_KEY $contract_address src/token/RestrictionManager.sol:RestrictionManager --verifier-url $VERIFIER_URL --chain $CHAIN_ID
 elif [ "$type" == "tranche" ]; then
     decimals=$(cast call $contract_address 'decimals()(uint8)' --rpc-url $RPC_URL)
     echo "decimals: $decimals"
