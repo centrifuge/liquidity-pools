@@ -238,6 +238,8 @@ interface IERC7540CancelRedeem {
 }
 
 interface IAuthorizeOperator {
+    function DOMAIN_SEPARATOR() external view returns (bytes32);
+
     function authorizeOperator(
         address controller,
         address operator,
@@ -266,6 +268,21 @@ interface IERC7540Vault is
     event CancelDepositClaimable(address indexed controller, uint256 indexed requestId, uint256 assets);
     event CancelRedeemClaimable(address indexed controller, uint256 indexed requestId, uint256 shares);
 
+    /// @notice Identifier of the Centrifuge pool
     function poolId() external view returns (uint64);
+
+    /// @notice Identifier of the tranche of the Centrifuge pool
     function trancheId() external view returns (bytes16);
+
+    /// @notice TODO
+    function onDepositClaimable(address owner, uint256 assets, uint256 shares) external;
+
+    /// @notice TODO
+    function onRedeemClaimable(address owner, uint256 assets, uint256 shares) external;
+
+    /// @notice TODO
+    function onCancelDepositClaimable(address owner, uint256 assets) external;
+
+    /// @notice TODO
+    function onCancelRedeemClaimable(address owner, uint256 shares) external;
 }

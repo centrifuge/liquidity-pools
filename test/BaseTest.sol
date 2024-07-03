@@ -5,15 +5,16 @@ pragma abicoder v2;
 // core contracts
 import {Root} from "src/Root.sol";
 import {InvestmentManager} from "src/InvestmentManager.sol";
-import {PoolManager, Tranche} from "src/PoolManager.sol";
+import {PoolManager} from "src/PoolManager.sol";
 import {Escrow} from "src/Escrow.sol";
 import {ERC7540VaultFactory} from "src/factories/ERC7540VaultFactory.sol";
-import {TrancheTokenFactory} from "src/factories/TrancheTokenFactory.sol";
+import {TrancheFactory} from "src/factories/TrancheFactory.sol";
 import {ERC7540Vault} from "src/ERC7540Vault.sol";
-import {TrancheToken, TrancheTokenLike} from "src/token/Tranche.sol";
+import {Tranche} from "src/token/Tranche.sol";
+import {ITranche} from "src/interfaces/token/ITranche.sol";
 import {ERC20} from "src/token/ERC20.sol";
 import {Gateway} from "src/gateway/Gateway.sol";
-import {RestrictionManagerLike, RestrictionManager} from "src/token/RestrictionManager.sol";
+import {RestrictionManager} from "src/token/RestrictionManager.sol";
 import {MessagesLib} from "src/libraries/MessagesLib.sol";
 import {Deployer} from "script/Deployer.sol";
 import {MockSafe} from "test/mocks/MockSafe.sol";
@@ -21,17 +22,19 @@ import "src/interfaces/IERC20.sol";
 
 // mocks
 import {MockCentrifugeChain} from "test/mocks/MockCentrifugeChain.sol";
-import {MockRouter} from "test/mocks/MockRouter.sol";
+import {MockGasService} from "test/mocks/MockGasService.sol";
+import {MockAdapter} from "test/mocks/MockAdapter.sol";
 
 // test env
 import "forge-std/Test.sol";
 
 contract BaseTest is Deployer, Test {
     MockCentrifugeChain centrifugeChain;
-    MockRouter router1;
-    MockRouter router2;
-    MockRouter router3;
-    address[] testRouters;
+    MockGasService mockedGasService;
+    MockAdapter adapter1;
+    MockAdapter adapter2;
+    MockAdapter adapter3;
+    address[] testAdapters;
     ERC20 public erc20;
 
     address self = address(this);
@@ -40,11 +43,11 @@ contract BaseTest is Deployer, Test {
     address randomUser = makeAddr("randomUser");
 
     uint128 constant MAX_UINT128 = type(uint128).max;
+    uint256 constant GATEWAY_INITIAL_BALACE = 10 ether;
 
     // default values
     uint128 public defaultAssetId = 1;
-    uint128 public defaultPrice = 1 * 10 ** 18;
-    uint8 public defaultRestrictionSet = 2;
+    uint128 public defaultPrice = 1 * 10**18;
     uint8 public defaultDecimals = 8;
 
     function setUp() public virtual {
@@ -58,39 +61,52 @@ contract BaseTest is Deployer, Test {
         // deploy core contracts
         deploy(address(this));
 
-        // deploy mock routers
-        router1 = new MockRouter(address(aggregator));
-        router2 = new MockRouter(address(aggregator));
-        router3 = new MockRouter(address(aggregator));
+        // deploy mock adapters
 
-        testRouters.push(address(router1));
-        testRouters.push(address(router2));
-        testRouters.push(address(router3));
+        adapter1 = new MockAdapter(address(gateway));
+        adapter2 = new MockAdapter(address(gateway));
+        adapter3 = new MockAdapter(address(gateway));
+
+        adapter1.setReturn("estimate", uint256(1 gwei));
+        adapter2.setReturn("estimate", uint256(1.25 gwei));
+        adapter3.setReturn("estimate", uint256(1.75 gwei));
+
+        testAdapters.push(address(adapter1));
+        testAdapters.push(address(adapter2));
+        testAdapters.push(address(adapter3));
 
         // wire contracts
-        wire(address(router1));
-        aggregator.file("routers", testRouters);
+        wire(address(adapter1));
         // remove deployer access
-        // removeDeployerAccess(address(router)); // need auth permissions in tests
+        // removeDeployerAccess(address(adapter)); // need auth permissions in tests
 
-        centrifugeChain = new MockCentrifugeChain(testRouters);
+        centrifugeChain = new MockCentrifugeChain(testAdapters);
+        mockedGasService = new MockGasService();
         erc20 = _newErc20("X's Dollar", "USDX", 6);
+
+        gateway.file("adapters", testAdapters);
+        gateway.file("gasService", address(mockedGasService));
+        vm.deal(address(gateway), GATEWAY_INITIAL_BALACE);
+
+        mockedGasService.setReturn("estimate", uint256(0.5 gwei));
+        mockedGasService.setReturn("shouldRefuel", true);
 
         // Label contracts
         vm.label(address(root), "Root");
         vm.label(address(investmentManager), "InvestmentManager");
         vm.label(address(poolManager), "PoolManager");
         vm.label(address(gateway), "Gateway");
-        vm.label(address(aggregator), "Aggregator");
-        vm.label(address(router1), "MockRouter1");
-        vm.label(address(router2), "MockRouter2");
-        vm.label(address(router3), "MockRouter3");
+        vm.label(address(adapter1), "MockAdapter1");
+        vm.label(address(adapter2), "MockAdapter2");
+        vm.label(address(adapter3), "MockAdapter3");
         vm.label(address(erc20), "ERC20");
         vm.label(address(centrifugeChain), "CentrifugeChain");
+        vm.label(address(router), "CentrifugeRouter");
+        vm.label(address(gasService), "GasService");
+        vm.label(address(mockedGasService), "MockGasService");
         vm.label(address(escrow), "Escrow");
         vm.label(address(guardian), "Guardian");
-        vm.label(address(poolManager.restrictionManagerFactory()), "RestrictionManagerFactory");
-        vm.label(address(poolManager.trancheTokenFactory()), "TrancheTokenFactory");
+        vm.label(address(poolManager.trancheFactory()), "TrancheFactory");
         vm.label(address(poolManager.vaultFactory()), "ERC7540VaultFactory");
 
         // Exclude predeployed contracts from invariant tests by default
@@ -98,24 +114,23 @@ contract BaseTest is Deployer, Test {
         excludeContract(address(investmentManager));
         excludeContract(address(poolManager));
         excludeContract(address(gateway));
-        excludeContract(address(aggregator));
         excludeContract(address(erc20));
         excludeContract(address(centrifugeChain));
-        excludeContract(address(router1));
-        excludeContract(address(router2));
-        excludeContract(address(router3));
+        excludeContract(address(router));
+        excludeContract(address(adapter1));
+        excludeContract(address(adapter2));
+        excludeContract(address(adapter3));
         excludeContract(address(escrow));
         excludeContract(address(guardian));
-        excludeContract(address(poolManager.restrictionManagerFactory()));
-        excludeContract(address(poolManager.trancheTokenFactory()));
+        excludeContract(address(poolManager.trancheFactory()));
         excludeContract(address(poolManager.vaultFactory()));
     }
 
     // helpers
     function deployVault(
         uint64 poolId,
-        uint8 trancheTokenDecimals,
-        uint8 restrictionSet,
+        uint8 trancheDecimals,
+        address hook,
         string memory tokenName,
         string memory tokenSymbol,
         bytes16 trancheId,
@@ -126,9 +141,9 @@ contract BaseTest is Deployer, Test {
             centrifugeChain.addAsset(assetId, asset);
         }
 
-        if (poolManager.getTrancheToken(poolId, trancheId) == address(0)) {
+        if (poolManager.getTranche(poolId, trancheId) == address(0)) {
             centrifugeChain.addPool(poolId);
-            centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, trancheTokenDecimals, restrictionSet);
+            centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, trancheDecimals, hook);
 
             centrifugeChain.allowAsset(poolId, assetId);
             poolManager.deployTranche(poolId, trancheId);
@@ -151,14 +166,11 @@ contract BaseTest is Deployer, Test {
         bytes16 trancheId,
         uint128 asset
     ) public returns (address) {
-        uint8 restrictionSet = 2;
-        return deployVault(poolId, decimals, restrictionSet, tokenName, tokenSymbol, trancheId, asset, address(erc20));
+        return deployVault(poolId, decimals, restrictionManager, tokenName, tokenSymbol, trancheId, asset, address(erc20));
     }
 
     function deploySimpleVault() public returns (address) {
-        return deployVault(
-            5, 6, defaultRestrictionSet, "name", "symbol", bytes16(bytes("1")), defaultAssetId, address(erc20)
-        );
+        return deployVault(5, 6, restrictionManager, "name", "symbol", bytes16(bytes("1")), defaultAssetId, address(erc20));
     }
 
     function deposit(address _vault, address _investor, uint256 amount) public {
@@ -180,7 +192,7 @@ contract BaseTest is Deployer, Test {
         );
 
         if (claimDeposit) {
-            vault.deposit(amount, _investor); // claim the trancheTokens
+            vault.deposit(amount, _investor); // claim the tranches
         }
         vm.stopPrank();
     }

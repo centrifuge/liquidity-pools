@@ -53,7 +53,7 @@ fail_on_revert = false
   "src/Escrow.sol" = ["Escrow"]
   "src/Root.sol" = ["Root"]
   "src/token/ERC20.sol" = ["ERC20"]
-  "src/token/Tranche.sol" = ["TrancheToken"]
+  "src/token/Tranche.sol" = ["Tranche"]
   "src/token/RestrictionManager.sol" = ["RestrictionManager"]
   "src/admin/Guardian.sol" = ["Guardian"]
 

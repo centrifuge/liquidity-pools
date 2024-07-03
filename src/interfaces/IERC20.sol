@@ -175,10 +175,6 @@ interface IERC20Permit {
     function DOMAIN_SEPARATOR() external view returns (bytes32);
 }
 
-interface IERC20Callback {
-    function onERC20Transfer(address from, address to, uint256 value) external returns (bytes4);
-}
-
 interface IERC20Wrapper {
     function underlying() external view returns (address);
     function depositFor(address account, uint256 value) external returns (bool);

@@ -66,7 +66,7 @@ contract EpochExecutorHandler is BaseHandler {
         );
 
         increaseVar(currentInvestor, "totalCurrencyPaidOutOnInvest", assets);
-        increaseVar(currentInvestor, "totalTrancheTokensPaidOutOnInvest", shares);
+        increaseVar(currentInvestor, "totalTranchesPaidOutOnInvest", shares);
         setMaxVar(currentInvestor, "maxDepositFulfillmentPrice", fulfillmentPrice);
     }
 
@@ -77,8 +77,8 @@ contract EpochExecutorHandler is BaseHandler {
         fulfillmentRatio = bound(fulfillmentRatio, 0, 1 * 10 ** 18); // 0% to 100%
         fulfillmentPrice = bound(fulfillmentPrice, 0, 2 * 10 ** 18); // 0.00 to 2.00
 
-        uint256 outstandingRedeemRequest = getVar(currentInvestor, "totalRedeemRequested")
-            - getVar(currentInvestor, "totalTrancheTokensPaidOutOnRedeem");
+        uint256 outstandingRedeemRequest =
+            getVar(currentInvestor, "totalRedeemRequested") - getVar(currentInvestor, "totalTranchesPaidOutOnRedeem");
 
         if (outstandingRedeemRequest == 0) {
             return;
@@ -91,7 +91,7 @@ contract EpochExecutorHandler is BaseHandler {
             poolId, trancheId, bytes32(bytes20(currentInvestor)), assetId, assets, shares
         );
 
-        increaseVar(currentInvestor, "totalTrancheTokensPaidOutOnRedeem", shares);
+        increaseVar(currentInvestor, "totalTranchesPaidOutOnRedeem", shares);
         increaseVar(currentInvestor, "totalCurrencyPaidOutOnRedeem", assets);
         setMaxVar(currentInvestor, "maxRedeemFulfillmentPrice", fulfillmentPrice);
     }

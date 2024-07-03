@@ -4,7 +4,7 @@ pragma solidity 0.8.21;
 import "forge-std/Test.sol";
 import {MockAxelarPrecompile} from "test/mocks/MockAxelarPrecompile.sol";
 import {MockAxelarGateway} from "test/mocks/MockAxelarGateway.sol";
-import {AxelarForwarder} from "src/gateway/routers/axelar/Forwarder.sol";
+import {AxelarForwarder} from "src/gateway/adapters/axelar/Forwarder.sol";
 
 contract AxelarForwarderTest is Test {
     // Represents the precompile address on Centrifuge. Precompile is located at `address(2048)` which is

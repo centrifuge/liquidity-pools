@@ -5,24 +5,22 @@ import {Root} from "src/Root.sol";
 import {IGuardian} from "src/interfaces/IGuardian.sol";
 
 interface SafeLike {
-    function getOwners() external view returns (address[] memory);
     function isOwner(address signer) external view returns (bool);
-    function getThreshold() external view returns (uint256);
 }
 
-interface AggregatorLike {
+interface GatewayLike {
     function disputeMessageRecovery(bytes32 messageHash) external;
 }
 
 contract Guardian is IGuardian {
     Root public immutable root;
     SafeLike public immutable safe;
-    AggregatorLike public immutable aggregator;
+    GatewayLike public immutable gateway;
 
-    constructor(address safe_, address root_, address aggregator_) {
+    constructor(address safe_, address root_, address gateway_) {
         root = Root(root_);
         safe = SafeLike(safe_);
-        aggregator = AggregatorLike(aggregator_);
+        gateway = GatewayLike(gateway_);
     }
 
     modifier onlySafe() {
@@ -60,7 +58,7 @@ contract Guardian is IGuardian {
 
     /// @inheritdoc IGuardian
     function disputeMessageRecovery(bytes32 messageHash) external onlySafe {
-        aggregator.disputeMessageRecovery(messageHash);
+        gateway.disputeMessageRecovery(messageHash);
     }
 
     // --- Helpers ---
