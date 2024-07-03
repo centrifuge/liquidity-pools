@@ -2,7 +2,7 @@
 pragma solidity >=0.5.0;
 
 interface IAdapter {
-    event File(bytes32 what, uint256 value);
+    event File(bytes32 indexed what, uint256 value);
 
     // --- Incoming ---
     /// @notice TODO

@@ -2,7 +2,9 @@
 pragma solidity 0.8.21;
 
 interface IGasService {
-    event File(bytes32 what, uint64 value);
+    event File(bytes32 indexed what, uint64 value);
+    event UpdateGasPrice(uint128 value, uint256 computedAt);
+    event UpdateTokenPrice(uint256 value);
 
     /// Using file patter to update state variables;
     /// @dev Used to update the messageCost and proofCost;
