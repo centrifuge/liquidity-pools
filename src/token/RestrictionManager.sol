@@ -24,7 +24,8 @@ contract RestrictionManager is Auth, IRestrictionManager, IHook {
     using BitmapLib for *;
     using BytesLib for bytes;
 
-    uint8 public constant FREEZE_BIT = 128 - 1;
+    /// @dev Least significant bit
+    uint8 public constant FREEZE_BIT = 0;
 
     IRoot public immutable root;
 
@@ -128,8 +129,9 @@ contract RestrictionManager is Auth, IRestrictionManager, IHook {
     }
 
     /// @inheritdoc IRestrictionManager
-    function isMember(address token, address user) public view returns (bool) {
-        return abi.encodePacked(ITranche(token).hookDataOf(user)).toUint64(0) >= block.timestamp;
+    function isMember(address token, address user) public view returns (bool isValid, uint64 validUntil) {
+        validUntil = abi.encodePacked(ITranche(token).hookDataOf(user)).toUint64(0);
+        isValid = validUntil >= block.timestamp;
     }
 
     // --- ERC165 support ---
