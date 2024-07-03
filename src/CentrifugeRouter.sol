@@ -70,8 +70,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
 
         gateway.topUp{value: topUpAmount}();
         if (erc20Wrapper) {
-            SafeTransferLib.safeTransferFrom(IERC20Wrapper(asset).underlying(), owner, address(this), amount);
-            wrap(asset, amount, address(this), address(this));
+            wrap(asset, amount, address(this), owner);
             IERC7540Vault(vault).requestDeposit(amount, controller, address(this));
         } else {
             IERC7540Vault(vault).requestDeposit(amount, controller, owner);
@@ -90,8 +89,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         (address asset, bool erc20Wrapper) = poolManager.getVaultAsset(vault);
 
         if (erc20Wrapper) {
-            SafeTransferLib.safeTransferFrom(IERC20Wrapper(asset).underlying(), owner, address(this), amount);
-            wrap(asset, amount, address(escrow), address(this));
+            wrap(asset, amount, address(escrow), owner);
         } else {
             SafeTransferLib.safeTransferFrom(asset, owner, address(escrow), amount);
         }
