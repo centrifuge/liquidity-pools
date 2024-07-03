@@ -469,7 +469,7 @@ contract PoolManager is Auth, IPoolManager {
     function getVaultAsset(address vault) public view override returns (address, bool) {
         VaultAsset memory _asset = vaultToAsset[vault];
         require(_asset.asset != address(0), "PoolManager/unknown-vault");
-        return (_asset.asset, _asset.erc20Wrapper);
+        return (_asset.asset, _asset.isWrapper);
     }
 
     /// @inheritdoc IPoolManager

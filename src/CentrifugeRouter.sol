@@ -90,9 +90,9 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     function openLockDepositRequest(address vault, uint256 amount) external payable protected {
         open(vault);
 
-        (address asset, bool erc20Wrapper) = poolManager.getVaultAsset(vault);
+        (address asset, bool isWrapper) = poolManager.getVaultAsset(vault);
 
-        if (erc20Wrapper) {
+        if (isWrapper) {
             wrap(asset, amount, address(this), _initiator);
             lockDepositRequest(vault, amount, _initiator, address(this));
         } else {
@@ -159,8 +159,8 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         require(controller == _initiator || permissionlesslyClaiming, "CentrifugeRouter/invalid-sender");
         uint256 maxRedeem = IERC7540Vault(vault).maxRedeem(controller);
 
-        (address asset, bool erc20Wrapper) = poolManager.getVaultAsset(vault);
-        if (erc20Wrapper && permissionlesslyClaiming) {
+        (address asset, bool isWrapper) = poolManager.getVaultAsset(vault);
+        if (isWrapper && permissionlesslyClaiming) {
             // Auto-unwrap if permissionlesly claiming for another controller
             uint256 assets = IERC7540Vault(vault).redeem(maxRedeem, address(this), controller);
             unwrap(asset, assets, receiver);

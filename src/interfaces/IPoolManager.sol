@@ -39,7 +39,7 @@ struct VaultAsset {
     /// @dev Address of the asset
     address asset;
     /// @dev Whether this wrapper conforms to the IERC20Wrapper interface
-    bool erc20Wrapper;
+    bool isWrapper;
 }
 
 interface IPoolManager {
@@ -79,7 +79,7 @@ interface IPoolManager {
     function assetToId(address) external view returns (uint128 assetId);
 
     /// @notice TODO
-    function vaultToAsset(address) external view returns (address asset, bool erc20Wrapper);
+    function vaultToAsset(address) external view returns (address asset, bool isWrapper);
 
     /// @notice TODO
     function file(bytes32 what, address data) external;
@@ -183,7 +183,7 @@ interface IPoolManager {
     ///         but in that case each caller MUST make sure they handle the case
     ///         where a 0 address is returned. Using this method, that handling is done
     ///         on the behalf the caller.
-    function getVaultAsset(address vault) external view returns (address asset, bool erc20Wrapper);
+    function getVaultAsset(address vault) external view returns (address asset, bool isWrapper);
 
     /// @notice TODO
     function isAllowedAsset(uint64 poolId, address asset) external view returns (bool);
