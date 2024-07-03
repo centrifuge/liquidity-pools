@@ -7,8 +7,12 @@ import "src/interfaces/IERC7540.sol";
 import "src/interfaces/IERC20.sol";
 import {CastLib} from "src/libraries/CastLib.sol";
 
-contract CentrifugeRouterTest is BaseTest {
+contract routerTest is BaseTest {
     using CastLib for *;
+
+    uint256 constant GAS_BUFFER = 10 gwei;
+    /// @dev Payload is not taken into account during gas estimation
+    bytes constant PAYLOAD_FOR_GAS_ESTIMATION = "irrelevant_value";
 
     function testGetVault() public {
         address vault_ = deploySimpleVault();
@@ -39,7 +43,9 @@ contract CentrifugeRouterTest is BaseTest {
 
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max);
 
-        centrifugeRouter.requestDeposit(vault_, amount, self, self);
+        uint256 gas = estimateGas() + GAS_BUFFER;
+
+        router.requestDeposit{value: gas}(vault_, amount, self, self, gas);
 
         assertEq(erc20.balanceOf(address(escrow)), amount);
     }
@@ -70,12 +76,12 @@ contract CentrifugeRouterTest is BaseTest {
         assertEq(erc20.balanceOf(address(routerEscrow)), 0);
 
         erc20.mint(self, amount);
-        erc20.approve(address(centrifugeRouter), amount);
+        erc20.approve(address(router), amount);
 
-        centrifugeRouter.lockDepositRequest(vault_, amount, self, self);
+        router.lockDepositRequest(vault_, amount, self, self);
         assertEq(erc20.balanceOf(address(routerEscrow)), amount);
 
-        centrifugeRouter.unlockDepositRequest(vault_);
+        router.unlockDepositRequest(vault_);
         assertEq(erc20.balanceOf(address(routerEscrow)), 0);
         assertEq(erc20.balanceOf(self), amount);
     }
@@ -83,19 +89,20 @@ contract CentrifugeRouterTest is BaseTest {
     function testCancelDepositRequest() public {
         address vault_ = deploySimpleVault();
         vm.label(vault_, "vault");
+        ERC7540Vault vault = ERC7540Vault(vault_);
 
         uint256 amount = 100 * 10 ** 18;
         assertEq(erc20.balanceOf(address(routerEscrow)), 0);
 
         erc20.mint(self, amount);
-        erc20.approve(address(centrifugeRouter), amount);
+        erc20.approve(address(router), amount);
 
-        centrifugeRouter.lockDepositRequest(vault_, amount, self, self);
+        router.lockDepositRequest(vault_, amount, self, self);
         assertEq(erc20.balanceOf(address(routerEscrow)), amount);
-        assertEq(investmentManager.pendingCancelDepositRequest(vault_, self), false);
+        assertEq(vault.pendingCancelDepositRequest(0, self), false);
 
-        centrifugeRouter.cancelDepositRequest(vault_, self);
-        assertEq(investmentManager.pendingCancelDepositRequest(vault_, self), true);
+        router.cancelDepositRequest(vault_, self);
+        assertEq(vault.pendingCancelDepositRequest(0, self), true);
         assertEq(erc20.balanceOf(address(routerEscrow)), amount);
     }
 
@@ -107,17 +114,23 @@ contract CentrifugeRouterTest is BaseTest {
         uint256 amount = 100 * 10 ** 18;
 
         erc20.mint(self, amount);
-        erc20.approve(address(centrifugeRouter), amount);
+        erc20.approve(address(vault_), amount);
+        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max);
 
-        centrifugeRouter.lockDepositRequest(vault_, amount, self, self);
-        centrifugeRouter.cancelDepositRequest(vault_, self);
-        assertEq(investmentManager.pendingCancelDepositRequest(vault_, self), true);
-        assertEq(erc20.balanceOf(address(routerEscrow)), amount);
-        centrifugeChain.isFulfilledCancelDepositRequest(vault.poolId(), vault.trancheId(), self.toBytes32(), defaultAssetId, uint128(amount), uint128(amount));
-        assertEq(investmentManager.claimableCancelDepositRequest(vault_, self), true);
+        uint256 gas = estimateGas() + GAS_BUFFER;
+        router.requestDeposit{value: gas}(vault_, amount, self, self, gas);
+        assertEq(erc20.balanceOf(address(escrow)), amount);
 
-        centrifugeRouter.claimCancelDepositRequest(vault_, self, self);
-        assertEq(erc20.balanceOf(address(routerEscrow)), 0);
+        router.cancelDepositRequest(vault_, self);
+        assertEq(vault.pendingCancelDepositRequest(0, self), true);
+        assertEq(erc20.balanceOf(address(escrow)), amount);
+        centrifugeChain.isFulfilledCancelDepositRequest(
+            vault.poolId(), vault.trancheId(), self.toBytes32(), defaultAssetId, uint128(amount), uint128(amount)
+        );
+        assertEq(vault.claimableCancelDepositRequest(0, self), amount);
+
+        router.claimCancelDepositRequest(vault_, self, self);
+        assertEq(erc20.balanceOf(address(escrow)), 0);
         assertEq(erc20.balanceOf(self), amount);
     }
 
@@ -130,7 +143,8 @@ contract CentrifugeRouterTest is BaseTest {
         erc20.mint(self, amount);
         erc20.approve(address(vault_), amount);
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max);
-        centrifugeRouter.requestDeposit(vault_, amount, self, self);
+        uint256 gas = estimateGas() + GAS_BUFFER;
+        router.requestDeposit{value: gas}(vault_, amount, self, self, gas);
         IERC20 share = IERC20(address(vault.share()));
         centrifugeChain.isFulfilledDepositRequest(
             vault.poolId(),
@@ -146,8 +160,8 @@ contract CentrifugeRouterTest is BaseTest {
 
         // Then redeem
         share.approve(vault_, amount);
-        share.approve(address(centrifugeRouter), amount);
-        centrifugeRouter.requestRedeem(vault_, amount, self, self);
+        share.approve(address(router), amount);
+        router.requestRedeem(vault_, amount, self, self);
         assertEq(share.balanceOf(address(self)), 0);
     }
 
@@ -160,7 +174,8 @@ contract CentrifugeRouterTest is BaseTest {
         erc20.mint(self, amount);
         erc20.approve(address(vault_), amount);
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max);
-        centrifugeRouter.requestDeposit(vault_, amount, self, self);
+        uint256 gas = estimateGas() + GAS_BUFFER;
+        router.requestDeposit{value: gas}(vault_, amount, self, self, gas);
         IERC20 share = IERC20(address(vault.share()));
         centrifugeChain.isFulfilledDepositRequest(
             vault.poolId(),
@@ -176,12 +191,12 @@ contract CentrifugeRouterTest is BaseTest {
 
         // Then redeem
         share.approve(vault_, amount);
-        share.approve(address(centrifugeRouter), amount);
-        centrifugeRouter.requestRedeem(vault_, amount, self, self);
+        share.approve(address(router), amount);
+        router.requestRedeem(vault_, amount, self, self);
         assertEq(share.balanceOf(address(self)), 0);
 
-        centrifugeRouter.cancelRedeemRequest(vault_, self);
-        assertEq(investmentManager.pendingCancelRedeemRequest(vault_, self), true);
+        router.cancelRedeemRequest(vault_, self);
+        assertEq(vault.pendingCancelRedeemRequest(0, self), true);
     }
 
     function testClaimCancelRedeemRequest() public {
@@ -193,7 +208,8 @@ contract CentrifugeRouterTest is BaseTest {
         erc20.mint(self, amount);
         erc20.approve(address(vault_), amount);
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max);
-        centrifugeRouter.requestDeposit(vault_, amount, self, self);
+        uint256 gas = estimateGas() + GAS_BUFFER;
+        router.requestDeposit{value: gas}(vault_, amount, self, self, gas);
         IERC20 share = IERC20(address(vault.share()));
         centrifugeChain.isFulfilledDepositRequest(
             vault.poolId(),
@@ -209,16 +225,44 @@ contract CentrifugeRouterTest is BaseTest {
 
         // Then redeem
         share.approve(vault_, amount);
-        share.approve(address(centrifugeRouter), amount);
-        centrifugeRouter.requestRedeem(vault_, amount, self, self);
+        share.approve(address(router), amount);
+        router.requestRedeem(vault_, amount, self, self);
         assertEq(share.balanceOf(address(self)), 0);
 
-        centrifugeRouter.cancelRedeemRequest(vault_, self);
-        assertEq(investmentManager.pendingCancelRedeemRequest(vault_, self), true);
+        router.cancelRedeemRequest(vault_, self);
+        assertEq(vault.pendingCancelRedeemRequest(0, self), true);
 
-        centrifugeChain.isFulfilledCancelRedeemRequest(vault.poolId(), vault.trancheId(), self.toBytes32(), defaultAssetId, uint128(amount), uint128(amount));
-        centrifugeRouter.claimCancelRedeemRequest(vault_, self, self);
+        centrifugeChain.isFulfilledCancelRedeemRequest(
+            vault.poolId(), vault.trancheId(), self.toBytes32(), defaultAssetId, uint128(amount), uint128(amount)
+        );
+
+        router.claimCancelRedeemRequest(vault_, self, self);
         assertEq(share.balanceOf(address(self)), amount);
     }
 
+    function testTransferTranchesToEVMs() public {
+        uint64 validUntil = uint64(block.timestamp + 7 days);
+        address destinationAddress = makeAddr("destinationAddress");
+        uint256 amount = 100 * 10 ** 18;
+
+        address vault_ = deploySimpleVault();
+        ERC7540Vault vault = ERC7540Vault(vault_);
+        ITranche tranche = ITranche(address(ERC7540Vault(vault_).share()));
+        deal(address(tranche), address(this), amount);
+        tranche.approve(address(poolManager), amount);
+
+        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), destinationAddress, validUntil);
+        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), address(this), validUntil);
+
+
+        assertEq(tranche.balanceOf(address(this)), amount);
+        router.transferTranchesToEVM(
+            vault_, uint64(block.chainid), destinationAddress, uint128(amount)
+        );
+        assertEq(tranche.balanceOf(address(this)), 0);
+    }
+
+    function estimateGas() internal view returns (uint256 total) {
+        (, total) = gateway.estimate(PAYLOAD_FOR_GAS_ESTIMATION);
+    }
 }

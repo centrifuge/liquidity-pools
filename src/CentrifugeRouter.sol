@@ -188,13 +188,11 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     }
 
     /// @inheritdoc ICentrifugeRouter
-    function transferTrancheTokensToEVM(
-        address vault,
-        uint64 destinationChainId,
-        address destinationAddress,
-        uint128 amount
-    ) external protected {
-        IPoolManager(poolManager).transferTrancheTokensToEVM(
+    function transferTranchesToEVM(address vault, uint64 destinationChainId, address destinationAddress, uint128 amount)
+        external
+        protected
+    {
+        IPoolManager(poolManager).transferTranchesToEVM(
             IERC7540Vault(vault).poolId(),
             IERC7540Vault(vault).trancheId(),
             destinationChainId,
@@ -204,8 +202,8 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     }
 
     /// @inheritdoc ICentrifugeRouter
-    function transferTrancheTokensToCentrifuge(address vault, bytes32 destinationAddress, uint128 amount) external {
-        IPoolManager(poolManager).transferTrancheTokensToCentrifuge(
+    function transferTranchesToCentrifuge(address vault, bytes32 destinationAddress, uint128 amount) external {
+        IPoolManager(poolManager).transferTranchesToCentrifuge(
             IERC7540Vault(vault).poolId(), IERC7540Vault(vault).trancheId(), destinationAddress, amount
         );
     }
