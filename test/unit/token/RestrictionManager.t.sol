@@ -27,14 +27,18 @@ contract RestrictionManagerTest is Test {
         restrictionManager.updateMember(address(token), address(this), uint64(block.timestamp - 1));
 
         restrictionManager.updateMember(address(token), address(this), validUntil);
-        assertTrue(restrictionManager.isMember(address(token), address(this)));
+        (bool _isMember, uint64 _validUntil) = restrictionManager.isMember(address(token), address(this));
+        assertTrue(_isMember);
+        assertEq(_validUntil, validUntil);
     }
 
     function testIsMember(uint64 validUntil) public {
         vm.assume(validUntil >= block.timestamp);
 
         restrictionManager.updateMember(address(token), address(this), validUntil);
-        assertTrue(restrictionManager.isMember(address(token), address(this)));
+        (bool _isMember, uint64 _validUntil) = restrictionManager.isMember(address(token), address(this));
+        assertTrue(_isMember);
+        assertEq(_validUntil, validUntil);
     }
 
     function testFreeze() public {
@@ -48,10 +52,26 @@ contract RestrictionManagerTest is Test {
         assertEq(restrictionManager.isFrozen(address(token), address(0)), false);
     }
 
+    function testAddMemberAndFreeze(uint64 validUntil) public {
+        vm.assume(validUntil >= block.timestamp);
+
+        restrictionManager.updateMember(address(token), address(this), validUntil);
+        (bool _isMember, uint64 _validUntil) = restrictionManager.isMember(address(token), address(this));
+        assertTrue(_isMember);
+        assertEq(_validUntil, validUntil);
+        assertEq(restrictionManager.isFrozen(address(token), address(this)), false);
+
+        restrictionManager.freeze(address(token), address(this));
+        (_isMember, _validUntil) = restrictionManager.isMember(address(token), address(this));
+        assertTrue(_isMember);
+        assertEq(_validUntil, validUntil);
+        assertEq(restrictionManager.isFrozen(address(token), address(this)), true);
+    }
+
     // --- erc165 checks ---
     function testERC165Support(bytes4 unsupportedInterfaceId) public {
         bytes4 erc165 = 0x01ffc9a7;
-        bytes4 hook = 0x0ede2660;
+        bytes4 hook = 0xad4e9d84;
 
         vm.assume(unsupportedInterfaceId != erc165 && unsupportedInterfaceId != hook);
 

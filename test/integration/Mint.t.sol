@@ -17,7 +17,7 @@ contract MintTest is BaseTest {
         tranche.mint(investor, amount);
 
         root.relyContract(address(tranche), self); // give self auth permissions
-        vm.expectRevert(bytes("destination-not-a-member"));
+        vm.expectRevert(bytes("RestrictionManager/transfer-blocked"));
         tranche.mint(investor, amount);
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), investor, type(uint64).max);
 

@@ -319,10 +319,10 @@ contract DepositTest is BaseTest {
         assertEq(tranche.balanceOf(address(escrow)), shares);
 
         // deposit 1/2 funds to receiver
-        vm.expectRevert(bytes("destination-not-a-member"));
+        vm.expectRevert(bytes("RestrictionManager/transfer-blocked"));
         vault.deposit(amount / 2, receiver, self); // mint half the amount
 
-        vm.expectRevert(bytes("destination-not-a-member"));
+        vm.expectRevert(bytes("RestrictionManager/transfer-blocked"));
         vault.mint(amount / 2, receiver); // mint half the amount
 
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), receiver, type(uint64).max); // add receiver
