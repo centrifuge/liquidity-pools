@@ -12,8 +12,7 @@ contract MockRestrictionManager is RestrictionManager, Mock {
         override
         returns (bytes4)
     {
-        uint8 restrictionCode = detectTransferRestriction(from, to, value, hookData);
-        require(restrictionCode == SUCCESS_CODE, messageForTransferRestriction(restrictionCode));
+        require(checkERC20Transfer(from, to, value, hookData), "RestrictionManager/transfer-blocked");
 
         values_address["onERC20Transfer_from"] = from;
         values_address["onERC20Transfer_to"] = to;
