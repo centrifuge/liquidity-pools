@@ -303,7 +303,7 @@ contract CentrifugeRouterTest is BaseTest {
         assertEq(tranche2.balanceOf(address(escrow)), tranchesPayout2);
     }
 
-    function testWrapAndRequestDeposit(uint256 amount) public {
+    function testLockAndExecuteDepositRequest(uint256 amount) public {
         amount = uint128(bound(amount, 4, MAX_UINT128));
         vm.assume(amount % 2 == 0);
 
@@ -320,48 +320,11 @@ contract CentrifugeRouterTest is BaseTest {
 
         erc20.mint(investor, amount);
         vm.startPrank(investor);
-        // TODO: use permit instead of approve, to show this is also possible
-        erc20.approve(address(router), amount);
-
-        uint256 gas = estimateGas();
-
-        // multicall
-        bytes[] memory calls = new bytes[](2);
-        calls[0] = abi.encodeWithSelector(router.wrap.selector, address(wrapper), amount);
-        calls[1] =
-            abi.encodeWithSelector(router.requestDeposit.selector, vault_, amount, investor, address(router), gas);
-        router.multicall{value: gas}(calls);
-
-        uint128 assetId = poolManager.assetToId(address(wrapper));
-        (uint128 tranchesPayout) = fulfillDepositRequest(vault, assetId, amount, investor);
-
-        assertEq(vault.maxMint(investor), tranchesPayout);
-        assertEq(vault.maxDeposit(investor), amount);
-        ITranche tranche = ITranche(address(vault.share()));
-        assertEq(tranche.balanceOf(address(escrow)), tranchesPayout);
-    }
-
-    function testWrapAndLockDepositRequest(uint256 amount) public {
-        amount = uint128(bound(amount, 4, MAX_UINT128));
-        vm.assume(amount % 2 == 0);
-
-        MockERC20Wrapper wrapper = new MockERC20Wrapper(address(erc20));
-        address vault_ = deployVault(
-            5, 6, restrictionManager, "name", "symbol", bytes16(bytes("1")), defaultAssetId, address(wrapper)
-        );
-        ERC7540Vault vault = ERC7540Vault(vault_);
-        vm.label(vault_, "vault");
-
-        address investor = makeAddr("investor");
-        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), investor, type(uint64).max);
-
-        erc20.mint(investor, amount);
-        vm.startPrank(investor);
         erc20.approve(address(router), amount);
 
         // multicall
         bytes[] memory calls = new bytes[](3);
-        calls[0] = abi.encodeWithSelector(router.wrap.selector, address(wrapper), amount);
+        calls[0] = abi.encodeWithSelector(router.wrap.selector, wrapper, amount, address(router), investor);
         calls[1] = abi.encodeWithSelector(router.lockDepositRequest.selector, vault_, amount, investor, address(router));
         calls[2] = abi.encodeWithSelector(router.executeLockedDepositRequest.selector, vault_, investor);
         router.multicall(calls);
@@ -397,11 +360,58 @@ contract CentrifugeRouterTest is BaseTest {
 
         // multicall
         bytes[] memory calls = new bytes[](2);
-        calls[0] = abi.encodeWithSelector(router.wrap.selector, address(wrapper), amount);
+        calls[0] = abi.encodeWithSelector(router.wrap.selector, address(wrapper), amount, address(router), investor);
         calls[1] = abi.encodeWithSelector(router.unwrap.selector, address(wrapper), amount, investor);
         router.multicall(calls);
 
         assertEq(erc20.balanceOf(investor), amount);
+    }
+
+    function testWrapAndAutoUnwrapOnRedeem(uint256 amount) public {
+        amount = uint128(bound(amount, 4, MAX_UINT128));
+        vm.assume(amount % 2 == 0);
+
+        MockERC20Wrapper wrapper = new MockERC20Wrapper(address(erc20));
+        address vault_ = deployVault(
+            5, 6, restrictionManager, "name", "symbol", bytes16(bytes("1")), defaultAssetId, address(wrapper)
+        );
+        ERC7540Vault vault = ERC7540Vault(vault_);
+        vm.label(vault_, "vault");
+
+        address investor = makeAddr("investor");
+
+        erc20.mint(investor, amount);
+
+        // Investor locks deposit request and enables permissionless lcaiming
+        vm.startPrank(investor);
+        erc20.approve(address(router), amount);
+        router.openLockDepositRequest(vault_, amount);
+        vm.stopPrank();
+
+        // Anyone else can execute the request and claim the deposit
+        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), investor, type(uint64).max);
+        router.executeLockedDepositRequest(vault_, investor);
+        uint128 assetId = poolManager.assetToId(address(wrapper));
+        (uint128 tranchesPayout) = fulfillDepositRequest(vault, assetId, amount, investor);
+
+        ITranche tranche = ITranche(address(vault.share()));
+        router.claimDeposit(vault_, investor, investor);
+
+        // Investors submits redemption  request
+        vm.startPrank(investor);
+        tranche.approve(address(router), tranchesPayout);
+        router.requestRedeem(vault_, tranchesPayout, investor, investor);
+        vm.stopPrank();
+
+        // Anyone else claims the redeem
+        (uint128 assetPayout) = fulfillRedeemRequest(vault, assetId, tranchesPayout, investor);
+        assertEq(wrapper.balanceOf(address(escrow)), assetPayout);
+        assertEq(erc20.balanceOf(address(investor)), 0);
+        router.claimRedeem(vault_, investor, investor);
+
+        // Token was immediately unwrapped
+        assertEq(wrapper.balanceOf(address(escrow)), 0);
+        assertEq(erc20.balanceOf(investor), assetPayout);
     }
 
     function testMultipleTopUpScenarios(uint256 amount) public {

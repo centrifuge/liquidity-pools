@@ -6,7 +6,7 @@ interface ICentrifugeRouter {
     event LockDepositRequest(
         address indexed vault, address indexed controller, address indexed owner, address sender, uint256 amount
     );
-    event UnlockDepositRequest(address indexed vault, address indexed controller);
+    event UnlockDepositRequest(address indexed vault, address indexed controller, address indexed receiver);
     event ExecuteLockedDepositRequest(address indexed vault, address indexed controller, address sender);
 
     /// @notice TODO
@@ -32,7 +32,7 @@ interface ICentrifugeRouter {
     function openLockDepositRequest(address vault, uint256 amount) external payable;
 
     /// @notice TODO
-    function unlockDepositRequest(address vault) external payable;
+    function unlockDepositRequest(address vault, address receiver) external payable;
 
     /// @notice TODO
     function executeLockedDepositRequest(address vault, address controller) external payable;
@@ -62,7 +62,7 @@ interface ICentrifugeRouter {
 
     // --- ERC20 wrapping ---
     /// @notice TODO
-    function wrap(address wrapper, uint256 amount) external payable;
+    function wrap(address wrapper, uint256 amount, address receiver, address owner) external payable;
 
     /// @notice TODO
     function unwrap(address wrapper, uint256 amount, address receiver) external payable;

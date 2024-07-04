@@ -248,6 +248,8 @@ interface IAuthorizeOperator {
         bytes32 nonce,
         bytes memory signature
     ) external returns (bool);
+
+    function invalidateNonce(bytes32 nonce) external;
 }
 
 interface IERC7714 {

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity >=0.5.0;
 
+import {IMessageHandler} from "src/interfaces/gateway/IGateway.sol";
+
 /// @dev Vault orders and investment/redemption limits per user
 struct InvestmentState {
     /// @dev Tranche tokens that can be claimed using `mint()`
@@ -25,7 +27,7 @@ struct InvestmentState {
     bool pendingCancelRedeemRequest;
 }
 
-interface IInvestmentManager {
+interface IInvestmentManager is IMessageHandler {
     // --- Events ---
     event File(bytes32 indexed what, address data);
     event TriggerRedeemRequest(

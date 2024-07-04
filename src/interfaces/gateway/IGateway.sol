@@ -106,3 +106,7 @@ interface IGateway {
     /// @param amount - amount to be sent to the @param to
     function recoverTokens(address token, address to, uint256 amount) external;
 }
+
+interface IMessageHandler {
+    function handle(bytes memory message) external;
+}

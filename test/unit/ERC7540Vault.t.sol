@@ -94,7 +94,7 @@ contract ERC7540VaultTest is BaseTest {
         bytes4 erc7540Redeem = 0x620ee8e4;
         bytes4 erc7540CancelDeposit = 0x8bf840e3;
         bytes4 erc7540CancelRedeem = 0xe76cffc7;
-        bytes4 ercAuthorizeOperator = 0x59361fd0;
+        bytes4 ercAuthorizeOperator = 0x7a7911eb;
         bytes4 erc7714 = 0x78d77ecb;
 
         vm.assume(
