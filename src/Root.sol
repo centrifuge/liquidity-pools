@@ -26,8 +26,11 @@ contract Root is Auth, IRoot {
     /// @notice Trusted contracts within the system
     mapping(address => uint256) public endorsements;
 
+    /// @inheritdoc IRoot
     bool public paused;
+    /// @inheritdoc IRoot
     uint256 public delay;
+    /// @inheritdoc IRoot
     mapping(address relyTarget => uint256 timestamp) public schedule;
 
     constructor(address _escrow, uint256 _delay, address deployer) {
