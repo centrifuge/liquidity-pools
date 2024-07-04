@@ -219,11 +219,17 @@ contract GatewayTest is Test {
     }
 
     function testUseBeforeInitialization() public {
+        bytes memory message = abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1));
+
         vm.expectRevert(bytes("Gateway/invalid-adapter"));
-        gateway.handle(abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1)));
+        gateway.handle(message);
 
         vm.expectRevert(bytes("Gateway/invalid-manager"));
-        gateway.send(abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1)), address(this));
+        gateway.send(message, address(this));
+
+        vm.expectRevert(bytes("Gateway/adapters-not-initialized"));
+        vm.prank(address(investmentManager));
+        gateway.send(message, address(this));
     }
 
     function testIncomingAggregatedMessages() public {
