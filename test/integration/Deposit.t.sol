@@ -124,6 +124,19 @@ contract DepositTest is BaseTest {
         assertTrue(vault.maxDeposit(self) <= amount * 0.01e18);
     }
 
+    function testDepositWithPrepaymentFromGateway(uint256 amount) public {
+        amount = uint128(bound(amount, 4, MAX_UINT128));
+        vm.assume(amount % 2 == 0);
+
+        (, uint256 gasToBePaid) = gateway.estimate("PAYLOAD_IS_IRRELEVANT");
+
+        assertEq(address(gateway).balance, GATEWAY_INITIAL_BALACE);
+
+        testDepositMint(amount);
+
+        assertEq(address(gateway).balance, GATEWAY_INITIAL_BALACE - gasToBePaid);
+    }
+
     function testPartialDepositExecutions(uint64 poolId, bytes16 trancheId, uint128 assetId) public {
         vm.assume(assetId > 0);
 
