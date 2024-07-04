@@ -256,7 +256,8 @@ contract ERC7540Vault is Auth, IERC7540Vault {
         return interfaceId == type(IERC7540Deposit).interfaceId || interfaceId == type(IERC7540Redeem).interfaceId
             || interfaceId == type(IERC7540Operator).interfaceId || interfaceId == type(IERC7540CancelDeposit).interfaceId
             || interfaceId == type(IERC7540CancelRedeem).interfaceId || interfaceId == type(IERC7575).interfaceId
-            || interfaceId == type(IAuthorizeOperator).interfaceId || interfaceId == type(IERC165).interfaceId;
+            || interfaceId == type(IAuthorizeOperator).interfaceId || interfaceId == type(IERC7714).interfaceId
+            || interfaceId == type(IERC165).interfaceId;
     }
 
     // --- ERC-4626 methods ---
@@ -384,6 +385,11 @@ contract ERC7540Vault is Auth, IERC7540Vault {
 
     function priceLastUpdated() external view returns (uint64) {
         return manager.priceLastUpdated(address(this));
+    }
+
+    /// @inheritdoc IERC7714
+    function isPermissioned(address controller) external view returns (bool) {
+        return ITranche(share).checkTransferRestriction(address(0), controller, 0);
     }
 
     function validateController(address controller) internal view {

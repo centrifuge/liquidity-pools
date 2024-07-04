@@ -250,6 +250,13 @@ interface IAuthorizeOperator {
     ) external returns (bool);
 }
 
+interface IERC7714 {
+    /**
+     * @dev Returns `true` if the `user` is permissioned to interact with the contract.
+     */
+    function isPermissioned(address controller) external view returns (bool);
+}
+
 /**
  * @title  IERC7540Vault
  * @dev    This is the specific set of interfaces used by the Centrifuge impelmentation of ERC7540,
@@ -261,7 +268,8 @@ interface IERC7540Vault is
     IERC7540CancelDeposit,
     IERC7540CancelRedeem,
     IERC7575,
-    IAuthorizeOperator
+    IAuthorizeOperator,
+    IERC7714
 {
     event DepositClaimable(address indexed controller, uint256 indexed requestId, uint256 assets, uint256 shares);
     event RedeemClaimable(address indexed controller, uint256 indexed requestId, uint256 assets, uint256 shares);

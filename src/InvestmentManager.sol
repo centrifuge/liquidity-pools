@@ -58,7 +58,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
 
     // --- Outgoing message handling ---
     /// @inheritdoc IInvestmentManager
-    function requestDeposit(address vault, uint256 assets, address controller, address owner, address source)
+    function requestDeposit(address vault, uint256 assets, address controller, address, /* owner */ address source)
         public
         auth
         returns (bool)
@@ -161,7 +161,8 @@ contract InvestmentManager is Auth, IInvestmentManager {
         IERC7540Vault _vault = IERC7540Vault(vault);
         uint256 approximateTranchesPayout = pendingRedeemRequest(vault, controller);
         require(
-            _canTransfer(vault, address(0), controller, approximateTranchesPayout), "InvestmentManager/transfer-not-allowed"
+            _canTransfer(vault, address(0), controller, approximateTranchesPayout),
+            "InvestmentManager/transfer-not-allowed"
         );
 
         InvestmentState storage state = investments[vault][controller];
