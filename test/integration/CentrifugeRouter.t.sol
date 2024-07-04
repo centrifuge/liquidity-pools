@@ -27,7 +27,7 @@ contract CentrifugeRouterTest is BaseTest {
         vm.expectRevert(bytes("Gateway/cannot-topup-with-nothing"));
         router.requestDeposit(vault_, amount, self, self, 0);
 
-        vm.expectRevert(bytes("InvestmentManager/owner-is-restricted"));
+        vm.expectRevert(bytes("InvestmentManager/transfer-not-allowed"));
         router.requestDeposit{value: 1 wei}(vault_, amount, self, self, 1 wei);
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max);
 

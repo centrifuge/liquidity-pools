@@ -24,7 +24,7 @@ contract DepositTest is BaseTest {
         erc20.mint(self, amount);
 
         // will fail - user not member: can not send funds
-        vm.expectRevert(bytes("InvestmentManager/owner-is-restricted"));
+        vm.expectRevert(bytes("InvestmentManager/transfer-not-allowed"));
         vault.requestDeposit(amount, self, self);
 
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max); // add user as member

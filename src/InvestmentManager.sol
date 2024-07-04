@@ -58,7 +58,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
 
     // --- Outgoing message handling ---
     /// @inheritdoc IInvestmentManager
-    function requestDeposit(address vault, uint256 assets, address receiver, address owner, address source)
+    function requestDeposit(address vault, uint256 assets, address controller, address owner, address source)
         public
         auth
         returns (bool)
@@ -71,13 +71,12 @@ contract InvestmentManager is Auth, IInvestmentManager {
         address asset = vault_.asset();
         require(poolManager.isAllowedAsset(poolId, asset), "InvestmentManager/asset-not-allowed");
 
-        require(_canTransfer(vault, address(0), owner, 0), "InvestmentManager/owner-is-restricted");
         require(
-            _canTransfer(vault, address(0), receiver, convertToShares(vault, assets)),
+            _canTransfer(vault, address(0), controller, convertToShares(vault, assets)),
             "InvestmentManager/transfer-not-allowed"
         );
 
-        InvestmentState storage state = investments[vault][receiver];
+        InvestmentState storage state = investments[vault][controller];
         require(state.pendingCancelDepositRequest != true, "InvestmentManager/cancellation-is-pending");
 
         state.pendingDepositRequest = state.pendingDepositRequest + _assets;
@@ -86,7 +85,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
                 uint8(MessagesLib.Call.IncreaseInvestOrder),
                 poolId,
                 vault_.trancheId(),
-                receiver.toBytes32(),
+                controller.toBytes32(),
                 poolManager.assetToId(asset),
                 _assets
             ),
@@ -97,7 +96,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
     }
 
     /// @inheritdoc IInvestmentManager
-    function requestRedeem(address vault, uint256 shares, address receiver, /* owner */ address, address source)
+    function requestRedeem(address vault, uint256 shares, address controller, /* owner */ address, address source)
         public
         auth
         returns (bool)
@@ -109,19 +108,15 @@ contract InvestmentManager is Auth, IInvestmentManager {
         // You cannot redeem using a disallowed asset, instead another vault will have to be used
         require(poolManager.isAllowedAsset(vault_.poolId(), vault_.asset()), "InvestmentManager/asset-not-allowed");
 
-        require(
-            _canTransfer(vault, receiver, address(escrow), convertToAssets(vault, shares)),
-            "InvestmentManager/transfer-not-allowed"
-        );
-        return _processRedeemRequest(vault, _shares, receiver, source);
+        return _processRedeemRequest(vault, _shares, controller, source);
     }
 
-    function _processRedeemRequest(address vault, uint128 shares, address owner, address source)
+    function _processRedeemRequest(address vault, uint128 shares, address controller, address source)
         internal
         returns (bool)
     {
         IERC7540Vault vault_ = IERC7540Vault(vault);
-        InvestmentState storage state = investments[vault][owner];
+        InvestmentState storage state = investments[vault][controller];
         require(state.pendingCancelRedeemRequest != true, "InvestmentManager/cancellation-is-pending");
 
         state.pendingRedeemRequest = state.pendingRedeemRequest + shares;
@@ -131,7 +126,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
                 uint8(MessagesLib.Call.IncreaseRedeemOrder),
                 vault_.poolId(),
                 vault_.trancheId(),
-                owner.toBytes32(),
+                controller.toBytes32(),
                 poolManager.assetToId(vault_.asset()),
                 shares
             ),
@@ -142,10 +137,10 @@ contract InvestmentManager is Auth, IInvestmentManager {
     }
 
     /// @inheritdoc IInvestmentManager
-    function cancelDepositRequest(address vault, address owner, address source) public auth {
+    function cancelDepositRequest(address vault, address controller, address source) public auth {
         IERC7540Vault _vault = IERC7540Vault(vault);
 
-        InvestmentState storage state = investments[vault][owner];
+        InvestmentState storage state = investments[vault][controller];
         require(state.pendingCancelDepositRequest != true, "InvestmentManager/cancellation-is-pending");
         state.pendingCancelDepositRequest = true;
 
@@ -154,7 +149,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
                 uint8(MessagesLib.Call.CancelInvestOrder),
                 _vault.poolId(),
                 _vault.trancheId(),
-                owner.toBytes32(),
+                controller.toBytes32(),
                 poolManager.assetToId(_vault.asset())
             ),
             source
@@ -162,14 +157,14 @@ contract InvestmentManager is Auth, IInvestmentManager {
     }
 
     /// @inheritdoc IInvestmentManager
-    function cancelRedeemRequest(address vault, address owner, address source) public auth {
+    function cancelRedeemRequest(address vault, address controller, address source) public auth {
         IERC7540Vault _vault = IERC7540Vault(vault);
-        uint256 approximateTranchesPayout = pendingRedeemRequest(vault, owner);
+        uint256 approximateTranchesPayout = pendingRedeemRequest(vault, controller);
         require(
-            _canTransfer(vault, address(0), owner, approximateTranchesPayout), "InvestmentManager/transfer-not-allowed"
+            _canTransfer(vault, address(0), controller, approximateTranchesPayout), "InvestmentManager/transfer-not-allowed"
         );
 
-        InvestmentState storage state = investments[vault][owner];
+        InvestmentState storage state = investments[vault][controller];
         require(state.pendingCancelRedeemRequest != true, "InvestmentManager/cancellation-is-pending");
         state.pendingCancelRedeemRequest = true;
 
@@ -178,7 +173,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
                 uint8(MessagesLib.Call.CancelRedeemOrder),
                 _vault.poolId(),
                 _vault.trancheId(),
-                owner.toBytes32(),
+                controller.toBytes32(),
                 poolManager.assetToId(_vault.asset())
             ),
             source
@@ -464,24 +459,24 @@ contract InvestmentManager is Auth, IInvestmentManager {
 
     // --- Vault claim functions ---
     /// @inheritdoc IInvestmentManager
-    function deposit(address vault, uint256 assets, address receiver, address owner)
+    function deposit(address vault, uint256 assets, address receiver, address controller)
         public
         auth
         returns (uint256 shares)
     {
-        InvestmentState storage state = investments[vault][owner];
+        InvestmentState storage state = investments[vault][controller];
         uint128 shares_ = _calculateShares(assets.toUint128(), vault, state.depositPrice);
         _processDeposit(state, shares_, vault, receiver);
         shares = uint256(shares_);
     }
 
     /// @inheritdoc IInvestmentManager
-    function mint(address vault, uint256 shares, address receiver, address owner)
+    function mint(address vault, uint256 shares, address receiver, address controller)
         public
         auth
         returns (uint256 assets)
     {
-        InvestmentState storage state = investments[vault][owner];
+        InvestmentState storage state = investments[vault][controller];
         _processDeposit(state, shares.toUint128(), vault, receiver);
         assets = uint256(_calculateAssets(shares.toUint128(), vault, state.depositPrice));
     }
@@ -497,24 +492,24 @@ contract InvestmentManager is Auth, IInvestmentManager {
     }
 
     /// @inheritdoc IInvestmentManager
-    function redeem(address vault, uint256 shares, address receiver, address owner)
+    function redeem(address vault, uint256 shares, address receiver, address controller)
         public
         auth
         returns (uint256 assets)
     {
-        InvestmentState storage state = investments[vault][owner];
+        InvestmentState storage state = investments[vault][controller];
         uint128 assets_ = _calculateAssets(shares.toUint128(), vault, state.redeemPrice);
         _processRedeem(state, assets_, vault, receiver);
         assets = uint256(assets_);
     }
 
     /// @inheritdoc IInvestmentManager
-    function withdraw(address vault, uint256 assets, address receiver, address owner)
+    function withdraw(address vault, uint256 assets, address receiver, address controller)
         public
         auth
         returns (uint256 shares)
     {
-        InvestmentState storage state = investments[vault][owner];
+        InvestmentState storage state = investments[vault][controller];
         _processRedeem(state, assets.toUint128(), vault, receiver);
         shares = uint256(_calculateShares(assets.toUint128(), vault, state.redeemPrice));
     }
@@ -528,24 +523,24 @@ contract InvestmentManager is Auth, IInvestmentManager {
     }
 
     /// @inheritdoc IInvestmentManager
-    function claimCancelDepositRequest(address vault, address receiver, address owner)
+    function claimCancelDepositRequest(address vault, address receiver, address controller)
         public
         auth
         returns (uint256 assets)
     {
-        InvestmentState storage state = investments[vault][owner];
+        InvestmentState storage state = investments[vault][controller];
         assets = state.claimableCancelDepositRequest;
         state.claimableCancelDepositRequest = 0;
         SafeTransferLib.safeTransferFrom(IERC7540Vault(vault).asset(), address(escrow), receiver, assets);
     }
 
     /// @inheritdoc IInvestmentManager
-    function claimCancelRedeemRequest(address vault, address receiver, address owner)
+    function claimCancelRedeemRequest(address vault, address receiver, address controller)
         public
         auth
         returns (uint256 shares)
     {
-        InvestmentState storage state = investments[vault][owner];
+        InvestmentState storage state = investments[vault][controller];
         shares = state.claimableCancelRedeemRequest;
         state.claimableCancelRedeemRequest = 0;
         require(
