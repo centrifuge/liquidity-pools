@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity >=0.5.0;
 
+import {IMessageHandler} from "src/interfaces/gateway/IGateway.sol";
+
 /// @dev Centrifuge pools
 struct Pool {
     uint256 createdAt;
@@ -42,7 +44,7 @@ struct VaultAsset {
     bool isWrapper;
 }
 
-interface IPoolManager {
+interface IPoolManager is IMessageHandler {
     event File(bytes32 indexed what, address data);
     event AddAsset(uint128 indexed assetId, address indexed asset);
     event AddPool(uint64 indexed poolId);
