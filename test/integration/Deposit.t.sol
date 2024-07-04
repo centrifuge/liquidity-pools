@@ -373,23 +373,23 @@ contract DepositTest is BaseTest {
 
         // trigger executed collectInvest
         uint128 _currencyId = poolManager.assetToId(address(erc20)); // retrieve currencyId
-        uint128 tranchesPayout = uint128(amount * 10 ** 18 / price); // tranchePrice = 2$
-        assertApproxEqAbs(tranchesPayout, amount / 2, 2);
+        uint128 tranchePayout = uint128(amount * 10 ** 18 / price); // tranchePrice = 2$
+        assertApproxEqAbs(tranchePayout, amount / 2, 2);
         centrifugeChain.isFulfilledDepositRequest(
             vault.poolId(),
             vault.trancheId(),
             bytes32(bytes20(self)),
             _currencyId,
             uint128(amount),
-            tranchesPayout,
+            tranchePayout,
             uint128(amount)
         );
 
         // assert deposit & mint values adjusted
-        assertEq(vault.maxMint(self), tranchesPayout); // max deposit
+        assertEq(vault.maxMint(self), tranchePayout); // max deposit
         assertEq(vault.maxDeposit(self), amount); // max deposit
         // assert tranche tokens minted
-        assertEq(tranche.balanceOf(address(escrow)), tranchesPayout);
+        assertEq(tranche.balanceOf(address(escrow)), tranchePayout);
 
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), receiver, type(uint64).max); // add receiver
 
@@ -406,8 +406,8 @@ contract DepositTest is BaseTest {
         vault.deposit(amount, receiver, address(this));
         vm.stopPrank();
 
-        assertApproxEqAbs(tranche.balanceOf(receiver), tranchesPayout, 1);
-        assertApproxEqAbs(tranche.balanceOf(receiver), tranchesPayout, 1);
+        assertApproxEqAbs(tranche.balanceOf(receiver), tranchePayout, 1);
+        assertApproxEqAbs(tranche.balanceOf(receiver), tranchePayout, 1);
         assertApproxEqAbs(tranche.balanceOf(address(escrow)), 0, 1);
         assertApproxEqAbs(erc20.balanceOf(address(escrow)), amount, 1);
     }
