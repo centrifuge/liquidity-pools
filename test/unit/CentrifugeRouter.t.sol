@@ -100,11 +100,11 @@ contract CentrifugeRouterTest is BaseTest {
 
         erc20.mint(self, balance);
         erc20.approve(address(router), amount);
-        wrapper.shouldFail("deposit", true);
+        wrapper.setFail("depositFor", true);
         vm.expectRevert(bytes("CentrifugeRouter/deposit-for-failed"));
         router.wrap(address(wrapper), amount, receiver, self);
 
-        wrapper.shouldFail("deposit", false);
+        wrapper.setFail("depositFor", false);
         router.wrap(address(wrapper), amount, receiver, self);
         assertEq(wrapper.balanceOf(receiver), balance);
         assertEq(erc20.balanceOf(self), 0);
@@ -126,10 +126,10 @@ contract CentrifugeRouterTest is BaseTest {
         router.unwrap(address(wrapper), amount, self);
 
         router.wrap(address(wrapper), amount, address(router), self);
-        wrapper.shouldFail("withdraw", true);
+        wrapper.setFail("withdrawTo", true);
         vm.expectRevert(bytes("CentrifugeRouter/withdraw-to-failed"));
         router.unwrap(address(wrapper), amount, self);
-        wrapper.shouldFail("withdraw", false);
+        wrapper.setFail("withdrawTo", false);
 
         assertEq(wrapper.balanceOf(address(router)), balance);
         assertEq(erc20.balanceOf(self), 0);

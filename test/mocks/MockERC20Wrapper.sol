@@ -3,9 +3,10 @@ pragma solidity 0.8.26;
 
 import {ERC20} from "src/token/ERC20.sol";
 import {IERC20Wrapper, IERC20Metadata} from "src/interfaces/IERC20.sol";
+import {Mock} from "test/mocks/Mock.sol";
 import "forge-std/Test.sol";
 
-contract MockERC20Wrapper is ERC20, IERC20Wrapper {
+contract MockERC20Wrapper is ERC20, Mock, IERC20Wrapper {
     address public underlying;
     bool shouldDepositFail;
     bool shouldWithdrawFail;
@@ -15,7 +16,7 @@ contract MockERC20Wrapper is ERC20, IERC20Wrapper {
     }
 
     function depositFor(address account, uint256 value) external returns (bool) {
-        if (shouldDepositFail) return false;
+        if (method_fail["depositFor"]) return false;
         require(
             IERC20Metadata(underlying).transferFrom(msg.sender, address(this), value),
             "MockERC20Wrapper/failed-transfer"
@@ -30,17 +31,11 @@ contract MockERC20Wrapper is ERC20, IERC20Wrapper {
     }
 
     function withdrawTo(address account, uint256 value) external returns (bool) {
-        if (shouldWithdrawFail) return false;
+        if (method_fail["withdrawTo"]) return false;
         balances[msg.sender] -= value;
         totalSupply = totalSupply - value;
 
         IERC20Metadata(underlying).transfer(account, value);
         return true;
-    }
-
-    function shouldFail(bytes32 action, bool value) external {
-        if (action == "deposit") shouldDepositFail = value;
-        else if (action == "withdraw") shouldWithdrawFail = value;
-        else revert("Nothing to fail but yourself!");
     }
 }
