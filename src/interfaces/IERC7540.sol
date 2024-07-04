@@ -276,6 +276,9 @@ interface IERC7540Vault is
     /// @notice Identifier of the tranche of the Centrifuge pool
     function trancheId() external view returns (bytes16);
 
+    function shareDecimals() external view returns (uint8);
+    function assetDecimals() external view returns (uint8);
+
     /// @notice TODO
     function onDepositClaimable(address owner, uint256 assets, uint256 shares) external;
 

@@ -27,6 +27,16 @@ struct InvestmentState {
     bool pendingCancelRedeemRequest;
 }
 
+struct Vault {
+    address addr;
+    address asset;
+    address share;
+    uint8 shareDecimals;
+    uint8 assetDecimals;
+    uint64 poolId;
+    bytes16 trancheId;
+}
+
 interface IInvestmentManager is IMessageHandler {
     // --- Events ---
     event File(bytes32 indexed what, address data);
@@ -47,7 +57,7 @@ interface IInvestmentManager is IMessageHandler {
     ///         proceed with tranche token payouts in case their orders got fulfilled.
     /// @dev    The user asset amount required to fulfill the deposit request have to be locked,
     ///         even though the tranche token payout can only happen after epoch execution.
-    function requestDeposit(address vault, uint256 assets, address receiver, address owner, address source)
+    function requestDeposit(Vault calldata vault, uint256 assets, address receiver, address owner, address source)
         external
         returns (bool);
 
@@ -58,15 +68,15 @@ interface IInvestmentManager is IMessageHandler {
     ///         in case their orders got fulfilled.
     /// @dev    The user tranche tokens required to fulfill the redemption request have to be locked,
     ///         even though the asset payout can only happen after epoch execution.
-    function requestRedeem(address vault, uint256 shares, address receiver, address, /* owner */ address source)
+    function requestRedeem(Vault calldata vault, uint256 shares, address receiver, address, /* owner */ address source)
         external
         returns (bool);
 
     /// @notice TODO
-    function cancelDepositRequest(address vault, address owner, address source) external;
+    function cancelDepositRequest(Vault calldata vault, address owner, address source) external;
 
     /// @notice TODO
-    function cancelRedeemRequest(address vault, address owner, address source) external;
+    function cancelRedeemRequest(Vault calldata vault, address owner, address source) external;
 
     // --- Incoming message handling ---
     /// @notice TODO
@@ -121,22 +131,22 @@ interface IInvestmentManager is IMessageHandler {
 
     // --- View functions ---
     /// @notice TODO
-    function convertToShares(address vault, uint256 _assets) external view returns (uint256 shares);
+    function convertToShares(Vault calldata vault, uint256 _assets) external view returns (uint256 shares);
 
     /// @notice TODO
-    function convertToAssets(address vault, uint256 _shares) external view returns (uint256 assets);
+    function convertToAssets(Vault calldata vault, uint256 _shares) external view returns (uint256 assets);
 
     /// @notice TODO
-    function maxDeposit(address vault, address user) external view returns (uint256);
+    function maxDeposit(Vault calldata vault, address user) external view returns (uint256);
 
     /// @notice TODO
-    function maxMint(address vault, address user) external view returns (uint256 shares);
+    function maxMint(Vault calldata vault, address user) external view returns (uint256 shares);
 
     /// @notice TODO
-    function maxWithdraw(address vault, address user) external view returns (uint256 assets);
+    function maxWithdraw(Vault calldata vault, address user) external view returns (uint256 assets);
 
     /// @notice TODO
-    function maxRedeem(address vault, address user) external view returns (uint256 shares);
+    function maxRedeem(Vault calldata vault, address user) external view returns (uint256 shares);
 
     /// @notice TODO
     function pendingDepositRequest(address vault, address user) external view returns (uint256 assets);
@@ -166,34 +176,38 @@ interface IInvestmentManager is IMessageHandler {
     /// @notice Processes owner's asset deposit / investment after the epoch has been executed on Centrifuge.
     ///         The asset required to fulfill the invest order is already locked in escrow upon calling
     ///         requestDeposit.
-    function deposit(address vault, uint256 assets, address receiver, address owner)
+    function deposit(Vault calldata vault, uint256 assets, address receiver, address owner)
         external
         returns (uint256 shares);
 
     /// @notice Processes owner's asset deposit / investment after the epoch has been executed on Centrifuge.
     ///         The asset required to fulfill the invest order is already locked in escrow upon calling
     ///         requestDeposit.
-    function mint(address vault, uint256 shares, address receiver, address owner) external returns (uint256 assets);
+    function mint(Vault calldata vault, uint256 shares, address receiver, address owner)
+        external
+        returns (uint256 assets);
 
     /// @dev    Processes owner's tranche Token redemption after the epoch has been executed on Centrifuge.
     ///         The shares required to fulfill the redemption order was already locked in escrow
     ///         upon calling requestRedeem.
-    function redeem(address vault, uint256 shares, address receiver, address owner) external returns (uint256 assets);
+    function redeem(Vault calldata vault, uint256 shares, address receiver, address owner)
+        external
+        returns (uint256 assets);
 
     /// @dev    Processes owner's tranche token redemption after the epoch has been executed on Centrifuge.
     ///         The shares required to fulfill the redemption order was already locked in escrow
     ///         upon calling requestRedeem.
-    function withdraw(address vault, uint256 assets, address receiver, address owner)
+    function withdraw(Vault calldata vault, uint256 assets, address receiver, address owner)
         external
         returns (uint256 shares);
 
     /// @notice TODO
-    function claimCancelDepositRequest(address vault, address receiver, address owner)
+    function claimCancelDepositRequest(Vault calldata vault, address receiver, address owner)
         external
         returns (uint256 assets);
 
     /// @notice TODO
-    function claimCancelRedeemRequest(address vault, address receiver, address owner)
+    function claimCancelRedeemRequest(Vault calldata vault, address receiver, address owner)
         external
         returns (uint256 shares);
 }
