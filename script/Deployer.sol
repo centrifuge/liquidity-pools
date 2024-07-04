@@ -56,7 +56,7 @@ contract Deployer is Script {
         gasService = new GasService(20000000000000000, 20000000000000000, 2500000000000000000, 178947400000000);
         gasService.rely(address(root));
 
-        gateway = new Gateway(address(root), address(investmentManager), address(poolManager), address(gasService));
+        gateway = new Gateway(address(root), address(poolManager), address(investmentManager), address(gasService));
         routerEscrow = new Escrow(deployer);
         router = new CentrifugeRouter(address(routerEscrow), address(gateway), address(poolManager));
         IAuth(address(routerEscrow)).rely(address(router));
