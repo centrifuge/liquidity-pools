@@ -270,7 +270,7 @@ contract Gateway is Auth, IGateway {
         uint256 numAdapters = adapters.length;
         require(numAdapters > 0, "Gateway/adapters-not-initialized");
 
-        uint256 fuel = QUOTA_SLOT.loadUint256();
+        uint256 fuel = QUOTA_SLOT.tloadUint256();
         uint256 messageCost = gasService.estimate(message);
         uint256 proofCost = gasService.estimate(proof);
 
@@ -290,7 +290,7 @@ contract Gateway is Auth, IGateway {
 
                 currentAdapter.send(payload);
             }
-            QUOTA_SLOT.store(0);
+            QUOTA_SLOT.tstore(0);
         } else if (gasService.shouldRefuel(source, message)) {
             uint256 tank = address(this).balance;
             for (uint256 i; i < numAdapters; i++) {
@@ -318,7 +318,7 @@ contract Gateway is Auth, IGateway {
     function topUp() external payable {
         require(IRoot(root).endorsed(msg.sender), "Gateway/only-endorsed-can-topup");
         require(msg.value > 0, "Gateway/cannot-topup-with-nothing");
-        QUOTA_SLOT.store(msg.value);
+        QUOTA_SLOT.tstore(msg.value);
     }
 
     // --- Helpers ---
