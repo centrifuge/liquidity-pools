@@ -45,11 +45,13 @@ contract GasService is IGasService, Auth {
         require(lastUpdatedAt < computedAt, "GasService/cannot-update-price-with-backdate");
         gasPrice = value;
         lastUpdatedAt = computedAt;
+        emit UpdateGasPrice(value, computedAt);
     }
 
     /// @inheritdoc IGasService
     function updateTokenPrice(uint256 value) external auth {
         tokenPrice = value;
+        emit UpdateTokenPrice(value);
     }
 
     /// @inheritdoc IGasService

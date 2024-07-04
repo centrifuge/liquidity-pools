@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity >=0.5.0;
 
-interface IRoot {
+import {IMessageHandler} from "src/interfaces/gateway/IGateway.sol";
+
+interface IRoot is IMessageHandler {
     // --- Events ---
     event File(bytes32 indexed what, uint256 data);
     event Pause();
@@ -13,6 +15,15 @@ interface IRoot {
     event RecoverTokens(address indexed target, address indexed token, address indexed to, uint256 amount);
     event Endorse(address indexed user);
     event Veto(address indexed user);
+
+    /// @notice TODO
+    function paused() external view returns (bool);
+
+    /// @notice TODO
+    function delay() external view returns (uint256);
+
+    /// @notice TODO
+    function schedule(address relyTarget) external view returns (uint256 timestamp);
 
     // --- Administration ---
     /// @notice TODO
