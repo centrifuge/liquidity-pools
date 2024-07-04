@@ -7,6 +7,8 @@ interface ITransferProxy {
 }
 
 interface ITransferProxyFactory {
+    event DeployTransferProxy(bytes32 indexed destination, address proxy);
+
     /// @dev Lookup proxy by destination address
     function proxies(bytes32 destination) external view returns (address proxy);
 

@@ -5,23 +5,25 @@ import {ERC7540VaultFactory} from "src/factories/ERC7540VaultFactory.sol";
 import {TrancheFactoryLike} from "src/factories/TrancheFactory.sol";
 import {ITranche} from "src/interfaces/token/ITranche.sol";
 import {IHook} from "src/interfaces/token/IHook.sol";
-import {IERC20Metadata} from "src/interfaces/IERC20.sol";
+import {IERC20Metadata, IERC20Wrapper} from "src/interfaces/IERC20.sol";
 import {Auth} from "src/Auth.sol";
 import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 import {MathLib} from "src/libraries/MathLib.sol";
 import {MessagesLib} from "src/libraries/MessagesLib.sol";
 import {CastLib} from "src/libraries/CastLib.sol";
-import {Pool, TrancheDetails, TranchePrice, UndeployedTranche, IPoolManager} from "src/interfaces/IPoolManager.sol";
+import {
+    Pool,
+    TrancheDetails,
+    TranchePrice,
+    UndeployedTranche,
+    VaultAsset,
+    IPoolManager
+} from "src/interfaces/IPoolManager.sol";
 import {BytesLib} from "src/libraries/BytesLib.sol";
 import {IEscrow} from "src/interfaces/IEscrow.sol";
 import {IGateway} from "src/interfaces/gateway/IGateway.sol";
 import {IGasService} from "src/interfaces/gateway/IGasService.sol";
 import {IAuth} from "src/interfaces/IAuth.sol";
-
-interface GasServiceLike {
-    function updateGasPrice(uint256 value, uint256 computedAt) external;
-    function price() external returns (uint256);
-}
 
 /// @title  Pool Manager
 /// @notice This contract manages which pools & tranches exist,
@@ -43,7 +45,7 @@ contract PoolManager is Auth, IPoolManager {
     IGasService public gasService;
 
     mapping(uint64 poolId => Pool) public pools;
-    mapping(address => address) public vaultToAsset;
+    mapping(address => VaultAsset) public vaultToAsset;
     mapping(uint128 assetId => address) public idToAsset;
     mapping(address => uint128 assetId) public assetToId;
     mapping(uint64 poolId => mapping(bytes16 => UndeployedTranche)) public undeployedTranches;
@@ -85,7 +87,7 @@ contract PoolManager is Auth, IPoolManager {
             abi.encodePacked(uint8(MessagesLib.Call.TransferAssets), assetId, msg.sender.toBytes32(), recipient, amount),
             address(this)
         );
-        emit TransferCurrency(asset, recipient, amount);
+        emit TransferCurrency(asset, msg.sender, recipient, amount);
     }
 
     /// @inheritdoc IPoolManager
@@ -109,7 +111,7 @@ contract PoolManager is Auth, IPoolManager {
             address(this)
         );
 
-        emit TransferTranchesToCentrifuge(poolId, trancheId, destinationAddress, amount);
+        emit TransferTranchesToCentrifuge(poolId, trancheId, msg.sender, destinationAddress, amount);
     }
 
     /// @inheritdoc IPoolManager
@@ -137,7 +139,7 @@ contract PoolManager is Auth, IPoolManager {
             address(this)
         );
 
-        emit TransferTranchesToEVM(poolId, trancheId, destinationChainId, destinationAddress, amount);
+        emit TransferTranchesToEVM(poolId, trancheId, msg.sender, destinationChainId, destinationAddress, amount);
     }
 
     // --- Incoming message handling ---
@@ -402,7 +404,13 @@ contract PoolManager is Auth, IPoolManager {
         vault = vaultFactory.newVault(
             poolId, trancheId, asset, tranche.token, address(escrow), investmentManager, vaultWards
         );
-        vaultToAsset[vault] = asset;
+
+        // Check whether the ERC20 token is a wrapper
+        try IERC20Wrapper(asset).underlying() returns (address) {
+            vaultToAsset[vault] = VaultAsset(asset, true);
+        } catch {
+            vaultToAsset[vault] = VaultAsset(asset, false);
+        }
 
         // Link vault to tranche token
         IAuth(tranche.token).rely(vault);
@@ -458,9 +466,10 @@ contract PoolManager is Auth, IPoolManager {
     }
 
     /// @inheritdoc IPoolManager
-    function getVaultAsset(address vault) public view override returns (address asset) {
-        asset = vaultToAsset[vault];
-        require(asset != address(0), "PoolManager/unknown-vault");
+    function getVaultAsset(address vault) public view override returns (address, bool) {
+        VaultAsset memory _asset = vaultToAsset[vault];
+        require(_asset.asset != address(0), "PoolManager/unknown-vault");
+        return (_asset.asset, _asset.isWrapper);
     }
 
     /// @inheritdoc IPoolManager

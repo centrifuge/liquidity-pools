@@ -2,7 +2,7 @@
 pragma solidity >=0.5.0;
 
 interface IAdapter {
-    event File(bytes32 what, uint256 value);
+    event File(bytes32 indexed what, uint256 value);
 
     // --- Incoming ---
     /// @notice TODO
@@ -18,7 +18,7 @@ interface IAdapter {
     function send(bytes calldata payload) external;
 
     /// @notice TODO
-    function estimate(bytes calldata payload, uint256 destChainCost) external returns (uint256);
+    function estimate(bytes calldata payload, uint256 destChainCost) external view returns (uint256);
 
     /// @notice TODO
     function pay(bytes calldata payload, address refund) external payable;

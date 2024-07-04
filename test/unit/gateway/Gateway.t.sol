@@ -34,7 +34,7 @@ contract GatewayTest is Test {
         investmentManager = new MockManager();
         poolManager = new MockManager();
         gasService = new MockGasService();
-        gateway = new Gateway(address(root), address(investmentManager), address(poolManager), address(gasService));
+        gateway = new Gateway(address(root), address(poolManager), address(investmentManager), address(gasService));
 
         gasService.setReturn("shouldRefuel", true);
         vm.deal(address(gateway), 1 ether);

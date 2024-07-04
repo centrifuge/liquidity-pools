@@ -250,6 +250,11 @@ contract ERC7540Vault is Auth, IERC7540Vault {
         return true;
     }
 
+    /// @inheritdoc IAuthorizeOperator
+    function invalidateNonce(bytes32 nonce) external {
+        authorizations[msg.sender][nonce] = true;
+    }
+
     // --- ERC165 support ---
     /// @inheritdoc IERC165
     function supportsInterface(bytes4 interfaceId) external pure override returns (bool) {
