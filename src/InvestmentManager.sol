@@ -108,16 +108,16 @@ contract InvestmentManager is Auth, IInvestmentManager {
         // You cannot redeem using a disallowed asset, instead another vault will have to be used
         require(poolManager.isAllowedAsset(vault_.poolId(), vault_.asset()), "InvestmentManager/asset-not-allowed");
 
-        return _processRedeemRequest(vault, _shares, controller, source);
+        return _processRedeemRequest(vault, _shares, controller, source, false);
     }
 
-    function _processRedeemRequest(address vault, uint128 shares, address controller, address source)
+    function _processRedeemRequest(address vault, uint128 shares, address controller, address source, bool triggered)
         internal
         returns (bool)
     {
         IERC7540Vault vault_ = IERC7540Vault(vault);
         InvestmentState storage state = investments[vault][controller];
-        require(state.pendingCancelRedeemRequest != true, "InvestmentManager/cancellation-is-pending");
+        require(state.pendingCancelRedeemRequest != true || triggered, "InvestmentManager/cancellation-is-pending");
 
         state.pendingRedeemRequest = state.pendingRedeemRequest + shares;
 
@@ -359,7 +359,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
             state.maxMint = 0;
         }
 
-        require(_processRedeemRequest(vault, shares, user, msg.sender), "InvestmentManager/failed-redeem-request");
+        require(_processRedeemRequest(vault, shares, user, msg.sender, true), "InvestmentManager/failed-redeem-request");
 
         // Transfer the tranche token amount that was not covered by tokens still in escrow for claims,
         // from user to escrow (lock tranche tokens in escrow)
