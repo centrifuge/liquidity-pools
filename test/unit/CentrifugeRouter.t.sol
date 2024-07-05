@@ -129,6 +129,11 @@ contract routerTest is BaseTest {
         );
         assertEq(vault.claimableCancelDepositRequest(0, self), amount);
 
+        address sender = makeAddr("maliciousUser");
+        vm.prank(sender);
+        vm.expectRevert("CentrifugeRouter/invalid-controller");
+        router.claimCancelDepositRequest(vault_, sender, self);
+
         router.claimCancelDepositRequest(vault_, self, self);
         assertEq(erc20.balanceOf(address(escrow)), 0);
         assertEq(erc20.balanceOf(self), amount);
@@ -240,26 +245,59 @@ contract routerTest is BaseTest {
         assertEq(share.balanceOf(address(self)), amount);
     }
 
-    function testTransferTranchesToEVMs() public {
-        uint64 validUntil = uint64(block.timestamp + 7 days);
-        address destinationAddress = makeAddr("destinationAddress");
-        uint256 amount = 100 * 10 ** 18;
-
+    function testOpen() public {
         address vault_ = deploySimpleVault();
+        vm.label(vault_, "vault");
         ERC7540Vault vault = ERC7540Vault(vault_);
-        ITranche tranche = ITranche(address(ERC7540Vault(vault_).share()));
-        deal(address(tranche), address(this), amount);
-        tranche.approve(address(poolManager), amount);
 
-        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), destinationAddress, validUntil);
-        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), address(this), validUntil);
+        assertEq(router.opened(address(this), vault_), false);
+        router.open(vault_);
+        assertEq(router.opened(address(this), vault_), true);
+    }
+
+    function testClosed() public {
+        address vault_ = deploySimpleVault();
+        vm.label(vault_, "vault");
+        ERC7540Vault vault = ERC7540Vault(vault_);
+
+        router.open(vault_);
+        assertEq(router.opened(address(this), vault_), true);
+        router.close(vault_);
+        assertEq(router.opened(address(this), vault_), false);
+    }
+
+    function testPermit() public {
+        address vault_ = deploySimpleVault();
+        vm.label(vault_, "vault");
+        ERC7540Vault vault = ERC7540Vault(vault_);
 
 
-        assertEq(tranche.balanceOf(address(this)), amount);
-        router.transferTranchesToEVM(
-            vault_, uint64(block.chainid), destinationAddress, uint128(amount)
+        bytes32 PERMIT_TYPEHASH =
+        keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
+        uint256 privateKey = 0xBEEF;
+        address owner = vm.addr(privateKey);
+        vm.label(owner, "owner");
+        vm.label(address(router), "spender");
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
+            privateKey,
+            keccak256(
+                abi.encodePacked(
+                    "\x19\x01",
+                    erc20.DOMAIN_SEPARATOR(),
+                    keccak256(abi.encode(PERMIT_TYPEHASH, owner, address(router), 1e18, 0, block.timestamp))
+                )
+            )
         );
-        assertEq(tranche.balanceOf(address(this)), 0);
+
+        // vm.expectEmit(true, true, true, true);
+        // emit Approval(address(this), address(0xCAFE), 1e18);
+        // token.permit(owner, address(0xCAFE), 1e18, block.timestamp, v, r, s);
+        router.permit(address(erc20), address(router), 1e18, block.timestamp, v, r, s);
+
+        assertEq(erc20.allowance(owner, address(router)), 1e18);
+        assertEq(erc20.nonces(owner), 1);
+
     }
 
     function estimateGas() internal view returns (uint256 total) {

@@ -60,6 +60,10 @@ interface IPoolManager {
         uint128 amount
     );
 
+    function investmentManager() external view returns (address);
+
+
+
     /// @notice TODO
     function idToAsset(uint128 assetId) external view returns (address asset);
 

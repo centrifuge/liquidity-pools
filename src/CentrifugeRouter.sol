@@ -8,6 +8,7 @@ import {IERC20, IERC20Permit, IERC20Wrapper} from "src/interfaces/IERC20.sol";
 import {IERC7540Vault} from "src/interfaces/IERC7540.sol";
 import {ICentrifugeRouter} from "src/interfaces/ICentrifugeRouter.sol";
 import {IPoolManager} from "src/interfaces/IPoolManager.sol";
+import {IInvestmentManager} from "src/interfaces/IInvestmentManager.sol";
 import {IEscrow} from "src/interfaces/IEscrow.sol";
 import {IGateway} from "src/interfaces/gateway/IGateway.sol";
 
@@ -142,11 +143,13 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
 
     /// @inheritdoc ICentrifugeRouter
     function cancelDepositRequest(address vault, address controller) external protected {
+        validateController(controller);
         IERC7540Vault(vault).cancelDepositRequest(0, controller);
     }
 
     /// @inheritdoc ICentrifugeRouter
     function claimCancelDepositRequest(address vault, address receiver, address controller) external protected {
+        validateController(vault, controller);
         IERC7540Vault(vault).claimCancelDepositRequest(0, receiver, controller);
     }
 
@@ -173,11 +176,13 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
 
     /// @inheritdoc ICentrifugeRouter
     function cancelRedeemRequest(address vault, address controller) external protected {
+        validateController(controller);
         IERC7540Vault(vault).cancelRedeemRequest(0, controller);
     }
 
     /// @inheritdoc ICentrifugeRouter
     function claimCancelRedeemRequest(address vault, address receiver, address controller) external protected {
+        validateController(controller);
         IERC7540Vault(vault).claimCancelRedeemRequest(0, receiver, controller);
     }
 
@@ -292,5 +297,13 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         if (IERC20(token).allowance(address(this), spender) == 0) {
             SafeTransferLib.safeApprove(token, spender, type(uint256).max);
         }
+    }
+
+    function validateController(address vault, address controller) internal view {
+        require(
+            controller == msg.sender || IERC7540Vault(vault).isOperator(controller, msg.sender)
+                || IInvestmentManager(poolManager.investmentManager()).isGlobalOperator(address(this), msg.sender),
+            "CentrifugeRouter/invalid-controller"
+        );
     }
 }
