@@ -265,11 +265,9 @@ contract CentrifugeRouterTest is BaseTest {
     function testPermit() public {
         address vault_ = deploySimpleVault();
         vm.label(vault_, "vault");
-        ERC7540Vault vault = ERC7540Vault(vault_);
 
 
-        bytes32 PERMIT_TYPEHASH =
-        keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
+        bytes32 PERMIT_TYPEHASH = keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
         uint256 privateKey = 0xBEEF;
         address owner = vm.addr(privateKey);
         vm.label(owner, "owner");
@@ -286,14 +284,11 @@ contract CentrifugeRouterTest is BaseTest {
             )
         );
 
-        // vm.expectEmit(true, true, true, true);
-        // emit Approval(address(this), address(0xCAFE), 1e18);
-        // token.permit(owner, address(0xCAFE), 1e18, block.timestamp, v, r, s);
+        vm.prank(owner);
         router.permit(address(erc20), address(router), 1e18, block.timestamp, v, r, s);
 
         assertEq(erc20.allowance(owner, address(router)), 1e18);
         assertEq(erc20.nonces(owner), 1);
-
     }
 
     function testOpenAndClose() public {

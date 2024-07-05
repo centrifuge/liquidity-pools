@@ -151,13 +151,13 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     }
 
     /// @inheritdoc ICentrifugeRouter
-    function cancelDepositRequest(address vault, address controller) external protected {
-        validateController(controller);
+    function cancelDepositRequest(address vault, address controller) external payable protected {
+        validateController(vault, controller);
         IERC7540Vault(vault).cancelDepositRequest(0, controller);
     }
 
     /// @inheritdoc ICentrifugeRouter
-    function claimCancelDepositRequest(address vault, address receiver, address controller) external protected {
+    function claimCancelDepositRequest(address vault, address receiver, address controller) external payable protected {
         validateController(vault, controller);
         IERC7540Vault(vault).claimCancelDepositRequest(0, receiver, controller);
     }
@@ -192,14 +192,14 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     }
 
     /// @inheritdoc ICentrifugeRouter
-    function cancelRedeemRequest(address vault, address controller) external protected {
-        validateController(controller);
+    function cancelRedeemRequest(address vault, address controller) external payable protected {
+        validateController(vault, controller);
         IERC7540Vault(vault).cancelRedeemRequest(0, controller);
     }
 
     /// @inheritdoc ICentrifugeRouter
-    function claimCancelRedeemRequest(address vault, address receiver, address controller) external protected {
-        validateController(controller);
+    function claimCancelRedeemRequest(address vault, address receiver, address controller) external payable protected {
+        validateController(vault, controller);
         IERC7540Vault(vault).claimCancelRedeemRequest(0, receiver, controller);
     }
 
@@ -212,6 +212,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     /// @inheritdoc ICentrifugeRouter
     function transferTranchesToEVM(address vault, uint64 destinationChainId, address destinationAddress, uint128 amount)
         external
+        payable
         protected
     {
         IPoolManager(poolManager).transferTranchesToEVM(
@@ -224,7 +225,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     }
 
     /// @inheritdoc ICentrifugeRouter
-    function transferTranchesToCentrifuge(address vault, bytes32 destinationAddress, uint128 amount) external {
+    function transferTranchesToCentrifuge(address vault, bytes32 destinationAddress, uint128 amount) external payable protected {
         IPoolManager(poolManager).transferTranchesToCentrifuge(
             IERC7540Vault(vault).poolId(), IERC7540Vault(vault).trancheId(), destinationAddress, amount
         );

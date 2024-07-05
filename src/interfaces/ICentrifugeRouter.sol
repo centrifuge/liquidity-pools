@@ -41,10 +41,10 @@ interface ICentrifugeRouter {
     function claimDeposit(address vault, address receiver, address controller) external payable;
 
     /// @notice TODO
-    function cancelDepositRequest(address vault, address controller) external;
+    function cancelDepositRequest(address vault, address controller) external payable;
 
     /// @notice TODO
-    function claimCancelDepositRequest(address vault, address receiver, address controller) external;
+    function claimCancelDepositRequest(address vault, address receiver, address controller) external payable;
 
     // --- Redeem ---
     /// @notice TODO
@@ -61,14 +61,20 @@ interface ICentrifugeRouter {
     function close(address vault) external;
 
     /// @notice TODO
-    function cancelRedeemRequest(address vault, address controller) external;
+    function cancelRedeemRequest(address vault, address controller) external payable;
 
     /// @notice TODO
-    function claimCancelRedeemRequest(address vault, address receiver, address controller) external;
+    function claimCancelRedeemRequest(address vault, address receiver, address controller) external payable;
 
     // --- Transfer ---
     /// @notice TODO
     function transfer(address asset, bytes32 recipient, uint128 amount) external;
+
+    /// @notice TODO
+    function transferTranchesToEVM(address vault, uint64 destinationChainId, address destinationAddress, uint128 amount) external payable;
+
+    /// @notice TODO
+    function transferTranchesToCentrifuge(address vault, bytes32 destinationAddress, uint128 amount) external payable;
 
     // --- ERC20 permit ---
     /// @notice TODO
