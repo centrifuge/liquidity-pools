@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.21;
+pragma solidity 0.8.26;
 
 import {Root} from "src/Root.sol";
 import {Gateway} from "src/gateway/Gateway.sol";
@@ -46,7 +46,7 @@ contract Deployer is Script {
         root = new Root{salt: salt}(address(escrow), delay, deployer);
 
         vaultFactory = address(new ERC7540VaultFactory(address(root)));
-        restrictionManager = address(new RestrictionManager{salt: salt}(address(root)));
+        restrictionManager = address(new RestrictionManager{salt: salt}(address(root), deployer));
         trancheFactory = address(new TrancheFactory{salt: salt}(address(root), deployer));
         investmentManager = new InvestmentManager(address(root), address(escrow));
         poolManager = new PoolManager(address(escrow), vaultFactory, trancheFactory);
@@ -56,7 +56,7 @@ contract Deployer is Script {
         gasService = new GasService(20000000000000000, 20000000000000000, 2500000000000000000, 178947400000000);
         gasService.rely(address(root));
 
-        gateway = new Gateway(address(root), address(investmentManager), address(poolManager), address(gasService));
+        gateway = new Gateway(address(root), address(poolManager), address(investmentManager), address(gasService));
         routerEscrow = new Escrow(deployer);
         router = new CentrifugeRouter(address(routerEscrow), address(gateway), address(poolManager));
         IAuth(address(routerEscrow)).rely(address(router));

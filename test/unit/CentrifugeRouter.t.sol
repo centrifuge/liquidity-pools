@@ -1,18 +1,33 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.21;
+pragma solidity 0.8.26;
 
 import "test/BaseTest.sol";
 import "src/interfaces/IERC7575.sol";
 import "src/interfaces/IERC7540.sol";
 import "src/interfaces/IERC20.sol";
+import {MockERC20Wrapper} from "test/mocks/MockERC20Wrapper.sol";
 import {CastLib} from "src/libraries/CastLib.sol";
 
-contract routerTest is BaseTest {
+contract ERC20WrapperFake {
+    address public underlying;
+
+    constructor(address underlying_) {
+        underlying = underlying_;
+    }
+}
+
+contract CentrifugeRouterTest is BaseTest {
     using CastLib for *;
 
     uint256 constant GAS_BUFFER = 10 gwei;
     /// @dev Payload is not taken into account during gas estimation
     bytes constant PAYLOAD_FOR_GAS_ESTIMATION = "irrelevant_value";
+
+    function testInitialization() public {
+        assertEq(address(router.escrow()), address(routerEscrow));
+        assertEq(address(router.gateway()), address(gateway));
+        assertEq(address(router.poolManager()), address(poolManager));
+    }
 
     function testGetVault() public {
         address vault_ = deploySimpleVault();
@@ -68,20 +83,22 @@ contract routerTest is BaseTest {
         assertEq(erc20.balanceOf(address(routerEscrow)), amount);
     }
 
-    function testUnlockDepositRequest() public {
+    function testUnlockDepositRequests() public {
         address vault_ = deploySimpleVault();
         vm.label(vault_, "vault");
 
         uint256 amount = 100 * 10 ** 18;
-        assertEq(erc20.balanceOf(address(routerEscrow)), 0);
 
         erc20.mint(self, amount);
         erc20.approve(address(router), amount);
 
+        vm.expectRevert(bytes("CentrifugeRouter/user-has-no-locked-balance"));
+        router.unlockDepositRequest(vault_, self);
+
         router.lockDepositRequest(vault_, amount, self, self);
         assertEq(erc20.balanceOf(address(routerEscrow)), amount);
-
-        router.unlockDepositRequest(vault_);
+        assertEq(erc20.balanceOf(self), 0);
+        router.unlockDepositRequest(vault_, self);
         assertEq(erc20.balanceOf(address(routerEscrow)), 0);
         assertEq(erc20.balanceOf(self), amount);
     }
@@ -245,27 +262,6 @@ contract routerTest is BaseTest {
         assertEq(share.balanceOf(address(self)), amount);
     }
 
-    function testOpen() public {
-        address vault_ = deploySimpleVault();
-        vm.label(vault_, "vault");
-        ERC7540Vault vault = ERC7540Vault(vault_);
-
-        assertEq(router.opened(address(this), vault_), false);
-        router.open(vault_);
-        assertEq(router.opened(address(this), vault_), true);
-    }
-
-    function testClosed() public {
-        address vault_ = deploySimpleVault();
-        vm.label(vault_, "vault");
-        ERC7540Vault vault = ERC7540Vault(vault_);
-
-        router.open(vault_);
-        assertEq(router.opened(address(this), vault_), true);
-        router.close(vault_);
-        assertEq(router.opened(address(this), vault_), false);
-    }
-
     function testPermit() public {
         address vault_ = deploySimpleVault();
         vm.label(vault_, "vault");
@@ -298,6 +294,76 @@ contract routerTest is BaseTest {
         assertEq(erc20.allowance(owner, address(router)), 1e18);
         assertEq(erc20.nonces(owner), 1);
 
+    }
+
+    function testOpenAndClose() public {
+        address vault_ = deploySimpleVault();
+        vm.label(vault_, "vault");
+
+        assertFalse(router.opened(self, vault_));
+        router.open(vault_);
+        assertTrue(router.opened(self, vault_));
+        router.close(vault_);
+        assertFalse(router.opened(self, vault_));
+    }
+
+    function testWrap() public {
+        uint256 amount = 150 * 10 ** 18;
+        uint256 balance = 100 * 10 ** 18;
+        address receiver = makeAddr("receiver");
+        MockERC20Wrapper wrapper = new MockERC20Wrapper(address(erc20));
+
+        vm.expectRevert(bytes("CentrifugeRouter/invalid-owner"));
+        router.wrap(address(wrapper), amount, receiver, makeAddr("ownerIsNeitherCallerNorRouter"));
+
+        vm.expectRevert(bytes("CentrifugeRouter/zero-balance"));
+        router.wrap(address(wrapper), amount, receiver, self);
+
+        erc20.mint(self, balance);
+        erc20.approve(address(router), amount);
+        wrapper.setFail("depositFor", true);
+        vm.expectRevert(bytes("CentrifugeRouter/deposit-for-failed"));
+        router.wrap(address(wrapper), amount, receiver, self);
+
+        wrapper.setFail("depositFor", false);
+        router.wrap(address(wrapper), amount, receiver, self);
+        assertEq(wrapper.balanceOf(receiver), balance);
+        assertEq(erc20.balanceOf(self), 0);
+
+        erc20.mint(address(router), balance);
+        router.wrap(address(wrapper), amount, receiver, address(router));
+        assertEq(wrapper.balanceOf(receiver), 200 * 10 ** 18);
+        assertEq(erc20.balanceOf(address(router)), 0);
+    }
+
+    function testUnwrap() public {
+        uint256 amount = 150 * 10 ** 18;
+        uint256 balance = 100 * 10 ** 18;
+        MockERC20Wrapper wrapper = new MockERC20Wrapper(address(erc20));
+        erc20.mint(self, balance);
+        erc20.approve(address(router), amount);
+
+        vm.expectRevert(bytes("CentrifugeRouter/zero-balance"));
+        router.unwrap(address(wrapper), amount, self);
+
+        router.wrap(address(wrapper), amount, address(router), self);
+        wrapper.setFail("withdrawTo", true);
+        vm.expectRevert(bytes("CentrifugeRouter/withdraw-to-failed"));
+        router.unwrap(address(wrapper), amount, self);
+        wrapper.setFail("withdrawTo", false);
+
+        assertEq(wrapper.balanceOf(address(router)), balance);
+        assertEq(erc20.balanceOf(self), 0);
+        router.unwrap(address(wrapper), amount, self);
+        assertEq(wrapper.balanceOf(address(router)), 0);
+        assertEq(erc20.balanceOf(self), balance);
+    }
+
+    function testEstimate() public {
+        bytes memory message = "IRRELEVANT";
+        uint256 estimated = router.estimate(message);
+        (, uint256 gatewayEstimated) = gateway.estimate(message);
+        assertEq(estimated, gatewayEstimated);
     }
 
     function estimateGas() internal view returns (uint256 total) {

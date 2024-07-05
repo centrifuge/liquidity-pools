@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.21;
+pragma solidity 0.8.26;
 
 import "test/BaseTest.sol";
 import "src/interfaces/IERC7575.sol";
@@ -94,13 +94,15 @@ contract ERC7540VaultTest is BaseTest {
         bytes4 erc7540Redeem = 0x620ee8e4;
         bytes4 erc7540CancelDeposit = 0x8bf840e3;
         bytes4 erc7540CancelRedeem = 0xe76cffc7;
-        bytes4 ercAuthorizeOperator = 0x59361fd0;
+        bytes4 ercAuthorizeOperator = 0x7a7911eb;
+        bytes4 erc7714 = 0x78d77ecb;
 
         vm.assume(
             unsupportedInterfaceId != erc165 && unsupportedInterfaceId != erc7575Vault
                 && unsupportedInterfaceId != erc7540Operator && unsupportedInterfaceId != erc7540Deposit
                 && unsupportedInterfaceId != erc7540Redeem && unsupportedInterfaceId != erc7540CancelDeposit
                 && unsupportedInterfaceId != erc7540CancelRedeem && unsupportedInterfaceId != ercAuthorizeOperator
+                && unsupportedInterfaceId != erc7714
         );
 
         address vault_ = deploySimpleVault();
@@ -114,6 +116,7 @@ contract ERC7540VaultTest is BaseTest {
         assertEq(type(IERC7540CancelDeposit).interfaceId, erc7540CancelDeposit);
         assertEq(type(IERC7540CancelRedeem).interfaceId, erc7540CancelRedeem);
         assertEq(type(IAuthorizeOperator).interfaceId, ercAuthorizeOperator);
+        assertEq(type(IERC7714).interfaceId, erc7714);
 
         assertEq(vault.supportsInterface(erc165), true);
         assertEq(vault.supportsInterface(erc7575Vault), true);
@@ -123,6 +126,7 @@ contract ERC7540VaultTest is BaseTest {
         assertEq(vault.supportsInterface(erc7540CancelDeposit), true);
         assertEq(vault.supportsInterface(erc7540CancelRedeem), true);
         assertEq(vault.supportsInterface(ercAuthorizeOperator), true);
+        assertEq(vault.supportsInterface(erc7714), true);
 
         assertEq(vault.supportsInterface(unsupportedInterfaceId), false);
     }

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.21;
+pragma solidity 0.8.26;
 
 import {Auth} from "src/Auth.sol";
 import {IGasService} from "src/interfaces/gateway/IGasService.sol";
@@ -45,11 +45,13 @@ contract GasService is IGasService, Auth {
         require(lastUpdatedAt < computedAt, "GasService/cannot-update-price-with-backdate");
         gasPrice = value;
         lastUpdatedAt = computedAt;
+        emit UpdateGasPrice(value, computedAt);
     }
 
     /// @inheritdoc IGasService
     function updateTokenPrice(uint256 value) external auth {
         tokenPrice = value;
+        emit UpdateTokenPrice(value);
     }
 
     /// @inheritdoc IGasService

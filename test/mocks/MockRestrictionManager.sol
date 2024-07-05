@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.21;
+pragma solidity 0.8.26;
 
 import "test/mocks/Mock.sol";
 import "src/token/RestrictionManager.sol";
 
 contract MockRestrictionManager is RestrictionManager, Mock {
-    constructor(address root_) RestrictionManager(root_) {}
+    constructor(address root_, address deployer) RestrictionManager(root_, deployer) {}
 
     function onERC20Transfer(address from, address to, uint256 value, HookData calldata hookData)
         public

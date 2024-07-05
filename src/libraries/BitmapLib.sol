@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.21;
+pragma solidity 0.8.26;
 
 /// @title  BitmapLib
 library BitmapLib {
@@ -23,7 +23,7 @@ library BitmapLib {
 
     /// @notice Get n most significant bits from the bitmap
     function getMSBits(uint256 bitmap, uint256 n) internal pure returns (uint256) {
-        return bitmap >> n;
+        return bitmap >> (256 - n);
     }
 
     /// @notice Shift the value left

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.21;
+pragma solidity 0.8.26;
 
 import {Auth} from "src/Auth.sol";
 import {EIP712Lib} from "src/libraries/EIP712Lib.sol";
@@ -250,13 +250,19 @@ contract ERC7540Vault is Auth, IERC7540Vault {
         return true;
     }
 
+    /// @inheritdoc IAuthorizeOperator
+    function invalidateNonce(bytes32 nonce) external {
+        authorizations[msg.sender][nonce] = true;
+    }
+
     // --- ERC165 support ---
     /// @inheritdoc IERC165
     function supportsInterface(bytes4 interfaceId) external pure override returns (bool) {
         return interfaceId == type(IERC7540Deposit).interfaceId || interfaceId == type(IERC7540Redeem).interfaceId
             || interfaceId == type(IERC7540Operator).interfaceId || interfaceId == type(IERC7540CancelDeposit).interfaceId
             || interfaceId == type(IERC7540CancelRedeem).interfaceId || interfaceId == type(IERC7575).interfaceId
-            || interfaceId == type(IAuthorizeOperator).interfaceId || interfaceId == type(IERC165).interfaceId;
+            || interfaceId == type(IAuthorizeOperator).interfaceId || interfaceId == type(IERC7714).interfaceId
+            || interfaceId == type(IERC165).interfaceId;
     }
 
     // --- ERC-4626 methods ---
@@ -384,6 +390,11 @@ contract ERC7540Vault is Auth, IERC7540Vault {
 
     function priceLastUpdated() external view returns (uint64) {
         return manager.priceLastUpdated(address(this));
+    }
+
+    /// @inheritdoc IERC7714
+    function isPermissioned(address controller) external view returns (bool) {
+        return ITranche(share).checkTransferRestriction(address(0), controller, 0);
     }
 
     function validateController(address controller) internal view {

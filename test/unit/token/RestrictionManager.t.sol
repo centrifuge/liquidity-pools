@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.21;
+pragma solidity 0.8.26;
 
 import {Tranche} from "src/token/Tranche.sol";
 import {MockRoot} from "test/mocks/MockRoot.sol";
@@ -16,7 +16,7 @@ contract RestrictionManagerTest is Test {
     function setUp() public {
         root = new MockRoot();
         token = new Tranche(18);
-        restrictionManager = new RestrictionManager(address(root));
+        restrictionManager = new RestrictionManager(address(root), address(this));
         token.file("hook", address(restrictionManager));
     }
 
@@ -27,14 +27,18 @@ contract RestrictionManagerTest is Test {
         restrictionManager.updateMember(address(token), address(this), uint64(block.timestamp - 1));
 
         restrictionManager.updateMember(address(token), address(this), validUntil);
-        assertTrue(restrictionManager.isMember(address(token), address(this)));
+        (bool _isMember, uint64 _validUntil) = restrictionManager.isMember(address(token), address(this));
+        assertTrue(_isMember);
+        assertEq(_validUntil, validUntil);
     }
 
     function testIsMember(uint64 validUntil) public {
         vm.assume(validUntil >= block.timestamp);
 
         restrictionManager.updateMember(address(token), address(this), validUntil);
-        assertTrue(restrictionManager.isMember(address(token), address(this)));
+        (bool _isMember, uint64 _validUntil) = restrictionManager.isMember(address(token), address(this));
+        assertTrue(_isMember);
+        assertEq(_validUntil, validUntil);
     }
 
     function testFreeze() public {
@@ -46,6 +50,22 @@ contract RestrictionManagerTest is Test {
         vm.expectRevert("RestrictionManager/cannot-freeze-zero-address");
         restrictionManager.freeze(address(token), address(0));
         assertEq(restrictionManager.isFrozen(address(token), address(0)), false);
+    }
+
+    function testAddMemberAndFreeze(uint64 validUntil) public {
+        vm.assume(validUntil >= block.timestamp);
+
+        restrictionManager.updateMember(address(token), address(this), validUntil);
+        (bool _isMember, uint64 _validUntil) = restrictionManager.isMember(address(token), address(this));
+        assertTrue(_isMember);
+        assertEq(_validUntil, validUntil);
+        assertEq(restrictionManager.isFrozen(address(token), address(this)), false);
+
+        restrictionManager.freeze(address(token), address(this));
+        (_isMember, _validUntil) = restrictionManager.isMember(address(token), address(this));
+        assertTrue(_isMember);
+        assertEq(_validUntil, validUntil);
+        assertEq(restrictionManager.isFrozen(address(token), address(this)), true);
     }
 
     // --- erc165 checks ---

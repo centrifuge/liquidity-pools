@@ -1,4 +1,4 @@
-pragma solidity 0.8.21;
+pragma solidity 0.8.26;
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma abicoder v2;
 
@@ -105,6 +105,7 @@ contract BaseTest is Deployer, Test {
         vm.label(address(gasService), "GasService");
         vm.label(address(mockedGasService), "MockGasService");
         vm.label(address(escrow), "Escrow");
+        vm.label(address(routerEscrow), "RouterEscrow");
         vm.label(address(guardian), "Guardian");
         vm.label(address(poolManager.trancheFactory()), "TrancheFactory");
         vm.label(address(poolManager.vaultFactory()), "ERC7540VaultFactory");
@@ -121,6 +122,7 @@ contract BaseTest is Deployer, Test {
         excludeContract(address(adapter2));
         excludeContract(address(adapter3));
         excludeContract(address(escrow));
+        excludeContract(address(routerEscrow));
         excludeContract(address(guardian));
         excludeContract(address(poolManager.trancheFactory()));
         excludeContract(address(poolManager.vaultFactory()));

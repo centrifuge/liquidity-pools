@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.21;
+pragma solidity 0.8.26;
 
 uint8 constant MAX_ADAPTER_COUNT = 8;
 
@@ -105,4 +105,8 @@ interface IGateway {
     /// @param to - address  that will receive the funds
     /// @param amount - amount to be sent to the @param to
     function recoverTokens(address token, address to, uint256 amount) external;
+}
+
+interface IMessageHandler {
+    function handle(bytes memory message) external;
 }

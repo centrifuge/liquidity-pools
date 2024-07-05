@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.21;
+pragma solidity 0.8.26;
 
 import "src/interfaces/IERC7575.sol";
 import "src/interfaces/IERC7540.sol";
@@ -28,7 +28,7 @@ contract TrancheTest is Test {
         token.file("name", "Some Token");
         token.file("symbol", "ST");
 
-        restrictionManager = new MockRestrictionManager(address(new MockRoot()));
+        restrictionManager = new MockRestrictionManager(address(new MockRoot()), address(this));
         token.file("hook", address(restrictionManager));
     }
 
@@ -87,7 +87,9 @@ contract TrancheTest is Test {
         assertEq(token.balanceOf(targetUser), 0);
 
         restrictionManager.updateMember(address(token), targetUser, uint64(validUntil));
-        assertTrue(restrictionManager.isMember(address(token), targetUser));
+        (bool _isMember, uint64 _validUntil) = restrictionManager.isMember(address(token), targetUser);
+        assertTrue(_isMember);
+        assertEq(_validUntil, validUntil);
 
         restrictionManager.freeze(address(token), self);
         vm.expectRevert(bytes("RestrictionManager/transfer-blocked"));
@@ -140,7 +142,9 @@ contract TrancheTest is Test {
         assertEq(token.balanceOf(targetUser), 0);
 
         restrictionManager.updateMember(address(token), targetUser, uint64(validUntil));
-        assertTrue(restrictionManager.isMember(address(token), targetUser));
+        (bool _isMember, uint64 _validUntil) = restrictionManager.isMember(address(token), targetUser);
+        assertTrue(_isMember);
+        assertEq(_validUntil, validUntil);
 
         restrictionManager.freeze(address(token), self);
         vm.expectRevert(bytes("RestrictionManager/transfer-blocked"));
@@ -184,7 +188,9 @@ contract TrancheTest is Test {
         token.mint(targetUser, amount);
 
         restrictionManager.updateMember(address(token), targetUser, uint64(validUntil));
-        assertTrue(restrictionManager.isMember(address(token), targetUser));
+        (bool _isMember, uint64 _validUntil) = restrictionManager.isMember(address(token), targetUser);
+        assertTrue(_isMember);
+        assertEq(_validUntil, validUntil);
 
         token.mint(targetUser, amount);
         assertEq(token.balanceOf(targetUser), amount);

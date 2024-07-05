@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.21;
+pragma solidity 0.8.26;
 
 import {Auth} from "src/Auth.sol";
 import {MessagesLib} from "src/libraries/MessagesLib.sol";
@@ -26,8 +26,11 @@ contract Root is Auth, IRoot {
     /// @notice Trusted contracts within the system
     mapping(address => uint256) public endorsements;
 
+    /// @inheritdoc IRoot
     bool public paused;
+    /// @inheritdoc IRoot
     uint256 public delay;
+    /// @inheritdoc IRoot
     mapping(address relyTarget => uint256 timestamp) public schedule;
 
     constructor(address _escrow, uint256 _delay, address deployer) {

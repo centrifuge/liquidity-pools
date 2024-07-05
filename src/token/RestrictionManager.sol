@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.21;
+pragma solidity 0.8.26;
 
 import {Auth} from "src/Auth.sol";
 import {IERC20} from "src/interfaces/IERC20.sol";
@@ -10,7 +10,7 @@ import {MessagesLib} from "src/libraries/MessagesLib.sol";
 import {BitmapLib} from "src/libraries/BitmapLib.sol";
 import {BytesLib} from "src/libraries/BytesLib.sol";
 import {IERC165} from "src/interfaces/IERC7575.sol";
-import "src/interfaces/token/IRestrictionManager.sol";
+import {RestrictionUpdate, IRestrictionManager} from "src/interfaces/token/IRestrictionManager.sol";
 
 /// @title  Restriction Manager
 /// @notice Hook implementation that:
@@ -24,15 +24,20 @@ contract RestrictionManager is Auth, IRestrictionManager, IHook {
     using BitmapLib for *;
     using BytesLib for bytes;
 
-    uint8 public constant FREEZE_BIT = 128 - 1;
+    /// @dev Least significant bit
+    uint8 public constant FREEZE_BIT = 0;
+
+    uint8 public constant SOURCE_IS_FROZEN_CODE = 1;
+    uint8 public constant DESTINATION_IS_FROZEN_CODE = 2;
+    uint8 public constant DESTINATION_NOT_A_MEMBER_RESTRICTION_CODE = 3;
 
     IRoot public immutable root;
 
-    constructor(address root_) {
+    constructor(address root_, address deployer) {
         root = IRoot(root_);
 
-        wards[msg.sender] = 1;
-        emit Rely(msg.sender);
+        wards[deployer] = 1;
+        emit Rely(deployer);
     }
 
     // --- Callback from tranche token ---
@@ -128,8 +133,9 @@ contract RestrictionManager is Auth, IRestrictionManager, IHook {
     }
 
     /// @inheritdoc IRestrictionManager
-    function isMember(address token, address user) public view returns (bool) {
-        return abi.encodePacked(ITranche(token).hookDataOf(user)).toUint64(0) >= block.timestamp;
+    function isMember(address token, address user) public view returns (bool isValid, uint64 validUntil) {
+        validUntil = abi.encodePacked(ITranche(token).hookDataOf(user)).toUint64(0);
+        isValid = validUntil >= block.timestamp;
     }
 
     // --- ERC165 support ---

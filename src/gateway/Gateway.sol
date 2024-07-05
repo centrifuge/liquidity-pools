@@ -1,35 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.21;
+pragma solidity 0.8.26;
 
 import {Auth} from "src/Auth.sol";
 import {ArrayLib} from "src/libraries/ArrayLib.sol";
 import {BytesLib} from "src/libraries/BytesLib.sol";
 import {MessagesLib} from "src/libraries/MessagesLib.sol";
 import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
-import {IGateway} from "src/interfaces/gateway/IGateway.sol";
-
-interface ManagerLike {
-    function handle(bytes memory message) external;
-}
-
-interface GasServiceLike {
-    function estimate(bytes calldata payload) external view returns (uint256);
-    function shouldRefuel(address source, bytes calldata payload) external returns (bool);
-}
-
-interface AdapterLike {
-    function send(bytes memory message) external;
-    function pay(bytes calldata payload, address refund) external payable;
-    function estimate(bytes calldata payload, uint256 destChainCost) external view returns (uint256);
-}
-
-interface RootLike {
-    function paused() external returns (bool);
-    function scheduleRely(address target) external;
-    function cancelRely(address target) external;
-    function recoverTokens(address target, address token, address to, uint256 amount) external;
-    function endorsed(address user) external view returns (bool);
-}
+import {IGateway, IMessageHandler} from "src/interfaces/gateway/IGateway.sol";
+import {IRoot} from "src/interfaces/IRoot.sol";
+import {IGasService} from "src/interfaces/gateway/IGasService.sol";
+import {IAdapter} from "src/interfaces/gateway/IAdapter.sol";
 
 /// @title  Gateway
 /// @notice Routing contract that forwards to multiple adapters (1 full message, n-1 proofs)
@@ -44,11 +24,12 @@ contract Gateway is Auth, IGateway {
     uint8 public constant MAX_ADAPTER_COUNT = 8;
     uint8 public constant PRIMARY_ADAPTER_ID = 1;
     uint256 public constant RECOVERY_CHALLENGE_PERIOD = 7 days;
-    RootLike public immutable root;
 
-    address public investmentManager;
+    IRoot public immutable root;
+
     address public poolManager;
-    GasServiceLike public gasService;
+    address public investmentManager;
+    IGasService public gasService;
 
     address[] public adapters;
     mapping(address adapter => Adapter) public activeAdapters;
@@ -58,11 +39,11 @@ contract Gateway is Auth, IGateway {
 
     uint256 quota;
 
-    constructor(address root_, address investmentManager_, address poolManager_, address gasService_) {
-        root = RootLike(root_);
-        investmentManager = investmentManager_;
+    constructor(address root_, address poolManager_, address investmentManager_, address gasService_) {
+        root = IRoot(root_);
         poolManager = poolManager_;
-        gasService = GasServiceLike(gasService_);
+        investmentManager = investmentManager_;
+        gasService = IGasService(gasService_);
 
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
@@ -114,7 +95,7 @@ contract Gateway is Auth, IGateway {
 
     /// @inheritdoc IGateway
     function file(bytes32 what, address instance) external auth {
-        if (what == "gasService") gasService = GasServiceLike(instance);
+        if (what == "gasService") gasService = IGasService(instance);
         else if (what == "investmentManager") investmentManager = instance;
         else if (what == "poolManager") poolManager = instance;
         else revert("Gateway/file-unrecognized-param");
@@ -227,7 +208,7 @@ contract Gateway is Auth, IGateway {
             require(manager != address(0), "Gateway/unregistered-message-id");
         }
 
-        ManagerLike(manager).handle(message);
+        IMessageHandler(manager).handle(message);
     }
 
     function _handleRecovery(bytes memory payload) internal {
@@ -291,7 +272,7 @@ contract Gateway is Auth, IGateway {
         if (fuel > 0) {
             uint256 tank = fuel;
             for (uint256 i; i < numAdapters; i++) {
-                AdapterLike currentAdapter = AdapterLike(adapters[i]);
+                IAdapter currentAdapter = IAdapter(adapters[i]);
                 bool isPrimaryAdapter = i == PRIMARY_ADAPTER_ID - 1;
                 bytes memory payload = isPrimaryAdapter ? message : proof;
 
@@ -308,7 +289,7 @@ contract Gateway is Auth, IGateway {
         } else if (gasService.shouldRefuel(source, message)) {
             uint256 tank = address(this).balance;
             for (uint256 i; i < numAdapters; i++) {
-                AdapterLike currentAdapter = AdapterLike(adapters[i]);
+                IAdapter currentAdapter = IAdapter(adapters[i]);
                 bool isPrimaryAdapter = i == PRIMARY_ADAPTER_ID - 1;
                 bytes memory payload = isPrimaryAdapter ? message : proof;
 
@@ -330,7 +311,7 @@ contract Gateway is Auth, IGateway {
 
     /// @inheritdoc IGateway
     function topUp() external payable {
-        require(RootLike(root).endorsed(msg.sender), "Gateway/only-endorsed-can-topup");
+        require(IRoot(root).endorsed(msg.sender), "Gateway/only-endorsed-can-topup");
         require(msg.value > 0, "Gateway/cannot-topup-with-nothing");
         quota = msg.value;
     }
@@ -346,7 +327,7 @@ contract Gateway is Auth, IGateway {
         for (uint256 i; i < adapters.length; i++) {
             uint256 centrifugeCost = i == PRIMARY_ADAPTER_ID - 1 ? messageCost : proofCost;
             bytes memory message = i == PRIMARY_ADAPTER_ID - 1 ? payload : proof;
-            uint256 estimated = AdapterLike(adapters[i]).estimate(message, centrifugeCost);
+            uint256 estimated = IAdapter(adapters[i]).estimate(message, centrifugeCost);
             tranches[i] = estimated;
             total += estimated;
         }

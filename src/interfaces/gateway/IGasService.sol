@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.21;
+pragma solidity 0.8.26;
 
 interface IGasService {
-    event File(bytes32 what, uint64 value);
+    event File(bytes32 indexed what, uint64 value);
+    event UpdateGasPrice(uint128 value, uint256 computedAt);
+    event UpdateTokenPrice(uint256 value);
 
     /// Using file patter to update state variables;
     /// @dev Used to update the messageCost and proofCost;
@@ -44,11 +46,11 @@ interface IGasService {
     /// Estimate the total execution cost on destination chain in ETH.abi
     /// @param payload - Estimates the execution cost based on the payload.abi
     /// @return Estimated cost in WEI units
-    function estimate(bytes calldata payload) external returns (uint256);
+    function estimate(bytes calldata payload) external view returns (uint256);
 
     /// Used to verify if given user for a given message can take advantage of
     /// transaction cost prepayment.
     /// @param source Source that triggered the transaction
     /// @param payload The message that is going to be send
-    function shouldRefuel(address source, bytes calldata payload) external view returns (bool);
+    function shouldRefuel(address source, bytes calldata payload) external returns (bool);
 }
