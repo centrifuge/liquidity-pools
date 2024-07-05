@@ -295,4 +295,7 @@ interface IERC7540Vault is
 
     /// @notice TODO
     function onCancelRedeemClaimable(address owner, uint256 shares) external;
+
+    /// @notice TODO
+    function authTransferFrom(address sender, address owner, address recipient, uint256 shares) external;
 }

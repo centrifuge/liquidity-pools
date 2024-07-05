@@ -263,6 +263,11 @@ contract CentrifugeRouterTest is BaseTest {
             vault.poolId(), vault.trancheId(), self.toBytes32(), defaultAssetId, uint128(amount), uint128(amount)
         );
 
+        address sender = makeAddr("maliciousUser");
+        vm.prank(sender);
+        vm.expectRevert("CentrifugeRouter/invalid-controller");
+        router.claimCancelRedeemRequest(vault_, sender, self);
+
         router.claimCancelRedeemRequest(vault_, self, self);
         assertEq(share.balanceOf(address(self)), amount);
     }
@@ -294,6 +299,66 @@ contract CentrifugeRouterTest is BaseTest {
 
         assertEq(erc20.allowance(owner, address(router)), 1e18);
         assertEq(erc20.nonces(owner), 1);
+    }
+
+    function testTransfer() public {
+        address vault_ = deploySimpleVault();
+        vm.label(vault_, "vault");
+
+        uint256 amount = 100 * 10 ** 18;
+        bytes32 recipient = address(2).toBytes32();
+        erc20.mint(self, amount);
+
+        erc20.approve(address(router), amount);
+        router.transfer(address(erc20), recipient, uint128(amount));
+
+        assertEq(erc20.balanceOf(address(escrow)), amount);
+    }
+
+    function testTranferTranchesToEVM() public {
+        address vault_ = deploySimpleVault();
+        vm.label(vault_, "vault");
+        ERC7540Vault vault = ERC7540Vault(vault_);
+        ERC20 share = ERC20(IERC7540Vault(vault_).share());
+
+        uint256 amount = 100 * 10 ** 18;
+        uint64 destinationChainId = 2;
+        address destinationAddress = makeAddr("destinationAddress");
+
+        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), address(this), type(uint64).max);
+        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), destinationAddress, type(uint64).max);
+
+        vm.prank(address(root));
+        share.mint(self, 100 * 10 ** 18);
+
+        share.approve(address(router), amount);
+
+        router.transferTranchesToEVM(vault_, destinationChainId, destinationAddress, uint128(amount));
+        assertEq(share.balanceOf(address(router)), 0);
+        assertEq(share.balanceOf(address(this)), 0);
+    }
+
+    function testTranferTranchesToCentrifuge2() public {
+        address vault_ = deploySimpleVault();
+        vm.label(vault_, "vault");
+        ERC7540Vault vault = ERC7540Vault(vault_);
+        ERC20 share = ERC20(IERC7540Vault(vault_).share());
+
+        uint256 amount = 100 * 10 ** 18;
+        bytes32 destinationAddress = makeAddr("destinationAddress").toBytes32();
+
+        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), address(this), type(uint64).max);
+        // centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), destinationAddress, type(uint64).max);
+
+        vm.prank(address(root));
+        share.mint(self, 100 * 10 ** 18);
+
+        share.approve(address(router), amount);
+
+        router.transferTranchesToCentrifuge(vault_, destinationAddress, uint128(amount));
+
+        assertEq(share.balanceOf(address(router)), 0);
+        assertEq(share.balanceOf(address(this)), 0);
     }
 
     function testOpenAndClose() public {
@@ -366,7 +431,7 @@ contract CentrifugeRouterTest is BaseTest {
         assertEq(estimated, gatewayEstimated);
     }
 
-    function testAuthTransferFrom2() public {
+    function testAuthTransferFrom() public {
         address vault_ = deploySimpleVault();
         ERC7540Vault vault = ERC7540Vault(vault_);
         vm.label(vault_, "vault");

@@ -206,7 +206,9 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     // --- Transfer ---
     /// @inheritdoc ICentrifugeRouter
     function transfer(address asset, bytes32 recipient, uint128 amount) external protected {
-        IPoolManager(poolManager).transfer(asset, recipient, amount);
+        SafeTransferLib.safeTransferFrom(asset, msg.sender, address(this), amount);
+        IERC20(asset).approve(address(poolManager), amount);
+        poolManager.transfer(asset, recipient, amount);
     }
 
     /// @inheritdoc ICentrifugeRouter
@@ -215,6 +217,8 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         payable
         protected
     {
+        SafeTransferLib.safeTransferFrom(IERC7540Vault(vault).share(), msg.sender, address(this), amount);
+        IERC20(IERC7540Vault(vault).share()).approve(address(poolManager), amount);
         IPoolManager(poolManager).transferTranchesToEVM(
             IERC7540Vault(vault).poolId(),
             IERC7540Vault(vault).trancheId(),
@@ -226,6 +230,8 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
 
     /// @inheritdoc ICentrifugeRouter
     function transferTranchesToCentrifuge(address vault, bytes32 destinationAddress, uint128 amount) external payable protected {
+        SafeTransferLib.safeTransferFrom(IERC7540Vault(vault).share(), msg.sender, address(this), amount);
+        IERC20(IERC7540Vault(vault).share()).approve(address(poolManager), amount);
         IPoolManager(poolManager).transferTranchesToCentrifuge(
             IERC7540Vault(vault).poolId(), IERC7540Vault(vault).trancheId(), destinationAddress, amount
         );
@@ -276,7 +282,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         external
         protected
     {
-        AuthTransferLike(IERC7540Vault(vault).share()).authTransferFrom(sender, owner, recipient, amount);
+        IERC7540Vault(vault).authTransferFrom(sender, owner, recipient, amount);
     }
 
     // --- Batching ---
