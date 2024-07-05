@@ -8,6 +8,10 @@ import "src/interfaces/IERC20.sol";
 import {MockERC20Wrapper} from "test/mocks/MockERC20Wrapper.sol";
 import {CastLib} from "src/libraries/CastLib.sol";
 
+interface Authlike {
+    function rely(address) external;
+}
+
 contract ERC20WrapperFake {
     address public underlying;
 
@@ -15,6 +19,7 @@ contract ERC20WrapperFake {
         underlying = underlying_;
     }
 }
+
 
 contract CentrifugeRouterTest is BaseTest {
     using CastLib for *;
@@ -359,6 +364,29 @@ contract CentrifugeRouterTest is BaseTest {
         uint256 estimated = router.estimate(message);
         (, uint256 gatewayEstimated) = gateway.estimate(message);
         assertEq(estimated, gatewayEstimated);
+    }
+
+    function testAuthTransferFrom2() public {
+        address vault_ = deploySimpleVault();
+        ERC7540Vault vault = ERC7540Vault(vault_);
+        vm.label(vault_, "vault");
+        ERC20 token = ERC20(address(vault.share()));
+        uint256 amount = 100 * 10 ** 18;
+
+        address sourceUser = makeAddr("sourceUser");
+        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), sourceUser, type(uint64).max);
+        vm.prank(address(root));
+        token.mint(sourceUser, amount);
+
+        vm.prank(address(2));
+        vm.expectRevert(bytes("Auth/not-authorized"));
+        router.authTransferFrom(vault_, sourceUser, sourceUser, self, amount);
+        assertEq(token.balanceOf(sourceUser), amount);
+        assertEq(token.balanceOf(self), 0);
+
+        router.authTransferFrom(vault_, sourceUser, sourceUser, self, amount);
+        assertEq(token.balanceOf(sourceUser), 0);
+        assertEq(token.balanceOf(self), amount);
     }
 
     function estimateGas() internal view returns (uint256 total) {
