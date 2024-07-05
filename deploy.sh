@@ -19,7 +19,7 @@ echo "Admin = $ADMIN"
 
 case "$ADAPTER" in
   Permissionless|Axelar|Forwarder)
-    forge script script/${Adapter}.s.sol:${ADAPTER}Script --optimize --rpc-url $RPC_URL --private-key $PRIVATE_KEY --verify --broadcast --chain-id $CHAIN_ID --etherscan-api-key $ETHERSCAN_KEY $1
+    forge script script/${ADAPTER}.s.sol:${ADAPTER}Script --optimize --rpc-url $RPC_URL --private-key $PRIVATE_KEY --verify --broadcast --chain-id $CHAIN_ID --etherscan-api-key $ETHERSCAN_KEY $1
     ;;
   Passthrough)
     forge script test/integration/PassthroughAdapter.s.sol:PassthroughAdapterScript --optimize --rpc-url $RPC_URL --private-key $PRIVATE_KEY --verify --broadcast --chain-id $CHAIN_ID --etherscan-api-key $ETHERSCAN_KEY $1

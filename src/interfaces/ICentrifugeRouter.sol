@@ -74,4 +74,7 @@ interface ICentrifugeRouter {
     // --- View Methods ---
     /// @notice TODO
     function getVault(uint64 poolId, bytes16 trancheId, address asset) external view returns (address);
+
+    /// @notice TODO
+    function estimate(bytes calldata payload) external view returns (uint256 amount);
 }

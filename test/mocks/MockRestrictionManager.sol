@@ -5,7 +5,7 @@ import "test/mocks/Mock.sol";
 import "src/token/RestrictionManager.sol";
 
 contract MockRestrictionManager is RestrictionManager, Mock {
-    constructor(address root_) RestrictionManager(root_) {}
+    constructor(address root_, address deployer) RestrictionManager(root_, deployer) {}
 
     function onERC20Transfer(address from, address to, uint256 value, HookData calldata hookData)
         public
