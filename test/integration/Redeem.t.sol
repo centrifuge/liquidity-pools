@@ -279,10 +279,11 @@ contract RedeemTest is BaseTest {
         assertEq(tranche.balanceOf(address(escrow)), amount / 2);
         assertEq(tranche.balanceOf(investor), amount / 2);
         // investor cancels outstanding cancellation request
-         vm.prank(investor);
+        vm.prank(investor);
         vault.cancelRedeemRequest(0, investor);
         assertEq(vault.pendingCancelRedeemRequest(0, investor), true);
-        // redeem request can still be triggered for the other half of the investors tokens even though the investor has an outstanding cancellation
+        // redeem request can still be triggered for the other half of the investors tokens even though the investor has
+        // an outstanding cancellation
         centrifugeChain.triggerIncreaseRedeemOrder(poolId, trancheId, investor, defaultAssetId, amount / 2);
         assertApproxEqAbs(tranche.balanceOf(investor), 0, 1);
         assertApproxEqAbs(tranche.balanceOf(address(escrow)), amount, 1);
