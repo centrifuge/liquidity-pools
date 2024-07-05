@@ -111,6 +111,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
         return _processRedeemRequest(vault, _shares, controller, source, false);
     }
 
+    /// @dev    triggered indicates if the the _processRedeemRequest call was triggered from centrifugeChain
     function _processRedeemRequest(address vault, uint128 shares, address controller, address source, bool triggered)
         internal
         returns (bool)
