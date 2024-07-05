@@ -234,6 +234,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         return IPoolManager(poolManager).getVault(poolId, trancheId, asset);
     }
 
+    /// @inheritdoc ICentrifugeRouter
     function estimate(bytes calldata payload) external view returns (uint256 amount) {
         (, amount) = IGateway(gateway).estimate(payload);
     }
