@@ -68,7 +68,7 @@ interface ICentrifugeRouter {
 
     // --- Transfer ---
     /// @notice TODO
-    function transfer(address asset, bytes32 recipient, uint128 amount) external;
+    function transfer(address asset, address recipient, uint128 amount) external;
 
     /// @notice TODO
     function transferTranchesToEVM(address vault, uint64 destinationChainId, address destinationAddress, uint128 amount) external payable;

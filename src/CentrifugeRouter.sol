@@ -4,6 +4,7 @@ pragma solidity 0.8.26;
 import {Auth} from "src/Auth.sol";
 import {MathLib} from "src/libraries/MathLib.sol";
 import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
+import {CastLib} from "src/libraries/CastLib.sol";
 import {IERC20, IERC20Permit, IERC20Wrapper} from "src/interfaces/IERC20.sol";
 import {IERC7540Vault} from "src/interfaces/IERC7540.sol";
 import {ICentrifugeRouter} from "src/interfaces/ICentrifugeRouter.sol";
@@ -12,16 +13,12 @@ import {IInvestmentManager} from "src/interfaces/IInvestmentManager.sol";
 import {IEscrow} from "src/interfaces/IEscrow.sol";
 import {IGateway} from "src/interfaces/gateway/IGateway.sol";
 
-interface GatewayLike {
-    function topUp() external payable;
-    function estimate(bytes calldata payload) external returns (uint256[] memory tranches, uint256 total);
-}
-
 interface AuthTransferLike {
     function authTransferFrom(address sender, address owner, address recipient, uint256 amount) external;
 }
 
 contract CentrifugeRouter is Auth, ICentrifugeRouter {
+    using CastLib for address;
     IEscrow public immutable escrow;
     IGateway public immutable gateway;
     IPoolManager public immutable poolManager;
@@ -123,7 +120,6 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         emit UnlockDepositRequest(vault, _initiator, receiver);
     }
 
-    // TODO This should be also payable.
     /// @inheritdoc ICentrifugeRouter
     function executeLockedDepositRequest(address vault, address controller) external payable protected {
         uint256 lockedRequest = lockedRequests[controller][vault];
@@ -163,7 +159,6 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     }
 
     // --- Redeem ---
-    // TODO this should be payable
     /// @inheritdoc ICentrifugeRouter
     function requestRedeem(address vault, uint256 amount, address controller, address owner)
         external
@@ -205,10 +200,10 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
 
     // --- Transfer ---
     /// @inheritdoc ICentrifugeRouter
-    function transfer(address asset, bytes32 recipient, uint128 amount) external protected {
+    function transfer(address asset, address recipient, uint128 amount) external protected {
         SafeTransferLib.safeTransferFrom(asset, msg.sender, address(this), amount);
-        IERC20(asset).approve(address(poolManager), amount);
-        poolManager.transfer(asset, recipient, amount);
+        _approveMax(asset, address(poolManager));
+        poolManager.transfer(asset, recipient.toBytes32(), amount);
     }
 
     /// @inheritdoc ICentrifugeRouter
@@ -218,7 +213,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         protected
     {
         SafeTransferLib.safeTransferFrom(IERC7540Vault(vault).share(), msg.sender, address(this), amount);
-        IERC20(IERC7540Vault(vault).share()).approve(address(poolManager), amount);
+        _approveMax(IERC7540Vault(vault).share(), address(poolManager));
         IPoolManager(poolManager).transferTranchesToEVM(
             IERC7540Vault(vault).poolId(),
             IERC7540Vault(vault).trancheId(),
@@ -231,7 +226,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     /// @inheritdoc ICentrifugeRouter
     function transferTranchesToCentrifuge(address vault, bytes32 destinationAddress, uint128 amount) external payable protected {
         SafeTransferLib.safeTransferFrom(IERC7540Vault(vault).share(), msg.sender, address(this), amount);
-        IERC20(IERC7540Vault(vault).share()).approve(address(poolManager), amount);
+        _approveMax(IERC7540Vault(vault).share(), address(poolManager));
         IPoolManager(poolManager).transferTranchesToCentrifuge(
             IERC7540Vault(vault).poolId(), IERC7540Vault(vault).trancheId(), destinationAddress, amount
         );

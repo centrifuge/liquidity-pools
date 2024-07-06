@@ -123,6 +123,11 @@ contract CentrifugeRouterTest is BaseTest {
         assertEq(erc20.balanceOf(address(routerEscrow)), amount);
         assertEq(vault.pendingCancelDepositRequest(0, self), false);
 
+        address sender = makeAddr("maliciousUser");
+        vm.prank(sender);
+        vm.expectRevert("CentrifugeRouter/invalid-controller");
+        router.cancelDepositRequest(vault_, self);
+
         router.cancelDepositRequest(vault_, self);
         assertEq(vault.pendingCancelDepositRequest(0, self), true);
         assertEq(erc20.balanceOf(address(routerEscrow)), amount);
@@ -222,6 +227,11 @@ contract CentrifugeRouterTest is BaseTest {
         router.requestRedeem(vault_, amount, self, self);
         assertEq(share.balanceOf(address(self)), 0);
 
+        address sender = makeAddr("maliciousUser");
+        vm.prank(sender);
+        vm.expectRevert("CentrifugeRouter/invalid-controller");
+        router.cancelRedeemRequest(vault_, self);
+
         router.cancelRedeemRequest(vault_, self);
         assertEq(vault.pendingCancelRedeemRequest(0, self), true);
     }
@@ -306,7 +316,7 @@ contract CentrifugeRouterTest is BaseTest {
         vm.label(vault_, "vault");
 
         uint256 amount = 100 * 10 ** 18;
-        bytes32 recipient = address(2).toBytes32();
+        address recipient = address(2);
         erc20.mint(self, amount);
 
         erc20.approve(address(router), amount);
