@@ -42,8 +42,6 @@ contract Gateway is Auth, IGateway {
     mapping(bytes32 messageHash => Recovery) public recoveries;
     mapping(uint8 messageId => address manager) messageHandlers;
 
-    uint256 quota;
-
     constructor(address root_, address poolManager_, address investmentManager_, address gasService_) {
         root = IRoot(root_);
         poolManager = poolManager_;
