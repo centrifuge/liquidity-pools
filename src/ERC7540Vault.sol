@@ -2,11 +2,12 @@
 pragma solidity 0.8.26;
 
 import {Auth} from "src/Auth.sol";
+import {IRoot} from "src/interfaces/IRoot.sol";
 import {EIP712Lib} from "src/libraries/EIP712Lib.sol";
+import {ITranche} from "src/interfaces/token/ITranche.sol";
 import {SignatureLib} from "src/libraries/SignatureLib.sol";
 import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 import {IInvestmentManager} from "src/interfaces/IInvestmentManager.sol";
-import {ITranche} from "src/interfaces/token/ITranche.sol";
 import "src/interfaces/IERC7540.sol";
 import "src/interfaces/IERC7575.sol";
 import "src/interfaces/IERC20.sol";
@@ -36,6 +37,9 @@ contract ERC7540Vault is Auth, IERC7540Vault {
     uint8 public immutable shareDecimals;
 
     /// @notice Escrow contract for tokens
+    IRoot public immutable root;
+
+    /// @notice Escrow contract for tokens
     address public immutable escrow;
 
     /// @notice Vault implementation contract
@@ -59,12 +63,21 @@ contract ERC7540Vault is Auth, IERC7540Vault {
     // --- Events ---
     event File(bytes32 indexed what, address data);
 
-    constructor(uint64 poolId_, bytes16 trancheId_, address asset_, address share_, address escrow_, address manager_) {
+    constructor(
+        uint64 poolId_,
+        bytes16 trancheId_,
+        address asset_,
+        address share_,
+        address root_,
+        address escrow_,
+        address manager_
+    ) {
         poolId = poolId_;
         trancheId = trancheId_;
         asset = asset_;
         share = share_;
         shareDecimals = IERC20Metadata(share).decimals();
+        root = IRoot(root_);
         escrow = escrow_;
         manager = IInvestmentManager(manager_);
 
@@ -91,10 +104,7 @@ contract ERC7540Vault is Auth, IERC7540Vault {
     // --- ERC-7540 methods ---
     /// @inheritdoc IERC7540Deposit
     function requestDeposit(uint256 assets, address controller, address owner) public returns (uint256) {
-        require(
-            owner == msg.sender || isOperator[owner][msg.sender] || manager.isGlobalOperator(address(this), msg.sender),
-            "ERC7540Vault/invalid-owner"
-        );
+        require(owner == msg.sender || isOperator[owner][msg.sender], "ERC7540Vault/invalid-owner");
         require(IERC20(asset).balanceOf(owner) >= assets, "ERC7540Vault/insufficient-balance");
 
         require(
@@ -209,6 +219,14 @@ contract ERC7540Vault is Auth, IERC7540Vault {
     function setOperator(address operator, bool approved) public virtual returns (bool) {
         isOperator[msg.sender][operator] = approved;
         emit OperatorSet(msg.sender, operator, approved);
+        return true;
+    }
+
+    /// @inheritdoc IERC7540Vault
+    function setEndorsedOperator(address owner, bool approved) public virtual returns (bool) {
+        require(root.endorsed(msg.sender), "ERC7540Vault/sender-not-endorsed");
+        isOperator[owner][msg.sender] = approved;
+        emit OperatorSet(owner, msg.sender, approved);
         return true;
     }
 
@@ -398,10 +416,6 @@ contract ERC7540Vault is Auth, IERC7540Vault {
     }
 
     function validateController(address controller) internal view {
-        require(
-            controller == msg.sender || isOperator[controller][msg.sender]
-                || manager.isGlobalOperator(address(this), msg.sender),
-            "ERC7540Vault/invalid-controller"
-        );
+        require(controller == msg.sender || isOperator[controller][msg.sender], "ERC7540Vault/invalid-controller");
     }
 }

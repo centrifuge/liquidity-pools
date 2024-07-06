@@ -53,6 +53,17 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         SafeTransferLib.safeTransfer(token, to, amount);
     }
 
+    // --- Enable interactions with the vault ---
+    function open(address vault) public protected {
+        opened[_initiator][vault] = true;
+        IERC7540Vault(vault).setEndorsedOperator(_initiator, true);
+    }
+
+    function close(address vault) external protected {
+        opened[_initiator][vault] = false;
+        IERC7540Vault(vault).setEndorsedOperator(_initiator, false);
+    }
+
     // --- Deposit ---
     /// @inheritdoc ICentrifugeRouter
     function requestDeposit(address vault, uint256 amount, address controller, address owner, uint256 topUpAmount)
@@ -167,15 +178,6 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         } else {
             IERC7540Vault(vault).redeem(maxRedeem, receiver, controller);
         }
-    }
-
-    // --- Manage permissionless claiming ---
-    function open(address vault) public protected {
-        opened[_initiator][vault] = true;
-    }
-
-    function close(address vault) external protected {
-        opened[_initiator][vault] = false;
     }
 
     // --- ERC20 permits ---
