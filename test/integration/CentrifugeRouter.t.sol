@@ -78,23 +78,19 @@ contract CentrifugeRouterTest is BaseTest {
         root.veto(address(router));
         vm.expectRevert(bytes("ERC7540Vault/sender-not-endorsed"));
         router.open(vault_);
-        assertEq(router.opened(address(this), vault_), false);
         assertEq(vault.isOperator(address(this), address(router)), false);
 
         root.endorse(address(router));
         router.open(vault_);
-        assertEq(router.opened(address(this), vault_), true);
         assertEq(vault.isOperator(address(this), address(router)), true);
 
         root.veto(address(router));
         vm.expectRevert(bytes("ERC7540Vault/sender-not-endorsed"));
         router.close(vault_);
-        assertEq(router.opened(address(this), vault_), true);
         assertEq(vault.isOperator(address(this), address(router)), true);
 
         root.endorse(address(router));
         router.close(vault_);
-        assertEq(router.opened(address(this), vault_), false);
         assertEq(vault.isOperator(address(this), address(router)), false);
     }
 
