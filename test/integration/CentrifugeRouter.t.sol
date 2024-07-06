@@ -23,11 +23,14 @@ contract CentrifugeRouterTest is BaseTest {
         vm.label(vault_, "vault");
 
         erc20.mint(self, amount);
-        router.open(vault_);
 
         vm.expectRevert(bytes("Gateway/cannot-topup-with-nothing"));
         router.requestDeposit(vault_, amount, self, self, 0);
 
+        vm.expectRevert(bytes("ERC7540Vault/invalid-owner"));
+        router.requestDeposit{value: 1 wei}(vault_, amount, self, self, 1 wei);
+
+        router.open(vault_);
         vm.expectRevert(bytes("InvestmentManager/transfer-not-allowed"));
         router.requestDeposit{value: 1 wei}(vault_, amount, self, self, 1 wei);
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max);
@@ -65,6 +68,34 @@ contract CentrifugeRouterTest is BaseTest {
         assertApproxEqAbs(tranche.balanceOf(self), tranchePayout, 1);
         assertApproxEqAbs(tranche.balanceOf(address(escrow)), 0, 1);
         assertApproxEqAbs(erc20.balanceOf(address(escrow)), amount, 1);
+    }
+
+    function testOpenCloseVaults() public {
+        address vault_ = deploySimpleVault();
+        ERC7540Vault vault = ERC7540Vault(vault_);
+        vm.label(vault_, "vault");
+
+        root.veto(address(router));
+        vm.expectRevert(bytes("ERC7540Vault/sender-not-endorsed"));
+        router.open(vault_);
+        assertEq(router.opened(address(this), vault_), false);
+        assertEq(vault.isOperator(address(this), address(router)), false);
+
+        root.endorse(address(router));
+        router.open(vault_);
+        assertEq(router.opened(address(this), vault_), true);
+        assertEq(vault.isOperator(address(this), address(router)), true);
+
+        root.veto(address(router));
+        vm.expectRevert(bytes("ERC7540Vault/sender-not-endorsed"));
+        router.close(vault_);
+        assertEq(router.opened(address(this), vault_), true);
+        assertEq(vault.isOperator(address(this), address(router)), true);
+
+        root.endorse(address(router));
+        router.close(vault_);
+        assertEq(router.opened(address(this), vault_), false);
+        assertEq(vault.isOperator(address(this), address(router)), false);
     }
 
     function testRouterAsyncDeposit(uint256 amount) public {
