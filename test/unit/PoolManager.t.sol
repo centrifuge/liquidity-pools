@@ -3,6 +3,7 @@ pragma solidity 0.8.26;
 
 import "test/BaseTest.sol";
 import {CastLib} from "src/libraries/CastLib.sol";
+import {Domain} from "src/interfaces/IPoolManager.sol";
 import {IRestrictionManager} from "src/interfaces/token/IRestrictionManager.sol";
 import {MockHook} from "test/mocks/MockHook.sol";
 
@@ -313,11 +314,11 @@ contract PoolManagerTest is BaseTest {
         uint64 poolId = vault.poolId();
         bytes16 trancheId = vault.trancheId();
         vm.expectRevert(bytes("PoolManager/unknown-token"));
-        poolManager.transferTranchesToCentrifuge(poolId + 1, trancheId, centChainAddress, amount);
+        poolManager.transferTrancheTokens(poolId + 1, trancheId, Domain.Centrifuge, 0, centChainAddress, amount);
 
         // send the transfer from EVM -> Cent Chain
         tranche.approve(address(poolManager), amount);
-        poolManager.transferTranchesToCentrifuge(poolId, trancheId, centChainAddress, amount);
+        poolManager.transferTrancheTokens(poolId, trancheId, Domain.Centrifuge, 0, centChainAddress, amount);
         assertEq(tranche.balanceOf(address(this)), 0);
 
         // Finally, verify the connector called `adapter.send`
@@ -326,7 +327,8 @@ contract PoolManagerTest is BaseTest {
             poolId,
             trancheId,
             bytes32(bytes20(address(this))),
-            MessagesLib.formatDomain(MessagesLib.Domain.Centrifuge),
+            Domain.Centrifuge,
+            uint64(0),
             centChainAddress,
             amount
         );
@@ -345,7 +347,9 @@ contract PoolManagerTest is BaseTest {
         ITranche tranche = ITranche(address(vault.share()));
 
         vm.expectRevert(bytes("RestrictionManager/transfer-blocked"));
-        centrifugeChain.incomingTransferTrancheTokens(poolId, trancheId, uint64(block.chainid), destinationAddress, amount);
+        centrifugeChain.incomingTransferTrancheTokens(
+            poolId, trancheId, uint64(block.chainid), destinationAddress, amount
+        );
         centrifugeChain.updateMember(poolId, trancheId, destinationAddress, validUntil);
 
         vm.expectRevert(bytes("PoolManager/unknown-token"));
@@ -354,7 +358,9 @@ contract PoolManagerTest is BaseTest {
         );
 
         assertTrue(tranche.checkTransferRestriction(address(0), destinationAddress, 0));
-        centrifugeChain.incomingTransferTrancheTokens(poolId, trancheId, uint64(block.chainid), destinationAddress, amount);
+        centrifugeChain.incomingTransferTrancheTokens(
+            poolId, trancheId, uint64(block.chainid), destinationAddress, amount
+        );
         assertEq(tranche.balanceOf(destinationAddress), amount);
     }
 
@@ -382,12 +388,14 @@ contract PoolManagerTest is BaseTest {
         uint64 poolId = vault.poolId();
         bytes16 trancheId = vault.trancheId();
         vm.expectRevert(bytes("PoolManager/unknown-token"));
-        poolManager.transferTranchesToEVM(poolId + 1, trancheId, uint64(block.chainid), destinationAddress, amount);
+        poolManager.transferTrancheTokens(
+            poolId + 1, trancheId, Domain.EVM, uint64(block.chainid), destinationAddress.toBytes32(), amount
+        );
 
         // Approve and transfer amount from this address to destinationAddress
         tranche.approve(address(poolManager), amount);
-        poolManager.transferTranchesToEVM(
-            vault.poolId(), vault.trancheId(), uint64(block.chainid), destinationAddress, amount
+        poolManager.transferTrancheTokens(
+            vault.poolId(), vault.trancheId(), Domain.EVM, uint64(block.chainid), destinationAddress.toBytes32(), amount
         );
         assertEq(tranche.balanceOf(address(this)), 0);
     }

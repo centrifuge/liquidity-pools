@@ -7,6 +7,7 @@ import "src/interfaces/IERC7540.sol";
 import "src/interfaces/IERC20.sol";
 import {MockERC20Wrapper} from "test/mocks/MockERC20Wrapper.sol";
 import {CastLib} from "src/libraries/CastLib.sol";
+import {Domain} from "src/interfaces/IPoolManager.sol";
 
 interface Authlike {
     function rely(address) external;
@@ -310,7 +311,7 @@ contract CentrifugeRouterTest is BaseTest {
         assertEq(erc20.nonces(owner), 1);
     }
 
-    function testTransfer() public {
+    function testTransferAssets() public {
         address vault_ = deploySimpleVault();
         vm.label(vault_, "vault");
 
@@ -324,7 +325,7 @@ contract CentrifugeRouterTest is BaseTest {
         assertEq(erc20.balanceOf(address(escrow)), amount);
     }
 
-    function testTranferTranchesToEVM() public {
+    function testTranferTrancheTokens() public {
         address vault_ = deploySimpleVault();
         vm.label(vault_, "vault");
         ERC7540Vault vault = ERC7540Vault(vault_);
@@ -342,30 +343,7 @@ contract CentrifugeRouterTest is BaseTest {
 
         share.approve(address(router), amount);
 
-        router.transferTranchesToEVM(vault_, destinationChainId, destinationAddress, uint128(amount));
-        assertEq(share.balanceOf(address(router)), 0);
-        assertEq(share.balanceOf(address(this)), 0);
-    }
-
-    function testTranferTranchesToCentrifuge2() public {
-        address vault_ = deploySimpleVault();
-        vm.label(vault_, "vault");
-        ERC7540Vault vault = ERC7540Vault(vault_);
-        ERC20 share = ERC20(IERC7540Vault(vault_).share());
-
-        uint256 amount = 100 * 10 ** 18;
-        bytes32 destinationAddress = makeAddr("destinationAddress").toBytes32();
-
-        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), address(this), type(uint64).max);
-        // centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), destinationAddress, type(uint64).max);
-
-        vm.prank(address(root));
-        share.mint(self, 100 * 10 ** 18);
-
-        share.approve(address(router), amount);
-
-        router.transferTranchesToCentrifuge(vault_, destinationAddress, uint128(amount));
-
+        router.transferTrancheTokens(vault_, Domain.EVM, destinationChainId, destinationAddress, uint128(amount));
         assertEq(share.balanceOf(address(router)), 0);
         assertEq(share.balanceOf(address(this)), 0);
     }
