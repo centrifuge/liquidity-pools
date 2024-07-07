@@ -286,15 +286,15 @@ contract PoolManagerTest is BaseTest {
         erc20.approve(address(poolManager), type(uint256).max);
 
         vm.expectRevert(bytes("PoolManager/unknown-asset"));
-        poolManager.transfer(address(erc20), recipient, amount);
+        poolManager.transferAssets(address(erc20), recipient, amount);
         centrifugeChain.addAsset(assetId, address(erc20));
 
-        poolManager.transfer(address(erc20), recipient, amount);
+        poolManager.transferAssets(address(erc20), recipient, amount);
         assertEq(erc20.balanceOf(address(this)), initialBalance - amount);
         assertEq(erc20.balanceOf(address(poolManager.escrow())), amount);
     }
 
-    function testTransferTranchesToCentrifuge(uint128 amount) public {
+    function testTransferTrancheTokensToCentrifuge(uint128 amount) public {
         vm.assume(amount > 0);
         uint64 validUntil = uint64(block.timestamp + 7 days);
         bytes32 centChainAddress = makeAddr("centChainAddress").toBytes32();
@@ -304,7 +304,7 @@ contract PoolManagerTest is BaseTest {
 
         // fund this account with amount
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), address(this), validUntil);
-        centrifugeChain.incomingTransferTranches(
+        centrifugeChain.incomingTransferTrancheTokens(
             vault.poolId(), vault.trancheId(), uint64(block.chainid), address(this), amount
         );
         assertEq(tranche.balanceOf(address(this)), amount); // Verify the address(this) has the expected amount
@@ -322,7 +322,7 @@ contract PoolManagerTest is BaseTest {
 
         // Finally, verify the connector called `adapter.send`
         bytes memory message = abi.encodePacked(
-            uint8(MessagesLib.Call.TransferTranches),
+            uint8(MessagesLib.Call.TransferTrancheTokens),
             poolId,
             trancheId,
             bytes32(bytes20(address(this))),
@@ -333,7 +333,7 @@ contract PoolManagerTest is BaseTest {
         assertEq(adapter1.sent(message), 1);
     }
 
-    function testTransferTranchesFromCentrifuge(uint128 amount) public {
+    function testTransferTrancheTokensFromCentrifuge(uint128 amount) public {
         vm.assume(amount > 0);
         uint64 validUntil = uint64(block.timestamp + 7 days);
         address destinationAddress = makeAddr("destinationAddress");
@@ -345,20 +345,20 @@ contract PoolManagerTest is BaseTest {
         ITranche tranche = ITranche(address(vault.share()));
 
         vm.expectRevert(bytes("RestrictionManager/transfer-blocked"));
-        centrifugeChain.incomingTransferTranches(poolId, trancheId, uint64(block.chainid), destinationAddress, amount);
+        centrifugeChain.incomingTransferTrancheTokens(poolId, trancheId, uint64(block.chainid), destinationAddress, amount);
         centrifugeChain.updateMember(poolId, trancheId, destinationAddress, validUntil);
 
         vm.expectRevert(bytes("PoolManager/unknown-token"));
-        centrifugeChain.incomingTransferTranches(
+        centrifugeChain.incomingTransferTrancheTokens(
             poolId + 1, trancheId, uint64(block.chainid), destinationAddress, amount
         );
 
         assertTrue(tranche.checkTransferRestriction(address(0), destinationAddress, 0));
-        centrifugeChain.incomingTransferTranches(poolId, trancheId, uint64(block.chainid), destinationAddress, amount);
+        centrifugeChain.incomingTransferTrancheTokens(poolId, trancheId, uint64(block.chainid), destinationAddress, amount);
         assertEq(tranche.balanceOf(destinationAddress), amount);
     }
 
-    function testTransferTranchesToEVM(uint128 amount) public {
+    function testTransferTrancheTokensToEVM(uint128 amount) public {
         uint64 validUntil = uint64(block.timestamp + 7 days);
         address destinationAddress = makeAddr("destinationAddress");
         vm.assume(amount > 0);
@@ -373,7 +373,7 @@ contract PoolManagerTest is BaseTest {
         assertTrue(tranche.checkTransferRestriction(address(0), destinationAddress, 0));
 
         // Fund this address with samount
-        centrifugeChain.incomingTransferTranches(
+        centrifugeChain.incomingTransferTrancheTokens(
             vault.poolId(), vault.trancheId(), uint64(block.chainid), address(this), amount
         );
         assertEq(tranche.balanceOf(address(this)), amount);

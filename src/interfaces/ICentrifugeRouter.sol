@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity >=0.5.0;
 
+import {Domain} from "src/interfaces/IPoolManager.sol";
+
 interface ICentrifugeRouter {
     // --- Events ---
     event LockDepositRequest(
@@ -68,13 +70,19 @@ interface ICentrifugeRouter {
 
     // --- Transfer ---
     /// @notice TODO
-    function transfer(address asset, address recipient, uint128 amount) external;
+    function transferAssets(address asset, bytes32 recipient, uint128 amount) external payable;
 
     /// @notice TODO
-    function transferTranchesToEVM(address vault, uint64 destinationChainId, address destinationAddress, uint128 amount) external payable;
+    function transferAssets(address asset, address recipient, uint128 amount) external payable;
 
     /// @notice TODO
-    function transferTranchesToCentrifuge(address vault, bytes32 destinationAddress, uint128 amount) external payable;
+    function transferTrancheTokens(address vault, Domain domain, uint64 id, bytes32 recipient, uint128 amount)
+        external
+        payable;
+
+    function transferTrancheTokens(address vault, Domain domain, uint64 chainId, address recipient, uint128 amount)
+        external
+        payable;
 
     // --- ERC20 permit ---
     /// @notice TODO

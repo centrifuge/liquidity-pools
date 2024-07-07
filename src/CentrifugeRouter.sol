@@ -8,7 +8,7 @@ import {CastLib} from "src/libraries/CastLib.sol";
 import {IERC20, IERC20Permit, IERC20Wrapper} from "src/interfaces/IERC20.sol";
 import {IERC7540Vault} from "src/interfaces/IERC7540.sol";
 import {ICentrifugeRouter} from "src/interfaces/ICentrifugeRouter.sol";
-import {IPoolManager} from "src/interfaces/IPoolManager.sol";
+import {IPoolManager, Domain} from "src/interfaces/IPoolManager.sol";
 import {IInvestmentManager} from "src/interfaces/IInvestmentManager.sol";
 import {IEscrow} from "src/interfaces/IEscrow.sol";
 import {IGateway} from "src/interfaces/gateway/IGateway.sol";
@@ -19,6 +19,7 @@ interface AuthTransferLike {
 
 contract CentrifugeRouter is Auth, ICentrifugeRouter {
     using CastLib for address;
+
     IEscrow public immutable escrow;
     IGateway public immutable gateway;
     IPoolManager public immutable poolManager;
@@ -153,7 +154,11 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     }
 
     /// @inheritdoc ICentrifugeRouter
-    function claimCancelDepositRequest(address vault, address receiver, address controller) external payable protected {
+    function claimCancelDepositRequest(address vault, address receiver, address controller)
+        external
+        payable
+        protected
+    {
         validateController(vault, controller);
         IERC7540Vault(vault).claimCancelDepositRequest(0, receiver, controller);
     }
@@ -200,36 +205,37 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
 
     // --- Transfer ---
     /// @inheritdoc ICentrifugeRouter
-    function transfer(address asset, address recipient, uint128 amount) external protected {
+    function transferAssets(address asset, bytes32 recipient, uint128 amount) external payable protected {
         SafeTransferLib.safeTransferFrom(asset, msg.sender, address(this), amount);
         _approveMax(asset, address(poolManager));
-        poolManager.transfer(asset, recipient.toBytes32(), amount);
+        poolManager.transferAssets(asset, recipient, amount);
     }
 
     /// @inheritdoc ICentrifugeRouter
-    function transferTranchesToEVM(address vault, uint64 destinationChainId, address destinationAddress, uint128 amount)
-        external
+    function transferAssets(address asset, address recipient, uint128 amount) public payable protected {
+        poolManager.transferAssets(asset, recipient.toBytes32(), amount);
+    }
+
+    /// @inheritdoc ICentrifugeRouter
+    function transferTrancheTokens(address vault, Domain domain, uint64 chainId, bytes32 recipient, uint128 amount)
+        public
         payable
         protected
     {
         SafeTransferLib.safeTransferFrom(IERC7540Vault(vault).share(), msg.sender, address(this), amount);
         _approveMax(IERC7540Vault(vault).share(), address(poolManager));
-        IPoolManager(poolManager).transferTranchesToEVM(
-            IERC7540Vault(vault).poolId(),
-            IERC7540Vault(vault).trancheId(),
-            destinationChainId,
-            destinationAddress,
-            amount
+        IPoolManager(poolManager).transferTrancheTokens(
+            IERC7540Vault(vault).poolId(), IERC7540Vault(vault).trancheId(), domain, chainId, recipient, amount
         );
     }
 
     /// @inheritdoc ICentrifugeRouter
-    function transferTranchesToCentrifuge(address vault, bytes32 destinationAddress, uint128 amount) external payable protected {
-        SafeTransferLib.safeTransferFrom(IERC7540Vault(vault).share(), msg.sender, address(this), amount);
-        _approveMax(IERC7540Vault(vault).share(), address(poolManager));
-        IPoolManager(poolManager).transferTranchesToCentrifuge(
-            IERC7540Vault(vault).poolId(), IERC7540Vault(vault).trancheId(), destinationAddress, amount
-        );
+    function transferTrancheTokens(address vault, Domain domain, uint64 chainId, address recipient, uint128 amount)
+        external
+        payable
+        protected
+    {
+        transferTrancheTokens(vault, domain, chainId, recipient.toBytes32(), amount);
     }
 
     // --- Manage permissionless claiming ---

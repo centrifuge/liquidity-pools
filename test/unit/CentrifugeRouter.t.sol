@@ -20,7 +20,6 @@ contract ERC20WrapperFake {
     }
 }
 
-
 contract CentrifugeRouterTest is BaseTest {
     using CastLib for *;
 
@@ -286,8 +285,8 @@ contract CentrifugeRouterTest is BaseTest {
         address vault_ = deploySimpleVault();
         vm.label(vault_, "vault");
 
-
-        bytes32 PERMIT_TYPEHASH = keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
+        bytes32 PERMIT_TYPEHASH =
+            keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
         uint256 privateKey = 0xBEEF;
         address owner = vm.addr(privateKey);
         vm.label(owner, "owner");
@@ -320,7 +319,7 @@ contract CentrifugeRouterTest is BaseTest {
         erc20.mint(self, amount);
 
         erc20.approve(address(router), amount);
-        router.transfer(address(erc20), recipient, uint128(amount));
+        router.transferAssets(address(erc20), recipient, uint128(amount));
 
         assertEq(erc20.balanceOf(address(escrow)), amount);
     }
