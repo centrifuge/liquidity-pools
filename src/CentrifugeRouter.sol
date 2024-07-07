@@ -206,7 +206,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     // --- Transfer ---
     /// @inheritdoc ICentrifugeRouter
     function transferAssets(address asset, bytes32 recipient, uint128 amount) external payable protected {
-        SafeTransferLib.safeTransferFrom(asset, msg.sender, address(this), amount);
+        SafeTransferLib.safeTransferFrom(asset, _initiator, address(this), amount);
         _approveMax(asset, address(poolManager));
         poolManager.transferAssets(asset, recipient, amount);
     }
@@ -222,7 +222,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         payable
         protected
     {
-        SafeTransferLib.safeTransferFrom(IERC7540Vault(vault).share(), msg.sender, address(this), amount);
+        SafeTransferLib.safeTransferFrom(IERC7540Vault(vault).share(), _initiator, address(this), amount);
         _approveMax(IERC7540Vault(vault).share(), address(poolManager));
         IPoolManager(poolManager).transferTrancheTokens(
             IERC7540Vault(vault).poolId(), IERC7540Vault(vault).trancheId(), domain, chainId, recipient, amount
