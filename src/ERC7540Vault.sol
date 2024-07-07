@@ -36,16 +36,16 @@ contract ERC7540Vault is Auth, IERC7540Vault {
     address public immutable share;
     uint8 public immutable shareDecimals;
 
-    /// @notice Escrow contract for tokens
+    /// @dev For looking up endorsed contracts
     IRoot public immutable root;
 
-    /// @notice Escrow contract for tokens
+    /// @dev Escrow contract for tokens
     address public immutable escrow;
 
-    /// @notice Vault implementation contract
+    /// @dev Vault implementation contract
     IInvestmentManager public manager;
 
-    /// @dev    Requests for Centrifuge pool are non-transferable and all have ID = 0
+    /// @dev Requests for Centrifuge pool are non-transferable and all have ID = 0
     uint256 constant REQUEST_ID = 0;
 
     bytes32 private immutable nameHash;
