@@ -215,8 +215,10 @@ contract Gateway is Auth, IGateway {
         if (MessagesLib.messageType(payload) == MessagesLib.Call.InitiateMessageRecovery) {
             bytes32 messageHash = payload.toBytes32(1);
             address adapter = payload.toAddress(33);
+
             require(activeAdapters[msg.sender].id != 0, "Gateway/invalid-sender");
             require(activeAdapters[adapter].id != 0, "Gateway/invalid-adapter");
+
             recoveries[messageHash] = Recovery(block.timestamp + RECOVERY_CHALLENGE_PERIOD, adapter);
             emit InitiateMessageRecovery(messageHash, adapter);
         } else if (MessagesLib.messageType(payload) == MessagesLib.Call.DisputeMessageRecovery) {
@@ -238,9 +240,8 @@ contract Gateway is Auth, IGateway {
     /// @inheritdoc IGateway
     function executeMessageRecovery(bytes calldata message) external {
         bytes32 messageHash = keccak256(message);
-        // wouldn't it better to mark these as memory?
-        Recovery storage recovery = recoveries[messageHash];
-        Adapter storage adapter = activeAdapters[recovery.adapter];
+        Recovery memory recovery = recoveries[messageHash];
+        Adapter memory adapter = activeAdapters[recovery.adapter];
 
         require(recovery.timestamp != 0, "Gateway/message-recovery-not-initiated");
         require(recovery.timestamp <= block.timestamp, "Gateway/challenge-period-has-not-ended");
