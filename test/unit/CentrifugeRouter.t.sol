@@ -161,7 +161,7 @@ contract CentrifugeRouterTest is BaseTest {
 
         address sender = makeAddr("maliciousUser");
         vm.prank(sender);
-        vm.expectRevert("CentrifugeRouter/invalid-controller");
+        vm.expectRevert("CentrifugeRouter/invalid-sender");
         router.claimCancelDepositRequest(vault_, sender, self);
 
         router.claimCancelDepositRequest(vault_, self, self);
@@ -280,7 +280,7 @@ contract CentrifugeRouterTest is BaseTest {
 
         address sender = makeAddr("maliciousUser");
         vm.prank(sender);
-        vm.expectRevert("CentrifugeRouter/invalid-controller");
+        vm.expectRevert("CentrifugeRouter/invalid-sender");
         router.claimCancelRedeemRequest(vault_, sender, self);
 
         router.claimCancelRedeemRequest(vault_, self, self);
@@ -350,7 +350,9 @@ contract CentrifugeRouterTest is BaseTest {
 
         share.approve(address(router), amount);
         uint256 fuel = estimateGas();
-        router.transferTrancheTokens{value: fuel}(vault_, Domain.EVM, destinationChainId, destinationAddress, uint128(amount), fuel);
+        router.transferTrancheTokens{value: fuel}(
+            vault_, Domain.EVM, destinationChainId, destinationAddress, uint128(amount), fuel
+        );
         assertEq(share.balanceOf(address(router)), 0);
         assertEq(share.balanceOf(address(this)), 0);
     }
@@ -423,29 +425,6 @@ contract CentrifugeRouterTest is BaseTest {
         uint256 estimated = router.estimate(message);
         (, uint256 gatewayEstimated) = gateway.estimate(message);
         assertEq(estimated, gatewayEstimated);
-    }
-
-    function testAuthTransferFrom() public {
-        address vault_ = deploySimpleVault();
-        ERC7540Vault vault = ERC7540Vault(vault_);
-        vm.label(vault_, "vault");
-        ERC20 token = ERC20(address(vault.share()));
-        uint256 amount = 100 * 10 ** 18;
-
-        address sourceUser = makeAddr("sourceUser");
-        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), sourceUser, type(uint64).max);
-        vm.prank(address(root));
-        token.mint(sourceUser, amount);
-
-        vm.prank(address(2));
-        vm.expectRevert(bytes("Auth/not-authorized"));
-        router.authTransferFrom(vault_, sourceUser, sourceUser, self, amount);
-        assertEq(token.balanceOf(sourceUser), amount);
-        assertEq(token.balanceOf(self), 0);
-
-        router.authTransferFrom(vault_, sourceUser, sourceUser, self, amount);
-        assertEq(token.balanceOf(sourceUser), 0);
-        assertEq(token.balanceOf(self), amount);
     }
 
     function estimateGas() internal view returns (uint256 total) {

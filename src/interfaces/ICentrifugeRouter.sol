@@ -50,7 +50,9 @@ interface ICentrifugeRouter {
 
     // --- Redeem ---
     /// @notice TODO
-    function requestRedeem(address vault, uint256 amount, address controller, address owner, uint256 topUpAmount) external payable;
+    function requestRedeem(address vault, uint256 amount, address controller, address owner, uint256 topUpAmount)
+        external
+        payable;
 
     /// @notice TODO
     function claimRedeem(address vault, address receiver, address controller) external payable;
@@ -76,13 +78,23 @@ interface ICentrifugeRouter {
     function transferAssets(address asset, address recipient, uint128 amount, uint256 topUpAmount) external payable;
 
     /// @notice TODO
-    function transferTrancheTokens(address vault, Domain domain, uint64 id, bytes32 recipient, uint128 amount, uint256 topUpAmount)
-        external
-        payable;
+    function transferTrancheTokens(
+        address vault,
+        Domain domain,
+        uint64 id,
+        bytes32 recipient,
+        uint128 amount,
+        uint256 topUpAmount
+    ) external payable;
 
-    function transferTrancheTokens(address vault, Domain domain, uint64 chainId, address recipient, uint128 amount, uint256 topUpAmount)
-        external
-        payable;
+    function transferTrancheTokens(
+        address vault,
+        Domain domain,
+        uint64 chainId,
+        address recipient,
+        uint128 amount,
+        uint256 topUpAmount
+    ) external payable;
 
     // --- ERC20 permit ---
     /// @notice TODO
@@ -96,11 +108,6 @@ interface ICentrifugeRouter {
 
     /// @notice TODO
     function unwrap(address wrapper, uint256 amount, address receiver) external payable;
-
-    // --- ERC20 auth transfer ---
-    /// @notice TODO
-    function authTransferFrom(address vault, address sender, address owner, address recipient, uint256 amount)
-        external;
 
     // --- Batching ---
     /// @notice TODO

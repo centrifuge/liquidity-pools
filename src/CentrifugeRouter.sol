@@ -169,7 +169,10 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         payable
         protected
     {
-        validateController(vault, controller);
+        require(
+            controller == _initiator || (controller == receiver && opened[controller][vault] == true),
+            "CentrifugeRouter/invalid-sender"
+        );
         IERC7540Vault(vault).claimCancelDepositRequest(0, receiver, controller);
     }
 
@@ -215,7 +218,10 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
 
     /// @inheritdoc ICentrifugeRouter
     function claimCancelRedeemRequest(address vault, address receiver, address controller) external payable protected {
-        validateController(vault, controller);
+        require(
+            controller == _initiator || (controller == receiver && opened[controller][vault] == true),
+            "CentrifugeRouter/invalid-sender"
+        );
         IERC7540Vault(vault).claimCancelRedeemRequest(0, receiver, controller);
     }
 
@@ -263,11 +269,14 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     }
 
     /// @inheritdoc ICentrifugeRouter
-    function transferTrancheTokens(address vault, Domain domain, uint64 chainId, address recipient, uint128 amount, uint256 topUpAmount)
-        external
-        payable
-        protected
-    {
+    function transferTrancheTokens(
+        address vault,
+        Domain domain,
+        uint64 chainId,
+        address recipient,
+        uint128 amount,
+        uint256 topUpAmount
+    ) external payable protected {
         transferTrancheTokens(vault, domain, chainId, recipient.toBytes32(), amount, topUpAmount);
     }
 
@@ -308,15 +317,6 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         require(amount != 0, "CentrifugeRouter/zero-balance");
 
         require(IERC20Wrapper(wrapper).withdrawTo(receiver, amount), "CentrifugeRouter/withdraw-to-failed");
-    }
-
-    // --- ERC20 auth transfer ---
-    /// @inheritdoc ICentrifugeRouter
-    function authTransferFrom(address vault, address sender, address owner, address recipient, uint256 amount)
-        external
-        protected
-    {
-        IERC7540Vault(vault).authTransferFrom(sender, owner, recipient, amount);
     }
 
     // --- Batching ---
