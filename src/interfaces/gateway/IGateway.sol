@@ -25,11 +25,6 @@ interface IGateway {
         bytes pendingMessage;
     }
 
-    struct Recovery {
-        uint256 timestamp;
-        address adapter;
-    }
-
     struct Metadata {
         address source;
     }
@@ -47,8 +42,8 @@ interface IGateway {
     event RecoverMessage(address adapter, bytes message);
     event RecoverProof(address adapter, bytes32 messageHash);
     event InitiateMessageRecovery(bytes32 messageHash, address adapter);
-    event DisputeMessageRecovery(bytes32 messageHash);
-    event ExecuteMessageRecovery(bytes message);
+    event DisputeMessageRecovery(bytes32 messageHash, address adapter);
+    event ExecuteMessageRecovery(bytes message, address adapter);
     event File(bytes32 indexed what, address[] adapters);
     event File(bytes32 indexed what, address instance);
     event File(bytes32 indexed what, uint8 messageId, address manager);
@@ -66,7 +61,7 @@ interface IGateway {
     function handle(bytes calldata payload) external;
 
     /// @notice TODO
-    function disputeMessageRecovery(bytes32 messageHash) external;
+    function disputeMessageRecovery(address adapter, bytes32 messageHash) external;
 
     /// @dev Governance on Centrifuge Chain can initiate message recovery. After the challenge period,
     ///      the recovery can be executed. If a malign adapter initiates message recovery, governance on
@@ -74,14 +69,14 @@ interface IGateway {
     ///
     ///      Only 1 recovery can be outstanding per message hash. If multiple adapters fail at the same time,
     //       these will need to be recovered serially (increasing the challenge period for each failed adapter).
-    function executeMessageRecovery(bytes calldata message) external;
+    function executeMessageRecovery(address adapter, bytes calldata message) external;
 
     // --- Outgoing ---
     /// @dev Sends 1 message to the first adapter with the full message, and n-1 messages to the other adapters with
     ///      proofs (hash of message). This ensures message uniqueness (can only be executed on the destination once).
     function send(bytes calldata message, address source) external payable;
 
-    /// @notice TODO
+    /// @notice TODOGatewayTest
     function topUp() external payable;
 
     // --- Helpers ---
