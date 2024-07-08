@@ -237,7 +237,6 @@ contract Gateway is Auth, IGateway {
     /// @inheritdoc IGateway
     function executeMessageRecovery(address adapter, bytes calldata message) external {
         bytes32 messageHash = keccak256(message);
-        // wouldn't it better to mark these as memory?
         uint256 recovery = recoveries[adapter][messageHash];
 
         require(recovery != 0, "Gateway/message-recovery-not-initiated");

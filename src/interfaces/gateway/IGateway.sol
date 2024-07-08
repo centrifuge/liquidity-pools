@@ -76,7 +76,7 @@ interface IGateway {
     ///      proofs (hash of message). This ensures message uniqueness (can only be executed on the destination once).
     function send(bytes calldata message, address source) external payable;
 
-    /// @notice TODOGatewayTest
+    /// @notice TODO
     function topUp() external payable;
 
     // --- Helpers ---
