@@ -407,6 +407,5 @@ contract ERC7540Vault is Auth, IERC7540Vault {
 
     function authTransferFrom(address sender, address owner, address recipient, uint256 shares) external auth {
         ITranche(share).authTransferFrom(sender, owner, recipient, shares);
-        
     }
 }
