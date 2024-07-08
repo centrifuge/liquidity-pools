@@ -23,7 +23,7 @@ interface ICentrifugeRouter {
 
     // --- Deposit ---
     /// @notice TODO
-    function requestDeposit(address vault, uint256 amount, address controller, address owner, uint256 topUp)
+    function requestDeposit(address vault, uint256 amount, address controller, address owner, uint256 topUpAmount)
         external
         payable;
 
@@ -37,20 +37,20 @@ interface ICentrifugeRouter {
     function unlockDepositRequest(address vault, address receiver) external payable;
 
     /// @notice TODO
-    function executeLockedDepositRequest(address vault, address controller) external payable;
+    function executeLockedDepositRequest(address vault, address controller, uint256 topUpAmount) external payable;
 
     /// @notice TODO
     function claimDeposit(address vault, address receiver, address controller) external payable;
 
     /// @notice TODO
-    function cancelDepositRequest(address vault, address controller) external payable;
+    function cancelDepositRequest(address vault, address controller, uint256 topUpAmount) external payable;
 
     /// @notice TODO
     function claimCancelDepositRequest(address vault, address receiver, address controller) external payable;
 
     // --- Redeem ---
     /// @notice TODO
-    function requestRedeem(address vault, uint256 amount, address controller, address owner) external payable;
+    function requestRedeem(address vault, uint256 amount, address controller, address owner, uint256 topUpAmount) external payable;
 
     /// @notice TODO
     function claimRedeem(address vault, address receiver, address controller) external payable;
@@ -63,24 +63,24 @@ interface ICentrifugeRouter {
     function close(address vault) external;
 
     /// @notice TODO
-    function cancelRedeemRequest(address vault, address controller) external payable;
+    function cancelRedeemRequest(address vault, address controller, uint256 topUpAmount) external payable;
 
     /// @notice TODO
     function claimCancelRedeemRequest(address vault, address receiver, address controller) external payable;
 
     // --- Transfer ---
     /// @notice TODO
-    function transferAssets(address asset, bytes32 recipient, uint128 amount) external payable;
+    function transferAssets(address asset, bytes32 recipient, uint128 amount, uint256 topUpAmount) external payable;
 
     /// @notice TODO
-    function transferAssets(address asset, address recipient, uint128 amount) external payable;
+    function transferAssets(address asset, address recipient, uint128 amount, uint256 topUpAmount) external payable;
 
     /// @notice TODO
-    function transferTrancheTokens(address vault, Domain domain, uint64 id, bytes32 recipient, uint128 amount)
+    function transferTrancheTokens(address vault, Domain domain, uint64 id, bytes32 recipient, uint128 amount, uint256 topUpAmount)
         external
         payable;
 
-    function transferTrancheTokens(address vault, Domain domain, uint64 chainId, address recipient, uint128 amount)
+    function transferTrancheTokens(address vault, Domain domain, uint64 chainId, address recipient, uint128 amount, uint256 topUpAmount)
         external
         payable;
 

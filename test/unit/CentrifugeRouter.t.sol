@@ -124,11 +124,14 @@ contract CentrifugeRouterTest is BaseTest {
         assertEq(vault.pendingCancelDepositRequest(0, self), false);
 
         address sender = makeAddr("maliciousUser");
+        vm.deal(sender, 10 ether);
+        uint256 fuel = estimateGas();
         vm.prank(sender);
         vm.expectRevert("CentrifugeRouter/invalid-controller");
-        router.cancelDepositRequest(vault_, self);
+        router.cancelDepositRequest{value: fuel}(vault_, self, fuel);
 
-        router.cancelDepositRequest(vault_, self);
+        vm.deal(address(this), 10 ether);
+        router.cancelDepositRequest{value: fuel}(vault_, self, fuel);
         assertEq(vault.pendingCancelDepositRequest(0, self), true);
         assertEq(erc20.balanceOf(address(routerEscrow)), amount);
     }
@@ -148,7 +151,7 @@ contract CentrifugeRouterTest is BaseTest {
         router.requestDeposit{value: gas}(vault_, amount, self, self, gas);
         assertEq(erc20.balanceOf(address(escrow)), amount);
 
-        router.cancelDepositRequest(vault_, self);
+        router.cancelDepositRequest{value: gas}(vault_, self, gas);
         assertEq(vault.pendingCancelDepositRequest(0, self), true);
         assertEq(erc20.balanceOf(address(escrow)), amount);
         centrifugeChain.isFulfilledCancelDepositRequest(
@@ -193,7 +196,7 @@ contract CentrifugeRouterTest is BaseTest {
         // Then redeem
         share.approve(vault_, amount);
         share.approve(address(router), amount);
-        router.requestRedeem(vault_, amount, self, self);
+        router.requestRedeem{value: gas}(vault_, amount, self, self, gas);
         assertEq(share.balanceOf(address(self)), 0);
     }
 
@@ -224,15 +227,17 @@ contract CentrifugeRouterTest is BaseTest {
         // Then redeem
         share.approve(vault_, amount);
         share.approve(address(router), amount);
-        router.requestRedeem(vault_, amount, self, self);
+        router.requestRedeem{value: gas}(vault_, amount, self, self, gas);
         assertEq(share.balanceOf(address(self)), 0);
 
         address sender = makeAddr("maliciousUser");
+        vm.deal(sender, 10 ether);
         vm.prank(sender);
         vm.expectRevert("CentrifugeRouter/invalid-controller");
-        router.cancelRedeemRequest(vault_, self);
+        router.cancelRedeemRequest{value: gas}(vault_, self, gas);
 
-        router.cancelRedeemRequest(vault_, self);
+        vm.deal(address(this), 10 ether);
+        router.cancelRedeemRequest{value: gas}(vault_, self, gas);
         assertEq(vault.pendingCancelRedeemRequest(0, self), true);
     }
 
@@ -263,10 +268,10 @@ contract CentrifugeRouterTest is BaseTest {
         // Then redeem
         share.approve(vault_, amount);
         share.approve(address(router), amount);
-        router.requestRedeem(vault_, amount, self, self);
+        router.requestRedeem{value: gas}(vault_, amount, self, self, gas);
         assertEq(share.balanceOf(address(self)), 0);
 
-        router.cancelRedeemRequest(vault_, self);
+        router.cancelRedeemRequest{value: gas}(vault_, self, gas);
         assertEq(vault.pendingCancelRedeemRequest(0, self), true);
 
         centrifugeChain.isFulfilledCancelRedeemRequest(
@@ -319,8 +324,10 @@ contract CentrifugeRouterTest is BaseTest {
         address recipient = address(2);
         erc20.mint(self, amount);
 
+        uint256 fuel = estimateGas();
+        vm.deal(address(this), 10 ether);
         erc20.approve(address(router), amount);
-        router.transferAssets(address(erc20), recipient, uint128(amount));
+        router.transferAssets{value: fuel}(address(erc20), recipient, uint128(amount), fuel);
 
         assertEq(erc20.balanceOf(address(escrow)), amount);
     }
@@ -342,8 +349,8 @@ contract CentrifugeRouterTest is BaseTest {
         share.mint(self, 100 * 10 ** 18);
 
         share.approve(address(router), amount);
-
-        router.transferTrancheTokens(vault_, Domain.EVM, destinationChainId, destinationAddress, uint128(amount));
+        uint256 fuel = estimateGas();
+        router.transferTrancheTokens{value: fuel}(vault_, Domain.EVM, destinationChainId, destinationAddress, uint128(amount), fuel);
         assertEq(share.balanceOf(address(router)), 0);
         assertEq(share.balanceOf(address(this)), 0);
     }
