@@ -634,7 +634,7 @@ contract GatewayTest is Test {
         assertEq(poolManager.received(message), 0);
 
         vm.expectRevert(bytes("Gateway/message-recovery-not-initiated"));
-        gateway.executeMessageRecovery(message);
+        gateway.executeMessageRecovery(address(adapter1), message);
 
         // Initiate recovery
         _send(
@@ -645,11 +645,11 @@ contract GatewayTest is Test {
         );
 
         vm.expectRevert(bytes("Gateway/challenge-period-has-not-ended"));
-        gateway.executeMessageRecovery(message);
+        gateway.executeMessageRecovery(address(adapter1), message);
 
         // Execute recovery
         vm.warp(block.timestamp + gateway.RECOVERY_CHALLENGE_PERIOD());
-        gateway.executeMessageRecovery(message);
+        gateway.executeMessageRecovery(address(adapter1), message);
         assertEq(poolManager.received(message), 1);
     }
 
@@ -681,7 +681,7 @@ contract GatewayTest is Test {
         assertEq(investmentManager.received(message), 0);
 
         vm.expectRevert(bytes("Gateway/message-recovery-not-initiated"));
-        gateway.executeMessageRecovery(proof);
+        gateway.executeMessageRecovery(address(adapter3), proof);
 
         // Initiate recovery
         _send(
@@ -692,11 +692,11 @@ contract GatewayTest is Test {
         );
 
         vm.expectRevert(bytes("Gateway/challenge-period-has-not-ended"));
-        gateway.executeMessageRecovery(proof);
+        gateway.executeMessageRecovery(address(adapter3), proof);
         vm.warp(block.timestamp + gateway.RECOVERY_CHALLENGE_PERIOD());
 
         // Execute recovery
-        gateway.executeMessageRecovery(proof);
+        gateway.executeMessageRecovery(address(adapter3), proof);
         assertEq(poolManager.received(message), 1);
     }
 
@@ -723,7 +723,7 @@ contract GatewayTest is Test {
 
         gateway.file("adapters", oneMockAdapter);
         vm.expectRevert(bytes("Gateway/invalid-adapter"));
-        gateway.executeMessageRecovery(proof);
+        gateway.executeMessageRecovery(address(adapter3), proof);
         gateway.file("adapters", threeMockAdapters);
     }
 
@@ -747,7 +747,7 @@ contract GatewayTest is Test {
         );
 
         vm.expectRevert(bytes("Gateway/challenge-period-has-not-ended"));
-        gateway.executeMessageRecovery(proof);
+        gateway.executeMessageRecovery(address(adapter3), proof);
 
         // Dispute recovery
         _send(
@@ -759,7 +759,7 @@ contract GatewayTest is Test {
 
         // Check that recovery is not possible anymore
         vm.expectRevert(bytes("Gateway/message-recovery-not-initiated"));
-        gateway.executeMessageRecovery(proof);
+        gateway.executeMessageRecovery(address(adapter3), proof);
         assertEq(poolManager.received(message), 0);
     }
 
@@ -784,7 +784,7 @@ contract GatewayTest is Test {
         vm.warp(block.timestamp + gateway.RECOVERY_CHALLENGE_PERIOD());
 
         vm.expectRevert(bytes("Gateway/no-recursive-recovery-allowed"));
-        gateway.executeMessageRecovery(message);
+        gateway.executeMessageRecovery(address(adapter1), message);
         assertEq(poolManager.received(message), 0);
     }
 
