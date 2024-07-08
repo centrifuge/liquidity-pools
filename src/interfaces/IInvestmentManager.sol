@@ -79,8 +79,7 @@ interface IInvestmentManager is IMessageHandler {
         address user,
         uint128 assetId,
         uint128 assets,
-        uint128 shares,
-        uint128 fulfillment
+        uint128 shares
     ) external;
 
     /// @notice TODO
@@ -111,8 +110,7 @@ interface IInvestmentManager is IMessageHandler {
         bytes16 trancheId,
         address user,
         uint128 assetId,
-        uint128 shares,
-        uint128 fulfillment
+        uint128 shares
     ) external;
 
     /// @notice TODO

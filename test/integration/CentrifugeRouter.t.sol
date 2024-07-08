@@ -467,13 +467,7 @@ contract CentrifugeRouterTest is BaseTest {
         tranchePayout = uint128(amount * 10 ** 18 / price);
         assertApproxEqAbs(tranchePayout, amount / 2, 2);
         centrifugeChain.isFulfilledDepositRequest(
-            vault.poolId(),
-            vault.trancheId(),
-            bytes32(bytes20(user)),
-            assetId,
-            uint128(amount),
-            tranchePayout,
-            uint128(amount)
+            vault.poolId(), vault.trancheId(), bytes32(bytes20(user)), assetId, uint128(amount), tranchePayout
         );
     }
 

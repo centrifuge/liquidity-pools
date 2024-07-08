@@ -56,13 +56,7 @@ contract EpochExecutorHandler is BaseHandler {
         uint128 shares = uint128(assets.mulDiv(1 * 10 ** 18, fulfillmentPrice, MathLib.Rounding.Down));
 
         centrifugeChain.isFulfilledDepositRequest(
-            poolId,
-            trancheId,
-            bytes32(bytes20(currentInvestor)),
-            assetId,
-            assets,
-            shares,
-            uint128(outstandingDepositRequest - assets)
+            poolId, trancheId, bytes32(bytes20(currentInvestor)), assetId, assets, shares
         );
 
         increaseVar(currentInvestor, "totalCurrencyPaidOutOnInvest", assets);

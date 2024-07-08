@@ -197,17 +197,10 @@ contract MockCentrifugeChain is Test {
         bytes16 trancheId,
         bytes32 investor,
         uint128 assetId,
-        uint128 shares,
-        uint128 fulfillment
+        uint128 shares
     ) public {
         bytes memory _message = abi.encodePacked(
-            uint8(MessagesLib.Call.FulfilledCancelRedeemRequest),
-            poolId,
-            trancheId,
-            investor,
-            assetId,
-            shares,
-            fulfillment
+            uint8(MessagesLib.Call.FulfilledCancelRedeemRequest), poolId, trancheId, investor, assetId, shares
         );
         _execute(_message);
     }
@@ -218,18 +211,10 @@ contract MockCentrifugeChain is Test {
         bytes32 investor,
         uint128 assetId,
         uint128 assets,
-        uint128 shares,
-        uint128 fulfillment
+        uint128 shares
     ) public {
         bytes memory _message = abi.encodePacked(
-            uint8(MessagesLib.Call.FulfilledDepositRequest),
-            poolId,
-            trancheId,
-            investor,
-            assetId,
-            assets,
-            shares,
-            fulfillment
+            uint8(MessagesLib.Call.FulfilledDepositRequest), poolId, trancheId, investor, assetId, assets, shares
         );
         _execute(_message);
     }
