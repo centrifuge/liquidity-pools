@@ -105,13 +105,8 @@ interface IInvestmentManager is IMessageHandler {
     /// @dev Compared to handleFulfilledCancelDepositRequest, there is no
     ///      transfer of asset in this function because they
     ///      can stay in the Escrow, ready to be claimed on deposit/mint.
-    function fulfillCancelRedeemRequest(
-        uint64 poolId,
-        bytes16 trancheId,
-        address user,
-        uint128 assetId,
-        uint128 shares
-    ) external;
+    function fulfillCancelRedeemRequest(uint64 poolId, bytes16 trancheId, address user, uint128 assetId, uint128 shares)
+        external;
 
     /// @notice TODO
     function triggerRedeemRequest(uint64 poolId, bytes16 trancheId, address user, uint128 assetId, uint128 shares)
