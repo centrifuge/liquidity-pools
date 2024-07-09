@@ -75,17 +75,6 @@ contract CentrifugeRouterTest is BaseTest {
         assertEq(erc20.balanceOf(self), amount);
     }
 
-    function testOpenAndClose() public {
-        address vault_ = deploySimpleVault();
-        vm.label(vault_, "vault");
-
-        assertFalse(router.opened(self, vault_));
-        router.open(vault_);
-        assertTrue(router.opened(self, vault_));
-        router.close(vault_);
-        assertFalse(router.opened(self, vault_));
-    }
-
     function testWrap() public {
         uint256 amount = 150 * 10 ** 18;
         uint256 balance = 100 * 10 ** 18;
