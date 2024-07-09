@@ -14,9 +14,6 @@ interface ICentrifugeRouter {
     /// @notice TODO
     function lockedRequests(address controller, address vault) external view returns (uint256 amount);
 
-    /// @notice Determines whether requests for a given controller and vault can be claimed by anyone (permissionlessly)
-    function opened(address controller, address vault) external view returns (bool);
-
     // --- Administration ---
     /// @notice TODO
     function recoverTokens(address token, address to, uint256 amount) external;

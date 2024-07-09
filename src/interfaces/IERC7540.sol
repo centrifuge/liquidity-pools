@@ -285,6 +285,9 @@ interface IERC7540Vault is
     function trancheId() external view returns (bytes16);
 
     /// @notice TODO
+    function setEndorsedOperator(address owner, bool approved) external returns (bool);
+
+    /// @notice TODO
     function onDepositClaimable(address owner, uint256 assets, uint256 shares) external;
 
     /// @notice TODO

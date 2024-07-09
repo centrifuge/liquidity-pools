@@ -24,9 +24,6 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     address internal _initiator = UNSET_INITIATOR;
 
     /// @inheritdoc ICentrifugeRouter
-    mapping(address controller => mapping(address vault => bool)) public opened;
-
-    /// @inheritdoc ICentrifugeRouter
     mapping(address controller => mapping(address vault => uint256 amount)) public lockedRequests;
 
     constructor(address escrow_, address gateway_, address poolManager_) {
@@ -55,6 +52,15 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     /// @inheritdoc ICentrifugeRouter
     function recoverTokens(address token, address to, uint256 amount) external auth {
         SafeTransferLib.safeTransfer(token, to, amount);
+    }
+
+    // --- Enable interactions with the vault ---
+    function open(address vault) public protected {
+        IERC7540Vault(vault).setEndorsedOperator(_initiator, true);
+    }
+
+    function close(address vault) external protected {
+        IERC7540Vault(vault).setEndorsedOperator(_initiator, false);
     }
 
     // --- Deposit ---
@@ -143,7 +149,8 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     /// @inheritdoc ICentrifugeRouter
     function claimDeposit(address vault, address receiver, address controller) external payable protected {
         require(
-            controller == _initiator || (controller == receiver && opened[controller][vault] == true),
+            controller == _initiator
+                || (controller == receiver && IERC7540Vault(vault).isOperator(controller, address(this))),
             "CentrifugeRouter/invalid-sender"
         );
         uint256 maxDeposit = IERC7540Vault(vault).maxDeposit(controller);
@@ -186,8 +193,8 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
 
     /// @inheritdoc ICentrifugeRouter
     function claimRedeem(address vault, address receiver, address controller) external payable protected {
-        bool permissionlesslyClaiming =
-            controller != _initiator && controller == receiver && opened[controller][vault] == true;
+        bool permissionlesslyClaiming = controller != _initiator && controller == receiver
+            && IERC7540Vault(vault).isOperator(controller, address(this));
 
         require(controller == _initiator || permissionlesslyClaiming, "CentrifugeRouter/invalid-sender");
         uint256 maxRedeem = IERC7540Vault(vault).maxRedeem(controller);
