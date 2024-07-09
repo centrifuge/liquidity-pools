@@ -68,14 +68,12 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         payable
         protected
     {
-        require(topUpAmount <= address(this).balance, "CentrifugeRouter/insufficient-funds-to-topup");
-
         (address asset,) = poolManager.getVaultAsset(vault);
         if (owner == address(this)) {
             _approveMax(asset, vault);
         }
 
-        gateway.topUp{value: topUpAmount}();
+        _pay(topUpAmount);
         IERC7540Vault(vault).requestDeposit(amount, controller, owner);
     }
 
@@ -127,8 +125,6 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         payable
         protected
     {
-        require(topUpAmount <= address(this).balance, "CentrifugeRouter/insufficient-funds-to-topup");
-
         uint256 lockedRequest = lockedRequests[controller][vault];
         require(lockedRequest > 0, "CentrifugeRouter/controller-has-no-balance");
         lockedRequests[controller][vault] = 0;
@@ -138,7 +134,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         escrow.approveMax(asset, address(this));
         SafeTransferLib.safeTransferFrom(asset, address(escrow), address(this), lockedRequest);
 
-        gateway.topUp{value: topUpAmount}();
+        _pay(topUpAmount);
         _approveMax(asset, vault);
         IERC7540Vault(vault).requestDeposit(lockedRequest, controller, address(this));
         emit ExecuteLockedDepositRequest(vault, controller, _initiator);
@@ -156,10 +152,8 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
 
     /// @inheritdoc ICentrifugeRouter
     function cancelDepositRequest(address vault, address controller, uint256 topUpAmount) external payable protected {
-        require(topUpAmount <= address(this).balance, "CentrifugeRouter/insufficient-funds-to-topup");
-
         validateController(vault, controller);
-        gateway.topUp{value: topUpAmount}();
+        _pay(topUpAmount);
         IERC7540Vault(vault).cancelDepositRequest(0, controller);
     }
 
@@ -183,9 +177,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         payable
         protected
     {
-        require(topUpAmount <= address(this).balance, "CentrifugeRouter/insufficient-funds-to-topup");
-
-        gateway.topUp{value: topUpAmount}();
+        _pay(topUpAmount);
         IERC7540Vault(vault).requestRedeem(amount, controller, owner);
     }
 
@@ -209,10 +201,8 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
 
     /// @inheritdoc ICentrifugeRouter
     function cancelRedeemRequest(address vault, address controller, uint256 topUpAmount) external payable protected {
-        require(topUpAmount <= address(this).balance, "CentrifugeRouter/insufficient-funds-to-topup");
-
         validateController(vault, controller);
-        gateway.topUp{value: topUpAmount}();
+        _pay(topUpAmount);
         IERC7540Vault(vault).cancelRedeemRequest(0, controller);
     }
 
@@ -232,11 +222,9 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         payable
         protected
     {
-        require(topUpAmount <= address(this).balance, "CentrifugeRouter/insufficient-funds-to-topup");
-
         SafeTransferLib.safeTransferFrom(asset, _initiator, address(this), amount);
         _approveMax(asset, address(poolManager));
-        gateway.topUp{value: topUpAmount}();
+        _pay(topUpAmount);
         poolManager.transferAssets(asset, recipient, amount);
     }
 
@@ -258,11 +246,9 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         uint128 amount,
         uint256 topUpAmount
     ) public payable protected {
-        require(topUpAmount <= address(this).balance, "CentrifugeRouter/insufficient-funds-to-topup");
-
         SafeTransferLib.safeTransferFrom(IERC7540Vault(vault).share(), _initiator, address(this), amount);
         _approveMax(IERC7540Vault(vault).share(), address(poolManager));
-        gateway.topUp{value: topUpAmount}();
+        _pay(topUpAmount);
         IPoolManager(poolManager).transferTrancheTokens(
             IERC7540Vault(vault).poolId(), IERC7540Vault(vault).trancheId(), domain, chainId, recipient, amount
         );
@@ -357,6 +343,12 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         if (IERC20(token).allowance(address(this), spender) == 0) {
             SafeTransferLib.safeApprove(token, spender, type(uint256).max);
         }
+    }
+
+    function _pay(uint256 amount) internal {
+        require(amount <= address(this).balance, "CentrifugeRouter/insufficient-funds-to-topup");
+        gateway.topUp{value: amount}();
+
     }
 
     function validateController(address vault, address controller) internal view {
