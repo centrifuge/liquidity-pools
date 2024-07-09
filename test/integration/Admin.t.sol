@@ -63,7 +63,7 @@ contract AdminTest is BaseTest {
         erc20.mint(address(this), amount);
         guardian.pause();
         vm.expectRevert("Gateway/paused");
-        poolManager.transfer(address(erc20), bytes32(bytes20(recipient)), amount);
+        poolManager.transferAssets(address(erc20), bytes32(bytes20(recipient)), amount);
     }
 
     function testIncomingTransferWhilePausedFails(
@@ -87,7 +87,7 @@ contract AdminTest is BaseTest {
         // the escrow account, from which funds are moved from into the recipient on an incoming transfer.
         erc20.approve(address(poolManager), type(uint256).max);
         erc20.mint(address(this), amount);
-        poolManager.transfer(address(erc20), bytes32(bytes20(recipient)), amount);
+        poolManager.transferAssets(address(erc20), bytes32(bytes20(recipient)), amount);
         assertEq(erc20.balanceOf(address(poolManager.escrow())), amount);
 
         guardian.pause();
@@ -121,7 +121,7 @@ contract AdminTest is BaseTest {
         guardian.pause();
         vm.prank(address(adminSafe));
         guardian.unpause();
-        poolManager.transfer(address(erc20), bytes32(bytes20(recipient)), amount);
+        poolManager.transferAssets(address(erc20), bytes32(bytes20(recipient)), amount);
         assertEq(erc20.balanceOf(address(poolManager.escrow())), amount);
 
         centrifugeChain.incomingTransfer(assetId, sender, bytes32(bytes20(recipient)), amount);
