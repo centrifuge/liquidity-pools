@@ -337,7 +337,7 @@ contract DepositTest is BaseTest {
         assertApproxEqAbs(erc20.balanceOf(address(escrow)), amount, 1);
     }
 
-    function testDepositWithEndorsement(uint256 amount) public {
+    function testDepositAsEndorsedOperator(uint256 amount) public {
         // If lower than 4 or odd, rounding down can lead to not receiving any tokens
         amount = uint128(bound(amount, 4, MAX_UINT128));
         vm.assume(amount % 2 == 0);
@@ -383,6 +383,7 @@ contract DepositTest is BaseTest {
         // endorse router
         root.endorse(router);
         vm.startPrank(router); // try to claim deposit on behalf of user and set the wrong user as receiver
+        vault.setEndorsedOperator(address(this), true);
         vault.deposit(amount, receiver, address(this));
         vm.stopPrank();
 

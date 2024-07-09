@@ -445,11 +445,6 @@ contract InvestmentManager is Auth, IInvestmentManager {
         (, lastUpdated) = poolManager.getTranchePrice(vault_.poolId(), vault_.trancheId(), vault_.asset());
     }
 
-    /// @inheritdoc IInvestmentManager
-    function isGlobalOperator(address, /* vault */ address user) public view returns (bool) {
-        return IRoot(root).endorsed(user);
-    }
-
     // --- Vault claim functions ---
     /// @inheritdoc IInvestmentManager
     function deposit(address vault, uint256 assets, address receiver, address controller)

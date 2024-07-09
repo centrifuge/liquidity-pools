@@ -152,9 +152,6 @@ interface IInvestmentManager is IMessageHandler {
     /// @notice TODO
     function priceLastUpdated(address vault) external view returns (uint64 lastUpdated);
 
-    /// @notice TODO
-    function isGlobalOperator(address, /* vault */ address user) external view returns (bool);
-
     // --- Vault claim functions ---
     /// @notice Processes owner's asset deposit / investment after the epoch has been executed on Centrifuge.
     ///         The asset required to fulfill the invest order is already locked in escrow upon calling
