@@ -736,4 +736,36 @@ contract DepositTest is BaseTest {
         vault.mint(firstTranchePayout + secondTranchePayout, self);
         assertEq(tranche.balanceOf(self), firstTranchePayout + secondTranchePayout);
     }
+
+    function testDepositAsInvestorDirectly(uint256 amount) public {
+        amount = uint128(bound(amount, 4, MAX_UINT128));
+        vm.assume(amount % 2 == 0);
+
+        address vault_ = deploySimpleVault();
+        ERC7540Vault vault = ERC7540Vault(vault_);
+        ITranche tranche = ITranche(address(vault.share()));
+
+        assertEq(tranche.balanceOf(investor), 0);
+
+        erc20.mint(investor, amount);
+        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), investor, type(uint64).max); // add user as
+
+        vm.startPrank(investor);
+        erc20.approve(vault_, amount);
+        vault.requestDeposit(amount, investor, investor);
+        vm.stopPrank();
+
+        uint128 assetId = poolManager.assetToId(address(erc20));
+        centrifugeChain.isFulfilledDepositRequest(
+            vault.poolId(), vault.trancheId(), investor.toBytes32(), assetId, uint128(amount), uint128(amount), 0
+        );
+        vm.expectRevert(bytes("InvestmentManager/tranche-token-amount-is-zero"));
+        vault.deposit(amount, investor);
+
+        vm.prank(investor);
+        uint256 shares = vault.deposit(amount, investor);
+
+        assertEq(tranche.balanceOf(investor), amount);
+        assertEq(shares, amount);
+    }
 }
