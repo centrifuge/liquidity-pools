@@ -27,6 +27,10 @@ contract CentrifugeRouterTest is BaseTest {
         vm.expectRevert(bytes("Gateway/cannot-topup-with-nothing"));
         router.requestDeposit(vault_, amount, self, self, 0);
 
+        vm.expectRevert(bytes("ERC7540Vault/invalid-owner"));
+        router.requestDeposit{value: 1 wei}(vault_, amount, self, self, 1 wei);
+
+        router.open(vault_);
         vm.expectRevert(bytes("InvestmentManager/transfer-not-allowed"));
         router.requestDeposit{value: 1 wei}(vault_, amount, self, self, 1 wei);
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max);
@@ -64,6 +68,30 @@ contract CentrifugeRouterTest is BaseTest {
         assertApproxEqAbs(tranche.balanceOf(self), tranchePayout, 1);
         assertApproxEqAbs(tranche.balanceOf(address(escrow)), 0, 1);
         assertApproxEqAbs(erc20.balanceOf(address(escrow)), amount, 1);
+    }
+
+    function testOpenCloseVaults() public {
+        address vault_ = deploySimpleVault();
+        ERC7540Vault vault = ERC7540Vault(vault_);
+        vm.label(vault_, "vault");
+
+        root.veto(address(router));
+        vm.expectRevert(bytes("ERC7540Vault/sender-not-endorsed"));
+        router.open(vault_);
+        assertEq(vault.isOperator(address(this), address(router)), false);
+
+        root.endorse(address(router));
+        router.open(vault_);
+        assertEq(vault.isOperator(address(this), address(router)), true);
+
+        root.veto(address(router));
+        vm.expectRevert(bytes("ERC7540Vault/sender-not-endorsed"));
+        router.close(vault_);
+        assertEq(vault.isOperator(address(this), address(router)), true);
+
+        root.endorse(address(router));
+        router.close(vault_);
+        assertEq(vault.isOperator(address(this), address(router)), false);
     }
 
     function testRouterAsyncDeposit(uint256 amount) public {
@@ -113,6 +141,8 @@ contract CentrifugeRouterTest is BaseTest {
         erc20.mint(self, amount);
         erc20.approve(vault_, amount);
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max);
+        router.open(vault_);
+
         uint256 fuel = estimateGas();
         router.requestDeposit{value: fuel}(vault_, amount, self, self, fuel);
 
@@ -142,6 +172,10 @@ contract CentrifugeRouterTest is BaseTest {
 
         uint256 fuel = estimateGas();
         (ERC20 erc20X, ERC20 erc20Y, ERC7540Vault vault1, ERC7540Vault vault2) = setUpMultipleVaults(amount1, amount2);
+
+        router.open(address(vault1));
+        router.open(address(vault2));
+
         router.requestDeposit{value: fuel}(address(vault1), amount1, self, self, fuel);
         router.requestDeposit{value: fuel}(address(vault2), amount2, self, self, fuel);
 
@@ -179,6 +213,10 @@ contract CentrifugeRouterTest is BaseTest {
         uint256 fuel = estimateGas();
         // deposit
         (ERC20 erc20X, ERC20 erc20Y, ERC7540Vault vault1, ERC7540Vault vault2) = setUpMultipleVaults(amount1, amount2);
+
+        router.open(address(vault1));
+        router.open(address(vault2));
+
         router.requestDeposit{value: fuel}(address(vault1), amount1, self, self, fuel);
         router.requestDeposit{value: fuel}(address(vault2), amount2, self, self, fuel);
 
@@ -225,6 +263,7 @@ contract CentrifugeRouterTest is BaseTest {
         erc20.mint(self, amount);
         erc20.approve(address(router), amount);
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max);
+        router.open(address(vault_));
         router.lockDepositRequest(vault_, amount, self, self);
 
         // multicall
@@ -252,6 +291,8 @@ contract CentrifugeRouterTest is BaseTest {
         erc20.mint(self, amount);
         erc20.approve(vault_, amount);
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max);
+        router.open(vault_);
+
         uint256 fuel = estimateGas();
         router.requestDeposit{value: fuel}(vault_, amount, self, self, fuel);
 
@@ -280,6 +321,9 @@ contract CentrifugeRouterTest is BaseTest {
         vm.assume(amount2 % 2 == 0);
 
         (ERC20 erc20X, ERC20 erc20Y, ERC7540Vault vault1, ERC7540Vault vault2) = setUpMultipleVaults(amount1, amount2);
+
+        router.open(address(vault1));
+        router.open(address(vault2));
 
         uint256 gas = estimateGas();
         bytes[] memory calls = new bytes[](2);
@@ -351,6 +395,7 @@ contract CentrifugeRouterTest is BaseTest {
 
         address investor = makeAddr("investor");
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), investor, type(uint64).max);
+        router.open(vault_);
 
         erc20.mint(investor, amount);
         vm.startPrank(investor);
@@ -426,6 +471,7 @@ contract CentrifugeRouterTest is BaseTest {
 
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max);
         erc20.approve(vault_, amount);
+        router.open(vault_);
 
         uint256 gasLimit = estimateGas();
         uint256 lessGas = gasLimit - 1;
@@ -467,13 +513,7 @@ contract CentrifugeRouterTest is BaseTest {
         tranchePayout = uint128(amount * 10 ** 18 / price);
         assertApproxEqAbs(tranchePayout, amount / 2, 2);
         centrifugeChain.isFulfilledDepositRequest(
-            vault.poolId(),
-            vault.trancheId(),
-            bytes32(bytes20(user)),
-            assetId,
-            uint128(amount),
-            tranchePayout,
-            uint128(amount)
+            vault.poolId(), vault.trancheId(), bytes32(bytes20(user)), assetId, uint128(amount), tranchePayout
         );
     }
 

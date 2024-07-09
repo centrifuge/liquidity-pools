@@ -39,8 +39,8 @@ contract Gateway is Auth, IGateway {
     address[] public adapters;
     mapping(address adapter => Adapter) public activeAdapters;
     mapping(bytes32 messageHash => Message) public messages;
-    mapping(bytes32 messageHash => Recovery) public recoveries;
     mapping(uint8 messageId => address manager) messageHandlers;
+    mapping(address router => mapping(bytes32 messageHash => uint256 timestamp)) public recoveries;
 
     constructor(address root_, address poolManager_, address investmentManager_, address gasService_) {
         root = IRoot(root_);
@@ -124,12 +124,12 @@ contract Gateway is Auth, IGateway {
     // --- Incoming ---
     /// @inheritdoc IGateway
     function handle(bytes calldata message) external pauseable {
-        Adapter memory adapter = activeAdapters[msg.sender];
-        require(adapter.id != 0, "Gateway/invalid-adapter");
-        _handle(message, msg.sender, adapter, false);
+        _handle(message, msg.sender, false);
     }
 
-    function _handle(bytes calldata payload, address adapterAddr, Adapter memory adapter, bool isRecovery) internal {
+    function _handle(bytes calldata payload, address adapter_, bool isRecovery) internal {
+        Adapter memory adapter = activeAdapters[adapter_];
+        require(adapter.id != 0, "Gateway/invalid-adapter");
         uint8 call = payload.toUint8(0);
         if (
             call == uint8(MessagesLib.Call.InitiateMessageRecovery)
@@ -144,7 +144,7 @@ contract Gateway is Auth, IGateway {
         if (adapter.quorum == 1 && !isMessageProof) {
             // Special case for gas efficiency
             _dispatch(payload);
-            emit ExecuteMessage(payload, adapterAddr);
+            emit ExecuteMessage(payload, adapter_);
             return;
         }
 
@@ -153,11 +153,11 @@ contract Gateway is Auth, IGateway {
         if (isMessageProof) {
             require(isRecovery || adapter.id != PRIMARY_ADAPTER_ID, "Gateway/non-proof-adapter");
             messageHash = payload.toBytes32(1);
-            emit HandleProof(messageHash, adapterAddr);
+            emit HandleProof(messageHash, adapter_);
         } else {
             require(isRecovery || adapter.id == PRIMARY_ADAPTER_ID, "Gateway/non-message-adapter");
             messageHash = keccak256(payload);
-            emit HandleMessage(payload, adapterAddr);
+            emit HandleMessage(payload, adapter_);
         }
 
         Message storage state = messages[messageHash];
@@ -215,43 +215,39 @@ contract Gateway is Auth, IGateway {
     }
 
     function _handleRecovery(bytes memory payload) internal {
+        bytes32 messageHash = payload.toBytes32(1);
+        address adapter = payload.toAddress(33);
+
         if (MessagesLib.messageType(payload) == MessagesLib.Call.InitiateMessageRecovery) {
-            bytes32 messageHash = payload.toBytes32(1);
-            address adapter = payload.toAddress(33);
             require(activeAdapters[msg.sender].id != 0, "Gateway/invalid-sender");
             require(activeAdapters[adapter].id != 0, "Gateway/invalid-adapter");
-            recoveries[messageHash] = Recovery(block.timestamp + RECOVERY_CHALLENGE_PERIOD, adapter);
+            recoveries[adapter][messageHash] = block.timestamp + RECOVERY_CHALLENGE_PERIOD;
             emit InitiateMessageRecovery(messageHash, adapter);
         } else if (MessagesLib.messageType(payload) == MessagesLib.Call.DisputeMessageRecovery) {
-            bytes32 messageHash = payload.toBytes32(1);
-            return _disputeMessageRecovery(messageHash);
+            return _disputeMessageRecovery(adapter, messageHash);
         }
     }
 
-    /// @inheritdoc IGateway
-    function disputeMessageRecovery(bytes32 messageHash) external auth {
-        _disputeMessageRecovery(messageHash);
+    function disputeMessageRecovery(address adapter, bytes32 messageHash) external auth {
+        _disputeMessageRecovery(adapter, messageHash);
     }
 
-    function _disputeMessageRecovery(bytes32 messageHash) internal {
-        delete recoveries[messageHash];
-        emit DisputeMessageRecovery(messageHash);
+    function _disputeMessageRecovery(address adapter, bytes32 messageHash) internal {
+        delete recoveries[adapter][messageHash];
+        emit DisputeMessageRecovery(messageHash, adapter);
     }
 
     /// @inheritdoc IGateway
-    function executeMessageRecovery(bytes calldata message) external {
+    function executeMessageRecovery(address adapter, bytes calldata message) external {
         bytes32 messageHash = keccak256(message);
-        // wouldn't it better to mark these as memory?
-        Recovery storage recovery = recoveries[messageHash];
-        Adapter storage adapter = activeAdapters[recovery.adapter];
+        uint256 recovery = recoveries[adapter][messageHash];
 
-        require(recovery.timestamp != 0, "Gateway/message-recovery-not-initiated");
-        require(recovery.timestamp <= block.timestamp, "Gateway/challenge-period-has-not-ended");
-        require(adapter.id != 0, "Gateway/invalid-adapter");
+        require(recovery != 0, "Gateway/message-recovery-not-initiated");
+        require(recovery <= block.timestamp, "Gateway/challenge-period-has-not-ended");
 
-        delete recoveries[messageHash];
-        _handle(message, recovery.adapter, adapter, true);
-        emit ExecuteMessageRecovery(message);
+        delete recoveries[adapter][messageHash];
+        _handle(message, adapter, true);
+        emit ExecuteMessageRecovery(message, adapter);
     }
 
     // --- Outgoing ---
