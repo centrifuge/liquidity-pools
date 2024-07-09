@@ -166,7 +166,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         protected
     {
         require(
-            controller == _initiator || (controller == receiver && opened[controller][vault] == true),
+            controller == _initiator || (controller == receiver && IERC7540Vault(vault).isOperator(controller, address(this))),
             "CentrifugeRouter/invalid-sender"
         );
         IERC7540Vault(vault).claimCancelDepositRequest(0, receiver, controller);
@@ -210,7 +210,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     /// @inheritdoc ICentrifugeRouter
     function claimCancelRedeemRequest(address vault, address receiver, address controller) external payable protected {
         require(
-            controller == _initiator || (controller == receiver && opened[controller][vault] == true),
+            controller == _initiator || (controller == receiver && IERC7540Vault(vault).isOperator(controller, address(this))),
             "CentrifugeRouter/invalid-sender"
         );
         IERC7540Vault(vault).claimCancelRedeemRequest(0, receiver, controller);
@@ -265,15 +265,6 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         uint256 topUpAmount
     ) external payable protected {
         transferTrancheTokens(vault, domain, chainId, recipient.toBytes32(), amount, topUpAmount);
-    }
-
-    // --- Manage permissionless claiming ---
-    function open(address vault) public protected {
-        opened[_initiator][vault] = true;
-    }
-
-    function close(address vault) external protected {
-        opened[_initiator][vault] = false;
     }
 
     // --- ERC20 permits ---
