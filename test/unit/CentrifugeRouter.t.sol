@@ -196,12 +196,7 @@ contract CentrifugeRouterTest is BaseTest {
         router.requestDeposit{value: gas}(vault_, amount, self, self, gas);
         IERC20 share = IERC20(address(vault.share()));
         centrifugeChain.isFulfilledDepositRequest(
-            vault.poolId(),
-            vault.trancheId(),
-            bytes32(bytes20(self)),
-            defaultAssetId,
-            uint128(amount),
-            uint128(amount)
+            vault.poolId(), vault.trancheId(), bytes32(bytes20(self)), defaultAssetId, uint128(amount), uint128(amount)
         );
         vault.deposit(amount, self, self);
         assertEq(share.balanceOf(address(self)), amount);
@@ -232,16 +227,11 @@ contract CentrifugeRouterTest is BaseTest {
         erc20.approve(address(vault_), amount);
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max);
         uint256 gas = estimateGas();
-        router.open(vault_ );
+        router.open(vault_);
         router.requestDeposit{value: gas}(vault_, amount, self, self, gas);
         IERC20 share = IERC20(address(vault.share()));
         centrifugeChain.isFulfilledDepositRequest(
-            vault.poolId(),
-            vault.trancheId(),
-            bytes32(bytes20(self)),
-            defaultAssetId,
-            uint128(amount),
-            uint128(amount)
+            vault.poolId(), vault.trancheId(), bytes32(bytes20(self)), defaultAssetId, uint128(amount), uint128(amount)
         );
         vault.deposit(amount, self, self);
         assertEq(share.balanceOf(address(self)), amount);
@@ -280,12 +270,7 @@ contract CentrifugeRouterTest is BaseTest {
         router.requestDeposit{value: gas}(vault_, amount, self, self, gas);
         IERC20 share = IERC20(address(vault.share()));
         centrifugeChain.isFulfilledDepositRequest(
-            vault.poolId(),
-            vault.trancheId(),
-            bytes32(bytes20(self)),
-            defaultAssetId,
-            uint128(amount),
-            uint128(amount)
+            vault.poolId(), vault.trancheId(), bytes32(bytes20(self)), defaultAssetId, uint128(amount), uint128(amount)
         );
         vault.deposit(amount, self, self);
         assertEq(share.balanceOf(address(self)), amount);

@@ -166,7 +166,8 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         protected
     {
         require(
-            controller == _initiator || (controller == receiver && IERC7540Vault(vault).isOperator(controller, address(this))),
+            controller == _initiator
+                || (controller == receiver && IERC7540Vault(vault).isOperator(controller, address(this))),
             "CentrifugeRouter/invalid-sender"
         );
         IERC7540Vault(vault).claimCancelDepositRequest(0, receiver, controller);
@@ -210,7 +211,8 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     /// @inheritdoc ICentrifugeRouter
     function claimCancelRedeemRequest(address vault, address receiver, address controller) external payable protected {
         require(
-            controller == _initiator || (controller == receiver && IERC7540Vault(vault).isOperator(controller, address(this))),
+            controller == _initiator
+                || (controller == receiver && IERC7540Vault(vault).isOperator(controller, address(this))),
             "CentrifugeRouter/invalid-sender"
         );
         IERC7540Vault(vault).claimCancelRedeemRequest(0, receiver, controller);
