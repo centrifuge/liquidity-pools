@@ -197,9 +197,9 @@ contract Gateway is Auth, IGateway {
         // Hardcoded paths for root + pool & investment managers for gas efficiency
         if (id >= 5 && id <= 7) {
             manager = address(root);
-        } else if (id >= 9 && id <= 20) {
+        } else if (id >= 9 && id <= 18) {
             manager = poolManager;
-        } else if (id >= 21 && id <= 29) {
+        } else if (id >= 19 && id <= 27) {
             manager = investmentManager;
         } else {
             // Dynamic path for other managers, to be able to easily
