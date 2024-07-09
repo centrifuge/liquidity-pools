@@ -56,11 +56,11 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
 
     // --- Enable interactions with the vault ---
     function open(address vault) public protected {
-        IERC7540Vault(vault).setEndorsedOperator(_initiator, true);
+        IERC7540Vault(vault).setEndorsedOperator(_initiator(), true);
     }
 
     function close(address vault) external protected {
-        IERC7540Vault(vault).setEndorsedOperator(_initiator, false);
+        IERC7540Vault(vault).setEndorsedOperator(_initiator(), false);
     }
 
     // --- Deposit ---
