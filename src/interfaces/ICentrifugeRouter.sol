@@ -43,7 +43,7 @@ interface ICentrifugeRouter {
     function claimDeposit(address vault, address receiver, address controller) external payable;
 
     /// @notice TODO
-    function cancelDepositRequest(address vault, address controller, uint256 topUpAmount) external payable;
+    function cancelDepositRequest(address vault, uint256 topUpAmount) external payable;
 
     /// @notice TODO
     function claimCancelDepositRequest(address vault, address receiver, address controller) external payable;
@@ -65,7 +65,7 @@ interface ICentrifugeRouter {
     function close(address vault) external;
 
     /// @notice TODO
-    function cancelRedeemRequest(address vault, address controller, uint256 topUpAmount) external payable;
+    function cancelRedeemRequest(address vault, uint256 topUpAmount) external payable;
 
     /// @notice TODO
     function claimCancelRedeemRequest(address vault, address receiver, address controller) external payable;

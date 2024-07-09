@@ -129,22 +129,19 @@ contract CentrifugeRouterTest is BaseTest {
         address sender = makeAddr("maliciousUser");
         vm.deal(sender, 10 ether);
         uint256 fuel = estimateGas();
-        vm.prank(sender);
-        vm.expectRevert("CentrifugeRouter/invalid-controller");
-        router.cancelDepositRequest{value: fuel}(vault_, self, fuel);
 
         vm.deal(address(this), 10 ether);
 
         vm.expectRevert("CentrifugeRouter/insufficient-funds-to-topup");
-        router.cancelDepositRequest(vault_, self, fuel);
+        router.cancelDepositRequest(vault_, fuel);
 
         vm.expectRevert("Gateway/cannot-topup-with-nothing");
-        router.cancelDepositRequest{value: fuel}(vault_, self, 0);
+        router.cancelDepositRequest{value: fuel}(vault_, 0);
 
         vm.expectRevert("Gateway/not-enough-gas-funds");
-        router.cancelDepositRequest{value: fuel}(vault_, self, fuel - 1);
+        router.cancelDepositRequest{value: fuel}(vault_, fuel - 1);
 
-        router.cancelDepositRequest{value: fuel}(vault_, self, fuel);
+        router.cancelDepositRequest{value: fuel}(vault_, fuel);
         assertEq(vault.pendingCancelDepositRequest(0, self), true);
         assertEq(erc20.balanceOf(address(routerEscrow)), amount);
     }
@@ -164,7 +161,7 @@ contract CentrifugeRouterTest is BaseTest {
         router.requestDeposit{value: gas}(vault_, amount, self, self, gas);
         assertEq(erc20.balanceOf(address(escrow)), amount);
 
-        router.cancelDepositRequest{value: gas}(vault_, self, gas);
+        router.cancelDepositRequest{value: gas}(vault_, gas);
         assertEq(vault.pendingCancelDepositRequest(0, self), true);
         assertEq(erc20.balanceOf(address(escrow)), amount);
         centrifugeChain.isFulfilledCancelDepositRequest(
@@ -252,24 +249,18 @@ contract CentrifugeRouterTest is BaseTest {
         router.requestRedeem{value: gas}(vault_, amount, self, self, gas);
         assertEq(share.balanceOf(address(self)), 0);
 
-        address sender = makeAddr("maliciousUser");
-        vm.deal(sender, 10 ether);
-        vm.prank(sender);
-        vm.expectRevert("CentrifugeRouter/invalid-controller");
-        router.cancelRedeemRequest{value: gas}(vault_, self, gas);
-
         vm.deal(address(this), 10 ether);
 
         vm.expectRevert("CentrifugeRouter/insufficient-funds-to-topup");
-        router.cancelRedeemRequest(vault_, self, gas);
+        router.cancelRedeemRequest(vault_, gas);
 
         vm.expectRevert("Gateway/cannot-topup-with-nothing");
-        router.cancelRedeemRequest{value: gas}(vault_, self, 0);
+        router.cancelRedeemRequest{value: gas}(vault_, 0);
 
         vm.expectRevert("Gateway/not-enough-gas-funds");
-        router.cancelRedeemRequest{value: gas}(vault_, self, gas - 1);
+        router.cancelRedeemRequest{value: gas}(vault_, gas - 1);
 
-        router.cancelRedeemRequest{value: gas}(vault_, self, gas);
+        router.cancelRedeemRequest{value: gas}(vault_, gas);
         assertEq(vault.pendingCancelRedeemRequest(0, self), true);
     }
 
@@ -303,7 +294,7 @@ contract CentrifugeRouterTest is BaseTest {
         router.requestRedeem{value: gas}(vault_, amount, self, self, gas);
         assertEq(share.balanceOf(address(self)), 0);
 
-        router.cancelRedeemRequest{value: gas}(vault_, self, gas);
+        router.cancelRedeemRequest{value: gas}(vault_, gas);
         assertEq(vault.pendingCancelRedeemRequest(0, self), true);
 
         centrifugeChain.isFulfilledCancelRedeemRequest(
@@ -348,7 +339,7 @@ contract CentrifugeRouterTest is BaseTest {
         assertEq(erc20.nonces(owner), 1);
     }
 
-    function testTransferAssets() public {
+    function testTransferAssetsToAddress() public {
         address vault_ = deploySimpleVault();
         vm.label(vault_, "vault");
 
@@ -374,7 +365,33 @@ contract CentrifugeRouterTest is BaseTest {
         assertEq(erc20.balanceOf(address(escrow)), amount);
     }
 
-    function testTranferTrancheTokens() public {
+    function testTransferAssetsToBytes32() public {
+        address vault_ = deploySimpleVault();
+        vm.label(vault_, "vault");
+
+        uint256 amount = 100 * 10 ** 18;
+        bytes32 recipient = address(2).toBytes32();
+        erc20.mint(self, amount);
+
+        uint256 fuel = estimateGas();
+        vm.deal(address(this), 10 ether);
+        erc20.approve(address(router), amount);
+
+        vm.expectRevert("CentrifugeRouter/insufficient-funds-to-topup");
+        router.transferAssets(address(erc20), recipient, uint128(amount), fuel);
+
+        vm.expectRevert("Gateway/cannot-topup-with-nothing");
+        router.transferAssets{value: fuel}(address(erc20), recipient, uint128(amount), 0);
+
+        vm.expectRevert("Gateway/not-enough-gas-funds");
+        router.transferAssets{value: fuel}(address(erc20), recipient, uint128(amount), fuel - 1);
+
+        router.transferAssets{value: fuel}(address(erc20), recipient, uint128(amount), fuel);
+
+        assertEq(erc20.balanceOf(address(escrow)), amount);
+    }
+
+    function testTranferTrancheTokensToAddressDestination() public {
         address vault_ = deploySimpleVault();
         vm.label(vault_, "vault");
         ERC7540Vault vault = ERC7540Vault(vault_);
@@ -385,7 +402,6 @@ contract CentrifugeRouterTest is BaseTest {
         address destinationAddress = makeAddr("destinationAddress");
 
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), address(this), type(uint64).max);
-        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), destinationAddress, type(uint64).max);
 
         vm.prank(address(root));
         share.mint(self, 100 * 10 ** 18);
@@ -397,7 +413,47 @@ contract CentrifugeRouterTest is BaseTest {
         router.transferTrancheTokens(vault_, Domain.EVM, destinationChainId, destinationAddress, uint128(amount), fuel);
 
         vm.expectRevert("Gateway/cannot-topup-with-nothing");
-        router.transferTrancheTokens{value: fuel}(vault_, Domain.EVM, destinationChainId, destinationAddress, uint128(amount), 0);
+        router.transferTrancheTokens{value: fuel}(
+            vault_, Domain.EVM, destinationChainId, destinationAddress, uint128(amount), 0
+        );
+
+        vm.expectRevert("Gateway/not-enough-gas-funds");
+        router.transferTrancheTokens{value: fuel}(
+            vault_, Domain.EVM, destinationChainId, destinationAddress, uint128(amount), fuel - 1
+        );
+
+        router.transferTrancheTokens{value: fuel}(
+            vault_, Domain.EVM, destinationChainId, destinationAddress, uint128(amount), fuel
+        );
+        assertEq(share.balanceOf(address(router)), 0);
+        assertEq(share.balanceOf(address(this)), 0);
+    }
+
+    function testTranferTrancheTokensToBytes32Destination() public {
+        address vault_ = deploySimpleVault();
+        vm.label(vault_, "vault");
+        ERC7540Vault vault = ERC7540Vault(vault_);
+        ERC20 share = ERC20(IERC7540Vault(vault_).share());
+
+        uint256 amount = 100 * 10 ** 18;
+        uint64 destinationChainId = 2;
+        bytes32 destinationAddress = makeAddr("destinationAddress").toBytes32();
+
+        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), address(this), type(uint64).max);
+
+        vm.prank(address(root));
+        share.mint(self, 100 * 10 ** 18);
+
+        share.approve(address(router), amount);
+        uint256 fuel = estimateGas();
+
+        vm.expectRevert("CentrifugeRouter/insufficient-funds-to-topup");
+        router.transferTrancheTokens(vault_, Domain.EVM, destinationChainId, destinationAddress, uint128(amount), fuel);
+
+        vm.expectRevert("Gateway/cannot-topup-with-nothing");
+        router.transferTrancheTokens{value: fuel}(
+            vault_, Domain.EVM, destinationChainId, destinationAddress, uint128(amount), 0
+        );
 
         vm.expectRevert("Gateway/not-enough-gas-funds");
         router.transferTrancheTokens{value: fuel}(
