@@ -404,8 +404,4 @@ contract ERC7540Vault is Auth, IERC7540Vault {
             "ERC7540Vault/invalid-controller"
         );
     }
-
-    function authTransferFrom(address sender, address owner, address recipient, uint256 shares) external auth {
-        ITranche(share).authTransferFrom(sender, owner, recipient, shares);
-    }
 }

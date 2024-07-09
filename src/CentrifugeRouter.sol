@@ -13,10 +13,6 @@ import {IInvestmentManager} from "src/interfaces/IInvestmentManager.sol";
 import {IEscrow} from "src/interfaces/IEscrow.sol";
 import {IGateway} from "src/interfaces/gateway/IGateway.sol";
 
-interface AuthTransferLike {
-    function authTransferFrom(address sender, address owner, address recipient, uint256 amount) external;
-}
-
 contract CentrifugeRouter is Auth, ICentrifugeRouter {
     using CastLib for address;
 
@@ -151,10 +147,9 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     }
 
     /// @inheritdoc ICentrifugeRouter
-    function cancelDepositRequest(address vault, address controller, uint256 topUpAmount) external payable protected {
-        validateController(vault, controller);
+    function cancelDepositRequest(address vault, uint256 topUpAmount) external payable protected {
         _pay(topUpAmount);
-        IERC7540Vault(vault).cancelDepositRequest(0, controller);
+        IERC7540Vault(vault).cancelDepositRequest(0, _initiator);
     }
 
     /// @inheritdoc ICentrifugeRouter
@@ -200,10 +195,9 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     }
 
     /// @inheritdoc ICentrifugeRouter
-    function cancelRedeemRequest(address vault, address controller, uint256 topUpAmount) external payable protected {
-        validateController(vault, controller);
+    function cancelRedeemRequest(address vault, uint256 topUpAmount) external payable protected {
         _pay(topUpAmount);
-        IERC7540Vault(vault).cancelRedeemRequest(0, controller);
+        IERC7540Vault(vault).cancelRedeemRequest(0, _initiator);
     }
 
     /// @inheritdoc ICentrifugeRouter
@@ -348,13 +342,5 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     function _pay(uint256 amount) internal {
         require(amount <= address(this).balance, "CentrifugeRouter/insufficient-funds-to-topup");
         gateway.topUp{value: amount}();
-    }
-
-    function validateController(address vault, address controller) internal view {
-        require(
-            controller == msg.sender || IERC7540Vault(vault).isOperator(controller, msg.sender)
-                || IInvestmentManager(poolManager.investmentManager()).isGlobalOperator(address(this), msg.sender),
-            "CentrifugeRouter/invalid-controller"
-        );
     }
 }
