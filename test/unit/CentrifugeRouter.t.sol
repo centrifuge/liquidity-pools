@@ -54,19 +54,22 @@ contract CentrifugeRouterTest is BaseTest {
         address vault_ = deploySimpleVault();
         vm.label(vault_, "vault");
         ERC7540Vault vault = ERC7540Vault(vault_);
-
         uint256 amount = 100 * 10 ** 18;
-        assertEq(erc20.balanceOf(address(escrow)), 0);
-
         erc20.mint(self, amount);
         erc20.approve(address(vault_), amount);
-
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max);
+        uint256 gas = estimateGas();
 
-        uint256 gas = estimateGas() + GAS_BUFFER;
+        vm.expectRevert("CentrifugeRouter/insufficient-funds-to-topup");
+        router.requestDeposit(vault_, amount, self, self, gas);
+
+        vm.expectRevert("Gateway/cannot-topup-with-nothing");
+        router.requestDeposit{value: gas}(vault_, amount, self, self, 0);
+
+        vm.expectRevert("Gateway/not-enough-gas-funds");
+        router.requestDeposit{value: gas}(vault_, amount, self, self, gas - 1);
 
         router.requestDeposit{value: gas}(vault_, amount, self, self, gas);
-
         assertEq(erc20.balanceOf(address(escrow)), amount);
     }
 
@@ -131,6 +134,16 @@ contract CentrifugeRouterTest is BaseTest {
         router.cancelDepositRequest{value: fuel}(vault_, self, fuel);
 
         vm.deal(address(this), 10 ether);
+
+        vm.expectRevert("CentrifugeRouter/insufficient-funds-to-topup");
+        router.cancelDepositRequest(vault_, self, fuel);
+
+        vm.expectRevert("Gateway/cannot-topup-with-nothing");
+        router.cancelDepositRequest{value: fuel}(vault_, self, 0);
+
+        vm.expectRevert("Gateway/not-enough-gas-funds");
+        router.cancelDepositRequest{value: fuel}(vault_, self, fuel - 1);
+
         router.cancelDepositRequest{value: fuel}(vault_, self, fuel);
         assertEq(vault.pendingCancelDepositRequest(0, self), true);
         assertEq(erc20.balanceOf(address(routerEscrow)), amount);
@@ -178,7 +191,7 @@ contract CentrifugeRouterTest is BaseTest {
         erc20.mint(self, amount);
         erc20.approve(address(vault_), amount);
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max);
-        uint256 gas = estimateGas() + GAS_BUFFER;
+        uint256 gas = estimateGas();
         router.requestDeposit{value: gas}(vault_, amount, self, self, gas);
         IERC20 share = IERC20(address(vault.share()));
         centrifugeChain.isFulfilledDepositRequest(
@@ -194,8 +207,17 @@ contract CentrifugeRouterTest is BaseTest {
         assertEq(share.balanceOf(address(self)), amount);
 
         // Then redeem
-        share.approve(vault_, amount);
         share.approve(address(router), amount);
+
+        vm.expectRevert("CentrifugeRouter/insufficient-funds-to-topup");
+        router.requestRedeem(vault_, amount, self, self, gas);
+
+        vm.expectRevert("Gateway/cannot-topup-with-nothing");
+        router.requestRedeem{value: gas}(vault_, amount, self, self, 0);
+
+        vm.expectRevert("Gateway/not-enough-gas-funds");
+        router.requestRedeem{value: gas}(vault_, amount, self, self, gas - 1);
+
         router.requestRedeem{value: gas}(vault_, amount, self, self, gas);
         assertEq(share.balanceOf(address(self)), 0);
     }
@@ -209,7 +231,7 @@ contract CentrifugeRouterTest is BaseTest {
         erc20.mint(self, amount);
         erc20.approve(address(vault_), amount);
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max);
-        uint256 gas = estimateGas() + GAS_BUFFER;
+        uint256 gas = estimateGas();
         router.requestDeposit{value: gas}(vault_, amount, self, self, gas);
         IERC20 share = IERC20(address(vault.share()));
         centrifugeChain.isFulfilledDepositRequest(
@@ -237,6 +259,16 @@ contract CentrifugeRouterTest is BaseTest {
         router.cancelRedeemRequest{value: gas}(vault_, self, gas);
 
         vm.deal(address(this), 10 ether);
+
+        vm.expectRevert("CentrifugeRouter/insufficient-funds-to-topup");
+        router.cancelRedeemRequest(vault_, self, gas);
+
+        vm.expectRevert("Gateway/cannot-topup-with-nothing");
+        router.cancelRedeemRequest{value: gas}(vault_, self, 0);
+
+        vm.expectRevert("Gateway/not-enough-gas-funds");
+        router.cancelRedeemRequest{value: gas}(vault_, self, gas - 1);
+
         router.cancelRedeemRequest{value: gas}(vault_, self, gas);
         assertEq(vault.pendingCancelRedeemRequest(0, self), true);
     }
@@ -327,6 +359,16 @@ contract CentrifugeRouterTest is BaseTest {
         uint256 fuel = estimateGas();
         vm.deal(address(this), 10 ether);
         erc20.approve(address(router), amount);
+
+        vm.expectRevert("CentrifugeRouter/insufficient-funds-to-topup");
+        router.transferAssets(address(erc20), recipient, uint128(amount), fuel);
+
+        vm.expectRevert("Gateway/cannot-topup-with-nothing");
+        router.transferAssets{value: fuel}(address(erc20), recipient, uint128(amount), 0);
+
+        vm.expectRevert("Gateway/not-enough-gas-funds");
+        router.transferAssets{value: fuel}(address(erc20), recipient, uint128(amount), fuel - 1);
+
         router.transferAssets{value: fuel}(address(erc20), recipient, uint128(amount), fuel);
 
         assertEq(erc20.balanceOf(address(escrow)), amount);
@@ -350,6 +392,18 @@ contract CentrifugeRouterTest is BaseTest {
 
         share.approve(address(router), amount);
         uint256 fuel = estimateGas();
+
+        vm.expectRevert("CentrifugeRouter/insufficient-funds-to-topup");
+        router.transferTrancheTokens(vault_, Domain.EVM, destinationChainId, destinationAddress, uint128(amount), fuel);
+
+        vm.expectRevert("Gateway/cannot-topup-with-nothing");
+        router.transferTrancheTokens{value: fuel}(vault_, Domain.EVM, destinationChainId, destinationAddress, uint128(amount), 0);
+
+        vm.expectRevert("Gateway/not-enough-gas-funds");
+        router.transferTrancheTokens{value: fuel}(
+            vault_, Domain.EVM, destinationChainId, destinationAddress, uint128(amount), fuel - 1
+        );
+
         router.transferTrancheTokens{value: fuel}(
             vault_, Domain.EVM, destinationChainId, destinationAddress, uint128(amount), fuel
         );
