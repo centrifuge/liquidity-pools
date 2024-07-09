@@ -348,7 +348,6 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     function _pay(uint256 amount) internal {
         require(amount <= address(this).balance, "CentrifugeRouter/insufficient-funds-to-topup");
         gateway.topUp{value: amount}();
-
     }
 
     function validateController(address vault, address controller) internal view {
