@@ -54,23 +54,23 @@ library MessagesLib {
         /// 18 - Update a user restriction
         UpdateRestriction,
         /// --- Investment Manager ---
-        /// 21 - Increase an investment order by a given amount
+        /// 19 - Increase an investment order by a given amount
         DepositRequest,
-        /// 22 - Increase a Redeem order by a given amount
+        /// 20 - Increase a Redeem order by a given amount
         RedeemRequest,
-        /// 23 - Executed Collect Invest
+        /// 21 - Executed Collect Invest
         FulfilledDepositRequest,
-        /// 24 - Executed Collect Redeem
+        /// 22 - Executed Collect Redeem
         FulfilledRedeemRequest,
-        /// 25 - Cancel an investment order
+        /// 23 - Cancel an investment order
         CancelDepositRequest,
-        /// 26 - Cancel a redeem order
+        /// 24 - Cancel a redeem order
         CancelRedeemRequest,
-        /// 27 - Executed Decrease Invest Order
+        /// 25 - Executed Decrease Invest Order
         FulfilledCancelDepositRequest,
-        /// 28 - Executed Decrease Redeem Order
+        /// 26 - Executed Decrease Redeem Order
         FulfilledCancelRedeemRequest,
-        /// 29 - Request redeem investor
+        /// 27 - Request redeem investor
         TriggerRedeemRequest
     }
 
