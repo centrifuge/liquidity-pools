@@ -734,7 +734,7 @@ contract DepositTest is BaseTest {
 
         uint128 assetId = poolManager.assetToId(address(erc20));
         centrifugeChain.isFulfilledDepositRequest(
-            vault.poolId(), vault.trancheId(), investor.toBytes32(), assetId, uint128(amount), uint128(amount), 0
+            vault.poolId(), vault.trancheId(), investor.toBytes32(), assetId, uint128(amount), uint128(amount)
         );
         vm.expectRevert(bytes("InvestmentManager/tranche-token-amount-is-zero"));
         vault.deposit(amount, investor);
