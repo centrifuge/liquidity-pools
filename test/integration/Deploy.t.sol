@@ -2,6 +2,7 @@
 pragma solidity 0.8.26;
 
 import {InvestmentManager} from "src/InvestmentManager.sol";
+import {RestrictionUpdate} from "src/interfaces/token/IRestrictionManager.sol";
 import {Gateway} from "src/gateway/Gateway.sol";
 import {MockCentrifugeChain} from "test/mocks/MockCentrifugeChain.sol";
 import {Escrow} from "src/Escrow.sol";
@@ -35,14 +36,15 @@ contract DeployTest is Test, Deployer {
     using MathLib for uint256;
 
     uint8 constant PRICE_DECIMALS = 18;
-    address deployer;
-    PermissionlessAdapter adapter;
+    address self;
     address[] accounts;
+    PermissionlessAdapter adapter;
     Guardian fakeGuardian;
+    ERC20 erc20;
 
     function setUp() public {
-        deployer = address(this);
-        deploy(deployer);
+        self = address(this);
+        deploy(self);
         adapter = new PermissionlessAdapter(address(gateway));
         wire(address(adapter));
 
@@ -55,6 +57,8 @@ contract DeployTest is Test, Deployer {
         fakeGuardian = new Guardian(adminSafe, address(root), address(gateway));
 
         removeDeployerAccess(address(adapter), address(this));
+
+        erc20 = newErc20("Test", "TEST", 6);
     }
 
     function testDeployerHasNoAccess() public {
@@ -62,17 +66,17 @@ contract DeployTest is Test, Deployer {
         root.relyContract(address(investmentManager), address(1));
 
         // checking in the same order as they are deployed
-        assertEq(escrow.wards(deployer), 0);
-        assertEq(routerEscrow.wards(deployer), 0);
-        assertEq(root.wards(deployer), 0);
-        assertEq(WardLike(vaultFactory).wards(deployer), 0);
-        assertEq(WardLike(restrictionManager).wards(deployer), 0);
-        assertEq(WardLike(trancheFactory).wards(deployer), 0);
-        assertEq(investmentManager.wards(deployer), 0);
-        assertEq(poolManager.wards(deployer), 0);
-        assertEq(gasService.wards(deployer), 0);
-        assertEq(gateway.wards(deployer), 0);
-        assertEq(adapter.wards(deployer), 0);
+        assertEq(escrow.wards(self), 0);
+        assertEq(routerEscrow.wards(self), 0);
+        assertEq(root.wards(self), 0);
+        assertEq(WardLike(vaultFactory).wards(self), 0);
+        assertEq(WardLike(restrictionManager).wards(self), 0);
+        assertEq(WardLike(trancheFactory).wards(self), 0);
+        assertEq(investmentManager.wards(self), 0);
+        assertEq(poolManager.wards(self), 0);
+        assertEq(gasService.wards(self), 0);
+        assertEq(gateway.wards(self), 0);
+        assertEq(adapter.wards(self), 0);
     }
 
     function testAdminSetup(address nonAdmin, address nonPauser) public {
@@ -137,126 +141,144 @@ contract DeployTest is Test, Deployer {
         assertTrue(root.endorsed(address(router)));
     }
 
-    // deal(address(erc20), self, amount);
-    // deal(address(gateway), 10 ether);
+    function testDeployAndInvestRedeem(
+        uint64 poolId,
+        string memory tokenName,
+        string memory tokenSymbol,
+        bytes16 trancheId,
+        uint8 decimals
+    ) public {
+        vm.assume(decimals <= 18 && decimals > 0);
+        uint128 price = uint128(2 * 10 ** PRICE_DECIMALS); //TODO: fuzz price
+        uint256 amount = 1000 * 10 ** erc20.decimals();
+        uint64 validUntil = uint64(block.timestamp + 1000 days);
+        address vault_ =
+            deployPoolAndTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, address(restrictionManager));
+        ERC7540Vault vault = ERC7540Vault(vault_);
 
-    //         deal(address(erc20), self, amount);
+        deal(address(erc20), self, amount);
 
-    //         vm.prank(address(gateway));
-    //         HookLike(tranche.hook()).updateMember(self, validUntil);
+        vm.prank(address(gateway));
 
-    //         depositMint(poolId, trancheId, price, amount, vault);
-    //         amount = tranche.balanceOf(self);
+        poolManager.updateRestriction(
+            poolId,
+            trancheId,
+            abi.encodePacked(uint8(RestrictionUpdate.UpdateMember), bytes32(bytes20(self)), validUntil)
+        );
 
-    //         redeemWithdraw(poolId, trancheId, price, amount, vault);
-    //     }
+        depositMint(poolId, trancheId, price, amount, vault);
+        Tranche trancheToken = Tranche(address(vault.share()));
+        amount = trancheToken.balanceOf(self);
 
-    //     function depositMint(uint64 poolId, bytes16 trancheId, uint128 price, uint256 amount, ERC7540Vault vault)
-    // public
-    // {
-    //         erc20.approve(address(vault), amount); // add allowance
-    //         vault.requestDeposit(amount, self, self, "");
+        redeemWithdraw(poolId, trancheId, price, amount, vault);
+    }
 
-    //         // ensure funds are locked in escrow
-    //         assertEq(erc20.balanceOf(address(escrow)), amount);
-    //         assertEq(erc20.balanceOf(self), 0);
+    function depositMint(uint64 poolId, bytes16 trancheId, uint128 price, uint256 amount, ERC7540Vault vault) public {
+        erc20.approve(address(vault), amount); // add allowance
+        vault.requestDeposit(amount, self, self);
 
-    //         // trigger executed collectInvest
-    //         uint128 _assetId = poolManager.assetToId(address(erc20)); // retrieve assetId
+        // ensure funds are locked in escrow
+        assertEq(erc20.balanceOf(address(escrow)), amount);
+        assertEq(erc20.balanceOf(self), 0);
 
-    //         Tranche tranche = Tranche(address(vault.share()));
-    //         uint128 shares = (
-    //             amount.mulDiv(
-    //                 10 ** (PRICE_DECIMALS - erc20.decimals() + tranche.decimals()), price, MathLib.Rounding.Down
-    //             )
-    //         ).toUint128();
+        // trigger executed collectInvest
+        uint128 _assetId = poolManager.assetToId(address(erc20)); // retrieve assetId
 
-    //         // Assume an epoch execution happens on cent chain
-    //         // Assume a bot calls collectInvest for this user on cent chain
+        Tranche trancheToken = Tranche(address(vault.share()));
+        uint128 shares = (
+            amount.mulDiv(
+                10 ** (PRICE_DECIMALS - erc20.decimals() + trancheToken.decimals()), price, MathLib.Rounding.Down
+            )
+        ).toUint128();
 
-    //         vm.prank(address(gateway));
-    //         investmentManager.fulfillDepositRequest(poolId, trancheId, self, _assetId, uint128(amount), shares, 0);
+        // Assume an epoch execution happens on cent chain
+        // Assume a bot calls collectInvest for this user on cent chain
 
-    // uint256 div = 2;
-    // vault.deposit(amount / div, self, self);
+        vm.prank(address(gateway));
+        investmentManager.fulfillDepositRequest(poolId, trancheId, self, _assetId, uint128(amount), shares);
 
-    //         uint256 div = 2;
-    //         vault.deposit(amount / div, self);
+        assertEq(vault.maxMint(self), shares);
+        assertEq(vault.maxDeposit(self), amount);
+        assertEq(trancheToken.balanceOf(address(escrow)), shares);
+        assertEq(erc20.balanceOf(self), 0);
 
-    //         assertEq(tranche.balanceOf(self), shares / div);
-    //         assertEq(tranche.balanceOf(address(escrow)), shares - shares / div);
-    //         assertEq(vault.maxMint(self), shares - shares / div);
-    //         assertEq(vault.maxDeposit(self), amount - amount / div); // max deposit
+        uint256 div = 2;
+        vault.deposit(amount / div, self);
 
-    //         vault.mint(vault.maxMint(self), self);
+        assertEq(trancheToken.balanceOf(self), shares / div);
+        assertEq(trancheToken.balanceOf(address(escrow)), shares - shares / div);
+        assertEq(vault.maxMint(self), shares - shares / div);
+        assertEq(vault.maxDeposit(self), amount - amount / div); // max deposit
 
-    //         assertEq(tranche.balanceOf(self), shares);
-    //         assertTrue(tranche.balanceOf(address(escrow)) <= 1);
-    //         assertTrue(vault.maxMint(self) <= 1);
-    //     }
+        vault.mint(vault.maxMint(self), self);
 
-    //     function redeemWithdraw(uint64 poolId, bytes16 trancheId, uint128 price, uint256 amount, ERC7540Vault vault)
-    //         public
-    //     {
-    //         vault.requestRedeem(amount, address(this), address(this), "");
+        assertEq(trancheToken.balanceOf(self), shares);
+        assertTrue(trancheToken.balanceOf(address(escrow)) <= 1);
+        assertTrue(vault.maxMint(self) <= 1);
+    }
 
-    //         // redeem
-    //         Tranche tranche = Tranche(address(vault.share()));
-    //         uint128 _assetId = poolManager.assetToId(address(erc20)); // retrieve assetId
-    //         uint128 assets = (
-    //             amount.mulDiv(price, 10 ** (18 - erc20.decimals() + tranche.decimals()), MathLib.Rounding.Down)
-    //         ).toUint128();
-    //         // Assume an epoch execution happens on cent chain
-    //         // Assume a bot calls collectRedeem for this user on cent chain
-    //         vm.prank(address(gateway));
-    //         investmentManager.fulfillRedeemRequest(poolId, trancheId, self, _assetId, assets, uint128(amount));
+    function redeemWithdraw(uint64 poolId, bytes16 trancheId, uint128 price, uint256 amount, ERC7540Vault vault)
+        public
+    {
+        vault.requestRedeem(amount, address(this), address(this));
 
-    //         assertEq(vault.maxWithdraw(self), assets);
-    //         assertEq(vault.maxRedeem(self), amount);
-    //         assertEq(tranche.balanceOf(address(escrow)), 0);
+        // redeem
+        Tranche trancheToken = Tranche(address(vault.share()));
+        uint128 _assetId = poolManager.assetToId(address(erc20)); // retrieve assetId
+        uint128 assets = (
+            amount.mulDiv(price, 10 ** (18 - erc20.decimals() + trancheToken.decimals()), MathLib.Rounding.Down)
+        ).toUint128();
+        // Assume an epoch execution happens on cent chain
+        // Assume a bot calls collectRedeem for this user on cent chain
+        vm.prank(address(gateway));
+        investmentManager.fulfillRedeemRequest(poolId, trancheId, self, _assetId, assets, uint128(amount));
 
-    //         uint128 div = 2;
-    //         vault.redeem(amount / div, self, self);
-    //         assertEq(tranche.balanceOf(self), 0);
-    //         assertEq(tranche.balanceOf(address(escrow)), 0);
-    //         assertEq(erc20.balanceOf(self), assets / div);
-    //         assertEq(vault.maxWithdraw(self), assets / div);
-    //         assertEq(vault.maxRedeem(self), amount / div);
+        assertEq(vault.maxWithdraw(self), assets);
+        assertEq(vault.maxRedeem(self), amount);
+        assertEq(trancheToken.balanceOf(address(escrow)), 0);
 
-    //         vault.withdraw(vault.maxWithdraw(self), self, self);
-    //         assertEq(tranche.balanceOf(self), 0);
-    //         assertEq(tranche.balanceOf(address(escrow)), 0);
-    //         assertEq(erc20.balanceOf(self), assets);
-    //         assertEq(vault.maxWithdraw(self), 0);
-    //         assertEq(vault.maxRedeem(self), 0);
-    //     }
+        uint128 div = 2;
+        vault.redeem(amount / div, self, self);
+        assertEq(trancheToken.balanceOf(self), 0);
+        assertEq(trancheToken.balanceOf(address(escrow)), 0);
+        assertEq(erc20.balanceOf(self), assets / div);
+        assertEq(vault.maxWithdraw(self), assets / div);
+        assertEq(vault.maxRedeem(self), amount / div);
 
-    //     // helpers
+        vault.withdraw(vault.maxWithdraw(self), self, self);
+        assertEq(trancheToken.balanceOf(self), 0);
+        assertEq(trancheToken.balanceOf(address(escrow)), 0);
+        assertEq(erc20.balanceOf(self), assets);
+        assertEq(vault.maxWithdraw(self), 0);
+        assertEq(vault.maxRedeem(self), 0);
+    }
 
-    //     function deployPoolAndTranche(
-    //         uint64 poolId,
-    //         bytes16 trancheId,
-    //         string memory tokenName,
-    //         string memory tokenSymbol,
-    //         uint8 decimals,
-    //         address hook
-    //     ) public returns (address) {
-    //         vm.startPrank(address(gateway));
-    //         poolManager.addPool(poolId);
-    //         poolManager.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, restrictionSet);
-    //         poolManager.addAsset(1, address(erc20));
-    //         poolManager.allowAsset(poolId, 1);
-    //         vm.stopPrank();
+    // helpers
 
-    //         poolManager.deployTranche(poolId, trancheId);
-    //         address vault = poolManager.deployVault(poolId, trancheId, address(erc20));
-    //         return vault;
-    //     }
+    function deployPoolAndTranche(
+        uint64 poolId,
+        bytes16 trancheId,
+        string memory tokenName,
+        string memory tokenSymbol,
+        uint8 decimals,
+        address hook
+    ) public returns (address) {
+        vm.startPrank(address(gateway));
+        poolManager.addPool(poolId);
+        poolManager.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, hook);
+        poolManager.addAsset(1, address(erc20));
+        poolManager.allowAsset(poolId, 1);
+        vm.stopPrank();
 
-    //     function newErc20(string memory name, string memory symbol, uint8 decimals) internal returns (ERC20) {
-    //         ERC20 asset = new ERC20(decimals);
-    //         asset.file("name", name);
-    //         asset.file("symbol", symbol);
-    //         return asset;
-    //     }
+        poolManager.deployTranche(poolId, trancheId);
+        address vault = poolManager.deployVault(poolId, trancheId, address(erc20));
+        return vault;
+    }
+
+    function newErc20(string memory name, string memory symbol, uint8 decimals) internal returns (ERC20) {
+        ERC20 asset = new ERC20(decimals);
+        asset.file("name", name);
+        asset.file("symbol", symbol);
+        return asset;
+    }
 }
