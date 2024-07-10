@@ -16,7 +16,7 @@ contract TransferProxy is ITransferProxy {
 
     /// @inheritdoc ITransferProxy
     function transfer(address asset, uint128 amount) external {
-        poolManager.transfer(asset, destination, amount);
+        poolManager.transferAssets(asset, destination, amount);
     }
 }
 
