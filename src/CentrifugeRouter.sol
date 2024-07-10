@@ -154,8 +154,8 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
                 || (controller == receiver && IERC7540Vault(vault).isOperator(controller, address(this))),
             "CentrifugeRouter/invalid-sender"
         );
-        uint256 maxDeposit = IERC7540Vault(vault).maxDeposit(controller);
-        IERC7540Vault(vault).deposit(maxDeposit, receiver, controller);
+        uint256 maxMint = IERC7540Vault(vault).maxMint(controller);
+        IERC7540Vault(vault).mint(maxMint, receiver, controller);
     }
 
     /// @inheritdoc ICentrifugeRouter
@@ -196,15 +196,15 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
             && IERC7540Vault(vault).isOperator(controller, address(this));
 
         require(controller == initiator || permissionlesslyClaiming, "CentrifugeRouter/invalid-sender");
-        uint256 maxRedeem = IERC7540Vault(vault).maxRedeem(controller);
+        uint256 maxWithdraw = IERC7540Vault(vault).maxWithdraw(controller);
 
         (address asset, bool isWrapper) = poolManager.getVaultAsset(vault);
         if (isWrapper && permissionlesslyClaiming) {
             // Auto-unwrap if permissionlesly claiming for another controller
-            uint256 assets = IERC7540Vault(vault).redeem(maxRedeem, address(this), controller);
-            unwrap(asset, assets, receiver);
+            IERC7540Vault(vault).withdraw(maxWithdraw, address(this), controller);
+            unwrap(asset, maxWithdraw, receiver);
         } else {
-            IERC7540Vault(vault).redeem(maxRedeem, receiver, controller);
+            IERC7540Vault(vault).withdraw(maxWithdraw, receiver, controller);
         }
     }
 
