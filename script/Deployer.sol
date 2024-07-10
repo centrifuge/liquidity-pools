@@ -49,7 +49,7 @@ contract Deployer is Script {
         restrictionManager = address(new RestrictionManager{salt: salt}(address(root), deployer));
         trancheFactory = address(new TrancheFactory{salt: salt}(address(root), deployer));
         investmentManager = new InvestmentManager(address(root), address(escrow));
-        poolManager = new PoolManager(address(escrow), vaultFactory, trancheFactory);
+        poolManager = new PoolManager(address(escrow), vaultFactory, trancheFactory, address(restrictionManager));
         transferProxyFactory = address(new TransferProxyFactory{salt: salt}(address(poolManager)));
 
         // TODO THESE VALUES NEEDS TO BE CHECKED

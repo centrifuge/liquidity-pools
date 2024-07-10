@@ -38,6 +38,7 @@ contract PoolManager is Auth, IPoolManager {
     uint8 internal constant MAX_DECIMALS = 18;
 
     IEscrow public immutable escrow;
+    address public immutable restrictionManager;
 
     IGateway public gateway;
     address public investmentManager;
@@ -51,10 +52,11 @@ contract PoolManager is Auth, IPoolManager {
     mapping(address => uint128 assetId) public assetToId;
     mapping(uint64 poolId => mapping(bytes16 => UndeployedTranche)) public undeployedTranches;
 
-    constructor(address escrow_, address vaultFactory_, address trancheFactory_) {
+    constructor(address escrow_, address vaultFactory_, address trancheFactory_, address restrictionManager_) {
         escrow = IEscrow(escrow_);
         vaultFactory = ERC7540VaultFactory(vaultFactory_);
         trancheFactory = TrancheFactoryLike(trancheFactory_);
+        restrictionManager = restrictionManager_;
 
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
@@ -138,7 +140,7 @@ contract PoolManager is Auth, IPoolManager {
                 message.slice(25, 128).bytes128ToString(),
                 message.toBytes32(153).toString(),
                 message.toUint8(185),
-                message.toAddress(186)
+                restrictionManager
             );
         } else if (call == MessagesLib.Call.UpdateRestriction) {
             updateRestriction(message.toUint64(1), message.toBytes16(9), message.slice(25, message.length - 25));
