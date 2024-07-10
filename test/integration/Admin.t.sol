@@ -7,6 +7,7 @@ import {CastLib} from "src/libraries/CastLib.sol";
 
 contract AdminTest is BaseTest {
     using CastLib for *;
+
     address[] threeMockAdapters;
 
     function setUp() public override {
