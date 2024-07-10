@@ -23,8 +23,7 @@ contract Gateway is Auth, IGateway {
     using BytesLib for bytes;
     using TransientStorage for bytes32;
 
-    // The slot holding the quota state, transiently. bytes32(uint256(keccak256("quota")) - 1)
-    bytes32 public constant QUOTA_SLOT = 0x1b6c99859b82987bd128ac509391b5af30e732c101d06c7836845a4a5b8e14f6;
+    bytes32 public constant QUOTA_SLOT = bytes32(uint256(keccak256("quota")) - 1);
 
     uint8 public constant MAX_ADAPTER_COUNT = 8;
     uint8 public constant PRIMARY_ADAPTER_ID = 1;
