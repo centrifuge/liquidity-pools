@@ -4,8 +4,11 @@ pragma solidity 0.8.26;
 import {Test} from "forge-std/Test.sol";
 import {GasService} from "src/gateway/GasService.sol";
 import {MessagesLib} from "src/libraries/MessagesLib.sol";
+import {BytesLib} from "src/libraries/BytesLib.sol";
 
 contract GasServiceTest is Test {
+    using BytesLib for bytes;
+
     uint64 constant MESSAGE_COST = 40000000000000000;
     uint64 constant PROOF_COST = 20000000000000000;
     uint128 constant GAS_PRICE = 2500000000000000000;
@@ -58,6 +61,7 @@ contract GasServiceTest is Test {
 
     function testEstimateFunction(bytes calldata message) public {
         vm.assume(message.length > 1);
+        vm.assume(message.toUint8(0) != uint8(MessagesLib.Call.MessageProof));
         bytes memory proof = abi.encodePacked(uint8(MessagesLib.Call.MessageProof), keccak256(message));
 
         uint256 messageCost = service.estimate(message);
