@@ -200,7 +200,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
 
         (address asset, bool isWrapper) = poolManager.getVaultAsset(vault);
         if (isWrapper && permissionlesslyClaiming) {
-            // Auto-unwrap if permissionlesly claiming for another controller
+            // Auto-unwrap if permissionlessly claiming for another controller
             IERC7540Vault(vault).withdraw(maxWithdraw, address(this), controller);
             unwrap(asset, maxWithdraw, receiver);
         } else {
