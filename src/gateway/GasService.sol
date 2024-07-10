@@ -21,7 +21,7 @@ contract GasService is IGasService, Auth {
     /// @inheritdoc IGasService
     uint256 public tokenPrice;
 
-    constructor(uint64 proofCost_, uint64 messageCost_, uint128 gasPrice_, uint256 tokenPrice_) {
+    constructor(uint64 messageCost_, uint64 proofCost_, uint128 gasPrice_, uint256 tokenPrice_) {
         messageCost = messageCost_;
         proofCost = proofCost_;
         gasPrice = gasPrice_;
