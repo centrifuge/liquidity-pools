@@ -110,7 +110,6 @@ contract DeployTest is Test, Deployer {
         assertEq(WardLike(restrictionManager).wards(root_), 1);
         assertEq(WardLike(trancheFactory).wards(root_), 1);
 
-        // TODO VERIFY IF THIS IS NEEDED
         assertEq(root.wards(gateway_), 1);
         assertEq(poolManager.wards(gateway_), 1);
         assertEq(investmentManager.wards(gateway_), 1);
@@ -119,7 +118,6 @@ contract DeployTest is Test, Deployer {
         assertEq(root.wards(guardian_), 1);
 
         assertEq(routerEscrow.wards(address(router)), 1);
-        // TODO VERIFY IF THIS IS NEEDED
         assertEq(investmentManager.wards(vaultFactory), 1);
     }
 
