@@ -322,6 +322,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
                 }
             }
         }
+        INITIATOR_SLOT.tstore(0);
     }
 
     // --- View Methods ---
