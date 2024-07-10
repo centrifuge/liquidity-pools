@@ -9,7 +9,7 @@ interface ERC20Like {
 }
 
 contract MockPoolManager is Mock {
-    function transfer(address currency, bytes32 recipient, uint128 amount) external {
+    function transferAssets(address currency, bytes32 recipient, uint128 amount) external {
         values_address["currency"] = currency;
         values_bytes32["recipient"] = recipient;
         values_uint128["amount"] = amount;

@@ -1,16 +1,22 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.26;
 
-import "test/BaseTest.sol";
+import "forge-std/Test.sol";
+import {ERC20} from "src/token/ERC20.sol";
+import {Gateway} from "src/gateway/Gateway.sol";
 import {MockGateway} from "test/mocks/MockGateway.sol";
 import {MockAdapter} from "test/mocks/MockAdapter.sol";
 import {MockRoot} from "test/mocks/MockRoot.sol";
 import {MockManager} from "test/mocks/MockManager.sol";
 import {MockAxelarGasService} from "test/mocks/MockAxelarGasService.sol";
+import {MockGasService} from "test/mocks/MockGasService.sol";
 import {CastLib} from "src/libraries/CastLib.sol";
+import {MessagesLib} from "src/libraries/MessagesLib.sol";
 
 contract GatewayTest is Test {
     using CastLib for *;
+
+    uint256 constant INITIAL_BALANCE = 1 ether;
 
     address self;
 
@@ -37,7 +43,7 @@ contract GatewayTest is Test {
         gateway = new Gateway(address(root), address(poolManager), address(investmentManager), address(gasService));
 
         gasService.setReturn("shouldRefuel", true);
-        vm.deal(address(gateway), 1 ether);
+        vm.deal(address(gateway), INITIAL_BALANCE);
 
         adapter1 = new MockAdapter(address(gateway));
         vm.label(address(adapter1), "MockAdapter1");
@@ -219,11 +225,17 @@ contract GatewayTest is Test {
     }
 
     function testUseBeforeInitialization() public {
+        bytes memory message = abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1));
+
         vm.expectRevert(bytes("Gateway/invalid-adapter"));
-        gateway.handle(abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1)));
+        gateway.handle(message);
 
         vm.expectRevert(bytes("Gateway/invalid-manager"));
-        gateway.send(abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1)), address(this));
+        gateway.send(message, address(this));
+
+        vm.expectRevert(bytes("Gateway/adapters-not-initialized"));
+        vm.prank(address(investmentManager));
+        gateway.send(message, address(this));
     }
 
     function testIncomingAggregatedMessages() public {
@@ -597,7 +609,7 @@ contract GatewayTest is Test {
         bytes memory message = abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1));
 
         uint256 balanceBeforeTx = address(gateway).balance;
-        assertEq(balanceBeforeTx, 1 ether);
+        assertEq(balanceBeforeTx, INITIAL_BALANCE);
         assertEq(_quota(), 0);
 
         gasService.setReturn("shouldRefuel", false);
@@ -606,7 +618,7 @@ contract GatewayTest is Test {
         vm.prank(address(investmentManager));
         gateway.send(message, self);
 
-        assertEq(balanceBeforeTx, 1 ether);
+        assertEq(balanceBeforeTx, INITIAL_BALANCE);
         assertEq(_quota(), 0);
     }
 
@@ -622,7 +634,7 @@ contract GatewayTest is Test {
         assertEq(poolManager.received(message), 0);
 
         vm.expectRevert(bytes("Gateway/message-recovery-not-initiated"));
-        gateway.executeMessageRecovery(message);
+        gateway.executeMessageRecovery(address(adapter1), message);
 
         // Initiate recovery
         _send(
@@ -633,11 +645,11 @@ contract GatewayTest is Test {
         );
 
         vm.expectRevert(bytes("Gateway/challenge-period-has-not-ended"));
-        gateway.executeMessageRecovery(message);
+        gateway.executeMessageRecovery(address(adapter1), message);
 
         // Execute recovery
         vm.warp(block.timestamp + gateway.RECOVERY_CHALLENGE_PERIOD());
-        gateway.executeMessageRecovery(message);
+        gateway.executeMessageRecovery(address(adapter1), message);
         assertEq(poolManager.received(message), 1);
     }
 
@@ -669,7 +681,7 @@ contract GatewayTest is Test {
         assertEq(investmentManager.received(message), 0);
 
         vm.expectRevert(bytes("Gateway/message-recovery-not-initiated"));
-        gateway.executeMessageRecovery(proof);
+        gateway.executeMessageRecovery(address(adapter3), proof);
 
         // Initiate recovery
         _send(
@@ -680,11 +692,11 @@ contract GatewayTest is Test {
         );
 
         vm.expectRevert(bytes("Gateway/challenge-period-has-not-ended"));
-        gateway.executeMessageRecovery(proof);
+        gateway.executeMessageRecovery(address(adapter3), proof);
         vm.warp(block.timestamp + gateway.RECOVERY_CHALLENGE_PERIOD());
 
         // Execute recovery
-        gateway.executeMessageRecovery(proof);
+        gateway.executeMessageRecovery(address(adapter3), proof);
         assertEq(poolManager.received(message), 1);
     }
 
@@ -711,7 +723,7 @@ contract GatewayTest is Test {
 
         gateway.file("adapters", oneMockAdapter);
         vm.expectRevert(bytes("Gateway/invalid-adapter"));
-        gateway.executeMessageRecovery(proof);
+        gateway.executeMessageRecovery(address(adapter3), proof);
         gateway.file("adapters", threeMockAdapters);
     }
 
@@ -735,7 +747,7 @@ contract GatewayTest is Test {
         );
 
         vm.expectRevert(bytes("Gateway/challenge-period-has-not-ended"));
-        gateway.executeMessageRecovery(proof);
+        gateway.executeMessageRecovery(address(adapter3), proof);
 
         // Dispute recovery
         _send(
@@ -747,7 +759,7 @@ contract GatewayTest is Test {
 
         // Check that recovery is not possible anymore
         vm.expectRevert(bytes("Gateway/message-recovery-not-initiated"));
-        gateway.executeMessageRecovery(proof);
+        gateway.executeMessageRecovery(address(adapter3), proof);
         assertEq(poolManager.received(message), 0);
     }
 
@@ -772,7 +784,7 @@ contract GatewayTest is Test {
         vm.warp(block.timestamp + gateway.RECOVERY_CHALLENGE_PERIOD());
 
         vm.expectRevert(bytes("Gateway/no-recursive-recovery-allowed"));
-        gateway.executeMessageRecovery(message);
+        gateway.executeMessageRecovery(address(adapter1), message);
         assertEq(poolManager.received(message), 0);
     }
 
@@ -821,6 +833,32 @@ contract GatewayTest is Test {
         for (uint256 j = 0; j < numParallelDuplicateMessages; j++) {
             assertEq(poolManager.received(message), numParallelDuplicateMessages);
         }
+    }
+
+    function testRecoverTokens() public {
+        address ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+        address receiver = makeAddr("receiver");
+
+        assertEq(address(gateway).balance, INITIAL_BALANCE);
+        assertEq(receiver.balance, 0);
+
+        vm.expectRevert(bytes("Auth/not-authorized"));
+        vm.prank(makeAddr("UnauthorizedCaller"));
+        gateway.recoverTokens(ETH, receiver, INITIAL_BALANCE);
+
+        gateway.recoverTokens(ETH, receiver, INITIAL_BALANCE);
+        assertEq(address(gateway).balance, 0);
+        assertEq(receiver.balance, INITIAL_BALANCE);
+
+        uint256 amount = 200 gwei;
+        ERC20 token = new ERC20(18);
+        token.mint(address(gateway), amount);
+        assertEq(token.balanceOf(address(gateway)), amount);
+        assertEq(token.balanceOf(receiver), 0);
+
+        gateway.recoverTokens(address(token), receiver, amount);
+        assertEq(token.balanceOf(address(gateway)), 0);
+        assertEq(token.balanceOf(receiver), amount);
     }
 
     function assertVotes(bytes memory message, uint16 r1, uint16 r2, uint16 r3) internal {

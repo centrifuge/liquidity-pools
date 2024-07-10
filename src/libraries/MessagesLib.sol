@@ -74,21 +74,7 @@ library MessagesLib {
         TriggerRedeemRequest
     }
 
-    enum Domain {
-        Centrifuge,
-        EVM
-    }
-
     function messageType(bytes memory _msg) internal pure returns (Call _call) {
         _call = Call(_msg.toUint8(0));
-    }
-
-    // Utils
-    function formatDomain(Domain domain) internal pure returns (bytes9) {
-        return bytes9(bytes1(uint8(domain)));
-    }
-
-    function formatDomain(Domain domain, uint64 chainId) internal pure returns (bytes9) {
-        return bytes9(BytesLib.slice(abi.encodePacked(uint8(domain), chainId), 0, 9));
     }
 }

@@ -46,7 +46,6 @@ contract OperatorTest is BaseTest {
             bytes32(bytes20(investor)),
             defaultAssetId,
             uint128(amount),
-            uint128(amount),
             uint128(amount)
         );
 

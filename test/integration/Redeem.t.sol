@@ -186,7 +186,7 @@ contract RedeemTest is BaseTest {
         vault.requestRedeem(amount, address(this), address(this));
 
         centrifugeChain.isFulfilledCancelRedeemRequest(
-            vault.poolId(), vault.trancheId(), self.toBytes32(), defaultAssetId, uint128(amount), uint128(amount)
+            vault.poolId(), vault.trancheId(), self.toBytes32(), defaultAssetId, uint128(amount)
         );
 
         assertEq(tranche.balanceOf(address(escrow)), amount);
@@ -251,6 +251,43 @@ contract RedeemTest is BaseTest {
         vm.prank(investor);
         vault.redeem(amount, investor, investor);
         assertApproxEqAbs(erc20.balanceOf(investor), investorBalanceBefore + amount, 1);
+    }
+
+    function testTriggerRedeemRequestTokensWithCancellation(uint128 amount) public {
+        amount = uint128(bound(amount, 2, (MAX_UINT128 - 1)));
+        vm.assume(amount % 2 == 0);
+
+        address vault_ = deploySimpleVault();
+        ERC7540Vault vault = ERC7540Vault(vault_);
+        ITranche tranche = ITranche(address(vault.share()));
+        deposit(vault_, investor, amount, false); // request and execute deposit, but don't claim
+        uint256 investorBalanceBefore = erc20.balanceOf(investor);
+        assertEq(vault.maxMint(investor), amount);
+        uint64 poolId = vault.poolId();
+        bytes16 trancheId = vault.trancheId();
+
+        vm.prank(investor);
+        vault.mint(amount, investor); // investor mints half of the amount
+
+        assertApproxEqAbs(tranche.balanceOf(investor), amount, 1);
+        assertApproxEqAbs(tranche.balanceOf(address(escrow)), 0, 1);
+        assertApproxEqAbs(vault.maxMint(investor), 0, 1);
+
+        // investor submits request to redeem half the amount
+        vm.prank(investor);
+        vault.requestRedeem(amount / 2, investor, investor);
+        assertEq(tranche.balanceOf(address(escrow)), amount / 2);
+        assertEq(tranche.balanceOf(investor), amount / 2);
+        // investor cancels outstanding cancellation request
+        vm.prank(investor);
+        vault.cancelRedeemRequest(0, investor);
+        assertEq(vault.pendingCancelRedeemRequest(0, investor), true);
+        // redeem request can still be triggered for the other half of the investors tokens even though the investor has
+        // an outstanding cancellation
+        centrifugeChain.triggerIncreaseRedeemOrder(poolId, trancheId, investor, defaultAssetId, amount / 2);
+        assertApproxEqAbs(tranche.balanceOf(investor), 0, 1);
+        assertApproxEqAbs(tranche.balanceOf(address(escrow)), amount, 1);
+        assertEq(vault.maxMint(investor), 0);
     }
 
     function testTriggerRedeemRequestTokensUnmintedTokensInEscrow(uint128 amount) public {
@@ -327,7 +364,7 @@ contract RedeemTest is BaseTest {
 
         uint128 shares = 100000000;
         centrifugeChain.isFulfilledDepositRequest(
-            poolId, trancheId, bytes32(bytes20(self)), _assetId, uint128(investmentAmount), shares, shares
+            poolId, trancheId, bytes32(bytes20(self)), _assetId, uint128(investmentAmount), shares
         );
 
         (, uint256 depositPrice,,,,,,,,) = investmentManager.investments(address(vault), self);

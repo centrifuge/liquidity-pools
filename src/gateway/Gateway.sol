@@ -6,6 +6,7 @@ import {ArrayLib} from "src/libraries/ArrayLib.sol";
 import {BytesLib} from "src/libraries/BytesLib.sol";
 import {MessagesLib} from "src/libraries/MessagesLib.sol";
 import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
+import {TransientStorage} from "src/libraries/TransientStorage.sol";
 import {IGateway, IMessageHandler} from "src/interfaces/gateway/IGateway.sol";
 import {IRoot} from "src/interfaces/IRoot.sol";
 import {IGasService} from "src/interfaces/gateway/IGasService.sol";
@@ -20,6 +21,9 @@ import {IAdapter} from "src/interfaces/gateway/IAdapter.sol";
 contract Gateway is Auth, IGateway {
     using ArrayLib for uint16[8];
     using BytesLib for bytes;
+    using TransientStorage for bytes32;
+
+    bytes32 public constant QUOTA_SLOT = bytes32(uint256(keccak256("quota")) - 1);
 
     uint8 public constant MAX_ADAPTER_COUNT = 8;
     uint8 public constant PRIMARY_ADAPTER_ID = 1;
@@ -34,10 +38,8 @@ contract Gateway is Auth, IGateway {
     address[] public adapters;
     mapping(address adapter => Adapter) public activeAdapters;
     mapping(bytes32 messageHash => Message) public messages;
-    mapping(bytes32 messageHash => Recovery) public recoveries;
     mapping(uint8 messageId => address manager) messageHandlers;
-
-    uint256 quota;
+    mapping(address router => mapping(bytes32 messageHash => uint256 timestamp)) public recoveries;
 
     constructor(address root_, address poolManager_, address investmentManager_, address gasService_) {
         root = IRoot(root_);
@@ -121,12 +123,12 @@ contract Gateway is Auth, IGateway {
     // --- Incoming ---
     /// @inheritdoc IGateway
     function handle(bytes calldata message) external pauseable {
-        Adapter memory adapter = activeAdapters[msg.sender];
-        require(adapter.id != 0, "Gateway/invalid-adapter");
-        _handle(message, msg.sender, adapter, false);
+        _handle(message, msg.sender, false);
     }
 
-    function _handle(bytes calldata payload, address adapterAddr, Adapter memory adapter, bool isRecovery) internal {
+    function _handle(bytes calldata payload, address adapter_, bool isRecovery) internal {
+        Adapter memory adapter = activeAdapters[adapter_];
+        require(adapter.id != 0, "Gateway/invalid-adapter");
         uint8 call = payload.toUint8(0);
         if (
             call == uint8(MessagesLib.Call.InitiateMessageRecovery)
@@ -141,7 +143,7 @@ contract Gateway is Auth, IGateway {
         if (adapter.quorum == 1 && !isMessageProof) {
             // Special case for gas efficiency
             _dispatch(payload);
-            emit ExecuteMessage(payload, adapterAddr);
+            emit ExecuteMessage(payload, adapter_);
             return;
         }
 
@@ -150,11 +152,11 @@ contract Gateway is Auth, IGateway {
         if (isMessageProof) {
             require(isRecovery || adapter.id != PRIMARY_ADAPTER_ID, "Gateway/non-proof-adapter");
             messageHash = payload.toBytes32(1);
-            emit HandleProof(messageHash, adapterAddr);
+            emit HandleProof(messageHash, adapter_);
         } else {
             require(isRecovery || adapter.id == PRIMARY_ADAPTER_ID, "Gateway/non-message-adapter");
             messageHash = keccak256(payload);
-            emit HandleMessage(payload, adapterAddr);
+            emit HandleMessage(payload, adapter_);
         }
 
         Message storage state = messages[messageHash];
@@ -212,43 +214,39 @@ contract Gateway is Auth, IGateway {
     }
 
     function _handleRecovery(bytes memory payload) internal {
+        bytes32 messageHash = payload.toBytes32(1);
+        address adapter = payload.toAddress(33);
+
         if (MessagesLib.messageType(payload) == MessagesLib.Call.InitiateMessageRecovery) {
-            bytes32 messageHash = payload.toBytes32(1);
-            address adapter = payload.toAddress(33);
             require(activeAdapters[msg.sender].id != 0, "Gateway/invalid-sender");
             require(activeAdapters[adapter].id != 0, "Gateway/invalid-adapter");
-            recoveries[messageHash] = Recovery(block.timestamp + RECOVERY_CHALLENGE_PERIOD, adapter);
+            recoveries[adapter][messageHash] = block.timestamp + RECOVERY_CHALLENGE_PERIOD;
             emit InitiateMessageRecovery(messageHash, adapter);
         } else if (MessagesLib.messageType(payload) == MessagesLib.Call.DisputeMessageRecovery) {
-            bytes32 messageHash = payload.toBytes32(1);
-            return _disputeMessageRecovery(messageHash);
+            return _disputeMessageRecovery(adapter, messageHash);
         }
     }
 
-    /// @inheritdoc IGateway
-    function disputeMessageRecovery(bytes32 messageHash) external auth {
-        _disputeMessageRecovery(messageHash);
+    function disputeMessageRecovery(address adapter, bytes32 messageHash) external auth {
+        _disputeMessageRecovery(adapter, messageHash);
     }
 
-    function _disputeMessageRecovery(bytes32 messageHash) internal {
-        delete recoveries[messageHash];
-        emit DisputeMessageRecovery(messageHash);
+    function _disputeMessageRecovery(address adapter, bytes32 messageHash) internal {
+        delete recoveries[adapter][messageHash];
+        emit DisputeMessageRecovery(messageHash, adapter);
     }
 
     /// @inheritdoc IGateway
-    function executeMessageRecovery(bytes calldata message) external {
+    function executeMessageRecovery(address adapter, bytes calldata message) external {
         bytes32 messageHash = keccak256(message);
-        // wouldn't it better to mark these as memory?
-        Recovery storage recovery = recoveries[messageHash];
-        Adapter storage adapter = activeAdapters[recovery.adapter];
+        uint256 recovery = recoveries[adapter][messageHash];
 
-        require(recovery.timestamp != 0, "Gateway/message-recovery-not-initiated");
-        require(recovery.timestamp <= block.timestamp, "Gateway/challenge-period-has-not-ended");
-        require(adapter.id != 0, "Gateway/invalid-adapter");
+        require(recovery != 0, "Gateway/message-recovery-not-initiated");
+        require(recovery <= block.timestamp, "Gateway/challenge-period-has-not-ended");
 
-        delete recoveries[messageHash];
-        _handle(message, recovery.adapter, adapter, true);
-        emit ExecuteMessageRecovery(message);
+        delete recoveries[adapter][messageHash];
+        _handle(message, adapter, true);
+        emit ExecuteMessageRecovery(message, adapter);
     }
 
     // --- Outgoing ---
@@ -265,7 +263,7 @@ contract Gateway is Auth, IGateway {
         uint256 numAdapters = adapters.length;
         require(numAdapters > 0, "Gateway/adapters-not-initialized");
 
-        uint256 fuel = quota;
+        uint256 fuel = QUOTA_SLOT.tloadUint256();
         uint256 messageCost = gasService.estimate(message);
         uint256 proofCost = gasService.estimate(proof);
 
@@ -285,7 +283,7 @@ contract Gateway is Auth, IGateway {
 
                 currentAdapter.send(payload);
             }
-            quota = 0;
+            QUOTA_SLOT.tstore(0);
         } else if (gasService.shouldRefuel(source, message)) {
             uint256 tank = address(this).balance;
             for (uint256 i; i < numAdapters; i++) {
@@ -313,7 +311,7 @@ contract Gateway is Auth, IGateway {
     function topUp() external payable {
         require(IRoot(root).endorsed(msg.sender), "Gateway/only-endorsed-can-topup");
         require(msg.value > 0, "Gateway/cannot-topup-with-nothing");
-        quota = msg.value;
+        QUOTA_SLOT.tstore(msg.value);
     }
 
     // --- Helpers ---

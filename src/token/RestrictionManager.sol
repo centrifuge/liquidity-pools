@@ -33,11 +33,11 @@ contract RestrictionManager is Auth, IRestrictionManager, IHook {
 
     IRoot public immutable root;
 
-    constructor(address root_) {
+    constructor(address root_, address deployer) {
         root = IRoot(root_);
 
-        wards[msg.sender] = 1;
-        emit Rely(msg.sender);
+        wards[deployer] = 1;
+        emit Rely(deployer);
     }
 
     // --- Callback from tranche token ---

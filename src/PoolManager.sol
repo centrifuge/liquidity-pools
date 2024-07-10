@@ -17,6 +17,7 @@ import {
     TranchePrice,
     UndeployedTranche,
     VaultAsset,
+    Domain,
     IPoolManager
 } from "src/interfaces/IPoolManager.sol";
 import {BytesLib} from "src/libraries/BytesLib.sol";
@@ -77,7 +78,7 @@ contract PoolManager is Auth, IPoolManager {
 
     // --- Outgoing message handling ---
     /// @inheritdoc IPoolManager
-    function transfer(address asset, bytes32 recipient, uint128 amount) external {
+    function transferAssets(address asset, bytes32 recipient, uint128 amount) external {
         uint128 assetId = assetToId[asset];
         require(assetId != 0, "PoolManager/unknown-asset");
 
@@ -87,39 +88,16 @@ contract PoolManager is Auth, IPoolManager {
             abi.encodePacked(uint8(MessagesLib.Call.TransferAssets), assetId, msg.sender.toBytes32(), recipient, amount),
             address(this)
         );
-        emit TransferCurrency(asset, msg.sender, recipient, amount);
+        emit TransferAssets(asset, msg.sender, recipient, amount);
     }
 
     /// @inheritdoc IPoolManager
-    function transferTranchesToCentrifuge(uint64 poolId, bytes16 trancheId, bytes32 destinationAddress, uint128 amount)
-        external
-    {
-        ITranche tranche = ITranche(getTranche(poolId, trancheId));
-        require(address(tranche) != address(0), "PoolManager/unknown-token");
-
-        tranche.burn(msg.sender, amount);
-        gateway.send(
-            abi.encodePacked(
-                uint8(MessagesLib.Call.TransferTrancheTokens),
-                poolId,
-                trancheId,
-                msg.sender.toBytes32(),
-                MessagesLib.formatDomain(MessagesLib.Domain.Centrifuge),
-                destinationAddress,
-                amount
-            ),
-            address(this)
-        );
-
-        emit TransferTranchesToCentrifuge(poolId, trancheId, msg.sender, destinationAddress, amount);
-    }
-
-    /// @inheritdoc IPoolManager
-    function transferTranchesToEVM(
+    function transferTrancheTokens(
         uint64 poolId,
         bytes16 trancheId,
-        uint64 destinationChainId,
-        address destinationAddress,
+        Domain destinationDomain,
+        uint64 destinationId,
+        bytes32 recipient,
         uint128 amount
     ) external {
         ITranche tranche = ITranche(getTranche(poolId, trancheId));
@@ -132,14 +110,14 @@ contract PoolManager is Auth, IPoolManager {
                 poolId,
                 trancheId,
                 msg.sender.toBytes32(),
-                MessagesLib.formatDomain(MessagesLib.Domain.EVM, destinationChainId),
-                destinationAddress.toBytes32(),
+                _formatDomain(destinationDomain, destinationId),
+                recipient,
                 amount
             ),
             address(this)
         );
 
-        emit TransferTranchesToEVM(poolId, trancheId, msg.sender, destinationChainId, destinationAddress, amount);
+        emit TransferTrancheTokens(poolId, trancheId, msg.sender, destinationDomain, destinationId, recipient, amount);
     }
 
     // --- Incoming message handling ---
@@ -175,7 +153,7 @@ contract PoolManager is Auth, IPoolManager {
         } else if (call == MessagesLib.Call.TransferAssets) {
             handleTransfer(message.toUint128(1), message.toAddress(49), message.toUint128(81));
         } else if (call == MessagesLib.Call.TransferTrancheTokens) {
-            handleTransferTranches(
+            handleTransferTrancheTokens(
                 message.toUint64(1), message.toBytes16(9), message.toAddress(66), message.toUint128(98)
             );
         } else if (call == MessagesLib.Call.UpdateTrancheMetadata) {
@@ -333,7 +311,7 @@ contract PoolManager is Auth, IPoolManager {
     }
 
     /// @inheritdoc IPoolManager
-    function handleTransferTranches(uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 amount)
+    function handleTransferTrancheTokens(uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 amount)
         public
         auth
     {
@@ -475,5 +453,9 @@ contract PoolManager is Auth, IPoolManager {
     /// @inheritdoc IPoolManager
     function isAllowedAsset(uint64 poolId, address asset) public view returns (bool) {
         return pools[poolId].allowedAssets[asset];
+    }
+
+    function _formatDomain(Domain domain, uint64 chainId) internal pure returns (bytes9) {
+        return bytes9(BytesLib.slice(abi.encodePacked(uint8(domain), chainId), 0, 9));
     }
 }

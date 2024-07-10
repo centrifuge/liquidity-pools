@@ -16,7 +16,7 @@ contract RestrictionManagerTest is Test {
     function setUp() public {
         root = new MockRoot();
         token = new Tranche(18);
-        restrictionManager = new RestrictionManager(address(root));
+        restrictionManager = new RestrictionManager(address(root), address(this));
         token.file("hook", address(restrictionManager));
     }
 
