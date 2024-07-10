@@ -79,8 +79,7 @@ interface IInvestmentManager is IMessageHandler {
         address user,
         uint128 assetId,
         uint128 assets,
-        uint128 shares,
-        uint128 fulfillment
+        uint128 shares
     ) external;
 
     /// @notice TODO
@@ -106,14 +105,8 @@ interface IInvestmentManager is IMessageHandler {
     /// @dev Compared to handleFulfilledCancelDepositRequest, there is no
     ///      transfer of asset in this function because they
     ///      can stay in the Escrow, ready to be claimed on deposit/mint.
-    function fulfillCancelRedeemRequest(
-        uint64 poolId,
-        bytes16 trancheId,
-        address user,
-        uint128 assetId,
-        uint128 shares,
-        uint128 fulfillment
-    ) external;
+    function fulfillCancelRedeemRequest(uint64 poolId, bytes16 trancheId, address user, uint128 assetId, uint128 shares)
+        external;
 
     /// @notice TODO
     function triggerRedeemRequest(uint64 poolId, bytes16 trancheId, address user, uint128 assetId, uint128 shares)
@@ -158,9 +151,6 @@ interface IInvestmentManager is IMessageHandler {
 
     /// @notice TODO
     function priceLastUpdated(address vault) external view returns (uint64 lastUpdated);
-
-    /// @notice TODO
-    function isGlobalOperator(address, /* vault */ address user) external view returns (bool);
 
     // --- Vault claim functions ---
     /// @notice Processes owner's asset deposit / investment after the epoch has been executed on Centrifuge.

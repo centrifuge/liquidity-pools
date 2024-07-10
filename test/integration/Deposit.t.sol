@@ -70,13 +70,7 @@ contract DepositTest is BaseTest {
         uint128 shares = uint128((amount * 10 ** 18) / price); // tranchePrice = 2$
         assertApproxEqAbs(shares, amount / 2, 2);
         centrifugeChain.isFulfilledDepositRequest(
-            vault.poolId(),
-            vault.trancheId(),
-            bytes32(bytes20(self)),
-            _assetId,
-            uint128(amount),
-            shares,
-            uint128(amount)
+            vault.poolId(), vault.trancheId(), bytes32(bytes20(self)), _assetId, uint128(amount), shares
         );
 
         // assert deposit & mint values adjusted
@@ -161,7 +155,7 @@ contract DepositTest is BaseTest {
         uint128 assets = 50000000; // 50 * 10**6
         uint128 firstTranchePayout = 35714285714285714285; // 50 * 10**18 / 1.4, rounded down
         centrifugeChain.isFulfilledDepositRequest(
-            poolId, trancheId, bytes32(bytes20(self)), _assetId, assets, firstTranchePayout, assets
+            poolId, trancheId, bytes32(bytes20(self)), _assetId, assets, firstTranchePayout
         );
 
         (, uint256 depositPrice,,,,,,,,) = investmentManager.investments(address(vault), self);
@@ -170,7 +164,7 @@ contract DepositTest is BaseTest {
         // second trigger executed collectInvest of the second 50% at a price of 1.2
         uint128 secondTranchePayout = 41666666666666666666; // 50 * 10**18 / 1.2, rounded down
         centrifugeChain.isFulfilledDepositRequest(
-            poolId, trancheId, bytes32(bytes20(self)), _assetId, assets, secondTranchePayout, assets
+            poolId, trancheId, bytes32(bytes20(self)), _assetId, assets, secondTranchePayout
         );
 
         (, depositPrice,,,,,,,,) = investmentManager.investments(address(vault), self);
@@ -210,8 +204,7 @@ contract DepositTest is BaseTest {
     //         bytes32(bytes20(self)),
     //         defaultAssetId,
     //         uint128(totalAmount),
-    //         uint128(tokenAmount),
-    //         uint128(totalAmount)
+    //         uint128(tokenAmount)
     //     );
 
     //     // user claims multiple partial deposits
@@ -271,8 +264,7 @@ contract DepositTest is BaseTest {
     //         bytes32(bytes20(self)),
     //         defaultAssetId,
     //         uint128(totalAmount),
-    //         uint128(tokenAmount),
-    //         uint128(totalAmount)
+    //         uint128(tokenAmount)
     //     );
 
     //     // user claims multiple partial mints
@@ -316,13 +308,7 @@ contract DepositTest is BaseTest {
         uint128 shares = uint128(amount * 10 ** 18 / price); // tranchePrice = 2$
         assertApproxEqAbs(shares, amount / 2, 2);
         centrifugeChain.isFulfilledDepositRequest(
-            vault.poolId(),
-            vault.trancheId(),
-            bytes32(bytes20(self)),
-            _assetId,
-            uint128(amount),
-            shares,
-            uint128(amount)
+            vault.poolId(), vault.trancheId(), bytes32(bytes20(self)), _assetId, uint128(amount), shares
         );
 
         // assert deposit & mint values adjusted
@@ -351,7 +337,7 @@ contract DepositTest is BaseTest {
         assertApproxEqAbs(erc20.balanceOf(address(escrow)), amount, 1);
     }
 
-    function testDepositWithEndorsement(uint256 amount) public {
+    function testDepositAsEndorsedOperator(uint256 amount) public {
         // If lower than 4 or odd, rounding down can lead to not receiving any tokens
         amount = uint128(bound(amount, 4, MAX_UINT128));
         vm.assume(amount % 2 == 0);
@@ -376,13 +362,7 @@ contract DepositTest is BaseTest {
         uint128 tranchePayout = uint128(amount * 10 ** 18 / price); // tranchePrice = 2$
         assertApproxEqAbs(tranchePayout, amount / 2, 2);
         centrifugeChain.isFulfilledDepositRequest(
-            vault.poolId(),
-            vault.trancheId(),
-            bytes32(bytes20(self)),
-            _currencyId,
-            uint128(amount),
-            tranchePayout,
-            uint128(amount)
+            vault.poolId(), vault.trancheId(), bytes32(bytes20(self)), _currencyId, uint128(amount), tranchePayout
         );
 
         // assert deposit & mint values adjusted
@@ -403,6 +383,7 @@ contract DepositTest is BaseTest {
         // endorse router
         root.endorse(router);
         vm.startPrank(router); // try to claim deposit on behalf of user and set the wrong user as receiver
+        vault.setEndorsedOperator(address(this), true);
         vault.deposit(amount, receiver, address(this));
         vm.stopPrank();
 
@@ -436,7 +417,7 @@ contract DepositTest is BaseTest {
         uint128 assets = 50000000; // 50 * 10**6
         uint128 firstTranchePayout = 41666666666666666666; // 50 * 10**18 / 1.2, rounded down
         centrifugeChain.isFulfilledDepositRequest(
-            poolId, trancheId, bytes32(bytes20(self)), _assetId, assets, firstTranchePayout, assets / 2
+            poolId, trancheId, bytes32(bytes20(self)), _assetId, assets, firstTranchePayout
         );
 
         // assert deposit & mint values adjusted
@@ -451,7 +432,7 @@ contract DepositTest is BaseTest {
         assets = 50000000; // 50 * 10**6
         uint128 secondTranchePayout = 35714285714285714285; // 50 * 10**18 / 1.4, rounded down
         centrifugeChain.isFulfilledDepositRequest(
-            poolId, trancheId, bytes32(bytes20(self)), _assetId, assets, secondTranchePayout, 0
+            poolId, trancheId, bytes32(bytes20(self)), _assetId, assets, secondTranchePayout
         );
 
         // collect the tranche tokens
@@ -506,7 +487,7 @@ contract DepositTest is BaseTest {
         uint128 assets = 50000000000000000000; // 50 * 10**18
         uint128 firstTranchePayout = 41666666; // 50 * 10**6 / 1.2, rounded down
         centrifugeChain.isFulfilledDepositRequest(
-            poolId, trancheId, bytes32(bytes20(self)), _assetId, assets, firstTranchePayout, assets / 2
+            poolId, trancheId, bytes32(bytes20(self)), _assetId, assets, firstTranchePayout
         );
 
         // assert deposit & mint values adjusted
@@ -521,7 +502,7 @@ contract DepositTest is BaseTest {
         assets = 50000000000000000000; // 50 * 10**18
         uint128 secondTranchePayout = 35714285; // 50 * 10**6 / 1.4, rounded down
         centrifugeChain.isFulfilledDepositRequest(
-            poolId, trancheId, bytes32(bytes20(self)), _assetId, assets, secondTranchePayout, 0
+            poolId, trancheId, bytes32(bytes20(self)), _assetId, assets, secondTranchePayout
         );
 
         // collect the tranche tokens
@@ -582,9 +563,7 @@ contract DepositTest is BaseTest {
         // executed at price of 1.2, leads to a tranche token payout of
         // 99 * 10**18 / 1.2 = 82500000000000000000
         uint128 shares = 82500000000000000000;
-        centrifugeChain.isFulfilledDepositRequest(
-            poolId, trancheId, bytes32(bytes20(self)), _assetId, assets, shares, assets
-        );
+        centrifugeChain.isFulfilledDepositRequest(poolId, trancheId, bytes32(bytes20(self)), _assetId, assets, shares);
         centrifugeChain.updateTranchePrice(poolId, trancheId, assetId, 1200000000000000000, uint64(block.timestamp));
 
         // assert deposit & mint values adjusted
@@ -630,9 +609,7 @@ contract DepositTest is BaseTest {
         // executed at price of 1.2, leads to a tranche token payout of
         // 99 * 10**6 / 1.2 = 82500000
         uint128 shares = 82500000;
-        centrifugeChain.isFulfilledDepositRequest(
-            poolId, trancheId, bytes32(bytes20(self)), _assetId, assets, shares, assets
-        );
+        centrifugeChain.isFulfilledDepositRequest(poolId, trancheId, bytes32(bytes20(self)), _assetId, assets, shares);
         centrifugeChain.updateTranchePrice(poolId, trancheId, assetId, 1200000000000000000, uint64(block.timestamp));
 
         // assert deposit & mint values adjusted
@@ -713,7 +690,7 @@ contract DepositTest is BaseTest {
         uint128 assets = 50000000; // 50 * 10**6
         uint128 firstTranchePayout = 35714285714285714285; // 50 * 10**18 / 1.4, rounded down
         centrifugeChain.isFulfilledDepositRequest(
-            poolId, trancheId, bytes32(bytes20(self)), _assetId, assets, firstTranchePayout, assets
+            poolId, trancheId, bytes32(bytes20(self)), _assetId, assets, firstTranchePayout
         );
 
         (, uint256 depositPrice,,,,,,,,) = investmentManager.investments(address(vault), self);
@@ -722,7 +699,7 @@ contract DepositTest is BaseTest {
         // second trigger executed collectInvest of the second 50% at a price of 1.2
         uint128 secondTranchePayout = 41666666666666666666; // 50 * 10**18 / 1.2, rounded down
         centrifugeChain.isFulfilledDepositRequest(
-            poolId, trancheId, bytes32(bytes20(self)), _assetId, assets, secondTranchePayout, assets
+            poolId, trancheId, bytes32(bytes20(self)), _assetId, assets, secondTranchePayout
         );
 
         (, depositPrice,,,,,,,,) = investmentManager.investments(address(vault), self);

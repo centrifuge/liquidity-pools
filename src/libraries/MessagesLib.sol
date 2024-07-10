@@ -28,7 +28,7 @@ library MessagesLib {
         /// 7 - A transfer of assets
         Transfer,
         /// 8 - A transfer of tranche tokens
-        TransferTranches,
+        TransferTrancheTokens,
         /// 9 - Increase an investment order by a given amount
         IncreaseInvestOrder,
         /// 10 - Decrease an investment order by a given amount
@@ -79,21 +79,7 @@ library MessagesLib {
         UpdateCentrifugeGasPrice
     }
 
-    enum Domain {
-        Centrifuge,
-        EVM
-    }
-
     function messageType(bytes memory _msg) internal pure returns (Call _call) {
         _call = Call(_msg.toUint8(0));
-    }
-
-    // Utils
-    function formatDomain(Domain domain) internal pure returns (bytes9) {
-        return bytes9(bytes1(uint8(domain)));
-    }
-
-    function formatDomain(Domain domain, uint64 chainId) internal pure returns (bytes9) {
-        return bytes9(BytesLib.slice(abi.encodePacked(uint8(domain), chainId), 0, 9));
     }
 }

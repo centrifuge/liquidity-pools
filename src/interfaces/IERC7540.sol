@@ -28,7 +28,7 @@ interface IERC7540Operator {
      * @param operator The address of the operator.
      * @return status The approval status
      */
-    function isOperator(address controller, address operator) external returns (bool status);
+    function isOperator(address controller, address operator) external view returns (bool status);
 }
 
 interface IERC7540Deposit is IERC7540Operator {
@@ -283,6 +283,9 @@ interface IERC7540Vault is
 
     /// @notice Identifier of the tranche of the Centrifuge pool
     function trancheId() external view returns (bytes16);
+
+    /// @notice TODO
+    function setEndorsedOperator(address owner, bool approved) external returns (bool);
 
     /// @notice TODO
     function onDepositClaimable(address owner, uint256 assets, uint256 shares) external;

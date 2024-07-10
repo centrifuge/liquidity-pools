@@ -186,7 +186,7 @@ contract RedeemTest is BaseTest {
         vault.requestRedeem(amount, address(this), address(this));
 
         centrifugeChain.isFulfilledCancelRedeemRequest(
-            vault.poolId(), vault.trancheId(), self.toBytes32(), defaultAssetId, uint128(amount), uint128(amount)
+            vault.poolId(), vault.trancheId(), self.toBytes32(), defaultAssetId, uint128(amount)
         );
 
         assertEq(tranche.balanceOf(address(escrow)), amount);
@@ -364,7 +364,7 @@ contract RedeemTest is BaseTest {
 
         uint128 shares = 100000000;
         centrifugeChain.isFulfilledDepositRequest(
-            poolId, trancheId, bytes32(bytes20(self)), _assetId, uint128(investmentAmount), shares, shares
+            poolId, trancheId, bytes32(bytes20(self)), _assetId, uint128(investmentAmount), shares
         );
 
         (, uint256 depositPrice,,,,,,,,) = investmentManager.investments(address(vault), self);

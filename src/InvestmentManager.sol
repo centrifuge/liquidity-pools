@@ -194,8 +194,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
                 message.toAddress(25),
                 message.toUint128(57),
                 message.toUint128(73),
-                message.toUint128(89),
-                message.toUint128(105)
+                message.toUint128(89)
             );
         } else if (call == MessagesLib.Call.FulfilledRedeemRequest) {
             fulfillRedeemRequest(
@@ -221,8 +220,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
                 message.toBytes16(9),
                 message.toAddress(25),
                 message.toUint128(57),
-                message.toUint128(73),
-                message.toUint128(89)
+                message.toUint128(73)
             );
         } else if (call == MessagesLib.Call.TriggerRedeemRequest) {
             triggerRedeemRequest(
@@ -244,8 +242,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
         address user,
         uint128 assetId,
         uint128 assets,
-        uint128 shares,
-        uint128 fulfillment
+        uint128 shares
     ) public auth {
         address vault = poolManager.getVault(poolId, trancheId, assetId);
 
@@ -253,8 +250,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
         require(state.pendingDepositRequest > 0, "InvestmentManager/no-pending-deposit-request");
         state.depositPrice = _calculatePrice(vault, _maxDeposit(vault, user) + assets, state.maxMint + shares);
         state.maxMint = state.maxMint + shares;
-        state.pendingDepositRequest =
-            state.pendingDepositRequest > fulfillment ? state.pendingDepositRequest - fulfillment : 0;
+        state.pendingDepositRequest = state.pendingDepositRequest > assets ? state.pendingDepositRequest - assets : 0;
 
         if (state.pendingDepositRequest == 0) state.pendingCancelDepositRequest = false;
 
@@ -318,21 +314,16 @@ contract InvestmentManager is Auth, IInvestmentManager {
     }
 
     /// @inheritdoc IInvestmentManager
-    function fulfillCancelRedeemRequest(
-        uint64 poolId,
-        bytes16 trancheId,
-        address user,
-        uint128 assetId,
-        uint128 shares,
-        uint128 fulfillment
-    ) public auth {
+    function fulfillCancelRedeemRequest(uint64 poolId, bytes16 trancheId, address user, uint128 assetId, uint128 shares)
+        public
+        auth
+    {
         address vault = poolManager.getVault(poolId, trancheId, assetId);
         InvestmentState storage state = investments[vault][user];
         require(state.pendingCancelRedeemRequest == true, "InvestmentManager/no-pending-cancel-redeem-request");
 
         state.claimableCancelRedeemRequest = state.claimableCancelRedeemRequest + shares;
-        state.pendingRedeemRequest =
-            state.pendingRedeemRequest > fulfillment ? state.pendingRedeemRequest - fulfillment : 0;
+        state.pendingRedeemRequest = state.pendingRedeemRequest > shares ? state.pendingRedeemRequest - shares : 0;
 
         if (state.pendingRedeemRequest == 0) state.pendingCancelRedeemRequest = false;
 
@@ -452,11 +443,6 @@ contract InvestmentManager is Auth, IInvestmentManager {
     function priceLastUpdated(address vault) public view returns (uint64 lastUpdated) {
         IERC7540Vault vault_ = IERC7540Vault(vault);
         (, lastUpdated) = poolManager.getTranchePrice(vault_.poolId(), vault_.trancheId(), vault_.asset());
-    }
-
-    /// @inheritdoc IInvestmentManager
-    function isGlobalOperator(address, /* vault */ address user) public view returns (bool) {
-        return IRoot(root).endorsed(user);
     }
 
     // --- Vault claim functions ---

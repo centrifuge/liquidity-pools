@@ -190,7 +190,7 @@ contract BaseTest is Deployer, Test {
         // trigger executed collectInvest
         uint128 assetId = poolManager.assetToId(address(erc20)); // retrieve assetId
         centrifugeChain.isFulfilledDepositRequest(
-            vault.poolId(), vault.trancheId(), bytes32(bytes20(_investor)), assetId, uint128(amount), uint128(amount), 0
+            vault.poolId(), vault.trancheId(), bytes32(bytes20(_investor)), assetId, uint128(amount), uint128(amount)
         );
 
         if (claimDeposit) {
