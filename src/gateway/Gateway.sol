@@ -6,6 +6,7 @@ import {ArrayLib} from "src/libraries/ArrayLib.sol";
 import {BytesLib} from "src/libraries/BytesLib.sol";
 import {MessagesLib} from "src/libraries/MessagesLib.sol";
 import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
+import {TransientStorage} from "src/libraries/TransientStorage.sol";
 import {IGateway, IMessageHandler} from "src/interfaces/gateway/IGateway.sol";
 import {IRoot} from "src/interfaces/IRoot.sol";
 import {IGasService} from "src/interfaces/gateway/IGasService.sol";
@@ -20,6 +21,9 @@ import {IAdapter} from "src/interfaces/gateway/IAdapter.sol";
 contract Gateway is Auth, IGateway {
     using ArrayLib for uint16[8];
     using BytesLib for bytes;
+    using TransientStorage for bytes32;
+
+    bytes32 public constant QUOTA_SLOT = bytes32(uint256(keccak256("quota")) - 1);
 
     uint8 public constant MAX_ADAPTER_COUNT = 8;
     uint8 public constant PRIMARY_ADAPTER_ID = 1;
@@ -36,8 +40,6 @@ contract Gateway is Auth, IGateway {
     mapping(bytes32 messageHash => Message) public messages;
     mapping(uint8 messageId => address manager) messageHandlers;
     mapping(address router => mapping(bytes32 messageHash => uint256 timestamp)) public recoveries;
-
-    uint256 quota;
 
     constructor(address root_, address poolManager_, address investmentManager_, address gasService_) {
         root = IRoot(root_);
@@ -261,7 +263,7 @@ contract Gateway is Auth, IGateway {
         uint256 numAdapters = adapters.length;
         require(numAdapters > 0, "Gateway/adapters-not-initialized");
 
-        uint256 fuel = quota;
+        uint256 fuel = QUOTA_SLOT.tloadUint256();
         uint256 messageCost = gasService.estimate(message);
         uint256 proofCost = gasService.estimate(proof);
 
@@ -281,7 +283,7 @@ contract Gateway is Auth, IGateway {
 
                 currentAdapter.send(payload);
             }
-            quota = 0;
+            QUOTA_SLOT.tstore(0);
         } else if (gasService.shouldRefuel(source, message)) {
             uint256 tank = address(this).balance;
             for (uint256 i; i < numAdapters; i++) {
@@ -309,7 +311,7 @@ contract Gateway is Auth, IGateway {
     function topUp() external payable {
         require(IRoot(root).endorsed(msg.sender), "Gateway/only-endorsed-can-topup");
         require(msg.value > 0, "Gateway/cannot-topup-with-nothing");
-        quota = msg.value;
+        QUOTA_SLOT.tstore(msg.value);
     }
 
     // --- Helpers ---
