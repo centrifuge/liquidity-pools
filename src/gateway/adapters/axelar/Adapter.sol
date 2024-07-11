@@ -30,10 +30,10 @@ interface AxelarGasServiceLike {
 /// @title  Axelar Adapter
 /// @notice Routing contract that integrates with an Axelar Gateway
 contract AxelarAdapter is Auth, IAdapter {
-    string public constant CENTRIFUGE_ID = "centrifuge";
-    bytes32 public constant CENTRIFUGE_ID_HASH = keccak256(bytes("centrifuge"));
-    bytes32 public constant CENTRIFUGE_ADDRESS_HASH = keccak256(bytes("0x7369626CEF070000000000000000000000000000"));
-    string public constant CENTRIFUGE_AXELAR_EXECUTABLE = "0xc1757c6A0563E37048869A342dF0651b9F267e41";
+    string public constant CENTRIFUGE_ID = "centrifuge-2";
+    bytes32 public constant CENTRIFUGE_ID_HASH = keccak256(bytes("centrifuge-2"));
+    bytes32 public constant CENTRIFUGE_ADDRESS_HASH =keccak256(bytes("0x7369626CEF070000000000000000000000000000"));
+    string public constant CENTRIFUGE_AXELAR_EXECUTABLE = "0x1940aafa3b20d9bfc49dc8f983ba2fe9fa958eaa";
 
     IGateway public immutable gateway;
     AxelarGatewayLike public immutable axelarGateway;
