@@ -43,8 +43,21 @@ contract GasServiceTest is Test {
     }
 
     function testUpdateGasPrice(uint128 value) public {
+        vm.assume(value != 0);
+        vm.assume(value != GAS_PRICE);
+
         uint256 pastDate = service.lastUpdatedAt() - 1;
         uint256 futureDate = service.lastUpdatedAt() + 1;
+
+        uint256 lastUpdateAt = service.lastUpdatedAt();
+
+        vm.expectRevert(bytes("GasService/price-cannot-be-zero"));
+        service.updateGasPrice(0, futureDate);
+        assertEq(lastUpdateAt, service.lastUpdatedAt());
+
+        vm.expectRevert(bytes("GasService/same-price-already-set"));
+        service.updateGasPrice(GAS_PRICE, futureDate);
+        assertEq(lastUpdateAt, service.lastUpdatedAt());
 
         vm.expectRevert(bytes("GasService/cannot-update-price-with-backdate"));
         service.updateGasPrice(value, pastDate);
@@ -52,6 +65,7 @@ contract GasServiceTest is Test {
 
         service.updateGasPrice(value, futureDate);
         assertEq(service.gasPrice(), value);
+        assertEq(service.lastUpdatedAt(), futureDate);
     }
 
     function testUpdateTokenPrice(uint256 value) public {
