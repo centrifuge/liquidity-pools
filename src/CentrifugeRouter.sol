@@ -9,7 +9,6 @@ import {IERC20, IERC20Permit, IERC20Wrapper} from "src/interfaces/IERC20.sol";
 import {IERC7540Vault} from "src/interfaces/IERC7540.sol";
 import {ICentrifugeRouter} from "src/interfaces/ICentrifugeRouter.sol";
 import {IPoolManager, Domain} from "src/interfaces/IPoolManager.sol";
-import {IInvestmentManager} from "src/interfaces/IInvestmentManager.sol";
 import {IEscrow} from "src/interfaces/IEscrow.sol";
 import {IGateway} from "src/interfaces/gateway/IGateway.sol";
 import {TransientStorage} from "src/libraries/TransientStorage.sol";

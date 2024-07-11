@@ -7,7 +7,6 @@ import {MathLib} from "src/libraries/MathLib.sol";
 import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 import {MessagesLib} from "src/libraries/MessagesLib.sol";
 import {BytesLib} from "src/libraries/BytesLib.sol";
-import {IRoot} from "src/interfaces/IRoot.sol";
 import {IERC20, IERC20Metadata} from "src/interfaces/IERC20.sol";
 import {IPoolManager} from "src/interfaces/IPoolManager.sol";
 import {IInvestmentManager, InvestmentState} from "src/interfaces/IInvestmentManager.sol";
