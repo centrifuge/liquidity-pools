@@ -14,7 +14,6 @@ contract AxelarAdapterTest is Test {
     MockGateway gateway;
     MockAxelarGasService axelarGasService;
     AxelarAdapter adapter;
-    AxelarForwarder forwarder;
 
     string private constant axelarCentrifugeChainId = "centrifuge";
     string private constant axelarCentrifugeChainAddress = "0x7369626CEF070000000000000000000000000000";
@@ -23,8 +22,51 @@ contract AxelarAdapterTest is Test {
         axelarGateway = new MockAxelarGateway();
         gateway = new MockGateway();
         axelarGasService = new MockAxelarGasService();
-        forwarder = new AxelarForwarder(address(axelarGateway));
         adapter = new AxelarAdapter(address(gateway), address(axelarGateway), address(axelarGasService));
+    }
+
+    function testInitialization() public {
+        assertEq(address(adapter.gateway()), address(gateway));
+        assertEq(address(adapter.axelarGateway()), address(axelarGateway));
+        assertEq(address(adapter.axelarGasService()), address(axelarGasService));
+
+        assertEq(adapter.wards(address(this)), 1);
+    }
+
+    function testEstimate(uint256 gasLimit) public {
+        uint256 axelarCost = 10;
+        vm.assume(gasLimit < type(uint256).max - axelarCost);
+
+        adapter.file("axelarCost", axelarCost);
+
+        bytes memory payload = "irrelevant";
+
+        uint256 estimation = adapter.estimate(payload, gasLimit);
+        assertEq(estimation, gasLimit + axelarCost);
+    }
+
+    function testFiling(uint256 value) public {
+        vm.assume(value != adapter.axelarCost());
+
+        adapter.file("axelarCost", value);
+        assertEq(adapter.axelarCost(), value);
+
+        vm.expectRevert(bytes("AxelarAdapterfile-unrecognized-param"));
+        adapter.file("random", value);
+    }
+
+    function testPayment(bytes calldata payload, uint256 value) public {
+        vm.deal(address(this), value);
+        adapter.pay{value: value}(payload, address(this));
+
+        uint256[] memory call = axelarGasService.callsWithValue("payNativeGasForContractCall");
+        assertEq(call.length, 1);
+        assertEq(call[0], value);
+        assertEq(axelarGasService.values_address("sender"), address(adapter));
+        assertEq(axelarGasService.values_string("destinationChain"), adapter.CENTRIFUGE_ID());
+        assertEq(axelarGasService.values_string("destinationAddress"), adapter.CENTRIFUGE_AXELAR_EXECUTABLE());
+        assertEq(axelarGasService.values_bytes("payload"), payload);
+        assertEq(axelarGasService.values_address("refundAddress"), address(this));
     }
 
     function testIncomingCalls(
