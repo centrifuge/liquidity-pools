@@ -25,6 +25,7 @@ import {IEscrow} from "src/interfaces/IEscrow.sol";
 import {IGateway} from "src/interfaces/gateway/IGateway.sol";
 import {IGasService} from "src/interfaces/gateway/IGasService.sol";
 import {IAuth} from "src/interfaces/IAuth.sol";
+import {IRecoverable} from "src/interfaces/IRoot.sol";
 
 /// @title  Pool Manager
 /// @notice This contract manages which pools & tranches exist,
@@ -72,6 +73,7 @@ contract PoolManager is Auth, IPoolManager {
         emit File(what, data);
     }
 
+    /// @inheritdoc IRecoverable
     function recoverTokens(address token, address to, uint256 amount) external auth {
         SafeTransferLib.safeTransfer(token, to, amount);
     }

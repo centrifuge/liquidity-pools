@@ -12,6 +12,7 @@ import {IPoolManager, Domain} from "src/interfaces/IPoolManager.sol";
 import {IEscrow} from "src/interfaces/IEscrow.sol";
 import {IGateway} from "src/interfaces/gateway/IGateway.sol";
 import {TransientStorage} from "src/libraries/TransientStorage.sol";
+import {IRecoverable} from "src/interfaces/IRoot.sol";
 
 contract CentrifugeRouter is Auth, ICentrifugeRouter {
     using CastLib for address;
@@ -50,7 +51,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     }
 
     // --- Administration ---
-    /// @inheritdoc ICentrifugeRouter
+    /// @inheritdoc IRecoverable
     function recoverTokens(address token, address to, uint256 amount) external auth {
         SafeTransferLib.safeTransfer(token, to, amount);
     }

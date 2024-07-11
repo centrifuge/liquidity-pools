@@ -19,7 +19,7 @@ interface TrancheFactoryLike {
 /// @dev    Utility for deploying new tranche token contracts
 ///         Ensures the addresses are deployed at a deterministic address
 ///         based on the pool id and tranche id.
-contract TrancheFactory is Auth {
+contract TrancheFactory is Auth, TrancheFactoryLike {
     address public immutable root;
 
     constructor(address _root, address deployer) {
