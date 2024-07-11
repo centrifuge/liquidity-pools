@@ -14,13 +14,13 @@ contract GuardianTest is BaseTest {
 
     function testOnlySafe() public {
         vm.expectRevert("Guardian/not-the-authorized-safe");
-        vm.prank(makeAddr('maliciousUser'));
+        vm.prank(makeAddr("maliciousUser"));
         guardian.unpause();
     }
 
     function testOnlySafeOrOwner() public {
         vm.expectRevert("Guardian/not-the-authorized-safe-or-its-owner");
-        vm.prank(makeAddr('maliciousUser'));
+        vm.prank(makeAddr("maliciousUser"));
         guardian.pause();
     }
 }
