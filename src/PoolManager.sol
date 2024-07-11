@@ -323,8 +323,6 @@ contract PoolManager is Auth, IPoolManager {
 
     /// @inheritdoc IPoolManager
     function updateCentrifugeGasPrice(uint128 price, uint256 computedAt) public auth {
-        require(price > 0, "PoolManager/price-cannot-be-zero");
-        require(gasService.gasPrice() != price, "PoolManager/same-price-already-set");
         gasService.updateGasPrice(price, computedAt);
     }
 
