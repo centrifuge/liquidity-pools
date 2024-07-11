@@ -11,16 +11,4 @@ contract GuardianTest is BaseTest {
         assertEq(address(guardian.root()), address(root));
         assertEq(address(guardian.gateway()), address(gateway));
     }
-
-    function testOnlySafe() public {
-        vm.expectRevert("Guardian/not-the-authorized-safe");
-        vm.prank(makeAddr("maliciousUser"));
-        guardian.unpause();
-    }
-
-    function testOnlySafeOrOwner() public {
-        vm.expectRevert("Guardian/not-the-authorized-safe-or-its-owner");
-        vm.prank(makeAddr("maliciousUser"));
-        guardian.pause();
-    }
 }

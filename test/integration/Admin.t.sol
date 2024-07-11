@@ -8,26 +8,6 @@ import {CastLib} from "src/libraries/CastLib.sol";
 contract AdminTest is BaseTest {
     using CastLib for *;
 
-    address[] threeMockAdapters;
-
-    function setUp() public override {
-        super.setUp();
-        adapter1 = new MockAdapter(address(gateway));
-        vm.label(address(adapter1), "MockAdapter1");
-        adapter2 = new MockAdapter(address(gateway));
-        vm.label(address(adapter2), "MockAdapter2");
-        adapter3 = new MockAdapter(address(gateway));
-        vm.label(address(adapter3), "MockAdapter3");
-
-        adapter1.setReturn("estimate", uint256(1.5 gwei));
-        adapter2.setReturn("estimate", uint256(1.25 gwei));
-        adapter3.setReturn("estimate", uint256(0.75 gwei));
-
-        threeMockAdapters.push(address(adapter1));
-        threeMockAdapters.push(address(adapter2));
-        threeMockAdapters.push(address(adapter3));
-    }
-
     function testDeployment() public {
         // values set correctly
         assertEq(address(root.escrow()), address(escrow));
@@ -348,10 +328,10 @@ contract AdminTest is BaseTest {
 
     function testDisputeRecovery() public {
         MockManager poolManager = new MockManager();
-        gateway.file("adapters", threeMockAdapters);
+        gateway.file("adapters", testAdapters);
 
         bytes memory message = abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1));
-        bytes memory proof = _formatMessageProof(abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1)));
+        bytes memory proof = _formatMessageProof(message);
 
         // Only send through 2 out of 3 adapters
         _send(adapter1, message);
@@ -368,6 +348,10 @@ contract AdminTest is BaseTest {
 
         vm.expectRevert(bytes("Gateway/challenge-period-has-not-ended"));
         gateway.executeMessageRecovery(address(adapter3), proof);
+
+        vm.prank(makeAddr("unauthorized"));
+        vm.expectRevert("Guardian/not-the-authorized-safe");
+        guardian.disputeMessageRecovery(address(adapter3), keccak256(proof));
 
         // Dispute recovery
         vm.prank(address(adminSafe));
