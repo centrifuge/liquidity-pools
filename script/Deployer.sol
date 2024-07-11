@@ -42,65 +42,83 @@ contract Deployer is Script {
         bytes32 salt = vm.envOr(
             "DEPLOYMENT_SALT", keccak256(abi.encodePacked(string(abi.encodePacked(blockhash(block.number - 1)))))
         );
-        escrow = new Escrow{salt: salt}(deployer);
-        root = new Root{salt: salt}(address(escrow), delay, deployer);
 
+        uint64 messageCost = uint64(vm.envOr("MESSAGE_COST", uint256(20000000000000000))); // in Weight
+        uint64 proofCost = uint64(vm.envOr("PROOF_COST", uint256(20000000000000000))); // in Weigth
+        uint128 gasPrice = uint128(vm.envOr("GAS_PRICE", uint256(2500000000000000000))); // Centrifuge Chain
+        uint256 tokenPrice = vm.envOr("TOKEN_PRICE", uint256(178947400000000)); // CFG/ETH
+
+        escrow = new Escrow{salt: keccak256(abi.encodePacked(salt, "escrow1"))}(deployer);
+        routerEscrow = new Escrow{salt: keccak256(abi.encodePacked(salt, "escrow2"))}(deployer);
+        root = new Root{salt: salt}(address(escrow), delay, deployer);
         vaultFactory = address(new ERC7540VaultFactory(address(root)));
         restrictionManager = address(new RestrictionManager{salt: salt}(address(root), deployer));
         trancheFactory = address(new TrancheFactory{salt: salt}(address(root), deployer));
         investmentManager = new InvestmentManager(address(root), address(escrow));
         poolManager = new PoolManager(address(escrow), vaultFactory, trancheFactory, address(restrictionManager));
         transferProxyFactory = address(new TransferProxyFactory{salt: salt}(address(poolManager)));
-
-        // TODO THESE VALUES NEEDS TO BE CHECKED
-        gasService = new GasService(20000000000000000, 20000000000000000, 2500000000000000000, 178947400000000);
-        gasService.rely(address(root));
-
+        gasService = new GasService(messageCost, proofCost, gasPrice, tokenPrice);
         gateway = new Gateway(address(root), address(poolManager), address(investmentManager), address(gasService));
-        routerEscrow = new Escrow(deployer);
         router = new CentrifugeRouter(address(routerEscrow), address(gateway), address(poolManager));
-        IAuth(address(routerEscrow)).rely(address(router));
+        guardian = new Guardian(adminSafe, address(root), address(gateway));
+
+        _endorse();
+        _rely();
+        _file();
+    }
+
+    function _endorse() internal {
         root.endorse(address(router));
         root.endorse(address(escrow));
+    }
 
+    function _rely() internal {
+        // Rely on PoolManager
+        gasService.rely(address(poolManager));
+        escrow.rely(address(poolManager));
         IAuth(vaultFactory).rely(address(poolManager));
         IAuth(trancheFactory).rely(address(poolManager));
         IAuth(restrictionManager).rely(address(poolManager));
 
+        // Rely on Root
+        router.rely(address(root));
+        poolManager.rely(address(root));
+        investmentManager.rely(address(root));
+        gateway.rely(address(root));
+        gasService.rely(address(root));
+        escrow.rely(address(root));
+        routerEscrow.rely(address(root));
         IAuth(vaultFactory).rely(address(root));
         IAuth(trancheFactory).rely(address(root));
         IAuth(restrictionManager).rely(address(root));
 
-        guardian = new Guardian(adminSafe, address(root), address(gateway));
+        // Rely on guardian
+        root.rely(address(guardian));
+        gateway.rely(address(guardian));
+
+        // Rely on gateway
+        root.rely(address(gateway));
+        investmentManager.rely(address(gateway));
+        poolManager.rely(address(gateway));
+
+        // Rely on others
+        IAuth(address(routerEscrow)).rely(address(router));
+        investmentManager.rely(address(vaultFactory));
+    }
+
+    function _file() public {
+        poolManager.file("investmentManager", address(investmentManager));
+        poolManager.file("gasService", address(gasService));
+        poolManager.file("gateway", address(gateway));
+
+        investmentManager.file("poolManager", address(poolManager));
+        investmentManager.file("gateway", address(gateway));
     }
 
     function wire(address adapter) public {
         adapters.push(adapter);
-
-        // Wire guardian
-        root.rely(address(guardian));
-        gateway.rely(address(guardian));
-
-        // Wire gateway
         gateway.file("adapters", adapters);
-        root.rely(address(gateway));
-        investmentManager.file("poolManager", address(poolManager));
-        poolManager.file("investmentManager", address(investmentManager));
-        poolManager.file("gasService", address(gasService));
-
-        router.rely(address(root));
-        investmentManager.file("gateway", address(gateway));
-        poolManager.file("gateway", address(gateway));
-        investmentManager.rely(address(root));
-        investmentManager.rely(address(gateway));
-        investmentManager.rely(address(vaultFactory));
-        poolManager.rely(address(root));
-        poolManager.rely(address(gateway));
-        gateway.rely(address(root));
         IAuth(adapter).rely(address(root));
-        IAuth(address(escrow)).rely(address(root));
-        IAuth(address(routerEscrow)).rely(address(root));
-        IAuth(address(escrow)).rely(address(poolManager));
     }
 
     function removeDeployerAccess(address adapter, address deployer) public {
