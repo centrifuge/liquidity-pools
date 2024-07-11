@@ -4,6 +4,7 @@ pragma solidity 0.8.26;
 import {IAdapter} from "src/interfaces/gateway/IAdapter.sol";
 import {IGateway} from "src/interfaces/gateway/IGateway.sol";
 import {Auth} from "src/Auth.sol";
+import {IGateway} from "src/interfaces/gateway/IGateway.sol";
 
 interface AxelarGatewayLike {
     function callContract(string calldata destinationChain, string calldata contractAddress, bytes calldata payload)
@@ -40,7 +41,7 @@ contract AxelarAdapter is Auth, IAdapter {
     AxelarGasServiceLike public immutable axelarGasService;
 
     /// @dev This value is in AXELAR fees in ETH ( wei )
-    uint256 axelarCost = 58039058122843;
+    uint256 public axelarCost = 58039058122843;
 
     constructor(address gateway_, address axelarGateway_, address axelarGasService_) {
         gateway = IGateway(gateway_);
