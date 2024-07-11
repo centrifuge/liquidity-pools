@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.21;
+pragma solidity 0.8.26;
 
 import {ERC7540Vault} from "src/ERC7540Vault.sol";
 import {Auth} from "src/Auth.sol";
@@ -9,7 +9,7 @@ interface ERC7540VaultFactoryLike {
         uint64 poolId,
         bytes16 trancheId,
         address asset,
-        address trancheToken,
+        address tranche,
         address escrow,
         address investmentManager,
         address[] calldata wards_
@@ -38,12 +38,12 @@ contract ERC7540VaultFactory is Auth {
         uint64 poolId,
         bytes16 trancheId,
         address asset,
-        address trancheToken,
+        address tranche,
         address escrow,
         address investmentManager,
         address[] calldata wards_
     ) public auth returns (address) {
-        ERC7540Vault vault = new ERC7540Vault(poolId, trancheId, asset, trancheToken, escrow, investmentManager);
+        ERC7540Vault vault = new ERC7540Vault(poolId, trancheId, asset, tranche, root, escrow, investmentManager);
 
         vault.rely(root);
         for (uint256 i = 0; i < wards_.length; i++) {

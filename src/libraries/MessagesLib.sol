@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.21;
+pragma solidity 0.8.26;
 
 import {BytesLib} from "src/libraries/BytesLib.sol";
 import {CastLib} from "src/libraries/CastLib.sol";
@@ -22,9 +22,9 @@ library MessagesLib {
         /// 4 - Add a Pool's Tranche Token
         AddTranche,
         /// 5 - Update the price of a Tranche Token
-        UpdateTrancheTokenPrice,
-        /// 6 - Update the member list of a tranche token with a new member
-        UpdateMember,
+        UpdateTranchePrice,
+        /// 6 - Set a restriction
+        UpdateRestriction,
         /// 7 - A transfer of assets
         Transfer,
         /// 8 - A transfer of tranche tokens
@@ -58,13 +58,13 @@ library MessagesLib {
         /// 22 - Cancel a previously scheduled upgrade
         CancelUpgrade,
         /// 23 - Update tranche token metadata
-        UpdateTrancheTokenMetadata,
+        UpdateTrancheMetadata,
         /// 24 - Disallow an asset to be used as an asset for investing in pools
         DisallowAsset,
         /// 25 - Freeze tranche tokens
-        Freeze,
+        DEPRECATED_Freeze,
         /// 26 - Unfreeze tranche tokens
-        Unfreeze,
+        DEPRECATED_Unfreeze,
         /// 27 - Request redeem investor
         TriggerRedeemRequest,
         /// 28 - Proof
@@ -75,25 +75,13 @@ library MessagesLib {
         DisputeMessageRecovery,
         /// 31 - Recover Tokens sent to the wrong contract
         RecoverTokens,
-        /// 32 - Batch Messages
+        /// 32 - Update Centrifuge Gas Price
+        UpdateCentrifugeGasPrice,
+        /// 33 - Batch Messages
         Batch
-    }
-
-    enum Domain {
-        Centrifuge,
-        EVM
     }
 
     function messageType(bytes memory _msg) internal pure returns (Call _call) {
         _call = Call(_msg.toUint8(0));
-    }
-
-    // Utils
-    function formatDomain(Domain domain) internal pure returns (bytes9) {
-        return bytes9(bytes1(uint8(domain)));
-    }
-
-    function formatDomain(Domain domain, uint64 chainId) internal pure returns (bytes9) {
-        return bytes9(BytesLib.slice(abi.encodePacked(uint8(domain), chainId), 0, 9));
     }
 }

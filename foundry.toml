@@ -3,8 +3,8 @@ src = 'src'
 out = 'out'
 libs = ['lib']
 
-solc_version = "0.8.21"
-evm_version = "paris" # to prevent usage of PUSH0, which is not supported on all chains
+solc_version = "0.8.26"
+evm_version = "cancun"
 
 optimizer = true
 optimizer_runs = 500
@@ -53,7 +53,7 @@ fail_on_revert = false
   "src/Escrow.sol" = ["Escrow"]
   "src/Root.sol" = ["Root"]
   "src/token/ERC20.sol" = ["ERC20"]
-  "src/token/Tranche.sol" = ["TrancheToken"]
+  "src/token/Tranche.sol" = ["Tranche"]
   "src/token/RestrictionManager.sol" = ["RestrictionManager"]
   "src/admin/Guardian.sol" = ["Guardian"]
 

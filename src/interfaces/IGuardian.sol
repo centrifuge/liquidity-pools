@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.21;
+pragma solidity 0.8.26;
 
 interface IGuardian {
     /// @notice Pause the protocol
@@ -18,7 +18,7 @@ interface IGuardian {
     /// @dev callable by safe only
     function cancelRely(address target) external;
 
-    /// @notice Dispute an aggregator message recovery
+    /// @notice Dispute an gateway message recovery
     /// @dev callable by safe only
     function disputeMessageRecovery(bytes32 messageHash) external;
 }

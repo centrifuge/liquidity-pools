@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.21;
+pragma solidity 0.8.26;
 
 import {MessagesLib} from "src/libraries/MessagesLib.sol";
 import {CastLib} from "src/libraries/CastLib.sol";
@@ -17,21 +17,5 @@ contract MessagesLibTest is Test {
         bytes memory payload = abi.encodePacked(uint8(MessagesLib.Call.AddPool), poolId);
 
         assertTrue(MessagesLib.messageType(payload) == MessagesLib.Call.AddPool);
-    }
-
-    function testFormatDomainCentrifuge() public {
-        assertEq(MessagesLib.formatDomain(MessagesLib.Domain.Centrifuge), hex"000000000000000000");
-    }
-
-    function testFormatDomainMoonbeam() public {
-        assertEq(MessagesLib.formatDomain(MessagesLib.Domain.EVM, 1284), hex"010000000000000504");
-    }
-
-    function testFormatDomainMoonbaseAlpha() public {
-        assertEq(MessagesLib.formatDomain(MessagesLib.Domain.EVM, 1287), hex"010000000000000507");
-    }
-
-    function testFormatDomainAvalanche() public {
-        assertEq(MessagesLib.formatDomain(MessagesLib.Domain.EVM, 43114), hex"01000000000000a86a");
     }
 }

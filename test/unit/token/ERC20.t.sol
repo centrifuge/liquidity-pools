@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.21;
+pragma solidity 0.8.26;
 
-import {ERC20, IERC1271} from "src/token/ERC20.sol";
+import {ERC20} from "src/token/ERC20.sol";
+import {IERC1271} from "src/libraries/SignatureLib.sol";
 import "forge-std/Test.sol";
 
 contract MockMultisig is IERC1271 {
@@ -486,26 +487,6 @@ contract ERC20Test is Test {
 
         uint256 app = from == address(this) || approval == type(uint256).max ? approval : approval - amount;
         assertEq(token.allowance(from, address(this)), app);
-
-        if (from == to) {
-            assertEq(token.balanceOf(from), amount);
-        } else {
-            assertEq(token.balanceOf(from), 0);
-            assertEq(token.balanceOf(to), amount);
-        }
-    }
-
-    function testAuthTransferFrom(address to, uint256 amount) public {
-        if (to == address(0) || to == address(token)) return;
-
-        address from = address(0xABCD);
-
-        token.mint(from, amount);
-
-        vm.expectEmit(true, true, true, true);
-        emit Transfer(from, to, amount);
-        assertTrue(token.authTransferFrom(from, from, to, amount));
-        assertEq(token.totalSupply(), amount);
 
         if (from == to) {
             assertEq(token.balanceOf(from), amount);

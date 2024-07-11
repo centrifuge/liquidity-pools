@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity >=0.5.0;
 
+import {IMessageHandler} from "src/interfaces/gateway/IGateway.sol";
+
 /// @dev Vault orders and investment/redemption limits per user
 struct InvestmentState {
     /// @dev Tranche tokens that can be claimed using `mint()`
@@ -13,7 +15,7 @@ struct InvestmentState {
     uint256 redeemPrice;
     /// @dev Remaining invest (deposit) order in assets
     uint128 pendingDepositRequest;
-    /// @dev Remaining redeem order in assets
+    /// @dev Remaining redeem order in tranche tokens
     uint128 pendingRedeemRequest;
     /// @dev Currency that can be claimed using `claimCancelDepositRequest()`
     uint128 claimableCancelDepositRequest;
@@ -25,7 +27,7 @@ struct InvestmentState {
     bool pendingCancelRedeemRequest;
 }
 
-interface IInvestmentManager {
+interface IInvestmentManager is IMessageHandler {
     // --- Events ---
     event File(bytes32 indexed what, address data);
     event TriggerRedeemRequest(
@@ -45,7 +47,9 @@ interface IInvestmentManager {
     ///         proceed with tranche token payouts in case their orders got fulfilled.
     /// @dev    The user asset amount required to fulfill the deposit request have to be locked,
     ///         even though the tranche token payout can only happen after epoch execution.
-    function requestDeposit(address vault, uint256 assets, address receiver, address owner) external returns (bool);
+    function requestDeposit(address vault, uint256 assets, address receiver, address owner, address source)
+        external
+        returns (bool);
 
     /// @notice Request tranche token redemption. Liquidity pools have to request redemptions
     ///         from Centrifuge before actual asset payouts can be done. The redemption
@@ -54,15 +58,15 @@ interface IInvestmentManager {
     ///         in case their orders got fulfilled.
     /// @dev    The user tranche tokens required to fulfill the redemption request have to be locked,
     ///         even though the asset payout can only happen after epoch execution.
-    function requestRedeem(address vault, uint256 shares, address receiver, address /* owner */ )
+    function requestRedeem(address vault, uint256 shares, address receiver, address, /* owner */ address source)
         external
         returns (bool);
 
     /// @notice TODO
-    function cancelDepositRequest(address vault, address owner) external;
+    function cancelDepositRequest(address vault, address owner, address source) external;
 
     /// @notice TODO
-    function cancelRedeemRequest(address vault, address owner) external;
+    function cancelRedeemRequest(address vault, address owner, address source) external;
 
     // --- Incoming message handling ---
     /// @notice TODO
@@ -75,8 +79,7 @@ interface IInvestmentManager {
         address user,
         uint128 assetId,
         uint128 assets,
-        uint128 shares,
-        uint128 fulfillment
+        uint128 shares
     ) external;
 
     /// @notice TODO
@@ -102,14 +105,8 @@ interface IInvestmentManager {
     /// @dev Compared to handleFulfilledCancelDepositRequest, there is no
     ///      transfer of asset in this function because they
     ///      can stay in the Escrow, ready to be claimed on deposit/mint.
-    function fulfillCancelRedeemRequest(
-        uint64 poolId,
-        bytes16 trancheId,
-        address user,
-        uint128 assetId,
-        uint128 shares,
-        uint128 fulfillment
-    ) external;
+    function fulfillCancelRedeemRequest(uint64 poolId, bytes16 trancheId, address user, uint128 assetId, uint128 shares)
+        external;
 
     /// @notice TODO
     function triggerRedeemRequest(uint64 poolId, bytes16 trancheId, address user, uint128 assetId, uint128 shares)
@@ -154,9 +151,6 @@ interface IInvestmentManager {
 
     /// @notice TODO
     function priceLastUpdated(address vault) external view returns (uint64 lastUpdated);
-
-    /// @notice TODO
-    function isGlobalOperator(address, /* vault */ address user) external view returns (bool);
 
     // --- Vault claim functions ---
     /// @notice Processes owner's asset deposit / investment after the epoch has been executed on Centrifuge.

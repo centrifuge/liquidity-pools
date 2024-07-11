@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.21;
+pragma solidity 0.8.26;
 
 import "forge-std/Test.sol";
 import {MockAxelarPrecompile} from "test/mocks/MockAxelarPrecompile.sol";
 import {MockAxelarGateway} from "test/mocks/MockAxelarGateway.sol";
-import {AxelarForwarder} from "src/gateway/routers/axelar/Forwarder.sol";
+import {AxelarForwarder} from "src/gateway/adapters/axelar/Forwarder.sol";
 
 contract AxelarForwarderTest is Test {
     // Represents the precompile address on Centrifuge. Precompile is located at `address(2048)` which is

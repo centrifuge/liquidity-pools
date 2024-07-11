@@ -2,7 +2,7 @@
 pragma solidity ^0.8.18;
 
 import {MockCentrifugeChain} from "test/mocks/MockCentrifugeChain.sol";
-import {IERC7540} from "src/interfaces/IERC7540.sol";
+import {IERC7540Vault} from "src/interfaces/IERC7540.sol";
 import {BaseHandler} from "test/invariant/handlers/BaseHandler.sol";
 import {MathLib} from "src/libraries/MathLib.sol";
 
@@ -14,8 +14,7 @@ interface ERC20Like {
     function balanceOf(address user) external view returns (uint256);
 }
 
-interface VaultLike is IERC7540 {
-    function share() external view returns (address);
+interface VaultLike is IERC7540Vault {
     function manager() external view returns (address);
 }
 
@@ -28,7 +27,7 @@ contract InvestorHandler is BaseHandler {
     uint128 assetId;
 
     ERC20Like immutable erc20;
-    ERC20Like immutable trancheToken;
+    ERC20Like immutable tranche;
     VaultLike immutable vault;
     MockCentrifugeChain immutable centrifugeChain;
     address immutable escrow;
@@ -51,7 +50,7 @@ contract InvestorHandler is BaseHandler {
         vault = VaultLike(_vault);
         centrifugeChain = MockCentrifugeChain(mockCentrifugeChain_);
         erc20 = ERC20Like(erc20_);
-        trancheToken = ERC20Like(vault.share());
+        tranche = ERC20Like(vault.share());
         escrow = escrow_;
         investmentManager = vault.manager();
     }
@@ -104,10 +103,10 @@ contract InvestorHandler is BaseHandler {
                 // Don't allow total outstanding redeem requests > type(uint128).max
                 uint128(
                     type(uint128).max - getVar(currentInvestor, "totalRedeemRequested")
-                        + getVar(currentInvestor, "totalTrancheTokensPaidOutOnRedeem")
+                        + getVar(currentInvestor, "totalTranchesPaidOutOnRedeem")
                 ),
                 // Cannot redeem more than current balance of TT
-                trancheToken.balanceOf(currentInvestor)
+                tranche.balanceOf(currentInvestor)
             )
         );
         if (amount_ == 0) return;

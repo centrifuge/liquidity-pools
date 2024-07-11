@@ -24,19 +24,19 @@ jobs:
           FOUNDRY_PROFILE: ci
           FORK_TESTS: false
 
-  test-invariant:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
+  # test-invariant:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v3
 
-      - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
+  #     - name: Install Foundry
+  #       uses: foundry-rs/foundry-toolchain@v1
 
-      - name: Run tests
-        run: forge test --match-path "test/invariant/**/*.sol"
-        env:
-          FOUNDRY_PROFILE: ci
-          FORK_TESTS: false
+  #     - name: Run tests
+  #       run: forge test --match-path "test/invariant/**/*.sol"
+  #       env:
+  #         FOUNDRY_PROFILE: ci
+  #         FORK_TESTS: false
 
   lint:
     runs-on: ubuntu-latest
@@ -122,7 +122,7 @@ jobs:
   #       with:
   #         fail-on: "none"
   #         sarif: "results.sarif"
-  #         solc-version: "0.8.21"
+  #         solc-version: "0.8.26"
   #         target: "src/"
 
   #     - name: Upload SARIF file

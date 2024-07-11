@@ -1,15 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.21;
+pragma solidity 0.8.26;
 
 import {Auth} from "src/Auth.sol";
 import {MessagesLib} from "src/libraries/MessagesLib.sol";
 import {BytesLib} from "src/libraries/BytesLib.sol";
 import {IRoot} from "src/interfaces/IRoot.sol";
-
-interface AuthLike {
-    function rely(address) external;
-    function deny(address) external;
-}
+import {IAuth} from "src/interfaces/IAuth.sol";
 
 interface RecoverLike {
     function recoverTokens(address, address, uint256) external;
@@ -30,8 +26,11 @@ contract Root is Auth, IRoot {
     /// @notice Trusted contracts within the system
     mapping(address => uint256) public endorsements;
 
+    /// @inheritdoc IRoot
     bool public paused;
+    /// @inheritdoc IRoot
     uint256 public delay;
+    /// @inheritdoc IRoot
     mapping(address relyTarget => uint256 timestamp) public schedule;
 
     constructor(address _escrow, uint256 _delay, address deployer) {
@@ -124,7 +123,7 @@ contract Root is Auth, IRoot {
         } else if (call == MessagesLib.Call.RecoverTokens) {
             (address target, address token, address to, uint256 amount) =
                 (message.toAddress(1), message.toAddress(33), message.toAddress(65), message.toUint256(97));
-            RecoverLike(target).recoverTokens(token, to, amount);
+            recoverTokens(target, token, to, amount);
         } else {
             revert("Root/invalid-message");
         }
@@ -133,19 +132,19 @@ contract Root is Auth, IRoot {
     /// --- External contract ward management ---
     /// @inheritdoc IRoot
     function relyContract(address target, address user) external auth {
-        AuthLike(target).rely(user);
+        IAuth(target).rely(user);
         emit RelyContract(target, user);
     }
 
     /// @inheritdoc IRoot
     function denyContract(address target, address user) external auth {
-        AuthLike(target).deny(user);
+        IAuth(target).deny(user);
         emit DenyContract(target, user);
     }
 
-    /// --- Token Recovery ---
+    /// --- Token recovery ---
     /// @inheritdoc IRoot
-    function recoverTokens(address target, address token, address to, uint256 amount) external auth {
+    function recoverTokens(address target, address token, address to, uint256 amount) public auth {
         RecoverLike(target).recoverTokens(token, to, amount);
         emit RecoverTokens(target, token, to, amount);
     }

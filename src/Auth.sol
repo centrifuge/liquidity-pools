@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.21;
+pragma solidity 0.8.26;
+
+import {IAuth} from "src/interfaces/IAuth.sol";
 
 /// @title  Auth
 /// @notice Simple authentication pattern
 /// @author Based on code from https://github.com/makerdao/dss
-contract Auth {
+contract Auth is IAuth {
     mapping(address => uint256) public wards;
-
-    event Rely(address indexed user);
-    event Deny(address indexed user);
 
     /// @dev Give permissions to the user
     function rely(address user) external auth {

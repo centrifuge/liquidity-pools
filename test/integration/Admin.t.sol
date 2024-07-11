@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.21;
+pragma solidity 0.8.26;
 
 import "test/BaseTest.sol";
 
@@ -15,7 +15,7 @@ contract AdminTest is BaseTest {
 
         // permissions set correctly
         assertEq(root.wards(address(guardian)), 1);
-        assertEq(aggregator.wards(address(guardian)), 1);
+        assertEq(gateway.wards(address(guardian)), 1);
     }
 
     //------ pause tests ------//
@@ -63,7 +63,7 @@ contract AdminTest is BaseTest {
         erc20.mint(address(this), amount);
         guardian.pause();
         vm.expectRevert("Gateway/paused");
-        poolManager.transfer(address(erc20), bytes32(bytes20(recipient)), amount);
+        poolManager.transferAssets(address(erc20), bytes32(bytes20(recipient)), amount);
     }
 
     function testIncomingTransferWhilePausedFails(
@@ -87,7 +87,7 @@ contract AdminTest is BaseTest {
         // the escrow account, from which funds are moved from into the recipient on an incoming transfer.
         erc20.approve(address(poolManager), type(uint256).max);
         erc20.mint(address(this), amount);
-        poolManager.transfer(address(erc20), bytes32(bytes20(recipient)), amount);
+        poolManager.transferAssets(address(erc20), bytes32(bytes20(recipient)), amount);
         assertEq(erc20.balanceOf(address(poolManager.escrow())), amount);
 
         guardian.pause();
@@ -121,7 +121,7 @@ contract AdminTest is BaseTest {
         guardian.pause();
         vm.prank(address(adminSafe));
         guardian.unpause();
-        poolManager.transfer(address(erc20), bytes32(bytes20(recipient)), amount);
+        poolManager.transferAssets(address(erc20), bytes32(bytes20(recipient)), amount);
         assertEq(erc20.balanceOf(address(poolManager.escrow())), amount);
 
         centrifugeChain.incomingTransfer(assetId, sender, bytes32(bytes20(recipient)), amount);
@@ -143,7 +143,7 @@ contract AdminTest is BaseTest {
     }
 
     function testGuardianPauseAuth(address user) public {
-        vm.assume(user != address(this));
+        vm.assume(user != address(this) && user != adminSafe);
         vm.expectRevert("Guardian/not-the-authorized-safe-or-its-owner");
         vm.prank(user);
         guardian.pause();

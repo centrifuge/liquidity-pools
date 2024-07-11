@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.21;
+pragma solidity 0.8.26;
 
 /// @title  Math Lib
 /// @dev    Standard math utilities missing in the Solidity language.
@@ -117,5 +117,10 @@ library MathLib {
         } else {
             value = uint128(_value);
         }
+    }
+
+    /// @notice Returns the smallest of two numbers.
+    function min(uint256 a, uint256 b) internal pure returns (uint256) {
+        return a > b ? b : a;
     }
 }

@@ -1,12 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.21;
+pragma solidity 0.8.26;
 
-import {IERC20, IERC20Metadata, IERC20Permit} from "src/interfaces/IERC20.sol";
 import {Auth} from "src/Auth.sol";
-
-interface IERC1271 {
-    function isValidSignature(bytes32, bytes memory) external view returns (bytes4);
-}
+import {EIP712Lib} from "src/libraries/EIP712Lib.sol";
+import {SignatureLib} from "src/libraries/SignatureLib.sol";
+import {IERC20, IERC20Metadata, IERC20Permit} from "src/interfaces/IERC20.sol";
 
 /// @title  ERC20
 /// @notice Standard ERC-20 implementation, with mint/burn functionality and permit logic.
@@ -21,8 +19,7 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
     /// @inheritdoc IERC20
     uint256 public totalSupply;
 
-    /// @inheritdoc IERC20
-    mapping(address => uint256) public balanceOf;
+    mapping(address => uint256) internal balances;
     /// @inheritdoc IERC20
     mapping(address => mapping(address => uint256)) public allowance;
     /// @inheritdoc IERC20Permit
@@ -47,28 +44,27 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
         nameHash = keccak256(bytes("Centrifuge"));
         versionHash = keccak256(bytes("1"));
         deploymentChainId = block.chainid;
-        _DOMAIN_SEPARATOR = _calculateDomainSeparator(block.chainid);
+        _DOMAIN_SEPARATOR = EIP712Lib.calculateDomainSeparator(nameHash, versionHash);
     }
 
-    function _calculateDomainSeparator(uint256 chainId) private view returns (bytes32) {
-        return keccak256(
-            abi.encode(
-                // keccak256('EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)')
-                0x8b73c3c69bb8fe3d512ecc4cf759cc79239f7b179b0ffacaa9a75d522b39400f,
-                nameHash,
-                versionHash,
-                chainId,
-                address(this)
-            )
-        );
+    /// @inheritdoc IERC20
+    function balanceOf(address user) public view virtual returns (uint256) {
+        return balances[user];
+    }
+
+    function _setBalance(address user, uint256 value) internal {
+        balances[user] = value;
     }
 
     /// @inheritdoc IERC20Permit
-    function DOMAIN_SEPARATOR() external view returns (bytes32) {
-        return block.chainid == deploymentChainId ? _DOMAIN_SEPARATOR : _calculateDomainSeparator(block.chainid);
+    function DOMAIN_SEPARATOR() public view returns (bytes32) {
+        return block.chainid == deploymentChainId
+            ? _DOMAIN_SEPARATOR
+            : EIP712Lib.calculateDomainSeparator(nameHash, versionHash);
     }
 
-    function file(bytes32 what, string memory data) external auth {
+    // --- Administration ---
+    function file(bytes32 what, string memory data) public virtual auth {
         if (what == "name") name = data;
         else if (what == "symbol") symbol = data;
         else revert("ERC20/file-unrecognized-param");
@@ -79,12 +75,12 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
     /// @inheritdoc IERC20
     function transfer(address to, uint256 value) public virtual returns (bool) {
         require(to != address(0) && to != address(this), "ERC20/invalid-address");
-        uint256 balance = balanceOf[msg.sender];
+        uint256 balance = balanceOf(msg.sender);
         require(balance >= value, "ERC20/insufficient-balance");
 
         unchecked {
-            balanceOf[msg.sender] = balance - value;
-            balanceOf[to] += value; // note: we don't need an overflow check here b/c sum of all balances == totalSupply
+            balances[msg.sender] -= value;
+            balances[to] += value; // note: we don't need an overflow check here b/c sum of all balances == totalSupply
         }
 
         emit Transfer(msg.sender, to, value);
@@ -99,7 +95,7 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
 
     function _transferFrom(address sender, address from, address to, uint256 value) internal virtual returns (bool) {
         require(to != address(0) && to != address(this), "ERC20/invalid-address");
-        uint256 balance = balanceOf[from];
+        uint256 balance = balanceOf(from);
         require(balance >= value, "ERC20/insufficient-balance");
 
         if (from != sender) {
@@ -113,8 +109,8 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
         }
 
         unchecked {
-            balanceOf[from] = balance - value;
-            balanceOf[to] += value; // note: we don't need an overflow check here b/c sum of all balances == totalSupply
+            balances[from] -= value;
+            balances[to] += value; // note: we don't need an overflow check here b/c sum of all balances == totalSupply
         }
 
         emit Transfer(from, to, value);
@@ -135,17 +131,17 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
     function mint(address to, uint256 value) public virtual auth {
         require(to != address(0) && to != address(this), "ERC20/invalid-address");
         unchecked {
-            // We don't need an overflow check here b/c balanceOf[to] <= totalSupply
+            // We don't need an overflow check here b/c balances[to] <= totalSupply
             // and there is an overflow check below
-            balanceOf[to] = balanceOf[to] + value;
+            balances[to] = balances[to] + value;
         }
         totalSupply = totalSupply + value;
 
         emit Transfer(address(0), to, value);
     }
 
-    function burn(address from, uint256 value) external auth {
-        uint256 balance = balanceOf[from];
+    function burn(address from, uint256 value) public virtual auth {
+        uint256 balance = balanceOf(from);
         require(balance >= value, "ERC20/insufficient-balance");
 
         if (from != msg.sender) {
@@ -161,7 +157,7 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
 
         unchecked {
             // We don't need overflow checks b/c require(balance >= value) and balance <= totalSupply
-            balanceOf[from] = balance - value;
+            balances[from] -= value;
             totalSupply = totalSupply - value;
         }
 
@@ -169,33 +165,6 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
     }
 
     // --- Approve by signature ---
-    function _isValidSignature(address signer, bytes32 digest, bytes memory signature)
-        internal
-        view
-        returns (bool valid)
-    {
-        if (signature.length == 65) {
-            bytes32 r;
-            bytes32 s;
-            uint8 v;
-            assembly {
-                r := mload(add(signature, 0x20))
-                s := mload(add(signature, 0x40))
-                v := byte(0, mload(add(signature, 0x60)))
-            }
-            if (signer == ecrecover(digest, v, r, s)) {
-                return true;
-            }
-        }
-
-        if (signer.code.length > 0) {
-            (bool success, bytes memory result) =
-                signer.staticcall(abi.encodeCall(IERC1271.isValidSignature, (digest, signature)));
-            valid =
-                (success && result.length == 32 && abi.decode(result, (bytes4)) == IERC1271.isValidSignature.selector);
-        }
-    }
-
     function permit(address owner, address spender, uint256 value, uint256 deadline, bytes memory signature) public {
         require(block.timestamp <= deadline, "ERC20/permit-expired");
         require(owner != address(0), "ERC20/invalid-owner");
@@ -208,12 +177,12 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
         bytes32 digest = keccak256(
             abi.encodePacked(
                 "\x19\x01",
-                block.chainid == deploymentChainId ? _DOMAIN_SEPARATOR : _calculateDomainSeparator(block.chainid),
+                DOMAIN_SEPARATOR(),
                 keccak256(abi.encode(PERMIT_TYPEHASH, owner, spender, value, nonce, deadline))
             )
         );
 
-        require(_isValidSignature(owner, digest, signature), "ERC20/invalid-permit");
+        require(SignatureLib.isValidSignature(owner, digest, signature), "ERC20/invalid-permit");
 
         allowance[owner][spender] = value;
         emit Approval(owner, spender, value);
@@ -224,10 +193,5 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
         external
     {
         permit(owner, spender, value, deadline, abi.encodePacked(r, s, v));
-    }
-
-    // --- Fail-safe ---
-    function authTransferFrom(address sender, address from, address to, uint256 value) public auth returns (bool) {
-        return _transferFrom(sender, from, to, value);
     }
 }

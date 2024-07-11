@@ -1,22 +1,25 @@
 // SPDw-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.21;
+pragma solidity 0.8.26;
 
 import {MessagesLib} from "src/libraries/MessagesLib.sol";
 import {CastLib} from "src/libraries/CastLib.sol";
+import {BytesLib} from "src/libraries/BytesLib.sol";
+import {Domain} from "src/interfaces/IPoolManager.sol";
+import {RestrictionUpdate} from "src/interfaces/token/IRestrictionManager.sol";
 import "forge-std/Test.sol";
 
-interface RouterLike {
+interface AdapterLike {
     function execute(bytes memory _message) external;
 }
 
 contract MockCentrifugeChain is Test {
     using CastLib for *;
 
-    address[] public routers;
+    address[] public adapters;
 
-    constructor(address[] memory routers_) {
-        for (uint256 i = 0; i < routers_.length; i++) {
-            routers.push(routers_[i]);
+    constructor(address[] memory adapters_) {
+        for (uint256 i = 0; i < adapters_.length; i++) {
+            adapters.push(adapters_[i]);
         }
     }
 
@@ -56,7 +59,7 @@ contract MockCentrifugeChain is Test {
         string memory tokenName,
         string memory tokenSymbol,
         uint8 decimals,
-        uint8 restrictionSet
+        address hook
     ) public {
         bytes memory _message = abi.encodePacked(
             uint8(MessagesLib.Call.AddTranche),
@@ -65,25 +68,28 @@ contract MockCentrifugeChain is Test {
             tokenName.toBytes128(),
             tokenSymbol.toBytes32(),
             decimals,
-            restrictionSet
+            hook
         );
         _execute(_message);
     }
 
     function updateMember(uint64 poolId, bytes16 trancheId, address user, uint64 validUntil) public {
-        bytes memory _message =
-            abi.encodePacked(uint8(MessagesLib.Call.UpdateMember), poolId, trancheId, user.toBytes32(), validUntil);
+        bytes memory _message = abi.encodePacked(
+            uint8(MessagesLib.Call.UpdateRestriction),
+            poolId,
+            trancheId,
+            uint8(RestrictionUpdate.UpdateMember),
+            user.toBytes32(),
+            validUntil
+        );
         _execute(_message);
     }
 
-    function updateTrancheTokenMetadata(
-        uint64 poolId,
-        bytes16 trancheId,
-        string memory tokenName,
-        string memory tokenSymbol
-    ) public {
+    function updateTrancheMetadata(uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol)
+        public
+    {
         bytes memory _message = abi.encodePacked(
-            uint8(MessagesLib.Call.UpdateTrancheTokenMetadata),
+            uint8(MessagesLib.Call.UpdateTrancheMetadata),
             poolId,
             trancheId,
             tokenName.toBytes128(),
@@ -92,16 +98,11 @@ contract MockCentrifugeChain is Test {
         _execute(_message);
     }
 
-    function updateTrancheTokenPrice(
-        uint64 poolId,
-        bytes16 trancheId,
-        uint128 assetId,
-        uint128 price,
-        uint64 computedAt
-    ) public {
-        bytes memory _message = abi.encodePacked(
-            uint8(MessagesLib.Call.UpdateTrancheTokenPrice), poolId, trancheId, assetId, price, computedAt
-        );
+    function updateTranchePrice(uint64 poolId, bytes16 trancheId, uint128 assetId, uint128 price, uint64 computedAt)
+        public
+    {
+        bytes memory _message =
+            abi.encodePacked(uint8(MessagesLib.Call.UpdateTranchePrice), poolId, trancheId, assetId, price, computedAt);
         _execute(_message);
     }
 
@@ -137,7 +138,7 @@ contract MockCentrifugeChain is Test {
             poolId,
             trancheId,
             msg.sender.toBytes32(),
-            MessagesLib.formatDomain(MessagesLib.Domain.EVM, destinationChainId),
+            bytes9(BytesLib.slice(abi.encodePacked(uint8(Domain.EVM), destinationChainId), 0, 9)),
             destinationAddress.toBytes32(),
             amount
         );
@@ -155,12 +156,24 @@ contract MockCentrifugeChain is Test {
     }
 
     function freeze(uint64 poolId, bytes16 trancheId, address user) public {
-        bytes memory _message = abi.encodePacked(uint8(MessagesLib.Call.Freeze), poolId, trancheId, user.toBytes32());
+        bytes memory _message = abi.encodePacked(
+            uint8(MessagesLib.Call.UpdateRestriction),
+            poolId,
+            trancheId,
+            uint8(RestrictionUpdate.Freeze),
+            user.toBytes32()
+        );
         _execute(_message);
     }
 
     function unfreeze(uint64 poolId, bytes16 trancheId, address user) public {
-        bytes memory _message = abi.encodePacked(uint8(MessagesLib.Call.Unfreeze), poolId, trancheId, user.toBytes32());
+        bytes memory _message = abi.encodePacked(
+            uint8(MessagesLib.Call.UpdateRestriction),
+            poolId,
+            trancheId,
+            uint8(RestrictionUpdate.Unfreeze),
+            user.toBytes32()
+        );
         _execute(_message);
     }
 
@@ -196,17 +209,10 @@ contract MockCentrifugeChain is Test {
         bytes16 trancheId,
         bytes32 investor,
         uint128 assetId,
-        uint128 shares,
-        uint128 fulfillment
+        uint128 shares
     ) public {
         bytes memory _message = abi.encodePacked(
-            uint8(MessagesLib.Call.FulfilledCancelRedeemRequest),
-            poolId,
-            trancheId,
-            investor,
-            assetId,
-            shares,
-            fulfillment
+            uint8(MessagesLib.Call.FulfilledCancelRedeemRequest), poolId, trancheId, investor, assetId, shares
         );
         _execute(_message);
     }
@@ -217,18 +223,10 @@ contract MockCentrifugeChain is Test {
         bytes32 investor,
         uint128 assetId,
         uint128 assets,
-        uint128 shares,
-        uint128 fulfillment
+        uint128 shares
     ) public {
         bytes memory _message = abi.encodePacked(
-            uint8(MessagesLib.Call.FulfilledDepositRequest),
-            poolId,
-            trancheId,
-            investor,
-            assetId,
-            assets,
-            shares,
-            fulfillment
+            uint8(MessagesLib.Call.FulfilledDepositRequest), poolId, trancheId, investor, assetId, assets, shares
         );
         _execute(_message);
     }
@@ -253,8 +251,8 @@ contract MockCentrifugeChain is Test {
 
     function _execute(bytes memory message) internal {
         bytes memory proof = abi.encodePacked(uint8(MessagesLib.Call.MessageProof), keccak256(message));
-        for (uint256 i = 0; i < routers.length; i++) {
-            RouterLike(routers[i]).execute(i == 0 ? message : proof);
+        for (uint256 i = 0; i < adapters.length; i++) {
+            AdapterLike(adapters[i]).execute(i == 0 ? message : proof);
         }
     }
 

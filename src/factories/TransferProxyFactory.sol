@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.21;
+pragma solidity 0.8.26;
 
 import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 import {IPoolManager} from "src/interfaces/IPoolManager.sol";
@@ -16,7 +16,7 @@ contract TransferProxy is ITransferProxy {
 
     /// @inheritdoc ITransferProxy
     function transfer(address asset, uint128 amount) external {
-        poolManager.transfer(asset, destination, amount);
+        poolManager.transferAssets(asset, destination, amount);
     }
 }
 
@@ -44,6 +44,8 @@ contract TransferProxyFactory is ITransferProxyFactory {
 
         address proxy = address(new TransferProxy(poolManager, destination));
         proxies[destination] = proxy;
+
+        emit DeployTransferProxy(destination, proxy);
         return proxy;
     }
 }

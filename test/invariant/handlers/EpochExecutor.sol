@@ -3,7 +3,7 @@ pragma solidity ^0.8.18;
 
 import {MockCentrifugeChain} from "test/mocks/MockCentrifugeChain.sol";
 import {MathLib} from "src/libraries/MathLib.sol";
-import {IERC7540} from "src/interfaces/IERC7540.sol";
+import {IERC7540Vault} from "src/interfaces/IERC7540.sol";
 import {BaseHandler} from "test/invariant/handlers/BaseHandler.sol";
 
 interface ERC20Like {
@@ -12,7 +12,7 @@ interface ERC20Like {
     function balanceOf(address user) external view returns (uint256);
 }
 
-interface VaultLike is IERC7540 {
+interface VaultLike is IERC7540Vault {
     function share() external view returns (address);
     function manager() external view returns (address);
 }
@@ -56,17 +56,11 @@ contract EpochExecutorHandler is BaseHandler {
         uint128 shares = uint128(assets.mulDiv(1 * 10 ** 18, fulfillmentPrice, MathLib.Rounding.Down));
 
         centrifugeChain.isFulfilledDepositRequest(
-            poolId,
-            trancheId,
-            bytes32(bytes20(currentInvestor)),
-            assetId,
-            assets,
-            shares,
-            uint128(outstandingDepositRequest - assets)
+            poolId, trancheId, bytes32(bytes20(currentInvestor)), assetId, assets, shares
         );
 
         increaseVar(currentInvestor, "totalCurrencyPaidOutOnInvest", assets);
-        increaseVar(currentInvestor, "totalTrancheTokensPaidOutOnInvest", shares);
+        increaseVar(currentInvestor, "totalTranchesPaidOutOnInvest", shares);
         setMaxVar(currentInvestor, "maxDepositFulfillmentPrice", fulfillmentPrice);
     }
 
@@ -77,8 +71,8 @@ contract EpochExecutorHandler is BaseHandler {
         fulfillmentRatio = bound(fulfillmentRatio, 0, 1 * 10 ** 18); // 0% to 100%
         fulfillmentPrice = bound(fulfillmentPrice, 0, 2 * 10 ** 18); // 0.00 to 2.00
 
-        uint256 outstandingRedeemRequest = getVar(currentInvestor, "totalRedeemRequested")
-            - getVar(currentInvestor, "totalTrancheTokensPaidOutOnRedeem");
+        uint256 outstandingRedeemRequest =
+            getVar(currentInvestor, "totalRedeemRequested") - getVar(currentInvestor, "totalTranchesPaidOutOnRedeem");
 
         if (outstandingRedeemRequest == 0) {
             return;
@@ -91,7 +85,7 @@ contract EpochExecutorHandler is BaseHandler {
             poolId, trancheId, bytes32(bytes20(currentInvestor)), assetId, assets, shares
         );
 
-        increaseVar(currentInvestor, "totalTrancheTokensPaidOutOnRedeem", shares);
+        increaseVar(currentInvestor, "totalTranchesPaidOutOnRedeem", shares);
         increaseVar(currentInvestor, "totalCurrencyPaidOutOnRedeem", assets);
         setMaxVar(currentInvestor, "maxRedeemFulfillmentPrice", fulfillmentPrice);
     }
