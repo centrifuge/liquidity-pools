@@ -25,7 +25,8 @@ contract AxelarAdapterTest is Test {
         adapter = new AxelarAdapter(address(gateway), address(axelarGateway), address(axelarGasService));
     }
 
-    function testInitialization() public {
+    function testDeploy() public {
+        adapter = new AxelarAdapter(address(gateway), address(axelarGateway), address(axelarGasService));
         assertEq(address(adapter.gateway()), address(gateway));
         assertEq(address(adapter.axelarGateway()), address(axelarGateway));
         assertEq(address(adapter.axelarGasService()), address(axelarGasService));
