@@ -15,11 +15,11 @@ contract VaultProxyFactoryTest is Test {
     ERC20 share;
 
     function setUp() public {
-        router = new MockCentrifugeRouter();
-        vault = new MockVault();
-        factory = new VaultProxyFactory(address(router));
         asset = new ERC20(18);
         share = new ERC20(18);
+        router = new MockCentrifugeRouter();
+        vault = new MockVault(address(asset), address(share));
+        factory = new VaultProxyFactory(address(router));
     }
 
     function testVaultProxyCreation(address user) public {
@@ -36,13 +36,15 @@ contract VaultProxyFactoryTest is Test {
     }
 
     function testVaultProxyDeposit(uint256 amount) public {
+        vm.assume(amount > 0);
+
         address user = makeAddr("user");
 
         VaultProxy proxy = VaultProxy(factory.newVaultProxy(address(vault), user));
         asset.mint(user, amount);
         vm.deal(address(this), 1 ether);
 
-        vm.expectRevert(bytes("VaultProxyFactory/zero-asset-allowance"));
+        vm.expectRevert(bytes("VaultProxy/zero-asset-allowance"));
         proxy.requestDeposit();
 
         assertEq(asset.balanceOf(user), amount);
@@ -50,8 +52,8 @@ contract VaultProxyFactoryTest is Test {
 
         vm.prank(user);
         asset.approve(address(proxy), amount);
-        
-        proxy.requestDeposit{ value: 1 ether }();
+
+        proxy.requestDeposit{value: 1 ether}();
 
         assertEq(asset.balanceOf(user), 0);
         assertEq(asset.balanceOf(address(router)), amount);
@@ -61,5 +63,35 @@ contract VaultProxyFactoryTest is Test {
         assertEq(router.values_address("requestDeposit_controller"), user);
         assertEq(router.values_address("requestDeposit_owner"), address(router));
         assertEq(router.values_uint256("requestDeposit_topUpAmount"), 1 ether);
+    }
+
+    function testVaultProxyRedeem(uint256 amount) public {
+        vm.assume(amount > 0);
+
+        address user = makeAddr("user");
+
+        VaultProxy proxy = VaultProxy(factory.newVaultProxy(address(vault), user));
+        share.mint(user, amount);
+        vm.deal(address(this), 1 ether);
+
+        vm.expectRevert(bytes("VaultProxy/zero-share-allowance"));
+        proxy.requestRedeem();
+
+        assertEq(share.balanceOf(user), amount);
+        assertEq(share.balanceOf(address(router)), 0);
+
+        vm.prank(user);
+        share.approve(address(proxy), amount);
+
+        proxy.requestRedeem{value: 1 ether}();
+
+        assertEq(share.balanceOf(user), 0);
+        assertEq(share.balanceOf(address(router)), amount);
+
+        assertEq(router.values_address("requestRedeem_vault"), address(vault));
+        assertEq(router.values_uint256("requestRedeem_amount"), amount);
+        assertEq(router.values_address("requestRedeem_controller"), user);
+        assertEq(router.values_address("requestRedeem_owner"), address(router));
+        assertEq(router.values_uint256("requestRedeem_topUpAmount"), 1 ether);
     }
 }
