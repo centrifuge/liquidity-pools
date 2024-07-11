@@ -25,6 +25,7 @@ contract VaultProxy is IVaultProxy {
     /// @inheritdoc IVaultProxy
     function requestDeposit() external payable {
         uint256 assets = asset.allowance(user, address(this));
+        require(assets > 0, "VaultProxy/zero-asset-allowance");
         asset.transferFrom(user, address(router), assets);
         router.requestDeposit{value: msg.value}(vault, assets, user, address(router), msg.value);
     }
@@ -32,6 +33,7 @@ contract VaultProxy is IVaultProxy {
     /// @inheritdoc IVaultProxy
     function requestRedeem() external payable {
         uint256 shares = share.allowance(user, address(this));
+        require(shares > 0, "VaultProxy/zero-share-allowance");
         share.transferFrom(user, address(router), shares);
         router.requestRedeem{value: msg.value}(vault, shares, user, address(router), msg.value);
     }
@@ -42,6 +44,9 @@ interface VaultProxyFactoryLike {
 }
 
 /// @title  Vault investment proxy factory
+/// @notice Used to deploy vault proxies that investors can give ERC20 approval for assets or shares
+///         which anyone can then permissionlessly trigger the requests to the vaults to. Can be used
+///         by integrations that can only support ERC20 approvals and not arbitrary contract calls.
 contract VaultProxyFactory is IVaultProxyFactory {
     address public immutable router;
 
