@@ -177,7 +177,7 @@ contract GatewayTest is Test {
         uint64 poolId = 1;
         uint128 assetId = 1;
         bytes memory _addPool = abi.encodePacked(uint8(MessagesLib.Call.AddPool), poolId);
-        bytes memory _addAsset = abi.encodePacked(uint8(MessagesLib.Call.AddAsset), assetId, address(erc20));
+        bytes memory _addAsset = abi.encodePacked(uint8(MessagesLib.Call.AddAsset), assetId, makeAddr("erc20"));
         bytes memory _allowAsset = abi.encodePacked(uint8(MessagesLib.Call.AllowAsset), poolId, assetId);
 
         bytes memory _message = abi.encodePacked(
@@ -189,9 +189,10 @@ contract GatewayTest is Test {
             uint16(_allowAsset.length),
             _allowAsset
         );
-        centrifugeChain.execute(_message);
-        assertEq(poolManager.idToAsset(assetId), address(erc20));
-        assertEq(poolManager.isAllowedAsset(poolId, address(erc20)), true);
+        gateway.handle(_message);
+        assertEq(poolManager.received(_addPool), 1);
+        assertEq(poolManager.received(_addAsset), 1);
+        assertEq(poolManager.received(_allowAsset), 1);
     }
 
     function testBatchedMessagedWithinBatchedMessageFails() public {
@@ -199,7 +200,7 @@ contract GatewayTest is Test {
         uint128 assetId = 1;
         bytes memory _addPool = abi.encodePacked(uint8(MessagesLib.Call.AddPool), poolId);
 
-        bytes memory _addAsset = abi.encodePacked(uint8(MessagesLib.Call.AddAsset), assetId, address(erc20));
+        bytes memory _addAsset = abi.encodePacked(uint8(MessagesLib.Call.AddAsset), assetId, makeAddr("erc20"));
         bytes memory _allowAsset = abi.encodePacked(uint8(MessagesLib.Call.AllowAsset), poolId, assetId);
 
         bytes memory _addAndAllowAssetMessage = abi.encodePacked(
@@ -214,7 +215,7 @@ contract GatewayTest is Test {
             _addAndAllowAssetMessage
         );
         vm.expectRevert(bytes("Gateway/batch-not-allowed-within-batch"));
-        centrifugeChain.execute(_message);
+        gateway.handle(_message);
     }
 
     function testFileAdapters() public {

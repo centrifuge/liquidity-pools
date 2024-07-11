@@ -123,7 +123,7 @@ contract Gateway is Auth, IGateway {
     // --- Incoming ---
     /// @inheritdoc IGateway
     function handle(bytes calldata message) external pauseable {
-        _handle(message, msg.sender, false);
+        _handle(message, msg.sender, false, false);
     }
 
     function _handle(bytes calldata payload, address adapter_, bool isRecovery, bool isBatched) internal {
@@ -142,7 +142,7 @@ contract Gateway is Auth, IGateway {
         bool isMessageProof = call == uint8(MessagesLib.Call.MessageProof);
         if (adapter.quorum == 1 && !isMessageProof) {
             // Special case for gas efficiency
-            _dispatch(payload);
+            _dispatch(payload, adapter_, isRecovery, isBatched);
             emit ExecuteMessage(payload, adapter_);
             return;
         }
@@ -176,9 +176,9 @@ contract Gateway is Auth, IGateway {
 
             // Handle message
             if (isMessageProof) {
-                _dispatch(state.pendingMessage);
+                _dispatch(state.pendingMessage, adapter_, isRecovery, isBatched);
             } else {
-                _dispatch(payload);
+                _dispatch(payload, adapter_, isRecovery, isBatched);
             }
 
             // Only if there are no more pending messages, remove the pending message
@@ -192,7 +192,7 @@ contract Gateway is Auth, IGateway {
         }
     }
 
-    function _dispatch(bytes memory message) internal {
+    function _dispatch(bytes memory message, address _adapter, bool isRecovery, bool isBatched) internal {
         uint8 id = message.toUint8(0);
         address manager;
 
@@ -203,15 +203,23 @@ contract Gateway is Auth, IGateway {
             manager = investmentManager;
         } else if (id >= 21 && id <= 22 || id == 31) {
             manager = address(root);
-        } else if (id == 32) {
-            require(!isBatched, "Gateway/batch-not-allowed-within-batch");
+        } else if (id == 33) {
+            require(!isBatched, "Gateway/no-recursive-batching-allowed");
             // Handle batch messages
             uint256 start = 1;
             while (start < message.length) {
                 // Each message in the batch is prefixed with
                 // the message length (uint16: 2 bytes)
                 uint16 length = message.toUint16(start);
-                _handle(message[start + 2:start + 2 + length], true);
+                bytes calldata subMessageCalldata;
+
+                assembly {
+                    let subMessageStart := add(add(message, 0x20), start)
+                    subMessageCalldata.offset := add(subMessageStart, 2)
+                    subMessageCalldata.length := length
+                }
+
+                _handle(subMessageCalldata, _adapter, isRecovery, true);
                 start += 2 + length;
             }
             return;
@@ -257,7 +265,7 @@ contract Gateway is Auth, IGateway {
         require(recovery <= block.timestamp, "Gateway/challenge-period-has-not-ended");
 
         delete recoveries[adapter][messageHash];
-        _handle(message, adapter, true);
+        _handle(message, adapter, true, false);
         emit ExecuteMessageRecovery(message, adapter);
     }
 
