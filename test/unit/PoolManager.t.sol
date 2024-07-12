@@ -458,7 +458,7 @@ contract PoolManagerTest is BaseTest {
         assertTrue(tranche.checkTransferRestriction(randomUser, secondUser, 0));
     }
 
-    function testUpdateTokenMetadata() public {
+    function testUpdateTrancheMetadata() public {
         address vault_ = deploySimpleVault();
         ERC7540Vault vault = ERC7540Vault(vault_);
         uint64 poolId = vault.poolId();
@@ -484,6 +484,31 @@ contract PoolManagerTest is BaseTest {
 
         vm.expectRevert(bytes("PoolManager/old-metadata"));
         centrifugeChain.updateTrancheMetadata(poolId, trancheId, updatedTokenName, updatedTokenSymbol);
+    }
+
+    function testUpdateTrancheHook() public {
+        address vault_ = deploySimpleVault();
+        ERC7540Vault vault = ERC7540Vault(vault_);
+        uint64 poolId = vault.poolId();
+        bytes16 trancheId = vault.trancheId();
+        ITranche tranche = ITranche(address(ERC7540Vault(vault_).share()));
+
+        address newHook = makeAddr("NewHook");
+
+        vm.expectRevert(bytes("PoolManager/unknown-token"));
+        centrifugeChain.updateTrancheHook(100, bytes16(bytes("100")), newHook);
+
+        vm.expectRevert(bytes("Auth/not-authorized"));
+        vm.prank(randomUser);
+        poolManager.updateTrancheHook(poolId, trancheId, newHook);
+
+        assertEq(tranche.hook(), restrictionManager);
+
+        centrifugeChain.updateTrancheHook(poolId, trancheId, newHook);
+        assertEq(tranche.hook(), newHook);
+
+        vm.expectRevert(bytes("PoolManager/old-hook"));
+        centrifugeChain.updateTrancheHook(poolId, trancheId, newHook);
     }
 
     function testAllowAsset() public {
@@ -514,7 +539,7 @@ contract PoolManagerTest is BaseTest {
         centrifugeChain.disallowAsset(poolId + 1, randomCurrency);
     }
 
-    function testUpdateTokenPriceWorks(
+    function testUpdateTranchePriceWorks(
         uint64 poolId,
         uint8 decimals,
         uint128 assetId,

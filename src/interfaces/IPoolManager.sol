@@ -136,6 +136,9 @@ interface IPoolManager is IMessageHandler, IRecoverable {
     /// @notice TODO
     function updateRestriction(uint64 poolId, bytes16 trancheId, bytes memory update) external;
 
+    /// @notice TODO
+    function updateTrancheHook(uint64 poolId, bytes16 trancheId, address hook) external;
+
     /// @notice A global chain agnostic asset index is maintained on Centrifuge. This function maps
     ///         a asset from the Centrifuge index to its corresponding address on the evm chain.
     ///         The chain agnostic asset id has to be used to pass asset information to the Centrifuge.

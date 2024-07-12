@@ -76,7 +76,9 @@ library MessagesLib {
         /// 31 - Recover Tokens sent to the wrong contract
         RecoverTokens,
         /// 32 - Update Centrifuge Gas Price
-        UpdateCentrifugeGasPrice
+        UpdateCentrifugeGasPrice,
+        /// 32 - Update Trnache Hook
+        UpdateTrancheHook
     }
 
     function messageType(bytes memory _msg) internal pure returns (Call _call) {

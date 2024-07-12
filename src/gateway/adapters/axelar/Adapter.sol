@@ -58,9 +58,9 @@ contract AxelarAdapter is Auth, IAdapter {
         else revert("AxelarAdapterfile-unrecognized-param");
         emit File(what, value);
     }
+
     // --- Incoming ---
     /// @inheritdoc IAdapter
-
     function execute(
         bytes32 commandId,
         string calldata sourceChain,
