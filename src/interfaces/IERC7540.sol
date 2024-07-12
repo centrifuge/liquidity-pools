@@ -2,6 +2,7 @@
 pragma solidity >=0.5.0;
 
 import {IERC7575} from "src/interfaces/IERC7575.sol";
+import {IRecoverable} from "src/interfaces/IRoot.sol";
 
 interface IERC7540Operator {
     /**
@@ -271,7 +272,8 @@ interface IERC7540Vault is
     IERC7540CancelRedeem,
     IERC7575,
     IAuthorizeOperator,
-    IERC7714
+    IERC7714,
+    IRecoverable
 {
     event DepositClaimable(address indexed controller, uint256 indexed requestId, uint256 assets, uint256 shares);
     event RedeemClaimable(address indexed controller, uint256 indexed requestId, uint256 assets, uint256 shares);

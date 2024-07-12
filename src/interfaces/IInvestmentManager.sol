@@ -2,6 +2,7 @@
 pragma solidity >=0.5.0;
 
 import {IMessageHandler} from "src/interfaces/gateway/IGateway.sol";
+import {IRecoverable} from "src/interfaces/IRoot.sol";
 
 /// @dev Vault orders and investment/redemption limits per user
 struct InvestmentState {
@@ -27,7 +28,7 @@ struct InvestmentState {
     bool pendingCancelRedeemRequest;
 }
 
-interface IInvestmentManager is IMessageHandler {
+interface IInvestmentManager is IMessageHandler, IRecoverable {
     // --- Events ---
     event File(bytes32 indexed what, address data);
     event TriggerRedeemRequest(
@@ -36,9 +37,6 @@ interface IInvestmentManager is IMessageHandler {
 
     /// @notice TODO
     function file(bytes32 what, address data) external;
-
-    /// @notice TODO
-    function recoverTokens(address token, address to, uint256 amount) external;
 
     // --- Outgoing message handling ---
     /// @notice Liquidity pools have to request investments from Centrifuge before

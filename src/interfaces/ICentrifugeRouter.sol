@@ -2,8 +2,9 @@
 pragma solidity >=0.5.0;
 
 import {Domain} from "src/interfaces/IPoolManager.sol";
+import {IRecoverable} from "src/interfaces/IRoot.sol";
 
-interface ICentrifugeRouter {
+interface ICentrifugeRouter is IRecoverable {
     // --- Events ---
     event LockDepositRequest(
         address indexed vault, address indexed controller, address indexed owner, address sender, uint256 amount
@@ -13,10 +14,6 @@ interface ICentrifugeRouter {
 
     /// @notice TODO
     function lockedRequests(address controller, address vault) external view returns (uint256 amount);
-
-    // --- Administration ---
-    /// @notice TODO
-    function recoverTokens(address token, address to, uint256 amount) external;
 
     // --- Deposit ---
     /// @notice TODO

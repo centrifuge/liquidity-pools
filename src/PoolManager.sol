@@ -25,6 +25,7 @@ import {IEscrow} from "src/interfaces/IEscrow.sol";
 import {IGateway} from "src/interfaces/gateway/IGateway.sol";
 import {IGasService} from "src/interfaces/gateway/IGasService.sol";
 import {IAuth} from "src/interfaces/IAuth.sol";
+import {IRecoverable} from "src/interfaces/IRoot.sol";
 
 /// @title  Pool Manager
 /// @notice This contract manages which pools & tranches exist,
@@ -72,6 +73,7 @@ contract PoolManager is Auth, IPoolManager {
         emit File(what, data);
     }
 
+    /// @inheritdoc IRecoverable
     function recoverTokens(address token, address to, uint256 amount) external auth {
         SafeTransferLib.safeTransfer(token, to, amount);
     }
@@ -84,10 +86,7 @@ contract PoolManager is Auth, IPoolManager {
 
         SafeTransferLib.safeTransferFrom(asset, msg.sender, address(escrow), amount);
 
-        gateway.send(
-            abi.encodePacked(uint8(MessagesLib.Call.Transfer), assetId, msg.sender.toBytes32(), recipient, amount),
-            address(this)
-        );
+        gateway.send(abi.encodePacked(uint8(MessagesLib.Call.Transfer), assetId, recipient, amount), address(this));
         emit TransferAssets(asset, msg.sender, recipient, amount);
     }
 
@@ -104,15 +103,10 @@ contract PoolManager is Auth, IPoolManager {
         require(address(tranche) != address(0), "PoolManager/unknown-token");
 
         tranche.burn(msg.sender, amount);
+        bytes9 domain = _formatDomain(destinationDomain, destinationId);
         gateway.send(
             abi.encodePacked(
-                uint8(MessagesLib.Call.TransferTrancheTokens),
-                poolId,
-                trancheId,
-                msg.sender.toBytes32(),
-                _formatDomain(destinationDomain, destinationId),
-                recipient,
-                amount
+                uint8(MessagesLib.Call.TransferTrancheTokens), poolId, trancheId, domain, recipient, amount
             ),
             address(this)
         );
