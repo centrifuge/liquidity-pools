@@ -40,7 +40,6 @@ contract ForkTest is Deployer, Test {
     uint128 currencyId = 242333941209166991950178742833476896417; // USDC 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48
     address currency = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
     address adminMultiSig = 0xD9D30ab47c0f096b0AA67e9B8B1624504a63e7FD;
-    // old lp 0xB3AC09cd5201569a821d87446A4aF1b202B10aFd
 
     address self;
 
@@ -73,7 +72,7 @@ contract ForkTest is Deployer, Test {
         // get auth on old TrancheToken through DelayedAdmin - simulate governance
         vm.startPrank(adminMultiSig);
         guardianOld.scheduleRely(self);
-        // get auth on old TrancheToken through Guardian - simulate governance
+        // get auth on new TrancheToken through Guardian - simulate governance
         guardian.scheduleRely(self);
         vm.stopPrank();
         // warp delay time = 48H & exec relies
@@ -92,35 +91,32 @@ contract ForkTest is Deployer, Test {
             abi.encodePacked(uint8(RestrictionUpdate.UpdateMember), address(holder2).toBytes32(), type(uint64).max);
         bytes memory update3 =
             abi.encodePacked(uint8(RestrictionUpdate.UpdateMember), address(holder3).toBytes32(), type(uint64).max);
-
         poolManager.updateRestriction(poolId, trancheId, update1);
         poolManager.updateRestriction(poolId, trancheId, update2);
         poolManager.updateRestriction(poolId, trancheId, update3);
 
-        // mint new tranche Tokens to users and make sure the balance equals with old token balances
+        // mint new tranche Tokens to users and make sure the balance equals to old tranche token balances
         trancheToken.mint(holder1, holderBalance1);
         trancheToken.mint(holder2, holderBalance2);
         trancheToken.mint(holder3, holderBalance3);
-
         assertEq(holderBalance1, trancheToken.balanceOf(holder1));
         assertEq(holderBalance2, trancheToken.balanceOf(holder2));
         assertEq(holderBalance3, trancheToken.balanceOf(holder3));
         assertEq(trancheTokenToMigrate.totalSupply(), trancheToken.totalSupply());
 
-        // burn old tranche tokens using auth transfers
+        // burn old tranche tokens using auth transfers & make sure old tranche token supply equals zero
         TrancheTokenOld(tokenToMigrate_).authTransferFrom(holder1, self, holderBalance1);
         TrancheTokenOld(tokenToMigrate_).authTransferFrom(holder2, self, holderBalance2);
         TrancheTokenOld(tokenToMigrate_).authTransferFrom(holder3, self, holderBalance3);
         trancheTokenToMigrate.burn(self, holderBalance1);
         trancheTokenToMigrate.burn(self, holderBalance2);
         trancheTokenToMigrate.burn(self, holderBalance3);
-
         assertEq(trancheTokenToMigrate.balanceOf(holder1), 0);
         assertEq(trancheTokenToMigrate.balanceOf(holder2), 0);
         assertEq(trancheTokenToMigrate.balanceOf(holder3), 0);
         assertEq(trancheTokenToMigrate.totalSupply(), 0);
 
-        // rename token
+        // rename old tranche token
         trancheTokenToMigrate.file("name", "test");
         trancheTokenToMigrate.file("symbol", "test");
         assertEq(trancheTokenToMigrate.name(), "test");
