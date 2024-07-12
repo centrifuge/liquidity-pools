@@ -207,18 +207,19 @@ contract Gateway is Auth, IGateway {
         } else if (id == 33) {
             // Handle batch messages
             require(!isBatched, "Gateway/no-recursive-batching-allowed");
-            uint256 start = 1;
-            while (start < message.length) {
+            uint256 offset = 1;
+            while (offset < message.length) {
                 // Each message in the batch is prefixed with
                 // the message length (uint16: 2 bytes)
-                uint16 length = message.toUint16(start);
+                uint16 length = message.toUint16(offset);
                 bytes memory subMessage = new bytes(length);
+                offset = offset + 2;
                 for (uint256 i = 0; i < length; i++) {
-                    subMessage[i] = message[start + 2 + i];
+                    subMessage[i] = message[offset + i];
                 }
                 _dispatch(subMessage, true);
 
-                start += 2 + length;
+                offset += length;
             }
             return;
         } else {
