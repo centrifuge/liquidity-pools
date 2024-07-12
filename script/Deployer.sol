@@ -59,10 +59,10 @@ contract Deployer is Script {
         investmentManager = new InvestmentManager(address(root), address(escrow));
         poolManager = new PoolManager(address(escrow), vaultFactory, trancheFactory);
         transferProxyFactory = address(new TransferProxyFactory{salt: salt}(address(poolManager)));
-        vaultProxyFactory = address(new VaultProxyFactory{salt: salt}(address(router)));
         gasService = new GasService(messageCost, proofCost, gasPrice, tokenPrice);
         gateway = new Gateway(address(root), address(poolManager), address(investmentManager), address(gasService));
         router = new CentrifugeRouter(address(routerEscrow), address(gateway), address(poolManager));
+        vaultProxyFactory = address(new VaultProxyFactory{salt: salt}(address(router)));
         guardian = new Guardian(adminSafe, address(root), address(gateway));
 
         _endorse();

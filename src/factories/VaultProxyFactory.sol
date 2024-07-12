@@ -31,11 +31,23 @@ contract VaultProxy is IVaultProxy {
     }
 
     /// @inheritdoc IVaultProxy
+    function claimDeposit() external {
+        uint256 maxMint = IERC7540Vault(vault).maxMint(user);
+        IERC7540Vault(vault).mint(maxMint, address(user), user);
+    }
+
+    /// @inheritdoc IVaultProxy
     function requestRedeem() external payable {
-        uint256 shares = share.allowance(user, address(this));
+        uint256 shares = share.allowance(user, user);
         require(shares > 0, "VaultProxy/zero-share-allowance");
         share.transferFrom(user, address(router), shares);
         router.requestRedeem{value: msg.value}(vault, shares, user, address(router), msg.value);
+    }
+
+    /// @inheritdoc IVaultProxy
+    function claimRedeem() external {
+        uint256 maxWithdraw = IERC7540Vault(vault).maxWithdraw(address(this));
+        IERC7540Vault(vault).withdraw(maxWithdraw, address(user), address(this));
     }
 }
 

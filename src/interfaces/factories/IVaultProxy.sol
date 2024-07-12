@@ -5,8 +5,14 @@ interface IVaultProxy {
     /// @dev Anyone can submit deposit request if there is USDC approval
     function requestDeposit() external payable;
 
+    /// @dev Anyone can claim shares
+    function claimDeposit() external;
+
     /// @dev Anyone can submit redeem request if there is share token approval
     function requestRedeem() external payable;
+
+    /// @dev Anyone can claim assets
+    function claimRedeem() external;
 }
 
 interface IVaultProxyFactory {
