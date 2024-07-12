@@ -205,8 +205,8 @@ contract Gateway is Auth, IGateway {
         } else if (id >= 21 && id <= 22 || id == 31) {
             manager = address(root);
         } else if (id == 33) {
-            require(!isBatched, "Gateway/no-recursive-batching-allowed");
             // Handle batch messages
+            require(!isBatched, "Gateway/no-recursive-batching-allowed");
             uint256 start = 1;
             while (start < message.length) {
                 // Each message in the batch is prefixed with
