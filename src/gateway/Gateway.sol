@@ -124,10 +124,10 @@ contract Gateway is Auth, IGateway {
     // --- Incoming ---
     /// @inheritdoc IGateway
     function handle(bytes calldata message) external pauseable {
-        _handle(message, msg.sender, false, false);
+        _handle(message, msg.sender, false);
     }
 
-    function _handle(bytes calldata payload, address adapter_, bool isRecovery, bool isBatched) internal {
+    function _handle(bytes calldata payload, address adapter_, bool isRecovery) internal {
         Adapter memory adapter = activeAdapters[adapter_];
         require(adapter.id != 0, "Gateway/invalid-adapter");
         uint8 call = payload.toUint8(0);
@@ -143,7 +143,7 @@ contract Gateway is Auth, IGateway {
         bool isMessageProof = call == uint8(MessagesLib.Call.MessageProof);
         if (adapter.quorum == 1 && !isMessageProof) {
             // Special case for gas efficiency
-            _dispatch(payload, isBatched);
+            _dispatch(payload, false);
             emit ExecuteMessage(payload, adapter_);
             return;
         }
@@ -177,9 +177,9 @@ contract Gateway is Auth, IGateway {
 
             // Handle message
             if (isMessageProof) {
-                _dispatch(state.pendingMessage, isBatched);
+                _dispatch(state.pendingMessage, false);
             } else {
-                _dispatch(payload, isBatched);
+                _dispatch(payload, false);
             }
 
             // Only if there are no more pending messages, remove the pending message
@@ -263,7 +263,7 @@ contract Gateway is Auth, IGateway {
         require(recovery <= block.timestamp, "Gateway/challenge-period-has-not-ended");
 
         delete recoveries[adapter][messageHash];
-        _handle(message, adapter, true, false);
+        _handle(message, adapter, true);
         emit ExecuteMessageRecovery(message, adapter);
     }
 
