@@ -21,6 +21,7 @@ contract GasServiceTest is Test {
     }
 
     function testDeployment() public {
+        service = new GasService(MESSAGE_COST, PROOF_COST, GAS_PRICE, TOKEN_PRICE);
         assertEq(service.wards(address(this)), 1);
         assertEq(service.messageCost(), MESSAGE_COST);
         assertEq(service.proofCost(), PROOF_COST);
@@ -40,6 +41,10 @@ contract GasServiceTest is Test {
 
         vm.expectRevert(bytes("GasService/file-unrecognized-param"));
         service.file(what, messageCost);
+
+        vm.prank(makeAddr("unauthorized"));
+        vm.expectRevert("Auth/not-authorized");
+        service.file("messageCost", messageCost);
     }
 
     function testUpdateGasPrice(uint128 value) public {
@@ -66,11 +71,19 @@ contract GasServiceTest is Test {
         service.updateGasPrice(value, futureDate);
         assertEq(service.gasPrice(), value);
         assertEq(service.lastUpdatedAt(), futureDate);
+
+        vm.prank(makeAddr("unauthorized"));
+        vm.expectRevert("Auth/not-authorized");
+        service.updateGasPrice(value, futureDate);
     }
 
     function testUpdateTokenPrice(uint256 value) public {
         service.updateTokenPrice(value);
         assertEq(service.tokenPrice(), value);
+
+        vm.prank(makeAddr("unauthorized"));
+        vm.expectRevert("Auth/not-authorized");
+        service.updateTokenPrice(value);
     }
 
     function testEstimateFunction(bytes calldata message) public {
