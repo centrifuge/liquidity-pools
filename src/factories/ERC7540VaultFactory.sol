@@ -24,7 +24,7 @@ interface AuthLike {
 
 /// @title  ERC7540 Vault Factory
 /// @dev    Utility for deploying new vault contracts
-contract ERC7540VaultFactory is Auth {
+contract ERC7540VaultFactory is Auth, ERC7540VaultFactoryLike {
     address public immutable root;
 
     constructor(address _root) {

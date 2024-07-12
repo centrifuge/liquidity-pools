@@ -69,13 +69,14 @@ contract Gateway is Auth, IGateway {
             require(quorum_ <= MAX_ADAPTER_COUNT, "Gateway/exceeds-max-adapter-count");
 
             uint64 sessionId = 0;
-            if (adapters.length > 0) {
+            uint8 numAdapters = uint8(adapters.length);
+            if (numAdapters > 0) {
                 // Increment session id if it is not the initial adapter setup and the quorum was decreased
                 Adapter memory prevAdapter = activeAdapters[adapters[0]];
                 sessionId = quorum_ < prevAdapter.quorum ? prevAdapter.activeSessionId + 1 : prevAdapter.activeSessionId;
             }
             // Disable old adapters
-            for (uint8 i = 0; i < adapters.length; i++) {
+            for (uint8 i = 0; i < numAdapters; i++) {
                 delete activeAdapters[adapters[i]];
             }
 

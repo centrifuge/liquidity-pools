@@ -20,5 +20,5 @@ interface IGuardian {
 
     /// @notice Dispute an gateway message recovery
     /// @dev callable by safe only
-    function disputeMessageRecovery(bytes32 messageHash) external;
+    function disputeMessageRecovery(address adapter, bytes32 messageHash) external;
 }

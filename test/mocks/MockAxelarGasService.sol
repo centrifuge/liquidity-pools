@@ -11,7 +11,7 @@ contract MockAxelarGasService is Mock {
         bytes calldata payload,
         address refundAddress
     ) external payable {
-        call("payNativeGasForContractCall");
+        callWithValue("payNativeGasForContractCall", msg.value);
         values_address["sender"] = sender;
         values_string["destinationChain"] = destinationChain;
         values_string["destinationAddress"] = destinationAddress;

@@ -13,7 +13,6 @@ interface IERC1404 {
 interface ITranche is IERC20Metadata, IERC7575Share, IERC1404 {
     // --- Events ---
     event File(bytes32 indexed what, address data);
-    event File(bytes32 indexed what, address data1, address data2);
     event SetHookData(address indexed user, bytes16 data);
 
     // --- Administration ---
@@ -29,6 +28,7 @@ interface ITranche is IERC20Metadata, IERC7575Share, IERC1404 {
     /// @notice TODO
     function updateVault(address asset, address vault_) external;
 
+    // --- ERC20 overrides ---
     /// @notice TODO
     function hookDataOf(address user) external view returns (bytes16);
 

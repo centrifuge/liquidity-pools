@@ -326,7 +326,6 @@ contract PoolManagerTest is BaseTest {
             uint8(MessagesLib.Call.TransferTrancheTokens),
             poolId,
             trancheId,
-            bytes32(bytes20(address(this))),
             Domain.Centrifuge,
             uint64(0),
             centChainAddress,

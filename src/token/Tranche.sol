@@ -29,6 +29,7 @@ contract Tranche is ERC20, ITranche {
 
     uint8 internal constant MAX_DECIMALS = 18;
 
+    /// @inheritdoc ITranche
     address public hook;
 
     /// @inheritdoc IERC7575Share
@@ -51,6 +52,7 @@ contract Tranche is ERC20, ITranche {
         emit File(what, data);
     }
 
+    /// @inheritdoc ITranche
     function file(bytes32 what, string memory data) public override(ERC20, ITranche) auth {
         super.file(what, data);
     }
@@ -62,6 +64,7 @@ contract Tranche is ERC20, ITranche {
     }
 
     // --- ERC20 overrides ---
+    /// @inheritdoc IERC20
     function balanceOf(address user) public view override(ERC20, IERC20) returns (uint256) {
         return balances[user].getLSBits(128);
     }
@@ -78,11 +81,13 @@ contract Tranche is ERC20, ITranche {
         emit SetHookData(user, hookData);
     }
 
+    /// @inheritdoc IERC20
     function transfer(address to, uint256 value) public override(ERC20, IERC20) returns (bool success) {
         success = super.transfer(to, value);
         _onTransfer(msg.sender, to, value);
     }
 
+    /// @inheritdoc IERC20
     function transferFrom(address from, address to, uint256 value)
         public
         override(ERC20, IERC20)
@@ -105,13 +110,12 @@ contract Tranche is ERC20, ITranche {
     }
 
     function _onTransfer(address from, address to, uint256 value) internal {
-        if (hook != address(0)) {
-            require(
-                IHook(hook).onERC20Transfer(from, to, value, HookData(hookDataOf(from), hookDataOf(to)))
+        require(
+            hook == address(0)
+                || IHook(hook).onERC20Transfer(from, to, value, HookData(hookDataOf(from), hookDataOf(to)))
                     == IHook.onERC20Transfer.selector,
-                "Tranche/restrictions-failed"
-            );
-        }
+            "Tranche/restrictions-failed"
+        );
     }
 
     /// @inheritdoc ITranche
@@ -121,13 +125,12 @@ contract Tranche is ERC20, ITranche {
         returns (bool success)
     {
         success = _transferFrom(sender, from, to, value);
-        if (hook != address(0)) {
-            require(
-                IHook(hook).onERC20AuthTransfer(sender, from, to, value, HookData(hookDataOf(from), hookDataOf(to)))
+        require(
+            hook == address(0)
+                || IHook(hook).onERC20AuthTransfer(sender, from, to, value, HookData(hookDataOf(from), hookDataOf(to)))
                     == IHook.onERC20AuthTransfer.selector,
-                "Tranche/restrictions-failed"
-            );
-        }
+            "Tranche/restrictions-failed"
+        );
     }
 
     // --- ERC1404 implementation ---
