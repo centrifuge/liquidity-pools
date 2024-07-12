@@ -143,7 +143,7 @@ contract Gateway is Auth, IGateway {
         bool isMessageProof = call == uint8(MessagesLib.Call.MessageProof);
         if (adapter.quorum == 1 && !isMessageProof) {
             // Special case for gas efficiency
-            _dispatch(payload, adapter_, isRecovery, isBatched);
+            _dispatch(payload, isBatched);
             emit ExecuteMessage(payload, adapter_);
             return;
         }
@@ -177,9 +177,9 @@ contract Gateway is Auth, IGateway {
 
             // Handle message
             if (isMessageProof) {
-                _dispatch(state.pendingMessage, adapter_, isRecovery, isBatched);
+                _dispatch(state.pendingMessage, isBatched);
             } else {
-                _dispatch(payload, adapter_, isRecovery, isBatched);
+                _dispatch(payload, isBatched);
             }
 
             // Only if there are no more pending messages, remove the pending message
@@ -193,7 +193,7 @@ contract Gateway is Auth, IGateway {
         }
     }
 
-    function _dispatch(bytes memory message, address _adapter, bool isRecovery, bool isBatched) internal {
+    function _dispatch(bytes memory message, bool isBatched) internal {
         uint8 id = message.toUint8(0);
         address manager;
 
@@ -216,7 +216,7 @@ contract Gateway is Auth, IGateway {
                 for (uint256 i = 0; i < length; i++) {
                     subMessage[i] = message[start + 2 + i];
                 }
-                _dispatch(subMessage, _adapter, isRecovery, true);
+                _dispatch(subMessage, true);
 
                 start += 2 + length;
             }
