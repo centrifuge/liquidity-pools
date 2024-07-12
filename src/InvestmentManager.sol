@@ -7,13 +7,13 @@ import {MathLib} from "src/libraries/MathLib.sol";
 import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 import {MessagesLib} from "src/libraries/MessagesLib.sol";
 import {BytesLib} from "src/libraries/BytesLib.sol";
-import {IRoot} from "src/interfaces/IRoot.sol";
 import {IERC20, IERC20Metadata} from "src/interfaces/IERC20.sol";
 import {IPoolManager} from "src/interfaces/IPoolManager.sol";
 import {IInvestmentManager, InvestmentState} from "src/interfaces/IInvestmentManager.sol";
 import {ITranche} from "src/interfaces/token/ITranche.sol";
 import {IERC7540Vault} from "src/interfaces/IERC7540.sol";
 import {IGateway} from "src/interfaces/gateway/IGateway.sol";
+import {IRecoverable} from "src/interfaces/IRoot.sol";
 
 /// @title  Investment Manager
 /// @notice This is the main contract vaults interact with for
@@ -51,7 +51,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
         emit File(what, data);
     }
 
-    /// @inheritdoc IInvestmentManager
+    /// @inheritdoc IRecoverable
     function recoverTokens(address token, address to, uint256 amount) external auth {
         SafeTransferLib.safeTransfer(token, to, amount);
     }

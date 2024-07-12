@@ -87,7 +87,7 @@ interface IGateway {
     function activeSessionId() external view returns (uint64);
 
     /// @notice TODO
-    function votes(bytes32 messageHash) external view returns (uint16[MAX_ADAPTER_COUNT] memory votes);
+    function votes(bytes32 messageHash) external view returns (uint16[MAX_ADAPTER_COUNT] memory);
 
     // @dev Used to calculate overall cost for bridging a payload on the first adapter and settling
     // on the destination chain and  bridging its payload proofs on n-1 adapter and settling on the destination chain.

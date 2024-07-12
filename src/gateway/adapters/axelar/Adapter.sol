@@ -2,6 +2,7 @@
 pragma solidity 0.8.26;
 
 import {IAdapter} from "src/interfaces/gateway/IAdapter.sol";
+import {IGateway} from "src/interfaces/gateway/IGateway.sol";
 import {Auth} from "src/Auth.sol";
 import {IGateway} from "src/interfaces/gateway/IGateway.sol";
 

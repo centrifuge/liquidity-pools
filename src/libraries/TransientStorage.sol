@@ -15,13 +15,13 @@ library TransientStorage {
         }
     }
 
-    function tloadAddress(bytes32 slot) internal returns (address value) {
+    function tloadAddress(bytes32 slot) internal view returns (address value) {
         assembly {
             value := tload(slot)
         }
     }
 
-    function tloadUint256(bytes32 slot) internal returns (uint256 value) {
+    function tloadUint256(bytes32 slot) internal view returns (uint256 value) {
         assembly {
             value := tload(slot)
         }

@@ -3,6 +3,10 @@ pragma solidity >=0.5.0;
 
 import {IMessageHandler} from "src/interfaces/gateway/IGateway.sol";
 
+interface IRecoverable {
+    function recoverTokens(address, address, uint256) external;
+}
+
 interface IRoot is IMessageHandler {
     // --- Events ---
     event File(bytes32 indexed what, uint256 data);

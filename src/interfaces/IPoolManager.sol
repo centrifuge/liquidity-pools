@@ -2,6 +2,7 @@
 pragma solidity >=0.5.0;
 
 import {IMessageHandler} from "src/interfaces/gateway/IGateway.sol";
+import {IRecoverable} from "src/interfaces/IRoot.sol";
 
 /// @dev Centrifuge pools
 struct Pool {
@@ -49,7 +50,7 @@ enum Domain {
     EVM
 }
 
-interface IPoolManager is IMessageHandler {
+interface IPoolManager is IMessageHandler, IRecoverable {
     event File(bytes32 indexed what, address data);
     event AddAsset(uint128 indexed assetId, address indexed asset);
     event AddPool(uint64 indexed poolId);

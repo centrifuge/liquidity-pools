@@ -9,10 +9,10 @@ import {IERC20, IERC20Permit, IERC20Wrapper} from "src/interfaces/IERC20.sol";
 import {IERC7540Vault} from "src/interfaces/IERC7540.sol";
 import {ICentrifugeRouter} from "src/interfaces/ICentrifugeRouter.sol";
 import {IPoolManager, Domain} from "src/interfaces/IPoolManager.sol";
-import {IInvestmentManager} from "src/interfaces/IInvestmentManager.sol";
 import {IEscrow} from "src/interfaces/IEscrow.sol";
 import {IGateway} from "src/interfaces/gateway/IGateway.sol";
 import {TransientStorage} from "src/libraries/TransientStorage.sol";
+import {IRecoverable} from "src/interfaces/IRoot.sol";
 
 contract CentrifugeRouter is Auth, ICentrifugeRouter {
     using CastLib for address;
@@ -51,7 +51,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     }
 
     // --- Administration ---
-    /// @inheritdoc ICentrifugeRouter
+    /// @inheritdoc IRecoverable
     function recoverTokens(address token, address to, uint256 amount) external auth {
         SafeTransferLib.safeTransfer(token, to, amount);
     }
@@ -154,8 +154,8 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
                 || (controller == receiver && IERC7540Vault(vault).isOperator(controller, address(this))),
             "CentrifugeRouter/invalid-sender"
         );
-        uint256 maxDeposit = IERC7540Vault(vault).maxDeposit(controller);
-        IERC7540Vault(vault).deposit(maxDeposit, receiver, controller);
+        uint256 maxMint = IERC7540Vault(vault).maxMint(controller);
+        IERC7540Vault(vault).mint(maxMint, receiver, controller);
     }
 
     /// @inheritdoc ICentrifugeRouter
@@ -196,15 +196,15 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
             && IERC7540Vault(vault).isOperator(controller, address(this));
 
         require(controller == initiator || permissionlesslyClaiming, "CentrifugeRouter/invalid-sender");
-        uint256 maxRedeem = IERC7540Vault(vault).maxRedeem(controller);
+        uint256 maxWithdraw = IERC7540Vault(vault).maxWithdraw(controller);
 
         (address asset, bool isWrapper) = poolManager.getVaultAsset(vault);
         if (isWrapper && permissionlesslyClaiming) {
-            // Auto-unwrap if permissionlesly claiming for another controller
-            uint256 assets = IERC7540Vault(vault).redeem(maxRedeem, address(this), controller);
-            unwrap(asset, assets, receiver);
+            // Auto-unwrap if permissionlessly claiming for another controller
+            IERC7540Vault(vault).withdraw(maxWithdraw, address(this), controller);
+            unwrap(asset, maxWithdraw, receiver);
         } else {
-            IERC7540Vault(vault).redeem(maxRedeem, receiver, controller);
+            IERC7540Vault(vault).withdraw(maxWithdraw, receiver, controller);
         }
     }
 
@@ -337,7 +337,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     }
 
     // --- Helpers ---
-    function _initiator() internal returns (address) {
+    function _initiator() internal view returns (address) {
         return INITIATOR_SLOT.tloadAddress();
     }
 

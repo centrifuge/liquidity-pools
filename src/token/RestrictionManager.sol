@@ -2,7 +2,6 @@
 pragma solidity 0.8.26;
 
 import {Auth} from "src/Auth.sol";
-import {IERC20} from "src/interfaces/IERC20.sol";
 import {IRoot} from "src/interfaces/IRoot.sol";
 import {ITranche} from "src/interfaces/token/ITranche.sol";
 import {IHook, HookData} from "src/interfaces/token/IHook.sol";
