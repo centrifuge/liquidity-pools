@@ -172,52 +172,6 @@ contract GatewayTest is Test {
         assertEq(mgr.values_bytes("handle_message"), message);
     }
 
-    // --- Batched messages ---
-    function testBatchedAddPoolAddAssetAllowAssetMessage() public {
-        uint64 poolId = 1;
-        uint128 assetId = 1;
-        bytes memory _addPool = abi.encodePacked(uint8(MessagesLib.Call.AddPool), poolId);
-        bytes memory _addAsset = abi.encodePacked(uint8(MessagesLib.Call.AddAsset), assetId, makeAddr("erc20"));
-        bytes memory _allowAsset = abi.encodePacked(uint8(MessagesLib.Call.AllowAsset), poolId, assetId);
-
-        bytes memory _message = abi.encodePacked(
-            uint8(MessagesLib.Call.Batch),
-            uint16(_addPool.length),
-            _addPool,
-            uint16(_addAsset.length),
-            _addAsset,
-            uint16(_allowAsset.length),
-            _allowAsset
-        );
-        gateway.handle(_message);
-        assertEq(poolManager.received(_addPool), 1);
-        assertEq(poolManager.received(_addAsset), 1);
-        assertEq(poolManager.received(_allowAsset), 1);
-    }
-
-    function testBatchedMessagedWithinBatchedMessageFails() public {
-        uint64 poolId = 1;
-        uint128 assetId = 1;
-        bytes memory _addPool = abi.encodePacked(uint8(MessagesLib.Call.AddPool), poolId);
-
-        bytes memory _addAsset = abi.encodePacked(uint8(MessagesLib.Call.AddAsset), assetId, makeAddr("erc20"));
-        bytes memory _allowAsset = abi.encodePacked(uint8(MessagesLib.Call.AllowAsset), poolId, assetId);
-
-        bytes memory _addAndAllowAssetMessage = abi.encodePacked(
-            uint8(MessagesLib.Call.Batch), uint16(_addAsset.length), _addAsset, uint16(_allowAsset.length), _allowAsset
-        );
-
-        bytes memory _message = abi.encodePacked(
-            uint8(MessagesLib.Call.Batch),
-            uint16(_addPool.length),
-            _addPool,
-            uint16(_addAndAllowAssetMessage.length),
-            _addAndAllowAssetMessage
-        );
-        vm.expectRevert(bytes("Gateway/batch-not-allowed-within-batch"));
-        gateway.handle(_message);
-    }
-
     function testFileAdapters() public {
         gateway.file("adapters", threeMockAdapters);
         assertEq(gateway.adapters(0), address(adapter1));

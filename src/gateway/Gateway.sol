@@ -11,7 +11,6 @@ import {IGateway, IMessageHandler} from "src/interfaces/gateway/IGateway.sol";
 import {IRoot} from "src/interfaces/IRoot.sol";
 import {IGasService} from "src/interfaces/gateway/IGasService.sol";
 import {IAdapter} from "src/interfaces/gateway/IAdapter.sol";
-import {console} from "forge-std/Console.sol";
 
 /// @title  Gateway
 /// @notice Routing contract that forwards to multiple adapters (1 full message, n-1 proofs)
@@ -128,11 +127,9 @@ contract Gateway is Auth, IGateway {
     }
 
     function _handle(bytes calldata payload, address adapter_, bool isRecovery, bool isBatched) internal {
-        console.log("handle", adapter_);
         Adapter memory adapter = activeAdapters[adapter_];
         require(adapter.id != 0, "Gateway/invalid-adapter");
         uint8 call = payload.toUint8(0);
-        console.log("call", call);
         if (
             call == uint8(MessagesLib.Call.InitiateMessageRecovery)
                 || call == uint8(MessagesLib.Call.DisputeMessageRecovery)
@@ -143,9 +140,7 @@ contract Gateway is Auth, IGateway {
         }
 
         bool isMessageProof = call == uint8(MessagesLib.Call.MessageProof);
-        console.log("isMessageProof", isMessageProof);
         if (adapter.quorum == 1 && !isMessageProof) {
-            console.log("special case");
             // Special case for gas efficiency
             _dispatch(payload, adapter_, isRecovery, isBatched);
             emit ExecuteMessage(payload, adapter_);
@@ -181,10 +176,8 @@ contract Gateway is Auth, IGateway {
 
             // Handle message
             if (isMessageProof) {
-                console.log("votes are enough and is proof");
                 _dispatch(state.pendingMessage, adapter_, isRecovery, isBatched);
             } else {
-                console.log("votes are enough and is not proof");
                 _dispatch(payload, adapter_, isRecovery, isBatched);
             }
 
@@ -195,7 +188,6 @@ contract Gateway is Auth, IGateway {
 
             emit ExecuteMessage(payload, msg.sender);
         } else if (!isMessageProof) {
-            console.log("is not proof and not enough votes");
             state.pendingMessage = payload;
         }
     }
