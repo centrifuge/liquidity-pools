@@ -2,11 +2,11 @@
 pragma solidity 0.8.26;
 
 import "test/BaseTest.sol";
+import {MockManager} from "test/mocks/MockManager.sol";
+import {CastLib} from "src/libraries/CastLib.sol";
 
 contract AdminTest is BaseTest {
-    function setUp() public override {
-        super.setUp();
-    }
+    using CastLib for *;
 
     function testDeployment() public {
         // values set correctly
@@ -324,5 +324,51 @@ contract AdminTest is BaseTest {
         root.veto(router);
         assertEq(root.endorsements(router), 0);
         assertEq(root.endorsed(router), false);
+    }
+
+    function testDisputeRecovery() public {
+        MockManager poolManager = new MockManager();
+        gateway.file("adapters", testAdapters);
+
+        bytes memory message = abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1));
+        bytes memory proof = _formatMessageProof(message);
+
+        // Only send through 2 out of 3 adapters
+        _send(adapter1, message);
+        _send(adapter2, proof);
+        assertEq(poolManager.received(message), 0);
+
+        // Initiate recovery
+        _send(
+            adapter1,
+            abi.encodePacked(
+                uint8(MessagesLib.Call.InitiateMessageRecovery), keccak256(proof), address(adapter3).toBytes32()
+            )
+        );
+
+        vm.expectRevert(bytes("Gateway/challenge-period-has-not-ended"));
+        gateway.executeMessageRecovery(address(adapter3), proof);
+
+        vm.prank(makeAddr("unauthorized"));
+        vm.expectRevert("Guardian/not-the-authorized-safe");
+        guardian.disputeMessageRecovery(address(adapter3), keccak256(proof));
+
+        // Dispute recovery
+        vm.prank(address(adminSafe));
+        guardian.disputeMessageRecovery(address(adapter3), keccak256(proof));
+
+        // Check that recovery is not possible anymore
+        vm.expectRevert(bytes("Gateway/message-recovery-not-initiated"));
+        gateway.executeMessageRecovery(address(adapter3), proof);
+        assertEq(poolManager.received(message), 0);
+    }
+
+    function _send(MockAdapter adapter, bytes memory message) internal {
+        vm.prank(address(adapter));
+        gateway.handle(message);
+    }
+
+    function _formatMessageProof(bytes memory message) internal pure returns (bytes memory) {
+        return abi.encodePacked(uint8(MessagesLib.Call.MessageProof), keccak256(message));
     }
 }

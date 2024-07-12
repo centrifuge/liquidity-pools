@@ -4,6 +4,7 @@ pragma solidity 0.8.26;
 import {Auth} from "src/Auth.sol";
 import {IRoot} from "src/interfaces/IRoot.sol";
 import {EIP712Lib} from "src/libraries/EIP712Lib.sol";
+import {IRecoverable} from "src/interfaces/IRoot.sol";
 import {ITranche} from "src/interfaces/token/ITranche.sol";
 import {SignatureLib} from "src/libraries/SignatureLib.sol";
 import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
@@ -97,6 +98,7 @@ contract ERC7540Vault is Auth, IERC7540Vault {
         emit File(what, data);
     }
 
+    /// @inheritdoc IRecoverable
     function recoverTokens(address token, address to, uint256 amount) external auth {
         SafeTransferLib.safeTransfer(token, to, amount);
     }

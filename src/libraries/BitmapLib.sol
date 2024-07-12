@@ -31,11 +31,6 @@ library BitmapLib {
         return uint128(value) << shift;
     }
 
-    /// @notice Concatenate uint64 values to create a uint128 value
-    function concat(uint64 left, uint64 right) internal pure returns (uint128) {
-        return uint128(uint64(left)) << 64 | uint64(right);
-    }
-
     /// @notice Concatenate uint128 values to create a uint256 value
     function concat(uint128 left, uint128 right) internal pure returns (uint256) {
         return uint256(uint128(left)) << 128 | uint128(right);
