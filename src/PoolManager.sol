@@ -86,10 +86,7 @@ contract PoolManager is Auth, IPoolManager {
 
         SafeTransferLib.safeTransferFrom(asset, msg.sender, address(escrow), amount);
 
-        gateway.send(
-            abi.encodePacked(uint8(MessagesLib.Call.Transfer), assetId, msg.sender.toBytes32(), recipient, amount),
-            address(this)
-        );
+        gateway.send(abi.encodePacked(uint8(MessagesLib.Call.Transfer), assetId, recipient, amount), address(this));
         emit TransferAssets(asset, msg.sender, recipient, amount);
     }
 
@@ -106,15 +103,10 @@ contract PoolManager is Auth, IPoolManager {
         require(address(tranche) != address(0), "PoolManager/unknown-token");
 
         tranche.burn(msg.sender, amount);
+        bytes9 domain = _formatDomain(destinationDomain, destinationId);
         gateway.send(
             abi.encodePacked(
-                uint8(MessagesLib.Call.TransferTrancheTokens),
-                poolId,
-                trancheId,
-                msg.sender.toBytes32(),
-                _formatDomain(destinationDomain, destinationId),
-                recipient,
-                amount
+                uint8(MessagesLib.Call.TransferTrancheTokens), poolId, trancheId, domain, recipient, amount
             ),
             address(this)
         );

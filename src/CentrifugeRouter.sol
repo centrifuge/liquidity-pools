@@ -337,7 +337,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     }
 
     // --- Helpers ---
-    function _initiator() internal returns (address) {
+    function _initiator() internal view returns (address) {
         return INITIATOR_SLOT.tloadAddress();
     }
 
