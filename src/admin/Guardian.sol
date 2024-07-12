@@ -3,24 +3,21 @@ pragma solidity 0.8.26;
 
 import {Root} from "src/Root.sol";
 import {IGuardian} from "src/interfaces/IGuardian.sol";
+import {IGateway} from "src/interfaces/gateway/IGateway.sol";
 
 interface SafeLike {
     function isOwner(address signer) external view returns (bool);
 }
 
-interface GatewayLike {
-    function disputeMessageRecovery(bytes32 messageHash) external;
-}
-
 contract Guardian is IGuardian {
     Root public immutable root;
     SafeLike public immutable safe;
-    GatewayLike public immutable gateway;
+    IGateway public immutable gateway;
 
     constructor(address safe_, address root_, address gateway_) {
         root = Root(root_);
         safe = SafeLike(safe_);
-        gateway = GatewayLike(gateway_);
+        gateway = IGateway(gateway_);
     }
 
     modifier onlySafe() {
@@ -57,8 +54,8 @@ contract Guardian is IGuardian {
     }
 
     /// @inheritdoc IGuardian
-    function disputeMessageRecovery(bytes32 messageHash) external onlySafe {
-        gateway.disputeMessageRecovery(messageHash);
+    function disputeMessageRecovery(address adapter, bytes32 messageHash) external onlySafe {
+        gateway.disputeMessageRecovery(adapter, messageHash);
     }
 
     // --- Helpers ---
