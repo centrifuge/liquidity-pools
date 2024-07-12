@@ -2,7 +2,9 @@
 pragma solidity 0.8.26;
 
 import {IAdapter} from "src/interfaces/gateway/IAdapter.sol";
+import {IGateway} from "src/interfaces/gateway/IGateway.sol";
 import {Auth} from "src/Auth.sol";
+import {IGateway} from "src/interfaces/gateway/IGateway.sol";
 
 interface AxelarGatewayLike {
     function callContract(string calldata destinationChain, string calldata contractAddress, bytes calldata payload)
@@ -14,10 +16,6 @@ interface AxelarGatewayLike {
         string calldata sourceAddress,
         bytes32 payloadHash
     ) external returns (bool);
-}
-
-interface GatewayLike {
-    function handle(bytes memory message) external;
 }
 
 interface AxelarGasServiceLike {
@@ -38,15 +36,15 @@ contract AxelarAdapter is Auth, IAdapter {
     bytes32 public constant CENTRIFUGE_ADDRESS_HASH = keccak256(bytes("0x7369626CEF070000000000000000000000000000"));
     string public constant CENTRIFUGE_AXELAR_EXECUTABLE = "0xc1757c6A0563E37048869A342dF0651b9F267e41";
 
-    GatewayLike public immutable gateway;
+    IGateway public immutable gateway;
     AxelarGatewayLike public immutable axelarGateway;
     AxelarGasServiceLike public immutable axelarGasService;
 
     /// @dev This value is in AXELAR fees in ETH ( wei )
-    uint256 axelarCost = 58039058122843;
+    uint256 public axelarCost = 58039058122843;
 
     constructor(address gateway_, address axelarGateway_, address axelarGasService_) {
-        gateway = GatewayLike(gateway_);
+        gateway = IGateway(gateway_);
         axelarGateway = AxelarGatewayLike(axelarGateway_);
         axelarGasService = AxelarGasServiceLike(axelarGasService_);
 

@@ -2,6 +2,7 @@
 pragma solidity >=0.5.0;
 
 import {IMessageHandler} from "src/interfaces/gateway/IGateway.sol";
+import {IRecoverable} from "src/interfaces/IRoot.sol";
 
 /// @dev Centrifuge pools
 struct Pool {
@@ -44,7 +45,12 @@ struct VaultAsset {
     bool isWrapper;
 }
 
-interface IPoolManager is IMessageHandler {
+enum Domain {
+    Centrifuge,
+    EVM
+}
+
+interface IPoolManager is IMessageHandler, IRecoverable {
     event File(bytes32 indexed what, address data);
     event AddAsset(uint128 indexed assetId, address indexed asset);
     event AddPool(uint64 indexed poolId);
@@ -57,22 +63,18 @@ interface IPoolManager is IMessageHandler {
     event PriceUpdate(
         uint64 indexed poolId, bytes16 indexed trancheId, address indexed asset, uint256 price, uint64 computedAt
     );
-    event TransferCurrency(address indexed asset, address indexed sender, bytes32 indexed recipient, uint128 amount);
-    event TransferTranchesToCentrifuge(
+    event TransferAssets(address indexed asset, address indexed sender, bytes32 indexed recipient, uint128 amount);
+    event TransferTrancheTokens(
         uint64 indexed poolId,
         bytes16 indexed trancheId,
         address indexed sender,
+        Domain destinationDomain,
+        uint64 destinationId,
         bytes32 destinationAddress,
         uint128 amount
     );
-    event TransferTranchesToEVM(
-        uint64 indexed poolId,
-        bytes16 indexed trancheId,
-        address indexed sender,
-        uint64 destinationChainId,
-        address destinationAddress,
-        uint128 amount
-    );
+
+    function investmentManager() external view returns (address);
 
     /// @notice TODO
     function idToAsset(uint128 assetId) external view returns (address asset);
@@ -87,18 +89,15 @@ interface IPoolManager is IMessageHandler {
     function file(bytes32 what, address data) external;
 
     /// @notice TODO
-    function transfer(address asset, bytes32 recipient, uint128 amount) external;
+    function transferAssets(address asset, bytes32 recipient, uint128 amount) external;
 
     /// @notice TODO
-    function transferTranchesToCentrifuge(uint64 poolId, bytes16 trancheId, bytes32 destinationAddress, uint128 amount)
-        external;
-
-    /// @notice TODO
-    function transferTranchesToEVM(
+    function transferTrancheTokens(
         uint64 poolId,
         bytes16 trancheId,
-        uint64 destinationChainId,
-        address destinationAddress,
+        Domain destinationDomain,
+        uint64 destinationId,
+        bytes32 recipient,
         uint128 amount
     ) external;
 
@@ -150,7 +149,7 @@ interface IPoolManager is IMessageHandler {
     function handleTransfer(uint128 assetId, address recipient, uint128 amount) external;
 
     /// @notice TODO
-    function handleTransferTranches(uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 amount)
+    function handleTransferTrancheTokens(uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 amount)
         external;
 
     /// @notice TODO

@@ -2,6 +2,7 @@
 pragma solidity >=0.5.0;
 
 import {IMessageHandler} from "src/interfaces/gateway/IGateway.sol";
+import {IRecoverable} from "src/interfaces/IRoot.sol";
 
 /// @dev Vault orders and investment/redemption limits per user
 struct InvestmentState {
@@ -27,7 +28,7 @@ struct InvestmentState {
     bool pendingCancelRedeemRequest;
 }
 
-interface IInvestmentManager is IMessageHandler {
+interface IInvestmentManager is IMessageHandler, IRecoverable {
     // --- Events ---
     event File(bytes32 indexed what, address data);
     event TriggerRedeemRequest(
@@ -36,9 +37,6 @@ interface IInvestmentManager is IMessageHandler {
 
     /// @notice TODO
     function file(bytes32 what, address data) external;
-
-    /// @notice TODO
-    function recoverTokens(address token, address to, uint256 amount) external;
 
     // --- Outgoing message handling ---
     /// @notice Liquidity pools have to request investments from Centrifuge before
@@ -79,8 +77,7 @@ interface IInvestmentManager is IMessageHandler {
         address user,
         uint128 assetId,
         uint128 assets,
-        uint128 shares,
-        uint128 fulfillment
+        uint128 shares
     ) external;
 
     /// @notice TODO
@@ -106,14 +103,8 @@ interface IInvestmentManager is IMessageHandler {
     /// @dev Compared to handleFulfilledCancelDepositRequest, there is no
     ///      transfer of asset in this function because they
     ///      can stay in the Escrow, ready to be claimed on deposit/mint.
-    function fulfillCancelRedeemRequest(
-        uint64 poolId,
-        bytes16 trancheId,
-        address user,
-        uint128 assetId,
-        uint128 shares,
-        uint128 fulfillment
-    ) external;
+    function fulfillCancelRedeemRequest(uint64 poolId, bytes16 trancheId, address user, uint128 assetId, uint128 shares)
+        external;
 
     /// @notice TODO
     function triggerRedeemRequest(uint64 poolId, bytes16 trancheId, address user, uint128 assetId, uint128 shares)
@@ -158,9 +149,6 @@ interface IInvestmentManager is IMessageHandler {
 
     /// @notice TODO
     function priceLastUpdated(address vault) external view returns (uint64 lastUpdated);
-
-    /// @notice TODO
-    function isGlobalOperator(address, /* vault */ address user) external view returns (bool);
 
     // --- Vault claim functions ---
     /// @notice Processes owner's asset deposit / investment after the epoch has been executed on Centrifuge.

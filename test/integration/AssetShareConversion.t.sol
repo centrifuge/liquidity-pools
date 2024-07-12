@@ -33,7 +33,7 @@ contract AssetShareConversionTest is BaseTest {
         uint128 _assetId = poolManager.assetToId(address(asset)); // retrieve assetId
         uint128 shares = 100000000000000000000; // 100 * 10**18
         centrifugeChain.isFulfilledDepositRequest(
-            poolId, trancheId, bytes32(bytes20(self)), _assetId, uint128(investmentAmount), shares, 0
+            poolId, trancheId, bytes32(bytes20(self)), _assetId, uint128(investmentAmount), shares
         );
         vault.mint(shares, self);
         centrifugeChain.updateTranchePrice(poolId, trancheId, assetId, 1000000000000000000, uint64(block.timestamp));
@@ -80,7 +80,7 @@ contract AssetShareConversionTest is BaseTest {
         uint128 _assetId = poolManager.assetToId(address(asset)); // retrieve assetId
         uint128 shares = 100000000; // 100 * 10**6
         centrifugeChain.isFulfilledDepositRequest(
-            poolId, trancheId, bytes32(bytes20(self)), _assetId, uint128(investmentAmount), shares, 0
+            poolId, trancheId, bytes32(bytes20(self)), _assetId, uint128(investmentAmount), shares
         );
         vault.mint(shares, self);
         centrifugeChain.updateTranchePrice(poolId, trancheId, assetId, 1000000000000000000, uint64(block.timestamp));

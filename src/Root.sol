@@ -4,12 +4,8 @@ pragma solidity 0.8.26;
 import {Auth} from "src/Auth.sol";
 import {MessagesLib} from "src/libraries/MessagesLib.sol";
 import {BytesLib} from "src/libraries/BytesLib.sol";
-import {IRoot} from "src/interfaces/IRoot.sol";
+import {IRoot, IRecoverable} from "src/interfaces/IRoot.sol";
 import {IAuth} from "src/interfaces/IAuth.sol";
-
-interface RecoverLike {
-    function recoverTokens(address, address, uint256) external;
-}
 
 /// @title  Root
 /// @notice Core contract that is a ward on all other deployed contracts.
@@ -145,7 +141,7 @@ contract Root is Auth, IRoot {
     /// --- Token recovery ---
     /// @inheritdoc IRoot
     function recoverTokens(address target, address token, address to, uint256 amount) public auth {
-        RecoverLike(target).recoverTokens(token, to, amount);
+        IRecoverable(target).recoverTokens(token, to, amount);
         emit RecoverTokens(target, token, to, amount);
     }
 }

@@ -24,7 +24,7 @@ interface AuthLike {
 
 /// @title  ERC7540 Vault Factory
 /// @dev    Utility for deploying new vault contracts
-contract ERC7540VaultFactory is Auth {
+contract ERC7540VaultFactory is Auth, ERC7540VaultFactoryLike {
     address public immutable root;
 
     constructor(address _root) {
@@ -43,7 +43,7 @@ contract ERC7540VaultFactory is Auth {
         address investmentManager,
         address[] calldata wards_
     ) public auth returns (address) {
-        ERC7540Vault vault = new ERC7540Vault(poolId, trancheId, asset, tranche, escrow, investmentManager);
+        ERC7540Vault vault = new ERC7540Vault(poolId, trancheId, asset, tranche, root, escrow, investmentManager);
 
         vault.rely(root);
         for (uint256 i = 0; i < wards_.length; i++) {

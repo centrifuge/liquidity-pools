@@ -17,6 +17,7 @@ import {
     TranchePrice,
     UndeployedTranche,
     VaultAsset,
+    Domain,
     IPoolManager
 } from "src/interfaces/IPoolManager.sol";
 import {BytesLib} from "src/libraries/BytesLib.sol";
@@ -24,6 +25,7 @@ import {IEscrow} from "src/interfaces/IEscrow.sol";
 import {IGateway} from "src/interfaces/gateway/IGateway.sol";
 import {IGasService} from "src/interfaces/gateway/IGasService.sol";
 import {IAuth} from "src/interfaces/IAuth.sol";
+import {IRecoverable} from "src/interfaces/IRoot.sol";
 
 /// @title  Pool Manager
 /// @notice This contract manages which pools & tranches exist,
@@ -71,75 +73,45 @@ contract PoolManager is Auth, IPoolManager {
         emit File(what, data);
     }
 
+    /// @inheritdoc IRecoverable
     function recoverTokens(address token, address to, uint256 amount) external auth {
         SafeTransferLib.safeTransfer(token, to, amount);
     }
 
     // --- Outgoing message handling ---
     /// @inheritdoc IPoolManager
-    function transfer(address asset, bytes32 recipient, uint128 amount) external {
+    function transferAssets(address asset, bytes32 recipient, uint128 amount) external {
         uint128 assetId = assetToId[asset];
         require(assetId != 0, "PoolManager/unknown-asset");
 
         SafeTransferLib.safeTransferFrom(asset, msg.sender, address(escrow), amount);
 
-        gateway.send(
-            abi.encodePacked(uint8(MessagesLib.Call.Transfer), assetId, msg.sender.toBytes32(), recipient, amount),
-            address(this)
-        );
-        emit TransferCurrency(asset, msg.sender, recipient, amount);
+        gateway.send(abi.encodePacked(uint8(MessagesLib.Call.Transfer), assetId, recipient, amount), address(this));
+        emit TransferAssets(asset, msg.sender, recipient, amount);
     }
 
     /// @inheritdoc IPoolManager
-    function transferTranchesToCentrifuge(uint64 poolId, bytes16 trancheId, bytes32 destinationAddress, uint128 amount)
-        external
-    {
-        ITranche tranche = ITranche(getTranche(poolId, trancheId));
-        require(address(tranche) != address(0), "PoolManager/unknown-token");
-
-        tranche.burn(msg.sender, amount);
-        gateway.send(
-            abi.encodePacked(
-                uint8(MessagesLib.Call.TransferTranches),
-                poolId,
-                trancheId,
-                msg.sender.toBytes32(),
-                MessagesLib.formatDomain(MessagesLib.Domain.Centrifuge),
-                destinationAddress,
-                amount
-            ),
-            address(this)
-        );
-
-        emit TransferTranchesToCentrifuge(poolId, trancheId, msg.sender, destinationAddress, amount);
-    }
-
-    /// @inheritdoc IPoolManager
-    function transferTranchesToEVM(
+    function transferTrancheTokens(
         uint64 poolId,
         bytes16 trancheId,
-        uint64 destinationChainId,
-        address destinationAddress,
+        Domain destinationDomain,
+        uint64 destinationId,
+        bytes32 recipient,
         uint128 amount
     ) external {
         ITranche tranche = ITranche(getTranche(poolId, trancheId));
         require(address(tranche) != address(0), "PoolManager/unknown-token");
 
         tranche.burn(msg.sender, amount);
+        bytes9 domain = _formatDomain(destinationDomain, destinationId);
         gateway.send(
             abi.encodePacked(
-                uint8(MessagesLib.Call.TransferTranches),
-                poolId,
-                trancheId,
-                msg.sender.toBytes32(),
-                MessagesLib.formatDomain(MessagesLib.Domain.EVM, destinationChainId),
-                destinationAddress.toBytes32(),
-                amount
+                uint8(MessagesLib.Call.TransferTrancheTokens), poolId, trancheId, domain, recipient, amount
             ),
             address(this)
         );
 
-        emit TransferTranchesToEVM(poolId, trancheId, msg.sender, destinationChainId, destinationAddress, amount);
+        emit TransferTrancheTokens(poolId, trancheId, msg.sender, destinationDomain, destinationId, recipient, amount);
     }
 
     // --- Incoming message handling ---
@@ -174,8 +146,8 @@ contract PoolManager is Auth, IPoolManager {
             );
         } else if (call == MessagesLib.Call.Transfer) {
             handleTransfer(message.toUint128(1), message.toAddress(49), message.toUint128(81));
-        } else if (call == MessagesLib.Call.TransferTranches) {
-            handleTransferTranches(
+        } else if (call == MessagesLib.Call.TransferTrancheTokens) {
+            handleTransferTrancheTokens(
                 message.toUint64(1), message.toBytes16(9), message.toAddress(66), message.toUint128(98)
             );
         } else if (call == MessagesLib.Call.UpdateTrancheMetadata) {
@@ -333,7 +305,7 @@ contract PoolManager is Auth, IPoolManager {
     }
 
     /// @inheritdoc IPoolManager
-    function handleTransferTranches(uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 amount)
+    function handleTransferTrancheTokens(uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 amount)
         public
         auth
     {
@@ -345,8 +317,6 @@ contract PoolManager is Auth, IPoolManager {
 
     /// @inheritdoc IPoolManager
     function updateCentrifugeGasPrice(uint128 price, uint256 computedAt) public auth {
-        require(price > 0, "PoolManager/price-cannot-be-zero");
-        require(gasService.gasPrice() != price, "PoolManager/same-price-already-set");
         gasService.updateGasPrice(price, computedAt);
     }
 
@@ -475,5 +445,9 @@ contract PoolManager is Auth, IPoolManager {
     /// @inheritdoc IPoolManager
     function isAllowedAsset(uint64 poolId, address asset) public view returns (bool) {
         return pools[poolId].allowedAssets[asset];
+    }
+
+    function _formatDomain(Domain domain, uint64 chainId) internal pure returns (bytes9) {
+        return bytes9(BytesLib.slice(abi.encodePacked(uint8(domain), chainId), 0, 9));
     }
 }

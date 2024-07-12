@@ -38,7 +38,7 @@ contract DepositRedeem is BaseTest {
         uint128 assets = 50000000; // 50 * 10**6
         uint128 firstTranchePayout = 35714285714285714285; // 50 * 10**18 / 1.4, rounded down
         centrifugeChain.isFulfilledDepositRequest(
-            poolId, trancheId, bytes32(bytes20(self)), _assetId, assets, firstTranchePayout, assets
+            poolId, trancheId, bytes32(bytes20(self)), _assetId, assets, firstTranchePayout
         );
 
         (, uint256 depositPrice,,,,,,,,) = investmentManager.investments(address(vault), self);
@@ -47,7 +47,7 @@ contract DepositRedeem is BaseTest {
         // second trigger executed collectInvest of the second 50% at a price of 1.2
         uint128 secondTranchePayout = 41666666666666666666; // 50 * 10**18 / 1.2, rounded down
         centrifugeChain.isFulfilledDepositRequest(
-            poolId, trancheId, bytes32(bytes20(self)), _assetId, assets, secondTranchePayout, 0
+            poolId, trancheId, bytes32(bytes20(self)), _assetId, assets, secondTranchePayout
         );
 
         (, depositPrice,,,,,,,,) = investmentManager.investments(address(vault), self);
