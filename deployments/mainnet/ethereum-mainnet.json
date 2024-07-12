@@ -1,6 +1,6 @@
 {
     "chainId": 1,
-    "rpcUrl": "https://mainnet.infura.io/v3/ed5e0e19bcbc427cbf8f661736d44516",
+    "rpcUrl": "https://mainnet.infura.io/v3/e5a02bbddefe47f88c2d087ec4a37744",
     "config": {
         "commitHash": "da5c31462b5fe615d3510ca35f884018fd8055c7",
         "deployer": "0x7270b20603FbB3dF0921381670fbd62b9991aDa4",

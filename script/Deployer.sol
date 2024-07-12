@@ -19,7 +19,7 @@ import "forge-std/Script.sol";
 
 contract Deployer is Script {
     uint256 internal constant delay = 48 hours;
-    address adminSafe;
+    address adminSafe = 0xD9D30ab47c0f096b0AA67e9B8B1624504a63e7FD; // safe wallet for fork testing
     address[] adapters;
 
     Root public root;
