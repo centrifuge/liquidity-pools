@@ -133,7 +133,7 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
         unchecked {
             // We don't need an overflow check here b/c balances[to] <= totalSupply
             // and there is an overflow check below
-            balances[to] = balances[to] + value;
+            balances[to] += value;
         }
         totalSupply = totalSupply + value;
 

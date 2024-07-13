@@ -55,7 +55,7 @@ contract MockCentrifugeChain is Test {
             uint8(MessagesLib.Call.AddTranche),
             poolId,
             trancheId,
-            tokenName.toBytes128(),
+            _toBytes128(tokenName),
             tokenSymbol.toBytes32(),
             decimals,
             hook
@@ -82,7 +82,7 @@ contract MockCentrifugeChain is Test {
             uint8(MessagesLib.Call.UpdateTrancheMetadata),
             poolId,
             trancheId,
-            tokenName.toBytes128(),
+            _toBytes128(tokenName),
             tokenSymbol.toBytes32()
         );
         _execute(_message);
@@ -243,6 +243,12 @@ contract MockCentrifugeChain is Test {
             uint8(MessagesLib.Call.FulfilledRedeemRequest), poolId, trancheId, investor, assetId, assets, shares
         );
         _execute(_message);
+    }
+
+    /// @dev Adds zero padding
+    function _toBytes128(string memory source) internal pure returns (bytes memory) {
+        bytes memory sourceBytes = bytes(source);
+        return bytes.concat(sourceBytes, new bytes(128 - sourceBytes.length));
     }
 
     function _execute(bytes memory message) internal {
