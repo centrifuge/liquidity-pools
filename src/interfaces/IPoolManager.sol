@@ -89,7 +89,7 @@ interface IPoolManager is IMessageHandler, IRecoverable {
     /// @return isWrapper Whether the asset is a wrapped ERC20 token
     function vaultToAsset(address) external view returns (address asset, bool isWrapper);
 
-    /// @notice sets a given value to contract storage
+    /// @notice Updates a contract parameter
     /// @param what Accepts a bytes32 representation of 'gateway', 'investmentManager', 'trancheFactory',
     ///                'vaultFactory', or 'gasService'
     function file(bytes32 what, address data) external;
@@ -199,7 +199,7 @@ interface IPoolManager is IMessageHandler, IRecoverable {
     /// @dev    The Centrifuge gas price is used by the gasService contract to
     ///         calculate the gas cost for cross-chain messages.
     /// @dev    The function can only be executed by the gateway contract.
-    function updateCentrifugeGasPrice(uint128 price, uint256 computedAt) external;
+    function updateCentrifugeGasPrice(uint128 price, uint64 computedAt) external;
 
     /// @notice Returns the tranche token for a given pool and tranche id
     function getTranche(uint64 poolId, bytes16 trancheId) external view returns (address);

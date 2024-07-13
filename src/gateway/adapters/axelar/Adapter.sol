@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.26;
 
-import {IAdapter} from "src/interfaces/gateway/IAdapter.sol";
+import {IAxelarAdapter, IAdapter} from "src/interfaces/gateway/adapters/IAxelarAdapter.sol";
 import {IGateway} from "src/interfaces/gateway/IGateway.sol";
 import {Auth} from "src/Auth.sol";
 import {IGateway} from "src/interfaces/gateway/IGateway.sol";
@@ -30,7 +30,7 @@ interface AxelarGasServiceLike {
 
 /// @title  Axelar Adapter
 /// @notice Routing contract that integrates with an Axelar Gateway
-contract AxelarAdapter is Auth, IAdapter {
+contract AxelarAdapter is Auth, IAxelarAdapter {
     string public constant CENTRIFUGE_ID = "centrifuge";
     bytes32 public constant CENTRIFUGE_ID_HASH = keccak256(bytes("centrifuge"));
     bytes32 public constant CENTRIFUGE_ADDRESS_HASH = keccak256(bytes("0x7369626CEF070000000000000000000000000000"));
@@ -40,7 +40,7 @@ contract AxelarAdapter is Auth, IAdapter {
     AxelarGatewayLike public immutable axelarGateway;
     AxelarGasServiceLike public immutable axelarGasService;
 
-    /// @dev This value is in AXELAR fees in ETH ( wei )
+    /// @inheritdoc IAxelarAdapter
     uint256 public axelarCost = 58039058122843;
 
     constructor(address gateway_, address axelarGateway_, address axelarGasService_) {
@@ -53,6 +53,7 @@ contract AxelarAdapter is Auth, IAdapter {
     }
 
     // --- Administrative ---
+    /// @inheritdoc IAxelarAdapter
     function file(bytes32 what, uint256 value) external auth {
         if (what == "axelarCost") axelarCost = value;
         else revert("AxelarAdapterfile-unrecognized-param");
@@ -60,7 +61,7 @@ contract AxelarAdapter is Auth, IAdapter {
     }
 
     // --- Incoming ---
-    /// @inheritdoc IAdapter
+    /// @inheritdoc IAxelarAdapter
     function execute(
         bytes32 commandId,
         string calldata sourceChain,
@@ -78,22 +79,22 @@ contract AxelarAdapter is Auth, IAdapter {
     }
 
     // --- Outgoing ---
-    /// @inheritdoc IAdapter
     function send(bytes calldata payload) public {
         require(msg.sender == address(gateway), "AxelarAdapter/only-gateway-allowed-to-call");
-
         axelarGateway.callContract(CENTRIFUGE_ID, CENTRIFUGE_AXELAR_EXECUTABLE, payload);
     }
 
+    /// @inheritdoc IAdapter
+    /// @dev Currently the payload (message) is not taken into consideration during cost estimation
+    ///      A predefined `axelarCost` value is used.
+    function estimate(bytes calldata, uint256 baseCost) public view returns (uint256) {
+        return baseCost + axelarCost;
+    }
+
+    /// @inheritdoc IAdapter
     function pay(bytes calldata payload, address refund) public payable {
         axelarGasService.payNativeGasForContractCall{value: msg.value}(
             address(this), CENTRIFUGE_ID, CENTRIFUGE_AXELAR_EXECUTABLE, payload, refund
         );
-    }
-
-    /// @dev Currently the payload ( message ) is not taken into consideration during cost estimation
-    /// A predefined `axelarCost` value is used.
-    function estimate(bytes calldata, uint256 gasLimit) public view returns (uint256) {
-        return axelarCost + gasLimit;
     }
 }

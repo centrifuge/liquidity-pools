@@ -5,6 +5,7 @@ import "test/BaseTest.sol";
 import "src/interfaces/IERC7575.sol";
 import "src/interfaces/IERC7540.sol";
 import "src/interfaces/IERC20.sol";
+import {CentrifugeRouter} from "src/CentrifugeRouter.sol";
 import {MockERC20Wrapper} from "test/mocks/MockERC20Wrapper.sol";
 import {CastLib} from "src/libraries/CastLib.sol";
 import {Domain} from "src/interfaces/IPoolManager.sol";
@@ -29,6 +30,9 @@ contract CentrifugeRouterTest is BaseTest {
     bytes constant PAYLOAD_FOR_GAS_ESTIMATION = "irrelevant_value";
 
     function testInitialization() public {
+        // redeploying within test to increase coverage
+        new CentrifugeRouter(address(routerEscrow), address(gateway), address(poolManager));
+
         assertEq(address(router.escrow()), address(routerEscrow));
         assertEq(address(router.gateway()), address(gateway));
         assertEq(address(router.poolManager()), address(poolManager));

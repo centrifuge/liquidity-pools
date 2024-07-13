@@ -303,18 +303,19 @@ interface IERC7540Vault is
     /// @notice Identifier of the tranche of the Centrifuge pool
     function trancheId() external view returns (bytes16);
 
-    /// @notice TODO
+    /// @notice Set msg.sender as operator of owner, to `approved` status
+    /// @dev    MUST be called by endorsed sender
     function setEndorsedOperator(address owner, bool approved) external returns (bool);
 
-    /// @notice TODO
+    /// @notice Callback when a deposit Request becomes claimable
     function onDepositClaimable(address owner, uint256 assets, uint256 shares) external;
 
-    /// @notice TODO
+    /// @notice Callback when a redeem Request becomes claimable
     function onRedeemClaimable(address owner, uint256 assets, uint256 shares) external;
 
-    /// @notice TODO
+    /// @notice Callback when a claim deposit Request becomes claimable
     function onCancelDepositClaimable(address owner, uint256 assets) external;
 
-    /// @notice TODO
+    /// @notice Callback when a claim redeem Request becomes claimable
     function onCancelRedeemClaimable(address owner, uint256 shares) external;
 }

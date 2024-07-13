@@ -20,27 +20,31 @@ interface IRoot is IMessageHandler {
     event Endorse(address indexed user);
     event Veto(address indexed user);
 
-    /// @notice TODO
+    /// @notice Returns whether the root is paused
     function paused() external view returns (bool);
 
-    /// @notice TODO
+    /// @notice Returns the current timelock for adding new wards
     function delay() external view returns (uint256);
 
-    /// @notice TODO
+    /// @notice Returns when `relyTarget` has passed the timelock
     function schedule(address relyTarget) external view returns (uint256 timestamp);
 
     // --- Administration ---
-    /// @notice TODO
+    /// @notice Updates a contract parameter
+    /// @param what Accepts a bytes32 representation of 'delay'
     function file(bytes32 what, uint256 data) external;
 
     /// --- Endorsements ---
-    /// @notice TODO
+    /// @notice Endorses the `user`
+    /// @dev    Endorsed users are trusted contracts in the system. They are allowed to bypass
+    ///         token restrictions (e.g. the Escrow can automatically receive tranche tokens by being endorsed), and
+    ///         can automatically set operators in ERC-7540 vaults (e.g. the CentrifugeRouter) is always an operator.
     function endorse(address user) external;
 
-    /// @notice TODO
+    /// @notice Removes the endorsed user
     function veto(address user) external;
 
-    /// @notice TODO
+    /// @notice Returns whether the user is endorsed
     function endorsed(address user) external view returns (bool);
 
     // --- Pause management ---
