@@ -42,7 +42,8 @@ contract MockReentrantERC20Wrapper2 is ERC20, Mock, IERC20Wrapper {
     }
 
     function depositFor(address account, uint256 value) external returns (bool) {
-        reentrancyTarget.wrap(makeAddr("Vault"), value, makeAddr("Receiver"), account);
+        bytes[] memory calls = new bytes[](0);
+        reentrancyTarget.multicall(calls);
         return true;
     }
 
