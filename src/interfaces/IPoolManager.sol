@@ -156,10 +156,12 @@ interface IPoolManager is IMessageHandler, IRecoverable {
     /// @param  trancheId The tranche id
     /// @param  update The restriction update in the form of a bytes array indicating
     ///                the restriction to be updated, the user to be updated, and a validUntil timestamp.
-    /// @dev    Available restrictions are UpdateMember, Freeze, and Unfreeze
     function updateRestriction(uint64 poolId, bytes16 trancheId, bytes memory update) external;
 
-    /// @notice TODO
+    /// @notice Updates the hook of a tranche token
+    /// @param  poolId The centrifuge pool id
+    /// @param  trancheId The tranche id
+    /// @param  hook The new hook addres
     function updateTrancheHook(uint64 poolId, bytes16 trancheId, address hook) external;
 
     /// @notice A global chain agnostic asset index is maintained on Centrifuge. This function maps
