@@ -16,6 +16,9 @@ contract InvestmentManagerTest is BaseTest {
                 && nonWard != address(this)
         );
 
+        // redeploying within test to increase coverage
+        InvestmentManager newlyDeployed = new InvestmentManager(address(root), address(escrow));
+
         // values set correctly
         assertEq(address(investmentManager.escrow()), address(escrow));
         assertEq(address(investmentManager.gateway()), address(gateway));
