@@ -196,7 +196,7 @@ contract PoolManager is Auth, IPoolManager {
         address asset = idToAsset[assetId];
         require(asset != address(0), "PoolManager/unknown-asset");
 
-        pools[poolId].allowedAssets[asset] = false;
+        delete pools[poolId].allowedAssets[asset];
         emit DisallowAsset(poolId, asset);
     }
 

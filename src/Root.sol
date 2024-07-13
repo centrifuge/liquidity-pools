@@ -78,7 +78,7 @@ contract Root is Auth, IRoot {
 
     /// @inheritdoc IRoot
     function unpause() external auth {
-        paused = false;
+        delete paused;
         emit Unpause();
     }
 

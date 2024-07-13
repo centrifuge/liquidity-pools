@@ -65,12 +65,12 @@ contract Gateway is Auth, IGateway {
     function file(bytes32 what, address[] calldata adapters_) external auth {
         if (what == "adapters") {
             uint8 quorum_ = uint8(adapters_.length);
-            require(quorum_ > 0, "Gateway/empty-adapter-set");
+            require(quorum_ != 0, "Gateway/empty-adapter-set");
             require(quorum_ <= MAX_ADAPTER_COUNT, "Gateway/exceeds-max");
 
             uint64 sessionId = 0;
             uint8 numAdapters = uint8(adapters.length);
-            if (numAdapters > 0) {
+            if (numAdapters != 0) {
                 // Increment session id if it is not the initial adapter setup and the quorum was decreased
                 Adapter memory prevAdapter = activeAdapters[adapters[0]];
                 sessionId = quorum_ < prevAdapter.quorum ? prevAdapter.activeSessionId + 1 : prevAdapter.activeSessionId;
@@ -259,13 +259,13 @@ contract Gateway is Auth, IGateway {
         bytes memory proof = abi.encodePacked(uint8(MessagesLib.Call.MessageProof), keccak256(message));
 
         uint256 numAdapters = adapters.length;
-        require(numAdapters > 0, "Gateway/not-initialized");
+        require(numAdapters != 0, "Gateway/not-initialized");
 
         uint256 fuel = QUOTA_SLOT.tloadUint256();
         uint256 messageCost = gasService.estimate(message);
         uint256 proofCost = gasService.estimate(proof);
 
-        if (fuel > 0) {
+        if (fuel != 0) {
             uint256 tank = fuel;
             for (uint256 i; i < numAdapters; i++) {
                 IAdapter currentAdapter = IAdapter(adapters[i]);
@@ -308,7 +308,7 @@ contract Gateway is Auth, IGateway {
     /// @inheritdoc IGateway
     function topUp() external payable {
         require(IRoot(root).endorsed(msg.sender), "Gateway/only-endorsed-can-topup");
-        require(msg.value > 0, "Gateway/cannot-topup-with-nothing");
+        require(msg.value != 0, "Gateway/cannot-topup-with-nothing");
         QUOTA_SLOT.tstore(msg.value);
     }
 

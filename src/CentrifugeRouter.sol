@@ -116,7 +116,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     function unlockDepositRequest(address vault, address receiver) external payable protected {
         address initiator = _initiator();
         uint256 lockedRequest = lockedRequests[initiator][vault];
-        require(lockedRequest > 0, "CentrifugeRouter/no-locked-balance");
+        require(lockedRequest != 0, "CentrifugeRouter/no-locked-balance");
         lockedRequests[initiator][vault] = 0;
 
         (address asset,) = poolManager.getVaultAsset(vault);
@@ -133,7 +133,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         protected
     {
         uint256 lockedRequest = lockedRequests[controller][vault];
-        require(lockedRequest > 0, "CentrifugeRouter/no-locked-request");
+        require(lockedRequest != 0, "CentrifugeRouter/no-locked-request");
         lockedRequests[controller][vault] = 0;
 
         (address asset,) = poolManager.getVaultAsset(vault);
@@ -315,7 +315,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
             (bool success, bytes memory returnData) = address(this).delegatecall(data[i]);
             if (!success) {
                 uint256 length = returnData.length;
-                require(length > 0, "CentrifugeRouter/call-failed");
+                require(length != 0, "CentrifugeRouter/call-failed");
 
                 assembly ("memory-safe") {
                     revert(add(32, returnData), length)

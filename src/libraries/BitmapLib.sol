@@ -13,7 +13,7 @@ library BitmapLib {
 
     function getBit(uint128 bitmap, uint128 index) internal pure returns (bool) {
         uint128 bitAtIndex = uint128(bitmap & (1 << index));
-        return bitAtIndex > 0;
+        return bitAtIndex != 0;
     }
 
     /// @notice Get n least significant bits from the bitmap

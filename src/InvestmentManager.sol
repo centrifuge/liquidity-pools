@@ -247,12 +247,12 @@ contract InvestmentManager is Auth, IInvestmentManager {
         address vault = poolManager.getVault(poolId, trancheId, assetId);
 
         InvestmentState storage state = investments[vault][user];
-        require(state.pendingDepositRequest > 0, "InvestmentManager/no-pending-deposit-request");
+        require(state.pendingDepositRequest != 0, "InvestmentManager/no-pending-deposit-request");
         state.depositPrice = _calculatePrice(vault, _maxDeposit(vault, user) + assets, state.maxMint + shares);
         state.maxMint = state.maxMint + shares;
         state.pendingDepositRequest = state.pendingDepositRequest > assets ? state.pendingDepositRequest - assets : 0;
 
-        if (state.pendingDepositRequest == 0) state.pendingCancelDepositRequest = false;
+        if (state.pendingDepositRequest == 0) delete state.pendingCancelDepositRequest;
 
         // Mint to escrow. Recipient can claim by calling withdraw / redeem
         ITranche tranche = ITranche(IERC7540Vault(vault).share());
@@ -273,7 +273,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
         address vault = poolManager.getVault(poolId, trancheId, assetId);
 
         InvestmentState storage state = investments[vault][user];
-        require(state.pendingRedeemRequest > 0, "InvestmentManager/no-pending-redeem-request");
+        require(state.pendingRedeemRequest != 0, "InvestmentManager/no-pending-redeem-request");
 
         // Calculate new weighted average redeem price and update order book values
         state.redeemPrice =
@@ -281,7 +281,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
         state.maxWithdraw = state.maxWithdraw + assets;
         state.pendingRedeemRequest = state.pendingRedeemRequest > shares ? state.pendingRedeemRequest - shares : 0;
 
-        if (state.pendingRedeemRequest == 0) state.pendingCancelRedeemRequest = false;
+        if (state.pendingRedeemRequest == 0) delete state.pendingCancelRedeemRequest;
 
         // Burn redeemed tranche tokens from escrow
         ITranche tranche = ITranche(IERC7540Vault(vault).share());
@@ -308,7 +308,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
         state.pendingDepositRequest =
             state.pendingDepositRequest > fulfillment ? state.pendingDepositRequest - fulfillment : 0;
 
-        if (state.pendingDepositRequest == 0) state.pendingCancelDepositRequest = false;
+        if (state.pendingDepositRequest == 0) delete state.pendingCancelDepositRequest;
 
         IERC7540Vault(vault).onCancelDepositClaimable(user, assets);
     }
@@ -325,7 +325,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
         state.claimableCancelRedeemRequest = state.claimableCancelRedeemRequest + shares;
         state.pendingRedeemRequest = state.pendingRedeemRequest > shares ? state.pendingRedeemRequest - shares : 0;
 
-        if (state.pendingRedeemRequest == 0) state.pendingCancelRedeemRequest = false;
+        if (state.pendingRedeemRequest == 0) delete state.pendingCancelRedeemRequest;
 
         IERC7540Vault(vault).onCancelRedeemClaimable(user, shares);
     }
@@ -345,7 +345,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
             // The full redeem request is covered by the claimable amount
             tokensToTransfer = 0;
             state.maxMint = state.maxMint - shares;
-        } else if (state.maxMint > 0) {
+        } else if (state.maxMint != 0) {
             // The redeem request is only partially covered by the claimable amount
             tokensToTransfer = shares - state.maxMint;
             state.maxMint = 0;
@@ -355,7 +355,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
 
         // Transfer the tranche token amount that was not covered by tokens still in escrow for claims,
         // from user to escrow (lock tranche tokens in escrow)
-        if (tokensToTransfer > 0) {
+        if (tokensToTransfer != 0) {
             require(
                 ITranche(address(IERC7540Vault(vault).share())).authTransferFrom(
                     user, user, address(escrow), tokensToTransfer

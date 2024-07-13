@@ -44,7 +44,7 @@ contract GasService is IGasService, Auth {
 
     /// @inheritdoc IGasService
     function updateGasPrice(uint128 value, uint64 computedAt) external auth {
-        require(value > 0, "GasService/price-cannot-be-zero");
+        require(value != 0, "GasService/price-cannot-be-zero");
         require(gasPrice != value, "GasService/already-set-price");
         require(lastUpdatedAt < computedAt, "GasService/outdated-price");
         gasPrice = value;
