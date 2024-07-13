@@ -25,15 +25,6 @@ interface IGateway {
         bytes pendingMessage;
     }
 
-    struct Metadata {
-        address source;
-    }
-
-    struct Transaction {
-        address source;
-        bytes message;
-    }
-
     // --- Events ---
     event HandleMessage(bytes message, address adapter);
     event HandleProof(bytes32 messageHash, address adapter);

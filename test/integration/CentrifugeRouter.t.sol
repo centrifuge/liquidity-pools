@@ -77,7 +77,7 @@ contract CentrifugeRouterTest is BaseTest {
         vm.label(vault_, "vault");
 
         root.veto(address(router));
-        vm.expectRevert(bytes("ERC7540Vault/sender-not-endorsed"));
+        vm.expectRevert(bytes("ERC7540Vault/not-endorsed"));
         router.open(vault_);
         assertEq(vault.isOperator(address(this), address(router)), false);
 
@@ -86,7 +86,7 @@ contract CentrifugeRouterTest is BaseTest {
         assertEq(vault.isOperator(address(this), address(router)), true);
 
         root.veto(address(router));
-        vm.expectRevert(bytes("ERC7540Vault/sender-not-endorsed"));
+        vm.expectRevert(bytes("ERC7540Vault/not-endorsed"));
         router.close(vault_);
         assertEq(vault.isOperator(address(this), address(router)), true);
 
@@ -513,7 +513,7 @@ contract CentrifugeRouterTest is BaseTest {
         vm.expectRevert("Gateway/cannot-topup-with-nothing");
         router.requestDeposit(vault_, amount, self, self, 0);
 
-        vm.expectRevert("CentrifugeRouter/insufficient-funds-to-topup");
+        vm.expectRevert("CentrifugeRouter/insufficient-funds");
         router.requestDeposit{value: lessGas}(vault_, amount, self, self, gasLimit);
 
         vm.expectRevert("Gateway/not-enough-gas-funds");
@@ -529,7 +529,7 @@ contract CentrifugeRouterTest is BaseTest {
         calls[0] = abi.encodeWithSelector(router.requestDeposit.selector, vault_, amount / 2, self, self, gasLimit);
         calls[1] = abi.encodeWithSelector(router.requestDeposit.selector, vault_, amount / 2, self, self, gasLimit);
 
-        vm.expectRevert("CentrifugeRouter/insufficient-funds-to-topup");
+        vm.expectRevert("CentrifugeRouter/insufficient-funds");
         router.multicall{value: gasLimit}(calls);
 
         uint256 coverMoreThanItIsNeeded = gasLimit * calls.length + 1;

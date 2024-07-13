@@ -382,31 +382,31 @@ contract InvestmentManager is Auth, IInvestmentManager {
     }
 
     /// @inheritdoc IInvestmentManager
-    function maxDeposit(address vault, address user) public view returns (uint256) {
+    function maxDeposit(address vault, address user) public view returns (uint256 assets) {
         if (!_canTransfer(vault, address(escrow), user, 0)) return 0;
-        return uint256(_maxDeposit(vault, user));
+        assets = uint256(_maxDeposit(vault, user));
     }
 
-    function _maxDeposit(address vault, address user) internal view returns (uint128) {
+    function _maxDeposit(address vault, address user) internal view returns (uint128 assets) {
         InvestmentState memory state = investments[vault][user];
-        return _calculateAssets(state.maxMint, vault, state.depositPrice);
+        assets = _calculateAssets(state.maxMint, vault, state.depositPrice);
     }
 
     /// @inheritdoc IInvestmentManager
     function maxMint(address vault, address user) public view returns (uint256 shares) {
         if (!_canTransfer(vault, address(escrow), user, 0)) return 0;
-        return uint256(investments[vault][user].maxMint);
+        shares = uint256(investments[vault][user].maxMint);
     }
 
     /// @inheritdoc IInvestmentManager
     function maxWithdraw(address vault, address user) public view returns (uint256 assets) {
-        return uint256(investments[vault][user].maxWithdraw);
+        assets = uint256(investments[vault][user].maxWithdraw);
     }
 
     /// @inheritdoc IInvestmentManager
     function maxRedeem(address vault, address user) public view returns (uint256 shares) {
         InvestmentState memory state = investments[vault][user];
-        return uint256(_calculateShares(state.maxWithdraw, vault, state.redeemPrice));
+        shares = uint256(_calculateShares(state.maxWithdraw, vault, state.redeemPrice));
     }
 
     /// @inheritdoc IInvestmentManager
@@ -564,28 +564,28 @@ contract InvestmentManager is Auth, IInvestmentManager {
         }
     }
 
-    function _calculatePrice(address vault, uint128 assets, uint128 shares) internal view returns (uint256 price) {
+    function _calculatePrice(address vault, uint128 assets, uint128 shares) internal view returns (uint256) {
         if (assets == 0 || shares == 0) {
             return 0;
         }
 
         (uint8 assetDecimals, uint8 shareDecimals) = _getPoolDecimals(vault);
-        price = _toPriceDecimals(assets, assetDecimals).mulDiv(
+        return _toPriceDecimals(assets, assetDecimals).mulDiv(
             10 ** PRICE_DECIMALS, _toPriceDecimals(shares, shareDecimals), MathLib.Rounding.Down
         );
     }
 
     /// @dev    When converting assets to shares using the price,
     ///         all values are normalized to PRICE_DECIMALS
-    function _toPriceDecimals(uint128 _value, uint8 decimals) internal pure returns (uint256 value) {
+    function _toPriceDecimals(uint128 _value, uint8 decimals) internal pure returns (uint256) {
         if (PRICE_DECIMALS == decimals) return uint256(_value);
-        value = uint256(_value) * 10 ** (PRICE_DECIMALS - decimals);
+        return uint256(_value) * 10 ** (PRICE_DECIMALS - decimals);
     }
 
     /// @dev    Convert decimals of the value from the price decimals back to the intended decimals
-    function _fromPriceDecimals(uint256 _value, uint8 decimals) internal pure returns (uint128 value) {
+    function _fromPriceDecimals(uint256 _value, uint8 decimals) internal pure returns (uint128) {
         if (PRICE_DECIMALS == decimals) return _value.toUint128();
-        value = (_value / 10 ** (PRICE_DECIMALS - decimals)).toUint128();
+        return (_value / 10 ** (PRICE_DECIMALS - decimals)).toUint128();
     }
 
     /// @dev    Return the asset decimals and the share decimals for a given vault

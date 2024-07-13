@@ -305,7 +305,7 @@ interface IERC7540Vault is
 
     /// @notice Set msg.sender as operator of owner, to `approved` status
     /// @dev    MUST be called by endorsed sender
-    function setEndorsedOperator(address owner, bool approved) external returns (bool);
+    function setEndorsedOperator(address owner, bool approved) external;
 
     /// @notice Callback when a deposit Request becomes claimable
     function onDepositClaimable(address owner, uint256 assets, uint256 shares) external;

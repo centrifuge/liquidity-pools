@@ -116,7 +116,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     function unlockDepositRequest(address vault, address receiver) external payable protected {
         address initiator = _initiator();
         uint256 lockedRequest = lockedRequests[initiator][vault];
-        require(lockedRequest > 0, "CentrifugeRouter/user-has-no-locked-balance");
+        require(lockedRequest > 0, "CentrifugeRouter/no-locked-balance");
         lockedRequests[initiator][vault] = 0;
 
         (address asset,) = poolManager.getVaultAsset(vault);
@@ -133,7 +133,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         protected
     {
         uint256 lockedRequest = lockedRequests[controller][vault];
-        require(lockedRequest > 0, "CentrifugeRouter/controller-has-no-balance");
+        require(lockedRequest > 0, "CentrifugeRouter/no-locked-request");
         lockedRequests[controller][vault] = 0;
 
         (address asset,) = poolManager.getVaultAsset(vault);
@@ -295,14 +295,14 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         SafeTransferLib.safeTransferFrom(underlying, owner, address(this), amount);
 
         _approveMax(underlying, wrapper);
-        require(IERC20Wrapper(wrapper).depositFor(receiver, amount), "CentrifugeRouter/deposit-for-failed");
+        require(IERC20Wrapper(wrapper).depositFor(receiver, amount), "CentrifugeRouter/wrap-failed");
     }
 
     function unwrap(address wrapper, uint256 amount, address receiver) public payable protected {
         amount = MathLib.min(amount, IERC20(wrapper).balanceOf(address(this)));
         require(amount != 0, "CentrifugeRouter/zero-balance");
 
-        require(IERC20Wrapper(wrapper).withdrawTo(receiver, amount), "CentrifugeRouter/withdraw-to-failed");
+        require(IERC20Wrapper(wrapper).withdrawTo(receiver, amount), "CentrifugeRouter/unwrap-failed");
     }
 
     // --- Batching ---
@@ -350,7 +350,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     }
 
     function _pay(uint256 amount) internal {
-        require(amount <= address(this).balance, "CentrifugeRouter/insufficient-funds-to-topup");
+        require(amount <= address(this).balance, "CentrifugeRouter/insufficient-funds");
         gateway.topUp{value: amount}();
     }
 }

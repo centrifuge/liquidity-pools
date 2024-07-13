@@ -333,7 +333,7 @@ contract PoolManager is Auth, IPoolManager {
     // --- Public functions ---
     // slither-disable-start reentrancy-eth
     /// @inheritdoc IPoolManager
-    function deployTranche(uint64 poolId, bytes16 trancheId) public returns (address) {
+    function deployTranche(uint64 poolId, bytes16 trancheId) external returns (address) {
         UndeployedTranche storage undeployedTranche = undeployedTranches[poolId][trancheId];
         require(undeployedTranche.decimals != 0, "PoolManager/tranche-not-added");
 
@@ -368,7 +368,7 @@ contract PoolManager is Auth, IPoolManager {
     // slither-disable-end reentrancy-eth
 
     /// @inheritdoc IPoolManager
-    function deployVault(uint64 poolId, bytes16 trancheId, address asset) public returns (address) {
+    function deployVault(uint64 poolId, bytes16 trancheId, address asset) external returns (address) {
         TrancheDetails storage tranche = pools[poolId].tranches[trancheId];
         require(tranche.token != address(0), "PoolManager/tranche-does-not-exist");
         require(isAllowedAsset(poolId, asset), "PoolManager/asset-not-supported");
@@ -401,7 +401,7 @@ contract PoolManager is Auth, IPoolManager {
     }
 
     /// @inheritdoc IPoolManager
-    function removeVault(uint64 poolId, bytes16 trancheId, address asset) public auth {
+    function removeVault(uint64 poolId, bytes16 trancheId, address asset) external auth {
         require(pools[poolId].createdAt != 0, "PoolManager/pool-does-not-exist");
         TrancheDetails storage tranche = pools[poolId].tranches[trancheId];
         require(tranche.token != address(0), "PoolManager/tranche-does-not-exist");

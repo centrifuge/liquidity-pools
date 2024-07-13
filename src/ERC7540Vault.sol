@@ -24,6 +24,12 @@ import "src/interfaces/IERC20.sol";
 ///         After execution users can use the deposit, mint, redeem and withdraw functions to get their shares
 ///         and/or assets from the pools.
 contract ERC7540Vault is Auth, IERC7540Vault {
+    /// @dev Requests for Centrifuge pool are non-transferable and all have ID = 0
+    uint256 private constant REQUEST_ID = 0;
+
+    bytes32 public constant AUTHORIZE_OPERATOR_TYPEHASH =
+        keccak256("AuthorizeOperator(address controller,address operator,bool approved,uint256 deadline,bytes32 nonce)");
+
     /// @inheritdoc IERC7540Vault
     uint64 public immutable poolId;
 
@@ -46,15 +52,10 @@ contract ERC7540Vault is Auth, IERC7540Vault {
     /// @dev Vault implementation contract
     IInvestmentManager public manager;
 
-    /// @dev Requests for Centrifuge pool are non-transferable and all have ID = 0
-    uint256 constant REQUEST_ID = 0;
-
     bytes32 private immutable nameHash;
     bytes32 private immutable versionHash;
     uint256 public immutable deploymentChainId;
     bytes32 private immutable _DOMAIN_SEPARATOR;
-    bytes32 public constant AUTHORIZE_OPERATOR_TYPEHASH =
-        keccak256("AuthorizeOperator(address controller,address operator,bool approved,uint256 deadline,bytes32 nonce)");
 
     /// @inheritdoc IERC7741
     mapping(address controller => mapping(bytes32 nonce => bool used)) public authorizations;
@@ -219,18 +220,17 @@ contract ERC7540Vault is Auth, IERC7540Vault {
     }
 
     /// @inheritdoc IERC7540Operator
-    function setOperator(address operator, bool approved) public virtual returns (bool) {
+    function setOperator(address operator, bool approved) public virtual returns (bool success) {
         isOperator[msg.sender][operator] = approved;
         emit OperatorSet(msg.sender, operator, approved);
-        return true;
+        success = true;
     }
 
     /// @inheritdoc IERC7540Vault
-    function setEndorsedOperator(address owner, bool approved) public virtual returns (bool) {
-        require(root.endorsed(msg.sender), "ERC7540Vault/sender-not-endorsed");
+    function setEndorsedOperator(address owner, bool approved) public virtual {
+        require(root.endorsed(msg.sender), "ERC7540Vault/not-endorsed");
         isOperator[owner][msg.sender] = approved;
         emit OperatorSet(owner, msg.sender, approved);
-        return true;
     }
 
     /// @inheritdoc IERC7741
@@ -248,8 +248,8 @@ contract ERC7540Vault is Auth, IERC7540Vault {
         uint256 deadline,
         bytes32 nonce,
         bytes memory signature
-    ) external returns (bool) {
-        require(block.timestamp <= deadline, "ERC7540Vault/authorization-expired");
+    ) external returns (bool success) {
+        require(block.timestamp <= deadline, "ERC7540Vault/expired");
         require(controller != address(0), "ERC7540Vault/invalid-controller");
         require(!authorizations[controller][nonce], "ERC7540Vault/authorization-used");
 
@@ -268,7 +268,7 @@ contract ERC7540Vault is Auth, IERC7540Vault {
         isOperator[controller][operator] = approved;
         emit OperatorSet(controller, operator, approved);
 
-        return true;
+        success = true;
     }
 
     /// @inheritdoc IERC7741

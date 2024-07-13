@@ -45,8 +45,8 @@ contract GasService is IGasService, Auth {
     /// @inheritdoc IGasService
     function updateGasPrice(uint128 value, uint64 computedAt) external auth {
         require(value > 0, "GasService/price-cannot-be-zero");
-        require(gasPrice != value, "GasService/same-price-already-set");
-        require(lastUpdatedAt < computedAt, "GasService/cannot-update-price-with-backdate");
+        require(gasPrice != value, "GasService/already-set-price");
+        require(lastUpdatedAt < computedAt, "GasService/outdated-price");
         gasPrice = value;
         lastUpdatedAt = computedAt;
         emit UpdateGasPrice(value, computedAt);
@@ -73,7 +73,7 @@ contract GasService is IGasService, Auth {
     }
 
     /// @inheritdoc IGasService
-    function shouldRefuel(address, bytes calldata) public pure returns (bool) {
-        return true;
+    function shouldRefuel(address, bytes calldata) public pure returns (bool success) {
+        success = true;
     }
 }

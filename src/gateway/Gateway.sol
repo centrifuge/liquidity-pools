@@ -66,7 +66,7 @@ contract Gateway is Auth, IGateway {
         if (what == "adapters") {
             uint8 quorum_ = uint8(adapters_.length);
             require(quorum_ > 0, "Gateway/empty-adapter-set");
-            require(quorum_ <= MAX_ADAPTER_COUNT, "Gateway/exceeds-max-adapter-count");
+            require(quorum_ <= MAX_ADAPTER_COUNT, "Gateway/exceeds-max");
 
             uint64 sessionId = 0;
             uint8 numAdapters = uint8(adapters.length);
@@ -135,7 +135,7 @@ contract Gateway is Auth, IGateway {
             call == uint8(MessagesLib.Call.InitiateMessageRecovery)
                 || call == uint8(MessagesLib.Call.DisputeMessageRecovery)
         ) {
-            require(!isRecovery, "Gateway/no-recursive-recovery-allowed");
+            require(!isRecovery, "Gateway/no-recursion");
             require(adapters.length > 1, "Gateway/no-recovery-with-one-adapter-allowed");
             return _handleRecovery(payload);
         }
@@ -253,16 +253,13 @@ contract Gateway is Auth, IGateway {
     // --- Outgoing ---
     /// @inheritdoc IGateway
     function send(bytes calldata message, address source) public payable pauseable {
-        require(
-            msg.sender == investmentManager || msg.sender == poolManager
-                || msg.sender == messageHandlers[message.toUint8(0)],
-            "Gateway/invalid-manager"
-        );
+        bool isManager = msg.sender == investmentManager || msg.sender == poolManager;
+        require(isManager || msg.sender == messageHandlers[message.toUint8(0)], "Gateway/invalid-manager");
 
         bytes memory proof = abi.encodePacked(uint8(MessagesLib.Call.MessageProof), keccak256(message));
 
         uint256 numAdapters = adapters.length;
-        require(numAdapters > 0, "Gateway/adapters-not-initialized");
+        require(numAdapters > 0, "Gateway/not-initialized");
 
         uint256 fuel = QUOTA_SLOT.tloadUint256();
         uint256 messageCost = gasService.estimate(message);

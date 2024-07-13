@@ -6,9 +6,9 @@ library BitmapLib {
     function setBit(uint128 bitmap, uint128 index, bool isTrue) internal pure returns (uint128) {
         if (isTrue) {
             return bitmap | (uint128(1) << index);
-        } else {
-            return bitmap & ~(uint128(1) << index);
         }
+
+        return bitmap & ~(uint128(1) << index);
     }
 
     function getBit(uint128 bitmap, uint128 index) internal pure returns (bool) {
