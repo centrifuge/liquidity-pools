@@ -89,7 +89,7 @@ interface IPoolManager is IMessageHandler, IRecoverable {
     /// @return isWrapper Whether the asset is a wrapped ERC20 token
     function vaultToAsset(address) external view returns (address asset, bool isWrapper);
 
-    /// @notice sets a given value to contract storage
+    /// @notice Updates a contract parameter
     /// @param what Accepts a bytes32 representation of 'gateway', 'investmentManager', 'trancheFactory',
     ///                'vaultFactory', or 'gasService'
     function file(bytes32 what, address data) external;
