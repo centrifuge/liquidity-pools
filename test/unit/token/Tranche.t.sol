@@ -74,6 +74,13 @@ contract TrancheTest is Test {
         assertEq(token.supportsInterface(unsupportedInterfaceId), false);
     }
 
+    // --- erc1404 checks ---
+    function testERC1404Support() public {
+        assertEq(token.SUCCESS_CODE(), 0);
+        assertEq(token.messageForTransferRestriction(0), "transfer-allowed");
+        assertEq(token.messageForTransferRestriction(1), "transfer-blocked");
+    }
+
     // --- RestrictionManager ---
     // transferFrom
     function testTransferFrom(uint256 amount) public {

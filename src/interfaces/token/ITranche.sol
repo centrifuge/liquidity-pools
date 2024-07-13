@@ -16,34 +16,39 @@ interface ITranche is IERC20Metadata, IERC7575Share, IERC1404 {
     event SetHookData(address indexed user, bytes16 data);
 
     // --- Administration ---
-    /// @notice TODO
+    /// @notice returns the hook that transfers perform callbacks to
+    /// @dev    MUST comply to `IHook` interface
     function hook() external view returns (address);
 
-    /// @notice TODO
+    /// @notice Updates a contract parameter
+    /// @param what Accepts a bytes32 representation of 'name', 'symbol'
     function file(bytes32 what, string memory data) external;
 
-    /// @notice TODO
+    /// @notice Updates a contract parameter
+    /// @param what Accepts a bytes32 representation of 'hook'
     function file(bytes32 what, address data) external;
 
-    /// @notice TODO
+    /// @notice updates the vault for a given `asset`
     function updateVault(address asset, address vault_) external;
 
     // --- ERC20 overrides ---
-    /// @notice TODO
+    /// @notice returns the 16 byte hook data of the given `user`.
+    /// @dev    Stored in the 128 most significant bits of the user balance
     function hookDataOf(address user) external view returns (bytes16);
 
-    /// @notice TODO
+    /// @notice update the 16 byte hook data of the given `user`
     function setHookData(address user, bytes16 hookData) external;
 
-    /// @notice TODO
+    /// @notice Function to mint tokens
     function mint(address user, uint256 value) external;
 
-    /// @notice TODO
+    /// @notice Function to burn tokens
     function burn(address user, uint256 value) external;
 
-    /// @notice TODO
+    /// @notice Checks if the tokens can be transferred given the input values
     function checkTransferRestriction(address from, address to, uint256 value) external view returns (bool);
 
-    /// @notice TODO
+    /// @notice Performs an authorized transfer, with `sender` as the given sender.
+    /// @dev    Requires allowance if `sender` != `from`
     function authTransferFrom(address sender, address from, address to, uint256 amount) external returns (bool);
 }

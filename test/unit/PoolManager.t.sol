@@ -14,6 +14,9 @@ contract PoolManagerTest is BaseTest {
     function testDeployment(address nonWard) public {
         vm.assume(nonWard != address(root) && nonWard != address(gateway) && nonWard != address(this));
 
+        // redeploying within test to increase coverage
+        new PoolManager(address(escrow), vaultFactory, trancheFactory);
+
         // values set correctly
         assertEq(address(poolManager.gateway()), address(gateway));
         assertEq(address(poolManager.escrow()), address(escrow));
@@ -48,6 +51,11 @@ contract PoolManagerTest is BaseTest {
         address newEscrow = makeAddr("newEscrow");
         vm.expectRevert("PoolManager/file-unrecognized-param");
         poolManager.file("escrow", newEscrow);
+    }
+
+    function testHandleInvalidMessage() public {
+        vm.expectRevert(bytes("PoolManager/invalid-message"));
+        poolManager.handle(abi.encodePacked(uint8(MessagesLib.Call.Invalid)));
     }
 
     function testAddPool(uint64 poolId) public {
@@ -579,6 +587,21 @@ contract PoolManagerTest is BaseTest {
 
         vm.expectRevert(bytes("PoolManager/cannot-set-older-price"));
         centrifugeChain.updateTranchePrice(poolId, trancheId, assetId, price, uint64(block.timestamp - 1));
+    }
+
+    function testUpdateCentrifugeGasPrice(uint128 price) public {
+        price = uint128(bound(price, 1, type(uint128).max));
+
+        // Allows us to go back in time later
+        vm.warp(block.timestamp + 1 days);
+
+        vm.expectRevert(bytes("Auth/not-authorized"));
+        vm.prank(randomUser);
+        poolManager.updateCentrifugeGasPrice(price, uint64(block.timestamp));
+
+        centrifugeChain.updateCentrifugeGasPrice(price, uint64(block.timestamp));
+        assertEq(gasService.gasPrice(), price);
+        assertEq(gasService.lastUpdatedAt(), block.timestamp);
     }
 
     function testRemoveVault() public {

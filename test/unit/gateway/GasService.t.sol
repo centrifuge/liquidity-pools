@@ -51,10 +51,10 @@ contract GasServiceTest is Test {
         vm.assume(value != 0);
         vm.assume(value != GAS_PRICE);
 
-        uint256 pastDate = service.lastUpdatedAt() - 1;
-        uint256 futureDate = service.lastUpdatedAt() + 1;
+        uint64 pastDate = uint64(service.lastUpdatedAt() - 1);
+        uint64 futureDate = uint64(service.lastUpdatedAt() + 1);
 
-        uint256 lastUpdateAt = service.lastUpdatedAt();
+        uint64 lastUpdateAt = uint64(service.lastUpdatedAt());
 
         vm.expectRevert(bytes("GasService/price-cannot-be-zero"));
         service.updateGasPrice(0, futureDate);

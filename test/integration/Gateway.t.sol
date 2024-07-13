@@ -11,6 +11,9 @@ contract GatewayTest is BaseTest {
                 && nonWard != address(gateway)
         );
 
+        // redeploying within test to increase coverage
+        new Gateway(address(root), address(poolManager), address(investmentManager), address(gasService));
+
         // values set correctly
         assertEq(address(gateway.investmentManager()), address(investmentManager));
         assertEq(address(gateway.poolManager()), address(poolManager));
