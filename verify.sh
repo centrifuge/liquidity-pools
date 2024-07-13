@@ -6,7 +6,7 @@ display_help() {
     echo 
     echo "This script verifies the vault contract and its associated tranche and restriction manager contracts."
     echo
-    echo "Usage: $0 {vault|tranche|restrictionManager|all} contract_address"
+    echo "Usage: $0 contract_address"
     echo
     echo "Arguments:"
     echo "  contract_address      The address of the vault to verify"
