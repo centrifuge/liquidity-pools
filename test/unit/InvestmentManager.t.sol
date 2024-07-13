@@ -8,6 +8,14 @@ interface VaultLike {
     function priceComputedAt() external view returns (uint64);
 }
 
+contract InvestmentManagerHarness is InvestmentManager {
+    constructor(address root, address escrow) InvestmentManager(root, escrow) {}
+
+    function calculatePrice(address vault, uint128 assets, uint128 shares) external view returns (uint256 price) {
+        return _calculatePrice(vault, assets, shares);
+    }
+}
+
 contract InvestmentManagerTest is BaseTest {
     // Deployment
     function testDeployment(address nonWard) public {
@@ -56,5 +64,12 @@ contract InvestmentManagerTest is BaseTest {
     function testHandleInvalidMessage() public {
         vm.expectRevert(bytes("InvestmentManager/invalid-message"));
         investmentManager.handle(abi.encodePacked(uint8(MessagesLib.Call.Invalid)));
+    }
+
+    // --- Price calculations ---
+    function testPrice() public {
+        InvestmentManagerHarness harness = new InvestmentManagerHarness(address(root), address(escrow));
+        assertEq(harness.calculatePrice(address(0), 1, 0), 0);
+        assertEq(harness.calculatePrice(address(0), 0, 1), 0);
     }
 }
