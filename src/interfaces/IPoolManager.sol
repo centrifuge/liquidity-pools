@@ -91,7 +91,7 @@ interface IPoolManager is IMessageHandler, IRecoverable {
 
     /// @notice sets a given value to contract storage
     /// @param what Accepts a bytes32 representation of 'gateway', 'investmentManager', 'trancheFactory',
-    /// 'vaultFactory', or 'gasService'
+    ///                'vaultFactory', or 'gasService'
     function file(bytes32 what, address data) external;
 
     /// @notice transfers assets to a cross-chain recipient address
