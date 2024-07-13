@@ -7,6 +7,7 @@ import "src/interfaces/IERC7540.sol";
 import "src/interfaces/IERC20.sol";
 import {CentrifugeRouter} from "src/CentrifugeRouter.sol";
 import {MockERC20Wrapper} from "test/mocks/MockERC20Wrapper.sol";
+import {MockReentrantERC20Wrapper1, MockReentrantERC20Wrapper2} from "test/mocks/MockReentrantERC20Wrapper.sol";
 
 contract CentrifugeRouterTest is BaseTest {
     uint256 constant GAS_BUFFER = 10 gwei;
@@ -587,6 +588,52 @@ contract CentrifugeRouterTest is BaseTest {
 
         centrifugeChain.updateMember(vault1.poolId(), vault1.trancheId(), self, type(uint64).max);
         centrifugeChain.updateMember(vault2.poolId(), vault2.trancheId(), self, type(uint64).max);
+    }
+
+    function testReentrancyCheck(uint256 amount) public {
+        amount = uint128(bound(amount, 4, MAX_UINT128));
+        vm.assume(amount % 2 == 0);
+
+        MockReentrantERC20Wrapper1 wrapper = new MockReentrantERC20Wrapper1(address(erc20), address(router));
+        address vault_ = deployVault(
+            5, 6, restrictionManager, "name", "symbol", bytes16(bytes("1")), defaultAssetId, address(wrapper)
+        );
+        ERC7540Vault vault = ERC7540Vault(vault_);
+        vm.label(vault_, "vault");
+
+        address investor = makeAddr("investor");
+
+        erc20.mint(investor, amount);
+
+        // Investor locks deposit request and enables permissionless lcaiming
+        vm.startPrank(investor);
+        erc20.approve(address(router), amount);
+        vm.expectRevert(bytes("CentrifugeRouter/unauthorized-sender"));
+        router.openLockDepositRequest(vault_, amount);
+        vm.stopPrank();
+    }
+
+    function testMulticallReentrancyCheck(uint256 amount) public {
+        amount = uint128(bound(amount, 4, MAX_UINT128));
+        vm.assume(amount % 2 == 0);
+
+        MockReentrantERC20Wrapper2 wrapper = new MockReentrantERC20Wrapper2(address(erc20), address(router));
+        address vault_ = deployVault(
+            5, 6, restrictionManager, "name", "symbol", bytes16(bytes("1")), defaultAssetId, address(wrapper)
+        );
+        ERC7540Vault vault = ERC7540Vault(vault_);
+        vm.label(vault_, "vault");
+
+        address investor = makeAddr("investor");
+
+        erc20.mint(investor, amount);
+
+        // Investor locks deposit request and enables permissionless lcaiming
+        vm.startPrank(investor);
+        erc20.approve(address(router), amount);
+        vm.expectRevert(bytes("CentrifugeRouter/already-initiated"));
+        router.openLockDepositRequest(vault_, amount);
+        vm.stopPrank();
     }
 
     function estimateGas() internal view returns (uint256 total) {
