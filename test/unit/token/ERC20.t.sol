@@ -69,6 +69,9 @@ contract ERC20Test is Test {
         vm.expectRevert(bytes("Auth/not-authorized"));
         token.file("name", newName);
 
+        vm.expectRevert(bytes("ERC20/file-unrecognized-param"));
+        token.file("notName", newName);
+
         token.file("name", newName);
         assertEq(token.name(), newName);
 
