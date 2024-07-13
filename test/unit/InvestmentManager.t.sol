@@ -49,4 +49,9 @@ contract InvestmentManagerTest is BaseTest {
         vm.expectRevert(bytes("Auth/not-authorized"));
         investmentManager.file("poolManager", randomUser);
     }
+
+    function testHandleInvalidMessage() public {
+        vm.expectRevert(bytes("InvestmentManager/invalid-message"));
+        investmentManager.handle(abi.encodePacked(uint8(MessagesLib.Call.AddAsset)));
+    }
 }

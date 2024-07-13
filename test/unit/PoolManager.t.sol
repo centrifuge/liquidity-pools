@@ -50,6 +50,11 @@ contract PoolManagerTest is BaseTest {
         poolManager.file("escrow", newEscrow);
     }
 
+    function testHandleInvalidMessage() public {
+        vm.expectRevert(bytes("PoolManager/invalid-message"));
+        poolManager.handle(abi.encodePacked(uint8(MessagesLib.Call.IncreaseInvestOrder)));
+    }
+
     function testAddPool(uint64 poolId) public {
         centrifugeChain.addPool(poolId);
         (uint256 createdAt) = poolManager.pools(poolId);

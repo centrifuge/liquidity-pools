@@ -18,6 +18,11 @@ contract AdminTest is BaseTest {
         assertEq(gateway.wards(address(guardian)), 1);
     }
 
+    function testHandleInvalidMessage() public {
+        vm.expectRevert(bytes("Root/invalid-message"));
+        root.handle(abi.encodePacked(uint8(MessagesLib.Call.AddAsset)));
+    }
+
     //------ pause tests ------//
     function testUnauthorizedPauseFails() public {
         MockSafe(adminSafe).removeOwner(address(this));
