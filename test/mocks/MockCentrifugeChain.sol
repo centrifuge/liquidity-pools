@@ -98,6 +98,11 @@ contract MockCentrifugeChain is Test {
         _execute(_message);
     }
 
+    function updateTrancheHook(uint64 poolId, bytes16 trancheId, address hook) public {
+        bytes memory _message = abi.encodePacked(uint8(MessagesLib.Call.UpdateTrancheHook), poolId, trancheId, hook);
+        _execute(_message);
+    }
+
     function updateTranchePrice(uint64 poolId, bytes16 trancheId, uint128 assetId, uint128 price, uint64 computedAt)
         public
     {

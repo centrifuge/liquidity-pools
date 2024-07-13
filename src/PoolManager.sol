@@ -161,6 +161,8 @@ contract PoolManager is Auth, IPoolManager {
             disallowAsset(message.toUint64(1), message.toUint128(9));
         } else if (call == MessagesLib.Call.UpdateCentrifugeGasPrice) {
             updateCentrifugeGasPrice(message.toUint128(1), message.toUint256(17));
+        } else if (call == MessagesLib.Call.UpdateTrancheHook) {
+            updateTrancheHook(message.toUint64(1), message.toBytes16(9), message.toAddress(25));
         } else {
             revert("PoolManager/invalid-message");
         }
@@ -269,6 +271,14 @@ contract PoolManager is Auth, IPoolManager {
         ITranche tranche = ITranche(getTranche(poolId, trancheId));
         require(address(tranche) != address(0), "PoolManager/unknown-token");
         IHook(tranche.hook()).updateRestriction(address(tranche), update);
+    }
+
+    /// @inheritdoc IPoolManager
+    function updateTrancheHook(uint64 poolId, bytes16 trancheId, address hook) public auth {
+        ITranche tranche = ITranche(getTranche(poolId, trancheId));
+        require(address(tranche) != address(0), "PoolManager/unknown-token");
+        require(hook != tranche.hook(), "PoolManager/old-hook");
+        tranche.file("hook", hook);
     }
 
     /// @inheritdoc IPoolManager

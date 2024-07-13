@@ -77,7 +77,9 @@ library MessagesLib {
         RecoverTokens,
         /// 32 - Update Centrifuge Gas Price
         UpdateCentrifugeGasPrice,
-        /// 33 - Batch Messages
+        /// 33 - Update Tranche Hook
+        UpdateTrancheHook,
+        /// 34 - Batch Messages
         Batch
     }
 

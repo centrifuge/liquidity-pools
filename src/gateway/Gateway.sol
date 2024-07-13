@@ -198,13 +198,13 @@ contract Gateway is Auth, IGateway {
         address manager;
 
         // Hardcoded paths for root + pool & investment managers for gas efficiency
-        if (id >= 1 && id <= 8 || id >= 23 && id <= 26 || id == 32) {
+        if (id >= 1 && id <= 8 || id >= 23 && id <= 26 || id >= 32 && id <= 33) {
             manager = poolManager;
         } else if (id >= 9 && id <= 20 || id == 27) {
             manager = investmentManager;
         } else if (id >= 21 && id <= 22 || id == 31) {
             manager = address(root);
-        } else if (id == 33) {
+        } else if (id == 34) {
             // Handle batch messages
             require(!isBatched, "Gateway/no-recursive-batching-allowed");
             uint256 offset = 1;
