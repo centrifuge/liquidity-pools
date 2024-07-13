@@ -12,8 +12,7 @@ contract GatewayTest is BaseTest {
         );
 
         // redeploying within test to increase coverage
-        Gateway newlyDeployed =
-            new Gateway(address(root), address(poolManager), address(investmentManager), address(gasService));
+        new Gateway(address(root), address(poolManager), address(investmentManager), address(gasService));
 
         // values set correctly
         assertEq(address(gateway.investmentManager()), address(investmentManager));

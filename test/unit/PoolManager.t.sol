@@ -15,7 +15,7 @@ contract PoolManagerTest is BaseTest {
         vm.assume(nonWard != address(root) && nonWard != address(gateway) && nonWard != address(this));
 
         // redeploying within test to increase coverage
-        PoolManager newlyDeployed = new PoolManager(address(escrow), vaultFactory, trancheFactory);
+        new PoolManager(address(escrow), vaultFactory, trancheFactory);
 
         // values set correctly
         assertEq(address(poolManager.gateway()), address(gateway));

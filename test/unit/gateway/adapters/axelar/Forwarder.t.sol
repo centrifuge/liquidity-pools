@@ -22,7 +22,7 @@ contract AxelarForwarderTest is Test {
     }
 
     function testDeployment() public {
-        AxelarForwarder newlyDeployed = new AxelarForwarder(address(axelarGateway));
+        new AxelarForwarder(address(axelarGateway));
     }
 
     function testInvalidFile() public {

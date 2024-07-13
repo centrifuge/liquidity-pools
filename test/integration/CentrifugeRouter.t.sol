@@ -416,6 +416,33 @@ contract CentrifugeRouterTest is BaseTest {
         assertEq(erc20.balanceOf(investor), amount);
     }
 
+    function testWrapAndDeposit(uint256 amount) public {
+        amount = uint128(bound(amount, 4, MAX_UINT128));
+        vm.assume(amount % 2 == 0);
+
+        MockERC20Wrapper wrapper = new MockERC20Wrapper(address(erc20));
+        address vault_ = deployVault(
+            5, 6, restrictionManager, "name", "symbol", bytes16(bytes("1")), defaultAssetId, address(wrapper)
+        );
+        ERC7540Vault vault = ERC7540Vault(vault_);
+        vm.label(vault_, "vault");
+
+        address investor = makeAddr("investor");
+        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), investor, type(uint64).max);
+        router.open(vault_);
+
+        erc20.mint(investor, amount);
+        vm.startPrank(investor);
+        erc20.approve(address(router), amount);
+
+        assertEq(erc20.balanceOf(investor), amount);
+
+        vm.deal(investor, 10 ether);
+        uint256 fuel = estimateGas();
+        router.wrap(address(wrapper), amount, address(router), investor);
+        router.requestDeposit{value: fuel}(address(vault), amount, investor, address(router), fuel);
+    }
+
     function testWrapAndAutoUnwrapOnRedeem(uint256 amount) public {
         amount = uint128(bound(amount, 4, MAX_UINT128));
         vm.assume(amount % 2 == 0);

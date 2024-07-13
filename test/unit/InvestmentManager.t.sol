@@ -25,7 +25,7 @@ contract InvestmentManagerTest is BaseTest {
         );
 
         // redeploying within test to increase coverage
-        InvestmentManager newlyDeployed = new InvestmentManager(address(root), address(escrow));
+        new InvestmentManager(address(root), address(escrow));
 
         // values set correctly
         assertEq(address(investmentManager.escrow()), address(escrow));
