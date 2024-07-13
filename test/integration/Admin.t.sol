@@ -20,7 +20,7 @@ contract AdminTest is BaseTest {
 
     function testHandleInvalidMessage() public {
         vm.expectRevert(bytes("Root/invalid-message"));
-        root.handle(abi.encodePacked(uint8(MessagesLib.Call.AddAsset)));
+        root.handle(abi.encodePacked(uint8(MessagesLib.Call.Invalid)));
     }
 
     //------ pause tests ------//

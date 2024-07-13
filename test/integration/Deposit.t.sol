@@ -52,6 +52,16 @@ contract DepositTest is BaseTest {
         vm.expectRevert(bytes("InvestmentManager/asset-not-allowed"));
         vault.requestDeposit(amount, self, self);
 
+        // will fail - cannot fulfill if there is no pending request
+        uint128 _assetId = poolManager.assetToId(address(erc20)); // retrieve assetId
+        uint128 shares = uint128((amount * 10 ** 18) / price); // tranchePrice = 2$
+        uint64 poolId = vault.poolId();
+        bytes16 trancheId = vault.trancheId();
+        vm.expectRevert(bytes("InvestmentManager/no-pending-deposit-request"));
+        centrifugeChain.isFulfilledDepositRequest(
+            poolId, trancheId, bytes32(bytes20(self)), _assetId, uint128(amount), shares
+        );
+
         // success
         centrifugeChain.allowAsset(vault.poolId(), defaultAssetId);
         erc20.approve(vault_, amount);
@@ -68,8 +78,6 @@ contract DepositTest is BaseTest {
         assertEq(vault.claimableDepositRequest(0, self), 0);
 
         // trigger executed collectInvest
-        uint128 _assetId = poolManager.assetToId(address(erc20)); // retrieve assetId
-        uint128 shares = uint128((amount * 10 ** 18) / price); // tranchePrice = 2$
         assertApproxEqAbs(shares, amount / 2, 2);
         centrifugeChain.isFulfilledDepositRequest(
             vault.poolId(), vault.trancheId(), bytes32(bytes20(self)), _assetId, uint128(amount), shares
@@ -640,6 +648,13 @@ contract DepositTest is BaseTest {
 
         assertEq(erc20.balanceOf(address(escrow)), amount);
         assertEq(erc20.balanceOf(address(self)), 0);
+
+        uint64 poolId = vault.poolId();
+        bytes16 trancheId = vault.trancheId();
+        vm.expectRevert(bytes("InvestmentManager/no-pending-cancel-deposit-request"));
+        centrifugeChain.isFulfilledCancelDepositRequest(
+            poolId, trancheId, self.toBytes32(), defaultAssetId, uint128(amount), uint128(amount)
+        );
 
         // check message was send out to centchain
         vault.cancelDepositRequest(0, self);
