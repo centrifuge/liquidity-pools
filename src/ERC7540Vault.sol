@@ -56,7 +56,8 @@ contract ERC7540Vault is Auth, IERC7540Vault {
     bytes32 public constant AUTHORIZE_OPERATOR_TYPEHASH =
         keccak256("AuthorizeOperator(address controller,address operator,bool approved,uint256 deadline,bytes32 nonce)");
 
-    mapping(address controller => mapping(bytes32 nonce => bool used)) authorizations;
+    /// @inheritdoc IERC7741
+    mapping(address controller => mapping(bytes32 nonce => bool used)) public authorizations;
 
     /// @inheritdoc IERC7540Operator
     mapping(address => mapping(address => bool)) public isOperator;
@@ -232,14 +233,14 @@ contract ERC7540Vault is Auth, IERC7540Vault {
         return true;
     }
 
-    /// @inheritdoc IAuthorizeOperator
+    /// @inheritdoc IERC7741
     function DOMAIN_SEPARATOR() public view returns (bytes32) {
         return block.chainid == deploymentChainId
             ? _DOMAIN_SEPARATOR
             : EIP712Lib.calculateDomainSeparator(nameHash, versionHash);
     }
 
-    /// @inheritdoc IAuthorizeOperator
+    /// @inheritdoc IERC7741
     function authorizeOperator(
         address controller,
         address operator,
@@ -270,7 +271,7 @@ contract ERC7540Vault is Auth, IERC7540Vault {
         return true;
     }
 
-    /// @inheritdoc IAuthorizeOperator
+    /// @inheritdoc IERC7741
     function invalidateNonce(bytes32 nonce) external {
         authorizations[msg.sender][nonce] = true;
     }
@@ -281,7 +282,7 @@ contract ERC7540Vault is Auth, IERC7540Vault {
         return interfaceId == type(IERC7540Deposit).interfaceId || interfaceId == type(IERC7540Redeem).interfaceId
             || interfaceId == type(IERC7540Operator).interfaceId || interfaceId == type(IERC7540CancelDeposit).interfaceId
             || interfaceId == type(IERC7540CancelRedeem).interfaceId || interfaceId == type(IERC7575).interfaceId
-            || interfaceId == type(IAuthorizeOperator).interfaceId || interfaceId == type(IERC7714).interfaceId
+            || interfaceId == type(IERC7741).interfaceId || interfaceId == type(IERC7714).interfaceId
             || interfaceId == type(IERC165).interfaceId;
     }
 
