@@ -213,7 +213,7 @@ contract Gateway is Auth, IGateway {
                 // the message length (uint16: 2 bytes)
                 uint16 length = message.toUint16(offset);
                 bytes memory subMessage = new bytes(length);
-                offset = offset + 2;
+                offset = offset + 2; // Skip length
                 for (uint256 i = 0; i < length; i++) {
                     subMessage[i] = message[offset + i];
                 }
