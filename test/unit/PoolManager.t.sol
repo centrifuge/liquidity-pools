@@ -582,6 +582,8 @@ contract PoolManagerTest is BaseTest {
     }
 
     function testUpdateCentrifugeGasPrice(uint128 price) public {
+        price = uint128(bound(price, 1, type(uint128).max));
+
         // Allows us to go back in time later
         vm.warp(block.timestamp + 1 days);
 
