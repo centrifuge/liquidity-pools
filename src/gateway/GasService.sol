@@ -19,7 +19,7 @@ contract GasService is IGasService, Auth {
     /// @inheritdoc IGasService
     uint128 public gasPrice;
     /// @inheritdoc IGasService
-    uint256 public lastUpdatedAt;
+    uint64 public lastUpdatedAt;
     /// @inheritdoc IGasService
     uint256 public tokenPrice;
 
@@ -28,7 +28,7 @@ contract GasService is IGasService, Auth {
         proofCost = proofCost_;
         gasPrice = gasPrice_;
         tokenPrice = tokenPrice_;
-        lastUpdatedAt = block.timestamp;
+        lastUpdatedAt = uint64(block.timestamp);
 
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
@@ -43,7 +43,7 @@ contract GasService is IGasService, Auth {
     }
 
     /// @inheritdoc IGasService
-    function updateGasPrice(uint128 value, uint256 computedAt) external auth {
+    function updateGasPrice(uint128 value, uint64 computedAt) external auth {
         require(value > 0, "GasService/price-cannot-be-zero");
         require(gasPrice != value, "GasService/same-price-already-set");
         require(lastUpdatedAt < computedAt, "GasService/cannot-update-price-with-backdate");
