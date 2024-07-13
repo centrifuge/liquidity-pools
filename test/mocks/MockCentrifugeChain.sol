@@ -101,6 +101,11 @@ contract MockCentrifugeChain is Test {
         _execute(_message);
     }
 
+    function updateCentrifugeGasPrice(uint128 price, uint64 computedAt) public {
+        bytes memory _message = abi.encodePacked(uint8(MessagesLib.Call.UpdateCentrifugeGasPrice), price, computedAt);
+        _execute(_message);
+    }
+
     function triggerIncreaseRedeemOrder(
         uint64 poolId,
         bytes16 trancheId,
