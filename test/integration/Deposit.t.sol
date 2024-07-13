@@ -27,7 +27,9 @@ contract DepositTest is BaseTest {
         vm.expectRevert(bytes("InvestmentManager/transfer-not-allowed"));
         vault.requestDeposit(amount, self, self);
 
+        assertEq(vault.isPermissioned(self), false);
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max); // add user as member
+        assertEq(vault.isPermissioned(self), true);
 
         // will fail - user not member: can not receive tranche
         vm.expectRevert(bytes("InvestmentManager/transfer-not-allowed"));
