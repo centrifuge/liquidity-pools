@@ -152,11 +152,6 @@ contract Tranche is ERC20, ITranche {
         return restrictionCode == SUCCESS_CODE_ID ? SUCCESS_MESSAGE : ERROR_MESSAGE;
     }
 
-    /// @inheritdoc IERC1404
-    function SUCCESS_CODE() public pure returns (uint8) {
-        return SUCCESS_CODE_ID;
-    }
-
     // --- ERC165 support ---
     /// @inheritdoc IERC165
     function supportsInterface(bytes4 interfaceId) external pure override returns (bool) {
