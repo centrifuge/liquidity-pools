@@ -7,6 +7,10 @@ import {MathLib} from "src/libraries/MathLib.sol";
 import {BytesLib} from "src/libraries/BytesLib.sol";
 import {MessagesLib} from "src/libraries/MessagesLib.sol";
 
+/// @title  GasService
+/// @notice This is a utility contract used in calculations of the
+///         transaction cost for a message / proof being sent across all supported bridges
+///         and executed on Centrifuge chain.
 contract GasService is IGasService, Auth {
     using MathLib for uint64;
     using MathLib for uint256;
