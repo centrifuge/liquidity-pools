@@ -54,6 +54,10 @@ contract AxelarAdapterTest is Test {
 
         vm.expectRevert(bytes("AxelarAdapterfile-unrecognized-param"));
         adapter.file("random", value);
+
+        vm.prank(makeAddr("unauthorized"));
+        vm.expectRevert("Auth/not-authorized");
+        adapter.file("axelarCost", value);
     }
 
     function testPayment(bytes calldata payload, uint256 value) public {
