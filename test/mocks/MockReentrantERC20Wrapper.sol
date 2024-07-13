@@ -24,7 +24,7 @@ contract MockReentrantERC20Wrapper1 is ERC20, Mock, IERC20Wrapper {
         return true;
     }
 
-    function withdrawTo(address, /* account */ uint256 /* value */ ) external returns (bool) {
+    function withdrawTo(address, /* account */ uint256 /* value */ ) external pure returns (bool) {
         return true;
     }
 }
@@ -41,13 +41,13 @@ contract MockReentrantERC20Wrapper2 is ERC20, Mock, IERC20Wrapper {
         reentrancyTarget = ICentrifugeRouter(reentrancyTarget_);
     }
 
-    function depositFor(address account, uint256 value) external returns (bool) {
+    function depositFor(address, /* account */ uint256 /* value */ ) external returns (bool) {
         bytes[] memory calls = new bytes[](0);
         reentrancyTarget.multicall(calls);
         return true;
     }
 
-    function withdrawTo(address, /* account */ uint256 /* value */ ) external returns (bool) {
+    function withdrawTo(address, /* account */ uint256 /* value */ ) external pure returns (bool) {
         return true;
     }
 }

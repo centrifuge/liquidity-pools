@@ -598,7 +598,6 @@ contract CentrifugeRouterTest is BaseTest {
         address vault_ = deployVault(
             5, 6, restrictionManager, "name", "symbol", bytes16(bytes("1")), defaultAssetId, address(wrapper)
         );
-        ERC7540Vault vault = ERC7540Vault(vault_);
         vm.label(vault_, "vault");
 
         address investor = makeAddr("investor");
@@ -621,7 +620,6 @@ contract CentrifugeRouterTest is BaseTest {
         address vault_ = deployVault(
             5, 6, restrictionManager, "name", "symbol", bytes16(bytes("1")), defaultAssetId, address(wrapper)
         );
-        ERC7540Vault vault = ERC7540Vault(vault_);
         vm.label(vault_, "vault");
 
         address investor = makeAddr("investor");
