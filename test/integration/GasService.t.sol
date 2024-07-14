@@ -11,10 +11,10 @@ contract GasServiceTest is BaseTest {
 
     function testUpdateGasPrice(uint128 price) public {
         price = uint128(bound(price, 1, type(uint128).max));
+        vm.assume(price != gasService.gasPrice());
 
         gateway.file("gasService", address(gasService));
 
-        assertTrue(gasService.gasPrice() != price);
         assertEq(gasService.lastUpdatedAt(), block.timestamp);
 
         vm.warp(block.timestamp + 1 days);
