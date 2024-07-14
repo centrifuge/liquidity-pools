@@ -36,6 +36,10 @@ interface IGasService {
     /// @return The current price
     function tokenPrice() external returns (uint256);
 
+    /// @notice Executes a message from the gateway
+    /// @dev    The function can only be executed by the gateway contract.
+    function handle(bytes calldata message) external;
+
     /// @notice Updates the gas price on Centrifuge Chain
     /// @dev    This is called through PoolManager and the update
     ///         comes as a message from the Centrifuge Chain.

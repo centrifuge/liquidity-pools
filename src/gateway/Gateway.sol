@@ -199,16 +199,7 @@ contract Gateway is Auth, IGateway, IRecoverable {
         uint8 id = message.toUint8(0);
         address manager;
 
-        // Hardcoded paths for root + pool & investment managers for gas efficiency
-        if (id >= 5 && id <= 7) {
-            manager = address(root);
-        } else if (id == 8) {
-            manager = address(gasService);
-        } else if (id >= 9 && id <= 19) {
-            manager = poolManager;
-        } else if (id >= 20 && id <= 28) {
-            manager = investmentManager;
-        } else if (id == 4) {
+        if (id == 4) {
             // Handle batch messages
             require(!isBatched, "Gateway/no-recursive-batching-allowed");
             uint256 offset = 1;
@@ -226,6 +217,14 @@ contract Gateway is Auth, IGateway, IRecoverable {
                 offset += length;
             }
             return;
+        } else if (id >= 5 && id <= 7) {
+            manager = address(root);
+        } else if (id == 8) {
+            manager = address(gasService);
+        } else if (id >= 9 && id <= 19) {
+            manager = poolManager;
+        } else if (id >= 20 && id <= 28) {
+            manager = investmentManager;
         } else {
             // Dynamic path for other managers, to be able to easily
             // extend functionality of Liquidity Pools

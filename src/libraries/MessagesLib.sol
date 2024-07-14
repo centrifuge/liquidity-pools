@@ -30,7 +30,7 @@ library MessagesLib {
         /// 7 - Recover tokens sent to the wrong contract
         RecoverTokens,
         // --- Gas service ---
-        /// 8 - Update Centrifuge Gas Price
+        /// 8 - Update Centrifuge gas price
         UpdateCentrifugeGasPrice,
         // --- Pool Manager ---
         /// 9 - Add an asset id -> EVM address mapping

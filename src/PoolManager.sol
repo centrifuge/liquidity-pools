@@ -161,8 +161,6 @@ contract PoolManager is Auth, IPoolManager {
             );
         } else if (call == MessagesLib.Call.DisallowAsset) {
             disallowAsset(message.toUint64(1), message.toUint128(9));
-        } else if (call == MessagesLib.Call.UpdateCentrifugeGasPrice) {
-            updateCentrifugeGasPrice(message.toUint128(1), message.toUint64(17));
         } else if (call == MessagesLib.Call.UpdateTrancheHook) {
             updateTrancheHook(message.toUint64(1), message.toBytes16(9), message.toAddress(25));
         } else {
@@ -325,11 +323,6 @@ contract PoolManager is Auth, IPoolManager {
         require(address(tranche) != address(0), "PoolManager/unknown-token");
 
         tranche.mint(destinationAddress, amount);
-    }
-
-    /// @inheritdoc IPoolManager
-    function updateCentrifugeGasPrice(uint128 price, uint64 computedAt) public auth {
-        gasService.updateGasPrice(price, computedAt);
     }
 
     // --- Public functions ---

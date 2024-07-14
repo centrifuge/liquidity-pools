@@ -46,8 +46,21 @@ contract GasService is IGasService, Auth {
         emit File(what, value);
     }
 
+    /// --- Incoming message handling ---
     /// @inheritdoc IGasService
-    function updateGasPrice(uint128 value, uint64 computedAt) external auth {
+    function handle(bytes calldata message) public auth {
+        MessagesLib.Call call = MessagesLib.messageType(message);
+
+        if (call == MessagesLib.Call.UpdateCentrifugeGasPrice) {
+            updateGasPrice(message.toUint128(1), message.toUint64(17));
+        } else {
+            revert("GasService/invalid-message");
+        }
+    }
+
+    /// --- Update methods ---
+    /// @inheritdoc IGasService
+    function updateGasPrice(uint128 value, uint64 computedAt) public auth {
         require(value != 0, "GasService/price-cannot-be-zero");
         require(gasPrice != value, "GasService/already-set-price");
         require(lastUpdatedAt < computedAt, "GasService/outdated-price");
@@ -62,6 +75,7 @@ contract GasService is IGasService, Auth {
         emit UpdateTokenPrice(value);
     }
 
+    /// --- Estimations ---
     /// @inheritdoc IGasService
     function estimate(bytes calldata payload) public view returns (uint256) {
         uint256 denominator = 10 ** 18;

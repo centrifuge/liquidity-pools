@@ -100,6 +100,7 @@ contract Deployer is Script {
         root.rely(address(gateway));
         investmentManager.rely(address(gateway));
         poolManager.rely(address(gateway));
+        gasService.rely(address(gateway));
 
         // Rely on others
         IAuth(address(routerEscrow)).rely(address(router));
