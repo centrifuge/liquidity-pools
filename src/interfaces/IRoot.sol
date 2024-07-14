@@ -4,7 +4,13 @@ pragma solidity >=0.5.0;
 import {IMessageHandler} from "src/interfaces/gateway/IGateway.sol";
 
 interface IRecoverable {
-    function recoverTokens(address, address, uint256) external;
+    /// @notice Used to recover any ERC-20 token.
+    /// @dev    This method is called only by authorized entities
+    /// @param  token It could be 0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
+    ///         to recover locked native ETH or any ERC20 compatible token.
+    /// @param  to Receiver of the funds
+    /// @param  amount Amount to send to the receiver.
+    function recoverTokens(address token, address to, uint256 amount) external;
 }
 
 interface IRoot is IMessageHandler {
