@@ -14,6 +14,12 @@ import {IGateway} from "src/interfaces/gateway/IGateway.sol";
 import {TransientStorage} from "src/libraries/TransientStorage.sol";
 import {IRecoverable} from "src/interfaces/IRoot.sol";
 
+/// @title  CentrifugeRouter
+/// @notice This is a helper contract, designed to be the entrypoint for EOAs.
+///         It removes the need to know about all other contracts and simplifies the way to interact with the protocol.
+///         It also adds the need to fully pay for each step of the transaction execution. CentrifugeRouter allows
+///         the caller to execute multiple function into a single transaction by taking advantage of
+///         the multicall functionality which batches message calls into a single one.
 contract CentrifugeRouter is Auth, ICentrifugeRouter {
     using CastLib for address;
     using TransientStorage for bytes32;
