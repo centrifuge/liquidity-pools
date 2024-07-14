@@ -31,13 +31,12 @@ interface ICentrifugeRouter is IRecoverable {
         payable;
 
     /// @notice Locks `amount` of `vault`'s asset in an escrow before actually sending a deposit LockDepositRequest
-    ///         There are users that would like to interact with the protocol but haven't passed KYC yet. They can
-    ///         lock the funds they would like to deposit beforehand. Once the KYC is passed, anyone can deposit on
-    /// their behalf
-    ///         by calling `executeLockedDepositRequest`.
+    ///         There are users that would like to interact with the protocol but don't have permissions yet. They can
+    ///         lock the funds they would like to deposit beforehand. Once permissions are granted, anyone can deposit on
+    ///         their behalf by calling `executeLockedDepositRequest`.
     ///
     ///
-    ///         Example: DAO with onchain governance, that wants to invest their treasury (aka a Prime user)
+    ///         Example: DAO with onchain governance, that wants to invest their treasury
     ///             The process that doesn't include calling this method is as follows:
     ///
     ///                 1. The DAO signs the legal agreements for the pool => no onchain action,
@@ -48,14 +47,13 @@ interface ICentrifugeRouter is IRecoverable {
     ///
     ///             With the new router function the steps are as follows:
     ///
-    ///                 1. DAO signs the legal agreement + calls  `lockDepositRequest`  in 1 governance proposal
+    ///                 1. DAO signs the legal agreement + calls  `openLockDepositRequest`  in 1 governance proposal
     ///
-    ///                 2. Issuer then whitelists them, then calls `executeLockDepositFunds` for them,
+    ///                 2. Issuer then gives them permissions, then calls `executeLockDepositFunds` for them,
     ///                    then fulfills the request, then calls `claimDeposit` for them
     ///
     /// @dev    For initial interaction better use `openLockDepositRequest` which includes some of the message calls
-    /// that the caller
-    ///         must do execute before calling `lockDepositRequest`
+    ///         that the caller must do execute before calling `lockDepositRequest`
     ///
     /// @param  vault The address of the vault to invest in
     /// @param  amount Amount to invest
@@ -77,7 +75,7 @@ interface ICentrifugeRouter is IRecoverable {
     /// @param  receiver Address of the received of the unlocked funds
     function unlockDepositRequest(address vault, address receiver) external payable;
 
-    /// @notice After the controller being KYC approved, anyone can call this method and
+    /// @notice After the controller is given permissions, anyone can call this method and
     ///         actually request a deposit with the locked funds on the behalf of the `controller`
     /// @param  vault The vault for which funds are locked
     /// @param  controller Owner of the deposit position
@@ -212,8 +210,7 @@ interface ICentrifugeRouter is IRecoverable {
     function wrap(address wrapper, uint256 amount, address receiver, address owner) external payable;
 
     /// @notice There are vault which underlying asset is actuall a wrapped one.
-    /// @dev    Currently only wrapped tokens where CentrifugeRouter is the owner can be unwrapped
-    ///         No unwrapping for 3rd parties is supported.
+    /// @dev    Wrapped tokens need to be held by the CentrifugeRouter to be unwrapped.
     /// @param  wrapper The address of the wrapper
     /// @param  amount  Amount to be wrapped
     /// @param  receiver Receiver of the unwrapped tokens
@@ -222,12 +219,12 @@ interface ICentrifugeRouter is IRecoverable {
     // --- Batching ---
     /// @notice Allows caller to execute multiple ( batched ) messages calls in one transaction.
     /// @dev    Messages calls that can be executed are only part of the CentrifugeRouter itself.
-    ///         No reentrat execution is allowed.
+    ///         No reentrant execution is allowed.
     ///         In order to provide the correct value for functions that require top up,
     ///         the caller must estimate separate, in advance, how much each of the message call will cost.
     ///         The `msg.value` when calling this method must be the sum of all estimates.
     ///
-    ///         Example: An investor would like to make 2 consequetive deposit requests in a single batch.
+    ///         Example: An investor would like to make 2 consecutive deposit requests in a single batch.
     ///         address investor            = // Investor's address
     ///         address vault               = // Vault's address
     ///         uint256 amount1             = 100 * 10 ** 18
