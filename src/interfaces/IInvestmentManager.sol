@@ -4,9 +4,9 @@ pragma solidity >=0.5.0;
 import {IMessageHandler} from "src/interfaces/gateway/IGateway.sol";
 import {IRecoverable} from "src/interfaces/IRoot.sol";
 
-/// @dev Vault orders and investment/redemption limits per user
+/// @dev Vault orders and deposit/redeem bookkeeping per user
 struct InvestmentState {
-    /// @dev shares that can be claimed using `mint()`
+    /// @dev Shares that can be claimed using `mint()`
     uint128 maxMint;
     /// @dev Weighted average price of deposits, used to convert maxMint to maxDeposit
     uint256 depositPrice;
@@ -22,9 +22,9 @@ struct InvestmentState {
     uint128 claimableCancelDepositRequest;
     /// @dev Shares that can be claimed using `claimCancelRedeemRequest()`
     uint128 claimableCancelRedeemRequest;
-    /// @dev Indicates whether the depositRequest was requested to be canceled
+    /// @dev Indicates whether the depositRequest was requested to be cancelled
     bool pendingCancelDepositRequest;
-    /// @dev Indicates whether the redeemRequest was requested to be canceled
+    /// @dev Indicates whether the redeemRequest was requested to be cancelled
     bool pendingCancelRedeemRequest;
 }
 
@@ -41,12 +41,13 @@ interface IInvestmentManager is IMessageHandler, IRecoverable {
     function file(bytes32 what, address data) external;
 
     // --- Outgoing message handling ---
-    /// @notice Liquidity pools have to request investments from Centrifuge before
+    /// @notice Requests assets deposit. Liquidity pools have to request investments from Centrifuge before
     ///         shares can be minted. The deposit requests are added to the order book
     ///         on Centrifuge. Once the next epoch is executed on Centrifuge, vaults can
-    ///         proceed with share payouts in case their orders get fulfilled.
-    /// @dev    The user asset amount required to fulfill the deposit request have to be locked,
-    ///         even though the share payout can only happen after epoch execution.
+    ///         proceed with share payouts in case the order got fulfilled.
+    /// @dev    The assets required to fulfill the deposit request have to be locked and are transferred from the
+    ///         owner to the escrow, even though the share payout can only happen after epoch execution.
+    ///         The receiver becomes the owner of deposit request fulfillment.
     function requestDeposit(address vault, uint256 assets, address receiver, address owner, address source)
         external
         returns (bool);
@@ -55,20 +56,22 @@ interface IInvestmentManager is IMessageHandler, IRecoverable {
     ///         from Centrifuge before actual asset payouts can be done. The redemption
     ///         requests are added to the order book on Centrifuge. Once the next epoch is
     ///         executed on Centrifuge, vaults can proceed with asset payouts
-    ///         in case their orders get fulfilled.
-    /// @dev    The user shares required to fulfill the redemption request have to be locked,
-    ///         even though the asset payout can only happen after epoch execution.
+    ///         in case the order got fulfilled.
+    /// @dev    The shares required to fulfill the redemption request have to be locked and are transferred from the
+    ///         owner to the escrow, even though the asset payout can only happen after epoch execution.
+    ///         The receiver becomes the owner of redeem request fulfillment.
     function requestRedeem(address vault, uint256 shares, address receiver, address, /* owner */ address source)
         external
         returns (bool);
 
     /// @notice Requests the cancellation of a pending deposit request. Liquidity pools have to request the
-    ///         cancellation of outstanding requests
-    ///         from Centrifuge before actual asset can be unlocked and transferred to the owner.
+    ///         cancellation of outstanding requests from Centrifuge before actual assets can be unlocked and
+    /// transferred
+    ///         to the owner.
     ///         While users have outstanding cancellation requests no new deposit requests can be submitted.
     ///         Once the next epoch is executed on Centrifuge, vaults can proceed with asset payouts
-    ///         in case the orders could be canceled successfully.
-    /// @dev    The cancellation request might fail, in case the pending deposit order already got fulfilled on
+    ///         if orders could be cancelled successfully.
+    /// @dev    The cancellation request might fail in case the pending deposit order already got fulfilled on
     ///         Centrifuge.
     function cancelDepositRequest(address vault, address owner, address source) external;
 
@@ -78,8 +81,8 @@ interface IInvestmentManager is IMessageHandler, IRecoverable {
     ///         While users have outstanding cancellation requests no new redeem requests can be submitted (exception:
     ///         trigger through governance).
     ///         Once the next epoch is executed on Centrifuge, vaults can proceed with share payouts
-    ///         in case the orders could be canceled successfully.
-    /// @dev    The cancellation request might fail, in case the pending redeem order already got fulfilled on
+    ///         if the orders could be cancelled successfully.
+    /// @dev    The cancellation request might fail in case the pending redeem order already got fulfilled on
     ///         Centrifuge.
     function cancelRedeemRequest(address vault, address owner, address source) external;
 
@@ -91,7 +94,7 @@ interface IInvestmentManager is IMessageHandler, IRecoverable {
     /// @notice Fulfills pending deposit requests after successful epoch execution on Centrifuge.
     ///         The amount of shares that can be claimed by the user is minted and moved to the escrow contract.
     ///         The MaxMint bookkeeping value is updated.
-    ///         The request fulfillment can also be partial.
+    ///         The request fulfillment can be partial.
     /// @dev    The shares in the escrow are reserved for the user and are transferred to the user on deposit
     ///         and mint calls.
     function fulfillDepositRequest(
@@ -105,8 +108,8 @@ interface IInvestmentManager is IMessageHandler, IRecoverable {
 
     /// @notice Fulfills pending redeem requests after successful epoch execution on Centrifuge.
     ///         The amount of redeemed shares is burned. The amount of assets that can be claimed by the user in
-    ///         return is present in the escrow contract. The MaxWithdraw bookkeeping value is updated.
-    ///         The request fulfillment can also be partial.
+    ///         return is locked in the escrow contract. The MaxWithdraw bookkeeping value is updated.
+    ///         The request fulfillment can be partial.
     /// @dev    The assets in the escrow are reserved for the user and are transferred to the user on redeem
     ///         and withdraw calls.
     function fulfillRedeemRequest(
@@ -119,8 +122,8 @@ interface IInvestmentManager is IMessageHandler, IRecoverable {
     ) external;
 
     /// @notice Fulfills deposit request cancellation after successful epoch execution on Centrifuge.
-    ///         The amount of assets that can be claimed by the user is already present in the escrow contract.
-    ///         Updates claimableCancelDepositRequest bookkeeping value. The cancellation order execution can also be
+    ///         The amount of assets that can be claimed by the user is locked in the escrow contract.
+    ///         Updates claimableCancelDepositRequest bookkeeping value. The cancellation order execution can be
     ///         partial.
     /// @dev    The assets in the escrow are reserved for the user and are transferred to the user during
     ///         claimCancelDepositRequest calls.
@@ -134,7 +137,7 @@ interface IInvestmentManager is IMessageHandler, IRecoverable {
     ) external;
 
     /// @notice Fulfills redeem request cancellation after successful epoch execution on Centrifuge.
-    ///         The amount of shares that can be claimed by the user is already present in the escrow contract.
+    ///         The amount of shares that can be claimed by the user is locked in the escrow contract.
     ///         Updates claimableCancelRedeemRequest bookkeeping value. The cancellation order execution can also be
     ///         partial.
     /// @dev    The shares in the escrow are reserved for the user and are transferred to the user during
@@ -147,7 +150,7 @@ interface IInvestmentManager is IMessageHandler, IRecoverable {
     ///         migrations.
     ///         Once the next epoch is executed on Centrifuge, vaults can proceed with asset payouts in case the orders
     ///         got fulfilled.
-    /// @dev    The user share amount required to fulfill the redeem request has to be locked,
+    /// @dev    The user share amount required to fulfill the redeem request has to be locked in escrow,
     ///         even though the asset payout can only happen after epoch execution.
     function triggerRedeemRequest(uint64 poolId, bytes16 trancheId, address user, uint128 assetId, uint128 shares)
         external;
@@ -175,10 +178,11 @@ interface IInvestmentManager is IMessageHandler, IRecoverable {
     ///         redeem order fulfillment on Centrifuge.
     function maxRedeem(address vault, address user) external view returns (uint256 shares);
 
-    /// @notice Indicates whether a user has pending deposit requests and returns the total asset request value.
+    /// @notice Indicates whether a user has pending deposit requests and returns the total deposit request asset
+    /// request value.
     function pendingDepositRequest(address vault, address user) external view returns (uint256 assets);
 
-    /// @notice Indicates whether a user has pending redeem requests and returns the total shares request value.
+    /// @notice Indicates whether a user has pending redeem requests and returns the total share request value.
     function pendingRedeemRequest(address vault, address user) external view returns (uint256 shares);
 
     /// @notice Indicates whether a user has pending deposit request cancellations.
@@ -187,12 +191,12 @@ interface IInvestmentManager is IMessageHandler, IRecoverable {
     /// @notice Indicates whether a user has pending redeem request cancellations.
     function pendingCancelRedeemRequest(address vault, address user) external view returns (bool isPending);
 
-    /// @notice Indicates whether a user has claimable deposit requests cancellation and returns the total asset claim
-    ///         value.
+    /// @notice Indicates whether a user has claimable deposit request cancellation and returns the total claim
+    ///         value in assets.
     function claimableCancelDepositRequest(address vault, address user) external view returns (uint256 assets);
 
-    /// @notice Indicates whether a user has claimable redeem requests cancellation and returns the total share claim
-    ///         value.
+    /// @notice Indicates whether a user has claimable redeem request cancellation and returns the total claim
+    ///         value in shares.
     function claimableCancelRedeemRequest(address vault, address user) external view returns (uint256 shares);
 
     /// @notice Returns the timestamp of the last share price update for a vault.
@@ -200,8 +204,7 @@ interface IInvestmentManager is IMessageHandler, IRecoverable {
 
     // --- Vault claim functions ---
     /// @notice Processes owner's asset deposit after the epoch has been executed on Centrifuge and the deposit order
-    /// has
-    ///         been successfully processed (partial fulfillment possible).
+    ///         has been successfully processed (partial fulfillment possible).
     ///         Shares are transferred from the escrow to the receiver. Amount of shares is computed based of the amount
     ///         of assets and the owner's share price.
     /// @dev    The assets required to fulfill the deposit are already locked in escrow upon calling requestDeposit.
@@ -227,9 +230,9 @@ interface IInvestmentManager is IMessageHandler, IRecoverable {
     ///         Assets are transferred from the escrow to the receiver. Amount of assets is computed based of the amount
     ///         of shares and the owner's share price.
     /// @dev    The shares required to fulfill the redemption were already locked in escrow on requestRedeem and burned
-    ///         on fulfillDepositRequest.
+    ///         on fulfillRedeemRequest.
     ///         The assets required to fulfill the redemption have already been reserved in escrow on
-    ///         fulfillDepositRequest.
+    ///         fulfillRedeemtRequest.
     function redeem(address vault, uint256 shares, address receiver, address owner) external returns (uint256 assets);
 
     /// @notice Processes owner's asset withdrawal after the epoch has been executed on Centrifuge and the redeem order
@@ -237,16 +240,15 @@ interface IInvestmentManager is IMessageHandler, IRecoverable {
     ///         Assets are transferred from the escrow to the receiver. Amount of shares is computed based of the amount
     ///         of shares and the owner's share price.
     /// @dev    The shares required to fulfill the withdrawal were already locked in escrow on requestRedeem and burned
-    ///         on fulfillDepositRequest.
+    ///         on fulfillRedeemRequest.
     ///         The assets required to fulfill the withdrawal have already been reserved in escrow on
-    ///         fulfillDepositRequest.
+    ///         fulfillRedeemtRequest.
     function withdraw(address vault, uint256 assets, address receiver, address owner)
         external
         returns (uint256 shares);
 
     /// @notice Processes owner's deposit request cancellation after the epoch has been executed on Centrifuge and the
-    ///          deposit order cancellation has
-    ///         been successfully processed (partial fulfillment possible).
+    ///         deposit order cancellation has been successfully processed (partial fulfillment possible).
     ///         Assets are transferred from the escrow to the receiver.
     /// @dev    The assets required to fulfill the claim have already been reserved for the owner in escrow on
     ///         fulfillCancelDepositRequest.
@@ -255,8 +257,7 @@ interface IInvestmentManager is IMessageHandler, IRecoverable {
         returns (uint256 assets);
 
     /// @notice Processes owner's redeem request cancellation after the epoch has been executed on Centrifuge and the
-    ///         redeem order cancellation has
-    ///         been successfully processed (partial fulfillment possible).
+    ///         redeem order cancellation has been successfully processed (partial fulfillment possible).
     ///         Shares are transferred from the escrow to the receiver.
     /// @dev    The shares required to fulfill the claim have already been reserved for the owner in escrow on
     ///         fulfillCancelRedeemRequest.
