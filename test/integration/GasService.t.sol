@@ -4,6 +4,11 @@ pragma solidity 0.8.26;
 import "test/BaseTest.sol";
 
 contract GasServiceTest is BaseTest {
+    function testHandleInvalidMessage() public {
+        vm.expectRevert(bytes("GasService/invalid-message"));
+        gasService.handle(abi.encodePacked(uint8(MessagesLib.Call.Invalid)));
+    }
+
     function testUpdateGasPrice(uint128 price) public {
         price = uint128(bound(price, 1, type(uint128).max));
 
