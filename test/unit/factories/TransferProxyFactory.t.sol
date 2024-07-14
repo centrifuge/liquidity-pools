@@ -27,7 +27,7 @@ contract TransferProxyFactoryTest is Test {
         assertEq(proxy.destination(), destination);
 
         // Proxies cannot be deployed twice
-        vm.expectRevert(bytes("TransferProxyFactory/proxy-already-deployed"));
+        vm.expectRevert(bytes("TransferProxyFactory/already-deployed"));
         factory.newTransferProxy(destination);
 
         erc20.mint(address(this), 100);

@@ -4,6 +4,7 @@ pragma solidity 0.8.26;
 import {Auth} from "src/Auth.sol";
 import {IRoot} from "src/interfaces/IRoot.sol";
 import {EIP712Lib} from "src/libraries/EIP712Lib.sol";
+import {IRecoverable} from "src/interfaces/IRoot.sol";
 import {ITranche} from "src/interfaces/token/ITranche.sol";
 import {SignatureLib} from "src/libraries/SignatureLib.sol";
 import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
@@ -23,6 +24,12 @@ import "src/interfaces/IERC20.sol";
 ///         After execution users can use the deposit, mint, redeem and withdraw functions to get their shares
 ///         and/or assets from the pools.
 contract ERC7540Vault is Auth, IERC7540Vault {
+    /// @dev Requests for Centrifuge pool are non-transferable and all have ID = 0
+    uint256 private constant REQUEST_ID = 0;
+
+    bytes32 public constant AUTHORIZE_OPERATOR_TYPEHASH =
+        keccak256("AuthorizeOperator(address controller,address operator,bool approved,uint256 deadline,bytes32 nonce)");
+
     /// @inheritdoc IERC7540Vault
     uint64 public immutable poolId;
 
@@ -45,17 +52,13 @@ contract ERC7540Vault is Auth, IERC7540Vault {
     /// @dev Vault implementation contract
     IInvestmentManager public manager;
 
-    /// @dev Requests for Centrifuge pool are non-transferable and all have ID = 0
-    uint256 constant REQUEST_ID = 0;
-
     bytes32 private immutable nameHash;
     bytes32 private immutable versionHash;
     uint256 public immutable deploymentChainId;
     bytes32 private immutable _DOMAIN_SEPARATOR;
-    bytes32 public constant AUTHORIZE_OPERATOR_TYPEHASH =
-        keccak256("AuthorizeOperator(address controller,address operator,bool approved,uint256 deadline,bytes32 nonce)");
 
-    mapping(address controller => mapping(bytes32 nonce => bool used)) authorizations;
+    /// @inheritdoc IERC7741
+    mapping(address controller => mapping(bytes32 nonce => bool used)) public authorizations;
 
     /// @inheritdoc IERC7540Operator
     mapping(address => mapping(address => bool)) public isOperator;
@@ -97,6 +100,7 @@ contract ERC7540Vault is Auth, IERC7540Vault {
         emit File(what, data);
     }
 
+    /// @inheritdoc IRecoverable
     function recoverTokens(address token, address to, uint256 amount) external auth {
         SafeTransferLib.safeTransfer(token, to, amount);
     }
@@ -216,28 +220,27 @@ contract ERC7540Vault is Auth, IERC7540Vault {
     }
 
     /// @inheritdoc IERC7540Operator
-    function setOperator(address operator, bool approved) public virtual returns (bool) {
+    function setOperator(address operator, bool approved) public virtual returns (bool success) {
         isOperator[msg.sender][operator] = approved;
         emit OperatorSet(msg.sender, operator, approved);
-        return true;
+        success = true;
     }
 
     /// @inheritdoc IERC7540Vault
-    function setEndorsedOperator(address owner, bool approved) public virtual returns (bool) {
-        require(root.endorsed(msg.sender), "ERC7540Vault/sender-not-endorsed");
+    function setEndorsedOperator(address owner, bool approved) public virtual {
+        require(root.endorsed(msg.sender), "ERC7540Vault/not-endorsed");
         isOperator[owner][msg.sender] = approved;
         emit OperatorSet(owner, msg.sender, approved);
-        return true;
     }
 
-    /// @inheritdoc IAuthorizeOperator
+    /// @inheritdoc IERC7741
     function DOMAIN_SEPARATOR() public view returns (bytes32) {
         return block.chainid == deploymentChainId
             ? _DOMAIN_SEPARATOR
             : EIP712Lib.calculateDomainSeparator(nameHash, versionHash);
     }
 
-    /// @inheritdoc IAuthorizeOperator
+    /// @inheritdoc IERC7741
     function authorizeOperator(
         address controller,
         address operator,
@@ -245,8 +248,8 @@ contract ERC7540Vault is Auth, IERC7540Vault {
         uint256 deadline,
         bytes32 nonce,
         bytes memory signature
-    ) external returns (bool) {
-        require(block.timestamp <= deadline, "ERC7540Vault/authorization-expired");
+    ) external returns (bool success) {
+        require(block.timestamp <= deadline, "ERC7540Vault/expired");
         require(controller != address(0), "ERC7540Vault/invalid-controller");
         require(!authorizations[controller][nonce], "ERC7540Vault/authorization-used");
 
@@ -265,10 +268,10 @@ contract ERC7540Vault is Auth, IERC7540Vault {
         isOperator[controller][operator] = approved;
         emit OperatorSet(controller, operator, approved);
 
-        return true;
+        success = true;
     }
 
-    /// @inheritdoc IAuthorizeOperator
+    /// @inheritdoc IERC7741
     function invalidateNonce(bytes32 nonce) external {
         authorizations[msg.sender][nonce] = true;
     }
@@ -279,7 +282,7 @@ contract ERC7540Vault is Auth, IERC7540Vault {
         return interfaceId == type(IERC7540Deposit).interfaceId || interfaceId == type(IERC7540Redeem).interfaceId
             || interfaceId == type(IERC7540Operator).interfaceId || interfaceId == type(IERC7540CancelDeposit).interfaceId
             || interfaceId == type(IERC7540CancelRedeem).interfaceId || interfaceId == type(IERC7575).interfaceId
-            || interfaceId == type(IAuthorizeOperator).interfaceId || interfaceId == type(IERC7714).interfaceId
+            || interfaceId == type(IERC7741).interfaceId || interfaceId == type(IERC7714).interfaceId
             || interfaceId == type(IERC165).interfaceId;
     }
 

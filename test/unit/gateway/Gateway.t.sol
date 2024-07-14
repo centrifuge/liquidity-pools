@@ -210,7 +210,7 @@ contract GatewayTest is Test {
         vm.expectRevert(bytes(""));
         assertEq(gateway.adapters(3), address(0));
 
-        vm.expectRevert(bytes("Gateway/exceeds-max-adapter-count"));
+        vm.expectRevert(bytes("Gateway/exceeds-max"));
         gateway.file("adapters", nineMockAdapters);
 
         vm.expectRevert(bytes("Gateway/file-unrecognized-param"));
@@ -233,7 +233,7 @@ contract GatewayTest is Test {
         vm.expectRevert(bytes("Gateway/invalid-manager"));
         gateway.send(message, address(this));
 
-        vm.expectRevert(bytes("Gateway/adapters-not-initialized"));
+        vm.expectRevert(bytes("Gateway/not-initialized"));
         vm.prank(address(investmentManager));
         gateway.send(message, address(this));
     }
@@ -783,7 +783,7 @@ contract GatewayTest is Test {
 
         vm.warp(block.timestamp + gateway.RECOVERY_CHALLENGE_PERIOD());
 
-        vm.expectRevert(bytes("Gateway/no-recursive-recovery-allowed"));
+        vm.expectRevert(bytes("Gateway/no-recursion"));
         gateway.executeMessageRecovery(address(adapter1), message);
         assertEq(poolManager.received(message), 0);
     }

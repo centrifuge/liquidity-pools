@@ -47,30 +47,32 @@ library MessagesLib {
         UpdateTranchePrice,
         /// 15 - Update tranche token metadata
         UpdateTrancheMetadata,
-        /// 16 - A transfer of assets
+        /// 16 - Update Tranche Hook
+        UpdateTrancheHook,
+        /// 17 - A transfer of assets
         TransferAssets,
-        /// 17 - A transfer of tranche tokens
+        /// 18 - A transfer of tranche tokens
         TransferTrancheTokens,
-        /// 18 - Update a user restriction
+        /// 19 - Update a user restriction
         UpdateRestriction,
         /// --- Investment Manager ---
-        /// 19 - Increase an investment order by a given amount
+        /// 20 - Increase an investment order by a given amount
         DepositRequest,
-        /// 20 - Increase a Redeem order by a given amount
+        /// 21 - Increase a Redeem order by a given amount
         RedeemRequest,
-        /// 21 - Executed Collect Invest
+        /// 22 - Executed Collect Invest
         FulfilledDepositRequest,
-        /// 22 - Executed Collect Redeem
+        /// 23 - Executed Collect Redeem
         FulfilledRedeemRequest,
-        /// 23 - Cancel an investment order
+        /// 24 - Cancel an investment order
         CancelDepositRequest,
-        /// 24 - Cancel a redeem order
+        /// 25 - Cancel a redeem order
         CancelRedeemRequest,
-        /// 25 - Executed Decrease Invest Order
+        /// 26 - Executed Decrease Invest Order
         FulfilledCancelDepositRequest,
-        /// 26 - Executed Decrease Redeem Order
+        /// 27 - Executed Decrease Redeem Order
         FulfilledCancelRedeemRequest,
-        /// 27 - Request redeem investor
+        /// 28 - Request redeem investor
         TriggerRedeemRequest
     }
 

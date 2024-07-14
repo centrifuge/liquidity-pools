@@ -2,8 +2,9 @@
 pragma solidity >=0.5.0;
 
 import {Domain} from "src/interfaces/IPoolManager.sol";
+import {IRecoverable} from "src/interfaces/IRoot.sol";
 
-interface ICentrifugeRouter {
+interface ICentrifugeRouter is IRecoverable {
     // --- Events ---
     event LockDepositRequest(
         address indexed vault, address indexed controller, address indexed owner, address sender, uint256 amount
@@ -14,12 +15,16 @@ interface ICentrifugeRouter {
     /// @notice TODO
     function lockedRequests(address controller, address vault) external view returns (uint256 amount);
 
-    // --- Administration ---
-    /// @notice TODO
-    function recoverTokens(address token, address to, uint256 amount) external;
-
     // --- Deposit ---
-    /// @notice TODO
+    /// @notice Check `IERC7540Deposit.requestDeposit`.
+    /// @dev    This adds a mandatory prepayment for all the costs that will incur during the transaction.
+    ///         The caller must call `CentrifugeRouter.estimate` to get estimates how much the deposit will cost.
+    ///
+    /// @param  vault The vault to deposit into
+    /// @param  amount Check @param IERC7540Deposit.requestDeposit.assets
+    /// @param  controller Check @param IERC7540Deposit.requestDeposit.controller
+    /// @param  owner Check @param IERC7540Deposit.requestDeposit.owner
+    /// @param  topUpAmount Amount that covers all costs outside EVM
     function requestDeposit(address vault, uint256 amount, address controller, address owner, uint256 topUpAmount)
         external
         payable;
@@ -39,14 +44,28 @@ interface ICentrifugeRouter {
     /// @notice TODO
     function claimDeposit(address vault, address receiver, address controller) external payable;
 
-    /// @notice TODO
+    // --- Redeem ---
+    /// @notice Check `IERC7540CancelDeposit.cancelDepositRequest`.
+    /// @dev    This adds a mandatory prepayment for all the costs that will incur during the transaction.
+    ///         The caller must call `CentrifugeRouter.estimate` to get estimates how much the deposit will cost.
+    ///
+    /// @param  vault The vault where the deposit was initiated
+    /// @param  topUpAmount Amount that covers all costs outside EVM
     function cancelDepositRequest(address vault, uint256 topUpAmount) external payable;
 
     /// @notice TODO
     function claimCancelDepositRequest(address vault, address receiver, address controller) external payable;
 
     // --- Redeem ---
-    /// @notice TODO
+    /// @notice Check `IERC7540Redeem.requestRedeem`.
+    /// @dev    This adds a mandatory prepayment for all the costs that will incur during the transaction.
+    ///         The caller must call `CentrifugeRouter.estimate` to get estimates how much the deposit will cost.
+    ///
+    /// @param  vault The vault to deposit into
+    /// @param  amount Check @param IERC7540Redeem.requestRedeem.shares
+    /// @param  controller Check @param IERC7540Redeem.requestRedeem.controller
+    /// @param  owner Check @param IERC7540Redeem.requestRedeem.owner
+    /// @param  topUpAmount Amount that covers all costs outside EVM
     function requestRedeem(address vault, uint256 amount, address controller, address owner, uint256 topUpAmount)
         external
         payable;
@@ -61,20 +80,41 @@ interface ICentrifugeRouter {
     /// @notice Disallow permissionless claiming
     function close(address vault) external;
 
-    /// @notice TODO
+    /// @notice Check `IERC7540CancelRedeem.cancelRedeemRequest`.
+    /// @dev    This adds a mandatory prepayment for all the costs that will incur during the transaction.
+    ///         The caller must call `CentrifugeRouter.estimate` to get estimates how much the deposit will cost.
+    ///
+    /// @param  vault The vault where the deposit was initiated
+    /// @param  topUpAmount Amount that covers all costs outside EVM
     function cancelRedeemRequest(address vault, uint256 topUpAmount) external payable;
 
-    /// @notice TODO
     function claimCancelRedeemRequest(address vault, address receiver, address controller) external payable;
 
     // --- Transfer ---
-    /// @notice TODO
+    /// @notice Check `IPoolManager.transferAssets`.
+    /// @dev    This adds a mandatory prepayment for all the costs that will incur during the transaction.
+    ///         The caller must call `CentrifugeRouter.estimate` to get estimates how much the deposit will cost.
+    ///
+    /// @param  asset Check `IPoolManager.transferAssets.asset`
+    /// @param  recipient Check `IPoolManager.transferAssets.recipient`
+    /// @param  amount Check `IPoolManager.transferAssets.amount`
+    /// @param  topUpAmount Amount that covers all costs outside EVM
     function transferAssets(address asset, bytes32 recipient, uint128 amount, uint256 topUpAmount) external payable;
 
-    /// @notice TODO
+    /// @notice This is a more friendly version where the recipient is and EVM address
+    /// @dev the recipient address is padded to 32 bytes internally
     function transferAssets(address asset, address recipient, uint128 amount, uint256 topUpAmount) external payable;
 
-    /// @notice TODO
+    /// @notice Check `IPoolManager.transferTrancheTokens`.
+    /// @dev    This adds a mandatory prepayment for all the costs that will incur during the transaction.
+    ///         The caller must call `CentrifugeRouter.estimate` to get estimates how much the deposit will cost.
+    ///
+    /// @param  vault The vault for the corresponding tranche token
+    /// @param  domain Check `IPoolManager.transferTrancheTokens.domain`
+    /// @param  id Check `IPoolManager.transferTrancheTokens.destinationId`
+    /// @param  recipient Check `IPoolManager.transferTrancheTokens.recipient`
+    /// @param  amount Check `IPoolManager.transferTrancheTokens.amount`
+    /// @param  topUpAmount Amount that covers all costs outside EVM
     function transferTrancheTokens(
         address vault,
         Domain domain,
@@ -84,6 +124,8 @@ interface ICentrifugeRouter {
         uint256 topUpAmount
     ) external payable;
 
+    /// @notice This is a more friendly version where the recipient is and EVM address
+    /// @dev the recipient address is padded to 32 bytes internally
     function transferTrancheTokens(
         address vault,
         Domain domain,

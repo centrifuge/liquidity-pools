@@ -9,6 +9,12 @@ import {IAuth} from "src/interfaces/IAuth.sol";
 contract Auth is IAuth {
     mapping(address => uint256) public wards;
 
+    /// @dev Check if the msg.sender has permissions
+    modifier auth() {
+        require(wards[msg.sender] == 1, "Auth/not-authorized");
+        _;
+    }
+
     /// @dev Give permissions to the user
     function rely(address user) external auth {
         wards[user] = 1;
@@ -19,11 +25,5 @@ contract Auth is IAuth {
     function deny(address user) external auth {
         wards[user] = 0;
         emit Deny(user);
-    }
-
-    /// @dev Check if the msg.sender has permissions
-    modifier auth() {
-        require(wards[msg.sender] == 1, "Auth/not-authorized");
-        _;
     }
 }

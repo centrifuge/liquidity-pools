@@ -250,5 +250,5 @@ interface IERC7575Share is IERC165 {
      *
      * @param asset the ERC-20 token to deposit with into the Vault
      */
-    function vault(address asset) external view returns (address vault);
+    function vault(address asset) external view returns (address);
 }

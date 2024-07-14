@@ -2,7 +2,6 @@
 pragma solidity 0.8.26;
 
 import {Auth} from "src/Auth.sol";
-import {IERC20} from "src/interfaces/IERC20.sol";
 import {IRoot} from "src/interfaces/IRoot.sol";
 import {ITranche} from "src/interfaces/token/ITranche.sol";
 import {IHook, HookData} from "src/interfaces/token/IHook.sol";
@@ -26,10 +25,6 @@ contract RestrictionManager is Auth, IRestrictionManager, IHook {
 
     /// @dev Least significant bit
     uint8 public constant FREEZE_BIT = 0;
-
-    uint8 public constant SOURCE_IS_FROZEN_CODE = 1;
-    uint8 public constant DESTINATION_IS_FROZEN_CODE = 2;
-    uint8 public constant DESTINATION_NOT_A_MEMBER_RESTRICTION_CODE = 3;
 
     IRoot public immutable root;
 
@@ -133,7 +128,7 @@ contract RestrictionManager is Auth, IRestrictionManager, IHook {
     }
 
     /// @inheritdoc IRestrictionManager
-    function isMember(address token, address user) public view returns (bool isValid, uint64 validUntil) {
+    function isMember(address token, address user) external view returns (bool isValid, uint64 validUntil) {
         validUntil = abi.encodePacked(ITranche(token).hookDataOf(user)).toUint64(0);
         isValid = validUntil >= block.timestamp;
     }

@@ -33,6 +33,16 @@ contract MockCentrifugeChain is Test {
         _execute(_message);
     }
 
+    function batchAddPoolAllowAsset(uint64 poolId, uint128 assetId) public {
+        bytes memory _addPool = abi.encodePacked(uint8(MessagesLib.Call.AddPool), poolId);
+        bytes memory _allowAsset = abi.encodePacked(uint8(MessagesLib.Call.AllowAsset), poolId, assetId);
+
+        bytes memory _message = abi.encodePacked(
+            uint8(MessagesLib.Call.Batch), uint16(_addPool.length), _addPool, uint16(_allowAsset.length), _allowAsset
+        );
+        _execute(_message);
+    }
+
     function allowAsset(uint64 poolId, uint128 assetId) public {
         bytes memory _message = abi.encodePacked(uint8(MessagesLib.Call.AllowAsset), poolId, assetId);
         _execute(_message);
@@ -55,7 +65,7 @@ contract MockCentrifugeChain is Test {
             uint8(MessagesLib.Call.AddTranche),
             poolId,
             trancheId,
-            tokenName.toBytes128(),
+            _toBytes128(tokenName),
             tokenSymbol.toBytes32(),
             decimals,
             hook
@@ -82,9 +92,14 @@ contract MockCentrifugeChain is Test {
             uint8(MessagesLib.Call.UpdateTrancheMetadata),
             poolId,
             trancheId,
-            tokenName.toBytes128(),
+            _toBytes128(tokenName),
             tokenSymbol.toBytes32()
         );
+        _execute(_message);
+    }
+
+    function updateTrancheHook(uint64 poolId, bytes16 trancheId, address hook) public {
+        bytes memory _message = abi.encodePacked(uint8(MessagesLib.Call.UpdateTrancheHook), poolId, trancheId, hook);
         _execute(_message);
     }
 
@@ -93,6 +108,11 @@ contract MockCentrifugeChain is Test {
     {
         bytes memory _message =
             abi.encodePacked(uint8(MessagesLib.Call.UpdateTranchePrice), poolId, trancheId, assetId, price, computedAt);
+        _execute(_message);
+    }
+
+    function updateCentrifugeGasPrice(uint128 price, uint64 computedAt) public {
+        bytes memory _message = abi.encodePacked(uint8(MessagesLib.Call.UpdateCentrifugeGasPrice), price, computedAt);
         _execute(_message);
     }
 
@@ -234,6 +254,16 @@ contract MockCentrifugeChain is Test {
             uint8(MessagesLib.Call.FulfilledRedeemRequest), poolId, trancheId, investor, assetId, assets, shares
         );
         _execute(_message);
+    }
+
+    function execute(bytes memory message) external {
+        _execute(message);
+    }
+
+    /// @dev Adds zero padding
+    function _toBytes128(string memory source) internal pure returns (bytes memory) {
+        bytes memory sourceBytes = bytes(source);
+        return bytes.concat(sourceBytes, new bytes(128 - sourceBytes.length));
     }
 
     function _execute(bytes memory message) internal {

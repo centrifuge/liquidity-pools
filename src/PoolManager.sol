@@ -25,6 +25,7 @@ import {IEscrow} from "src/interfaces/IEscrow.sol";
 import {IGateway} from "src/interfaces/gateway/IGateway.sol";
 import {IGasService} from "src/interfaces/gateway/IGasService.sol";
 import {IAuth} from "src/interfaces/IAuth.sol";
+import {IRecoverable} from "src/interfaces/IRoot.sol";
 
 /// @title  Pool Manager
 /// @notice This contract manages which pools & tranches exist,
@@ -72,6 +73,7 @@ contract PoolManager is Auth, IPoolManager {
         emit File(what, data);
     }
 
+    /// @inheritdoc IRecoverable
     function recoverTokens(address token, address to, uint256 amount) external auth {
         SafeTransferLib.safeTransfer(token, to, amount);
     }
@@ -85,8 +87,7 @@ contract PoolManager is Auth, IPoolManager {
         SafeTransferLib.safeTransferFrom(asset, msg.sender, address(escrow), amount);
 
         gateway.send(
-            abi.encodePacked(uint8(MessagesLib.Call.TransferAssets), assetId, msg.sender.toBytes32(), recipient, amount),
-            address(this)
+            abi.encodePacked(uint8(MessagesLib.Call.TransferAssets), assetId, recipient, amount), address(this)
         );
         emit TransferAssets(asset, msg.sender, recipient, amount);
     }
@@ -104,15 +105,10 @@ contract PoolManager is Auth, IPoolManager {
         require(address(tranche) != address(0), "PoolManager/unknown-token");
 
         tranche.burn(msg.sender, amount);
+        bytes9 domain = _formatDomain(destinationDomain, destinationId);
         gateway.send(
             abi.encodePacked(
-                uint8(MessagesLib.Call.TransferTrancheTokens),
-                poolId,
-                trancheId,
-                msg.sender.toBytes32(),
-                _formatDomain(destinationDomain, destinationId),
-                recipient,
-                amount
+                uint8(MessagesLib.Call.TransferTrancheTokens), poolId, trancheId, domain, recipient, amount
             ),
             address(this)
         );
@@ -166,7 +162,9 @@ contract PoolManager is Auth, IPoolManager {
         } else if (call == MessagesLib.Call.DisallowAsset) {
             disallowAsset(message.toUint64(1), message.toUint128(9));
         } else if (call == MessagesLib.Call.UpdateCentrifugeGasPrice) {
-            updateCentrifugeGasPrice(message.toUint128(1), message.toUint256(17));
+            updateCentrifugeGasPrice(message.toUint128(1), message.toUint64(17));
+        } else if (call == MessagesLib.Call.UpdateTrancheHook) {
+            updateTrancheHook(message.toUint64(1), message.toBytes16(9), message.toAddress(25));
         } else {
             revert("PoolManager/invalid-message");
         }
@@ -200,7 +198,7 @@ contract PoolManager is Auth, IPoolManager {
         address asset = idToAsset[assetId];
         require(asset != address(0), "PoolManager/unknown-asset");
 
-        pools[poolId].allowedAssets[asset] = false;
+        delete pools[poolId].allowedAssets[asset];
         emit DisallowAsset(poolId, asset);
     }
 
@@ -278,6 +276,14 @@ contract PoolManager is Auth, IPoolManager {
     }
 
     /// @inheritdoc IPoolManager
+    function updateTrancheHook(uint64 poolId, bytes16 trancheId, address hook) public auth {
+        ITranche tranche = ITranche(getTranche(poolId, trancheId));
+        require(address(tranche) != address(0), "PoolManager/unknown-token");
+        require(hook != tranche.hook(), "PoolManager/old-hook");
+        tranche.file("hook", hook);
+    }
+
+    /// @inheritdoc IPoolManager
     function addAsset(uint128 assetId, address asset) public auth {
         // Currency index on the Centrifuge side should start at 1
         require(assetId != 0, "PoolManager/asset-id-has-to-be-greater-than-0");
@@ -322,16 +328,14 @@ contract PoolManager is Auth, IPoolManager {
     }
 
     /// @inheritdoc IPoolManager
-    function updateCentrifugeGasPrice(uint128 price, uint256 computedAt) public auth {
-        require(price > 0, "PoolManager/price-cannot-be-zero");
-        require(gasService.gasPrice() != price, "PoolManager/same-price-already-set");
+    function updateCentrifugeGasPrice(uint128 price, uint64 computedAt) public auth {
         gasService.updateGasPrice(price, computedAt);
     }
 
     // --- Public functions ---
     // slither-disable-start reentrancy-eth
     /// @inheritdoc IPoolManager
-    function deployTranche(uint64 poolId, bytes16 trancheId) public returns (address) {
+    function deployTranche(uint64 poolId, bytes16 trancheId) external returns (address) {
         UndeployedTranche storage undeployedTranche = undeployedTranches[poolId][trancheId];
         require(undeployedTranche.decimals != 0, "PoolManager/tranche-not-added");
 
@@ -366,7 +370,7 @@ contract PoolManager is Auth, IPoolManager {
     // slither-disable-end reentrancy-eth
 
     /// @inheritdoc IPoolManager
-    function deployVault(uint64 poolId, bytes16 trancheId, address asset) public returns (address) {
+    function deployVault(uint64 poolId, bytes16 trancheId, address asset) external returns (address) {
         TrancheDetails storage tranche = pools[poolId].tranches[trancheId];
         require(tranche.token != address(0), "PoolManager/tranche-does-not-exist");
         require(isAllowedAsset(poolId, asset), "PoolManager/asset-not-supported");
@@ -399,7 +403,7 @@ contract PoolManager is Auth, IPoolManager {
     }
 
     /// @inheritdoc IPoolManager
-    function removeVault(uint64 poolId, bytes16 trancheId, address asset) public auth {
+    function removeVault(uint64 poolId, bytes16 trancheId, address asset) external auth {
         require(pools[poolId].createdAt != 0, "PoolManager/pool-does-not-exist");
         TrancheDetails storage tranche = pools[poolId].tranches[trancheId];
         require(tranche.token != address(0), "PoolManager/tranche-does-not-exist");

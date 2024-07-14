@@ -69,7 +69,7 @@ contract OperatorTest is BaseTest {
 
         uint128 price = 2 * 10 ** 18;
         address vault_ = deploySimpleVault();
-        (address owner, uint256 ownerPk) = makeAddrAndKey("owner");
+        (address controller, uint256 controllerPk) = makeAddrAndKey("controller");
         address operator = makeAddr("operator");
         ERC7540Vault vault = ERC7540Vault(vault_);
 
@@ -77,26 +77,26 @@ contract OperatorTest is BaseTest {
             vault.poolId(), vault.trancheId(), defaultAssetId, price, uint64(block.timestamp)
         );
 
-        erc20.mint(owner, amount);
+        erc20.mint(controller, amount);
 
-        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), owner, type(uint64).max);
-        vm.prank(owner);
+        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), controller, type(uint64).max);
+        vm.prank(controller);
         erc20.approve(vault_, amount);
 
         vm.prank(operator);
         vm.expectRevert(bytes("ERC7540Vault/invalid-owner"));
-        vault.requestDeposit(amount, owner, owner);
+        vault.requestDeposit(amount, controller, controller);
 
         uint256 deadline = type(uint64).max;
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(
-            ownerPk,
+            controllerPk,
             keccak256(
                 abi.encodePacked(
                     "\x19\x01",
                     vault.DOMAIN_SEPARATOR(),
                     keccak256(
                         abi.encode(
-                            vault.AUTHORIZE_OPERATOR_TYPEHASH(), owner, operator, true, deadline, bytes32("nonce")
+                            vault.AUTHORIZE_OPERATOR_TYPEHASH(), controller, operator, true, deadline, bytes32("nonce")
                         )
                     )
                 )
@@ -107,14 +107,14 @@ contract OperatorTest is BaseTest {
         delete s;
         delete v;
 
-        assertEq(vault.isOperator(owner, operator), false);
+        assertEq(vault.isOperator(controller, operator), false);
         vm.prank(operator);
-        vault.authorizeOperator(owner, operator, true, deadline, bytes32("nonce"), signature);
-        assertEq(vault.isOperator(owner, operator), true);
+        vault.authorizeOperator(controller, operator, true, deadline, bytes32("nonce"), signature);
+        assertEq(vault.isOperator(controller, operator), true);
 
         vm.prank(operator);
-        vault.requestDeposit(amount, owner, owner);
-        assertEq(vault.pendingDepositRequest(0, owner), amount);
+        vault.requestDeposit(amount, controller, controller);
+        assertEq(vault.pendingDepositRequest(0, controller), amount);
         assertEq(vault.pendingDepositRequest(0, operator), 0);
     }
 
@@ -168,5 +168,60 @@ contract OperatorTest is BaseTest {
         vm.prank(operator);
         vm.expectRevert(bytes("ERC20/insufficient-allowance"));
         vault.requestRedeem(amount, investor, investor);
+    }
+
+    function testInvalidateNonce(uint256 amount) public {
+        // If lower than 4 or odd, rounding down can lead to not receiving any tokens
+        amount = uint128(bound(amount, 4, MAX_UINT128));
+        vm.assume(amount % 2 == 0);
+
+        uint128 price = 2 * 10 ** 18;
+        address vault_ = deploySimpleVault();
+        (address controller, uint256 controllerPk) = makeAddrAndKey("controller");
+        address operator = makeAddr("operator");
+        ERC7540Vault vault = ERC7540Vault(vault_);
+
+        centrifugeChain.updateTranchePrice(
+            vault.poolId(), vault.trancheId(), defaultAssetId, price, uint64(block.timestamp)
+        );
+
+        erc20.mint(controller, amount);
+
+        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), controller, type(uint64).max);
+        vm.prank(controller);
+        erc20.approve(vault_, amount);
+
+        vm.prank(operator);
+        vm.expectRevert(bytes("ERC7540Vault/invalid-owner"));
+        vault.requestDeposit(amount, controller, controller);
+
+        uint256 deadline = type(uint64).max;
+        bytes32 nonce = bytes32("nonce");
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
+            controllerPk,
+            keccak256(
+                abi.encodePacked(
+                    "\x19\x01",
+                    vault.DOMAIN_SEPARATOR(),
+                    keccak256(
+                        abi.encode(vault.AUTHORIZE_OPERATOR_TYPEHASH(), controller, operator, true, deadline, nonce)
+                    )
+                )
+            )
+        );
+        bytes memory signature = abi.encodePacked(r, s, v);
+        delete r;
+        delete s;
+        delete v;
+
+        vm.prank(controller);
+        vault.invalidateNonce(nonce);
+
+        assertEq(vault.authorizations(controller, nonce), true);
+
+        vm.expectRevert(bytes("ERC7540Vault/authorization-used"));
+        vm.prank(operator);
+        vault.authorizeOperator(controller, operator, true, deadline, nonce, signature);
+        assertEq(vault.isOperator(controller, operator), false);
     }
 }

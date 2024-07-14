@@ -28,6 +28,16 @@ contract RedeemTest is BaseTest {
         vm.expectRevert(bytes("InvestmentManager/asset-not-allowed"));
         vault.requestRedeem(amount, address(this), address(this));
 
+        // will fail - cannot fulfill if there is no pending redeem request
+        uint128 _assetId = poolManager.assetToId(address(erc20)); // retrieve assetId
+        uint128 assets = uint128((amount * 10 ** 18) / defaultPrice);
+        uint64 poolId = vault.poolId();
+        bytes16 trancheId = vault.trancheId();
+        vm.expectRevert(bytes("InvestmentManager/no-pending-redeem-request"));
+        centrifugeChain.isFulfilledRedeemRequest(
+            poolId, trancheId, bytes32(bytes20(self)), _assetId, assets, uint128(amount)
+        );
+
         // success
         centrifugeChain.allowAsset(vault.poolId(), defaultAssetId);
         vault.requestRedeem(amount, address(this), address(this));
@@ -40,8 +50,6 @@ contract RedeemTest is BaseTest {
         vault.requestRedeem(amount, address(this), address(this));
 
         // trigger executed collectRedeem
-        uint128 _assetId = poolManager.assetToId(address(erc20)); // retrieve assetId
-        uint128 assets = uint128((amount * 10 ** 18) / defaultPrice);
         centrifugeChain.isFulfilledRedeemRequest(
             vault.poolId(), vault.trancheId(), bytes32(bytes20(self)), _assetId, assets, uint128(amount)
         );
@@ -261,7 +269,6 @@ contract RedeemTest is BaseTest {
         ERC7540Vault vault = ERC7540Vault(vault_);
         ITranche tranche = ITranche(address(vault.share()));
         deposit(vault_, investor, amount, false); // request and execute deposit, but don't claim
-        uint256 investorBalanceBefore = erc20.balanceOf(investor);
         assertEq(vault.maxMint(investor), amount);
         uint64 poolId = vault.poolId();
         bytes16 trancheId = vault.trancheId();

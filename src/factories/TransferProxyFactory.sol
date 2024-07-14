@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.26;
 
-import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 import {IPoolManager} from "src/interfaces/IPoolManager.sol";
 import {ITransferProxy, ITransferProxyFactory} from "src/interfaces/factories/ITransferProxy.sol";
 
@@ -39,8 +38,8 @@ contract TransferProxyFactory is ITransferProxyFactory {
     }
 
     /// @inheritdoc ITransferProxyFactory
-    function newTransferProxy(bytes32 destination) public returns (address) {
-        require(proxies[destination] == address(0), "TransferProxyFactory/proxy-already-deployed");
+    function newTransferProxy(bytes32 destination) external returns (address) {
+        require(proxies[destination] == address(0), "TransferProxyFactory/already-deployed");
 
         address proxy = address(new TransferProxy(poolManager, destination));
         proxies[destination] = proxy;

@@ -21,6 +21,10 @@ contract AxelarForwarderTest is Test {
         forwarder = new AxelarForwarder(address(axelarGateway));
     }
 
+    function testDeployment() public {
+        new AxelarForwarder(address(axelarGateway));
+    }
+
     function testInvalidFile() public {
         vm.expectRevert("AxelarForwarder/file-unrecognized-param");
         forwarder.file("not-axelar-gateway", address(1));

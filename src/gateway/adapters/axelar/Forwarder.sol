@@ -2,15 +2,7 @@
 pragma solidity 0.8.26;
 
 import {Auth} from "src/Auth.sol";
-
-interface AxelarGatewayLike {
-    function validateContractCall(
-        bytes32 commandId,
-        string calldata sourceChain,
-        string calldata sourceAddress,
-        bytes32 payloadHash
-    ) external returns (bool);
-}
+import {AxelarGatewayLike} from "src/gateway/adapters/axelar/Adapter.sol";
 
 interface PrecompileLike {
     function execute(
@@ -77,7 +69,7 @@ contract AxelarForwarder is Auth {
         bytes calldata, //payload,
         string calldata, //tokenSymbol,
         uint256 //amount
-    ) public pure {
+    ) external pure {
         revert("AxelarForwarder/execute-with-token-not-supported");
     }
 }
