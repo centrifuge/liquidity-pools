@@ -137,14 +137,6 @@ interface IGateway {
     ///         for a message / proof to be passed through one router and executed on Centrifuge chain
     /// @return total Total cost for sending one message and corresponding proofs on through all adapters
     function estimate(bytes calldata payload) external view returns (uint256[] memory tranches, uint256 total);
-
-    /// @notice Used to recover any ERC-20 token.
-    /// @dev    This method is called only by authorized entities
-    /// @param  token It could be 0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
-    ///         to recover locked native ETH or any ERC20 compatible token.
-    /// @param  to Receiver of the funds
-    /// @param  amount Amount to send to the receiver.
-    function recoverTokens(address token, address to, uint256 amount) external;
 }
 
 interface IMessageHandler {

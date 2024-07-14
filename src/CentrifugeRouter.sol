@@ -14,6 +14,11 @@ import {IGateway} from "src/interfaces/gateway/IGateway.sol";
 import {TransientStorage} from "src/libraries/TransientStorage.sol";
 import {IRecoverable} from "src/interfaces/IRoot.sol";
 
+/// @title  CentrifugeRouter
+/// @notice This is a helper contract. 
+///         It’s a one-stop contract for project / protocols / DAOs that would like to use our protocol.
+///         Its goal is to improve the UX for our potential Prime users. 
+///         It removes the need to know about all other contracts and simplifies the way to interact with Centrifuge Protocol.
 contract CentrifugeRouter is Auth, ICentrifugeRouter {
     using CastLib for address;
     using TransientStorage for bytes32;

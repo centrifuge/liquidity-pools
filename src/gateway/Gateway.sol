@@ -11,6 +11,7 @@ import {IGateway, IMessageHandler} from "src/interfaces/gateway/IGateway.sol";
 import {IRoot} from "src/interfaces/IRoot.sol";
 import {IGasService} from "src/interfaces/gateway/IGasService.sol";
 import {IAdapter} from "src/interfaces/gateway/IAdapter.sol";
+import {IRecoverable} from "src/interfaces/IRoot.sol";
 
 /// @title  Gateway
 /// @notice Routing contract that forwards outgoing messages to multiple adapters (1 full message, n-1 proofs)
@@ -18,7 +19,7 @@ import {IAdapter} from "src/interfaces/gateway/IAdapter.sol";
 ///         Handling incoming messages from the Centrifuge chain through multiple adapters.
 ///         Supports processing multiple duplicate messages in parallel by
 ///         storing counts of messages and proofs that have been received.
-contract Gateway is Auth, IGateway {
+contract Gateway is Auth, IGateway, IRecoverable {
     using ArrayLib for uint16[8];
     using BytesLib for bytes;
     using TransientStorage for bytes32;
@@ -113,6 +114,7 @@ contract Gateway is Auth, IGateway {
         emit File(what, data1, data2);
     }
 
+    /// @inheritdoc IRecoverable
     function recoverTokens(address token, address receiver, uint256 amount) external auth {
         if (token == address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)) {
             payable(receiver).transfer(amount);
@@ -228,6 +230,7 @@ contract Gateway is Auth, IGateway {
         }
     }
 
+    /// @inheritdoc IGateway
     function disputeMessageRecovery(address adapter, bytes32 messageHash) external auth {
         _disputeMessageRecovery(adapter, messageHash);
     }
