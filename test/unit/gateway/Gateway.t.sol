@@ -119,7 +119,7 @@ contract GatewayTest is Test {
     function testOnlyAdaptersCanCall() public {
         gateway.file("adapters", threeMockAdapters);
 
-        bytes memory message = hex"020000000000bce1a4";
+        bytes memory message = hex"A00000000000bce1a4";
 
         vm.expectRevert(bytes("Gateway/invalid-adapter"));
         vm.prank(makeAddr("randomUser"));

@@ -176,7 +176,7 @@ contract RedeemTest is BaseTest {
         // check message was send out to centchain
         vault.cancelRedeemRequest(0, self);
         bytes memory cancelOrderMessage = abi.encodePacked(
-            uint8(MessagesLib.Call.CancelRedeemOrder),
+            uint8(MessagesLib.Call.CancelRedeemRequest),
             vault.poolId(),
             vault.trancheId(),
             bytes32(bytes20(self)),

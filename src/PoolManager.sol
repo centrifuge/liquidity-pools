@@ -86,7 +86,9 @@ contract PoolManager is Auth, IPoolManager {
 
         SafeTransferLib.safeTransferFrom(asset, msg.sender, address(escrow), amount);
 
-        gateway.send(abi.encodePacked(uint8(MessagesLib.Call.Transfer), assetId, recipient, amount), address(this));
+        gateway.send(
+            abi.encodePacked(uint8(MessagesLib.Call.TransferAssets), assetId, recipient, amount), address(this)
+        );
         emit TransferAssets(asset, msg.sender, recipient, amount);
     }
 
@@ -123,8 +125,6 @@ contract PoolManager is Auth, IPoolManager {
             addAsset(message.toUint128(1), message.toAddress(17));
         } else if (call == MessagesLib.Call.AddPool) {
             addPool(message.toUint64(1));
-        } else if (call == MessagesLib.Call.AllowAsset) {
-            allowAsset(message.toUint64(1), message.toUint128(9));
         } else if (call == MessagesLib.Call.AddTranche) {
             addTranche(
                 message.toUint64(1),
@@ -134,8 +134,10 @@ contract PoolManager is Auth, IPoolManager {
                 message.toUint8(185),
                 message.toAddress(186)
             );
-        } else if (call == MessagesLib.Call.UpdateRestriction) {
-            updateRestriction(message.toUint64(1), message.toBytes16(9), message.slice(25, message.length - 25));
+        } else if (call == MessagesLib.Call.AllowAsset) {
+            allowAsset(message.toUint64(1), message.toUint128(9));
+        } else if (call == MessagesLib.Call.DisallowAsset) {
+            disallowAsset(message.toUint64(1), message.toUint128(9));
         } else if (call == MessagesLib.Call.UpdateTranchePrice) {
             updateTranchePrice(
                 message.toUint64(1),
@@ -144,12 +146,6 @@ contract PoolManager is Auth, IPoolManager {
                 message.toUint128(41),
                 message.toUint64(57)
             );
-        } else if (call == MessagesLib.Call.Transfer) {
-            handleTransfer(message.toUint128(1), message.toAddress(49), message.toUint128(81));
-        } else if (call == MessagesLib.Call.TransferTrancheTokens) {
-            handleTransferTrancheTokens(
-                message.toUint64(1), message.toBytes16(9), message.toAddress(66), message.toUint128(98)
-            );
         } else if (call == MessagesLib.Call.UpdateTrancheMetadata) {
             updateTrancheMetadata(
                 message.toUint64(1),
@@ -157,12 +153,16 @@ contract PoolManager is Auth, IPoolManager {
                 message.slice(25, 128).bytes128ToString(),
                 message.toBytes32(153).toString()
             );
-        } else if (call == MessagesLib.Call.DisallowAsset) {
-            disallowAsset(message.toUint64(1), message.toUint128(9));
-        } else if (call == MessagesLib.Call.UpdateCentrifugeGasPrice) {
-            updateCentrifugeGasPrice(message.toUint128(1), message.toUint64(17));
         } else if (call == MessagesLib.Call.UpdateTrancheHook) {
             updateTrancheHook(message.toUint64(1), message.toBytes16(9), message.toAddress(25));
+        } else if (call == MessagesLib.Call.TransferAssets) {
+            handleTransfer(message.toUint128(1), message.toAddress(49), message.toUint128(81));
+        } else if (call == MessagesLib.Call.TransferTrancheTokens) {
+            handleTransferTrancheTokens(
+                message.toUint64(1), message.toBytes16(9), message.toAddress(66), message.toUint128(98)
+            );
+        } else if (call == MessagesLib.Call.UpdateRestriction) {
+            updateRestriction(message.toUint64(1), message.toBytes16(9), message.slice(25, message.length - 25));
         } else {
             revert("PoolManager/invalid-message");
         }
@@ -325,11 +325,6 @@ contract PoolManager is Auth, IPoolManager {
         tranche.mint(destinationAddress, amount);
     }
 
-    /// @inheritdoc IPoolManager
-    function updateCentrifugeGasPrice(uint128 price, uint64 computedAt) public auth {
-        gasService.updateGasPrice(price, computedAt);
-    }
-
     // --- Public functions ---
     // slither-disable-start reentrancy-eth
     /// @inheritdoc IPoolManager
@@ -410,6 +405,8 @@ contract PoolManager is Auth, IPoolManager {
         require(vault != address(0), "PoolManager/vault-not-deployed");
 
         vaultFactory.denyVault(vault, investmentManager);
+
+        delete vaultToAsset[vault];
 
         IAuth(tranche.token).deny(vault);
         ITranche(tranche.token).updateVault(asset, address(0));

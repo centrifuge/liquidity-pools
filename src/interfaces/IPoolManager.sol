@@ -195,12 +195,6 @@ interface IPoolManager is IMessageHandler, IRecoverable {
     /// @dev    The function can only be executed by the gateway contract.
     function removeVault(uint64 poolId, bytes16 trancheId, address asset) external;
 
-    /// @notice Updates the gas price for the centrifuge chain
-    /// @dev    The Centrifuge gas price is used by the gasService contract to
-    ///         calculate the gas cost for cross-chain messages.
-    /// @dev    The function can only be executed by the gateway contract.
-    function updateCentrifugeGasPrice(uint128 price, uint64 computedAt) external;
-
     /// @notice Returns the tranche token for a given pool and tranche id
     function getTranche(uint64 poolId, bytes16 trancheId) external view returns (address);
 

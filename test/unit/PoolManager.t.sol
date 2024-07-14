@@ -589,21 +589,6 @@ contract PoolManagerTest is BaseTest {
         centrifugeChain.updateTranchePrice(poolId, trancheId, assetId, price, uint64(block.timestamp - 1));
     }
 
-    function testUpdateCentrifugeGasPrice(uint128 price) public {
-        price = uint128(bound(price, 1, type(uint128).max));
-
-        // Allows us to go back in time later
-        vm.warp(block.timestamp + 1 days);
-
-        vm.expectRevert(bytes("Auth/not-authorized"));
-        vm.prank(randomUser);
-        poolManager.updateCentrifugeGasPrice(price, uint64(block.timestamp));
-
-        centrifugeChain.updateCentrifugeGasPrice(price, uint64(block.timestamp));
-        assertEq(gasService.gasPrice(), price);
-        assertEq(gasService.lastUpdatedAt(), block.timestamp);
-    }
-
     function testRemoveVault() public {
         address vault_ = deploySimpleVault();
         ERC7540Vault vault = ERC7540Vault(vault_);
@@ -630,6 +615,9 @@ contract PoolManagerTest is BaseTest {
         assertEq(investmentManager.wards(vault_), 0);
         assertEq(tranche.wards(vault_), 0);
         assertEq(tranche.allowance(address(escrow), vault_), 0);
+
+        vm.expectRevert(bytes("PoolManager/unknown-vault"));
+        poolManager.getVaultAsset(vault_);
     }
 
     function testRemoveVaultFailsWhenVaultNotDeployed() public {

@@ -2,85 +2,76 @@
 pragma solidity 0.8.26;
 
 import {BytesLib} from "src/libraries/BytesLib.sol";
-import {CastLib} from "src/libraries/CastLib.sol";
 
 /// @title  MessagesLib
 /// @dev    Library for encoding and decoding messages.
 library MessagesLib {
     using BytesLib for bytes;
-    using CastLib for *;
 
     enum Call {
         /// 0 - An invalid message
         Invalid,
-        /// 1 - Add an asset id -> EVM address mapping
-        AddAsset,
-        /// 2 - Add Pool
-        AddPool,
-        /// 3 - Allow an asset to be used as an asset for investing in pools
-        AllowAsset,
-        /// 4 - Add a Pool's Tranche Token
-        AddTranche,
-        /// 5 - Update the price of a Tranche Token
-        UpdateTranchePrice,
-        /// 6 - Set a restriction
-        UpdateRestriction,
-        /// 7 - A transfer of assets
-        Transfer,
-        /// 8 - A transfer of tranche tokens
-        TransferTrancheTokens,
-        /// 9 - Increase an investment order by a given amount
-        IncreaseInvestOrder,
-        /// 10 - Decrease an investment order by a given amount
-        DecreaseInvestOrder,
-        /// 11 - Increase a Redeem order by a given amount
-        IncreaseRedeemOrder,
-        /// 12 - Decrease a Redeem order by a given amount
-        DecreaseRedeemOrder,
-        /// 13 - Collect investment
-        DEPRECATED_CollectInvest,
-        /// 14 - Collect Redeem
-        DEPRECATED_CollectRedeem,
-        /// 15 - Executed Decrease Invest Order
-        FulfilledCancelDepositRequest,
-        /// 16 - Executed Decrease Redeem Order
-        FulfilledCancelRedeemRequest,
-        /// 17 - Executed Collect Invest
-        FulfilledDepositRequest,
-        /// 18 - Executed Collect Redeem
-        FulfilledRedeemRequest,
-        /// 19 - Cancel an investment order
-        CancelInvestOrder,
-        /// 20 - Cancel a redeem order
-        CancelRedeemOrder,
-        /// 21 - Schedule an upgrade contract to be granted admin rights
-        ScheduleUpgrade,
-        /// 22 - Cancel a previously scheduled upgrade
-        CancelUpgrade,
-        /// 23 - Update tranche token metadata
-        UpdateTrancheMetadata,
-        /// 24 - Disallow an asset to be used as an asset for investing in pools
-        DisallowAsset,
-        /// 25 - Freeze tranche tokens
-        DEPRECATED_Freeze,
-        /// 26 - Unfreeze tranche tokens
-        DEPRECATED_Unfreeze,
-        /// 27 - Request redeem investor
-        TriggerRedeemRequest,
-        /// 28 - Proof
+        // --- Gateway ---
+        /// 1 - Proof
         MessageProof,
-        /// 29 - Initiate Message Recovery
+        /// 2 - Initiate Message Recovery
         InitiateMessageRecovery,
-        /// 30 - Dispute Message Recovery
+        /// 3 - Dispute Message Recovery
         DisputeMessageRecovery,
-        /// 31 - Recover Tokens sent to the wrong contract
+        /// 4 - Batch Messages
+        Batch,
+        // --- Root ---
+        /// 5 - Schedule an upgrade contract to be granted admin rights
+        ScheduleUpgrade,
+        /// 6 - Cancel a previously scheduled upgrade
+        CancelUpgrade,
+        /// 7 - Recover tokens sent to the wrong contract
         RecoverTokens,
-        /// 32 - Update Centrifuge Gas Price
+        // --- Gas service ---
+        /// 8 - Update Centrifuge gas price
         UpdateCentrifugeGasPrice,
-        /// 33 - Update Tranche Hook
+        // --- Pool Manager ---
+        /// 9 - Add an asset id -> EVM address mapping
+        AddAsset,
+        /// 10 - Add Pool
+        AddPool,
+        /// 11 - Add a Pool's Tranche Token
+        AddTranche,
+        /// 12 - Allow an asset to be used as an asset for investing in pools
+        AllowAsset,
+        /// 13 - Disallow an asset to be used as an asset for investing in pools
+        DisallowAsset,
+        /// 14 - Update the price of a Tranche Token
+        UpdateTranchePrice,
+        /// 15 - Update tranche token metadata
+        UpdateTrancheMetadata,
+        /// 16 - Update Tranche Hook
         UpdateTrancheHook,
-        /// 34 - Batch Messages
-        Batch
+        /// 17 - A transfer of assets
+        TransferAssets,
+        /// 18 - A transfer of tranche tokens
+        TransferTrancheTokens,
+        /// 19 - Update a user restriction
+        UpdateRestriction,
+        /// --- Investment Manager ---
+        /// 20 - Increase an investment order by a given amount
+        DepositRequest,
+        /// 21 - Increase a Redeem order by a given amount
+        RedeemRequest,
+        /// 22 - Executed Collect Invest
+        FulfilledDepositRequest,
+        /// 23 - Executed Collect Redeem
+        FulfilledRedeemRequest,
+        /// 24 - Cancel an investment order
+        CancelDepositRequest,
+        /// 25 - Cancel a redeem order
+        CancelRedeemRequest,
+        /// 26 - Executed Decrease Invest Order
+        FulfilledCancelDepositRequest,
+        /// 27 - Executed Decrease Redeem Order
+        FulfilledCancelRedeemRequest,
+        /// 28 - Request redeem investor
+        TriggerRedeemRequest
     }
 
     function messageType(bytes memory _msg) internal pure returns (Call _call) {

@@ -82,7 +82,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
         state.pendingDepositRequest = state.pendingDepositRequest + _assets;
         gateway.send(
             abi.encodePacked(
-                uint8(MessagesLib.Call.IncreaseInvestOrder),
+                uint8(MessagesLib.Call.DepositRequest),
                 poolId,
                 vault_.trancheId(),
                 controller.toBytes32(),
@@ -124,7 +124,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
 
         gateway.send(
             abi.encodePacked(
-                uint8(MessagesLib.Call.IncreaseRedeemOrder),
+                uint8(MessagesLib.Call.RedeemRequest),
                 vault_.poolId(),
                 vault_.trancheId(),
                 controller.toBytes32(),
@@ -147,7 +147,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
 
         gateway.send(
             abi.encodePacked(
-                uint8(MessagesLib.Call.CancelInvestOrder),
+                uint8(MessagesLib.Call.CancelDepositRequest),
                 _vault.poolId(),
                 _vault.trancheId(),
                 controller.toBytes32(),
@@ -172,7 +172,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
 
         gateway.send(
             abi.encodePacked(
-                uint8(MessagesLib.Call.CancelRedeemOrder),
+                uint8(MessagesLib.Call.CancelRedeemRequest),
                 _vault.poolId(),
                 _vault.trancheId(),
                 controller.toBytes32(),
