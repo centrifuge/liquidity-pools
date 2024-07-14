@@ -538,6 +538,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
     }
 
     // --- Helpers ---
+    /// @dev    Calculates share amount based on asset amount and share price. Returned value is in share decimals.
     function _calculateShares(uint128 assets, address vault, uint256 price) internal view returns (uint128 shares) {
         if (price == 0 || assets == 0) {
             shares = 0;
@@ -551,6 +552,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
         }
     }
 
+    /// @dev    Calculates asset amount based on share amount and share price. Returned value is in asset decimals.
     function _calculateAssets(uint128 shares, address vault, uint256 price) internal view returns (uint128 assets) {
         if (price == 0 || shares == 0) {
             assets = 0;
@@ -564,6 +566,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
         }
     }
 
+    /// @dev    Calculates share price and returns the value in price decimals
     function _calculatePrice(address vault, uint128 assets, uint128 shares) internal view returns (uint256) {
         if (assets == 0 || shares == 0) {
             return 0;
@@ -582,18 +585,20 @@ contract InvestmentManager is Auth, IInvestmentManager {
         return uint256(_value) * 10 ** (PRICE_DECIMALS - decimals);
     }
 
-    /// @dev    Convert decimals of the value from the price decimals back to the intended decimals
+    /// @dev    Converts decimals of the value from the price decimals back to the intended decimals
     function _fromPriceDecimals(uint256 _value, uint8 decimals) internal pure returns (uint128) {
         if (PRICE_DECIMALS == decimals) return _value.toUint128();
         return (_value / 10 ** (PRICE_DECIMALS - decimals)).toUint128();
     }
 
-    /// @dev    Return the asset decimals and the share decimals for a given vault
+    /// @dev    Returns the asset decimals and the share decimals for a given vault
     function _getPoolDecimals(address vault) internal view returns (uint8 assetDecimals, uint8 shareDecimals) {
         assetDecimals = IERC20Metadata(IERC7540Vault(vault).asset()).decimals();
         shareDecimals = IERC20Metadata(IERC7540Vault(vault).share()).decimals();
     }
 
+    /// @dev    Checks transfer restrictions for the vault shares. Sender (from) and receiver (to) have both to pass the
+    ///         restrictions for a successful share transfer.
     function _canTransfer(address vault, address from, address to, uint256 value) internal view returns (bool) {
         ITranche share = ITranche(IERC7540Vault(vault).share());
         return share.checkTransferRestriction(from, to, value);
