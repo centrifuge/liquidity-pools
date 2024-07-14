@@ -17,7 +17,7 @@ contract GasService is IGasService, Auth {
     using BytesLib for bytes;
 
     /// @dev Prices are fixed-point integers with 18 decimals
-    uint8 internal constant PRICE_DENOMINATOR = 10 ** 18;
+    uint256 internal constant PRICE_DENOMINATOR = 10 ** 18;
 
     /// @inheritdoc IGasService
     uint64 public proofCost;
