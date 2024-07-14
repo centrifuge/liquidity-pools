@@ -255,6 +255,10 @@ contract MockCentrifugeChain is Test {
         _execute(_message);
     }
 
+    function execute(bytes memory message) external {
+        _execute(message);
+    }
+
     /// @dev Adds zero padding
     function _toBytes128(string memory source) internal pure returns (bytes memory) {
         bytes memory sourceBytes = bytes(source);
