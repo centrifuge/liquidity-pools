@@ -11,14 +11,15 @@ import {IGateway, IMessageHandler} from "src/interfaces/gateway/IGateway.sol";
 import {IRoot} from "src/interfaces/IRoot.sol";
 import {IGasService} from "src/interfaces/gateway/IGasService.sol";
 import {IAdapter} from "src/interfaces/gateway/IAdapter.sol";
+import {IRecoverable} from "src/interfaces/IRoot.sol";
 
 /// @title  Gateway
-/// @notice Routing contract that forwards to multiple adapters (1 full message, n-1 proofs)
-///         and validates multiple adapters have confirmed a message.
-///
+/// @notice Routing contract that forwards outgoing messages to multiple adapters (1 full message, n-1 proofs)
+///         and validates that multiple adapters have confirmed a message.
+///         Handling incoming messages from the Centrifuge Chain through multiple adapters.
 ///         Supports processing multiple duplicate messages in parallel by
 ///         storing counts of messages and proofs that have been received.
-contract Gateway is Auth, IGateway {
+contract Gateway is Auth, IGateway, IRecoverable {
     using ArrayLib for uint16[8];
     using BytesLib for bytes;
     using TransientStorage for bytes32;
@@ -62,9 +63,9 @@ contract Gateway is Auth, IGateway {
 
     // --- Administration ---
     /// @inheritdoc IGateway
-    function file(bytes32 what, address[] calldata adapters_) external auth {
+    function file(bytes32 what, address[] calldata addresses) external auth {
         if (what == "adapters") {
-            uint8 quorum_ = uint8(adapters_.length);
+            uint8 quorum_ = uint8(addresses.length);
             require(quorum_ > 0, "Gateway/empty-adapter-set");
             require(quorum_ <= MAX_ADAPTER_COUNT, "Gateway/exceeds-max-adapter-count");
 
@@ -82,18 +83,18 @@ contract Gateway is Auth, IGateway {
 
             // Enable new adapters, setting quorum to number of adapters
             for (uint8 j; j < quorum_; j++) {
-                require(activeAdapters[adapters_[j]].id == 0, "Gateway/no-duplicates-allowed");
+                require(activeAdapters[addresses[j]].id == 0, "Gateway/no-duplicates-allowed");
 
                 // Ids are assigned sequentially starting at 1
-                activeAdapters[adapters_[j]] = Adapter(j + 1, quorum_, sessionId);
+                activeAdapters[addresses[j]] = Adapter(j + 1, quorum_, sessionId);
             }
 
-            adapters = adapters_;
+            adapters = addresses;
         } else {
             revert("Gateway/file-unrecognized-param");
         }
 
-        emit File(what, adapters_);
+        emit File(what, addresses);
     }
 
     /// @inheritdoc IGateway
@@ -113,6 +114,7 @@ contract Gateway is Auth, IGateway {
         emit File(what, data1, data2);
     }
 
+    /// @inheritdoc IRecoverable
     function recoverTokens(address token, address receiver, uint256 amount) external auth {
         if (token == address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)) {
             payable(receiver).transfer(amount);
@@ -246,6 +248,7 @@ contract Gateway is Auth, IGateway {
         }
     }
 
+    /// @inheritdoc IGateway
     function disputeMessageRecovery(address adapter, bytes32 messageHash) external auth {
         _disputeMessageRecovery(adapter, messageHash);
     }
