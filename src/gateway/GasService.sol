@@ -17,7 +17,7 @@ contract GasService is IGasService, Auth {
     using BytesLib for bytes;
 
     /// @dev Prices are fixed-point integers with 18 decimals
-    uint8 internal constant PRICE_DECIMALS = 18;
+    uint8 internal constant PRICE_DENOMINATOR = 10 ** 18;
 
     /// @inheritdoc IGasService
     uint64 public proofCost;
@@ -84,12 +84,12 @@ contract GasService is IGasService, Auth {
         uint256 totalCost;
         uint8 call = payload.toUint8(0);
         if (call == uint8(MessagesLib.Call.MessageProof)) {
-            totalCost = proofCost.mulDiv(gasPrice, PRICE_DECIMALS, MathLib.Rounding.Up);
+            totalCost = proofCost.mulDiv(gasPrice, PRICE_DENOMINATOR, MathLib.Rounding.Up);
         } else {
-            totalCost = messageCost.mulDiv(gasPrice, PRICE_DECIMALS, MathLib.Rounding.Up);
+            totalCost = messageCost.mulDiv(gasPrice, PRICE_DENOMINATOR, MathLib.Rounding.Up);
         }
 
-        return totalCost.mulDiv(tokenPrice, PRICE_DECIMALS, MathLib.Rounding.Up);
+        return totalCost.mulDiv(tokenPrice, PRICE_DENOMINATOR, MathLib.Rounding.Up);
     }
 
     /// @inheritdoc IGasService
