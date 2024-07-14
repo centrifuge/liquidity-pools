@@ -615,6 +615,9 @@ contract PoolManagerTest is BaseTest {
         assertEq(investmentManager.wards(vault_), 0);
         assertEq(tranche.wards(vault_), 0);
         assertEq(tranche.allowance(address(escrow), vault_), 0);
+
+        vm.expectRevert(bytes("PoolManager/unknown-vault"));
+        poolManager.getVaultAsset(vault_);
     }
 
     function testRemoveVaultFailsWhenVaultNotDeployed() public {

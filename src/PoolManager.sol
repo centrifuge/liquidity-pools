@@ -406,6 +406,8 @@ contract PoolManager is Auth, IPoolManager {
 
         vaultFactory.denyVault(vault, investmentManager);
 
+        delete vaultToAsset[vault];
+
         IAuth(tranche.token).deny(vault);
         ITranche(tranche.token).updateVault(asset, address(0));
 
