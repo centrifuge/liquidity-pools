@@ -2,13 +2,11 @@
 pragma solidity 0.8.26;
 
 import {BytesLib} from "src/libraries/BytesLib.sol";
-import {CastLib} from "src/libraries/CastLib.sol";
 
 /// @title  MessagesLib
 /// @dev    Library for encoding and decoding messages.
 library MessagesLib {
     using BytesLib for bytes;
-    using CastLib for *;
 
     enum Call {
         /// 0 - An invalid message
