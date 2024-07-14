@@ -65,13 +65,13 @@ interface IGateway {
     // --- Incoming ---
     /// @notice Handles incoming messages, proofs, and recoveries.
     /// @dev    Assumes adapters ensure messages cannot be confirmed more than once.
-    /// @param  payload Incoming message from the Centrifuge chain passed through adapters.
+    /// @param  payload Incoming message from the Centrifuge Chain passed through adapters.
     function handle(bytes calldata payload) external;
 
     /// @notice Governance on Centrifuge Chain can initiate message recovery. After the challenge period,
     ///         the recovery can be executed. If a malign adapter initiates message recovery, governance on
     ///         Centrifuge Chain can dispute and immediately cancel the recovery, using any other valid adapter.
-    /// @param  adapter Adapter's address
+    /// @param  adapter Adapter that the recovery was targeting
     /// @param  messageHash Hash of the message being disputed
     function disputeMessageRecovery(address adapter, bytes32 messageHash) external;
 
@@ -81,12 +81,12 @@ interface IGateway {
     ///
     ///         Only 1 recovery can be outstanding per message hash. If multiple adapters fail at the same time,
     ///         these will need to be recovered serially (increasing the challenge period for each failed adapter).
-    /// @param  adapter Adapter's address
+    /// @param  adapter Adapter's address that the recovery is targeting
     /// @param  message Hash of the message to be recovered
     function executeMessageRecovery(address adapter, bytes calldata message) external;
 
     // --- Outgoing ---
-    /// @notice Sends outgoing messages to the Centrifuge chain.
+    /// @notice Sends outgoing messages to the Centrifuge Chain.
     /// @dev    Sends 1 message to the first adapter with the full message,
     ///         and n-1 messages to the other adapters with proofs (hash of message).
     ///         This ensures message uniqueness (can only be executed on the destination once).
@@ -97,8 +97,8 @@ interface IGateway {
     ///         Used to determine whether it is eligible for TX cost payment.
     function send(bytes calldata message, address source) external payable;
 
-    /// @notice Prepays for the TX cost for sending through the bridges
-    ///         and Centrifuge chain
+    /// @notice Prepays for the TX cost for sending through the adapters
+    ///         and Centrifuge Chain
     /// @dev    It can be called only through endorsed contracts.
     ///         Currently being called from Centrifuge Router only.
     ///         In order to prepay, the method MUST be called with `msg.value`.
@@ -134,13 +134,13 @@ interface IGateway {
     /// @param  payload Used in gas cost calculations.
     /// @dev    Currenly the payload is not taken into consideration.
     /// @return tranches An array of cost values per adapter. Each value is how much it's going to cost
-    ///         for a message / proof to be passed through one router and executed on Centrifuge chain
+    ///         for a message / proof to be passed through one router and executed on Centrifuge Chain
     /// @return total Total cost for sending one message and corresponding proofs on through all adapters
     function estimate(bytes calldata payload) external view returns (uint256[] memory tranches, uint256 total);
 }
 
 interface IMessageHandler {
-    /// @notice Handling incoming messages from Centrifuge chain.
+    /// @notice Handling incoming messages from Centrifuge Chain.
     /// @param  message Incoming message
     function handle(bytes memory message) external;
 }

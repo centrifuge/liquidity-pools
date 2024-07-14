@@ -16,7 +16,7 @@ import {IRecoverable} from "src/interfaces/IRoot.sol";
 /// @title  Gateway
 /// @notice Routing contract that forwards outgoing messages to multiple adapters (1 full message, n-1 proofs)
 ///         and validates that multiple adapters have confirmed a message.
-///         Handling incoming messages from the Centrifuge chain through multiple adapters.
+///         Handling incoming messages from the Centrifuge Chain through multiple adapters.
 ///         Supports processing multiple duplicate messages in parallel by
 ///         storing counts of messages and proofs that have been received.
 contract Gateway is Auth, IGateway, IRecoverable {
