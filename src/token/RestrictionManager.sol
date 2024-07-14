@@ -26,10 +26,6 @@ contract RestrictionManager is Auth, IRestrictionManager, IHook {
     /// @dev Least significant bit
     uint8 public constant FREEZE_BIT = 0;
 
-    uint8 public constant SOURCE_IS_FROZEN_CODE = 1;
-    uint8 public constant DESTINATION_IS_FROZEN_CODE = 2;
-    uint8 public constant DESTINATION_NOT_A_MEMBER_RESTRICTION_CODE = 3;
-
     IRoot public immutable root;
 
     constructor(address root_, address deployer) {
@@ -132,7 +128,7 @@ contract RestrictionManager is Auth, IRestrictionManager, IHook {
     }
 
     /// @inheritdoc IRestrictionManager
-    function isMember(address token, address user) public view returns (bool isValid, uint64 validUntil) {
+    function isMember(address token, address user) external view returns (bool isValid, uint64 validUntil) {
         validUntil = abi.encodePacked(ITranche(token).hookDataOf(user)).toUint64(0);
         isValid = validUntil >= block.timestamp;
     }

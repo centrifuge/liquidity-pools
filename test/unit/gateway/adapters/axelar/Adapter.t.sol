@@ -90,11 +90,11 @@ contract AxelarAdapterTest is Test {
         vm.assume(relayer.code.length == 0);
 
         vm.prank(address(relayer));
-        vm.expectRevert(bytes("AxelarAdapter/invalid-source-chain"));
+        vm.expectRevert(bytes("AxelarAdapter/invalid-chain"));
         adapter.execute(commandId, sourceChain, axelarCentrifugeChainAddress, payload);
 
         vm.prank(address(relayer));
-        vm.expectRevert(bytes("AxelarAdapter/invalid-source-address"));
+        vm.expectRevert(bytes("AxelarAdapter/invalid-address"));
         adapter.execute(commandId, axelarCentrifugeChainId, sourceAddress, payload);
 
         axelarGateway.setReturn("validateContractCall", false);
@@ -110,7 +110,7 @@ contract AxelarAdapterTest is Test {
     function testOutgoingCalls(bytes calldata message, address invalidOrigin) public {
         vm.assume(invalidOrigin != address(gateway));
 
-        vm.expectRevert(bytes("AxelarAdapter/only-gateway-allowed-to-call"));
+        vm.expectRevert(bytes("AxelarAdapter/not-gateway"));
         adapter.send(message);
 
         vm.prank(address(gateway));

@@ -66,12 +66,12 @@ contract Gateway is Auth, IGateway, IRecoverable {
     function file(bytes32 what, address[] calldata addresses) external auth {
         if (what == "adapters") {
             uint8 quorum_ = uint8(addresses.length);
-            require(quorum_ > 0, "Gateway/empty-adapter-set");
-            require(quorum_ <= MAX_ADAPTER_COUNT, "Gateway/exceeds-max-adapter-count");
+            require(quorum_ != 0, "Gateway/empty-adapter-set");
+            require(quorum_ <= MAX_ADAPTER_COUNT, "Gateway/exceeds-max");
 
             uint64 sessionId = 0;
             uint8 numAdapters = uint8(adapters.length);
-            if (numAdapters > 0) {
+            if (numAdapters != 0) {
                 // Increment session id if it is not the initial adapter setup and the quorum was decreased
                 Adapter memory prevAdapter = activeAdapters[adapters[0]];
                 sessionId = quorum_ < prevAdapter.quorum ? prevAdapter.activeSessionId + 1 : prevAdapter.activeSessionId;
@@ -137,7 +137,7 @@ contract Gateway is Auth, IGateway, IRecoverable {
             call == uint8(MessagesLib.Call.InitiateMessageRecovery)
                 || call == uint8(MessagesLib.Call.DisputeMessageRecovery)
         ) {
-            require(!isRecovery, "Gateway/no-recursive-recovery-allowed");
+            require(!isRecovery, "Gateway/no-recursion");
             require(adapters.length > 1, "Gateway/no-recovery-with-one-adapter-allowed");
             return _handleRecovery(payload);
         }
@@ -274,22 +274,19 @@ contract Gateway is Auth, IGateway, IRecoverable {
     // --- Outgoing ---
     /// @inheritdoc IGateway
     function send(bytes calldata message, address source) public payable pauseable {
-        require(
-            msg.sender == investmentManager || msg.sender == poolManager
-                || msg.sender == messageHandlers[message.toUint8(0)],
-            "Gateway/invalid-manager"
-        );
+        bool isManager = msg.sender == investmentManager || msg.sender == poolManager;
+        require(isManager || msg.sender == messageHandlers[message.toUint8(0)], "Gateway/invalid-manager");
 
         bytes memory proof = abi.encodePacked(uint8(MessagesLib.Call.MessageProof), keccak256(message));
 
         uint256 numAdapters = adapters.length;
-        require(numAdapters > 0, "Gateway/adapters-not-initialized");
+        require(numAdapters != 0, "Gateway/not-initialized");
 
         uint256 fuel = QUOTA_SLOT.tloadUint256();
         uint256 messageCost = gasService.estimate(message);
         uint256 proofCost = gasService.estimate(proof);
 
-        if (fuel > 0) {
+        if (fuel != 0) {
             uint256 tank = fuel;
             for (uint256 i; i < numAdapters; i++) {
                 IAdapter currentAdapter = IAdapter(adapters[i]);
@@ -332,7 +329,7 @@ contract Gateway is Auth, IGateway, IRecoverable {
     /// @inheritdoc IGateway
     function topUp() external payable {
         require(IRoot(root).endorsed(msg.sender), "Gateway/only-endorsed-can-topup");
-        require(msg.value > 0, "Gateway/cannot-topup-with-nothing");
+        require(msg.value != 0, "Gateway/cannot-topup-with-nothing");
         QUOTA_SLOT.tstore(msg.value);
     }
 

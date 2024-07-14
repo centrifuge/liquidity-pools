@@ -32,21 +32,24 @@ interface AxelarGasServiceLike {
 /// @notice Routing contract that integrates with an Axelar Gateway
 contract AxelarAdapter is Auth, IAxelarAdapter {
     string public constant CENTRIFUGE_ID = "centrifuge";
-    bytes32 public constant CENTRIFUGE_ID_HASH = keccak256(bytes("centrifuge"));
-    bytes32 public constant CENTRIFUGE_ADDRESS_HASH = keccak256(bytes("0x7369626CEF070000000000000000000000000000"));
     string public constant CENTRIFUGE_AXELAR_EXECUTABLE = "0xc1757c6A0563E37048869A342dF0651b9F267e41";
 
     IGateway public immutable gateway;
+    bytes32 public immutable centrifugeIdHash;
+    bytes32 public immutable centrifugeAddressHash;
     AxelarGatewayLike public immutable axelarGateway;
     AxelarGasServiceLike public immutable axelarGasService;
 
     /// @inheritdoc IAxelarAdapter
-    uint256 public axelarCost = 58039058122843;
+    uint256 public axelarCost = 58_039_058_122_843;
 
     constructor(address gateway_, address axelarGateway_, address axelarGasService_) {
         gateway = IGateway(gateway_);
         axelarGateway = AxelarGatewayLike(axelarGateway_);
         axelarGasService = AxelarGasServiceLike(axelarGasService_);
+
+        centrifugeIdHash = keccak256(bytes(CENTRIFUGE_ID));
+        centrifugeAddressHash = keccak256(bytes("0x7369626CEF070000000000000000000000000000"));
 
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
@@ -68,8 +71,8 @@ contract AxelarAdapter is Auth, IAxelarAdapter {
         string calldata sourceAddress,
         bytes calldata payload
     ) public {
-        require(keccak256(bytes(sourceChain)) == CENTRIFUGE_ID_HASH, "AxelarAdapter/invalid-source-chain");
-        require(keccak256(bytes(sourceAddress)) == CENTRIFUGE_ADDRESS_HASH, "AxelarAdapter/invalid-source-address");
+        require(keccak256(bytes(sourceChain)) == centrifugeIdHash, "AxelarAdapter/invalid-chain");
+        require(keccak256(bytes(sourceAddress)) == centrifugeAddressHash, "AxelarAdapter/invalid-address");
         require(
             axelarGateway.validateContractCall(commandId, sourceChain, sourceAddress, keccak256(payload)),
             "AxelarAdapter/not-approved-by-axelar-gateway"
@@ -80,7 +83,7 @@ contract AxelarAdapter is Auth, IAxelarAdapter {
 
     // --- Outgoing ---
     function send(bytes calldata payload) public {
-        require(msg.sender == address(gateway), "AxelarAdapter/only-gateway-allowed-to-call");
+        require(msg.sender == address(gateway), "AxelarAdapter/not-gateway");
         axelarGateway.callContract(CENTRIFUGE_ID, CENTRIFUGE_AXELAR_EXECUTABLE, payload);
     }
 

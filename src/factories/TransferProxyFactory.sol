@@ -38,8 +38,8 @@ contract TransferProxyFactory is ITransferProxyFactory {
     }
 
     /// @inheritdoc ITransferProxyFactory
-    function newTransferProxy(bytes32 destination) public returns (address) {
-        require(proxies[destination] == address(0), "TransferProxyFactory/proxy-already-deployed");
+    function newTransferProxy(bytes32 destination) external returns (address) {
+        require(proxies[destination] == address(0), "TransferProxyFactory/already-deployed");
 
         address proxy = address(new TransferProxy(poolManager, destination));
         proxies[destination] = proxy;

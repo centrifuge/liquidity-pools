@@ -60,11 +60,11 @@ contract GasServiceTest is Test {
         service.updateGasPrice(0, futureDate);
         assertEq(lastUpdateAt, service.lastUpdatedAt());
 
-        vm.expectRevert(bytes("GasService/same-price-already-set"));
+        vm.expectRevert(bytes("GasService/already-set-price"));
         service.updateGasPrice(GAS_PRICE, futureDate);
         assertEq(lastUpdateAt, service.lastUpdatedAt());
 
-        vm.expectRevert(bytes("GasService/cannot-update-price-with-backdate"));
+        vm.expectRevert(bytes("GasService/outdated-price"));
         service.updateGasPrice(value, pastDate);
         assertEq(service.gasPrice(), GAS_PRICE);
 
