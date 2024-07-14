@@ -145,7 +145,7 @@ contract Gateway is Auth, IGateway, IRecoverable {
         bool isMessageProof = call == uint8(MessagesLib.Call.MessageProof);
         if (adapter.quorum == 1 && !isMessageProof) {
             // Special case for gas efficiency
-            _dispatch(payload);
+            _dispatch(payload, false);
             emit ExecuteMessage(payload, adapter_);
             return;
         }
@@ -179,9 +179,9 @@ contract Gateway is Auth, IGateway, IRecoverable {
 
             // Handle message
             if (isMessageProof) {
-                _dispatch(state.pendingMessage);
+                _dispatch(state.pendingMessage, false);
             } else {
-                _dispatch(payload);
+                _dispatch(payload, false);
             }
 
             // Only if there are no more pending messages, remove the pending message
@@ -195,7 +195,7 @@ contract Gateway is Auth, IGateway, IRecoverable {
         }
     }
 
-    function _dispatch(bytes memory message) internal {
+    function _dispatch(bytes memory message, bool isBatched) internal {
         uint8 id = message.toUint8(0);
         address manager;
 
@@ -206,6 +206,24 @@ contract Gateway is Auth, IGateway, IRecoverable {
             manager = investmentManager;
         } else if (id >= 21 && id <= 22 || id == 31) {
             manager = address(root);
+        } else if (id == 34) {
+            // Handle batch messages
+            require(!isBatched, "Gateway/no-recursive-batching-allowed");
+            uint256 offset = 1;
+            while (offset < message.length) {
+                // Each message in the batch is prefixed with
+                // the message length (uint16: 2 bytes)
+                uint16 length = message.toUint16(offset);
+                bytes memory subMessage = new bytes(length);
+                offset = offset + 2; // Skip length
+                for (uint256 i = 0; i < length; i++) {
+                    subMessage[i] = message[offset + i];
+                }
+                _dispatch(subMessage, true);
+
+                offset += length;
+            }
+            return;
         } else {
             // Dynamic path for other managers, to be able to easily
             // extend functionality of Liquidity Pools

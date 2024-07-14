@@ -78,7 +78,9 @@ library MessagesLib {
         /// 32 - Update Centrifuge Gas Price
         UpdateCentrifugeGasPrice,
         /// 33 - Update Tranche Hook
-        UpdateTrancheHook
+        UpdateTrancheHook,
+        /// 34 - Batch Messages
+        Batch
     }
 
     function messageType(bytes memory _msg) internal pure returns (Call _call) {
