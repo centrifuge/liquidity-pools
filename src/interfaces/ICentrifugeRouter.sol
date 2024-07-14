@@ -32,9 +32,9 @@ interface ICentrifugeRouter is IRecoverable {
 
     /// @notice Locks `amount` of `vault`'s asset in an escrow before actually sending a deposit LockDepositRequest
     ///         There are users that would like to interact with the protocol but don't have permissions yet. They can
-    ///         lock the funds they would like to deposit beforehand. Once permissions are granted, anyone can deposit on
+    ///         lock the funds they would like to deposit beforehand.
+    ///         Once permissions are granted, anyone can deposit on
     ///         their behalf by calling `executeLockedDepositRequest`.
-    ///
     ///
     ///         Example: DAO with onchain governance, that wants to invest their treasury
     ///             The process that doesn't include calling this method is as follows:
