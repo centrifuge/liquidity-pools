@@ -62,12 +62,12 @@ contract Tranche is ERC20, ITranche {
     // --- ERC20 overrides ---
     /// @inheritdoc IERC20
     function balanceOf(address user) public view override(ERC20, IERC20) returns (uint256) {
-        return balances[user].getLSBits(128);
+        return balancesWithMetadata[user].getLSBits(128);
     }
 
     /// @inheritdoc ITranche
     function hookDataOf(address user) public view returns (bytes16) {
-        return bytes16(uint128(balances[user].getMSBits(128)));
+        return bytes16(uint128(balancesWithMetadata[user].getMSBits(128)));
     }
 
     /// @inheritdoc ITranche

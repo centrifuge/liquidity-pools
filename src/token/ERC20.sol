@@ -19,7 +19,7 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
     /// @inheritdoc IERC20
     uint256 public totalSupply;
 
-    mapping(address => uint256) internal balances;
+    mapping(address => uint256) internal balancesWithMetadata;
     /// @inheritdoc IERC20
     mapping(address => mapping(address => uint256)) public allowance;
     /// @inheritdoc IERC20Permit
@@ -49,11 +49,11 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
 
     /// @inheritdoc IERC20
     function balanceOf(address user) public view virtual returns (uint256) {
-        return balances[user];
+        return balancesWithMetadata[user];
     }
 
     function _setBalance(address user, uint256 value) internal {
-        balances[user] = value;
+        balancesWithMetadata[user] = value;
     }
 
     /// @inheritdoc IERC20Permit
@@ -79,8 +79,8 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
         require(balance >= value, "ERC20/insufficient-balance");
 
         unchecked {
-            balances[msg.sender] -= value;
-            balances[to] += value; // note: we don't need an overflow check here b/c sum of all balances == totalSupply
+            balancesWithMetadata[msg.sender] -= value;
+            balancesWithMetadata[to] += value; // note: we don't need an overflow check here b/c sum of all balancesWithMetadata == totalSupply
         }
 
         emit Transfer(msg.sender, to, value);
@@ -109,8 +109,8 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
         }
 
         unchecked {
-            balances[from] -= value;
-            balances[to] += value; // note: we don't need an overflow check here b/c sum of all balances == totalSupply
+            balancesWithMetadata[from] -= value;
+            balancesWithMetadata[to] += value; // note: we don't need an overflow check here b/c sum of all balancesWithMetadata == totalSupply
         }
 
         emit Transfer(from, to, value);
@@ -131,9 +131,9 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
     function mint(address to, uint256 value) public virtual auth {
         require(to != address(0) && to != address(this), "ERC20/invalid-address");
         unchecked {
-            // We don't need an overflow check here b/c balances[to] <= totalSupply
+            // We don't need an overflow check here b/c balancesWithMetadata[to] <= totalSupply
             // and there is an overflow check below
-            balances[to] += value;
+            balancesWithMetadata[to] += value;
         }
         totalSupply = totalSupply + value;
 
@@ -157,7 +157,7 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
 
         unchecked {
             // We don't need overflow checks b/c require(balance >= value) and balance <= totalSupply
-            balances[from] -= value;
+            balancesWithMetadata[from] -= value;
             totalSupply = totalSupply - value;
         }
 
