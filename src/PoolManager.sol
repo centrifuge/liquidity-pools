@@ -156,10 +156,10 @@ contract PoolManager is Auth, IPoolManager {
         } else if (call == MessagesLib.Call.UpdateTrancheHook) {
             updateTrancheHook(message.toUint64(1), message.toBytes16(9), message.toAddress(25));
         } else if (call == MessagesLib.Call.TransferAssets) {
-            handleTransfer(message.toUint128(1), message.toAddress(49), message.toUint128(81));
+            handleTransfer(message.toUint128(1), message.toAddress(17), message.toUint128(49));
         } else if (call == MessagesLib.Call.TransferTrancheTokens) {
             handleTransferTrancheTokens(
-                message.toUint64(1), message.toBytes16(9), message.toAddress(66), message.toUint128(98)
+                message.toUint64(1), message.toBytes16(9), message.toAddress(34), message.toUint128(66)
             );
         } else if (call == MessagesLib.Call.UpdateRestriction) {
             updateRestriction(message.toUint64(1), message.toBytes16(9), message.slice(25, message.length - 25));
