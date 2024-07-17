@@ -265,19 +265,19 @@ contract PoolManagerTest is BaseTest {
         bytes32 sender = makeAddr("sender").toBytes32();
 
         vm.expectRevert(bytes("PoolManager/unknown-asset"));
-        centrifugeChain.incomingTransfer(assetId, sender, bytes32(bytes20(recipient)), amount);
+        centrifugeChain.incomingTransfer(assetId, bytes32(bytes20(recipient)), amount);
         centrifugeChain.addAsset(assetId, address(erc20));
 
         vm.expectRevert(bytes("SafeTransferLib/safe-transfer-from-failed"));
-        centrifugeChain.incomingTransfer(assetId, sender, bytes32(bytes20(recipient)), amount);
+        centrifugeChain.incomingTransfer(assetId, bytes32(bytes20(recipient)), amount);
 
         vm.expectRevert(bytes("SafeTransferLib/safe-transfer-from-failed"));
-        centrifugeChain.incomingTransfer(assetId, sender, bytes32(bytes20(recipient)), amount);
+        centrifugeChain.incomingTransfer(assetId, bytes32(bytes20(recipient)), amount);
 
         erc20.mint(address(poolManager.escrow()), amount); // fund escrow
 
         // Now we test the incoming message
-        centrifugeChain.incomingTransfer(assetId, sender, bytes32(bytes20(recipient)), amount);
+        centrifugeChain.incomingTransfer(assetId, bytes32(bytes20(recipient)), amount);
         assertEq(erc20.balanceOf(address(poolManager.escrow())), 0);
         assertEq(erc20.balanceOf(recipient), amount);
     }
