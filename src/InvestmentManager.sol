@@ -245,6 +245,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
         uint128 shares
     ) public auth {
         address vault = poolManager.getVault(poolId, trancheId, assetId);
+        require(vault != address(0), "InvestmentManager/vault-not-found");
 
         InvestmentState storage state = investments[vault][user];
         require(state.pendingDepositRequest != 0, "InvestmentManager/no-pending-deposit-request");
@@ -271,6 +272,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
         uint128 shares
     ) public auth {
         address vault = poolManager.getVault(poolId, trancheId, assetId);
+        require(vault != address(0), "InvestmentManager/vault-not-found");
 
         InvestmentState storage state = investments[vault][user];
         require(state.pendingRedeemRequest != 0, "InvestmentManager/no-pending-redeem-request");
@@ -300,6 +302,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
         uint128 fulfillment
     ) public auth {
         address vault = poolManager.getVault(poolId, trancheId, assetId);
+        require(vault != address(0), "InvestmentManager/vault-not-found");
 
         InvestmentState storage state = investments[vault][user];
         require(state.pendingCancelDepositRequest == true, "InvestmentManager/no-pending-cancel-deposit-request");
@@ -319,6 +322,8 @@ contract InvestmentManager is Auth, IInvestmentManager {
         auth
     {
         address vault = poolManager.getVault(poolId, trancheId, assetId);
+        require(vault != address(0), "InvestmentManager/vault-not-found");
+
         InvestmentState storage state = investments[vault][user];
         require(state.pendingCancelRedeemRequest == true, "InvestmentManager/no-pending-cancel-redeem-request");
 
@@ -337,6 +342,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
     {
         require(shares != 0, "InvestmentManager/tranche-token-amount-is-zero");
         address vault = poolManager.getVault(poolId, trancheId, assetId);
+        require(vault != address(0), "InvestmentManager/vault-not-found");
 
         // If there's any unclaimed deposits, claim those first
         InvestmentState storage state = investments[vault][user];
