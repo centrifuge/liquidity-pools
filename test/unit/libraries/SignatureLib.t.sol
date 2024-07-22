@@ -86,6 +86,16 @@ contract SignatureLibTest is Test {
         vm.expectRevert("Signature validation failed");
     }
 
+    function testSignatureReplay() public {
+        bytes32 digest1 = _calculateTestDigest();
+        bytes32 digest2 = keccak256("Different message");
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(ownerPk, digest1);
+        bytes memory signature = abi.encodePacked(r, s, v);
+
+        assertTrue(SignatureLib.isValidSignature(owner, digest1, signature));
+        assertFalse(SignatureLib.isValidSignature(owner, digest2, signature));
+    }
+
     function _calculateTestDigest() private view returns (bytes32) {
         return keccak256(abi.encodePacked("\x19\x01", testDomainSeparator, keccak256(abi.encode(keccak256("Test()")))));
     }
