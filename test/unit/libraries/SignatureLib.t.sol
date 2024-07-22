@@ -30,7 +30,7 @@ contract SignatureLibTest is Test {
 
     bytes32 private nameHash;
     bytes32 private versionHash;
-    bytes32 private testDomainSeparator;
+    bytes32 private domainSeparator;
     address private owner;
     uint256 private ownerPk;
     address private wrongOwner;
@@ -39,7 +39,7 @@ contract SignatureLibTest is Test {
     function setUp() public {
         nameHash = keccak256(bytes("Centrifuge"));
         versionHash = keccak256(bytes("1"));
-        testDomainSeparator = EIP712Lib.calculateDomainSeparator(nameHash, versionHash);
+        domainSeparator = EIP712Lib.calculateDomainSeparator(nameHash, versionHash);
         (owner, ownerPk) = makeAddrAndKey("owner");
         (wrongOwner, wrongOwnerPk) = makeAddrAndKey("wrongOwner");
     }
@@ -97,6 +97,6 @@ contract SignatureLibTest is Test {
     }
 
     function _calculateTestDigest() private view returns (bytes32) {
-        return keccak256(abi.encodePacked("\x19\x01", testDomainSeparator, keccak256(abi.encode(keccak256("Test()")))));
+        return keccak256(abi.encodePacked("\x19\x01", domainSeparator, keccak256(abi.encode(keccak256("Test()")))));
     }
 }
