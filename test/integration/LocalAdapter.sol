@@ -2,8 +2,6 @@
 pragma solidity 0.8.26;
 
 import {Auth} from "./../../src/Auth.sol";
-import {IAdapter} from "src/interfaces/gateway/IAdapter.sol";
-
 interface PrecompileLike {
     function execute(
         bytes32 commandId,
@@ -17,10 +15,10 @@ interface GatewayLike {
     function handle(bytes memory message) external;
 }
 
-/// @title  Local Adapter
+/// @title  Local Router
 /// @notice Routing contract that routes from Substrate to EVM and back.
 ///         I.e. for testing LP in a local Centrifuge Chain deployment.
-contract LocalAdapter is Auth, IAdapter {
+contract LocalAdapter is Auth {
     address internal constant PRECOMPILE = 0x0000000000000000000000000000000000000800;
     bytes32 internal constant FAKE_COMMAND_ID = keccak256("FAKE_COMMAND_ID");
 
@@ -34,12 +32,16 @@ contract LocalAdapter is Auth, IAdapter {
     event File(bytes32 indexed what, address addr);
     event File(bytes32 indexed what, string data);
 
-    // --- Administrative ---
+    constructor() {
+        wards[msg.sender] = 1;
+        emit Rely(msg.sender);
+    }
+
     function file(bytes32 what, address data) external {
         if (what == "gateway") {
             gateway = GatewayLike(data);
         } else {
-            revert("LocalAdapter/file-unrecognized-param");
+            revert("LocalRouter/file-unrecognized-param");
         }
 
         emit File(what, data);
@@ -51,13 +53,12 @@ contract LocalAdapter is Auth, IAdapter {
         } else if (what == "sourceAddress") {
             sourceAddress = data;
         } else {
-            revert("LocalAdapter/file-unrecognized-param");
+            revert("LocalRouter/file-unrecognized-param");
         }
 
         emit File(what, data);
     }
 
-    // --- Incoming ---
     // From Centrifuge to LP on Centrifuge (faking other domain)
     function callContract(
         string calldata destinationChain,
@@ -68,9 +69,7 @@ contract LocalAdapter is Auth, IAdapter {
         emit RouteToDomain(destinationChain, destinationContractAddress, payload);
     }
 
-    // --- Outgoing ---
-    /// @inheritdoc IAdapter
-    /// @dev From LP on Centrifuge (faking other domain) to Centrifuge
+    // From LP on Centrifuge (faking other domain) to Centrifuge
     function send(bytes calldata message) public {
         PrecompileLike precompile = PrecompileLike(PRECOMPILE);
         precompile.execute(FAKE_COMMAND_ID, sourceChain, sourceAddress, message);
@@ -78,13 +77,6 @@ contract LocalAdapter is Auth, IAdapter {
         emit RouteToCentrifuge(FAKE_COMMAND_ID, sourceChain, sourceAddress, message);
     }
 
-    /// @inheritdoc IAdapter
-    function estimate(bytes calldata payload, uint256 baseCost) external view returns (uint256) {
-        return 0;
-    }
-
-    /// @inheritdoc IAdapter
-    function pay(bytes calldata payload, address refund) public payable {
-        return;
-    }
+    // Added to be ignored in coverage report
+    function test() public {}
 }
