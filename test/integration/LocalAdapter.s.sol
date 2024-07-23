@@ -16,7 +16,7 @@ contract LocalAdapterScript is Deployer {
         adminSafe = address(0x361c43cd5Fd700923Aae9dED678851a201839fc6);
 
         deploy(msg.sender);
-        LocalRouter router = new LocalRouter();
+        LocalAdapter router = new LocalAdapter();
         wire(address(router));
 
         router.file("gateway", address(gateway));
