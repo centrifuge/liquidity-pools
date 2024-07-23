@@ -2,6 +2,7 @@
 pragma solidity 0.8.26;
 
 import {Auth} from "./../../src/Auth.sol";
+
 interface PrecompileLike {
     function execute(
         bytes32 commandId,

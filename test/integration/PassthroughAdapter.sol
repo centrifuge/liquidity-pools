@@ -77,7 +77,7 @@ contract PassthroughAdapter is Auth {
 
     /// @notice Execute message on centrifuge
     function executeOnCentrifuge(string calldata _sourceChain, string calldata _sourceAddress, bytes calldata payload)
-    external
+        external
     {
         PrecompileLike precompile = PrecompileLike(PRECOMPILE);
         precompile.execute(FAKE_COMMAND_ID, _sourceChain, _sourceAddress, payload);
@@ -86,11 +86,9 @@ contract PassthroughAdapter is Auth {
     }
 
     /// @notice Execute message on other domain
-    function executeOnDomain(
-        string calldata _sourceChain,
-        string calldata _sourceAddress,
-        bytes calldata payload
-    ) external {
+    function executeOnDomain(string calldata _sourceChain, string calldata _sourceAddress, bytes calldata payload)
+        external
+    {
         gateway.handle(payload);
         emit ExecuteOnDomain(_sourceChain, _sourceAddress, payload);
     }
