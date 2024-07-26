@@ -1,6 +1,7 @@
 pragma solidity 0.8.26;
 
 import {Auth} from "./../../src/Auth.sol";
+import {IAdapter} from "src/interfaces/gateway/IAdapter.sol";
 
 interface PrecompileLike {
     function execute(
@@ -15,10 +16,10 @@ interface GatewayLike {
     function handle(bytes memory message) external;
 }
 
-/// @title  PassthroughRouter
+/// @title  PassthroughAdapter
 /// @notice Routing contract that accepts any incomming messages and forwards them
 ///         to the gateway and solely emits an event for outgoing messages.
-contract PassthroughAdapter is Auth {
+contract PassthroughAdapter is Auth, IAdapter {
     address internal constant PRECOMPILE = 0x0000000000000000000000000000000000000800;
     bytes32 internal constant FAKE_COMMAND_ID = keccak256("FAKE_COMMAND_ID");
 
@@ -37,11 +38,12 @@ contract PassthroughAdapter is Auth {
         emit Rely(msg.sender);
     }
 
+    // --- Administrative ---
     function file(bytes32 what, address addr) external auth {
         if (what == "gateway") {
             gateway = GatewayLike(addr);
         } else {
-            revert("LocalRouter/file-unrecognized-param");
+            revert("PassthroughAdapter/file-unrecognized-param");
         }
 
         emit File(what, addr);
@@ -53,12 +55,13 @@ contract PassthroughAdapter is Auth {
         } else if (what == "sourceAddress") {
             sourceAddress = data;
         } else {
-            revert("LocalRouter/file-unrecognized-param");
+            revert("PassthroughAdapter/file-unrecognized-param");
         }
 
         emit File(what, data);
     }
 
+    /// --- Incoming ---
     /// @notice From Centrifuge to LP on other domain. Just emits an event.
     ///         Just used on Centrifuge.
     function callContract(
@@ -69,6 +72,8 @@ contract PassthroughAdapter is Auth {
         emit Route(destinationChain, destinationContractAddress, payload);
     }
 
+    /// --- Outgoing ---
+    /// @inheritdoc IAdapter
     /// @notice From other domain to Centrifuge. Just emits an event.
     ///         Just used on EVM domains.
     function send(bytes calldata message) public {
@@ -91,6 +96,16 @@ contract PassthroughAdapter is Auth {
     {
         gateway.handle(payload);
         emit ExecuteOnDomain(_sourceChain, _sourceAddress, payload);
+    }
+
+    /// @inheritdoc IAdapter
+    function estimate(bytes calldata, uint256) external pure returns (uint256) {
+        return 0;
+    }
+
+    /// @inheritdoc IAdapter
+    function pay(bytes calldata, address) public payable {
+        return;
     }
 
     // Added to be ignored in coverage report

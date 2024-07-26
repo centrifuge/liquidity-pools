@@ -2,6 +2,7 @@
 pragma solidity 0.8.26;
 
 import {Auth} from "./../../src/Auth.sol";
+import {IAdapter} from "src/interfaces/gateway/IAdapter.sol";
 
 interface PrecompileLike {
     function execute(
@@ -16,10 +17,10 @@ interface GatewayLike {
     function handle(bytes memory message) external;
 }
 
-/// @title  Local Router
+/// @title  Local Adapter
 /// @notice Routing contract that routes from Substrate to EVM and back.
 ///         I.e. for testing LP in a local Centrifuge Chain deployment.
-contract LocalAdapter is Auth {
+contract LocalAdapter is Auth, IAdapter {
     address internal constant PRECOMPILE = 0x0000000000000000000000000000000000000800;
     bytes32 internal constant FAKE_COMMAND_ID = keccak256("FAKE_COMMAND_ID");
 
@@ -38,11 +39,12 @@ contract LocalAdapter is Auth {
         emit Rely(msg.sender);
     }
 
+    // --- Administrative ---
     function file(bytes32 what, address data) external {
         if (what == "gateway") {
             gateway = GatewayLike(data);
         } else {
-            revert("LocalRouter/file-unrecognized-param");
+            revert("LocalAdapter/file-unrecognized-param");
         }
 
         emit File(what, data);
@@ -54,12 +56,13 @@ contract LocalAdapter is Auth {
         } else if (what == "sourceAddress") {
             sourceAddress = data;
         } else {
-            revert("LocalRouter/file-unrecognized-param");
+            revert("LocalAdapter/file-unrecognized-param");
         }
 
         emit File(what, data);
     }
 
+    // --- Incoming ---
     // From Centrifuge to LP on Centrifuge (faking other domain)
     function callContract(
         string calldata destinationChain,
@@ -70,12 +73,24 @@ contract LocalAdapter is Auth {
         emit RouteToDomain(destinationChain, destinationContractAddress, payload);
     }
 
-    // From LP on Centrifuge (faking other domain) to Centrifuge
+    // --- Outgoing ---
+    /// @inheritdoc IAdapter
+    /// @dev From LP on Centrifuge (faking other domain) to Centrifuge
     function send(bytes calldata message) public {
         PrecompileLike precompile = PrecompileLike(PRECOMPILE);
         precompile.execute(FAKE_COMMAND_ID, sourceChain, sourceAddress, message);
 
         emit RouteToCentrifuge(FAKE_COMMAND_ID, sourceChain, sourceAddress, message);
+    }
+
+    /// @inheritdoc IAdapter
+    function estimate(bytes calldata, uint256) external pure returns (uint256) {
+        return 0;
+    }
+
+    /// @inheritdoc IAdapter
+    function pay(bytes calldata, address) public payable {
+        return;
     }
 
     // Added to be ignored in coverage report

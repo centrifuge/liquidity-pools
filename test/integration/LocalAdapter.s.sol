@@ -4,7 +4,7 @@ pragma solidity 0.8.26;
 import {Deployer} from "../../script/Deployer.sol";
 import {LocalAdapter} from "./LocalAdapter.sol";
 
-// Script to deploy Liquidity Pools with an Axelar router.
+// Script to deploy Liquidity Pools with an Axelar adapter.
 contract LocalAdapterScript is Deployer {
     function setUp() public {}
 
@@ -16,14 +16,14 @@ contract LocalAdapterScript is Deployer {
         adminSafe = address(0x361c43cd5Fd700923Aae9dED678851a201839fc6);
 
         deploy(msg.sender);
-        LocalAdapter router = new LocalAdapter();
-        wire(address(router));
+        LocalAdapter adapter = new LocalAdapter();
+        wire(address(adapter));
 
-        router.file("gateway", address(gateway));
-        router.file("sourceChain", "TestDomain");
-        router.file("sourceAddress", "0x1111111111111111111111111111111111111111");
+        adapter.file("gateway", address(gateway));
+        adapter.file("sourceChain", "TestDomain");
+        adapter.file("sourceAddress", "0x1111111111111111111111111111111111111111");
 
-        removeDeployerAccess(address(router), msg.sender);
+        removeDeployerAccess(address(adapter), msg.sender);
 
         vm.stopBroadcast();
     }
