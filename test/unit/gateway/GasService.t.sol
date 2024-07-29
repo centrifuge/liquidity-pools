@@ -21,6 +21,7 @@ contract GasServiceTest is Test {
     }
 
     function testDeployment() public {
+        service = new GasService(MESSAGE_COST, PROOF_COST, GAS_PRICE, TOKEN_PRICE);
         assertEq(service.wards(address(this)), 1);
         assertEq(service.messageCost(), MESSAGE_COST);
         assertEq(service.proofCost(), PROOF_COST);
@@ -40,37 +41,49 @@ contract GasServiceTest is Test {
 
         vm.expectRevert(bytes("GasService/file-unrecognized-param"));
         service.file(what, messageCost);
+
+        vm.prank(makeAddr("unauthorized"));
+        vm.expectRevert("Auth/not-authorized");
+        service.file("messageCost", messageCost);
     }
 
     function testUpdateGasPrice(uint128 value) public {
         vm.assume(value != 0);
         vm.assume(value != GAS_PRICE);
 
-        uint256 pastDate = service.lastUpdatedAt() - 1;
-        uint256 futureDate = service.lastUpdatedAt() + 1;
+        uint64 pastDate = uint64(service.lastUpdatedAt() - 1);
+        uint64 futureDate = uint64(service.lastUpdatedAt() + 1);
 
-        uint256 lastUpdateAt = service.lastUpdatedAt();
+        uint64 lastUpdateAt = uint64(service.lastUpdatedAt());
 
         vm.expectRevert(bytes("GasService/price-cannot-be-zero"));
         service.updateGasPrice(0, futureDate);
         assertEq(lastUpdateAt, service.lastUpdatedAt());
 
-        vm.expectRevert(bytes("GasService/same-price-already-set"));
+        vm.expectRevert(bytes("GasService/already-set-price"));
         service.updateGasPrice(GAS_PRICE, futureDate);
         assertEq(lastUpdateAt, service.lastUpdatedAt());
 
-        vm.expectRevert(bytes("GasService/cannot-update-price-with-backdate"));
+        vm.expectRevert(bytes("GasService/outdated-price"));
         service.updateGasPrice(value, pastDate);
         assertEq(service.gasPrice(), GAS_PRICE);
 
         service.updateGasPrice(value, futureDate);
         assertEq(service.gasPrice(), value);
         assertEq(service.lastUpdatedAt(), futureDate);
+
+        vm.prank(makeAddr("unauthorized"));
+        vm.expectRevert("Auth/not-authorized");
+        service.updateGasPrice(value, futureDate);
     }
 
     function testUpdateTokenPrice(uint256 value) public {
         service.updateTokenPrice(value);
         assertEq(service.tokenPrice(), value);
+
+        vm.prank(makeAddr("unauthorized"));
+        vm.expectRevert("Auth/not-authorized");
+        service.updateTokenPrice(value);
     }
 
     function testEstimateFunction(bytes calldata message) public {

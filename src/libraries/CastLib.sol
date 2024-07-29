@@ -12,12 +12,6 @@ library CastLib {
         return bytes32(bytes(source));
     }
 
-    /// @dev Adds zero padding
-    function toBytes128(string memory source) internal pure returns (bytes memory) {
-        bytes memory sourceBytes = bytes(source);
-        return bytes.concat(sourceBytes, new bytes(128 - sourceBytes.length));
-    }
-
     /// @dev Removes zero padding
     function bytes128ToString(bytes memory _bytes128) internal pure returns (string memory) {
         require(_bytes128.length == 128, "Input should be 128 bytes");

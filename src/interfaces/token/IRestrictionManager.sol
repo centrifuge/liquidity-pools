@@ -15,19 +15,20 @@ interface IRestrictionManager {
     event Unfreeze(address indexed token, address indexed user);
 
     // --- Handling freezes ---
-    /// @notice TODO
+    /// @notice Freeze a user balance. Frozen users cannot receive nor send tokens
     function freeze(address token, address user) external;
 
-    /// @notice TODO
+    /// @notice Unfreeze a user balance
     function unfreeze(address token, address user) external;
 
-    /// @notice TODO
+    /// @notice Returns whether the user's tokens are frozen
     function isFrozen(address token, address user) external view returns (bool);
 
     // --- Managing members ---
-    /// @notice TODO
+    /// @notice Add a member. Non-members cannot receive tokens, but can send tokens to valid members
+    /// @param  validUntil Timestamp until which the user will be a valid member
     function updateMember(address token, address user, uint64 validUntil) external;
 
-    /// @notice TODO
+    /// @notice Returns whether the user is a valid member of the token
     function isMember(address token, address user) external view returns (bool isValid, uint64 validUntil);
 }

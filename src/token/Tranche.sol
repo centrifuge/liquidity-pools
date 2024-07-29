@@ -27,17 +27,13 @@ import {BitmapLib} from "src/libraries/BitmapLib.sol";
 contract Tranche is ERC20, ITranche {
     using BitmapLib for *;
 
-    uint8 internal constant MAX_DECIMALS = 18;
-
     /// @inheritdoc ITranche
     address public hook;
 
     /// @inheritdoc IERC7575Share
     mapping(address asset => address) public vault;
 
-    constructor(uint8 decimals_) ERC20(decimals_) {
-        require(decimals_ <= MAX_DECIMALS, "Tranche/too-many-decimals");
-    }
+    constructor(uint8 decimals_) ERC20(decimals_) {}
 
     modifier authOrHook() {
         require(wards[msg.sender] == 1 || msg.sender == hook, "Tranche/not-authorized");
@@ -148,13 +144,8 @@ contract Tranche is ERC20, ITranche {
     }
 
     /// @inheritdoc IERC1404
-    function messageForTransferRestriction(uint8 restrictionCode) public pure returns (string memory) {
+    function messageForTransferRestriction(uint8 restrictionCode) external pure returns (string memory) {
         return restrictionCode == SUCCESS_CODE_ID ? SUCCESS_MESSAGE : ERROR_MESSAGE;
-    }
-
-    /// @inheritdoc IERC1404
-    function SUCCESS_CODE() public pure returns (uint8) {
-        return SUCCESS_CODE_ID;
     }
 
     // --- ERC165 support ---

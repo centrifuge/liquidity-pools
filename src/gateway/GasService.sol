@@ -7,10 +7,17 @@ import {MathLib} from "src/libraries/MathLib.sol";
 import {BytesLib} from "src/libraries/BytesLib.sol";
 import {MessagesLib} from "src/libraries/MessagesLib.sol";
 
+/// @title  GasService
+/// @notice This is a utility contract used in calculations of the
+///         transaction cost for a message / proof being sent across all supported adapters
+///         and executed on Centrifuge Chain.
 contract GasService is IGasService, Auth {
     using MathLib for uint64;
     using MathLib for uint256;
     using BytesLib for bytes;
+
+    /// @dev Prices are fixed-point integers with 18 decimals
+    uint256 internal constant PRICE_DENOMINATOR = 10 ** 18;
 
     /// @inheritdoc IGasService
     uint64 public proofCost;
@@ -19,7 +26,7 @@ contract GasService is IGasService, Auth {
     /// @inheritdoc IGasService
     uint128 public gasPrice;
     /// @inheritdoc IGasService
-    uint256 public lastUpdatedAt;
+    uint64 public lastUpdatedAt;
     /// @inheritdoc IGasService
     uint256 public tokenPrice;
 
@@ -28,7 +35,7 @@ contract GasService is IGasService, Auth {
         proofCost = proofCost_;
         gasPrice = gasPrice_;
         tokenPrice = tokenPrice_;
-        lastUpdatedAt = block.timestamp;
+        lastUpdatedAt = uint64(block.timestamp);
 
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
@@ -42,11 +49,24 @@ contract GasService is IGasService, Auth {
         emit File(what, value);
     }
 
+    /// --- Incoming message handling ---
     /// @inheritdoc IGasService
-    function updateGasPrice(uint128 value, uint256 computedAt) external auth {
-        require(value > 0, "GasService/price-cannot-be-zero");
-        require(gasPrice != value, "GasService/same-price-already-set");
-        require(lastUpdatedAt < computedAt, "GasService/cannot-update-price-with-backdate");
+    function handle(bytes calldata message) public auth {
+        MessagesLib.Call call = MessagesLib.messageType(message);
+
+        if (call == MessagesLib.Call.UpdateCentrifugeGasPrice) {
+            updateGasPrice(message.toUint128(1), message.toUint64(17));
+        } else {
+            revert("GasService/invalid-message");
+        }
+    }
+
+    /// --- Update methods ---
+    /// @inheritdoc IGasService
+    function updateGasPrice(uint128 value, uint64 computedAt) public auth {
+        require(value != 0, "GasService/price-cannot-be-zero");
+        require(gasPrice != value, "GasService/already-set-price");
+        require(lastUpdatedAt < computedAt, "GasService/outdated-price");
         gasPrice = value;
         lastUpdatedAt = computedAt;
         emit UpdateGasPrice(value, computedAt);
@@ -58,22 +78,22 @@ contract GasService is IGasService, Auth {
         emit UpdateTokenPrice(value);
     }
 
+    /// --- Estimations ---
     /// @inheritdoc IGasService
     function estimate(bytes calldata payload) public view returns (uint256) {
-        uint256 denominator = 10 ** 18;
         uint256 totalCost;
         uint8 call = payload.toUint8(0);
         if (call == uint8(MessagesLib.Call.MessageProof)) {
-            totalCost = proofCost.mulDiv(gasPrice, denominator, MathLib.Rounding.Up);
+            totalCost = proofCost.mulDiv(gasPrice, PRICE_DENOMINATOR, MathLib.Rounding.Up);
         } else {
-            totalCost = messageCost.mulDiv(gasPrice, denominator, MathLib.Rounding.Up);
+            totalCost = messageCost.mulDiv(gasPrice, PRICE_DENOMINATOR, MathLib.Rounding.Up);
         }
 
-        return totalCost.mulDiv(tokenPrice, denominator, MathLib.Rounding.Up);
+        return totalCost.mulDiv(tokenPrice, PRICE_DENOMINATOR, MathLib.Rounding.Up);
     }
 
     /// @inheritdoc IGasService
-    function shouldRefuel(address, bytes calldata) public pure returns (bool) {
-        return true;
+    function shouldRefuel(address, bytes calldata) public pure returns (bool success) {
+        success = true;
     }
 }

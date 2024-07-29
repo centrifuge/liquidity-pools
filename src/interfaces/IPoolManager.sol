@@ -74,24 +74,38 @@ interface IPoolManager is IMessageHandler, IRecoverable {
         uint128 amount
     );
 
+    /// @notice returns the investmentManager address
+    /// @dev    can be set using file
     function investmentManager() external view returns (address);
 
-    /// @notice TODO
+    /// @notice returns the asset address associated with a given asset id
     function idToAsset(uint128 assetId) external view returns (address asset);
 
-    /// @notice TODO
+    /// @notice returns the asset id associated with a given address
     function assetToId(address) external view returns (uint128 assetId);
 
-    /// @notice TODO
+    /// @notice returns the asset address associated with a given vault address
+    /// @return asset The asset address
+    /// @return isWrapper Whether the asset is a wrapped ERC20 token
     function vaultToAsset(address) external view returns (address asset, bool isWrapper);
 
-    /// @notice TODO
+    /// @notice Updates a contract parameter
+    /// @param what Accepts a bytes32 representation of 'gateway', 'investmentManager', 'trancheFactory',
+    ///                'vaultFactory', or 'gasService'
     function file(bytes32 what, address data) external;
 
-    /// @notice TODO
+    /// @notice transfers assets to a cross-chain recipient address
+    /// @dev    Addresses on centrifuge chain are represented as bytes32
     function transferAssets(address asset, bytes32 recipient, uint128 amount) external;
 
-    /// @notice TODO
+    /// @notice transfers tranche tokens to a cross-chain recipient address
+    /// @dev    To transfer to evm chains, pad a 20 byte evm address with 12 bytes of 0
+    /// @param  poolId The centrifuge pool id
+    /// @param  trancheId The tranche id
+    /// @param  destinationDomain an enum representing the destination domain (Centrifuge or EVM)
+    /// @param  destinationId The destination chain id
+    /// @param  recipient A bytes32 representation of the recipient address
+    /// @param  amount The amount of tokens to transfer
     function transferTrancheTokens(
         uint64 poolId,
         bytes16 trancheId,
@@ -111,7 +125,9 @@ interface IPoolManager is IMessageHandler, IRecoverable {
     /// @dev        The function can only be executed by the gateway contract.
     function allowAsset(uint64 poolId, uint128 assetId) external;
 
-    /// @notice TODO
+    /// @notice    Centrifuge pools can support multiple currencies for investing. this function removes
+    ///            a supported asset from the pool details.
+    /// @dev       The function can only be executed by the gateway contract.
     function disallowAsset(uint64 poolId, uint128 assetId) external;
 
     /// @notice     New tranche details from an existing Centrifuge pool are added.
@@ -125,16 +141,28 @@ interface IPoolManager is IMessageHandler, IRecoverable {
         address hook
     ) external;
 
-    /// @notice TODO
+    /// @notice   Updates the tokenName and tokenSymbol of a tranche token
+    /// @dev      The function can only be executed by the gateway contract.
     function updateTrancheMetadata(uint64 poolId, bytes16 trancheId, string memory tokenName, string memory tokenSymbol)
         external;
 
-    /// @notice TODO
+    /// @notice  Updates the price of a tranche token
+    /// @dev     The function can only be executed by the gateway contract.
     function updateTranchePrice(uint64 poolId, bytes16 trancheId, uint128 assetId, uint128 price, uint64 computedAt)
         external;
 
-    /// @notice TODO
+    /// @notice Updates the restrictions on a tranche token for a specific user
+    /// @param  poolId The centrifuge pool id
+    /// @param  trancheId The tranche id
+    /// @param  update The restriction update in the form of a bytes array indicating
+    ///                the restriction to be updated, the user to be updated, and a validUntil timestamp.
     function updateRestriction(uint64 poolId, bytes16 trancheId, bytes memory update) external;
+
+    /// @notice Updates the hook of a tranche token
+    /// @param  poolId The centrifuge pool id
+    /// @param  trancheId The tranche id
+    /// @param  hook The new hook addres
+    function updateTrancheHook(uint64 poolId, bytes16 trancheId, address hook) external;
 
     /// @notice A global chain agnostic asset index is maintained on Centrifuge. This function maps
     ///         a asset from the Centrifuge index to its corresponding address on the evm chain.
@@ -142,38 +170,41 @@ interface IPoolManager is IMessageHandler, IRecoverable {
     /// @dev    This function can only be executed by the gateway contract.
     function addAsset(uint128 assetId, address asset) external;
 
-    /// @notice TODO
+    /// @notice Executes a message from the gateway
+    /// @dev    The function can only be executed by the gateway contract.
     function handle(bytes calldata message) external;
 
-    /// @notice TODO
+    /// @notice Transfers assets to a recipient from the escrow contract
+    /// @dev    The function can only be executed internally or by the gateway contract.
     function handleTransfer(uint128 assetId, address recipient, uint128 amount) external;
 
-    /// @notice TODO
+    /// @notice Mints tranche tokens to a recipient
+    /// @dev    The function can only be executed internally or by the gateway contract.
     function handleTransferTrancheTokens(uint64 poolId, bytes16 trancheId, address destinationAddress, uint128 amount)
         external;
 
-    /// @notice TODO
+    /// @notice Deploys a created tranche
+    /// @dev    The function can only be executed by the gateway contract.
     function deployTranche(uint64 poolId, bytes16 trancheId) external returns (address);
 
-    /// @notice TODO
+    /// @notice Deploys a vault for a given asset and tranche token
+    /// @dev    The function can only be executed by the gateway contract.
     function deployVault(uint64 poolId, bytes16 trancheId, address asset) external returns (address);
 
-    /// @notice TODO
+    /// @notice Removes a vault for a given asset and tranche token
+    /// @dev    The function can only be executed by the gateway contract.
     function removeVault(uint64 poolId, bytes16 trancheId, address asset) external;
 
-    /// @notice TODO
-    function updateCentrifugeGasPrice(uint128 price, uint256 computedAt) external;
-
-    /// @notice TODO
+    /// @notice Returns the tranche token for a given pool and tranche id
     function getTranche(uint64 poolId, bytes16 trancheId) external view returns (address);
 
-    /// @notice TODO
+    /// @notice Returns the vault for a given pool, tranche id, and asset id
     function getVault(uint64 poolId, bytes16 trancheId, uint128 assetId) external view returns (address);
 
-    /// @notice TODO
+    /// @notice Returns the vault for a given pool, tranche id, and asset address
     function getVault(uint64 poolId, bytes16 trancheId, address asset) external view returns (address);
 
-    /// @notice TODO
+    /// @notice Retuns the latest tranche token price for a given pool, tranche id, and asset id
     function getTranchePrice(uint64 poolId, bytes16 trancheId, address asset)
         external
         view
@@ -186,6 +217,6 @@ interface IPoolManager is IMessageHandler, IRecoverable {
     ///         on the behalf the caller.
     function getVaultAsset(address vault) external view returns (address asset, bool isWrapper);
 
-    /// @notice TODO
+    /// @notice Checks whether a given asset is allowed for a given pool
     function isAllowedAsset(uint64 poolId, address asset) external view returns (bool);
 }

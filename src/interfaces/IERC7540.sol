@@ -238,9 +238,11 @@ interface IERC7540CancelRedeem {
         returns (uint256 shares);
 }
 
-interface IAuthorizeOperator {
-    function DOMAIN_SEPARATOR() external view returns (bytes32);
-
+interface IERC7741 {
+    /**
+     * @dev Grants or revokes permissions for `operator` to manage Requests on behalf of the
+     *      `msg.sender`, using an [EIP-712](./eip-712.md) signature.
+     */
     function authorizeOperator(
         address controller,
         address operator,
@@ -250,7 +252,22 @@ interface IAuthorizeOperator {
         bytes memory signature
     ) external returns (bool);
 
+    /**
+     * @dev Revokes the given `nonce` for `msg.sender` as the `owner`.
+     */
     function invalidateNonce(bytes32 nonce) external;
+
+    /**
+     * @dev Returns whether the given `nonce` has been used for the `controller`.
+     */
+    function authorizations(address controller, bytes32 nonce) external view returns (bool used);
+
+    /**
+     * @dev Returns the `DOMAIN_SEPARATOR` as defined according to EIP-712. The `DOMAIN_SEPARATOR
+     *      should be unique to the contract and chain to prevent replay attacks from other domains,
+     *      and satisfy the requirements of EIP-712, but is otherwise unconstrained.
+     */
+    function DOMAIN_SEPARATOR() external view returns (bytes32);
 }
 
 interface IERC7714 {
@@ -271,7 +288,7 @@ interface IERC7540Vault is
     IERC7540CancelDeposit,
     IERC7540CancelRedeem,
     IERC7575,
-    IAuthorizeOperator,
+    IERC7741,
     IERC7714,
     IRecoverable
 {
@@ -286,18 +303,19 @@ interface IERC7540Vault is
     /// @notice Identifier of the tranche of the Centrifuge pool
     function trancheId() external view returns (bytes16);
 
-    /// @notice TODO
-    function setEndorsedOperator(address owner, bool approved) external returns (bool);
+    /// @notice Set msg.sender as operator of owner, to `approved` status
+    /// @dev    MUST be called by endorsed sender
+    function setEndorsedOperator(address owner, bool approved) external;
 
-    /// @notice TODO
+    /// @notice Callback when a deposit Request becomes claimable
     function onDepositClaimable(address owner, uint256 assets, uint256 shares) external;
 
-    /// @notice TODO
+    /// @notice Callback when a redeem Request becomes claimable
     function onRedeemClaimable(address owner, uint256 assets, uint256 shares) external;
 
-    /// @notice TODO
+    /// @notice Callback when a claim deposit Request becomes claimable
     function onCancelDepositClaimable(address owner, uint256 assets) external;
 
-    /// @notice TODO
+    /// @notice Callback when a claim redeem Request becomes claimable
     function onCancelRedeemClaimable(address owner, uint256 shares) external;
 }

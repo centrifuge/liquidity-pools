@@ -5,7 +5,7 @@ pragma solidity 0.8.26;
 library ArrayLib {
     function countNonZeroValues(uint16[8] memory arr) internal pure returns (uint8 count) {
         for (uint256 i; i < arr.length; i++) {
-            if (arr[i] > 0) ++count;
+            if (arr[i] != 0) ++count;
         }
     }
 
@@ -13,7 +13,7 @@ library ArrayLib {
         for (uint256 i; i < arr.length; i++) {
             if (numValues == 0) return;
 
-            if (arr[i] > 0) {
+            if (arr[i] != 0) {
                 arr[i] -= 1;
                 numValues--;
             }
@@ -24,7 +24,7 @@ library ArrayLib {
 
     function isEmpty(uint16[8] memory arr) internal pure returns (bool) {
         for (uint256 i; i < arr.length; i++) {
-            if (arr[i] > 0) return false;
+            if (arr[i] != 0) return false;
         }
         return true;
     }

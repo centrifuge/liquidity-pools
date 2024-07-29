@@ -5,6 +5,7 @@ import "test/BaseTest.sol";
 import "src/interfaces/IERC7575.sol";
 import "src/interfaces/IERC7540.sol";
 import "src/interfaces/IERC20.sol";
+import {CentrifugeRouter} from "src/CentrifugeRouter.sol";
 import {MockERC20Wrapper} from "test/mocks/MockERC20Wrapper.sol";
 import {CastLib} from "src/libraries/CastLib.sol";
 import {Domain} from "src/interfaces/IPoolManager.sol";
@@ -29,6 +30,9 @@ contract CentrifugeRouterTest is BaseTest {
     bytes constant PAYLOAD_FOR_GAS_ESTIMATION = "irrelevant_value";
 
     function testInitialization() public {
+        // redeploying within test to increase coverage
+        new CentrifugeRouter(address(routerEscrow), address(gateway), address(poolManager));
+
         assertEq(address(router.escrow()), address(routerEscrow));
         assertEq(address(router.gateway()), address(gateway));
         assertEq(address(router.poolManager()), address(poolManager));
@@ -64,7 +68,7 @@ contract CentrifugeRouterTest is BaseTest {
         router.requestDeposit{value: gas}(vault_, amount, self, self, gas);
         router.open(vault_);
 
-        vm.expectRevert("CentrifugeRouter/insufficient-funds-to-topup");
+        vm.expectRevert("CentrifugeRouter/insufficient-funds");
         router.requestDeposit(vault_, amount, self, self, gas);
 
         vm.expectRevert("Gateway/cannot-topup-with-nothing");
@@ -104,7 +108,7 @@ contract CentrifugeRouterTest is BaseTest {
         erc20.mint(self, amount);
         erc20.approve(address(router), amount);
 
-        vm.expectRevert(bytes("CentrifugeRouter/user-has-no-locked-balance"));
+        vm.expectRevert(bytes("CentrifugeRouter/no-locked-balance"));
         router.unlockDepositRequest(vault_, self);
 
         router.lockDepositRequest(vault_, amount, self, self);
@@ -134,7 +138,7 @@ contract CentrifugeRouterTest is BaseTest {
         uint256 fuel = estimateGas();
         vm.deal(address(this), 10 ether);
 
-        vm.expectRevert("CentrifugeRouter/insufficient-funds-to-topup");
+        vm.expectRevert("CentrifugeRouter/insufficient-funds");
         router.cancelDepositRequest(vault_, fuel);
 
         vm.expectRevert("Gateway/cannot-topup-with-nothing");
@@ -204,7 +208,7 @@ contract CentrifugeRouterTest is BaseTest {
         // Then redeem
         share.approve(address(router), amount);
 
-        vm.expectRevert("CentrifugeRouter/insufficient-funds-to-topup");
+        vm.expectRevert("CentrifugeRouter/insufficient-funds");
         router.requestRedeem(vault_, amount, self, self, gas);
 
         vm.expectRevert("Gateway/cannot-topup-with-nothing");
@@ -243,7 +247,7 @@ contract CentrifugeRouterTest is BaseTest {
 
         vm.deal(address(this), 10 ether);
 
-        vm.expectRevert("CentrifugeRouter/insufficient-funds-to-topup");
+        vm.expectRevert("CentrifugeRouter/insufficient-funds");
         router.cancelRedeemRequest(vault_, gas);
 
         vm.expectRevert("Gateway/cannot-topup-with-nothing");
@@ -338,7 +342,7 @@ contract CentrifugeRouterTest is BaseTest {
         vm.deal(address(this), 10 ether);
         erc20.approve(address(router), amount);
 
-        vm.expectRevert("CentrifugeRouter/insufficient-funds-to-topup");
+        vm.expectRevert("CentrifugeRouter/insufficient-funds");
         router.transferAssets(address(erc20), recipient, uint128(amount), fuel);
 
         vm.expectRevert("Gateway/cannot-topup-with-nothing");
@@ -364,7 +368,7 @@ contract CentrifugeRouterTest is BaseTest {
         vm.deal(address(this), 10 ether);
         erc20.approve(address(router), amount);
 
-        vm.expectRevert("CentrifugeRouter/insufficient-funds-to-topup");
+        vm.expectRevert("CentrifugeRouter/insufficient-funds");
         router.transferAssets(address(erc20), recipient, uint128(amount), fuel);
 
         vm.expectRevert("Gateway/cannot-topup-with-nothing");
@@ -396,7 +400,7 @@ contract CentrifugeRouterTest is BaseTest {
         share.approve(address(router), amount);
         uint256 fuel = estimateGas();
 
-        vm.expectRevert("CentrifugeRouter/insufficient-funds-to-topup");
+        vm.expectRevert("CentrifugeRouter/insufficient-funds");
         router.transferTrancheTokens(vault_, Domain.EVM, destinationChainId, destinationAddress, uint128(amount), fuel);
 
         vm.expectRevert("Gateway/cannot-topup-with-nothing");
@@ -434,7 +438,7 @@ contract CentrifugeRouterTest is BaseTest {
         share.approve(address(router), amount);
         uint256 fuel = estimateGas();
 
-        vm.expectRevert("CentrifugeRouter/insufficient-funds-to-topup");
+        vm.expectRevert("CentrifugeRouter/insufficient-funds");
         router.transferTrancheTokens(vault_, Domain.EVM, destinationChainId, destinationAddress, uint128(amount), fuel);
 
         vm.expectRevert("Gateway/cannot-topup-with-nothing");
@@ -480,7 +484,7 @@ contract CentrifugeRouterTest is BaseTest {
         erc20.mint(self, balance);
         erc20.approve(address(router), amount);
         wrapper.setFail("depositFor", true);
-        vm.expectRevert(bytes("CentrifugeRouter/deposit-for-failed"));
+        vm.expectRevert(bytes("CentrifugeRouter/wrap-failed"));
         router.wrap(address(wrapper), amount, receiver, self);
 
         wrapper.setFail("depositFor", false);
@@ -506,7 +510,7 @@ contract CentrifugeRouterTest is BaseTest {
 
         router.wrap(address(wrapper), amount, address(router), self);
         wrapper.setFail("withdrawTo", true);
-        vm.expectRevert(bytes("CentrifugeRouter/withdraw-to-failed"));
+        vm.expectRevert(bytes("CentrifugeRouter/unwrap-failed"));
         router.unwrap(address(wrapper), amount, self);
         wrapper.setFail("withdrawTo", false);
 

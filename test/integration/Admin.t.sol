@@ -18,6 +18,11 @@ contract AdminTest is BaseTest {
         assertEq(gateway.wards(address(guardian)), 1);
     }
 
+    function testHandleInvalidMessage() public {
+        vm.expectRevert(bytes("Root/invalid-message"));
+        root.handle(abi.encodePacked(uint8(MessagesLib.Call.Invalid)));
+    }
+
     //------ pause tests ------//
     function testUnauthorizedPauseFails() public {
         MockSafe(adminSafe).removeOwner(address(this));
@@ -129,7 +134,7 @@ contract AdminTest is BaseTest {
         assertEq(erc20.balanceOf(recipient), amount);
     }
 
-    //------ Delayed admin tests ------///
+    //------ Guardian tests ------///
     function testGuardianPause() public {
         guardian.pause();
         assertEq(root.paused(), true);
@@ -167,6 +172,7 @@ contract AdminTest is BaseTest {
         root.executeScheduledRely(spell);
     }
 
+    //------ Root tests ------///
     function testCancellingScheduleBeforeRelyFails() public {
         address spell = vm.addr(1);
         vm.expectRevert("Root/target-not-scheduled");
