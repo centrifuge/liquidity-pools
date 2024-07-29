@@ -34,6 +34,11 @@ contract LocalAdapter is Auth, IAdapter {
     event File(bytes32 indexed what, address addr);
     event File(bytes32 indexed what, string data);
 
+    constructor() {
+        wards[msg.sender] = 1;
+        emit Rely(msg.sender);
+    }
+
     // --- Administrative ---
     function file(bytes32 what, address data) external {
         if (what == "gateway") {
@@ -79,12 +84,15 @@ contract LocalAdapter is Auth, IAdapter {
     }
 
     /// @inheritdoc IAdapter
-    function estimate(bytes calldata payload, uint256 baseCost) external view returns (uint256) {
+    function estimate(bytes calldata, uint256) external pure returns (uint256) {
         return 0;
     }
 
     /// @inheritdoc IAdapter
-    function pay(bytes calldata payload, address refund) public payable {
+    function pay(bytes calldata, address) public payable {
         return;
     }
+
+    // Added to be ignored in coverage report
+    function test() public {}
 }
