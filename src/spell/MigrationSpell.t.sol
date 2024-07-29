@@ -70,7 +70,9 @@ contract MigrationSpellTest is Test {
         // assert all old tokens burned
         assertEq(trancheTokenOld.totalSupply(), 0);
 
-        // assert renaming worked
+        // assert renaming of old trancheToken worked
+        assertEq(trancheTokenOld.name(), spell.NAME_OLD());
+        assertEq(trancheTokenOld.symbol(), spell.SYMBOL_OLD());
     }
 
     function _loadDeployment(string memory folder, string memory name) internal {
