@@ -73,6 +73,13 @@ contract MigrationSpellTest is Test {
         // assert renaming of old trancheToken worked
         assertEq(trancheTokenOld.name(), spell.NAME_OLD());
         assertEq(trancheTokenOld.symbol(), spell.SYMBOL_OLD());
+
+        // assert denies
+        assertEq(spell.POOLMANAGER().wards(address(spell)), 0);
+        assertEq(spell.trancheTokenNew().wards(address(spell)), 0);
+        assertEq(spell.INVESTMENTMANAGER_OLD().wards(address(spell)), 0);
+        assertEq(spell.ROOT_OLD().wards(address(spell)), 0);
+        assertEq(spell.ROOT_NEW().wards(address(spell)), 0);
     }
 
     function _loadDeployment(string memory folder, string memory name) internal {

@@ -81,8 +81,9 @@ contract MigrationSpell {
         IRoot rootOld = IRoot(address(ROOT_OLD));
         IRoot rootNew = IRoot(address(ROOT_NEW));
         IPoolManager poolManager = IPoolManager(address(POOLMANAGER));
-        IInvestmentManager investmentManagerOld = IInvestmentManager(address(INVESTMENTMANAGER_OLD));
         ITranche trancheTokenOld = ITranche(TRANCHE_TOKEN_OLD);
+        IInvestmentManager investmentManagerOld = IInvestmentManager(address(INVESTMENTMANAGER_OLD));
+        rootOld.relyContract(address(investmentManagerOld), self);
 
         // deploy new tranche token
         rootNew.relyContract(address(POOLMANAGER), self);
@@ -126,6 +127,11 @@ contract MigrationSpell {
         trancheTokenOld.file("symbol", SYMBOL_OLD);
 
         // denies
+        rootNew.denyContract(address(POOLMANAGER), self);
+        rootNew.denyContract(address(trancheTokenNew), self);
+        rootOld.denyContract(address(investmentManagerOld), self);
+        rootOld.deny(self);
+        rootNew.deny(self);
     }
 
     function getNumberOfMigratedMembers() public view returns (uint256) {
