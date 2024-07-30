@@ -2,6 +2,7 @@
 pragma solidity 0.8.26;
 
 import {Guardian} from "src/admin/Guardian.sol";
+import {Auth} from "src/Auth.sol";
 import "./MigrationSpell-mainnet.sol";
 import "forge-std/Test.sol";
 import "forge-std/StdJson.sol";
@@ -75,11 +76,11 @@ contract MigrationSpellTest is Test {
         assertEq(trancheTokenOld.symbol(), spell.SYMBOL_OLD());
 
         // assert denies
-        assertEq(spell.POOLMANAGER().wards(address(spell)), 0);
-        assertEq(spell.trancheTokenNew().wards(address(spell)), 0);
-        assertEq(spell.INVESTMENTMANAGER_OLD().wards(address(spell)), 0);
-        assertEq(spell.ROOT_OLD().wards(address(spell)), 0);
-        assertEq(spell.ROOT_NEW().wards(address(spell)), 0);
+        assertEq(Auth(spell.POOLMANAGER()).wards(address(spell)), 0);
+        assertEq(Auth(address(spell.trancheTokenNew())).wards(address(spell)), 0);
+        assertEq(Auth(spell.INVESTMENTMANAGER_OLD()).wards(address(spell)), 0);
+        assertEq(Auth(spell.ROOT_OLD()).wards(address(spell)), 0);
+        assertEq(Auth(spell.ROOT_NEW()).wards(address(spell)), 0);
     }
 
     function _loadDeployment(string memory folder, string memory name) internal {

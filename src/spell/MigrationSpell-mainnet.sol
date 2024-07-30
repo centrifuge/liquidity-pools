@@ -6,6 +6,7 @@ import {RestrictionUpdate} from "src/interfaces/token/IRestrictionManager.sol";
 import {ITranche} from "src/interfaces/token/ITranche.sol";
 import {IInvestmentManager} from "src/interfaces/IInvestmentManager.sol";
 import {CastLib} from "src/libraries/CastLib.sol";
+import {IAuth} from "src/interfaces/IAuth.sol";
 
 interface ITrancheOld {
     function authTransferFrom(address from, address to, uint256 value) external returns (bool);
@@ -130,8 +131,8 @@ contract MigrationSpell {
         rootNew.denyContract(address(POOLMANAGER), self);
         rootNew.denyContract(address(trancheTokenNew), self);
         rootOld.denyContract(address(investmentManagerOld), self);
-        rootOld.deny(self);
-        rootNew.deny(self);
+        IAuth(address(rootOld)).deny(self);
+        IAuth(address(rootNew)).deny(self);
     }
 
     function getNumberOfMigratedMembers() public view returns (uint256) {
