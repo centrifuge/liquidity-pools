@@ -97,7 +97,7 @@ contract AdminTest is BaseTest {
 
         guardian.pause();
         vm.expectRevert("Gateway/paused");
-        centrifugeChain.incomingTransfer(assetId, sender, bytes32(bytes20(recipient)), amount);
+        centrifugeChain.incomingTransfer(assetId, bytes32(bytes20(recipient)), amount);
     }
 
     function testUnpausingResumesFunctionality(
@@ -129,7 +129,7 @@ contract AdminTest is BaseTest {
         poolManager.transferAssets(address(erc20), bytes32(bytes20(recipient)), amount);
         assertEq(erc20.balanceOf(address(poolManager.escrow())), amount);
 
-        centrifugeChain.incomingTransfer(assetId, sender, bytes32(bytes20(recipient)), amount);
+        centrifugeChain.incomingTransfer(assetId, bytes32(bytes20(recipient)), amount);
         assertEq(erc20.balanceOf(address(poolManager.escrow())), 0);
         assertEq(erc20.balanceOf(recipient), amount);
     }

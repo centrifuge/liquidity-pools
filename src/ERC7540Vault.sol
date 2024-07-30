@@ -404,11 +404,12 @@ contract ERC7540Vault is Auth, IERC7540Vault {
     }
 
     // --- Helpers ---
-    /// @notice Price of 1 unit of share, quoted in the decimals of the asset
+    /// @notice Price of 1 unit of share, quoted in the decimals of the asset.
     function pricePerShare() external view returns (uint256) {
         return convertToAssets(10 ** shareDecimals);
     }
 
+    /// @notice Returns timestamp of the last share price update.
     function priceLastUpdated() external view returns (uint64) {
         return manager.priceLastUpdated(address(this));
     }
@@ -418,6 +419,7 @@ contract ERC7540Vault is Auth, IERC7540Vault {
         return ITranche(share).checkTransferRestriction(address(0), controller, 0);
     }
 
+    /// @notice Ensures msg.sender can operate on behalf of controller.
     function validateController(address controller) internal view {
         require(controller == msg.sender || isOperator[controller][msg.sender], "ERC7540Vault/invalid-controller");
     }
