@@ -14,7 +14,7 @@ contract MigrationSpellTest is Test {
 
     // set this variables custom for each network
     Guardian guardianOld = Guardian(address(0x2559998026796Ca6fd057f3aa66F2d6ecdEd9028));
-    Guardian guardianNew = Guardian(address(0x0000000000000000000000000000000000000000)); // Todo set address
+    Guardian guardianNew = Guardian(address(0x0000000000000000000000000000000000000000)); // TODO set address
     address adminMultiSig = 0xD9D30ab47c0f096b0AA67e9B8B1624504a63e7FD;
 
     address self;
@@ -33,11 +33,11 @@ contract MigrationSpellTest is Test {
     function testMigration() public {
         // check if spell is migrating all the current token holders
         uint256 holdersSupplySum;
-        uint256[] memory trancheTokenHolderBalancesOld = new uint256[](spell.getNumberOfMigratedHolders());
+        uint256[] memory trancheTokenHolderBalancesOld = new uint256[](spell.getNumberOfMigratedMembers());
         uint256 balanceOld;
 
-        for (uint8 i; i < spell.getNumberOfMigratedHolders(); i++) {
-            balanceOld = trancheTokenOld.balanceOf(spell.trancheTokenHolders(i));
+        for (uint8 i; i < spell.getNumberOfMigratedMembers(); i++) {
+            balanceOld = trancheTokenOld.balanceOf(spell.memberlistMembers(i));
             trancheTokenHolderBalancesOld[i] = balanceOld;
             holdersSupplySum += balanceOld;
         }
@@ -58,12 +58,12 @@ contract MigrationSpellTest is Test {
 
         // for all holders check if balance was migrated correctly
         uint256 balanceNew;
-        for (uint8 i; i < spell.getNumberOfMigratedHolders(); i++) {
-            balanceNew = spell.trancheTokenNew().balanceOf(spell.trancheTokenHolders(i));
+        for (uint8 i; i < spell.getNumberOfMigratedMembers(); i++) {
+            balanceNew = spell.trancheTokenNew().balanceOf(spell.memberlistMembers(i));
             // assert users new token balance equals old token balance
             assertEq(trancheTokenHolderBalancesOld[i], balanceNew);
             // assert old tokens got removed from user wallet
-            assertEq(trancheTokenOld.balanceOf(spell.trancheTokenHolders(i)), 0);
+            assertEq(trancheTokenOld.balanceOf(spell.memberlistMembers(i)), 0);
         }
         // assert total new supply equeals total old supply
         assertEq(spell.trancheTokenNew().totalSupply(), holdersSupplySum);
