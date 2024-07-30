@@ -59,5 +59,5 @@ echo "poolManager: $poolManager"
 echo "restrictionManager: $restrictionManager"
 echo "token decimals: $decimals"
 forge verify-contract --constructor-args $(cast abi-encode "constructor(address, address)" $root $deployer) --watch --etherscan-api-key $ETHERSCAN_KEY $contract_address src/token/RestrictionManager.sol:RestrictionManager --verifier-url $VERIFIER_URL --chain $CHAIN_ID
-forge verify-contract --constructor-args $(cast abi-encode "constructor(uint8)" $decimals) --watch --etherscan-api-key $ETHERSCAN_KEY $contract_address src/token/Tranche.sol:Tranche --verifier-url $VERIFIER_URL --chain $CHAIN_ID
+forge verify-contract --constructor-args $(cast abi-encode "constructor(uint8)" $decimals) --watch --etherscan-api-key $ETHERSCAN_KEY $share src/token/Tranche.sol:Tranche --verifier-url $VERIFIER_URL --chain $CHAIN_ID
 forge verify-contract --constructor-args $(cast abi-encode "constructor(uint64,bytes16,address,address,address,address,address)" $poolId $trancheId $asset $share $root $escrow $investmentManager) --watch --etherscan-api-key $ETHERSCAN_KEY $contract_address src/ERC7540Vault.sol:ERC7540Vault --verifier-url $VERIFIER_URL --chain $CHAIN_ID
