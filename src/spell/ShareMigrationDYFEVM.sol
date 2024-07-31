@@ -64,15 +64,6 @@ contract MigrationSpell {
         execute();
     }
 
-    function testCast(address ROOT_NEW_, address POOLMANAGER_, address RESTRICTIONMANAGER_) public {
-        require(!done, "spell-already-cast");
-        done = true;
-        ROOT_NEW = ROOT_NEW_;
-        POOLMANAGER = POOLMANAGER_;
-        RESTRICTIONMANAGER = RESTRICTIONMANAGER_;
-        execute();
-    }
-
     function execute() internal {
         self = address(this);
         IRoot rootOld = IRoot(address(ROOT_OLD));

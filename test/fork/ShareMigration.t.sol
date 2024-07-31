@@ -10,13 +10,24 @@ import {CastLib} from "src/libraries/CastLib.sol";
 import {MathLib} from "src/libraries/MathLib.sol";
 import {IInvestmentManager} from "src/interfaces/IInvestmentManager.sol";
 import {Auth} from "src/Auth.sol";
-import {MigrationSpell} from "src/spell/ShareMigrationDYFEVM.sol";
+import {MigrationSpell} from "src/spell/ShareMigrationLTFBase.sol";
 import "forge-std/Test.sol";
 import "forge-std/StdJson.sol";
 import "script/Deployer.sol";
 
 interface TrancheTokenOld {
     function authTransferFrom(address from, address to, uint256 value) external returns (bool);
+}
+
+contract TestableSpell is MigrationSpell {
+    function testCast(address root, address poolManager, address restrictionManager) public {
+        require(!done, "spell-already-cast");
+        done = true;
+        ROOT_NEW = root;
+        POOLMANAGER = poolManager;
+        RESTRICTIONMANAGER = restrictionManager;
+        execute();
+    }
 }
 
 contract ForkTest is Deployer, Test {
@@ -31,25 +42,39 @@ contract ForkTest is Deployer, Test {
     Root rootOld;
     mapping(address => uint256) balancesOld;
 
-    MigrationSpell spell;
+    TestableSpell spell;
 
     address self;
 
     function setUp() public virtual {
         self = address(this);
 
-        spell = new MigrationSpell();
+        spell = new TestableSpell();
 
-        _loadDeployment("mainnet", "ethereum-mainnet"); // Mainnet
+        _loadDeployment("mainnet", "base-mainnet"); // Mainnet
         _loadFork(0);
         trancheTokenToMigrate = Tranche(address(spell.TRANCHE_TOKEN_OLD())); // Anemoy Liquid Treasury Fund 1 (LTF)
         guardianOld = Guardian(spell.GUARDIAN_OLD());
         rootOld = Root(spell.ROOT_OLD());
 
-        deployNewContracts(); // Deploy Liquidity Pools v2
     }
 
-    function testShareMigration() public {
+    function testShareMigrationAgainstRealDeployment() public {
+        address ROOT = 0x468CBaA7b44851C2426b58190030162d18786b6d;
+        address POOLMANAGER = 0x7829E5ca4286Df66e9F58160544097dB517a3B8c;
+        address RESTRICTIONMANAGER = 0xd35ec9Bd13bC4483D47c850298D5C285C8D1Ec22;
+        address GUARDIAN = 0xA0e3A5709995eF9900ab0F7FA070567Fe89d9e18;
+        guardian = Guardian(GUARDIAN);
+        root = Root(ROOT);
+        migrateShares(ROOT, POOLMANAGER, RESTRICTIONMANAGER);
+    }
+
+    function testShareMigrationAgainstMockDeployment() public {
+        deployNewContracts(); // Deploy Liquidity Pools v2
+        migrateShares(address(root), address(poolManager), address(restrictionManager));
+    }
+
+    function migrateShares(address root, address poolManager, address restrictionManager) internal {
         uint256 totalSupplyOld = 0;
         for (uint8 i; i < spell.getNumberOfMigratedMembers(); i++) {
             totalSupplyOld += trancheTokenToMigrate.balanceOf(spell.memberlistMembers(i));
@@ -66,7 +91,7 @@ contract ForkTest is Deployer, Test {
         // warp delay time = 48H & exec relies
         vm.warp(block.timestamp + 2 days);
         rootOld.executeScheduledRely(address(spell));
-        root.executeScheduledRely(address(spell));
+        Root(root).executeScheduledRely(address(spell));
 
         
         for (uint8 i; i < spell.getNumberOfMigratedMembers(); i++) {
@@ -80,7 +105,7 @@ contract ForkTest is Deployer, Test {
 
         spell.testCast(address(root), address(poolManager), address(restrictionManager));
 
-        Tranche trancheToken = Tranche(address(poolManager.getTranche(spell.POOL_ID(), spell.TRANCHE_ID())));
+        Tranche trancheToken = Tranche(address(PoolManager(poolManager).getTranche(spell.POOL_ID(), spell.TRANCHE_ID())));
 
         // check if all holders have been migrated correctly
         uint256 totalSupplyNew = 0;
