@@ -2,7 +2,7 @@
     "chainId": 8453,
     "rpcUrl": "https://mainnet.base.org",
     "config": {
-        "commitHash": "2f07d3129172af3ee47463c03a253b4a8b24d824",
+        "commitHash": "3e77fade7c74285a0f4d97d94e62d11b21e52260",
         "deployer": "0x7270b20603FbB3dF0921381670fbd62b9991aDa4",
         "admin": "0x8b83962fB9dB346a20c95D98d4E312f17f4C0d9b",
         "adminSigners": [
@@ -15,34 +15,30 @@
             "0xc4576CE4603552c5BeAa056c449b0795D48fcf92",
             "0x790c2c860DDC993f3da92B19cB440cF8338C59a6"
         ],
-        "pausers": [
-            "0x9eDec77dd2651Ce062ab17e941347018AD4eAEA9",
-            "0x790c2c860DDC993f3da92B19cB440cF8338C59a6",
-            "0x2F1724cc5005F376411747dFE24fb7412f5955B1",
-            "0x3cE760441A4E9BD2c40A69d39A472052Ac14e0D9"
-        ],
         "adapter": {
             "name": "Axelar",
-            "axelarGateway": "0xe432150cce91c13a887f7D836923d5597adD8E31"
+            "axelarGateway": "0xe432150cce91c13a887f7D836923d5597adD8E31",
+            "axelarGasService": "0x2d5d7d31F671F86C782533cc367F14109a082712"
         },
-        "deploymentSalt": "e416b338a274162320c79445ae6604141d1cb08275eb27011b69f002dc094d05",
+        "deploymentSalt": "0x7270b20603fbb3df0921381670fbd62b9991ada41f42d38010d7f928ca170010",
         "etherscanUrl": "https://api.basescan.org/api/"
     },
     "contracts": {
-        "root": "0x498016d30Cd5f0db50d7ACE329C07313a0420502",
-        "investmentManager": "0xbBF0AB988691dB1892ADaF7F0eF560Ca4c6DD73A",
-        "poolManager": "0x78E9e622A57f70F1E0Ec652A4931E4e278e58142",
-        "gateway": "0x634F036fE66579E901c7bA34e33DF422E37A0037",
-        "escrow": "0xd595E1483c507E74E2E6A3dE8e7D08d8f6F74936",
-        "userEscrow": "0x9fc3A3bcEdc1CaB14EfC1B7ef45dFBDd3d17c9d7",
-        "adapter": "0x8174D5f12Ce682459864D8C081f9635012Ab51c2",
-        "trancheFactory": "0x2d60cd1527073419423B14666E2D43C1Cf28B152",
-        "liquidityPoolFactory": "0x77F48b2c942E6f3ac2232568d560e423c441386a",
-        "restrictionManagerFactory": "0xf4D7F6919eF0B495a2551F7299324961F29aE7aC",
-        "pauseAdmin": "0xce86472007Ea37a5d0208f8C1559A37530c8067C",
-        "delayedAdmin": "0x2559998026796Ca6fd057f3aa66F2d6ecdEd9028",
-        "messages": "0xAf9F6Ac63C057EB7F59b6Fae2c3d447191b58Ea5"
+        "escrow": "0x000000E5cADeB42DeA6965ebE33AF4b9238D306a",
+        "routerEscrow": "0x75A10760aA20CE1cE974C001037CCFb76EF7e76B",
+        "root": "0x468CBaA7b44851C2426b58190030162d18786b6d",
+        "erc7540VaultFactory": "0xE79f06573d6aF1B66166A926483ba00924285d20",
+        "restrictionManager": "0xd35ec9Bd13bC4483D47c850298D5C285C8D1Ec22",
+        "trancheFactory": "0x523B1332d0232c497F56F7C7A478168fee167069",
+        "investmentManager": "0x3C9C09C4Cfda9D2c35142AAea706E9FC9EA28F27",
+        "poolManager": "0x7829E5ca4286Df66e9F58160544097dB517a3B8c",
+        "transferProxyFactory": "0x0dF9cDcecaa4EFf9F8efeF63b4459d2f9ce84705",
+        "gasService": "0x09ab10a9c3E6Eac1d18270a2322B6113F4C7f5E8",
+        "gateway": "0xBbAF0E2Be11E90B92EA0929e7Bda28f5Bdb22d29",
+        "centrifugeRouter": "0x54836E16AB6bA542A1EeA2e64E05b3eb6a2fca7B",
+        "guardian": "0xA0e3A5709995eF9900ab0F7FA070567Fe89d9e18",
+        "adapter": "0x4A6A7a018858155353aA791787453718658B5386"
     },
-    "deploymentBlock": 8053054,
+    "deploymentBlock": 17834134,
     "isTestnet": false
 }
