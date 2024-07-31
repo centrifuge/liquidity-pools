@@ -57,7 +57,7 @@ contract MigrationSpellTest is Test {
         // cast spell
         spell.cast();
 
-        // for all holders check if balance was migrated correctly
+        // for all members check if balance was migrated correctly
         uint256 balanceNew;
         for (uint8 i; i < spell.getNumberOfMigratedMembers(); i++) {
             balanceNew = spell.trancheTokenNew().balanceOf(spell.memberlistMembers(i));
@@ -66,6 +66,8 @@ contract MigrationSpellTest is Test {
             // assert old tokens got removed from user wallet
             assertEq(trancheTokenOld.balanceOf(spell.memberlistMembers(i)), 0);
         }
+        // assert all old tokens were claimed from escrow
+        assertEq(trancheTokenOld.balanceOf(spell.ESCROW_OLD()), 0);
         // assert total new supply equeals total old supply
         assertEq(spell.trancheTokenNew().totalSupply(), holdersSupplySum);
         // assert all old tokens burned
@@ -74,6 +76,11 @@ contract MigrationSpellTest is Test {
         // assert renaming of old trancheToken worked
         assertEq(trancheTokenOld.name(), spell.NAME_OLD());
         assertEq(trancheTokenOld.symbol(), spell.SYMBOL_OLD());
+
+        // assert new trancheToken metadata
+        assertEq(spell.trancheTokenNew().name(), spell.NAME());
+        assertEq(spell.trancheTokenNew().symbol(), spell.SYMBOL());
+        assertEq(spell.trancheTokenNew().decimals(), spell.DECIMALS());
 
         // assert denies
         assertEq(Auth(spell.POOLMANAGER()).wards(address(spell)), 0);

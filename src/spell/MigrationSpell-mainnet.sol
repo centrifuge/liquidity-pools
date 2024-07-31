@@ -16,6 +16,9 @@ interface ITrancheOld {
 contract MigrationSpell {
     using CastLib for *;
 
+    address public constant CURRENCY = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48; // USDC
+    uint128 public constant CURRENCY_ID = 242333941209166991950178742833476896417;
+
     // addresses of the old liquidity pool deployment
     address public constant TRANCHE_TOKEN_OLD = 0x30baA3BA9D7089fD8D020a994Db75D14CF7eC83b;
     address public constant ROOT_OLD = 0x498016d30Cd5f0db50d7ACE329C07313a0420502;
@@ -56,7 +59,7 @@ contract MigrationSpell {
         0x86552B8d4F4a600D92d516eE8eA8B922EFEcB561
     ];
 
-    mapping(address => uint256) public validUntil;
+    mapping(address => uint64) public validUntil;
     bool public done;
     uint256 constant ONE = 10 ** 27;
     address self;
@@ -90,9 +93,10 @@ contract MigrationSpell {
         rootNew.relyContract(address(POOLMANAGER), self);
         poolManager.addPool(POOL_ID);
         poolManager.addTranche(POOL_ID, TRANCHE_ID, NAME, SYMBOL, DECIMALS, RESTRICTIONMANAGER);
+        poolManager.addAsset(CURRENCY_ID, CURRENCY);
+        poolManager.allowAsset(POOL_ID, CURRENCY_ID);
         trancheTokenNew = ITranche(poolManager.deployTranche(POOL_ID, TRANCHE_ID));
         rootNew.relyContract(address(trancheTokenNew), self);
-
 
         // add all old members to new memberlist and claim any tokens
         uint256 holderBalance;
@@ -103,13 +107,20 @@ contract MigrationSpell {
                 POOL_ID,
                 TRANCHE_ID,
                 abi.encodePacked(
-                    uint8(RestrictionUpdate.UpdateMember), address(memberlistMembers[i]).toBytes32(), validUntil[memberlistMembers[i]]
+                    uint8(RestrictionUpdate.UpdateMember),
+                    address(memberlistMembers[i]).toBytes32(),
+                    validUntil[memberlistMembers[i]]
                 )
             );
 
             if (escrowBalance > 0) {
                 // Claim any unclaimed tokens the user may have
-                investmentManagerOld.mint(VAULT_OLD, investmentManagerOld.maxMint(VAULT_OLD, memberlistMembers[i]), memberlistMembers[i], memberlistMembers[i]);
+                investmentManagerOld.mint(
+                    VAULT_OLD,
+                    investmentManagerOld.maxMint(VAULT_OLD, memberlistMembers[i]),
+                    memberlistMembers[i],
+                    memberlistMembers[i]
+                );
             }
             holderBalance = trancheTokenOld.balanceOf(memberlistMembers[i]);
             if (holderBalance > 0) {
@@ -133,6 +144,8 @@ contract MigrationSpell {
         rootOld.denyContract(address(investmentManagerOld), self);
         IAuth(address(rootOld)).deny(self);
         IAuth(address(rootNew)).deny(self);
+
+        poolManager.deployVault(POOL_ID, TRANCHE_ID, CURRENCY);
     }
 
     function getNumberOfMigratedMembers() public view returns (uint256) {
