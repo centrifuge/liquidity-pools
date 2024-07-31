@@ -6,10 +6,11 @@ display_help() {
     echo 
     echo "This script verifies the vault contract and its associated tranche and restriction manager contracts."
     echo
-    echo "Usage: $0 contract_address"
+    echo "Usage: $0 contract_address deployer"
     echo
     echo "Arguments:"
     echo "  contract_address      The address of the vault to verify"
+    echo "  deployer              The address of the deployer"
     echo
     echo "Required Environment Variables:"
     echo "  RPC_URL               The RPC URL"
@@ -30,6 +31,7 @@ if [ -z "$RPC_URL" ] || [ -z "$ETHERSCAN_KEY" ] || [ -z "$VERIFIER_URL" ] || [ -
 fi
 
 contract_address=$1
+deployer=$2
 
 if ! cast call $contract_address 'share()(address)' --rpc-url $RPC_URL &> /dev/null; then
     echo "Error: Must pass a vault address."
@@ -56,6 +58,6 @@ echo "investmentManager: $investmentManager"
 echo "poolManager: $poolManager"
 echo "restrictionManager: $restrictionManager"
 echo "token decimals: $decimals"
-forge verify-contract --constructor-args $(cast abi-encode "constructor(address, address)" $root $share) --watch --etherscan-api-key $ETHERSCAN_KEY $contract_address src/token/RestrictionManager.sol:RestrictionManager --verifier-url $VERIFIER_URL --chain $CHAIN_ID
-forge verify-contract --constructor-args $(cast abi-encode "constructor(uint8)" $decimals) --watch --etherscan-api-key $ETHERSCAN_KEY $contract_address src/token/Tranche.sol:Tranche --verifier-url $VERIFIER_URL --chain $CHAIN_ID
+forge verify-contract --constructor-args $(cast abi-encode "constructor(address, address)" $root $deployer) --watch --etherscan-api-key $ETHERSCAN_KEY $contract_address src/token/RestrictionManager.sol:RestrictionManager --verifier-url $VERIFIER_URL --chain $CHAIN_ID
+forge verify-contract --constructor-args $(cast abi-encode "constructor(uint8)" $decimals) --watch --etherscan-api-key $ETHERSCAN_KEY $share src/token/Tranche.sol:Tranche --verifier-url $VERIFIER_URL --chain $CHAIN_ID
 forge verify-contract --constructor-args $(cast abi-encode "constructor(uint64,bytes16,address,address,address,address,address)" $poolId $trancheId $asset $share $root $escrow $investmentManager) --watch --etherscan-api-key $ETHERSCAN_KEY $contract_address src/ERC7540Vault.sol:ERC7540Vault --verifier-url $VERIFIER_URL --chain $CHAIN_ID
