@@ -3,7 +3,7 @@ pragma solidity 0.8.26;
 
 import {Guardian} from "src/admin/Guardian.sol";
 import {Auth} from "src/Auth.sol";
-import "./MigrationSpell-mainnet.sol";
+import "./ShareMigrationLTFEVM.sol";
 import "forge-std/Test.sol";
 import "forge-std/StdJson.sol";
 
