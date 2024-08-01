@@ -10,7 +10,13 @@ import {CastLib} from "src/libraries/CastLib.sol";
 import {MathLib} from "src/libraries/MathLib.sol";
 import {IInvestmentManager} from "src/interfaces/IInvestmentManager.sol";
 import {Auth} from "src/Auth.sol";
-import {MigrationSpell} from "src/spell/ShareMigration_LTF_EVM.sol";
+import {MigrationSpell as LTF_EVM} from "src/spell/ShareMigration_LTF_EVM.sol";
+import {MigrationSpell as DYF_EVM} from "src/spell/ShareMigration_DYF_EVM.sol";
+import {MigrationSpell as NS3SR_EVM} from "src/spell/ShareMigration_NS3SR_EVM.sol";
+import {MigrationSpell as NS3JR_EVM} from "src/spell/ShareMigration_NS3JR_EVM.sol";
+import {MigrationSpell as LTF_Base} from "src/spell/ShareMigration_LTF_Base.sol";
+import {MigrationSpell as LTF_Celo} from "src/spell/ShareMigration_LTF_Celo.sol";
+import {MigrationSpellBase} from "src/spell/MigrationSpellBase.sol";
 import "forge-std/Test.sol";
 import "forge-std/StdJson.sol";
 import "script/Deployer.sol";
@@ -28,7 +34,31 @@ interface TrancheTokenOld {
     function authTransferFrom(address from, address to, uint256 value) external returns (bool);
 }
 
-contract TestableSpell is MigrationSpell {
+contract TestableSpell is MigrationSpellBase {
+    constructor(MigrationSpellBase _baseSpell) {
+        // Copy all the properties from the base spell
+        NETWORK = _baseSpell.NETWORK();
+        ROOT_OLD = _baseSpell.ROOT_OLD();
+        ADMIN_MULTISIG = _baseSpell.ADMIN_MULTISIG();
+        GUARDIAN_OLD = _baseSpell.GUARDIAN_OLD();
+        VAULT_OLD = _baseSpell.VAULT_OLD();
+        ROOT_NEW = _baseSpell.ROOT_NEW();
+        GUARDIAN_NEW = _baseSpell.GUARDIAN_NEW();
+        POOLMANAGER_NEW = _baseSpell.POOLMANAGER_NEW();
+        RESTRICTIONMANAGER_NEW = _baseSpell.RESTRICTIONMANAGER_NEW();
+        NAME = _baseSpell.NAME();
+        SYMBOL = _baseSpell.SYMBOL();
+        NAME_OLD = _baseSpell.NAME_OLD();
+        SYMBOL_OLD = _baseSpell.SYMBOL_OLD();
+
+        uint256 memberCount = _baseSpell.getNumberOfMigratedMembers();
+        for (uint256 i = 0; i < memberCount; i++) {
+            address member = _baseSpell.memberlistMembers(i);
+            memberlistMembers.push(member);
+            validUntil[member] = _baseSpell.validUntil(member);
+        }
+    }
+
     function testCast(address root, address poolManager, address restrictionManager) public {
         ROOT_NEW = root;
         POOLMANAGER_NEW = poolManager;
@@ -58,119 +88,381 @@ contract ForkTest is Deployer, Test {
     using CastLib for *;
     using stdJson for string;
 
-    string[] deployments;
-    Tranche trancheTokenToMigrate;
-    Guardian guardianOld;
-    Root rootOld;
-    mapping(address => uint256) balancesOld;
-
-    TestableSpell spell;
-
     address self;
+    mapping(address => uint256) balancesOld;
+    string[] deployments;
+
+    struct MigrationContext {
+        TestableSpell spell;
+        IVaultOld vaultOld;
+        Tranche trancheTokenToMigrate;
+        Tranche trancheToken;
+        uint64 poolId;
+        bytes16 trancheId;
+        uint256 totalSupplyOld;
+        uint256 totalSupplyNew;
+    }
 
     function setUp() public virtual {
         self = address(this);
+    }
 
-        spell = new TestableSpell();
-
+    function test_LTF_EVM_MigrationAgainstRealDeployment() public {
+        TestableSpell spell = new TestableSpell(new LTF_EVM());
         _loadDeployment("mainnet", spell.NETWORK());
         _loadFork(0);
-        IVaultOld vaultOld = IVaultOld(spell.VAULT_OLD());
-        trancheTokenToMigrate = Tranche(vaultOld.share());
-        guardianOld = Guardian(spell.GUARDIAN_OLD());
-        rootOld = Root(spell.ROOT_OLD());
-    }
-
-    function testShareMigrationAgainstRealDeployment() public {
-        guardian = Guardian(spell.GUARDIAN_NEW());
-        root = Root(spell.ROOT_NEW());
-        migrateShares(spell.ROOT_NEW(), spell.POOLMANAGER_NEW(), spell.RESTRICTIONMANAGER_NEW(), spell.ADMIN_MULTISIG());
-    }
-
-    function testShareMigrationAgainstMockDeployment() public {
-        deployNewContracts(); // Deploy Liquidity Pools v2
-        migrateShares(
-            address(root), address(poolManager), address(restrictionManager), 0xD9D30ab47c0f096b0AA67e9B8B1624504a63e7FD
+        MigrationContext memory ctx = migrateSharesPartOne(
+            spell,
+            spell.ROOT_NEW(),
+            spell.POOLMANAGER_NEW(),
+            spell.RESTRICTIONMANAGER_NEW(),
+            spell.ADMIN_MULTISIG(),
+            spell.GUARDIAN_NEW()
         );
+        migrateSharesPartTwo(ctx, spell.ROOT_NEW(), spell.POOLMANAGER_NEW(), spell.RESTRICTIONMANAGER_NEW());
     }
 
-    function migrateShares(address root, address poolManager, address restrictionManager, address adminMultisig)
-        internal
-    {
-        uint256 totalSupplyOld = 0;
-        for (uint8 i; i < spell.getNumberOfMigratedMembers(); i++) {
-            totalSupplyOld += trancheTokenToMigrate.balanceOf(spell.memberlistMembers(i));
-        }
-        // Check that total supply is accounted for
-        assertEq(trancheTokenToMigrate.totalSupply(), totalSupplyOld);
+    function test_LTF_EVM_MigrationAgainstMockDeployment() public {
+        TestableSpell spell = new TestableSpell(new LTF_EVM());
+        _loadDeployment("mainnet", spell.NETWORK());
+        _loadFork(0);
+        deployNewContracts();
+        MigrationContext memory ctx = migrateSharesPartOne(
+            spell,
+            address(root),
+            address(poolManager),
+            address(restrictionManager),
+            0xD9D30ab47c0f096b0AA67e9B8B1624504a63e7FD,
+            address(guardian)
+        );
+        migrateSharesPartTwo(ctx, address(root), address(poolManager), address(restrictionManager));
+    }
 
-        // get auth on old TrancheToken through DelayedAdmin - simulate governance
-        vm.prank(spell.ADMIN_MULTISIG());
-        guardianOld.scheduleRely(address(spell));
-        // get auth on new TrancheToken through Guardian - simulate governance
-        // Deployer.sol always sets adminSafe to the EVM multisig, so we override the spell's multisig here during mock
-        // deployments
-        vm.prank(adminMultisig);
-        guardian.scheduleRely(address(spell));
-        // warp delay time = 48H & exec relies
-        vm.warp(block.timestamp + 2 days);
-        rootOld.executeScheduledRely(address(spell));
-        Root(root).executeScheduledRely(address(spell));
+    function test_DYF_EVM_MigrationAgainstRealDeployment() public {
+        TestableSpell spell = new TestableSpell(new DYF_EVM());
+        _loadDeployment("mainnet", spell.NETWORK());
+        _loadFork(0);
+        MigrationContext memory ctx = migrateSharesPartOne(
+            spell,
+            spell.ROOT_NEW(),
+            spell.POOLMANAGER_NEW(),
+            spell.RESTRICTIONMANAGER_NEW(),
+            spell.ADMIN_MULTISIG(),
+            spell.GUARDIAN_NEW()
+        );
+        migrateSharesPartTwo(ctx, spell.ROOT_NEW(), spell.POOLMANAGER_NEW(), spell.RESTRICTIONMANAGER_NEW());
+    }
 
-        IVaultOld vaultOld = IVaultOld(spell.VAULT_OLD());
-        uint64 poolId = vaultOld.poolId();
-        bytes16 trancheId = vaultOld.trancheId();
+    function test_DYF_EVM_MigrationAgainstMockDeployment() public {
+        TestableSpell spell = new TestableSpell(new DYF_EVM());
+        _loadDeployment("mainnet", spell.NETWORK());
+        _loadFork(0);
+        deployNewContracts();
+        MigrationContext memory ctx = migrateSharesPartOne(
+            spell,
+            address(root),
+            address(poolManager),
+            address(restrictionManager),
+            0xD9D30ab47c0f096b0AA67e9B8B1624504a63e7FD,
+            address(guardian)
+        );
+        migrateSharesPartTwo(ctx, address(root), address(poolManager), address(restrictionManager));
+    }
 
-        for (uint8 i; i < spell.getNumberOfMigratedMembers(); i++) {
-            if (spell.memberlistMembers(i) != vaultOld.escrow()) {
-                uint256 maxMint =
-                    IInvestmentManager(vaultOld.manager()).maxMint(spell.VAULT_OLD(), spell.memberlistMembers(i));
-                balancesOld[spell.memberlistMembers(i)] =
-                    trancheTokenToMigrate.balanceOf(spell.memberlistMembers(i)) + maxMint;
-            }
-        }
+    function test_NS3SR_EVM_MigrationAgainstRealDeployment() public {
+        TestableSpell spell = new TestableSpell(new NS3SR_EVM());
+        _loadDeployment("mainnet", spell.NETWORK());
+        _loadFork(0);
+        MigrationContext memory ctx = migrateSharesPartOne(
+            spell,
+            spell.ROOT_NEW(),
+            spell.POOLMANAGER_NEW(),
+            spell.RESTRICTIONMANAGER_NEW(),
+            spell.ADMIN_MULTISIG(),
+            spell.GUARDIAN_NEW()
+        );
+        migrateSharesPartTwo(ctx, spell.ROOT_NEW(), spell.POOLMANAGER_NEW(), spell.RESTRICTIONMANAGER_NEW());
+    }
+
+    function test_NS3SR_EVM_MigrationAgainstMockDeployment() public {
+        TestableSpell spell = new TestableSpell(new NS3SR_EVM());
+        _loadDeployment("mainnet", spell.NETWORK());
+        _loadFork(0);
+        deployNewContracts();
+        MigrationContext memory ctx = migrateSharesPartOne(
+            spell,
+            address(root),
+            address(poolManager),
+            address(restrictionManager),
+            0xD9D30ab47c0f096b0AA67e9B8B1624504a63e7FD,
+            address(guardian)
+        );
+        migrateSharesPartTwo(ctx, address(root), address(poolManager), address(restrictionManager));
+    }
+
+    function test_NS3JR_EVM_MigrationAgainstRealDeployment() public {
+        TestableSpell spell = new TestableSpell(new NS3JR_EVM());
+        _loadDeployment("mainnet", spell.NETWORK());
+        _loadFork(0);
+        MigrationContext memory ctx = migrateSharesPartOne(
+            spell,
+            spell.ROOT_NEW(),
+            spell.POOLMANAGER_NEW(),
+            spell.RESTRICTIONMANAGER_NEW(),
+            spell.ADMIN_MULTISIG(),
+            spell.GUARDIAN_NEW()
+        );
+        migrateSharesPartTwo(ctx, spell.ROOT_NEW(), spell.POOLMANAGER_NEW(), spell.RESTRICTIONMANAGER_NEW());
+    }
+
+    function test_NS3JR_EVM_MigrationAgainstMockDeployment() public {
+        TestableSpell spell = new TestableSpell(new NS3JR_EVM());
+        _loadDeployment("mainnet", spell.NETWORK());
+        _loadFork(0);
+        deployNewContracts();
+        MigrationContext memory ctx = migrateSharesPartOne(
+            spell,
+            address(root),
+            address(poolManager),
+            address(restrictionManager),
+            0xD9D30ab47c0f096b0AA67e9B8B1624504a63e7FD,
+            address(guardian)
+        );
+        migrateSharesPartTwo(ctx, address(root), address(poolManager), address(restrictionManager));
+    }
+
+    function test_LTF_Base_MigrationAgainstRealDeployment() public {
+        TestableSpell spell = new TestableSpell(new LTF_Base());
+        _loadDeployment("mainnet", spell.NETWORK());
+        _loadFork(0);
+        MigrationContext memory ctx = migrateSharesPartOne(
+            spell,
+            spell.ROOT_NEW(),
+            spell.POOLMANAGER_NEW(),
+            spell.RESTRICTIONMANAGER_NEW(),
+            spell.ADMIN_MULTISIG(),
+            spell.GUARDIAN_NEW()
+        );
+        migrateSharesPartTwo(ctx, spell.ROOT_NEW(), spell.POOLMANAGER_NEW(), spell.RESTRICTIONMANAGER_NEW());
+    }
+
+    function test_LTF_Base_MigrationAgainstMockDeployment() public {
+        TestableSpell spell = new TestableSpell(new LTF_Base());
+        _loadDeployment("mainnet", spell.NETWORK());
+        _loadFork(0);
+        deployNewContracts();
+        MigrationContext memory ctx = migrateSharesPartOne(
+            spell,
+            address(root),
+            address(poolManager),
+            address(restrictionManager),
+            0xD9D30ab47c0f096b0AA67e9B8B1624504a63e7FD,
+            address(guardian)
+        );
+        migrateSharesPartTwo(ctx, address(root), address(poolManager), address(restrictionManager));
+    }
+
+    function test_LTF_Celo_MigrationAgainstRealDeployment() public {
+        TestableSpell spell = new TestableSpell(new LTF_Celo());
+        _loadDeployment("mainnet", spell.NETWORK());
+        _loadFork(0);
+        MigrationContext memory ctx = migrateSharesPartOne(
+            spell,
+            spell.ROOT_NEW(),
+            spell.POOLMANAGER_NEW(),
+            spell.RESTRICTIONMANAGER_NEW(),
+            spell.ADMIN_MULTISIG(),
+            spell.GUARDIAN_NEW()
+        );
+        migrateSharesPartTwo(ctx, spell.ROOT_NEW(), spell.POOLMANAGER_NEW(), spell.RESTRICTIONMANAGER_NEW());
+    }
+
+    function test_LTF_Celo_MigrationAgainstMockDeployment() public {
+        TestableSpell spell = new TestableSpell(new LTF_Celo());
+        _loadDeployment("mainnet", spell.NETWORK());
+        _loadFork(0);
+        deployNewContracts();
+        MigrationContext memory ctx = migrateSharesPartOne(
+            spell,
+            address(root),
+            address(poolManager),
+            address(restrictionManager),
+            0xD9D30ab47c0f096b0AA67e9B8B1624504a63e7FD,
+            address(guardian)
+        );
+        migrateSharesPartTwo(ctx, address(root), address(poolManager), address(restrictionManager));
+    }
+
+    // function testAllEVMMigrationsAgainstRealDeployment() public {
+    //     TestableSpell spellLTF = new TestableSpell(new LTF_EVM());
+    //     _loadDeployment("mainnet", spellLTF.NETWORK());
+    //     _loadFork(0);
+    //     MigrationContext memory ctxLTF = migrateSharesPartOne(
+    //         spellLTF,
+    //         spellLTF.ROOT_NEW(),
+    //         spellLTF.POOLMANAGER_NEW(),
+    //         spellLTF.RESTRICTIONMANAGER_NEW(),
+    //         spellLTF.ADMIN_MULTISIG(),
+    //         spellLTF.GUARDIAN_NEW()
+    //     );
+    //     TestableSpell spellDYF = new TestableSpell(new DYF_EVM());
+    //     MigrationContext memory ctxDYF = migrateSharesPartOne(
+    //         spellDYF,
+    //         spellDYF.ROOT_NEW(),
+    //         spellDYF.POOLMANAGER_NEW(),
+    //         spellDYF.RESTRICTIONMANAGER_NEW(),
+    //         spellDYF.ADMIN_MULTISIG(),
+    //         spellDYF.GUARDIAN_NEW()
+    //     );
+    //     TestableSpell spellNS3SR = new TestableSpell(new NS3SR_EVM());
+    //     MigrationContext memory ctxNS3SR = migrateSharesPartOne(
+    //         spellNS3SR,
+    //         spellNS3SR.ROOT_NEW(),
+    //         spellNS3SR.POOLMANAGER_NEW(),
+    //         spellNS3SR.RESTRICTIONMANAGER_NEW(),
+    //         spellNS3SR.ADMIN_MULTISIG(),
+    //         spellNS3SR.GUARDIAN_NEW()
+    //     );
+    //     TestableSpell spellNS3JR = new TestableSpell(new NS3JR_EVM());
+    //     MigrationContext memory ctxNS3JR = migrateSharesPartOne(
+    //         spellNS3JR,
+    //         spellNS3JR.ROOT_NEW(),
+    //         spellNS3JR.POOLMANAGER_NEW(),
+    //         spellNS3JR.RESTRICTIONMANAGER_NEW(),
+    //         spellNS3JR.ADMIN_MULTISIG(),
+    //         spellNS3JR.GUARDIAN_NEW()
+    //     );
+    //     migrateSharesPartTwo(
+    //         ctxLTF,
+    //         spellLTF.ROOT_NEW(),
+    //         spellLTF.POOLMANAGER_NEW(),
+    //         spellLTF.RESTRICTIONMANAGER_NEW()
+    //     );
+    //     migrateSharesPartTwo(
+    //         ctxDYF,
+    //         spellDYF.ROOT_NEW(),
+    //         spellDYF.POOLMANAGER_NEW(),
+    //         spellDYF.RESTRICTIONMANAGER_NEW()
+    //     );
+    //     migrateSharesPartTwo(
+    //         ctxNS3SR,
+    //         spellNS3SR.ROOT_NEW(),
+    //         spellNS3SR.POOLMANAGER_NEW(),
+    //         spellNS3SR.RESTRICTIONMANAGER_NEW()
+    //     );
+    //     migrateSharesPartTwo(
+    //         ctxNS3JR,
+    //         spellNS3JR.ROOT_NEW(),
+    //         spellNS3JR.POOLMANAGER_NEW(),
+    //         spellNS3JR.RESTRICTIONMANAGER_NEW()
+    //     );
+    // }
+
+    function migrateSharesPartOne(
+        TestableSpell spell,
+        address root,
+        address poolManager,
+        address restrictionManager,
+        address adminMultisig,
+        address guardian
+    ) internal returns (MigrationContext memory ctx) {
+        MigrationContext memory ctx;
+        ctx.spell = spell;
+        ctx.vaultOld = IVaultOld(spell.VAULT_OLD());
+        ctx.trancheTokenToMigrate = Tranche(ctx.vaultOld.share());
+        ctx.poolId = ctx.vaultOld.poolId();
+        ctx.trancheId = ctx.vaultOld.trancheId();
+
+        setupAuthAndBalances(ctx, root, poolManager, restrictionManager, adminMultisig, guardian);
 
         spell.testCastPartOne(address(root), address(poolManager), address(restrictionManager));
 
         // assert vault and tranche were deployed
-        assertTrue(PoolManager(poolManager).getVault(poolId, trancheId, vaultOld.asset()) != address(0));
-        assertTrue(PoolManager(poolManager).getTranche(poolId, trancheId) != address(0));
+        assertTrue(PoolManager(poolManager).getVault(ctx.poolId, ctx.trancheId, ctx.vaultOld.asset()) != address(0));
+        assertTrue(PoolManager(poolManager).getTranche(ctx.poolId, ctx.trancheId) != address(0));
+        return ctx;
+    }
 
+    function migrateSharesPartTwo(
+        MigrationContext memory ctx,
+        address root,
+        address poolManager,
+        address restrictionManager
+    ) internal {
+        TestableSpell spell = ctx.spell;
         spell.testCastPartTwo(address(root), address(poolManager), address(restrictionManager));
 
-        Tranche trancheToken = Tranche(address(PoolManager(poolManager).getTranche(poolId, trancheId)));
+        ctx.trancheToken = Tranche(address(PoolManager(poolManager).getTranche(ctx.poolId, ctx.trancheId)));
 
-        // check if all holders have been migrated correctly
-        uint256 totalSupplyNew = 0;
-        for (uint8 i; i < spell.getNumberOfMigratedMembers(); i++) {
-            uint256 balanceNew = trancheToken.balanceOf(spell.memberlistMembers(i));
-            totalSupplyNew += balanceNew;
-            assertApproxEqAbs(trancheTokenToMigrate.balanceOf(spell.memberlistMembers(i)), 0, 1);
-            if (spell.memberlistMembers(i) != vaultOld.escrow()) {
-                assertApproxEqAbs(balanceNew, balancesOld[spell.memberlistMembers(i)], 1);
+        verifyMigration(ctx, root, poolManager);
+    }
+
+    function setupAuthAndBalances(
+        MigrationContext memory ctx,
+        address root,
+        address poolManager,
+        address restrictionManager,
+        address adminMultisig,
+        address guardian
+    ) internal {
+        ctx.totalSupplyOld = 0;
+        for (uint8 i; i < ctx.spell.getNumberOfMigratedMembers(); i++) {
+            ctx.totalSupplyOld += ctx.trancheTokenToMigrate.balanceOf(ctx.spell.memberlistMembers(i));
+        }
+        assertEq(ctx.trancheTokenToMigrate.totalSupply(), ctx.totalSupplyOld);
+
+        Guardian guardianOld = Guardian(ctx.spell.GUARDIAN_OLD());
+        vm.prank(ctx.spell.ADMIN_MULTISIG());
+        guardianOld.scheduleRely(address(ctx.spell));
+
+        Guardian guardian = Guardian(guardian);
+        vm.prank(adminMultisig);
+        guardian.scheduleRely(address(ctx.spell));
+
+        vm.warp(block.timestamp + 2 days);
+        Root rootOld = Root(ctx.spell.ROOT_OLD());
+        rootOld.executeScheduledRely(address(ctx.spell));
+        Root(root).executeScheduledRely(address(ctx.spell));
+
+        for (uint8 i; i < ctx.spell.getNumberOfMigratedMembers(); i++) {
+            if (ctx.spell.memberlistMembers(i) != ctx.vaultOld.escrow()) {
+                uint256 maxMint = IInvestmentManager(ctx.vaultOld.manager()).maxMint(
+                    ctx.spell.VAULT_OLD(), ctx.spell.memberlistMembers(i)
+                );
+                balancesOld[ctx.spell.memberlistMembers(i)] =
+                    ctx.trancheTokenToMigrate.balanceOf(ctx.spell.memberlistMembers(i)) + maxMint;
             }
         }
-        assertApproxEqAbs(trancheTokenToMigrate.balanceOf(vaultOld.escrow()), 0, 1);
+    }
 
-        // check total supply
-        assertApproxEqAbs(trancheToken.totalSupply(), totalSupplyNew, 1);
-        assertApproxEqAbs(trancheToken.totalSupply(), totalSupplyOld, 1);
-        assertApproxEqAbs(trancheTokenToMigrate.totalSupply(), 0, 1);
+    function verifyMigration(MigrationContext memory ctx, address root, address poolManager) internal {
+        ctx.totalSupplyNew = 0;
+        for (uint8 i; i < ctx.spell.getNumberOfMigratedMembers(); i++) {
+            uint256 balanceNew = ctx.trancheToken.balanceOf(ctx.spell.memberlistMembers(i));
+            ctx.totalSupplyNew += balanceNew;
+            assertApproxEqAbs(ctx.trancheTokenToMigrate.balanceOf(ctx.spell.memberlistMembers(i)), 0, 1);
+            if (ctx.spell.memberlistMembers(i) != ctx.vaultOld.escrow()) {
+                assertApproxEqAbs(balanceNew, balancesOld[ctx.spell.memberlistMembers(i)], 1);
+            }
+        }
+        assertApproxEqAbs(ctx.trancheTokenToMigrate.balanceOf(ctx.vaultOld.escrow()), 0, 1);
 
-        // check trancheToken metadata
-        assertEq(trancheTokenToMigrate.name(), spell.NAME_OLD());
-        assertEq(trancheTokenToMigrate.symbol(), spell.SYMBOL_OLD());
-        assertEq(trancheToken.name(), spell.NAME());
-        assertEq(trancheToken.symbol(), spell.SYMBOL());
-        assertEq(trancheToken.decimals(), trancheTokenToMigrate.decimals());
+        assertApproxEqAbs(ctx.trancheToken.totalSupply(), ctx.totalSupplyNew, 1);
+        assertApproxEqAbs(ctx.trancheToken.totalSupply(), ctx.totalSupplyOld, 1);
+        assertApproxEqAbs(ctx.trancheTokenToMigrate.totalSupply(), 0, 1);
 
-        // assert denies
-        assertEq(Auth(address(poolManager)).wards(address(spell)), 0);
-        assertEq(Auth(address(trancheToken)).wards(address(spell)), 0);
-        assertEq(Auth(address(trancheTokenToMigrate)).wards(address(spell)), 0);
-        assertEq(Auth(vaultOld.manager()).wards(address(spell)), 0);
-        assertEq(Auth(address(rootOld)).wards(address(spell)), 0);
-        assertEq(Auth(address(root)).wards(address(spell)), 0);
+        assertEq(ctx.trancheTokenToMigrate.name(), ctx.spell.NAME_OLD());
+        assertEq(ctx.trancheTokenToMigrate.symbol(), ctx.spell.SYMBOL_OLD());
+        assertEq(ctx.trancheToken.name(), ctx.spell.NAME());
+        assertEq(ctx.trancheToken.symbol(), ctx.spell.SYMBOL());
+        assertEq(ctx.trancheToken.decimals(), ctx.trancheTokenToMigrate.decimals());
+
+        assertEq(Auth(address(poolManager)).wards(address(ctx.spell)), 0);
+        assertEq(Auth(address(ctx.trancheToken)).wards(address(ctx.spell)), 0);
+        assertEq(Auth(address(ctx.trancheTokenToMigrate)).wards(address(ctx.spell)), 0);
+        assertEq(Auth(ctx.vaultOld.manager()).wards(address(ctx.spell)), 0);
+        assertEq(Auth(ctx.spell.ROOT_OLD()).wards(address(ctx.spell)), 0);
+        assertEq(Auth(address(root)).wards(address(ctx.spell)), 0);
     }
 
     function deployNewContracts() internal {
@@ -187,9 +479,5 @@ contract ForkTest is Deployer, Test {
         string memory rpcUrl = abi.decode(deployments[id].parseRaw(".rpcUrl"), (string));
         uint256 forkId = vm.createFork(rpcUrl);
         vm.selectFork(forkId);
-    }
-
-    function _get(uint256 id, string memory key) internal view returns (address) {
-        return abi.decode(deployments[id].parseRaw(key), (address));
     }
 }
