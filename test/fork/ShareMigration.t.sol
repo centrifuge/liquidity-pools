@@ -10,7 +10,7 @@ import {CastLib} from "src/libraries/CastLib.sol";
 import {MathLib} from "src/libraries/MathLib.sol";
 import {IInvestmentManager} from "src/interfaces/IInvestmentManager.sol";
 import {Auth} from "src/Auth.sol";
-import {MigrationSpell} from "src/spell/ShareMigration_LTF_EVM.sol";
+import {MigrationSpell} from "src/spell/ShareMigration_LTF_Celo.sol";
 import "forge-std/Test.sol";
 import "forge-std/StdJson.sol";
 import "script/Deployer.sol";
@@ -131,7 +131,7 @@ contract ForkTest is Deployer, Test {
                 assertEq(balanceNew, balancesOld[spell.memberlistMembers(i)]);
             }
         }
-        assertEq(trancheTokenToMigrate.balanceOf(vaultOld.escrow()), 0);
+        assertEq(trancheTokenToMigrate.balanceOf(vaultOld.escrow()), 0, 1);
 
         // check total supply
         assertEq(trancheToken.totalSupply(), totalSupplyNew);

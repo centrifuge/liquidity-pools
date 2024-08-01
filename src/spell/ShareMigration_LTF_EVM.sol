@@ -16,10 +16,10 @@ contract MigrationSpell is MigrationSpellBase {
         VAULT_OLD = 0xB3AC09cd5201569a821d87446A4aF1b202B10aFd;
 
         // new deployment addresses
-        ROOT_NEW = 0x0000000000000000000000000000000000000000; // TODO Set and make constant
-        GUARDIAN_NEW = 0x0000000000000000000000000000000000000000; // TODO Set and make constant
-        POOLMANAGER_NEW = 0x0000000000000000000000000000000000000000; // TODO Set and make constant
-        RESTRICTIONMANAGER_NEW = 0x0000000000000000000000000000000000000000; // TODO Set and make constant
+        ROOT_NEW = 0x0C1fDfd6a1331a875EA013F3897fc8a76ada5DfC;
+        GUARDIAN_NEW = 0x09ab10a9c3E6Eac1d18270a2322B6113F4C7f5E8;
+        POOLMANAGER_NEW = 0x91808B5E2F6d7483D41A681034D7c9DbB64B9E29;
+        RESTRICTIONMANAGER_NEW = 0x4737C3f62Cc265e786b280153fC666cEA2fBc0c0;
 
         // information to deploy the new tranche token & liquidity pool to be able to migrate the tokens
         NAME = "Anemoy Liquid Treasury Fund 1";
