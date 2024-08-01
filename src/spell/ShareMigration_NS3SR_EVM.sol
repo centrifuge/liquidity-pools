@@ -38,10 +38,7 @@ contract MigrationSpell is MigrationSpellBase {
         NAME_OLD = "DEPRECATED";
         SYMBOL_OLD = "DEPRECATED";
 
-        memberlistMembers = [
-            0xd595E1483c507E74E2E6A3dE8e7D08d8f6F74936,
-            0xbe19e6AdF267248beE015dd3fbBa363E12ca8cE6
-        ];
+        memberlistMembers = [0xd595E1483c507E74E2E6A3dE8e7D08d8f6F74936, 0xbe19e6AdF267248beE015dd3fbBa363E12ca8cE6];
 
         validUntil[0xd595E1483c507E74E2E6A3dE8e7D08d8f6F74936] = type(uint64).max;
         validUntil[0xbe19e6AdF267248beE015dd3fbBa363E12ca8cE6] = 4869492494;

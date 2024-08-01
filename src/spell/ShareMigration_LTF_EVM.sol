@@ -4,7 +4,6 @@ import {MigrationSpellBase} from "src/spell/MigrationSpellBase.sol";
 
 // spell to migrate tranche tokens
 contract MigrationSpell is MigrationSpellBase {
-
     constructor() {
         NETWORK = "ethereum-mainnet";
         // old deployment addresses

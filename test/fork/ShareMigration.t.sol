@@ -66,10 +66,14 @@ contract ForkTest is Deployer, Test {
 
     function testShareMigrationAgainstMockDeployment() public {
         deployNewContracts(); // Deploy Liquidity Pools v2
-        migrateShares(address(root), address(poolManager), address(restrictionManager), 0xD9D30ab47c0f096b0AA67e9B8B1624504a63e7FD);
+        migrateShares(
+            address(root), address(poolManager), address(restrictionManager), 0xD9D30ab47c0f096b0AA67e9B8B1624504a63e7FD
+        );
     }
 
-    function migrateShares(address root, address poolManager, address restrictionManager, address adminMultisig) internal {
+    function migrateShares(address root, address poolManager, address restrictionManager, address adminMultisig)
+        internal
+    {
         uint256 totalSupplyOld = 0;
         for (uint8 i; i < spell.getNumberOfMigratedMembers(); i++) {
             totalSupplyOld += trancheTokenToMigrate.balanceOf(spell.memberlistMembers(i));
@@ -81,7 +85,8 @@ contract ForkTest is Deployer, Test {
         vm.prank(spell.ADMIN_MULTISIG());
         guardianOld.scheduleRely(address(spell));
         // get auth on new TrancheToken through Guardian - simulate governance
-        // Deployer.sol always sets adminSafe to the EVM multisig, so we override the spell's multisig here during mock deployments
+        // Deployer.sol always sets adminSafe to the EVM multisig, so we override the spell's multisig here during mock
+        // deployments
         vm.prank(adminMultisig);
         guardian.scheduleRely(address(spell));
         // warp delay time = 48H & exec relies
