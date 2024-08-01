@@ -36,6 +36,20 @@ contract TestableSpell is MigrationSpell {
         executePartOne();
         executePartTwo();
     }
+
+    function testCastPartOne(address root, address poolManager, address restrictionManager) public {
+        ROOT_NEW = root;
+        POOLMANAGER_NEW = poolManager;
+        RESTRICTIONMANAGER_NEW = restrictionManager;
+        executePartOne();
+    }
+
+    function testCastPartTwo(address root, address poolManager, address restrictionManager) public {
+        ROOT_NEW = root;
+        POOLMANAGER_NEW = poolManager;
+        RESTRICTIONMANAGER_NEW = restrictionManager;
+        executePartTwo();
+    }
 }
 
 contract ForkTest is Deployer, Test {
@@ -116,7 +130,13 @@ contract ForkTest is Deployer, Test {
             }
         }
 
-        spell.testCast(address(root), address(poolManager), address(restrictionManager));
+        spell.testCastPartOne(address(root), address(poolManager), address(restrictionManager));
+
+        // assert vault and tranche were deployed
+        assertTrue(PoolManager(poolManager).getVault(poolId, trancheId, vaultOld.asset()) != address(0));
+        assertTrue(PoolManager(poolManager).getTranche(poolId, trancheId) != address(0));
+
+        spell.testCastPartTwo(address(root), address(poolManager), address(restrictionManager));
 
         Tranche trancheToken = Tranche(address(PoolManager(poolManager).getTranche(poolId, trancheId)));
 
@@ -151,9 +171,6 @@ contract ForkTest is Deployer, Test {
         assertEq(Auth(vaultOld.manager()).wards(address(spell)), 0);
         assertEq(Auth(address(rootOld)).wards(address(spell)), 0);
         assertEq(Auth(address(root)).wards(address(spell)), 0);
-
-        // assert vault was deployed
-        assertTrue(PoolManager(poolManager).getVault(poolId, trancheId, vaultOld.asset()) != address(0));
     }
 
     function deployNewContracts() internal {
