@@ -89,7 +89,7 @@ contract ForkTest is Deployer, Test {
     using stdJson for string;
 
     address self;
-    mapping(address => uint256) balancesOld;
+    mapping(address => mapping(address => uint256)) balancesOld; // member => token => balance
     string[] deployments;
 
     struct MigrationContext {
@@ -293,70 +293,70 @@ contract ForkTest is Deployer, Test {
         migrateSharesPartTwo(ctx, address(root), address(poolManager), address(restrictionManager));
     }
 
-    // function testAllEVMMigrationsAgainstRealDeployment() public {
-    //     TestableSpell spellLTF = new TestableSpell(new LTF_EVM());
-    //     _loadDeployment("mainnet", spellLTF.NETWORK());
-    //     _loadFork(0);
-    //     MigrationContext memory ctxLTF = migrateSharesPartOne(
-    //         spellLTF,
-    //         spellLTF.ROOT_NEW(),
-    //         spellLTF.POOLMANAGER_NEW(),
-    //         spellLTF.RESTRICTIONMANAGER_NEW(),
-    //         spellLTF.ADMIN_MULTISIG(),
-    //         spellLTF.GUARDIAN_NEW()
-    //     );
-    //     TestableSpell spellDYF = new TestableSpell(new DYF_EVM());
-    //     MigrationContext memory ctxDYF = migrateSharesPartOne(
-    //         spellDYF,
-    //         spellDYF.ROOT_NEW(),
-    //         spellDYF.POOLMANAGER_NEW(),
-    //         spellDYF.RESTRICTIONMANAGER_NEW(),
-    //         spellDYF.ADMIN_MULTISIG(),
-    //         spellDYF.GUARDIAN_NEW()
-    //     );
-    //     TestableSpell spellNS3SR = new TestableSpell(new NS3SR_EVM());
-    //     MigrationContext memory ctxNS3SR = migrateSharesPartOne(
-    //         spellNS3SR,
-    //         spellNS3SR.ROOT_NEW(),
-    //         spellNS3SR.POOLMANAGER_NEW(),
-    //         spellNS3SR.RESTRICTIONMANAGER_NEW(),
-    //         spellNS3SR.ADMIN_MULTISIG(),
-    //         spellNS3SR.GUARDIAN_NEW()
-    //     );
-    //     TestableSpell spellNS3JR = new TestableSpell(new NS3JR_EVM());
-    //     MigrationContext memory ctxNS3JR = migrateSharesPartOne(
-    //         spellNS3JR,
-    //         spellNS3JR.ROOT_NEW(),
-    //         spellNS3JR.POOLMANAGER_NEW(),
-    //         spellNS3JR.RESTRICTIONMANAGER_NEW(),
-    //         spellNS3JR.ADMIN_MULTISIG(),
-    //         spellNS3JR.GUARDIAN_NEW()
-    //     );
-    //     migrateSharesPartTwo(
-    //         ctxLTF,
-    //         spellLTF.ROOT_NEW(),
-    //         spellLTF.POOLMANAGER_NEW(),
-    //         spellLTF.RESTRICTIONMANAGER_NEW()
-    //     );
-    //     migrateSharesPartTwo(
-    //         ctxDYF,
-    //         spellDYF.ROOT_NEW(),
-    //         spellDYF.POOLMANAGER_NEW(),
-    //         spellDYF.RESTRICTIONMANAGER_NEW()
-    //     );
-    //     migrateSharesPartTwo(
-    //         ctxNS3SR,
-    //         spellNS3SR.ROOT_NEW(),
-    //         spellNS3SR.POOLMANAGER_NEW(),
-    //         spellNS3SR.RESTRICTIONMANAGER_NEW()
-    //     );
-    //     migrateSharesPartTwo(
-    //         ctxNS3JR,
-    //         spellNS3JR.ROOT_NEW(),
-    //         spellNS3JR.POOLMANAGER_NEW(),
-    //         spellNS3JR.RESTRICTIONMANAGER_NEW()
-    //     );
-    // }
+    function testAllEVMMigrationsAgainstRealDeployment() public {
+        TestableSpell spellLTF = new TestableSpell(new LTF_EVM());
+        _loadDeployment("mainnet", spellLTF.NETWORK());
+        _loadFork(0);
+        MigrationContext memory ctxLTF = migrateSharesPartOne(
+            spellLTF,
+            spellLTF.ROOT_NEW(),
+            spellLTF.POOLMANAGER_NEW(),
+            spellLTF.RESTRICTIONMANAGER_NEW(),
+            spellLTF.ADMIN_MULTISIG(),
+            spellLTF.GUARDIAN_NEW()
+        );
+        TestableSpell spellDYF = new TestableSpell(new DYF_EVM());
+        MigrationContext memory ctxDYF = migrateSharesPartOne(
+            spellDYF,
+            spellDYF.ROOT_NEW(),
+            spellDYF.POOLMANAGER_NEW(),
+            spellDYF.RESTRICTIONMANAGER_NEW(),
+            spellDYF.ADMIN_MULTISIG(),
+            spellDYF.GUARDIAN_NEW()
+        );
+        TestableSpell spellNS3SR = new TestableSpell(new NS3SR_EVM());
+        MigrationContext memory ctxNS3SR = migrateSharesPartOne(
+            spellNS3SR,
+            spellNS3SR.ROOT_NEW(),
+            spellNS3SR.POOLMANAGER_NEW(),
+            spellNS3SR.RESTRICTIONMANAGER_NEW(),
+            spellNS3SR.ADMIN_MULTISIG(),
+            spellNS3SR.GUARDIAN_NEW()
+        );
+        TestableSpell spellNS3JR = new TestableSpell(new NS3JR_EVM());
+        MigrationContext memory ctxNS3JR = migrateSharesPartOne(
+            spellNS3JR,
+            spellNS3JR.ROOT_NEW(),
+            spellNS3JR.POOLMANAGER_NEW(),
+            spellNS3JR.RESTRICTIONMANAGER_NEW(),
+            spellNS3JR.ADMIN_MULTISIG(),
+            spellNS3JR.GUARDIAN_NEW()
+        );
+        migrateSharesPartTwo(
+            ctxLTF,
+            spellLTF.ROOT_NEW(),
+            spellLTF.POOLMANAGER_NEW(),
+            spellLTF.RESTRICTIONMANAGER_NEW()
+        );
+        migrateSharesPartTwo(
+            ctxDYF,
+            spellDYF.ROOT_NEW(),
+            spellDYF.POOLMANAGER_NEW(),
+            spellDYF.RESTRICTIONMANAGER_NEW()
+        );
+        migrateSharesPartTwo(
+            ctxNS3SR,
+            spellNS3SR.ROOT_NEW(),
+            spellNS3SR.POOLMANAGER_NEW(),
+            spellNS3SR.RESTRICTIONMANAGER_NEW()
+        );
+        migrateSharesPartTwo(
+            ctxNS3JR,
+            spellNS3JR.ROOT_NEW(),
+            spellNS3JR.POOLMANAGER_NEW(),
+            spellNS3JR.RESTRICTIONMANAGER_NEW()
+        );
+    }
 
     function migrateSharesPartOne(
         TestableSpell spell,
@@ -429,7 +429,7 @@ contract ForkTest is Deployer, Test {
                 uint256 maxMint = IInvestmentManager(ctx.vaultOld.manager()).maxMint(
                     ctx.spell.VAULT_OLD(), ctx.spell.memberlistMembers(i)
                 );
-                balancesOld[ctx.spell.memberlistMembers(i)] =
+                balancesOld[ctx.spell.memberlistMembers(i)][address(ctx.trancheTokenToMigrate)] =
                     ctx.trancheTokenToMigrate.balanceOf(ctx.spell.memberlistMembers(i)) + maxMint;
             }
         }
@@ -442,7 +442,7 @@ contract ForkTest is Deployer, Test {
             ctx.totalSupplyNew += balanceNew;
             assertApproxEqAbs(ctx.trancheTokenToMigrate.balanceOf(ctx.spell.memberlistMembers(i)), 0, 1);
             if (ctx.spell.memberlistMembers(i) != ctx.vaultOld.escrow()) {
-                assertApproxEqAbs(balanceNew, balancesOld[ctx.spell.memberlistMembers(i)], 1);
+                assertApproxEqAbs(balanceNew, balancesOld[ctx.spell.memberlistMembers(i)][address(ctx.trancheTokenToMigrate)], 1);
             }
         }
         assertApproxEqAbs(ctx.trancheTokenToMigrate.balanceOf(ctx.vaultOld.escrow()), 0, 1);

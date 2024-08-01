@@ -9,6 +9,10 @@ import {InvestmentManager} from "src/InvestmentManager.sol";
 import {CastLib} from "src/libraries/CastLib.sol";
 import {IAuth} from "src/interfaces/IAuth.sol";
 
+interface IPoolManagerNew is IPoolManager {
+    function isPoolActive(uint64 poolId) external view returns (bool);
+}
+
 interface ITrancheOld {
     function authTransferFrom(address from, address to, uint256 value) external returns (bool);
 }
@@ -36,7 +40,7 @@ contract MigrationSpellBase {
     address public POOLMANAGER_NEW;
     address public RESTRICTIONMANAGER_NEW;
     ITranche public trancheTokenNew;
-    IPoolManager poolManager;
+    IPoolManagerNew poolManager;
 
     address public ROOT_OLD;
     IRoot public rootOld;
@@ -83,7 +87,7 @@ contract MigrationSpellBase {
         vaultOld = IVaultOld(VAULT_OLD);
         POOL_ID = vaultOld.poolId();
         TRANCHE_ID = vaultOld.trancheId();
-        poolManager = IPoolManager(address(POOLMANAGER_NEW));
+        poolManager = IPoolManagerNew(address(POOLMANAGER_NEW));
         trancheTokenOld = ITranche(vaultOld.share());
         DECIMALS = trancheTokenOld.decimals();
         investmentManagerOld = InvestmentManager(vaultOld.manager());
@@ -94,9 +98,13 @@ contract MigrationSpellBase {
 
         // deploy new tranche token
         rootNew.relyContract(address(POOLMANAGER_NEW), self);
-        poolManager.addPool(POOL_ID);
+        if (!poolManager.isPoolActive(POOL_ID)) {
+            poolManager.addPool(POOL_ID);
+        }
         poolManager.addTranche(POOL_ID, TRANCHE_ID, NAME, SYMBOL, DECIMALS, RESTRICTIONMANAGER_NEW);
-        poolManager.addAsset(CURRENCY_ID, vaultOld.asset());
+        if (poolManager.assetToId(vaultOld.asset()) == 0) {
+            poolManager.addAsset(CURRENCY_ID, vaultOld.asset());
+        }
         poolManager.allowAsset(POOL_ID, CURRENCY_ID);
         trancheTokenNew = ITranche(poolManager.deployTranche(POOL_ID, TRANCHE_ID));
         rootNew.relyContract(address(trancheTokenNew), self);
