@@ -10,7 +10,7 @@ import {CastLib} from "src/libraries/CastLib.sol";
 import {MathLib} from "src/libraries/MathLib.sol";
 import {IInvestmentManager} from "src/interfaces/IInvestmentManager.sol";
 import {Auth} from "src/Auth.sol";
-import {MigrationSpell} from "src/spell/ShareMigrationLTFBase.sol";
+import {MigrationSpell} from "src/spell/ShareMigration_LTF_Celo.sol";
 import "forge-std/Test.sol";
 import "forge-std/StdJson.sol";
 import "script/Deployer.sol";
@@ -51,26 +51,25 @@ contract ForkTest is Deployer, Test {
 
         spell = new TestableSpell();
 
-        _loadDeployment("mainnet", "base-mainnet"); // Mainnet
+        _loadDeployment("mainnet", spell.NETWORK());
         _loadFork(0);
         trancheTokenToMigrate = Tranche(address(spell.TRANCHE_TOKEN_OLD())); // Anemoy Liquid Treasury Fund 1 (LTF)
         guardianOld = Guardian(spell.GUARDIAN_OLD());
         rootOld = Root(spell.ROOT_OLD());
-
     }
 
     function testShareMigrationAgainstRealDeployment() public {
         guardian = Guardian(spell.GUARDIAN_NEW());
         root = Root(spell.ROOT_NEW());
-        migrateShares(spell.ROOT_NEW(), spell.POOLMANAGER_NEW(), spell.RESTRICTIONMANAGER_NEW());
+        migrateShares(spell.ROOT_NEW(), spell.POOLMANAGER_NEW(), spell.RESTRICTIONMANAGER_NEW(), spell.ADMIN_MULTISIG());
     }
 
     function testShareMigrationAgainstMockDeployment() public {
         deployNewContracts(); // Deploy Liquidity Pools v2
-        migrateShares(address(root), address(poolManager), address(restrictionManager));
+        migrateShares(address(root), address(poolManager), address(restrictionManager), 0xD9D30ab47c0f096b0AA67e9B8B1624504a63e7FD);
     }
 
-    function migrateShares(address root, address poolManager, address restrictionManager) internal {
+    function migrateShares(address root, address poolManager, address restrictionManager, address adminMultisig) internal {
         uint256 totalSupplyOld = 0;
         for (uint8 i; i < spell.getNumberOfMigratedMembers(); i++) {
             totalSupplyOld += trancheTokenToMigrate.balanceOf(spell.memberlistMembers(i));
@@ -79,21 +78,22 @@ contract ForkTest is Deployer, Test {
         assertEq(trancheTokenToMigrate.totalSupply(), totalSupplyOld);
 
         // get auth on old TrancheToken through DelayedAdmin - simulate governance
-        vm.startPrank(spell.ADMIN_MULTISIG());
+        vm.prank(spell.ADMIN_MULTISIG());
         guardianOld.scheduleRely(address(spell));
         // get auth on new TrancheToken through Guardian - simulate governance
+        // Deployer.sol always sets adminSafe to the EVM multisig, so we override the spell's multisig here during mock deployments
+        vm.prank(adminMultisig);
         guardian.scheduleRely(address(spell));
-        vm.stopPrank();
         // warp delay time = 48H & exec relies
         vm.warp(block.timestamp + 2 days);
         rootOld.executeScheduledRely(address(spell));
         Root(root).executeScheduledRely(address(spell));
 
-        
         for (uint8 i; i < spell.getNumberOfMigratedMembers(); i++) {
             if (spell.memberlistMembers(i) != spell.ESCROW_OLD()) {
-                uint256 maxMint =
-                    IInvestmentManager(spell.INVESTMENTMANAGER_OLD()).maxMint(spell.VAULT_OLD(), spell.memberlistMembers(i));
+                uint256 maxMint = IInvestmentManager(spell.INVESTMENTMANAGER_OLD()).maxMint(
+                    spell.VAULT_OLD(), spell.memberlistMembers(i)
+                );
                 balancesOld[spell.memberlistMembers(i)] =
                     trancheTokenToMigrate.balanceOf(spell.memberlistMembers(i)) + maxMint;
             }
@@ -101,7 +101,8 @@ contract ForkTest is Deployer, Test {
 
         spell.testCast(address(root), address(poolManager), address(restrictionManager));
 
-        Tranche trancheToken = Tranche(address(PoolManager(poolManager).getTranche(spell.POOL_ID(), spell.TRANCHE_ID())));
+        Tranche trancheToken =
+            Tranche(address(PoolManager(poolManager).getTranche(spell.POOL_ID(), spell.TRANCHE_ID())));
 
         // check if all holders have been migrated correctly
         uint256 totalSupplyNew = 0;
@@ -114,7 +115,7 @@ contract ForkTest is Deployer, Test {
             }
         }
         assertEq(trancheTokenToMigrate.balanceOf(spell.ESCROW_OLD()), 0);
-        
+
         // check total supply
         assertEq(trancheToken.totalSupply(), totalSupplyNew);
         assertEq(trancheToken.totalSupply(), totalSupplyOld);
@@ -136,7 +137,9 @@ contract ForkTest is Deployer, Test {
         assertEq(Auth(address(root)).wards(address(spell)), 0);
 
         // assert vault was deployed
-        assertTrue(PoolManager(poolManager).getVault(spell.POOL_ID(), spell.TRANCHE_ID(), spell.CURRENCY()) != address(0));
+        assertTrue(
+            PoolManager(poolManager).getVault(spell.POOL_ID(), spell.TRANCHE_ID(), spell.CURRENCY()) != address(0)
+        );
     }
 
     function deployNewContracts() internal {
