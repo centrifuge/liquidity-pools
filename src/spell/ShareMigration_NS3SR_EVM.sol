@@ -27,8 +27,8 @@ contract MigrationSpell is MigrationSpellBase {
         NAME = "New Silver Series 3 Senior";
         SYMBOL = "NS3SR";
 
-        NAME_OLD = "NS3JR (deprecated)";
-        SYMBOL_OLD = "NS3JR-DEPRECATED";
+        NAME_OLD = "NS3SR (deprecated)";
+        SYMBOL_OLD = "NS3SR-DEPRECATED";
 
         memberlistMembers = [0xd595E1483c507E74E2E6A3dE8e7D08d8f6F74936, 0xbe19e6AdF267248beE015dd3fbBa363E12ca8cE6];
 
