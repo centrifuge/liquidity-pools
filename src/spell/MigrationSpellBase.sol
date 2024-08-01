@@ -30,45 +30,65 @@ contract MigrationSpellBase {
     using CastLib for *;
 
     string public NETWORK;
-    // uint128 public CURRENCY_ID;
-    address public ROOT_OLD;
-    address public ADMIN_MULTISIG;
-    address public GUARDIAN_OLD;
-    address public VAULT_OLD;
     address public ROOT_NEW;
+    IRoot public rootNew;
     address public GUARDIAN_NEW;
     address public POOLMANAGER_NEW;
     address public RESTRICTIONMANAGER_NEW;
     ITranche public trancheTokenNew;
+    IPoolManager poolManager;
+
+    address public ROOT_OLD;
+    IRoot public rootOld;
+    address public ADMIN_MULTISIG;
+    address public GUARDIAN_OLD;
+    address public VAULT_OLD;
+    uint64 POOL_ID;
+    bytes16 TRANCHE_ID;
+    uint8 DECIMALS;
+    uint128 CURRENCY_ID;
+    IVaultOld public vaultOld;
+    ITranche trancheTokenOld;
+    InvestmentManager investmentManagerOld;
+    IPoolManagerOld poolManagerOld;
+
     string public NAME;
     string public SYMBOL;
     string public NAME_OLD;
     string public SYMBOL_OLD;
     address[] public memberlistMembers;
     mapping(address => uint64) public validUntil;
-    bool public done;
+    bool public partOneDone;
+    bool public partTwoDone;
     uint256 constant ONE = 10 ** 27;
     address self;
 
-    function cast() public {
-        require(!done, "spell-already-cast");
-        done = true;
-        execute();
+    function castPartOne() public {
+        require(!partOneDone, "spell-already-cast");
+        partOneDone = true;
+        executePartOne();
     }
 
-    function execute() internal {
+    function castPartTwo() public {
+        require(partOneDone, "part-one-not-cast");
+        require(!partTwoDone, "spell-already-cast");
+        partTwoDone = true;
+        executePartTwo();
+    }
+
+    function executePartOne() internal {
         self = address(this);
-        IRoot rootOld = IRoot(address(ROOT_OLD));
-        IRoot rootNew = IRoot(address(ROOT_NEW));
-        IVaultOld vaultOld = IVaultOld(VAULT_OLD);
-        uint64 POOL_ID = vaultOld.poolId();
-        bytes16 TRANCHE_ID = vaultOld.trancheId();
-        IPoolManager poolManager = IPoolManager(address(POOLMANAGER_NEW));
-        ITranche trancheTokenOld = ITranche(vaultOld.share());
-        uint8 DECIMALS = trancheTokenOld.decimals();
-        InvestmentManager investmentManagerOld = InvestmentManager(vaultOld.manager());
-        IPoolManagerOld poolManagerOld = IPoolManagerOld(address(investmentManagerOld.poolManager()));
-        uint128 CURRENCY_ID = poolManagerOld.currencyAddressToId(vaultOld.asset());
+        rootOld = IRoot(address(ROOT_OLD));
+        rootNew = IRoot(address(ROOT_NEW));
+        vaultOld = IVaultOld(VAULT_OLD);
+        POOL_ID = vaultOld.poolId();
+        TRANCHE_ID = vaultOld.trancheId();
+        poolManager = IPoolManager(address(POOLMANAGER_NEW));
+        trancheTokenOld = ITranche(vaultOld.share());
+        DECIMALS = trancheTokenOld.decimals();
+        investmentManagerOld = InvestmentManager(vaultOld.manager());
+        poolManagerOld = IPoolManagerOld(address(investmentManagerOld.poolManager()));
+        CURRENCY_ID = poolManagerOld.currencyAddressToId(vaultOld.asset());
         rootOld.relyContract(address(investmentManagerOld), self);
         rootOld.relyContract(address(trancheTokenOld), self);
 
@@ -80,7 +100,10 @@ contract MigrationSpellBase {
         poolManager.allowAsset(POOL_ID, CURRENCY_ID);
         trancheTokenNew = ITranche(poolManager.deployTranche(POOL_ID, TRANCHE_ID));
         rootNew.relyContract(address(trancheTokenNew), self);
+        poolManager.deployVault(POOL_ID, TRANCHE_ID, vaultOld.asset());
+    }
 
+    function executePartTwo() internal {
         // add all old members to new memberlist and claim any tokens
         uint256 holderBalance;
         for (uint8 i; i < memberlistMembers.length; i++) {
@@ -124,8 +147,6 @@ contract MigrationSpellBase {
         rootOld.denyContract(address(investmentManagerOld), self);
         IAuth(address(rootOld)).deny(self);
         IAuth(address(rootNew)).deny(self);
-
-        poolManager.deployVault(POOL_ID, TRANCHE_ID, vaultOld.asset());
     }
 
     function getNumberOfMigratedMembers() public view returns (uint256) {

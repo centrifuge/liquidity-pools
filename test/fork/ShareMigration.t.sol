@@ -10,7 +10,7 @@ import {CastLib} from "src/libraries/CastLib.sol";
 import {MathLib} from "src/libraries/MathLib.sol";
 import {IInvestmentManager} from "src/interfaces/IInvestmentManager.sol";
 import {Auth} from "src/Auth.sol";
-import {MigrationSpell} from "src/spell/ShareMigration_LTF_Celo.sol";
+import {MigrationSpell} from "src/spell/ShareMigration_LTF_EVM.sol";
 import "forge-std/Test.sol";
 import "forge-std/StdJson.sol";
 import "script/Deployer.sol";
@@ -30,12 +30,11 @@ interface TrancheTokenOld {
 
 contract TestableSpell is MigrationSpell {
     function testCast(address root, address poolManager, address restrictionManager) public {
-        require(!done, "spell-already-cast");
-        done = true;
         ROOT_NEW = root;
         POOLMANAGER_NEW = poolManager;
         RESTRICTIONMANAGER_NEW = restrictionManager;
-        execute();
+        executePartOne();
+        executePartTwo();
     }
 }
 
