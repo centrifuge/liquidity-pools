@@ -10,10 +10,19 @@ import {CastLib} from "src/libraries/CastLib.sol";
 import {MathLib} from "src/libraries/MathLib.sol";
 import {IInvestmentManager} from "src/interfaces/IInvestmentManager.sol";
 import {Auth} from "src/Auth.sol";
-import {MigrationSpell} from "src/spell/ShareMigration_LTF_Celo.sol";
+import {MigrationSpell} from "src/spell/ShareMigration_LTF_EVM.sol";
 import "forge-std/Test.sol";
 import "forge-std/StdJson.sol";
 import "script/Deployer.sol";
+
+interface IVaultOld {
+    function poolId() external view returns (uint64);
+    function trancheId() external view returns (bytes16);
+    function share() external view returns (address);
+    function manager() external view returns (address);
+    function escrow() external view returns (address);
+    function asset() external view returns (address);
+}
 
 interface TrancheTokenOld {
     function authTransferFrom(address from, address to, uint256 value) external returns (bool);
@@ -53,7 +62,8 @@ contract ForkTest is Deployer, Test {
 
         _loadDeployment("mainnet", spell.NETWORK());
         _loadFork(0);
-        trancheTokenToMigrate = Tranche(address(spell.TRANCHE_TOKEN_OLD())); // Anemoy Liquid Treasury Fund 1 (LTF)
+        IVaultOld vaultOld = IVaultOld(spell.VAULT_OLD());
+        trancheTokenToMigrate = Tranche(vaultOld.share());
         guardianOld = Guardian(spell.GUARDIAN_OLD());
         rootOld = Root(spell.ROOT_OLD());
     }
@@ -94,11 +104,14 @@ contract ForkTest is Deployer, Test {
         rootOld.executeScheduledRely(address(spell));
         Root(root).executeScheduledRely(address(spell));
 
+        IVaultOld vaultOld = IVaultOld(spell.VAULT_OLD());
+        uint64 poolId = vaultOld.poolId();
+        bytes16 trancheId = vaultOld.trancheId();
+
         for (uint8 i; i < spell.getNumberOfMigratedMembers(); i++) {
-            if (spell.memberlistMembers(i) != spell.ESCROW_OLD()) {
-                uint256 maxMint = IInvestmentManager(spell.INVESTMENTMANAGER_OLD()).maxMint(
-                    spell.VAULT_OLD(), spell.memberlistMembers(i)
-                );
+            if (spell.memberlistMembers(i) != vaultOld.escrow()) {
+                uint256 maxMint =
+                    IInvestmentManager(vaultOld.manager()).maxMint(spell.VAULT_OLD(), spell.memberlistMembers(i));
                 balancesOld[spell.memberlistMembers(i)] =
                     trancheTokenToMigrate.balanceOf(spell.memberlistMembers(i)) + maxMint;
             }
@@ -106,8 +119,7 @@ contract ForkTest is Deployer, Test {
 
         spell.testCast(address(root), address(poolManager), address(restrictionManager));
 
-        Tranche trancheToken =
-            Tranche(address(PoolManager(poolManager).getTranche(spell.POOL_ID(), spell.TRANCHE_ID())));
+        Tranche trancheToken = Tranche(address(PoolManager(poolManager).getTranche(poolId, trancheId)));
 
         // check if all holders have been migrated correctly
         uint256 totalSupplyNew = 0;
@@ -115,11 +127,11 @@ contract ForkTest is Deployer, Test {
             uint256 balanceNew = trancheToken.balanceOf(spell.memberlistMembers(i));
             totalSupplyNew += balanceNew;
             assertEq(trancheTokenToMigrate.balanceOf(spell.memberlistMembers(i)), 0);
-            if (spell.memberlistMembers(i) != spell.ESCROW_OLD()) {
+            if (spell.memberlistMembers(i) != vaultOld.escrow()) {
                 assertEq(balanceNew, balancesOld[spell.memberlistMembers(i)]);
             }
         }
-        assertEq(trancheTokenToMigrate.balanceOf(spell.ESCROW_OLD()), 0);
+        assertEq(trancheTokenToMigrate.balanceOf(vaultOld.escrow()), 0);
 
         // check total supply
         assertEq(trancheToken.totalSupply(), totalSupplyNew);
@@ -131,20 +143,18 @@ contract ForkTest is Deployer, Test {
         assertEq(trancheTokenToMigrate.symbol(), spell.SYMBOL_OLD());
         assertEq(trancheToken.name(), spell.NAME());
         assertEq(trancheToken.symbol(), spell.SYMBOL());
-        assertEq(trancheToken.decimals(), spell.DECIMALS());
+        assertEq(trancheToken.decimals(), trancheTokenToMigrate.decimals());
 
         // assert denies
         assertEq(Auth(address(poolManager)).wards(address(spell)), 0);
         assertEq(Auth(address(trancheToken)).wards(address(spell)), 0);
         assertEq(Auth(address(trancheTokenToMigrate)).wards(address(spell)), 0);
-        assertEq(Auth(spell.INVESTMENTMANAGER_OLD()).wards(address(spell)), 0);
+        assertEq(Auth(vaultOld.manager()).wards(address(spell)), 0);
         assertEq(Auth(address(rootOld)).wards(address(spell)), 0);
         assertEq(Auth(address(root)).wards(address(spell)), 0);
 
         // assert vault was deployed
-        assertTrue(
-            PoolManager(poolManager).getVault(spell.POOL_ID(), spell.TRANCHE_ID(), spell.CURRENCY()) != address(0)
-        );
+        assertTrue(PoolManager(poolManager).getVault(poolId, trancheId, vaultOld.asset()) != address(0));
     }
 
     function deployNewContracts() internal {

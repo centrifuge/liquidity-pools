@@ -13,27 +13,29 @@ interface ITrancheOld {
     function authTransferFrom(address from, address to, uint256 value) external returns (bool);
 }
 
+interface IVaultOld {
+    function poolId() external view returns (uint64);
+    function trancheId() external view returns (bytes16);
+    function share() external view returns (address);
+    function manager() external view returns (address);
+    function escrow() external view returns (address);
+    function asset() external view returns (address);
+}
+
 contract MigrationSpellBase {
     using CastLib for *;
 
     string public NETWORK;
-    address public CURRENCY;
     uint128 public CURRENCY_ID;
-    address public ESCROW_OLD;
-    address public INVESTMENTMANAGER_OLD;
     address public ROOT_OLD;
     address public ADMIN_MULTISIG;
     address public GUARDIAN_OLD;
-    address public TRANCHE_TOKEN_OLD;
     address public VAULT_OLD;
     address public ROOT_NEW;
     address public GUARDIAN_NEW;
     address public POOLMANAGER_NEW;
     address public RESTRICTIONMANAGER_NEW;
     ITranche public trancheTokenNew;
-    uint64 public POOL_ID;
-    bytes16 public TRANCHE_ID;
-    uint8 public DECIMALS;
     string public NAME;
     string public SYMBOL;
     string public NAME_OLD;
@@ -54,9 +56,13 @@ contract MigrationSpellBase {
         self = address(this);
         IRoot rootOld = IRoot(address(ROOT_OLD));
         IRoot rootNew = IRoot(address(ROOT_NEW));
+        IVaultOld vaultOld = IVaultOld(VAULT_OLD);
+        uint64 POOL_ID = vaultOld.poolId();
+        bytes16 TRANCHE_ID = vaultOld.trancheId();
         IPoolManager poolManager = IPoolManager(address(POOLMANAGER_NEW));
-        ITranche trancheTokenOld = ITranche(TRANCHE_TOKEN_OLD);
-        IInvestmentManager investmentManagerOld = IInvestmentManager(address(INVESTMENTMANAGER_OLD));
+        ITranche trancheTokenOld = ITranche(vaultOld.share());
+        uint8 DECIMALS = trancheTokenOld.decimals();
+        IInvestmentManager investmentManagerOld = IInvestmentManager(vaultOld.manager());
         rootOld.relyContract(address(investmentManagerOld), self);
         rootOld.relyContract(address(trancheTokenOld), self);
 
@@ -64,7 +70,7 @@ contract MigrationSpellBase {
         rootNew.relyContract(address(POOLMANAGER_NEW), self);
         poolManager.addPool(POOL_ID);
         poolManager.addTranche(POOL_ID, TRANCHE_ID, NAME, SYMBOL, DECIMALS, RESTRICTIONMANAGER_NEW);
-        poolManager.addAsset(CURRENCY_ID, CURRENCY);
+        poolManager.addAsset(CURRENCY_ID, vaultOld.asset());
         poolManager.allowAsset(POOL_ID, CURRENCY_ID);
         trancheTokenNew = ITranche(poolManager.deployTranche(POOL_ID, TRANCHE_ID));
         rootNew.relyContract(address(trancheTokenNew), self);
@@ -82,23 +88,18 @@ contract MigrationSpellBase {
                     validUntil[memberlistMembers[i]]
                 )
             );
-            if (memberlistMembers[i] != ESCROW_OLD) {
+            if (memberlistMembers[i] != vaultOld.escrow()) {
                 uint256 maxMint = investmentManagerOld.maxMint(VAULT_OLD, memberlistMembers[i]);
                 if (maxMint > 0) {
                     // Claim any unclaimed tokens the user may have
-                    investmentManagerOld.mint(
-                        VAULT_OLD,
-                        investmentManagerOld.maxMint(VAULT_OLD, memberlistMembers[i]),
-                        memberlistMembers[i],
-                        memberlistMembers[i]
-                    );
+                    investmentManagerOld.mint(VAULT_OLD, maxMint, memberlistMembers[i], memberlistMembers[i]);
                 }
                 holderBalance = trancheTokenOld.balanceOf(memberlistMembers[i]);
                 if (holderBalance > 0) {
                     // mint new token to the holder's wallet
                     trancheTokenNew.mint(memberlistMembers[i], holderBalance);
                     // transfer old tokens from holders' wallets
-                    ITrancheOld(TRANCHE_TOKEN_OLD).authTransferFrom(memberlistMembers[i], self, holderBalance);
+                    ITrancheOld(vaultOld.share()).authTransferFrom(memberlistMembers[i], self, holderBalance);
                 }
             }
         }
@@ -118,7 +119,7 @@ contract MigrationSpellBase {
         IAuth(address(rootOld)).deny(self);
         IAuth(address(rootNew)).deny(self);
 
-        poolManager.deployVault(POOL_ID, TRANCHE_ID, CURRENCY);
+        poolManager.deployVault(POOL_ID, TRANCHE_ID, vaultOld.asset());
     }
 
     function getNumberOfMigratedMembers() public view returns (uint256) {
