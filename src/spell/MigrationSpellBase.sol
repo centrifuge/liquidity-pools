@@ -5,7 +5,7 @@ import {IRoot} from "src/interfaces/IRoot.sol";
 import {IPoolManager} from "src/interfaces/IPoolManager.sol";
 import {RestrictionUpdate} from "src/interfaces/token/IRestrictionManager.sol";
 import {ITranche} from "src/interfaces/token/ITranche.sol";
-import {IInvestmentManager} from "src/interfaces/IInvestmentManager.sol";
+import {InvestmentManager} from "src/InvestmentManager.sol";
 import {CastLib} from "src/libraries/CastLib.sol";
 import {IAuth} from "src/interfaces/IAuth.sol";
 
@@ -22,11 +22,15 @@ interface IVaultOld {
     function asset() external view returns (address);
 }
 
+interface IPoolManagerOld {
+    function currencyAddressToId(address currency) external view returns (uint128);
+}
+
 contract MigrationSpellBase {
     using CastLib for *;
 
     string public NETWORK;
-    uint128 public CURRENCY_ID;
+    // uint128 public CURRENCY_ID;
     address public ROOT_OLD;
     address public ADMIN_MULTISIG;
     address public GUARDIAN_OLD;
@@ -62,7 +66,9 @@ contract MigrationSpellBase {
         IPoolManager poolManager = IPoolManager(address(POOLMANAGER_NEW));
         ITranche trancheTokenOld = ITranche(vaultOld.share());
         uint8 DECIMALS = trancheTokenOld.decimals();
-        IInvestmentManager investmentManagerOld = IInvestmentManager(vaultOld.manager());
+        InvestmentManager investmentManagerOld = InvestmentManager(vaultOld.manager());
+        IPoolManagerOld poolManagerOld = IPoolManagerOld(address(investmentManagerOld.poolManager()));
+        uint128 CURRENCY_ID = poolManagerOld.currencyAddressToId(vaultOld.asset());
         rootOld.relyContract(address(investmentManagerOld), self);
         rootOld.relyContract(address(trancheTokenOld), self);
 

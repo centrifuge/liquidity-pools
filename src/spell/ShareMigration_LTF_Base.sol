@@ -10,7 +10,6 @@ contract MigrationSpell is MigrationSpellBase {
     constructor() {
         NETWORK = "base-mainnet";
         // old deployment addresses
-        CURRENCY_ID = 242333941209166991950178742833476896418;
         ROOT_OLD = 0x498016d30Cd5f0db50d7ACE329C07313a0420502;
         ADMIN_MULTISIG = 0x8b83962fB9dB346a20c95D98d4E312f17f4C0d9b;
         GUARDIAN_OLD = 0x2559998026796Ca6fd057f3aa66F2d6ecdEd9028;
@@ -28,8 +27,8 @@ contract MigrationSpell is MigrationSpellBase {
         NAME = "Anemoy Liquid Treasury Fund 1";
         SYMBOL = "LTF";
 
-        NAME_OLD = "DEPRECATED";
-        SYMBOL_OLD = "DEPRECATED";
+        NAME_OLD = "LTF (deprecated)";
+        SYMBOL_OLD = "LTF-DEPRECATED";
 
         memberlistMembers = [
             0xd595E1483c507E74E2E6A3dE8e7D08d8f6F74936,

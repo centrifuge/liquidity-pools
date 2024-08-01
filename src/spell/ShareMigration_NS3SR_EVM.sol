@@ -10,7 +10,6 @@ contract MigrationSpell is MigrationSpellBase {
     constructor() {
         NETWORK = "ethereum-mainnet";
         // old deployment addresses
-        CURRENCY_ID = 242333941209166991950178742833476896417;
         ROOT_OLD = 0x498016d30Cd5f0db50d7ACE329C07313a0420502;
         ADMIN_MULTISIG = 0xD9D30ab47c0f096b0AA67e9B8B1624504a63e7FD;
         GUARDIAN_OLD = 0x2559998026796Ca6fd057f3aa66F2d6ecdEd9028;
@@ -28,8 +27,8 @@ contract MigrationSpell is MigrationSpellBase {
         NAME = "New Silver Series 3 Senior";
         SYMBOL = "NS3SR";
 
-        NAME_OLD = "DEPRECATED";
-        SYMBOL_OLD = "DEPRECATED";
+        NAME_OLD = "NS3JR (deprecated)";
+        SYMBOL_OLD = "NS3JR-DEPRECATED";
 
         memberlistMembers = [0xd595E1483c507E74E2E6A3dE8e7D08d8f6F74936, 0xbe19e6AdF267248beE015dd3fbBa363E12ca8cE6];
 

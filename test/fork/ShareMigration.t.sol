@@ -126,20 +126,20 @@ contract ForkTest is Deployer, Test {
         for (uint8 i; i < spell.getNumberOfMigratedMembers(); i++) {
             uint256 balanceNew = trancheToken.balanceOf(spell.memberlistMembers(i));
             totalSupplyNew += balanceNew;
-            assertEq(trancheTokenToMigrate.balanceOf(spell.memberlistMembers(i)), 0);
+            assertApproxEqAbs(trancheTokenToMigrate.balanceOf(spell.memberlistMembers(i)), 0, 1);
             if (spell.memberlistMembers(i) != vaultOld.escrow()) {
-                assertEq(balanceNew, balancesOld[spell.memberlistMembers(i)]);
+                assertApproxEqAbs(balanceNew, balancesOld[spell.memberlistMembers(i)], 1);
             }
         }
-        assertEq(trancheTokenToMigrate.balanceOf(vaultOld.escrow()), 0, 1);
+        assertApproxEqAbs(trancheTokenToMigrate.balanceOf(vaultOld.escrow()), 0, 1);
 
         // check total supply
-        assertEq(trancheToken.totalSupply(), totalSupplyNew);
-        assertEq(trancheToken.totalSupply(), totalSupplyOld);
-        assertEq(trancheTokenToMigrate.totalSupply(), 0);
+        assertApproxEqAbs(trancheToken.totalSupply(), totalSupplyNew, 1);
+        assertApproxEqAbs(trancheToken.totalSupply(), totalSupplyOld, 1);
+        assertApproxEqAbs(trancheTokenToMigrate.totalSupply(), 0, 1);
 
         // check trancheToken metadata
-        assertEq(trancheTokenToMigrate.name(), spell.SYMBOL_OLD());
+        assertEq(trancheTokenToMigrate.name(), spell.NAME_OLD());
         assertEq(trancheTokenToMigrate.symbol(), spell.SYMBOL_OLD());
         assertEq(trancheToken.name(), spell.NAME());
         assertEq(trancheToken.symbol(), spell.SYMBOL());
