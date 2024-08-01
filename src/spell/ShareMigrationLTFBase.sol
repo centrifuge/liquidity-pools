@@ -30,9 +30,10 @@ contract MigrationSpell {
     address public constant VAULT_OLD = 0xa0872E8D2975483b2Ab4Afcee729133D8666F6f5;
 
     // new deployment addresses
-    address public ROOT_NEW = 0x0000000000000000000000000000000000000000; // TODO Set and make constant
-    address public POOLMANAGER = 0x0000000000000000000000000000000000000000; // TODO Set and make constant
-    address public RESTRICTIONMANAGER = 0x0000000000000000000000000000000000000000; // TODO Set and make constant
+    address public ROOT_NEW = 0x468CBaA7b44851C2426b58190030162d18786b6d;
+    address public GUARDIAN_NEW = 0xA0e3A5709995eF9900ab0F7FA070567Fe89d9e18;
+    address public POOLMANAGER_NEW = 0x7829E5ca4286Df66e9F58160544097dB517a3B8c;
+    address public RESTRICTIONMANAGER_NEW = 0xd35ec9Bd13bC4483D47c850298D5C285C8D1Ec22;
     ITranche public trancheTokenNew; // to be deployed during spell exec
 
     // information to deploy the new tranche token & liquidity pool to be able to migrate the tokens
@@ -72,16 +73,16 @@ contract MigrationSpell {
         self = address(this);
         IRoot rootOld = IRoot(address(ROOT_OLD));
         IRoot rootNew = IRoot(address(ROOT_NEW));
-        IPoolManager poolManager = IPoolManager(address(POOLMANAGER));
+        IPoolManager poolManager = IPoolManager(address(POOLMANAGER_NEW));
         ITranche trancheTokenOld = ITranche(TRANCHE_TOKEN_OLD);
         IInvestmentManager investmentManagerOld = IInvestmentManager(address(INVESTMENTMANAGER_OLD));
         rootOld.relyContract(address(investmentManagerOld), self);
         rootOld.relyContract(address(trancheTokenOld), self);
 
         // deploy new tranche token
-        rootNew.relyContract(address(POOLMANAGER), self);
+        rootNew.relyContract(address(POOLMANAGER_NEW), self);
         poolManager.addPool(POOL_ID);
-        poolManager.addTranche(POOL_ID, TRANCHE_ID, NAME, SYMBOL, DECIMALS, RESTRICTIONMANAGER);
+        poolManager.addTranche(POOL_ID, TRANCHE_ID, NAME, SYMBOL, DECIMALS, RESTRICTIONMANAGER_NEW);
         poolManager.addAsset(CURRENCY_ID, CURRENCY);
         poolManager.allowAsset(POOL_ID, CURRENCY_ID);
         trancheTokenNew = ITranche(poolManager.deployTranche(POOL_ID, TRANCHE_ID));
@@ -89,7 +90,6 @@ contract MigrationSpell {
 
         // add all old members to new memberlist and claim any tokens
         uint256 holderBalance;
-        uint256 escrowBalance = trancheTokenOld.balanceOf(ESCROW_OLD);
         for (uint8 i; i < memberlistMembers.length; i++) {
             // add member to new memberlist
             poolManager.updateRestriction(
@@ -130,7 +130,7 @@ contract MigrationSpell {
         trancheTokenOld.file("symbol", SYMBOL_OLD);
 
         // denies
-        rootNew.denyContract(address(POOLMANAGER), self);
+        rootNew.denyContract(address(POOLMANAGER_NEW), self);
         rootNew.denyContract(address(trancheTokenNew), self);
         rootOld.denyContract(address(trancheTokenOld), self);
         rootOld.denyContract(address(investmentManagerOld), self);

@@ -24,8 +24,8 @@ contract TestableSpell is MigrationSpell {
         require(!done, "spell-already-cast");
         done = true;
         ROOT_NEW = root;
-        POOLMANAGER = poolManager;
-        RESTRICTIONMANAGER = restrictionManager;
+        POOLMANAGER_NEW = poolManager;
+        RESTRICTIONMANAGER_NEW = restrictionManager;
         execute();
     }
 }
@@ -60,13 +60,9 @@ contract ForkTest is Deployer, Test {
     }
 
     function testShareMigrationAgainstRealDeployment() public {
-        address ROOT = 0x468CBaA7b44851C2426b58190030162d18786b6d;
-        address POOLMANAGER = 0x7829E5ca4286Df66e9F58160544097dB517a3B8c;
-        address RESTRICTIONMANAGER = 0xd35ec9Bd13bC4483D47c850298D5C285C8D1Ec22;
-        address GUARDIAN = 0xA0e3A5709995eF9900ab0F7FA070567Fe89d9e18;
-        guardian = Guardian(GUARDIAN);
-        root = Root(ROOT);
-        migrateShares(ROOT, POOLMANAGER, RESTRICTIONMANAGER);
+        guardian = Guardian(spell.GUARDIAN_NEW());
+        root = Root(spell.ROOT_NEW());
+        migrateShares(spell.ROOT_NEW(), spell.POOLMANAGER_NEW(), spell.RESTRICTIONMANAGER_NEW());
     }
 
     function testShareMigrationAgainstMockDeployment() public {
@@ -138,6 +134,9 @@ contract ForkTest is Deployer, Test {
         assertEq(Auth(spell.INVESTMENTMANAGER_OLD()).wards(address(spell)), 0);
         assertEq(Auth(address(rootOld)).wards(address(spell)), 0);
         assertEq(Auth(address(root)).wards(address(spell)), 0);
+
+        // assert vault was deployed
+        assertTrue(PoolManager(poolManager).getVault(spell.POOL_ID(), spell.TRANCHE_ID(), spell.CURRENCY()) != address(0));
     }
 
     function deployNewContracts() internal {
