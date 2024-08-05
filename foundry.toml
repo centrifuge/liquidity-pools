@@ -5,7 +5,7 @@ libs = ['lib']
 no_match_contract = "CryticTester"
 
 solc_version = "0.8.26"
-evm_version = "cancun"
+evm_version = "paris"
 
 optimizer = true
 optimizer_runs = 500

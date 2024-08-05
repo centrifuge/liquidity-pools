@@ -5,25 +5,25 @@ pragma solidity 0.8.26;
 library TransientStorage {
     function tstore(bytes32 slot, address value) internal {
         assembly {
-            tstore(slot, value)
+            sstore(slot, value)
         }
     }
 
     function tstore(bytes32 slot, uint256 value) internal {
         assembly {
-            tstore(slot, value)
+            sstore(slot, value)
         }
     }
 
     function tloadAddress(bytes32 slot) internal view returns (address value) {
         assembly {
-            value := tload(slot)
+            value := sload(slot)
         }
     }
 
     function tloadUint256(bytes32 slot) internal view returns (uint256 value) {
         assembly {
-            value := tload(slot)
+            value := sload(slot)
         }
     }
 }
