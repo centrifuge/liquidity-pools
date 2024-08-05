@@ -2,7 +2,7 @@
     "chainId": 42220,
     "rpcUrl": "https://celo-mainnet.infura.io/v3/ed5e0e19bcbc427cbf8f661736d44516",
     "config": {
-        "commitHash": "ea767c1c9bffd2e1bdc647688e42c44c489a6e5f",
+        "commitHash": "9f4a9a3538e78832d39ca4f6d0e5f6115eaccf38",
         "deployer": "0x7270b20603FbB3dF0921381670fbd62b9991aDa4",
         "admin": "0x2464f95F6901233bF4a0130A3611d5B4CBd83195",
         "adminSigners": [
