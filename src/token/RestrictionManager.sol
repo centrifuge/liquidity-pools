@@ -28,11 +28,8 @@ contract RestrictionManager is Auth, IRestrictionManager, IHook {
 
     IRoot public immutable root;
 
-    constructor(address root_, address deployer) {
+    constructor(address root_, address deployer) Auth(deployer) {
         root = IRoot(root_);
-
-        wards[deployer] = 1;
-        emit Rely(deployer);
     }
 
     // --- Callback from tranche token ---
@@ -43,7 +40,7 @@ contract RestrictionManager is Auth, IRestrictionManager, IHook {
         returns (bytes4)
     {
         require(checkERC20Transfer(from, to, value, hookData), "RestrictionManager/transfer-blocked");
-        return bytes4(keccak256("onERC20Transfer(address,address,uint256,(bytes16,bytes16))"));
+        return IHook.onERC20Transfer.selector;
     }
 
     /// @inheritdoc IHook
@@ -54,7 +51,7 @@ contract RestrictionManager is Auth, IRestrictionManager, IHook {
         uint256, /* value */
         HookData calldata /* hookData */
     ) external pure returns (bytes4) {
-        return bytes4(keccak256("onERC20AuthTransfer(address,address,address,uint256,(bytes16,bytes16))"));
+        return IHook.onERC20AuthTransfer.selector;
     }
 
     // --- ERC1404 implementation ---
@@ -65,15 +62,23 @@ contract RestrictionManager is Auth, IRestrictionManager, IHook {
         returns (bool)
     {
         if (uint128(hookData.from).getBit(FREEZE_BIT) == true && !root.endorsed(from)) {
+            // Source is frozen and not endorsed
             return false;
         }
 
-        bool toIsEndorsed = root.endorsed(to);
-        if (uint128(hookData.to).getBit(FREEZE_BIT) == true && !toIsEndorsed) {
+        if (root.endorsed(to) || to == address(0)) {
+            // Destination is endorsed and source was already checked, so the transfer is allowed
+            return true;
+        }
+
+        uint128 toHookData = uint128(hookData.to);
+        if (toHookData.getBit(FREEZE_BIT) == true) {
+            // Destination is frozen
             return false;
         }
 
-        if (abi.encodePacked(hookData.to).toUint64(0) < block.timestamp && !toIsEndorsed) {
+        if (toHookData >> 64 < block.timestamp) {
+            // Destination is not a member
             return false;
         }
 
@@ -121,7 +126,8 @@ contract RestrictionManager is Auth, IRestrictionManager, IHook {
         require(block.timestamp <= validUntil, "RestrictionManager/invalid-valid-until");
         require(!root.endorsed(user), "RestrictionManager/endorsed-user-cannot-be-updated");
 
-        uint128 hookData = validUntil.shiftLeft(64).setBit(FREEZE_BIT, isFrozen(token, user));
+        uint128 hookData = uint128(validUntil) << 64;
+        hookData.setBit(FREEZE_BIT, isFrozen(token, user));
         ITranche(token).setHookData(user, bytes16(hookData));
 
         emit UpdateMember(token, user, validUntil);

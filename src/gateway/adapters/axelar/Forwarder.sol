@@ -2,16 +2,8 @@
 pragma solidity 0.8.26;
 
 import {Auth} from "src/Auth.sol";
-import {AxelarGatewayLike} from "src/gateway/adapters/axelar/Adapter.sol";
-
-interface PrecompileLike {
-    function execute(
-        bytes32 commandId,
-        string calldata sourceChain,
-        string calldata sourceAddress,
-        bytes calldata payload
-    ) external;
-}
+import {IAxelarGateway} from "src/gateway/adapters/axelar/Adapter.sol";
+import {IPrecompile} from "src/interfaces/misc/IPrecompile.sol";
 
 // A contract to be deployed on Centrifuge-EVM in order to forward axelar tx to
 // the precompile.
@@ -20,23 +12,20 @@ contract AxelarForwarder is Auth {
     // 0x0000000000000000000000000000000000000800 in hex.
     address internal constant PRECOMPILE = 0x0000000000000000000000000000000000000800;
 
-    AxelarGatewayLike public axelarGateway;
+    IAxelarGateway public axelarGateway;
 
     // --- Events ---
     event File(bytes32 indexed what, address data);
     event Forwarded(bytes32 commandId, string sourceChain, string sourceAddress, bytes payload);
 
-    constructor(address axelarGateway_) {
-        axelarGateway = AxelarGatewayLike(axelarGateway_);
-
-        wards[msg.sender] = 1;
-        emit Rely(msg.sender);
+    constructor(address axelarGateway_) Auth(msg.sender) {
+        axelarGateway = IAxelarGateway(axelarGateway_);
     }
 
     // --- Administration ---
     function file(bytes32 what, address data) external auth {
         if (what == "axelarGateway") {
-            axelarGateway = AxelarGatewayLike(data);
+            axelarGateway = IAxelarGateway(data);
         } else {
             revert("AxelarForwarder/file-unrecognized-param");
         }
@@ -56,7 +45,7 @@ contract AxelarForwarder is Auth {
             "AxelarForwarder/not-approved-by-gateway"
         );
 
-        PrecompileLike precompile = PrecompileLike(PRECOMPILE);
+        IPrecompile precompile = IPrecompile(PRECOMPILE);
         precompile.execute(commandId, sourceChain, sourceAddress, payload);
 
         emit Forwarded(commandId, sourceChain, sourceAddress, payload);

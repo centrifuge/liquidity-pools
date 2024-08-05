@@ -32,6 +32,9 @@ interface IRoot is IMessageHandler {
     /// @notice Returns the current timelock for adding new wards
     function delay() external view returns (uint256);
 
+    /// @notice Trusted contracts within the system
+    function endorsements(address target) external view returns (uint256);
+
     /// @notice Returns when `relyTarget` has passed the timelock
     function schedule(address relyTarget) external view returns (uint256 timestamp);
 

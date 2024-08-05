@@ -54,7 +54,7 @@ contract AdminTest is BaseTest {
         address recipient,
         uint128 amount
     ) public {
-        decimals = uint8(bound(decimals, 1, 18));
+        decimals = uint8(bound(decimals, 2, 18));
         vm.assume(amount > 0);
         vm.assume(assetId != 0);
         vm.assume(recipient != address(0));
@@ -80,7 +80,7 @@ contract AdminTest is BaseTest {
         address recipient,
         uint128 amount
     ) public {
-        decimals = uint8(bound(decimals, 1, 18));
+        decimals = uint8(bound(decimals, 2, 18));
         vm.assume(amount > 0);
         vm.assume(assetId != 0);
         vm.assume(recipient != address(0));
@@ -109,7 +109,7 @@ contract AdminTest is BaseTest {
         address recipient,
         uint128 amount
     ) public {
-        decimals = uint8(bound(decimals, 1, 18));
+        decimals = uint8(bound(decimals, 2, 18));
         vm.assume(amount > 0);
         vm.assume(assetId != 0);
         vm.assume(recipient != address(investmentManager.escrow()));

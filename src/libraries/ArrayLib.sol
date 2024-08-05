@@ -4,13 +4,15 @@ pragma solidity 0.8.26;
 /// @title  ArrayLib
 library ArrayLib {
     function countNonZeroValues(uint16[8] memory arr) internal pure returns (uint8 count) {
-        for (uint256 i; i < arr.length; i++) {
+        uint256 elementsCount = arr.length;
+        for (uint256 i; i < elementsCount; i++) {
             if (arr[i] != 0) ++count;
         }
     }
 
     function decreaseFirstNValues(uint16[8] storage arr, uint8 numValues) internal {
-        for (uint256 i; i < arr.length; i++) {
+        uint256 elementsCount = arr.length;
+        for (uint256 i; i < elementsCount; i++) {
             if (numValues == 0) return;
 
             if (arr[i] != 0) {
@@ -23,7 +25,8 @@ library ArrayLib {
     }
 
     function isEmpty(uint16[8] memory arr) internal pure returns (bool) {
-        for (uint256 i; i < arr.length; i++) {
+        uint256 elementsCount = arr.length;
+        for (uint256 i; i < elementsCount; i++) {
             if (arr[i] != 0) return false;
         }
         return true;

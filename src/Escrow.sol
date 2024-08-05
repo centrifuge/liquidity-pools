@@ -10,10 +10,7 @@ import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 /// @notice Escrow contract that holds tokens.
 ///         Only wards can approve funds to be taken out.
 contract Escrow is Auth, IEscrow {
-    constructor(address deployer) {
-        wards[deployer] = 1;
-        emit Rely(deployer);
-    }
+    constructor(address deployer) Auth(deployer) {}
 
     // --- Token approvals ---
     /// @inheritdoc IEscrow

@@ -12,6 +12,8 @@ library SignatureLib {
         view
         returns (bool valid)
     {
+        require(signer != address(0), "SignatureLib/invalid-signer");
+
         if (signature.length == 65) {
             bytes32 r;
             bytes32 s;

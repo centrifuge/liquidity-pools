@@ -30,15 +30,12 @@ contract GasService is IGasService, Auth {
     /// @inheritdoc IGasService
     uint256 public tokenPrice;
 
-    constructor(uint64 messageCost_, uint64 proofCost_, uint128 gasPrice_, uint256 tokenPrice_) {
+    constructor(uint64 messageCost_, uint64 proofCost_, uint128 gasPrice_, uint256 tokenPrice_) Auth(msg.sender) {
         messageCost = messageCost_;
         proofCost = proofCost_;
         gasPrice = gasPrice_;
         tokenPrice = tokenPrice_;
         lastUpdatedAt = uint64(block.timestamp);
-
-        wards[msg.sender] = 1;
-        emit Rely(msg.sender);
     }
 
     /// @inheritdoc IGasService

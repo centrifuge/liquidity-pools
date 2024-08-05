@@ -25,6 +25,14 @@ interface ITranche is IERC20Metadata, IERC7575Share, IERC1404 {
     event File(bytes32 indexed what, address data);
     event SetHookData(address indexed user, bytes16 data);
 
+    struct Balance {
+        /// @dev The user balance is limited to uint128. This is safe because the decimals are limited to 18,
+        ///      thus the max balance is 2^128-1 / 10**18 = 3.40 * 10**20. This is also enforced on mint.
+        uint128 amount;
+        /// @dev There are 16 bytes that are used to store hook data (e.g. restrictions for users).
+        bytes16 hookData;
+    }
+
     // --- Administration ---
     /// @notice returns the hook that transfers perform callbacks to
     /// @dev    MUST comply to `IHook` interface

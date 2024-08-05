@@ -5,18 +5,18 @@ import {Root} from "src/Root.sol";
 import {IGuardian} from "src/interfaces/IGuardian.sol";
 import {IGateway} from "src/interfaces/gateway/IGateway.sol";
 
-interface SafeLike {
+interface ISafe {
     function isOwner(address signer) external view returns (bool);
 }
 
 contract Guardian is IGuardian {
     Root public immutable root;
-    SafeLike public immutable safe;
+    ISafe public immutable safe;
     IGateway public immutable gateway;
 
     constructor(address safe_, address root_, address gateway_) {
         root = Root(root_);
-        safe = SafeLike(safe_);
+        safe = ISafe(safe_);
         gateway = IGateway(gateway_);
     }
 

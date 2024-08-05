@@ -2,9 +2,7 @@
 pragma solidity 0.8.26;
 
 import {AxelarAdapter} from "src/gateway/adapters/axelar/Adapter.sol";
-import {ERC20} from "src/token/ERC20.sol";
 import {Deployer} from "script/Deployer.sol";
-import {AxelarForwarder} from "src/gateway/adapters/axelar/Forwarder.sol";
 
 // Script to deploy Liquidity Pools with an Axelar Adapter.
 contract AxelarScript is Deployer {

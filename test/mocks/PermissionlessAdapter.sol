@@ -12,11 +12,8 @@ contract PermissionlessAdapter is Auth {
 
     event Send(bytes message);
 
-    constructor(address gateway_) {
+    constructor(address gateway_) Auth(msg.sender) {
         gateway = GatewayLike(gateway_);
-
-        wards[msg.sender] = 1;
-        emit Rely(msg.sender);
     }
 
     // --- Incoming ---

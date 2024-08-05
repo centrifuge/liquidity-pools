@@ -121,7 +121,7 @@ contract DepositTest is BaseTest {
         // minting or depositing more should revert
         vm.expectRevert(bytes("InvestmentManager/exceeds-deposit-limits"));
         vault.mint(1, self);
-        vm.expectRevert(bytes("InvestmentManager/exceeds-deposit-limits"));
+        vm.expectRevert(bytes("InvestmentManager/exceeds-max-deposit"));
         vault.deposit(2, self, self);
 
         // remainder is rounding difference
@@ -168,7 +168,7 @@ contract DepositTest is BaseTest {
             poolId, trancheId, bytes32(bytes20(self)), _assetId, assets, firstTranchePayout
         );
 
-        (, uint256 depositPrice,,,,,,,,) = investmentManager.investments(address(vault), self);
+        (,, uint256 depositPrice,,,,,,,) = investmentManager.investments(address(vault), self);
         assertEq(depositPrice, 1400000000000000000);
 
         // second trigger executed collectInvest of the second 50% at a price of 1.2
@@ -177,7 +177,7 @@ contract DepositTest is BaseTest {
             poolId, trancheId, bytes32(bytes20(self)), _assetId, assets, secondTranchePayout
         );
 
-        (, depositPrice,,,,,,,,) = investmentManager.investments(address(vault), self);
+        (,, depositPrice,,,,,,,) = investmentManager.investments(address(vault), self);
         assertEq(depositPrice, 1292307679384615384);
 
         // assert deposit & mint values adjusted
@@ -392,7 +392,11 @@ contract DepositTest is BaseTest {
 
         // endorse router
         root.endorse(router);
-        vm.startPrank(router); // try to claim deposit on behalf of user and set the wrong user as receiver
+
+        vm.startPrank(router);
+        vm.expectRevert(bytes("ERC7540Vault/cannot-set-self-as-operator"));
+        vault.setEndorsedOperator(address(router), true);
+
         vault.setEndorsedOperator(address(this), true);
         vault.deposit(amount, receiver, address(this));
         vm.stopPrank();
@@ -435,7 +439,7 @@ contract DepositTest is BaseTest {
         assertEq(vault.maxMint(self), firstTranchePayout);
 
         // deposit price should be ~1.2*10**18
-        (, uint256 depositPrice,,,,,,,,) = investmentManager.investments(address(vault), self);
+        (,, uint256 depositPrice,,,,,,,) = investmentManager.investments(address(vault), self);
         assertEq(depositPrice, 1200000000000000000);
 
         // trigger executed collectInvest of the second 50% at a price of 1.4
@@ -505,7 +509,7 @@ contract DepositTest is BaseTest {
         assertEq(vault.maxMint(self), firstTranchePayout);
 
         // deposit price should be ~1.2*10**18
-        (, uint256 depositPrice,,,,,,,,) = investmentManager.investments(address(vault), self);
+        (,, uint256 depositPrice,,,,,,,) = investmentManager.investments(address(vault), self);
         assertEq(depositPrice, 1200000019200000307);
 
         // trigger executed collectInvest of the second 50% at a price of 1.4
@@ -581,7 +585,7 @@ contract DepositTest is BaseTest {
         assertEq(vault.maxMint(self), shares);
 
         // lp price is set to the deposit price
-        (, uint256 depositPrice,,,,,,,,) = investmentManager.investments(address(vault), self);
+        (,, uint256 depositPrice,,,,,,,) = investmentManager.investments(address(vault), self);
         assertEq(depositPrice, 1200000000000000000);
     }
 
@@ -627,7 +631,7 @@ contract DepositTest is BaseTest {
         assertEq(vault.maxMint(self), shares);
 
         // lp price is set to the deposit price
-        (, uint256 depositPrice,,,,,,,,) = investmentManager.investments(address(vault), self);
+        (,, uint256 depositPrice,,,,,,,) = investmentManager.investments(address(vault), self);
         assertEq(depositPrice, 1200000000000000000);
     }
 
@@ -710,7 +714,7 @@ contract DepositTest is BaseTest {
             poolId, trancheId, bytes32(bytes20(self)), _assetId, assets, firstTranchePayout
         );
 
-        (, uint256 depositPrice,,,,,,,,) = investmentManager.investments(address(vault), self);
+        (,, uint256 depositPrice,,,,,,,) = investmentManager.investments(address(vault), self);
         assertEq(depositPrice, 1400000000000000000);
 
         // second trigger executed collectInvest of the second 50% at a price of 1.2
@@ -719,7 +723,7 @@ contract DepositTest is BaseTest {
             poolId, trancheId, bytes32(bytes20(self)), _assetId, assets, secondTranchePayout
         );
 
-        (, depositPrice,,,,,,,,) = investmentManager.investments(address(vault), self);
+        (,, depositPrice,,,,,,,) = investmentManager.investments(address(vault), self);
         assertEq(depositPrice, 1292307679384615384);
 
         // assert deposit & mint values adjusted
@@ -753,7 +757,7 @@ contract DepositTest is BaseTest {
         centrifugeChain.isFulfilledDepositRequest(
             vault.poolId(), vault.trancheId(), investor.toBytes32(), assetId, uint128(amount), uint128(amount)
         );
-        vm.expectRevert(bytes("InvestmentManager/tranche-token-amount-is-zero"));
+        vm.expectRevert(bytes("InvestmentManager/exceeds-max-deposit"));
         vault.deposit(amount, investor);
 
         vm.prank(investor);

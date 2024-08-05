@@ -111,6 +111,7 @@ contract FactoryTest is Test {
         address token = trancheFactory.newTranche(poolId, trancheId, name, symbol, decimals, trancheWards);
 
         assertEq(address(token), predictedAddress);
+        assertEq(trancheFactory.getAddress(poolId, trancheId, decimals), address(token));
     }
 
     function testDeployingDeterministicAddressTwiceReverts(
