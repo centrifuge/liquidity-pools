@@ -2,7 +2,7 @@
     "chainId": 1,
     "rpcUrl": "https://mainnet.infura.io/v3/28b9df37a970456197cdb6b73af4e6de",
     "config": {
-        "commitHash": "27827821e933f574d9bd87581e9b3221c58a9b3d",
+        "commitHash": "7b367a604bcf3bf7de5afb1bcfd956f922669779",
         "deployer": "0x7270b20603FbB3dF0921381670fbd62b9991aDa4",
         "admin": "0xD9D30ab47c0f096b0AA67e9B8B1624504a63e7FD",
         "adminSigners": [

@@ -2,7 +2,7 @@
     "chainId": 42161,
     "rpcUrl": "https://arbitrum-mainnet.infura.io/v3/ed5e0e19bcbc427cbf8f661736d44516",
     "config": {
-        "commitHash": "27827821e933f574d9bd87581e9b3221c58a9b3d",
+        "commitHash": "7b367a604bcf3bf7de5afb1bcfd956f922669779",
         "deployer": "0x7270b20603FbB3dF0921381670fbd62b9991aDa4",
         "admin": "0xa36caE0ACd40C6BbA61014282f6AE51c7807A433",
         "adminSigners": [
