@@ -12,8 +12,8 @@ contract BurnTest is BaseTest {
 
         ITranche tranche = ITranche(address(vault.share()));
         root.relyContract(address(tranche), self); // give self auth permissions
-        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), investor, type(uint64).max); // add investor as
-            // member
+        // add investor as member
+        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), investor, type(uint64).max);
 
         tranche.mint(investor, amount);
         root.denyContract(address(tranche), self); // remove auth permissions from self

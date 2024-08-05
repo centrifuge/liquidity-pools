@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity >=0.5.0;
 
 import {IERC165} from "src/interfaces/IERC7575.sol";
@@ -16,15 +16,15 @@ string constant ERROR_MESSAGE = "transfer-blocked";
 
 interface IHook is IERC165 {
     /// @notice Callback on standard ERC20 transfer.
-    /// @dev    MUST return bytes4(keccak256("onERC20Transfer(address,address,uint256,(bytes16,bytes16))")) if
-    ///         successful
+    /// @dev    MUST return bytes4(keccak256("onERC20Transfer(address,address,uint256,(bytes16,bytes16))"))
+    ///         if successful
     function onERC20Transfer(address from, address to, uint256 value, HookData calldata hookdata)
         external
         returns (bytes4);
 
     /// @notice Callback on authorized ERC20 transfer.
-    /// @dev    MUST return bytes4(keccak256("onERC20Transfer(address,address,uint256,(bytes16,bytes16))")) if
-    ///         successful
+    /// @dev    MUST return bytes4(keccak256("onERC20AuthTransfer(address,address,address,uint256,(bytes16,bytes16))"))
+    ///         if successful
     function onERC20AuthTransfer(address sender, address from, address to, uint256 value, HookData calldata hookdata)
         external
         returns (bytes4);

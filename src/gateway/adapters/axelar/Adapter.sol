@@ -1,32 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.26;
 
-import {IAxelarAdapter, IAdapter} from "src/interfaces/gateway/adapters/IAxelarAdapter.sol";
+import {
+    IAxelarAdapter,
+    IAdapter,
+    IAxelarGateway,
+    IAxelarGasService
+} from "src/interfaces/gateway/adapters/IAxelarAdapter.sol";
 import {IGateway} from "src/interfaces/gateway/IGateway.sol";
 import {Auth} from "src/Auth.sol";
 import {IGateway} from "src/interfaces/gateway/IGateway.sol";
-
-interface AxelarGatewayLike {
-    function callContract(string calldata destinationChain, string calldata contractAddress, bytes calldata payload)
-        external;
-
-    function validateContractCall(
-        bytes32 commandId,
-        string calldata sourceChain,
-        string calldata sourceAddress,
-        bytes32 payloadHash
-    ) external returns (bool);
-}
-
-interface AxelarGasServiceLike {
-    function payNativeGasForContractCall(
-        address sender,
-        string calldata destinationChain,
-        string calldata destinationAddress,
-        bytes calldata payload,
-        address refundAddress
-    ) external payable;
-}
 
 /// @title  Axelar Adapter
 /// @notice Routing contract that integrates with an Axelar Gateway
@@ -37,22 +20,19 @@ contract AxelarAdapter is Auth, IAxelarAdapter {
     IGateway public immutable gateway;
     bytes32 public immutable centrifugeIdHash;
     bytes32 public immutable centrifugeAddressHash;
-    AxelarGatewayLike public immutable axelarGateway;
-    AxelarGasServiceLike public immutable axelarGasService;
+    IAxelarGateway public immutable axelarGateway;
+    IAxelarGasService public immutable axelarGasService;
 
     /// @inheritdoc IAxelarAdapter
     uint256 public axelarCost = 58_039_058_122_843;
 
-    constructor(address gateway_, address axelarGateway_, address axelarGasService_) {
+    constructor(address gateway_, address axelarGateway_, address axelarGasService_) Auth(msg.sender) {
         gateway = IGateway(gateway_);
-        axelarGateway = AxelarGatewayLike(axelarGateway_);
-        axelarGasService = AxelarGasServiceLike(axelarGasService_);
+        axelarGateway = IAxelarGateway(axelarGateway_);
+        axelarGasService = IAxelarGasService(axelarGasService_);
 
         centrifugeIdHash = keccak256(bytes(CENTRIFUGE_ID));
         centrifugeAddressHash = keccak256(bytes("0x7369626CEF070000000000000000000000000000"));
-
-        wards[msg.sender] = 1;
-        emit Rely(msg.sender);
     }
 
     // --- Administrative ---

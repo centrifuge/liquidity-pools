@@ -14,10 +14,8 @@ contract MockAdapter is Auth, Mock {
 
     mapping(bytes => uint256) public sent;
 
-    constructor(address gateway_) {
+    constructor(address gateway_) Auth(msg.sender) {
         gateway = GatewayLike(gateway_);
-
-        wards[msg.sender] = 1;
     }
 
     function execute(bytes memory _message) external {
@@ -29,8 +27,8 @@ contract MockAdapter is Auth, Mock {
         sent[message]++;
     }
 
-    function estimate(bytes calldata, uint256) public view returns (uint256 estimation) {
-        estimation = values_uint256_return["estimate"];
+    function estimate(bytes calldata, uint256 baseCost) public view returns (uint256 estimation) {
+        estimation = values_uint256_return["estimate"] + baseCost;
     }
 
     function pay(bytes calldata, address) external payable {

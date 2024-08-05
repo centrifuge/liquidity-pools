@@ -2,32 +2,21 @@
 pragma solidity 0.8.26;
 
 import {Tranche} from "src/token/Tranche.sol";
+import {ITrancheFactory} from "src/interfaces/factories/ITrancheFactory.sol";
 import {Auth} from "src/Auth.sol";
-
-interface TrancheFactoryLike {
-    function newTranche(
-        uint64 poolId,
-        bytes16 trancheId,
-        string memory name,
-        string memory symbol,
-        uint8 decimals,
-        address[] calldata restrictionManagerWards
-    ) external returns (address);
-}
 
 /// @title  Tranche Token Factory
 /// @dev    Utility for deploying new tranche token contracts
 ///         Ensures the addresses are deployed at a deterministic address
 ///         based on the pool id and tranche id.
-contract TrancheFactory is Auth, TrancheFactoryLike {
+contract TrancheFactory is Auth, ITrancheFactory {
     address public immutable root;
 
-    constructor(address _root, address deployer) {
+    constructor(address _root, address deployer) Auth(deployer) {
         root = _root;
-        wards[deployer] = 1;
-        emit Rely(deployer);
     }
 
+    /// @inheritdoc ITrancheFactory
     function newTranche(
         uint64 poolId,
         bytes16 trancheId,
@@ -46,11 +35,26 @@ contract TrancheFactory is Auth, TrancheFactoryLike {
         token.file("symbol", symbol);
 
         token.rely(root);
-        for (uint256 i = 0; i < trancheWards.length; i++) {
+        uint256 wardsCount = trancheWards.length;
+        for (uint256 i; i < wardsCount; i++) {
             token.rely(trancheWards[i]);
         }
         token.deny(address(this));
 
         return address(token);
+    }
+
+    /// @inheritdoc ITrancheFactory
+    function getAddress(uint64 poolId, bytes16 trancheId, uint8 decimals) external view returns (address) {
+        bytes32 hash = keccak256(
+            abi.encodePacked(
+                bytes1(0xff),
+                address(this),
+                keccak256(abi.encodePacked(poolId, trancheId)),
+                keccak256(abi.encodePacked(type(Tranche).creationCode, abi.encode(decimals)))
+            )
+        );
+
+        return address(uint160(uint256(hash)));
     }
 }

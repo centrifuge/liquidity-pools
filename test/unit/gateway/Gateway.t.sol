@@ -18,6 +18,12 @@ contract GatewayTest is Test {
 
     uint256 constant INITIAL_BALANCE = 1 ether;
 
+    uint256 constant FIRST_ADAPTER_ESTIMATE = 1.5 gwei;
+    uint256 constant SECOND_ADAPTER_ESTIMATE = 1 gwei;
+    uint256 constant THIRD_ADAPTER_ESTIMATE = 0.5 gwei;
+    uint256 constant BASE_MESSAGE_ESTIMATE = 0.75 gwei;
+    uint256 constant BASE_PROOF_ESTIMATE = 0.25 gwei;
+
     address self;
 
     MockRoot root;
@@ -36,12 +42,13 @@ contract GatewayTest is Test {
     Gateway gateway;
 
     function setUp() public {
+        self = address(this);
         root = new MockRoot();
         investmentManager = new MockManager();
         poolManager = new MockManager();
         gasService = new MockGasService();
         gateway = new Gateway(address(root), address(poolManager), address(investmentManager), address(gasService));
-
+        gateway.file("payers", self, true);
         gasService.setReturn("shouldRefuel", true);
         vm.deal(address(gateway), INITIAL_BALANCE);
 
@@ -54,11 +61,12 @@ contract GatewayTest is Test {
         adapter4 = new MockAdapter(address(gateway));
         vm.label(address(adapter4), "MockAdapter4");
 
-        adapter1.setReturn("estimate", uint256(1.5 gwei));
-        adapter2.setReturn("estimate", uint256(1.25 gwei));
-        adapter3.setReturn("estimate", uint256(0.75 gwei));
+        adapter1.setReturn("estimate", FIRST_ADAPTER_ESTIMATE);
+        adapter2.setReturn("estimate", SECOND_ADAPTER_ESTIMATE);
+        adapter3.setReturn("estimate", THIRD_ADAPTER_ESTIMATE);
 
-        gasService.setReturn("estimate", uint256(0.5 gwei));
+        gasService.setReturn("message_estimate", BASE_MESSAGE_ESTIMATE);
+        gasService.setReturn("proof_estimate", BASE_PROOF_ESTIMATE);
 
         oneMockAdapter.push(address(adapter1));
 
@@ -83,8 +91,6 @@ contract GatewayTest is Test {
         nineMockAdapters.push(address(adapter1));
         nineMockAdapters.push(address(adapter1));
         nineMockAdapters.push(address(adapter1));
-
-        self = address(this);
     }
 
     // --- Administration ---
@@ -148,7 +154,9 @@ contract GatewayTest is Test {
     }
 
     // --- Dynamic managers ---
-    function testCustomManager() public {
+    function testCustomManager(uint8 existingMessageId) public {
+        existingMessageId = uint8(bound(existingMessageId, 0, 28));
+
         uint8 messageId = 40;
         address[] memory adapters = new address[](1);
         adapters[0] = address(adapter1);
@@ -164,6 +172,9 @@ contract GatewayTest is Test {
 
         assertEq(mgr.received(message), 0);
 
+        vm.expectRevert(bytes("Gateway/hardcoded-message-id"));
+        gateway.file("message", existingMessageId, address(mgr));
+
         gateway.file("message", messageId, address(mgr));
         vm.prank(address(adapter1));
         gateway.handle(message);
@@ -174,39 +185,26 @@ contract GatewayTest is Test {
 
     function testFileAdapters() public {
         gateway.file("adapters", threeMockAdapters);
+        assertEq(gateway.quorum(), 3);
         assertEq(gateway.adapters(0), address(adapter1));
         assertEq(gateway.adapters(1), address(adapter2));
         assertEq(gateway.adapters(2), address(adapter3));
         assertEq(gateway.activeSessionId(), 0);
 
-        vm.expectRevert(bytes(""));
-        assertEq(gateway.adapters(3), address(0));
-
-        (uint8 validadapter1Id, uint8 validadapter1Quorum,) = gateway.activeAdapters(address(adapter1));
-        assertEq(validadapter1Id, 1);
-        assertEq(validadapter1Quorum, 3);
-        (uint8 validadapter2Id, uint8 validadapter2Quorum,) = gateway.activeAdapters(address(adapter2));
-        assertEq(validadapter2Id, 2);
-        assertEq(validadapter2Quorum, 3);
-        (uint8 validadapter3Id, uint8 validadapter3Quorum,) = gateway.activeAdapters(address(adapter3));
-        assertEq(validadapter3Id, 3);
-        assertEq(validadapter3Quorum, 3);
-        (uint8 invalidadapter4Id, uint8 invalidadapter4Quorum,) = gateway.activeAdapters(address(adapter4));
-        assertEq(invalidadapter4Id, 0);
-        assertEq(invalidadapter4Quorum, 0);
-
         gateway.file("adapters", fourMockAdapters);
-        (uint8 validadapter4Id, uint8 validadapter4Quorum,) = gateway.activeAdapters(address(adapter4));
-        assertEq(validadapter4Id, 4);
-        assertEq(validadapter4Quorum, 4);
+        assertEq(gateway.quorum(), 4);
+        assertEq(gateway.adapters(0), address(adapter1));
+        assertEq(gateway.adapters(1), address(adapter2));
+        assertEq(gateway.adapters(2), address(adapter3));
         assertEq(gateway.adapters(3), address(adapter4));
-        assertEq(gateway.activeSessionId(), 0);
+        assertEq(gateway.activeSessionId(), 1);
 
         gateway.file("adapters", threeMockAdapters);
-        (invalidadapter4Id, invalidadapter4Quorum,) = gateway.activeAdapters(address(adapter4));
-        assertEq(invalidadapter4Id, 0);
-        assertEq(invalidadapter4Quorum, 0);
-        assertEq(gateway.activeSessionId(), 1);
+        assertEq(gateway.quorum(), 3);
+        assertEq(gateway.adapters(0), address(adapter1));
+        assertEq(gateway.adapters(1), address(adapter2));
+        assertEq(gateway.adapters(2), address(adapter3));
+        assertEq(gateway.activeSessionId(), 2);
         vm.expectRevert(bytes(""));
         assertEq(gateway.adapters(3), address(0));
 
@@ -399,10 +397,11 @@ contract GatewayTest is Test {
     function testPrepayment() public {
         uint256 topUpAmount = 1 gwei;
 
-        vm.expectRevert(bytes("Gateway/only-endorsed-can-topup"));
+        gateway.file("payers", self, false);
+        vm.expectRevert(bytes("Gateway/only-payers-can-top-up"));
         gateway.topUp{value: topUpAmount}();
 
-        root.setReturn("endorsed_user", true);
+        gateway.file("payers", self, true);
         vm.expectRevert(bytes("Gateway/cannot-topup-with-nothing"));
         gateway.topUp{value: 0}();
 
@@ -417,8 +416,6 @@ contract GatewayTest is Test {
 
         bytes memory message = abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1));
         bytes memory proof = _formatMessageProof(message);
-
-        root.setReturn("endorsed_user", true);
 
         uint256 balanceBeforeTx = address(gateway).balance;
         uint256 topUpAmount = 10 wei;
@@ -446,8 +443,6 @@ contract GatewayTest is Test {
 
         bytes memory message = abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1));
         bytes memory proof = _formatMessageProof(message);
-
-        root.setReturn("endorsed_user", true);
 
         uint256 balanceBeforeTx = address(gateway).balance;
 
@@ -478,8 +473,6 @@ contract GatewayTest is Test {
 
         bytes memory message = abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1));
         bytes memory proof = _formatMessageProof(message);
-
-        root.setReturn("endorsed_user", true);
 
         uint256 balanceBeforeTx = address(gateway).balance;
 
@@ -859,6 +852,25 @@ contract GatewayTest is Test {
         gateway.recoverTokens(address(token), receiver, amount);
         assertEq(token.balanceOf(address(gateway)), 0);
         assertEq(token.balanceOf(receiver), amount);
+    }
+
+    function testEstimate() public {
+        gateway.file("adapters", threeMockAdapters);
+
+        bytes memory message = abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1));
+
+        uint256 firstRouterEstimate = FIRST_ADAPTER_ESTIMATE + BASE_MESSAGE_ESTIMATE;
+        uint256 secondRouterEstimate = SECOND_ADAPTER_ESTIMATE + BASE_PROOF_ESTIMATE;
+        uint256 thirdRouterEstimate = THIRD_ADAPTER_ESTIMATE + BASE_PROOF_ESTIMATE;
+        uint256 totalEstimate = firstRouterEstimate + secondRouterEstimate + thirdRouterEstimate;
+
+        (uint256[] memory tranches, uint256 total) = gateway.estimate(message);
+
+        assertEq(tranches.length, 3);
+        assertEq(tranches[0], firstRouterEstimate);
+        assertEq(tranches[1], secondRouterEstimate);
+        assertEq(tranches[2], thirdRouterEstimate);
+        assertEq(total, totalEstimate);
     }
 
     function assertVotes(bytes memory message, uint16 r1, uint16 r2, uint16 r3) internal {

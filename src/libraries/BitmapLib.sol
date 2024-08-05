@@ -15,24 +15,4 @@ library BitmapLib {
         uint128 bitAtIndex = uint128(bitmap & (1 << index));
         return bitAtIndex != 0;
     }
-
-    /// @notice Get n least significant bits from the bitmap
-    function getLSBits(uint256 bitmap, uint256 n) internal pure returns (uint256) {
-        return bitmap & (2 ** n - 1);
-    }
-
-    /// @notice Get n most significant bits from the bitmap
-    function getMSBits(uint256 bitmap, uint256 n) internal pure returns (uint256) {
-        return bitmap >> (256 - n);
-    }
-
-    /// @notice Shift the value left
-    function shiftLeft(uint64 value, uint128 shift) internal pure returns (uint128) {
-        return uint128(value) << shift;
-    }
-
-    /// @notice Concatenate uint128 values to create a uint256 value
-    function concat(uint128 left, uint128 right) internal pure returns (uint256) {
-        return uint256(uint128(left)) << 128 | uint128(right);
-    }
 }

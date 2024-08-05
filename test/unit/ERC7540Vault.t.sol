@@ -68,7 +68,7 @@ contract ERC7540VaultTest is BaseTest {
         vm.expectRevert(bytes("MathLib/uint128-overflow"));
         vault.convertToAssets(amount);
 
-        vm.expectRevert(bytes("MathLib/uint128-overflow"));
+        vm.expectRevert(bytes("InvestmentManager/exceeds-max-deposit"));
         vault.deposit(amount, randomUser, self);
 
         vm.expectRevert(bytes("MathLib/uint128-overflow"));
@@ -77,7 +77,7 @@ contract ERC7540VaultTest is BaseTest {
         vm.expectRevert(bytes("MathLib/uint128-overflow"));
         vault.withdraw(amount, randomUser, self);
 
-        vm.expectRevert(bytes("MathLib/uint128-overflow"));
+        vm.expectRevert(bytes("InvestmentManager/exceeds-max-redeem"));
         vault.redeem(amount, randomUser, self);
 
         erc20.mint(address(this), amount);
@@ -94,7 +94,7 @@ contract ERC7540VaultTest is BaseTest {
         bytes4 erc7540Redeem = 0x620ee8e4;
         bytes4 erc7540CancelDeposit = 0x8bf840e3;
         bytes4 erc7540CancelRedeem = 0xe76cffc7;
-        bytes4 erc7741 = 0xb78caa48;
+        bytes4 erc7741 = 0xa9e50872;
         bytes4 erc7714 = 0x78d77ecb;
 
         vm.assume(

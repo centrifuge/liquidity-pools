@@ -19,6 +19,7 @@ interface IERC7540Operator {
      *
      * @param operator The address of the operator.
      * @param approved The approval status.
+     * @return Whether the call was executed successfully or not
      */
     function setOperator(address operator, bool approved) external returns (bool);
 
@@ -247,8 +248,8 @@ interface IERC7741 {
         address controller,
         address operator,
         bool approved,
-        uint256 deadline,
         bytes32 nonce,
+        uint256 deadline,
         bytes memory signature
     ) external returns (bool);
 
@@ -306,6 +307,9 @@ interface IERC7540Vault is
     /// @notice Set msg.sender as operator of owner, to `approved` status
     /// @dev    MUST be called by endorsed sender
     function setEndorsedOperator(address owner, bool approved) external;
+
+    /// @notice Callback when a redeem Request is triggered externally;
+    function onRedeemRequest(address controller, address owner, uint256 shares) external;
 
     /// @notice Callback when a deposit Request becomes claimable
     function onDepositClaimable(address owner, uint256 assets, uint256 shares) external;

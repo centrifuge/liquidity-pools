@@ -33,10 +33,7 @@ contract PassthroughAdapter is Auth, IAdapter {
     event File(bytes32 indexed what, address addr);
     event File(bytes32 indexed what, string data);
 
-    constructor() {
-        wards[msg.sender] = 1;
-        emit Rely(msg.sender);
-    }
+    constructor() Auth(msg.sender) {}
 
     // --- Administrative ---
     function file(bytes32 what, address addr) external auth {

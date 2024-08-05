@@ -16,8 +16,8 @@ contract AssetShareConversionTest is BaseTest {
         ERC7540Vault vault = ERC7540Vault(vault_);
         ITranche tranche = ITranche(address(ERC7540Vault(vault_).share()));
 
-        assertEq(vault.priceLastUpdated(), 0);
-        assertEq(vault.pricePerShare(), 0);
+        assertEq(vault.priceLastUpdated(), block.timestamp);
+        assertEq(vault.pricePerShare(), 1e6);
         centrifugeChain.updateTranchePrice(poolId, trancheId, assetId, 1e18, uint64(block.timestamp));
         assertEq(vault.priceLastUpdated(), uint64(block.timestamp));
         assertEq(vault.pricePerShare(), 1e6);
@@ -88,8 +88,8 @@ contract AssetShareConversionTest is BaseTest {
         // assert share/asset conversion
         assertEq(tranche.totalSupply(), 100000000);
         assertEq(vault.totalAssets(), 100000000000000000000);
-        assertEq(vault.convertToShares(100000000000000000000), 100000000); // tranche tokens have 12 less decimals than
-            // assets
+        // tranche tokens have 12 less decimals than asset
+        assertEq(vault.convertToShares(100000000000000000000), 100000000);
         assertEq(vault.convertToAssets(vault.convertToShares(100000000000000000000)), 100000000000000000000);
         assertEq(vault.pricePerShare(), 1e18);
 
@@ -97,8 +97,8 @@ contract AssetShareConversionTest is BaseTest {
         centrifugeChain.updateTranchePrice(poolId, trancheId, assetId, 1200000000000000000, uint64(block.timestamp));
 
         assertEq(vault.totalAssets(), 120000000000000000000);
-        assertEq(vault.convertToShares(120000000000000000000), 100000000); // tranche tokens have 12 less decimals than
-            // assets
+        // tranche tokens have 12 less decimals than assets
+        assertEq(vault.convertToShares(120000000000000000000), 100000000);
         assertEq(vault.convertToAssets(vault.convertToShares(120000000000000000000)), 120000000000000000000);
         assertEq(vault.pricePerShare(), 1.2e18);
     }

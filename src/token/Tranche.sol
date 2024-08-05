@@ -13,19 +13,15 @@ import {
 } from "src/interfaces/token/IHook.sol";
 import {IERC7575Share, IERC165} from "src/interfaces/IERC7575.sol";
 import {ITranche, IERC1404} from "src/interfaces/token/ITranche.sol";
-import {BitmapLib} from "src/libraries/BitmapLib.sol";
+import {MathLib} from "src/libraries/MathLib.sol";
 
 /// @title  Tranche Token
 /// @notice Extension of ERC20 + ERC1404 for tranche tokens,
 ///         integrating an external hook optionally for ERC20 callbacks and ERC1404 checks.
-///
-/// @dev    The user balance is limited to uint128. This is safe because the decimals are limited to 18,
-///         thus the max balance is 2^128-1 / 10**18 = 3.40 * 10**20. This is also enforced on mint.
-///
-///         The most significant 128 bits of the uint256 balance value are used
-///         to store hook data (e.g. restrictions for users).
 contract Tranche is ERC20, ITranche {
-    using BitmapLib for *;
+    using MathLib for uint256;
+
+    mapping(address => Balance) private balances;
 
     /// @inheritdoc ITranche
     address public hook;
@@ -60,20 +56,22 @@ contract Tranche is ERC20, ITranche {
     }
 
     // --- ERC20 overrides ---
-    /// @inheritdoc IERC20
-    function balanceOf(address user) public view override(ERC20, IERC20) returns (uint256) {
-        return balances[user].getLSBits(128);
+    function _balanceOf(address user) internal view override returns (uint256) {
+        return balances[user].amount;
+    }
+
+    function _setBalance(address user, uint256 value) internal override {
+        balances[user].amount = value.toUint128();
     }
 
     /// @inheritdoc ITranche
     function hookDataOf(address user) public view returns (bytes16) {
-        return bytes16(uint128(balances[user].getMSBits(128)));
+        return balances[user].hookData;
     }
 
     /// @inheritdoc ITranche
     function setHookData(address user, bytes16 hookData) public authOrHook {
-        /// Balance values are [uint128(hookData) + uint128(balance)]
-        _setBalance(user, uint128(hookData).concat(uint128(balanceOf(user))));
+        balances[user].hookData = hookData;
         emit SetHookData(user, hookData);
     }
 
@@ -103,6 +101,7 @@ contract Tranche is ERC20, ITranche {
     /// @inheritdoc ITranche
     function burn(address from, uint256 value) public override(ERC20, ITranche) {
         super.burn(from, value);
+        _onTransfer(from, address(0), value);
     }
 
     function _onTransfer(address from, address to, uint256 value) internal {

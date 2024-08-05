@@ -26,8 +26,8 @@ interface IGateway {
     }
 
     // --- Events ---
-    event HandleMessage(bytes message, address adapter);
-    event HandleProof(bytes32 messageHash, address adapter);
+    event ProcessMessage(bytes message, address adapter);
+    event ProcessProof(bytes32 messageHash, address adapter);
     event ExecuteMessage(bytes message, address adapter);
     event SendMessage(bytes message);
     event RecoverMessage(address adapter, bytes message);
@@ -38,7 +38,17 @@ interface IGateway {
     event File(bytes32 indexed what, address[] adapters);
     event File(bytes32 indexed what, address instance);
     event File(bytes32 indexed what, uint8 messageId, address manager);
-    event Received(address indexed sender, uint256 amount);
+    event File(bytes32 indexed what, address caller, bool isAllowed);
+    event ReceiveNativeTokens(address indexed sender, uint256 amount);
+
+    /// @notice Returns the address of the adapter at the given id.
+    function adapters(uint256 id) external view returns (address);
+
+    /// @notice Returns the address of the contract that handles the given message id.
+    function messageHandlers(uint8 messageId) external view returns (address);
+
+    /// @notice Returns the timestamp when the given recovery can be executed.
+    function recoveries(address adapter, bytes32 messageHash) external view returns (uint256 timestamp);
 
     // --- Administration ---
     /// @notice Used to update an array of addresses ( state variable ) on very rare occasions.
@@ -61,6 +71,14 @@ interface IGateway {
     /// @param  data1 The key of the mapping.
     /// @param  data2 The value of the mapping
     function file(bytes32 what, uint8 data1, address data2) external;
+
+    /// @notice Used to update a mapping ( state variables ) on very rare occasions.
+    /// @dev    Manages who is allowed to call `this.topUp`
+    ///
+    /// @param what The name of the variable to be updated - `payers`
+    /// @param caller Address of the payer allowed to top-up
+    /// @param isAllower Whether the `caller` is allowed to top-up or not
+    function file(bytes32 what, address caller, bool isAllower) external;
 
     // --- Incoming ---
     /// @notice Handles incoming messages, proofs, and recoveries.
@@ -133,10 +151,16 @@ interface IGateway {
     ///         and settling on the destination chain.
     /// @param  payload Used in gas cost calculations.
     /// @dev    Currenly the payload is not taken into consideration.
-    /// @return tranches An array of cost values per adapter. Each value is how much it's going to cost
+    /// @return perAdapter An array of cost values per adapter. Each value is how much it's going to cost
     ///         for a message / proof to be passed through one router and executed on Centrifuge Chain
     /// @return total Total cost for sending one message and corresponding proofs on through all adapters
-    function estimate(bytes calldata payload) external view returns (uint256[] memory tranches, uint256 total);
+    function estimate(bytes calldata payload) external view returns (uint256[] memory perAdapter, uint256 total);
+
+    /// @notice Used to check current state of the `caller` and whether they are allowed to call
+    ///         `this.topUp` or not.
+    /// @param  caller Address to check
+    /// @return isAllowed Whether the `caller` `isAllowed to call `this.topUp()`
+    function payers(address caller) external view returns (bool isAllowed);
 }
 
 interface IMessageHandler {

@@ -16,6 +16,16 @@ interface ICentrifugeRouter is IRecoverable {
     /// @dev    This is a getter method
     function lockedRequests(address controller, address vault) external view returns (uint256 amount);
 
+    // --- Manage permissionless claiming ---
+    /// @notice Enable permissionless claiming
+    /// @dev    After this is called, anyone can claim tokens to msg.sender.
+    ///         Even any requests submitted directly to the vault (not through the CentrifugeRouter) will be
+    ///         permissionlessly claimable through the CentrifugeRouter, until `disable()` is called.
+    function enable(address vault) external;
+
+    /// @notice Disable permissionless claiming
+    function disable(address vault) external;
+
     // --- Deposit ---
     /// @notice Check `IERC7540Deposit.requestDeposit`.
     /// @dev    This adds a mandatory prepayment for all the costs that will incur during the transaction.
@@ -63,11 +73,13 @@ interface ICentrifugeRouter is IRecoverable {
 
     /// @notice Helper method to lock a deposit request, and enable permissionless claiming of that vault in 1 call.
     /// @dev    It starts interaction with the vault by calling `open`.
-    ///         If `vault`'s underlying asset is a wrapped one, there is a `wrap` message call on the deposited asset
-    ///         beforehand.
+    ///         Vaults support assets that are wrapped one. When user calls this method
+    ///         and the vault's asset is a wrapped one, first the balance of the wrapped asset is checked.
+    ///         If balance >= `amount`, then this asset is used
+    ///         else  amount is treat as an underlying asset one and it is wrapped.
     /// @param  vault Address of the vault
     /// @param  amount Amount to be deposited
-    function openLockDepositRequest(address vault, uint256 amount) external payable;
+    function enableLockDepositRequest(address vault, uint256 amount) external payable;
 
     /// @notice Unlocks all deposited assets of the current caller for a given vault
     ///
@@ -127,13 +139,6 @@ interface ICentrifugeRouter is IRecoverable {
     /// @param  controller Check IERC7575.withdraw.owner
     function claimRedeem(address vault, address receiver, address controller) external payable;
 
-    // --- Manage permissionless claiming ---
-    /// @notice Allow permissionless claiming
-    function open(address vault) external;
-
-    /// @notice Disallow permissionless claiming
-    function close(address vault) external;
-
     /// @notice Check `IERC7540CancelRedeem.cancelRedeemRequest`.
     /// @dev    This adds a mandatory prepayment for all the costs that will incur during the transaction.
     ///         The caller must call `CentrifugeRouter.estimate` to get estimates how much the deposit will cost.
@@ -163,6 +168,9 @@ interface ICentrifugeRouter is IRecoverable {
     /// @notice This is a more friendly version where the recipient is and EVM address
     /// @dev the recipient address is padded to 32 bytes internally
     function transferAssets(address asset, address recipient, uint128 amount, uint256 topUpAmount) external payable;
+
+    /// @notice Trigger a transfer of assets from a TransferProxy contract.
+    function transferAssetsFromProxy(address transferProxy, address asset, uint256 topUpAmount) external payable;
 
     /// @notice Check `IPoolManager.transferTrancheTokens`.
     /// @dev    This adds a mandatory prepayment for all the costs that will incur during the transaction.
@@ -234,15 +242,15 @@ interface ICentrifugeRouter is IRecoverable {
     ///         address router              = // CentrifugeRouter's address
     ///
     ///         bytes[] memory calls = new bytes[](2);
-    ///         calls[0] = abi.encodeWithSelector(
-    ///             router.requestDeposit.selector, vault, amount1, investor, investor, requestDepositCost
-    ///         };
-    ///         calls[1] = abi.encodeWithSelector(
-    ///             router.requestDeposit.selector, vault, amount2, investor, investor, requestDepositCost
-    ///         };
+    ///         calls[0] = abi.encodeCall(
+    ///             router.requestDeposit, (vault, amount1, investor, investor, requestDepositCost)
+    ///         );
+    ///         calls[1] = abi.encodeCall(
+    ///             router.requestDeposit, (vault, amount2, investor, investor, requestDepositCost)
+    ///         );
     ///         uint256 msgValue = 2 * requestDepositCost;
 
-    ///         router.multical{value: msgValue}(calls);
+    ///         router.multicall{value: msgValue}(calls);
     ///
     ///         The `msg.value` MUST be at least 20 gwei. `multicall{value: 20 gwei}()`
     /// @param  data An array of all encoded messages calls and their arguments
@@ -254,4 +262,14 @@ interface ICentrifugeRouter is IRecoverable {
 
     /// @notice Check IGateway.estimate
     function estimate(bytes calldata payload) external view returns (uint256 amount);
+
+    /// @notice Called to check if `user` has permissions on `vault` to execute requests
+    ///
+    /// @param vault Address of the `vault` the `user` wants to operate on
+    /// @param user Address of the `user` that will operates on the `vault`
+    /// @return Whether `user` has permissions to operate on `vault`
+    function hasPermissions(address vault, address user) external view returns (bool);
+
+    /// @notice Returns whether the controller has called `enable()` for the given `vault`
+    function isEnabled(address vault, address controller) external view returns (bool);
 }

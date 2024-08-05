@@ -23,7 +23,7 @@ library CastLib {
 
         bytes memory bytesArray = new bytes(i);
 
-        for (uint8 j = 0; j < i; j++) {
+        for (uint8 j; j < i; j++) {
             bytesArray[j] = _bytes128[j];
         }
 

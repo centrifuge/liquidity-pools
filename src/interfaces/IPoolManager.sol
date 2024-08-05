@@ -84,11 +84,6 @@ interface IPoolManager is IMessageHandler, IRecoverable {
     /// @notice returns the asset id associated with a given address
     function assetToId(address) external view returns (uint128 assetId);
 
-    /// @notice returns the asset address associated with a given vault address
-    /// @return asset The asset address
-    /// @return isWrapper Whether the asset is a wrapped ERC20 token
-    function vaultToAsset(address) external view returns (address asset, bool isWrapper);
-
     /// @notice Updates a contract parameter
     /// @param what Accepts a bytes32 representation of 'gateway', 'investmentManager', 'trancheFactory',
     ///                'vaultFactory', or 'gasService'
@@ -195,8 +190,14 @@ interface IPoolManager is IMessageHandler, IRecoverable {
     /// @dev    The function can only be executed by the gateway contract.
     function removeVault(uint64 poolId, bytes16 trancheId, address asset) external;
 
+    /// @notice Returns whether the given pool id is active
+    function isPoolActive(uint64 poolId) external view returns (bool);
+
     /// @notice Returns the tranche token for a given pool and tranche id
     function getTranche(uint64 poolId, bytes16 trancheId) external view returns (address);
+
+    /// @notice Returns whether the tranche token for a given pool and tranche id can be deployed
+    function canTrancheBeDeployed(uint64 poolId, bytes16 trancheId) external view returns (bool);
 
     /// @notice Returns the vault for a given pool, tranche id, and asset id
     function getVault(uint64 poolId, bytes16 trancheId, uint128 assetId) external view returns (address);

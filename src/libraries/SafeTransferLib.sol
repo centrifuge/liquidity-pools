@@ -13,8 +13,7 @@ library SafeTransferLib {
     /// @param to The destination address of the transfer
     /// @param value The amount to be transferred
     function safeTransferFrom(address token, address from, address to, uint256 value) internal {
-        (bool success, bytes memory data) =
-            token.call(abi.encodeWithSelector(IERC20.transferFrom.selector, from, to, value));
+        (bool success, bytes memory data) = token.call(abi.encodeCall(IERC20.transferFrom, (from, to, value)));
         require(success && (data.length == 0 || abi.decode(data, (bool))), "SafeTransferLib/safe-transfer-from-failed");
     }
 
@@ -24,7 +23,7 @@ library SafeTransferLib {
     /// @param to The recipient of the transfer
     /// @param value The value of the transfer
     function safeTransfer(address token, address to, uint256 value) internal {
-        (bool success, bytes memory data) = token.call(abi.encodeWithSelector(IERC20.transfer.selector, to, value));
+        (bool success, bytes memory data) = token.call(abi.encodeCall(IERC20.transfer, (to, value)));
         require(success && (data.length == 0 || abi.decode(data, (bool))), "SafeTransferLib/safe-transfer-failed");
     }
 
@@ -34,7 +33,17 @@ library SafeTransferLib {
     /// @param to The target of the approval
     /// @param value The amount of the given token the target will be allowed to spend
     function safeApprove(address token, address to, uint256 value) internal {
-        (bool success, bytes memory data) = token.call(abi.encodeWithSelector(IERC20.approve.selector, to, value));
+        (bool success, bytes memory data) = token.call(abi.encodeCall(IERC20.approve, (to, value)));
         require(success && (data.length == 0 || abi.decode(data, (bool))), "SafeTransferLib/safe-approve-failed");
+    }
+
+    /// @notice Transfers ETH to the recipient address
+    /// @dev Fails with `STE`
+    /// @dev Make sure that method that is using this function is protected from reentrancy
+    /// @param to The destination of the transfer
+    /// @param value The value to be transferred
+    function safeTransferETH(address to, uint256 value) internal {
+        (bool success,) = to.call{value: value}(new bytes(0));
+        require(success, "SafeTransferLib/safe-transfer-eth-failed");
     }
 }

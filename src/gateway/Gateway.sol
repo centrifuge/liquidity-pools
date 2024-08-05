@@ -4,6 +4,7 @@ pragma solidity 0.8.26;
 import {Auth} from "src/Auth.sol";
 import {ArrayLib} from "src/libraries/ArrayLib.sol";
 import {BytesLib} from "src/libraries/BytesLib.sol";
+import {MathLib} from "src/libraries/MathLib.sol";
 import {MessagesLib} from "src/libraries/MessagesLib.sol";
 import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 import {TransientStorage} from "src/libraries/TransientStorage.sol";
@@ -22,9 +23,10 @@ import {IRecoverable} from "src/interfaces/IRoot.sol";
 contract Gateway is Auth, IGateway, IRecoverable {
     using ArrayLib for uint16[8];
     using BytesLib for bytes;
+    using MathLib for uint256;
     using TransientStorage for bytes32;
 
-    bytes32 public constant QUOTA_SLOT = bytes32(uint256(keccak256("quota")) - 1);
+    bytes32 public constant QUOTA_SLOT = bytes32(uint256(keccak256("Centrifuge/quota")) - 1);
 
     uint8 public constant MAX_ADAPTER_COUNT = 8;
     uint8 public constant PRIMARY_ADAPTER_ID = 1;
@@ -36,20 +38,25 @@ contract Gateway is Auth, IGateway, IRecoverable {
     address public investmentManager;
     IGasService public gasService;
 
-    address[] public adapters;
-    mapping(address adapter => Adapter) public activeAdapters;
-    mapping(bytes32 messageHash => Message) public messages;
-    mapping(uint8 messageId => address manager) messageHandlers;
-    mapping(address router => mapping(bytes32 messageHash => uint256 timestamp)) public recoveries;
+    mapping(bytes32 messageHash => Message) internal _messages;
+    mapping(address adapter => Adapter) internal _activeAdapters;
 
-    constructor(address root_, address poolManager_, address investmentManager_, address gasService_) {
+    /// @inheritdoc IGateway
+    address[] public adapters;
+    /// @inheritdoc IGateway
+    mapping(address payer => bool) public payers;
+    /// @inheritdoc IGateway
+    mapping(uint8 messageId => address) public messageHandlers;
+    /// @inheritdoc IGateway
+    mapping(address adapter => mapping(bytes32 messageHash => uint256 timestamp)) public recoveries;
+
+    constructor(address root_, address poolManager_, address investmentManager_, address gasService_)
+        Auth(msg.sender)
+    {
         root = IRoot(root_);
         poolManager = poolManager_;
         investmentManager = investmentManager_;
         gasService = IGasService(gasService_);
-
-        wards[msg.sender] = 1;
-        emit Rely(msg.sender);
     }
 
     modifier pauseable() {
@@ -58,35 +65,32 @@ contract Gateway is Auth, IGateway, IRecoverable {
     }
 
     receive() external payable {
-        emit Received(msg.sender, msg.value);
+        emit ReceiveNativeTokens(msg.sender, msg.value);
     }
 
     // --- Administration ---
     /// @inheritdoc IGateway
     function file(bytes32 what, address[] calldata addresses) external auth {
         if (what == "adapters") {
-            uint8 quorum_ = uint8(addresses.length);
+            uint8 quorum_ = addresses.length.toUint8();
             require(quorum_ != 0, "Gateway/empty-adapter-set");
             require(quorum_ <= MAX_ADAPTER_COUNT, "Gateway/exceeds-max");
 
-            uint64 sessionId = 0;
-            uint8 numAdapters = uint8(adapters.length);
-            if (numAdapters != 0) {
-                // Increment session id if it is not the initial adapter setup and the quorum was decreased
-                Adapter memory prevAdapter = activeAdapters[adapters[0]];
-                sessionId = quorum_ < prevAdapter.quorum ? prevAdapter.activeSessionId + 1 : prevAdapter.activeSessionId;
-            }
+            // Increment session id to reset pending votes
+            uint256 numAdapters = adapters.length;
+            uint64 sessionId = numAdapters > 0 ? _activeAdapters[adapters[0]].activeSessionId + 1 : 0;
+
             // Disable old adapters
-            for (uint8 i = 0; i < numAdapters; i++) {
-                delete activeAdapters[adapters[i]];
+            for (uint8 i; i < numAdapters; i++) {
+                delete _activeAdapters[adapters[i]];
             }
 
             // Enable new adapters, setting quorum to number of adapters
             for (uint8 j; j < quorum_; j++) {
-                require(activeAdapters[addresses[j]].id == 0, "Gateway/no-duplicates-allowed");
+                require(_activeAdapters[addresses[j]].id == 0, "Gateway/no-duplicates-allowed");
 
                 // Ids are assigned sequentially starting at 1
-                activeAdapters[addresses[j]] = Adapter(j + 1, quorum_, sessionId);
+                _activeAdapters[addresses[j]] = Adapter(j + 1, quorum_, sessionId);
             }
 
             adapters = addresses;
@@ -109,15 +113,27 @@ contract Gateway is Auth, IGateway, IRecoverable {
 
     /// @inheritdoc IGateway
     function file(bytes32 what, uint8 data1, address data2) public auth {
-        if (what == "message") messageHandlers[data1] = data2;
-        else revert("Gateway/file-unrecognized-param");
+        if (what == "message") {
+            require(data1 > uint8(type(MessagesLib.Call).max), "Gateway/hardcoded-message-id");
+            messageHandlers[data1] = data2;
+        } else {
+            revert("Gateway/file-unrecognized-param");
+        }
         emit File(what, data1, data2);
+    }
+
+    /// @inheritdoc IGateway
+    function file(bytes32 what, address payer, bool isAllowed) external auth {
+        if (what == "payers") payers[payer] = isAllowed;
+        else revert("Gateway/file-unrecognized-param");
+
+        emit File(what, payer, isAllowed);
     }
 
     /// @inheritdoc IRecoverable
     function recoverTokens(address token, address receiver, uint256 amount) external auth {
         if (token == address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)) {
-            payable(receiver).transfer(amount);
+            SafeTransferLib.safeTransferETH(receiver, amount);
         } else {
             SafeTransferLib.safeTransfer(token, receiver, amount);
         }
@@ -130,7 +146,7 @@ contract Gateway is Auth, IGateway, IRecoverable {
     }
 
     function _handle(bytes calldata payload, address adapter_, bool isRecovery) internal {
-        Adapter memory adapter = activeAdapters[adapter_];
+        Adapter memory adapter = _activeAdapters[adapter_];
         require(adapter.id != 0, "Gateway/invalid-adapter");
         uint8 call = payload.toUint8(0);
         if (
@@ -155,14 +171,14 @@ contract Gateway is Auth, IGateway, IRecoverable {
         if (isMessageProof) {
             require(isRecovery || adapter.id != PRIMARY_ADAPTER_ID, "Gateway/non-proof-adapter");
             messageHash = payload.toBytes32(1);
-            emit HandleProof(messageHash, adapter_);
+            emit ProcessProof(messageHash, adapter_);
         } else {
             require(isRecovery || adapter.id == PRIMARY_ADAPTER_ID, "Gateway/non-message-adapter");
             messageHash = keccak256(payload);
-            emit HandleMessage(payload, adapter_);
+            emit ProcessMessage(payload, adapter_);
         }
 
-        Message storage state = messages[messageHash];
+        Message storage state = _messages[messageHash];
 
         if (adapter.activeSessionId != state.sessionId) {
             // Clear votes from previous session
@@ -180,16 +196,16 @@ contract Gateway is Auth, IGateway, IRecoverable {
             // Handle message
             if (isMessageProof) {
                 _dispatch(state.pendingMessage, false);
+                emit ExecuteMessage(state.pendingMessage, adapter_);
             } else {
                 _dispatch(payload, false);
+                emit ExecuteMessage(payload, adapter_);
             }
 
             // Only if there are no more pending messages, remove the pending message
             if (state.votes.isEmpty()) {
                 delete state.pendingMessage;
             }
-
-            emit ExecuteMessage(payload, msg.sender);
         } else if (!isMessageProof) {
             state.pendingMessage = payload;
         }
@@ -202,19 +218,22 @@ contract Gateway is Auth, IGateway, IRecoverable {
         if (id == 4) {
             // Handle batch messages
             require(!isBatched, "Gateway/no-recursive-batching-allowed");
-            uint256 offset = 1;
-            while (offset < message.length) {
-                // Each message in the batch is prefixed with
-                // the message length (uint16: 2 bytes)
-                uint16 length = message.toUint16(offset);
-                bytes memory subMessage = new bytes(length);
-                offset = offset + 2; // Skip length
-                for (uint256 i = 0; i < length; i++) {
+            uint256 offset = 1; // Offsets the message type which is 1 byte
+            uint256 messageLength = message.length;
+
+            // Check if the message actually contains 2 bytes dedicated for the subMessage length
+            while (offset + 2 <= messageLength) {
+                uint16 subMessageLength = message.toUint16(offset);
+                bytes memory subMessage = new bytes(subMessageLength);
+                offset = offset + 2; // Skip subMessage length
+
+                require(offset + subMessageLength <= messageLength, "Gateway/corrupted-message");
+                for (uint256 i; i < subMessageLength; i++) {
                     subMessage[i] = message[offset + i];
                 }
                 _dispatch(subMessage, true);
 
-                offset += length;
+                offset += subMessageLength;
             }
             return;
         } else if (id >= 5 && id <= 7) {
@@ -240,8 +259,7 @@ contract Gateway is Auth, IGateway, IRecoverable {
         address adapter = payload.toAddress(33);
 
         if (MessagesLib.messageType(payload) == MessagesLib.Call.InitiateMessageRecovery) {
-            require(activeAdapters[msg.sender].id != 0, "Gateway/invalid-sender");
-            require(activeAdapters[adapter].id != 0, "Gateway/invalid-adapter");
+            require(_activeAdapters[adapter].id != 0, "Gateway/invalid-adapter");
             recoveries[adapter][messageHash] = block.timestamp + RECOVERY_CHALLENGE_PERIOD;
             emit InitiateMessageRecovery(messageHash, adapter);
         } else if (MessagesLib.messageType(payload) == MessagesLib.Call.DisputeMessageRecovery) {
@@ -305,7 +323,6 @@ contract Gateway is Auth, IGateway, IRecoverable {
             }
             QUOTA_SLOT.tstore(0);
         } else if (gasService.shouldRefuel(source, message)) {
-            uint256 tank = address(this).balance;
             for (uint256 i; i < numAdapters; i++) {
                 IAdapter currentAdapter = IAdapter(adapters[i]);
                 bool isPrimaryAdapter = i == PRIMARY_ADAPTER_ID - 1;
@@ -313,8 +330,7 @@ contract Gateway is Auth, IGateway, IRecoverable {
 
                 uint256 consumed = currentAdapter.estimate(payload, isPrimaryAdapter ? messageCost : proofCost);
 
-                if (consumed <= tank) {
-                    tank -= consumed;
+                if (consumed <= address(this).balance) {
                     currentAdapter.pay{value: consumed}(payload, address(this));
                 }
 
@@ -329,42 +345,43 @@ contract Gateway is Auth, IGateway, IRecoverable {
 
     /// @inheritdoc IGateway
     function topUp() external payable {
-        require(IRoot(root).endorsed(msg.sender), "Gateway/only-endorsed-can-topup");
+        require(payers[msg.sender], "Gateway/only-payers-can-top-up");
         require(msg.value != 0, "Gateway/cannot-topup-with-nothing");
         QUOTA_SLOT.tstore(msg.value);
     }
 
     // --- Helpers ---
     /// @inheritdoc IGateway
-    function estimate(bytes calldata payload) external view returns (uint256[] memory tranches, uint256 total) {
+    function estimate(bytes calldata payload) external view returns (uint256[] memory perAdapter, uint256 total) {
         bytes memory proof = abi.encodePacked(uint8(MessagesLib.Call.MessageProof), keccak256(payload));
-        uint256 proofCost = gasService.estimate(payload);
-        uint256 messageCost = gasService.estimate(proof);
-        tranches = new uint256[](adapters.length);
+        uint256 messageCost = gasService.estimate(payload);
+        uint256 proofCost = gasService.estimate(proof);
+        perAdapter = new uint256[](adapters.length);
 
-        for (uint256 i; i < adapters.length; i++) {
+        uint256 adaptersCount = adapters.length;
+        for (uint256 i; i < adaptersCount; i++) {
             uint256 centrifugeCost = i == PRIMARY_ADAPTER_ID - 1 ? messageCost : proofCost;
             bytes memory message = i == PRIMARY_ADAPTER_ID - 1 ? payload : proof;
             uint256 estimated = IAdapter(adapters[i]).estimate(message, centrifugeCost);
-            tranches[i] = estimated;
+            perAdapter[i] = estimated;
             total += estimated;
         }
     }
 
     /// @inheritdoc IGateway
     function quorum() external view returns (uint8) {
-        Adapter memory adapter = activeAdapters[adapters[0]];
+        Adapter memory adapter = _activeAdapters[adapters[0]];
         return adapter.quorum;
     }
 
     /// @inheritdoc IGateway
     function activeSessionId() external view returns (uint64) {
-        Adapter memory adapter = activeAdapters[adapters[0]];
+        Adapter memory adapter = _activeAdapters[adapters[0]];
         return adapter.activeSessionId;
     }
 
     /// @inheritdoc IGateway
-    function votes(bytes32 messageHash) external view returns (uint16[8] memory) {
-        return messages[messageHash].votes;
+    function votes(bytes32 messageHash) external view returns (uint16[MAX_ADAPTER_COUNT] memory) {
+        return _messages[messageHash].votes;
     }
 }
