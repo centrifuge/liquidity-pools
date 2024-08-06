@@ -6,11 +6,10 @@ display_help() {
     echo 
     echo "This script verifies the vault contract and its associated tranche and restriction manager contracts."
     echo
-    echo "Usage: $0 contract_address deployer"
+    echo "Usage: $0 contract_address"
     echo
     echo "Arguments:"
     echo "  contract_address      The address of the vault to verify"
-    echo "  deployer              The address of the deployer"
     echo
     echo "Required Environment Variables:"
     echo "  RPC_URL               The RPC URL"
@@ -31,13 +30,12 @@ if [ -z "$RPC_URL" ] || [ -z "$ETHERSCAN_KEY" ] || [ -z "$VERIFIER_URL" ] || [ -
 fi
 
 contract_address=$1
-deployer=$2
 
+echo "vault: $contract_address"
 if ! cast call $contract_address 'share()(address)' --rpc-url $RPC_URL &> /dev/null; then
     echo "Error: Must pass a vault address."
     exit 1
 fi
-echo "vault: $contract_address"
 poolId=$(cast call $contract_address 'poolId()(uint64)' --rpc-url $RPC_URL | awk '{print $1}')
 trancheId=$(cast call $contract_address 'trancheId()(bytes16)' --rpc-url $RPC_URL | cut -c 1-34)
 asset=$(cast call $contract_address 'asset()(address)' --rpc-url $RPC_URL)
