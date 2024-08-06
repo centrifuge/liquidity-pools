@@ -52,10 +52,10 @@ medusa fuzz --config medusa-aggregator.json
 | [xmxanuel](https://x.com/xmxanuel)  | July 2023  | Security review         |  Internal |
 | [Code4rena](https://code4rena.com/)  | Sep 2023  | Competitive audit       | [`Report`](https://code4rena.com/reports/2023-09-centrifuge)                                                        |
 | [SRLabs](https://www.srlabs.de/)  | Sep 2023  | Security review               | [`Report`](https://github.com/centrifuge/liquidity-pools/blob/main/audits/2023-09-SRLabs.pdf)                          |
-| [Cantina](https://cantina.xyz/)  | Oct 2023  | Security review             | [`Report`](https://github.com/centrifuge/liquidity-pools/blob/main/audits/2023-10-Spearbit-Cantina-Managed.pdf) |
+| [Cantina](https://cantina.xyz/)  | Oct 2023  | Security review             | [`Report`](https://github.com/centrifuge/liquidity-pools/blob/main/audits/2023-10-Cantina.pdf) |
 | [Alex the Entreprenerd](https://x.com/gallodasballo)  | Mar - Apr 2024  | Invariant test development | [`Part 1`](https://getrecon.substack.com/p/lessons-learned-from-fuzzing-centrifuge)                                                     |
 | [xmxanuel](https://x.com/xmxanuel)  | May - June 2024  | Security review | Internal                                                                                                                                               |
-| [Spearbit](https://spearbit.com/)  | July 2024  | Security review             |  |
+| [Spearbit](https://spearbit.com/)  | July 2024  | Security review             | [`Report`](https://github.com/centrifuge/liquidity-pools/blob/main/audits/2024-08-Spearbit.pdf) |
 
 ## License
 This codebase is licensed under [GNU Lesser General Public License v3.0](https://github.com/centrifuge/liquidity-pools/blob/main/LICENSE).
