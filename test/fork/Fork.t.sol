@@ -48,6 +48,7 @@ struct Deployment {
     address safe;
     address axelarGateway;
     address axelarGasService;
+    bool isTestnet;
 }
 
 contract ForkTest is Test {
@@ -282,6 +283,7 @@ contract ForkTest is Test {
         address deployer = deployment.deployer;
         address axelarGateway = deployment.axelarGateway;
         address axelarGasService = deployment.axelarGasService;
+        bool isTestnet = deployment.isTestnet;
 
         AxelarAdapter _adapter = AxelarAdapter(adapter);
         assertEq(address(_adapter.gateway()), gateway);
@@ -293,6 +295,13 @@ contract ForkTest is Test {
 
         assertEq(IAxelarContract(axelarGateway).contractId(), keccak256("axelar-gateway"));
         assertEq(IAxelarContract(axelarGasService).contractId(), keccak256("axelar-gas-service"));
+
+        if (!isTestnet) {
+            assertEq(_adapter.CENTRIFUGE_ID(), "centrifuge");
+            assertEq(_adapter.CENTRIFUGE_AXELAR_EXECUTABLE(), "0xc1757c6A0563E37048869A342dF0651b9F267e41");
+            assertEq(_adapter.centrifugeIdHash(), keccak256(bytes("centrifuge")));
+            assertEq(_adapter.centrifugeAddressHash(), keccak256(bytes("0x7369626CEF070000000000000000000000000000")));
+        }
     }
 
     function _verifyTrancheFactory(Deployment memory deployment) internal {
@@ -446,7 +455,8 @@ contract ForkTest is Test {
             _get(id, ".config.deployer"),
             _get(id, ".config.admin"),
             _get(id, ".config.adapter.axelarGateway"),
-            _get(id, ".config.adapter.axelarGasService")
+            _get(id, ".config.adapter.axelarGasService"),
+            abi.decode(deployments[id].parseRaw(".isTestnet"), (bool))
         );
     }
 }
