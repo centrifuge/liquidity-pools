@@ -38,7 +38,12 @@ contract FreezeManagerTest is BaseTest {
         assertEq(vault.claimableDepositRequest(0, self), 0);
 
         centrifugeChain.isFulfilledDepositRequest(
-            vault.poolId(), vault.trancheId(), bytes32(bytes20(self)), poolManager.assetToId(address(erc20)), uint128(amount), uint128(amount)
+            vault.poolId(),
+            vault.trancheId(),
+            bytes32(bytes20(self)),
+            poolManager.assetToId(address(erc20)),
+            uint128(amount),
+            uint128(amount)
         );
 
         assertEq(vault.maxMint(self), amount);
