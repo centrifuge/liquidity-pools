@@ -16,8 +16,7 @@ import {RestrictionUpdate, IFreezeManager} from "src/interfaces/token/IFreezeMan
 ///         * Supports freezing accounts which blocks transfers both to and from them
 ///         * Allows authTransferFrom calls
 ///
-/// @dev    The first 8 bytes (uint64) of hookData is used for the memberlist valid until date,
-///         the last bit is used to denote whether the account is frozen.
+/// @dev    The last bit of hookData is used to denote whether the account is frozen.
 contract FreezeManager is Auth, IFreezeManager, IHook {
     using BitmapLib for *;
     using BytesLib for bytes;
