@@ -3,7 +3,7 @@ pragma solidity >=0.5.0;
 
 enum RestrictionUpdate {
     Invalid,
-    UpdateMember,
+    Invalid,
     Freeze,
     Unfreeze
 }
