@@ -27,19 +27,13 @@ contract CryticToFoundry is Test, TargetFunctions, FoundryAsserts {
     // forge test --match-test test_erc7540_6_deposit_call_target_1 -vv
     function test_erc7540_6_deposit_call_target_1() public {
         deployNewTokenPoolAndTranche(233, 28269320542146199253579888502169902638602973317426694748705922998786179475);
-
         poolManager_updateMember(104682477517645628);
-
         poolManager_updateTranchePrice(56901525302466059, 7840914769514120);
-
         vault_requestDeposit(31538029450636696910582306038649448464549600365089094367785921647207723207717);
-
         investmentManager_fulfillDepositRequest(
             237784553952399504434353056688092462338, 11272134262104, 8548248478501905158605391940158212738
         );
-
         poolManager_freeze();
-
         erc7540_6_deposit_call_target(72);
     }
 }
