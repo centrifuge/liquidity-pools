@@ -148,7 +148,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
         (address asset,) = poolManager.getVaultAsset(vault);
 
         escrow.approveMax(asset, address(this));
-        SafeTransferLib.safeTransferFrom(asset, address(escrow), address(this), lockedRequest - 1);
+        SafeTransferLib.safeTransferFrom(asset, address(escrow), address(this), lockedRequest);
 
         _pay(topUpAmount);
         _approveMax(asset, vault);

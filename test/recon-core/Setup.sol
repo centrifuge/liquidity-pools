@@ -88,6 +88,7 @@ abstract contract Setup is BaseSetup, SharedStorage {
         // Setup Escrow Permissions
         escrow.rely(address(investmentManager));
         escrow.rely(address(poolManager));
+        routerEscrow.rely(address(router));
 
         root.endorse(address(router));
         root.endorse(address(escrow));

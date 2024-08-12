@@ -400,7 +400,7 @@ abstract contract Properties is Setup, Asserts, ERC7540CentrifugeProperties {
         if (address(token) == address(0)) {
             return true;
         }
-
+        
         unchecked {
             return token.balanceOf(address(routerEscrow))
                 == (

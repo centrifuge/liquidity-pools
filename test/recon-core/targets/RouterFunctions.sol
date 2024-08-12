@@ -104,14 +104,14 @@ abstract contract RouterFunctions is BaseTargetFunctions, Properties {
         }
 
         // After Balances and Checks
-        uint256 balanceOfEscrowAfter = token.balanceOf(address(routerEscrow));
+        uint256 balanceOfEscrowAfter = token.balanceOf(address(escrow));
         uint256 balanceOfRouterEscrowAfter = token.balanceOf(address(routerEscrow));
         uint256 lockedRequestAfter = router.lockedRequests(actor, address(vault));
 
         // NOTE: We only enforce the check if the tx didn't revert
         if (!hasReverted) {
             uint256 deltaEscrow = balanceOfEscrowAfter - balanceOfEscrowB4;
-            uint256 deltaRouterEscrow = balanceOfRouterEscrowAfter - balanceOfRouterEscrowB4;
+            uint256 deltaRouterEscrow = balanceOfRouterEscrowB4 - balanceOfRouterEscrowAfter;
 
             eq(deltaEscrow, lockedRequestB4, "Router-x");
             eq(deltaRouterEscrow, lockedRequestB4, "Router-x");
