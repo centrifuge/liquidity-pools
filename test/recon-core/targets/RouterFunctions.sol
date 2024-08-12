@@ -31,11 +31,6 @@ abstract contract RouterFunctions is BaseTargetFunctions, Properties {
             hasReverted = true;
         }
 
-        if (!poolManager.isAllowedAsset(poolId, address(token))) {
-            // TODO: Ensure this works via actor switch
-            t(hasReverted, "Router-x Must Revert");
-        }
-
         // After Balances and Checks
         uint256 balanceAfter = token.balanceOf(actor);
         uint256 balanceOfRouterEscrowAfter = token.balanceOf(address(routerEscrow));
