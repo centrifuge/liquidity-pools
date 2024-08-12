@@ -103,7 +103,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
 
         lockedRequests[controller][vault] += amount;
         (address asset,) = poolManager.getVaultAsset(vault);
-        SafeTransferLib.safeTransferFrom(asset, owner, address(escrow), amount);
+        // SafeTransferLib.safeTransferFrom(asset, owner, address(escrow), amount);
 
         emit LockDepositRequest(vault, controller, owner, msg.sender, amount);
     }

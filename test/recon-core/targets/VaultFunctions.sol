@@ -19,14 +19,6 @@ import {ERC7540Vault} from "src/ERC7540Vault.sol";
  * - vault_file
  */
 abstract contract VaultFunctions is BaseTargetFunctions, Properties {
-    /// @dev Get the balance of the current token and actor
-    function _getTokenAndBalanceForVault() internal view returns (uint256) {
-        // Token
-        uint256 amt = token.balanceOf(actor);
-
-        return amt;
-    }
-
     // === REQUEST === //
     function vault_requestDeposit(uint256 assets) public {
         assets = between(assets, 0, _getTokenAndBalanceForVault());
