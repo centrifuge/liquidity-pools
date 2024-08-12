@@ -120,6 +120,24 @@ contract CentrifugeRouterTest is BaseTest {
         assertEq(erc20.balanceOf(self), amount);
     }
 
+    function testUnlockDepositRequestForDisallowedAsset() public {
+        address vault_ = deploySimpleVault();
+        vm.label(vault_, "vault");
+        uint256 amount = 100 * 10 ** 18;
+        erc20.mint(self, amount);
+        erc20.approve(address(router), amount);
+        router.lockDepositRequest(vault_, amount, self, self);
+        assertEq(erc20.balanceOf(address(routerEscrow)), amount);
+        assertEq(erc20.balanceOf(self), 0);
+
+        centrifugeChain.disallowAsset(ERC7540Vault(vault_).poolId(), poolManager.assetToId(ERC7540Vault(vault_).asset()));
+        router.unlockDepositRequest(vault_, self);
+
+        assertEq(poolManager.isAllowedAsset(ERC7540Vault(vault_).poolId(), ERC7540Vault(vault_).asset()), false);
+        assertEq(erc20.balanceOf(address(routerEscrow)), 0);
+        assertEq(erc20.balanceOf(self), amount);
+    }
+
     function testCancelDepositRequest() public {
         address vault_ = deploySimpleVault();
         vm.label(vault_, "vault");

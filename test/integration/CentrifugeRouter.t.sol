@@ -270,6 +270,34 @@ contract CentrifugeRouterTest is BaseTest {
         assertApproxEqAbs(erc20Y.balanceOf(self), assetPayout2, 1);
     }
 
+    function testMulticallingEnableLockDepositRequestAndExecute(uint256 amount) public {
+        amount = uint128(bound(amount, 4, MAX_UINT128));
+        vm.assume(amount % 2 == 0);
+
+        address vault_ = deploySimpleVault();
+        ERC7540Vault vault = ERC7540Vault(vault_);
+        vm.label(vault_, "vault");
+
+        erc20.mint(self, amount);
+        erc20.approve(address(router), amount);
+        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max);
+
+        // multicall
+        uint256 fuel = estimateGas();
+        bytes[] memory calls = new bytes[](2);
+        calls[0] = abi.encodeWithSelector(router.enableLockDepositRequest.selector, address(vault_), amount);
+        calls[1] = abi.encodeWithSelector(router.executeLockedDepositRequest.selector, vault_, self, fuel);
+        router.multicall{ value: fuel }(calls);
+
+        uint128 assetId = poolManager.assetToId(address(erc20));
+        (uint128 tranchePayout) = fulfillDepositRequest(vault, assetId, amount, self);
+
+        assertEq(vault.maxMint(self), tranchePayout);
+        assertEq(vault.maxDeposit(self), amount);
+        ITranche tranche = ITranche(address(vault.share()));
+        assertEq(tranche.balanceOf(address(escrow)), tranchePayout);
+    }
+
     function testMulticallingApproveVaultAndExecuteLockedDepositRequest(uint256 amount) public {
         amount = uint128(bound(amount, 4, MAX_UINT128));
         vm.assume(amount % 2 == 0);
