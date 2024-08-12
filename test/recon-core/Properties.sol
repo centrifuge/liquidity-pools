@@ -271,7 +271,7 @@ abstract contract Properties is Setup, Asserts, ERC7540CentrifugeProperties {
             /// @audit Minted by Asset Payouts by Investors
             == (
                 mintedByCurrencyPayout[address(token)] + sumOfDepositRequests[address(token)]
-                    + sumOfTransfersIn[address(token)]
+                    + sumOfTransfersIn[address(token)] + sumOfExecutedLockedDepositRequests[address(token)]
                 // Minus Claimed Redemptions and TransfersOut
                 - sumOfClaimedRedemptions[address(token)] - sumOfClaimedDepositCancelations[address(token)]
                     - sumOfTransfersOut[address(token)]
