@@ -14,8 +14,8 @@ import {ERC7540Vault} from "src/ERC7540Vault.sol";
  * A collection of handlers that interact with the Centrifuge Router
  */
 abstract contract RouterFunctions is BaseTargetFunctions, Properties {
-    // === Open lock deposit request === //
-    function router_openLockDepositRequest(uint256 assets) public {
+    // === Enable lock deposit request === //
+    function router_enableLockDepositRequest(uint256 assets) public {
         assets = between(assets, 0, _getTokenAndBalanceForVault());
 
         token.approve(address(router), assets);
@@ -25,7 +25,7 @@ abstract contract RouterFunctions is BaseTargetFunctions, Properties {
         uint256 balanceOfRouterEscrowB4 = token.balanceOf(address(routerEscrow));
 
         bool hasReverted;
-        try router.openLockDepositRequest(address(vault), assets) {
+        try router.enableLockDepositRequest(address(vault), assets) {
             // TODO: add shadow variables
         } catch {
             hasReverted = true;
@@ -33,7 +33,7 @@ abstract contract RouterFunctions is BaseTargetFunctions, Properties {
 
         if (!poolManager.isAllowedAsset(poolId, address(token))) {
             // TODO: Ensure this works via actor switch
-            t(hasReverted, "LP-3 Must Revert");
+            t(hasReverted, "Router-1 Must Revert");
         }
 
         // After Balances and Checks
@@ -48,10 +48,10 @@ abstract contract RouterFunctions is BaseTargetFunctions, Properties {
             uint256 deltaRouterEscrow = balanceOfRouterEscrowAfter - balanceOfRouterEscrowB4;
 
             if (RECON_EXACT_BAL_CHECK) {
-                eq(deltaUser, assets, "Extra LP-1");
+                eq(deltaUser, assets, "Router-2");
             }
 
-            eq(deltaUser, deltaRouterEscrow, "7540-11");
+            eq(deltaUser, deltaRouterEscrow, "Router-3");
         }
     }
 }

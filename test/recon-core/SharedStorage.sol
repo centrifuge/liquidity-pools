@@ -32,7 +32,7 @@ abstract contract SharedStorage {
     // Should we also enforce the exact balance check on asset / shares?
     // TODO: This is broken rn
     // Liquidity Pool functions
-    bool RECON_EXACT_BAL_CHECK = false;
+    bool RECON_EXACT_BAL_CHECK = true;
 
     /// === INTERNAL COUNTERS === ///
     // Currency ID = Currency Length
