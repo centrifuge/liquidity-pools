@@ -33,7 +33,7 @@ abstract contract RouterFunctions is BaseTargetFunctions, Properties {
 
         if (!poolManager.isAllowedAsset(poolId, address(token))) {
             // TODO: Ensure this works via actor switch
-            t(hasReverted, "Router-1 Must Revert");
+            t(hasReverted, "Router-x Must Revert");
         }
 
         // After Balances and Checks
@@ -48,10 +48,10 @@ abstract contract RouterFunctions is BaseTargetFunctions, Properties {
             uint256 deltaRouterEscrow = balanceOfRouterEscrowAfter - balanceOfRouterEscrowB4;
 
             if (RECON_EXACT_BAL_CHECK) {
-                eq(deltaUser, assets, "Router-2");
+                eq(deltaUser, assets, "Router-x");
             }
 
-            eq(deltaUser, deltaRouterEscrow, "Router-3");
+            eq(deltaUser, deltaRouterEscrow, "Router-x");
         }
     }
 
@@ -82,11 +82,11 @@ abstract contract RouterFunctions is BaseTargetFunctions, Properties {
             uint256 deltaRouterEscrow = balanceOfRouterEscrowAfter - balanceOfRouterEscrowB4;
 
             if (RECON_EXACT_BAL_CHECK) {
-                eq(deltaUser, lockedRequestB4, "Router-2");
+                eq(deltaUser, lockedRequestB4, "Router-x");
             }
 
-            eq(deltaRouterEscrow, lockedRequestB4, "Router-2");
-            eq(lockedRequestAfter, 0, "Router-3");
+            eq(deltaRouterEscrow, lockedRequestB4, "Router-x");
+            eq(lockedRequestAfter, 0, "Router-x");
         }
     }
 
@@ -105,7 +105,7 @@ abstract contract RouterFunctions is BaseTargetFunctions, Properties {
 
         if (!poolManager.isAllowedAsset(poolId, address(token))) {
             // TODO: Ensure this works via actor switch
-            t(hasReverted, "Router-1 Must Revert");
+            t(hasReverted, "Router-x Must Revert");
         }
 
         // After Balances and Checks
@@ -118,9 +118,46 @@ abstract contract RouterFunctions is BaseTargetFunctions, Properties {
             uint256 deltaEscrow = balanceOfEscrowAfter - balanceOfEscrowB4;
             uint256 deltaRouterEscrow = balanceOfRouterEscrowAfter - balanceOfRouterEscrowB4;
 
-            eq(deltaEscrow, lockedRequestB4, "Router-2");
-            eq(deltaRouterEscrow, lockedRequestB4, "Router-2");
-            eq(lockedRequestAfter, 0, "Router-3");
+            eq(deltaEscrow, lockedRequestB4, "Router-x");
+            eq(deltaRouterEscrow, lockedRequestB4, "Router-x");
+            eq(lockedRequestAfter, 0, "Router-x");
+        }
+    }
+
+    // TODO: once we have multi actor support, include receiver != controller case
+    function router_claimDeposit(address sender) public {
+        // Bal b4
+        uint256 trancheUserB4 = trancheToken.balanceOf(actor);
+        uint256 trancheEscrowB4 = trancheToken.balanceOf(address(escrow));
+        uint256 shares = vault.maxMint(address(actor));
+
+        bool hasReverted;
+        vm.prank(sender);
+        try router.claimDeposit(address(vault), address(actor), address(actor)) {
+            // Processed Deposit | E-2 | Global-1
+            sumOfClaimedDeposits[address(trancheToken)] += shares;
+        } catch {
+            hasReverted = true;
+        }
+
+        if (!router.isEnabled(address(vault), address(actor)) && address(actor) != sender) {
+            t(hasReverted, "Router-x Must Revert");
+        }
+
+        // Bal after
+        uint256 trancheUserAfter = trancheToken.balanceOf(actor);
+        uint256 trancheEscrowAfter = trancheToken.balanceOf(address(escrow));
+
+        // NOTE: We only enforce the check if the tx didn't revert
+        if (!hasReverted) {
+            unchecked {
+                uint256 deltaUser = trancheUserAfter - trancheUserB4; // B4 - after -> They pay
+                uint256 deltaEscrow = trancheEscrowB4 - trancheEscrowAfter; // After - B4 -> They gain
+                emit DebugNumber(deltaUser);
+                emit DebugNumber(deltaEscrow);
+
+                eq(deltaUser, deltaEscrow, "Router-x");
+            }
         }
     }
 }
