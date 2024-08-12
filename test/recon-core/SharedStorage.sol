@@ -178,4 +178,10 @@ abstract contract SharedStorage {
     // System will enter an inconsistent state
     mapping(address => mapping(address => uint256)) requestDepositAssets;
     mapping(address => mapping(address => uint256)) requestRedeemShares;
+
+    // === invariant_RE_1 === //
+    // Indexed by Currency
+    mapping(address => uint256) sumOfLockedDepositRequests;
+    mapping(address => uint256) sumOfUnlockedDepositRequests;
+    mapping(address => uint256) sumOfExecutedLockedDepositRequests;
 }

@@ -26,7 +26,7 @@ abstract contract RouterFunctions is BaseTargetFunctions, Properties {
 
         bool hasReverted;
         try router.enableLockDepositRequest(address(vault), assets) {
-            // TODO: add shadow variables
+            sumOfLockedDepositRequests[address(token)] += assets;
         } catch {
             hasReverted = true;
         }
@@ -52,6 +52,75 @@ abstract contract RouterFunctions is BaseTargetFunctions, Properties {
             }
 
             eq(deltaUser, deltaRouterEscrow, "Router-3");
+        }
+    }
+
+    // === Lock deposit request === //
+    // TODO
+
+    // === Executed locked deposit request === //
+    function router_unlockDepositRequest() public {
+        uint256 balanceB4 = token.balanceOf(actor);
+        uint256 balanceOfRouterEscrowB4 = token.balanceOf(address(routerEscrow));
+        uint256 lockedRequestB4 = router.lockedRequests(actor, address(vault));
+
+        bool hasReverted;
+        try router.unlockDepositRequest(address(vault), actor) {
+            sumOfUnlockedDepositRequests[address(token)] += lockedRequestB4;
+        } catch {
+            hasReverted = true;
+        }
+
+        // After Balances and Checks
+        uint256 balanceAfter = token.balanceOf(actor);
+        uint256 balanceOfRouterEscrowAfter = token.balanceOf(address(routerEscrow));
+        uint256 lockedRequestAfter = router.lockedRequests(actor, address(vault));
+
+        // NOTE: We only enforce the check if the tx didn't revert
+        if (!hasReverted) {
+            uint256 deltaUser = balanceB4 - balanceAfter;
+            uint256 deltaRouterEscrow = balanceOfRouterEscrowAfter - balanceOfRouterEscrowB4;
+
+            if (RECON_EXACT_BAL_CHECK) {
+                eq(deltaUser, lockedRequestB4, "Router-2");
+            }
+
+            eq(deltaRouterEscrow, lockedRequestB4, "Router-2");
+            eq(lockedRequestAfter, 0, "Router-3");
+        }
+    }
+
+    // === Executed locked deposit request === //
+    function router_executeLockedDepositRequest() public {
+        uint256 balanceOfEscrowB4 = token.balanceOf(address(escrow));
+        uint256 balanceOfRouterEscrowB4 = token.balanceOf(address(routerEscrow));
+        uint256 lockedRequestB4 = router.lockedRequests(actor, address(vault));
+
+        bool hasReverted;
+        try router.executeLockedDepositRequest(address(vault), actor, 0) {
+            sumOfExecutedLockedDepositRequests[address(token)] += lockedRequestB4;
+        } catch {
+            hasReverted = true;
+        }
+
+        if (!poolManager.isAllowedAsset(poolId, address(token))) {
+            // TODO: Ensure this works via actor switch
+            t(hasReverted, "Router-1 Must Revert");
+        }
+
+        // After Balances and Checks
+        uint256 balanceOfEscrowAfter = token.balanceOf(address(routerEscrow));
+        uint256 balanceOfRouterEscrowAfter = token.balanceOf(address(routerEscrow));
+        uint256 lockedRequestAfter = router.lockedRequests(actor, address(vault));
+
+        // NOTE: We only enforce the check if the tx didn't revert
+        if (!hasReverted) {
+            uint256 deltaEscrow = balanceOfEscrowAfter - balanceOfEscrowB4;
+            uint256 deltaRouterEscrow = balanceOfRouterEscrowAfter - balanceOfRouterEscrowB4;
+
+            eq(deltaEscrow, lockedRequestB4, "Router-2");
+            eq(deltaRouterEscrow, lockedRequestB4, "Router-2");
+            eq(lockedRequestAfter, 0, "Router-3");
         }
     }
 }
