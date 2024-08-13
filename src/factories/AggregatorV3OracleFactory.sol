@@ -45,15 +45,21 @@ contract VaultOracle is Auth, IAggregatorV3 {
     }
 
     // --- Price computation ---
-    function latestRoundData() public view override returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound) {
+    function latestRoundData()
+        public
+        view
+        override
+        returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound)
+    {
         uint256 priceLastUpdated = vault.priceLastUpdated();
         return (ROUND_ID, int256(vault.pricePerShare()), priceLastUpdated, priceLastUpdated, ROUND_ID);
     }
 
-    function getRoundData(
-        uint80 /* roundId */
-    ) external view returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound) {
+    function getRoundData(uint80 /* roundId */ )
+        external
+        view
+        returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound)
+    {
         return latestRoundData();
     }
-
 }
