@@ -19,7 +19,12 @@ contract VaultOracle is Auth, IAggregatorV3 {
     event File(bytes32 indexed what, address data);
 
     constructor(address vault_) Auth(msg.sender) {
-        _updateVault(vault_);
+        IERC7540Vault newVault = IERC7540Vault(vault_);
+        decimals = IERC20Metadata(newVault.share()).decimals();
+
+        string memory assetSymbol = IERC20Metadata(newVault.asset()).symbol();
+        string memory shareSymbol = IERC20Metadata(newVault.share()).symbol();
+        description = string.concat(assetSymbol, " / ", shareSymbol);
 
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
@@ -36,12 +41,13 @@ contract VaultOracle is Auth, IAggregatorV3 {
     }
 
     function _updateVault(address vault_) internal {
-        vault = IERC7540Vault(vault_);
-        decimals = IERC20Metadata(vault.share()).decimals();
+        IERC7540Vault newVault = IERC7540Vault(vault_);
+        require(
+            address(vault) == address(0) || (vault.share() == newVault.share() && vault.asset() == newVault.asset()),
+            "VaultOracle/mismatching-asset-or-share"
+        );
 
-        string memory assetSymbol = IERC20Metadata(vault.asset()).symbol();
-        string memory shareSymbol = IERC20Metadata(vault.share()).symbol();
-        description = string.concat(assetSymbol, " / ", shareSymbol);
+        vault = newVault;
     }
 
     // --- Price computation ---
