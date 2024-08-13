@@ -7,7 +7,6 @@ import {IERC20Metadata} from "src/interfaces/IERC20.sol";
 import {IERC7540Vault} from "src/interfaces/IERC7540.sol";
 
 contract VaultOracle is Auth, IAggregatorV3 {
-    uint8 public constant PRICE_DECIMALS = 36;
     uint80 public constant ROUND_ID = 0;
 
     uint256 public immutable override version = 1;
