@@ -10,10 +10,9 @@ contract VaultOracle is Auth, IAggregatorV3 {
     uint80 public constant ROUND_ID = 0;
 
     uint256 public immutable override version = 1;
+    uint8 public immutable override decimals;
 
     IERC7540Vault public vault;
-    uint8 public override decimals;
-    string public override description;
 
     // --- Events ---
     event File(bytes32 indexed what, address data);
@@ -21,10 +20,6 @@ contract VaultOracle is Auth, IAggregatorV3 {
     constructor(address vault_) Auth(msg.sender) {
         IERC7540Vault newVault = IERC7540Vault(vault_);
         decimals = IERC20Metadata(newVault.share()).decimals();
-
-        string memory assetSymbol = IERC20Metadata(newVault.asset()).symbol();
-        string memory shareSymbol = IERC20Metadata(newVault.share()).symbol();
-        description = string.concat(assetSymbol, " / ", shareSymbol);
 
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
@@ -67,5 +62,12 @@ contract VaultOracle is Auth, IAggregatorV3 {
         returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound)
     {
         return latestRoundData();
+    }
+
+    // --- View methods ---
+    function description() external view returns (string memory) {
+        string memory assetSymbol = IERC20Metadata(vault.asset()).symbol();
+        string memory shareSymbol = IERC20Metadata(vault.share()).symbol();
+        return string.concat(assetSymbol, " / ", shareSymbol);
     }
 }
