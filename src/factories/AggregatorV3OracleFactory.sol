@@ -19,7 +19,7 @@ contract VaultOracle is Auth, IAggregatorV3 {
 
     constructor(address vault_) Auth(msg.sender) {
         IERC7540Vault newVault = IERC7540Vault(vault_);
-        decimals = IERC20Metadata(newVault.share()).decimals();
+        decimals = IERC20Metadata(newVault.asset()).decimals();
 
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
