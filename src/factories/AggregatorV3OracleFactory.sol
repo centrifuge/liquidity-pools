@@ -28,21 +28,16 @@ contract VaultOracle is Auth, IAggregatorV3 {
     // --- Administration ---
     function file(bytes32 what, address data) public auth {
         if (what == "vault") {
-            _updateVault(data);
+            require(
+                address(vault) == address(0)
+                    || (IERC7540Vault(data).share() == vault.share() && IERC7540Vault(data).asset() == vault.asset()),
+                "VaultOracle/mismatching-asset-or-share"
+            );
+            vault = IERC7540Vault(data);
             emit File(what, data);
         } else {
             revert("VaultOracle/file-unrecognized-param");
         }
-    }
-
-    function _updateVault(address vault_) internal {
-        IERC7540Vault newVault = IERC7540Vault(vault_);
-        require(
-            address(vault) == address(0) || (vault.share() == newVault.share() && vault.asset() == newVault.asset()),
-            "VaultOracle/mismatching-asset-or-share"
-        );
-
-        vault = newVault;
     }
 
     // --- Price computation ---
