@@ -58,8 +58,8 @@ contract VaultOracle is Auth, IAggregatorV3 {
 
     // --- View methods ---
     function description() external view returns (string memory) {
-        string memory assetSymbol = IERC20Metadata(vault.asset()).symbol();
         string memory shareSymbol = IERC20Metadata(vault.share()).symbol();
-        return string.concat(assetSymbol, " / ", shareSymbol);
+        string memory assetSymbol = IERC20Metadata(vault.asset()).symbol();
+        return string.concat(shareSymbol, " / ", assetSymbol);
     }
 }
