@@ -358,7 +358,9 @@ contract CentrifugeRouterTest is BaseTest {
         vm.expectRevert("Gateway/not-enough-gas-funds");
         router.transferAssets{value: fuel}(address(erc20), recipient, uint128(amount), fuel - 1);
 
+        snapStart("CentrifugeRouter_transferAssets");
         router.transferAssets{value: fuel}(address(erc20), recipient, uint128(amount), fuel);
+        snapEnd();
 
         assertEq(erc20.balanceOf(address(escrow)), amount);
     }
@@ -450,9 +452,11 @@ contract CentrifugeRouterTest is BaseTest {
             vault_, Domain.EVM, destinationChainId, destinationAddress, uint128(amount), fuel - 1
         );
 
+        snapStart("CentrifugeRouter_transferTrancheTokens");
         router.transferTrancheTokens{value: fuel}(
             vault_, Domain.EVM, destinationChainId, destinationAddress, uint128(amount), fuel
         );
+        snapEnd();
         assertEq(share.balanceOf(address(router)), 0);
         assertEq(share.balanceOf(address(this)), 0);
     }
