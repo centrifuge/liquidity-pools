@@ -14,8 +14,8 @@ import {IGateway} from "src/interfaces/gateway/IGateway.sol";
 /// @title  Axelar Adapter
 /// @notice Routing contract that integrates with an Axelar Gateway
 contract AxelarAdapter is Auth, IAxelarAdapter {
-    string public constant CENTRIFUGE_ID = "centrifuge-2";
-    string public constant CENTRIFUGE_AXELAR_EXECUTABLE = "0x1940aafa3b20d9bfc49dc8f983ba2fe9fa958eaa";
+    string public constant CENTRIFUGE_ID = "centrifuge";
+    string public constant CENTRIFUGE_AXELAR_EXECUTABLE = "0xc1757c6A0563E37048869A342dF0651b9F267e41";
 
     IGateway public immutable gateway;
     bytes32 public immutable centrifugeIdHash;
