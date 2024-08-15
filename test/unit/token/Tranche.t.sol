@@ -7,12 +7,13 @@ import {Tranche} from "src/token/Tranche.sol";
 import {MockRoot} from "test/mocks/MockRoot.sol";
 import {MockRestrictionManager} from "test/mocks/MockRestrictionManager.sol";
 import "forge-std/Test.sol";
+import {GasSnapshot} from "forge-gas-snapshot/GasSnapshot.sol";
 
 interface ERC20Like {
     function balanceOf(address) external view returns (uint256);
 }
 
-contract TrancheTest is Test {
+contract TrancheTest is Test, GasSnapshot {
     Tranche token;
     MockRestrictionManager restrictionManager;
 
@@ -109,7 +110,9 @@ contract TrancheTest is Test {
         assertEq(token.balanceOf(targetUser), 0);
 
         restrictionManager.unfreeze(address(token), targetUser);
+        snapStart("Tranche_transferFrom");
         token.transferFrom(self, targetUser, amount);
+        snapEnd();
         assertEq(token.balanceOf(targetUser), amount);
         afterTransferAssumptions(self, targetUser, amount);
 

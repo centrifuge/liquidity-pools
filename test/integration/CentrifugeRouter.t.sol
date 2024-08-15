@@ -48,7 +48,9 @@ contract CentrifugeRouterTest is BaseTest {
         vm.expectRevert(bytes("CentrifugeRouter/invalid-owner"));
         router.requestDeposit{value: gas}(vault_, amount, self, self, gas);
 
+        snapStart("CentrifugeRouter_requestDeposit");
         router.requestDeposit{value: gas}(vault_, amount, self, self, gas);
+        snapEnd();
 
         assertEq(address(gateway).balance, GATEWAY_INITIAL_BALACE + GAS_BUFFER);
         for (uint8 i; i < testAdapters.length; i++) {
