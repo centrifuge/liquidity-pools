@@ -1,25 +1,22 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.21;
+pragma solidity 0.8.26;
 
-import {PermissionlessRouter} from "test/mocks/PermissionlessRouter.sol";
+import {PermissionlessAdapter} from "test/mocks/PermissionlessAdapter.sol";
 import {InvestmentManager} from "src/InvestmentManager.sol";
-import {Deployer, RouterLike} from "script/Deployer.sol";
+import {Deployer} from "script/Deployer.sol";
 
-// Script to deploy Liquidity Pools with a permissionless router for testing.
+// Script to deploy Liquidity Pools with a permissionless adapter for testing.
 contract PermissionlessScript is Deployer {
     function setUp() public {}
 
     function run() public {
         vm.startBroadcast();
 
-        admin = msg.sender;
-        pausers = [msg.sender];
+        adminSafe = msg.sender;
 
         deploy(msg.sender);
-        PermissionlessRouter router = new PermissionlessRouter(address(aggregator));
-        wire(address(router));
-
-        giveAdminAccess();
+        PermissionlessAdapter adapter = new PermissionlessAdapter(address(gateway));
+        wire(address(adapter));
 
         vm.stopBroadcast();
     }

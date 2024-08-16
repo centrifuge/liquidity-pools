@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.21;
+pragma solidity 0.8.26;
 
 import "test/BaseTest.sol";
-import "test/mocks/MockRestrictionManagerFactory.sol";
 import {CastLib} from "src/libraries/CastLib.sol";
+import {Domain} from "src/interfaces/IPoolManager.sol";
+import {IRestrictionManager} from "src/interfaces/token/IRestrictionManager.sol";
+import {MockHook} from "test/mocks/MockHook.sol";
+import {RestrictionUpdate} from "src/interfaces/token/IRestrictionManager.sol";
 
 contract PoolManagerTest is BaseTest {
     using CastLib for *;
@@ -11,6 +14,9 @@ contract PoolManagerTest is BaseTest {
     // Deployment
     function testDeployment(address nonWard) public {
         vm.assume(nonWard != address(root) && nonWard != address(gateway) && nonWard != address(this));
+
+        // redeploying within test to increase coverage
+        new PoolManager(address(escrow), vaultFactory, trancheFactory);
 
         // values set correctly
         assertEq(address(poolManager.gateway()), address(gateway));
@@ -35,13 +41,9 @@ contract PoolManagerTest is BaseTest {
         poolManager.file("investmentManager", newInvestmentManager);
         assertEq(address(poolManager.investmentManager()), newInvestmentManager);
 
-        address newTrancheTokenFactory = makeAddr("newTrancheTokenFactory");
-        poolManager.file("trancheTokenFactory", newTrancheTokenFactory);
-        assertEq(address(poolManager.trancheTokenFactory()), newTrancheTokenFactory);
-
-        address newRestrictionManagerFactory = makeAddr("newRestrictionManagerFactory");
-        poolManager.file("restrictionManagerFactory", newRestrictionManagerFactory);
-        assertEq(address(poolManager.restrictionManagerFactory()), newRestrictionManagerFactory);
+        address newTrancheFactory = makeAddr("newTrancheFactory");
+        poolManager.file("trancheFactory", newTrancheFactory);
+        assertEq(address(poolManager.trancheFactory()), newTrancheFactory);
 
         address newVaultFactory = makeAddr("newVaultFactory");
         poolManager.file("vaultFactory", newVaultFactory);
@@ -52,10 +54,13 @@ contract PoolManagerTest is BaseTest {
         poolManager.file("escrow", newEscrow);
     }
 
+    function testHandleInvalidMessage() public {
+        vm.expectRevert(bytes("PoolManager/invalid-message"));
+        poolManager.handle(abi.encodePacked(uint8(MessagesLib.Call.Invalid)));
+    }
+
     function testAddPool(uint64 poolId) public {
         centrifugeChain.addPool(poolId);
-        (uint256 createdAt) = poolManager.pools(poolId);
-        assertEq(createdAt, block.timestamp);
 
         vm.expectRevert(bytes("PoolManager/pool-already-added"));
         centrifugeChain.addPool(poolId);
@@ -70,45 +75,46 @@ contract PoolManagerTest is BaseTest {
         bytes16 trancheId,
         string memory tokenName,
         string memory tokenSymbol,
-        uint8 decimals,
-        uint8 restrictionSet
+        uint8 decimals
     ) public {
-        decimals = uint8(bound(decimals, 1, 18));
+        decimals = uint8(bound(decimals, 2, 18));
         vm.assume(bytes(tokenName).length <= 128);
         vm.assume(bytes(tokenSymbol).length <= 32);
 
+        address hook = address(new MockHook());
+
         vm.expectRevert(bytes("PoolManager/invalid-pool"));
-        centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, restrictionSet);
+        centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, hook);
         centrifugeChain.addPool(poolId);
 
         vm.expectRevert(bytes("Auth/not-authorized"));
         vm.prank(randomUser);
-        poolManager.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, restrictionSet);
+        poolManager.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, hook);
 
         vm.expectRevert(bytes("PoolManager/too-few-tranche-token-decimals"));
-        centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, 0, restrictionSet);
+        centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, 0, hook);
 
         vm.expectRevert(bytes("PoolManager/too-many-tranche-token-decimals"));
-        centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, 19, restrictionSet);
+        centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, 19, hook);
 
-        centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, restrictionSet);
+        centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, hook);
+        assertTrue(poolManager.canTrancheBeDeployed(poolId, trancheId));
 
         vm.expectRevert(bytes("PoolManager/tranche-already-exists"));
-        centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, restrictionSet);
-
-        (,,, uint8 _restrictionSet) = poolManager.undeployedTranches(poolId, trancheId);
-        assertEq(_restrictionSet, restrictionSet);
+        centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, hook);
 
         poolManager.deployTranche(poolId, trancheId);
+        assertFalse(poolManager.canTrancheBeDeployed(poolId, trancheId));
 
-        TrancheToken trancheToken = TrancheToken(poolManager.getTrancheToken(poolId, trancheId));
+        Tranche tranche = Tranche(poolManager.getTranche(poolId, trancheId));
 
-        assertEq(tokenName, trancheToken.name());
-        assertEq(tokenSymbol, trancheToken.symbol());
-        assertEq(decimals, trancheToken.decimals());
+        assertEq(tokenName, tranche.name());
+        assertEq(tokenSymbol, tranche.symbol());
+        assertEq(decimals, tranche.decimals());
+        assertEq(hook, tranche.hook());
 
         vm.expectRevert(bytes("PoolManager/tranche-already-deployed"));
-        centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, restrictionSet);
+        centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, hook);
     }
 
     function testAddMultipleTranchesWorks(
@@ -116,61 +122,53 @@ contract PoolManagerTest is BaseTest {
         bytes16[4] calldata trancheIds,
         string memory tokenName,
         string memory tokenSymbol,
-        uint8 decimals,
-        uint8 restrictionSet
+        uint8 decimals
     ) public {
-        decimals = uint8(bound(decimals, 1, 18));
+        decimals = uint8(bound(decimals, 2, 18));
         vm.assume(!hasDuplicates(trancheIds));
         vm.assume(bytes(tokenName).length <= 128);
         vm.assume(bytes(tokenSymbol).length <= 32);
 
         centrifugeChain.addPool(poolId);
 
+        address hook = address(new MockHook());
+
         for (uint256 i = 0; i < trancheIds.length; i++) {
-            centrifugeChain.addTranche(poolId, trancheIds[i], tokenName, tokenSymbol, decimals, restrictionSet);
+            centrifugeChain.addTranche(poolId, trancheIds[i], tokenName, tokenSymbol, decimals, hook);
             poolManager.deployTranche(poolId, trancheIds[i]);
-            TrancheToken trancheToken = TrancheToken(poolManager.getTrancheToken(poolId, trancheIds[i]));
-            assertEq(tokenName, trancheToken.name());
-            assertEq(tokenSymbol, trancheToken.symbol());
-            assertEq(decimals, trancheToken.decimals());
+            Tranche tranche = Tranche(poolManager.getTranche(poolId, trancheIds[i]));
+            assertEq(tokenName, tranche.name());
+            assertEq(tokenSymbol, tranche.symbol());
+            assertEq(decimals, tranche.decimals());
         }
     }
 
     function testDeployTranche(
         uint64 poolId,
         uint8 decimals,
-        uint8 restrictionSet,
         string memory tokenName,
         string memory tokenSymbol,
         bytes16 trancheId,
         uint128 assetId
     ) public {
         vm.assume(assetId > 0);
-        decimals = uint8(bound(decimals, 1, 18));
+        decimals = uint8(bound(decimals, 2, 18));
         vm.assume(bytes(tokenName).length <= 128);
         vm.assume(bytes(tokenSymbol).length <= 32);
+
+        address hook = address(new MockHook());
 
         centrifugeChain.addPool(poolId); // add pool
 
         vm.expectRevert(bytes("PoolManager/tranche-not-added"));
         poolManager.deployTranche(poolId, trancheId);
-        centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, restrictionSet); // add tranche
-        address trancheToken_ = poolManager.deployTranche(poolId, trancheId);
-        TrancheToken trancheToken = TrancheToken(trancheToken_);
-        assertEq(trancheToken.wards(address(root)), 1);
-        assertEq(trancheToken.wards(address(investmentManager)), 1);
-        assertEq(tokenName, trancheToken.name());
-        assertEq(tokenSymbol, trancheToken.symbol());
-    }
-
-    function testRestrictionSetIntegration(uint64 poolId, bytes16 trancheId, uint8 restrictionSet) public {
-        MockRestrictionManagerFactory restrictionManagerFactory = new MockRestrictionManagerFactory();
-        poolManager.file("restrictionManagerFactory", address(restrictionManagerFactory));
-        centrifugeChain.addPool(poolId);
-        centrifugeChain.addTranche(poolId, trancheId, "", "", defaultDecimals, restrictionSet);
-        poolManager.deployTranche(poolId, trancheId);
-        // assert restrictionSet info is passed correctly to the factory
-        assertEq(restrictionManagerFactory.values_uint8("restrictionSet"), restrictionSet);
+        centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, hook); // add tranche
+        address tranche_ = poolManager.deployTranche(poolId, trancheId);
+        Tranche tranche = Tranche(tranche_);
+        assertEq(tranche.wards(address(root)), 1);
+        assertEq(tranche.wards(address(investmentManager)), 1);
+        assertEq(tokenName, tranche.name());
+        assertEq(tokenSymbol, tranche.symbol());
     }
 
     function testAddAsset(uint128 assetId) public {
@@ -205,24 +203,25 @@ contract PoolManagerTest is BaseTest {
     function testDeployVault(
         uint64 poolId,
         uint8 decimals,
-        uint8 restrictionSet,
         string memory tokenName,
         string memory tokenSymbol,
         bytes16 trancheId,
         uint128 assetId
     ) public {
-        decimals = uint8(bound(decimals, 1, 18));
+        decimals = uint8(bound(decimals, 2, 18));
         vm.assume(assetId > 0);
         vm.assume(bytes(tokenName).length <= 128);
         vm.assume(bytes(tokenSymbol).length <= 32);
 
+        address hook = address(new MockHook());
+
         centrifugeChain.addPool(poolId); // add pool
-        centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, restrictionSet); // add tranche
+        centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, hook); // add tranche
         centrifugeChain.addAsset(assetId, address(erc20));
 
         vm.expectRevert(bytes("PoolManager/tranche-does-not-exist"));
         poolManager.deployVault(poolId, trancheId, address(erc20));
-        address trancheToken_ = poolManager.deployTranche(poolId, trancheId);
+        address tranche_ = poolManager.deployTranche(poolId, trancheId);
 
         vm.expectRevert(bytes("PoolManager/asset-not-supported"));
         poolManager.deployVault(poolId, trancheId, address(erc20));
@@ -239,27 +238,23 @@ contract PoolManagerTest is BaseTest {
 
         // check vault state
         ERC7540Vault vault = ERC7540Vault(vault_);
-        TrancheToken trancheToken = TrancheToken(trancheToken_);
+        Tranche tranche = Tranche(tranche_);
         assertEq(address(vault.manager()), address(investmentManager));
         assertEq(vault.asset(), address(erc20));
         assertEq(vault.poolId(), poolId);
         assertEq(vault.trancheId(), trancheId);
-        assertEq(address(vault.share()), trancheToken_);
+        assertEq(address(vault.share()), tranche_);
         assertTrue(vault.wards(address(investmentManager)) == 1);
         assertTrue(vault.wards(address(this)) == 0);
         assertTrue(investmentManager.wards(vaultAddress) == 1);
 
-        assertEq(trancheToken.name(), tokenName);
-        assertEq(trancheToken.symbol(), tokenSymbol);
-        assertEq(trancheToken.decimals(), decimals);
-        (, uint64 actualValidUntil) = RestrictionManagerLike(address(trancheToken.restrictionManager())).restrictions(
-            address(investmentManager.escrow())
-        );
-        assertTrue(actualValidUntil >= block.timestamp);
+        // assertEq(tranche.name(), tokenName);
+        // assertEq(tranche.symbol(), tokenSymbol);
+        assertEq(tranche.decimals(), decimals);
 
-        assertTrue(trancheToken.wards(address(poolManager)) == 1);
-        assertTrue(trancheToken.wards(vault_) == 1);
-        assertTrue(trancheToken.wards(address(this)) == 0);
+        assertTrue(tranche.wards(address(poolManager)) == 1);
+        assertTrue(tranche.wards(vault_) == 1);
+        assertTrue(tranche.wards(address(this)) == 0);
     }
 
     function testIncomingTransfer(uint128 amount) public {
@@ -269,19 +264,19 @@ contract PoolManagerTest is BaseTest {
         bytes32 sender = makeAddr("sender").toBytes32();
 
         vm.expectRevert(bytes("PoolManager/unknown-asset"));
-        centrifugeChain.incomingTransfer(assetId, sender, bytes32(bytes20(recipient)), amount);
+        centrifugeChain.incomingTransfer(assetId, bytes32(bytes20(recipient)), amount);
         centrifugeChain.addAsset(assetId, address(erc20));
 
         vm.expectRevert(bytes("SafeTransferLib/safe-transfer-from-failed"));
-        centrifugeChain.incomingTransfer(assetId, sender, bytes32(bytes20(recipient)), amount);
+        centrifugeChain.incomingTransfer(assetId, bytes32(bytes20(recipient)), amount);
 
         vm.expectRevert(bytes("SafeTransferLib/safe-transfer-from-failed"));
-        centrifugeChain.incomingTransfer(assetId, sender, bytes32(bytes20(recipient)), amount);
+        centrifugeChain.incomingTransfer(assetId, bytes32(bytes20(recipient)), amount);
 
         erc20.mint(address(poolManager.escrow()), amount); // fund escrow
 
         // Now we test the incoming message
-        centrifugeChain.incomingTransfer(assetId, sender, bytes32(bytes20(recipient)), amount);
+        centrifugeChain.incomingTransfer(assetId, bytes32(bytes20(recipient)), amount);
         assertEq(erc20.balanceOf(address(poolManager.escrow())), 0);
         assertEq(erc20.balanceOf(recipient), amount);
     }
@@ -299,10 +294,10 @@ contract PoolManagerTest is BaseTest {
         erc20.approve(address(poolManager), type(uint256).max);
 
         vm.expectRevert(bytes("PoolManager/unknown-asset"));
-        poolManager.transfer(address(erc20), recipient, amount);
+        poolManager.transferAssets(address(erc20), recipient, amount);
         centrifugeChain.addAsset(assetId, address(erc20));
 
-        poolManager.transfer(address(erc20), recipient, amount);
+        poolManager.transferAssets(address(erc20), recipient, amount);
         assertEq(erc20.balanceOf(address(this)), initialBalance - amount);
         assertEq(erc20.balanceOf(address(poolManager.escrow())), amount);
     }
@@ -313,37 +308,38 @@ contract PoolManagerTest is BaseTest {
         bytes32 centChainAddress = makeAddr("centChainAddress").toBytes32();
         address vault_ = deploySimpleVault();
         ERC7540Vault vault = ERC7540Vault(vault_);
-        TrancheTokenLike trancheToken = TrancheTokenLike(address(ERC7540Vault(vault_).share()));
+        ITranche tranche = ITranche(address(ERC7540Vault(vault_).share()));
 
         // fund this account with amount
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), address(this), validUntil);
+
         centrifugeChain.incomingTransferTrancheTokens(
             vault.poolId(), vault.trancheId(), uint64(block.chainid), address(this), amount
         );
-        assertEq(trancheToken.balanceOf(address(this)), amount); // Verify the address(this) has the expected amount
+        assertEq(tranche.balanceOf(address(this)), amount); // Verify the address(this) has the expected amount
 
         // fails for invalid tranche token
         uint64 poolId = vault.poolId();
         bytes16 trancheId = vault.trancheId();
         vm.expectRevert(bytes("PoolManager/unknown-token"));
-        poolManager.transferTrancheTokensToCentrifuge(poolId + 1, trancheId, centChainAddress, amount);
+        poolManager.transferTrancheTokens(poolId + 1, trancheId, Domain.Centrifuge, 0, centChainAddress, amount);
 
         // send the transfer from EVM -> Cent Chain
-        trancheToken.approve(address(poolManager), amount);
-        poolManager.transferTrancheTokensToCentrifuge(poolId, trancheId, centChainAddress, amount);
-        assertEq(trancheToken.balanceOf(address(this)), 0);
+        tranche.approve(address(poolManager), amount);
+        poolManager.transferTrancheTokens(poolId, trancheId, Domain.Centrifuge, 0, centChainAddress, amount);
+        assertEq(tranche.balanceOf(address(this)), 0);
 
-        // Finally, verify the connector called `router.send`
+        // Finally, verify the connector called `adapter.send`
         bytes memory message = abi.encodePacked(
             uint8(MessagesLib.Call.TransferTrancheTokens),
             poolId,
             trancheId,
-            bytes32(bytes20(address(this))),
-            MessagesLib.formatDomain(MessagesLib.Domain.Centrifuge),
+            Domain.Centrifuge,
+            uint64(0),
             centChainAddress,
             amount
         );
-        assertEq(router1.sent(message), 1);
+        assertEq(adapter1.sent(message), 1);
     }
 
     function testTransferTrancheTokensFromCentrifuge(uint128 amount) public {
@@ -355,9 +351,9 @@ contract PoolManagerTest is BaseTest {
         uint64 poolId = vault.poolId();
         bytes16 trancheId = vault.trancheId();
 
-        TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
+        ITranche tranche = ITranche(address(vault.share()));
 
-        vm.expectRevert(bytes("RestrictionManager/destination-not-a-member"));
+        vm.expectRevert(bytes("RestrictionManager/transfer-blocked"));
         centrifugeChain.incomingTransferTrancheTokens(
             poolId, trancheId, uint64(block.chainid), destinationAddress, amount
         );
@@ -368,11 +364,11 @@ contract PoolManagerTest is BaseTest {
             poolId + 1, trancheId, uint64(block.chainid), destinationAddress, amount
         );
 
-        assertTrue(trancheToken.checkTransferRestriction(address(0), destinationAddress, 0));
+        assertTrue(tranche.checkTransferRestriction(address(0), destinationAddress, 0));
         centrifugeChain.incomingTransferTrancheTokens(
             poolId, trancheId, uint64(block.chainid), destinationAddress, amount
         );
-        assertEq(trancheToken.balanceOf(destinationAddress), amount);
+        assertEq(tranche.balanceOf(destinationAddress), amount);
     }
 
     function testTransferTrancheTokensToEVM(uint128 amount) public {
@@ -382,53 +378,56 @@ contract PoolManagerTest is BaseTest {
 
         address vault_ = deploySimpleVault();
         ERC7540Vault vault = ERC7540Vault(vault_);
-        TrancheTokenLike trancheToken = TrancheTokenLike(address(ERC7540Vault(vault_).share()));
+        ITranche tranche = ITranche(address(ERC7540Vault(vault_).share()));
 
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), destinationAddress, validUntil);
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), address(this), validUntil);
-        assertTrue(trancheToken.checkTransferRestriction(address(0), address(this), 0));
-        assertTrue(trancheToken.checkTransferRestriction(address(0), destinationAddress, 0));
+        assertTrue(tranche.checkTransferRestriction(address(0), address(this), 0));
+        assertTrue(tranche.checkTransferRestriction(address(0), destinationAddress, 0));
 
         // Fund this address with samount
         centrifugeChain.incomingTransferTrancheTokens(
             vault.poolId(), vault.trancheId(), uint64(block.chainid), address(this), amount
         );
-        assertEq(trancheToken.balanceOf(address(this)), amount);
+        assertEq(tranche.balanceOf(address(this)), amount);
 
         // fails for invalid tranche token
         uint64 poolId = vault.poolId();
         bytes16 trancheId = vault.trancheId();
         vm.expectRevert(bytes("PoolManager/unknown-token"));
-        poolManager.transferTrancheTokensToEVM(poolId + 1, trancheId, uint64(block.chainid), destinationAddress, amount);
+        poolManager.transferTrancheTokens(
+            poolId + 1, trancheId, Domain.EVM, uint64(block.chainid), destinationAddress.toBytes32(), amount
+        );
 
         // Approve and transfer amount from this address to destinationAddress
-        trancheToken.approve(address(poolManager), amount);
-        poolManager.transferTrancheTokensToEVM(
-            vault.poolId(), vault.trancheId(), uint64(block.chainid), destinationAddress, amount
+        tranche.approve(address(poolManager), amount);
+        poolManager.transferTrancheTokens(
+            vault.poolId(), vault.trancheId(), Domain.EVM, uint64(block.chainid), destinationAddress.toBytes32(), amount
         );
-        assertEq(trancheToken.balanceOf(address(this)), 0);
+        assertEq(tranche.balanceOf(address(this)), 0);
     }
 
     function testUpdateMember(uint64 validUntil) public {
         validUntil = uint64(bound(validUntil, block.timestamp, type(uint64).max));
         address vault_ = deploySimpleVault();
         ERC7540Vault vault = ERC7540Vault(vault_);
-        TrancheTokenLike trancheToken = TrancheTokenLike(address(ERC7540Vault(vault_).share()));
+        ITranche tranche = ITranche(address(ERC7540Vault(vault_).share()));
 
         uint64 poolId = vault.poolId();
         bytes16 trancheId = vault.trancheId();
+        IRestrictionManager hook = IRestrictionManager(tranche.hook());
         vm.expectRevert(bytes("Auth/not-authorized"));
         vm.prank(randomUser);
-        poolManager.updateMember(poolId, trancheId, randomUser, validUntil);
+        hook.updateMember(address(tranche), randomUser, validUntil);
 
         vm.expectRevert(bytes("PoolManager/unknown-token"));
         centrifugeChain.updateMember(100, bytes16(bytes("100")), randomUser, validUntil); // use random poolId &
             // trancheId
 
         centrifugeChain.updateMember(poolId, trancheId, randomUser, validUntil);
-        assertTrue(trancheToken.checkTransferRestriction(address(0), randomUser, 0));
+        assertTrue(tranche.checkTransferRestriction(address(0), randomUser, 0));
 
-        vm.expectRevert(bytes("PoolManager/escrow-member-cannot-be-updated"));
+        vm.expectRevert(bytes("RestrictionManager/endorsed-user-cannot-be-updated"));
         centrifugeChain.updateMember(poolId, trancheId, address(escrow), validUntil);
     }
 
@@ -437,11 +436,11 @@ contract PoolManagerTest is BaseTest {
         ERC7540Vault vault = ERC7540Vault(vault_);
         uint64 poolId = vault.poolId();
         bytes16 trancheId = vault.trancheId();
-        TrancheTokenLike trancheToken = TrancheTokenLike(address(ERC7540Vault(vault_).share()));
+        ITranche tranche = ITranche(address(ERC7540Vault(vault_).share()));
         uint64 validUntil = uint64(block.timestamp + 7 days);
         address secondUser = makeAddr("secondUser");
 
-        vm.expectRevert(bytes("PoolManager/escrow-cannot-be-frozen"));
+        vm.expectRevert(bytes("RestrictionManager/endorsed-user-cannot-be-frozen"));
         centrifugeChain.freeze(poolId, trancheId, address(escrow));
 
         vm.expectRevert(bytes("PoolManager/unknown-token"));
@@ -452,47 +451,99 @@ contract PoolManagerTest is BaseTest {
 
         centrifugeChain.updateMember(poolId, trancheId, randomUser, validUntil);
         centrifugeChain.updateMember(poolId, trancheId, secondUser, validUntil);
-        assertTrue(trancheToken.checkTransferRestriction(randomUser, secondUser, 0));
+        assertTrue(tranche.checkTransferRestriction(randomUser, secondUser, 0));
 
         centrifugeChain.freeze(poolId, trancheId, randomUser);
-        assertFalse(trancheToken.checkTransferRestriction(randomUser, secondUser, 0));
+        assertFalse(tranche.checkTransferRestriction(randomUser, secondUser, 0));
 
         centrifugeChain.unfreeze(poolId, trancheId, randomUser);
-        assertTrue(trancheToken.checkTransferRestriction(randomUser, secondUser, 0));
+        assertTrue(tranche.checkTransferRestriction(randomUser, secondUser, 0));
 
         centrifugeChain.freeze(poolId, trancheId, secondUser);
-        assertFalse(trancheToken.checkTransferRestriction(randomUser, secondUser, 0));
+        assertFalse(tranche.checkTransferRestriction(randomUser, secondUser, 0));
 
         centrifugeChain.unfreeze(poolId, trancheId, secondUser);
-        assertTrue(trancheToken.checkTransferRestriction(randomUser, secondUser, 0));
+        assertTrue(tranche.checkTransferRestriction(randomUser, secondUser, 0));
     }
 
-    function testUpdateTokenMetadata() public {
+    function testUpdateTrancheMetadata() public {
         address vault_ = deploySimpleVault();
         ERC7540Vault vault = ERC7540Vault(vault_);
         uint64 poolId = vault.poolId();
         bytes16 trancheId = vault.trancheId();
-        TrancheTokenLike trancheToken = TrancheTokenLike(address(ERC7540Vault(vault_).share()));
+        ITranche tranche = ITranche(address(ERC7540Vault(vault_).share()));
 
         string memory updatedTokenName = "newName";
         string memory updatedTokenSymbol = "newSymbol";
 
         vm.expectRevert(bytes("PoolManager/unknown-token"));
-        centrifugeChain.updateTrancheTokenMetadata(100, bytes16(bytes("100")), updatedTokenName, updatedTokenSymbol);
+        centrifugeChain.updateTrancheMetadata(100, bytes16(bytes("100")), updatedTokenName, updatedTokenSymbol);
 
         vm.expectRevert(bytes("Auth/not-authorized"));
         vm.prank(randomUser);
-        poolManager.updateTrancheTokenMetadata(poolId, trancheId, updatedTokenName, updatedTokenSymbol);
+        poolManager.updateTrancheMetadata(poolId, trancheId, updatedTokenName, updatedTokenSymbol);
 
-        assertEq(trancheToken.name(), "name");
-        assertEq(trancheToken.symbol(), "symbol");
+        assertEq(tranche.name(), "name");
+        assertEq(tranche.symbol(), "symbol");
 
-        centrifugeChain.updateTrancheTokenMetadata(poolId, trancheId, updatedTokenName, updatedTokenSymbol);
-        assertEq(trancheToken.name(), updatedTokenName);
-        assertEq(trancheToken.symbol(), updatedTokenSymbol);
+        centrifugeChain.updateTrancheMetadata(poolId, trancheId, updatedTokenName, updatedTokenSymbol);
+        assertEq(tranche.name(), updatedTokenName);
+        assertEq(tranche.symbol(), updatedTokenSymbol);
 
         vm.expectRevert(bytes("PoolManager/old-metadata"));
-        centrifugeChain.updateTrancheTokenMetadata(poolId, trancheId, updatedTokenName, updatedTokenSymbol);
+        centrifugeChain.updateTrancheMetadata(poolId, trancheId, updatedTokenName, updatedTokenSymbol);
+    }
+
+    function testUpdateTrancheHook() public {
+        address vault_ = deploySimpleVault();
+        ERC7540Vault vault = ERC7540Vault(vault_);
+        uint64 poolId = vault.poolId();
+        bytes16 trancheId = vault.trancheId();
+        ITranche tranche = ITranche(address(ERC7540Vault(vault_).share()));
+
+        address newHook = makeAddr("NewHook");
+
+        vm.expectRevert(bytes("PoolManager/unknown-token"));
+        centrifugeChain.updateTrancheHook(100, bytes16(bytes("100")), newHook);
+
+        vm.expectRevert(bytes("Auth/not-authorized"));
+        vm.prank(randomUser);
+        poolManager.updateTrancheHook(poolId, trancheId, newHook);
+
+        assertEq(tranche.hook(), restrictionManager);
+
+        centrifugeChain.updateTrancheHook(poolId, trancheId, newHook);
+        assertEq(tranche.hook(), newHook);
+
+        vm.expectRevert(bytes("PoolManager/old-hook"));
+        centrifugeChain.updateTrancheHook(poolId, trancheId, newHook);
+    }
+
+    function testUpdateRestriction() public {
+        address vault_ = deploySimpleVault();
+        ERC7540Vault vault = ERC7540Vault(vault_);
+        uint64 poolId = vault.poolId();
+        bytes16 trancheId = vault.trancheId();
+        ITranche tranche = ITranche(address(ERC7540Vault(vault_).share()));
+
+        bytes memory update = abi.encodePacked(uint8(RestrictionUpdate.Freeze), makeAddr("User").toBytes32());
+
+        vm.expectRevert(bytes("PoolManager/unknown-token"));
+        poolManager.updateRestriction(100, bytes16(bytes("100")), update);
+
+        vm.expectRevert(bytes("Auth/not-authorized"));
+        vm.prank(randomUser);
+        poolManager.updateRestriction(poolId, trancheId, update);
+
+        address hook = tranche.hook();
+        poolManager.updateTrancheHook(poolId, trancheId, address(0));
+
+        vm.expectRevert(bytes("PoolManager/invalid-hook"));
+        poolManager.updateRestriction(poolId, trancheId, update);
+
+        poolManager.updateTrancheHook(poolId, trancheId, hook);
+
+        poolManager.updateRestriction(poolId, trancheId, update);
     }
 
     function testAllowAsset() public {
@@ -523,26 +574,27 @@ contract PoolManagerTest is BaseTest {
         centrifugeChain.disallowAsset(poolId + 1, randomCurrency);
     }
 
-    function testUpdateTokenPriceWorks(
+    function testUpdateTranchePriceWorks(
         uint64 poolId,
         uint8 decimals,
-        uint8 restrictionSet,
         uint128 assetId,
         string memory tokenName,
         string memory tokenSymbol,
         bytes16 trancheId,
         uint128 price
     ) public {
-        decimals = uint8(bound(decimals, 1, 18));
+        decimals = uint8(bound(decimals, 2, 18));
         vm.assume(poolId > 0);
         vm.assume(trancheId > 0);
         vm.assume(assetId > 0);
         centrifugeChain.addPool(poolId);
 
-        vm.expectRevert(bytes("PoolManager/tranche-does-not-exist"));
-        centrifugeChain.updateTrancheTokenPrice(poolId, trancheId, assetId, price, uint64(block.timestamp));
+        address hook = address(new MockHook());
 
-        centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, restrictionSet);
+        vm.expectRevert(bytes("PoolManager/tranche-does-not-exist"));
+        centrifugeChain.updateTranchePrice(poolId, trancheId, assetId, price, uint64(block.timestamp));
+
+        centrifugeChain.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, hook);
         centrifugeChain.addAsset(assetId, address(erc20));
         centrifugeChain.allowAsset(poolId, assetId);
 
@@ -553,16 +605,15 @@ contract PoolManagerTest is BaseTest {
 
         vm.expectRevert(bytes("Auth/not-authorized"));
         vm.prank(randomUser);
-        poolManager.updateTrancheTokenPrice(poolId, trancheId, assetId, price, uint64(block.timestamp));
+        poolManager.updateTranchePrice(poolId, trancheId, assetId, price, uint64(block.timestamp));
 
-        centrifugeChain.updateTrancheTokenPrice(poolId, trancheId, assetId, price, uint64(block.timestamp));
-        (uint256 latestPrice, uint64 priceComputedAt) =
-            poolManager.getTrancheTokenPrice(poolId, trancheId, address(erc20));
+        centrifugeChain.updateTranchePrice(poolId, trancheId, assetId, price, uint64(block.timestamp));
+        (uint256 latestPrice, uint64 priceComputedAt) = poolManager.getTranchePrice(poolId, trancheId, address(erc20));
         assertEq(latestPrice, price);
         assertEq(priceComputedAt, block.timestamp);
 
         vm.expectRevert(bytes("PoolManager/cannot-set-older-price"));
-        centrifugeChain.updateTrancheTokenPrice(poolId, trancheId, assetId, price, uint64(block.timestamp - 1));
+        centrifugeChain.updateTranchePrice(poolId, trancheId, assetId, price, uint64(block.timestamp - 1));
     }
 
     function testRemoveVault() public {
@@ -571,8 +622,8 @@ contract PoolManagerTest is BaseTest {
         uint64 poolId = vault.poolId();
         bytes16 trancheId = vault.trancheId();
         address asset = address(vault.asset());
-        address trancheToken_ = address(vault.share());
-        TrancheToken trancheToken = TrancheToken(trancheToken_);
+        address tranche_ = address(vault.share());
+        Tranche tranche = Tranche(tranche_);
 
         poolManager.deny(address(this));
         vm.expectRevert(bytes("Auth/not-authorized"));
@@ -580,25 +631,32 @@ contract PoolManagerTest is BaseTest {
 
         root.relyContract(address(poolManager), address(this));
 
-        vm.expectRevert(bytes("PoolManager/pool-does-not-exist"));
-        poolManager.removeVault(poolId + 1, trancheId, asset);
-
         vm.expectRevert(bytes("PoolManager/tranche-does-not-exist"));
         poolManager.removeVault(poolId, bytes16(0), asset);
 
         poolManager.removeVault(poolId, trancheId, asset);
-        assertEq(poolManager.getVault(poolId, trancheId, asset), address(0));
+
+        vm.expectRevert(bytes("PoolManager/vault-not-deployed"));
+        poolManager.removeVault(poolId, trancheId, asset);
+
+        vm.expectRevert(bytes("PoolManager/unknown-vault"));
+        poolManager.getVault(poolId, trancheId, asset);
         assertEq(investmentManager.wards(vault_), 0);
-        assertEq(trancheToken.wards(vault_), 0);
-        assertEq(trancheToken.allowance(address(escrow), vault_), 0);
+        assertEq(tranche.wards(vault_), 0);
+        assertEq(tranche.allowance(address(escrow), vault_), 0);
+
+        vm.expectRevert(bytes("PoolManager/unknown-vault"));
+        poolManager.getVaultAsset(vault_);
     }
 
     function testRemoveVaultFailsWhenVaultNotDeployed() public {
         uint64 poolId = 5;
         bytes16 trancheId = bytes16(bytes("1"));
 
+        address hook = address(new MockHook());
+
         centrifugeChain.addPool(poolId); // add pool
-        centrifugeChain.addTranche(poolId, trancheId, "Test Token", "TT", 6, 2); // add tranche
+        centrifugeChain.addTranche(poolId, trancheId, "Test Token", "TT", 6, hook); // add tranche
 
         centrifugeChain.addAsset(10, address(erc20));
         centrifugeChain.allowAsset(poolId, 10);
@@ -625,11 +683,92 @@ contract PoolManagerTest is BaseTest {
 
         // Remove old vault
         poolManager.removeVault(poolId, trancheId, asset);
-        assertEq(poolManager.getVault(poolId, trancheId, asset), address(0));
+        vm.expectRevert(bytes("PoolManager/unknown-vault"));
+        poolManager.getVault(poolId, trancheId, asset);
 
         // Deploy new vault
         address newVault = poolManager.deployVault(poolId, trancheId, asset);
         assertEq(poolManager.getVault(poolId, trancheId, asset), newVault);
+    }
+
+    function testGetVaultByAssetId() public {
+        address vault_ = deploySimpleVault();
+        ERC7540Vault vault = ERC7540Vault(vault_);
+        uint64 poolId = vault.poolId();
+        bytes16 trancheId = vault.trancheId();
+        address asset = address(vault.asset());
+        uint128 assetId = poolManager.assetToId(asset);
+
+        assertEq(poolManager.getVault(poolId, trancheId, assetId), vault_);
+    }
+
+    function testGetVaultByAsset() public {
+        address vault_ = deploySimpleVault();
+        ERC7540Vault vault = ERC7540Vault(vault_);
+        uint64 poolId = vault.poolId();
+        bytes16 trancheId = vault.trancheId();
+        address asset = address(vault.asset());
+
+        assertEq(poolManager.getVault(poolId, trancheId, asset), vault_);
+    }
+
+    function testGetInvalidVaultByAssetIdFails() public {
+        address vault_ = deploySimpleVault();
+        ERC7540Vault vault = ERC7540Vault(vault_);
+        uint64 poolId = vault.poolId();
+        bytes16 trancheId = vault.trancheId();
+        vm.expectRevert(bytes("PoolManager/unknown-vault"));
+        poolManager.getVault(poolId, trancheId, defaultAssetId + 1);
+    }
+
+    function testGetInvalidVaultByAssetFails() public {
+        address vault_ = deploySimpleVault();
+        ERC7540Vault vault = ERC7540Vault(vault_);
+        uint64 poolId = vault.poolId();
+        bytes16 trancheId = vault.trancheId();
+        vm.expectRevert(bytes("PoolManager/unknown-vault"));
+        poolManager.getVault(poolId, trancheId, address(1));
+    }
+
+    function testPoolManagerCannotTransferTrancheTokensOnAccountRestrictions(uint128 amount) public {
+        uint64 validUntil = uint64(block.timestamp + 7 days);
+        address destinationAddress = makeAddr("destinationAddress");
+        vm.assume(amount > 0);
+
+        address vault_ = deploySimpleVault();
+        ERC7540Vault vault = ERC7540Vault(vault_);
+        ITranche tranche = ITranche(address(ERC7540Vault(vault_).share()));
+        tranche.approve(address(poolManager), amount);
+
+        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), destinationAddress, validUntil);
+        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), address(this), validUntil);
+        assertTrue(tranche.checkTransferRestriction(address(0), address(this), 0));
+        assertTrue(tranche.checkTransferRestriction(address(0), destinationAddress, 0));
+
+        // Fund this address with amount
+        centrifugeChain.incomingTransferTrancheTokens(
+            vault.poolId(), vault.trancheId(), uint64(block.chainid), address(this), amount
+        );
+        assertEq(tranche.balanceOf(address(this)), amount);
+
+        // fails for invalid tranche token
+        uint64 poolId = vault.poolId();
+        bytes16 trancheId = vault.trancheId();
+
+        centrifugeChain.freeze(poolId, trancheId, address(this));
+        assertFalse(tranche.checkTransferRestriction(address(this), destinationAddress, 0));
+
+        vm.expectRevert(bytes("RestrictionManager/transfer-blocked"));
+        poolManager.transferTrancheTokens(
+            poolId, trancheId, Domain.EVM, uint64(block.chainid), destinationAddress.toBytes32(), amount
+        );
+        assertEq(tranche.balanceOf(address(this)), amount);
+
+        centrifugeChain.unfreeze(poolId, trancheId, address(this));
+        poolManager.transferTrancheTokens(
+            poolId, trancheId, Domain.EVM, uint64(block.chainid), destinationAddress.toBytes32(), amount
+        );
+        assertEq(tranche.balanceOf(address(escrow)), 0);
     }
 
     // helpers

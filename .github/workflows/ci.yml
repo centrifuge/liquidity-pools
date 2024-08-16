@@ -10,7 +10,7 @@ env:
   FOUNDRY_PROFILE: ci
 
 jobs:
-  test-unit:
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -24,7 +24,7 @@ jobs:
           FOUNDRY_PROFILE: ci
           FORK_TESTS: false
 
-  test-invariant:
+  echidna-property:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -32,11 +32,37 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
 
-      - name: Run tests
-        run: forge test --match-path "test/invariant/**/*.sol"
-        env:
-          FOUNDRY_PROFILE: ci
-          FORK_TESTS: false
+      - name: Compile contracts
+        run: |
+          forge build --build-info
+
+      - name: Run Echidna
+        uses: crytic/echidna-action@v2
+        with:
+          files: .
+          contract: CryticTester
+          config: echidna-property.yaml
+          test-limit: 100000
+
+  echidna-assertion:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Compile contracts
+        run: |
+          forge build --build-info
+
+      - name: Run Echidna
+        uses: crytic/echidna-action@v2
+        with:
+          files: .
+          contract: CryticTester
+          config: echidna-assertion.yaml
+          test-limit: 100000
 
   lint:
     runs-on: ubuntu-latest
@@ -122,7 +148,7 @@ jobs:
   #       with:
   #         fail-on: "none"
   #         sarif: "results.sarif"
-  #         solc-version: "0.8.21"
+  #         solc-version: "0.8.26"
   #         target: "src/"
 
   #     - name: Upload SARIF file

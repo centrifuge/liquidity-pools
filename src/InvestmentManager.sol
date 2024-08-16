@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.21;
+pragma solidity 0.8.26;
 
 import {Auth} from "src/Auth.sol";
 import {CastLib} from "src/libraries/CastLib.sol";
@@ -10,31 +10,10 @@ import {BytesLib} from "src/libraries/BytesLib.sol";
 import {IERC20, IERC20Metadata} from "src/interfaces/IERC20.sol";
 import {IPoolManager} from "src/interfaces/IPoolManager.sol";
 import {IInvestmentManager, InvestmentState} from "src/interfaces/IInvestmentManager.sol";
-
-interface GatewayLike {
-    function send(bytes memory message) external;
-}
-
-interface TrancheTokenLike is IERC20 {
-    function checkTransferRestriction(address from, address to, uint256 value) external view returns (bool);
-    function mint(address user, uint256 value) external;
-    function burn(address user, uint256 value) external;
-}
-
-interface VaultLike is IERC20 {
-    function poolId() external view returns (uint64);
-    function trancheId() external view returns (bytes16);
-    function asset() external view returns (address);
-    function share() external view returns (address);
-    function emitDepositClaimable(address owner, uint256 assets, uint256 shares) external;
-    function emitRedeemClaimable(address owner, uint256 assets, uint256 shares) external;
-    function emitCancelDepositClaimable(address owner, uint256 assets) external;
-    function emitCancelRedeemClaimable(address owner, uint256 shares) external;
-}
-
-interface AuthTransferLike {
-    function authTransferFrom(address sender, address from, address to, uint256 amount) external returns (bool);
-}
+import {ITranche} from "src/interfaces/token/ITranche.sol";
+import {IERC7540Vault} from "src/interfaces/IERC7540.sol";
+import {IGateway} from "src/interfaces/gateway/IGateway.sol";
+import {IRecoverable} from "src/interfaces/IRoot.sol";
 
 /// @title  Investment Manager
 /// @notice This is the main contract vaults interact with for
@@ -47,42 +26,42 @@ contract InvestmentManager is Auth, IInvestmentManager {
     /// @dev Prices are fixed-point integers with 18 decimals
     uint8 internal constant PRICE_DECIMALS = 18;
 
+    address public immutable root;
     address public immutable escrow;
 
-    GatewayLike public gateway;
+    IGateway public gateway;
     IPoolManager public poolManager;
 
+    /// @inheritdoc IInvestmentManager
     mapping(address vault => mapping(address investor => InvestmentState)) public investments;
 
-    constructor(address escrow_) {
+    constructor(address root_, address escrow_) Auth(msg.sender) {
+        root = root_;
         escrow = escrow_;
-
-        wards[msg.sender] = 1;
-        emit Rely(msg.sender);
     }
 
     // --- Administration ---
     /// @inheritdoc IInvestmentManager
     function file(bytes32 what, address data) external auth {
-        if (what == "gateway") gateway = GatewayLike(data);
+        if (what == "gateway") gateway = IGateway(data);
         else if (what == "poolManager") poolManager = IPoolManager(data);
         else revert("InvestmentManager/file-unrecognized-param");
         emit File(what, data);
     }
 
-    /// @inheritdoc IInvestmentManager
+    /// @inheritdoc IRecoverable
     function recoverTokens(address token, address to, uint256 amount) external auth {
         SafeTransferLib.safeTransfer(token, to, amount);
     }
 
     // --- Outgoing message handling ---
     /// @inheritdoc IInvestmentManager
-    function requestDeposit(address vault, uint256 assets, address receiver, address owner)
+    function requestDeposit(address vault, uint256 assets, address controller, address, /* owner */ address source)
         public
         auth
         returns (bool)
     {
-        VaultLike vault_ = VaultLike(vault);
+        IERC7540Vault vault_ = IERC7540Vault(vault);
         uint128 _assets = assets.toUint128();
         require(_assets != 0, "InvestmentManager/zero-amount-not-allowed");
 
@@ -90,115 +69,116 @@ contract InvestmentManager is Auth, IInvestmentManager {
         address asset = vault_.asset();
         require(poolManager.isAllowedAsset(poolId, asset), "InvestmentManager/asset-not-allowed");
 
-        require(_canTransfer(vault, address(0), owner, 0), "InvestmentManager/owner-is-restricted");
         require(
-            _canTransfer(vault, address(0), receiver, convertToShares(vault, assets)),
+            _canTransfer(vault, address(0), controller, convertToShares(vault, assets)),
             "InvestmentManager/transfer-not-allowed"
         );
 
-        InvestmentState storage state = investments[vault][receiver];
+        InvestmentState storage state = investments[vault][controller];
         require(state.pendingCancelDepositRequest != true, "InvestmentManager/cancellation-is-pending");
 
         state.pendingDepositRequest = state.pendingDepositRequest + _assets;
-        state.exists = true;
-
         gateway.send(
             abi.encodePacked(
-                uint8(MessagesLib.Call.IncreaseInvestOrder),
+                uint8(MessagesLib.Call.DepositRequest),
                 poolId,
                 vault_.trancheId(),
-                receiver,
+                controller.toBytes32(),
                 poolManager.assetToId(asset),
                 _assets
-            )
+            ),
+            source
         );
 
         return true;
     }
 
     /// @inheritdoc IInvestmentManager
-    function requestRedeem(address vault, uint256 shares, address receiver, address /* owner */ )
+    function requestRedeem(address vault, uint256 shares, address controller, /* owner */ address, address source)
         public
         auth
         returns (bool)
     {
         uint128 _shares = shares.toUint128();
         require(_shares != 0, "InvestmentManager/zero-amount-not-allowed");
-        VaultLike vault_ = VaultLike(vault);
+        IERC7540Vault vault_ = IERC7540Vault(vault);
 
         // You cannot redeem using a disallowed asset, instead another vault will have to be used
         require(poolManager.isAllowedAsset(vault_.poolId(), vault_.asset()), "InvestmentManager/asset-not-allowed");
 
-        require(
-            _canTransfer(vault, receiver, address(escrow), convertToAssets(vault, shares)),
-            "InvestmentManager/transfer-not-allowed"
-        );
-
-        return _processRedeemRequest(vault, _shares, receiver);
+        return _processRedeemRequest(vault, _shares, controller, source, false);
     }
 
-    function _processRedeemRequest(address vault, uint128 shares, address owner) internal returns (bool) {
-        VaultLike vault_ = VaultLike(vault);
-        InvestmentState storage state = investments[vault][owner];
-        require(state.pendingCancelRedeemRequest != true, "InvestmentManager/cancellation-is-pending");
+    /// @dev    triggered indicates if the the _processRedeemRequest call was triggered from centrifugeChain
+    function _processRedeemRequest(address vault, uint128 shares, address controller, address source, bool triggered)
+        internal
+        returns (bool)
+    {
+        IERC7540Vault vault_ = IERC7540Vault(vault);
+        InvestmentState storage state = investments[vault][controller];
+        require(state.pendingCancelRedeemRequest != true || triggered, "InvestmentManager/cancellation-is-pending");
 
         state.pendingRedeemRequest = state.pendingRedeemRequest + shares;
-        state.exists = true;
 
         gateway.send(
             abi.encodePacked(
-                uint8(MessagesLib.Call.IncreaseRedeemOrder),
+                uint8(MessagesLib.Call.RedeemRequest),
                 vault_.poolId(),
                 vault_.trancheId(),
-                owner,
+                controller.toBytes32(),
                 poolManager.assetToId(vault_.asset()),
                 shares
-            )
+            ),
+            source
         );
 
         return true;
     }
 
     /// @inheritdoc IInvestmentManager
-    function cancelDepositRequest(address vault, address owner) public auth {
-        VaultLike _vault = VaultLike(vault);
+    function cancelDepositRequest(address vault, address controller, address source) public auth {
+        IERC7540Vault _vault = IERC7540Vault(vault);
 
-        InvestmentState storage state = investments[vault][owner];
+        InvestmentState storage state = investments[vault][controller];
+        require(state.pendingDepositRequest > 0, "InvestmentManager/no-pending-deposit-request");
         require(state.pendingCancelDepositRequest != true, "InvestmentManager/cancellation-is-pending");
         state.pendingCancelDepositRequest = true;
 
         gateway.send(
             abi.encodePacked(
-                uint8(MessagesLib.Call.CancelInvestOrder),
+                uint8(MessagesLib.Call.CancelDepositRequest),
                 _vault.poolId(),
                 _vault.trancheId(),
-                owner.toBytes32(),
+                controller.toBytes32(),
                 poolManager.assetToId(_vault.asset())
-            )
+            ),
+            source
         );
     }
 
     /// @inheritdoc IInvestmentManager
-    function cancelRedeemRequest(address vault, address owner) public auth {
-        VaultLike _vault = VaultLike(vault);
-        uint256 approximateTrancheTokensPayout = pendingRedeemRequest(vault, owner);
+    function cancelRedeemRequest(address vault, address controller, address source) public auth {
+        IERC7540Vault _vault = IERC7540Vault(vault);
+        uint256 approximateTranchesPayout = pendingRedeemRequest(vault, controller);
+        require(approximateTranchesPayout > 0, "InvestmentManager/no-pending-redeem-request");
         require(
-            _canTransfer(vault, address(0), owner, approximateTrancheTokensPayout),
+            _canTransfer(vault, address(0), controller, approximateTranchesPayout),
             "InvestmentManager/transfer-not-allowed"
         );
 
-        InvestmentState storage state = investments[vault][owner];
+        InvestmentState storage state = investments[vault][controller];
         require(state.pendingCancelRedeemRequest != true, "InvestmentManager/cancellation-is-pending");
         state.pendingCancelRedeemRequest = true;
 
         gateway.send(
             abi.encodePacked(
-                uint8(MessagesLib.Call.CancelRedeemOrder),
+                uint8(MessagesLib.Call.CancelRedeemRequest),
                 _vault.poolId(),
                 _vault.trancheId(),
-                owner.toBytes32(),
+                controller.toBytes32(),
                 poolManager.assetToId(_vault.asset())
-            )
+            ),
+            source
         );
     }
 
@@ -214,8 +194,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
                 message.toAddress(25),
                 message.toUint128(57),
                 message.toUint128(73),
-                message.toUint128(89),
-                message.toUint128(105)
+                message.toUint128(89)
             );
         } else if (call == MessagesLib.Call.FulfilledRedeemRequest) {
             fulfillRedeemRequest(
@@ -241,8 +220,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
                 message.toBytes16(9),
                 message.toAddress(25),
                 message.toUint128(57),
-                message.toUint128(73),
-                message.toUint128(89)
+                message.toUint128(73)
             );
         } else if (call == MessagesLib.Call.TriggerRedeemRequest) {
             triggerRedeemRequest(
@@ -264,24 +242,23 @@ contract InvestmentManager is Auth, IInvestmentManager {
         address user,
         uint128 assetId,
         uint128 assets,
-        uint128 shares,
-        uint128 fulfillment
+        uint128 shares
     ) public auth {
         address vault = poolManager.getVault(poolId, trancheId, assetId);
 
         InvestmentState storage state = investments[vault][user];
+        require(state.pendingDepositRequest != 0, "InvestmentManager/no-pending-deposit-request");
         state.depositPrice = _calculatePrice(vault, _maxDeposit(vault, user) + assets, state.maxMint + shares);
         state.maxMint = state.maxMint + shares;
-        state.pendingDepositRequest =
-            state.pendingDepositRequest > fulfillment ? state.pendingDepositRequest - fulfillment : 0;
+        state.pendingDepositRequest = state.pendingDepositRequest > assets ? state.pendingDepositRequest - assets : 0;
 
-        if (state.pendingDepositRequest == 0) state.pendingCancelDepositRequest = false;
+        if (state.pendingDepositRequest == 0) delete state.pendingCancelDepositRequest;
 
-        // Mint to escrow. Recipient can claim by calling withdraw / redeem
-        TrancheTokenLike trancheToken = TrancheTokenLike(VaultLike(vault).share());
-        trancheToken.mint(address(escrow), shares);
+        // Mint to escrow. Recipient can claim by calling deposit / mint
+        ITranche tranche = ITranche(IERC7540Vault(vault).share());
+        tranche.mint(address(escrow), shares);
 
-        VaultLike(vault).emitDepositClaimable(user, assets, shares);
+        IERC7540Vault(vault).onDepositClaimable(user, assets, shares);
     }
 
     /// @inheritdoc IInvestmentManager
@@ -296,7 +273,7 @@ contract InvestmentManager is Auth, IInvestmentManager {
         address vault = poolManager.getVault(poolId, trancheId, assetId);
 
         InvestmentState storage state = investments[vault][user];
-        require(state.exists == true, "InvestmentManager/non-existent-user");
+        require(state.pendingRedeemRequest != 0, "InvestmentManager/no-pending-redeem-request");
 
         // Calculate new weighted average redeem price and update order book values
         state.redeemPrice =
@@ -304,13 +281,13 @@ contract InvestmentManager is Auth, IInvestmentManager {
         state.maxWithdraw = state.maxWithdraw + assets;
         state.pendingRedeemRequest = state.pendingRedeemRequest > shares ? state.pendingRedeemRequest - shares : 0;
 
-        if (state.pendingRedeemRequest == 0) state.pendingCancelRedeemRequest = false;
+        if (state.pendingRedeemRequest == 0) delete state.pendingCancelRedeemRequest;
 
         // Burn redeemed tranche tokens from escrow
-        TrancheTokenLike trancheToken = TrancheTokenLike(VaultLike(vault).share());
-        trancheToken.burn(address(escrow), shares);
+        ITranche tranche = ITranche(IERC7540Vault(vault).share());
+        tranche.burn(address(escrow), shares);
 
-        VaultLike(vault).emitRedeemClaimable(user, assets, shares);
+        IERC7540Vault(vault).onRedeemClaimable(user, assets, shares);
     }
 
     /// @inheritdoc IInvestmentManager
@@ -325,36 +302,32 @@ contract InvestmentManager is Auth, IInvestmentManager {
         address vault = poolManager.getVault(poolId, trancheId, assetId);
 
         InvestmentState storage state = investments[vault][user];
-        require(state.exists == true, "InvestmentManager/non-existent-user");
+        require(state.pendingCancelDepositRequest == true, "InvestmentManager/no-pending-cancel-deposit-request");
 
         state.claimableCancelDepositRequest = state.claimableCancelDepositRequest + assets;
         state.pendingDepositRequest =
             state.pendingDepositRequest > fulfillment ? state.pendingDepositRequest - fulfillment : 0;
 
-        if (state.pendingDepositRequest == 0) state.pendingCancelDepositRequest = false;
+        if (state.pendingDepositRequest == 0) delete state.pendingCancelDepositRequest;
 
-        VaultLike(vault).emitCancelDepositClaimable(user, assets);
+        IERC7540Vault(vault).onCancelDepositClaimable(user, assets);
     }
 
     /// @inheritdoc IInvestmentManager
-    function fulfillCancelRedeemRequest(
-        uint64 poolId,
-        bytes16 trancheId,
-        address user,
-        uint128 assetId,
-        uint128 shares,
-        uint128 fulfillment
-    ) public auth {
+    function fulfillCancelRedeemRequest(uint64 poolId, bytes16 trancheId, address user, uint128 assetId, uint128 shares)
+        public
+        auth
+    {
         address vault = poolManager.getVault(poolId, trancheId, assetId);
         InvestmentState storage state = investments[vault][user];
+        require(state.pendingCancelRedeemRequest == true, "InvestmentManager/no-pending-cancel-redeem-request");
 
         state.claimableCancelRedeemRequest = state.claimableCancelRedeemRequest + shares;
-        state.pendingRedeemRequest =
-            state.pendingRedeemRequest > fulfillment ? state.pendingRedeemRequest - fulfillment : 0;
+        state.pendingRedeemRequest = state.pendingRedeemRequest > shares ? state.pendingRedeemRequest - shares : 0;
 
-        if (state.pendingRedeemRequest == 0) state.pendingCancelRedeemRequest = false;
+        if (state.pendingRedeemRequest == 0) delete state.pendingCancelRedeemRequest;
 
-        VaultLike(vault).emitCancelRedeemClaimable(user, shares);
+        IERC7540Vault(vault).onCancelRedeemClaimable(user, shares);
     }
 
     /// @inheritdoc IInvestmentManager
@@ -372,68 +345,70 @@ contract InvestmentManager is Auth, IInvestmentManager {
             // The full redeem request is covered by the claimable amount
             tokensToTransfer = 0;
             state.maxMint = state.maxMint - shares;
-        } else if (state.maxMint > 0) {
+        } else if (state.maxMint != 0) {
             // The redeem request is only partially covered by the claimable amount
             tokensToTransfer = shares - state.maxMint;
             state.maxMint = 0;
         }
 
-        require(_processRedeemRequest(vault, shares, user), "InvestmentManager/failed-redeem-request");
+        require(_processRedeemRequest(vault, shares, user, msg.sender, true), "InvestmentManager/failed-redeem-request");
 
         // Transfer the tranche token amount that was not covered by tokens still in escrow for claims,
         // from user to escrow (lock tranche tokens in escrow)
-        if (tokensToTransfer > 0) {
+        if (tokensToTransfer != 0) {
             require(
-                AuthTransferLike(address(VaultLike(vault).share())).authTransferFrom(
+                ITranche(address(IERC7540Vault(vault).share())).authTransferFrom(
                     user, user, address(escrow), tokensToTransfer
                 ),
                 "InvestmentManager/transfer-failed"
             );
         }
+
         emit TriggerRedeemRequest(poolId, trancheId, user, poolManager.idToAsset(assetId), shares);
+        IERC7540Vault(vault).onRedeemRequest(user, user, shares);
     }
 
     // --- View functions ---
     /// @inheritdoc IInvestmentManager
     function convertToShares(address vault, uint256 _assets) public view returns (uint256 shares) {
-        VaultLike vault_ = VaultLike(vault);
-        (uint128 latestPrice,) = poolManager.getTrancheTokenPrice(vault_.poolId(), vault_.trancheId(), vault_.asset());
-        shares = uint256(_calculateShares(_assets.toUint128(), vault, latestPrice));
+        IERC7540Vault vault_ = IERC7540Vault(vault);
+        (uint128 latestPrice,) = poolManager.getTranchePrice(vault_.poolId(), vault_.trancheId(), vault_.asset());
+        shares = uint256(_calculateShares(_assets.toUint128(), vault, latestPrice, MathLib.Rounding.Down));
     }
 
     /// @inheritdoc IInvestmentManager
     function convertToAssets(address vault, uint256 _shares) public view returns (uint256 assets) {
-        VaultLike vault_ = VaultLike(vault);
-        (uint128 latestPrice,) = poolManager.getTrancheTokenPrice(vault_.poolId(), vault_.trancheId(), vault_.asset());
-        assets = uint256(_calculateAssets(_shares.toUint128(), vault, latestPrice));
+        IERC7540Vault vault_ = IERC7540Vault(vault);
+        (uint128 latestPrice,) = poolManager.getTranchePrice(vault_.poolId(), vault_.trancheId(), vault_.asset());
+        assets = uint256(_calculateAssets(_shares.toUint128(), vault, latestPrice, MathLib.Rounding.Down));
     }
 
     /// @inheritdoc IInvestmentManager
-    function maxDeposit(address vault, address user) public view returns (uint256) {
+    function maxDeposit(address vault, address user) public view returns (uint256 assets) {
         if (!_canTransfer(vault, address(escrow), user, 0)) return 0;
-        return uint256(_maxDeposit(vault, user));
+        assets = uint256(_maxDeposit(vault, user));
     }
 
-    function _maxDeposit(address vault, address user) internal view returns (uint128) {
+    function _maxDeposit(address vault, address user) internal view returns (uint128 assets) {
         InvestmentState memory state = investments[vault][user];
-        return _calculateAssets(state.maxMint, vault, state.depositPrice);
+        assets = _calculateAssets(state.maxMint, vault, state.depositPrice, MathLib.Rounding.Down);
     }
 
     /// @inheritdoc IInvestmentManager
     function maxMint(address vault, address user) public view returns (uint256 shares) {
         if (!_canTransfer(vault, address(escrow), user, 0)) return 0;
-        return uint256(investments[vault][user].maxMint);
+        shares = uint256(investments[vault][user].maxMint);
     }
 
     /// @inheritdoc IInvestmentManager
     function maxWithdraw(address vault, address user) public view returns (uint256 assets) {
-        return uint256(investments[vault][user].maxWithdraw);
+        assets = uint256(investments[vault][user].maxWithdraw);
     }
 
     /// @inheritdoc IInvestmentManager
     function maxRedeem(address vault, address user) public view returns (uint256 shares) {
         InvestmentState memory state = investments[vault][user];
-        return uint256(_calculateShares(state.maxWithdraw, vault, state.redeemPrice));
+        shares = uint256(_calculateShares(state.maxWithdraw, vault, state.redeemPrice, MathLib.Rounding.Down));
     }
 
     /// @inheritdoc IInvestmentManager
@@ -468,161 +443,198 @@ contract InvestmentManager is Auth, IInvestmentManager {
 
     /// @inheritdoc IInvestmentManager
     function priceLastUpdated(address vault) public view returns (uint64 lastUpdated) {
-        VaultLike vault_ = VaultLike(vault);
-        (, lastUpdated) = poolManager.getTrancheTokenPrice(vault_.poolId(), vault_.trancheId(), vault_.asset());
+        IERC7540Vault vault_ = IERC7540Vault(vault);
+        (, lastUpdated) = poolManager.getTranchePrice(vault_.poolId(), vault_.trancheId(), vault_.asset());
     }
 
     // --- Vault claim functions ---
     /// @inheritdoc IInvestmentManager
-    function deposit(address vault, uint256 assets, address receiver, address owner)
+    function deposit(address vault, uint256 assets, address receiver, address controller)
         public
         auth
         returns (uint256 shares)
     {
-        InvestmentState storage state = investments[vault][owner];
-        uint128 shares_ = _calculateShares(assets.toUint128(), vault, state.depositPrice);
-        _processDeposit(state, shares_, vault, receiver);
-        shares = uint256(shares_);
+        require(assets <= _maxDeposit(vault, controller), "InvestmentManager/exceeds-max-deposit");
+
+        InvestmentState storage state = investments[vault][controller];
+        uint128 sharesUp = _calculateShares(assets.toUint128(), vault, state.depositPrice, MathLib.Rounding.Up);
+        uint128 sharesDown = _calculateShares(assets.toUint128(), vault, state.depositPrice, MathLib.Rounding.Down);
+        _processDeposit(state, sharesUp, sharesDown, vault, receiver);
+        shares = uint256(sharesDown);
     }
 
     /// @inheritdoc IInvestmentManager
-    function mint(address vault, uint256 shares, address receiver, address owner)
+    function mint(address vault, uint256 shares, address receiver, address controller)
         public
         auth
         returns (uint256 assets)
     {
-        InvestmentState storage state = investments[vault][owner];
-        _processDeposit(state, shares.toUint128(), vault, receiver);
-        assets = uint256(_calculateAssets(shares.toUint128(), vault, state.depositPrice));
+        InvestmentState storage state = investments[vault][controller];
+        uint128 shares_ = shares.toUint128();
+        _processDeposit(state, shares_, shares_, vault, receiver);
+        assets = uint256(_calculateAssets(shares_, vault, state.depositPrice, MathLib.Rounding.Down));
     }
 
-    function _processDeposit(InvestmentState storage state, uint128 shares, address vault, address receiver) internal {
-        require(shares != 0, "InvestmentManager/tranche-token-amount-is-zero");
-        require(shares <= state.maxMint, "InvestmentManager/exceeds-deposit-limits");
-        state.maxMint = state.maxMint - shares;
-        require(
-            IERC20(VaultLike(vault).share()).transferFrom(address(escrow), receiver, shares),
-            "InvestmentManager/tranche-tokens-transfer-failed"
-        );
+    function _processDeposit(
+        InvestmentState storage state,
+        uint128 sharesUp,
+        uint128 sharesDown,
+        address vault,
+        address receiver
+    ) internal {
+        require(sharesUp <= state.maxMint, "InvestmentManager/exceeds-deposit-limits");
+        state.maxMint = state.maxMint > sharesUp ? state.maxMint - sharesUp : 0;
+        if (sharesDown > 0) {
+            require(
+                IERC20(IERC7540Vault(vault).share()).transferFrom(address(escrow), receiver, sharesDown),
+                "InvestmentManager/tranche-tokens-transfer-failed"
+            );
+        }
     }
 
     /// @inheritdoc IInvestmentManager
-    function redeem(address vault, uint256 shares, address receiver, address owner)
+    function redeem(address vault, uint256 shares, address receiver, address controller)
         public
         auth
         returns (uint256 assets)
     {
-        InvestmentState storage state = investments[vault][owner];
-        uint128 assets_ = _calculateAssets(shares.toUint128(), vault, state.redeemPrice);
-        _processRedeem(state, assets_, vault, receiver);
-        assets = uint256(assets_);
+        require(shares <= maxRedeem(vault, controller), "InvestmentManager/exceeds-max-redeem");
+
+        InvestmentState storage state = investments[vault][controller];
+        uint128 assetsUp = _calculateAssets(shares.toUint128(), vault, state.redeemPrice, MathLib.Rounding.Up);
+        uint128 assetsDown = _calculateAssets(shares.toUint128(), vault, state.redeemPrice, MathLib.Rounding.Down);
+        _processRedeem(state, assetsUp, assetsDown, vault, receiver);
+        assets = uint256(assetsDown);
     }
 
     /// @inheritdoc IInvestmentManager
-    function withdraw(address vault, uint256 assets, address receiver, address owner)
+    function withdraw(address vault, uint256 assets, address receiver, address controller)
         public
         auth
         returns (uint256 shares)
     {
-        InvestmentState storage state = investments[vault][owner];
-        _processRedeem(state, assets.toUint128(), vault, receiver);
-        shares = uint256(_calculateShares(assets.toUint128(), vault, state.redeemPrice));
+        InvestmentState storage state = investments[vault][controller];
+        uint128 assets_ = assets.toUint128();
+        _processRedeem(state, assets_, assets_, vault, receiver);
+        shares = uint256(_calculateShares(assets_, vault, state.redeemPrice, MathLib.Rounding.Down));
     }
 
-    function _processRedeem(InvestmentState storage state, uint128 assets, address vault, address receiver) internal {
-        VaultLike vault_ = VaultLike(vault);
-        require(assets != 0, "InvestmentManager/asset-amount-is-zero");
-        require(assets <= state.maxWithdraw, "InvestmentManager/exceeds-redeem-limits");
-        state.maxWithdraw = state.maxWithdraw - assets;
-        SafeTransferLib.safeTransferFrom(vault_.asset(), address(escrow), receiver, assets);
+    function _processRedeem(
+        InvestmentState storage state,
+        uint128 assetsUp,
+        uint128 assetsDown,
+        address vault,
+        address receiver
+    ) internal {
+        IERC7540Vault vault_ = IERC7540Vault(vault);
+        require(assetsUp <= state.maxWithdraw, "InvestmentManager/exceeds-redeem-limits");
+        state.maxWithdraw = state.maxWithdraw > assetsUp ? state.maxWithdraw - assetsUp : 0;
+        if (assetsDown > 0) SafeTransferLib.safeTransferFrom(vault_.asset(), address(escrow), receiver, assetsDown);
     }
 
     /// @inheritdoc IInvestmentManager
-    function claimCancelDepositRequest(address vault, address receiver, address owner)
+    function claimCancelDepositRequest(address vault, address receiver, address controller)
         public
         auth
         returns (uint256 assets)
     {
-        InvestmentState storage state = investments[vault][owner];
+        InvestmentState storage state = investments[vault][controller];
         assets = state.claimableCancelDepositRequest;
         state.claimableCancelDepositRequest = 0;
-        SafeTransferLib.safeTransferFrom(VaultLike(vault).asset(), address(escrow), receiver, assets);
+        if (assets > 0) {
+            SafeTransferLib.safeTransferFrom(IERC7540Vault(vault).asset(), address(escrow), receiver, assets);
+        }
     }
 
     /// @inheritdoc IInvestmentManager
-    function claimCancelRedeemRequest(address vault, address receiver, address owner)
+    function claimCancelRedeemRequest(address vault, address receiver, address controller)
         public
         auth
         returns (uint256 shares)
     {
-        InvestmentState storage state = investments[vault][owner];
+        InvestmentState storage state = investments[vault][controller];
         shares = state.claimableCancelRedeemRequest;
         state.claimableCancelRedeemRequest = 0;
-        require(
-            IERC20(VaultLike(vault).share()).transferFrom(address(escrow), receiver, shares),
-            "InvestmentManager/tranche-tokens-transfer-failed"
-        );
+        if (shares > 0) {
+            require(
+                IERC20(IERC7540Vault(vault).share()).transferFrom(address(escrow), receiver, shares),
+                "InvestmentManager/tranche-tokens-transfer-failed"
+            );
+        }
     }
 
     // --- Helpers ---
-    function _calculateShares(uint128 assets, address vault, uint256 price) internal view returns (uint128 shares) {
+    /// @dev    Calculates share amount based on asset amount and share price. Returned value is in share decimals.
+    function _calculateShares(uint128 assets, address vault, uint256 price, MathLib.Rounding rounding)
+        internal
+        view
+        returns (uint128 shares)
+    {
         if (price == 0 || assets == 0) {
             shares = 0;
         } else {
             (uint8 assetDecimals, uint8 shareDecimals) = _getPoolDecimals(vault);
 
             uint256 sharesInPriceDecimals =
-                _toPriceDecimals(assets, assetDecimals).mulDiv(10 ** PRICE_DECIMALS, price, MathLib.Rounding.Down);
+                _toPriceDecimals(assets, assetDecimals).mulDiv(10 ** PRICE_DECIMALS, price, rounding);
 
             shares = _fromPriceDecimals(sharesInPriceDecimals, shareDecimals);
         }
     }
 
-    function _calculateAssets(uint128 shares, address vault, uint256 price) internal view returns (uint128 assets) {
+    /// @dev    Calculates asset amount based on share amount and share price. Returned value is in asset decimals.
+    function _calculateAssets(uint128 shares, address vault, uint256 price, MathLib.Rounding rounding)
+        internal
+        view
+        returns (uint128 assets)
+    {
         if (price == 0 || shares == 0) {
             assets = 0;
         } else {
             (uint8 assetDecimals, uint8 shareDecimals) = _getPoolDecimals(vault);
 
             uint256 assetsInPriceDecimals =
-                _toPriceDecimals(shares, shareDecimals).mulDiv(price, 10 ** PRICE_DECIMALS, MathLib.Rounding.Down);
+                _toPriceDecimals(shares, shareDecimals).mulDiv(price, 10 ** PRICE_DECIMALS, rounding);
 
             assets = _fromPriceDecimals(assetsInPriceDecimals, assetDecimals);
         }
     }
 
-    function _calculatePrice(address vault, uint128 assets, uint128 shares) internal view returns (uint256 price) {
+    /// @dev    Calculates share price and returns the value in price decimals
+    function _calculatePrice(address vault, uint128 assets, uint128 shares) internal view returns (uint256) {
         if (assets == 0 || shares == 0) {
             return 0;
         }
 
         (uint8 assetDecimals, uint8 shareDecimals) = _getPoolDecimals(vault);
-        price = _toPriceDecimals(assets, assetDecimals).mulDiv(
+        return _toPriceDecimals(assets, assetDecimals).mulDiv(
             10 ** PRICE_DECIMALS, _toPriceDecimals(shares, shareDecimals), MathLib.Rounding.Down
         );
     }
 
     /// @dev    When converting assets to shares using the price,
     ///         all values are normalized to PRICE_DECIMALS
-    function _toPriceDecimals(uint128 _value, uint8 decimals) internal pure returns (uint256 value) {
+    function _toPriceDecimals(uint128 _value, uint8 decimals) internal pure returns (uint256) {
         if (PRICE_DECIMALS == decimals) return uint256(_value);
-        value = uint256(_value) * 10 ** (PRICE_DECIMALS - decimals);
+        return uint256(_value) * 10 ** (PRICE_DECIMALS - decimals);
     }
 
-    /// @dev    Convert decimals of the value from the price decimals back to the intended decimals
-    function _fromPriceDecimals(uint256 _value, uint8 decimals) internal pure returns (uint128 value) {
+    /// @dev    Converts decimals of the value from the price decimals back to the intended decimals
+    function _fromPriceDecimals(uint256 _value, uint8 decimals) internal pure returns (uint128) {
         if (PRICE_DECIMALS == decimals) return _value.toUint128();
-        value = (_value / 10 ** (PRICE_DECIMALS - decimals)).toUint128();
+        return (_value / 10 ** (PRICE_DECIMALS - decimals)).toUint128();
     }
 
-    /// @dev    Return the asset decimals and the share decimals for a given vault
+    /// @dev    Returns the asset decimals and the share decimals for a given vault
     function _getPoolDecimals(address vault) internal view returns (uint8 assetDecimals, uint8 shareDecimals) {
-        assetDecimals = IERC20Metadata(VaultLike(vault).asset()).decimals();
-        shareDecimals = IERC20Metadata(VaultLike(vault).share()).decimals();
+        assetDecimals = IERC20Metadata(IERC7540Vault(vault).asset()).decimals();
+        shareDecimals = IERC20Metadata(IERC7540Vault(vault).share()).decimals();
     }
 
+    /// @dev    Checks transfer restrictions for the vault shares. Sender (from) and receiver (to) have both to pass the
+    ///         restrictions for a successful share transfer.
     function _canTransfer(address vault, address from, address to, uint256 value) internal view returns (bool) {
-        TrancheTokenLike share = TrancheTokenLike(VaultLike(vault).share());
+        ITranche share = ITranche(IERC7540Vault(vault).share());
         return share.checkTransferRestriction(from, to, value);
     }
 }

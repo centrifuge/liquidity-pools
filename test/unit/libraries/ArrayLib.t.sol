@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.21;
+pragma solidity 0.8.26;
 
 import "forge-std/Test.sol";
 import {ArrayLib} from "src/libraries/ArrayLib.sol";
@@ -24,7 +24,7 @@ contract ArrayLibTest is Test {
         uint8 numNonZeroes = ArrayLib.countNonZeroValues(initialArray);
 
         // Decreasing by 1 should reduce by min(numNonZeroes, numValuesToDecrease) since zero values cannot be decreased
-        ArrayLib.decreaseFirstNValues(decreasedArray, numValuesToDecrease, 1);
+        ArrayLib.decreaseFirstNValues(decreasedArray, numValuesToDecrease);
         assertEq(_count(initialArray) - _count(decreasedArray), _min(numNonZeroes, numValuesToDecrease));
     }
 

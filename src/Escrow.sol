@@ -1,26 +1,29 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.21;
+pragma solidity 0.8.26;
 
 import {Auth} from "src/Auth.sol";
-import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 import {IEscrow} from "src/interfaces/IEscrow.sol";
+import {IERC20} from "src/interfaces/IERC20.sol";
+import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 
 /// @title  Escrow
 /// @notice Escrow contract that holds tokens.
 ///         Only wards can approve funds to be taken out.
 contract Escrow is Auth, IEscrow {
-    constructor(address deployer) {
-        wards[deployer] = 1;
-        emit Rely(deployer);
-    }
+    constructor(address deployer) Auth(deployer) {}
 
     // --- Token approvals ---
     /// @inheritdoc IEscrow
-    function approve(address token, address spender, uint256 value) external auth {
-        // Approve 0 first for tokens that require this
-        SafeTransferLib.safeApprove(token, spender, 0);
+    function approveMax(address token, address spender) external auth {
+        if (IERC20(token).allowance(address(this), spender) == 0) {
+            SafeTransferLib.safeApprove(token, spender, type(uint256).max);
+            emit Approve(token, spender, type(uint256).max);
+        }
+    }
 
-        SafeTransferLib.safeApprove(token, spender, value);
-        emit Approve(token, spender, value);
+    /// @inheritdoc IEscrow
+    function unapprove(address token, address spender) external auth {
+        SafeTransferLib.safeApprove(token, spender, 0);
+        emit Approve(token, spender, 0);
     }
 }

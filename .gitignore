@@ -8,3 +8,12 @@ broadcast/
 lcov.info
 docs
 .vscode
+
+## Recon
+/medusa
+/crytic-export
+/echidna
+
+## Recon Separate Configs
+/medusa-core
+/medusa-aggregator

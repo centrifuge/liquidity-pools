@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.21;
+pragma solidity 0.8.26;
 
 import "test/BaseTest.sol";
+import {MockManager} from "test/mocks/MockManager.sol";
+import {CastLib} from "src/libraries/CastLib.sol";
 
 contract AdminTest is BaseTest {
-    function setUp() public override {
-        super.setUp();
-        pauseAdmin.addPauser(address(this));
-    }
+    using CastLib for *;
 
     function testDeployment() public {
         // values set correctly
@@ -15,31 +14,36 @@ contract AdminTest is BaseTest {
         assertEq(root.paused(), false);
 
         // permissions set correctly
-        assertEq(root.wards(address(delayedAdmin)), 1);
-        assertEq(root.wards(address(pauseAdmin)), 1);
-        assertEq(pauseAdmin.wards(address(delayedAdmin)), 1);
-        assertEq(aggregator.wards(address(delayedAdmin)), 1);
+        assertEq(root.wards(address(guardian)), 1);
+        assertEq(gateway.wards(address(guardian)), 1);
     }
 
-    //------ PauseAdmin tests ------//
-    function testPause() public {
-        pauseAdmin.removePauser(address(this));
-        vm.expectRevert("PauseAdmin/not-authorized-to-pause");
-        pauseAdmin.pause();
+    function testHandleInvalidMessage() public {
+        vm.expectRevert(bytes("Root/invalid-message"));
+        root.handle(abi.encodePacked(uint8(MessagesLib.Call.Invalid)));
+    }
 
-        pauseAdmin.addPauser(address(this));
-        pauseAdmin.pause();
+    //------ pause tests ------//
+    function testUnauthorizedPauseFails() public {
+        MockSafe(adminSafe).removeOwner(address(this));
+        vm.expectRevert("Guardian/not-the-authorized-safe-or-its-owner");
+        guardian.pause();
+    }
+
+    function testPauseWorks() public {
+        guardian.pause();
         assertEq(root.paused(), true);
+    }
 
-        delayedAdmin.unpause();
+    function testUnpauseWorks() public {
+        vm.prank(address(adminSafe));
+        guardian.unpause();
         assertEq(root.paused(), false);
     }
 
-    function testPauseAuth(address user) public {
-        vm.assume(user != address(this));
-        vm.expectRevert("PauseAdmin/not-authorized-to-pause");
-        vm.prank(user);
-        pauseAdmin.pause();
+    function testUnauthorizedUnpauseFails() public {
+        vm.expectRevert("Guardian/not-the-authorized-safe");
+        guardian.unpause();
     }
 
     function testOutgoingTransferWhilePausedFails(
@@ -50,7 +54,7 @@ contract AdminTest is BaseTest {
         address recipient,
         uint128 amount
     ) public {
-        decimals = uint8(bound(decimals, 1, 18));
+        decimals = uint8(bound(decimals, 2, 18));
         vm.assume(amount > 0);
         vm.assume(assetId != 0);
         vm.assume(recipient != address(0));
@@ -62,9 +66,9 @@ contract AdminTest is BaseTest {
         // the escrow account, from which funds are moved from into the recipient on an incoming transfer.
         erc20.approve(address(poolManager), type(uint256).max);
         erc20.mint(address(this), amount);
-        pauseAdmin.pause();
+        guardian.pause();
         vm.expectRevert("Gateway/paused");
-        poolManager.transfer(address(erc20), bytes32(bytes20(recipient)), amount);
+        poolManager.transferAssets(address(erc20), bytes32(bytes20(recipient)), amount);
     }
 
     function testIncomingTransferWhilePausedFails(
@@ -76,7 +80,7 @@ contract AdminTest is BaseTest {
         address recipient,
         uint128 amount
     ) public {
-        decimals = uint8(bound(decimals, 1, 18));
+        decimals = uint8(bound(decimals, 2, 18));
         vm.assume(amount > 0);
         vm.assume(assetId != 0);
         vm.assume(recipient != address(0));
@@ -88,12 +92,12 @@ contract AdminTest is BaseTest {
         // the escrow account, from which funds are moved from into the recipient on an incoming transfer.
         erc20.approve(address(poolManager), type(uint256).max);
         erc20.mint(address(this), amount);
-        poolManager.transfer(address(erc20), bytes32(bytes20(recipient)), amount);
+        poolManager.transferAssets(address(erc20), bytes32(bytes20(recipient)), amount);
         assertEq(erc20.balanceOf(address(poolManager.escrow())), amount);
 
-        pauseAdmin.pause();
+        guardian.pause();
         vm.expectRevert("Gateway/paused");
-        centrifugeChain.incomingTransfer(assetId, sender, bytes32(bytes20(recipient)), amount);
+        centrifugeChain.incomingTransfer(assetId, bytes32(bytes20(recipient)), amount);
     }
 
     function testUnpausingResumesFunctionality(
@@ -105,7 +109,7 @@ contract AdminTest is BaseTest {
         address recipient,
         uint128 amount
     ) public {
-        decimals = uint8(bound(decimals, 1, 18));
+        decimals = uint8(bound(decimals, 2, 18));
         vm.assume(amount > 0);
         vm.assume(assetId != 0);
         vm.assume(recipient != address(investmentManager.escrow()));
@@ -119,35 +123,41 @@ contract AdminTest is BaseTest {
         // the escrow account, from which funds are moved from into the recipient on an incoming transfer.
         erc20.approve(address(poolManager), type(uint256).max);
         erc20.mint(address(this), amount);
-        pauseAdmin.pause();
-        delayedAdmin.unpause();
-        poolManager.transfer(address(erc20), bytes32(bytes20(recipient)), amount);
+        guardian.pause();
+        vm.prank(address(adminSafe));
+        guardian.unpause();
+        poolManager.transferAssets(address(erc20), bytes32(bytes20(recipient)), amount);
         assertEq(erc20.balanceOf(address(poolManager.escrow())), amount);
 
-        centrifugeChain.incomingTransfer(assetId, sender, bytes32(bytes20(recipient)), amount);
+        centrifugeChain.incomingTransfer(assetId, bytes32(bytes20(recipient)), amount);
         assertEq(erc20.balanceOf(address(poolManager.escrow())), 0);
         assertEq(erc20.balanceOf(recipient), amount);
     }
 
-    //------ Delayed admin tests ------///
-    function testDelayedAdminPause() public {
-        delayedAdmin.pause();
+    //------ Guardian tests ------///
+    function testGuardianPause() public {
+        guardian.pause();
         assertEq(root.paused(), true);
+    }
 
-        delayedAdmin.unpause();
+    function testGuardianUnpause() public {
+        guardian.pause();
+        vm.prank(address(adminSafe));
+        guardian.unpause();
         assertEq(root.paused(), false);
     }
 
-    function testDelayedAdminPauseAuth(address user) public {
-        vm.assume(user != address(this));
-        vm.expectRevert("Auth/not-authorized");
+    function testGuardianPauseAuth(address user) public {
+        vm.assume(user != address(this) && user != adminSafe);
+        vm.expectRevert("Guardian/not-the-authorized-safe-or-its-owner");
         vm.prank(user);
-        delayedAdmin.pause();
+        guardian.pause();
     }
 
     function testTimelockWorks() public {
         address spell = vm.addr(1);
-        delayedAdmin.scheduleRely(spell);
+        vm.prank(address(adminSafe));
+        guardian.scheduleRely(spell);
         vm.warp(block.timestamp + delay + 1 hours);
         root.executeScheduledRely(spell);
         assertEq(root.wards(spell), 1);
@@ -155,20 +165,27 @@ contract AdminTest is BaseTest {
 
     function testTimelockFailsBefore48hours() public {
         address spell = vm.addr(1);
-        delayedAdmin.scheduleRely(spell);
+        vm.prank(address(adminSafe));
+        guardian.scheduleRely(spell);
         vm.warp(block.timestamp + delay - 1 hours);
         vm.expectRevert("Root/target-not-ready");
         root.executeScheduledRely(spell);
     }
 
-    function testCancellingScheduleWorks() public {
+    //------ Root tests ------///
+    function testCancellingScheduleBeforeRelyFails() public {
         address spell = vm.addr(1);
         vm.expectRevert("Root/target-not-scheduled");
         root.cancelRely(spell);
+    }
 
-        delayedAdmin.scheduleRely(spell);
+    function testCancellingScheduleWorks() public {
+        address spell = vm.addr(1);
+        vm.prank(address(adminSafe));
+        guardian.scheduleRely(spell);
         assertEq(root.schedule(spell), block.timestamp + delay);
-        delayedAdmin.cancelRely(spell);
+        vm.prank(address(adminSafe));
+        guardian.cancelRely(spell);
         assertEq(root.schedule(spell), 0);
         vm.warp(block.timestamp + delay + 1 hours);
         vm.expectRevert("Root/target-not-scheduled");
@@ -177,34 +194,28 @@ contract AdminTest is BaseTest {
 
     function testUnauthorizedCancelFails() public {
         address spell = vm.addr(1);
-        delayedAdmin.scheduleRely(spell);
-        vm.expectRevert("Auth/not-authorized");
-        vm.prank(spell);
-        delayedAdmin.cancelRely(spell);
+        vm.prank(address(adminSafe));
+        guardian.scheduleRely(spell);
+        address badActor = vm.addr(0xBAD);
+        vm.expectRevert("Guardian/not-the-authorized-safe");
+        vm.prank(badActor);
+        guardian.cancelRely(spell);
     }
 
-    function testAddPauser() public {
-        address newPauser = vm.addr(0xABCDE);
-
-        address badActor = vm.addr(0xBAD);
-        vm.prank(badActor);
-        vm.expectRevert("Auth/not-authorized");
-        delayedAdmin.addPauser(badActor);
-
-        delayedAdmin.addPauser(newPauser);
-        assertEq(pauseAdmin.pausers(newPauser), 1);
+    function testAddedSafeOwnerCanPause() public {
+        address newOwner = vm.addr(0xABCDE);
+        MockSafe(adminSafe).addOwner(newOwner);
+        vm.prank(newOwner);
+        guardian.pause();
+        assertEq(root.paused(), true);
     }
 
-    function testRemovePauser() public {
-        address oldPauser = vm.addr(0xABCDE);
-
-        address badActor = vm.addr(0xBAD);
-        vm.prank(badActor);
-        vm.expectRevert("Auth/not-authorized");
-        delayedAdmin.removePauser(badActor);
-
-        delayedAdmin.removePauser(oldPauser);
-        assertEq(pauseAdmin.pausers(oldPauser), 0);
+    function testRemovedOwnerCannotPause() public {
+        MockSafe(adminSafe).removeOwner(address(this));
+        assertEq(MockSafe(adminSafe).isOwner(address(this)), false);
+        vm.expectRevert("Guardian/not-the-authorized-safe-or-its-owner");
+        vm.prank(address(this));
+        guardian.pause();
     }
 
     function testIncomingScheduleUpgradeMessage() public {
@@ -227,16 +238,22 @@ contract AdminTest is BaseTest {
     }
 
     //------ Updating delay tests ------///
-    function testUpdatingDelay() public {
-        delayedAdmin.scheduleRely(address(this));
+    function testUpdatingDelayWorks() public {
+        vm.prank(address(adminSafe));
+        guardian.scheduleRely(address(this));
         vm.warp(block.timestamp + delay + 1 hours);
         root.executeScheduledRely(address(this));
+    }
 
+    function testUpdatingDelayWithLargeValueFails() public {
         vm.expectRevert("Root/delay-too-long");
         root.file("delay", 5 weeks);
+    }
 
+    function testUpdatingDelayAndExecutingBeforeNewDelayFails() public {
         root.file("delay", 2 hours);
-        delayedAdmin.scheduleRely(address(this));
+        vm.prank(address(adminSafe));
+        guardian.scheduleRely(address(this));
         vm.warp(block.timestamp + 1 hours);
         vm.expectRevert("Root/target-not-ready");
         root.executeScheduledRely(address(this));
@@ -249,7 +266,8 @@ contract AdminTest is BaseTest {
 
     //------ rely/denyContract tests ------///
     function testRelyDenyContract() public {
-        delayedAdmin.scheduleRely(address(this));
+        vm.prank(address(adminSafe));
+        guardian.scheduleRely(address(this));
         vm.warp(block.timestamp + delay + 1 hours);
         root.executeScheduledRely(address(this));
 
@@ -286,5 +304,77 @@ contract AdminTest is BaseTest {
         assertEq(asset.balanceOf(vault_), 0);
         assertEq(asset.balanceOf(address(poolManager)), 0);
         assertEq(asset.balanceOf(address(investmentManager)), 0);
+    }
+
+    //Endorsements
+    function testEndorseVeto() public {
+        address endorser = makeAddr("endorser");
+
+        // endorse
+        address router = makeAddr("router");
+
+        root.rely(endorser);
+        vm.prank(endorser);
+        root.endorse(router);
+        assertEq(root.endorsements(router), 1);
+        assertEq(root.endorsed(router), true);
+
+        // veto
+        root.deny(endorser);
+        vm.expectRevert(bytes("Auth/not-authorized")); // fail no auth permissions
+        vm.prank(endorser);
+        root.veto(router);
+
+        root.rely(endorser);
+        vm.prank(endorser);
+        root.veto(router);
+        assertEq(root.endorsements(router), 0);
+        assertEq(root.endorsed(router), false);
+    }
+
+    function testDisputeRecovery() public {
+        MockManager poolManager = new MockManager();
+        gateway.file("adapters", testAdapters);
+
+        bytes memory message = abi.encodePacked(uint8(MessagesLib.Call.AddPool), uint64(1));
+        bytes memory proof = _formatMessageProof(message);
+
+        // Only send through 2 out of 3 adapters
+        _send(adapter1, message);
+        _send(adapter2, proof);
+        assertEq(poolManager.received(message), 0);
+
+        // Initiate recovery
+        _send(
+            adapter1,
+            abi.encodePacked(
+                uint8(MessagesLib.Call.InitiateMessageRecovery), keccak256(proof), address(adapter3).toBytes32()
+            )
+        );
+
+        vm.expectRevert(bytes("Gateway/challenge-period-has-not-ended"));
+        gateway.executeMessageRecovery(address(adapter3), proof);
+
+        vm.prank(makeAddr("unauthorized"));
+        vm.expectRevert("Guardian/not-the-authorized-safe");
+        guardian.disputeMessageRecovery(address(adapter3), keccak256(proof));
+
+        // Dispute recovery
+        vm.prank(address(adminSafe));
+        guardian.disputeMessageRecovery(address(adapter3), keccak256(proof));
+
+        // Check that recovery is not possible anymore
+        vm.expectRevert(bytes("Gateway/message-recovery-not-initiated"));
+        gateway.executeMessageRecovery(address(adapter3), proof);
+        assertEq(poolManager.received(message), 0);
+    }
+
+    function _send(MockAdapter adapter, bytes memory message) internal {
+        vm.prank(address(adapter));
+        gateway.handle(message);
+    }
+
+    function _formatMessageProof(bytes memory message) internal pure returns (bytes memory) {
+        return abi.encodePacked(uint8(MessagesLib.Call.MessageProof), keccak256(message));
     }
 }

@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: MIT
-pragma solidity 0.8.21;
+// SPDX-License-Identifier: AGPL-3.0-only
+pragma solidity >=0.5.0;
 
 /// @title  IERC20
 /// @dev    Interface of the ERC20 standard as defined in the EIP.
@@ -175,6 +175,19 @@ interface IERC20Permit {
     function DOMAIN_SEPARATOR() external view returns (bytes32);
 }
 
-interface IERC20Callback {
-    function onERC20Transfer(address from, address to, uint256 value) external returns (bytes4);
+interface IERC20Wrapper {
+    /**
+     * @dev Returns the address of the underlying ERC-20 token that is being wrapped.
+     */
+    function underlying() external view returns (address);
+
+    /**
+     * @dev Allow a user to deposit underlying tokens and mint the corresponding number of wrapped tokens.
+     */
+    function depositFor(address account, uint256 value) external returns (bool);
+
+    /**
+     * @dev Allow a user to burn a number of wrapped tokens and withdraw the corresponding number of underlying tokens.
+     */
+    function withdrawTo(address account, uint256 value) external returns (bool);
 }

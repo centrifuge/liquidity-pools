@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.21;
+pragma solidity 0.8.26;
 
 /// @title  Bytes Lib
 /// @dev    Bytes tightly packed arrays utility library for ethereum contracts written in Solidity.
@@ -82,6 +82,17 @@ library BytesLib {
 
         assembly {
             tempUint := mload(add(add(_bytes, 0x1), _start))
+        }
+
+        return tempUint;
+    }
+
+    function toUint16(bytes memory _bytes, uint256 _start) internal pure returns (uint16) {
+        require(_bytes.length >= _start + 2, "toUint16_outOfBounds");
+        uint16 tempUint;
+
+        assembly {
+            tempUint := mload(add(add(_bytes, 0x2), _start))
         }
 
         return tempUint;

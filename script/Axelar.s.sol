@@ -1,27 +1,25 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.21;
+pragma solidity 0.8.26;
 
-import {AxelarRouter} from "src/gateway/routers/axelar/Router.sol";
-import {ERC20} from "src/token/ERC20.sol";
-import {Deployer, RouterLike} from "script/Deployer.sol";
-import {AxelarForwarder} from "src/gateway/routers/axelar/Forwarder.sol";
+import {AxelarAdapter} from "src/gateway/adapters/axelar/Adapter.sol";
+import {Deployer} from "script/Deployer.sol";
 
-// Script to deploy Liquidity Pools with an Axelar router.
+// Script to deploy Liquidity Pools with an Axelar Adapter.
 contract AxelarScript is Deployer {
     function setUp() public {}
 
     function run() public {
         vm.startBroadcast();
 
-        admin = vm.envAddress("ADMIN");
-        pausers = vm.envAddress("PAUSERS", ",");
+        adminSafe = vm.envAddress("ADMIN");
 
         deploy(msg.sender);
-        AxelarRouter router = new AxelarRouter(address(aggregator), address(vm.envAddress("AXELAR_GATEWAY")));
-        wire(address(router));
+        AxelarAdapter adapter = new AxelarAdapter(
+            address(gateway), address(vm.envAddress("AXELAR_GATEWAY")), address(vm.envAddress("AXELAR_GAS_SERVICE"))
+        );
+        wire(address(adapter));
 
-        giveAdminAccess();
-        removeDeployerAccess(address(router), msg.sender);
+        removeDeployerAccess(address(adapter), msg.sender);
 
         vm.stopBroadcast();
     }

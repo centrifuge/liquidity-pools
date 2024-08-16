@@ -1,62 +1,44 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.21;
+pragma solidity 0.8.26;
 
 import {ERC7540Vault} from "src/ERC7540Vault.sol";
+import {IERC7540VaultFactory} from "src/interfaces/factories/IERC7540VaultFactory.sol";
 import {Auth} from "src/Auth.sol";
-
-interface ERC7540VaultFactoryLike {
-    function newVault(
-        uint64 poolId,
-        bytes16 trancheId,
-        address asset,
-        address trancheToken,
-        address escrow,
-        address investmentManager,
-        address[] calldata wards_
-    ) external returns (address);
-    function denyVault(address vault, address investmentManager) external;
-}
-
-interface AuthLike {
-    function rely(address) external;
-    function deny(address) external;
-}
 
 /// @title  ERC7540 Vault Factory
 /// @dev    Utility for deploying new vault contracts
-contract ERC7540VaultFactory is Auth {
+contract ERC7540VaultFactory is Auth, IERC7540VaultFactory {
     address public immutable root;
 
-    constructor(address _root) {
+    constructor(address _root) Auth(msg.sender) {
         root = _root;
-
-        wards[msg.sender] = 1;
-        emit Rely(msg.sender);
     }
 
+    /// @inheritdoc IERC7540VaultFactory
     function newVault(
         uint64 poolId,
         bytes16 trancheId,
         address asset,
-        address trancheToken,
+        address tranche,
         address escrow,
         address investmentManager,
         address[] calldata wards_
     ) public auth returns (address) {
-        ERC7540Vault vault = new ERC7540Vault(poolId, trancheId, asset, trancheToken, escrow, investmentManager);
+        ERC7540Vault vault = new ERC7540Vault(poolId, trancheId, asset, tranche, root, escrow, investmentManager);
 
         vault.rely(root);
-        for (uint256 i = 0; i < wards_.length; i++) {
+        uint256 wardsCount = wards_.length;
+        for (uint256 i; i < wardsCount; i++) {
             vault.rely(wards_[i]);
         }
 
-        AuthLike(investmentManager).rely(address(vault));
-
+        Auth(investmentManager).rely(address(vault));
         vault.deny(address(this));
         return address(vault);
     }
 
+    /// @inheritdoc IERC7540VaultFactory
     function denyVault(address vault, address investmentManager) public auth {
-        AuthLike(investmentManager).deny(address(vault));
+        Auth(investmentManager).deny(address(vault));
     }
 }

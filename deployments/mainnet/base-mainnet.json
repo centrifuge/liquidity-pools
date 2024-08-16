@@ -2,47 +2,44 @@
     "chainId": 8453,
     "rpcUrl": "https://mainnet.base.org",
     "config": {
-        "commitHash": "2f07d3129172af3ee47463c03a253b4a8b24d824",
+        "commitHash": "7b367a604bcf3bf7de5afb1bcfd956f922669779",
         "deployer": "0x7270b20603FbB3dF0921381670fbd62b9991aDa4",
         "admin": "0x8b83962fB9dB346a20c95D98d4E312f17f4C0d9b",
         "adminSigners": [
-            "0x71d9f8CFdcCEF71B59DD81AB387e523E2834F2b8",
-            "0xEf270f8877Aa1875fc13e78dcA31f3235210368f",
+            "0xd55114BfE98a2ca16202Aa741BeE571765292616",
+            "0x6E72DD4D5CFCc274a8712A72C9dB9FE1d5A7eB6b",
+            "0x88b991A2A8d3C5Ac808D3471e1784C6165d29612",
+            "0xE9441B34f71659cCA2bfE90d98ee0e57D9CAD28F",
             "0x2F1724cc5005F376411747dFE24fb7412f5955B1",
-            "0x46a71eEf8DbcFcbAC7A0e8D5d6B634A649e61fb8",
-            "0x9eDec77dd2651Ce062ab17e941347018AD4eAEA9",
-            "0x518B822e679Cc5162AD2C644760767D42d2fb80b",
-            "0xc4576CE4603552c5BeAa056c449b0795D48fcf92",
-            "0x790c2c860DDC993f3da92B19cB440cF8338C59a6"
-        ],
-        "pausers": [
             "0x9eDec77dd2651Ce062ab17e941347018AD4eAEA9",
             "0x790c2c860DDC993f3da92B19cB440cF8338C59a6",
-            "0x2F1724cc5005F376411747dFE24fb7412f5955B1",
-            "0x3cE760441A4E9BD2c40A69d39A472052Ac14e0D9"
+            "0xc4576CE4603552c5BeAa056c449b0795D48fcf92"
         ],
-        "router": {
+        "adapter": {
             "name": "Axelar",
-            "axelarGateway": "0xe432150cce91c13a887f7D836923d5597adD8E31"
+            "axelarGateway": "0xe432150cce91c13a887f7D836923d5597adD8E31",
+            "axelarGasService": "0x2d5d7d31F671F86C782533cc367F14109a082712"
         },
-        "deploymentSalt": "e416b338a274162320c79445ae6604141d1cb08275eb27011b69f002dc094d05",
+        "deploymentSalt": "0x7270b20603fbb3df0921381670fbd62b9991ada4b17953a73f70fdff36730018",
         "etherscanUrl": "https://api.basescan.org/api/"
     },
     "contracts": {
-        "root": "0x498016d30Cd5f0db50d7ACE329C07313a0420502",
-        "investmentManager": "0xbBF0AB988691dB1892ADaF7F0eF560Ca4c6DD73A",
-        "poolManager": "0x78E9e622A57f70F1E0Ec652A4931E4e278e58142",
-        "gateway": "0x634F036fE66579E901c7bA34e33DF422E37A0037",
-        "escrow": "0xd595E1483c507E74E2E6A3dE8e7D08d8f6F74936",
-        "userEscrow": "0x9fc3A3bcEdc1CaB14EfC1B7ef45dFBDd3d17c9d7",
-        "router": "0x8174D5f12Ce682459864D8C081f9635012Ab51c2",
-        "trancheTokenFactory": "0x2d60cd1527073419423B14666E2D43C1Cf28B152",
-        "liquidityPoolFactory": "0x77F48b2c942E6f3ac2232568d560e423c441386a",
-        "restrictionManagerFactory": "0xf4D7F6919eF0B495a2551F7299324961F29aE7aC",
-        "pauseAdmin": "0xce86472007Ea37a5d0208f8C1559A37530c8067C",
-        "delayedAdmin": "0x2559998026796Ca6fd057f3aa66F2d6ecdEd9028",
-        "messages": "0xAf9F6Ac63C057EB7F59b6Fae2c3d447191b58Ea5"
+        "escrow": "0x0000000005F458Fd6ba9EEb5f365D83b7dA913dD",
+        "routerEscrow": "0x0F1b890fC6774Ef9b14e99de16302E24A6e7B4F7",
+        "root": "0x0C1fDfd6a1331a875EA013F3897fc8a76ada5DfC",
+        "erc7540VaultFactory": "0xcaD01F5A7eE9ba09A1aFDb9Dcaa58cE024E4462C",
+        "restrictionManager": "0x4737C3f62Cc265e786b280153fC666cEA2fBc0c0",
+        "trancheFactory": "0xFa072fB96F737bdBCEa28c921d43c34d3a4Dbb6C",
+        "investmentManager": "0x36b87b860857e6a6d4c2D24be11dc9b230F00f03",
+        "poolManager": "0x7f192F34499DdB2bE06c4754CFf2a21c4B056994",
+        "transferProxyFactory": "0xbe55eBC29344a26550E07EF59aeF791fA3b2A817",
+        "gasService": "0x32043A41F4be198C4f6590312F7A7b91624Cab57",
+        "gateway": "0x3423D288F2C04eB072eBB973F8c8B9b73cAa4361",
+        "centrifugeRouter": "0xF35501E7fC4a076E744dbAFA883CED74CCF5009d",
+        "guardian": "0x427A1ce127b1775e4Cbd4F58ad468B9F832eA7e9",
+        "adapter": "0x30e34260b895CAE34A1cfB185271628c53311cF3"
     },
-    "deploymentBlock": 8053054,
-    "isTestnet": false
+    "deploymentBlock": 17854405,
+    "isTestnet": false,
+    "isDeterministicallyDeployed": true
 }

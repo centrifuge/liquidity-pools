@@ -44,14 +44,14 @@ contract SpellTest is RPCTest {
 
         // check if deprectaed pool removed correctly
         assertEq(InvestmentManager(investmentManager).wards(deprecatedLP_), 0);
-        assertEq(TrancheToken(anemoyToken).wards(deprecatedLP_), 0);
-        assertEq(TrancheToken(anemoyToken).isTrustedForwarder(deprecatedLP_), false);
-        assertEq(TrancheToken(anemoyToken).allowance(address(escrow), deprecatedLP_), 0);
+        assertEq(Tranche(anemoyToken).wards(deprecatedLP_), 0);
+        assertEq(Tranche(anemoyToken).isTrustedForwarder(deprecatedLP_), false);
+        assertEq(Tranche(anemoyToken).allowance(address(escrow), deprecatedLP_), 0);
 
         // check if new pool added correctly
         assertEq(InvestmentManager(investmentManager).wards(newLP_), 1);
-        assertEq(TrancheToken(anemoyToken).wards(newLP_), 1);
-        assertEq(TrancheToken(anemoyToken).isTrustedForwarder(newLP_), true);
-        assertEq(TrancheToken(anemoyToken).allowance(address(escrow), newLP_), UINT256_MAX);
+        assertEq(Tranche(anemoyToken).wards(newLP_), 1);
+        assertEq(Tranche(anemoyToken).isTrustedForwarder(newLP_), true);
+        assertEq(Tranche(anemoyToken).allowance(address(escrow), newLP_), UINT256_MAX);
     }
 // }

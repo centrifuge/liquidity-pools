@@ -1,17 +1,19 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.21;
+pragma solidity 0.8.26;
 
 import {InvestmentManager} from "src/InvestmentManager.sol";
+import {RestrictionUpdate} from "src/interfaces/token/IRestrictionManager.sol";
 import {Gateway} from "src/gateway/Gateway.sol";
 import {MockCentrifugeChain} from "test/mocks/MockCentrifugeChain.sol";
 import {Escrow} from "src/Escrow.sol";
-import {PauseAdmin} from "src/admins/PauseAdmin.sol";
-import {DelayedAdmin} from "src/admins/DelayedAdmin.sol";
-import {PoolManager, Pool, Tranche} from "src/PoolManager.sol";
+import {Guardian} from "src/admin/Guardian.sol";
+import {MockAdapter} from "test/mocks/MockAdapter.sol";
+import {MockSafe} from "test/mocks/MockSafe.sol";
+import {PoolManager, Pool} from "src/PoolManager.sol";
 import {ERC20} from "src/token/ERC20.sol";
-import {TrancheToken} from "src/token/Tranche.sol";
+import {Tranche} from "src/token/Tranche.sol";
 import {ERC7540VaultTest} from "test/unit/ERC7540Vault.t.sol";
-import {PermissionlessRouter} from "test/mocks/PermissionlessRouter.sol";
+import {PermissionlessAdapter} from "test/mocks/PermissionlessAdapter.sol";
 import {Root} from "src/Root.sol";
 import {ERC7540Vault} from "src/ERC7540Vault.sol";
 import {AxelarScript} from "script/Axelar.s.sol";
@@ -27,59 +29,120 @@ interface WardLike {
     function wards(address who) external returns (uint256);
 }
 
+interface HookLike {
+    function updateMember(address user, uint64 validUntil) external;
+}
+
 contract DeployTest is Test, Deployer {
     using MathLib for uint256;
 
     uint8 constant PRICE_DECIMALS = 18;
 
     address self;
+    address[] accounts;
+    PermissionlessAdapter adapter;
+    Guardian fakeGuardian;
     ERC20 erc20;
 
     function setUp() public {
-        deploy(address(this));
-        PermissionlessRouter router = new PermissionlessRouter(address(aggregator));
-        wire(address(router));
-
-        admin = makeAddr("admin");
-        pausers.push(makeAddr("pauser1"));
-        pausers.push(makeAddr("pauser2"));
-        pausers.push(makeAddr("pauser3"));
-        giveAdminAccess();
-
-        erc20 = newErc20("Test", "TEST", 6); // TODO: fuzz decimals
         self = address(this);
+        deploy(self);
+        adapter = new PermissionlessAdapter(address(gateway));
+        wire(address(adapter));
 
-        removeDeployerAccess(address(router), address(this));
+        // overwrite deployed guardian with a new mock safe guardian
+        accounts = new address[](3);
+        accounts[0] = makeAddr("account1");
+        accounts[1] = makeAddr("account2");
+        accounts[2] = makeAddr("account3");
+        adminSafe = address(new MockSafe(accounts, 1));
+        fakeGuardian = new Guardian(adminSafe, address(root), address(gateway));
+
+        removeDeployerAccess(address(adapter), address(this));
+
+        erc20 = newErc20("Test", "TEST", 6);
     }
 
     function testDeployerHasNoAccess() public {
         vm.expectRevert("Auth/not-authorized");
         root.relyContract(address(investmentManager), address(1));
-        assertEq(root.wards(address(this)), 0);
-        assertEq(investmentManager.wards(address(this)), 0);
-        assertEq(poolManager.wards(address(this)), 0);
-        assertEq(escrow.wards(address(this)), 0);
-        assertEq(gateway.wards(address(this)), 0);
-        assertEq(aggregator.wards(address(this)), 0);
-        assertEq(pauseAdmin.wards(address(this)), 0);
-        assertEq(delayedAdmin.wards(address(this)), 0);
-        // check factories
-        assertEq(WardLike(trancheTokenFactory).wards(address(this)), 0);
-        assertEq(WardLike(vaultFactory).wards(address(this)), 0);
-        assertEq(WardLike(restrictionManagerFactory).wards(address(this)), 0);
+
+        // checking in the same order as they are deployed
+        assertEq(escrow.wards(self), 0);
+        assertEq(routerEscrow.wards(self), 0);
+        assertEq(root.wards(self), 0);
+        assertEq(WardLike(vaultFactory).wards(self), 0);
+        assertEq(WardLike(restrictionManager).wards(self), 0);
+        assertEq(WardLike(trancheFactory).wards(self), 0);
+        assertEq(investmentManager.wards(self), 0);
+        assertEq(poolManager.wards(self), 0);
+        assertEq(gasService.wards(self), 0);
+        assertEq(gateway.wards(self), 0);
+        assertEq(adapter.wards(self), 0);
+        assertEq(router.wards(self), 0);
     }
 
     function testAdminSetup(address nonAdmin, address nonPauser) public {
-        vm.assume(nonAdmin != admin);
-        vm.assume(nonPauser != pausers[0] && nonPauser != pausers[1] && nonPauser != pausers[2]);
+        vm.assume(nonAdmin != adminSafe);
+        vm.assume(nonPauser != accounts[0] && nonPauser != accounts[1] && nonPauser != accounts[2]);
 
-        assertEq(delayedAdmin.wards(admin), 1);
-        assertEq(delayedAdmin.wards(nonAdmin), 0);
+        assertEq(address(fakeGuardian.safe()), adminSafe);
+        for (uint256 i = 0; i < accounts.length; i++) {
+            assertEq(MockSafe(adminSafe).isOwner(accounts[i]), true);
+        }
+        assertEq(MockSafe(adminSafe).isOwner(nonPauser), false);
+    }
 
-        assertEq(pauseAdmin.pausers(pausers[0]), 1);
-        assertEq(pauseAdmin.pausers(pausers[1]), 1);
-        assertEq(pauseAdmin.pausers(pausers[2]), 1);
-        assertEq(pauseAdmin.pausers(nonPauser), 0);
+    function testAccessRightsAssignment() public {
+        address poolManager_ = address(poolManager);
+        address root_ = address(root);
+        address gateway_ = address(gateway);
+        address guardian_ = address(guardian);
+
+        assertEq(gasService.wards(gateway_), 1);
+        assertEq(escrow.wards(poolManager_), 1);
+        assertEq(WardLike(vaultFactory).wards(poolManager_), 1);
+        assertEq(WardLike(restrictionManager).wards(poolManager_), 1);
+        assertEq(WardLike(trancheFactory).wards(poolManager_), 1);
+
+        assertEq(router.wards(root_), 1);
+        assertEq(poolManager.wards(root_), 1);
+        assertEq(investmentManager.wards(root_), 1);
+        assertEq(gateway.wards(root_), 1);
+        assertEq(gasService.wards(root_), 1);
+        assertEq(escrow.wards(root_), 1);
+        assertEq(routerEscrow.wards(root_), 1);
+        assertEq(adapter.wards(root_), 1);
+        assertEq(WardLike(vaultFactory).wards(root_), 1);
+        assertEq(WardLike(restrictionManager).wards(root_), 1);
+        assertEq(WardLike(trancheFactory).wards(root_), 1);
+
+        assertEq(root.wards(gateway_), 1);
+        assertEq(poolManager.wards(gateway_), 1);
+        assertEq(investmentManager.wards(gateway_), 1);
+
+        assertEq(gateway.wards(guardian_), 1);
+        assertEq(root.wards(guardian_), 1);
+
+        assertEq(routerEscrow.wards(address(router)), 1);
+        assertEq(investmentManager.wards(vaultFactory), 1);
+    }
+
+    function testFilings() public {
+        assertEq(poolManager.investmentManager(), address(investmentManager));
+        assertEq(address(poolManager.gateway()), address(gateway));
+        assertEq(address(poolManager.gasService()), address(gasService));
+
+        assertEq(address(investmentManager.poolManager()), address(poolManager));
+        assertEq(address(investmentManager.gateway()), address(gateway));
+
+        assertEq(gateway.adapters(0), address(adapter));
+        assertTrue(gateway.payers(address(router)));
+    }
+
+    function testEndorsements() public {
+        assertTrue(root.endorsed(address(escrow)));
+        assertTrue(root.endorsed(address(router)));
     }
 
     function testDeployAndInvestRedeem(
@@ -87,23 +150,28 @@ contract DeployTest is Test, Deployer {
         string memory tokenName,
         string memory tokenSymbol,
         bytes16 trancheId,
-        uint8 decimals,
-        uint8 restrictionSet
+        uint8 decimals
     ) public {
-        vm.assume(decimals <= 18 && decimals > 0);
+        decimals = uint8(bound(decimals, 2, 18));
         uint128 price = uint128(2 * 10 ** PRICE_DECIMALS); //TODO: fuzz price
         uint256 amount = 1000 * 10 ** erc20.decimals();
         uint64 validUntil = uint64(block.timestamp + 1000 days);
-        address vault_ = deployPoolAndTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, restrictionSet);
+        address vault_ =
+            deployPoolAndTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, address(restrictionManager));
         ERC7540Vault vault = ERC7540Vault(vault_);
 
         deal(address(erc20), self, amount);
 
         vm.prank(address(gateway));
-        poolManager.updateMember(poolId, trancheId, self, validUntil);
+
+        poolManager.updateRestriction(
+            poolId,
+            trancheId,
+            abi.encodePacked(uint8(RestrictionUpdate.UpdateMember), bytes32(bytes20(self)), validUntil)
+        );
 
         depositMint(poolId, trancheId, price, amount, vault);
-        TrancheToken trancheToken = TrancheToken(address(vault.share()));
+        Tranche trancheToken = Tranche(address(vault.share()));
         amount = trancheToken.balanceOf(self);
 
         redeemWithdraw(poolId, trancheId, price, amount, vault);
@@ -111,7 +179,7 @@ contract DeployTest is Test, Deployer {
 
     function depositMint(uint64 poolId, bytes16 trancheId, uint128 price, uint256 amount, ERC7540Vault vault) public {
         erc20.approve(address(vault), amount); // add allowance
-        vault.requestDeposit(amount, self, self, "");
+        vault.requestDeposit(amount, self, self);
 
         // ensure funds are locked in escrow
         assertEq(erc20.balanceOf(address(escrow)), amount);
@@ -120,7 +188,7 @@ contract DeployTest is Test, Deployer {
         // trigger executed collectInvest
         uint128 _assetId = poolManager.assetToId(address(erc20)); // retrieve assetId
 
-        TrancheToken trancheToken = TrancheToken(address(vault.share()));
+        Tranche trancheToken = Tranche(address(vault.share()));
         uint128 shares = (
             amount.mulDiv(
                 10 ** (PRICE_DECIMALS - erc20.decimals() + trancheToken.decimals()), price, MathLib.Rounding.Down
@@ -131,7 +199,7 @@ contract DeployTest is Test, Deployer {
         // Assume a bot calls collectInvest for this user on cent chain
 
         vm.prank(address(gateway));
-        investmentManager.fulfillDepositRequest(poolId, trancheId, self, _assetId, uint128(amount), shares, 0);
+        investmentManager.fulfillDepositRequest(poolId, trancheId, self, _assetId, uint128(amount), shares);
 
         assertEq(vault.maxMint(self), shares);
         assertEq(vault.maxDeposit(self), amount);
@@ -156,10 +224,10 @@ contract DeployTest is Test, Deployer {
     function redeemWithdraw(uint64 poolId, bytes16 trancheId, uint128 price, uint256 amount, ERC7540Vault vault)
         public
     {
-        vault.requestRedeem(amount, address(this), address(this), "");
+        vault.requestRedeem(amount, address(this), address(this));
 
         // redeem
-        TrancheToken trancheToken = TrancheToken(address(vault.share()));
+        Tranche trancheToken = Tranche(address(vault.share()));
         uint128 _assetId = poolManager.assetToId(address(erc20)); // retrieve assetId
         uint128 assets = (
             amount.mulDiv(price, 10 ** (18 - erc20.decimals() + trancheToken.decimals()), MathLib.Rounding.Down)
@@ -197,17 +265,19 @@ contract DeployTest is Test, Deployer {
         string memory tokenName,
         string memory tokenSymbol,
         uint8 decimals,
-        uint8 restrictionSet
+        address hook
     ) public returns (address) {
         vm.startPrank(address(gateway));
         poolManager.addPool(poolId);
-        poolManager.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, restrictionSet);
+        poolManager.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, hook);
         poolManager.addAsset(1, address(erc20));
         poolManager.allowAsset(poolId, 1);
+        poolManager.updateTranchePrice(poolId, trancheId, 1, uint128(10 ** 18), uint64(block.timestamp));
         vm.stopPrank();
 
         poolManager.deployTranche(poolId, trancheId);
         address vault = poolManager.deployVault(poolId, trancheId, address(erc20));
+
         return vault;
     }
 

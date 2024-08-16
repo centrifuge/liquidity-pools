@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.21;
+pragma solidity 0.8.26;
 
 /// @title  CastLib
 library CastLib {
@@ -10,12 +10,6 @@ library CastLib {
     /// @dev Adds zero padding
     function toBytes32(string memory source) internal pure returns (bytes32) {
         return bytes32(bytes(source));
-    }
-
-    /// @dev Adds zero padding
-    function toBytes128(string memory source) internal pure returns (bytes memory) {
-        bytes memory sourceBytes = bytes(source);
-        return bytes.concat(sourceBytes, new bytes(128 - sourceBytes.length));
     }
 
     /// @dev Removes zero padding
@@ -29,7 +23,7 @@ library CastLib {
 
         bytes memory bytesArray = new bytes(i);
 
-        for (uint8 j = 0; j < i; j++) {
+        for (uint8 j; j < i; j++) {
             bytesArray[j] = _bytes128[j];
         }
 

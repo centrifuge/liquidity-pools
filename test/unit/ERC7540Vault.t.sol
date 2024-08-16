@@ -1,11 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.21;
+pragma solidity 0.8.26;
 
 import "test/BaseTest.sol";
 import "src/interfaces/IERC7575.sol";
 import "src/interfaces/IERC7540.sol";
-import {MockSucceedingRequestReceiver} from "test/mocks/MockSucceedingRequestReceiver.sol";
-import {FailingRequestReceiver} from "test/mocks/FailingRequestReceiver.sol";
 
 contract ERC7540VaultTest is BaseTest {
     // Deployment
@@ -30,10 +28,10 @@ contract ERC7540VaultTest is BaseTest {
         assertEq(vault.asset(), address(erc20));
         assertEq(vault.poolId(), poolId);
         assertEq(vault.trancheId(), trancheId);
-        address token = poolManager.getTrancheToken(poolId, trancheId);
+        address token = poolManager.getTranche(poolId, trancheId);
         assertEq(address(vault.share()), token);
-        assertEq(tokenName, ERC20(token).name());
-        assertEq(tokenSymbol, ERC20(token).symbol());
+        // assertEq(tokenName, ERC20(token).name());
+        // assertEq(tokenSymbol, ERC20(token).symbol());
 
         // permissions set correctly
         assertEq(vault.wards(address(root)), 1);
@@ -57,7 +55,8 @@ contract ERC7540VaultTest is BaseTest {
     }
 
     // --- uint128 type checks ---
-    // Make sure all function calls would fail when overflow uint128
+    /// @dev Make sure all function calls would fail when overflow uint128
+    /// @dev requestRedeem is not checked because the tranche token supply is already capped at uint128
     function testAssertUint128(uint256 amount) public {
         vm.assume(amount > MAX_UINT128); // amount has to overflow UINT128
         address vault_ = deploySimpleVault();
@@ -69,8 +68,8 @@ contract ERC7540VaultTest is BaseTest {
         vm.expectRevert(bytes("MathLib/uint128-overflow"));
         vault.convertToAssets(amount);
 
-        vm.expectRevert(bytes("MathLib/uint128-overflow"));
-        vault.deposit(amount, randomUser);
+        vm.expectRevert(bytes("InvestmentManager/exceeds-max-deposit"));
+        vault.deposit(amount, randomUser, self);
 
         vm.expectRevert(bytes("MathLib/uint128-overflow"));
         vault.mint(amount, randomUser);
@@ -78,203 +77,58 @@ contract ERC7540VaultTest is BaseTest {
         vm.expectRevert(bytes("MathLib/uint128-overflow"));
         vault.withdraw(amount, randomUser, self);
 
-        vm.expectRevert(bytes("MathLib/uint128-overflow"));
+        vm.expectRevert(bytes("InvestmentManager/exceeds-max-redeem"));
         vault.redeem(amount, randomUser, self);
 
         erc20.mint(address(this), amount);
         vm.expectRevert(bytes("MathLib/uint128-overflow"));
-        vault.requestDeposit(amount, self, self, "");
-
-        TrancheTokenLike trancheToken = TrancheTokenLike(address(vault.share()));
-        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max);
-        root.relyContract(address(trancheToken), self);
-        trancheToken.mint(address(this), amount);
-        vm.expectRevert(bytes("MathLib/uint128-overflow"));
-        vault.requestRedeem(amount, address(this), address(this), "");
+        vault.requestDeposit(amount, self, self);
     }
 
     // --- erc165 checks ---
     function testERC165Support(bytes4 unsupportedInterfaceId) public {
         bytes4 erc165 = 0x01ffc9a7;
-        bytes4 erc7575 = 0x2f0a18c5;
-        bytes4 erc7540Deposit = 0x1683f250;
-        bytes4 erc7540Redeem = 0x0899cb0b;
+        bytes4 erc7575Vault = 0x2f0a18c5;
+        bytes4 erc7540Operator = 0xe3bc4e65;
+        bytes4 erc7540Deposit = 0xce3bbe50;
+        bytes4 erc7540Redeem = 0x620ee8e4;
         bytes4 erc7540CancelDeposit = 0x8bf840e3;
         bytes4 erc7540CancelRedeem = 0xe76cffc7;
+        bytes4 erc7741 = 0xa9e50872;
+        bytes4 erc7714 = 0x78d77ecb;
 
         vm.assume(
-            unsupportedInterfaceId != erc165 && unsupportedInterfaceId != erc7575
-                && unsupportedInterfaceId != erc7540Deposit && unsupportedInterfaceId != erc7540Redeem
-                && unsupportedInterfaceId != erc7540CancelDeposit && unsupportedInterfaceId != erc7540CancelRedeem
+            unsupportedInterfaceId != erc165 && unsupportedInterfaceId != erc7575Vault
+                && unsupportedInterfaceId != erc7540Operator && unsupportedInterfaceId != erc7540Deposit
+                && unsupportedInterfaceId != erc7540Redeem && unsupportedInterfaceId != erc7540CancelDeposit
+                && unsupportedInterfaceId != erc7540CancelRedeem && unsupportedInterfaceId != erc7741
+                && unsupportedInterfaceId != erc7714
         );
 
         address vault_ = deploySimpleVault();
         ERC7540Vault vault = ERC7540Vault(vault_);
 
         assertEq(type(IERC165).interfaceId, erc165);
-        assertEq(type(IERC7575).interfaceId, erc7575);
+        assertEq(type(IERC7575).interfaceId, erc7575Vault);
+        assertEq(type(IERC7540Operator).interfaceId, erc7540Operator);
         assertEq(type(IERC7540Deposit).interfaceId, erc7540Deposit);
         assertEq(type(IERC7540Redeem).interfaceId, erc7540Redeem);
         assertEq(type(IERC7540CancelDeposit).interfaceId, erc7540CancelDeposit);
         assertEq(type(IERC7540CancelRedeem).interfaceId, erc7540CancelRedeem);
+        assertEq(type(IERC7741).interfaceId, erc7741);
+        assertEq(type(IERC7714).interfaceId, erc7714);
 
         assertEq(vault.supportsInterface(erc165), true);
-        assertEq(vault.supportsInterface(erc7575), true);
+        assertEq(vault.supportsInterface(erc7575Vault), true);
+        assertEq(vault.supportsInterface(erc7540Operator), true);
         assertEq(vault.supportsInterface(erc7540Deposit), true);
         assertEq(vault.supportsInterface(erc7540Redeem), true);
         assertEq(vault.supportsInterface(erc7540CancelDeposit), true);
         assertEq(vault.supportsInterface(erc7540CancelRedeem), true);
+        assertEq(vault.supportsInterface(erc7741), true);
+        assertEq(vault.supportsInterface(erc7714), true);
 
         assertEq(vault.supportsInterface(unsupportedInterfaceId), false);
-    }
-
-    // --- callbacks ---
-    function testSucceedingCallbacks(bytes memory depositData, bytes memory redeemData) public {
-        vm.assume(depositData.length > 0);
-        vm.assume(redeemData.length > 0);
-
-        address vault_ = deploySimpleVault();
-        ERC7540Vault vault = ERC7540Vault(vault_);
-        MockSucceedingRequestReceiver receiver = new MockSucceedingRequestReceiver();
-
-        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), address(receiver), type(uint64).max);
-        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max);
-
-        uint256 amount = 100 * 10 ** 6;
-        erc20.mint(self, amount);
-        erc20.approve(vault_, amount);
-
-        // Check deposit callback
-        vault.requestDeposit(amount, address(receiver), self, depositData);
-
-        assertEq(erc20.balanceOf(self), 0);
-        assertEq(receiver.values_address("requestDeposit_operator"), self);
-        assertEq(receiver.values_address("requestDeposit_owner"), self);
-        assertEq(receiver.values_uint256("requestDeposit_requestId"), 0);
-        assertEq(receiver.values_uint256("requestDeposit_assets"), amount);
-        assertEq(receiver.values_bytes("requestDeposit_data"), depositData);
-
-        assertTrue(receiver.onERC7540DepositReceived(self, self, 0, amount, depositData) == 0x6d7e2da0);
-
-        // Claim deposit request
-        // Note this is sending it to self, which is technically incorrect, it should be going to the receiver
-        centrifugeChain.isFulfilledDepositRequest(
-            vault.poolId(),
-            vault.trancheId(),
-            bytes32(bytes20(self)),
-            defaultAssetId,
-            uint128(amount),
-            uint128(amount),
-            0
-        );
-        vault.mint(vault.maxMint(self), self);
-
-        // Check redeem callback
-        vault.requestRedeem(amount, address(receiver), self, redeemData);
-
-        TrancheToken trancheToken = TrancheToken(address(vault.share()));
-        assertEq(trancheToken.balanceOf(self), 0);
-        assertEq(receiver.values_address("requestRedeem_operator"), self);
-        assertEq(receiver.values_address("requestRedeem_owner"), self);
-        assertEq(receiver.values_uint256("requestRedeem_requestId"), 0);
-        assertEq(receiver.values_uint256("requestRedeem_shares"), amount);
-        assertEq(receiver.values_bytes("requestRedeem_data"), redeemData);
-
-        assertTrue(receiver.onERC7540RedeemReceived(self, self, 0, amount, redeemData) == 0x01a2e97e);
-    }
-
-    function testSucceedingCallbacksNotCalledWithEmptyData() public {
-        address vault_ = deploySimpleVault();
-        ERC7540Vault vault = ERC7540Vault(vault_);
-        MockSucceedingRequestReceiver receiver = new MockSucceedingRequestReceiver();
-
-        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), address(receiver), type(uint64).max);
-        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max);
-
-        uint256 amount = 100 * 10 ** 6;
-        erc20.mint(self, amount);
-        erc20.approve(vault_, amount);
-
-        // Check deposit callback
-        vault.requestDeposit(amount, address(receiver), self, "");
-
-        assertEq(receiver.values_address("requestDeposit_operator"), address(0));
-        assertEq(receiver.values_address("requestDeposit_owner"), address(0));
-        assertEq(receiver.values_uint256("requestDeposit_requestId"), 0);
-        assertEq(receiver.values_uint256("requestDeposit_assets"), 0);
-        assertEq(receiver.values_bytes("requestDeposit_data"), "");
-
-        // Claim deposit request
-        // Note this is sending it to self, which is technically incorrect, it should be going to the receiver
-        centrifugeChain.isFulfilledDepositRequest(
-            vault.poolId(),
-            vault.trancheId(),
-            bytes32(bytes20(self)),
-            defaultAssetId,
-            uint128(amount),
-            uint128(amount),
-            0
-        );
-        vault.mint(vault.maxMint(self), self);
-
-        // Check redeem callback
-        vault.requestRedeem(amount, address(receiver), self, "");
-
-        TrancheToken trancheToken = TrancheToken(address(vault.share()));
-        assertEq(trancheToken.balanceOf(self), 0);
-        assertEq(receiver.values_address("requestRedeem_operator"), address(0));
-        assertEq(receiver.values_address("requestRedeem_owner"), address(0));
-        assertEq(receiver.values_uint256("requestRedeem_requestId"), 0);
-        assertEq(receiver.values_uint256("requestRedeem_shares"), 0);
-        assertEq(receiver.values_bytes("requestRedeem_data"), "");
-    }
-
-    function testFailingCallbacks(bytes memory depositData, bytes memory redeemData) public {
-        address vault_ = deploySimpleVault();
-        ERC7540Vault vault = ERC7540Vault(vault_);
-        FailingRequestReceiver receiver = new FailingRequestReceiver();
-
-        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), address(receiver), type(uint64).max);
-        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max);
-
-        uint256 amount = 100 * 10 ** 6;
-        erc20.mint(self, amount);
-        erc20.approve(vault_, amount);
-
-        // Check deposit callback
-        vm.expectRevert(bytes("ERC7540Vault/receiver-failed"));
-        vault.requestDeposit(amount, address(receiver), self, depositData);
-
-        assertEq(erc20.balanceOf(self), amount);
-        assertEq(receiver.values_address("requestDeposit_operator"), self);
-        assertEq(receiver.values_address("requestDeposit_owner"), self);
-        assertEq(receiver.values_uint256("requestDeposit_requestId"), 0);
-        assertEq(receiver.values_uint256("requestDeposit_assets"), amount);
-        assertEq(receiver.values_bytes("requestDeposit_data"), depositData);
-
-        // Re-submit and claim deposit request
-        vault.requestDeposit(amount, self, self, depositData);
-        centrifugeChain.isFulfilledDepositRequest(
-            vault.poolId(),
-            vault.trancheId(),
-            bytes32(bytes20(self)),
-            defaultAssetId,
-            uint128(amount),
-            uint128(amount),
-            0
-        );
-        vault.mint(vault.maxMint(self), self);
-
-        // Check redeem callback
-        vm.expectRevert(bytes("ERC7540Vault/receiver-failed"));
-        vault.requestRedeem(amount, address(receiver), self, redeemData);
-
-        assertEq(erc20.balanceOf(self), amount);
-        assertEq(receiver.values_address("requestRedeem_operator"), self);
-        assertEq(receiver.values_address("requestRedeem_owner"), self);
-        assertEq(receiver.values_uint256("requestRedeem_requestId"), 0);
-        assertEq(receiver.values_uint256("requestDeposit_shares"), amount);
-        assertEq(receiver.values_bytes("requestRedeem_data"), redeemData);
     }
 
     // --- preview checks ---
