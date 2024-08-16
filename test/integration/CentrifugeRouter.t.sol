@@ -285,9 +285,9 @@ contract CentrifugeRouterTest is BaseTest {
         // multicall
         uint256 fuel = estimateGas();
         bytes[] memory calls = new bytes[](2);
-        calls[0] = abi.encodeWithSelector(router.enableLockDepositRequest.selector, address(vault_), amount);
-        calls[1] = abi.encodeWithSelector(router.executeLockedDepositRequest.selector, vault_, self, fuel);
-        router.multicall{ value: fuel }(calls);
+        calls[0] = abi.encodeCall(router.enableLockDepositRequest, (address(vault_), amount));
+        calls[1] = abi.encodeCall(router.executeLockedDepositRequest, (vault_, self, fuel));
+        router.multicall{value: fuel}(calls);
 
         uint128 assetId = poolManager.assetToId(address(erc20));
         (uint128 tranchePayout) = fulfillDepositRequest(vault, assetId, amount, self);

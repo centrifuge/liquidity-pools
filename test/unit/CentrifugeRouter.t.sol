@@ -130,7 +130,9 @@ contract CentrifugeRouterTest is BaseTest {
         assertEq(erc20.balanceOf(address(routerEscrow)), amount);
         assertEq(erc20.balanceOf(self), 0);
 
-        centrifugeChain.disallowAsset(ERC7540Vault(vault_).poolId(), poolManager.assetToId(ERC7540Vault(vault_).asset()));
+        centrifugeChain.disallowAsset(
+            ERC7540Vault(vault_).poolId(), poolManager.assetToId(ERC7540Vault(vault_).asset())
+        );
         router.unlockDepositRequest(vault_, self);
 
         assertEq(poolManager.isAllowedAsset(ERC7540Vault(vault_).poolId(), ERC7540Vault(vault_).asset()), false);
