@@ -2,7 +2,7 @@
 pragma solidity 0.8.21;
 
 import {ERC20} from "src/token/ERC20.sol";
-import {IERC20Metadata} from "src/interfaces/IERC20.sol";
+import {IERC20Metadata, IERC20Wrapper} from "src/interfaces/IERC20.sol";
 import {IERC7540} from "src/interfaces/IERC7540.sol";
 import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 
@@ -28,7 +28,7 @@ contract ClaimToken is ERC20 {
     }
 }
 
-contract RedemptionWrapper is ERC20 {
+contract RedemptionWrapper is ERC20, IERC20Wrapper {
     IERC20Metadata public immutable share;
     IERC20Metadata public immutable asset;
     ERC20 public immutable claimToken;
@@ -39,7 +39,9 @@ contract RedemptionWrapper is ERC20 {
     // --- Events ---
     event File(bytes32 indexed what, address data);
 
-    constructor(address vault_, address claimToken_, address user_) ERC20(IERC20Metadata(IERC7540(vault_).share()).decimals()) {
+    constructor(address vault_, address claimToken_, address user_)
+        ERC20(IERC20Metadata(IERC7540(vault_).share()).decimals())
+    {
         vault = IERC7540(vault_);
         share = IERC20Metadata(vault.share());
         asset = IERC20Metadata(vault.asset());
@@ -55,22 +57,23 @@ contract RedemptionWrapper is ERC20 {
     }
 
     // --- Interactions ---
-    function mint(address to, uint256 value) public override {
+    function depositFor(address account, uint256 value) external returns (bool) {
         require(msg.sender == user, "RedemptionWrapper/invalid-user");
         require(share.transferFrom(msg.sender, address(this), value), "RedemptionWrapper/failed-transfer");
         vault.requestRedeem(value, address(this), address(this), "");
 
-        claimToken.mint(to, value);
+        claimToken.mint(account, value);
+
+        return true;
     }
 
     function claim() public {
         vault.withdraw(vault.maxWithdraw(address(this)), address(this), address(this));
     }
 
-    function burn(address from, uint256 value) public override {
-        claimToken.burn(msg.sender, value);
-
+    function withdrawTo(address account, uint256 value) external returns (bool) {
         claim();
+        claimToken.burn(msg.sender, value);
         require(asset.balanceOf(address(this)) >= value, "RedemptionWrapper/insufficient-asset-balance");
         SafeTransferLib.safeTransferFrom(address(asset), address(this), msg.sender, value);
     }
@@ -92,7 +95,8 @@ contract RedemptionWrapperFactory {
 
         ERC20 token = claimToken[share];
         if (address(token) == address(0)) {
-            token = new ClaimToken(share);
+            bytes32 salt = keccak256(abi.encodePacked(share, "claimToken"));
+            token = new ClaimToken{salt: salt}(share);
             token.rely(root);
             claimToken[share] = token;
         }
