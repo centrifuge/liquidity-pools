@@ -166,9 +166,7 @@ abstract contract Properties is Setup, Asserts, ERC7540CentrifugeProperties {
         if (address(trancheToken) == address(0)) {
             return true; // Skip
         }
-        uint256 ACTORS_LENGTH = 1;
-        address[] memory actors = new address[](ACTORS_LENGTH);
-        actors[0] = address(this);
+        uint256 ACTORS_LENGTH = actors.length;
 
         uint256 acc;
 

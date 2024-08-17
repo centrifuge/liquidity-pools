@@ -38,7 +38,7 @@ abstract contract Setup is BaseSetup, SharedStorage {
     ERC7540Vault vault;
     ERC20 token;
     Tranche trancheToken;
-    address actor = address(this); // TODO: Generalize
+    address actor;
     RestrictionManager restrictionManager;
 
     bytes16 trancheId;
@@ -97,8 +97,15 @@ abstract contract Setup is BaseSetup, SharedStorage {
         vaultFactory.rely(address(poolManager));
         trancheFactory.rely(address(poolManager));
 
-        // TODO: Cycling of:
-        // Actors and ERC7540 Vaults
+        // TODO: Cycling of ERC7540 Vaults
+
+        // Cycling of Actors
+        actors.push(address(0x4c701));
+        actors.push(address(0x4c702));
+        actors.push(address(0x4c703));
+
+        // Always use first actor until we have coverage that we expect
+        actor = address(0x4c701);
     }
 
     /**

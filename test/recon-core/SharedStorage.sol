@@ -44,6 +44,9 @@ abstract contract SharedStorage {
     // Hash of index + salt, but we use number to be able to cycle
     bytes16 TRANCHE_ID = bytes16(bytes32(uint256(TRANCHE_COUNTER)));
 
+    // 3 actors
+    address[] actors;
+
     // NOTE: TODO
     // ** INCOMPLETE - Deployment, Setup and Cycling of Assets, Tranches, Pools and Vaults **/
     // Step 1
