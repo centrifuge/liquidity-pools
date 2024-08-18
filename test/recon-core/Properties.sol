@@ -407,4 +407,28 @@ abstract contract Properties is Setup, Asserts, ERC7540CentrifugeProperties {
                 );
         }
     }
+
+    // CentrifugeRouter
+
+    /**
+     * The sum of unlocked deposit requests must be less than the sum of locked deposit requests
+     */
+    function invariant_CR_1() public returns (bool) {
+        if (address(routerEscrow) == address(0)) {
+            return true;
+        }
+
+        return sumOfUnlockedDepositRequests[address(token)] <= sumOfLockedDepositRequests[address(token)];
+    }
+
+    /**
+     * The sum of executed deposit requests must be less than the sum of locked deposit requests
+     */
+    function invariant_CR_2() public returns (bool) {
+        if (address(routerEscrow) == address(0)) {
+            return true;
+        }
+
+        return sumOfExecutedLockedDepositRequests[address(token)] <= sumOfLockedDepositRequests[address(token)];
+    }
 }
