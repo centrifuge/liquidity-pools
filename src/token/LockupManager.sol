@@ -4,7 +4,7 @@ pragma solidity 0.8.26;
 import {Auth} from "src/Auth.sol";
 import {IRoot} from "src/interfaces/IRoot.sol";
 import {ITranche} from "src/interfaces/token/ITranche.sol";
-import {IHook, IExtendedHook, HookData} from "src/interfaces/token/IHook.sol";
+import {IHook, HookData} from "src/interfaces/token/IHook.sol";
 import {MessagesLib} from "src/libraries/MessagesLib.sol";
 import {BitmapLib} from "src/libraries/BitmapLib.sol";
 import {BytesLib} from "src/libraries/BytesLib.sol";
@@ -21,7 +21,7 @@ import {MathLib} from "src/libraries/MathLib.sol";
 ///
 /// @dev    The first 8 bytes (uint64) of hookData is used for the memberlist valid until date,
 ///         the last bit is used to denote whether the account is frozen.
-contract LockupManager is Auth, ILockupManager, IExtendedHook {
+contract LockupManager is Auth, ILockupManager, IHook {
     using BitmapLib for *;
     using BytesLib for bytes;
     using MathLib for uint256;
@@ -64,17 +64,19 @@ contract LockupManager is Auth, ILockupManager, IExtendedHook {
         virtual
         returns (bytes4)
     {
-        require(checkERC20Transfer(from, to, value, hookData), "LockupManager/transfer-blocked");
+        address token = msg.sender;
 
-        if (from == address(0) || to != address(escrow)) {
-            // Minting or transferring (except redemptions) sets new lockup period
-            address token = msg.sender;
-            _addLockup(token, to, value.toUint128());
+        if (from != address(0) && to != address(escrow)) {
+            // If transferring (not minting) to escrow, it's a redemption or cross-chain transfer
+            // that requires unlocked tokens.
+            _unlock(token, from, value.toUint128());
+        } else {
+            // If transferring to another user, this resets the lockup period. This ensures fungibility.
+            _lock(token, to, value.toUint128());
         }
 
-        // TODO: need to actually unlock any transferred tokens
-        // firstUnlock[usr] = current;
-        // alreadyUnlocked[usr] = safeSub(unlockAmountFound, amount);
+        // Unlocked balance already checked so setting to infinite
+        require(checkERC20Transfer(from, to, value, hookData, type(uint128).max), "LockupManager/transfer-blocked");
 
         return IHook.onERC20Transfer.selector;
     }
@@ -91,12 +93,14 @@ contract LockupManager is Auth, ILockupManager, IExtendedHook {
     }
 
     // --- ERC1404 implementation ---
-    /// @inheritdoc IExtendedHook
-    function checkERC20Transfer(address token, address from, address to, uint256 value, HookData calldata hookData)
-        public
-        view
-        returns (bool)
-    {
+    /// @inheritdoc ILockupManager
+    function checkERC20Transfer(
+        address from,
+        address to,
+        uint256 value,
+        HookData calldata hookData,
+        uint128 unlockedBalance
+    ) public view returns (bool) {
         if (uint128(hookData.from).getBit(FREEZE_BIT) == true && !root.endorsed(from)) {
             // Source is frozen and not endorsed
             return false;
@@ -118,7 +122,7 @@ contract LockupManager is Auth, ILockupManager, IExtendedHook {
             return false;
         }
 
-        if (from != address(0) && to != escrow && !isUnlocked(token, from, value)) {
+        if (from != address(0) && to != escrow && unlockedBalance < value) {
             // Tokens are being transferred (not minted from address(0)), not being redeemed (sent to the escrow),
             // and the unlocked balance is insufficient.
             return false;
@@ -128,13 +132,14 @@ contract LockupManager is Auth, ILockupManager, IExtendedHook {
     }
 
     /// @inheritdoc IHook
+    /// @dev Assumes msg.sender is token
     function checkERC20Transfer(address from, address to, uint256 value, HookData calldata hookData)
         public
         view
         returns (bool)
     {
-        // If token is not passed, assume msg.sender is token
-        return checkERC20Transfer(msg.sender, from, to, value, hookData);
+        uint128 unlockedBalance = unlocked(msg.sender, from);
+        return checkERC20Transfer(from, to, value, hookData, unlockedBalance);
     }
 
     // --- Incoming message handling ---
@@ -166,30 +171,28 @@ contract LockupManager is Auth, ILockupManager, IExtendedHook {
         emit SetLockupPeriod(token, lockupDays);
     }
 
-    /// @inheritdoc ILockupManager
-    function isUnlocked(address token, address user, uint256 amount) public view returns (bool) {
+    function _unlock(address token, address user, uint128 amount) internal {
         LockupData storage lockup = lockups[token][user];
-        if (lockup.first == 0) return false;
+        require(lockup.first != 0, "LockupManager/insufficient-unlocked-balance");
 
         uint16 currentDay = lockup.first;
         uint128 unlockAmountFound = lockup.unlocked;
         uint64 today = _midnightUTC(uint64(block.timestamp));
         while (unlockAmountFound < amount) {
             uint128 currentAmount = lockup.upcoming[currentDay].amount;
-            if (currentAmount == 0) return false;
-            if (currentDay > today) return false;
+            require(currentAmount != 0, "LockupManager/insufficient-unlocked-balance");
+            require(currentDay <= today, "LockupManager/insufficient-unlocked-balance");
 
             unlockAmountFound += currentAmount;
             currentDay = lockup.upcoming[currentDay].next;
         }
 
-        // firstUnlock[usr] = currentDay;
-        // alreadyUnlocked[usr] = safeSub(unlockAmountFound, amount);
-
-        return unlockAmountFound >= amount;
+        require(unlockAmountFound >= amount, "LockupManager/insufficient-unlocked-balance");
+        lockup.first = currentDay;
+        lockup.unlocked = unlockAmountFound - amount;
     }
 
-    function _addLockup(address token, address user, uint128 amount) internal {
+    function _lock(address token, address user, uint128 amount) internal {
         LockupConfig memory config = lockupConfig[token];
         // TODO: use safe cast
         uint16 daysSinceReferenceDate = uint16(
@@ -219,24 +222,27 @@ contract LockupManager is Auth, ILockupManager, IExtendedHook {
     }
 
     /// @inheritdoc ILockupManager
-    // function unlocked(address token, address user, uint256 day) public view returns (uint256) {
-    //     uint256 firstUnlock_ = firstUnlock[usr];
-    //     if (firstUnlock_ == 0) return alreadyUnlocked[usr];
+    function unlocked(address token, address user, uint64 timestamp) public view returns (uint128) {
+        LockupData storage lockup = lockups[token][user];
+        if (lockup.first == 0) return lockup.unlocked;
 
-    //     uint256 current = firstUnlock_;
-    //     uint256 amount = alreadyUnlocked[usr];
-    //     while (current <= day && current != 0) {
-    //         amount = safeAdd(amount, upcomingUnlocks[usr][current].amount);
-    //         current = upcomingUnlocks[usr][current].next;
-    //     }
+        LockupConfig memory config = lockupConfig[token];
+        uint16 day = uint16((_midnightUTC(uint64(timestamp)) / (1 days)) - (config.referenceDate / (1 days)));
 
-    //     return amount;
-    // }
+        uint16 current = lockup.first;
+        uint128 amount = lockup.unlocked;
+        while (current <= day && current != 0) {
+            amount += lockup.upcoming[current].amount;
+            current = lockup.upcoming[current].next;
+        }
 
-    // /// @inheritdoc ILockupManager
-    // function unlocked(address token, address user) public view returns (uint256) {
-    //     return calcUnlocked(usr, uniqueDayTimestamp(block.timestamp));
-    // }
+        return amount;
+    }
+
+    /// @inheritdoc ILockupManager
+    function unlocked(address token, address user) public view returns (uint128) {
+        return unlocked(token, user, uint64(block.timestamp));
+    }
 
     // --- Freezing ---
     /// @inheritdoc ILockupManager

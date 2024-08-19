@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity >=0.5.0;
 
+import {HookData} from "src/interfaces/token/IHook.sol";
+
 enum RestrictionUpdate {
     Invalid,
     UpdateMember,
@@ -19,6 +21,15 @@ interface ILockupManager {
     event Freeze(address indexed token, address indexed user);
     event Unfreeze(address indexed token, address indexed user);
 
+    /// @notice Check if given transfer can be performed
+    function checkERC20Transfer(
+        address from,
+        address to,
+        uint256 value,
+        HookData calldata hookData,
+        uint128 unlockedBalance
+    ) external view returns (bool);
+
     // --- Lockup period ---
     /// @notice TODO
     ///
@@ -34,10 +45,13 @@ interface ILockupManager {
     function setLockupPeriod(address token, uint16 lockupDays) external;
 
     /// @notice TODO
-    function isUnlocked(address token, address user, uint256 amount) external view returns (bool);
+    function forceUnlock(address token, address user) external;
 
     /// @notice TODO
-    function forceUnlock(address token, address user) external;
+    function unlocked(address token, address user, uint64 timestamp) external view returns (uint128);
+
+    /// @notice TODO
+    function unlocked(address token, address user) external view returns (uint128);
 
     // --- Handling freezes ---
     /// @notice Freeze a user balance. Frozen users cannot receive nor send tokens

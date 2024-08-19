@@ -39,11 +39,3 @@ interface IHook is IERC165 {
     /// @dev    MAY be user specific, which would be included in the encoded `update` value
     function updateRestriction(address token, bytes memory update) external;
 }
-
-interface IExtendedHook is IHook {
-    /// @notice Check if given transfer can be performed
-    function checkERC20Transfer(address token, address from, address to, uint256 value, HookData calldata hookData)
-        external
-        view
-        returns (bool);
-}
