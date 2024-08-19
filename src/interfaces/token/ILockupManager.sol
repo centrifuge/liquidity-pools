@@ -7,14 +7,37 @@ enum RestrictionUpdate {
     Freeze,
     Unfreeze,
     SetLockupPeriod,
-    UnlockTrancheTokens
+    ForceUnlock
 }
 
-interface IRestrictionManager {
+interface ILockupManager {
     // --- Events ---
+    event SetLockupPeriod(address indexed token, uint16 lockupDays);
+    event AddLockup(address indexed token, address indexed user, uint64 lockedUntil, uint128 amount);
+    event ForceUnlock(address indexed token, address indexed user);
     event UpdateMember(address indexed token, address indexed user, uint64 validUntil);
     event Freeze(address indexed token, address indexed user);
     event Unfreeze(address indexed token, address indexed user);
+
+    // --- Lockup period ---
+    /// @notice TODO
+    ///
+    /// @dev    referenceDate: Aug 1st
+    ///         block.timestamp: Aug 15th
+    ///         lockupDays: 7
+    ///
+    ///         When new tokens are minted, lockup should be until Aug 22nd.
+    ///
+    ///         Lockups are stored as days since referenceDate. So it should be 21 days.
+    ///
+    ///         daysSinceReferenceDate = (block.timestamp / (1 days)) - (referenceDate / (1 days)) + lockupDays
+    function setLockupPeriod(address token, uint16 lockupDays) external;
+
+    /// @notice TODO
+    function isUnlocked(address token, address user, uint256 amount) external view returns (bool);
+
+    /// @notice TODO
+    function forceUnlock(address token, address user) external;
 
     // --- Handling freezes ---
     /// @notice Freeze a user balance. Frozen users cannot receive nor send tokens
