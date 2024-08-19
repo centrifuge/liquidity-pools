@@ -53,7 +53,7 @@ medusa fuzz --config medusa-aggregator.json
 | [Code4rena](https://code4rena.com/)  | Sep 2023  | Competitive audit       | [`Report`](https://code4rena.com/reports/2023-09-centrifuge)                                                        |
 | [SRLabs](https://www.srlabs.de/)  | Sep 2023  | Security review               | [`Report`](https://github.com/centrifuge/liquidity-pools/blob/main/audits/2023-09-SRLabs.pdf)                          |
 | [Cantina](https://cantina.xyz/)  | Oct 2023  | Security review             | [`Report`](https://github.com/centrifuge/liquidity-pools/blob/main/audits/2023-10-Cantina.pdf) |
-| [Alex the Entreprenerd](https://x.com/gallodasballo)  | Mar - Apr 2024  | Invariant test development | [`Part 1`](https://getrecon.substack.com/p/lessons-learned-from-fuzzing-centrifuge)                                                     |
+| [Alex the Entreprenerd](https://x.com/gallodasballo)  | Mar - Apr 2024  | Invariant test development | [`Part 1`](https://getrecon.substack.com/p/lessons-learned-from-fuzzing-centrifuge) [`Part 2`](https://getrecon.substack.com/p/lessons-learned-from-fuzzing-centrifuge-059)  |
 | [xmxanuel](https://x.com/xmxanuel)  | May - June 2024  | Security review | Internal                                                                                                                                               |
 | [Spearbit](https://spearbit.com/)  | July 2024  | Security review             | [`Report`](https://github.com/centrifuge/liquidity-pools/blob/main/audits/2024-08-Spearbit.pdf) |
 
