@@ -12,6 +12,23 @@ enum RestrictionUpdate {
     ForceUnlock
 }
 
+struct LockupConfig {
+    uint64 referenceDate;
+    uint16 lockupDays; // type(uint16).max / 365 = 179 years
+}
+
+struct Unlock {
+    uint128 amount;
+    uint16 next;
+}
+
+struct LockupData {
+    uint16 first; // days since referenceDate
+    uint16 last; // days since referenceDate
+    uint128 unlocked;
+    mapping(uint16 => Unlock) upcoming;
+}
+
 interface ILockupManager {
     // --- Events ---
     event SetLockupPeriod(address indexed token, uint16 lockupDays);

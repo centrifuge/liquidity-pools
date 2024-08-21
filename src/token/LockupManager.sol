@@ -9,7 +9,13 @@ import {MessagesLib} from "src/libraries/MessagesLib.sol";
 import {BitmapLib} from "src/libraries/BitmapLib.sol";
 import {BytesLib} from "src/libraries/BytesLib.sol";
 import {IERC165} from "src/interfaces/IERC7575.sol";
-import {RestrictionUpdate, ILockupManager} from "src/interfaces/token/ILockupManager.sol";
+import {
+    RestrictionUpdate,
+    LockupConfig,
+    Unlock,
+    LockupData,
+    ILockupManager
+} from "src/interfaces/token/ILockupManager.sol";
 import {MathLib} from "src/libraries/MathLib.sol";
 
 /// @title  Lockup Manager
@@ -24,6 +30,7 @@ import {MathLib} from "src/libraries/MathLib.sol";
 contract LockupManager is Auth, ILockupManager, IHook {
     using BitmapLib for *;
     using BytesLib for bytes;
+    using MathLib for uint64;
     using MathLib for uint256;
 
     /// @dev Least significant bit
@@ -31,23 +38,6 @@ contract LockupManager is Auth, ILockupManager, IHook {
 
     address public immutable escrow;
     IRoot public immutable root;
-
-    struct LockupConfig {
-        uint64 referenceDate;
-        uint16 lockupDays; // type(uint16).max / 365 = 179 years
-    }
-
-    struct Unlock {
-        uint128 amount;
-        uint16 next;
-    }
-
-    struct LockupData {
-        uint16 first; // days since referenceDate
-        uint16 last; // days since referenceDate
-        uint128 unlocked;
-        mapping(uint16 => Unlock) upcoming;
-    }
 
     mapping(address token => LockupConfig) public lockupConfig;
     mapping(address token => mapping(address user => LockupData)) lockups;
@@ -195,9 +185,9 @@ contract LockupManager is Auth, ILockupManager, IHook {
     function _lock(address token, address user, uint128 amount) internal {
         LockupConfig memory config = lockupConfig[token];
         // TODO: use safe cast
-        uint16 daysSinceReferenceDate = uint16(
+        uint16 daysSinceReferenceDate = (
             (_midnightUTC(uint64(block.timestamp)) / (1 days)) - (config.referenceDate / (1 days)) + config.lockupDays
-        );
+        ).toUint16();
 
         LockupData storage lockup = lockups[token][user];
         lockup.upcoming[daysSinceReferenceDate].amount += amount;
