@@ -5,18 +5,16 @@ import "./RecoveryController.sol";
 import "forge-std/Test.sol";
 import "forge-std/StdJson.sol";
 
-interface iControllerProxy  {
+interface iControllerProxy {
     function changeAdmin(address newAdmin) external;
     function upgradeTo(address implementation) external;
     function upgradeToAndCall(address newImplementation, bytes calldata data) external;
-    }
-
+}
 
 //     interface IERC20 {
 //     function balanceOf(address account) external view returns (uint256);
 //     function safeTransferFrom(address from, address to, uint256 value) external;
 // }
-
 
 contract RecoverySpellTest is Test {
     using stdJson for string;
@@ -33,20 +31,20 @@ contract RecoverySpellTest is Test {
     function setUp() public {
         self = address(this);
         _loadDeployment("mainnet", "ethereum-mainnet"); // Mainnet
-        _loadFork(0); 
+        _loadFork(0);
     }
 
     function testRecovery() public {
         recoveryController = new RecoveryController(); // deploy new controller implementation
-        uint vaultBalanceCFG = IERC20(recoveryController.WCFG()).balanceOf(recoveryController.RWA_VAULT());
-        assertEq(vaultBalanceCFG, 138458952533663365715185); 
+        uint256 vaultBalanceCFG = IERC20(recoveryController.WCFG()).balanceOf(recoveryController.RWA_VAULT());
+        assertEq(vaultBalanceCFG, 138458952533663365715185);
 
         vm.startPrank(ADMIN);
         bytes memory data = abi.encodeWithSignature("recover()");
         iControllerProxy(CONTROLLER_PROXY).upgradeToAndCall(address(recoveryController), data);
 
-        assertEq(IERC20(recoveryController.WCFG()).balanceOf(recoveryController.RECOVERY_WALLET()), vaultBalanceCFG); 
-        assertEq(IERC20(recoveryController.WCFG()).balanceOf(recoveryController.RWA_VAULT()), 0); 
+        assertEq(IERC20(recoveryController.WCFG()).balanceOf(recoveryController.RECOVERY_WALLET()), vaultBalanceCFG);
+        assertEq(IERC20(recoveryController.WCFG()).balanceOf(recoveryController.RWA_VAULT()), 0);
     }
 
     function _loadDeployment(string memory folder, string memory name) internal {
