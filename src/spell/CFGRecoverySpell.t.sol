@@ -11,11 +11,6 @@ interface iControllerProxy {
     function upgradeToAndCall(address newImplementation, bytes calldata data) external;
 }
 
-//     interface IERC20 {
-//     function balanceOf(address account) external view returns (uint256);
-//     function safeTransferFrom(address from, address to, uint256 value) external;
-// }
-
 contract RecoverySpellTest is Test {
     using stdJson for string;
 
