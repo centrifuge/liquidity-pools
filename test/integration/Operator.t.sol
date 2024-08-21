@@ -30,6 +30,10 @@ contract OperatorTest is BaseTest {
         vm.expectRevert(bytes("ERC7540Vault/invalid-owner"));
         vault.requestDeposit(amount, investor, investor);
 
+        vm.prank(investor);
+        vm.expectRevert(bytes("ERC7540Vault/cannot-set-self-as-operator"));
+        vault.setOperator(investor, true);
+
         assertEq(vault.isOperator(investor, operator), false);
         vm.prank(investor);
         vault.setOperator(operator, true);
@@ -96,20 +100,44 @@ contract OperatorTest is BaseTest {
                     vault.DOMAIN_SEPARATOR(),
                     keccak256(
                         abi.encode(
-                            vault.AUTHORIZE_OPERATOR_TYPEHASH(), controller, operator, true, deadline, bytes32("nonce")
+                            vault.AUTHORIZE_OPERATOR_TYPEHASH(),
+                            controller,
+                            controller,
+                            true,
+                            bytes32("nonce"),
+                            deadline
                         )
                     )
                 )
             )
         );
         bytes memory signature = abi.encodePacked(r, s, v);
+        vm.prank(controller);
+        vm.expectRevert(bytes("ERC7540Vault/cannot-set-self-as-operator"));
+        vault.authorizeOperator(controller, controller, true, bytes32("nonce"), deadline, signature);
+
+        (v, r, s) = vm.sign(
+            controllerPk,
+            keccak256(
+                abi.encodePacked(
+                    "\x19\x01",
+                    vault.DOMAIN_SEPARATOR(),
+                    keccak256(
+                        abi.encode(
+                            vault.AUTHORIZE_OPERATOR_TYPEHASH(), controller, operator, true, bytes32("nonce"), deadline
+                        )
+                    )
+                )
+            )
+        );
+        signature = abi.encodePacked(r, s, v);
         delete r;
         delete s;
         delete v;
 
         assertEq(vault.isOperator(controller, operator), false);
         vm.prank(operator);
-        vault.authorizeOperator(controller, operator, true, deadline, bytes32("nonce"), signature);
+        vault.authorizeOperator(controller, operator, true, bytes32("nonce"), deadline, signature);
         assertEq(vault.isOperator(controller, operator), true);
 
         vm.prank(operator);
@@ -221,7 +249,7 @@ contract OperatorTest is BaseTest {
 
         vm.expectRevert(bytes("ERC7540Vault/authorization-used"));
         vm.prank(operator);
-        vault.authorizeOperator(controller, operator, true, deadline, nonce, signature);
+        vault.authorizeOperator(controller, operator, true, nonce, deadline, signature);
         assertEq(vault.isOperator(controller, operator), false);
     }
 }

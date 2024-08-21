@@ -88,7 +88,7 @@ contract GasServiceTest is Test {
 
     function testEstimateFunction(bytes calldata message) public {
         vm.assume(message.length > 1);
-        vm.assume(message.toUint8(0) != uint8(MessagesLib.Call.MessageProof));
+        vm.assume(message.toUint8(0) != uint8(MessagesLib.Call.MessageProof) && message.toUint8(0) <= 28);
         bytes memory proof = abi.encodePacked(uint8(MessagesLib.Call.MessageProof), keccak256(message));
 
         uint256 messageCost = service.estimate(message);

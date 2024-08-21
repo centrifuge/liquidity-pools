@@ -31,11 +31,11 @@ fi
 
 contract_address=$1
 
+echo "vault: $contract_address"
 if ! cast call $contract_address 'share()(address)' --rpc-url $RPC_URL &> /dev/null; then
     echo "Error: Must pass a vault address."
     exit 1
 fi
-echo "vault: $contract_address"
 poolId=$(cast call $contract_address 'poolId()(uint64)' --rpc-url $RPC_URL | awk '{print $1}')
 trancheId=$(cast call $contract_address 'trancheId()(bytes16)' --rpc-url $RPC_URL | cut -c 1-34)
 asset=$(cast call $contract_address 'asset()(address)' --rpc-url $RPC_URL)
@@ -56,6 +56,5 @@ echo "investmentManager: $investmentManager"
 echo "poolManager: $poolManager"
 echo "restrictionManager: $restrictionManager"
 echo "token decimals: $decimals"
-forge verify-contract --constructor-args $(cast abi-encode "constructor(address, address)" $root $share) --watch --etherscan-api-key $ETHERSCAN_KEY $contract_address src/token/RestrictionManager.sol:RestrictionManager --verifier-url $VERIFIER_URL --chain $CHAIN_ID
-forge verify-contract --constructor-args $(cast abi-encode "constructor(uint8)" $decimals) --watch --etherscan-api-key $ETHERSCAN_KEY $contract_address src/token/Tranche.sol:Tranche --verifier-url $VERIFIER_URL --chain $CHAIN_ID
+forge verify-contract --constructor-args $(cast abi-encode "constructor(uint8)" $decimals) --watch --etherscan-api-key $ETHERSCAN_KEY $share src/token/Tranche.sol:Tranche --verifier-url $VERIFIER_URL --chain $CHAIN_ID
 forge verify-contract --constructor-args $(cast abi-encode "constructor(uint64,bytes16,address,address,address,address,address)" $poolId $trancheId $asset $share $root $escrow $investmentManager) --watch --etherscan-api-key $ETHERSCAN_KEY $contract_address src/ERC7540Vault.sol:ERC7540Vault --verifier-url $VERIFIER_URL --chain $CHAIN_ID

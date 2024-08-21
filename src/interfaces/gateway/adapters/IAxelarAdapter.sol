@@ -3,6 +3,28 @@ pragma solidity >=0.5.0;
 
 import {IAdapter} from "src/interfaces/gateway/IAdapter.sol";
 
+interface IAxelarGateway {
+    function callContract(string calldata destinationChain, string calldata contractAddress, bytes calldata payload)
+        external;
+
+    function validateContractCall(
+        bytes32 commandId,
+        string calldata sourceChain,
+        string calldata sourceAddress,
+        bytes32 payloadHash
+    ) external returns (bool);
+}
+
+interface IAxelarGasService {
+    function payNativeGasForContractCall(
+        address sender,
+        string calldata destinationChain,
+        string calldata destinationAddress,
+        bytes calldata payload,
+        address refundAddress
+    ) external payable;
+}
+
 interface IAxelarAdapter is IAdapter {
     event File(bytes32 indexed what, uint256 value);
 

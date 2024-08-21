@@ -23,7 +23,7 @@ contract MockERC20Wrapper is ERC20, Mock, IERC20Wrapper {
         );
 
         // Obviously unsafe, just for testing purposes
-        balances[account] += value;
+        _setBalance(account, _balanceOf(account) + value);
         totalSupply = totalSupply + value;
         emit Transfer(address(0), account, value);
 
@@ -32,7 +32,7 @@ contract MockERC20Wrapper is ERC20, Mock, IERC20Wrapper {
 
     function withdrawTo(address account, uint256 value) external returns (bool) {
         if (method_fail["withdrawTo"]) return false;
-        balances[msg.sender] -= value;
+        _setBalance(msg.sender, _balanceOf(msg.sender) - value);
         totalSupply = totalSupply - value;
 
         IERC20Metadata(underlying).transfer(account, value);

@@ -19,24 +19,20 @@ contract Root is Auth, IRoot {
 
     address public immutable escrow;
 
-    /// @notice Trusted contracts within the system
-    mapping(address => uint256) public endorsements;
-
     /// @inheritdoc IRoot
     bool public paused;
     /// @inheritdoc IRoot
     uint256 public delay;
     /// @inheritdoc IRoot
+    mapping(address => uint256) public endorsements;
+    /// @inheritdoc IRoot
     mapping(address relyTarget => uint256 timestamp) public schedule;
 
-    constructor(address _escrow, uint256 _delay, address deployer) {
+    constructor(address _escrow, uint256 _delay, address deployer) Auth(deployer) {
         require(_delay <= MAX_DELAY, "Root/delay-too-long");
 
         escrow = _escrow;
         delay = _delay;
-
-        wards[deployer] = 1;
-        emit Rely(deployer);
     }
 
     // --- Administration ---

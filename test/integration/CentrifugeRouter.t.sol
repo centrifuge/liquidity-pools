@@ -31,7 +31,7 @@ contract CentrifugeRouterTest is BaseTest {
         vm.expectRevert(bytes("ERC7540Vault/invalid-owner"));
         router.requestDeposit{value: 1 wei}(vault_, amount, self, self, 1 wei);
 
-        router.open(vault_);
+        router.enable(vault_);
         vm.expectRevert(bytes("InvestmentManager/transfer-not-allowed"));
         router.requestDeposit{value: 1 wei}(vault_, amount, self, self, 1 wei);
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max);
@@ -41,6 +41,12 @@ contract CentrifugeRouterTest is BaseTest {
         vm.expectRevert(bytes("SafeTransferLib/safe-transfer-from-failed"));
         router.requestDeposit{value: gas}(vault_, amount, self, self, gas);
         erc20.approve(vault_, amount);
+
+        address nonOwner = makeAddr("NonOwner");
+        vm.deal(nonOwner, 10 ether);
+        vm.prank(nonOwner);
+        vm.expectRevert(bytes("CentrifugeRouter/invalid-owner"));
+        router.requestDeposit{value: gas}(vault_, amount, self, self, gas);
 
         router.requestDeposit{value: gas}(vault_, amount, self, self, gas);
 
@@ -71,28 +77,32 @@ contract CentrifugeRouterTest is BaseTest {
         assertApproxEqAbs(erc20.balanceOf(address(escrow)), amount, 1);
     }
 
-    function testOpenCloseVaults() public {
+    function testEnableDisableVaults() public {
         address vault_ = deploySimpleVault();
         ERC7540Vault vault = ERC7540Vault(vault_);
         vm.label(vault_, "vault");
 
         root.veto(address(router));
         vm.expectRevert(bytes("ERC7540Vault/not-endorsed"));
-        router.open(vault_);
+        router.enable(vault_);
         assertEq(vault.isOperator(address(this), address(router)), false);
+        assertEq(router.isEnabled(vault_, address(this)), false);
 
         root.endorse(address(router));
-        router.open(vault_);
+        router.enable(vault_);
         assertEq(vault.isOperator(address(this), address(router)), true);
+        assertEq(router.isEnabled(vault_, address(this)), true);
 
         root.veto(address(router));
         vm.expectRevert(bytes("ERC7540Vault/not-endorsed"));
-        router.close(vault_);
+        router.disable(vault_);
         assertEq(vault.isOperator(address(this), address(router)), true);
+        assertEq(router.isEnabled(vault_, address(this)), true);
 
         root.endorse(address(router));
-        router.close(vault_);
+        router.disable(vault_);
         assertEq(vault.isOperator(address(this), address(router)), false);
+        assertEq(router.isEnabled(vault_, address(this)), false);
     }
 
     function testRouterAsyncDeposit(uint256 amount) public {
@@ -106,7 +116,7 @@ contract CentrifugeRouterTest is BaseTest {
         erc20.mint(self, amount);
         erc20.approve(address(router), amount);
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max);
-        router.openLockDepositRequest(vault_, amount);
+        router.enableLockDepositRequest(vault_, amount);
 
         uint256 fuel = estimateGas();
 
@@ -145,7 +155,7 @@ contract CentrifugeRouterTest is BaseTest {
         erc20.mint(self, amount);
         erc20.approve(vault_, amount);
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max);
-        router.open(vault_);
+        router.enable(vault_);
 
         uint256 fuel = estimateGas();
         router.requestDeposit{value: fuel}(vault_, amount, self, self, fuel);
@@ -154,9 +164,15 @@ contract CentrifugeRouterTest is BaseTest {
         (uint128 tranchePayout) = fulfillDepositRequest(vault, assetId, amount, self);
         ITranche tranche = ITranche(address(vault.share()));
         router.claimDeposit(vault_, self, self);
+        tranche.approve(address(router), tranchePayout);
+
+        address nonOwner = makeAddr("NonOwner");
+        vm.deal(nonOwner, 10 ether);
+        vm.prank(nonOwner);
+        vm.expectRevert(bytes("CentrifugeRouter/invalid-owner"));
+        router.requestRedeem{value: fuel}(vault_, tranchePayout, self, self, fuel);
 
         // redeem
-        tranche.approve(address(router), tranchePayout);
         router.requestRedeem{value: fuel}(vault_, tranchePayout, self, self, fuel);
         (uint128 assetPayout) = fulfillRedeemRequest(vault, assetId, tranchePayout, self);
         assertApproxEqAbs(tranche.balanceOf(self), 0, 1);
@@ -177,8 +193,8 @@ contract CentrifugeRouterTest is BaseTest {
         uint256 fuel = estimateGas();
         (ERC20 erc20X, ERC20 erc20Y, ERC7540Vault vault1, ERC7540Vault vault2) = setUpMultipleVaults(amount1, amount2);
 
-        router.open(address(vault1));
-        router.open(address(vault2));
+        router.enable(address(vault1));
+        router.enable(address(vault2));
 
         router.requestDeposit{value: fuel}(address(vault1), amount1, self, self, fuel);
         router.requestDeposit{value: fuel}(address(vault2), amount2, self, self, fuel);
@@ -218,8 +234,8 @@ contract CentrifugeRouterTest is BaseTest {
         // deposit
         (ERC20 erc20X, ERC20 erc20Y, ERC7540Vault vault1, ERC7540Vault vault2) = setUpMultipleVaults(amount1, amount2);
 
-        router.open(address(vault1));
-        router.open(address(vault2));
+        router.enable(address(vault1));
+        router.enable(address(vault2));
 
         router.requestDeposit{value: fuel}(address(vault1), amount1, self, self, fuel);
         router.requestDeposit{value: fuel}(address(vault2), amount2, self, self, fuel);
@@ -265,7 +281,7 @@ contract CentrifugeRouterTest is BaseTest {
         erc20.mint(self, amount);
         erc20.approve(address(router), amount);
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max);
-        router.open(address(vault_));
+        router.enable(address(vault_));
         router.lockDepositRequest(vault_, amount, self, self);
 
         // multicall
@@ -294,7 +310,7 @@ contract CentrifugeRouterTest is BaseTest {
         erc20.mint(self, amount);
         erc20.approve(vault_, amount);
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max);
-        router.open(vault_);
+        router.enable(vault_);
 
         uint256 fuel = estimateGas();
         router.requestDeposit{value: fuel}(vault_, amount, self, self, fuel);
@@ -325,8 +341,8 @@ contract CentrifugeRouterTest is BaseTest {
 
         (ERC20 erc20X, ERC20 erc20Y, ERC7540Vault vault1, ERC7540Vault vault2) = setUpMultipleVaults(amount1, amount2);
 
-        router.open(address(vault1));
-        router.open(address(vault2));
+        router.enable(address(vault1));
+        router.enable(address(vault2));
 
         uint256 gas = estimateGas();
         bytes[] memory calls = new bytes[](2);
@@ -400,7 +416,7 @@ contract CentrifugeRouterTest is BaseTest {
 
         address investor = makeAddr("investor");
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), investor, type(uint64).max);
-        router.open(vault_);
+        router.enable(vault_);
 
         erc20.mint(investor, amount);
         vm.startPrank(investor);
@@ -430,7 +446,7 @@ contract CentrifugeRouterTest is BaseTest {
 
         address investor = makeAddr("investor");
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), investor, type(uint64).max);
-        router.open(vault_);
+        router.enable(vault_);
 
         erc20.mint(investor, amount);
         vm.startPrank(investor);
@@ -462,7 +478,7 @@ contract CentrifugeRouterTest is BaseTest {
         // Investor locks deposit request and enables permissionless lcaiming
         vm.startPrank(investor);
         erc20.approve(address(router), amount);
-        router.openLockDepositRequest(vault_, amount);
+        router.enableLockDepositRequest(vault_, amount);
         vm.stopPrank();
 
         // Anyone else can execute the request and claim the deposit
@@ -493,6 +509,90 @@ contract CentrifugeRouterTest is BaseTest {
         assertEq(erc20.balanceOf(investor), assetPayout);
     }
 
+    function testEnableLockDepositRequest(uint256 wrappedAmount, uint256 underlyingAmount) public {
+        wrappedAmount = uint128(bound(wrappedAmount, 4, MAX_UINT128));
+        vm.assume(wrappedAmount % 2 == 0);
+
+        underlyingAmount = uint128(bound(underlyingAmount, 4, MAX_UINT128));
+        vm.assume(underlyingAmount % 2 == 0);
+
+        vm.assume(wrappedAmount != underlyingAmount);
+        vm.assume(wrappedAmount < underlyingAmount);
+
+        address routerEscrowAddress = address(routerEscrow);
+
+        MockERC20Wrapper wrapper = new MockERC20Wrapper(address(erc20));
+        address vault_ = deployVault(
+            5, 6, restrictionManager, "name", "symbol", bytes16(bytes("1")), defaultAssetId, address(wrapper)
+        );
+        vm.label(vault_, "vault");
+
+        erc20.mint(self, underlyingAmount);
+        erc20.approve(address(router), underlyingAmount);
+        wrapper.mint(self, wrappedAmount);
+        wrapper.approve(address(router), wrappedAmount);
+
+        // Testing partial of wrapped asset balance
+        uint256 wrappedBalance = wrapper.balanceOf(self);
+        uint256 deposit = wrappedBalance / 2;
+        uint256 remainingWrapped = wrappedBalance / 2;
+        uint256 remainingUnderlying = erc20.balanceOf(self);
+        uint256 escrowBalance = deposit;
+        router.enableLockDepositRequest(vault_, deposit);
+        assertEq(wrapper.balanceOf(routerEscrowAddress), escrowBalance);
+        assertEq(wrapper.balanceOf(self), remainingWrapped);
+        assertEq(erc20.balanceOf(routerEscrowAddress), 0);
+        assertEq(erc20.balanceOf(self), remainingUnderlying);
+
+        // Testing more than the wrapped asset balance
+        wrappedBalance = wrapper.balanceOf(self);
+        deposit = wrappedBalance + 1;
+        remainingWrapped = wrappedBalance;
+        remainingUnderlying = erc20.balanceOf(self) - deposit;
+        escrowBalance = escrowBalance + deposit;
+        router.enableLockDepositRequest(vault_, deposit);
+        assertEq(wrapper.balanceOf(routerEscrowAddress), escrowBalance); // amount was used from the underlying asset
+            // and wrapped
+        assertEq(wrapper.balanceOf(self), remainingWrapped);
+        assertEq(erc20.balanceOf(routerEscrowAddress), 0);
+        assertEq(erc20.balanceOf(self), remainingUnderlying);
+
+        // Testing whole wrapped amount
+        wrappedBalance = wrapper.balanceOf(self);
+        deposit = wrappedBalance;
+        remainingUnderlying = erc20.balanceOf(self);
+        escrowBalance = escrowBalance + deposit;
+        router.enableLockDepositRequest(vault_, deposit);
+        assertEq(wrapper.balanceOf(routerEscrowAddress), escrowBalance);
+        assertEq(wrapper.balanceOf(self), 0);
+        assertEq(erc20.balanceOf(routerEscrowAddress), 0);
+        assertEq(erc20.balanceOf(self), remainingUnderlying);
+
+        // Testing more than the underlying
+        uint256 underlyingBalance = erc20.balanceOf(self);
+        deposit = underlyingBalance + 1;
+        remainingUnderlying = underlyingBalance;
+        vm.expectRevert(bytes("SafeTransferLib/safe-transfer-from-failed"));
+        router.enableLockDepositRequest(vault_, deposit);
+        assertEq(wrapper.balanceOf(routerEscrowAddress), escrowBalance);
+        assertEq(wrapper.balanceOf(self), 0);
+        assertEq(erc20.balanceOf(routerEscrowAddress), 0);
+        assertEq(erc20.balanceOf(self), remainingUnderlying);
+
+        // Testing all the underlying
+        deposit = erc20.balanceOf(self);
+        escrowBalance = escrowBalance + deposit;
+        router.enableLockDepositRequest(vault_, deposit);
+        assertEq(wrapper.balanceOf(routerEscrowAddress), escrowBalance);
+        assertEq(wrapper.balanceOf(self), 0);
+        assertEq(erc20.balanceOf(routerEscrowAddress), 0);
+        assertEq(erc20.balanceOf(self), 0);
+
+        // Testing with empty balance for both wrapped and underlying
+        vm.expectRevert(bytes("CentrifugeRouter/zero-balance"));
+        router.enableLockDepositRequest(vault_, wrappedAmount);
+    }
+
     function testMultipleTopUpScenarios(uint256 amount) public {
         amount = uint128(bound(amount, 4, MAX_UINT128));
         vm.assume(amount % 2 == 0);
@@ -505,7 +605,7 @@ contract CentrifugeRouterTest is BaseTest {
 
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max);
         erc20.approve(vault_, amount);
-        router.open(vault_);
+        router.enable(vault_);
 
         uint256 gasLimit = estimateGas();
         uint256 lessGas = gasLimit - 1;
@@ -520,7 +620,7 @@ contract CentrifugeRouterTest is BaseTest {
         router.requestDeposit{value: lessGas}(vault_, amount, self, self, lessGas);
 
         vm.expectRevert("PoolManager/unknown-vault");
-        router.requestDeposit{value: lessGas}(makeAddr("maliciousVault"), amount, self, makeAddr("owner"), lessGas);
+        router.requestDeposit{value: lessGas}(makeAddr("maliciousVault"), amount, self, self, lessGas);
 
         vm.expectRevert("PoolManager/unknown-vault");
         router.requestDeposit{value: lessGas}(makeAddr("maliciousVault"), amount, self, self, lessGas);
@@ -608,7 +708,7 @@ contract CentrifugeRouterTest is BaseTest {
         vm.startPrank(investor);
         erc20.approve(address(router), amount);
         vm.expectRevert(bytes("CentrifugeRouter/unauthorized-sender"));
-        router.openLockDepositRequest(vault_, amount);
+        router.enableLockDepositRequest(vault_, amount);
         vm.stopPrank();
     }
 
@@ -630,7 +730,7 @@ contract CentrifugeRouterTest is BaseTest {
         vm.startPrank(investor);
         erc20.approve(address(router), amount);
         vm.expectRevert(bytes("CentrifugeRouter/already-initiated"));
-        router.openLockDepositRequest(vault_, amount);
+        router.enableLockDepositRequest(vault_, amount);
         vm.stopPrank();
     }
 

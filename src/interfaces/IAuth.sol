@@ -5,6 +5,9 @@ interface IAuth {
     event Rely(address indexed user);
     event Deny(address indexed user);
 
+    /// @notice Returns whether the target is a ward (has admin access)
+    function wards(address target) external view returns (uint256);
+
     /// @notice Make user a ward (give them admin access)
     function rely(address user) external;
 

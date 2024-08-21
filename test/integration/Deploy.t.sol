@@ -8,6 +8,7 @@ import {MockCentrifugeChain} from "test/mocks/MockCentrifugeChain.sol";
 import {Escrow} from "src/Escrow.sol";
 import {Guardian} from "src/admin/Guardian.sol";
 import {MockAdapter} from "test/mocks/MockAdapter.sol";
+import {MockSafe} from "test/mocks/MockSafe.sol";
 import {PoolManager, Pool} from "src/PoolManager.sol";
 import {ERC20} from "src/token/ERC20.sol";
 import {Tranche} from "src/token/Tranche.sol";
@@ -36,6 +37,7 @@ contract DeployTest is Test, Deployer {
     using MathLib for uint256;
 
     uint8 constant PRICE_DECIMALS = 18;
+
     address self;
     address[] accounts;
     PermissionlessAdapter adapter;
@@ -77,6 +79,7 @@ contract DeployTest is Test, Deployer {
         assertEq(gasService.wards(self), 0);
         assertEq(gateway.wards(self), 0);
         assertEq(adapter.wards(self), 0);
+        assertEq(router.wards(self), 0);
     }
 
     function testAdminSetup(address nonAdmin, address nonPauser) public {
@@ -96,7 +99,7 @@ contract DeployTest is Test, Deployer {
         address gateway_ = address(gateway);
         address guardian_ = address(guardian);
 
-        assertEq(gasService.wards(poolManager_), 1);
+        assertEq(gasService.wards(gateway_), 1);
         assertEq(escrow.wards(poolManager_), 1);
         assertEq(WardLike(vaultFactory).wards(poolManager_), 1);
         assertEq(WardLike(restrictionManager).wards(poolManager_), 1);
@@ -134,6 +137,7 @@ contract DeployTest is Test, Deployer {
         assertEq(address(investmentManager.gateway()), address(gateway));
 
         assertEq(gateway.adapters(0), address(adapter));
+        assertTrue(gateway.payers(address(router)));
     }
 
     function testEndorsements() public {
@@ -148,7 +152,7 @@ contract DeployTest is Test, Deployer {
         bytes16 trancheId,
         uint8 decimals
     ) public {
-        vm.assume(decimals <= 18 && decimals > 0);
+        decimals = uint8(bound(decimals, 2, 18));
         uint128 price = uint128(2 * 10 ** PRICE_DECIMALS); //TODO: fuzz price
         uint256 amount = 1000 * 10 ** erc20.decimals();
         uint64 validUntil = uint64(block.timestamp + 1000 days);
@@ -268,10 +272,12 @@ contract DeployTest is Test, Deployer {
         poolManager.addTranche(poolId, trancheId, tokenName, tokenSymbol, decimals, hook);
         poolManager.addAsset(1, address(erc20));
         poolManager.allowAsset(poolId, 1);
+        poolManager.updateTranchePrice(poolId, trancheId, 1, uint128(10 ** 18), uint64(block.timestamp));
         vm.stopPrank();
 
         poolManager.deployTranche(poolId, trancheId);
         address vault = poolManager.deployVault(poolId, trancheId, address(erc20));
+
         return vault;
     }
 

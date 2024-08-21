@@ -13,7 +13,6 @@ import {PoolManager} from "src/PoolManager.sol";
 import {Escrow} from "src/Escrow.sol";
 import {CentrifugeRouter} from "src/CentrifugeRouter.sol";
 import {Guardian} from "src/admin/Guardian.sol";
-import {MockSafe} from "test/mocks/MockSafe.sol";
 import {IAuth} from "src/interfaces/IAuth.sol";
 import "forge-std/Script.sol";
 
@@ -31,10 +30,10 @@ contract Deployer is Script {
     Gateway public gateway;
     GasService public gasService;
     CentrifugeRouter public router;
+    TransferProxyFactory public transferProxyFactory;
     address public vaultFactory;
     address public restrictionManager;
     address public trancheFactory;
-    address public transferProxyFactory;
 
     function deploy(address deployer) public {
         // If no salt is provided, a pseudo-random salt is generated,
@@ -48,7 +47,7 @@ contract Deployer is Script {
         uint128 gasPrice = uint128(vm.envOr("GAS_PRICE", uint256(2500000000000000000))); // Centrifuge Chain
         uint256 tokenPrice = vm.envOr("TOKEN_PRICE", uint256(178947400000000)); // CFG/ETH
 
-        escrow = new Escrow{salt: keccak256(abi.encodePacked(salt, "escrow1"))}(deployer);
+        escrow = new Escrow{salt: salt}(deployer);
         routerEscrow = new Escrow{salt: keccak256(abi.encodePacked(salt, "escrow2"))}(deployer);
         root = new Root{salt: salt}(address(escrow), delay, deployer);
         vaultFactory = address(new ERC7540VaultFactory(address(root)));
@@ -56,7 +55,7 @@ contract Deployer is Script {
         trancheFactory = address(new TrancheFactory{salt: salt}(address(root), deployer));
         investmentManager = new InvestmentManager(address(root), address(escrow));
         poolManager = new PoolManager(address(escrow), vaultFactory, trancheFactory);
-        transferProxyFactory = address(new TransferProxyFactory{salt: salt}(address(poolManager)));
+        transferProxyFactory = new TransferProxyFactory{salt: salt}(address(root), deployer);
         gasService = new GasService(messageCost, proofCost, gasPrice, tokenPrice);
         gateway = new Gateway(address(root), address(poolManager), address(investmentManager), address(gasService));
         router = new CentrifugeRouter(address(routerEscrow), address(gateway), address(poolManager));
@@ -74,7 +73,6 @@ contract Deployer is Script {
 
     function _rely() internal {
         // Rely on PoolManager
-        gasService.rely(address(poolManager));
         escrow.rely(address(poolManager));
         IAuth(vaultFactory).rely(address(poolManager));
         IAuth(trancheFactory).rely(address(poolManager));
@@ -88,6 +86,7 @@ contract Deployer is Script {
         gasService.rely(address(root));
         escrow.rely(address(root));
         routerEscrow.rely(address(root));
+        transferProxyFactory.rely(address(root));
         IAuth(vaultFactory).rely(address(root));
         IAuth(trancheFactory).rely(address(root));
         IAuth(restrictionManager).rely(address(root));
@@ -103,7 +102,7 @@ contract Deployer is Script {
         gasService.rely(address(gateway));
 
         // Rely on others
-        IAuth(address(routerEscrow)).rely(address(router));
+        routerEscrow.rely(address(router));
         investmentManager.rely(address(vaultFactory));
     }
 
@@ -114,6 +113,10 @@ contract Deployer is Script {
 
         investmentManager.file("poolManager", address(poolManager));
         investmentManager.file("gateway", address(gateway));
+
+        gateway.file("payers", address(router), true);
+
+        transferProxyFactory.file("poolManager", address(poolManager));
     }
 
     function wire(address adapter) public {
@@ -127,6 +130,7 @@ contract Deployer is Script {
         IAuth(vaultFactory).deny(deployer);
         IAuth(trancheFactory).deny(deployer);
         IAuth(restrictionManager).deny(deployer);
+        transferProxyFactory.deny(deployer);
         root.deny(deployer);
         investmentManager.deny(deployer);
         poolManager.deny(deployer);

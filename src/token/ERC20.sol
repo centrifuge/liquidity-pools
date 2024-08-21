@@ -19,7 +19,8 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
     /// @inheritdoc IERC20
     uint256 public totalSupply;
 
-    mapping(address => uint256) internal balances;
+    mapping(address => uint256) private balances;
+
     /// @inheritdoc IERC20
     mapping(address => mapping(address => uint256)) public allowance;
     /// @inheritdoc IERC20Permit
@@ -36,10 +37,8 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
     // --- Events ---
     event File(bytes32 indexed what, string data);
 
-    constructor(uint8 decimals_) {
+    constructor(uint8 decimals_) Auth(msg.sender) {
         decimals = decimals_;
-        wards[msg.sender] = 1;
-        emit Rely(msg.sender);
 
         nameHash = keccak256(bytes("Centrifuge"));
         versionHash = keccak256(bytes("1"));
@@ -47,12 +46,16 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
         _DOMAIN_SEPARATOR = EIP712Lib.calculateDomainSeparator(nameHash, versionHash);
     }
 
-    /// @inheritdoc IERC20
-    function balanceOf(address user) public view virtual returns (uint256) {
+    function _balanceOf(address user) internal view virtual returns (uint256) {
         return balances[user];
     }
 
-    function _setBalance(address user, uint256 value) internal {
+    /// @inheritdoc IERC20
+    function balanceOf(address user) public view virtual returns (uint256) {
+        return _balanceOf(user);
+    }
+
+    function _setBalance(address user, uint256 value) internal virtual {
         balances[user] = value;
     }
 
@@ -79,8 +82,9 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
         require(balance >= value, "ERC20/insufficient-balance");
 
         unchecked {
-            balances[msg.sender] -= value;
-            balances[to] += value; // note: we don't need an overflow check here b/c sum of all balances == totalSupply
+            _setBalance(msg.sender, _balanceOf(msg.sender) - value);
+            // note: we don't need an overflow check here b/c sum of all balances == totalSupply
+            _setBalance(to, _balanceOf(to) + value);
         }
 
         emit Transfer(msg.sender, to, value);
@@ -109,8 +113,9 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
         }
 
         unchecked {
-            balances[from] -= value;
-            balances[to] += value; // note: we don't need an overflow check here b/c sum of all balances == totalSupply
+            _setBalance(from, _balanceOf(from) - value);
+            // note: we don't need an overflow check here b/c sum of all balances == totalSupply
+            _setBalance(to, _balanceOf(to) + value);
         }
 
         emit Transfer(from, to, value);
@@ -133,7 +138,7 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
         unchecked {
             // We don't need an overflow check here b/c balances[to] <= totalSupply
             // and there is an overflow check below
-            balances[to] += value;
+            _setBalance(to, _balanceOf(to) + value);
         }
         totalSupply = totalSupply + value;
 
@@ -157,7 +162,7 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
 
         unchecked {
             // We don't need overflow checks b/c require(balance >= value) and balance <= totalSupply
-            balances[from] -= value;
+            _setBalance(from, _balanceOf(from) - value);
             totalSupply = totalSupply - value;
         }
 
@@ -167,7 +172,6 @@ contract ERC20 is Auth, IERC20Metadata, IERC20Permit {
     // --- Approve by signature ---
     function permit(address owner, address spender, uint256 value, uint256 deadline, bytes memory signature) public {
         require(block.timestamp <= deadline, "ERC20/permit-expired");
-        require(owner != address(0), "ERC20/invalid-owner");
 
         uint256 nonce;
         unchecked {

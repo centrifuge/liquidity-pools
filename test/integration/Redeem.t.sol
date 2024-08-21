@@ -80,7 +80,7 @@ contract RedeemTest is BaseTest {
         // withdrawing or redeeming more should revert
         vm.expectRevert(bytes("InvestmentManager/exceeds-redeem-limits"));
         vault.withdraw(2, investor, self);
-        vm.expectRevert(bytes("InvestmentManager/exceeds-redeem-limits"));
+        vm.expectRevert(bytes("InvestmentManager/exceeds-max-redeem"));
         vault.redeem(2, investor, self);
     }
 
@@ -162,9 +162,10 @@ contract RedeemTest is BaseTest {
         ITranche tranche = ITranche(address(vault.share()));
         deposit(vault_, self, amount * 2); // deposit funds first
 
+        vm.expectRevert(bytes("InvestmentManager/no-pending-redeem-request"));
+        vault.cancelRedeemRequest(0, self);
+
         vault.requestRedeem(amount, address(this), address(this));
-        assertEq(tranche.balanceOf(address(escrow)), amount);
-        assertEq(tranche.balanceOf(self), amount);
 
         // will fail - user not member
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, uint64(block.timestamp));
@@ -172,6 +173,9 @@ contract RedeemTest is BaseTest {
         vm.expectRevert(bytes("InvestmentManager/transfer-not-allowed"));
         vault.cancelRedeemRequest(0, self);
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max);
+
+        assertEq(tranche.balanceOf(address(escrow)), amount);
+        assertEq(tranche.balanceOf(self), amount);
 
         // check message was send out to centchain
         vault.cancelRedeemRequest(0, self);
@@ -374,7 +378,7 @@ contract RedeemTest is BaseTest {
             poolId, trancheId, bytes32(bytes20(self)), _assetId, uint128(investmentAmount), shares
         );
 
-        (, uint256 depositPrice,,,,,,,,) = investmentManager.investments(address(vault), self);
+        (,, uint256 depositPrice,,,,,,,) = investmentManager.investments(address(vault), self);
         assertEq(depositPrice, 1000000000000000000);
 
         // assert deposit & mint values adjusted

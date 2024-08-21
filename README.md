@@ -4,7 +4,7 @@
 [foundry]: https://getfoundry.sh
 [foundry-badge]: https://img.shields.io/badge/Built%20with-Foundry-FFDB1C.svg
 
-Liquidity Pools enable seamless deployment of Centrifuge RWA pools on any EVM-compatible blockchain.
+Liquidity Pools enable seamless deployment of Centrifuge pools on any EVM-compatible blockchain. The multi-chain protocol was designed specifically to tokenize RWAs as ERC20 tokens featuring customizable and gas-efficient permissioning. Investors deposit and redeem onchain using the ERC7540 asynchronous tokenized vault standard. Issuers can plug-and-play custom investment features through ERC20 wrapper support and accept multiple stablecoins using ERC7575. The smart contracts are immutable, rigorously audited, and controlled by onchain governance.
 
 ## How it works
 ![Architecture](https://cloudflare-ipfs.com/ipfs/QmW7N8beQ6TF5efwqkMndouxGub2J1jqsEhv5gXDbyqA2K)
@@ -33,13 +33,29 @@ To run all tests locally:
 forge test
 ```
 
+To run the invariant tests using [echidna](https://github.com/crytic/echidna):
+```sh
+echidna . --contract CryticTester --config echidna-property.yaml
+echidna . --contract CryticTester --config echidna-assertion.yaml
+```
+
+To run the invariant tests using [medusa](https://github.com/crytic/medusa/):
+```sh
+medusa fuzz --config medusa-core.json
+medusa fuzz --config medusa-aggregator.json
+```
+
 ## Audit reports
 
-| Auditor | Report link |
-|---|---|
-| Code4rena | [`September 2023 - Code4rena Report`](https://code4rena.com/reports/2023-09-centrifuge) |
-| SRLabs | [`September 2023 - SRLabs Report`](https://github.com/centrifuge/liquidity-pools/blob/main/audits/2023-09-SRLabs.pdf) |
-| Spearbit | [`October 2023 - Cantina Managed Report`](https://github.com/centrifuge/liquidity-pools/blob/main/audits/2023-10-Spearbit-Cantina-Managed.pdf) |
+| Auditor    | Date    | Engagement                               | Report                                                                                                                                    |
+| --- | --- |:------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| [xmxanuel](https://x.com/xmxanuel)  | July 2023  | Security review         |  Internal |
+| [Code4rena](https://code4rena.com/)  | Sep 2023  | Competitive audit       | [`Report`](https://code4rena.com/reports/2023-09-centrifuge)                                                        |
+| [SRLabs](https://www.srlabs.de/)  | Sep 2023  | Security review               | [`Report`](https://github.com/centrifuge/liquidity-pools/blob/main/audits/2023-09-SRLabs.pdf)                          |
+| [Cantina](https://cantina.xyz/)  | Oct 2023  | Security review             | [`Report`](https://github.com/centrifuge/liquidity-pools/blob/main/audits/2023-10-Cantina.pdf) |
+| [Alex the Entreprenerd](https://x.com/gallodasballo)  | Mar - Apr 2024  | Invariant test development | [`Part 1`](https://getrecon.substack.com/p/lessons-learned-from-fuzzing-centrifuge) [`Part 2`](https://getrecon.substack.com/p/lessons-learned-from-fuzzing-centrifuge-059)  |
+| [xmxanuel](https://x.com/xmxanuel)  | May - June 2024  | Security review | Internal                                                                                                                                               |
+| [Spearbit](https://spearbit.com/)  | July 2024  | Security review             | [`Report`](https://github.com/centrifuge/liquidity-pools/blob/main/audits/2024-08-Spearbit.pdf) |
 
 ## License
 This codebase is licensed under [GNU Lesser General Public License v3.0](https://github.com/centrifuge/liquidity-pools/blob/main/LICENSE).

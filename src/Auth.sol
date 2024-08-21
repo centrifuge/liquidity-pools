@@ -6,8 +6,14 @@ import {IAuth} from "src/interfaces/IAuth.sol";
 /// @title  Auth
 /// @notice Simple authentication pattern
 /// @author Based on code from https://github.com/makerdao/dss
-contract Auth is IAuth {
+abstract contract Auth is IAuth {
+    /// @inheritdoc IAuth
     mapping(address => uint256) public wards;
+
+    constructor(address initialWard) {
+        wards[initialWard] = 1;
+        emit Rely(initialWard);
+    }
 
     /// @dev Check if the msg.sender has permissions
     modifier auth() {
@@ -15,13 +21,13 @@ contract Auth is IAuth {
         _;
     }
 
-    /// @dev Give permissions to the user
+    /// @inheritdoc IAuth
     function rely(address user) external auth {
         wards[user] = 1;
         emit Rely(user);
     }
 
-    /// @dev Remove permissions from the user
+    /// @inheritdoc IAuth
     function deny(address user) external auth {
         wards[user] = 0;
         emit Deny(user);
