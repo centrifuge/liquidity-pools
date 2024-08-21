@@ -27,8 +27,9 @@ import {MockAdapter} from "test/mocks/MockAdapter.sol";
 
 // test env
 import "forge-std/Test.sol";
+import {GasSnapshot} from "forge-gas-snapshot/GasSnapshot.sol";
 
-contract BaseTest is Deployer, Test {
+contract BaseTest is Deployer, GasSnapshot, Test {
     MockCentrifugeChain centrifugeChain;
     MockGasService mockedGasService;
     MockAdapter adapter1;

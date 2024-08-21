@@ -65,7 +65,9 @@ contract DepositTest is BaseTest {
         // success
         centrifugeChain.allowAsset(vault.poolId(), defaultAssetId);
         erc20.approve(vault_, amount);
+        snapStart("ERC7540Vault_requestDeposit");
         vault.requestDeposit(amount, self, self);
+        snapEnd();
 
         // fail: no asset left
         vm.expectRevert(bytes("ERC7540Vault/insufficient-balance"));
@@ -79,9 +81,11 @@ contract DepositTest is BaseTest {
 
         // trigger executed collectInvest
         assertApproxEqAbs(shares, amount / 2, 2);
+        snapStart("InvestmentManager_fulfillDepositRequest");
         centrifugeChain.isFulfilledDepositRequest(
             vault.poolId(), vault.trancheId(), bytes32(bytes20(self)), _assetId, uint128(amount), shares
         );
+        snapEnd();
 
         // assert deposit & mint values adjusted
         assertEq(vault.maxMint(self), shares);
