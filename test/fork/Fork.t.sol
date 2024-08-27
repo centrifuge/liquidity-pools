@@ -479,11 +479,11 @@ contract ForkTest is Test {
                 address admin = _get(i, ".config.admin");
                 _loadFork(i);
 
-                if (verUSDC != address(0)) {
+                if (verUSDC != address(32)) {
                     assertTrue(IAuth(verUSDC).wards(root) == 1);
                     assertTrue(IAuth(IWrappedUSDC(verUSDC).memberlist()).wards(admin) == 1);
                 }
-                if (cfg != address(0)) {
+                if (cfg != address(32)) {
                     assertTrue(IAuth(cfg).wards(root) == 1);
                 }
             }
