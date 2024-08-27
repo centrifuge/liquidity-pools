@@ -40,7 +40,8 @@
     "adapter": "0x85bAFcAdeA202258e3512FFBC3E2c9eE6Ad56365"
   },
   "integrations": {
-    "cfg": "0xc221b7E65FfC80DE234bbB6667aBDd46593D34F0"
+    "cfg": "0xc221b7E65FfC80DE234bbB6667aBDd46593D34F0",
+    "verUSDC": ""
   },
   "deploymentBlock": 20432396,
   "isTestnet": false,

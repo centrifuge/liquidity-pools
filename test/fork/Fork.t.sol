@@ -29,6 +29,16 @@ interface IAxelarContract {
     function contractId() external view returns (bytes32);
 }
 
+interface IAuth {
+    function rely(address) external;
+    function deny(address) external;
+    function wards(address) external view returns (uint256);
+}
+
+interface IWrappedUSDC {
+    function memberlist() external view returns (address);
+}
+
 struct Deployment {
     address root;
     address guardian;
@@ -458,5 +468,25 @@ contract ForkTest is Test {
             _get(id, ".config.adapter.axelarGasService"),
             abi.decode(deployments[id].parseRaw(".isTestnet"), (bool))
         );
+    }
+
+    function testIntegrations() public {
+        if (vm.envOr("FORK_TESTS", false)) {
+            for (uint256 i = 0; i < deployments.length; i++) {
+                address cfg = _get(i, ".integrations.cfg");
+                address verUSDC = _get(i, ".integrations.verUSDC");
+                address root = _get(i, ".contracts.root");
+                address admin = _get(i, ".config.admin");
+                _loadFork(i);
+
+                if (verUSDC != address(0)) {
+                    assertTrue(IAuth(verUSDC).wards(root) == 1);
+                    assertTrue(IAuth(IWrappedUSDC(verUSDC).memberlist()).wards(admin) == 1);
+                }
+                if (cfg != address(0)) {
+                    assertTrue(IAuth(cfg).wards(root) == 1);
+                }
+            }
+        }
     }
 }
