@@ -59,10 +59,12 @@ contract LockupManager is Auth, ILockupManager, IHook {
         if (from != address(0) && to != address(escrow)) {
             // If transferring (not minting) to escrow, it's a redemption or cross-chain transfer
             // that requires unlocked tokens.
-            _unlock(token, from, value.toUint128());
+            _tryUnlock(token, from, value.toUint128());
         } else {
             // If transferring to another user, this resets the lockup period. This ensures fungibility.
             _lock(token, to, value.toUint128());
+
+            // TODO: remove locks from transferred tokens of sender
         }
 
         // Unlocked balance already checked so setting to infinite
@@ -161,7 +163,7 @@ contract LockupManager is Auth, ILockupManager, IHook {
         emit SetLockupPeriod(token, lockupDays);
     }
 
-    function _unlock(address token, address user, uint128 amount) internal {
+    function _tryUnlock(address token, address user, uint128 amount) internal {
         LockupData storage lockup = lockups[token][user];
         require(lockup.first != 0, "LockupManager/insufficient-unlocked-balance");
 
@@ -184,7 +186,6 @@ contract LockupManager is Auth, ILockupManager, IHook {
 
     function _lock(address token, address user, uint128 amount) internal {
         LockupConfig memory config = lockupConfig[token];
-        // TODO: use safe cast
         uint16 daysSinceReferenceDate = (
             (_midnightUTC(uint64(block.timestamp)) / (1 days)) - (config.referenceDate / (1 days)) + config.lockupDays
         ).toUint16();
