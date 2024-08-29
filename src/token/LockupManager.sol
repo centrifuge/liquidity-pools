@@ -12,7 +12,7 @@ import {IERC165} from "src/interfaces/IERC7575.sol";
 import {
     RestrictionUpdate,
     LockupConfig,
-    Unlock,
+    Transfer,
     LockupData,
     ILockupManager
 } from "src/interfaces/token/ILockupManager.sol";
@@ -56,13 +56,14 @@ contract LockupManager is Auth, ILockupManager, IHook {
     {
         address token = msg.sender;
 
+        // TODO: check handling if lockup days is not set
         if (from != address(0) && to != address(escrow)) {
             // If transferring (not minting) to escrow, it's a redemption or cross-chain transfer
             // that requires unlocked tokens.
             _tryUnlock(token, from, value.toUint128());
         } else {
             // If transferring to another user, this resets the lockup period. This ensures fungibility.
-            _lock(token, to, value.toUint128());
+            _addTransfer(token, to, value.toUint128());
 
             // TODO: remove locks from transferred tokens of sender
         }
@@ -130,8 +131,8 @@ contract LockupManager is Auth, ILockupManager, IHook {
         view
         returns (bool)
     {
-        uint128 unlockedBalance = unlocked(msg.sender, from);
-        return checkERC20Transfer(from, to, value, hookData, unlockedBalance);
+        // uint128 unlockedBalance = unlocked(msg.sender, from);
+        return checkERC20Transfer(from, to, value, hookData, 0); // , unlockedBalance
     }
 
     // --- Incoming message handling ---
@@ -143,16 +144,18 @@ contract LockupManager is Auth, ILockupManager, IHook {
         else if (updateId == RestrictionUpdate.Freeze) freeze(token, update.toAddress(1));
         else if (updateId == RestrictionUpdate.Unfreeze) unfreeze(token, update.toAddress(1));
         else if (updateId == RestrictionUpdate.SetLockupPeriod) setLockupPeriod(token, update.toUint16(1));
+        else if (updateId == RestrictionUpdate.ForceUnlock) forceUnlock(token, update.toAddress(1));
         else revert("LockupManager/invalid-update");
     }
 
     /// @inheritdoc ILockupManager
     function setLockupPeriod(address token, uint16 lockupDays) public auth {
-        LockupConfig memory config = lockupConfig[token];
+        LockupConfig storage config = lockupConfig[token];
 
         if (config.referenceDate == 0) {
             // First time the lockup is setup
-            config.referenceDate = _midnightUTC(uint64(block.timestamp));
+            // Removing 1 day ensures the diff after the first transfer is non-zero
+            config.referenceDate = _midnightUTC(uint64(block.timestamp)) - 1 days;
         }
 
         // Can never be decreased because then we can assume new transfers will always be added to the end of
@@ -167,16 +170,20 @@ contract LockupManager is Auth, ILockupManager, IHook {
         LockupData storage lockup = lockups[token][user];
         require(lockup.first != 0, "LockupManager/insufficient-unlocked-balance");
 
+        uint16 lockupDays = lockupConfig[token].lockupDays;
         uint16 currentDay = lockup.first;
         uint128 unlockAmountFound = lockup.unlocked;
         uint64 today = _midnightUTC(uint64(block.timestamp));
         while (unlockAmountFound < amount) {
-            uint128 currentAmount = lockup.upcoming[currentDay].amount;
+            uint128 currentAmount = lockup.transfers[currentDay].amount;
             require(currentAmount != 0, "LockupManager/insufficient-unlocked-balance");
-            require(currentDay <= today, "LockupManager/insufficient-unlocked-balance");
+            require(currentDay <= today - lockupDays, "LockupManager/insufficient-unlocked-balance");
 
             unlockAmountFound += currentAmount;
-            currentDay = lockup.upcoming[currentDay].next;
+            currentDay = lockup.transfers[currentDay].next;
+
+            // TODO: what if the amount requires iterating over more elements in the mapping than possible in 1 block?
+            // => manualUnlock(..)
         }
 
         require(unlockAmountFound >= amount, "LockupManager/insufficient-unlocked-balance");
@@ -184,54 +191,65 @@ contract LockupManager is Auth, ILockupManager, IHook {
         lockup.unlocked = unlockAmountFound - amount;
     }
 
-    function _lock(address token, address user, uint128 amount) internal {
+    function _addTransfer(address token, address user, uint128 amount) internal {
         LockupConfig memory config = lockupConfig[token];
-        uint16 daysSinceReferenceDate = (
-            (_midnightUTC(uint64(block.timestamp)) / (1 days)) - (config.referenceDate / (1 days)) + config.lockupDays
-        ).toUint16();
+        uint16 daysSinceReferenceDate =
+            ((_midnightUTC(uint64(block.timestamp)) / (1 days)) - (config.referenceDate / (1 days))).toUint16();
 
+        emit DebugLog(daysSinceReferenceDate);
         LockupData storage lockup = lockups[token][user];
-        lockup.upcoming[daysSinceReferenceDate].amount += amount;
+        lockup.transfers[daysSinceReferenceDate].amount += amount;
 
         if (lockup.first == 0) {
             lockup.first = daysSinceReferenceDate;
             lockup.last = daysSinceReferenceDate;
         } else if (lockup.last != daysSinceReferenceDate) {
             // if its the same as the last one, we dont need to update any pointers
-            lockup.upcoming[lockup.last].next = daysSinceReferenceDate; // link as next to previous last
+            lockup.transfers[lockup.last].next = daysSinceReferenceDate; // link as next to previous last
             lockup.last = daysSinceReferenceDate; // set as new last
         }
     }
 
+    // TODO: add unlock(address token, address user, uint16 day) external {}
+
     /// @inheritdoc ILockupManager
+    // TODO: add amount parameter?
     function forceUnlock(address token, address user) public auth {
         lockups[token][user].first = 0;
         lockups[token][user].last = 0;
         lockups[token][user].unlocked = ITranche(token).balanceOf(user).toUint128();
-        // TODO: reset mapping
+        // TODO: reset mapping (potentially unbounded?)
         emit ForceUnlock(token, user);
     }
 
+    event DebugLog(uint256 val);
+
     /// @inheritdoc ILockupManager
-    function unlocked(address token, address user, uint64 timestamp) public view returns (uint128) {
+    function unlocked(address token, address user, uint64 timestamp) public returns (uint128) {
         LockupData storage lockup = lockups[token][user];
         if (lockup.first == 0) return lockup.unlocked;
 
         LockupConfig memory config = lockupConfig[token];
-        uint16 day = uint16((_midnightUTC(uint64(timestamp)) / (1 days)) - (config.referenceDate / (1 days)));
+        uint16 timestampDays = uint16((_midnightUTC(uint64(timestamp)) / (1 days)));
+        uint16 unlockedUntil = (timestampDays - (config.referenceDate / (1 days))) + config.lockupDays;
 
         uint16 current = lockup.first;
         uint128 amount = lockup.unlocked;
-        while (current <= day && current != 0) {
-            amount += lockup.upcoming[current].amount;
-            current = lockup.upcoming[current].next;
+        if (current > timestampDays) {
+            return amount;
+        }
+
+        while (current <= unlockedUntil && current != 0) {
+            amount += lockup.transfers[current].amount;
+            emit DebugLog(lockup.first);
+            current = lockup.transfers[current].next;
         }
 
         return amount;
     }
 
     /// @inheritdoc ILockupManager
-    function unlocked(address token, address user) public view returns (uint128) {
+    function unlocked(address token, address user) public returns (uint128) {
         return unlocked(token, user, uint64(block.timestamp));
     }
 

@@ -17,7 +17,7 @@ struct LockupConfig {
     uint16 lockupDays; // type(uint16).max / 365 = 179 years
 }
 
-struct Unlock {
+struct Transfer {
     uint128 amount;
     uint16 next;
 }
@@ -26,7 +26,7 @@ struct LockupData {
     uint16 first; // days since referenceDate
     uint16 last; // days since referenceDate
     uint128 unlocked;
-    mapping(uint16 => Unlock) upcoming;
+    mapping(uint16 => Transfer) transfers;
 }
 
 interface ILockupManager {
@@ -65,10 +65,10 @@ interface ILockupManager {
     function forceUnlock(address token, address user) external;
 
     /// @notice TODO
-    function unlocked(address token, address user, uint64 timestamp) external view returns (uint128);
+    function unlocked(address token, address user, uint64 timestamp) external returns (uint128);
 
     /// @notice TODO
-    function unlocked(address token, address user) external view returns (uint128);
+    function unlocked(address token, address user) external returns (uint128);
 
     // --- Handling freezes ---
     /// @notice Freeze a user balance. Frozen users cannot receive nor send tokens
