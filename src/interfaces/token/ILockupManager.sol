@@ -65,9 +65,6 @@ interface ILockupManager {
     function forceUnlock(address token, address user) external;
 
     /// @notice TODO
-    function unlocked(address token, address user, uint64 timestamp) external returns (uint128);
-
-    /// @notice TODO
     function unlocked(address token, address user) external returns (uint128);
 
     // --- Handling freezes ---

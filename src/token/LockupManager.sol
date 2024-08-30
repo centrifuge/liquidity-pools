@@ -57,16 +57,11 @@ contract LockupManager is Auth, ILockupManager, IHook {
         address token = msg.sender;
 
         // TODO: check handling if lockup days is not set
-        if (from != address(0) && to != address(escrow)) {
-            // If transferring (not minting) to escrow, it's a redemption or cross-chain transfer
-            // that requires unlocked tokens.
-            _tryUnlock(token, from, value.toUint128());
-        } else {
-            // If transferring to another user, this resets the lockup period. This ensures fungibility.
-            _addTransfer(token, to, value.toUint128());
 
-            // TODO: remove locks from transferred tokens of sender
-        }
+        // If transferring to another user, this resets the lockup period. This ensures fungibility.
+        _addTransfer(token, to, value.toUint128());
+
+        // TODO: remove locks from transferred tokens of sender
 
         // Unlocked balance already checked so setting to infinite
         require(checkERC20Transfer(from, to, value, hookData, type(uint128).max), "LockupManager/transfer-blocked");
@@ -77,11 +72,18 @@ contract LockupManager is Auth, ILockupManager, IHook {
     /// @inheritdoc IHook
     function onERC20AuthTransfer(
         address, /* sender */
-        address, /* from */
-        address, /* to */
-        uint256, /* value */
+        address from,
+        address to,
+        uint256 value,
         HookData calldata /* hookData */
-    ) external pure returns (bytes4) {
+    ) external returns (bytes4) {
+        address token = msg.sender;
+
+        if (to == address(escrow)) {
+            // If auth transferring to escrow, it's a redemption that requires unlocked tokens.
+            _tryUnlock(token, from, value.toUint128());
+        }
+
         return IHook.onERC20AuthTransfer.selector;
     }
 
@@ -167,27 +169,11 @@ contract LockupManager is Auth, ILockupManager, IHook {
     }
 
     function _tryUnlock(address token, address user, uint128 amount) internal {
-        LockupData storage lockup = lockups[token][user];
-        require(lockup.first != 0, "LockupManager/insufficient-unlocked-balance");
-
-        uint16 lockupDays = lockupConfig[token].lockupDays;
-        uint16 currentDay = lockup.first;
-        uint128 unlockAmountFound = lockup.unlocked;
-        uint64 today = _midnightUTC(uint64(block.timestamp));
-        while (unlockAmountFound < amount) {
-            uint128 currentAmount = lockup.transfers[currentDay].amount;
-            require(currentAmount != 0, "LockupManager/insufficient-unlocked-balance");
-            require(currentDay <= today - lockupDays, "LockupManager/insufficient-unlocked-balance");
-
-            unlockAmountFound += currentAmount;
-            currentDay = lockup.transfers[currentDay].next;
-
-            // TODO: what if the amount requires iterating over more elements in the mapping than possible in 1 block?
-            // => manualUnlock(..)
-        }
-
+        (uint128 unlockAmountFound, uint16 today) = _unlocked(token, user, uint64(block.timestamp));
         require(unlockAmountFound >= amount, "LockupManager/insufficient-unlocked-balance");
-        lockup.first = currentDay;
+
+        LockupData storage lockup = lockups[token][user];
+        lockup.first = today;
         lockup.unlocked = unlockAmountFound - amount;
     }
 
@@ -224,40 +210,28 @@ contract LockupManager is Auth, ILockupManager, IHook {
 
     event DebugLog(uint256 val);
 
-    /// @inheritdoc ILockupManager
-    function unlocked(address token, address user, uint64 timestamp) public returns (uint128) {
+    function _unlocked(address token, address user, uint64 timestamp)
+        internal
+        view
+        returns (uint128 amount, uint16 today)
+    {
         LockupData storage lockup = lockups[token][user];
-        if (lockup.first == 0) return lockup.unlocked;
 
         LockupConfig memory config = lockupConfig[token];
         uint16 timestampDays = uint16((_midnightUTC(uint64(timestamp)) / (1 days)));
-
-        if (config.lockupDays > uint16(timestampDays - (config.referenceDate / (1 days)))) {
-            return 0;
-        }
-
         uint16 unlockedUntil = uint16(timestampDays - (config.referenceDate / (1 days))) - config.lockupDays;
 
-        // loop from lockup.first to (now - lockupDays)
-
-        uint16 current = lockup.first;
-        uint128 amount = lockup.unlocked;
-        emit DebugLog(current);
-        emit DebugLog(timestampDays);
-        emit DebugLog(unlockedUntil);
-        while (current <= unlockedUntil && current != 0) {
-            amount += lockup.transfers[current].amount;
-            // emit DebugLog(current);
-            // emit DebugLog(lockup.transfers[current].amount);
-            current = lockup.transfers[current].next;
+        today = lockup.first;
+        amount = lockup.unlocked;
+        while (today <= unlockedUntil && today != 0) {
+            amount += lockup.transfers[today].amount;
+            today = lockup.transfers[today].next;
         }
-
-        return amount;
     }
 
     /// @inheritdoc ILockupManager
-    function unlocked(address token, address user) public returns (uint128) {
-        return unlocked(token, user, uint64(block.timestamp));
+    function unlocked(address token, address user) public returns (uint128 amount) {
+        (amount,) = _unlocked(token, user, uint64(block.timestamp));
     }
 
     // --- Freezing ---

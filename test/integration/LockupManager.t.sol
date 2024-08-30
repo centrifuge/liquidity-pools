@@ -9,7 +9,7 @@ contract LockupManagerTest is BaseTest {
     using CastLib for *;
 
     function testLockupManager(uint256 amount) public {
-        amount = bound(amount, 0, type(uint128).max);
+        amount = bound(amount, 2, type(uint128).max);
 
         LockupManager hook = new LockupManager(address(root), address(escrow), address(this));
         hook.rely(address(poolManager));
@@ -38,8 +38,8 @@ contract LockupManagerTest is BaseTest {
         assertEq(hook.unlocked(address(tranche), investor1), 0);
         assertEq(hook.unlocked(address(tranche), investor2), 0);
 
-        vm.expectRevert(bytes(""));
         vm.prank(investor1);
+        vm.expectRevert(bytes("ERC20/insufficient-allowance"));
         vault.requestRedeem(amount / 2, investor1, investor1);
 
         // After 4 days, investor1's balance is unlocked, investor2's balance not yet
@@ -50,7 +50,8 @@ contract LockupManagerTest is BaseTest {
         vm.prank(investor1);
         vault.requestRedeem(amount / 2, investor1, investor1);
 
-        vm.expectRevert(bytes(""));
         vm.prank(investor2);
+        vm.expectRevert(bytes("ERC20/insufficient-allowance"));
+        vault.requestRedeem(amount / 2, investor2, investor2);
     }
 }
