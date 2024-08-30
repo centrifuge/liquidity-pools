@@ -231,17 +231,24 @@ contract LockupManager is Auth, ILockupManager, IHook {
 
         LockupConfig memory config = lockupConfig[token];
         uint16 timestampDays = uint16((_midnightUTC(uint64(timestamp)) / (1 days)));
-        uint16 unlockedUntil = (timestampDays - (config.referenceDate / (1 days))) + config.lockupDays;
+
+        if (config.lockupDays > uint16(timestampDays - (config.referenceDate / (1 days)))) {
+            return 0;
+        }
+
+        uint16 unlockedUntil = uint16(timestampDays - (config.referenceDate / (1 days))) - config.lockupDays;
+
+        // loop from lockup.first to (now - lockupDays)
 
         uint16 current = lockup.first;
         uint128 amount = lockup.unlocked;
-        if (current > timestampDays) {
-            return amount;
-        }
-
+        emit DebugLog(current);
+        emit DebugLog(timestampDays);
+        emit DebugLog(unlockedUntil);
         while (current <= unlockedUntil && current != 0) {
             amount += lockup.transfers[current].amount;
-            emit DebugLog(lockup.first);
+            // emit DebugLog(current);
+            // emit DebugLog(lockup.transfers[current].amount);
             current = lockup.transfers[current].next;
         }
 
