@@ -13,13 +13,14 @@ enum RestrictionUpdate {
 }
 
 struct LockupConfig {
-    uint64 referenceDate;
+    uint64 referenceDate; // UTC midnight reference
+    uint32 time; // seconds since UTC midnight
     uint16 lockupDays; // type(uint16).max / 365 = 179 years
     bool locksTransfers;
 }
 
 struct Transfer {
-    uint128 amount;
+    uint128 amount; // TODO: change to aggregate unlocked?
     uint16 next; // days since referenceDate
 }
 
@@ -34,7 +35,7 @@ struct LockupData {
 interface ILockupManager {
     // --- Events ---
     event Lock(address indexed token, address indexed user, uint256 amount, uint64 lockedUntil);
-    event SetLockupPeriod(address indexed token, uint16 lockupDays);
+    event SetLockupPeriod(address indexed token, uint16 lockupDays, uint32 time);
     event ForceUnlock(address indexed token, address indexed user);
     event UpdateMember(address indexed token, address indexed user, uint64 validUntil);
     event Freeze(address indexed token, address indexed user);
@@ -54,20 +55,17 @@ interface ILockupManager {
     ///
     /// @dev    referenceDate: Aug 1st
     ///         block.timestamp: Aug 15th
-    ///         lockupDays: 7
     ///
-    ///         When new tokens are minted, lockup should be until Aug 22nd.
+    ///         Lockups are stored as days since referenceDate. So it should be 15 days.
     ///
-    ///         Lockups are stored as days since referenceDate. So it should be 21 days.
-    ///
-    ///         daysSinceReferenceDate = (block.timestamp / (1 days)) - (referenceDate / (1 days)) + lockupDays
-    function setLockupPeriod(address token, uint16 lockupDays) external;
+    ///         daysSinceReferenceDate = (block.timestamp / (1 days)) - (referenceDate / (1 days))
+    function setLockupPeriod(address token, uint16 lockupDays, uint32 time) external;
 
     /// @notice TODO
     function forceUnlock(address token, address user) external;
 
     /// @notice TODO
-    function unlocked(address token, address user) external returns (uint128);
+    function unlocked(address token, address user) external view returns (uint128);
 
     // --- Handling freezes ---
     /// @notice Freeze a user balance. Frozen users cannot receive nor send tokens
