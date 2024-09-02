@@ -102,4 +102,28 @@ contract AssetShareConversionTest is BaseTest {
         assertEq(vault.convertToAssets(vault.convertToShares(120000000000000000000)), 120000000000000000000);
         assertEq(vault.pricePerShare(), 1.2e18);
     }
+
+    function testPriceWorksAfterRemovingVault(uint64 poolId, bytes16 trancheId, uint128 assetId) public {
+        vm.assume(assetId > 0);
+
+        uint8 INVESTMENT_CURRENCY_DECIMALS = 6; // 6, like USDC
+        uint8 TRANCHE_TOKEN_DECIMALS = 18; // Like DAI
+
+        ERC20 asset = _newErc20("Asset", "A", INVESTMENT_CURRENCY_DECIMALS);
+        address vault_ =
+            deployVault(poolId, TRANCHE_TOKEN_DECIMALS, restrictionManager, "", "", trancheId, assetId, address(asset));
+        ERC7540Vault vault = ERC7540Vault(vault_);
+        ITranche tranche = ITranche(address(ERC7540Vault(vault_).share()));
+
+        assertEq(vault.priceLastUpdated(), block.timestamp);
+        assertEq(vault.pricePerShare(), 1e6);
+        centrifugeChain.updateTranchePrice(poolId, trancheId, assetId, 1.2e18, uint64(block.timestamp));
+        assertEq(vault.priceLastUpdated(), uint64(block.timestamp));
+        assertEq(vault.pricePerShare(), 1.2e6);
+
+        poolManager.removeVault(poolId, trancheId, address(vault.asset()));
+
+        assertEq(vault.priceLastUpdated(), uint64(block.timestamp));
+        assertEq(vault.pricePerShare(), 1.2e6);
+    }
 }
