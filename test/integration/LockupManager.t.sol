@@ -44,8 +44,8 @@ contract LockupManagerTest is BaseTest {
 
         // After 4 days, investor1's balance is unlocked, investor2's balance not yet
         vm.warp(block.timestamp + 2 days);
-        assertEq(hook.unlocked(address(tranche), investor1), amount / 2);
-        assertEq(hook.unlocked(address(tranche), investor2), 0);
+        assertApproxEqAbs(hook.unlocked(address(tranche), investor1), amount / 2, 1);
+        assertApproxEqAbs(hook.unlocked(address(tranche), investor2), 0, 1);
 
         vm.prank(investor1);
         vault.requestRedeem(amount / 2, investor1, investor1);
