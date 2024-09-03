@@ -138,6 +138,41 @@ contract LockupManagerTest is BaseTest {
         vault.requestRedeem(amount / 2, investor1, investor1);
     }
 
+    function testForceUnlock(uint256 amount, uint128 forceUnlockAmount) public {
+        amount = bound(amount, 2, type(uint128).max);
+        forceUnlockAmount = uint128(bound(forceUnlockAmount, 2, amount));
+
+        LockupManager hook = new LockupManager(address(root), address(escrow), address(this));
+        hook.rely(address(poolManager));
+        hook.rely(address(root));
+
+        address vault_ = deployVaultCustomHook(address(hook));
+        ERC7540Vault vault = ERC7540Vault(vault_);
+        ITranche tranche = ITranche(address(vault.share()));
+        vm.warp(block.timestamp + 1 days);
+        hook.setLockup(address(tranche), 3, 0, true);
+
+        address investor1 = makeAddr("investor1");
+        address investor2 = makeAddr("investor2");
+        root.relyContract(address(tranche), self);
+        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), investor1, type(uint64).max);
+        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), investor2, type(uint64).max);
+        tranche.mint(investor1, amount);
+
+        vm.warp(block.timestamp + 2 days);
+        assertEq(hook.unlocked(address(tranche), investor1), 0);
+
+        vm.prank(investor1);
+        vm.expectRevert(bytes("LockupManager/insufficient-unlocked-balance"));
+        tranche.transfer(investor2, amount / 2);
+
+        hook.forceUnlock(address(tranche), investor1, forceUnlockAmount);
+        assertEq(hook.unlocked(address(tranche), investor1), forceUnlockAmount);
+
+        vm.prank(investor1);
+        tranche.transfer(investor2, forceUnlockAmount);
+    }
+
     // We can do >10 years of transfers (each transfer grouped by day) without exceeding the
     // Ethereum gas limit with a transfer that loops over all unlocked transfers.
     function testLockupsWithManyTransfers(uint256 amount, uint8 lockupDays, uint256 numTransferDays) public {

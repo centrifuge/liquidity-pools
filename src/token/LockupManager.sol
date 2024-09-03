@@ -249,7 +249,7 @@ contract LockupManager is Auth, ILockupManager, IHook {
         } else if (updateId == RestrictionUpdate.SetLockupPeriod) {
             setLockup(token, update.toUint16(1), update.toUint32(3), update.toBool(7));
         } else if (updateId == RestrictionUpdate.ForceUnlock) {
-            forceUnlock(token, update.toAddress(1));
+            forceUnlock(token, update.toAddress(1), update.toUint128(33));
         } else {
             revert("LockupManager/invalid-update");
         }
@@ -264,29 +264,27 @@ contract LockupManager is Auth, ILockupManager, IHook {
             // Removing 1 day ensures the diff after the first transfer is non-zero
             config.referenceDate = (_midnightUTC(uint64(block.timestamp)) - 1 days);
         }
-
-        // Can never be decreased because then we can assume new transfers will always be added to the end of
-        // the linked list, which greatly simplifies the implementation and makes it more gas efficient.
-        require(lockupDays >= config.lockupDays, "LockupManager/cannot-decrease-lockup");
-        config.lockupDays = lockupDays;
-
         require(time <= SEC_PER_DAY, "LockupManager/invalid-time-of-day");
         config.time = time;
 
+        config.lockupDays = lockupDays;
         config.locksTransfers = locksTransfers;
 
         emit SetLockup(token, lockupDays, time, locksTransfers);
     }
 
     /// @inheritdoc ILockupManager
-    // TODO: add amount parameter? Or date?
-    function forceUnlock(address token, address user) public auth {
-        _lockups[token][user].first = 0;
-        _lockups[token][user].last = 0;
-        _lockups[token][user].unlocked = ITranche(token).balanceOf(user).toUint128();
+    function forceUnlock(address token, address user, uint128 amount) public auth {
+        LockupData storage lockup = _lockups[token][user];
+        uint16 today = lockup.first;
+        uint256 found = 0;
+        while (found < amount && today != 0) {
+            found += lockup.transfers[today].amount;
+            today = lockup.transfers[today].next;
+        }
 
-        // Reset mapping on today, since another transfer today can come in that could add to the old lock
-        _lockups[token][user].transfers[uint16((_midnightUTC(uint64(block.timestamp)) / (1 days)))] = Transfer(0, 0);
+        lockup.first = today;
+        _lockups[token][user].unlocked += amount;
 
         emit ForceUnlock(token, user);
     }

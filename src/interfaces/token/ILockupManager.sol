@@ -62,7 +62,7 @@ interface ILockupManager {
     function setLockup(address token, uint16 lockupDays, uint32 time, bool locksTransfers) external;
 
     /// @notice TODO
-    function forceUnlock(address token, address user) external;
+    function forceUnlock(address token, address user, uint128 amount) external;
 
     /// @notice TODO
     function unlocked(address token, address user) external view returns (uint128);
