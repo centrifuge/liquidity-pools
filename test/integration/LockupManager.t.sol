@@ -21,7 +21,7 @@ contract LockupManagerTest is BaseTest {
         ERC7540Vault vault = ERC7540Vault(vault_);
         ITranche tranche = ITranche(address(vault.share()));
         vm.warp(block.timestamp + 1 days);
-        hook.setLockupPeriod(address(tranche), 3, 0);
+        hook.setLockup(address(tranche), 3, 0, false);
 
         address investor1 = makeAddr("investor1");
         address investor2 = makeAddr("investor2");
@@ -55,6 +55,55 @@ contract LockupManagerTest is BaseTest {
         vm.prank(investor2);
         vm.expectRevert(bytes("ERC20/insufficient-allowance"));
         vault.requestRedeem(amount / 2, investor2, investor2);
+    }
+
+    function testLockupsWithBlockedTransfers(uint256 amount) public {
+        amount = bound(amount, 2, type(uint128).max);
+
+        LockupManager hook = new LockupManager(address(root), address(escrow), address(this));
+        hook.rely(address(poolManager));
+        hook.rely(address(root));
+
+        address vault_ = deployVaultCustomHook(address(hook));
+        ERC7540Vault vault = ERC7540Vault(vault_);
+        ITranche tranche = ITranche(address(vault.share()));
+        vm.warp(block.timestamp + 1 days);
+        hook.setLockup(address(tranche), 3, 0, true);
+
+        address investor1 = makeAddr("investor1");
+        address investor2 = makeAddr("investor2");
+        root.relyContract(address(tranche), self);
+        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), investor1, type(uint64).max);
+        centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), investor2, type(uint64).max);
+        tranche.mint(investor1, amount);
+
+        // After 2 days, the balance is locked, transfers and redemptions are both blocked
+        vm.warp(block.timestamp + 2 days);
+        assertEq(hook.unlocked(address(tranche), investor1), 0);
+
+        vm.prank(investor1);
+        vm.expectRevert(bytes("LockupManager/insufficient-unlocked-balance"));
+        tranche.transfer(investor2, amount / 2);
+
+        assertEq(hook.unlocked(address(tranche), investor1), 0);
+        assertEq(hook.unlocked(address(tranche), investor2), 0);
+
+        vm.prank(investor1);
+        vm.expectRevert(bytes("ERC20/insufficient-allowance"));
+        vault.requestRedeem(amount / 2, investor1, investor1);
+
+        // After 4 days, both transfers and redemptions can happen
+        vm.warp(block.timestamp + 2 days);
+        assertEq(hook.unlocked(address(tranche), investor1), amount);
+
+        vm.prank(investor1);
+        vault.requestRedeem(amount / 2, investor1, investor1);
+
+        vm.prank(investor1);
+        tranche.transfer(investor2, amount / 2);
+
+        assertApproxEqAbs(hook.unlocked(address(tranche), investor1), 0, 1);
+        assertApproxEqAbs(hook.unlocked(address(tranche), investor2), 0, 1);
     }
 
     function testIfNoLockupIsSet(uint256 amount) public {
@@ -104,7 +153,7 @@ contract LockupManagerTest is BaseTest {
         ERC7540Vault vault = ERC7540Vault(vault_);
         ITranche tranche = ITranche(address(vault.share()));
         vm.warp(block.timestamp + 1 days);
-        hook.setLockupPeriod(address(tranche), lockupDays, 0);
+        hook.setLockup(address(tranche), lockupDays, 0, false);
 
         address investor1 = makeAddr("investor1");
         address investor2 = makeAddr("investor2");

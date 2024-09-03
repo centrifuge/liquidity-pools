@@ -247,7 +247,7 @@ contract LockupManager is Auth, ILockupManager, IHook {
         } else if (updateId == RestrictionUpdate.Unfreeze) {
             unfreeze(token, update.toAddress(1));
         } else if (updateId == RestrictionUpdate.SetLockupPeriod) {
-            setLockupPeriod(token, update.toUint16(1), update.toUint32(3));
+            setLockup(token, update.toUint16(1), update.toUint32(3), update.toBool(7));
         } else if (updateId == RestrictionUpdate.ForceUnlock) {
             forceUnlock(token, update.toAddress(1));
         } else {
@@ -256,7 +256,7 @@ contract LockupManager is Auth, ILockupManager, IHook {
     }
 
     /// @inheritdoc ILockupManager
-    function setLockupPeriod(address token, uint16 lockupDays, uint32 time) public auth {
+    function setLockup(address token, uint16 lockupDays, uint32 time, bool locksTransfers) public auth {
         LockupConfig storage config = _lockupConfig[token];
 
         if (config.referenceDate == 0) {
@@ -273,7 +273,9 @@ contract LockupManager is Auth, ILockupManager, IHook {
         require(time <= SEC_PER_DAY, "LockupManager/invalid-time-of-day");
         config.time = time;
 
-        emit SetLockupPeriod(token, lockupDays, time);
+        config.locksTransfers = locksTransfers;
+
+        emit SetLockup(token, lockupDays, time, locksTransfers);
     }
 
     /// @inheritdoc ILockupManager
@@ -282,7 +284,10 @@ contract LockupManager is Auth, ILockupManager, IHook {
         _lockups[token][user].first = 0;
         _lockups[token][user].last = 0;
         _lockups[token][user].unlocked = ITranche(token).balanceOf(user).toUint128();
-        // TODO: reset mapping on today? Since another transfer today can come in that could add to the old lock
+
+        // Reset mapping on today, since another transfer today can come in that could add to the old lock
+        _lockups[token][user].transfers[uint16((_midnightUTC(uint64(block.timestamp)) / (1 days)))] = Transfer(0, 0);
+
         emit ForceUnlock(token, user);
     }
 

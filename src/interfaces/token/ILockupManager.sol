@@ -35,7 +35,7 @@ struct LockupData {
 interface ILockupManager {
     // --- Events ---
     event Lock(address indexed token, address indexed user, uint256 amount, uint64 lockedUntil);
-    event SetLockupPeriod(address indexed token, uint16 lockupDays, uint32 time);
+    event SetLockup(address indexed token, uint16 lockupDays, uint32 time, bool locksTransfers);
     event ForceUnlock(address indexed token, address indexed user);
     event UpdateMember(address indexed token, address indexed user, uint64 validUntil);
     event Freeze(address indexed token, address indexed user);
@@ -59,7 +59,7 @@ interface ILockupManager {
     ///         Lockups are stored as days since referenceDate. So it should be 15 days.
     ///
     ///         daysSinceReferenceDate = (block.timestamp / (1 days)) - (referenceDate / (1 days))
-    function setLockupPeriod(address token, uint16 lockupDays, uint32 time) external;
+    function setLockup(address token, uint16 lockupDays, uint32 time, bool locksTransfers) external;
 
     /// @notice TODO
     function forceUnlock(address token, address user) external;

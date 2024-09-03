@@ -87,6 +87,10 @@ library BytesLib {
         return tempUint;
     }
 
+    function toBool(bytes memory _bytes, uint256 _start) internal pure returns (bool) {
+        return toUint8(_bytes, _start) == 1;
+    }
+
     function toUint16(bytes memory _bytes, uint256 _start) internal pure returns (uint16) {
         require(_bytes.length >= _start + 2, "toUint16_outOfBounds");
         uint16 tempUint;
