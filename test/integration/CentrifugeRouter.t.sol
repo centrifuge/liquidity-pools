@@ -48,7 +48,9 @@ contract CentrifugeRouterTest is BaseTest {
         vm.expectRevert(bytes("CentrifugeRouter/invalid-owner"));
         router.requestDeposit{value: gas}(vault_, amount, self, self, gas);
 
+        snapStart("CentrifugeRouter_requestDeposit");
         router.requestDeposit{value: gas}(vault_, amount, self, self, gas);
+        snapEnd();
 
         assertEq(address(gateway).balance, GATEWAY_INITIAL_BALACE + GAS_BUFFER);
         for (uint8 i; i < testAdapters.length; i++) {
@@ -70,7 +72,9 @@ contract CentrifugeRouterTest is BaseTest {
         ITranche tranche = ITranche(address(vault.share()));
         assertEq(tranche.balanceOf(address(escrow)), tranchePayout);
 
+        snapStart("CentrifugeRouter_claimDeposit");
         router.claimDeposit(vault_, self, self);
+        snapEnd();
         assertApproxEqAbs(tranche.balanceOf(self), tranchePayout, 1);
         assertApproxEqAbs(tranche.balanceOf(self), tranchePayout, 1);
         assertApproxEqAbs(tranche.balanceOf(address(escrow)), 0, 1);
@@ -155,7 +159,9 @@ contract CentrifugeRouterTest is BaseTest {
         erc20.mint(self, amount);
         erc20.approve(vault_, amount);
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max);
+        snapStart("CentrifugeRouter_enable");
         router.enable(vault_);
+        snapEnd();
 
         uint256 fuel = estimateGas();
         router.requestDeposit{value: fuel}(vault_, amount, self, self, fuel);
@@ -173,7 +179,9 @@ contract CentrifugeRouterTest is BaseTest {
         router.requestRedeem{value: fuel}(vault_, tranchePayout, self, self, fuel);
 
         // redeem
+        snapStart("CentrifugeRouter_requestRedeem");
         router.requestRedeem{value: fuel}(vault_, tranchePayout, self, self, fuel);
+        snapEnd();
         (uint128 assetPayout) = fulfillRedeemRequest(vault, assetId, tranchePayout, self);
         assertApproxEqAbs(tranche.balanceOf(self), 0, 1);
         assertApproxEqAbs(tranche.balanceOf(address(escrow)), 0, 1);
@@ -282,7 +290,9 @@ contract CentrifugeRouterTest is BaseTest {
         erc20.approve(address(router), amount);
         centrifugeChain.updateMember(vault.poolId(), vault.trancheId(), self, type(uint64).max);
         router.enable(address(vault_));
+        snapStart("CentrifugeRouter_lockDepositRequest");
         router.lockDepositRequest(vault_, amount, self, self);
+        snapEnd();
 
         // multicall
         uint256 fuel = estimateGas();
