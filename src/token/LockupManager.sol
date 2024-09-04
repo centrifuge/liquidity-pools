@@ -212,12 +212,13 @@ contract LockupManager is Auth, ILockupManager, IHook {
         }
 
         if (to == escrow && unlockedBalance < value) {
-            // Tokens are being being redeemed (sent to the escrow) and the unlocked balance is insufficient.
+            // Tokens are being being redeemed (sent to the escrow) and the unlocked balance is insufficient
             return false;
         }
 
         address token = msg.sender;
         if (from != address(0) && _lockupConfig[token].locksTransfers && unlockedBalance < value) {
+            // Tokens are being being transferred, and the unlocked balance is insufficient
             return false;
         }
 
@@ -231,8 +232,8 @@ contract LockupManager is Auth, ILockupManager, IHook {
         view
         returns (bool)
     {
-        // uint128 unlockedBalance = unlocked(msg.sender, from);
-        return checkERC20Transfer(from, to, value, hookData, 0); // , unlockedBalance
+        (uint128 unlockedBalance,) = _unlocked(msg.sender, from, uint64(block.timestamp));
+        return checkERC20Transfer(from, to, value, hookData, unlockedBalance);
     }
 
     // --- Incoming message handling ---

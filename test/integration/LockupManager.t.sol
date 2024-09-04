@@ -88,6 +88,8 @@ contract LockupManagerTest is BaseTest {
         assertEq(hook.unlocked(address(tranche), investor1), 0);
         assertEq(hook.unlocked(address(tranche), investor2), 0);
 
+        assertFalse(tranche.checkTransferRestriction(investor1, investor2, amount / 2));
+
         vm.prank(investor1);
         vm.expectRevert(bytes("ERC20/insufficient-allowance"));
         vault.requestRedeem(amount / 2, investor1, investor1);
@@ -95,6 +97,7 @@ contract LockupManagerTest is BaseTest {
         // After 4 days, both transfers and redemptions can happen
         vm.warp(block.timestamp + 2 days);
         assertEq(hook.unlocked(address(tranche), investor1), amount);
+        assertTrue(tranche.checkTransferRestriction(investor1, investor2, amount / 2));
 
         vm.prank(investor1);
         vault.requestRedeem(amount / 2, investor1, investor1);
