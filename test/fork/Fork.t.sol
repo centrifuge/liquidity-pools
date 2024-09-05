@@ -60,6 +60,7 @@ struct Deployment {
 contract ForkTest is Test {
     using stdJson for string;
 
+    // Address that is used to denote an unset address when parsing deployment JSONs
     address constant UNSET_ADDRESS = address(32);
 
     string[] deployments;
