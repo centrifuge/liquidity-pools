@@ -73,6 +73,7 @@ contract ForkTest is Test {
 
         // Testnet
         // _loadDeployment("testnet", "ethereum-sepolia-demo");
+        _loadDeployment("testnet", "base-sepolia-demo");
     }
 
     function testContractSetup() public {
