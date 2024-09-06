@@ -60,9 +60,6 @@ struct Deployment {
 contract ForkTest is Test {
     using stdJson for string;
 
-    // Address that is used to denote an unset address when parsing deployment JSONs
-    address constant UNSET_ADDRESS = address(32);
-
     string[] deployments;
 
     function setUp() public virtual {
@@ -442,7 +439,7 @@ contract ForkTest is Test {
         vm.selectFork(forkId);
     }
 
-    function _getAddress(uint256 id, string memory key) internal view returns (address) {
+    function _getAddress(uint256 id, string memory key) public view returns (address) {
         return abi.decode(deployments[id].parseRaw(key), (address));
     }
 
@@ -478,17 +475,27 @@ contract ForkTest is Test {
         if (vm.envOr("FORK_TESTS", false)) {
             for (uint256 i = 0; i < deployments.length; i++) {
                 uint256 chainId = _getUint256(i, ".chainId");
-                address cfg = _getAddress(i, ".integrations.cfg");
-                address verUSDC = _getAddress(i, ".integrations.verUSDC");
+                address cfg;
+                try this._getAddress(i, ".integrations.cfg") returns (address _cfg) {
+                    cfg = _cfg;
+                } catch {
+                    cfg = address(0);
+                }
+                address verUSDC;
+                try this._getAddress(i, ".integrations.verUSDC") returns (address _verUSDC) {
+                    verUSDC = _verUSDC;
+                } catch {
+                    verUSDC = address(0);
+                }
                 address root = _getAddress(i, ".contracts.root");
                 address admin = _getAddress(i, ".config.admin");
                 _loadFork(i);
 
-                if (verUSDC != UNSET_ADDRESS) {
+                if (verUSDC != address(0)) {
                     assertEq(IAuth(verUSDC).wards(root), 1);
                     assertEq(IAuth(IWrappedUSDC(verUSDC).memberlist()).wards(admin), 1);
                 }
-                if (cfg != UNSET_ADDRESS) {
+                if (cfg != address(0)) {
                     assertEq(IAuth(cfg).wards(root), 1);
                     assertEq(IERC20Metadata(cfg).decimals(), 18);
                     if (chainId == 1) {
