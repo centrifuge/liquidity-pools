@@ -64,6 +64,12 @@ contract FreezeManager is Auth, IFreezeManager, IHook {
             return false;
         }
 
+        uint128 toHookData = uint128(hookData.to);
+        if (toHookData.getBit(FREEZE_BIT) == true) {
+            // Destination is frozen
+            return false;
+        }
+
         return true;
     }
 

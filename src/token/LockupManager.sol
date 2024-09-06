@@ -34,6 +34,7 @@ contract LockupManager is Auth, ILockupManager, IHook {
     using MathLib for uint256;
 
     uint256 internal constant SEC_PER_DAY = 60 * 60 * 24;
+    uint16 internal constant MAX_UNLOCK_DAYS = 365;
 
     /// @dev Least significant bit
     uint8 public constant FREEZE_BIT = 0;
@@ -57,6 +58,8 @@ contract LockupManager is Auth, ILockupManager, IHook {
         returns (bytes4)
     {
         address token = msg.sender;
+
+        // TODO: how to handle transfer to self?
 
         if (from != address(0)) {
             // Reset lockups for source
@@ -258,6 +261,7 @@ contract LockupManager is Auth, ILockupManager, IHook {
 
     /// @inheritdoc ILockupManager
     function setLockup(address token, uint16 lockupDays, uint32 time, bool locksTransfers) public auth {
+        require(lockupDays <= MAX_UNLOCK_DAYS, "LockupManager/lockup-days-too-high");
         LockupConfig storage config = _lockupConfig[token];
 
         if (config.referenceDate == 0) {
