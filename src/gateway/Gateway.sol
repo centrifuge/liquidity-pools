@@ -13,6 +13,7 @@ import {IRoot} from "src/interfaces/IRoot.sol";
 import {IGasService} from "src/interfaces/gateway/IGasService.sol";
 import {IAdapter} from "src/interfaces/gateway/IAdapter.sol";
 import {IRecoverable} from "src/interfaces/IRoot.sol";
+import "forge-std/console.sol";
 
 /// @title  Gateway
 /// @notice Routing contract that forwards outgoing messages to multiple adapters (1 full message, n-1 proofs)
@@ -106,8 +107,10 @@ contract Gateway is Auth, IGateway, IRecoverable {
         if (what == "gasService") gasService = IGasService(instance);
         else if (what == "investmentManager") investmentManager = instance;
         else if (what == "poolManager") poolManager = instance;
-        else revert("Gateway/file-unrecognized-param");
-
+        else  {
+            console.log("Gateway reverting because of unknown param");
+            revert("Gateway/file-unrecognized-param");
+        }
         emit File(what, instance);
     }
 

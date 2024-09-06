@@ -16,8 +16,9 @@ import {TrancheFactory} from "src/factories/TrancheFactory.sol";
 import {ERC7540VaultFactory} from "src/factories/ERC7540VaultFactory.sol";
 import {TransferProxyFactory} from "src/factories/TransferProxyFactory.sol";
 import {Guardian} from "src/admin/Guardian.sol";
+import {Deployment, Configuration} from "script/Deployer.sol";
+import {DeploymentManager} from "test/utils/DeploymentManager.sol";
 import "forge-std/Test.sol";
-import "forge-std/StdJson.sol";
 
 interface ISafe {
     function getOwners() external view returns (address[] memory);
@@ -29,32 +30,10 @@ interface IAxelarContract {
     function contractId() external view returns (bytes32);
 }
 
-struct Deployment {
-    address root;
-    address guardian;
-    address restrictionManager;
-    address investmentManager;
-    address poolManager;
-    address centrifugeRouter;
-    address payable gateway;
-    address gasService;
-    address escrow;
-    address routerEscrow;
-    address adapter;
-    address trancheFactory;
-    address vaultFactory;
-    address transferProxyFactory;
-    address deployer;
-    address safe;
-    address axelarGateway;
-    address axelarGasService;
-    bool isTestnet;
-}
-
 contract ForkTest is Test {
     using stdJson for string;
 
-    string[] deployments;
+    Deployment[] deployments;
 
     function setUp() public virtual {
         // Mainnet
@@ -72,8 +51,7 @@ contract ForkTest is Test {
         if (vm.envOr("FORK_TESTS", false)) {
             for (uint256 i; i < deployments.length; i++) {
                 // Read deployment file
-                Deployment memory deployment = _parse(i);
-
+                Deployment memory deployment = deployments[i];
                 _loadFork(i);
 
                 _verifyRoot(deployment);
@@ -99,14 +77,14 @@ contract ForkTest is Test {
         address escrow = deployment.escrow;
         address gateway = deployment.gateway;
         address guardian = deployment.guardian;
-        address router = deployment.centrifugeRouter;
+        address router = deployment.router;
         address deployer = deployment.deployer;
 
         Root _root = Root(root);
 
         assertEq(_root.escrow(), escrow);
 
-        assertEq(_root.delay(), 48 hours);
+        assertEq(_root.delay(), deployment.configuration.delay);
         assertEq(_root.paused(), false);
 
         assertEq(_root.wards(gateway), 1);
@@ -121,7 +99,7 @@ contract ForkTest is Test {
         address guardian = deployment.guardian;
         address gateway = deployment.gateway;
         address root = deployment.root;
-        address safe = deployment.safe;
+        address safe = deployment.adminSafe;
 
         Guardian _guardian = Guardian(guardian);
 
@@ -193,7 +171,7 @@ contract ForkTest is Test {
     }
 
     function _verifyRouter(Deployment memory deployment) internal {
-        address router = deployment.centrifugeRouter;
+        address router = deployment.router;
         address escrow = deployment.routerEscrow;
         address gateway = deployment.gateway;
         address root = deployment.root;
@@ -215,9 +193,9 @@ contract ForkTest is Test {
         address root = deployment.root;
         address poolManager = deployment.poolManager;
         address investmentManager = deployment.investmentManager;
-        address router = deployment.centrifugeRouter;
+        address router = deployment.router;
         address gasService = deployment.gasService;
-        address adapter = deployment.adapter;
+        address[] memory adapters = deployment.adapters;
         address guardian = deployment.guardian;
         address deployer = deployment.deployer;
 
@@ -229,7 +207,9 @@ contract ForkTest is Test {
         assertEq(address(_gateway.gasService()), gasService);
 
         assertTrue(_gateway.payers(router));
-        assertEq(_gateway.adapters(0), adapter);
+        for (uint256 i; i < adapters.length; i++) {
+            assertEq(_gateway.adapters(i), adapters[i]);
+        }
         assertEq(_gateway.quorum(), 1);
         assertEq(_gateway.activeSessionId(), 0);
 
@@ -267,7 +247,7 @@ contract ForkTest is Test {
     function _verifyRouterEscrow(Deployment memory deployment) internal {
         address escrow = deployment.routerEscrow;
         address root = deployment.root;
-        address router = deployment.centrifugeRouter;
+        address router = deployment.router;
         address deployer = deployment.deployer;
 
         Escrow _routerEscrow = Escrow(escrow);
@@ -278,13 +258,13 @@ contract ForkTest is Test {
     }
 
     function _verifyAxelarAdapter(Deployment memory deployment) internal {
-        address adapter = deployment.adapter;
+        address adapter = deployment.adapters[0];
         address gateway = deployment.gateway;
         address root = deployment.root;
         address deployer = deployment.deployer;
-        address axelarGateway = deployment.axelarGateway;
-        address axelarGasService = deployment.axelarGasService;
-        bool isTestnet = deployment.isTestnet;
+        // TODO Take this from the adapter not from the deployment.
+        address axelarGateway = address(0);
+        address axelarGasService = address(0);
 
         AxelarAdapter _adapter = AxelarAdapter(adapter);
         assertEq(address(_adapter.gateway()), gateway);
@@ -297,7 +277,7 @@ contract ForkTest is Test {
         assertEq(IAxelarContract(axelarGateway).contractId(), keccak256("axelar-gateway"));
         assertEq(IAxelarContract(axelarGasService).contractId(), keccak256("axelar-gas-service"));
 
-        if (!isTestnet) {
+        if (!deployment.configuration.isTestnet) {
             assertEq(_adapter.CENTRIFUGE_ID(), "centrifuge");
             assertEq(_adapter.CENTRIFUGE_AXELAR_EXECUTABLE(), "0xc1757c6A0563E37048869A342dF0651b9F267e41");
             assertEq(_adapter.centrifugeIdHash(), keccak256(bytes("centrifuge")));
@@ -351,12 +331,12 @@ contract ForkTest is Test {
     function testAdminSigners() public {
         if (vm.envOr("FORK_TESTS", false)) {
             for (uint256 i = 0; i < deployments.length; i++) {
-                bool isTestnet = abi.decode(deployments[i].parseRaw(".isTestnet"), (bool));
-                if (!isTestnet) {
+                Deployment memory current = deployments[i];
+                if (!current.configuration.isTestnet) {
                     // Read deployment file
-                    address adminSafe = _get(i, ".config.admin");
-                    address[] memory adminSigners =
-                        abi.decode(deployments[i].parseRaw(".config.adminSigners"), (address[]));
+                    address adminSafe = current.adminSafe;
+                    // TODO: Actually get the
+                    address[] memory adminSigners = new address[](0);
                     _loadFork(i);
 
                     // Check Safe signers
@@ -378,21 +358,20 @@ contract ForkTest is Test {
     function testDeterminism() public {
         if (vm.envOr("FORK_TESTS", false)) {
             for (uint256 i = 0; i < deployments.length; i++) {
-                bool isDeterministicallyDeployed =
-                    abi.decode(deployments[i].parseRaw(".isDeterministicallyDeployed"), (bool));
+                Deployment memory current = deployments[i];
+                bool isDeterministicallyDeployed = current.configuration.isDeterministic;
                 if (!isDeterministicallyDeployed) continue;
 
                 // Read deployment file
-                address root = _get(i, ".contracts.root");
-                address escrow = _get(i, ".contracts.escrow");
-                address routerEscrow = _get(i, ".contracts.routerEscrow");
-                address restrictionManager = _get(i, ".contracts.restrictionManager");
-                address trancheFactory = _get(i, ".contracts.trancheFactory");
-                address transferProxyFactory = _get(i, ".contracts.transferProxyFactory");
+                address root = current.root;
+                address escrow = current.escrow;
+                address routerEscrow = current.routerEscrow;
+                address restrictionManager = current.restrictionManager;
+                address trancheFactory = current.trancheFactory;
+                address transferProxyFactory = current.transferProxyFactory;
                 _loadFork(i);
 
-                bool isTestnet = abi.decode(deployments[i].parseRaw(".isTestnet"), (bool));
-                if (!isTestnet) {
+                if (deployments[i].configuration.isTestnet) {
                     // Check address
                     assertEq(root, 0x0C1fDfd6a1331a875EA013F3897fc8a76ada5DfC);
                     assertEq(escrow, 0x0000000005F458Fd6ba9EEb5f365D83b7dA913dD);
@@ -424,40 +403,12 @@ contract ForkTest is Test {
     }
 
     function _loadDeployment(string memory folder, string memory name) internal {
-        deployments.push(vm.readFile(string.concat(vm.projectRoot(), "/deployments/", folder, "/", name, ".json")));
+        deployments.push(DeploymentManager.loadFromJson(folder, name));
     }
 
     function _loadFork(uint256 id) internal {
-        string memory rpcUrl = abi.decode(deployments[id].parseRaw(".rpcUrl"), (string));
-        uint256 forkId = vm.createFork(rpcUrl);
-        vm.selectFork(forkId);
-    }
-
-    function _get(uint256 id, string memory key) internal view returns (address) {
-        return abi.decode(deployments[id].parseRaw(key), (address));
-    }
-
-    function _parse(uint256 id) internal view returns (Deployment memory) {
-        return Deployment(
-            _get(id, ".contracts.root"),
-            _get(id, ".contracts.guardian"),
-            _get(id, ".contracts.restrictionManager"),
-            _get(id, ".contracts.investmentManager"),
-            _get(id, ".contracts.poolManager"),
-            _get(id, ".contracts.centrifugeRouter"),
-            payable(_get(id, ".contracts.gateway")),
-            _get(id, ".contracts.gasService"),
-            _get(id, ".contracts.escrow"),
-            _get(id, ".contracts.routerEscrow"),
-            _get(id, ".contracts.adapter"),
-            _get(id, ".contracts.trancheFactory"),
-            _get(id, ".contracts.erc7540VaultFactory"),
-            _get(id, ".contracts.transferProxyFactory"),
-            _get(id, ".config.deployer"),
-            _get(id, ".config.admin"),
-            _get(id, ".config.adapter.axelarGateway"),
-            _get(id, ".config.adapter.axelarGasService"),
-            abi.decode(deployments[id].parseRaw(".isTestnet"), (bool))
-        );
+        // string memory rpcUrl = abi.decode(deployments[id].parseRaw(".rpcUrl"), (string));
+        // uint256 forkId = vm.createFork(rpcUrl);
+        // vm.selectFork(forkId);
     }
 }

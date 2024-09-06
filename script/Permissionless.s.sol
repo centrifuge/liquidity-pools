@@ -11,12 +11,9 @@ contract PermissionlessScript is Deployer {
 
     function run() public {
         vm.startBroadcast();
-
-        adminSafe = msg.sender;
-
-        deploy(msg.sender);
-        PermissionlessAdapter adapter = new PermissionlessAdapter(address(gateway));
-        wire(address(adapter));
+        address[] memory _adapters = new address[](1);
+        _adapters[0] = address(new PermissionlessAdapter(address(gateway)));
+        deploy(msg.sender, msg.sender, _adapters);
 
         vm.stopBroadcast();
     }

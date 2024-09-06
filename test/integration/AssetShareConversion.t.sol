@@ -11,8 +11,9 @@ contract AssetShareConversionTest is BaseTest {
         uint8 TRANCHE_TOKEN_DECIMALS = 18; // Like DAI
 
         ERC20 asset = _newErc20("Asset", "A", INVESTMENT_CURRENCY_DECIMALS);
-        address vault_ =
-            deployVault(poolId, TRANCHE_TOKEN_DECIMALS, restrictionManager, "", "", trancheId, assetId, address(asset));
+        address vault_ = deployVault(
+            poolId, TRANCHE_TOKEN_DECIMALS, address(restrictionManager), "", "", trancheId, assetId, address(asset)
+        );
         ERC7540Vault vault = ERC7540Vault(vault_);
         ITranche tranche = ITranche(address(ERC7540Vault(vault_).share()));
 
@@ -63,8 +64,9 @@ contract AssetShareConversionTest is BaseTest {
         uint8 TRANCHE_TOKEN_DECIMALS = 6; // Like USDC
 
         ERC20 asset = _newErc20("Currency", "CR", INVESTMENT_CURRENCY_DECIMALS);
-        address vault_ =
-            deployVault(poolId, TRANCHE_TOKEN_DECIMALS, restrictionManager, "", "", trancheId, assetId, address(asset));
+        address vault_ = deployVault(
+            poolId, TRANCHE_TOKEN_DECIMALS, address(restrictionManager), "", "", trancheId, assetId, address(asset)
+        );
         ERC7540Vault vault = ERC7540Vault(vault_);
         ITranche tranche = ITranche(address(ERC7540Vault(vault_).share()));
         centrifugeChain.updateTranchePrice(poolId, trancheId, assetId, 1000000, uint64(block.timestamp));

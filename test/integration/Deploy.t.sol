@@ -40,15 +40,12 @@ contract DeployTest is Test, Deployer {
 
     address self;
     address[] accounts;
+
     PermissionlessAdapter adapter;
-    Guardian fakeGuardian;
     ERC20 erc20;
 
     function setUp() public {
         self = address(this);
-        deploy(self);
-        adapter = new PermissionlessAdapter(address(gateway));
-        wire(address(adapter));
 
         // overwrite deployed guardian with a new mock safe guardian
         accounts = new address[](3);
@@ -56,9 +53,13 @@ contract DeployTest is Test, Deployer {
         accounts[1] = makeAddr("account2");
         accounts[2] = makeAddr("account3");
         adminSafe = address(new MockSafe(accounts, 1));
-        fakeGuardian = new Guardian(adminSafe, address(root), address(gateway));
 
-        removeDeployerAccess(address(adapter), address(this));
+        address[] memory _adapters = new address[](1);
+        _adapters[0] = address(new PermissionlessAdapter(address(gateway)));
+
+        deploy(self, adminSafe, _adapters);
+
+        removeDeployerAccess();
 
         erc20 = newErc20("Test", "TEST", 6);
     }
@@ -71,9 +72,9 @@ contract DeployTest is Test, Deployer {
         assertEq(escrow.wards(self), 0);
         assertEq(routerEscrow.wards(self), 0);
         assertEq(root.wards(self), 0);
-        assertEq(WardLike(vaultFactory).wards(self), 0);
-        assertEq(WardLike(restrictionManager).wards(self), 0);
-        assertEq(WardLike(trancheFactory).wards(self), 0);
+        assertEq(vaultFactory.wards(self), 0);
+        assertEq(restrictionManager.wards(self), 0);
+        assertEq(trancheFactory.wards(self), 0);
         assertEq(investmentManager.wards(self), 0);
         assertEq(poolManager.wards(self), 0);
         assertEq(gasService.wards(self), 0);
@@ -86,7 +87,7 @@ contract DeployTest is Test, Deployer {
         vm.assume(nonAdmin != adminSafe);
         vm.assume(nonPauser != accounts[0] && nonPauser != accounts[1] && nonPauser != accounts[2]);
 
-        assertEq(address(fakeGuardian.safe()), adminSafe);
+        assertEq(address(guardian.safe()), adminSafe);
         for (uint256 i = 0; i < accounts.length; i++) {
             assertEq(MockSafe(adminSafe).isOwner(accounts[i]), true);
         }
@@ -98,12 +99,13 @@ contract DeployTest is Test, Deployer {
         address root_ = address(root);
         address gateway_ = address(gateway);
         address guardian_ = address(guardian);
+        address vaultFactory_ = address(vaultFactory);
 
         assertEq(gasService.wards(gateway_), 1);
         assertEq(escrow.wards(poolManager_), 1);
-        assertEq(WardLike(vaultFactory).wards(poolManager_), 1);
-        assertEq(WardLike(restrictionManager).wards(poolManager_), 1);
-        assertEq(WardLike(trancheFactory).wards(poolManager_), 1);
+        assertEq(vaultFactory.wards(poolManager_), 1);
+        assertEq(restrictionManager.wards(poolManager_), 1);
+        assertEq(trancheFactory.wards(poolManager_), 1);
 
         assertEq(router.wards(root_), 1);
         assertEq(poolManager.wards(root_), 1);
@@ -113,9 +115,9 @@ contract DeployTest is Test, Deployer {
         assertEq(escrow.wards(root_), 1);
         assertEq(routerEscrow.wards(root_), 1);
         assertEq(adapter.wards(root_), 1);
-        assertEq(WardLike(vaultFactory).wards(root_), 1);
-        assertEq(WardLike(restrictionManager).wards(root_), 1);
-        assertEq(WardLike(trancheFactory).wards(root_), 1);
+        assertEq(vaultFactory.wards(root_), 1);
+        assertEq(restrictionManager.wards(root_), 1);
+        assertEq(trancheFactory.wards(root_), 1);
 
         assertEq(root.wards(gateway_), 1);
         assertEq(poolManager.wards(gateway_), 1);
@@ -125,7 +127,7 @@ contract DeployTest is Test, Deployer {
         assertEq(root.wards(guardian_), 1);
 
         assertEq(routerEscrow.wards(address(router)), 1);
-        assertEq(investmentManager.wards(vaultFactory), 1);
+        assertEq(investmentManager.wards(vaultFactory_), 1);
     }
 
     function testFilings() public {

@@ -2,6 +2,7 @@
 pragma solidity 0.8.26;
 
 import {IAuth} from "src/interfaces/IAuth.sol";
+import "forge-std/console.sol";
 
 /// @title  Auth
 /// @notice Simple authentication pattern
@@ -17,6 +18,8 @@ abstract contract Auth is IAuth {
 
     /// @dev Check if the msg.sender has permissions
     modifier auth() {
+        // console.log("Auth in:", address(this));
+        // console.log("Sender (auth):", msg.sender);
         require(wards[msg.sender] == 1, "Auth/not-authorized");
         _;
     }

@@ -14,6 +14,7 @@ import {ITranche} from "src/interfaces/token/ITranche.sol";
 import {IERC7540Vault} from "src/interfaces/IERC7540.sol";
 import {IGateway} from "src/interfaces/gateway/IGateway.sol";
 import {IRecoverable} from "src/interfaces/IRoot.sol";
+import "forge-std/console.sol";
 
 /// @title  Investment Manager
 /// @notice This is the main contract vaults interact with for
@@ -43,9 +44,16 @@ contract InvestmentManager is Auth, IInvestmentManager {
     // --- Administration ---
     /// @inheritdoc IInvestmentManager
     function file(bytes32 what, address data) external auth {
-        if (what == "gateway") gateway = IGateway(data);
-        else if (what == "poolManager") poolManager = IPoolManager(data);
-        else revert("InvestmentManager/file-unrecognized-param");
+        console.log("Investment Manager Filing...", data);
+        if (what == "gateway") {
+            gateway = IGateway(data);
+        } else if (what == "poolManager") {
+            poolManager = IPoolManager(data);
+        } else {
+            console.log("Reverting uknown param");
+            revert("InvestmentManager/file-unrecognized-param");
+        }
+
         emit File(what, data);
     }
 

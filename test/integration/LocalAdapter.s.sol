@@ -13,17 +13,18 @@ contract LocalAdapterScript is Deployer {
 
         // NOTE: 0x361c43cd5Fd700923Aae9dED678851a201839fc6 is the H160 of Keyring::Admin in the Centrifuge Chain
         // repository
-        adminSafe = address(0x361c43cd5Fd700923Aae9dED678851a201839fc6);
+        address _admin = address(0x361c43cd5Fd700923Aae9dED678851a201839fc6);
 
-        deploy(msg.sender);
         LocalAdapter adapter = new LocalAdapter();
-        wire(address(adapter));
+        address[] memory _adapters = new address[](1);
+        _adapters[0] = address(adapter);
+        deploy(msg.sender, _admin, _adapters);
 
         adapter.file("gateway", address(gateway));
         adapter.file("sourceChain", "TestDomain");
         adapter.file("sourceAddress", "0x1111111111111111111111111111111111111111");
 
-        removeDeployerAccess(address(adapter), msg.sender);
+        removeDeployerAccess();
 
         vm.stopBroadcast();
     }

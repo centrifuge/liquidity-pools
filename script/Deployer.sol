@@ -16,26 +16,63 @@ import {Guardian} from "src/admin/Guardian.sol";
 import {IAuth} from "src/interfaces/IAuth.sol";
 import "forge-std/Script.sol";
 
+struct Configuration {
+    uint256 delay;
+    bool isTestnet;
+    bool isDeterministic;
+}
+
+struct Deployment {
+    address escrow;
+    address routerEscrow;
+    address root;
+    address router;
+    address vaultFactory;
+    address trancheFactory;
+    address transferProxyFactory;
+    address poolManager;
+    address investmentManager;
+    address restrictionManager;
+    address gasService;
+    address payable gateway;
+    address guardian;
+    address deployer;
+    address adminSafe;
+    address[] adapters;
+    Configuration configuration;
+}
+
 contract Deployer is Script {
     uint256 internal constant delay = 48 hours;
+
+    Escrow public escrow;
+    Escrow public routerEscrow;
+    Root public root;
+    CentrifugeRouter public router;
+    ERC7540VaultFactory public vaultFactory;
+    TrancheFactory public trancheFactory;
+    TransferProxyFactory public transferProxyFactory;
+    PoolManager public poolManager;
+    InvestmentManager public investmentManager;
+    RestrictionManager public restrictionManager;
+    GasService public gasService;
+    Gateway public gateway;
+    Guardian public guardian;
+    address deployer;
     address adminSafe;
     address[] adapters;
 
-    Root public root;
-    InvestmentManager public investmentManager;
-    PoolManager public poolManager;
-    Escrow public escrow;
-    Escrow public routerEscrow;
-    Guardian public guardian;
-    Gateway public gateway;
-    GasService public gasService;
-    CentrifugeRouter public router;
-    TransferProxyFactory public transferProxyFactory;
-    address public vaultFactory;
-    address public restrictionManager;
-    address public trancheFactory;
+    Deployment deployment;
 
-    function deploy(address deployer) public {
+    function deploy(address _deployer, address _adminSafe, address[] memory _adapters_)
+        public
+        returns (Deployment memory)
+    {
+        require(_adminSafe != address(0), "Deployer/AdminSafe-must-be-set");
+        require(_adapters_.length > 0, "Deployer/At-least-one-router-is-needed");
+        console.log("Deployer is: ", _deployer);
+        console.log("Sender is: ", msg.sender);
+        console.log("This address is: ", address(this));
         // If no salt is provided, a pseudo-random salt is generated,
         // thus effectively making the deployment non-deterministic
         bytes32 salt = vm.envOr(
@@ -47,23 +84,33 @@ contract Deployer is Script {
         uint128 gasPrice = uint128(vm.envOr("GAS_PRICE", uint256(2500000000000000000))); // Centrifuge Chain
         uint256 tokenPrice = vm.envOr("TOKEN_PRICE", uint256(178947400000000)); // CFG/ETH
 
-        escrow = new Escrow{salt: salt}(deployer);
-        routerEscrow = new Escrow{salt: keccak256(abi.encodePacked(salt, "escrow2"))}(deployer);
-        root = new Root{salt: salt}(address(escrow), delay, deployer);
-        vaultFactory = address(new ERC7540VaultFactory(address(root)));
-        restrictionManager = address(new RestrictionManager{salt: salt}(address(root), deployer));
-        trancheFactory = address(new TrancheFactory{salt: salt}(address(root), deployer));
+        escrow = new Escrow{salt: salt}(_deployer);
+        routerEscrow = new Escrow{salt: keccak256(abi.encodePacked(salt, "escrow2"))}(_deployer);
+        root = new Root{salt: salt}(address(escrow), delay, _deployer);
+
+        vaultFactory = new ERC7540VaultFactory(address(root));
+        trancheFactory = new TrancheFactory{salt: salt}(address(root), _deployer);
+        transferProxyFactory = new TransferProxyFactory{salt: salt}(address(root), _deployer);
+
+        poolManager = new PoolManager(address(escrow), address(vaultFactory), address(trancheFactory));
         investmentManager = new InvestmentManager(address(root), address(escrow));
-        poolManager = new PoolManager(address(escrow), vaultFactory, trancheFactory);
-        transferProxyFactory = new TransferProxyFactory{salt: salt}(address(root), deployer);
+        restrictionManager = new RestrictionManager{salt: salt}(address(root), _deployer);
+
         gasService = new GasService(messageCost, proofCost, gasPrice, tokenPrice);
         gateway = new Gateway(address(root), address(poolManager), address(investmentManager), address(gasService));
         router = new CentrifugeRouter(address(routerEscrow), address(gateway), address(poolManager));
-        guardian = new Guardian(adminSafe, address(root), address(gateway));
+        guardian = new Guardian(_adminSafe, address(root), address(gateway));
+
+        deployer = _deployer;
+        adminSafe = _adminSafe;
+        adapters = _adapters_;
 
         _endorse();
         _rely();
         _file();
+        _storeDeployment();
+
+        return deployment;
     }
 
     function _endorse() internal {
@@ -74,9 +121,9 @@ contract Deployer is Script {
     function _rely() internal {
         // Rely on PoolManager
         escrow.rely(address(poolManager));
-        IAuth(vaultFactory).rely(address(poolManager));
-        IAuth(trancheFactory).rely(address(poolManager));
-        IAuth(restrictionManager).rely(address(poolManager));
+        vaultFactory.rely(address(poolManager));
+        trancheFactory.rely(address(poolManager));
+        restrictionManager.rely(address(poolManager));
 
         // Rely on Root
         router.rely(address(root));
@@ -87,9 +134,13 @@ contract Deployer is Script {
         escrow.rely(address(root));
         routerEscrow.rely(address(root));
         transferProxyFactory.rely(address(root));
-        IAuth(vaultFactory).rely(address(root));
-        IAuth(trancheFactory).rely(address(root));
-        IAuth(restrictionManager).rely(address(root));
+        vaultFactory.rely(address(root));
+        trancheFactory.rely(address(root));
+        restrictionManager.rely(address(root));
+        address[] memory adapters_ = adapters;
+        for (uint256 i; i < adapters_.length; i++) {
+            IAuth(adapters_[i]).rely(address(root));
+        }
 
         // Rely on guardian
         root.rely(address(guardian));
@@ -106,7 +157,7 @@ contract Deployer is Script {
         investmentManager.rely(address(vaultFactory));
     }
 
-    function _file() public {
+    function _file() internal {
         poolManager.file("investmentManager", address(investmentManager));
         poolManager.file("gasService", address(gasService));
         poolManager.file("gateway", address(gateway));
@@ -114,30 +165,56 @@ contract Deployer is Script {
         investmentManager.file("poolManager", address(poolManager));
         investmentManager.file("gateway", address(gateway));
 
+        gateway.file("adapters", adapters);
         gateway.file("payers", address(router), true);
 
         transferProxyFactory.file("poolManager", address(poolManager));
     }
 
-    function wire(address adapter) public {
-        adapters.push(adapter);
-        gateway.file("adapters", adapters);
-        IAuth(adapter).rely(address(root));
+    function _storeDeployment() internal {
+        deployment.escrow = address(escrow);
+        deployment.routerEscrow = address(routerEscrow);
+        deployment.root = address(root);
+        deployment.vaultFactory = address(vaultFactory);
+        deployment.trancheFactory = address(trancheFactory);
+        deployment.transferProxyFactory = address(transferProxyFactory);
+        deployment.poolManager = address(poolManager);
+        deployment.investmentManager = address(investmentManager);
+        deployment.restrictionManager = address(restrictionManager);
+        deployment.gasService = address(gasService);
+        deployment.gateway = payable(address(gateway));
+        deployment.router = address(router);
+        deployment.guardian = address(guardian);
+        deployment.deployer = address(deployer);
+        deployment.adminSafe = address(adminSafe);
+
+        deployment.configuration = Configuration({
+            delay: delay,
+            isTestnet: vm.envBool("IS_TESTNET"),
+            isDeterministic: vm.envBool("IS_DETERMINISTIC")
+        });
     }
 
-    function removeDeployerAccess(address adapter, address deployer) public {
-        IAuth(adapter).deny(deployer);
-        IAuth(vaultFactory).deny(deployer);
-        IAuth(trancheFactory).deny(deployer);
-        IAuth(restrictionManager).deny(deployer);
-        transferProxyFactory.deny(deployer);
-        root.deny(deployer);
-        investmentManager.deny(deployer);
-        poolManager.deny(deployer);
-        escrow.deny(deployer);
-        routerEscrow.deny(deployer);
-        gateway.deny(deployer);
-        router.deny(deployer);
-        gasService.deny(deployer);
+    function removeDeployerAccess() public {
+        address _deployer = deployer;
+
+        vaultFactory.deny(_deployer);
+        trancheFactory.deny(_deployer);
+        restrictionManager.deny(_deployer);
+        transferProxyFactory.deny(_deployer);
+        root.deny(_deployer);
+        investmentManager.deny(_deployer);
+        poolManager.deny(_deployer);
+        escrow.deny(_deployer);
+        routerEscrow.deny(_deployer);
+        gateway.deny(_deployer);
+        router.deny(_deployer);
+        gasService.deny(_deployer);
+
+        address[] memory _adapters = adapters;
+        uint256 adaptersCount = _adapters.length;
+        for (uint256 i; i < adaptersCount; i++) {
+            IAuth(_adapters[i]).deny(deployer);
+        }
     }
 }

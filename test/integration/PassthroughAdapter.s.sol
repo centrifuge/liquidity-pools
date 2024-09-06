@@ -10,17 +10,19 @@ contract PassthroughAdapterScript is Deployer {
     function run() public {
         vm.startBroadcast();
 
-        adminSafe = vm.envAddress("ADMIN");
+        address _admin = vm.envAddress("ADMIN");
 
-        deploy(msg.sender);
-        PassthroughAdapter router = new PassthroughAdapter();
-        wire(address(router));
+        PassthroughAdapter adapter = new PassthroughAdapter();
+        address[] memory _adapters = new address[](1);
+        _adapters[0] = address(adapter);
 
-        router.file("gateway", address(gateway));
-        router.file("sourceChain", vm.envString("SOURCE_CHAIN"));
-        router.file("sourceAddress", toString(address(router)));
+        deploy(msg.sender, _admin, _adapters);
 
-        removeDeployerAccess(address(router), msg.sender);
+        adapter.file("gateway", address(gateway));
+        adapter.file("sourceChain", vm.envString("SOURCE_CHAIN"));
+        adapter.file("sourceAddress", toString(address(adapter)));
+
+        removeDeployerAccess();
 
         vm.stopBroadcast();
     }

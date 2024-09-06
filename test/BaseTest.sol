@@ -57,13 +57,8 @@ contract BaseTest is Deployer, GasSnapshot, Test {
         // make yourself owner of the adminSafe
         address[] memory pausers = new address[](1);
         pausers[0] = self;
-        adminSafe = address(new MockSafe(pausers, 1));
-
-        // deploy core contracts
-        deploy(address(this));
-
+        
         // deploy mock adapters
-
         adapter1 = new MockAdapter(address(gateway));
         adapter2 = new MockAdapter(address(gateway));
         adapter3 = new MockAdapter(address(gateway));
@@ -76,8 +71,9 @@ contract BaseTest is Deployer, GasSnapshot, Test {
         testAdapters.push(address(adapter2));
         testAdapters.push(address(adapter3));
 
-        // wire contracts
-        wire(address(adapter1));
+        
+        // deploy core contracts
+        deploy(address(this), address(new MockSafe(pausers, 1)), testAdapters);
         // remove deployer access
         // removeDeployerAccess(address(adapter)); // need auth permissions in tests
 
@@ -85,7 +81,6 @@ contract BaseTest is Deployer, GasSnapshot, Test {
         mockedGasService = new MockGasService();
         erc20 = _newErc20("X's Dollar", "USDX", 6);
 
-        gateway.file("adapters", testAdapters);
         gateway.file("gasService", address(mockedGasService));
         vm.deal(address(gateway), GATEWAY_INITIAL_BALACE);
 
@@ -156,7 +151,6 @@ contract BaseTest is Deployer, GasSnapshot, Test {
         }
 
         poolManager.updateTranchePrice(poolId, trancheId, assetId, uint128(10 ** 18), uint64(block.timestamp));
-
         address vaultAddress = poolManager.deployVault(poolId, trancheId, asset);
 
         return vaultAddress;
@@ -170,13 +164,15 @@ contract BaseTest is Deployer, GasSnapshot, Test {
         bytes16 trancheId,
         uint128 asset
     ) public returns (address) {
-        return
-            deployVault(poolId, decimals, restrictionManager, tokenName, tokenSymbol, trancheId, asset, address(erc20));
+        return deployVault(
+            poolId, decimals, address(restrictionManager), tokenName, tokenSymbol, trancheId, asset, address(erc20)
+        );
     }
 
     function deploySimpleVault() public returns (address) {
-        return
-            deployVault(5, 6, restrictionManager, "name", "symbol", bytes16(bytes("1")), defaultAssetId, address(erc20));
+        return deployVault(
+            5, 6, address(restrictionManager), "name", "symbol", bytes16(bytes("1")), defaultAssetId, address(erc20)
+        );
     }
 
     function deposit(address _vault, address _investor, uint256 amount) public {

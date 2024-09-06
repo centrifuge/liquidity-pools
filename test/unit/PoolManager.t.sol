@@ -16,7 +16,7 @@ contract PoolManagerTest is BaseTest {
         vm.assume(nonWard != address(root) && nonWard != address(gateway) && nonWard != address(this));
 
         // redeploying within test to increase coverage
-        new PoolManager(address(escrow), vaultFactory, trancheFactory);
+        new PoolManager(address(escrow), address(vaultFactory), address(trancheFactory));
 
         // values set correctly
         assertEq(address(poolManager.gateway()), address(gateway));
@@ -510,7 +510,7 @@ contract PoolManagerTest is BaseTest {
         vm.prank(randomUser);
         poolManager.updateTrancheHook(poolId, trancheId, newHook);
 
-        assertEq(tranche.hook(), restrictionManager);
+        assertEq(tranche.hook(), address(restrictionManager));
 
         centrifugeChain.updateTrancheHook(poolId, trancheId, newHook);
         assertEq(tranche.hook(), newHook);

@@ -382,7 +382,7 @@ contract CentrifugeRouterTest is BaseTest {
 
         MockERC20Wrapper wrapper = new MockERC20Wrapper(address(erc20));
         address vault_ = deployVault(
-            5, 6, restrictionManager, "name", "symbol", bytes16(bytes("1")), defaultAssetId, address(wrapper)
+            5, 6, address(restrictionManager), "name", "symbol", bytes16(bytes("1")), defaultAssetId, address(wrapper)
         );
         ERC7540Vault vault = ERC7540Vault(vault_);
         vm.label(vault_, "vault");
@@ -419,7 +419,7 @@ contract CentrifugeRouterTest is BaseTest {
 
         MockERC20Wrapper wrapper = new MockERC20Wrapper(address(erc20));
         address vault_ = deployVault(
-            5, 6, restrictionManager, "name", "symbol", bytes16(bytes("1")), defaultAssetId, address(wrapper)
+            5, 6, address(restrictionManager), "name", "symbol", bytes16(bytes("1")), defaultAssetId, address(wrapper)
         );
         ERC7540Vault vault = ERC7540Vault(vault_);
         vm.label(vault_, "vault");
@@ -449,7 +449,7 @@ contract CentrifugeRouterTest is BaseTest {
 
         MockERC20Wrapper wrapper = new MockERC20Wrapper(address(erc20));
         address vault_ = deployVault(
-            5, 6, restrictionManager, "name", "symbol", bytes16(bytes("1")), defaultAssetId, address(wrapper)
+            5, 6, address(restrictionManager), "name", "symbol", bytes16(bytes("1")), defaultAssetId, address(wrapper)
         );
         ERC7540Vault vault = ERC7540Vault(vault_);
         vm.label(vault_, "vault");
@@ -476,7 +476,7 @@ contract CentrifugeRouterTest is BaseTest {
 
         MockERC20Wrapper wrapper = new MockERC20Wrapper(address(erc20));
         address vault_ = deployVault(
-            5, 6, restrictionManager, "name", "symbol", bytes16(bytes("1")), defaultAssetId, address(wrapper)
+            5, 6, address(restrictionManager), "name", "symbol", bytes16(bytes("1")), defaultAssetId, address(wrapper)
         );
         ERC7540Vault vault = ERC7540Vault(vault_);
         vm.label(vault_, "vault");
@@ -533,7 +533,7 @@ contract CentrifugeRouterTest is BaseTest {
 
         MockERC20Wrapper wrapper = new MockERC20Wrapper(address(erc20));
         address vault_ = deployVault(
-            5, 6, restrictionManager, "name", "symbol", bytes16(bytes("1")), defaultAssetId, address(wrapper)
+            5, 6, address(restrictionManager), "name", "symbol", bytes16(bytes("1")), defaultAssetId, address(wrapper)
         );
         vm.label(vault_, "vault");
 
@@ -682,9 +682,9 @@ contract CentrifugeRouterTest is BaseTest {
         vm.label(address(erc20X), "erc20X");
         vm.label(address(erc20Y), "erc20Y");
         address vault1_ =
-            deployVault(5, 6, restrictionManager, "name1", "symbol1", bytes16(bytes("1")), 1, address(erc20X));
+            deployVault(5, 6, address(restrictionManager), "name1", "symbol1", bytes16(bytes("1")), 1, address(erc20X));
         address vault2_ =
-            deployVault(4, 6, restrictionManager, "name2", "symbol2", bytes16(bytes("2")), 2, address(erc20Y));
+            deployVault(4, 6, address(restrictionManager), "name2", "symbol2", bytes16(bytes("2")), 2, address(erc20Y));
         vault1 = ERC7540Vault(vault1_);
         vault2 = ERC7540Vault(vault2_);
         vm.label(vault1_, "vault1");
@@ -706,7 +706,7 @@ contract CentrifugeRouterTest is BaseTest {
 
         MockReentrantERC20Wrapper1 wrapper = new MockReentrantERC20Wrapper1(address(erc20), address(router));
         address vault_ = deployVault(
-            5, 6, restrictionManager, "name", "symbol", bytes16(bytes("1")), defaultAssetId, address(wrapper)
+            5, 6, address(restrictionManager), "name", "symbol", bytes16(bytes("1")), defaultAssetId, address(wrapper)
         );
         vm.label(vault_, "vault");
 
@@ -728,7 +728,7 @@ contract CentrifugeRouterTest is BaseTest {
 
         MockReentrantERC20Wrapper2 wrapper = new MockReentrantERC20Wrapper2(address(erc20), address(router));
         address vault_ = deployVault(
-            5, 6, restrictionManager, "name", "symbol", bytes16(bytes("1")), defaultAssetId, address(wrapper)
+            5, 6, address(restrictionManager), "name", "symbol", bytes16(bytes("1")), defaultAssetId, address(wrapper)
         );
         vm.label(vault_, "vault");
 

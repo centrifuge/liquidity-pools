@@ -1,0 +1,45 @@
+{
+  "chainId": 13377331,
+  "config": {
+    "adapter": {
+      "axelarGasService": "0x2d5d7d31F671F86C782533cc367F14109a082712",
+      "axelarGateway": "0x4F4495243837681061C4743b74B3eEdf548D56A5",
+      "name": "AxelarAdapter"
+    },
+    "admin": "0xD9D30ab47c0f096b0AA67e9B8B1624504a63e7FD",
+    "adminSigners": [
+      "0x2F1724cc5005F376411747dFE24fb7412f5955B1",
+      "0xE9441B34f71659cCA2bfE90d98ee0e57D9CAD28F",
+      "0x88b991A2A8d3C5Ac808D3471e1784C6165d29612",
+      "0x6E72DD4D5CFCc274a8712A72C9dB9FE1d5A7eB6b",
+      "0x9eDec77dd2651Ce062ab17e941347018AD4eAEA9",
+      "0xd55114BfE98a2ca16202Aa741BeE571765292616",
+      "0x790c2c860DDC993f3da92B19cB440cF8338C59a6",
+      "0xc4576CE4603552c5BeAa056c449b0795D48fcf92"
+    ],
+    "commitHash": "49e9a7c3ad25b765cf99ce9191e3960db2f4b409",
+    "delay": 172800,
+    "deployer": "0x1804c8AB1F12E6bbf3894d4083f33e07309d1f38",
+    "deploymentSalt": "0x7270b20603fbb3df0921381670fbd62b9991ada4b17953a73f70fdff36730018",
+    "etherscanUrl": "https://api-sepolia.etherscan.io/api/",
+    "isDeterministicallyDeployed": true,
+    "isTestnet": true
+  },
+  "contracts": {
+    "escrow": "0xc60d823a3e3FbE175FD038Cedb2b423007b08AcC",
+    "gasService": "0xd21060559c9beb54fC07aFd6151aDf6cFCDDCAeB",
+    "gateway": "0x4C52a6277b1B84121b3072C0c92b6Be0b7CC10F1",
+    "guardian": "0x8B71b41D4dBEb2b6821d44692d3fACAAf77480Bb",
+    "investmentManager": "0x4f559F30f5eB88D635FDe1548C4267DB8FaB0351",
+    "poolManager": "0xD718d5A27a29FF1cD22403426084bA0d479869a0",
+    "restrictionManager": "0x6B64D9dd41485C7e89d9e2Ea384C38b8430F1726",
+    "root": "0x2bE8546e52c99AC8930Aa4d0d5Fd884dB25749fC",
+    "router": "0x978e3286EB805934215a88694d80b09aDed68D90",
+    "routerEscrow": "0x4211F448ff41E03D8895aCD1624c556089685955",
+    "trancheFactory": "0xd263c90D9A54BB5567B8b17247D7e5E3117eDE81",
+    "transferProxyFactory": "0xbc68D25C7879335BA7839c32058B815c3DA5E672",
+    "vaultFactory": "0x50EEf481cae4250d252Ae577A09bF514f224C6C4"
+  },
+  "deploymentBlock": 20691134,
+  "rpcUrl": "https://virtual.mainnet.rpc.tenderly.co/9e6efcc7-60ca-4cae-adb8-1cb028e8beec"
+}
