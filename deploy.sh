@@ -7,8 +7,6 @@ source $1
 
 COMMIT_HASH=$(git rev-parse HEAD)
 
-forge script script/Axelar.s.sol:AxelarScript
-
 if [[ -z "$RPC_URL" ]]; then
     error_exit "RPC_URL is not defined"
 fi
