@@ -440,6 +440,14 @@ contract ForkTest is Test {
     }
 
     function _getAddress(uint256 id, string memory key) public view returns (address) {
+        try this._tryGetAddress(id, key) returns (address addr) {
+            return addr;
+        } catch {
+            return address(0);
+        }
+    }
+
+    function _tryGetAddress(uint256 id, string memory key) external view returns (address) {
         return abi.decode(deployments[id].parseRaw(key), (address));
     }
 
@@ -475,18 +483,8 @@ contract ForkTest is Test {
         if (vm.envOr("FORK_TESTS", false)) {
             for (uint256 i = 0; i < deployments.length; i++) {
                 uint256 chainId = _getUint256(i, ".chainId");
-                address cfg;
-                try this._getAddress(i, ".integrations.cfg") returns (address _cfg) {
-                    cfg = _cfg;
-                } catch {
-                    cfg = address(0);
-                }
-                address verUSDC;
-                try this._getAddress(i, ".integrations.verUSDC") returns (address _verUSDC) {
-                    verUSDC = _verUSDC;
-                } catch {
-                    verUSDC = address(0);
-                }
+                address cfg = _getAddress(i, ".integrations.cfg");
+                address verUSDC = _getAddress(i, ".integrations.verUSDC");
                 address root = _getAddress(i, ".contracts.root");
                 address admin = _getAddress(i, ".config.admin");
                 _loadFork(i);
