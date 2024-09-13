@@ -39,6 +39,9 @@
         "guardian": "0x09ab10a9c3E6Eac1d18270a2322B6113F4C7f5E8",
         "adapter": "0x85bAFcAdeA202258e3512FFBC3E2c9eE6Ad56365"
     },
+    "integrations": {
+        "cfg": "0xc221b7E65FfC80DE234bbB6667aBDd46593D34F0"
+    },
     "deploymentBlock": 20432396,
     "isTestnet": false,
     "isDeterministicallyDeployed": true

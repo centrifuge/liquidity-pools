@@ -39,6 +39,10 @@
         "guardian": "0x427A1ce127b1775e4Cbd4F58ad468B9F832eA7e9",
         "adapter": "0x30e34260b895CAE34A1cfB185271628c53311cF3"
     },
+    "integrations": {
+        "cfg": "0x2b51E2Ec9551F9B87B321f63b805871f1c81ba97",
+        "verUSDC": "0x59aaF835D34b1E3dF2170e4872B785f11E2a964b"
+    },
     "deploymentBlock": 17854405,
     "isTestnet": false,
     "isDeterministicallyDeployed": true

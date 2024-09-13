@@ -16,6 +16,8 @@ import {TrancheFactory} from "src/factories/TrancheFactory.sol";
 import {ERC7540VaultFactory} from "src/factories/ERC7540VaultFactory.sol";
 import {TransferProxyFactory} from "src/factories/TransferProxyFactory.sol";
 import {Guardian} from "src/admin/Guardian.sol";
+import {IAuth} from "src/interfaces/IAuth.sol";
+import {IERC20Metadata} from "src/interfaces/IERC20.sol";
 import "forge-std/Test.sol";
 import "forge-std/StdJson.sol";
 
@@ -27,6 +29,10 @@ interface ISafe {
 
 interface IAxelarContract {
     function contractId() external view returns (bytes32);
+}
+
+interface IWrappedUSDC {
+    function memberlist() external view returns (address);
 }
 
 struct Deployment {
@@ -354,7 +360,7 @@ contract ForkTest is Test {
                 bool isTestnet = abi.decode(deployments[i].parseRaw(".isTestnet"), (bool));
                 if (!isTestnet) {
                     // Read deployment file
-                    address adminSafe = _get(i, ".config.admin");
+                    address adminSafe = _getAddress(i, ".config.admin");
                     address[] memory adminSigners =
                         abi.decode(deployments[i].parseRaw(".config.adminSigners"), (address[]));
                     _loadFork(i);
@@ -383,12 +389,12 @@ contract ForkTest is Test {
                 if (!isDeterministicallyDeployed) continue;
 
                 // Read deployment file
-                address root = _get(i, ".contracts.root");
-                address escrow = _get(i, ".contracts.escrow");
-                address routerEscrow = _get(i, ".contracts.routerEscrow");
-                address restrictionManager = _get(i, ".contracts.restrictionManager");
-                address trancheFactory = _get(i, ".contracts.trancheFactory");
-                address transferProxyFactory = _get(i, ".contracts.transferProxyFactory");
+                address root = _getAddress(i, ".contracts.root");
+                address escrow = _getAddress(i, ".contracts.escrow");
+                address routerEscrow = _getAddress(i, ".contracts.routerEscrow");
+                address restrictionManager = _getAddress(i, ".contracts.restrictionManager");
+                address trancheFactory = _getAddress(i, ".contracts.trancheFactory");
+                address transferProxyFactory = _getAddress(i, ".contracts.transferProxyFactory");
                 _loadFork(i);
 
                 bool isTestnet = abi.decode(deployments[i].parseRaw(".isTestnet"), (bool));
@@ -433,31 +439,72 @@ contract ForkTest is Test {
         vm.selectFork(forkId);
     }
 
-    function _get(uint256 id, string memory key) internal view returns (address) {
+    function _getAddress(uint256 id, string memory key) public view returns (address) {
+        try this._tryGetAddress(id, key) returns (address addr) {
+            return addr;
+        } catch {
+            return address(0);
+        }
+    }
+
+    function _tryGetAddress(uint256 id, string memory key) external view returns (address) {
         return abi.decode(deployments[id].parseRaw(key), (address));
+    }
+
+    function _getUint256(uint256 id, string memory key) internal view returns (uint256) {
+        return abi.decode(deployments[id].parseRaw(key), (uint256));
     }
 
     function _parse(uint256 id) internal view returns (Deployment memory) {
         return Deployment(
-            _get(id, ".contracts.root"),
-            _get(id, ".contracts.guardian"),
-            _get(id, ".contracts.restrictionManager"),
-            _get(id, ".contracts.investmentManager"),
-            _get(id, ".contracts.poolManager"),
-            _get(id, ".contracts.centrifugeRouter"),
-            payable(_get(id, ".contracts.gateway")),
-            _get(id, ".contracts.gasService"),
-            _get(id, ".contracts.escrow"),
-            _get(id, ".contracts.routerEscrow"),
-            _get(id, ".contracts.adapter"),
-            _get(id, ".contracts.trancheFactory"),
-            _get(id, ".contracts.erc7540VaultFactory"),
-            _get(id, ".contracts.transferProxyFactory"),
-            _get(id, ".config.deployer"),
-            _get(id, ".config.admin"),
-            _get(id, ".config.adapter.axelarGateway"),
-            _get(id, ".config.adapter.axelarGasService"),
+            _getAddress(id, ".contracts.root"),
+            _getAddress(id, ".contracts.guardian"),
+            _getAddress(id, ".contracts.restrictionManager"),
+            _getAddress(id, ".contracts.investmentManager"),
+            _getAddress(id, ".contracts.poolManager"),
+            _getAddress(id, ".contracts.centrifugeRouter"),
+            payable(_getAddress(id, ".contracts.gateway")),
+            _getAddress(id, ".contracts.gasService"),
+            _getAddress(id, ".contracts.escrow"),
+            _getAddress(id, ".contracts.routerEscrow"),
+            _getAddress(id, ".contracts.adapter"),
+            _getAddress(id, ".contracts.trancheFactory"),
+            _getAddress(id, ".contracts.erc7540VaultFactory"),
+            _getAddress(id, ".contracts.transferProxyFactory"),
+            _getAddress(id, ".config.deployer"),
+            _getAddress(id, ".config.admin"),
+            _getAddress(id, ".config.adapter.axelarGateway"),
+            _getAddress(id, ".config.adapter.axelarGasService"),
             abi.decode(deployments[id].parseRaw(".isTestnet"), (bool))
         );
+    }
+
+    function testIntegrations() public {
+        if (vm.envOr("FORK_TESTS", false)) {
+            for (uint256 i = 0; i < deployments.length; i++) {
+                uint256 chainId = _getUint256(i, ".chainId");
+                address cfg = _getAddress(i, ".integrations.cfg");
+                address verUSDC = _getAddress(i, ".integrations.verUSDC");
+                address root = _getAddress(i, ".contracts.root");
+                address admin = _getAddress(i, ".config.admin");
+                _loadFork(i);
+
+                if (verUSDC != address(0)) {
+                    assertEq(IAuth(verUSDC).wards(root), 1);
+                    assertEq(IAuth(IWrappedUSDC(verUSDC).memberlist()).wards(admin), 1);
+                }
+                if (cfg != address(0)) {
+                    assertEq(IAuth(cfg).wards(root), 1);
+                    assertEq(IERC20Metadata(cfg).decimals(), 18);
+                    if (chainId == 1) {
+                        assertEq(IERC20Metadata(cfg).name(), "Wrapped Centrifuge");
+                        assertEq(IERC20Metadata(cfg).symbol(), "wCFG");
+                    } else {
+                        assertEq(IERC20Metadata(cfg).name(), "Centrifuge");
+                        assertEq(IERC20Metadata(cfg).symbol(), "CFG");
+                    }
+                }
+            }
+        }
     }
 }
