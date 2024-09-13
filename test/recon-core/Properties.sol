@@ -271,7 +271,7 @@ abstract contract Properties is Setup, Asserts, ERC7540CentrifugeProperties {
             /// @audit Minted by Asset Payouts by Investors
             == (
                 mintedByCurrencyPayout[address(token)] + sumOfDepositRequests[address(token)]
-                    + sumOfTransfersIn[address(token)]
+                    + sumOfTransfersIn[address(token)] + sumOfExecutedLockedDepositRequests[address(token)]
                 // Minus Claimed Redemptions and TransfersOut
                 - sumOfClaimedRedemptions[address(token)] - sumOfClaimedDepositCancelations[address(token)]
                     - sumOfTransfersOut[address(token)]
@@ -381,5 +381,56 @@ abstract contract Properties is Setup, Asserts, ERC7540CentrifugeProperties {
 
         emit DebugWithString("acc - balOfEscrow", balOfEscrow < acc ? acc - balOfEscrow : 0);
         return acc <= balOfEscrow; // Ensure bal of escrow is sufficient to fulfill requests
+    }
+
+    // Router Escrow
+
+    /**
+     * The balance of currencies in RouterEscrow is
+     *     sum of locked deposit requests
+     *     minus sum of unlock deposit requests
+     *     minus sum of executed deposit requests
+     *
+     *     NOTE: Ignores donations
+     */
+    function invariant_RE_1() public returns (bool) {
+        if (address(routerEscrow) == address(0)) {
+            return true;
+        }
+        if (address(token) == address(0)) {
+            return true;
+        }
+
+        unchecked {
+            return token.balanceOf(address(routerEscrow))
+                == (
+                    sumOfLockedDepositRequests[address(token)] - sumOfUnlockedDepositRequests[address(token)]
+                        - sumOfExecutedLockedDepositRequests[address(token)]
+                );
+        }
+    }
+
+    // CentrifugeRouter
+
+    /**
+     * The sum of unlocked deposit requests must be less than the sum of locked deposit requests
+     */
+    function invariant_CR_1() public returns (bool) {
+        if (address(routerEscrow) == address(0)) {
+            return true;
+        }
+
+        return sumOfUnlockedDepositRequests[address(token)] <= sumOfLockedDepositRequests[address(token)];
+    }
+
+    /**
+     * The sum of executed deposit requests must be less than the sum of locked deposit requests
+     */
+    function invariant_CR_2() public returns (bool) {
+        if (address(routerEscrow) == address(0)) {
+            return true;
+        }
+
+        return sumOfExecutedLockedDepositRequests[address(token)] <= sumOfLockedDepositRequests[address(token)];
     }
 }

@@ -8,6 +8,7 @@ import {PoolManager} from "src/PoolManager.sol";
 import {ERC7540Vault} from "src/ERC7540Vault.sol";
 import {Root} from "src/Root.sol";
 import {Tranche} from "src/token/Tranche.sol";
+import {CentrifugeRouter} from "src/CentrifugeRouter.sol";
 
 import {ERC7540VaultFactory} from "src/factories/ERC7540VaultFactory.sol";
 import {TrancheFactory} from "src/factories/TrancheFactory.sol";
@@ -28,8 +29,10 @@ abstract contract Setup is BaseSetup, SharedStorage {
 
     // Handled //
     Escrow public escrow; // NOTE: Restriction Manager will query it
+    Escrow public routerEscrow;
     InvestmentManager investmentManager;
     PoolManager poolManager;
+    CentrifugeRouter router;
 
     // TODO: CYCLE / Make it work for variable values
     ERC7540Vault vault;
@@ -59,16 +62,18 @@ abstract contract Setup is BaseSetup, SharedStorage {
         centrifugeChain = address(this);
 
         // Dependencies
-        vaultFactory = new ERC7540VaultFactory(address(this));
-        trancheFactory = new TrancheFactory(address(this), address(this));
         escrow = new Escrow(address(address(this)));
+        routerEscrow = new Escrow(address(address(this)));
         root = new Root(address(escrow), 48 hours, address(this));
+        vaultFactory = new ERC7540VaultFactory(address(root));
+        trancheFactory = new TrancheFactory(address(root), address(this));
         restrictionManager = new RestrictionManager(address(root), address(this));
-
-        root.endorse(address(escrow));
 
         poolManager = new PoolManager(address(escrow), address(vaultFactory), address(trancheFactory));
         poolManager.file("gateway", address(this));
+
+        // Setup router
+        router = new CentrifugeRouter(address(routerEscrow), address(this), address(poolManager));
 
         investmentManager = new InvestmentManager(address(root), address(escrow));
 
@@ -83,6 +88,10 @@ abstract contract Setup is BaseSetup, SharedStorage {
         // Setup Escrow Permissions
         escrow.rely(address(investmentManager));
         escrow.rely(address(poolManager));
+        routerEscrow.rely(address(router));
+
+        root.endorse(address(router));
+        root.endorse(address(escrow));
 
         // Permissions on factories
         vaultFactory.rely(address(poolManager));
@@ -150,5 +159,13 @@ abstract contract Setup is BaseSetup, SharedStorage {
         ) = investmentManager.investments(address(vault), address(actor));
 
         return (depositPrice, redeemPrice);
+    }
+
+    /// @dev Get the balance of the current token and actor
+    function _getTokenAndBalanceForVault() internal view returns (uint256) {
+        // Token
+        uint256 amt = token.balanceOf(actor);
+
+        return amt;
     }
 }
