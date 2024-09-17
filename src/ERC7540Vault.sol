@@ -409,12 +409,12 @@ contract ERC7540Vault is Auth, IERC7540Vault {
     }
 
     // --- Helpers ---
-    /// @notice Price of 1 unit of share, quoted in the decimals of the asset.
+    /// @inheritdoc IERC7540Vault
     function pricePerShare() external view returns (uint256) {
         return convertToAssets(10 ** _shareDecimals);
     }
 
-    /// @notice Returns timestamp of the last share price update.
+    /// @inheritdoc IERC7540Vault
     function priceLastUpdated() external view returns (uint64) {
         return manager.priceLastUpdated(address(this));
     }

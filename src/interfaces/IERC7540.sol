@@ -308,6 +308,12 @@ interface IERC7540Vault is
     /// @dev    MUST be called by endorsed sender
     function setEndorsedOperator(address owner, bool approved) external;
 
+    /// @notice Price of 1 unit of share, quoted in the decimals of the asset.
+    function pricePerShare() external view returns (uint256);
+
+    /// @notice Returns timestamp of the last share price update.
+    function priceLastUpdated() external view returns (uint64);
+
     /// @notice Callback when a redeem Request is triggered externally;
     function onRedeemRequest(address controller, address owner, uint256 shares) external;
 
