@@ -69,10 +69,10 @@ contract InterestDistributor is Auth, IInterestDistributor {
     }
 
     /// @inheritdoc IInterestDistributor
-    function pending(address vault_, address user_) external view returns (uint128) {
+    function pending(address vault_, address user_) external view returns (uint128 shares) {
         InterestDetails memory user = _users[vault_][user_];
         if (user.lastPriceUpdate == IERC7540Vault(vault_).priceLastUpdated()) return 0;
-        return _calculateSharesToRedeem(
+        shares = _calculateSharesToRedeem(
             user.outstandingShares, uint256(user.latestPrice), IERC7540Vault(vault_).pricePerShare()
         );
     }
