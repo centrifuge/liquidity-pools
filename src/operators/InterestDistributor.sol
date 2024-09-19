@@ -6,7 +6,7 @@ import {IERC20} from "src/interfaces/IERC20.sol";
 import {IERC7540Vault} from "src/interfaces/IERC7540.sol";
 import {IPoolManager} from "src/interfaces/IPoolManager.sol";
 import {MathLib} from "src/libraries/MathLib.sol";
-import {IInterestDistributor} from "src/interfaces/operators/IInterestDistributor.sol";
+import {IInterestDistributor, InterestDetails} from "src/interfaces/operators/IInterestDistributor.sol";
 
 /// @title  InterestDistributor
 /// @notice Contract that can be set as an operator of a controller for a vault, which then enables
@@ -17,13 +17,7 @@ import {IInterestDistributor} from "src/interfaces/operators/IInterestDistributo
 contract InterestDistributor is Auth, IInterestDistributor {
     using MathLib for uint256;
 
-    struct UserDetails {
-        uint256 latestPrice;
-        uint64 lastPriceUpdate;
-        uint128 outstandingShares;
-    }
-
-    mapping(address vault => mapping(address user => UserDetails)) internal _users;
+    mapping(address vault => mapping(address user => InterestDetails)) internal _users;
 
     constructor() Auth(msg.sender) {}
 
@@ -32,7 +26,7 @@ contract InterestDistributor is Auth, IInterestDistributor {
         IERC7540Vault vault = IERC7540Vault(vault_);
         require(vault.isOperator(user_, address(this)), "InterestDistributor/not-an-operator");
 
-        UserDetails storage user = _users[vault_][user_];
+        InterestDetails storage user = _users[vault_][user_];
         uint64 priceLastUpdated = vault.priceLastUpdated();
 
         if (user.lastPriceUpdate == priceLastUpdated) {
@@ -43,14 +37,21 @@ contract InterestDistributor is Auth, IInterestDistributor {
         // Assuming price updates coincide with epoch fulfillments, this has the effect of only requesting
         // interest on the previous balance before the new fulfillment.
         uint256 newPrice = vault.pricePerShare();
-        uint128 request = _calculateSharesToRedeem(user.outstandingShares, user.latestPrice, newPrice);
+        uint128 request = _calculateSharesToRedeem(user.outstandingShares, uint256(user.latestPrice), newPrice);
 
-        user.latestPrice = newPrice;
+        uint128 prevOutstandingShares = user.outstandingShares;
+        user.latestPrice = uint64(newPrice);
         user.lastPriceUpdate = priceLastUpdated;
         user.outstandingShares = IERC20(vault.share()).balanceOf(user_).toUint128();
 
-        if (request > 0) vault.requestRedeem(request, user_, user_);
-        emit Distribute(vault_, user_, request);
+        if (request > 0) {
+            vault.requestRedeem(request, user_, user_);
+            emit InterestRedeemRequest(vault_, user_, request);
+        }
+
+        if (user.outstandingShares != prevOutstandingShares) {
+            emit OutstandingSharesUpdate(vault_, user_, prevOutstandingShares, user.outstandingShares);
+        }
     }
 
     /// @inheritdoc IInterestDistributor
@@ -58,7 +59,7 @@ contract InterestDistributor is Auth, IInterestDistributor {
         IERC7540Vault vault = IERC7540Vault(vault_);
         require(!vault.isOperator(user_, address(this)), "InterestDistributor/still-an-operator");
 
-        UserDetails storage user = _users[vault_][user_];
+        InterestDetails storage user = _users[vault_][user_];
         require(user.outstandingShares > 0, "InterestDistributor/no-outstanding-shares");
 
         user.latestPrice = 0;
@@ -69,9 +70,11 @@ contract InterestDistributor is Auth, IInterestDistributor {
 
     /// @inheritdoc IInterestDistributor
     function pending(address vault_, address user_) external view returns (uint128) {
-        UserDetails memory user = _users[vault_][user_];
+        InterestDetails memory user = _users[vault_][user_];
         if (user.lastPriceUpdate == IERC7540Vault(vault_).priceLastUpdated()) return 0;
-        return _calculateSharesToRedeem(user.outstandingShares, user.latestPrice, IERC7540Vault(vault_).pricePerShare());
+        return _calculateSharesToRedeem(
+            user.outstandingShares, uint256(user.latestPrice), IERC7540Vault(vault_).pricePerShare()
+        );
     }
 
     /// @dev Calculate shares to redeem based on outstandingShares * ((newPrice - prevPrice) / prevPrice)

@@ -1,9 +1,17 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity >=0.5.0;
 
+struct InterestDetails {
+    /// @dev Downcast from uint256
+    uint64 latestPrice;
+    uint64 lastPriceUpdate;
+    uint128 outstandingShares;
+}
+
 interface IInterestDistributor {
     // --- Events ---
-    event Distribute(address indexed vault, address indexed user, uint128 request);
+    event InterestRedeemRequest(address indexed vault, address indexed user, uint128 request);
+    event OutstandingSharesUpdate(address indexed vault, address indexed user, uint128 previous, uint128 current);
     event Clear(address indexed vault, address indexed user);
 
     /// @notice Trigger redeem request of pending interest for a user who has set the interest distributor
