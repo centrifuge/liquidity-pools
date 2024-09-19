@@ -9,7 +9,8 @@ import {MathLib} from "src/libraries/MathLib.sol";
 import {IInterestDistributor} from "src/interfaces/operators/IInterestDistributor.sol";
 
 /// @title  InterestDistributor
-/// @notice
+/// @notice Contract that can be set as an operator of a controller for a vault, which then enables
+///         permissionless triggers of redeem requests for the accrued interest on a vault.
 contract InterestDistributor is Auth, IInterestDistributor {
     using MathLib for uint256;
 
@@ -32,7 +33,6 @@ contract InterestDistributor is Auth, IInterestDistributor {
         uint64 priceLastUpdated = vault.priceLastUpdated();
 
         if (user.lastPriceUpdate == priceLastUpdated) {
-            // No price update since last distribute() call
             return;
         }
 
