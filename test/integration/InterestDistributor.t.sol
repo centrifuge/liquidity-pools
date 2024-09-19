@@ -3,13 +3,13 @@ pragma solidity 0.8.26;
 
 import "test/BaseTest.sol";
 
-contract OperatorTest is BaseTest {
-    function testRequestRedeemInterest(uint256 amount) public {
+contract InterestDistributorTest is BaseTest {
+    function testDistributeInterest(uint256 amount) public {
         // If lower than 4 or odd, rounding down can lead to not receiving any tokens
         amount = uint128(bound(amount, 4, MAX_UINT128));
         vm.assume(amount % 2 == 0);
 
-        uint128 price = 2 * 10 ** 18;
+        uint128 price = 1 * 10 ** 18;
         address vault_ = deploySimpleVault();
         address investor = makeAddr("investor");
         ERC7540Vault vault = ERC7540Vault(vault_);
@@ -37,6 +37,34 @@ contract OperatorTest is BaseTest {
             uint128(amount)
         );
 
+        vm.prank(investor);
         vault.deposit(amount, investor, investor);
+
+        assertEq(vault.pendingRedeemRequest(0, investor), 0);
+        assertEq(interestDistributor.pending(vault_, investor), 0);
+
+        vm.expectRevert(bytes("InterestDistributor/not-an-operator"));
+        interestDistributor.distribute(vault_, investor);
+
+        vm.prank(investor);
+        vault.setOperator(address(interestDistributor), true);
+
+        interestDistributor.distribute(vault_, investor);
+
+        assertEq(vault.pendingRedeemRequest(0, investor), 0);
+        assertEq(interestDistributor.pending(vault_, investor), 0);
+
+        vm.warp(block.timestamp + 1 days);
+        centrifugeChain.updateTranchePrice(
+            vault.poolId(), vault.trancheId(), defaultAssetId, 1.1 * 10 ** 18, uint64(block.timestamp)
+        );
+
+        assertEq(vault.pendingRedeemRequest(0, investor), 0);
+        assertEq(interestDistributor.pending(vault_, investor), amount / 10);
+
+        interestDistributor.distribute(vault_, investor);
+
+        assertEq(vault.pendingRedeemRequest(0, investor), amount / 10);
+        assertEq(interestDistributor.pending(vault_, investor), 0);
     }
 }

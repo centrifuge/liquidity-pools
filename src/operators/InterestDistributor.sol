@@ -10,10 +10,8 @@ import {IInterestDistributor} from "src/interfaces/operators/IInterestDistributo
 
 /// @title  InterestDistributor
 /// @notice
-contract InterestDistributor is IInterestDistributor {
+contract InterestDistributor is Auth, IInterestDistributor {
     using MathLib for uint256;
-
-    IPoolManager public poolManager;
 
     struct UserDetails {
         uint256 latestPrice;
@@ -23,14 +21,14 @@ contract InterestDistributor is IInterestDistributor {
 
     mapping(address vault => mapping(address user => UserDetails)) internal _users;
 
-    constructor(address poolManager_) Auth(msg.sender) {
-        poolManager = IPoolManager(poolManager_);
-    }
+    constructor() Auth(msg.sender) {}
 
     /// @inheritdoc IInterestDistributor
     function distribute(address vault_, address user_) public {
-        UserDetails storage user = _users[vault_][user_];
         IERC7540Vault vault = IERC7540Vault(vault_);
+        require(vault.isOperator(user_, address(this)), "InterestDistributor/not-an-operator");
+
+        UserDetails storage user = _users[vault_][user_];
         uint64 priceLastUpdated = vault.priceLastUpdated();
 
         if (user.lastPriceUpdate == priceLastUpdated) {
@@ -46,24 +44,43 @@ contract InterestDistributor is IInterestDistributor {
 
         user.latestPrice = newPrice;
         user.lastPriceUpdate = priceLastUpdated;
-        user.outstandingShares = IERC20(vault.share()).balanceOf(user).toUint128();
+        user.outstandingShares = IERC20(vault.share()).balanceOf(user_).toUint128();
 
-        vault.requestRedeem(request, user_, user_);
+        if (request > 0) vault.requestRedeem(request, user_, user_);
         emit Distribute(vault_, user_, request);
     }
 
     /// @inheritdoc IInterestDistributor
+    function clear(address vault_, address user_) external {
+        IERC7540Vault vault = IERC7540Vault(vault_);
+        require(!vault.isOperator(user_, address(this)), "InterestDistributor/still-an-operator");
+
+        UserDetails storage user = _users[vault_][user_];
+        require(user.outstandingShares > 0, "InterestDistributor/no-outstanding-shares");
+
+        user.latestPrice = 0;
+        user.lastPriceUpdate = 0;
+        user.outstandingShares = 0;
+        emit Clear(vault_, user_);
+    }
+
+    /// @inheritdoc IInterestDistributor
+    function pending(address vault_, address user_) external view returns (uint128) {
+        UserDetails memory user = _users[vault_][user_];
+        if (user.lastPriceUpdate == IERC7540Vault(vault_).priceLastUpdated()) return 0;
+        return _calculateSharesToRedeem(user.outstandingShares, user.latestPrice, IERC7540Vault(vault_).pricePerShare());
+    }
+
     function _calculateSharesToRedeem(uint128 outstandingShares, uint256 prevPrice, uint256 newPrice)
         internal
         view
-        returns (uint256 shares)
+        returns (uint128 shares)
     {
-        if (newPrice <= prevPrice) {
-            shares = 0;
-            return;
+        if (outstandingShares == 0 || newPrice <= prevPrice) {
+            return 0;
         }
 
         // outstandingShares * ((newPrice - prevPrice) / prevPrice)
-        shares = outstandingShares.mulDiv(newPrice - prevPrice, prevPrice, MathLib.Rounding.Down);
+        shares = uint256(outstandingShares).mulDiv(newPrice - prevPrice, prevPrice, MathLib.Rounding.Down).toUint128();
     }
 }
