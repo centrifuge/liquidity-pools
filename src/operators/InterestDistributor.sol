@@ -11,6 +11,9 @@ import {IInterestDistributor} from "src/interfaces/operators/IInterestDistributo
 /// @title  InterestDistributor
 /// @notice Contract that can be set as an operator of a controller for a vault, which then enables
 ///         permissionless triggers of redeem requests for the accrued interest on a vault.
+///
+///         Whenever a user claims new tranche tokens or a principal redeem request is initiated,
+///         distribute() should be called to update the outstanding shares that the interest is computed based on.
 contract InterestDistributor is Auth, IInterestDistributor {
     using MathLib for uint256;
 
