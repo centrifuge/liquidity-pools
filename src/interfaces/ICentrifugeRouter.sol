@@ -154,6 +154,9 @@ interface ICentrifugeRouter is IRecoverable {
     /// @param  controller Check  IERC7540CancelRedeem.claimCancelRedeemRequest.controller
     function claimCancelRedeemRequest(address vault, address receiver, address controller) external payable;
 
+    /// @notice TODO
+    function distributeInterest(address vault, address controller) external payable;
+
     // --- Transfer ---
     /// @notice Check `IPoolManager.transferAssets`.
     /// @dev    This adds a mandatory prepayment for all the costs that will incur during the transaction.

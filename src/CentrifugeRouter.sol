@@ -15,6 +15,7 @@ import {IGateway} from "src/interfaces/gateway/IGateway.sol";
 import {TransientStorage} from "src/libraries/TransientStorage.sol";
 import {IRecoverable} from "src/interfaces/IRoot.sol";
 import {ITransferProxy} from "src/interfaces/factories/ITransferProxy.sol";
+import {IInterestDistributor} from "src/interfaces/operators/IInterestDistributor.sol";
 
 /// @title  CentrifugeRouter
 /// @notice This is a helper contract, designed to be the entrypoint for EOAs.
@@ -36,6 +37,7 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     IEscrow public immutable escrow;
     IGateway public immutable gateway;
     IPoolManager public immutable poolManager;
+    IInterestDistributor public immutable interestDistributor;
 
     /// @inheritdoc ICentrifugeRouter
     mapping(address controller => mapping(address vault => uint256 amount)) public lockedRequests;
@@ -216,6 +218,11 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     function claimCancelRedeemRequest(address vault, address receiver, address controller) external payable protected {
         _canClaim(vault, receiver, controller);
         IERC7540Vault(vault).claimCancelRedeemRequest(REQUEST_ID, receiver, controller);
+    }
+
+    /// @inheritdoc ICentrifugeRouter
+    function distributeInterest(address vault, address controller) external payable protected {
+        interestDistributor.distribute(vault, controller);
     }
 
     // --- Transfer ---

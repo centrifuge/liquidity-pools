@@ -71,6 +71,7 @@ contract InterestDistributor is Auth, IInterestDistributor {
         return _calculateSharesToRedeem(user.outstandingShares, user.latestPrice, IERC7540Vault(vault_).pricePerShare());
     }
 
+    /// @dev Calculate shares to redeem based on outstandingShares * ((newPrice - prevPrice) / prevPrice)
     function _calculateSharesToRedeem(uint128 outstandingShares, uint256 prevPrice, uint256 newPrice)
         internal
         view
@@ -80,7 +81,6 @@ contract InterestDistributor is Auth, IInterestDistributor {
             return 0;
         }
 
-        // outstandingShares * ((newPrice - prevPrice) / prevPrice)
         shares = uint256(outstandingShares).mulDiv(newPrice - prevPrice, prevPrice, MathLib.Rounding.Down).toUint128();
     }
 }
