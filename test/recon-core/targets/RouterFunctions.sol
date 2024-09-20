@@ -119,6 +119,63 @@ abstract contract RouterFunctions is BaseTargetFunctions, Properties {
         }
     }
 
+    // === request Deposit === //
+    function router_requestDeposit(uint256 assets) public {
+        address owner = actor;
+        address controller = actor; // TODO: test with different address wen multi-actor supported
+
+        uint256 balanceOfEscrowB4 = token.balanceOf(address(escrow));
+        uint256 balanceOfRouterEscrowB4 = token.balanceOf(address(routerEscrow));
+        uint256 balanceOfOwnerB4 = token.balanceOf(owner);
+        assets = between(assets, 0, _getTokenAndBalanceForVault());
+
+        bool hasReverted;
+
+        token.approve(address(vault), assets); // owner = self -> allow to transfer tokens - need to test edge cacse
+            // without allowance
+
+        try router.requestDeposit(address(vault), assets, controller, owner, 0) {
+            // TODO: test topup
+            sumOfDepositRequestsRouter[address(token)] += assets;
+            requestDepositAssets[actor][address(token)] += assets;
+        } catch {
+            hasReverted = true;
+        }
+
+        if (!poolManager.isAllowedAsset(poolId, address(token))) {
+            // TODO: Ensure this works via actor switch
+            t(hasReverted, "Router-x Must Revert");
+        }
+
+        // If not member
+        (bool isMember,) = restrictionManager.isMember(address(trancheToken), controller);
+        if (!isMember) {
+            t(hasReverted, "LP-1 Must Revert");
+        }
+        if (restrictionManager.isFrozen(address(trancheToken), controller) == true) {
+            t(hasReverted, "LP-2 Must Revert");
+        }
+        if (!poolManager.isAllowedAsset(poolId, address(token))) {
+            t(hasReverted, "LP-3 Must Revert");
+        }
+
+        // After Balances and Checks
+        uint256 balanceOfEscrowAfter = token.balanceOf(address(escrow));
+        uint256 balanceOfOwnerAfter = token.balanceOf(owner);
+        uint256 balanceOfRouterEscrowAfter = token.balanceOf(address(routerEscrow));
+
+        // NOTE: We only enforce the check if the tx didn't revert
+        if (!hasReverted) {
+            uint256 deltaEscrow = balanceOfEscrowAfter - balanceOfEscrowB4;
+            uint256 deltaOwner = balanceOfOwnerB4 - balanceOfOwnerAfter;
+            uint256 deltaRouterEscrow = balanceOfRouterEscrowB4 - balanceOfRouterEscrowAfter;
+
+            eq(deltaEscrow, assets, "Router-x");
+            eq(deltaOwner, assets, "Router-x");
+            eq(deltaRouterEscrow, 0, "Router-x");
+        }
+    }
+
     // TODO: once we have multi actor support, include receiver != controller case
     function router_claimDeposit(address sender) public {
         // Bal b4
