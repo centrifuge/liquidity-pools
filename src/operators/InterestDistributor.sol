@@ -37,24 +37,24 @@ contract InterestDistributor is Auth, IInterestDistributor {
         // again once the price fully recovers above the previous high point (peak).
         // Peak is stored per user since if the price has globally gone down, and a user invests at that time,
         // they'd expect to redeem interest based on the price they invested in, not the previous high point.
-        uint256 newPrice = vault.pricePerShare();
-        if (newPrice < user.peak) return;
+        uint256 currentPrice = vault.pricePerShare();
+        if (currentPrice < user.peak) return;
         uint256 comparison = uint256(user.latestPrice) < user.peak ? user.peak : uint256(user.latestPrice);
 
         // Calculate before updating user.shares, so it's based on the balance of the last price update.
         // Assuming price updates coincide with epoch fulfillments, this has the effect of only requesting
         // interest on the previous balance before the new fulfillment.
-        uint128 request = _computeRequest(user.outstandingShares, comparison, newPrice);
+        uint128 request = _computeRequest(user.outstandingShares, comparison, currentPrice);
 
         uint128 prevOutstandingShares = user.outstandingShares;
-        user.latestPrice = uint64(newPrice);
-        if (newPrice > user.peak) user.peak = uint64(newPrice);
+        user.latestPrice = uint32(currentPrice);
+        if (currentPrice > user.peak) user.peak = uint32(currentPrice);
         user.lastDistribution = priceLastUpdated;
         user.outstandingShares = IERC20(vault.share()).balanceOf(user_).toUint128();
 
         if (request > 0) {
             vault.requestRedeem(request, user_, user_);
-            emit InterestRedeemRequest(vault_, user_, request);
+            emit InterestRedeemRequest(vault_, user_, comparison, currentPrice, request);
         }
 
         if (user.outstandingShares != prevOutstandingShares) {
@@ -72,25 +72,26 @@ contract InterestDistributor is Auth, IInterestDistributor {
     }
 
     /// @inheritdoc IInterestDistributor
-    function pending(address vault_, address user_) external returns (uint128 shares) {
+    function pending(address vault_, address user_) external view returns (uint128 shares) {
         InterestDetails memory user = _users[vault_][user_];
         if (user.lastDistribution == IERC7540Vault(vault_).priceLastUpdated()) return 0;
-        uint256 newPrice = IERC7540Vault(vault_).pricePerShare();
-        if (newPrice < user.peak) return 0;
+        uint256 currentPrice = IERC7540Vault(vault_).pricePerShare();
+        if (currentPrice < user.peak) return 0;
         uint256 comparison = uint256(user.latestPrice) < user.peak ? user.peak : uint256(user.latestPrice);
-        shares = _computeRequest(user.outstandingShares, comparison, newPrice);
+        shares = _computeRequest(user.outstandingShares, comparison, currentPrice);
     }
 
-    /// @dev Calculate shares to redeem based on outstandingShares * ((newPrice - prevPrice) / newPrice)
-    function _computeRequest(uint128 outstandingShares, uint256 prevPrice, uint256 newPrice)
+    /// @dev Calculate shares to redeem based on outstandingShares * ((currentPrice - prevPrice) / currentPrice)
+    function _computeRequest(uint128 outstandingShares, uint256 prevPrice, uint256 currentPrice)
         internal
-        view
+        pure
         returns (uint128 shares)
     {
-        if (outstandingShares == 0 || newPrice <= prevPrice) {
+        if (outstandingShares == 0 || currentPrice <= prevPrice) {
             return 0;
         }
 
-        shares = uint256(outstandingShares).mulDiv(newPrice - prevPrice, newPrice, MathLib.Rounding.Down).toUint128();
+        shares =
+            uint256(outstandingShares).mulDiv(currentPrice - prevPrice, currentPrice, MathLib.Rounding.Down).toUint128();
     }
 }

@@ -3,16 +3,18 @@ pragma solidity >=0.5.0;
 
 struct InterestDetails {
     /// @dev Downcast from uint256
-    uint64 latestPrice;
+    uint32 latestPrice;
     /// @dev Downcast from uint256
-    uint64 peak;
+    uint32 peak;
     uint64 lastDistribution;
     uint128 outstandingShares;
 }
 
 interface IInterestDistributor {
     // --- Events ---
-    event InterestRedeemRequest(address indexed vault, address indexed user, uint128 request);
+    event InterestRedeemRequest(
+        address indexed vault, address indexed user, uint256 previousPrice, uint256 currentPrice, uint128 request
+    );
     event OutstandingSharesUpdate(address indexed vault, address indexed user, uint128 previous, uint128 current);
     event Clear(address indexed vault, address indexed user);
 
@@ -27,5 +29,5 @@ interface IInterestDistributor {
     function clear(address vault_, address user_) external;
 
     /// @notice Returns the pending interest to be redeemed.
-    function pending(address vault_, address user_) external returns (uint128 shares);
+    function pending(address vault_, address user_) external view returns (uint128 shares);
 }
