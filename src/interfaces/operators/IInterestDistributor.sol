@@ -4,7 +4,9 @@ pragma solidity >=0.5.0;
 struct InterestDetails {
     /// @dev Downcast from uint256
     uint64 latestPrice;
-    uint64 lastPriceUpdate;
+    /// @dev Downcast from uint256
+    uint64 peak;
+    uint64 lastDistribution;
     uint128 outstandingShares;
 }
 
@@ -25,5 +27,5 @@ interface IInterestDistributor {
     function clear(address vault_, address user_) external;
 
     /// @notice Returns the pending interest to be redeemed.
-    function pending(address vault_, address user_) external view returns (uint128 shares);
+    function pending(address vault_, address user_) external returns (uint128 shares);
 }

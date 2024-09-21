@@ -13,7 +13,6 @@ contract InterestDistributorTest is BaseTest {
         address vault_ = deploySimpleVault();
         address investor = makeAddr("investor");
         ERC7540Vault vault = ERC7540Vault(vault_);
-        ITranche tranche = ITranche(address(vault.share()));
 
         centrifugeChain.updateTranchePrice(
             vault.poolId(), vault.trancheId(), defaultAssetId, price, uint64(block.timestamp)
@@ -56,30 +55,30 @@ contract InterestDistributorTest is BaseTest {
 
         vm.warp(block.timestamp + 1 days);
         centrifugeChain.updateTranchePrice(
-            vault.poolId(), vault.trancheId(), defaultAssetId, 1.1 * 10 ** 18, uint64(block.timestamp)
+            vault.poolId(), vault.trancheId(), defaultAssetId, 1.25 * 10 ** 18, uint64(block.timestamp)
         );
 
         assertApproxEqAbs(vault.pendingRedeemRequest(0, investor), 0, 1);
-        assertApproxEqAbs(interestDistributor.pending(vault_, investor), amount / 10, 1);
+        assertApproxEqAbs(interestDistributor.pending(vault_, investor), amount / 5, 1);
 
         interestDistributor.distribute(vault_, investor);
 
-        assertApproxEqAbs(vault.pendingRedeemRequest(0, investor), amount / 10, 1);
+        assertApproxEqAbs(vault.pendingRedeemRequest(0, investor), amount / 5, 1);
         assertApproxEqAbs(interestDistributor.pending(vault_, investor), 0, 1);
 
-        // vm.warp(block.timestamp + 1 days);
-        // centrifugeChain.updateTranchePrice(
-        //     vault.poolId(), vault.trancheId(), defaultAssetId, 1.0 * 10 ** 18, uint64(block.timestamp)
-        // );
+        vm.warp(block.timestamp + 1 days);
+        centrifugeChain.updateTranchePrice(
+            vault.poolId(), vault.trancheId(), defaultAssetId, 1.0 * 10 ** 18, uint64(block.timestamp)
+        );
 
-        // assertApproxEqAbs(interestDistributor.pending(vault_, investor), 0, 1);
-        // interestDistributor.distribute(vault_, investor);
+        assertApproxEqAbs(interestDistributor.pending(vault_, investor), 0, 1);
+        interestDistributor.distribute(vault_, investor);
 
-        // vm.warp(block.timestamp + 1 days);
-        // centrifugeChain.updateTranchePrice(
-        //     vault.poolId(), vault.trancheId(), defaultAssetId, 2 * 10 ** 18, uint64(block.timestamp)
-        // );
+        vm.warp(block.timestamp + 1 days);
+        centrifugeChain.updateTranchePrice(
+            vault.poolId(), vault.trancheId(), defaultAssetId, 2.5 * 10 ** 18, uint64(block.timestamp)
+        );
 
-        // assertApproxEqAbs(interestDistributor.pending(vault_, investor), amount / 2, 1);
+        assertApproxEqAbs(interestDistributor.pending(vault_, investor), amount / 2, 1);
     }
 }
