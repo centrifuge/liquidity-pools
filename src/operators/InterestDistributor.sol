@@ -36,7 +36,7 @@ contract InterestDistributor is IInterestDistributor {
         // they'd expect to redeem interest based on the price they invested in, not the previous high point.
         uint256 currentPrice = vault.pricePerShare();
         if (currentPrice < user.peak) return;
-        uint256 comparison = uint256(user.latestPrice) < user.peak ? user.peak : uint256(user.latestPrice);
+        uint256 comparison = MathLib.max(uint256(user.latestPrice), user.peak);
 
         // Calculate before updating user.shares, so it's based on the balance of the last price update.
         // Assuming price updates coincide with epoch fulfillments, this has the effect of only requesting
@@ -74,8 +74,8 @@ contract InterestDistributor is IInterestDistributor {
         if (user.lastDistribution == IERC7540Vault(vault_).priceLastUpdated()) return 0;
         uint256 currentPrice = IERC7540Vault(vault_).pricePerShare();
         if (currentPrice < user.peak) return 0;
-        uint256 comparison = uint256(user.latestPrice) < user.peak ? user.peak : uint256(user.latestPrice);
-        shares = _computeRequest(user.outstandingShares, comparison, currentPrice);
+        shares =
+            _computeRequest(user.outstandingShares, MathLib.max(uint256(user.latestPrice), user.peak), currentPrice);
     }
 
     /// @dev Calculate shares to redeem based on outstandingShares * ((currentPrice - prevPrice) / currentPrice)

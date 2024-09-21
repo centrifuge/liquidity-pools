@@ -62,7 +62,7 @@ contract Deployer is Script {
         gateway = new Gateway(address(root), address(poolManager), address(investmentManager), address(gasService));
         router = new CentrifugeRouter(address(routerEscrow), address(gateway), address(poolManager));
         guardian = new Guardian(adminSafe, address(root), address(gateway));
-        interestDistributor = new InterestDistributor();
+        interestDistributor = new InterestDistributor{salt: salt}();
 
         _endorse();
         _rely();
