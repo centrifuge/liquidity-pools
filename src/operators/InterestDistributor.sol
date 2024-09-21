@@ -64,15 +64,10 @@ contract InterestDistributor is Auth, IInterestDistributor {
 
     /// @inheritdoc IInterestDistributor
     function clear(address vault_, address user_) external {
-        IERC7540Vault vault = IERC7540Vault(vault_);
-        require(!vault.isOperator(user_, address(this)), "InterestDistributor/still-an-operator");
+        require(!IERC7540Vault(vault_).isOperator(user_, address(this)), "InterestDistributor/still-an-operator");
+        require(_users[vault_][user_].outstandingShares > 0, "InterestDistributor/no-outstanding-shares");
 
-        InterestDetails storage user = _users[vault_][user_];
-        require(user.outstandingShares > 0, "InterestDistributor/no-outstanding-shares");
-
-        user.latestPrice = 0;
-        user.lastDistribution = 0;
-        user.outstandingShares = 0;
+        delete _users[vault_][user_];
         emit Clear(vault_, user_);
     }
 

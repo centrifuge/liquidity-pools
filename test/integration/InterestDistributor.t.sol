@@ -39,6 +39,7 @@ contract InterestDistributorTest is BaseTest {
         vm.prank(investor);
         vault.deposit(amount, investor, investor);
 
+        // Initially, pending interest is 0
         assertApproxEqAbs(vault.pendingRedeemRequest(0, investor), 0, 1);
         assertApproxEqAbs(interestDistributor.pending(vault_, investor), 0, 1);
 
@@ -53,6 +54,7 @@ contract InterestDistributorTest is BaseTest {
         assertApproxEqAbs(vault.pendingRedeemRequest(0, investor), 0, 1);
         assertApproxEqAbs(interestDistributor.pending(vault_, investor), 0, 1);
 
+        // Once price goes to 1.25, 1/5th of the total shares are redeemed
         vm.warp(block.timestamp + 1 days);
         centrifugeChain.updateTranchePrice(
             vault.poolId(), vault.trancheId(), defaultAssetId, 1.25 * 10 ** 18, uint64(block.timestamp)
@@ -66,6 +68,7 @@ contract InterestDistributorTest is BaseTest {
         assertApproxEqAbs(vault.pendingRedeemRequest(0, investor), amount / 5, 1);
         assertApproxEqAbs(interestDistributor.pending(vault_, investor), 0, 1);
 
+        // When price goes down, no new redemption is submitted
         vm.warp(block.timestamp + 1 days);
         centrifugeChain.updateTranchePrice(
             vault.poolId(), vault.trancheId(), defaultAssetId, 1.0 * 10 ** 18, uint64(block.timestamp)
@@ -74,6 +77,15 @@ contract InterestDistributorTest is BaseTest {
         assertApproxEqAbs(interestDistributor.pending(vault_, investor), 0, 1);
         interestDistributor.distribute(vault_, investor);
 
+        vm.warp(block.timestamp + 1 days);
+        centrifugeChain.updateTranchePrice(
+            vault.poolId(), vault.trancheId(), defaultAssetId, 1.1 * 10 ** 18, uint64(block.timestamp)
+        );
+
+        assertApproxEqAbs(interestDistributor.pending(vault_, investor), 0, 1);
+        interestDistributor.distribute(vault_, investor);
+
+        // Once price goes above 1.25 again, shares are redeemed
         vm.warp(block.timestamp + 1 days);
         centrifugeChain.updateTranchePrice(
             vault.poolId(), vault.trancheId(), defaultAssetId, 2.5 * 10 ** 18, uint64(block.timestamp)
