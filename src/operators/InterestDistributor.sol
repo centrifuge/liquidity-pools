@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.26;
 
-import {Auth} from "src/Auth.sol";
 import {IERC20} from "src/interfaces/IERC20.sol";
 import {IERC7540Vault} from "src/interfaces/IERC7540.sol";
 import {IPoolManager} from "src/interfaces/IPoolManager.sol";
@@ -14,12 +13,10 @@ import {IInterestDistributor, InterestDetails} from "src/interfaces/operators/II
 ///
 ///         Whenever a user claims new tranche tokens or a principal redeem request is initiated,
 ///         distribute() should be called to update the outstanding shares that the interest is computed based on.
-contract InterestDistributor is Auth, IInterestDistributor {
+contract InterestDistributor is IInterestDistributor {
     using MathLib for uint256;
 
     mapping(address vault => mapping(address user => InterestDetails)) internal _users;
-
-    constructor() Auth(msg.sender) {}
 
     /// @inheritdoc IInterestDistributor
     function distribute(address vault_, address user_) external {
