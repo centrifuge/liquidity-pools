@@ -21,10 +21,10 @@ interface ICentrifugeRouter is IRecoverable {
     /// @dev    After this is called, anyone can claim tokens to msg.sender.
     ///         Even any requests submitted directly to the vault (not through the CentrifugeRouter) will be
     ///         permissionlessly claimable through the CentrifugeRouter, until `disable()` is called.
-    function enable(address vault) external;
+    function enable(address vault) external payable;
 
     /// @notice Disable permissionless claiming
-    function disable(address vault) external;
+    function disable(address vault) external payable;
 
     // --- Deposit ---
     /// @notice Check `IERC7540Deposit.requestDeposit`.
@@ -155,7 +155,7 @@ interface ICentrifugeRouter is IRecoverable {
     function claimCancelRedeemRequest(address vault, address receiver, address controller) external payable;
 
     /// @notice TODO
-    function distributeInterest(address vault, address controller) external payable;
+    function distributeInterest(address vault, address controller, uint256 topUpAmount) external payable;
 
     // --- Transfer ---
     /// @notice Check `IPoolManager.transferAssets`.

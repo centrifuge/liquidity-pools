@@ -69,11 +69,11 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     }
 
     // --- Enable interactions with the vault ---
-    function enable(address vault) public protected {
+    function enable(address vault) public payable protected {
         IERC7540Vault(vault).setEndorsedOperator(msg.sender, true);
     }
 
-    function disable(address vault) external protected {
+    function disable(address vault) external payable protected {
         IERC7540Vault(vault).setEndorsedOperator(msg.sender, false);
     }
 
@@ -221,7 +221,8 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     }
 
     /// @inheritdoc ICentrifugeRouter
-    function distributeInterest(address vault, address controller) external payable protected {
+    function distributeInterest(address vault, address controller, uint256 topUpAmount) external payable protected {
+        _pay(topUpAmount);
         interestDistributor.distribute(vault, controller);
     }
 
