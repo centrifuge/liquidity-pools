@@ -93,4 +93,8 @@ contract InterestDistributorTest is BaseTest {
 
         assertApproxEqAbs(interestDistributor.pending(vault_, investor), (amount - amount / 5) / 2, 1);
     }
+
+    // TODO: testDistributeAfterAnotherDeposit
+    // TODO: testDistributeAfterPrincipalRedemption
+    // TODO: testClear
 }

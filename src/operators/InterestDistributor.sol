@@ -32,25 +32,27 @@ contract InterestDistributor is IInterestDistributor {
         uint32 priceLastUpdated = uint32(vault_.priceLastUpdated());
         if (user.lastUpdate == priceLastUpdated) return;
 
-        uint128 prevOutstandingShares = user.shares;
+        uint128 prevShares = user.shares;
         uint96 currentPrice = uint96(vault_.pricePerShare());
 
-        // Calculate before updating user.shares, so it's based on the balance of the last price update.
+        // Calculate request before updating user.shares, so it is based on the balance at the last price update.
         // Assuming price updates coincide with epoch fulfillments, this results in only requesting
         // interest on the previous outstanding balance before the new fulfillment.
-        uint128 request = _computeRequest(user.shares, user.peak, currentPrice);
+        // If there was a principal redemption, the current balance is used since more than that cannot be redeemed.
+        uint128 currentShares = IERC20(vault_.share()).balanceOf(controller).toUint128();
+        uint128 request = MathLib.min(_computeRequest(user.shares, user.peak, currentPrice), currentShares).toUint128();
 
         user.lastUpdate = priceLastUpdated;
         if (currentPrice > user.peak) user.peak = uint96(currentPrice);
-        user.shares = IERC20(vault_.share()).balanceOf(controller).toUint128() - request;
+        user.shares = currentShares - request;
 
         if (request > 0) {
             vault_.requestRedeem(request, controller, controller);
             emit InterestRedeemRequest(vault, controller, user.peak, currentPrice, request);
         }
 
-        if (user.shares != prevOutstandingShares) {
-            emit OutstandingSharesUpdate(vault, controller, prevOutstandingShares, user.shares);
+        if (user.shares != prevShares) {
+            emit OutstandingSharesUpdate(vault, controller, prevShares, user.shares);
         }
     }
 
