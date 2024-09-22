@@ -85,12 +85,12 @@ contract InterestDistributorTest is BaseTest {
         assertApproxEqAbs(interestDistributor.pending(vault_, investor), 0, 1);
         interestDistributor.distribute(vault_, investor);
 
-        // Once price goes above 1.25 again, shares are redeemed
+        // Once price goes above 1.25 (to 2.50) again, shares are redeemed
         vm.warp(block.timestamp + 1 days);
         centrifugeChain.updateTranchePrice(
             vault.poolId(), vault.trancheId(), defaultAssetId, 2.5 * 10 ** 18, uint64(block.timestamp)
         );
 
-        assertApproxEqAbs(interestDistributor.pending(vault_, investor), amount / 2, 1);
+        assertApproxEqAbs(interestDistributor.pending(vault_, investor), (amount - amount / 5) / 2, 1);
     }
 }
