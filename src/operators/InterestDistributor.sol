@@ -29,23 +29,20 @@ contract InterestDistributor is IInterestDistributor {
         require(vault_.isOperator(controller, address(this)), "InterestDistributor/not-an-operator");
 
         InterestDetails storage user = _users[vault][controller];
-        uint64 priceLastUpdated = vault_.priceLastUpdated();
-
-        if (user.lastUpdate == priceLastUpdated) {
-            return;
-        }
+        uint32 priceLastUpdated = uint32(vault_.priceLastUpdated());
+        if (user.lastUpdate == priceLastUpdated) return;
 
         uint128 prevOutstandingShares = user.shares;
         uint96 currentPrice = uint96(vault_.pricePerShare());
 
         // Calculate before updating user.shares, so it's based on the balance of the last price update.
-        // Assuming price updates coincide with epoch fulfillments, this has the effect of only requesting
-        // interest on the previous balance before the new fulfillment.
+        // Assuming price updates coincide with epoch fulfillments, this results in only requesting
+        // interest on the previous outstanding balance before the new fulfillment.
         uint128 request = _computeRequest(user.shares, user.peak, currentPrice);
 
-        user.lastUpdate = uint32(priceLastUpdated);
+        user.lastUpdate = priceLastUpdated;
         if (currentPrice > user.peak) user.peak = uint96(currentPrice);
-        user.shares = IERC20(vault_.share()).balanceOf(controller).toUint128();
+        user.shares = IERC20(vault_.share()).balanceOf(controller).toUint128() - request;
 
         if (request > 0) {
             vault_.requestRedeem(request, controller, controller);
