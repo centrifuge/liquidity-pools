@@ -44,10 +44,8 @@ contract InterestDistributor is IInterestDistributor {
         // Calculate request before updating user.shares, so it is based on the balance at the last price update.
         // Assuming price updates coincide with epoch fulfillments, this results in only requesting
         // interest on the previous outstanding balance before the new fulfillment.
-        // If there was a principal redemption, the current balance is used since more than that cannot be redeemed.
         uint128 currentShares = IERC20(vault_.share()).balanceOf(controller).toUint128();
-        uint128 request =
-            MathLib.min(_computeRequest(user.shares, user.peak, uint96(currentPrice)), currentShares).toUint128();
+        uint128 request = _computeRequest(user.shares, currentShares, user.peak, uint96(currentPrice));
 
         user.lastUpdate = uint32(priceLastUpdated);
         if (currentPrice > user.peak) user.peak = uint96(currentPrice);
@@ -79,12 +77,22 @@ contract InterestDistributor is IInterestDistributor {
         (uint128 currentPrice, uint64 priceLastUpdated) =
             poolManager.getTranchePrice(vault_.poolId(), vault_.trancheId(), vault_.asset());
         if (user.lastUpdate == uint32(priceLastUpdated)) return 0;
-        shares = _computeRequest(user.shares, user.peak, uint96(currentPrice));
+        shares =
+            _computeRequest(user.shares, IERC20(vault_.share()).balanceOf(controller), user.peak, uint96(currentPrice));
     }
 
     /// @dev Calculate shares to redeem based on shares * ((currentPrice - prevPrice) / currentPrice)
-    function _computeRequest(uint128 shares, uint96 prevPrice, uint96 currentPrice) internal pure returns (uint128) {
-        if (shares == 0 || currentPrice <= prevPrice) return 0;
-        return uint256(shares).mulDiv(currentPrice - prevPrice, currentPrice, MathLib.Rounding.Down).toUint128();
+    function _computeRequest(uint128 outstandingShares, uint256 currentShares, uint96 prevPrice, uint96 currentPrice)
+        internal
+        pure
+        returns (uint128)
+    {
+        if (outstandingShares == 0 || currentPrice <= prevPrice) return 0;
+
+        // If there was a principal redemption, the current balance is used since more than that cannot be redeemed.
+        return MathLib.min(
+            uint256(outstandingShares).mulDiv(currentPrice - prevPrice, currentPrice, MathLib.Rounding.Down),
+            currentShares
+        ).toUint128();
     }
 }
