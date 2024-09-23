@@ -59,7 +59,7 @@ contract InterestDistributor is IInterestDistributor {
 
         if (request > 0) {
             vault_.requestRedeem(request, controller, controller);
-            emit InterestRedeemRequest(vault, controller, user.peak, currentPrice, request);
+            emit InterestRedeemRequest(vault, controller, user.peak, uint96(currentPrice), request);
         }
 
         if (user.shares != prevShares) {

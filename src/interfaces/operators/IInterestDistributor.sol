@@ -14,7 +14,7 @@ struct InterestDetails {
 interface IInterestDistributor {
     // --- Events ---
     event InterestRedeemRequest(
-        address indexed vault, address indexed controller, uint256 previousPrice, uint256 currentPrice, uint128 request
+        address indexed vault, address indexed controller, uint96 previousPrice, uint96 currentPrice, uint128 request
     );
     event OutstandingSharesUpdate(address indexed vault, address indexed controller, uint128 previous, uint128 current);
     event Clear(address indexed vault, address indexed controller);
