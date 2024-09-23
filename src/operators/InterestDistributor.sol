@@ -81,7 +81,7 @@ contract InterestDistributor is IInterestDistributor {
             _computeRequest(user.shares, IERC20(vault_.share()).balanceOf(controller), user.peak, uint96(currentPrice));
     }
 
-    /// @dev Calculate shares to redeem based on shares * ((currentPrice - prevPrice) / currentPrice)
+    /// @dev Calculate shares to redeem based on outstandingShares * ((currentPrice - prevPrice) / currentPrice)
     function _computeRequest(uint128 outstandingShares, uint256 currentShares, uint96 prevPrice, uint96 currentPrice)
         internal
         pure
