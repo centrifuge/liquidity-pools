@@ -70,7 +70,7 @@ contract InterestDistributor is IInterestDistributor {
     /// @inheritdoc IInterestDistributor
     function clear(address vault, address controller) external {
         require(!IERC7540Vault(vault).isOperator(controller, address(this)), "InterestDistributor/still-an-operator");
-        require(_users[vault][controller].shares > 0, "InterestDistributor/no-outstanding-shares");
+        require(_users[vault][controller].lastUpdate > 0, "InterestDistributor/unknown-controller");
 
         delete _users[vault][controller];
         emit Clear(vault, controller);
