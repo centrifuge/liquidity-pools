@@ -49,7 +49,9 @@ contract InterestDistributorTest is BaseTest {
         vm.prank(investor);
         vault.setOperator(address(interestDistributor), true);
 
+        snapStart("InterestDistributor_distribute_updateShares");
         interestDistributor.distribute(vault_, investor);
+        snapEnd();
 
         assertApproxEqAbs(vault.pendingRedeemRequest(0, investor), 0, 1);
         assertApproxEqAbs(interestDistributor.pending(vault_, investor), 0, 1);
@@ -63,7 +65,9 @@ contract InterestDistributorTest is BaseTest {
         assertApproxEqAbs(vault.pendingRedeemRequest(0, investor), 0, 1);
         assertApproxEqAbs(interestDistributor.pending(vault_, investor), amount / 5, 1);
 
+        snapStart("InterestDistributor_distribute_requestRedeem");
         interestDistributor.distribute(vault_, investor);
+        snapEnd();
 
         assertApproxEqAbs(vault.pendingRedeemRequest(0, investor), amount / 5, 1);
         assertApproxEqAbs(interestDistributor.pending(vault_, investor), 0, 1);
