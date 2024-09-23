@@ -155,6 +155,12 @@ interface ICentrifugeRouter is IRecoverable {
     function claimCancelRedeemRequest(address vault, address receiver, address controller) external payable;
 
     /// @notice TODO
+    /// @dev    This method is to be used when the pending interest is 0, since no redemption request is required then.
+    ///         If pending is non-zero, then the overloaded distributeInterest() method with the `topUpAmount` parameter
+    ///         should be used, to pay for the requestRedeem call to Centrifuge.
+    function distributeInterest(address vault, address controller) external payable;
+
+    /// @notice TODO
     function distributeInterest(address vault, address controller, uint256 topUpAmount) external payable;
 
     // --- Transfer ---

@@ -221,6 +221,11 @@ contract CentrifugeRouter is Auth, ICentrifugeRouter {
     }
 
     /// @inheritdoc ICentrifugeRouter
+    function distributeInterest(address vault, address controller) external payable protected {
+        interestDistributor.distribute(vault, controller);
+    }
+
+    /// @inheritdoc ICentrifugeRouter
     function distributeInterest(address vault, address controller, uint256 topUpAmount) external payable protected {
         _pay(topUpAmount);
         interestDistributor.distribute(vault, controller);
