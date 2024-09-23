@@ -18,6 +18,10 @@ import {IInterestDistributor, InterestDetails} from "src/interfaces/operators/II
 ///         again once the price fully recovers above the previous high point (peak).
 ///         Peak is stored per user since if the price has globally gone down, and a user invests at that time,
 ///         they'd expect to redeem interest based on the price they invested in, not the previous high point.
+/// @dev    Requires that:
+///         - Whenever orders are fulfilled, an UpdateTranchePrice message is also submitted
+///         - Users claim the complete fulfilled amount using the router, rather than partial claims through the vault.
+///         Otherwise the interest amounts may be off.
 contract InterestDistributor is IInterestDistributor {
     using MathLib for uint256;
 
