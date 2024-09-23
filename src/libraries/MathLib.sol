@@ -131,9 +131,4 @@ library MathLib {
     function min(uint256 a, uint256 b) internal pure returns (uint256) {
         return a > b ? b : a;
     }
-
-    /// @notice Returns the largest of two numbers.
-    function max(uint96 a, uint96 b) internal pure returns (uint96) {
-        return a < b ? b : a;
-    }
 }
