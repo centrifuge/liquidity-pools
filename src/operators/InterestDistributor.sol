@@ -37,8 +37,9 @@ contract InterestDistributor is IInterestDistributor {
         InterestDetails storage user = _users[vault][controller];
         uint128 prevShares = user.shares;
 
+        (address asset,) = poolManager.getVaultAsset(vault);
         (uint128 currentPrice, uint64 priceLastUpdated) =
-            poolManager.getTranchePrice(vault_.poolId(), vault_.trancheId(), vault_.asset());
+            poolManager.getTranchePrice(vault_.poolId(), vault_.trancheId(), asset);
         if (user.lastUpdate == priceLastUpdated) return;
 
         // Calculate request before updating user.shares, so it is based on the balance at the last price update.
