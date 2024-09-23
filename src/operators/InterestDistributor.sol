@@ -23,26 +23,33 @@ contract InterestDistributor is IInterestDistributor {
 
     mapping(address vault => mapping(address user => InterestDetails)) internal _users;
 
+    IPoolManager public immutable poolManager;
+
+    constructor(address poolManager_) {
+        poolManager = IPoolManager(poolManager_);
+    }
+
     /// @inheritdoc IInterestDistributor
     function distribute(address vault, address controller) external {
         IERC7540Vault vault_ = IERC7540Vault(vault);
         require(vault_.isOperator(controller, address(this)), "InterestDistributor/not-an-operator");
 
         InterestDetails storage user = _users[vault][controller];
-        uint32 priceLastUpdated = uint32(vault_.priceLastUpdated());
-        if (user.lastUpdate == priceLastUpdated) return;
-
         uint128 prevShares = user.shares;
-        uint96 currentPrice = uint96(vault_.pricePerShare());
+
+        (uint128 currentPrice, uint64 priceLastUpdated) =
+            poolManager.getTranchePrice(vault_.poolId(), vault_.trancheId(), vault_.asset());
+        if (user.lastUpdate == priceLastUpdated) return;
 
         // Calculate request before updating user.shares, so it is based on the balance at the last price update.
         // Assuming price updates coincide with epoch fulfillments, this results in only requesting
         // interest on the previous outstanding balance before the new fulfillment.
         // If there was a principal redemption, the current balance is used since more than that cannot be redeemed.
         uint128 currentShares = IERC20(vault_.share()).balanceOf(controller).toUint128();
-        uint128 request = MathLib.min(_computeRequest(user.shares, user.peak, currentPrice), currentShares).toUint128();
+        uint128 request =
+            MathLib.min(_computeRequest(user.shares, user.peak, uint96(currentPrice)), currentShares).toUint128();
 
-        user.lastUpdate = priceLastUpdated;
+        user.lastUpdate = uint32(priceLastUpdated);
         if (currentPrice > user.peak) user.peak = uint96(currentPrice);
         user.shares = currentShares - request;
 
@@ -68,8 +75,11 @@ contract InterestDistributor is IInterestDistributor {
     /// @inheritdoc IInterestDistributor
     function pending(address vault, address controller) external view returns (uint128 shares) {
         InterestDetails memory user = _users[vault][controller];
-        if (user.lastUpdate == IERC7540Vault(vault).priceLastUpdated()) return 0;
-        shares = _computeRequest(user.shares, user.peak, uint96(IERC7540Vault(vault).pricePerShare()));
+        IERC7540Vault vault_ = IERC7540Vault(vault);
+        (uint128 currentPrice, uint64 priceLastUpdated) =
+            poolManager.getTranchePrice(vault_.poolId(), vault_.trancheId(), vault_.asset());
+        if (user.lastUpdate == uint32(priceLastUpdated)) return 0;
+        shares = _computeRequest(user.shares, user.peak, uint96(currentPrice));
     }
 
     /// @dev Calculate shares to redeem based on shares * ((currentPrice - prevPrice) / currentPrice)
