@@ -95,7 +95,6 @@ contract InterestDistributor is IInterestDistributor {
     {
         if (outstandingShares == 0 || currentPrice <= prevPrice) return 0;
 
-        // If there was a principal redemption, the current balance is used since more than that cannot be redeemed.
         return MathLib.min(
             uint256(outstandingShares).mulDiv(currentPrice - prevPrice, currentPrice, MathLib.Rounding.Down),
             currentShares
