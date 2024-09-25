@@ -212,4 +212,35 @@ abstract contract RouterFunctions is BaseTargetFunctions, Properties {
             }
         }
     }
+
+    // === Cancel Deposit Request === //
+    function router_cancelDepositRequest() public {
+        uint256 balanceB4 = token.balanceOf(actor);
+        uint256 balanceOfRouterEscrowB4 = token.balanceOf(address(routerEscrow));
+        uint256 lockedRequestB4 = router.lockedRequests(actor, address(vault));
+
+        bool hasReverted;
+        try router.cancelDepositRequest(address(vault), 0) {
+            sumOfCancelledDepositRequests[address(token)] += lockedRequestB4;
+        } catch {
+            hasReverted = true;
+        }
+
+        // After Balances and Checks
+        uint256 balanceAfter = token.balanceOf(actor);
+        uint256 balanceOfRouterEscrowAfter = token.balanceOf(address(routerEscrow));
+        uint256 lockedRequestAfter = router.lockedRequests(actor, address(vault));
+
+        if (!hasReverted) {
+            uint256 deltaUser = balanceB4 - balanceAfter;
+            uint256 deltaRouterEscrow = balanceOfRouterEscrowAfter - balanceOfRouterEscrowB4;
+
+            if (RECON_EXACT_BAL_CHECK) {
+                eq(deltaUser, lockedRequestB4, "Router-x");
+            }
+
+            eq(deltaRouterEscrow, lockedRequestB4, "Router-x");
+            eq(lockedRequestAfter, 0, "Router-x");
+        }
+    }
 }
