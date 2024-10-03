@@ -186,4 +186,5 @@ abstract contract SharedStorage {
     mapping(address => uint256) sumOfExecutedLockedDepositRequests;
     // stores request data coming through the router
     mapping(address => uint256) sumOfDepositRequestsRouter;
+    mapping(address => uint256) sumOfRedeemRequestsRouter;
 }

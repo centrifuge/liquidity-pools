@@ -176,6 +176,45 @@ abstract contract RouterFunctions is BaseTargetFunctions, Properties {
         }
     }
 
+    function router_requestRedeem(uint256 shares) public {
+        address owner = actor;
+        address controller = actor;
+
+        uint256 balanceOfEscrowB4 = trancheToken.balanceOf(address(escrow));
+        uint256 balanceOfRouterEscrowB4 = trancheToken.balanceOf(address(routerEscrow));
+        uint256 balanceOfOwnerB4 = trancheToken.balanceOf(owner);
+        shares = between(shares, 0, balanceOfOwnerB4);
+
+        bool hasReverted;
+
+        trancheToken.approve(address(vault), shares);
+
+        try router.requestRedeem(address(vault), shares, controller, owner, 0) {
+            sumOfRedeemRequestsRouter[address(trancheToken)] += shares;
+            requestRedeemShares[actor][address(trancheToken)] += shares;
+        } catch {
+            hasReverted = true;
+        }
+        if (restrictionManager.isFrozen(address(trancheToken), controller)) {
+            t(hasReverted, "Router-Redeem-Frozen Must Revert");
+        }
+        // After Balances and Checks
+        uint256 balanceOfEscrowAfter = trancheToken.balanceOf(address(escrow));
+        uint256 balanceOfOwnerAfter = trancheToken.balanceOf(owner);
+        uint256 balanceOfRouterEscrowAfter = trancheToken.balanceOf(address(routerEscrow));
+
+        // NOTE: We only enforce the check if the tx didn't revert
+        if (!hasReverted) {
+            uint256 deltaEscrow = balanceOfEscrowAfter - balanceOfEscrowB4;
+            uint256 deltaOwner = balanceOfOwnerB4 - balanceOfOwnerAfter;
+            uint256 deltaRouterEscrow = balanceOfRouterEscrowB4 - balanceOfRouterEscrowAfter;
+
+            eq(deltaEscrow, shares, "Router-x");
+            eq(deltaOwner, shares, "Router-x");
+            eq(deltaRouterEscrow, 0, "Router-x");
+        }
+    }
+
     // TODO: once we have multi actor support, include receiver != controller case
     function router_claimDeposit(address sender) public {
         // Bal b4

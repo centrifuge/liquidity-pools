@@ -302,8 +302,8 @@ abstract contract Properties is Setup, Asserts, ERC7540CentrifugeProperties {
             return trancheToken.balanceOf(address(escrow))
                 == (
                     sumOfFullfilledDeposits[address(trancheToken)] + sumOfRedeemRequests[address(trancheToken)]
-                        - sumOfClaimedDeposits[address(trancheToken)] - sumOfClaimedRedeemCancelations[address(trancheToken)]
-                        - sumOfClaimedRequests[address(trancheToken)]
+                        + sumOfRedeemRequestsRouter[address(trancheToken)] - sumOfClaimedDeposits[address(trancheToken)]
+                        - sumOfClaimedRedeemCancelations[address(trancheToken)] - sumOfClaimedRequests[address(trancheToken)]
                 );
         }
     }
