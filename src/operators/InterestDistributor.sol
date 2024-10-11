@@ -25,7 +25,7 @@ import {IInterestDistributor, InterestDetails} from "src/interfaces/operators/II
 contract InterestDistributor is IInterestDistributor {
     using MathLib for uint256;
 
-    mapping(address vault => mapping(address user => InterestDetails)) internal _users;
+    mapping(address vault => mapping(address user => InterestDetails)) public users;
 
     IPoolManager public immutable poolManager;
 
@@ -38,7 +38,7 @@ contract InterestDistributor is IInterestDistributor {
         IERC7540Vault vault_ = IERC7540Vault(vault);
         require(vault_.isOperator(controller, address(this)), "InterestDistributor/not-an-operator");
 
-        InterestDetails memory user = _users[vault][controller];
+        InterestDetails memory user = users[vault][controller];
         uint128 prevShares = user.shares;
 
         (address asset,) = poolManager.getVaultAsset(vault);
@@ -56,7 +56,7 @@ contract InterestDistributor is IInterestDistributor {
         user.lastUpdate = uint32(priceLastUpdated);
         if (currentPrice > user.peak) user.peak = uint96(currentPrice);
         user.shares = currentShares - request;
-        _users[vault][controller] = user;
+        users[vault][controller] = user;
 
         if (request > 0) {
             vault_.requestRedeem(request, controller, controller);
@@ -71,15 +71,15 @@ contract InterestDistributor is IInterestDistributor {
     /// @inheritdoc IInterestDistributor
     function clear(address vault, address controller) external {
         require(!IERC7540Vault(vault).isOperator(controller, address(this)), "InterestDistributor/still-an-operator");
-        require(_users[vault][controller].lastUpdate > 0, "InterestDistributor/unknown-controller");
+        require(users[vault][controller].lastUpdate > 0, "InterestDistributor/unknown-controller");
 
-        delete _users[vault][controller];
+        delete users[vault][controller];
         emit Clear(vault, controller);
     }
 
     /// @inheritdoc IInterestDistributor
     function pending(address vault, address controller) external view returns (uint128 shares) {
-        InterestDetails memory user = _users[vault][controller];
+        InterestDetails memory user = users[vault][controller];
         IERC7540Vault vault_ = IERC7540Vault(vault);
         (uint128 currentPrice, uint64 priceLastUpdated) =
             poolManager.getTranchePrice(vault_.poolId(), vault_.trancheId(), vault_.asset());
