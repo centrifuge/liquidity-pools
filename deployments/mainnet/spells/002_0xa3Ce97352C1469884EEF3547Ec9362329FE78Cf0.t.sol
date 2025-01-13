@@ -13,7 +13,8 @@ contract SpellTest is Test {
     Spell spell;
 
     // Details related to pending redemption that is failing
-    address investor = 0x32f5eF78AA9C7b8882D748331AdcFe0dfA4f1a14;
+    address investor1 = 0x32f5eF78AA9C7b8882D748331AdcFe0dfA4f1a14;
+    address investor2 = 0xbe19e6AdF267248beE015dd3fbBa363E12ca8cE6;
     address vault = 0xa7607A638df0117E6718b93f8cFf53503A815D2f;
     ICentrifugeRouter router = ICentrifugeRouter(0x2F445BA946044C5F508a63eEaF7EAb673c69a1F4);
 
@@ -29,16 +30,23 @@ contract SpellTest is Test {
         assertEq(usdc.balanceOf(spell.NEW_ESCROW()), 0);
 
         vm.expectRevert(bytes("SafeTransferLib/safe-transfer-from-failed"));
-        vm.prank(investor);
-        router.claimRedeem(vault, investor, investor);
+        vm.prank(investor1);
+        router.claimRedeem(vault, investor1, investor1);
+
+        vm.expectRevert(bytes("SafeTransferLib/safe-transfer-from-failed"));
+        vm.prank(investor2);
+        router.claimRedeem(vault, investor2, investor2);
 
         castSpell();
 
         assertEq(usdc.balanceOf(spell.OLD_ESCROW()), 0);
         assertEq(usdc.balanceOf(spell.NEW_ESCROW()), 143360978110);
 
-        vm.prank(investor);
-        router.claimRedeem(vault, investor, investor);
+        vm.prank(investor1);
+        router.claimRedeem(vault, investor1, investor1);
+
+        vm.prank(investor2);
+        router.claimRedeem(vault, investor2, investor2);
     }
 
     function castSpell() internal {
