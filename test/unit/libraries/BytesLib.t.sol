@@ -25,6 +25,11 @@ contract BytesLibTest is Test {
         assertEq(BytesLib.toUint16(value, randomStart.length), number);
     }
 
+    function testToUint32(uint32 number, bytes memory randomStart, bytes memory randomEnd) public {
+        bytes memory value = bytes.concat(bytes.concat(randomStart, abi.encodePacked(number)), randomEnd);
+        assertEq(BytesLib.toUint32(value, randomStart.length), number);
+    }
+
     function testToUint64(uint64 number, bytes memory randomStart, bytes memory randomEnd) public {
         bytes memory value = bytes.concat(bytes.concat(randomStart, abi.encodePacked(number)), randomEnd);
         assertEq(BytesLib.toUint64(value, randomStart.length), number);

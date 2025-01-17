@@ -179,6 +179,11 @@ contract BaseTest is Deployer, GasSnapshot, Test {
             deployVault(5, 6, restrictionManager, "name", "symbol", bytes16(bytes("1")), defaultAssetId, address(erc20));
     }
 
+    function deployVaultCustomHook(address hook) public returns (address) {
+        return
+            deployVault(5, 6, hook, "name", "symbol", bytes16(bytes("1")), defaultAssetId, address(erc20));
+    }
+
     function deposit(address _vault, address _investor, uint256 amount) public {
         deposit(_vault, _investor, amount, true);
     }
