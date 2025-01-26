@@ -13,6 +13,7 @@ import {PoolManager} from "src/PoolManager.sol";
 import {Escrow} from "src/Escrow.sol";
 import {CentrifugeRouter} from "src/CentrifugeRouter.sol";
 import {Guardian} from "src/admin/Guardian.sol";
+import {InterestDistributor} from "src/operators/InterestDistributor.sol";
 import {IAuth} from "src/interfaces/IAuth.sol";
 import "forge-std/Script.sol";
 
@@ -31,6 +32,7 @@ contract Deployer is Script {
     GasService public gasService;
     CentrifugeRouter public router;
     TransferProxyFactory public transferProxyFactory;
+    InterestDistributor public interestDistributor;
     address public vaultFactory;
     address public restrictionManager;
     address public trancheFactory;
@@ -60,6 +62,7 @@ contract Deployer is Script {
         gateway = new Gateway(address(root), address(poolManager), address(investmentManager), address(gasService));
         router = new CentrifugeRouter(address(routerEscrow), address(gateway), address(poolManager));
         guardian = new Guardian(adminSafe, address(root), address(gateway));
+        interestDistributor = new InterestDistributor(address(poolManager));
 
         _endorse();
         _rely();
