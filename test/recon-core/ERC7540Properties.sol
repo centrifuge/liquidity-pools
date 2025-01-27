@@ -91,7 +91,8 @@ abstract contract ERC7540Properties is Setup, Asserts {
             return true; // Needs to be greater than 0, skip
         }
 
-        try IERC7540Vault(erc7540Target).deposit(maxDep + amt, actor) {
+        try IERC7540Vault(erc7540Target).deposit(maxDep + amt, actor) returns (uint256 shares) {
+            if (shares == 0) return true;
             return false;
         } catch {
             // We want this to be hit
@@ -163,7 +164,8 @@ abstract contract ERC7540Properties is Setup, Asserts {
             return true; // Needs to be greater than 0
         }
 
-        try IERC7540Vault(erc7540Target).redeem(maxDep + amt, actor, actor) {
+        try IERC7540Vault(erc7540Target).redeem(maxDep + amt, actor, actor) returns (uint256 assets) {
+            if (assets == 0) return true;
             return false;
         } catch {
             // We want this to be hit

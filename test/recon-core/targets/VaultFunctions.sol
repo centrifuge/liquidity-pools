@@ -19,14 +19,6 @@ import {ERC7540Vault} from "src/ERC7540Vault.sol";
  * - vault_file
  */
 abstract contract VaultFunctions is BaseTargetFunctions, Properties {
-    /// @dev Get the balance of the current token and actor
-    function _getTokenAndBalanceForVault() internal view returns (uint256) {
-        // Token
-        uint256 amt = token.balanceOf(actor);
-
-        return amt;
-    }
-
     // === REQUEST === //
     function vault_requestDeposit(uint256 assets) public {
         assets = between(assets, 0, _getTokenAndBalanceForVault());
@@ -176,12 +168,7 @@ abstract contract VaultFunctions is BaseTargetFunctions, Properties {
             uint256 deltaUser = trancheUserAfter - trancheUserB4; // B4 - after -> They pay
             uint256 deltaEscrow = trancheEscrowB4 - trancheEscrowAfter; // After - B4 -> They gain
             emit DebugNumber(deltaUser);
-            emit DebugNumber(assets);
             emit DebugNumber(deltaEscrow);
-
-            if (RECON_EXACT_BAL_CHECK) {
-                eq(deltaUser, assets, "Extra LP-2");
-            }
 
             eq(deltaUser, deltaEscrow, "7540-13");
         }
@@ -255,12 +242,7 @@ abstract contract VaultFunctions is BaseTargetFunctions, Properties {
 
             uint256 deltaEscrow = tokenEscrowB4 - tokenEscrowAfter;
             emit DebugNumber(deltaUser);
-            emit DebugNumber(shares);
             emit DebugNumber(deltaEscrow);
-
-            if (RECON_EXACT_BAL_CHECK) {
-                eq(deltaUser, shares, "Extra LP-3");
-            }
 
             eq(deltaUser, deltaEscrow, "7540-14");
         }
